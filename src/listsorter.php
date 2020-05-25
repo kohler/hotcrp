@@ -13,7 +13,9 @@ class ListSorter {
     /** @var int */
     public $thenval = -1;
     public $field;
+    /** @var string */
     public $uid;
+    /** @var ?PaperList */
     public $pl;
 
     static private $next_uid = 1;

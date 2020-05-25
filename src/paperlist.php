@@ -121,7 +121,9 @@ class PaperList {
     private $qreq;
     /** @var Contact */
     private $_reviewer_user;
+    /** @var ?PaperInfoSet */
     private $_rowset;
+    /** @var list<TagAnno> */
     private $_groups;
 
     private $sortable;
@@ -140,16 +142,21 @@ class PaperList {
     private $_table_class;
     private $_report_id;
     private $_row_id_pattern;
+    /** @var ?SearchSelection */
     private $_selection;
 
     private $_row_filter;
+    /** @var array<string,list<PaperColumn>> */
     private $_columns_by_name;
     private $_column_errors_by_name = [];
     private $_current_find_column;
+    /** @var list<ListSorter> */
+    private $_sorters = [];
+    /** @var bool */
+    private $_has_sorters = false;
 
     // columns access
     public $qopts; // set by PaperColumn::prepare
-    public $sorters = [];
     public $tagger;
     public $need_tag_attr;
     public $table_attr;
@@ -218,7 +225,8 @@ class PaperList {
 
         $display = $args["display"] ?? null;
         if ($display !== null) {
-            $this->_viewing = $this->_view_origin = $this->sorters = [];
+            // reset any `set_view_display` changes
+            $this->_viewing = $this->_view_origin = $this->_sorters = [];
         }
         $view_list = $this->search->view_list();
         for ($i = 0; $i !== count($view_list); ++$i) {
@@ -247,7 +255,7 @@ class PaperList {
             }
         }
         if (($xsorts = array_merge($xsorts, $this->search->sorter_list()))) {
-            $this->sorters = array_merge(ListSorter::compress($xsorts), $this->sorters);
+            $this->_sorters = array_merge(ListSorter::compress($xsorts), $this->_sorters);
         }
 
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
@@ -336,6 +344,7 @@ class PaperList {
         }
     }
     private function set_view_display($str, $origin) {
+        assert(!$this->_has_sorters);
         if ((string) $str === "") {
             return;
         }
@@ -349,7 +358,7 @@ class PaperList {
                 $action = "show";
             }
             if ($action === "sort") {
-                if ($w !== "sort:id" || $sorters || $this->sorters) {
+                if ($w !== "sort:id" || $sorters || $this->_sorters) {
                     $sorters[] = PaperSearch::parse_sorter($w);
                 }
             } else {
@@ -358,7 +367,7 @@ class PaperList {
             }
         }
         if ($sorters) {
-            $this->sorters = array_merge(ListSorter::compress($sorters), $this->sorters);
+            $this->_sorters = array_merge(ListSorter::compress($sorters), $this->_sorters);
         }
     }
 
@@ -384,7 +393,7 @@ class PaperList {
     }
 
     function _sort_compare($a, $b) {
-        foreach ($this->sorters as $s) {
+        foreach ($this->_sorters as $s) {
             if (($x = $s->field->compare($a, $b, $s))) {
                 return ($x < 0) === $s->reverse ? 1 : -1;
             }
@@ -399,7 +408,7 @@ class PaperList {
         if (($x = $a->_then_sort_info - $b->_then_sort_info)) {
             return $x < 0 ? -1 : 1;
         }
-        foreach ($this->sorters as $s) {
+        foreach ($this->_sorters as $s) {
             if (($s->thenval === -1 || $s->thenval === $a->_then_sort_info)
                 && ($x = $s->field->compare($a, $b, $s))) {
                 return ($x < 0) === $s->reverse ? 1 : -1;
@@ -412,53 +421,57 @@ class PaperList {
         }
     }
 
+    /** @return non-empty-list<ListSorter> */
+    function sorters() {
+        if (!$this->_has_sorters) {
+            $this->_has_sorters = true;
+            $old_context = $this->conf->xt_swap_context($this);
+            $sorters = [];
+            foreach ($this->_sorters as $sorter) {
+                if ($sorter->field) {
+                    // already prepared (e.g., NumericOrderPaperColumn)
+                    $sorters[] = $sorter;
+                } else if ($sorter->type
+                           && ($field = $this->find_column($sorter->type))) {
+                    if ($field->prepare($this, PaperColumn::PREP_SORT)
+                        && $field->sort) {
+                        $sorter->field = $field;
+                        $sorter->type = $field->name;
+                        $sorters[] = $sorter;
+                    }
+                } else if ($sorter->type) {
+                    if ($this->user->can_view_tags(null)
+                        && ($tagger = new Tagger($this->user))
+                        && ($tag = $tagger->check($sorter->type))
+                        && $this->conf->fetch_ivalue("select exists (select * from PaperTag where tag=?)", $tag)) {
+                        $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”. Did you mean “sort:#" . htmlspecialchars($sorter->type) . "”?");
+                    } else {
+                        $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”.");
+                    }
+                }
+            }
+            if (empty($sorters)) {
+                $sorters[] = PaperSearch::parse_sorter("id");
+                $sorters[0]->field = $this->find_column("id");
+            }
+            foreach ($sorters as $s) {
+                $s->assign_uid();
+                $s->pl = $this;
+                if ($s->reverse === null) {
+                    $s->reverse = false;
+                }
+                if ($s->score === null) {
+                    $s->score = ListSorter::default_score_sort($this->user);
+                }
+            }
+            $this->conf->xt_swap_context($this);
+            $this->_sorters = $sorters;
+        }
+        return $this->_sorters;
+    }
+
     private function _sort() {
         $this->_groups = [];
-
-        // prepare sorters
-        $old_context = $this->conf->xt_swap_context($this);
-        $sorters = [];
-        foreach ($this->sorters as $sorter) {
-            if ($sorter->field) {
-                // already prepared (e.g., NumericOrderPaperColumn)
-                $sorters[] = $sorter;
-            } else if ($sorter->type
-                       && ($field = $this->find_column($sorter->type))) {
-                if ($field->prepare($this, PaperColumn::PREP_SORT)
-                    && $field->sort) {
-                    $sorter->field = $field;
-                    $sorter->type = $field->name;
-                    $sorters[] = $sorter;
-                }
-            } else if ($sorter->type) {
-                if ($this->user->can_view_tags(null)
-                    && ($tagger = new Tagger($this->user))
-                    && ($tag = $tagger->check($sorter->type))
-                    && $this->conf->fetch_ivalue("select exists (select * from PaperTag where tag=?)", $tag)) {
-                    $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”. Did you mean “sort:#" . htmlspecialchars($sorter->type) . "”?");
-                } else {
-                    $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”.");
-                }
-            }
-        }
-        if (empty($sorters)) {
-            $sorters[] = PaperSearch::parse_sorter("id");
-            $sorters[0]->field = $this->find_column("id");
-        }
-        $this->conf->xt_swap_context($this);
-        $this->sorters = $sorters;
-
-        // set defaults
-        foreach ($this->sorters as $s) {
-            $s->assign_uid();
-            $s->pl = $this;
-            if ($s->reverse === null) {
-                $s->reverse = false;
-            }
-            if ($s->score === null) {
-                $s->score = ListSorter::default_score_sort($this->user);
-            }
-        }
 
         // actually sort
         $overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
@@ -467,14 +480,15 @@ class PaperList {
                 $row->_then_sort_info = $thenmap[$row->paperId];
             }
         }
-        foreach ($this->sorters as $s) {
+        foreach ($this->sorters() as $s) {
+            $s->pl = $this;
             $s->field->analyze_sort($this, $this->_rowset, $s);
         }
         $this->_rowset->sort_by([$this, $thenmap ? "_then_sort_compare" : "_sort_compare"]);
         $this->user->set_overrides($overrides);
 
         // clean up, assign groups
-        foreach ($this->sorters as $s) {
+        foreach ($this->sorters() as $s) {
             $s->pl = null; // break circular ref
         }
         if (!empty($this->search->groupmap)) {
@@ -512,18 +526,19 @@ class PaperList {
         }
     }
 
+    /** @return string */
     function sortdef($always = false) {
-        if (!empty($this->sorters)
-            && $this->sorters[0]->type
-            && $this->sorters[0]->thenval === -1
+        $sorters = $this->sorters();
+        if ($sorters[0]->type
+            && $sorters[0]->thenval === -1
             && ($always || (string) $this->qreq->sort != "")
-            && ($this->sorters[0]->type != "id" || $this->sorters[0]->reverse)) {
-            if (($fdef = $this->find_column($this->sorters[0]->type))) {
-                $x = $fdef->sort_name($this, $this->sorters[0]);
+            && ($sorters[0]->type != "id" || $sorters[0]->reverse)) {
+            if (($fdef = $this->find_column($sorters[0]->type))) {
+                $x = $fdef->sort_name($this, $sorters[0]);
             } else {
-                $x = $this->sorters[0]->type;
+                $x = $sorters[0]->type;
             }
-            if ($this->sorters[0]->reverse) {
+            if ($sorters[0]->reverse) {
                 $x .= " reverse";
             }
             return $x;
@@ -536,10 +551,14 @@ class PaperList {
     function set_selection(SearchSelection $ssel) {
         $this->_selection = $ssel;
     }
+
+    /** @return bool */
     function is_selected($paperId, $default = false) {
         return $this->_selection ? $this->_selection->is_selected($paperId) : $default;
     }
 
+    /** @param string $key
+     * @param bool $value */
     function mark_has($key, $value = true) {
         if ($value) {
             $this->_has[$key] = true;
@@ -547,12 +566,16 @@ class PaperList {
             $this->_has[$key] = false;
         }
     }
+
+    /** @param string $key
+     * @return bool */
     function has($key) {
         if (!isset($this->_has[$key])) {
             $this->_has[$key] = $this->_compute_has($key);
         }
         return $this->_has[$key];
     }
+
     private function _compute_has($key) {
         if ($key === "paper" || $key === "final") {
             $opt = $this->conf->paper_opts->find($key);
@@ -634,6 +657,8 @@ class PaperList {
         }
     }
 
+    /** @param string $name
+     * @return list<PaperColumn> */
     private function find_columns($name, $opt = null) {
         if (!array_key_exists($name, $this->_columns_by_name)) {
             $this->_current_find_column = $name;
@@ -661,6 +686,8 @@ class PaperList {
         return $this->_columns_by_name[$name];
     }
 
+    /** @param string $name
+     * @return ?PaperColumn */
     private function find_column($name) {
         return ($this->find_columns($name))[0] ?? null;
     }
@@ -678,6 +705,7 @@ class PaperList {
         return $fs;
     }
 
+    /** @return list<PaperColumn> */
     private function _view_columns($field_list) {
         // add explicitly requested columns
         $viewmap_add = [];
@@ -708,6 +736,8 @@ class PaperList {
         return $field_list;
     }
 
+    /** @param string|list<string> $fields
+     * @return list<PaperColumn> */
     private function _canonicalize_columns($fields) {
         if (is_string($fields)) {
             $fields = explode(" ", $fields);
@@ -730,13 +760,18 @@ class PaperList {
         return $field_list;
     }
 
+    /** @param string|list<string> $field_list
+     * @param bool $expand
+     * @param bool $all
+     * @return list<PaperColumn> */
     private function _columns($field_list, $expand, $all) {
-        // look up columns
         $old_context = $this->conf->xt_swap_context($this);
+        // look up columns
         $field_list = $this->_canonicalize_columns($field_list);
         if ($expand) {
             $field_list = $this->_view_columns($field_list);
         }
+        // look up sorters
         $this->conf->xt_swap_context($old_context);
 
         // prepare columns
@@ -763,10 +798,12 @@ class PaperList {
 
 
     function _contentDownload($row) {
-        if ($row->size == 0 || !$this->user->can_view_pdf($row))
+        if ($row->size !== 0 && $this->user->can_view_pdf($row)) {
+            $dtype = $row->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
+            return "&nbsp;" . $row->document($dtype)->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
+        } else {
             return "";
-        $dtype = $row->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
-        return "&nbsp;" . $row->document($dtype)->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
+        }
     }
 
     function _paperLink(PaperInfo $row) {
@@ -823,6 +860,7 @@ class PaperList {
         }
     }
 
+    /** @return PaperListReviewAnalysis */
     function make_review_analysis($xrow, PaperInfo $row) {
         return new PaperListReviewAnalysis($xrow, $row);
     }
@@ -1162,7 +1200,7 @@ class PaperList {
         $sort_name = $fdef->sort_name($this, null);
         $sort_url = htmlspecialchars(Navigation::siteurl() . $sort_url)
             . (strpos($sort_url, "?") ? "&amp;" : "?") . "sort=" . urlencode($sort_name);
-        $s0 = $this->sorters[0] ?? null;
+        $s0 = ($this->sorters())[0];
 
         $sort_class = "pl_sort";
         if ($s0
@@ -1473,11 +1511,13 @@ class PaperList {
     }
 
 
+    /** @return array{list<int>,list<TagAnno>} */
     function ids_and_groups() {
         $rows = $this->rowset();
         return [$rows->paper_ids(), $this->_groups];
     }
 
+    /** @return list<int> */
     function paper_ids() {
         return $this->rowset()->paper_ids();
     }
@@ -1496,6 +1536,7 @@ class PaperList {
         }
     }
 
+    /** @return SessionList */
     function session_list_object() {
         assert($this->_groups !== null);
         return $this->search->create_session_list_object($this->paper_ids(), $this->_listDescription(), $this->sortdef());
@@ -1934,7 +1975,7 @@ class PaperList {
         ksort($res, SORT_NATURAL);
         $res = array_values($res);
 
-        foreach ($this->sorters as $s) {
+        foreach ($this->sorters() as $s) {
             $sn = $s->field->sort_name($this, $s);
             $res[] = "sort:" . PaperSearch::escape_word($sn . ($s->reverse ? ",reverse" : ""));
             if ($sn === "id") {

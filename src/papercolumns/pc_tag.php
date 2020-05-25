@@ -22,8 +22,10 @@ class Tag_PaperColumn extends PaperColumn {
             $this->is_value = true;
         }
     }
+    /** @var ListSorter $sorter
+     * @return bool */
     function sorts_my_tag($sorter, Contact $user) {
-        return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->ltag) == 0;
+        return strcasecmp(Tagger::check_tag_keyword($sorter->type, $user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID), $this->ltag) === 0;
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_tags(null)) {
@@ -46,7 +48,7 @@ class Tag_PaperColumn extends PaperColumn {
             $this->emoji = $dt->emoji[0];
         }
         if ($this->editable && $visible > 0 && ($tid = $pl->table_id())) {
-            $sorter = get($pl->sorters, 0);
+            $sorter = ($pl->sorters())[0];
             if ($this->sorts_my_tag($sorter, $pl->user)
                 && !$sorter->reverse
                 && (!$pl->search->thenmap || $pl->search->is_order_anno)
