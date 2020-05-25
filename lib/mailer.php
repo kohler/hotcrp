@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class MailPreparation {
+    /** @var Conf */
     public $conf;
     public $subject = "";
     public $body = "";
@@ -16,6 +17,7 @@ class MailPreparation {
     public $unique_preparation = false;
     public $reset_capability;
 
+    /** @param Conf $conf */
     function __construct($conf, $recipient) {
         $this->conf = $conf;
         if ($recipient) {
@@ -38,6 +40,7 @@ class MailPreparation {
             && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")
                 || !preg_match('/\G(?:_.*|example\.(?:com|net|org))\z/i', $email, $m, 0, $at + 1));
     }
+    /** @param MailPreparation $p */
     function can_merge($p) {
         return $this->subject === $p->subject
             && $this->body === $p->body
@@ -646,13 +649,20 @@ class Mailer {
 
 
     /** @return MailPreparation */
-    function create_preparation() {
-        assert($this->recipient);
-        return new MailPreparation($this->conf, $this->recipient);
+    function prepare($template, $rest = []) {
+        assert($this->recipient && $this->recipient->email);
+        $prep = new MailPreparation($this->conf, $this->recipient);
+        $this->populate_preparation($prep, $template, $rest);
+        return $prep;
     }
 
-    /** @return MailPreparation */
+    /** @return MailPreparation
+     * @deprecated */
     function make_preparation($template, $rest = []) {
+        return $this->prepare($template, $rest);
+    }
+
+    function populate_preparation(MailPreparation $prep, $template, $rest = []) {
         // look up template
         if (is_string($template) && $template[0] === "@") {
             $template = (array) $this->conf->mail_template(substr($template, 1));
@@ -673,7 +683,6 @@ class Mailer {
         if (!isset($this->recipient->contactId)) {
             error_log("no contactId in recipient: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         }
-        $prep = $this->create_preparation();
         $mimetext = new MimeText;
 
         // expand the template
@@ -719,7 +728,6 @@ class Mailer {
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . $eol;
         $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . $eol;
         $prep->sensitive = $this->sensitive;
-        return $prep;
     }
 
     static function send_combined_preparations($preps) {

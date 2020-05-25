@@ -155,6 +155,7 @@ class Contact {
         return $user;
     }
 
+    /** @param object $user */
     private function merge($user) {
         if (is_array($user)) {
             $user = (object) $user;
@@ -1759,7 +1760,7 @@ class Contact {
 
     function send_mail($template, $rest = []) {
         $mailer = new HotCRPMailer($this->conf, $this, $rest);
-        $prep = $mailer->make_preparation($template, $rest);
+        $prep = $mailer->prepare($template, $rest);
         if ($prep->can_send()) {
             $prep->send();
             return $prep;

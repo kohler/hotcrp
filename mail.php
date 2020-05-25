@@ -460,7 +460,7 @@ class MailSender {
 
         // test whether this mail is paper-sensitive
         $mailer = new HotCRPMailer($this->conf, $this->user, $rest);
-        $prep = $mailer->make_preparation($template, $rest);
+        $prep = $mailer->prepare($template, $rest);
         $paper_sensitive = preg_match('/%[A-Z0-9]+[(%]/', $prep->subject . $prep->body);
 
         $q = $this->recip->query($paper_sensitive);
@@ -500,7 +500,7 @@ class MailSender {
             $rest["prow"] = $prow = $row->paperId > 0 ? $row : null;
             $rest["newrev_since"] = $this->recip->newrev_since;
             $mailer->reset($contact, $rest);
-            $prep = $mailer->make_preparation($template, $rest);
+            $prep = $mailer->prepare($template, $rest);
 
             if ($prep->errors) {
                 foreach ($prep->errors as $lcfield => $hline) {
@@ -518,7 +518,7 @@ class MailSender {
                     && $rest["censor"] === Mailer::CENSOR_NONE) {
                     $rest["censor"] = Mailer::CENSOR_DISPLAY;
                     $mailer->reset($contact, $rest);
-                    $last_prep->censored_preparation = $mailer->make_preparation($template, $rest);
+                    $last_prep->censored_preparation = $mailer->prepare($template, $rest);
                     $rest["censor"] = Mailer::CENSOR_NONE;
                 }
             }

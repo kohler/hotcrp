@@ -53,7 +53,7 @@ class MailChecker {
         xassert_eqq(count(self::$preps), 1);
         if (count(self::$preps) === 1) {
             $mailer = new HotCRPMailer($Conf, $recipient, $rest);
-            $prep = $mailer->make_preparation($template, $rest);
+            $prep = $mailer->prepare($template, $rest);
             xassert_eqq(self::$preps[0]->subject, $prep->subject);
             xassert_eqq(self::$preps[0]->body, $prep->body);
             xassert_eq(self::$preps[0]->to, $prep->to);

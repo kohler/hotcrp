@@ -706,11 +706,10 @@ function unparse_expertise($expertise) {
     }
 }
 
-/** @param int|array{int,int} $preference
- * @param ?int $expertise
+/** @param array{int,?int} $preference
  * @return string */
 function unparse_preference($preference, $expertise = null) {
-    assert(!is_object($preference));
+    assert(is_array($preference)); // XXX remove
     if (is_object($preference)) {
         list($preference, $expertise) = [$preference->reviewerPreference ?? null,
                                          $preference->reviewerExpertise ?? null];
@@ -723,10 +722,10 @@ function unparse_preference($preference, $expertise = null) {
     return $preference . unparse_expertise($expertise);
 }
 
-/** @param array{int,int} $preference
+/** @param array{int,?int} $preference
  * @return string */
 function unparse_preference_span($preference, $always = false) {
-    assert(!is_object($preference));
+    assert(is_array($preference)); // XXX remove
     if (is_object($preference)) {
         $preference = [$preference->reviewerPreference ?? null,
                        $preference->reviewerExpertise ?? null,

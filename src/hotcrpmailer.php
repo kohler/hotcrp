@@ -4,7 +4,7 @@
 
 class HotCRPMailPreparation extends MailPreparation {
     public $paperId = -1;
-    public $conflictType;
+    public $author_recipient = false;
     public $paper_expansions = 0;
     public $combination_type = 0;
     public $fake = false;
@@ -15,15 +15,16 @@ class HotCRPMailPreparation extends MailPreparation {
     }
     function can_merge($p) {
         return parent::can_merge($p)
+            && $p instanceof HotCRPMailPreparation
             && $this->combination_type == $p->combination_type
             && (($this->combination_type == 2
                  && !$this->paper_expansions
                  && !$p->paper_expansions)
-                || ($this->conflictType == $p->conflictType
+                || ($this->author_recipient === $p->author_recipient
                     && $this->combination_type != 0
-                    && $this->paperId == $p->paperId)
-                || ($this->conflictType == $p->conflictType
-                    && $this->to == $p->to));
+                    && $this->paperId === $p->paperId)
+                || ($this->author_recipient === $p->author_recipient
+                    && $this->to === $p->to));
     }
 }
 
@@ -280,7 +281,8 @@ class HotCRPMailer extends Mailer {
     }
     function kw_haspaper() {
         if ($this->row && $this->row->paperId > 0) {
-            if ($this->preparation) {
+            if ($this->preparation
+                && $this->preparation instanceof HotCRPMailPreparation) {
                 ++$this->preparation->paper_expansions;
             }
             return true;
@@ -452,14 +454,15 @@ class HotCRPMailer extends Mailer {
     }
 
     /** @return HotCRPMailPreparation */
-    function create_preparation() {
-        assert($this->recipient);
+    function prepare($template, $rest = []) {
+        assert($this->recipient && $this->recipient->email);
         $prep = new HotCRPMailPreparation($this->conf, $this->recipient);
-        if ($this->row && get($this->row, "paperId") > 0) {
+        if ($this->row && ($this->row->paperId ?? 0) > 0) {
             $prep->paperId = $this->row->paperId;
-            $prep->conflictType = $this->row->has_author($this->recipient);
+            $prep->author_recipient = $this->row->has_author($this->recipient);
         }
         $prep->combination_type = $this->combination_type;
+        $this->populate_preparation($prep, $template, $rest);
         return $prep;
     }
 
@@ -477,7 +480,7 @@ class HotCRPMailer extends Mailer {
             $checkf = $rest["check_function"] ?? null;
             if (!$checkf
                 || call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow)) {
-                $answer = $mailer->make_preparation($template, $rest);
+                $answer = $mailer->prepare($template, $rest);
             }
             $recipient->set_overrides($old_overrides);
         }
