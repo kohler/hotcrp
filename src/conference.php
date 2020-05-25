@@ -90,7 +90,7 @@ class Conf {
     public $short_name;
     /** @var string */
     public $long_name;
-    /** @var ?int */
+    /** @var int */
     public $default_format;
     /** @var string */
     public $download_prefix;
@@ -1861,6 +1861,9 @@ class Conf {
         return $this->_format_info[$format] ?? null;
     }
 
+    /** @param ?int $format
+     * @param ?string $text
+     * @return int */
     function check_format($format, $text = null) {
         if ($format === null) {
             $format = $this->default_format;
@@ -3524,8 +3527,8 @@ class Conf {
 
         if ($options["reviewerPreference"] ?? false) {
             $joins[] = "left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$contactId)";
-            $cols[] = "coalesce(PaperReviewPreference.preference, 0) as reviewerPreference";
-            $cols[] = "PaperReviewPreference.expertise as reviewerExpertise";
+            $cols[] = "coalesce(PaperReviewPreference.preference, 0) as myReviewerPreference";
+            $cols[] = "PaperReviewPreference.expertise as myReviewerExpertise";
         }
 
         if ($options["allReviewerPreference"] ?? false) {

@@ -7,6 +7,8 @@ class Contact_Update {
     public $cdb_qf = [];
 }
 
+/** @property ?string $__isAuthor__
+ * @property ?string $__hasReview__ */
 class Contact {
     /** @var int */
     static public $rights_version = 1;

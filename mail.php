@@ -342,6 +342,9 @@ class MailSender {
             $prep->body = "Dear " . $m[1] . (count($prep->to) == 1 ? "" : "s") . $m[2];
     }
 
+    /** @param HotCRPMailPreparation $prep
+     * @param HotCRPMailPreparation &$last_prep
+     * @return bool */
     private function process_prep($prep, &$last_prep, $row) {
         // Don't combine senders if anything differs. Also, don't combine
         // mails from different papers, unless those mails are to the same

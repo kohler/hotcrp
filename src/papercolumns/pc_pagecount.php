@@ -22,12 +22,12 @@ class PageCount_PaperColumn extends PaperColumn {
     }
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         foreach ($rows as $row) {
-            $row->_page_count_sort_info = $this->page_count($pl->user, $row);
+            $row->{$sorter->uid} = $this->page_count($pl->user, $row);
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $ac = $a->_page_count_sort_info;
-        $bc = $b->_page_count_sort_info;
+        $ac = $a->{$sorter->uid};
+        $bc = $b->{$sorter->uid};
         if ($ac === null || $bc === null) {
             return $ac === $bc ? 0 : ($ac === null ? -1 : 1);
         } else {

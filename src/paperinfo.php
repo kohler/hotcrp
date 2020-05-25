@@ -358,6 +358,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
  * @property ?string $sha1
  * @property ?string $leadContactId
  * @property ?string $shepherdContactId
+ * @property ?string $capVersion
  *
  * @property ?string $paperTags
  * @property ?string $optionIds
@@ -370,11 +371,15 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
  * @property ?string $commentSkeletonInfo
  * @property ?string $myReviewPermissions
  * @property ?string $allReviewerPreference
+ * @property ?string $myReviewerPreference
+ * @property ?string $myReviewerExpertise
  */
 class PaperInfo {
+    /** @var int */
     public $paperId;
     /** @var Conf */
     public $conf;
+    /** @var string */
     public $title;
     public $authorInformation;
     public $abstract;
@@ -396,13 +401,19 @@ class PaperInfo {
     /** @var array<int,PaperContactInfo> */
     private $_contact_info = [];
     private $_rights_version = 0;
+    /** @var ?list<Author> */
     private $_author_array;
+    /** @var ?list<AuthorMatcher> */
     private $_collaborator_array;
+    /** @var ?array<int,array{int,?int}> */
     private $_prefs_array;
     /** @var ?array{int,?array{int,?int}} */
     private $_prefs_cid;
+    /** @var ?int */
     private $_desirability;
+    /** @var ?list<int> */
     private $_topics_array;
+    /** @var ?array<int,float> */
     private $_topic_interest_score_array;
     /** @var ?array<int,list<int>> */
     private $_option_values;
@@ -414,6 +425,7 @@ class PaperInfo {
     private $_new_option_array;
     /** @var array<int,DocumentInfo> */
     private $_document_array;
+    /** @var ?array<int,array<int,int>> */
     private $_doclink_array;
     /** @var ?array<int,PaperInfo_Conflict> */
     private $_conflict_array;
@@ -437,16 +449,20 @@ class PaperInfo {
     private $_potential_conflict_flags;
     private $_request_array;
     private $_refusal_array;
+    /** @var ?Contact */
     private $_author_view_user;
     /** @var ?PaperInfoSet */
     public $_row_set;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
 
+    /** @param ?Contact $contact */
     function __construct($p = null, $contact = null, Conf $conf = null) {
         $this->merge($p, $contact, $conf);
     }
 
+    /** @param ?Contact $contact
+     * @param ?Conf $conf */
     private function merge($p, $contact, $conf) {
         assert($contact === null ? $conf !== null : $contact instanceof Contact);
         $this->conf = $contact ? $contact->conf : $conf;
@@ -456,12 +472,19 @@ class PaperInfo {
         }
         $this->paperId = (int) $this->paperId;
         $this->managerContactId = (int) $this->managerContactId;
-        if ($contact && (property_exists($this, "myReviewPermissions")
-                         || property_exists($this, "reviewSignatures"))) {
-            $this->_rights_version = Contact::$rights_version;
-            $this->load_my_contact_info($contact, $this);
-        } else if ($contact && property_exists($this, "conflictType")) {
-            error_log("conflictType exists but myReviewPermissions does not " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        if ($contact) {
+            if (property_exists($this, "myReviewPermissions")
+                || property_exists($this, "reviewSignatures")) {
+                $this->_rights_version = Contact::$rights_version;
+                $this->load_my_contact_info($contact, $this);
+            } else {
+                assert(!property_exists($this, "conflictType"));
+            }
+            if (property_exists($this, "myReviewerPreference")) {
+                $rp = (int) $this->myReviewerPreference;
+                $re = $this->myReviewerExpertise;
+                $this->_prefs_cid = [$contact->contactId, [$rp, $re !== null ? (int) $re : null]];
+            }
         }
         foreach (["paperTags", "optionIds"] as $k) {
             if (property_exists($this, $k) && $this->$k === null)
@@ -534,6 +557,8 @@ class PaperInfo {
     }
 
 
+    /** @param int|Contact $contact
+     * @return int */
     static private function contact_to_cid($contact) {
         assert($contact !== null);
         return is_object($contact) ? $contact->contactId : $contact;
@@ -601,6 +626,7 @@ class PaperInfo {
         $this->_contact_info[$ci->contactId] = $ci;
     }
 
+    /** @return Contact */
     function author_view_user() {
         if (!$this->_author_view_user) {
             $this->_author_view_user = new Contact(null, $this->conf);
@@ -610,6 +636,7 @@ class PaperInfo {
     }
 
 
+    /** @return array<string,true> */
     function missing_fields($registration = false, Contact $user = null) {
         $f = [];
         if ($this->title === ""
@@ -648,6 +675,7 @@ class PaperInfo {
         return $this->unaccented_field("title");
     }
 
+    /** @return int */
     function pretty_text_title_indent($width = 75) {
         $n = "Paper #{$this->paperId}: ";
         $vistitle = $this->unaccented_title();
@@ -655,19 +683,23 @@ class PaperInfo {
         return strlen($n) + max(0, $l);
     }
 
+    /** @return string */
     function pretty_text_title($width = 75) {
         $l = $this->pretty_text_title_indent($width);
         return prefix_word_wrap("Paper #{$this->paperId}: ", $this->title, $l);
     }
 
+    /** @return int */
     function format_of($text, $check_simple = false) {
         return $this->conf->check_format($this->paperFormat, $check_simple ? $text : null);
     }
 
+    /** @return int */
     function title_format() {
         return $this->format_of($this->title, true);
     }
 
+    /** @return string */
     function abstract_text() {
         if ($this->dataOverflow && isset($this->dataOverflow["abstract"])) {
             return $this->dataOverflow["abstract"];
@@ -676,6 +708,7 @@ class PaperInfo {
         }
     }
 
+    /** @return int */
     function abstract_format() {
         return $this->format_of($this->abstract_text(), true);
     }
@@ -684,6 +717,7 @@ class PaperInfo {
         return $this->conf->format_info($this->paperFormat);
     }
 
+    /** @return list<Author> */
     function author_list() {
         if (!isset($this->_author_array)) {
             $this->_author_array = array();
@@ -695,6 +729,7 @@ class PaperInfo {
         return $this->_author_array;
     }
 
+    /** @return ?Author */
     function author_by_email($email) {
         foreach ($this->author_list() as $a) {
             if (strcasecmp($a->email, $email) == 0 && (string) $email !== "")
@@ -703,6 +738,7 @@ class PaperInfo {
         return null;
     }
 
+    /** @return string */
     function parse_author_list() {
         $ai = "";
         foreach ($this->_author_array as $au) {
@@ -711,6 +747,7 @@ class PaperInfo {
         return ($this->authorInformation = $ai);
     }
 
+    /** @return string */
     function pretty_text_author_list() {
         $info = "";
         foreach ($this->author_list() as $au) {
@@ -757,6 +794,7 @@ class PaperInfo {
         }
     }
 
+    /** @return list<AuthorMatcher> */
     function collaborator_list() {
         if ($this->_collaborator_array === null) {
             $this->_collaborator_array = [];
@@ -768,6 +806,7 @@ class PaperInfo {
         return $this->_collaborator_array;
     }
 
+    /** @return bool */
     function has_nonempty_collaborators() {
         $collab = $this->collaborators();
         return $collab !== "" && strcasecmp($collab, "none") !== 0;
@@ -776,16 +815,18 @@ class PaperInfo {
     function potential_conflict_callback(Contact $user, $callback) {
         $nproblems = $auproblems = 0;
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
-            foreach ($this->author_list() as $n => $au)
+            foreach ($this->author_list() as $n => $au) {
                 foreach ($user->aucollab_matchers() as $matcher) {
                     if (($why = $matcher->test($au, $matcher->nonauthor))) {
-                        if (!$callback)
+                        if (!$callback) {
                             return true;
+                        }
                         $auproblems |= $why;
                         ++$nproblems;
                         call_user_func($callback, $user, $matcher, $au, $n + 1, $why);
                     }
                 }
+            }
         }
         if (($collab = $this->collaborators()) !== "") {
             $aum = $user->full_matcher();
@@ -862,18 +903,21 @@ class PaperInfo {
     }
 
 
+    /** @return int */
     function submitted_at() {
-        if ($this->timeSubmitted > 0)
+        if ($this->timeSubmitted > 0) {
             return (int) $this->timeSubmitted;
-        if ($this->timeWithdrawn > 0) {
-            if ($this->timeSubmitted == -100)
+        } else if ($this->timeWithdrawn > 0) {
+            if ($this->timeSubmitted == -100) {
                 return self::SUBMITTED_AT_FOR_WITHDRAWN;
-            if ($this->timeSubmitted < -100)
+            } else if ($this->timeSubmitted < -100) {
                 return -(int) $this->timeSubmitted;
+            }
         }
         return 0;
     }
 
+    /** @return list<Contact> */
     function administrators() {
         if ($this->managerContactId) {
             $u = $this->conf->cached_user_by_id($this->managerContactId);
@@ -892,10 +936,11 @@ class PaperInfo {
         $as = $cas = [];
         foreach ($chairs ? $this->conf->pc_chairs() : $this->conf->pc_members() as $u) {
             if ($u->is_primary_administrator($this)) {
-                if ($u->can_administer($this))
+                if ($u->can_administer($this)) {
                     $as[] = $u;
-                else
+                } else {
                     $cas[] = $u;
+                }
             }
         }
         return empty($as) ? $cas : $as;
@@ -926,36 +971,45 @@ class PaperInfo {
         return $s === false ? $this->$field : $s;
     }
 
+    /** @param TextPregexes $reg
+     * @return bool */
     function field_match_pregexes($reg, $field) {
         return Text::match_pregexes($reg, $this->$field, $this->deaccented_field($field));
     }
 
 
+    /** @return bool */
     function can_author_view_submitted_review() {
-        if ($this->can_author_respond())
+        if ($this->can_author_respond()) {
             return true;
-        else if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
+        } else if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS) {
             return $this->has_any_tag($this->conf->tag_au_seerev);
-        else
+        } else {
             return $this->conf->au_seerev != 0;
+        }
     }
 
+    /** @return bool */
     function can_author_respond() {
-        if ($this->conf->any_response_open === 2)
+        if ($this->conf->any_response_open === 2) {
             return true;
-        if ($this->conf->any_response_open) {
-            foreach ($this->conf->resp_rounds() as $rrd)
-                if ($rrd->time_allowed(true) && $rrd->search->filter([$this]))
+        } else if ($this->conf->any_response_open) {
+            foreach ($this->conf->resp_rounds() as $rrd) {
+                if ($rrd->time_allowed(true) && $rrd->search->filter([$this])) {
                     return true;
+                }
+            }
         }
         return false;
     }
 
+    /** @return bool */
     function can_author_view_decision() {
         return $this->outcome != 0
             && $this->conf->can_all_author_view_decision();
     }
 
+    /** @return bool */
     function can_author_edit_final_paper() {
         return $this->timeWithdrawn <= 0
             && $this->outcome > 0
@@ -964,6 +1018,7 @@ class PaperInfo {
     }
 
 
+    /** @return int */
     function review_type($contact) {
         $this->check_rights_version();
         if (is_object($contact) && $contact->has_capabilities()) {
@@ -979,28 +1034,33 @@ class PaperInfo {
         return $rrow ? $rrow->reviewType : 0;
     }
 
+    /** @return bool */
     function has_reviewer($contact) {
         return $this->review_type($contact) > 0;
     }
 
+    /** @return bool */
     function review_not_incomplete($contact) {
         $ci = $this->contact_info($contact);
         return $ci && $ci->review_status > PaperContactInfo::RS_UNSUBMITTED;
     }
 
+    /** @return bool */
     function review_submitted($contact) {
         $ci = $this->contact_info($contact);
         return $ci && $ci->reviewType > 0 && $ci->reviewSubmitted > 0;
     }
 
+    /** @return array<int,Contact> */
     function pc_can_become_reviewer_ignore_conflict() {
         if (!$this->conf->check_track_review_sensitivity()) {
             return $this->conf->pc_members();
         } else {
             $pcm = array();
-            foreach ($this->conf->pc_members() as $cid => $pc)
+            foreach ($this->conf->pc_members() as $cid => $pc) {
                 if ($pc->can_become_reviewer_ignore_conflict($this))
                     $pcm[$cid] = $pc;
+            }
             return $pcm;
         }
     }
@@ -1045,7 +1105,8 @@ class PaperInfo {
         return $tags !== "" && stripos(" " . $tags, " $tag#") !== false;
     }
 
-    /** @return false|float */
+    /** @param string $tag
+     * @return false|float */
     function tag_value($tag) {
         if (!property_exists($this, "paperTags")) {
             $this->load_tags();
@@ -1178,6 +1239,7 @@ class PaperInfo {
         }
     }
 
+    /** @return bool */
     function has_topics() {
         if (!property_exists($this, "topicIds")) {
             $this->load_topics();
@@ -1185,6 +1247,7 @@ class PaperInfo {
         return $this->topicIds !== null && $this->topicIds !== "";
     }
 
+    /** @return list<int> */
     function topic_list() {
         if ($this->_topics_array === null) {
             if (!property_exists($this, "topicIds")) {
@@ -1201,6 +1264,7 @@ class PaperInfo {
         return $this->_topics_array;
     }
 
+    /** @return array<int,string> */
     function topic_map() {
         $t = [];
         foreach ($this->topic_list() as $tid) {
@@ -1212,6 +1276,7 @@ class PaperInfo {
         return $t;
     }
 
+    /** @return string */
     function unparse_topics_text() {
         return join("; ", $this->topic_map());
     }
@@ -1227,7 +1292,7 @@ class PaperInfo {
         }
         if ($contact) {
             if ($this->_topic_interest_score_array === null) {
-                $this->_topic_interest_score_array = array();
+                $this->_topic_interest_score_array = [];
             }
             if (isset($this->_topic_interest_score_array[$contact->contactId])) {
                 $score = $this->_topic_interest_score_array[$contact->contactId];
@@ -1415,6 +1480,7 @@ class PaperInfo {
         return $pref;
     }
 
+    /** @return array<int,array{int,?int}> */
     function viewable_preferences(Contact $viewer, $aggregate = false) {
         if ($viewer->can_view_preference($this, $aggregate)) {
             return $this->preferences();
@@ -1426,6 +1492,7 @@ class PaperInfo {
         }
     }
 
+    /** @return int */
     function desirability() {
         if ($this->_desirability === null) {
             $this->_desirability = 0;
@@ -1672,6 +1739,7 @@ class PaperInfo {
         return $doc ? $doc->npages() : 0;
     }
 
+    /** @return array<int,array<int,int>> */
     private function doclink_array() {
         if ($this->_doclink_array === null) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
@@ -1691,10 +1759,11 @@ class PaperInfo {
         }
         return $this->_doclink_array;
     }
+
     /** @return list<DocumentInfo> */
     function linked_documents($linkid, $min, $max, $owner = null) {
         $docs = [];
-        foreach (get($this->doclink_array(), $linkid, []) as $lt => $docid) {
+        foreach (($this->doclink_array())[$linkid] ?? [] as $lt => $docid) {
             if ($lt >= $min
                 && $lt < $max
                 && ($d = $this->document(-2, $docid))) {
@@ -1706,6 +1775,7 @@ class PaperInfo {
         }
         return $docs;
     }
+
     function invalidate_linked_documents() {
         $this->_doclink_array = null;
     }
@@ -2126,6 +2196,7 @@ class PaperInfo {
         Dbl::free($result);
     }
 
+    /** @param string|ReviewField $field */
     function ensure_review_score($field) {
         $fid = is_object($field) ? $field->id : $field;
         if (!isset($this->_reviews_have[$fid])
@@ -2146,6 +2217,8 @@ class PaperInfo {
             }
         }
     }
+
+    /** @param string $fid */
     function _mark_has_score($fid) {
         $this->_reviews_have[$fid] = true;
     }
@@ -2286,6 +2359,7 @@ class PaperInfo {
             join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)";
     }
 
+    /** @return array<int,CommentInfo> */
     function fetch_comments($extra_where = null) {
         $result = $this->conf->qe(self::fetch_comment_query()
             . " where paperId={$this->paperId}" . ($extra_where ? " and $extra_where" : "")
@@ -2366,7 +2440,8 @@ class PaperInfo {
         return $crows;
     }
 
-    /** @return bool */
+    /** @param int|Contact $contact
+     * @return bool */
     function has_commenter($contact) {
         $cid = self::contact_to_cid($contact);
         foreach ($this->all_comment_skeletons() as $crow) {
@@ -2378,6 +2453,9 @@ class PaperInfo {
     }
 
 
+    /** @param list<ReviewInfo> $rrows
+     * @param list<CommentInfo> $crows
+     * @return list<ReviewInfo|CommentInfo> */
     function merge_reviews_and_comments($rrows, $crows) {
         if (empty($crows)) {
             return $rrows;
@@ -2425,11 +2503,13 @@ class PaperInfo {
         return $xrows;
     }
 
+    /** @return list<ReviewInfo|CommentInfo> */
     function viewable_submitted_reviews_and_comments(Contact $user) {
         $this->ensure_full_reviews();
         return $this->merge_reviews_and_comments($this->viewable_submitted_reviews_by_display($user), $this->viewable_comments($user));
     }
 
+    /** @return list<ReviewInfo|CommentInfo> */
     function viewable_reviews_and_comments(Contact $user) {
         $this->ensure_full_reviews();
         $rrows = [];

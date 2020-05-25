@@ -451,6 +451,7 @@ class HotCRPMailer extends Mailer {
         return $e;
     }
 
+    /** @return HotCRPMailPreparation */
     function create_preparation() {
         assert($this->recipient);
         $prep = new HotCRPMailPreparation($this->conf, $this->recipient);

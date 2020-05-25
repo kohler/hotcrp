@@ -25,7 +25,8 @@ class Autoassigner {
     private $load;
     private $prefs;
     private $eass;
-    public $prefinfo = array();
+    /** @var array<int,array<int,array{int,?int}>> */
+    public $prefinfo = [];
     private $pref_groups;
     private $method = self::METHOD_MCMF;
     private $balance = self::BALANCE_NEW;
@@ -121,7 +122,6 @@ class Autoassigner {
                 continue;
             }
             $this->ass[] = "$row[0],conflict," . $this->pcm[$row[1]]->email;
-            $this->prefinfo[(int) $row[1]][(int) $row[0]] = $row[2];
         }
         Dbl::free($result);
     }
@@ -597,8 +597,7 @@ class Autoassigner {
                         $m->add_edge($dst, "p$pid", max($capacity, 1), 0);
                     }
                 } else if ($this->review_gadget == self::REVIEW_GADGET_EXPERTISE
-                           && isset($this->prefinfo[$cid][$pid])
-                           && is_array($this->prefinfo[$cid][$pid])) {
+                           && isset($this->prefinfo[$cid][$pid])) {
                     $exp = $this->prefinfo[$cid][$pid][1];
                     if ($exp > 0) {
                         $dst = "p{$pid}x";

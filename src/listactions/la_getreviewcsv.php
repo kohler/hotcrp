@@ -4,6 +4,7 @@
 
 class GetReviewCSV_ListAction extends ListAction {
     private $include_paper;
+    private $author_view;
     function __construct($conf, $fj) {
         $this->author_view = !!get($fj, "author_view");
     }

@@ -696,6 +696,8 @@ function downloadText($text, $filename, $inline = false) {
     }
 }
 
+/** @param ?int $expertise
+ * @return string */
 function unparse_expertise($expertise) {
     if ($expertise === null) {
         return "";
@@ -704,7 +706,11 @@ function unparse_expertise($expertise) {
     }
 }
 
+/** @param int|array{int,int} $preference
+ * @param ?int $expertise
+ * @return string */
 function unparse_preference($preference, $expertise = null) {
+    assert(!is_object($preference));
     if (is_object($preference)) {
         list($preference, $expertise) = [$preference->reviewerPreference ?? null,
                                          $preference->reviewerExpertise ?? null];
@@ -717,7 +723,10 @@ function unparse_preference($preference, $expertise = null) {
     return $preference . unparse_expertise($expertise);
 }
 
+/** @param array{int,int} $preference
+ * @return string */
 function unparse_preference_span($preference, $always = false) {
+    assert(!is_object($preference));
     if (is_object($preference)) {
         $preference = [$preference->reviewerPreference ?? null,
                        $preference->reviewerExpertise ?? null,
@@ -727,7 +736,7 @@ function unparse_preference_span($preference, $always = false) {
     }
     $pv = (int) $preference[0];
     $ev = $preference[1];
-    $tv = (int) get($preference, 2);
+    $tv = (int) ($preference[2] ?? null);
     if ($pv > 0 || (!$pv && $tv > 0)) {
         $type = 1;
     } else if ($pv < 0 || $tv < 0) {

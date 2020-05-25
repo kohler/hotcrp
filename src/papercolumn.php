@@ -258,14 +258,14 @@ class Status_PaperColumn extends PaperColumn {
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         foreach ($rows as $row) {
             if ($row->outcome && $pl->user->can_view_decision($row)) {
-                $row->_status_sort_info = $row->outcome;
+                $row->{$sorter->uid} = $row->outcome;
             } else {
-                $row->_status_sort_info = -10000;
+                $row->{$sorter->uid} = -10000;
             }
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $x = $b->_status_sort_info - $a->_status_sort_info;
+        $x = $b->{$sorter->uid} - $a->{$sorter->uid};
         $x = $x ? : ($a->timeWithdrawn > 0 ? 1 : 0) - ($b->timeWithdrawn > 0 ? 1 : 0);
         $x = $x ? : ($b->timeSubmitted > 0 ? 1 : 0) - ($a->timeSubmitted > 0 ? 1 : 0);
         return $x ? : ($b->paperStorageId > 1 ? 1 : 0) - ($a->paperStorageId > 1 ? 1 : 0);
@@ -322,16 +322,16 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         foreach ($rows as $row) {
             if (!$pl->user->can_view_review_assignment($row, null)) {
-                $row->_review_status_sort_info = -2147483647;
+                $row->{$sorter->uid} = -2147483647;
             } else {
                 list($done, $started) = $this->data($row, $pl->user);
-                $row->_review_status_sort_info = $done + $started / 1000.0;
+                $row->{$sorter->uid} = $done + $started / 1000.0;
             }
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $av = $a->_review_status_sort_info;
-        $bv = $b->_review_status_sort_info;
+        $av = $a->{$sorter->uid};
+        $bv = $b->{$sorter->uid};
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
     function header(PaperList $pl, $is_text) {

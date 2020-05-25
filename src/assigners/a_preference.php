@@ -133,6 +133,7 @@ class Preference_Assigner extends Assigner {
     function unparse_description() {
         return "preference";
     }
+    /** @return ?array{int,?int} */
     private function preference_data($before) {
         $p = [$this->item->get($before, "_pref"),
               $this->item->get($before, "_exp")];
@@ -155,7 +156,7 @@ class Preference_Assigner extends Assigner {
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $p = $this->preference_data(false);
-        $pref = $p ? unparse_preference($p[0], $p[1]) : "none";
+        $pref = $p ? unparse_preference($p) : "none";
         $acsv->add([
             "pid" => $this->pid, "action" => "preference",
             "email" => $this->contact->email, "name" => $this->contact->name(),

@@ -2397,7 +2397,7 @@ class ReviewValues extends MessageSet {
         if (!empty($this->_mailer_preps)) {
             HotCRPMailer::send_combined_preparations($this->_mailer_preps);
         }
-        $this->_mailer_info = $this->_mailer_prefs = null;
+        $this->_mailer_info = $this->_mailer_preps = null;
 
         // record what happened
         $what = "#$prow->paperId";

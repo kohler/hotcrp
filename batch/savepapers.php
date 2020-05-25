@@ -44,6 +44,7 @@ if ($file === "-") {
     $content = stream_get_contents(STDIN);
     $filepfx = "";
 } else if (str_ends_with(strtolower($file), ".zip")) {
+    $content = false;
     $ziparchive = new ZipArchive;
     $zipfile = $file;
     $filepfx = "$file: ";

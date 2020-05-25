@@ -167,7 +167,8 @@ class Review_Assigner extends Assigner {
     private $notify = false;
     private $unsubmit = false;
     private $token = false;
-    static public $prefinfo = null;
+    /** @var ?array<int,array<int,array{int,?int}>> */
+    static public $prefinfo;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
         $this->rtype = $item->post("_rtype");
@@ -200,8 +201,8 @@ class Review_Assigner extends Assigner {
                 . htmlspecialchars($round) . '</span>';
         }
         if (self::$prefinfo
-            && ($cpref = get(self::$prefinfo, $this->cid))
-            && ($pref = get($cpref, $this->pid))) {
+            && ($cpref = self::$prefinfo[$this->cid] ?? null)
+            && ($pref = $cpref[$this->pid] ?? null)) {
             $t .= unparse_preference_span($pref);
         }
         return $t;
@@ -235,9 +236,10 @@ class Review_Assigner extends Assigner {
         } else if (($round = $this->item["_round"])) {
             $t .= ' <span class="revround" title="Review round">' . htmlspecialchars($round) . '</span>';
         }
-        if (!$this->item->existed() && self::$prefinfo
-            && ($cpref = get(self::$prefinfo, $this->cid))
-            && ($pref = get($cpref, $this->pid))) {
+        if (!$this->item->existed()
+            && self::$prefinfo
+            && ($cpref = self::$prefinfo[$this->cid] ?? null)
+            && ($pref = $cpref[$this->pid] ?? null)) {
             $t .= unparse_preference_span($pref);
         }
         return $t;
