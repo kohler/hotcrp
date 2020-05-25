@@ -1432,7 +1432,7 @@ class PaperTable {
     function echo_editable_anonymity($option, $ov, $reqov) {
         if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
             && $this->editable !== "f") {
-            $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, !$reqov->value, ["data-default-checked" => !$ov->blind]) . "</span>" . $this->edit_title_html($option);
+            $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, !$reqov->value, ["data-default-checked" => !$ov->value]) . "</span>" . $this->edit_title_html($option);
             $this->echo_editable_papt("nonblind", $heading, ["for" => "checkbox"]);
             $this->echo_field_hint($option);
             echo Ht::hidden("has_nonblind", 1), "</div>\n\n";
