@@ -316,8 +316,8 @@ class Text {
     }
 
     static function split_first_prefix($first) {
-        if (preg_match('/\A((?:dr\.?|mr\.?|mrs\.?|ms\.?|prof\.?)\s+)(?=\S)/i', $first, $m)) {
-            return [$m[2], $m[1]];
+        if (preg_match('/\A((?:(?:dr\.?|mr\.?|mrs\.?|ms\.?|prof\.?)\s+)+)(\S.*)\z/i', $first, $m)) {
+            return [$m[2], rtrim($m[1])];
         } else {
             return [$first, ""];
         }

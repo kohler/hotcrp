@@ -534,6 +534,10 @@ xassert_eqq(Text::analyze_von("Von Le Goues"), null);
 xassert_eqq(Text::analyze_von("von le Goues"), ["von le", "Goues"]);
 xassert_eqq(get(Text::split_name("Brivaldo Junior"), 0), "Brivaldo");
 xassert_eqq(get(Text::split_name("Brivaldo Junior"), 1), "Junior");
+xassert_array_eqq(Text::split_first_prefix("Dr."), ["Dr.", ""]);
+xassert_array_eqq(Text::split_first_prefix("Dr. John"), ["John", "Dr."]);
+xassert_array_eqq(Text::split_first_prefix("Dr. Prof."), ["Prof.", "Dr."]);
+xassert_array_eqq(Text::split_first_prefix("Dr. Prof. Mr. Bob"), ["Bob", "Dr. Prof. Mr."]);
 
 // author matching
 $aum = AuthorMatcher::make_string_guess("ETH Zürich");
