@@ -797,10 +797,13 @@ class PaperList {
     }
 
 
+    /** @param PaperInfo $row
+     * @return string */
     function _contentDownload($row) {
-        if ($row->size !== 0 && $this->user->can_view_pdf($row)) {
-            $dtype = $row->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
-            return "&nbsp;" . $row->document($dtype)->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
+        if ($row->size !== 0
+            && $this->user->can_view_pdf($row)
+            && ($doc = $row->joindoc())) {
+            return "&nbsp;" . $doc->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
         } else {
             return "";
         }
