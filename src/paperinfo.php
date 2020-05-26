@@ -456,7 +456,9 @@ class PaperInfo {
     /** @var ?list<array{string,string}> */
     private $_potential_conflicts;
     private $_potential_conflict_flags;
+    /** @var ?list<ReviewRequestInfo> */
     private $_request_array;
+    /** @var ?list<ReviewRefusalInfo> */
     private $_refusal_array;
     /** @var ?Contact */
     private $_author_view_user;
@@ -2297,16 +2299,15 @@ class PaperInfo {
             $prow->_request_array = [];
         }
 
-        $result = $this->conf->qe("select *, null contactId, null reviewToken, ? reviewType from ReviewRequest where paperId?a", REVIEW_REQUEST, $row_set->paper_ids());
-        while (($ref = $result->fetch_object())) {
-            $ref->reviewRound = (int) $ref->reviewRound;
-            $ref->reviewType = (int) $ref->reviewType;
+        $result = $this->conf->qe("select * from ReviewRequest where paperId?a", $row_set->paper_ids());
+        while (($ref = ReviewRequestInfo::fetch($result))) {
             $prow = $row_set->get($ref->paperId);
             $prow->_request_array[] = $ref;
         }
         Dbl::free($result);
     }
 
+    /** @return list<ReviewRequestInfo> */
     function review_requests() {
         if ($this->_request_array === null) {
             $this->load_review_requests();
@@ -2325,16 +2326,15 @@ class PaperInfo {
             $prow->_refusal_array = [];
         }
 
-        $result = $this->conf->qe("select *, null reviewToken, ? reviewType from PaperReviewRefused where paperId?a", REVIEW_REFUSAL, $row_set->paper_ids());
-        while (($ref = $result->fetch_object())) {
-            $ref->reviewRound = (int) $ref->reviewRound;
-            $ref->reviewType = (int) $ref->reviewType;
+        $result = $this->conf->qe("select * from PaperReviewRefused where paperId?a", $row_set->paper_ids());
+        while (($ref = ReviewRefusalInfo::fetch($result))) {
             $prow = $row_set->get($ref->paperId);
             $prow->_refusal_array[] = $ref;
         }
         Dbl::free($result);
     }
 
+    /** @return list<ReviewRefusalInfo> */
     function review_refusals() {
         if ($this->_refusal_array === null) {
             $this->load_review_refusals();
@@ -2342,6 +2342,7 @@ class PaperInfo {
         return $this->_refusal_array;
     }
 
+    /** @return list<ReviewRefusalInfo> */
     function review_refusals_of_user(Contact $user) {
         $a = [];
         foreach ($this->review_refusals() as $ref) {
@@ -2353,6 +2354,7 @@ class PaperInfo {
         return $a;
     }
 
+    /** @return list<ReviewRefusalInfo> */
     function review_refusals_of_email($email) {
         $a = [];
         foreach ($this->review_refusals() as $ref) {

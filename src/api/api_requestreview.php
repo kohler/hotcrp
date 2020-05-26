@@ -188,7 +188,7 @@ class RequestReview_API {
 
             $user->conf->qe("delete from ReviewRequest where paperId=? and email=?",
                 $prow->paperId, $email);
-            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, reviewType=?, reviewRound=?",
+            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, refusedReviewType=?, reviewRound=?",
                 $prow->paperId, $email, $reviewer ? $reviewer->contactId : 0,
                 $request->firstName, $request->lastName, $request->affiliation,
                 $request->requestedBy, $request->timeRequested,

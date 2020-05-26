@@ -302,6 +302,8 @@ src/partials/p_signin.php
 src/review.php
 src/reviewdiffinfo.php
 src/reviewinfo.php
+src/reviewrefusalinfo.php
+src/reviewrequestinfo.php
 src/reviewtable.php
 src/reviewtimes.php
 src/sample.pdf

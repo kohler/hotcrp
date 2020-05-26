@@ -1743,6 +1743,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("update PaperConflict set conflictType=(case conflictType&31 when 8 then 3 when 1 then 2 when 0 then 0 else (conflictType-1)*2 end + (conflictType&96))")) {
         $conf->update_schema_version(233);
     }
+    if ($conf->sversion == 233
+        && $conf->ql("update PaperReviewRefused change `reviewType` `refusedReviewType` tinyint(1) NOT NULL DEFAULT '0'")) {
+        $conf->update_schema_version(234);
+    }
 
     $conf->ql("delete from Settings where name='__schema_lock'");
     Conf::$g = $old_conf_g;
