@@ -441,7 +441,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         if (!empty($this->metadata_updates))
             $doc->update_metadata($this->metadata_updates);
         // record check status in `Paper` table
-        if ($prow->is_joindoc($doc)
+        if ($prow->is_primary_document($doc)
             && !$this->failed
             && !$this->need_run
             && $spec->timestamp) {

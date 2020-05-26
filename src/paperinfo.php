@@ -1693,12 +1693,14 @@ class PaperInfo {
         }
         return $this->_document_array[$did];
     }
+
     /** @return ?DocumentInfo */
-    function joindoc() {
+    function primary_document() {
         return $this->document($this->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION);
     }
+
     /** @return bool */
-    function is_joindoc(DocumentInfo $doc) {
+    function is_primary_document(DocumentInfo $doc) {
         return $doc->paperStorageId > 1
             && (($doc->paperStorageId == $this->paperStorageId
                  && $this->finalPaperStorageId <= 0
@@ -1706,6 +1708,7 @@ class PaperInfo {
                 || ($doc->paperStorageId == $this->finalPaperStorageId
                     && $doc->documentType == DTYPE_FINAL));
     }
+
     /** @param int $dtype
      * @return list<DocumentInfo> */
     function documents($dtype) {
@@ -1719,6 +1722,7 @@ class PaperInfo {
             return [];
         }
     }
+
     function mark_inactive_documents() {
         // see also DocumentInfo::active_document_map
         $dids = [];
@@ -1735,6 +1739,7 @@ class PaperInfo {
         }
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
     }
+
     function mark_inactive_linked_documents() {
         // see also DocumentInfo::active_document_map
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType<=? and paperStorageId not in (select documentId from DocumentLink where paperId=?)", $this->paperId, DTYPE_COMMENT, $this->paperId);
@@ -1842,6 +1847,7 @@ class PaperInfo {
         $this->_reviews_have = [];
     }
 
+    /** @return int|false */
     private function parse_textual_id($textid) {
         if (ctype_digit($textid)) {
             return intval($textid);

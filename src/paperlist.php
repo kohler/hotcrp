@@ -802,7 +802,7 @@ class PaperList {
     function _contentDownload($row) {
         if ($row->size !== 0
             && $this->user->can_view_pdf($row)
-            && ($doc = $row->joindoc())) {
+            && ($doc = $row->primary_document())) {
             return "&nbsp;" . $doc->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
         } else {
             return "";

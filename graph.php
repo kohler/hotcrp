@@ -186,7 +186,7 @@ if ($Graph == "formula") {
         Ht::button("Add data set", ["class" => "ui row-order-ui addrow"]),
         "</td></tr></tbody></table></div></div>\n";
     echo '<div class="g"></div>';
-    echo Ht::submit(null, "Graph");
+    echo Ht::submit("Graph");
     echo '</form>';
 }
 

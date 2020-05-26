@@ -1329,7 +1329,7 @@ class PaperStatus extends MessageSet {
                 self::preexecute_set_default_columns($this);
             }
 
-            $old_joindoc = $this->prow ? $this->prow->joindoc() : null;
+            $old_joindoc = $this->prow ? $this->prow->primary_document() : null;
             $old_joinid = $old_joindoc ? $old_joindoc->paperStorageId : 0;
 
             if ($this->_joindocs[DTYPE_FINAL] ?? null) {

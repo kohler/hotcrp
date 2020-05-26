@@ -1007,7 +1007,7 @@ class DocumentInfo implements JsonSerializable {
     private function link_html_format_info($flags, $suffix) {
         $need_run = false;
         if (($spects = $this->conf->format_spec($this->documentType)->timestamp)) {
-            if ($this->prow->is_joindoc($this)) {
+            if ($this->prow->is_primary_document($this)) {
                 $specstatus = $this->prow->pdfFormatStatus;
                 if ($specstatus == -$spects && ($flags & self::L_SMALL))
                     return ["", $suffix . "x", false];
