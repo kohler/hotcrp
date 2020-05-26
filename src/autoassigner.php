@@ -876,7 +876,7 @@ class Autoassigner {
                 $search[] = "THEN HEADING:none";
             }
             $curgroup = $groupmap[$pid];
-            $index += TagInfo::value_increment($sequential);
+            $index += Tagger::value_increment($sequential);
             $this->ass[] = "{$pid},tag,{$tag}#{$index}";
             $search[] = $pid;
         }

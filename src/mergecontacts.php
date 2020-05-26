@@ -124,10 +124,10 @@ class MergeContacts extends MessageSet {
         }
 
         $cj->tags = [];
-        foreach (TagInfo::split_unpack($this->newu->contactTags) as $ti) {
+        foreach (Tagger::split_unpack($this->newu->contactTags) as $ti) {
             $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
         }
-        foreach (TagInfo::split_unpack($this->oldu->contactTags) as $ti) {
+        foreach (Tagger::split_unpack($this->oldu->contactTags) as $ti) {
             if ($this->newu->tag_value($ti[0]) === false) {
                 $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
             }

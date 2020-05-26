@@ -694,9 +694,9 @@ class ContactList {
             if ($this->user->isPC
                 && ($tags = $row->viewable_tags($this->user))) {
                 $x = [];
-                foreach (TagInfo::split($tags) as $t) {
+                foreach (Tagger::split($tags) as $t) {
                     if ($t !== "pc#0")
-                        $x[] = '<a class="qq nw" href="' . $this->conf->hoturl("users", "t=%23" . TagInfo::base($t)) . '">' . $this->tagger->unparse_hashed($t) . '</a>';
+                        $x[] = '<a class="qq nw" href="' . $this->conf->hoturl("users", "t=%23" . Tagger::base($t)) . '">' . $this->tagger->unparse_hashed($t) . '</a>';
                 }
                 return join(" ", $x);
             } else {

@@ -258,7 +258,7 @@ function do_tags($qreq) {
             /* nada */
         } else if (!($t = $tagger->check($t, Tagger::NOPRIVATE))) {
             $errors[] = $tagger->error_html;
-        } else if (TagInfo::base($t) === "pc") {
+        } else if (Tagger::base($t) === "pc") {
             $errors[] = "The “pc” user tag is set automatically for all PC members.";
         } else {
             $t1[] = $t;
@@ -279,7 +279,7 @@ function do_tags($qreq) {
         $likes = array();
         $removes = array();
         foreach ($t1 as $t) {
-            list($tag, $index) = TagInfo::unpack($t);
+            list($tag, $index) = Tagger::unpack($t);
             $removes[] = $t;
             $likes[] = "contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like($tag) . "#%'");
         }

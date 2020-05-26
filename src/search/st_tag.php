@@ -109,7 +109,7 @@ class Tag_SearchTerm extends SearchTerm {
     }
     function default_sorter($top, $thenval, PaperSearch $srch) {
         if ($top && $this->tag1) {
-            $dt = $srch->conf->tags()->check(TagInfo::base($this->tag1));
+            $dt = $srch->conf->tags()->check(Tagger::base($this->tag1));
             if (($dt && $dt->order_anno) || $this->tag1nz) {
                 $s = new ListSorter("#{$this->tag1}");
                 $s->reverse = $dt && $dt->votish;

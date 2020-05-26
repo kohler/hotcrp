@@ -1207,7 +1207,7 @@ class PaperInfo {
         }
         $editable = $this->sorted_editable_tags($user);
         $viewable = $this->sorted_viewable_tags($user);
-        $pj->tags = TagInfo::split($viewable);
+        $pj->tags = Tagger::split($viewable);
         $pj->tags_edit_text = $tagger->unparse($editable);
         $pj->tags_view_html = $tagger->unparse_link($viewable);
         if (($decor = $tagger->unparse_decoration_html($viewable))) {
@@ -1219,7 +1219,7 @@ class PaperInfo {
             $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
             $viewable_c = $this->sorted_viewable_tags($user);
             if ($viewable_c !== $viewable) {
-                $pj->tags_conflicted = TagInfo::split($viewable_c);
+                $pj->tags_conflicted = Tagger::split($viewable_c);
                 if ($decor
                     && ($decor_c = $tagger->unparse_decoration_html($viewable_c)) !== $decor) {
                     $pj->tag_decoration_html_conflicted = $decor_c;

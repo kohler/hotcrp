@@ -58,7 +58,7 @@ class AllTags_API {
         $tags = [];
         foreach ($user->paper_set(["minimal" => true, "finalized" => true, "tags" => "require"]) as $prow) {
             if ($user->can_view_paper($prow)) {
-                foreach (TagInfo::split_unpack($prow->all_tags_text()) as $ti) {
+                foreach (Tagger::split_unpack($prow->all_tags_text()) as $ti) {
                     $lt = strtolower($ti[0]);
                     if (!isset($tags[$lt])
                         && ($tag = self::strip($ti[0], $user, $prow))

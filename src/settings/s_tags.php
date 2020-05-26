@@ -98,7 +98,7 @@ class Tags_SettingParser extends SettingParser {
         $ts = array();
         foreach (preg_split('/\s+/', $sv->reqv($si->name)) as $t) {
             if ($t !== "" && ($tx = $tagger->check($t, $checkf))) {
-                list($tag, $idx) = TagInfo::unpack($tx);
+                list($tag, $idx) = Tagger::unpack($tx);
                 if ($min_idx) {
                     $tx = $tag . "#" . max($min_idx, (float) $idx);
                 }

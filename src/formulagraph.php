@@ -372,7 +372,7 @@ class FormulaGraph extends MessageSet {
 
     private function _add_tag_data(&$data, $d, PaperInfo $prow) {
         assert($this->fx_type === Fexpr::FTAG);
-        $tags = TagInfo::split_unpack($prow->viewable_tags($this->user));
+        $tags = Tagger::split_unpack($prow->viewable_tags($this->user));
         foreach ($tags as $ti) {
             if (!isset($this->tags[$ti[0]])) {
                 $this->tags[$ti[0]] = count($this->tags);
@@ -384,7 +384,7 @@ class FormulaGraph extends MessageSet {
 
     private function _account_tags(PaperInfo $prow) {
         assert($this->fx_type === Fexpr::FTAG);
-        $tags = TagInfo::split_unpack($prow->viewable_tags($this->user));
+        $tags = Tagger::split_unpack($prow->viewable_tags($this->user));
         $r = [];
         foreach ($tags as $ti) {
             if (!isset($this->tags[$ti[0]])) {

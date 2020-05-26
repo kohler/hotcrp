@@ -367,7 +367,7 @@ class CommentInfo {
 
         // tags
         if (($tags = $this->viewable_tags($viewer))) {
-            $cj->tags = TagInfo::split($tags);
+            $cj->tags = Tagger::split($tags);
             if (($cc = $this->conf->tags()->color_classes($tags))) {
                 $cj->color_classes = $cc;
             }
@@ -583,7 +583,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             foreach ($m[0] as $tt) {
                 if (($tt = $tagger->check($tt))
                     && !stri_ends_with($tt, "response")) {
-                    list($tag, $value) = TagInfo::unpack($tt);
+                    list($tag, $value) = Tagger::unpack($tt);
                     $ts[strtolower($tag)] = $tag . "#" . (float) $value;
                 }
             }

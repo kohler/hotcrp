@@ -2082,7 +2082,7 @@ class Conf {
                 }
                 if ($u->contactTags) {
                     foreach (explode(" ", $u->contactTags) as $t) {
-                        list($tag, $value) = TagInfo::unpack($t);
+                        list($tag, $value) = Tagger::unpack($t);
                         if ($tag)
                             $this->_pc_tags_cache[strtolower($tag)] = $tag;
                     }

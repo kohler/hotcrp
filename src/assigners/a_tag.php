@@ -20,14 +20,14 @@ class NextTagAssigner {
             $indexes = array_values($this->pidindex);
             sort($indexes);
             $index = count($indexes) ? $indexes[count($indexes) - 1] : 0;
-            $index += TagInfo::value_increment($isseq);
+            $index += Tagger::value_increment($isseq);
         }
         $this->first_index = $this->next_index = ceil($index);
         $this->isseq = $isseq;
     }
     function next_index($isseq) {
         $index = $this->next_index;
-        $this->next_index += TagInfo::value_increment($isseq);
+        $this->next_index += Tagger::value_increment($isseq);
         return (float) $index;
     }
     function apply_finisher(AssignmentState $state) {

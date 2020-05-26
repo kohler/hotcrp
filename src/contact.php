@@ -3939,7 +3939,7 @@ class Contact {
         }
 
         // conflict checks
-        $tag = TagInfo::base($tag);
+        $tag = Tagger::base($tag);
         $dt = $this->conf->tags();
         if ($prow) {
             $rights = $this->rights($prow);
@@ -4004,7 +4004,7 @@ class Contact {
         if (!$tag) {
             return true;
         }
-        $tag = TagInfo::base($tag);
+        $tag = Tagger::base($tag);
         $twiddle = strpos($tag, "~");
         if ($twiddle === 0 && $tag[1] === "~") {
             if (!$rights->can_administer) {
@@ -4063,7 +4063,7 @@ class Contact {
                 $whyNot["notSubmitted"] = true;
             }
         } else {
-            $tag = TagInfo::base($tag);
+            $tag = Tagger::base($tag);
             $twiddle = strpos($tag, "~");
             if ($twiddle === 0 && $tag[1] === "~") {
                 $whyNot["chairTag"] = true;

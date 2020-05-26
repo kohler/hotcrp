@@ -499,13 +499,13 @@ class UserStatus extends MessageSet {
             $old_tags = array();
             foreach ($cj->tags as $t) {
                 if ($t !== "") {
-                    list($tag, $index) = TagInfo::unpack($t);
+                    list($tag, $index) = Tagger::unpack($t);
                     $old_tags[strtolower($tag)] = [$tag, $index];
                 }
             }
             // process removals, then additions
             foreach ($this->make_tags_array($cj->remove_tags ?? null, "remove_tags") as $t) {
-                list($tag, $index) = TagInfo::unpack($t);
+                list($tag, $index) = Tagger::unpack($t);
                 if ($index !== false) {
                     $ti = $old_tags[strtolower($tag)] ?? null;
                     if (!$ti || $ti[1] != $index)
@@ -514,7 +514,7 @@ class UserStatus extends MessageSet {
                 unset($old_tags[strtolower($tag)]);
             }
             foreach ($this->make_tags_array($cj->add_tags ?? null, "add_tags") as $t) {
-                list($tag, $index) = TagInfo::unpack($t);
+                list($tag, $index) = Tagger::unpack($t);
                 $old_tags[strtolower($tag)] = [$tag, $index];
             }
             // collect results
@@ -894,7 +894,7 @@ class UserStatus extends MessageSet {
         if (isset($cj->tags) && $this->viewer->privChair) {
             $tags = array();
             foreach ($cj->tags as $t) {
-                list($tag, $value) = TagInfo::unpack($t);
+                list($tag, $value) = Tagger::unpack($t);
                 if (self::check_pc_tag($tag)) {
                     $tags[$tag] = $tag . "#" . ($value ? : 0);
                 }

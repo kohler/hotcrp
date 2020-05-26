@@ -56,13 +56,13 @@ class PaperApi {
         if ($prow) {
             if (isset($qreq->tags)) {
                 $x[] = "$prow->paperId,tag,all#clear";
-                foreach (TagInfo::split($qreq->tags) as $t)
+                foreach (Tagger::split($qreq->tags) as $t)
                     $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
             }
-            foreach (TagInfo::split((string) $qreq->addtags) as $t) {
+            foreach (Tagger::split((string) $qreq->addtags) as $t) {
                 $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
             }
-            foreach (TagInfo::split((string) $qreq->deltags) as $t) {
+            foreach (Tagger::split((string) $qreq->deltags) as $t) {
                 $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t . "#clear");
             }
         } else if (isset($qreq->tagassignment)) {

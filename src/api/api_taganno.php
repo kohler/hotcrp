@@ -10,7 +10,7 @@ class TagAnno_API {
         }
         $j = ["ok" => true, "tag" => $tag, "editable" => $user->can_change_tag_anno($tag),
               "anno" => []];
-        $dt = $user->conf->tags()->add(TagInfo::base($tag));
+        $dt = $user->conf->tags()->add(Tagger::base($tag));
         foreach ($dt->order_anno_list() as $oa) {
             if ($oa->annoId !== null)
                 $j["anno"][] = $oa;

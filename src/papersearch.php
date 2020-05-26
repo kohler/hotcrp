@@ -2568,7 +2568,9 @@ class PaperSearch {
         }
     }
 
-    /** @param TagMapItem $dt */
+    /** @param int $g
+     * @param TagInfo $dt
+     * @param int $anno_index */
     private function _assign_order_anno_group($g, $dt, $anno_index) {
         if (($ta = $dt->order_anno_entry($anno_index))) {
             $this->groupmap[$g] = $ta;
@@ -2581,7 +2583,7 @@ class PaperSearch {
     }
 
     /** @param SearchTerm $qe
-     * @return ?TagMapItem */
+     * @return ?TagInfo */
     private function _find_order_anno_tag($qe) {
         $thetag = null;
         foreach ($this->_sorters as $sorter) {
@@ -2592,7 +2594,7 @@ class PaperSearch {
         if (!$thetag) {
             return null;
         }
-        $dt = $this->conf->tags()->add(TagInfo::base($thetag));
+        $dt = $this->conf->tags()->add(Tagger::base($thetag));
         if ($dt->has_order_anno()) {
             return $dt;
         }
@@ -2625,7 +2627,7 @@ class PaperSearch {
             }
         }
         $this->user->set_overrides($old_overrides);
-        usort($tag_order, "TagInfo::id_index_compar");
+        usort($tag_order, "Tagger::id_index_compar");
 
         $this->thenmap = [];
         $this->_assign_order_anno_group(0, $dt, -1);
