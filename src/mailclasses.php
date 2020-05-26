@@ -40,7 +40,11 @@ class MailRecipients {
 
             // map "somedec:no"/"somedec:yes" to real decisions
             $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
-            $dec_pcount = edb_map($result);
+            $dec_pcount = [];
+            while (($row = $result->fetch_row())) {
+                $dec_pcount[(int) $row[0]] = (int) $row[1];
+            }
+            Dbl::free($result);
             $dec_tcount = array(0 => 0, 1 => 0, -1 => 0);
             foreach ($dec_pcount as $dnum => $dcount) {
                 $dec_tcount[$dnum > 0 ? 1 : ($dnum < 0 ? -1 : 0)] += $dcount;

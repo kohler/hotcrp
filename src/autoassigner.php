@@ -118,10 +118,11 @@ class Autoassigner {
         $result = $this->conf->preference_conflict_result($papertype, "");
         $this->ass = ["paper,action,email"];
         while (($row = $result->fetch_row())) {
-            if (!isset($papers[$row[0]]) || !isset($this->pcm[$row[1]])) {
-                continue;
+            $pid = (int) $row[0];
+            $cid = (int) $row[1];
+            if (isset($papers[$pid]) && isset($this->pcm[$cid])) {
+                $this->ass[] = "$pid,conflict," . $this->pcm[$cid]->email;
             }
-            $this->ass[] = "$row[0],conflict," . $this->pcm[$row[1]]->email;
         }
         Dbl::free($result);
     }
@@ -146,8 +147,10 @@ class Autoassigner {
         $this->ass = ["paper,action,email"];
         $result = $this->conf->qe_raw($q);
         while (($row = $result->fetch_row())) {
-            if (isset($papers[$row[0]]) && isset($this->pcm[$row[1]])) {
-                $this->ass[] = "$row[0],$action," . $this->pcm[$row[1]]->email;
+            $pid = (int) $row[0];
+            $cid = (int) $row[1];
+            if (isset($papers[$pid]) && isset($this->pcm[$cid])) {
+                $this->ass[] = "$pid,$action," . $this->pcm[$cid]->email;
             }
         }
         Dbl::free($result);
@@ -228,7 +231,9 @@ class Autoassigner {
         if ($missing_pcm) {
             $result = $this->conf->qe("select contactId, paperId from PaperReview where paperId?a and contactId?a", $this->papersel, array_values($missing_pcm));
             while (($row = $result->fetch_row())) {
-                $this->eass[$row[0]][$row[1]] = max($this->eass[$row[0]][$row[1]], self::ENOASSIGN);
+                $cid = (int) $row[0];
+                $pid = (int) $row[1];
+                $this->eass[$cid][$pid] = max($this->eass[$cid][$pid], self::ENOASSIGN);
             }
             Dbl::free($result);
         }
@@ -749,8 +754,10 @@ class Autoassigner {
         $papers = array_fill_keys($this->papersel, $nass);
         $result = $this->conf->qe("select paperId, count(reviewId) from PaperReview where reviewType={$reviewtype} group by paperId");
         while (($row = $result->fetch_row())) {
-            if (isset($papers[$row[0]]))
-                $papers[$row[0]] = max($nass - $row[1], 0);
+            $pid = (int) $row[0];
+            if (isset($papers[$pid])) {
+                $papers[$pid] = max($nass - (int) $row[1], 0);
+            }
         }
         Dbl::free($result);
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);

@@ -771,41 +771,41 @@ class Conf {
 
     // database
 
-    /** @return mysqli_result|Dbl_Result */
+    /** @return Dbl_Result */
     function q(/* $qstr, ... */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), 0);
     }
-    /** @return mysqli_result|Dbl_Result */
+    /** @return Dbl_Result */
     function q_raw(/* $qstr */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW);
     }
-    /** @return mysqli_result|Dbl_Result */
+    /** @return Dbl_Result */
     function q_apply(/* $qstr, $args */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY);
     }
 
-    /** @return mysqli_result|Dbl_Result */
+    /** @return Dbl_Result */
     function ql(/* $qstr, ... */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG);
     }
-    /** @return mysqli_result|Dbl_Result */
+    /** @return Dbl_Result */
     function ql_raw(/* $qstr */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW | Dbl::F_LOG);
     }
-    /** @return mysqli_result|Dbl_Result */
+    /** @return Dbl_Result */
     function ql_apply(/* $qstr, $args */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_LOG);
     }
 
-    /** @return mysqli_result|Dbl_Result */
+    /** @return Dbl_Result */
     function qe(/* $qstr, ... */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR);
     }
-    /** @return mysqli_result|Dbl_Result */
+    /** @return Dbl_Result */
     function qe_raw(/* $qstr */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW | Dbl::F_ERROR);
     }
-    /** @return mysqli_result|Dbl_Result */
+    /** @return Dbl_Result */
     function qe_apply(/* $qstr, $args */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_ERROR);
     }
@@ -3394,7 +3394,7 @@ class Conf {
     }
 
     /** @param array{paperId?:list<int>} $options
-     * @return mysqli_result|Dbl_Result */
+     * @return Dbl_Result */
     function paper_result($options, Contact $user = null) {
         // Options:
         //   "paperId" => $pids Only papers in list<int> $pids

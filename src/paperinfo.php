@@ -142,8 +142,8 @@ class PaperContactInfo {
                 $row->_clear_contact_info($user);
             }
             while (($local = $result->fetch_row())) {
-                $row = $row_set->get($local[4]);
-                $ci = $row->_get_contact_info($local[5]);
+                $row = $row_set->get((int) $local[4]);
+                $ci = $row->_get_contact_info((int) $local[5]);
                 $ci->mark_conflict((int) $local[0]);
                 $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3]);
             }
@@ -183,7 +183,7 @@ class PaperContactInfo {
             }
         }
         while ($result && ($local = $result->fetch_row())) {
-            $ci = $prow->_get_contact_info($local[4]);
+            $ci = $prow->_get_contact_info((int) $local[4]);
             $ci->mark_conflict((int) $local[0]);
             $ci->mark_review_type((int) $local[1], (int) $local[2], (int) $local[3]);
         }
@@ -207,6 +207,9 @@ class PaperInfo_Conflict {
     /** @var string */
     public $email;
 
+    /** @param int $cid
+     * @param int $ctype
+     * @param ?string $email */
     function __construct($cid, $ctype, $email = null) {
         $this->contactId = (int) $cid;
         $this->conflictType = (int) $ctype;
@@ -284,11 +287,13 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return array_keys($this->by_pid);
     }
-    /** @return ?PaperInfo */
+    /** @param int $pid
+     * @return ?PaperInfo */
     function paper_by_id($pid) {
         return $this->by_pid[$pid] ?? null;
     }
-    /** @return PaperInfo */
+    /** @param int $pid
+     * @return PaperInfo */
     function checked_paper_by_id($pid) {
         $prow = $this->by_pid[$pid] ?? null;
         if (!$prow) {
@@ -296,11 +301,13 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return $prow;
     }
-    /** @return ?PaperInfo */
+    /** @param int $pid
+     * @return ?PaperInfo */
     function get($pid) {
         return $this->by_pid[$pid] ?? null;
     }
-    /** @return PaperInfoSet */
+    /** @param callable(PaperInfo):bool $func
+     * @return PaperInfoSet */
     function filter($func) {
         $next_set = new PaperInfoSet;
         foreach ($this->prows as $prow) {
@@ -309,6 +316,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return $next_set;
     }
+    /** @param callable(PaperInfo):bool $func */
     function apply_filter($func) {
         $nprows = $by_pid = [];
         foreach ($this->prows as $prow) {
@@ -323,6 +331,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $this->by_pid = $by_pid;
         $this->_need_pid_sort = false;
     }
+    /** @param callable(PaperInfo):bool $func */
     function any($func) {
         foreach ($this as $prow) {
             if (($x = call_user_func($func, $prow)))
@@ -456,19 +465,22 @@ class PaperInfo {
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
 
-    /** @param ?Contact $contact */
+    /** @param ?array<string,null|string|int> $p
+     * @param ?Contact $contact */
     function __construct($p = null, $contact = null, Conf $conf = null) {
         $this->merge($p, $contact, $conf);
     }
 
-    /** @param ?Contact $contact
+    /** @param ?array<string,null|string|int> $p
+     * @param ?Contact $contact
      * @param ?Conf $conf */
     private function merge($p, $contact, $conf) {
         assert($contact === null ? $conf !== null : $contact instanceof Contact);
         $this->conf = $contact ? $contact->conf : $conf;
         if ($p) {
-            foreach ($p as $k => $v)
+            foreach ($p as $k => $v) {
                 $this->$k = $v;
+            }
         }
         $this->paperId = (int) $this->paperId;
         $this->managerContactId = (int) $this->managerContactId;
@@ -1232,7 +1244,7 @@ class PaperInfo {
         if ($this->conf->has_topics()) {
             $result = $this->conf->qe("select paperId, group_concat(topicId) from PaperTopic where paperId?a group by paperId", $row_set->paper_ids());
             while ($result && ($row = $result->fetch_row())) {
-                $prow = $row_set->get($row[0]);
+                $prow = $row_set->get((int) $row[0]);
                 $prow->topicIds = (string) $row[1];
             }
             Dbl::free($result);
@@ -1335,7 +1347,7 @@ class PaperInfo {
             if ((string) $this->allConflictType !== "") {
                 foreach (explode(",", $this->allConflictType) as $x) {
                     list($cid, $ctype) = explode(" ", $x);
-                    $cflt = new PaperInfo_Conflict($cid, $ctype);
+                    $cflt = new PaperInfo_Conflict((int) $cid, (int) $ctype);
                     $this->_conflict_array[$cflt->contactId] = $cflt;
                 }
             }
@@ -1351,8 +1363,8 @@ class PaperInfo {
                 $result = $this->conf->qe("select paperId, contactId, conflictType, null from PaperConflict where paperId?a", $row_set->paper_ids());
             }
             while ($result && ($row = $result->fetch_row())) {
-                $prow = $row_set->get($row[0]);
-                $cflt = new PaperInfo_Conflict($row[1], $row[2], $row[3]);
+                $prow = $row_set->get((int) $row[0]);
+                $cflt = new PaperInfo_Conflict((int) $row[1], (int) $row[2], $row[3]);
                 $prow->_conflict_array[$cflt->contactId] = $cflt;
             }
             Dbl::free($result);
@@ -1425,7 +1437,7 @@ class PaperInfo {
         }
         $result = $this->conf->qe("select paperId, " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId?a group by paperId", $row_set->paper_ids());
         while ($result && ($row = $result->fetch_row())) {
-            $prow = $row_set->get($row[0]);
+            $prow = $row_set->get((int) $row[0]);
             $prow->allReviewerPreference = $row[1];
         }
         Dbl::free($result);
@@ -1463,7 +1475,7 @@ class PaperInfo {
             }
             $result = $this->conf->qe("select paperId, preference, expertise from PaperReviewPreference where paperId?a and contactId=?", $row_set->paper_ids(), $cid);
             while ($result && ($row = $result->fetch_row())) {
-                $prow = $row_set->get($row[0]);
+                $prow = $row_set->get((int) $row[0]);
                 $prow->_prefs_cid[1] = [(int) $row[1], $row[2] === null ? null : (int) $row[2]];
             }
             Dbl::free($result);
@@ -2190,7 +2202,7 @@ class PaperInfo {
         $select = $maybe_null ? "coalesce($fid,'.')" : $fid;
         $result = $this->conf->qe("select paperId, group_concat($select order by reviewId) from PaperReview where paperId?a group by paperId", $row_set->paper_ids());
         while ($result && ($row = $result->fetch_row())) {
-            $prow = $row_set->get($row[0]);
+            $prow = $row_set->get((int) $row[0]);
             $prow->$k = $row[1];
         }
         Dbl::free($result);

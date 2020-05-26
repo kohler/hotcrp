@@ -184,13 +184,15 @@ class Tags_SettingParser extends SettingParser {
                 $cvals = [];
                 $negative = false;
                 while (($row = $result->fetch_row())) {
+                    $pid = (int) $row[0];
                     $who = (int) substr($row[1], 0, strpos($row[1], "~"));
-                    if ($row[2] < 0) {
-                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for #$row[0].");
+                    $value = (float) $row[2];
+                    if ($value < 0) {
+                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for #$pid.");
                         $negative = true;
                     } else {
-                        $pvals[$row[0]] = ($pvals[$row[0]] ?? 0) + $row[2];
-                        $cvals[$who] = ($cvals[$who] ?? 0) + $row[2];
+                        $pvals[$pid] = ($pvals[$pid] ?? 0) + $value;
+                        $cvals[$who] = ($cvals[$who] ?? 0) + $value;
                     }
                 }
 
@@ -222,12 +224,13 @@ class Tags_SettingParser extends SettingParser {
                 $pvals = array();
                 $negative = false;
                 while (($row = $result->fetch_row())) {
+                    $pid = (int) $row[0];
                     $who = (int) substr($row[1], 0, strpos($row[1], "~"));
-                    if ($row[2] < 0) {
-                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for #$row[0].");
+                    if ((float) $row[2] < 0) {
+                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for #$pid.");
                         $negative = true;
                     } else {
-                        $pvals[$row[0]] = ($pvals[$row[0]] ?? 0) + 1;
+                        $pvals[$pid] = ($pvals[$pid] ?? 0) + 1;
                     }
                 }
 

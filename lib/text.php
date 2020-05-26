@@ -94,7 +94,7 @@ class Text {
                 }
             } else if (is_array($v)) {
                 foreach ($v as $k => $x) {
-                    if (($mk = get(self::$mapkeys, $k))
+                    if (($mk = self::$mapkeys[$k] ?? null)
                         && !isset($ret->$mk))
                         $ret->$mk = $x;
                 }

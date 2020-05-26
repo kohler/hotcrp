@@ -1915,12 +1915,9 @@ class PaperList {
         // get column list, check sort
         $this->_prepare();
         $field_list = $this->_columns($this->_list_columns(), true, false); /* XXX */
-        if (empty($field_list) || $this->rowset()->is_empty()) {
-            return null;
-        }
 
         // get field array
-        $fieldDef = array();
+        $fieldDef = [];
         foreach ($field_list as $fdef) {
             if ($fdef->viewable()
                 && $fdef->is_visible
@@ -1930,7 +1927,7 @@ class PaperList {
         }
 
         // collect row data
-        $body = array();
+        $body = [];
         $grouppos = empty($this->_groups) ? -1 : 0;
         foreach ($this->rowset() as $row) {
             $this->_row_setup($row);

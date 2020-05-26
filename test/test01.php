@@ -818,7 +818,7 @@ $paper3 = $user_chair->checked_paper_by_id(3);
 xassert_eqq(sorted_conflicts($paper3, true), "sclin@leland.stanford.edu");
 xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
 
-$user_sclin = $Conf->user_by_email("sclin@leland.stanford.edu");
+$user_sclin = $Conf->checked_user_by_email("sclin@leland.stanford.edu");
 $Conf->save_setting("sub_update", $Now + 10);
 $Conf->save_setting("sub_sub", $Now + 10);
 xassert($user_sclin->can_update_paper($paper3));
@@ -827,7 +827,7 @@ $paper3 = $user_chair->checked_paper_by_id(3);
 xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
 
 // test conflict types
-$user_rguerin = $Conf->user_by_email("rguerin@ibm.com");
+$user_rguerin = $Conf->checked_user_by_email("rguerin@ibm.com");
 xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::GENERAL);
 xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,pinned\n");
 $paper3 = $user_chair->checked_paper_by_id(3);
@@ -1027,8 +1027,8 @@ assert_search_papers($user_chair, "#red", "2 4 6 8");
 assert_search_papers($user_chair, "#green", "3 4 7 8");
 assert_search_papers($user_chair, "#blue", "5 6 7 8");
 
-$user_floyd = $Conf->user_by_email("floyd@ee.lbl.gov");
-$user_pfrancis = $Conf->user_by_email("pfrancis@ntt.jp");
+$user_floyd = $Conf->checked_user_by_email("floyd@ee.lbl.gov");
+$user_pfrancis = $Conf->checked_user_by_email("pfrancis@ntt.jp");
 xassert(!$user_marina->has_tag("red") && !$user_marina->has_tag("blue"));
 xassert($user_estrin->has_tag("red") && !$user_estrin->has_tag("blue"));
 xassert(!$user_pfrancis->has_tag("red") && $user_pfrancis->has_tag("blue"));
@@ -1102,7 +1102,7 @@ assert_search_papers($user_chair, "dec:yes", "1");
 xassert($Conf->setting("paperacc"));
 
 // check reviewAuthorSeen
-$user_author2 = $Conf->user_by_email("micke@cdt.luth.se");
+$user_author2 = $Conf->checked_user_by_email("micke@cdt.luth.se");
 $review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!$user_author2->can_view_review($paper2, $review2b));
 xassert(!$review2b->reviewAuthorSeen);
@@ -1183,7 +1183,7 @@ xassert_eqq($paper16b->all_tags_text(), "");
 xassert_assign($user_chair, "paper,action,reason\n16,revive\n");
 
 // author can also withdraw
-$user_mogul = $Conf->user_by_email("mogul@wrl.dec.com");
+$user_mogul = $Conf->checked_user_by_email("mogul@wrl.dec.com");
 $paper16 = $user_mogul->checked_paper_by_id(16);
 xassert($paper16->timeSubmitted > 0);
 xassert($paper16->timeWithdrawn <= 0);
@@ -1340,6 +1340,7 @@ xassert_eqq($u->affiliation, "Fart World");
 
 xassert(!maybe_user("thalerd@eecs.umich.edu"));
 $u = Contact::create($Conf, null, ["email" => "thalerd@eecs.umich.edu"]);
+assert($u !== null);
 xassert(!!$u);
 xassert($u->contactId > 0);
 xassert_eqq($u->email, "thalerd@eecs.umich.edu");

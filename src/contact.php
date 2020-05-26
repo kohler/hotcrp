@@ -305,6 +305,7 @@ class Contact {
             while (($m = $result->fetch_object())) {
                 $need[$m->contactId]->unslice_using($m);
             }
+            Dbl::free($result);
             $this->_slice = false;
         }
     }
@@ -331,14 +332,15 @@ class Contact {
         $name = $conf->sort_by_last ? ["lastName", "firstName"] : ["firstName", "lastName"];
         $s = [];
         foreach ($args ? : [] as $w) {
-            if ($w === "name")
+            if ($w === "name") {
                 $s = array_merge($s, $name);
-            else if ($w === "first" || $w === "firstName")
+            } else if ($w === "first" || $w === "firstName") {
                 $s[] = "firstName";
-            else if ($w === "last" || $w === "lastName")
+            } else if ($w === "last" || $w === "lastName") {
                 $s[] = "lastName";
-            else if ($w === "email" || $w === "affiliation")
+            } else if ($w === "email" || $w === "affiliation") {
                 $s[] = $w;
+            }
         }
         if (empty($s) && $explicit) {
             $s = $name;
@@ -3242,8 +3244,9 @@ class Contact {
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
             || $rights->reviewType == REVIEW_META
             || ($rbase && $rbase->requestedBy == $this->contactId && $rights->allow_pc)
-            || ($rbase && $this->is_owned_review($rbase)))
+            || ($rbase && $this->is_owned_review($rbase))) {
             return true;
+        }
         $seerevid_setting = $this->seerevid_setting($prow, $rbase, $rights);
         return ($rights->allow_pc
                 && $seerevid_setting == Conf::PCSEEREV_YES)
@@ -3255,17 +3258,19 @@ class Contact {
 
     function can_view_some_review_identity() {
         $tags = "";
-        if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID)))
+        if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID))) {
             $tags = " $t#0 ";
-        if ($this->isPC)
+        }
+        if ($this->isPC) {
             $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
-        else
+        } else {
             $rtype = $this->is_reviewer() ? REVIEW_EXTERNAL : 0;
+        }
         $prow = new PaperInfo([
             "conflictType" => 0, "managerContactId" => 0,
             "myReviewPermissions" => "$rtype 1 0",
             "paperId" => 1, "timeSubmitted" => 1,
-            "blind" => false, "outcome" => 1,
+            "blind" => "0", "outcome" => 1,
             "paperTags" => $tags
         ], $this);
         $overrides = $this->add_overrides(self::OVERRIDE_CONFLICT);

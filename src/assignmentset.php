@@ -628,7 +628,7 @@ class AssignmentCountSet {
                 and u.roles!=0 and (u.roles&" . Contact::ROLE_PC . ")!=0
                 group by u.contactId");
         while (($row = $result->fetch_row())) {
-            $ct = $this->ensure($row[0]);
+            $ct = $this->ensure((int) $row[0]);
             $ct->rev = strlen($row[1]);
             $ct->meta = substr_count($row[1], (string) REVIEW_META);
             $ct->pri = substr_count($row[1], (string) REVIEW_PRIMARY);
@@ -641,8 +641,8 @@ class AssignmentCountSet {
                 from Paper where timeWithdrawn<=0 and timeSubmitted>0
                 group by {$type}ContactId");
         while (($row = $result->fetch_row())) {
-            $ct = $this->ensure($row[0]);
-            $ct->$type = +$row[1];
+            $ct = $this->ensure((int) $row[0]);
+            $ct->$type = (int) $row[1];
         }
         Dbl::free($result);
     }

@@ -57,8 +57,8 @@ class AbbreviationMatchTracker {
     private function wmatch_score($pattern, $subject, $flags) {
         // assert($pattern whitespace is simplified)
         $pwords = explode(" ", $pattern);
-        $swords = preg_split('{\s+}', $subject);
-        $pword = null;
+        $swords = preg_split('/\s+/', $subject);
+        $pword = "";
         $pword_pos = -1;
         $pword_star = false;
         $ppos = $spos = $demerits = $skipped = 0;
@@ -321,6 +321,7 @@ class AbbreviationMatcher {
     private function _resolve($i) {
         $d =& $this->data[$i];
         if ($d[2] === $this) {
+            assert($d[4] !== null);
             $d[2] = call_user_func_array($d[4], $d[5]);
         }
         return $d[2];
