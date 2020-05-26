@@ -1373,7 +1373,7 @@ class Contact {
                 $updater["creationTime"] = $Now;
             }
             $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join("=?, ", array_keys($updater)) . "=? on duplicate key update firstName=firstName", array_values($updater));
-            if ($result) {
+            if ($result->affected_rows) {
                 $updater[$idk] = (int) $result->insert_id;
                 if ($idk === "contactId") {
                     $updater["contactXid"] = (int) $result->insert_id;
@@ -4573,6 +4573,8 @@ class Contact {
         }
     }
 
+    /** @param ReviewInfo $rrow
+     * @return Dbl_Result */
     function unsubmit_review_row($rrow, $extra = null) {
         $needsSubmit = 1;
         if ($rrow->reviewType == REVIEW_SECONDARY) {

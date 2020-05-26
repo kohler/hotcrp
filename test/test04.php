@@ -103,7 +103,7 @@ xassert_eqq(password($marina, true), ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng5
 
 // insert someone into the contactdb
 $result = Dbl::qe($Conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
-assert(!!$result);
+assert(!Dbl::is_error($result));
 Dbl::free($result);
 xassert(!maybe_user("te@_.com"));
 $u = $Conf->contactdb_user_by_email("te@_.com");
@@ -124,7 +124,7 @@ xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
 
 // changing email should work too, but not change cdb except for defaults
 $result = Dbl::qe($Conf->contactdb(), "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@_.com', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
-xassert(!!$result);
+xassert(!Dbl::is_error($result));
 Dbl::free($result);
 $te->change_email("te2@_.com");
 $te = maybe_user("te@_.com");

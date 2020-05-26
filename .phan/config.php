@@ -107,6 +107,10 @@ $config = [
     "suppress_issue_types" => [
         "PhanUnusedPublicMethodParameter",
         "PhanParamReqAfterOpt"
+    ],
+
+    "plugins" => [
+        ".phan/plugins/RedundantDblResultPlugin.php"
     ]
 ];
 

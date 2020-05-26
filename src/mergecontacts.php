@@ -139,8 +139,10 @@ class MergeContacts extends MessageSet {
         // Remove the old contact record
         if (!$this->has_error()) {
             $this->conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?", $this->oldu->contactId, $this->oldu->firstName, $this->oldu->lastName, $this->oldu->unaccentedName, $this->oldu->email);
-            if (!$this->conf->q("delete from ContactInfo where contactId=?", $this->oldu->contactId))
+            $result = $this->conf->q("delete from ContactInfo where contactId=?", $this->oldu->contactId);
+            if ($result->errno) {
                 $this->add_error($this->conf->db_error_html(true));
+            }
         }
     }
 

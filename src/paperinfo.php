@@ -512,10 +512,11 @@ class PaperInfo {
         }
     }
 
-    /** @return ?PaperInfo */
+    /** @param Dbl_Result $result
+     * @param ?Contact $contact
+     * @return ?PaperInfo */
     static function fetch($result, $contact, Conf $conf = null) {
-        $prow = $result ? $result->fetch_object("PaperInfo", [null, $contact, $conf]) : null;
-        '@phan-var ?PaperInfo $prow';
+        $prow = $result->fetch_object("PaperInfo", [null, $contact, $conf]);
         if ($prow && !is_int($prow->paperId)) {
             $prow->merge(null, $contact, $conf);
         }
@@ -2384,7 +2385,7 @@ class PaperInfo {
         $result = $this->conf->qe(self::fetch_comment_query()
             . " where paperId={$this->paperId}" . ($extra_where ? " and $extra_where" : "")
             . " order by paperId, commentId");
-        $comments = array();
+        $comments = [];
         while (($c = CommentInfo::fetch($result, $this, $this->conf))) {
             $comments[$c->commentId] = $c;
         }

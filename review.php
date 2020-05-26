@@ -87,7 +87,7 @@ if (isset($Qreq->unsubmitreview)
     && $Me->can_administer($prow)
     && $Qreq->post_ok()) {
     $result = $Me->unsubmit_review_row($paperTable->editrrow);
-    if ($result) {
+    if (!Dbl::is_error($result) && $result->affected_rows) {
         $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} unsubmitted", $prow);
         $Conf->confirmMsg("Unsubmitted review.");
     }
@@ -156,7 +156,7 @@ if (isset($Qreq->deletereview)
         Conf::msg_error("No review to delete.");
     } else {
         $result = $Conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
-        if ($result) {
+        if (!Dbl::is_error($result) && $result->affected_rows) {
             $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
             $Conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);

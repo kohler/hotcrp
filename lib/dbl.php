@@ -31,7 +31,7 @@ class Dbl_Result {
         $r = new Dbl_Result;
         $r->affected_rows = $r->warning_count = 0;
         $r->insert_id = null;
-        $r->errno = 1002;
+        $r->errno = 0;
         return $r;
     }
     /** @return ?array<int,?string> */
@@ -65,6 +65,7 @@ class Dbl_MultiResult {
         $this->qstr = $qstr;
         $this->more = $result;
     }
+    /** @return false|Dbl_Result */
     function next() {
         // XXX does processing stop at first error?
         if ($this->more === null) {
@@ -449,6 +450,7 @@ class Dbl {
             $result = Dbl_Result::make($dblink);
         } else if ($result === null) {
             $result = Dbl_Result::make_empty();
+            $result->errno = 1002;
         }
         if (self::$check_warnings
             && !($flags & self::F_ALLOWERROR)
@@ -615,12 +617,15 @@ class Dbl {
         return self::make_multi_query_stager($dblink ? : self::$default_dblink, self::F_ERROR);
     }
 
+    /** @param null|Dbl_Result|mysqli_result $result */
     static function free($result) {
         if ($result && $result instanceof mysqli_result) {
             $result->close();
         }
     }
 
+    /** @param null|Dbl_Result|mysqli_result $result
+     * @return bool */
     static function is_error($result) {
         return !$result
             || ($result instanceof Dbl_Result && $result->errno);

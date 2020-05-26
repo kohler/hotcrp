@@ -302,12 +302,12 @@ class DocumentInfo implements JsonSerializable {
             $result = $this->conf->qe_apply("update PaperStorage set " . join("=?, ", array_keys($upd)) . "=? where paperStorageId=?", $qv);
         } else {
             $result = $this->conf->qe_apply("insert into PaperStorage set " . join("=?, ", array_keys($upd)) . "=?", array_values($upd));
-            if ($result) {
+            if ($result->affected_rows) {
                 $this->paperStorageId = (int) $result->insert_id;
             }
         }
 
-        if ($result) {
+        if (!Dbl::is_error($result)) {
             Dbl::free($result);
             return true;
         } else {

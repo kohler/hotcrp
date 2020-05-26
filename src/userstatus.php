@@ -911,7 +911,8 @@ class UserStatus extends MessageSet {
             $q = "update ContactInfo set "
                 . join("=?, ", array_keys($cu->qv)) . "=?"
                 . " where contactId={$user->contactId}";
-            if (!($result = $user->conf->qe_apply($q, array_values($cu->qv)))) {
+            $result = $user->conf->qe_apply($q, array_values($cu->qv));
+            if (Dbl::is_error($result)) {
                 return false;
             }
             Dbl::free($result);

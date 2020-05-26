@@ -468,7 +468,7 @@ class MailSender {
             return Conf::msg_error("Bad recipients value");
         }
         $result = $this->conf->qe_raw($q);
-        if (!$result) {
+        if (Dbl::is_error($result)) {
             return;
         }
 

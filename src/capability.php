@@ -77,9 +77,11 @@ class CapabilityManager {
         }
         $value = base64_decode(str_replace(["-a", "-b"], ["+", "/"],
                                            substr($capabilityText, strlen($this->prefix()))));
-        if (strlen($value) >= 2
-            && ($result = Dbl::ql($this->dblink, "select * from Capability where salt=?", $value))
-            && ($capdata = CapabilityInfo::fetch($result))
+        if (strlen($value) < 2) {
+            return null;
+        }
+        $result = Dbl::ql($this->dblink, "select * from Capability where salt=?", $value);
+        if (($capdata = CapabilityInfo::fetch($result))
             && ($capdata->timeExpires == 0 || $capdata->timeExpires >= time())) {
             return $capdata;
         } else {

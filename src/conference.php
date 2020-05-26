@@ -299,7 +299,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 234) {
+        if ($this->sversion < 235) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -689,7 +689,8 @@ class Conf {
     function __save_setting($name, $value, $data = null) {
         $change = false;
         if ($value === null && $data === null) {
-            if ($this->qe("delete from Settings where name=?", $name)) {
+            $result = $this->qe("delete from Settings where name=?", $name);
+            if (!Dbl::is_error($result)) {
                 unset($this->settings[$name], $this->settingTexts[$name]);
                 $change = true;
             }
@@ -699,7 +700,8 @@ class Conf {
             if (is_array($dval) || is_object($dval)) {
                 $dval = json_encode_db($dval);
             }
-            if ($this->qe("insert into Settings set name=?, value=?, data=? on duplicate key update value=values(value), data=values(data)", $name, $value, $dval)) {
+            $result = $this->qe("insert into Settings set name=?, value=?, data=? on duplicate key update value=values(value), data=values(data)", $name, $value, $dval);
+            if (!Dbl::is_error($result)) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $data;
                 $change = true;
@@ -795,6 +797,11 @@ class Conf {
     /** @return Dbl_Result */
     function ql_apply(/* $qstr, $args */) {
         return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_LOG);
+    }
+    /** @return ?Dbl_Result */
+    function ql_ok(/* $qstr, ... */) {
+        $result = Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG);
+        return Dbl::is_error($result) ? null : $result;
     }
 
     /** @return Dbl_Result */
@@ -2393,7 +2400,7 @@ class Conf {
 
     private function invariantq($q, $args = []) {
         $result = $this->ql_apply($q, $args);
-        if ($result) {
+        if (!Dbl::is_error($result)) {
             self::$invariant_row = $result->fetch_row();
             $result->close();
             return !!self::$invariant_row;
@@ -2646,7 +2653,7 @@ class Conf {
         if (!$n) {
             $n = $this->fetch_ivalue("select value from Settings where name='allowPaperOption'");
         }
-        if ($n && $this->ql("update Settings set value=? where name='allowPaperOption'", $n)) {
+        if ($n && $this->ql_ok("update Settings set value=? where name='allowPaperOption'", $n)) {
             $this->sversion = $this->settings["allowPaperOption"] = $n;
             return true;
         } else {

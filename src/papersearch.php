@@ -2692,7 +2692,7 @@ class PaperSearch {
         ]);
         //Conf::msg_debugt($filter);
         if ($filter === "false") {
-            return [null, false];
+            return [Dbl_Result::make_empty(), false];
         }
 
         // add permissions tables if we will filter the results

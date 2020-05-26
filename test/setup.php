@@ -191,7 +191,7 @@ function setup_initialize_database() {
             die_hard("* Can't reinitialize contact database.\n" . $cdb->error);
         }
         while ($cdb->more_results()) {
-            Dbl::free($cdb->next_result());
+            $cdb->next_result();
         }
         $cdb->query("insert into Conferences set dbname='" . $cdb->real_escape_string($Conf->dbname) . "'");
     }

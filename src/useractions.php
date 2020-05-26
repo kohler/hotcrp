@@ -8,7 +8,8 @@ class UserActions {
         if (!$enabled_cids) {
             return (object) ["ok" => true, "warnings" => ["Those accounts were already disabled."]];
         }
-        if (!$user->conf->qe("update ContactInfo set disabled=1 where contactId?a and disabled=0", $enabled_cids)) {
+        $result = $user->conf->qe("update ContactInfo set disabled=1 where contactId?a and disabled=0", $enabled_cids);
+        if (Dbl::is_error($result)) {
             return (object) ["error" => true];
         }
         $user->conf->save_logs(true);
