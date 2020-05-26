@@ -693,8 +693,9 @@ class UserStatus extends MessageSet {
             && (!is_int($cj->id) || $cj->id <= 0)) {
             $this->error_at("id", "Format error [id]");
             return false;
-        } else if (isset($cj->id)
-                   && (!is_string($cj->email) || $cj->email === "")) {
+        }
+        if (isset($cj->email)
+            && !is_string($cj->email)) {
             $this->error_at("email", "Format error [email]");
             return false;
         }
