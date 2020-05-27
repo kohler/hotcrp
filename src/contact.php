@@ -134,6 +134,7 @@ class Contact {
     public $watch;
 
 
+    /** @param ?array<string,null|int|string> $user */
     function __construct($user = null, Conf $conf = null) {
         global $Conf;
         $this->conf = $conf ? : $Conf;
@@ -155,89 +156,84 @@ class Contact {
         return $user;
     }
 
-    /** @param object $user */
+    /** @param array<string,null|int|string> $user */
     private function merge($user) {
-        if (is_array($user)) {
-            $user = (object) $user;
+        if (is_object($user)) {
+            $user = (array) $user;
         }
-        if (!isset($user->dsn) || $user->dsn == $this->conf->dsn) {
-            if (isset($user->contactId))
-                $this->contactId = $this->contactXid = (int) $user->contactId;
+        if ((!isset($user["dsn"]) || $user["dsn"] == $this->conf->dsn)
+            && isset($user["contactId"])) {
+            $this->contactId = $this->contactXid = (int) $user["contactId"];
         }
-        if (isset($user->contactDbId)) {
-            $this->contactDbId = (int) $user->contactDbId;
+        if (isset($user["contactDbId"])) {
+            $this->contactDbId = (int) $user["contactDbId"];
         }
 
-        if (isset($user->firstName) && isset($user->lastName)) {
-            $name = $user;
+        if (isset($user["firstName"]) && isset($user["lastName"])) {
+            $this->firstName = (string) $user["firstName"];
+            $this->lastName = (string) $user["lastName"];
+            $this->unaccentedName = isset($user["unaccentedName"])
+                ? $user["unaccentedName"]
+                : Text::unaccented_name($this);
         } else {
             $name = Text::analyze_name($user);
-        }
-        $this->firstName = get_s($name, "firstName");
-        $this->lastName = get_s($name, "lastName");
-        if (isset($user->unaccentedName)) {
-            $this->unaccentedName = $user->unaccentedName;
-        } else if (isset($name->unaccentedName)) {
+            $this->firstName = $name->firstName;
+            $this->lastName = $name->lastName;
             $this->unaccentedName = $name->unaccentedName;
-        } else {
-            $this->unaccentedName = Text::unaccented_name($name);
         }
-        $this->affiliation = simplify_whitespace(get_s($user, "affiliation"));
-        $this->email = simplify_whitespace(get_s($user, "email"));
+
+        $this->affiliation = simplify_whitespace((string) ($user["affiliation"] ?? ""));
+        $this->email = simplify_whitespace((string) ($user["email"] ?? ""));
         self::set_sorter($this, $this->conf);
 
-        if (isset($user->roles) || isset($user->isPC)
-            || isset($user->isAssistant) || isset($user->isChair)) {
-            $roles = (int) ($user->roles ?? 0);
-            if ($user->isPC ?? null) {
-                $roles |= self::ROLE_PC;
-            }
-            if ($user->isAssistant ?? null) {
-                $roles |= self::ROLE_ADMIN;
-            }
-            if ($user->isChair ?? null) {
-                $roles |= self::ROLE_CHAIR;
-            }
+        $roles = (int) ($user["roles"] ?? 0);
+        if ($user["isPC"] ?? false) {
+            $roles |= self::ROLE_PC;
+        }
+        if ($user["isAssistant"] ?? false) {
+            $roles |= self::ROLE_ADMIN;
+        }
+        if ($user["isChair"] ?? false) {
+            $roles |= self::ROLE_CHAIR;
+        }
+        if ($roles !== 0) {
             $this->assign_roles($roles);
         }
-        if (property_exists($user, "contactTags")) {
-            $this->contactTags = $user->contactTags;
+        if (array_key_exists("contactTags", $user)) {
+            $this->contactTags = $user["contactTags"];
         } else {
             $this->contactTags = $this->contactId ? false : null;
         }
-        if (isset($user->disabled)) {
-            $this->disabled = !!$user->disabled;
+        if (isset($user["disabled"])) {
+            $this->disabled = !!$user["disabled"];
         }
 
         foreach (["preferredEmail", "phone", "country", "gender"] as $k) {
-            if (isset($user->$k))
-                $this->$k = simplify_whitespace($user->$k);
+            if (isset($user[$k]))
+                $this->$k = simplify_whitespace($user[$k]);
         }
-        if (isset($user->collaborators)) {
-            $this->collaborators = $user->collaborators;
+        if (isset($user["collaborators"])) {
+            $this->collaborators = $user["collaborators"];
         }
-        if (isset($user->password)) {
-            $this->password = (string) $user->password;
+        if (isset($user["password"])) {
+            $this->password = (string) $user["password"];
         }
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
-                  "updateTime", "creationTime"] as $k) {
-            if (isset($user->$k))
-                $this->$k = (int) $user->$k;
+                  "updateTime", "creationTime", "birthday"] as $k) {
+            if (isset($user[$k]))
+                $this->$k = (int) $user[$k];
         }
-        if (isset($user->activity_at)) {
-            $this->activity_at = (int) $user->activity_at;
-        } else if (isset($user->lastLogin)) {
-            $this->activity_at = (int) $user->lastLogin;
+        if (isset($user["activity_at"])) {
+            $this->activity_at = (int) $user["activity_at"];
+        } else if (isset($user["lastLogin"])) {
+            $this->activity_at = (int) $user["lastLogin"];
         }
-        if (isset($user->birthday)) {
-            $this->birthday = (int) $user->birthday;
-        }
-        if (isset($user->data) && $user->data) {
-            $this->data = $user->data;
+        if (isset($user["data"]) && $user["data"]) {
+            $this->data = $user["data"];
         }
         $this->_jdata = null;
-        if (isset($user->is_site_contact)) {
-            $this->is_site_contact = $user->is_site_contact;
+        if (isset($user["is_site_contact"])) {
+            $this->is_site_contact = $user["is_site_contact"];
         }
         $this->_disabled = null;
         $this->_contactdb_user = false;
@@ -587,7 +583,7 @@ class Contact {
         assert($this->has_email());
         if (!$this->has_account_here()
             && ($u = Contact::create($this->conf, null, $this))) {
-            $this->merge($u);
+            $this->merge(get_object_vars($u));
             $this->contactDbId = 0;
             $this->_contactdb_user = false;
             $this->activate(null);

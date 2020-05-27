@@ -38,6 +38,8 @@ $config = [
     // Backwards Compatibility Checking
     "backward_compatibility_checks" => false,
 
+    //"redundant_condition_detection" => true,
+
     // Only emit critical issues to start with
     // (0 is low severity, 5 is normal severity, 10 is critical)
     "minimum_severity" => 0,
@@ -110,7 +112,7 @@ $config = [
     ],
 
     "plugins" => [
-        ".phan/plugins/RedundantDblResultPlugin.php"
+        //".phan/plugins/RedundantDblResultPlugin.php"
     ]
 ];
 

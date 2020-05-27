@@ -495,11 +495,11 @@ class MailSender {
         $nwarnings = 0;
         $preperrors = array();
         $revinform = ($this->recipients == "newpcrev" ? array() : null);
-        while (($row = PaperInfo::fetch($result, $this->user))) {
+        while (($rowdata = $result->fetch_assoc())) {
+            $row = new PaperInfo($rowdata, $this->user, $this->conf);
+            $contact = new Contact($rowdata, $this->conf);
             ++$nrows_done;
-            $row->contactId = (int) $row->contactId;
 
-            $contact = new Contact($row, $this->conf);
             $rest["prow"] = $prow = $row->paperId > 0 ? $row : null;
             $rest["newrev_since"] = $this->recip->newrev_since;
             $mailer->reset($contact, $rest);

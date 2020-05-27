@@ -1923,7 +1923,7 @@ class Conf {
             $args = [
                 "fullName" => $this->opt("contactName"),
                 "email" => $this->opt("contactEmail"),
-                "isChair" => true, "isPC" => true, "is_site_contact" => true,
+                "isChair" => 1, "isPC" => 1, "is_site_contact" => 1,
                 "contactTags" => null
             ];
             if ((!$args["email"] || $args["email"] === "you@example.com")
@@ -1934,7 +1934,7 @@ class Conf {
                 $args["firstName"] = $row->firstName;
                 $args["lastName"] = $row->lastName;
             }
-            $this->_site_contact = new Contact((object) $args, $this);
+            $this->_site_contact = new Contact($args, $this);
         }
         return $this->_site_contact;
     }

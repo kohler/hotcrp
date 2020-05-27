@@ -281,7 +281,7 @@ foreach ($requests as $req) {
     }
     if ($rrowid === null) {
         if ($req[0] === 1) {
-            $rrowid = new Contact($rrow, $Conf);
+            $rrowid = new Contact(get_object_vars($rrow), $Conf);
         } else {
             $rrowid = $rrow;
         }
