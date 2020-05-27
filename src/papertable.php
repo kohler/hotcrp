@@ -43,7 +43,9 @@ class PaperTable {
     private $foldmap;
     private $foldnumber;
 
+    /** @var bool */
     private $allow_admin;
+    /** @var bool */
     private $admin;
 
     /** @var ?CheckFormat */

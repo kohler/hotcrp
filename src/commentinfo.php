@@ -68,13 +68,10 @@ class CommentInfo {
         $this->commentRound = (int) $this->commentRound;
     }
 
-    /** @return ?CommentInfo */
+    /** @param Dbl_Result $result
+     * @return ?CommentInfo */
     static function fetch($result, PaperInfo $prow = null, Conf $conf = null) {
-        $cinfo = null;
-        if ($result) {
-            $cinfo = $result->fetch_object("CommentInfo", [null, $prow, $conf]);
-        }
-        '@phan-var ?CommentInfo $cinfo';
+        $cinfo = $result->fetch_object("CommentInfo", [null, $prow, $conf]);
         if ($cinfo && !is_int($cinfo->commentId)) {
             $cinfo->merge(null, $prow, $conf);
         }

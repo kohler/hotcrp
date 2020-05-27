@@ -29,12 +29,15 @@ class HotCRPMailPreparation extends MailPreparation {
 }
 
 class HotCRPMailer extends Mailer {
-    protected $contacts = array();
+    /** @var array<string,Contact|stdClass> */
+    protected $contacts = [];
 
     /** @var ?PaperInfo */
     protected $row;
+    /** @var ?ReviewInfo */
     protected $rrow;
     protected $rrow_unsubmitted = false;
+    /** @var ?CommentInfo */
     protected $comment_row;
     protected $newrev_since = false;
     protected $no_send = false;
@@ -45,6 +48,7 @@ class HotCRPMailer extends Mailer {
     protected $_tagless = array();
 
 
+    /** @param ?Contact $recipient */
     function __construct(Conf $conf, $recipient = null, $rest = []) {
         parent::__construct($conf);
         $this->reset($recipient, $rest);
@@ -57,6 +61,7 @@ class HotCRPMailer extends Mailer {
         return (object) ["email" => get($x, "reviewEmail"), "firstName" => get($x, "reviewFirstName"), "lastName" => get($x, "reviewLastName")];
     }
 
+    /** @param ?Contact $recipient */
     function reset($recipient = null, $rest = []) {
         global $Me;
         parent::reset($recipient, $rest);
@@ -233,7 +238,6 @@ class HotCRPMailer extends Mailer {
         if ($uf->is_review && $args) {
             $args .= "rev_soft";
         } else if ($uf->is_review) {
-            assert(!$this->row || !isset($this->row->roles));
             if (!$this->row
                 || !($rt = $this->row->review_type($this->recipient))) {
                 $p = $this->conf->setting("pcrev_soft");
@@ -467,11 +471,16 @@ class HotCRPMailer extends Mailer {
     }
 
 
+    /** @param Contact $recipient
+     * @param PaperInfo $prow
+     * @param ?ReviewInfo $rrow
+     * @return bool */
     static function check_can_view_review($recipient, $prow, $rrow) {
         assert(!($recipient->overrides() & Contact::OVERRIDE_CONFLICT));
         return $recipient->can_view_review($prow, $rrow);
     }
 
+    /** @param Contact $recipient */
     static function prepare_to($recipient, $template, $rest = []) {
         $answer = null;
         if (!$recipient->is_disabled()) {
@@ -487,12 +496,14 @@ class HotCRPMailer extends Mailer {
         return $answer;
     }
 
+    /** @param Contact $recipient */
     static function send_to($recipient, $template, $rest = []) {
         if (($prep = self::prepare_to($recipient, $template, $rest))) {
             $prep->send();
         }
     }
 
+    /** @param PaperInfo $row */
     static function send_contacts($template, $row, $rest = []) {
         global $Me;
 
@@ -536,6 +547,7 @@ class HotCRPMailer extends Mailer {
         return !empty($contacts);
     }
 
+    /** @param PaperInfo $row */
     static function send_administrators($template, $row, $rest = []) {
         $preps = array();
         $rest["prow"] = $row;

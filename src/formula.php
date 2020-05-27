@@ -1271,7 +1271,8 @@ class Formula implements Abbreviator, JsonSerializable {
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
-    const DEBUG = 0;
+    /** @var bool */
+    const DEBUG = false;
 
     static public $opprec = array(
         "**" => 13,

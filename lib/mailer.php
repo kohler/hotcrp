@@ -155,7 +155,9 @@ class Mailer {
     public static $email_fields = ["to" => "To", "cc" => "Cc", "bcc" => "Bcc", "reply-to" => "Reply-To"];
     public static $template_fields = ["to", "cc", "bcc", "reply-to", "subject", "body"];
 
+    /** @var Conf */
     public $conf;
+    /** @var ?Contact */
     public $recipient;
 
     protected $width = 75;
@@ -174,11 +176,13 @@ class Mailer {
 
     static private $eol = null;
 
+    /** @param ?Contact $recipient */
     function __construct(Conf $conf, $recipient = null, $settings = []) {
         $this->conf = $conf;
         $this->reset($recipient, $settings);
     }
 
+    /** @param ?Contact $recipient */
     function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
         foreach (["width", "censor", "reason", "adminupdate", "notes",
@@ -730,6 +734,7 @@ class Mailer {
         $prep->sensitive = $this->sensitive;
     }
 
+    /** @param list<MailPreparation> $preps */
     static function send_combined_preparations($preps) {
         $last_p = null;
         foreach ($preps as $p) {
@@ -744,6 +749,7 @@ class Mailer {
     }
 
 
+    /** @return string */
     protected function unexpanded_warning_html() {
         $a = array_keys($this->_unexpanded);
         natcasesort($a);
@@ -757,10 +763,12 @@ class Mailer {
         }
     }
 
+    /** @return int */
     function warning_count() {
         return count($this->_unexpanded);
     }
 
+    /** @return list<string> */
     function warning_htmls() {
         $e = [];
         if (!empty($this->_unexpanded)) {

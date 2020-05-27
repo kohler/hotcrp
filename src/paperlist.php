@@ -809,6 +809,7 @@ class PaperList {
         }
     }
 
+    /** @return string */
     function _paperLink(PaperInfo $row) {
         $pt = $this->_paper_link_page ? : "paper";
         if ($pt === "finishreview") {
@@ -933,6 +934,7 @@ class PaperList {
         return $main_content . $override_content;
     }
 
+    /** @return array{bool,string} */
     private function _row_field_content(PaperColumn $fdef, PaperInfo $row) {
         $content = "";
         $override = $fdef->override;
@@ -1191,6 +1193,8 @@ class PaperList {
         return $grouppos;
     }
 
+    /** @param PaperColumn $fdef
+     * @return string */
     private function _field_title($fdef) {
         $t = $fdef->header($this, false);
         if (!$fdef->viewable_column()
@@ -1219,6 +1223,8 @@ class PaperList {
         return '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
     }
 
+    /** @param PaperListTableRender $rstate
+     * @param list<PaperColumn> $fieldDef */
     private function _analyze_folds($rstate, $fieldDef) {
         $classes = &$this->table_attr["class"];
         $jscol = [];
@@ -1258,6 +1264,7 @@ class PaperList {
         $this->table_attr["data-columns"] = $jscol;
     }
 
+    /** @param PaperListTableRender $rstate */
     private function _column_split($rstate, $colhead, &$body) {
         if (count($rstate->groupstart) <= 1) {
             return false;
@@ -1299,38 +1306,48 @@ class PaperList {
         $this->need_render = false;
     }
 
+    /** @param PaperListTableRender $rstate
+     * @param list<PaperColumn> $fieldDef
+     * @return string */
     private function _statistics_rows($rstate, $fieldDef) {
         if (!$this->foldable) {
             $any = false;
-            foreach ($fieldDef as $fdef)
+            foreach ($fieldDef as $fdef) {
                 $any = $any || ($fdef->viewable_column() && $fdef->has_statistics());
-            if (!$any)
+            }
+            if (!$any) {
                 return "";
+            }
         }
         $t = '  <tr class="pl_statheadrow fx8">';
-        if ($rstate->titlecol)
+        if ($rstate->titlecol) {
             $t .= "<td colspan=\"{$rstate->titlecol}\" class=\"plstat\"></td>";
+        }
         $t .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\" class=\"plstat\">" . foldupbutton(7, "Statistics") . "</td></tr>\n";
         foreach (self::$stats as $stat) {
             $t .= '  <tr';
-            if ($this->_row_id_pattern)
+            if ($this->_row_id_pattern) {
                 $t .= " id=\"" . str_replace("#", "stat_" . ScoreInfo::$stat_keys[$stat], $this->_row_id_pattern) . "\"";
+            }
             $t .= ' class="pl_statrow fx7 fx8" data-statistic="' . ScoreInfo::$stat_keys[$stat] . '">';
             $col = 0;
             foreach ($fieldDef as $fdef) {
-                if (!$fdef->viewable_column() || !$fdef->is_visible)
+                if (!$fdef->viewable_column() || !$fdef->is_visible) {
                     continue;
+                }
                 $class = "plstat " . $fdef->className;
-                if ($fdef->has_statistics())
+                if ($fdef->has_statistics()) {
                     $content = $fdef->statistic($this, $stat);
-                else if ($col == $rstate->titlecol) {
+                } else if ($col == $rstate->titlecol) {
                     $content = ScoreInfo::$stat_names[$stat];
                     $class = "plstat pl_statheader";
-                } else
+                } else {
                     $content = "";
+                }
                 $t .= '<td class="' . $class;
-                if ($fdef->fold)
+                if ($fdef->fold) {
                     $t .= ' fx' . $fdef->fold;
+                }
                 $t .= '">' . $content . '</td>';
                 ++$col;
             }
@@ -1987,6 +2004,7 @@ class PaperList {
         }
         return $res;
     }
+
     static function viewer_diff($v1, $v2) {
         $res = [];
         foreach ($v1 as $x) {

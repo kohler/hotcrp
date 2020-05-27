@@ -85,20 +85,22 @@ class Text {
                         $ret->$k = $v;
                     }
                 }
-            } else if (is_array($v) && isset($v[0])) {
-                for ($j = 0; $j < 3 && $j < count($v); ++$j) {
-                    $k = self::$argkeys[$j];
-                    if (!isset($ret->$k)) {
-                        $ret->$k = $v[$j];
+            } else if (is_array($v)) {
+                if (is_associative_array($v)) {
+                    foreach ($v as $k => $x) {
+                        if (($mk = self::$mapkeys[$k] ?? null)
+                            && !isset($ret->$mk))
+                            $ret->$mk = $x;
+                    }
+                    $delta = 3;
+                } else {
+                    for ($j = 0; $j < 3 && $j < count($v); ++$j) {
+                        $k = self::$argkeys[$j];
+                        if (!isset($ret->$k)) {
+                            $ret->$k = $v[$j];
+                        }
                     }
                 }
-            } else if (is_array($v)) {
-                foreach ($v as $k => $x) {
-                    if (($mk = self::$mapkeys[$k] ?? null)
-                        && !isset($ret->$mk))
-                        $ret->$mk = $x;
-                }
-                $delta = 3;
             } else if (is_object($v)) {
                 foreach (self::$mapkeys as $k => $mk) {
                     if (!isset($ret->$mk)

@@ -333,10 +333,9 @@ class PaperOptionList {
         if (!array_key_exists($id, $this->_omap)) {
             $this->_omap[$id] = null;
             if (($oj = ($this->option_json_list())[$id] ?? null)
-                && ($o = PaperOption::make($oj, $this->conf))
-                && $this->conf->xt_allowed($o)
-                && Conf::xt_enabled($o)) {
-                $this->_omap[$id] = $o;
+                && Conf::xt_enabled($oj)
+                && $this->conf->xt_allowed($oj)) {
+                $this->_omap[$id] = PaperOption::make($oj, $this->conf);
             }
         }
         return $this->_omap[$id];

@@ -3,14 +3,24 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Author {
+    /** @var string */
     public $firstName = "";
+    /** @var string */
     public $lastName = "";
+    /** @var string */
     public $email = "";
+    /** @var string */
     public $affiliation = "";
+    /** @var ?string */
     private $_name;
+    /** @var null */
+    public $unaccentedName;
+    /** @var ?int */
     public $contactId;
     private $_deaccents;
+    /** @var ?bool */
     public $nonauthor;
+    /** @var ?string */
     public $sorter;
 
     function __construct($x = null) {
@@ -33,12 +43,14 @@ class Author {
         $au->affiliation = isset($w[3]) ? $w[3] : "";
         return $au;
     }
-    /** @return Author */
+    /** @param string $s
+     * @return Author */
     static function make_string($s) {
         $au = new Author;
         $au->assign_string($s);
         return $au;
     }
+    /** @param string $s */
     function assign_string($s) {
         if (($paren = strpos($s, "(")) !== false) {
             if (preg_match('{\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:%]).*)\z}', $s, $m, 0, $paren + 1)) {
@@ -64,12 +76,14 @@ class Author {
             list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
         }
     }
-    /** @return Author */
+    /** @param string $s
+     * @return Author */
     static function make_string_guess($s) {
         $au = new Author;
         $au->assign_string_guess($s);
         return $au;
     }
+    /** @param string $s */
     function assign_string_guess($s) {
         $hash = strpos($s, "#");
         $pct = strpos($s, "%");

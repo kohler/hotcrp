@@ -19,6 +19,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     public $review_testable = true;
     private $tokens;
     private $wordcountexpr;
+    /** @var ?ReviewField */
     private $rfield;
     private $rfield_score1;
     private $rfield_score2;

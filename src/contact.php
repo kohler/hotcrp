@@ -4573,7 +4573,7 @@ class Contact {
         }
     }
 
-    /** @param ReviewInfo $rrow
+    /** @param ReviewInfo|stdClass $rrow
      * @return Dbl_Result */
     function unsubmit_review_row($rrow, $extra = null) {
         $needsSubmit = 1;

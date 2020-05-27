@@ -344,8 +344,9 @@ class MailSender {
 
     /** @param HotCRPMailPreparation $prep
      * @param HotCRPMailPreparation &$last_prep
+     * @param ?Contact $recipient
      * @return bool */
-    private function process_prep($prep, &$last_prep, $row) {
+    private function process_prep($prep, &$last_prep, $recipient) {
         // Don't combine senders if anything differs. Also, don't combine
         // mails from different papers, unless those mails are to the same
         // person.
@@ -365,7 +366,9 @@ class MailSender {
         }
 
         if (!$prep->fake
-            && ($must_include || !in_array($row->contactId, $last_prep->contactIds))) {
+            && ($must_include
+                || !$recipient
+                || !in_array($recipient->contactId, $last_prep->contactIds))) {
             if ($last_prep !== $prep) {
                 $last_prep->merge($prep);
             }
@@ -512,7 +515,7 @@ class MailSender {
                     }
                     $preperrors[$emsg] = true;
                 }
-            } else if ($this->process_prep($prep, $last_prep, $row)) {
+            } else if ($this->process_prep($prep, $last_prep, $contact)) {
                 if ((!$this->user->privChair || $this->conf->opt("chairHidePasswords"))
                     && !$last_prep->censored_preparation
                     && $rest["censor"] === Mailer::CENSOR_NONE) {
@@ -538,7 +541,7 @@ class MailSender {
             }
         }
 
-        $this->process_prep($fake_prep, $last_prep, (object) ["paperId" => -1]);
+        $this->process_prep($fake_prep, $last_prep, null);
         $this->echo_mailinfo($nrows_done, $nrows_total);
 
         if ($this->mcount === 0) {
