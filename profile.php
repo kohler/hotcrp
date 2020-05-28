@@ -294,7 +294,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
 function parseBulkFile($text, $filename) {
     global $Conf, $Me;
     $text = cleannl(convert_to_utf8($text));
-    $filename = $filename ? "$filename:" : "line ";
+    $filename = $filename ? htmlspecialchars($filename) . ":" : "line ";
     $success = $errors = array();
 
     if (!preg_match('/\A[^\r\n]*(?:,|\A)(?:user|email)(?:[,\r\n]|\z)/', $text)
