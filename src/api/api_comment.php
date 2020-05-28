@@ -3,15 +3,17 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class Comment_API {
-    static private function find_comment($query, $prow) {
+    /** @return ?CommentInfo */
+    static private function find_comment($query, PaperInfo $prow) {
         $cmts = $prow->fetch_comments($query);
         reset($cmts);
         return empty($cmts) ? null : current($cmts);
     }
-    static private function find_response($round, $prow) {
+    /** @return ?CommentInfo */
+    static private function find_response($round, PaperInfo $prow) {
         return $round === false ? null : self::find_comment("(commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=" . (int) $round, $prow);
     }
-    static private function save_success_message($xcrow) {
+    static private function save_success_message(CommentInfo $xcrow) {
         $what = $xcrow->commentId ? "saved" : "deleted";
         if (!$xcrow->is_response()) {
             return Ht::msg("Comment $what.", "confirm");
@@ -25,7 +27,8 @@ class Comment_API {
             }
         }
     }
-    static function run_post(Contact $user, Qrequest $qreq, $prow, $crow) {
+    /** @param ?CommentInfo $crow */
+    static function run_post(Contact $user, Qrequest $qreq, PaperInfo $prow, $crow) {
         // check response
         $round = false;
         if ($qreq->response) {
@@ -40,13 +43,12 @@ class Comment_API {
         }
 
         // create skeleton
-        $xcrow = $crow;
-        if (!$xcrow) {
-            if ($round === false) {
-                $xcrow = new CommentInfo(null, $prow);
-            } else {
-                $xcrow = CommentInfo::make_response_template($round, $prow);
-            }
+        if ($crow) {
+            $xcrow = $crow;
+        } else if ($round === false) {
+            $xcrow = new CommentInfo(null, $prow);
+        } else {
+            $xcrow = CommentInfo::make_response_template($round, $prow);
         }
 
         // request skeleton
@@ -156,7 +158,8 @@ class Comment_API {
         return [$xcrow, $ok, $msg];
     }
 
-    static private function lookup(Qrequest $qreq, $prow) {
+    /** @return array{?CommentInfo,string} */
+    static private function lookup(Qrequest $qreq, PaperInfo $prow) {
         if (ctype_digit($qreq->c)) {
             $crow = self::find_comment("commentId=" . intval($qreq->c), $prow);
             return [$crow, "No such comment."];
@@ -171,7 +174,7 @@ class Comment_API {
         return [self::find_response($round, $prow), "No such response."];
     }
 
-    static function run(Contact $user, Qrequest $qreq, $prow) {
+    static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         // check parameters
         if ((!isset($qreq->text) && !isset($qreq->delete) && $qreq->is_post())
             || ($qreq->c === "new" && !$qreq->is_get())) {

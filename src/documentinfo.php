@@ -967,10 +967,13 @@ class DocumentInfo implements JsonSerializable {
         if ($this->documentType == DTYPE_FINAL
             || ($this->documentType > 0
                 && ($o = $this->conf->option_by_id($this->documentType))
-                && $o->final))
+                && $o->final)) {
             $suffix = "f";
-        if ($this->documentType == DTYPE_FINAL && ($flags & self::L_FINALTITLE))
+        }
+        if ($this->documentType == DTYPE_FINAL
+            && ($flags & self::L_FINALTITLE)) {
             $title = "Final version";
+        }
 
         assert(!($flags & self::L_REQUIREFORMAT) || !!$this->prow);
         $need_run = false;

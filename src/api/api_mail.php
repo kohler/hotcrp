@@ -3,18 +3,20 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class Mail_API {
-    static function mailtext(Contact $user, Qrequest $qreq, $prow) {
+    static function mailtext(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if (!$user->isPC
-            || ($prow && !$user->can_view_paper($prow)))
+            || ($prow && !$user->can_view_paper($prow))) {
             return new JsonResult(403, "Permission error.");
+        }
 
         $recipient = [];
         foreach (["first" => "firstName", "last" => "lastName",
                   "affiliation" => "affiliation", "email" => "email"] as $r => $k) {
-            if (isset($qreq[$k]))
+            if (isset($qreq[$k])) {
                 $recipient[$k] = $qreq[$k];
-            else if (isset($qreq[$r]))
+            } else if (isset($qreq[$r])) {
                 $recipient[$k] = $qreq[$r];
+            }
         }
         $recipient = new Contact($recipient, $user->conf);
 

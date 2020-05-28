@@ -3,6 +3,9 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class RequestReview_API {
+    /** @param Contact $user
+     * @param Qrequest $qreq
+     * @param PaperInfo $prow */
     static function requestreview($user, $qreq, $prow) {
         global $Now;
         $round = null;
@@ -146,6 +149,9 @@ class RequestReview_API {
         return new JsonResult(["ok" => true, "action" => "request", "response" => "Requested an external review from " . Text::user_html($reviewer) . "."]);
     }
 
+    /** @param Contact $user
+     * @param Qrequest $qreq
+     * @param PaperInfo $prow */
     static function requestreview_anonymous($user, $qreq, $prow) {
         if (trim((string) $qreq->firstName) !== ""
             || trim((string) $qreq->lastName) !== "") {
@@ -168,6 +174,9 @@ class RequestReview_API {
         }
     }
 
+    /** @param Contact $user
+     * @param Qrequest $qreq
+     * @param PaperInfo $prow */
     static function denyreview($user, $qreq, $prow) {
         global $Now;
         if (!$user->allow_administer($prow)) {
@@ -215,6 +224,9 @@ class RequestReview_API {
         }
     }
 
+    /** @param Contact $user
+     * @param Qrequest $qreq
+     * @param PaperInfo $prow */
     static function declinereview($user, $qreq, $prow) {
         global $Now;
         $xrrows = $refusals = [];
@@ -327,6 +339,9 @@ class RequestReview_API {
         return new JsonResult(["ok" => true, "action" => "decline", "reason" => $reason]);
     }
 
+    /** @param Contact $user
+     * @param Qrequest $qreq
+     * @param PaperInfo $prow */
     static function retractreview($user, $qreq, $prow) {
         global $Now;
         $xrrows = $xrequests = [];
@@ -405,6 +420,9 @@ class RequestReview_API {
         return new JsonResult(["ok" => true, "action" => "retract", "notified" => $notified]);
     }
 
+    /** @param Contact $user
+     * @param Qrequest $qreq
+     * @param ?PaperInfo $prow */
     static function undeclinereview($user, $qreq, $prow) {
         global $Now;
         $refusals = [];

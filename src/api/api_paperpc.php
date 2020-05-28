@@ -3,7 +3,7 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class PaperPC_API {
-    private static function run(Contact $user, Qrequest $qreq, $prow, $type) {
+    private static function run(Contact $user, Qrequest $qreq, PaperInfo $prow, $type) {
         if ($qreq->method() !== "GET") {
             if (!isset($qreq->$type)) {
                 return new JsonResult(400, ["ok" => false, "error" => "Missing parameter."]);
@@ -35,19 +35,19 @@ class PaperPC_API {
         return $j;
     }
 
-    static function lead_api(Contact $user, Qrequest $qreq, $prow) {
+    static function lead_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         return self::run($user, $qreq, $prow, "lead");
     }
 
-    static function shepherd_api(Contact $user, Qrequest $qreq, $prow) {
+    static function shepherd_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         return self::run($user, $qreq, $prow, "shepherd");
     }
 
-    static function manager_api(Contact $user, Qrequest $qreq, $prow) {
+    static function manager_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         return self::run($user, $qreq, $prow, "manager");
     }
 
-    static function pc_api(Contact $user, Qrequest $qreq, $prow) {
+    static function pc_api(Contact $user, Qrequest $qreq) {
         if (!$user->can_view_pc()) {
             return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
         }

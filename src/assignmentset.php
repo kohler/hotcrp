@@ -25,10 +25,10 @@ class AssignmentItem implements ArrayAccess {
         return $x[$offset] ?? null;
     }
     function offsetSet($offset, $value) {
-        assert(false);
+        throw new Exception("invalid AssignmentItem::offsetSet");
     }
     function offsetUnset($offset) {
-        assert(false);
+        throw new Exception("invalid AssignmentItem::offsetUnset");
     }
     /** @return bool */
     function existed() {

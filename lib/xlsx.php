@@ -74,7 +74,7 @@ class XlsxGenerator {
         foreach ($rows as $row) {
             $rout[] = $this->row_data(count($rout) + 1, $row, 0);
         }
-        for ($c = $numcol = 0; $numcol != count($this->widths); ++$c) {
+        for ($c = $numcol = 0; $numcol !== count($this->widths); ++$c) {
             if (isset($this->widths[$c])) {
                 $w = min($this->widths[$c] + 3, 120);
                 $this->widths[$c] = "<col min=\"" . ($c + 1) . "\" max=\"" . ($c + 1) . "\" bestFit=\"1\" width=\"$w\"/>";

@@ -257,7 +257,7 @@ usort($requests, function ($a, $b) {
     }
 });
 
-if ($requests) {
+if (!empty($requests)) {
     echo '<div class="pcard revcard">',
         '<div class="revcard-head"><h2>Review requests</h2></div>',
         '<div class="revcard-body"><div class="ctable-wide">';

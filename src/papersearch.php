@@ -352,12 +352,12 @@ class SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        assert(false);
+        error_log("invalid SearchTerm::sqlexpr");
         return "false";
     }
 
     function exec(PaperInfo $row, PaperSearch $srch) {
-        assert(false);
+        error_log("invalid SearchTerm::exec");
         return false;
     }
 
@@ -1854,15 +1854,19 @@ class PaperSearch {
         $this->_allow_deleted = $x;
     }
 
+    /** @return string */
     function limit() {
         return $this->_limit_qe->limit;
     }
+    /** @return bool */
     function limit_submitted() {
         return $this->_limit_qe->lflag === Limit_SearchTerm::LFLAG_SUBMITTED;
     }
+    /** @return bool */
     function limit_author() {
         return $this->_limit_qe->limit === "a";
     }
+    /** @return bool */
     function limit_expect_nonsubmitted() {
         return in_array($this->_limit_qe->limit, ["a", "act", "all"])
             && $this->q !== "re:me";

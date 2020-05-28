@@ -3,7 +3,7 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class FormatCheck_API {
-    static function run(Contact $user, $qreq) {
+    static function run(Contact $user, Qrequest $qreq) {
         try {
             $docreq = new DocumentRequest($qreq, $qreq->doc, $user);
         } catch (Exception $e) {

@@ -471,15 +471,6 @@ class PaperTable {
             $c .= '</a>';
         }
         $c .= "</h3>";
-        if ($editfolder && false) {
-            $c .= "<span class=\"pstedit fn\">"
-                . "<a class=\"ui xx need-tooltip js-foldup\" href=\""
-                . $this->conf->selfurl($this->qreq, ["atab" => $what])
-                . "\"" . $foldnumclass . " data-tooltip=\"Edit\">"
-                . "<span class=\"psteditimg\">"
-                . Ht::img("edit48.png", "[Edit]", "editimg")
-                . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
-        }
         if (isset($extra["float"])) {
             $c .= $extra["float"];
         }
@@ -1692,7 +1683,7 @@ class PaperTable {
 
     private function papstripPCConflicts() {
         assert(!$this->editable && $this->prow->paperId);
-        $pcconf = array();
+        $pcconf = [];
         $pcm = $this->conf->pc_members();
         foreach ($this->prow->pc_conflicts() as $id => $cflt) {
             if (Conflict::is_conflicted($cflt->conflictType)) {

@@ -351,10 +351,10 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->by_pid[$offset] ?? null;
     }
     function offsetSet($offset, $value) {
-        assert(false);
+        error_log("invalid PaperInfoSet::offsetSet");
     }
     function offsetUnset($offset) {
-        assert(false);
+        error_log("invalid PaperInfoSet::offsetSet");
     }
 }
 

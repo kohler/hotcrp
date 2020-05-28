@@ -226,7 +226,6 @@ xassert_eqq($Conf->unparse_time_obscure($t0), "1 Sep 2010");
 xassert_eqq($Conf->unparse_time($t0), "1 Sep 2010 12pm EDT");
 
 // timezone tests
-xassert_eqq(true === "obscure", false);
 $t = $Conf->parse_time("29 May 2018 11:00:00 EDT");
 xassert_eqq($t, 1527606000);
 $t = $Conf->parse_time("29 May 2018 03:00:00 AoE");

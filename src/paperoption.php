@@ -629,6 +629,7 @@ class PaperOption implements Abbreviator {
         "intrinsic" => "+IntrinsicPaperOption"
     ];
 
+    /** @param stdClass $args */
     function __construct(Conf $conf, $args) {
         assert(is_object($args));
         if (!is_object($args)) {

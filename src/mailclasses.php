@@ -45,9 +45,9 @@ class MailRecipients {
                 $dec_pcount[(int) $row[0]] = (int) $row[1];
             }
             Dbl::free($result);
-            $dec_tcount = array(0 => 0, 1 => 0, -1 => 0);
+            $dec_tcount = [0, 0, 0];
             foreach ($dec_pcount as $dnum => $dcount) {
-                $dec_tcount[$dnum > 0 ? 1 : ($dnum < 0 ? -1 : 0)] += $dcount;
+                $dec_tcount[$dnum > 0 ? 2 : ($dnum < 0 ? 0 : 1)] += $dcount;
             }
             if ($type === "somedec:no" || $type === "somedec:yes") {
                 $dmaxcount = -1;
@@ -63,15 +63,16 @@ class MailRecipients {
             }
 
             $this->defsel("bydec_group", "Contact authors by decision", self::F_GROUP);
-            foreach ($this->conf->decision_map() as $dnum => $dname)
+            foreach ($this->conf->decision_map() as $dnum => $dname) {
                 if ($dnum) {
                     $k = "dec:$dname";
                     $hide = !get($dec_pcount, $dnum);
                     $this->defsel("dec:$dname", "Contact authors of " . htmlspecialchars($dname) . " papers", $hide ? self::F_HIDE : 0);
                 }
-            $this->defsel("dec:yes", "Contact authors of accept-class papers", $dec_tcount[1] == 0 ? self::F_HIDE : 0);
-            $this->defsel("dec:no", "Contact authors of reject-class papers", $dec_tcount[-1] == 0 ? self::F_HIDE : 0);
-            $this->defsel("dec:none", "Contact authors of undecided papers", $dec_tcount[0] == 0 || ($dec_tcount[1] == 0 && $dec_tcount[-1] == 0) ? self::F_HIDE : 0);
+            }
+            $this->defsel("dec:yes", "Contact authors of accept-class papers", $dec_tcount[2] === 0 ? self::F_HIDE : 0);
+            $this->defsel("dec:no", "Contact authors of reject-class papers", $dec_tcount[0] === 0 ? self::F_HIDE : 0);
+            $this->defsel("dec:none", "Contact authors of undecided papers", $dec_tcount[1] === 0 || ($dec_tcount[2] === 0 && $dec_tcount[0] === 0) ? self::F_HIDE : 0);
             $this->defsel("dec:any", "Contact authors of decided papers", self::F_HIDE);
             $this->defsel("bydec_group_end", null, self::F_GROUP);
 

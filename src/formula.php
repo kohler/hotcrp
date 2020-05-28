@@ -177,8 +177,7 @@ class Fexpr implements JsonSerializable {
     }
 
     function compile(FormulaCompiler $state) {
-        assert("no compile for $this->op" && false);
-        return "null";
+        throw new Exception("no Formula::compile for $this->op");
     }
 
     /** @param ?Fexpr $other_expr */
@@ -929,12 +928,18 @@ class VarUse_Fexpr extends Fexpr {
 }
 
 class FormulaCompiler {
+    /** @var Conf */
     public $conf;
+    /** @var Contact */
     public $user;
+    /** @var Tagger */
     public $tagger;
     private $gvar;
+    /** @var list<string> */
     private $g0stmt;
+    /** @var list<string> */
     public $gstmt;
+    /** @var list<string> */
     public $lstmt;
     public $index_type;
     public $indexed;
@@ -942,10 +947,12 @@ class FormulaCompiler {
     private $_maxlprefix;
     private $_lflags;
     public $indent = 2;
-    public $queryOptions = array();
+    public $queryOptions = [];
     public $tagrefs = null;
     private $_stack;
+    /** @var ?FormulaCompiler */
     public $term_compiler;
+    /** @var ?list<Formula> */
     public $term_list;
     public $term_error = false;
 
@@ -1246,7 +1253,9 @@ class FormulaParse {
 }
 
 class Formula implements Abbreviator, JsonSerializable {
+    /** @var Conf */
     public $conf;
+    /** @var ?Contact */
     public $user;
 
     public $formulaId;
@@ -1261,8 +1270,10 @@ class Formula implements Abbreviator, JsonSerializable {
     private $_depth = 0;
     private $_macro;
     private $_bind;
+    /** @var list<array{int,int,string}> */
     private $_lerrors;
 
+    /** @var ?FormulaParse */
     private $_parse;
     private $_format;
 
@@ -1318,11 +1329,10 @@ class Formula implements Abbreviator, JsonSerializable {
         $this->formulaId = (int) $this->formulaId;
     }
 
-    /** @return ?Formula */
+    /** @param Dbl_Result $result
+     * @return ?Formula */
     static function fetch(Conf $conf, $result) {
-        $formula = $result ? $result->fetch_object("Formula") : null;
-        '@phan-var ?Formula $formula';
-        if ($formula) {
+        if (($formula = $result->fetch_object("Formula"))) {
             $formula->conf = $conf;
             if (!is_int($formula->formulaId)) {
                 $formula->merge();
@@ -1369,6 +1379,7 @@ class Formula implements Abbreviator, JsonSerializable {
         return $this->lerror($expr->pos1, $expr->pos2, $message_html);
     }
 
+    /** @return FormulaParse */
     private function parse(Contact $user) {
         assert(!$this->conf || $this->conf === $user->conf);
         assert($this->_depth === 0);
@@ -1430,6 +1441,7 @@ class Formula implements Abbreviator, JsonSerializable {
         return $fp;
     }
 
+    /** @return bool */
     function check(Contact $user = null) {
         if ($this->_parse === null || ($user && $user !== $this->user)) {
             $this->_parse = $this->parse($user ?? $this->user);
@@ -1438,6 +1450,7 @@ class Formula implements Abbreviator, JsonSerializable {
         return $this->_format !== Fexpr::FERROR;
     }
 
+    /** @return string */
     function error_html() {
         if ($this->check()) {
             return "";
@@ -1982,7 +1995,7 @@ class Formula implements Abbreviator, JsonSerializable {
             } else if ($opx === "**") {
                 $e = new Pow_Fexpr($e, $e2);
             } else {
-                assert(false);
+                throw new Exception("Unknown operator $opx");
             }
             $e->set_landmark($pos1, -strlen($t));
         }
@@ -2262,17 +2275,22 @@ class Formula implements Abbreviator, JsonSerializable {
     }
 
 
+    /** @return bool */
     function is_sum() {
         return $this->check() && $this->_parse->fexpr->op === "sum";
     }
 
+    /** @return bool */
     function indexed() {
         return $this->check() && $this->_parse->indexed;
     }
+
+    /** @return int */
     function index_type() {
         return $this->check() ? $this->_parse->index_type : 0;
     }
 
+    /** @return array<string,string> */
     function jsonSerialize() {
         $j = [];
         if ($this->formulaId) {

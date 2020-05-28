@@ -558,11 +558,9 @@ class CsvGenerator {
             $this->add_row($header);
             $this->selection = $selection;
         } else if (is_associative_array($selection)) {
-            assert($header === null);
             $this->add_row(array_values($selection));
             $this->selection = array_keys($selection);
         } else {
-            assert($header === null);
             $this->add_row($selection);
             $this->selection = $selection;
         }

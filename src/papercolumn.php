@@ -551,7 +551,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
     private $rrow_key;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        if ($conf && isset($cj->user)) {
+        if (isset($cj->user)) {
             $this->contact = $conf->pc_member_by_email($cj->user);
         }
     }
@@ -566,6 +566,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
     const F_CONFLICT = 1;
     const F_LEAD = 2;
     const F_SHEPHERD = 4;
+    /** @return array{?PaperListReviewAnalysis,int} */
     private function analysis(PaperList $pl, PaperInfo $row) {
         $rrow = $row->review_of_user($this->contact);
         if ($rrow && (!$this->not_me || $pl->user->can_view_review_identity($row, $rrow))) {

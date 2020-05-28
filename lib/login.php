@@ -3,7 +3,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class LoginHelper {
-    const DEBUG = 0;
+    /** @var bool */
+    const DEBUG = false;
 
     static function check_http_auth(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
