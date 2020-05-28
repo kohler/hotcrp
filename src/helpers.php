@@ -708,31 +708,20 @@ function unparse_expertise($expertise) {
 
 /** @param array{int,?int} $preference
  * @return string */
-function unparse_preference($preference, $expertise = null) {
+function unparse_preference($preference) {
     assert(is_array($preference)); // XXX remove
-    if (is_object($preference)) {
-        list($preference, $expertise) = [$preference->reviewerPreference ?? null,
-                                         $preference->reviewerExpertise ?? null];
-    } else if (is_array($preference)) {
-        list($preference, $expertise) = $preference;
+    $pv = $preference[0];
+    $ev = $preference[1];
+    if ($pv === null || $pv === false) {
+        $pv = "0";
     }
-    if ($preference === null || $preference === false) {
-        $preference = "0";
-    }
-    return $preference . unparse_expertise($expertise);
+    return $pv . unparse_expertise($ev);
 }
 
 /** @param array{int,?int} $preference
  * @return string */
 function unparse_preference_span($preference, $always = false) {
     assert(is_array($preference)); // XXX remove
-    if (is_object($preference)) {
-        $preference = [$preference->reviewerPreference ?? null,
-                       $preference->reviewerExpertise ?? null,
-                       $preference->topicInterestScore ?? null];
-    } else if (!is_array($preference)) {
-        $preference = [$preference, null, null];
-    }
     $pv = (int) $preference[0];
     $ev = $preference[1];
     $tv = (int) ($preference[2] ?? null);
