@@ -142,7 +142,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
 
         // number of pages
-        $minpages = $maxpages = null;
         $pages = $this->pages = count($bj->pages);
         if (isset($bj->npages) && is_int($bj->npages)) {
             $pages = $this->pages = $bj->npages;
@@ -197,7 +196,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
                     $px[] = $i + 1;
                 }
             }
-            if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0)) {
+            $maxpages = $spec->pagelimit ? $spec->pagelimit[1] : 0;
+            if (count($px) > $maxpages * 0.75) {
                 $this->msg_at("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . self::page_message($px) . ".", self::WARNING);
             }
         }

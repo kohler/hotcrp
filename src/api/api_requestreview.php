@@ -284,9 +284,9 @@ class RequestReview_API {
         // commit refusal to database
         $user->conf->qe_raw("lock tables PaperReview write, PaperReviewRefused write");
 
-        $had_token = true;
+        $had_token = false;
         foreach ($rrows as $rrow) {
-            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, reviewType=?, reviewRound=?, data=?
+            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, refusedReviewType=?, reviewRound=?, data=?
                 on duplicate key update reason=coalesce(values(reason),reason)",
                 $prow->paperId, $rrow->email, $rrow->contactId,
                 $rrow->requestedBy, $rrow->timeRequested,

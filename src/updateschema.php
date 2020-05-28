@@ -210,15 +210,16 @@ function update_schema_transfer_country($conf) {
 function update_schema_review_word_counts($conf) {
     $rf = new ReviewForm($conf->review_form_json(), $conf);
     do {
-        $q = array();
+        $n = 0;
         $result = $conf->ql("select * from PaperReview where reviewWordCount is null limit 32");
         $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
         while (($rrow = $result->fetch_object())) {
             $cleanf("update PaperReview set reviewWordCount=? where paperId=? and reviewId=?", [$rf->word_count($rrow), $rrow->paperId, $rrow->reviewId]);
+            ++$n;
         }
         Dbl::free($result);
         $cleanf(true);
-    } while (count($q) == 32);
+    } while ($n === 32);
 }
 
 function update_schema_bad_comment_timeDisplayed($conf) {

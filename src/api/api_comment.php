@@ -170,7 +170,7 @@ class Comment_API {
         } else {
             return [null, "No such comment."];
         }
-        $round = $prow->conf->resp_round_number($response_name);
+        $round = $prow->conf->resp_round_number($rname);
         return [self::find_response($round, $prow), "No such response."];
     }
 
