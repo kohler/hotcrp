@@ -73,7 +73,8 @@ class ListAction {
     }
 
 
-    /** @param list<int> $pids */
+    /** @param list<int> $pids
+     * @return array{list<string>,list<array{paper?:int,action?:string,title?:string,email?:string,round?:string,review_token?:string}>} */
     static function pcassignments_csv_data(Contact $user, $pids) {
         require_once("assignmentset.php");
         $pcm = $user->conf->pc_members();

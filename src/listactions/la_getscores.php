@@ -20,8 +20,9 @@ class GetScores_ListAction extends ListAction {
             else {
                 $row->ensure_full_reviews();
                 $a = ["paper" => $row->paperId, "title" => $row->title];
-                if ($row->outcome && $user->can_view_decision($row))
+                if ($row->outcome && $user->can_view_decision($row)) {
                     $a["decision"] = $any_decision = $user->conf->decision_name($row->outcome);
+                }
                 foreach ($row->viewable_submitted_reviews_by_display($user) as $rrow) {
                     $view_bound = $user->view_score_bound($row, $rrow);
                     $this_scores = false;

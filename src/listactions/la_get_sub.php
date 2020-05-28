@@ -247,7 +247,8 @@ class GetPcconflicts_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $confset = $user->conf->conflict_types();
         $pcm = $user->conf->pc_members();
-        $texts = array();
+        $csvg = $user->conf->make_csvg("pcconflicts")
+            ->select(["paper", "title", "first", "last", "email", "conflicttype"]);
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
             if ($user->can_view_conflicts($prow)) {
@@ -259,30 +260,27 @@ class GetPcconflicts_ListAction extends ListAction {
                 }
                 if ($m) {
                     ksort($m);
-                    $texts[] = $m;
+                    $csvg->append(array_values($m));
                 }
             }
         }
         $user->set_overrides($old_overrides);
-        return $user->conf->make_csvg("pcconflicts")
-            ->select(["paper", "title", "first", "last", "email", "conflicttype"])
-            ->append($texts);
+        return $csvg;
     }
 }
 
 class GetTopics_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
-        $texts = array();
+        $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1]) as $row) {
             if ($user->can_view_paper($row)) {
-                $out = array();
+                $n = count($texts);
                 foreach ($row->topic_map() as $t) {
-                    $out[] = [$row->paperId, $row->title, $t];
+                    $texts[] = [$row->paperId, $row->title, $t];
                 }
-                if (empty($out)) {
-                    $out[] = [$row->paperId, $row->title, "<none>"];
+                if (count($texts) === $n) {
+                    $texts[] = [$row->paperId, $row->title, "<none>"];
                 }
-                $texts[] = $out;
             }
         }
         return $user->conf->make_csvg("topics")

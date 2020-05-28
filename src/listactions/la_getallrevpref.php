@@ -7,7 +7,7 @@ class GetAllRevpref_ListAction extends ListAction {
         return $user->is_manager();
     }
     function run(Contact $user, $qreq, $ssel) {
-        $texts = array();
+        $texts = [];
         $pcm = $user->conf->pc_members();
         $has_conflict = $has_expertise = $has_topic_score = false;
         foreach ($ssel->paper_set($user, ["allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]) as $prow) {

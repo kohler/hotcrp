@@ -686,7 +686,7 @@ class CsvGenerator {
         return $this;
     }
 
-    /** @param list<string|int>|array<string,string|int> $row
+    /** @param list<string|int|float>|array<string,string|int|float> $row
      * @return $this */
     function add_row($row) {
         if (!empty($row)) {
@@ -732,7 +732,7 @@ class CsvGenerator {
         return $this;
     }
 
-    /** @param list<list<string>>|list<array<string,string>> $rows
+    /** @param list<list<string|int|float>>|list<array<string,int|float|string>> $rows
      * @return $this */
     function append($rows) {
         foreach ($rows as $row) {
@@ -741,7 +741,7 @@ class CsvGenerator {
         return $this;
     }
 
-    /** @param list<int|string>|array<string,int|string> $row
+    /** @param list<int|string>|array<string,int|float|string> $row
      * @return $this
      * @deprecated */
     function add($row) {

@@ -117,7 +117,7 @@ if ((isset($Qreq->pap) && is_array($Qreq->pap))
 if ($getaction == "nameemail" && isset($papersel) && $Viewer->isPC) {
     $result = $Conf->qe_raw("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
     $people = [];
-    while (($row = $result->fetch_object())) {
+    while (($row = $result->fetch_assoc())) {
         $people[] = $row;
     }
     csv_exit($Conf->make_csvg("users")
@@ -141,19 +141,18 @@ if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
     $people = [];
     $has = (object) [];
     foreach ($users as $user) {
-        $row = (object) ["first" => $user->firstName, "last" => $user->lastName,
+        $row = ["first" => $user->firstName, "last" => $user->lastName,
             "email" => $user->email, "phone" => $user->phone,
             "disabled" => !!$user->is_disabled(), "affiliation" => $user->affiliation,
             "collaborators" => rtrim($user->collaborators())];
         if ($user->preferredEmail && $user->preferredEmail !== $user->email) {
-            $row->preferred_email = $user->preferredEmail;
+            $row["preferred_email"] = $user->preferredEmail;
         }
         if ($user->contactTags) {
-            $row->tags = $tagger->unparse($user->contactTags);
+            $row["tags"] = $tagger->unparse($user->contactTags);
         }
         foreach ($user->topic_interest_map() as $t => $i) {
-            $k = "topic$t";
-            $row->$k = $i;
+            $row["topic$t"] = $i;
         }
         $f = array();
         if ($user->defaultWatch & Contact::WATCH_REVIEW) {
@@ -172,7 +171,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
         if (empty($f)) {
             $f[] = "none";
         }
-        $row->follow = join(",", $f);
+        $row["follow"] = join(",", $f);
         if ($user->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
             $r = array();
             if ($user->roles & Contact::ROLE_CHAIR) {
@@ -184,13 +183,13 @@ if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
             if ($user->roles & Contact::ROLE_ADMIN) {
                 $r[] = "sysadmin";
             }
-            $row->roles = join(",", $r);
+            $row["roles"] = join(",", $r);
         } else {
-            $row->roles = "";
+            $row["roles"] = "";
         }
         $people[] = $row;
 
-        foreach ((array) $row as $k => $v) {
+        foreach ($row as $k => $v) {
             if ($v !== null && $v !== false && $v !== "") {
                 $has->$k = true;
             }

@@ -40,11 +40,13 @@ class GetRevpref_ListAction extends ListAction {
         $has_conflict = false;
         $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
-            if ($not_me && !$user->allow_administer($prow))
+            if ($not_me && !$user->allow_administer($prow)) {
                 continue;
+            }
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
-            if ($not_me)
+            if ($not_me) {
                 $item["email"] = $Rev->email;
+            }
             $item["preference"] = unparse_preference($prow->preference($Rev));
             if ($prow->has_conflict($Rev)) {
                 $item["notes"] = "conflict";
@@ -64,8 +66,9 @@ class GetRevpref_ListAction extends ListAction {
         }
         $fields = array_merge(["paper", "title"], $not_me ? ["email"] : [], ["preference"], $has_conflict ? ["notes"] : []);
         $title = "revprefs";
-        if ($not_me)
+        if ($not_me) {
             $title .= "-" . (preg_replace('/@.*|[^\w@.]/', "", $Rev->email) ? : "user");
+        }
         return $user->conf->make_csvg($title, CsvGenerator::FLAG_ITEM_COMMENTS)
             ->select($fields)->append($texts);
     }
