@@ -17,13 +17,16 @@ class PaperTable {
     private $crows;
     /** @var array<int,CommentInfo> */
     private $mycrows;
-    private $can_view_reviews = false;
+    /** @var bool */
+    private $can_view_reviews;
     /** @var ?ReviewInfo */
     public $rrow;
     /** @var ?ReviewInfo */
     public $editrrow;
     /** @var string */
     public $mode;
+    /** @var string */
+    private $first_mode;
     private $prefer_approvable = false;
     private $allreviewslink;
     /** @var ?PaperStatus */
@@ -67,30 +70,26 @@ class PaperTable {
         $this->canUploadFinal = $this->user->allow_edit_final_paper($this->prow);
 
         if (!$prow || !$this->prow->paperId) {
-            $this->mode = "edit";
+            $this->can_view_reviews = false;
+            $this->mode = $this->first_mode = "edit";
             return;
         }
 
+        $this->can_view_reviews = $user->can_view_review($prow, null)
+            || $prow->review_submitted($user);
+
         // enumerate allowed modes
-        $ms = [];
-        if ($user->can_view_review($prow, null)
-            || $prow->review_submitted($user)) {
-            $this->can_view_reviews = $ms["p"] = true;
-        } else if ($prow->timeWithdrawn > 0 && !$this->conf->timeUpdatePaper($prow)) {
-            $ms["p"] = true;
+        if ($prow->has_author($user)
+            && !$user->can_view_review($prow, null)
+            && $this->conf->timeFinalizePaper($prow)) {
+            $this->first_mode = "edit";
+        } else {
+            $this->first_mode = "p";
         }
+
+        $ms = ["p" => true];
         if ($user->can_review($prow, null)) {
             $ms["re"] = true;
-        }
-        if ($user->can_view_paper($prow) && $this->allow_admin) {
-            $ms["p"] = true;
-        }
-        if ($prow->has_author($user)
-            && ($this->conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0)) {
-            $ms["edit"] = true;
-        }
-        if ($user->can_view_paper($prow)) {
-            $ms["p"] = true;
         }
         if ($prow->has_author($user) || $this->allow_admin) {
             $ms["edit"] = true;
@@ -103,7 +102,7 @@ class PaperTable {
         }
         if ($mode === "pe") {
             $mode = "edit";
-        } else if ($mode === "view" || $mode === "r") {
+        } else if ($mode === "view" || $mode === "r" || $mode === "main") {
             $mode = "p";
         } else if ($mode === "rea") {
             $mode = "re";
@@ -112,7 +111,7 @@ class PaperTable {
         if ($mode && isset($ms[$mode])) {
             $this->mode = $mode;
         } else {
-            $this->mode = key($ms);
+            $this->mode = $this->first_mode;
         }
         if (isset($ms["re"]) && isset($this->qreq->reviewId)) {
             $this->mode = "re";
@@ -2328,7 +2327,7 @@ class PaperTable {
         $pid = $this->prow->paperId;
         $canEdit = $this->user->allow_edit_paper($this->prow);
         $canReview = $this->user->can_review($this->prow, null);
-        $canAssign = $this->admin;
+        $canAssign = $this->admin || $this->user->can_request_review($this->prow, null, true);
         $canHome = ($canEdit || $canAssign || $this->mode === "contact");
 
         $t = "";
@@ -2340,7 +2339,7 @@ class PaperTable {
             // home link
             $highlight = ($this->mode !== "assign" && $this->mode !== "edit"
                           && $this->mode !== "contact" && $this->mode !== "re");
-            $t .= $this->_paptabTabLink("Main", $this->prow->hoturl(), "view48.png", $highlight);
+            $t .= $this->_paptabTabLink("Main", $this->prow->hoturl(["m" => $this->first_mode === "p" ? null : "main"]), "view48.png", $highlight);
 
             if ($canEdit) {
                 $t .= $this->_paptabTabLink("Edit", $this->prow->hoturl(["m" => "edit"]), "edit48.png", $this->mode === "edit");
@@ -2351,7 +2350,8 @@ class PaperTable {
             }
 
             if ($canAssign) {
-                $t .= $this->_paptabTabLink("Assign", hoturl("assign", "p=$pid"), "assign48.png", $this->mode === "assign");
+                $assign = $this->allow_admin ? "Assign" : "Invite";
+                $t .= $this->_paptabTabLink($assign, $this->conf->hoturl("assign", "p=$pid"), "assign48.png", $this->mode === "assign");
             }
 
             $t .= "</ul></nav>";
