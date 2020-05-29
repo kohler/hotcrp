@@ -3216,8 +3216,8 @@ handle_ui.on("js-email-populate", function () {
         var idx = this.name.substring(7);
         nn = f["auname" + idx];
         af = f["auaff" + idx];
-    } else if (this.name.substring(0, 16) === "newcontact_email") {
-        nn = f["newcontact_name" + this.name.substring(16)];
+    } else if (this.name.substring(0, 14) === "contacts:email") {
+        nn = f["contacts:name" + this.name.substring(14)];
     }
     if (!fn && !ln && !nn && !af)
         return;
@@ -3384,13 +3384,24 @@ function row_order_change(e, delta, action) {
     }
 
     for (var i = 1; i <= trs.length; ++i) {
-        var $tr = $(trs[i - 1]), td0h = $($tr[0].firstChild).html();
+        var $tr = $(trs[i - 1]),
+            td0h = $($tr[0].firstChild).html(),
+            new_index = null;
         if (td0h !== i + "." && /^(?:\d+|\$).$/.test(td0h))
             $($tr[0].firstChild).html(i + ".");
         $tr.find("input, select, textarea").each(function () {
-            var m = /^(.*?)(?:\d+|\$)$/.exec(this.getAttribute("name"));
-            if (m && m[2] != i)
-                this.setAttribute("name", m[1] + i);
+            var m = /^(.*?)(\d+|\$)$/.exec(this.getAttribute("name"));
+            if (m && new_index === null) {
+                if (m[2] === '$') {
+                    var f = this.closest("form");
+                    new_index = 1;
+                    while (f.elements[m[1] + new_index])
+                        ++new_index;
+                } else
+                    new_index = i;
+            }
+            if (m && m[2] != new_index)
+                this.setAttribute("name", m[1] + new_index);
         });
     }
 }

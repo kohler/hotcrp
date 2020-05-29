@@ -1321,25 +1321,26 @@ class PaperTable {
     }
 
 
-    private function editable_newcontact_row($num, $anum) {
-        if ($num === '$') {
+    private function editable_newcontact_row($anum) {
+        if ($anum === '$') {
             $checked = true;
             $name = $email = "";
         } else {
-            $checked = !$this->useRequest || $this->qreq["newcontact_active_{$num}"];
-            $email = (string) ($this->useRequest ? $this->qreq["newcontact_email_{$num}"] : "");
-            $name = (string) ($this->useRequest ? $this->qreq["newcontact_name_{$num}"] : "");
+            $checked = !$this->useRequest || $this->qreq["contacts:active_$anum"];
+            $email = (string) ($this->useRequest ? $this->qreq["contacts:email_$anum"] : "");
+            $name = (string) ($this->useRequest ? $this->qreq["contacts:name_$anum"] : "");
         }
         $email = $email === "Email" ? "" : $email;
         $name = $name === "Name" ? "" : $name;
 
         return '<div class="' . $this->control_class("contacts:$anum", "checki")
             . '"><span class="checkc">'
-            . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => true, "id" => false])
+            . Ht::checkbox("contacts:active_$anum", 1, $checked, ["data-default-checked" => true, "id" => false])
             . ' </span>'
-            . Ht::entry("newcontact_email_{$num}", $email, ["size" => 30, "placeholder" => "Email", "class" => $this->control_class("contacts:email_$anum", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off"])
+            . Ht::entry("contacts:email_$anum", $email, ["size" => 30, "placeholder" => "Email", "class" => $this->control_class("contacts:email_$anum", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off"])
             . '  '
-            . Ht::entry("newcontact_name_{$num}", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off"])
+            . Ht::entry("contacts:name_$anum", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off"])
+            . Ht::hidden("contacts:isnew_$anum", "1")
             . $this->messages_at("contacts:$anum")
             . $this->messages_at("contacts:name_$anum")
             . $this->messages_at("contacts:email_$anum")
@@ -1372,25 +1373,26 @@ class PaperTable {
 
         $req_cemail = [];
         if ($this->useRequest) {
-            for ($cidx = 1; isset($this->qreq["contact_email_{$cidx}"]); ++$cidx)
-                if ($this->qreq["contact_active_{$cidx}"])
-                    $req_cemail[strtolower($this->qreq["contact_email_{$cidx}"])] = $cidx;
+            for ($cidx = 1; isset($this->qreq["contacts:email_$cidx"]); ++$cidx) {
+                if ($this->qreq["contacts:active_$cidx"])
+                    $req_cemail[strtolower($this->qreq["contacts:email_$cidx"])] = $cidx;
+            }
         }
 
         $cidx = 1;
         foreach ($contacts as $au) {
-            $reqidx = get($req_cemail, strtolower($au->email));
+            $reqidx = $req_cemail[strtolower($au->email)] ?? null;
             if ($au->nonauthor
                 && (strcasecmp($this->user->email, $au->email) != 0 || $this->allow_admin)) {
-                $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
-                    . Ht::checkbox("contact_active_{$cidx}", 1, !$this->useRequest || $reqidx, ["data-default-checked" => true, "id" => false]);
+                $ctl = Ht::hidden("contacts:email_$cidx", $au->email)
+                    . Ht::checkbox("contacts:active_$cidx", 1, !$this->useRequest || $reqidx, ["data-default-checked" => true, "id" => false]);
             } else if ($au->contactId) {
-                $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
-                    . Ht::hidden("contact_active_{$cidx}", 1)
+                $ctl = Ht::hidden("contacts:email_$cidx", $au->email)
+                    . Ht::hidden("contacts:active_$cidx", 1)
                     . Ht::checkbox(null, null, true, ["disabled" => true, "id" => false]);
             } else if ($au->email && validate_email($au->email)) {
-                $ctl = Ht::hidden("contact_email_{$cidx}", $au->email)
-                    . Ht::checkbox("contact_active_{$cidx}", 1, $this->useRequest && $reqidx, ["data-default-checked" => false, "id" => false]);
+                $ctl = Ht::hidden("contacts:email_$cidx", $au->email)
+                    . Ht::checkbox("contacts:active_$cidx", 1, $this->useRequest && $reqidx, ["data-default-checked" => false, "id" => false]);
             } else {
                 continue;
             }
@@ -1410,11 +1412,11 @@ class PaperTable {
             ++$cidx;
         }
         echo '</div><div data-row-template="',
-            htmlspecialchars($this->editable_newcontact_row('$', '$')),
+            htmlspecialchars($this->editable_newcontact_row('$')),
             '">';
         if ($this->useRequest) {
-            for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i) {
-                echo $this->editable_newcontact_row($i, $cidx);
+            while ($this->qreq["contacts:isnew_$cidx"]) {
+                echo $this->editable_newcontact_row($cidx);
                 ++$cidx;
             }
         }
