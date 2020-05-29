@@ -3147,32 +3147,17 @@ class PaperTable {
     }
 
     function fixReviewMode() {
-        if ($this->mode === "re" && $this->rrow
+        if ($this->mode === "re"
+            && $this->rrow
             && !$this->user->can_review($this->prow, $this->rrow, false)
             && ($this->rrow->contactId != $this->user->contactId
                 || $this->rrow->reviewSubmitted)) {
             $this->mode = "p";
         }
-        if ($this->mode === "p" && $this->rrow
+        if ($this->mode === "p"
+            && $this->rrow
             && !$this->user->can_view_review($this->prow, $this->rrow)) {
             $this->rrow = $this->editrrow = null;
-        }
-        if ($this->mode === "p" && !$this->rrow && !$this->editrrow
-            && $this->user->can_review($this->prow, null, false)) {
-            $viewable_rrow = $my_rrow = null;
-            foreach ($this->all_rrows as $rrow) {
-                if ($this->user->can_view_review($this->prow, $rrow)) {
-                    $viewable_rrow = $rrow;
-                }
-                if ($rrow->contactId == $this->user->contactId
-                    || (!$my_rrow && $this->user->is_my_review($rrow))) {
-                    $my_rrow = $rrow;
-                }
-            }
-            if (!$viewable_rrow) {
-                $this->mode = "re";
-                $this->editrrow = $my_rrow;
-            }
         }
         if ($this->mode === "p"
             && $this->prow->paperId
