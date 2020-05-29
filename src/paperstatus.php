@@ -1089,7 +1089,11 @@ class PaperStatus extends MessageSet {
         }
         if ($c) {
             $c->disabled = !!$this->disable_users;
-            $flags = $c->contact ?? false ? 0 : Contact::SAVE_IMPORT;
+            if (($c->is_new ?? false) || ($c->contact ?? false)) {
+                $flags = 0;
+            } else {
+                $flags = Contact::SAVE_IMPORT;
+            }
             $u = Contact::create($this->conf, $this->user, $c, $flags);
             if ($u) {
                 if ($u->password_unset()
