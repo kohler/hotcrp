@@ -296,18 +296,18 @@ class PCConflicts_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
     /** @return array<int,int> */
-    private function paper_value_map(PaperInfo $prow) {
+    static private function paper_value_map(PaperInfo $prow) {
         return array_intersect_key($prow->conflict_types(), $prow->conf->pc_members());
     }
     /** @return array<int,?string> */
-    private function value_map(PaperValue $ov) {
+    static private function value_map(PaperValue $ov) {
         return array_combine($ov->value_array(), $ov->data_array());
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $pcm = $this->conf->pc_members();
         $confset = $this->conf->conflict_types();
         $pcc = [];
-        foreach ($this->value_map($ov) as $k => $v) {
+        foreach (self::value_map($ov) as $k => $v) {
             if (($pc = $pcm[$k] ?? null) && (int) $v !== 0) {
                 $pcc[$pc->email] = $confset->unparse_json((int) $v);
             }
@@ -315,14 +315,14 @@ class PCConflicts_PaperOption extends PaperOption {
         return $pcc;
     }
     function value_load_intrinsic(PaperValue $ov) {
-        $vm = $this->paper_value_map($ov->prow);
+        $vm = self::paper_value_map($ov->prow);
         /** @phan-suppress-next-line PhanTypeMismatchArgument */
         $ov->set_value_data(array_keys($vm), array_values($vm));
     }
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->conf->setting("sub_pcconf")
             && ($ov->prow->outcome <= 0 || !$user->can_view_decision($ov->prow))) {
-            $vm = $this->value_map($ov);
+            $vm = self::value_map($ov);
             $pcs = [];
             foreach ($this->conf->full_pc_members() as $p) {
                 if (($vm[$p->contactId] ?? 0) === 0 /* not MAXUNCONFLICTED */
@@ -345,7 +345,7 @@ class PCConflicts_PaperOption extends PaperOption {
         } else {
             $mask = (CONFLICT_AUTHOR - 1) & ~1;
         }
-        foreach ($this->value_map($ov) as $k => $v) {
+        foreach (self::value_map($ov) as $k => $v) {
             $ps->update_conflict_value($pcm[$k]->email, $mask, ((int) $v) & $mask);
         }
         return true;
@@ -354,7 +354,7 @@ class PCConflicts_PaperOption extends PaperOption {
         $vm[$k] = (($vm[$k] ?? 0) & ~(CONFLICT_AUTHOR - 1)) | $v;
     }
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
-        $vm = $this->paper_value_map($prow);
+        $vm = self::paper_value_map($prow);
         foreach ($prow->conf->pc_members() as $cid => $pc) {
             if (isset($qreq["has_pcc$cid"]) || isset($qreq["pcc$cid"])) {
                 $ct = $qreq["pcc$cid"] ?? "0";
@@ -384,7 +384,7 @@ class PCConflicts_PaperOption extends PaperOption {
             return PaperValue::make_estop($prow, $this, "Format error.");
         }
 
-        $vm = $this->paper_value_map($prow);
+        $vm = self::paper_value_map($prow);
         foreach ($vm as $k => &$v) {
             $v &= ~(CONFLICT_AUTHOR - 1);
         }

@@ -60,14 +60,16 @@ class Text {
 
     static function analyze_von($lastName) {
         // see also split_name; NB intentionally case sensitive
-        if (preg_match('@\A((?:(?:v[ao]n|d[aeiu]|de[nr]|l[ae])\s+)+)(.*)\z@s', $lastName, $m))
+        if (preg_match('/\A((?:(?:v[ao]n|d[aeiu]|de[nr]|l[ae])\s+)+)(.*)\z/s', $lastName, $m)) {
             return array(rtrim($m[1]), $m[2]);
-        else
+        } else {
             return null;
+        }
     }
 
-    static function analyze_name_args($args, $ret = null) {
-        $ret = $ret ? : new NameInfo;
+    /** @return NameInfo */
+    static function analyze_name_args($args) {
+        $ret = new NameInfo;
         // collect arguments
         $delta = 0;
         if (count($args) == 1) {
@@ -107,8 +109,9 @@ class Text {
                         && isset($v->$k)
                         && (isset(self::$boolkeys[$mk])
                             ? is_bool($v->$k)
-                            : is_string($v->$k)))
+                            : is_string($v->$k))) {
                         $ret->$mk = $v->$k;
+                    }
                 }
             }
         }
@@ -141,12 +144,13 @@ class Text {
         return $ret;
     }
 
+    /** @return NameInfo */
     static function analyze_name(/* ... */) {
         return self::analyze_name_args(func_get_args());
     }
 
+    /** @return string */
     static function user_text(/* ... */) {
-        // was contactText
         $r = self::analyze_name_args(func_get_args());
         if ($r->orderedName !== "" && $r->email !== "") {
             return "$r->orderedName <$r->email>";
@@ -155,8 +159,8 @@ class Text {
         }
     }
 
+    /** @return string */
     static function user_html(/* ... */) {
-        // was contactHtml
         $r = self::analyze_name_args(func_get_args());
         $e = htmlspecialchars($r->email);
         if ($e !== "" && strpos($e, "@") !== false) {
@@ -171,6 +175,7 @@ class Text {
         }
     }
 
+    /** @return string */
     static function user_html_nolink(/* ... */) {
         $r = self::analyze_name_args(func_get_args());
         if (($e = $r->email) !== "") {
@@ -183,8 +188,8 @@ class Text {
         }
     }
 
+    /** @return string */
     static function name_text(/* ... */) {
-        // was contactNameText
         $r = self::analyze_name_args(func_get_args());
         if ($r->nameAmbiguous && $r->orderedName !== "" && $r->email !== "") {
             return "$r->orderedName <$r->email>";
@@ -193,14 +198,14 @@ class Text {
         }
     }
 
+    /** @return string */
     static function name_html(/* ... */) {
-        // was contactNameHtml
         $x = call_user_func_array("Text::name_text", func_get_args());
         return htmlspecialchars($x);
     }
 
+    /** @return string */
     static function user_email_to(/* ... */) {
-        // was contactEmailTo
         $r = self::analyze_name_args(func_get_args());
         if (($e = $r->email) === "") {
             $e = "none";
@@ -215,6 +220,7 @@ class Text {
         }
     }
 
+    /** @return string */
     static function initial($s) {
         $x = "";
         if ((string) $s !== "") {
@@ -231,6 +237,7 @@ class Text {
         return $x;
     }
 
+    /** @return string */
     static function abbrevname_text(/* ... */) {
         $r = self::analyze_name_args(func_get_args());
         $u = "";
@@ -247,19 +254,20 @@ class Text {
         return $u . $t;
     }
 
+    /** @return string */
     static function abbrevname_html(/* ... */) {
-        // was abbreviateNameHtml
         $x = call_user_func_array("Text::abbrevname_text", func_get_args());
         return htmlspecialchars($x);
     }
 
     const SUFFIX_REGEX = 'Jr\.?|Sr\.?|Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Junior|Senior|Esquire|I+|IV|V|VI*|IX|XI*|2n?d|3r?d|[4-9]th|1\dth';
 
-    /** @param string $name */
+    /** @param string $name
+     * @return array{string,string,?string} */
     static function split_name($name, $with_email = false) {
         $name = simplify_whitespace($name);
 
-        $ret = ["", ""];
+        $ret = ["", "", null];
         if ($with_email) {
             $email = "";
             if ($name === "") {
@@ -285,12 +293,12 @@ class Text {
         // parenthetical comment on name attaches to first or last whole
         $paren = "";
         if ($name !== "" && $name[strlen($name) - 1] === ")"
-            && preg_match('{\A(.*?)(\s*\(.*?\))\z}', $name, $m)) {
+            && preg_match('/\A(.*?)(\s*\(.*?\))\z/', $name, $m)) {
             $name = $m[1];
             $paren = $m[2];
         }
 
-        preg_match('{\A(.*?)((?:[, ]+(?:' . self::SUFFIX_REGEX . '))*)\z}i', $name, $m);
+        preg_match('/\A(.*?)((?:[, ]+(?:' . self::SUFFIX_REGEX . '))*)\z/i', $name, $m);
         if (($comma = strrpos($m[1], ",")) !== false) {
             $ret[0] = ltrim(substr($m[1], $comma + 1));
             $ret[1] = rtrim(substr($m[1], 0, $comma)) . $m[2];
@@ -302,12 +310,12 @@ class Text {
             $ret[1] = substr($m[1], $space + 1) . $m[2] . $paren;
             // see also split_von
             if (strpos($ret[0], " ") !== false
-                && preg_match('{\A(\S.*?)((?: (?:v[ao]n|d[aeiu]|de[nr]|l[ae]))+)\z}i', $ret[0], $m)) {
+                && preg_match('/\A(\S.*?)((?: (?:v[ao]n|d[aeiu]|de[nr]|l[ae]))+)\z/i', $ret[0], $m)) {
                 list($ret[0], $ret[1]) = [$m[1], ltrim($m[2]) . " " . $ret[1]];
             }
         } else if ($m[1] !== ""
                    && $m[2] !== ""
-                   && preg_match('{\A((?: Junior| Senior| Esquire)*)(.*)\z}i', $m[2], $mm)) {
+                   && preg_match('/\A((?: Junior| Senior| Esquire)*)(.*)\z/i', $m[2], $mm)) {
             $ret[0] = $m[1];
             $ret[1] = ltrim($m[2]) . $paren;
         } else {
@@ -317,6 +325,8 @@ class Text {
         return $ret;
     }
 
+    /** @param string $first
+     * @return array{string,string} */
     static function split_first_prefix($first) {
         if (preg_match('/\A((?:(?:dr\.?|mr\.?|mrs\.?|ms\.?|prof\.?)\s+)+)(\S.*)\z/i', $first, $m)) {
             return [$m[2], rtrim($m[1])];
@@ -325,6 +335,8 @@ class Text {
         }
     }
 
+    /** @param string $first
+     * @return array{string,string} */
     static function split_first_middle($first) {
         if (preg_match('/\A((?:\pL\.\s*)*\pL[^\s.]\S*)\s+(.*)\z/', $first, $m)
             || preg_match('/\A(\pL[^\s.]\S*)\s*(.*)\z/', $first, $m)) {
@@ -334,9 +346,11 @@ class Text {
         }
     }
 
+    /** @param string $last
+     * @return array{string,string} */
     static function split_last_suffix($last) {
-        if (preg_match('{\A(.*?)[\s,]+(' . self::SUFFIX_REGEX . ')\z}i', $last, $m)) {
-            if (preg_match('{\A(?:jr|sr|esq)\z}i', $m[2])) {
+        if (preg_match('/\A(.*?)[\s,]+(' . self::SUFFIX_REGEX . ')\z/i', $last, $m)) {
+            if (preg_match('/\A(?:jr|sr|esq)\z/i', $m[2])) {
                 $m[2] .= ".";
             }
             return [$m[1], $m[2]];
@@ -345,11 +359,13 @@ class Text {
         }
     }
 
+    /** @return string */
     static function unaccented_name(/* ... */) {
         $x = self::analyze_name_args(func_get_args());
         return $x->unaccentedName;
     }
 
+    /** @return string */
     static function word_regex($word) {
         if ($word === "") {
             return "";
@@ -366,12 +382,13 @@ class Text {
     const UTF8_FINAL_NONLETTERDIGIT = '(?:\z|(?!\pL|\pN)(?=\PM))';
     const UTF8_FINAL_NONLETTER = '(?:\z|(?!\pL)(?=\PM))';
 
+    /** @return string */
     static function utf8_word_regex($word) {
         if ($word === "") {
             return "";
         }
-        list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
-                               preg_match('{(?:\pL|\pN)\z}u', $word));
+        list($aw, $zw) = array(preg_match('/\A(?:\pL|\pN)/u', $word),
+                               preg_match('/(?:\pL|\pN)\z/u', $word));
         // Maybe `$word` is not valid UTF-8. Avoid warnings later.
         if (!$aw && !$zw && !is_valid_utf8($word)) {
             return self::utf8_word_regex(convert_to_utf8($word));
@@ -504,7 +521,7 @@ class Text {
         if ($clean_initial_nonletter) {
             for ($i = 1; $i < count($s); $i += 2) {
                 if ($s[$i] !== ""
-                    && preg_match('{\A((?!\pL|\pN)\X)(.*)\z}us', $s[$i], $m)) {
+                    && preg_match('/\A((?!\pL|\pN)\X)(.*)\z/us', $s[$i], $m)) {
                     $s[$i - 1] .= $m[1];
                     $s[$i] = $m[2];
                 }
@@ -577,13 +594,13 @@ class Text {
 
     static function html_to_text($x) {
         if (strpos($x, "<") !== false) {
-            $x = preg_replace('{\s*<\s*p\s*>\s*(.*?)\s*<\s*/\s*p\s*>}si', "\n\n\$1\n\n", $x);
-            $x = preg_replace('{\s*<\s*br\s*/?\s*>\s*(?:<\s*/\s*br\s*>\s*)?}si', "\n", $x);
-            $x = preg_replace('{\s*<\s*li\s*>}si', "\n* ", $x);
-            $x = preg_replace('{<\s*(b|strong)\s*>\s*(.*?)\s*<\s*/\s*\1\s*>}si', '**$2**', $x);
-            $x = preg_replace('{<\s*(i|em)\s*>\s*(.*?)\s*<\s*/\s*\1\s*>}si', '*$2*', $x);
-            $x = preg_replace('{<(?:[^"\'>]|".*?"|\'.*?\')*>}s', "", $x);
-            $x = preg_replace('{\n\n\n+}s', "\n\n", $x);
+            $x = preg_replace('/\s*<\s*p\s*>\s*(.*?)\s*<\s*\/\s*p\s*>/si', "\n\n\$1\n\n", $x);
+            $x = preg_replace('/\s*<\s*br\s*\/?\s*>\s*(?:<\s*\/\s*br\s*>\s*)?/si', "\n", $x);
+            $x = preg_replace('/\s*<\s*li\s*>/si', "\n* ", $x);
+            $x = preg_replace('/<\s*(b|strong)\s*>\s*(.*?)\s*<\s*\/\s*\1\s*>/si', '**$2**', $x);
+            $x = preg_replace('/<\s*(i|em)\s*>\s*(.*?)\s*<\s*\/\s*\1\s*>/si', '*$2*', $x);
+            $x = preg_replace('/<(?:[^"\'>]|".*?"|\'.*?\')*>/s', "", $x);
+            $x = preg_replace('/\n\n\n+/s', "\n\n", $x);
         }
         return html_entity_decode(trim($x), ENT_QUOTES, "UTF-8");
     }

@@ -383,7 +383,8 @@ class LogRowGenerator {
     }
 
     /** @param LogRow $row
-     * @param 'contactId'|'destContactId'|'trueContactId' $key */
+     * @param 'contactId'|'destContactId'|'trueContactId' $key
+     * @return list<Contact> */
     function users_for($row, $key) {
         if (!empty($this->need_users)) {
             $this->_make_users();
@@ -677,6 +678,7 @@ function searchbar(LogRowGenerator $lrg, $page) {
 // render rows
 $user_html = [];
 
+/** @param Contact $user */
 function set_user_html($user, $qreq_n) {
     global $Conf, $Me, $user_html;
     if (($pc = $Conf->pc_member_by_id($user->contactId))) {
@@ -712,6 +714,7 @@ function set_user_html($user, $qreq_n) {
     return $t;
 }
 
+/** @param list<Contact> $users */
 function render_users($users, $via) {
     global $Conf, $Qreq, $Me, $user_html;
     if (empty($users) && $via < 0) {

@@ -1111,8 +1111,12 @@ class PaperOption implements Abbreviator {
             return PaperValue::make_estop($prow, $this, "Expected string.");
         }
     }
+    /** @param PaperValue $ov
+     * @param PaperValue $reqov */
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
     }
+    /** @param PaperValue $ov
+     * @param PaperValue $reqov */
     function echo_web_edit_text(PaperTable $pt, $ov, $reqov, $extra = []) {
         $default_value = null;
         if ($ov->data() !== $reqov->data()

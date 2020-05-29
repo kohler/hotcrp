@@ -921,8 +921,11 @@ class PaperTable {
                 }
                 $this->entryMatches += $nm1 + $nm2 + $nm3;
                 $t = trim($t);
-                if ($au->email !== "" && $au->contactId
-                    && $viewAs !== null && $viewAs->email !== $au->email && $viewAs->privChair) {
+                if ($au->email !== ""
+                    && $au->contactId
+                    && $viewAs !== null
+                    && $viewAs->email !== $au->email
+                    && $viewAs->privChair) {
                     $t .= " <a href=\""
                         . $this->conf->selfurl($this->qreq, ["actas" => $au->email])
                         . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";

@@ -1543,7 +1543,7 @@ class AssignmentSet {
                 } else if ($prow->has_conflict($contact)) {
                     $err = Text::user_html_nolink($contact) . " has a conflict with #{$prow->paperId}.";
                 } else {
-                    $err = Text::user_html_nolink($contact) . " cannot be assigned to #${$prow->paperId}.";
+                    $err = Text::user_html_nolink($contact) . " cannot be assigned to #{$prow->paperId}.";
                 }
             }
             if ($err !== true) {

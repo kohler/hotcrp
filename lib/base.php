@@ -5,20 +5,29 @@
 
 // type helpers
 
-/** @param mixed $x */
+/** @param mixed $x
+ * @return bool */
 function is_number($x) {
     return is_int($x) || is_float($x);
 }
 
-/** @param mixed $x */
+/** @param mixed $x
+ * @return bool */
 function is_associative_array($x) {
-    // this method is suprisingly fast
+    // this method is surprisingly fast
     return is_array($x) && array_values($x) !== $x;
 }
 
-/** @param mixed $x */
+/** @param mixed $x
+ * @return bool */
+function is_list($x) {
+    return is_array($x) && array_values($x) === $x;
+}
+
+/** @param mixed $x
+ * @return bool */
 function is_int_list($x) {
-    if (is_array($x) && !is_associative_array($x)) {
+    if (is_array($x) && array_values($x) === $x) {
         foreach ($x as $i) {
             if (!is_int($i))
                 return false;

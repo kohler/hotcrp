@@ -4,7 +4,7 @@
 
 define("HOTCRP_VERSION", "2.102");
 
-// All review types must be 1 digit
+// All positive review types must be 1 digit
 define("REVIEW_META", 5);
 define("REVIEW_PRIMARY", 4);
 define("REVIEW_SECONDARY", 3);
