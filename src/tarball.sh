@@ -64,6 +64,7 @@ log.php
 mail.php
 manualassign.php
 mergeaccounts.php
+newaccount.php
 offline.php
 paper.php
 profile.php
@@ -73,6 +74,8 @@ reviewprefs.php
 scorechart.php
 search.php
 settings.php
+signin.php
+signout.php
 users.php
 
 batch/.htaccess
