@@ -1059,7 +1059,7 @@ class PaperStatus extends MessageSet {
         foreach ($pj->bad_contacts as $reg) {
             $key = "contacts";
             if (isset($reg->index) && is_int($reg->index)) {
-                $key = (isset($reg->is_new) && $reg->is_new === true ? "newcontact_email_" : "contact_") . $reg->index;
+                $key = "contacts:email_" . $reg->index;
             }
             if (!isset($reg->email)) {
                 $this->error_at($key, $this->_("Contact %s has no associated email.", Text::user_html($reg)));
@@ -1105,7 +1105,7 @@ class PaperStatus extends MessageSet {
             } else if (!($flags & Contact::SAVE_IMPORT)) {
                 $key = "contacts";
                 if (isset($c->index) && is_int($c->index)) {
-                    $key = (isset($c->is_new) && $c->is_new === true ? "newcontact_" : "contact_") . $c->index;
+                    $key = "contacts:" . $c->index;
                 }
                 $this->error_at($key, $this->_("Could not create an account for contact %s.", Text::user_html($c)));
                 $this->error_at("contacts", false);

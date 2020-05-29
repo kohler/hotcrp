@@ -30,23 +30,46 @@ class PaperSaver {
     function apply($pj, Qrequest $qreq, PaperInfo $prow = null, Contact $user, $action) {
     }
 
+    /** @param Qrequest $qreq */
+    static function translate_contact_qreq($qreq) {
+        $n = 1;
+        while (isset($qreq["contact_email_$n"])) {
+            $qreq["contacts:email_$n"] = $qreq["contact_email_$n"];
+            $qreq["contacts:active_$n"] = $qreq["contact_active_$n"];
+            ++$n;
+        }
+        $newi = 1;
+        while (isset($qreq["newcontact_email_$newi"])) {
+            $qreq["contacts:email_$n"] = $qreq["newcontact_email_$newi"];
+            $qreq["contacts:active_$n"] = $qreq["newcontact_active_$newi"];
+            $qreq["contacts:name_$n"] = $qreq["newcontact_name_$newi"];
+            $qreq["contacts:isnew_$n"] = "1";
+            ++$newi;
+            ++$n;
+        }
+    }
+
+    /** @param Qrequest $qreq */
     static function replace_contacts($pj, $qreq) {
         $pj->contacts = [];
-        for ($i = 1; isset($qreq["contact_email_{$i}"]); ++$i) {
-            if ($qreq["contact_active_{$i}"]) {
-                $pj->contacts[] = (object) ["email" => $qreq["contact_email_{$i}"], "index" => $i];
-            }
+        if (!isset($qreq["contacts:email_1"])) {
+            self::translate_contact_qreq($qreq);
         }
-        for ($i = 1; isset($qreq["newcontact_email_{$i}"]); ++$i) {
-            $email = trim((string) $qreq["newcontact_email_{$i}"]);
-            if ($qreq["newcontact_active_{$i}"]
-                && $email !== ""
-                && $email !== "Email") {
-                $name = simplify_whitespace((string) $qreq["newcontact_name_{$i}"]);
-                if ($name === "Name") {
-                    $name = "";
-                }
-                $pj->contacts[] = (object) ["email" => $email, "name" => $name, "index" => $i, "is_new" => true];
+        for ($n = 1; isset($qreq["contacts:email_$n"]); ++$n) {
+            $email = trim($qreq["contacts:email_$n"]);
+            if (strcasecmp($email, "Email") === 0) {
+                $email = "";
+            }
+            $name = simplify_whitespace((string) $qreq["contacts:name_$n"]);
+            if (strcasecmp($name, "Name") === 0) {
+                $name = "";
+            }
+            if ($qreq["contacts:active_$n"] && $email !== "") {
+                $pj->contacts[] = (object) [
+                    "email" => $email,
+                    "name" => $name === "" ? null : $name,
+                    "is_new" => !!$qreq["contacts:isnew_$n"], "index" => $n
+                ];
             }
         }
     }

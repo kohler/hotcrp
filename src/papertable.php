@@ -1321,7 +1321,7 @@ class PaperTable {
     }
 
 
-    private function editable_newcontact_row($num) {
+    private function editable_newcontact_row($num, $anum) {
         if ($num === '$') {
             $checked = true;
             $name = $email = "";
@@ -1333,16 +1333,16 @@ class PaperTable {
         $email = $email === "Email" ? "" : $email;
         $name = $name === "Name" ? "" : $name;
 
-        return '<div class="' . $this->control_class("newcontact_{$num}", "checki")
+        return '<div class="' . $this->control_class("contacts:$anum", "checki")
             . '"><span class="checkc">'
             . Ht::checkbox("newcontact_active_{$num}", 1, $checked, ["data-default-checked" => true, "id" => false])
             . ' </span>'
-            . Ht::entry("newcontact_email_{$num}", $email, ["size" => 30, "placeholder" => "Email", "class" => $this->control_class("newcontact_email_{$num}", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off"])
+            . Ht::entry("newcontact_email_{$num}", $email, ["size" => 30, "placeholder" => "Email", "class" => $this->control_class("contacts:email_$anum", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off"])
             . '  '
             . Ht::entry("newcontact_name_{$num}", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off"])
-            . $this->messages_at("newcontact_{$num}")
-            . $this->messages_at("newcontact_name_{$num}")
-            . $this->messages_at("newcontact_email_{$num}")
+            . $this->messages_at("contacts:$anum")
+            . $this->messages_at("contacts:name_$anum")
+            . $this->messages_at("contacts:email_$anum")
             . '</div>';
     }
 
@@ -1395,7 +1395,7 @@ class PaperTable {
                 continue;
             }
             echo '<div class="',
-                $reqidx ? $this->control_class("contact_{$reqidx}", "checki") : "checki",
+                $reqidx ? $this->control_class("contacts:$reqidx", "checki") : "checki",
                 '"><label><span class="checkc">', $ctl, ' </span>',
                 Text::user_html_nolink($au);
             if ($au->nonauthor) {
@@ -1406,15 +1406,17 @@ class PaperTable {
                 && $au->contactId != $this->user->contactId) {
                 echo '&nbsp;', actas_link($au);
             }
-            echo '</label>', $this->messages_at("contact_{$cidx}"), '</div>';
+            echo '</label>', $this->messages_at("contacts:$cidx"), '</div>';
             ++$cidx;
         }
         echo '</div><div data-row-template="',
-            htmlspecialchars($this->editable_newcontact_row('$')),
+            htmlspecialchars($this->editable_newcontact_row('$', '$')),
             '">';
         if ($this->useRequest) {
-            for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i)
-                echo $this->editable_newcontact_row($i);
+            for ($i = 1; isset($this->qreq["newcontact_email_{$i}"]); ++$i) {
+                echo $this->editable_newcontact_row($i, $cidx);
+                ++$cidx;
+            }
         }
         echo '</div><div class="ug">',
             Ht::button("Add contact", ["class" => "ui row-order-ui addrow"]),
