@@ -37,7 +37,6 @@ class Fexpr implements JsonSerializable {
     public $op = "";
     /** @var list<Fexpr> */
     public $args = [];
-    public $text;
     public $_format = false;
     public $pos1;
     public $pos2;
@@ -859,6 +858,7 @@ class Score_Fexpr extends Fexpr {
 }
 
 class Let_Fexpr extends Fexpr {
+    /** @var VarDef_Fexpr */
     private $vardef;
     function __construct(VarDef_Fexpr $vardef, Fexpr $val, Fexpr $body) {
         parent::__construct("let", [$val, $body]);
@@ -907,6 +907,7 @@ class VarDef_Fexpr extends Fexpr {
 }
 
 class VarUse_Fexpr extends Fexpr {
+    /** @var VarDef_Fexpr */
     private $vardef;
     function __construct(VarDef_Fexpr $vardef) {
         parent::__construct("varuse");
