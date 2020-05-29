@@ -26,6 +26,7 @@ class PaperTable {
     public $mode;
     private $prefer_approvable = false;
     private $allreviewslink;
+    /** @var ?PaperStatus */
     private $edit_status;
 
     public $editable;
@@ -34,6 +35,7 @@ class PaperTable {
 
     private $qreq;
     private $useRequest;
+    /** @var ?ReviewValues */
     private $review_values;
     private $npapstrip = 0;
     private $allFolded;
@@ -288,6 +290,7 @@ class PaperTable {
         $this->review_values = $rvalues;
     }
 
+    /** @return bool */
     function can_view_reviews() {
         return $this->can_view_reviews;
     }

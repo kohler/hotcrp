@@ -31,23 +31,26 @@ class Review_AssignmentParser extends AssignmentParser {
         self::load_review_state($state);
         Conflict_AssignmentParser::load_conflict_state($state);
     }
+    /** @param CsvRow $req */
     private function make_rdata($req, AssignmentState $state) {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
+    /** @param CsvRow $req */
     function user_universe($req, AssignmentState $state) {
         if ($this->rtype > REVIEW_EXTERNAL) {
             return "pc";
         } else if ($this->rtype == 0
                    || (($rdata = $this->make_rdata($req, $state))
-                       && !$rdata->can_create_review())) {
+                       && !$rdata->might_create_review())) {
             return "reviewers";
         } else {
             return "any";
         }
     }
+    /** @param CsvRow $req */
     private function make_filter($fkey, $key, $value, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
-        if ($rdata->can_create_review()) {
+        if ($rdata->might_create_review()) {
             return null;
         }
         return $state->make_filter($fkey, [
@@ -96,7 +99,7 @@ class Review_AssignmentParser extends AssignmentParser {
         // Conflict allowed if we're not going to assign a new review
         if ($this->rtype == 0
             || $prow->has_reviewer($contact)
-            || !$rdata->can_create_review()) {
+            || !$rdata->might_create_review()) {
             return true;
         }
         // Check whether review assignments are acceptable
@@ -127,7 +130,7 @@ class Review_AssignmentParser extends AssignmentParser {
             $state->add($rev);
             return true;
         } else if (!$rdata->newtype
-                   || ($rev === null && !$rdata->can_create_review())) {
+                   || ($rev === null && !$rdata->might_create_review())) {
             return true;
         }
 

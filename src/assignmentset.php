@@ -509,6 +509,7 @@ class AssignerContacts {
         return $this->store($c);
     }
     /** @param string $email
+     * @param ?CsvRow $req
      * @return ?Contact */
     function user_by_email($email, $create = false, $req = null) {
         if (!$email) {
@@ -694,6 +695,8 @@ class AssignmentParser {
     }
     // Return a descriptor of the set of papers relevant for this action.
     // Returns `""` or `"none"`.
+    /** @param CsvRow $req
+     * @return ''|'none' */
     function paper_universe($req, AssignmentState $state) {
         return "";
     }
@@ -702,6 +705,8 @@ class AssignmentParser {
     //
     // `expand_papers` is called for *all* actions before any actions are
     // processed further.
+    /** @param CsvRow $req
+     * @return string */
     function expand_papers($req, AssignmentState $state) {
         return (string) $req["paper"];
     }
@@ -727,6 +732,8 @@ class AssignmentParser {
     }
     // Return a descriptor of the set of users relevant for this action.
     // Returns `"none"`, `"pc"`, `"reviewers"`, `"pc+reviewers"`, or `"any"`.
+    /** @param CsvRow $req
+     * @return 'none'|'pc'|'reviewers'|'pc+reviewers'|'any' */
     function user_universe($req, AssignmentState $state) {
         return "pc";
     }
@@ -738,22 +745,26 @@ class AssignmentParser {
     // The assignment logic calls `paper_filter` when an action is applied to
     // an unusually large number of papers, such as removing all reviews by a
     // specific user.
+    /** @param CsvRow $req */
     function paper_filter($contact, $req, AssignmentState $state) {
         return false;
     }
     // Return the list of users corresponding to user `"any"` for this request,
     // or false if `"any"` is an invalid user.
+    /** @param CsvRow $req */
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         return false;
     }
     // Return the list of users relevant for this request, whose user is not
     // specified, or false if an explicit user is required.
+    /** @param CsvRow $req */
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return false;
     }
     // Return the list of users corresponding to `$user`, which is an anonymous
     // user (either `anonymous\d*` or `anonymous-new`), or false if a
     // non-anonymous user is required.
+    /** @param CsvRow $req */
     function expand_anonymous_user(PaperInfo $prow, $req, $user, AssignmentState $state) {
         return false;
     }
@@ -762,12 +773,14 @@ class AssignmentParser {
     // for instance, it might have `contactId == 0` (for user `"none"`)
     // or it might have a negative `contactId` (for a user that doesn’t yet
     // exist in the database).
+    /** @param CsvRow $req */
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return false;
     }
     // Apply this action to `$state`. Return `true` iff the action succeeds.
     // To indicate an error, call `$state->error($html)`, or, equivalently,
     // return `$html`.
+    /** @param CsvRow $req */
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return true;
     }
@@ -910,13 +923,15 @@ class ReviewAssigner_Data {
         }
         $this->creator = !$tmatch && !$rmatch && $this->newtype != 0;
     }
+    /** @return ReviewAssigner_Data */
     static function make($req, AssignmentState $state, $rtype) {
         if (!isset($req["_review_data"]) || !is_object($req["_review_data"])) {
             $req["_review_data"] = new ReviewAssigner_Data($req, $state, $rtype);
         }
         return $req["_review_data"];
     }
-    function can_create_review() {
+    /** @return bool */
+    function might_create_review() {
         return $this->creator;
     }
 }
