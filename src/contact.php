@@ -709,15 +709,22 @@ class Contact {
         return $cdbu && $cdbu->disabled;
     }
 
-    /** @return string */
-    function name() {
-        if ($this->firstName !== "" && $this->lastName !== "") {
-            return $this->firstName . " " . $this->lastName;
-        } else if ($this->lastName !== "") {
-            return $this->lastName;
-        } else {
-            return $this->firstName;
+    /** @param int $flags
+     * @return string */
+    function name($flags = 0) {
+        if (($flags & NAME_S) !== 0 && $this->conf->sort_by_last) {
+            $flags |= NAME_L;
         }
+        if (($flags & NAME_P) !== 0 && $this->nameAmbiguous) {
+            $flags |= NAME_E;
+        }
+        return Text::name($this->firstName, $this->lastName, $this->email, $flags);
+    }
+
+    /** @param int $flags
+     * @return string */
+    function name_h($flags = 0) {
+        return htmlspecialchars($this->name($flags));
     }
 
     function completion_items() {
@@ -747,9 +754,9 @@ class Contact {
         if ($pfx === "u") {
             return $user;
         } else if ($pfx === "t") {
-            return Text::name_text($user);
+            return Text::nameo($user, NAME_P);
         }
-        $n = Text::name_html($user);
+        $n = htmlspecialchars(Text::nameo($user, NAME_P));
         if ($pfx === "r"
             && isset($user->contactTags)
             && ($this->can_view_user_tags() || $user->contactId == $this->contactId)) {

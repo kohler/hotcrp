@@ -149,6 +149,66 @@ class Text {
         return self::analyze_name_args(func_get_args());
     }
 
+    /** @param string $firstName
+     * @param string $lastName
+     * @param string $email
+     * @param int $flags
+     * @return string */
+    static function name($firstName, $lastName, $email, $flags) {
+        if ($firstName !== "" && $lastName !== "") {
+            if (($flags & NAME_A) !== 0
+                && ($initial = self::initial($firstName)) !== "") {
+                $firstName = $initial;
+            }
+            if (($flags & NAME_L) !== 0) {
+                $name = $lastName . ", " . $firstName;
+            } else {
+                $name = $firstName . " " . $lastName;
+            }
+        } else if ($lastName !== "") {
+            $name = $lastName;
+        } else if ($firstName !== "") {
+            $name = $firstName;
+        } else if (($flags & (NAME_P | NAME_E)) === 0) {
+            return "";
+        } else if ($email !== "") {
+            if (($flags & NAME_U) !== 0) {
+                return "<" . $email . ">";
+            } else {
+                return $email;
+            }
+        } else {
+            return "[No name]";
+        }
+        if ($email !== "" && ($flags & NAME_E) !== 0) {
+            $name .= " <" . $email . ">";
+        }
+        return $name;
+    }
+
+    /** @param string $firstName
+     * @param string $lastName
+     * @param string $email
+     * @param int $flags
+     * @return string */
+    static function name_h($firstName, $lastName, $email, $flags) {
+        return htmlspecialchars(self::name($firstName, $lastName, $email, $flags));
+    }
+
+    /** @param object $o
+     * @param int $flags
+     * @return string */
+    static function nameo($o, $flags) {
+        return self::name($o->firstName, $o->lastName, $o->email, $flags);
+    }
+
+    /** @param object $o
+     * @param int $flags
+     * @return string */
+    static function nameo_h($o, $flags) {
+        return htmlspecialchars(self::name($o->firstName, $o->lastName, $o->email, $flags));
+    }
+
     /** @return string */
     static function user_text(/* ... */) {
         $r = self::analyze_name_args(func_get_args());

@@ -33,6 +33,14 @@ define("VIEWSCORE_AUTHORDEC", 1);
 define("VIEWSCORE_AUTHOR", 2);
 define("VIEWSCORE_EMPTYBOUND", 3);     // bound that can see nothing
 
+define("NAME_E", 1);   // include email
+define("NAME_U", 2);   // always put email in angle brackets
+define("NAME_EU", 3);  // NAME_E + NAME_U
+define("NAME_P", 4);   // return email or "[No name]" instead of empty string
+define("NAME_L", 8);   // "last, first"
+define("NAME_A", 16);  // abbreviate first
+define("NAME_S", 32);  // "last, first" according to conference preference
+
 define("COMMENTTYPE_DRAFT", 1);
 define("COMMENTTYPE_BLIND", 2);
 define("COMMENTTYPE_RESPONSE", 4);
