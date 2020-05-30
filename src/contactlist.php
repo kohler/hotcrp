@@ -527,12 +527,8 @@ class ContactList {
     function content($fieldId, $row) {
         switch ($fieldId) {
         case self::FIELD_NAME:
-            if ($this->sortField == $fieldId && $this->conf->sort_by_last) {
-                $t = Text::name_html($row, NameInfo::make_last_first());
-            } else {
-                $t = Text::name_html($row);
-            }
-            if (trim($t) == "") {
+            $t = $row->name_h($this->sortField == $fieldId ? NAME_S : 0);
+            if (trim($t) === "") {
                 $t = "[No name]";
             }
             $t = '<span class="taghl">' . $t . '</span>';
@@ -553,7 +549,7 @@ class ContactList {
             }
             if ($this->user->privChair && $row->email != $this->user->email) {
                 $t .= " <a href=\"" . $this->conf->hoturl("index", "actas=" . urlencode($row->email)) . "\">"
-                    . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($row)))
+                    . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . $row->name(NAME_P)])
                     . "</a>";
             }
             if ($row->is_disabled() && $this->user->isPC) {

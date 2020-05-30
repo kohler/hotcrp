@@ -170,9 +170,8 @@ $rev_opt = array();
 if (!$reviewer) {
     $rev_opt[0] = "(Select a PC member)";
 }
-$textarg = ["lastFirst" => $Conf->sort_by_last];
 foreach ($Conf->pc_members() as $pc) {
-    $rev_opt[$pc->email] = Text::name_html($pc, $textarg) . " ("
+    $rev_opt[$pc->email] = htmlspecialchars($pc->name(NAME_P|NAME_S)) . " ("
         . plural(get($rev_count, $pc->contactId, 0), "assignment") . ")";
 }
 

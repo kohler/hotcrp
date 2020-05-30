@@ -278,16 +278,15 @@ if ($Me->privChair) {
     $prefcount = [];
     $result = $Conf->qe_raw("select contactId, count(*) from PaperReviewPreference where preference!=0 or expertise is not null group by contactId");
     while (($row = $result->fetch_row())) {
-        $prefcount[$row[0]] = $row[1];
+        $prefcount[(int) $row[0]] = (int) $row[1];
     }
 
     $sel = [];
-    $textarg = ["lastFirst" => $Conf->sort_by_last];
     foreach ($Conf->pc_members() as $p) {
-        $sel[$p->email] = Text::name_html($p, $textarg) . " &nbsp; [" . plural(get($prefcount, $p->contactId, 0), "pref") . "]";
+        $sel[$p->email] = $p->name_h(NAME_P|NAME_S) . " &nbsp; [" . plural($prefcount[$p->contactId] ?? 0, "pref") . "]";
     }
     if (!isset($sel[$reviewer->email])) {
-        $sel[$reviewer->email] = Text::name_html($reviewer) . " &nbsp; [" . get($prefcount, $reviewer->contactId, 0) . "; not on PC]";
+        $sel[$reviewer->email] = $reviewer->name_h(NAME_P|NAME_S) . " &nbsp; [" . ($prefcount[$reviewer->contactId] ?? 0) . "; not on PC]";
     }
 
     echo Ht::select("reviewer", $sel, $reviewer->email, ["id" => "htctl-prefs-user"]), '</div>';

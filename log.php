@@ -684,9 +684,10 @@ function set_user_html($user, $qreq_n) {
     if (($pc = $Conf->pc_member_by_id($user->contactId))) {
         $user = $pc;
     }
-    $t = Text::name_html($user);
     if ($user->disabled === "deleted") {
-        $t = '<del>' . $t . ' &lt;' . htmlspecialchars($user->email) . '&gt;</del>';
+        $t = '<del>' . $user->name_h(NAME_E) . '</del>';
+    } else {
+        $t = $user->name_h(NAME_P);
     }
     $dt = null;
     if (($viewable = $user->viewable_tags($Me))) {
@@ -730,7 +731,7 @@ function render_users($users, $via) {
         }
         if ($user->disabled === "deleted") {
             if ($user->email) {
-                $t = '<del>' . Text::name_html($user) . ' &lt;' . htmlspecialchars($user->email) . '&gt;</del>';
+                $t = '<del>' . $user->name_h(NAME_E) . '</del>';
             } else {
                 $t = '<del>[deleted user ' . $user->contactId . ']</del>';
             }

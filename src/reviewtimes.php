@@ -132,7 +132,7 @@ class ReviewTimes {
                 $users[$cid] = $u = (object) array();
                 $p = $this->conf->cached_user_by_id((int) $cid);
                 if ($p) {
-                    $u->name = Text::name_text($p);
+                    $u->name = $p->name(NAME_P);
                 }
                 if (count($x) < $heavy_boundary) {
                     $u->light = true;

@@ -36,7 +36,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             return "Can’t change other users’ preferences for #{$prow->paperId}.";
         } else if (!$contact->can_enter_preference($prow)) {
             if ($contact->contactId !== $state->user->contactId) {
-                return Text::user_html_nolink($contact) . " can’t enter preference for #{$prow->paperId}.";
+                return $contact->name_h(NAME_E) . " can’t enter preference for #{$prow->paperId}.";
             } else {
                 return "Can’t enter preference for #{$prow->paperId}.";
             }

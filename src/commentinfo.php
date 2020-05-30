@@ -237,7 +237,7 @@ class CommentInfo {
 
     function unparse_commenter_html(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
-            $n = Text::abbrevname_html($this->commenter());
+            $n = Text::nameo_h($this->commenter(), NAME_P|NAME_A);
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
         }
@@ -250,7 +250,7 @@ class CommentInfo {
 
     function unparse_commenter_text(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
-            $n = Text::abbrevname_text($this->commenter());
+            $n = Text::nameo($this->commenter(), NAME_P|NAME_A);
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
         }
@@ -383,7 +383,7 @@ class CommentInfo {
                 $email = $cuser->email;
             } else {
                 $commenter = $this->commenter();
-                $cj->author = Text::name_html($commenter);
+                $cj->author = Text::nameo($commenter, NAME_P);
                 $email = $commenter->email;
             }
             if (!$idable) {
@@ -450,7 +450,7 @@ class CommentInfo {
             $x = "Response";
         }
         if ($contact->can_view_comment_identity($this->prow, $this)) {
-            $x .= " by " . Text::user_text($this->commenter());
+            $x .= " by " . Text::nameo($this->commenter(), NAME_E|NAME_U);
         } else if (($p = $this->unparse_commenter_pseudonym($contact))
                    && ($p !== "Author" || !($this->commentType & COMMENTTYPE_RESPONSE))) {
             $x .= " by " . $p;

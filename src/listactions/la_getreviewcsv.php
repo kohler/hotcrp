@@ -39,7 +39,7 @@ class GetReviewCSV_ListAction extends ListAction {
                     if ($viewer->can_view_review_identity($prow, $rrow)) {
                         $has_id = true;
                         $text["email"] = $rrow->email;
-                        $text["reviewername"] = Text::name_text($rrow);
+                        $text["reviewername"] = Text::nameo($rrow, 0);
                     }
                     foreach ($rf->paper_visible_fields($viewer, $prow, $rrow) as $f) {
                         $fields[$f->id] = true;

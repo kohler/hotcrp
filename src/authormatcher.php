@@ -223,7 +223,7 @@ class AuthorMatcher extends Author {
                 $aff_suffix = "(" . htmlspecialchars($au->affiliation) . ")";
             }
             if ($au instanceof Contact) {
-                $au = Text::name_text($au) . ($aff_suffix !== null ? " " . $aff_suffix : "");
+                $au = $au->name(NAME_P) . ($aff_suffix !== null ? " " . $aff_suffix : "");
             } else {
                 $au = $au->nameaff_text();
             }

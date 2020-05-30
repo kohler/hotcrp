@@ -176,24 +176,11 @@ class Author {
     }
     /** @return string */
     function abbrevname_text() {
-        if ($this->lastName !== "") {
-            $u = "";
-            if ($this->firstName !== ""
-                && ($u = Text::initial($this->firstName)) != "") {
-                $u .= " "; // non-breaking space
-            }
-            return $u . $this->lastName;
-        } else if ($this->firstName !== "") {
-            return $this->firstName;
-        } else if ($this->email !== "") {
-            return $this->email;
-        } else {
-            return "???";
-        }
+        return Text::nameo($this, NAME_P|NAME_A);
     }
     /** @return string */
     function abbrevname_html() {
-        return htmlspecialchars($this->abbrevname_text());
+        return htmlspecialchars(Text::nameo($this, NAME_P|NAME_A));
     }
     /** @return string */
     function deaccent($component) {

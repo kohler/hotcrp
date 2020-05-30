@@ -15,7 +15,7 @@ class Basics_SettingParser extends SettingParser {
     }
     static function render_site_contact(SettingValues $sv) {
         $site_user = $sv->conf->site_contact();
-        $sv->set_oldv("opt.contactName", Text::name_text($site_user));
+        $sv->set_oldv("opt.contactName", $site_user->name());
         $sv->set_oldv("opt.contactEmail", $site_user->email);
         $sv->echo_entry_group("opt.contactName", null);
         $sv->echo_entry_group("opt.contactEmail", null, null, "The site contact is the contact point for users if something goes wrong. It defaults to the chair.");
@@ -29,7 +29,7 @@ class Basics_SettingParser extends SettingParser {
         if ($si->name === "opt.contactEmail") {
             $default_contact = $sv->conf->default_site_contact();
             if ($default_contact
-                && $sv->newv("opt.contactName") === Text::name_text($default_contact)
+                && $sv->newv("opt.contactName") === $default_contact->name()
                 && $sv->newv("opt.contactEmail") === $default_contact->email
                 && get($sv->conf->opt_override, "contactName") === null
                 && get($sv->conf->opt_override, "contactEmail") === null) {

@@ -188,7 +188,7 @@ class Tags_SettingParser extends SettingParser {
                     $who = (int) substr($row[1], 0, strpos($row[1], "~"));
                     $value = (float) $row[2];
                     if ($value < 0) {
-                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for #$pid.");
+                        $sv->error_at(null, "Removed " . $pcm[$who]->name_h(NAME_P) . "’s negative “{$base}” vote for #$pid.");
                         $negative = true;
                     } else {
                         $pvals[$pid] = ($pvals[$pid] ?? 0) + $value;
@@ -198,7 +198,7 @@ class Tags_SettingParser extends SettingParser {
 
                 foreach ($cvals as $who => $what) {
                     if ($what > $allotment)
-                        $sv->error_at("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
+                        $sv->error_at("tag_vote", $pcm[$who]->name_h(NAME_P) . " already has more than $allotment votes for tag “{$base}”.");
                 }
 
                 $q = ($negative ? " or (tag like '%~{$sqlbase}' and tagIndex<0)" : "");
@@ -227,7 +227,7 @@ class Tags_SettingParser extends SettingParser {
                     $pid = (int) $row[0];
                     $who = (int) substr($row[1], 0, strpos($row[1], "~"));
                     if ((float) $row[2] < 0) {
-                        $sv->error_at(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for #$pid.");
+                        $sv->error_at(null, "Removed " . $pcm[$who]->name_h(NAME_P) . "’s negative “{$t}” approval vote for #$pid.");
                         $negative = true;
                     } else {
                         $pvals[$pid] = ($pvals[$pid] ?? 0) + 1;

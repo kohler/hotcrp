@@ -139,7 +139,7 @@ class Conflict_Assigner extends Assigner {
         $cid = isset($item["cid"]) ? $item["cid"] : $item["_cid"];
         $cflt = $state->query(["type" => "conflict", "pid" => $pid, "cid" => $cid]);
         if ($cflt && Conflict::is_conflicted($cflt[0]["_ctype"])) {
-            $uname = Text::user_html_nolink($state->user_by_id($cid));
+            $uname = $state->user_by_id($cid)->name_h(NAME_E);
             if (isset($item["_override"])
                 && $state->user->can_administer($state->prow($pid))) {
                 $state->warning("Overriding {$uname} conflict with #{$pid}.");

@@ -1111,11 +1111,11 @@ class AssignmentSet {
     }
 
     private static function req_user_html($req) {
-        return Text::user_html_nolink($req["firstName"], $req["lastName"], $req["email"]);
+        return Text::name_h($req["firstName"], $req["lastName"], $req["email"], NAME_E);
     }
 
     private static function apply_user_parts($req, $a) {
-        foreach (array("firstName", "lastName", "email") as $i => $k) {
+        foreach (["firstName", "lastName", "email"] as $i => $k) {
             if (!$req[$k] && ($a[$i] ?? null)) {
                 $req[$k] = $a[$i];
             }
@@ -1525,9 +1525,9 @@ class AssignmentSet {
                     $this->astate->error("User “none” is not allowed here. [{$contact->email}]");
                     return -1;
                 } else if ($prow->has_conflict($contact)) {
-                    $err = Text::user_html_nolink($contact) . " has a conflict with #{$prow->paperId}.";
+                    $err = $contact->name_h(NAME_E) . " has a conflict with #{$prow->paperId}.";
                 } else {
-                    $err = Text::user_html_nolink($contact) . " cannot be assigned to #{$prow->paperId}.";
+                    $err = $contact->name_h(NAME_E) . " cannot be assigned to #{$prow->paperId}.";
                 }
             }
             if ($err !== true) {

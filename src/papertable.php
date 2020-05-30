@@ -897,7 +897,7 @@ class PaperTable {
             return "[No authors]";
         } else if ($type === "last") {
             foreach ($table as $au) {
-                $n = Text::abbrevname_text($au);
+                $n = Text::nameo($au, NAME_P|NAME_A);
                 $names[] = Text::highlight($n, $highpreg, $nm);
                 $this->entryMatches += $nm;
             }
@@ -928,7 +928,7 @@ class PaperTable {
                     && $viewAs->privChair) {
                     $t .= " <a href=\""
                         . $this->conf->selfurl($this->qreq, ["actas" => $au->email])
-                        . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";
+                        . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::nameo($au, NAME_P))) . "</a>";
                 }
                 $names[] = '<p class="odname">' . $t . '</p>';
             }
@@ -1402,7 +1402,7 @@ class PaperTable {
             echo '<div class="',
                 $reqidx ? $this->control_class("contacts:$reqidx", "checki") : "checki",
                 '"><label><span class="checkc">', $ctl, ' </span>',
-                Text::user_html_nolink($au);
+                Text::nameo_h($au, NAME_E);
             if ($au->nonauthor) {
                 echo ' (<em>non-author</em>)';
             }

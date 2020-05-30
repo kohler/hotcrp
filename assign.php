@@ -293,7 +293,7 @@ foreach ($requests as $req) {
                 $prow->reviewurl(["actas" => $rrow->email]));
         }
     } else {
-        $name = Text::name_html($rrowid);
+        $name = Text::nameo_h($rrowid, NAME_P);
     }
     $fullname = $name;
     if ((string) $rrowid->affiliation !== "") {

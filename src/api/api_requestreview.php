@@ -45,9 +45,9 @@ class RequestReview_API {
         }
         // - check existing refusal
         if ($reviewer) {
-            $refusal = get($prow->review_refusals_of_user($reviewer), 0);
+            $refusal = ($prow->review_refusals_of_user($reviewer))[0] ?? null;
         } else {
-            $refusal = get($prow->review_refusals_of_email($email), 0);
+            $refusal = ($prow->review_refusals_of_email($email))[0] ?? null;
         }
         if ($refusal
             && (!$user->can_administer($prow) || !$qreq->override)) {
@@ -55,7 +55,7 @@ class RequestReview_API {
             if ($reviewer
                 && ($refusal->refusedBy == $reviewer->contactId
                     || ($refusal->refusedBy === null && $refusal->reason !== "request denied by chair"))) {
-                $msg = Text::name_html($reviewer) . " has declined to review this submission.";
+                $msg = $reviewer->name_h(NAME_P) . " has declined to review this submission.";
             } else {
                 $msg = "An administrator denied a previous request for " . htmlspecialchars($email) . " to review this submission.";
             }
@@ -102,15 +102,15 @@ class RequestReview_API {
                 $prow->paperId, $email, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, $Now, $reason, $round);
             if ($user->can_administer($prow)) {
-                $msg = "<p>" . Text::user_html($xreviewer) . " has a potential conflict with this submission, so you must approve this request for it to take effect.</p>"
+                $msg = "<p>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so you must approve this request for it to take effect.</p>"
                     . PaperInfo::potential_conflict_tooltip_html($potconflict);
             } else if ($extrev_chairreq === 2) {
-                $msg = "<p>" . Text::user_html($xreviewer) . " has a potential conflict with this submission, so an administrator must approve your proposed external review before it can take effect.</p>";
+                $msg = "<p>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so an administrator must approve your proposed external review before it can take effect.</p>";
                 if ($user->can_view_authors($prow)) {
                     $msg .= PaperInfo::potential_conflict_tooltip_html($potconflict);
                 }
             } else {
-                $msg = "Proposed an external review from " . Text::user_html($xreviewer) . ". An administrator must approve this proposal for it to take effect.";
+                $msg = "Proposed an external review from " . $xreviewer->name_h(NAME_E) . ". An administrator must approve this proposal for it to take effect.";
             }
             $user->log_activity("Review proposal added for $email", $prow);
             $prow->conf->update_autosearch_tags($prow);
@@ -130,7 +130,7 @@ class RequestReview_API {
         if (!$reviewer) {
             return new JsonResult(400, "Review assignment error: Could not create account.");
         } else if ($reviewer->is_disabled()) {
-            return new JsonResult(403, "Review assignment error: The account for " . Text::user_text($reviewer) . " is disabled.");
+            return new JsonResult(403, "Review assignment error: The account for " . $reviewer->name(NAME_E) . " is disabled.");
         }
 
         // assign review
@@ -146,7 +146,7 @@ class RequestReview_API {
             "requester_contact" => $requester, "reason" => $reason
         ]);
 
-        return new JsonResult(["ok" => true, "action" => "request", "response" => "Requested an external review from " . Text::user_html($reviewer) . "."]);
+        return new JsonResult(["ok" => true, "action" => "request", "response" => "Requested an external review from " . $reviewer->name_h(NAME_E) . "."]);
     }
 
     /** @param Contact $user

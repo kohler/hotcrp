@@ -366,8 +366,7 @@ function parseBulkFile($text, $filename) {
             $saved_users[strtolower($cj->email)] = $csv->lineno();
         }
         if (($saved_user = save_user($cj, $ustatus, null, true))) {
-            $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
-                . Text::user_html_nolink($saved_user) . "</a>";
+            $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
         }
         foreach ($ustatus->problem_texts() as $e) {
             $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> " . $e;
@@ -430,7 +429,7 @@ if (!$Qreq->post_ok()) {
             $Conf->msg($UserStatus->message_texts(), $UserStatus->problem_status());
         }
         if ($newProfile) {
-            $Conf->msg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.", "xconfirm");
+            $Conf->msg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>. A password has been emailed to that address. You may now create another account.", "xconfirm");
         } else {
             $Conf->msg("Profile updated.", "xconfirm");
             if ($Acct->contactId != $Me->contactId) {

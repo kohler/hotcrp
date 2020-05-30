@@ -1062,7 +1062,7 @@ class PaperStatus extends MessageSet {
                 $key = "contacts:email_" . $reg->index;
             }
             if (!isset($reg->email)) {
-                $this->error_at($key, $this->_("Contact %s has no associated email.", Text::user_html($reg)));
+                $this->error_at($key, $this->_("Contacts must have valid email addresses."));
             } else {
                 $this->error_at($key, $this->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
             }
@@ -1107,7 +1107,7 @@ class PaperStatus extends MessageSet {
                 if (isset($c->index) && is_int($c->index)) {
                     $key = "contacts:" . $c->index;
                 }
-                $this->error_at($key, $this->_("Could not create an account for contact %s.", Text::user_html($c)));
+                $this->error_at($key, $this->_("Could not create an account for contact %s.", Text::nameo_h($c, NAME_E)));
                 $this->error_at("contacts", false);
             }
         }

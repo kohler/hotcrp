@@ -6,7 +6,7 @@ function _review_table_actas($user, $rr) {
     if (!get($rr, "contactId") || $rr->contactId == $user->contactId)
         return "";
     return ' <a href="' . $user->conf->selfurl(null, ["actas" => $rr->email]) . '">'
-        . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::name_text($rr)])
+        . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($rr, NAME_P)])
         . "</a>";
 }
 

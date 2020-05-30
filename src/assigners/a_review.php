@@ -94,7 +94,7 @@ class Review_AssignmentParser extends AssignmentParser {
         // PC reviews must be PC members
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->newtype >= REVIEW_PC && !$contact->is_pc_member()) {
-            return Text::user_html_nolink($contact) . " is not a PC member and cannot be assigned a PC review.";
+            return $contact->name_h(NAME_E) . " is not a PC member and cannot be assigned a PC review.";
         }
         // Conflict allowed if we're not going to assign a new review
         if ($this->rtype == 0
@@ -105,7 +105,7 @@ class Review_AssignmentParser extends AssignmentParser {
         // Check whether review assignments are acceptable
         if ($contact->is_pc_member()
             && !$contact->can_accept_review_assignment_ignore_conflict($prow)) {
-            return Text::user_html_nolink($contact) . " cannot be assigned to review #{$prow->paperId}.";
+            return $contact->name_h(NAME_E) . " cannot be assigned to review #{$prow->paperId}.";
         }
         // Conflicts are checked later
         return true;

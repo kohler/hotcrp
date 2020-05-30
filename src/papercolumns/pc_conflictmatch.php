@@ -21,7 +21,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     function header(PaperList $pl, $is_text) {
         $t = "Potential conflict";
         if ($this->show_user) {
-            $t .= " with " . Text::name_html($this->contact);
+            $t .= " with " . $this->contact->name_h(NAME_P);
         }
         if ($this->show_user && $this->contact->affiliation) {
             $t .= " (" . htmlspecialchars($this->contact->affiliation) . ")";

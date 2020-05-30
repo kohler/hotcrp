@@ -59,7 +59,7 @@ class Lead_AssignmentParser extends AssignmentParser {
             return true;
         } else {
             $verb = $this->key === "manager" ? "administer" : $this->key;
-            return Text::user_html_nolink($contact) . " can’t $verb #{$prow->paperId}.";
+            return $contact->name_h(NAME_E) . " can’t $verb #{$prow->paperId}.";
         }
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
