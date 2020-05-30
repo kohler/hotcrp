@@ -1172,13 +1172,7 @@ $blind\n";
         if ($rrow && $viewer->active_review_token_for($prow, $rrow)) {
             $revname = "Review token " . encode_token((int) $rrow->reviewToken);
         } else if ($rrow && $viewer->can_view_review_identity($prow, $rrow)) {
-            if ($rrow->reviewType > 1
-                && $viewer->can_view_user_tags()
-                && ($cuser = $prow->conf->pc_member_by_id($rrow->contactId))) {
-                $revname = $viewer->reviewer_html_for($cuser);
-            } else {
-                $revname = Text::name_html($rrow);
-            }
+            $revname = $viewer->reviewer_html_for($rrow);
             if ($rrow->reviewBlind) {
                 $revname = "[{$revname}]";
             }
@@ -1349,12 +1343,7 @@ $blind\n";
         $showtoken = $editable && $viewer->active_review_token_for($prow, $rrow);
         if ($viewer->can_view_review_identity($prow, $rrow)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
-            if (isset($rrow->contactTags)
-                && $viewer->can_view_user_tags()) {
-                $rj["reviewer"] = $viewer->reviewer_html_for($rrow);
-            } else {
-                $rj["reviewer"] = Text::name_html($rrow);
-            }
+            $rj["reviewer"] = $viewer->reviewer_html_for($rrow);
             if (!Contact::is_anonymous_email($rrow->email)) {
                 $rj["reviewer_email"] = $rrow->email;
             }

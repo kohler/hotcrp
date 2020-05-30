@@ -777,30 +777,44 @@ class Contact {
     /** @param Contact|ReviewInfo|int $x
      * @return mixed */
     private function name_for($pfx, $x) {
-        $cid = is_object($x) ? $x->contactId : $x;
+        $cid = is_object($x) ? (int) $x->contactId : (int) $x;
+
         $key = $pfx . $cid;
         if (isset($this->_name_for_map[$key])) {
             return $this->_name_for_map[$key];
         }
 
-        if (+$cid === $this->contactId) {
+        if ($cid === $this->contactId) {
             $x = $this;
-        } else if (($pc = $this->conf->pc_member_by_id($cid))) {
-            $x = $pc;
         }
 
-        if (!(is_object($x) && isset($x->firstName) && isset($x->lastName) && isset($x->email))) {
+        if (!is_object($x) || !isset($x->firstName)) {
             if ($pfx === "u") {
-                if (!is_string($cid) && !is_integer($cid))
-                    error_log("bad cid at " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-                $x = $this->conf->user_by_id($cid);
-                $this->_contact_sorter_map[$cid] = $x->sorter;
+                $x = $this->conf->cached_user_by_id($cid);
             } else {
-                $x = $this->name_for("u", $x);
+                $x = $this->name_for("u", $cid);
             }
         }
 
-        return ($this->_name_for_map[$key] = $this->calculate_name_for($pfx, $x));
+        if (!$x) {
+            return $pfx === "u" ? null : "";
+        }
+
+        if ($x
+            && $pfx === "r"
+            && $this->can_view_user_tags()
+            && !isset($x->contactTags)
+            && ($pc = $this->conf->pc_member_by_id($cid))) {
+            $x = $pc;
+        }
+
+        if (isset($x->sorter) && !isset($this->_contact_sorter_map[$cid])) {
+            $this->_contact_sorter_map[$cid] = $x->sorter;
+        }
+
+        $res = $this->calculate_name_for($pfx, $x);
+        $this->_name_for_map[$key] = $res;
+        return $res;
     }
 
     /** @param Contact|ReviewInfo|int $x
@@ -867,7 +881,7 @@ class Contact {
     /** @return bool */
     static function is_anonymous_email($email) {
         // see also PaperSearch, Mailer
-        return substr($email, 0, 9) === "anonymous"
+        return str_starts_with($email, "anonymous")
             && (strlen($email) === 9 || ctype_digit(substr($email, 9)));
     }
 
