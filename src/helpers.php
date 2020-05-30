@@ -176,6 +176,8 @@ function foldupbutton($foldnum = 0, $content = "", $js = null) {
     return Ht::link(expander(null, $foldnum) . $content, "#", $js);
 }
 
+/** @param bool $open
+ * @return string */
 function expander($open, $foldnum = null) {
     $f = $foldnum !== null;
     $foldnum = ($foldnum !== 0 ? $foldnum : "");
@@ -189,12 +191,14 @@ function expander($open, $foldnum = null) {
     return $t . '</span>';
 }
 
-function actas_link($cid, $contact = null) {
+
+/** @param Contact|Author|ReviewInfo|CommentInfo $userlike
+ * @return string */
+function actas_link($userlike) {
     global $Conf;
-    $contact = !$contact && is_object($cid) ? $cid : $contact;
-    $cid = is_object($contact) ? $contact->email : $cid;
-    return '<a href="' . $Conf->selfurl(null, ["actas" => $cid])
-        . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($contact))) . '</a>';
+    return '<a href="' . $Conf->selfurl(null, ["actas" => $userlike->email])
+        . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($userlike, NAME_P)])
+        . '</a>';
 }
 
 
