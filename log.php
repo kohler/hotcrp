@@ -723,8 +723,12 @@ function render_users($users, $via) {
     }
     $all_pc = true;
     $ts = [];
+    $last_user = null;
     usort($users, "Contact::compare");
     foreach ($users as $user) {
+        if ($user === $last_user) {
+            continue;
+        }
         if ($all_pc
             && (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE))) {
             $all_pc = false;
@@ -746,6 +750,7 @@ function render_users($users, $via) {
             }
         }
         $ts[] = $t;
+        $last_user = $user;
     }
     if (count($ts) <= 3) {
         return join(", ", $ts);
