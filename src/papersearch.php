@@ -251,11 +251,6 @@ class SearchTerm {
         }
         return $qr->finish();
     }
-    /** @return SearchTerm
-     * @deprecated */
-    static function make_not(SearchTerm $term) {
-        return $term->negate();
-    }
     /** @return SearchTerm */
     function negate() {
         $qr = new Not_SearchTerm;

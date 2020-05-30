@@ -261,12 +261,4 @@ class ContactSearch {
     function user_by_index($i) {
         return ($this->users())[$i] ?? null;
     }
-    /** @deprecated */
-    function contacts() {
-        return $this->users();
-    }
-    /** @deprecated */
-    function contact($i) {
-        return $this->user_by_index($i);
-    }
 }

@@ -408,10 +408,6 @@ class AssignmentState {
     function has_messages() {
         return !empty($this->msgs);
     }
-    /** @deprecated */
-    function messages() {
-        return $this->msgs;
-    }
     /** @return list<array{int,string,int}> */
     function message_list() {
         return $this->msgs;
@@ -1064,10 +1060,6 @@ class AssignmentSet {
         }
         return $es;
     }
-    /** @deprecated */
-    function errors_html($landmarks = false) {
-        return $this->messages_html($landmarks);
-    }
     /** @return string */
     function messages_div_html($landmarks = false) {
         $es = $this->messages_html($landmarks);
@@ -1080,10 +1072,6 @@ class AssignmentSet {
         } else {
             return '<div><div class="mmm">' . join('</div><div class="mmm">', $es) . '</div></div>';
         }
-    }
-    /** @deprecated */
-    function errors_div_html($landmarks = false) {
-        return $this->messages_div_html($landmarks);
     }
     /** @return list<string> */
     function message_texts($landmarks = false) {
@@ -1098,10 +1086,6 @@ class AssignmentSet {
             }
         }
         return $es;
-    }
-    /** @deprecated */
-    function error_texts($landmarks = false) {
-        return $this->message_texts($landmarks);
     }
     function report_errors() {
         if ($this->astate->has_messages() && $this->has_error()) {
@@ -1794,11 +1778,6 @@ class AssignmentSet {
             $assigner->unparse_csv($this, $acsv);
         }
         return $acsv;
-    }
-    /** @return AssignmentCsv
-     * @deprecated */
-    function unparse_csv() {
-        return $this->make_acsv();
     }
 
     /** @return ?PaperInfo */
