@@ -209,7 +209,8 @@ class Text {
         return htmlspecialchars(self::name($o->firstName, $o->lastName, $o->email, $flags));
     }
 
-    /** @return string */
+    /** @deprecated
+     * @return string */
     static function user_text(/* ... */) {
         $r = self::analyze_name_args(func_get_args());
         if ($r->orderedName !== "" && $r->email !== "") {
@@ -219,7 +220,8 @@ class Text {
         }
     }
 
-    /** @return string */
+    /** @deprecated
+     * @return string */
     static function user_html(/* ... */) {
         $r = self::analyze_name_args(func_get_args());
         $e = htmlspecialchars($r->email);
@@ -235,7 +237,8 @@ class Text {
         }
     }
 
-    /** @return string */
+    /** @deprecated
+     * @return string */
     static function user_html_nolink(/* ... */) {
         $r = self::analyze_name_args(func_get_args());
         if (($e = $r->email) !== "") {
@@ -248,7 +251,8 @@ class Text {
         }
     }
 
-    /** @return string */
+    /** @deprecated
+     * @return string */
     static function name_text(/* ... */) {
         $r = self::analyze_name_args(func_get_args());
         if ($r->nameAmbiguous && $r->orderedName !== "" && $r->email !== "") {
@@ -258,7 +262,8 @@ class Text {
         }
     }
 
-    /** @return string */
+    /** @deprecated
+     * @return string */
     static function name_html(/* ... */) {
         $x = call_user_func_array("Text::name_text", func_get_args());
         return htmlspecialchars($x);
@@ -290,14 +295,15 @@ class Text {
                 $x = $m[1];
             }
             // Don't add a period if first name is a single letter
-            if ($x != "" && $x != $s && !str_starts_with($s, "$x ")) {
+            if ($x !== "" && $x !== $s && !str_starts_with($s, "$x ")) {
                 $x .= ".";
             }
         }
         return $x;
     }
 
-    /** @return string */
+    /** @deprecated
+     * @return string */
     static function abbrevname_text(/* ... */) {
         $r = self::analyze_name_args(func_get_args());
         $u = "";
@@ -314,7 +320,8 @@ class Text {
         return $u . $t;
     }
 
-    /** @return string */
+    /** @deprecated
+     * @return string */
     static function abbrevname_html(/* ... */) {
         $x = call_user_func_array("Text::abbrevname_text", func_get_args());
         return htmlspecialchars($x);
