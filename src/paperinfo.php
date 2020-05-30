@@ -1417,7 +1417,7 @@ class PaperInfo {
 
     /** @return list<object> */
     function named_contacts() {
-        $vals = Dbl::fetch_objects($this->conf->qe("select ContactInfo.contactId, conflictType, email, firstName, lastName, affiliation, contactTags from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId and conflictType>=" . CONFLICT_AUTHOR));
+        $vals = Dbl::fetch_objects($this->conf->qe("select ContactInfo.contactId, conflictType, email, firstName, lastName, affiliation, roles, contactTags from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId and conflictType>=" . CONFLICT_AUTHOR));
         foreach ($vals as $v) {
             $v->contactId = (int) $v->contactId;
             $v->conflictType = (int) $v->conflictType;
@@ -2078,7 +2078,7 @@ class PaperInfo {
     }
 
     private function fresh_review_of($key, $value) {
-        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " allRatings, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.contactTags from PaperReview join ContactInfo using (contactId) where paperId=? and $key=? order by paperId, reviewId", $this->paperId, $value);
+        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " allRatings, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles, ContactInfo.contactTags from PaperReview join ContactInfo using (contactId) where paperId=? and $key=? order by paperId, reviewId", $this->paperId, $value);
         $rrow = ReviewInfo::fetch($result, $this->conf);
         Dbl::free($result);
         return $rrow;
@@ -2572,7 +2572,7 @@ class PaperInfo {
 
     function notify_reviews($callback, $sending_user) {
         $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
-                password, contactTags, roles, defaultWatch,
+                password, roles, contactTags, defaultWatch,
                 " . self::my_review_permissions_sql() . " myReviewPermissions,
                 conflictType, watch, preferredEmail, disabled
         from ContactInfo
@@ -2614,7 +2614,7 @@ class PaperInfo {
 
     function notify_final_submit($callback, $sending_user) {
         $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
-                password, contactTags, roles, defaultWatch,
+                password, roles, contactTags, defaultWatch,
                 " . self::my_review_permissions_sql() . " myReviewPermissions,
                 conflictType, watch, preferredEmail, disabled
         from ContactInfo

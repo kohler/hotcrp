@@ -944,7 +944,7 @@ class PaperTable {
         }
 
         // find contact author information, combine with author table
-        $result = $this->conf->qe("select firstName, lastName, '' affiliation, email, contactId from ContactInfo where contactId?a", array_keys($this->prow->contacts()));
+        $result = $this->conf->qe("select contactId, firstName, lastName, '' affiliation, email from ContactInfo where contactId?a", array_keys($this->prow->contacts()));
         $contacts = array();
         while ($result && ($row = $result->fetch_object("Author"))) {
             $match = -1;

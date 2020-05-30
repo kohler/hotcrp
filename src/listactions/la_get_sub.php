@@ -166,7 +166,7 @@ class GetAbstract_ListAction extends ListAction {
 
 class GetAuthors_ListAction extends ListAction {
     static function contact_map(Conf $conf, $ssel) {
-        $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
+        $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email, roles, contactTags from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
         $contact_map = [];
         while (($row = $result->fetch_object())) {
             $row->contactId = (int) $row->contactId;
