@@ -101,7 +101,7 @@ class GetAbstract_ListAction extends ListAction {
             $fr->set_text("");
             foreach ($alist as $i => $au) {
                 $marker = ($i || count($alist) > 1 ? ($i + 1) . ". " : "");
-                $fr->value .= prefix_word_wrap($marker, $au->name_email_aff_text(), strlen($marker), self::WIDTH);
+                $fr->value .= prefix_word_wrap($marker, $au->name(NAME_E|NAME_A), strlen($marker), self::WIDTH);
             }
         }
     }

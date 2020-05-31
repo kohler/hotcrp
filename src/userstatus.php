@@ -293,7 +293,7 @@ class UserStatus extends MessageSet {
         } else {
             $cj_user = null;
         }
-        $cj_name = Text::analyze_name($cj);
+        $cj_name = Author::make_keyed($cj);
         foreach (["firstName", "lastName", "email"] as $i => $k) {
             if ($cj_name->$k !== "" && $cj_name->$k !== false) {
                 $cj->$k = $cj_name->$k;

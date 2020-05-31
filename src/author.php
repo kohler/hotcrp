@@ -13,8 +13,6 @@ class Author {
     public $affiliation = "";
     /** @var ?string */
     private $_name;
-    /** @var null */
-    public $unaccentedName;
     /** @var ?int */
     public $contactId;
     private $_deaccents;
@@ -37,10 +35,10 @@ class Author {
     static function make_tabbed($s) {
         $au = new Author;
         $w = explode("\t", $s);
-        $au->firstName = isset($w[0]) ? $w[0] : "";
-        $au->lastName = isset($w[1]) ? $w[1] : "";
-        $au->email = isset($w[2]) ? $w[2] : "";
-        $au->affiliation = isset($w[3]) ? $w[3] : "";
+        $au->firstName = $w[0] ?? "";
+        $au->lastName = $w[1] ?? "";
+        $au->email = $w[2] ?? "";
+        $au->affiliation = $w[3] ?? "";
         return $au;
     }
     /** @param string $s
@@ -71,7 +69,7 @@ class Author {
             }
         }
         if (strlen($s) > 4
-            || ($s !== "" && strcasecmp($s, "all") && strcasecmp($s, "none"))) {
+            || ($s !== "" && strcasecmp($s, "all") !== 0 && strcasecmp($s, "none") !== 0)) {
             $this->_name = trim($s);
             list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
         }
@@ -110,6 +108,34 @@ class Author {
             }
         }
     }
+    static private $object_keys = [
+        "firstName" => "firstName", "first" => "firstName",
+        "givenName" => "firstName", "given" => "givenName",
+        "lastName" => "lastName", "last" => "lastName",
+        "familyName" => "lastName", "family" => "familyName",
+        "name" => "name", "fullName" => "name",
+        "email" => "email", "affiliation" => "affiliation"
+    ];
+    /** @param object|array<string,mixed> $o
+     * @return Author */
+    static function make_keyed($o) {
+        $au = new Author;
+        foreach (is_object($o) ? get_object_vars($o) : $o as $k => $v) {
+            if (($mk = self::$object_keys[$k] ?? null) !== null
+                && is_string($v)) {
+                if ($mk === "name") {
+                    $au->_name = $v;
+                    list($au->firstName, $au->lastName, $e) = Text::split_name($v, true);
+                    if ($e !== null && $au->email === "") {
+                        $au->email = $e;
+                    }
+                } else {
+                    $au->$mk = $v;
+                }
+            }
+        }
+        return $au;
+    }
     /** @param string $s
      * @param int $paren
      * @return int */
@@ -128,59 +154,50 @@ class Author {
         return $paren;
     }
     /** @return string */
-    function name() {
-        if ($this->_name !== null) {
-            return $this->_name;
-        } else if ($this->firstName !== "" && $this->lastName !== "") {
-            return $this->firstName . " " . $this->lastName;
-        } else if ($this->lastName !== "") {
-            return $this->lastName;
+    function name($flags = 0) {
+        if (($flags & (NAME_L | NAME_I)) === 0 && $this->_name !== null) {
+            $name = $this->_name;
         } else {
-            return $this->firstName;
+            $name = Text::name($this->firstName, $this->lastName, $this->email, $flags);
         }
+        if (($flags & NAME_A) !== 0 && $this->affiliation !== "") {
+            $name .= ($name === "" ? "(" : " (") . $this->affiliation . ")";
+        }
+        return $name;
     }
     /** @return string */
+    function name_h($flags = 0) {
+        $name = htmlspecialchars($this->name($flags & ~NAME_A));
+        if (($flags & NAME_A) !== 0 && $this->affiliation !== "") {
+            $name .= ($name === "" ? "" : " ") . ' <span class="auaff">('
+                . htmlspecialchars($this->affiliation) . ')</span>';
+        }
+        return $name;
+    }
+    /** @deprecated
+     * @return string */
     function nameaff_html() {
-        $n = htmlspecialchars($this->name());
-        if ($n === "") {
-            $n = htmlspecialchars($this->email);
-        }
-        if ($this->affiliation) {
-            $n .= ' <span class="auaff">(' . htmlspecialchars($this->affiliation) . ')</span>';
-        }
-        return ltrim($n);
+        return $this->name_h(NAME_P|NAME_A);
     }
-    /** @return string */
+    /** @deprecated
+     * @return string */
     function nameaff_text() {
-        $n = $this->name();
-        if ($n === "") {
-            $n = $this->email;
-        }
-        if ($this->affiliation) {
-            $n .= ' (' . $this->affiliation . ')';
-        }
-        return ltrim($n);
+        return $this->name(NAME_P|NAME_A);
     }
-    /** @return string */
+    /** @deprecated
+     * @return string */
     function name_email_aff_text() {
-        $n = $this->name();
-        if ($n === "") {
-            $n = $this->email;
-        } else if ($this->email !== "") {
-            $n .= " <$this->email>";
-        }
-        if ($this->affiliation) {
-            $n .= ' (' . $this->affiliation . ')';
-        }
-        return ltrim($n);
+        return $this->name(NAME_E|NAME_A);
     }
-    /** @return string */
+    /** @deprecated
+     * @return string */
     function abbrevname_text() {
         return Text::nameo($this, NAME_P|NAME_I);
     }
-    /** @return string */
+    /** @deprecated
+     * @return string */
     function abbrevname_html() {
-        return htmlspecialchars(Text::nameo($this, NAME_P|NAME_I));
+        return Text::nameo_h($this, NAME_P|NAME_I);
     }
     /** @return string */
     function deaccent($component) {

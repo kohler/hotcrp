@@ -2082,16 +2082,16 @@ class Conf {
             $this->_pc_tags_cache = ["pc" => "pc"];
             while ($result && ($u = Contact::fetch($result, $this))) {
                 $pc[$u->contactId] = $u;
-                $u->name_analysis = Text::analyze_name($u);
-                if ($u->firstName || $u->lastName) {
-                    $by_name_text[Text::name_text($u)][] = $u;
+                if (($name = $u->name()) !== "") {
+                    $by_name_text[$name][] = $u;
                     $expected_by_name_count += 1;
                 }
                 if ($u->contactTags) {
                     foreach (explode(" ", $u->contactTags) as $t) {
                         list($tag, $value) = Tagger::unpack($t);
-                        if ($tag)
+                        if ($tag) {
                             $this->_pc_tags_cache[strtolower($tag)] = $tag;
+                        }
                     }
                 }
             }
@@ -2107,8 +2107,6 @@ class Conf {
                         foreach ($us as $u) {
                             if ($npcus > 1 || ($u->roles & Contact::ROLE_PC) == 0) {
                                 $u->nameAmbiguous = true;
-                                $u->name_analysis = null;
-                                $u->name_analysis = Text::analyze_name($u);
                             }
                         }
                     }
@@ -4319,26 +4317,27 @@ class Conf {
         if (($color_classes = $user->viewable_color_classes($viewer))) {
             $j->color_classes = $color_classes;
         }
-        if ($this->sort_by_last && $user->lastName) {
+        if ($this->sort_by_last && $user->lastName !== "") {
             self::pc_json_sort_by_last($j, $user);
         }
         return $j;
     }
 
-    /** @param Contact $viewer */
+    /** @param Contact $viewer
+     * @param ReviewInfo $user
+     * @return stdClass */
     private function pc_json_reviewer_item($viewer, $user) {
-        $r = Text::analyze_name($user);
         $j = (object) [
-            "name" => $r->name !== "" ? $r->name : $user->email,
+            "name" => Text::nameo($user, NAME_P),
             "email" => $user->email
         ];
-        if ($this->sort_by_last && $r->lastName) {
-            self::pc_json_sort_by_last($j, $r);
+        if ($this->sort_by_last && $user->lastName !== "") {
+            self::pc_json_sort_by_last($j, $user);
         }
         return $j;
     }
 
-    /** @param Contact $r */
+    /** @param Contact|NameInfo|ReviewInfo $r */
     static private function pc_json_sort_by_last($j, $r) {
         if (strlen($r->lastName) !== strlen($j->name)) {
             $j->lastpos = UnicodeHelper::utf16_strlen($r->firstName) + 1;

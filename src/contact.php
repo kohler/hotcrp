@@ -176,10 +176,11 @@ class Contact {
                 ? $user["unaccentedName"]
                 : Text::unaccented_name($this);
         } else {
-            $name = Text::analyze_name($user);
-            $this->firstName = $name->firstName;
-            $this->lastName = $name->lastName;
-            $this->unaccentedName = $name->unaccentedName;
+            $nameau = Author::make_keyed($user);
+            $this->firstName = $nameau->firstName;
+            $this->lastName = $nameau->lastName;
+            $name = Text::name($this->firstName, $this->lastName, "", 0);
+            $this->unaccentedName = is_usascii($name) ? $name : UnicodeHelper::deaccent($name);
         }
 
         $this->affiliation = simplify_whitespace((string) ($user["affiliation"] ?? ""));

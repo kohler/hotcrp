@@ -216,7 +216,7 @@ class Mailer {
 
 
     function expand_user($contact, $out) {
-        $r = Text::analyze_name($contact);
+        $r = Author::make_keyed($contact);
         if (is_object($contact) && get_s($contact, "preferredEmail") != "") {
             $r->email = $contact->preferredEmail;
         }

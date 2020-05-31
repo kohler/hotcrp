@@ -59,7 +59,7 @@ class Author_SearchTerm extends SearchTerm {
         } else if ($can_view) {
             foreach ($row->author_list() as $au) {
                 if ($this->regex) {
-                    $text = $au->name_email_aff_text();
+                    $text = $au->name(NAME_E|NAME_A);
                     if (!Text::match_pregexes($this->regex, $text,
                                               UnicodeHelper::deaccent($text))) {
                         continue;

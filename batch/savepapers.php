@@ -261,8 +261,13 @@ foreach ($jp as &$j) {
                 && validate_email($tf->req["reviewerEmail"])) {
                 $tf->req["override"] = true;
                 $tf->paperId = $pid;
-                $user_req = Text::analyze_name(["firstName" => get($tf->req, "reviewerFirst"), "lastName" => get($tf->req, "reviewerLast"), "email" => $tf->req["reviewerEmail"], "affiliation" => get($tf->req, "reviewerAffiliation")]);
-                $user_req->disabled = $disable_users;
+                $user_req = [
+                    "firstName" => $tf->req["reviewerFirst"] ?? "",
+                    "lastName" => $tf->req["reviewerLast"] ?? "",
+                    "email" => $tf->req["reviewerEmail"],
+                    "affiliation" => $tf->req["reviewerAffiliation"] ?? null,
+                    "disabled" => $disable_users
+                ];
                 $user = Contact::create($Conf, null, $user_req);
                 $tf->check_and_save($site_contact, $prow, null);
             } else {

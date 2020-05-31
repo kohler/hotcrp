@@ -216,17 +216,16 @@ class AuthorMatcher extends Author {
         }
         return 0;
     }
-    static function highlight_all($au, $matchers) {
+    static function highlight_all($aux, $matchers) {
         $aff_suffix = null;
-        if (is_object($au)) {
-            if ($au->affiliation) {
-                $aff_suffix = "(" . htmlspecialchars($au->affiliation) . ")";
+        if (is_object($aux)) {
+            $au = $aux->name(NAME_P);
+            if ($aux->affiliation !== "") {
+                $au .= " (" . $aux->affiliation . ")";
+                $aff_suffix = "(" . htmlspecialchars($aux->affiliation) . ")";
             }
-            if ($au instanceof Contact) {
-                $au = $au->name(NAME_P) . ($aff_suffix !== null ? " " . $aff_suffix : "");
-            } else {
-                $au = $au->nameaff_text();
-            }
+        } else {
+            $au = $aux;
         }
         $pregexes = [];
         '@phan-var list<object> $pregexes';
@@ -241,7 +240,7 @@ class AuthorMatcher extends Author {
         if (!empty($pregexes)) {
             $au = Text::highlight($au, $pregexes[0]);
         }
-        if ($aff_suffix && str_ends_with($au, $aff_suffix)) {
+        if ($aff_suffix !== null && str_ends_with($au, $aff_suffix)) {
             $au = substr($au, 0, -strlen($aff_suffix))
                 . '<span class="auaff">' . $aff_suffix . '</span>';
         }

@@ -235,7 +235,7 @@ if ($reviewer) {
     // search outline from old CRP, done here in a very different way
     $hlsearch = [];
     foreach ($reviewer->aucollab_matchers() as $matcher) {
-        $text = "match:\"" . str_replace("\"", "", $matcher->nameaff_text()) . "\"";
+        $text = "match:\"" . str_replace("\"", "", $matcher->name(NAME_P|NAME_A)) . "\"";
         $hlsearch[] = "au" . $text;
         if (!$matcher->nonauthor && $Conf->setting("sub_collab"))
             $hlsearch[] = "co" . $text;

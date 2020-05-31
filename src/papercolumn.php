@@ -425,7 +425,7 @@ class Authors_PaperColumn extends PaperColumn {
         $out = [];
         if (!$this->highlight && !$this->aufull) {
             foreach ($row->author_list() as $au) {
-                $out[] = $au->abbrevname_html();
+                $out[] = $au->name_h(NAME_P|NAME_I);
             }
             $t = join(", ", $out);
         } else {
@@ -471,7 +471,7 @@ class Authors_PaperColumn extends PaperColumn {
         $out = [];
         if (!$this->aufull) {
             foreach ($row->author_list() as $au) {
-                $out[] = $au->abbrevname_text();
+                $out[] = $au->name(NAME_P|NAME_I);
             }
             return join("; ", $out);
         } else {

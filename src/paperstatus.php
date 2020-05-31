@@ -500,11 +500,11 @@ class PaperStatus extends MessageSet {
     }
 
     private function normalize_author($pj, $au, &$au_by_lemail) {
-        $aux = Text::analyze_name($au);
+        $aux = Author::make_keyed($au);
         $aux->first = simplify_whitespace($aux->firstName);
         $aux->last = simplify_whitespace($aux->lastName);
         $aux->email = simplify_whitespace($aux->email);
-        $aux->affiliation = simplify_whitespace((string) $aux->affiliation);
+        $aux->affiliation = simplify_whitespace($aux->affiliation);
         // borrow from old author information
         if ($aux->email && $aux->first === "" && $aux->last === "" && $this->prow
             && ($old_au = $this->prow->author_by_email($aux->email))) {
@@ -687,7 +687,7 @@ class PaperStatus extends MessageSet {
                     if ($this->valid_contact($v))  {
                         $v = (object) ["email" => $v];
                     } else {
-                        $v = Text::analyze_name($v);
+                        $v = Author::make_keyed(["name" => $v]);
                     }
                 }
                 if (is_object($v) && !($v->email ?? false) && is_string($k)) {

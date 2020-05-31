@@ -40,6 +40,7 @@ define("NAME_P", 4);   // return email or "[No name]" instead of empty string
 define("NAME_L", 8);   // "last, first"
 define("NAME_I", 16);  // first initials instead of first name
 define("NAME_S", 32);  // "last, first" according to conference preference
+define("NAME_A", 64);  // affiliation (Author only)
 
 define("COMMENTTYPE_DRAFT", 1);
 define("COMMENTTYPE_BLIND", 2);

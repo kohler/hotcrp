@@ -92,7 +92,7 @@ class Default_PaperSaver extends PaperSaver {
                 return strcasecmp($c->email, $user->email) === 0;
             });
             if (!$has_me) {
-                $pj->contacts[] = Text::analyze_name($user);
+                $pj->contacts[] = Author::make_keyed($user);
             }
         }
         if ($action === "updatecontacts") {
