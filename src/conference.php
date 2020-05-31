@@ -4320,7 +4320,7 @@ class Conf {
             $j->color_classes = $color_classes;
         }
         if ($this->sort_by_last && $user->lastName) {
-            self::pc_json_sort_by_last($j, Text::analyze_name($user));
+            self::pc_json_sort_by_last($j, $user);
         }
         return $j;
     }
@@ -4338,21 +4338,13 @@ class Conf {
         return $j;
     }
 
-    /** @param NameInfo $r */
+    /** @param Contact $r */
     static private function pc_json_sort_by_last($j, $r) {
         if (strlen($r->lastName) !== strlen($j->name)) {
-            if ($r->nameAscii) {
-                $j->lastpos = strlen($r->firstName) + 1;
-            } else {
-                $j->lastpos = UnicodeHelper::utf16_strlen($r->firstName) + 1;
-            }
+            $j->lastpos = UnicodeHelper::utf16_strlen($r->firstName) + 1;
         }
         if ($r->nameAmbiguous && $r->name !== "" && $r->email !== "") {
-            if ($r->nameAscii) {
-                $j->emailpos = strlen($r->name) + 1;
-            } else {
-                $j->emailpos = UnicodeHelper::utf16_strlen($r->name) + 1;
-            }
+            $j->emailpos = UnicodeHelper::utf16_strlen($r->name) + 1;
         }
     }
 
