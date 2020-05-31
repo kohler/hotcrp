@@ -24,7 +24,7 @@ $paper1a = $ps->paper_json(1);
 xassert_eqq($paper1a->title, "Scalable Timers for Soft State Protocols");
 
 $ps->save_paper_json((object) ["id" => 1, "title" => "Scalable Timers? for Soft State Protocols"]);
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 
 $paper1b = $ps->paper_json(1);
 
@@ -40,10 +40,7 @@ $doc = DocumentInfo::make_file_upload(-1, DTYPE_SUBMISSION, [
     ], $Conf);
 xassert_eqq($doc->content_text_signature(), "starts with “%PDF-1.2”");
 $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
-xassert(!$ps->has_error());
-if ($ps->has_error()) {
-    error_log(join("\n", $ps->error_texts()));
-}
+xassert_paper_status($ps);
 
 $paper1c = $ps->paper_json(1);
 xassert_eqq($paper1c->submission->hash, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
@@ -52,14 +49,14 @@ $ps = new PaperStatus($Conf);
 
 $paper2a = $ps->paper_json(2);
 $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-hello\\n\",\"type\":\"application/pdf\"}}"));
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 xassert($Conf->check_document_inactive_invariants());
 
 $paper2b = $ps->paper_json(2);
 xassert_eqq($paper2b->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"final\":{\"content\":\"%PDF-goodbye\\n\",\"type\":\"application/pdf\"}}"));
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 xassert($Conf->check_document_inactive_invariants());
 
 $paper2 = $ps->paper_json(2);
@@ -67,7 +64,7 @@ xassert_eqq($paper2->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce
 xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-again hello\\n\",\"type\":\"application/pdf\"}}"));
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 xassert($Conf->check_document_inactive_invariants());
 
 $paper2 = $ps->paper_json(2);
@@ -84,7 +81,7 @@ $Conf->save_setting("options", 1, json_encode($options));
 $Conf->invalidate_caches("options");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"type\":\"application/pdf\"}]}}"));
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 xassert($Conf->check_document_inactive_invariants());
 
 $paper2 = $user_estrin->checked_paper_by_id(2);
@@ -96,7 +93,7 @@ xassert($docs[1]->check_text_hash("2e866582768e8954f55b974a2ad8503ef90717ab"));
 $d1psid = $docs[1]->paperStorageId;
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"sha1\": \"4c18e2ec1d1e6d9e53f57499a66aeb691d687370\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}]}}"));
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 xassert($Conf->check_document_inactive_invariants());
 
 $paper2 = $user_estrin->checked_paper_by_id(2);
@@ -124,7 +121,7 @@ xassert_eqq($docs[1]->paperStorageId, $d1psid);
 $Conf->save_setting("opt.contentHashMethod", 1, "sha256");
 
 $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content\":\"%PDF-whatever\\n\",\"type\":\"application/pdf\"}}"));
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 xassert($Conf->check_document_inactive_invariants());
 
 $paper3 = $user_estrin->checked_paper_by_id(3);
@@ -142,7 +139,7 @@ xassert($ps->diffs["title"]);
 xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
 xassert($ps->execute_save());
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 
 $newpaper = $user_estrin->checked_paper_by_id($ps->paperId);
 xassert($newpaper);
@@ -163,7 +160,7 @@ xassert($ps->prepare_save_paper_json($pj));
 xassert_eqq(count($ps->diffs), 1);
 xassert($ps->diffs["status"]);
 xassert($ps->execute_save());
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 
 $newpaper = $user_estrin->checked_paper_by_id($ps->paperId);
 xassert($newpaper);
@@ -185,7 +182,7 @@ xassert_eqq(count($ps->diffs), 2);
 xassert($ps->diffs["status"]);
 xassert($ps->diffs["calories"]);
 xassert($ps->execute_save());
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "opt1" => "10xxxxx", "has_opt1" => "1"]), $newpaper, $user_estrin, "update");
 $ps = new PaperStatus($Conf, $user_estrin);
@@ -198,7 +195,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_json($pj));
 xassert_eqq(count($ps->diffs), 1);
 xassert($ps->diffs["calories"]);
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 
 $newpaper = $user_estrin->checked_paper_by_id($ps->paperId);
 xassert($newpaper);
@@ -225,7 +222,7 @@ xassert($ps->diffs["title"]);
 xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
 xassert($ps->execute_save());
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 $npid1 = $ps->paperId;
 
 $newpaper = $user_estrin->checked_paper_by_id($npid1);
@@ -305,7 +302,7 @@ xassert_eqq($nprow1->collaborators(), "");
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => "  John Fart\rMIT\n\nButt Man (UCLA)"]), $nprow1, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_json($pj);
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators, "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
 xassert_eqq($nprow1->collaborators(), "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
@@ -313,7 +310,7 @@ xassert_eqq($nprow1->collaborators(), "John Fart\nAll (MIT)\n\nButt Man (UCLA)")
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => "Sal Stolfo, Guofei Gu, Manos Antonakakis, Roberto Perdisci, Weidong Cui, Xiapu Luo, Rocky Chang, Kapil Singh, Helen Wang, Zhichun Li, Junjie Zhang, David Dagon, Nick Feamster, Phil Porras."]), $nprow1, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_json($pj);
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators, "Sal Stolfo
 Guofei Gu
@@ -339,7 +336,7 @@ $long_collab = join("\n", $long_collab);
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => $long_collab]), $nprow1, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_json($pj);
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators, null);
 xassert_eqq(json_encode_db($nprow1->dataOverflow), json_encode_db(["collaborators" => $long_collab]));
@@ -349,7 +346,7 @@ xassert_eqq($nprow1->collaborators(), $long_collab);
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => "One guy (MIT)"]), $nprow1, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_json($pj);
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators, "One guy (MIT)");
 xassert_eqq($nprow1->dataOverflow, null);
@@ -407,7 +404,7 @@ $ps->save_paper_json((object) [
     "id" => $npid1,
     "topics" => ["fartchitecture"]
 ]);
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 xassert($ps->has_problem());
 xassert_eqq($ps->message_texts_at("topics"), ["Unknown topic ignored (fartchitecture)."]);
 $nprow1->invalidate_topics();
@@ -472,7 +469,7 @@ $ps->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => [$user_varghese->email, "notpc@no.com"]
 ]);
 xassert($ps->has_problem());
-xassert(!$ps->has_error());
+xassert_paper_status($ps);
 $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
 xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);

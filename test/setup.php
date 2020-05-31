@@ -538,5 +538,12 @@ function maybe_user($email) {
     return $Conf->user_by_email($email);
 }
 
+function xassert_paper_status(PaperStatus $ps) {
+    xassert(!$ps->has_error());
+    foreach ($ps->error_list() as $mx) {
+        error_log("! " . $mx[0] . ($mx[1] ? ": " . $mx[1] : ""));
+    }
+}
+
 MailChecker::clear();
 echo "* Tests initialized.\n";
