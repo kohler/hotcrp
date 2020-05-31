@@ -897,7 +897,7 @@ class PaperTable {
             return "[No authors]";
         } else if ($type === "last") {
             foreach ($table as $au) {
-                $n = Text::nameo($au, NAME_P|NAME_A);
+                $n = Text::nameo($au, NAME_P|NAME_I);
                 $names[] = Text::highlight($n, $highpreg, $nm);
                 $this->entryMatches += $nm;
             }

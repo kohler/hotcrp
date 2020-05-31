@@ -156,7 +156,7 @@ class Text {
      * @return string */
     static function name($firstName, $lastName, $email, $flags) {
         if ($firstName !== "" && $lastName !== "") {
-            if (($flags & NAME_A) !== 0
+            if (($flags & NAME_I) !== 0
                 && ($initial = self::initial($firstName)) !== "") {
                 $firstName = $initial;
             }

@@ -237,7 +237,7 @@ class CommentInfo {
 
     function unparse_commenter_html(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
-            $n = Text::nameo_h($this->commenter(), NAME_P|NAME_A);
+            $n = Text::nameo_h($this->commenter(), NAME_P|NAME_I);
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
         }
@@ -250,7 +250,7 @@ class CommentInfo {
 
     function unparse_commenter_text(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
-            $n = Text::nameo($this->commenter(), NAME_P|NAME_A);
+            $n = Text::nameo($this->commenter(), NAME_P|NAME_I);
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
         }

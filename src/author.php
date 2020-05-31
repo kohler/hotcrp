@@ -176,11 +176,11 @@ class Author {
     }
     /** @return string */
     function abbrevname_text() {
-        return Text::nameo($this, NAME_P|NAME_A);
+        return Text::nameo($this, NAME_P|NAME_I);
     }
     /** @return string */
     function abbrevname_html() {
-        return htmlspecialchars(Text::nameo($this, NAME_P|NAME_A));
+        return htmlspecialchars(Text::nameo($this, NAME_P|NAME_I));
     }
     /** @return string */
     function deaccent($component) {
