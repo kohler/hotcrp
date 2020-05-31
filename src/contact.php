@@ -248,7 +248,7 @@ class Contact {
         assert($this->contactId > 0 || ($this->contactId == 0 && $this->contactDbId > 0));
 
         if ($this->unaccentedName === "") {
-            $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
+            $this->unaccentedName = Text::name($this->firstName, $this->lastName, "", NAME_U);
         }
         if (isset($this->roles)) {
             $this->assign_roles((int) $this->roles);
@@ -1426,9 +1426,9 @@ class Contact {
             $db = $this->conf->dblink;
             $idk = "contactId";
             if (isset($updater["firstName"]) || isset($updater["lastName"])) {
-                $updater["firstName"] = get($updater, "firstName", $this->firstName);
-                $updater["lastName"] = get($updater, "lastName", $this->lastName);
-                $updater["unaccentedName"] = Text::unaccented_name($updater["firstName"], $updater["lastName"]);
+                $updater["firstName"] = $updater["firstName"] ?? $this->firstName;
+                $updater["lastName"] = $updater["lastName"] ?? $this->lastName;
+                $updater["unaccentedName"] = Text::name($this->firstName, $this->lastName, "", NAME_U);
             }
         }
         if ($this->$idk) {

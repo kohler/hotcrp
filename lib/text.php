@@ -460,7 +460,8 @@ class Text {
         }
     }
 
-    /** @return string */
+    /** @deprecated
+     * @return string */
     static function unaccented_name(/* ... */) {
         $x = self::analyze_name_args(func_get_args());
         return $x->unaccentedName;

@@ -181,7 +181,7 @@ function update_schema_unaccented_name($conf) {
     $qs = $qv = array();
     while (($x = $result->fetch_row())) {
         $qs[] = "update ContactInfo set unaccentedName=? where contactId=$x[0]";
-        $qv[] = Text::unaccented_name($x[1], $x[2]);
+        $qv[] = Text::name($x[1], $x[2], "", NAME_U);
     }
     Dbl::free($result);
 

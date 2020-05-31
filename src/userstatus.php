@@ -815,7 +815,7 @@ class UserStatus extends MessageSet {
                 && $user->save_assign_field("lastName", $cj->lastName, $cu)) {
                 $this->diffs["name"] = true;
             }
-            $user->save_assign_field("unaccentedName", Text::unaccented_name($user->firstName, $user->lastName), $cu);
+            $user->save_assign_field("unaccentedName", Text::name($user->firstName, $user->lastName, "", NAME_U), $cu);
         }
 
         if (isset($cj->email)
