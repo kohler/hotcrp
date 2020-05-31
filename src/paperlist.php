@@ -855,11 +855,12 @@ class PaperList {
             return 0;
         } else if (!$pc1 || !$pc2) {
             return $pc1 ? -1 : 1;
-        } else if (empty($sorter->anno)) {
+        } else if (!$sorter->ianno
+                   || $sorter->ianno === ($this->conf->sort_by_last ? 0312 : 0321)) {
             return Contact::compare($pc1, $pc2);
         } else {
-            $s1 = Contact::make_sorter($pc1, $sorter->anno);
-            $s2 = Contact::make_sorter($pc2, $sorter->anno);
+            $s1 = Contact::make_sorter($pc1, $sorter->ianno);
+            $s2 = Contact::make_sorter($pc2, $sorter->ianno);
             return strnatcasecmp($s1, $s2);
         }
     }

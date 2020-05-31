@@ -19,10 +19,10 @@ class Shepherd_PaperColumn extends PaperColumn {
         }
     }
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
-        $sorter->anno = Contact::parse_sortanno($pl->conf, $sorter->anno);
+        $sorter->ianno = Contact::parse_sortspec($pl->conf, $sorter->anno);
     }
     function sort_name(PaperList $pl, ListSorter $sorter = null) {
-        return $this->name . PaperColumn::contact_sort_anno($pl, $sorter);
+        return PaperColumn::decorate_user_sort_name($this->name, $pl, $sorter);
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $pl = $sorter->pl;

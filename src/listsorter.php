@@ -7,7 +7,10 @@ class ListSorter {
     /** @var ?bool */
     public $reverse = false;
     public $score;
+    /** @var ?list<string> */
     public $anno;
+    /** @var ?int */
+    public $ianno;
     /** @var bool */
     public $empty = false;
     /** @var int */

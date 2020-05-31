@@ -107,12 +107,11 @@ class PaperColumn extends Column {
     function sort_name(PaperList $pl, ListSorter $sorter = null) {
         return $this->name;
     }
-    static function contact_sort_anno(PaperList $pl, ListSorter $sorter = null) {
-        if ($sorter && ($anno = Contact::unparse_sortanno($pl->conf, $sorter->anno))) {
-            return " by " . $anno;
-        } else {
-            return "";
+    static function decorate_user_sort_name($name, PaperList $pl, ListSorter $sorter = null) {
+        if ($sorter && $sorter->ianno !== ($pl->conf->sort_by_last ? 0312 : 0321)) {
+            $name .= " by " . Contact::unparse_sortspec($sorter->ianno);
         }
+        return $name;
     }
 
     /** @return bool */
@@ -372,10 +371,10 @@ class Authors_PaperColumn extends PaperColumn {
         return $pl->user->can_view_some_authors();
     }
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
-        $sorter->anno = Contact::parse_sortanno($pl->conf, $sorter->anno, true);
+        $sorter->ianno = Contact::parse_sortspec($pl->conf, $sorter->anno);
     }
     function sort_name(PaperList $pl, ListSorter $sorter = null) {
-        return $this->name . PaperColumn::contact_sort_anno($pl, $sorter);
+        return PaperColumn::decorate_user_sort_name($this->name, $pl, $sorter);
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $au1 = $sorter->pl->user->allow_view_authors($a) ? $a->author_list() : [];
@@ -386,8 +385,8 @@ class Authors_PaperColumn extends PaperColumn {
             return empty($au1) ? 1 : -1;
         }
         for ($i = 0; $i < count($au1) && $i < count($au2); ++$i) {
-            $s1 = Contact::make_sorter($au1[$i], $sorter->anno);
-            $s2 = Contact::make_sorter($au2[$i], $sorter->anno);
+            $s1 = Contact::make_sorter($au1[$i], $sorter->ianno);
+            $s2 = Contact::make_sorter($au2[$i], $sorter->ianno);
             if (($v = strnatcasecmp($s1, $s2)) !== 0) {
                 return $v;
             }

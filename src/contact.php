@@ -324,58 +324,107 @@ class Contact {
     }
 
 
-    static function parse_sortanno(Conf $conf, $args, $explicit = false) {
-        $name = $conf->sort_by_last ? ["lastName", "firstName"] : ["firstName", "lastName"];
-        $s = [];
-        foreach ($args ? : [] as $w) {
+    // A sort specification is an integer divided into units of 3 bits.
+    // A unit of 1 === first, 2 === last, 3 === email, 4 === affiliation.
+    // Least significant bits === most important sort.
+
+    /** @param ?list<string> $args
+     * @return int */
+    static function parse_sortspec(Conf $conf, $args) {
+        $r = $seen = $shift = 0;
+        while (!empty($args)) {
+            $w = array_shift($args);
             if ($w === "name") {
-                $s = array_merge($s, $name);
-            } else if ($w === "first" || $w === "firstName") {
-                $s[] = "firstName";
+                array_unshift($args, $conf->sort_by_last ? "first" : "last");
+                $w = $conf->sort_by_last ? "last" : "first";
+            }
+            if ($w === "first" || $w === "firstName") {
+                $bit = 1;
             } else if ($w === "last" || $w === "lastName") {
-                $s[] = "lastName";
-            } else if ($w === "email" || $w === "affiliation") {
-                $s[] = $w;
-            }
-        }
-        if (empty($s) && $explicit) {
-            $s = $name;
-            $s[] = "email";
-        }
-        return $s;
-    }
-
-    static function unparse_sortanno(Conf $conf, $args) {
-        $defaultargs = $conf->sort_by_last ? ["lastName", "firstName", "email"] : ["firstName", "lastName", "email"];
-        return $args === $defaultargs ? null : join(" ", $args);
-    }
-
-    static function make_sorter($c, $args) {
-        if (is_bool($args) || $args === null) {
-            if ($args === false && isset($c->unaccentedName)) {
-                return trim("$c->unaccentedName $c->email");
-            }
-            $args = $args ? ["lastName", "firstName", "email"] : ["firstName", "lastName", "email"];
-        }
-        $s = [];
-        $firstName = $c->firstName;
-        foreach ($args as $arg) {
-            if ($arg === "lastName"
-                && $firstName !== false
-                && ($m = Text::analyze_von($c->lastName))) {
-                $x = $m[1];
-                $firstName = ltrim($firstName . " " . $m[0]);
-            } else if ($arg === "firstName") {
-                $x = $firstName;
-                $firstName = false;
+                $bit = 2;
+            } else if ($w === "email") {
+                $bit = 3;
+            } else if ($w === "affiliation") {
+                $bit = 4;
             } else {
-                $x = $c->$arg;
+                $bit = 0;
             }
-            if ((string) $x !== "") {
-                $s[] = $x;
+            if ($bit !== 0 && ($seen & (1 << $bit)) === 0) {
+                $seen |= 1 << $bit;
+                $r |= $bit << $shift;
+                $shift += 3;
             }
         }
-        $t = join(" ", $s);
+        if ($r === 0) { // default
+            $r = $conf->sort_by_last ? 0312 : 0321;
+        } else if (($seen & 016) === 002) { // first -> first last email
+            $r |= 032 << $shift;
+        } else if (($seen & 016) === 004) { // last -> first last email
+            $r |= 031 << $shift;
+        } else if (($seen & 010) === 0) { // always add email
+            $r |= 03 << $shift;
+        }
+        return $r;
+    }
+
+    /** @param int $sortspec
+     * @return string */
+    static function unparse_sortspec($sortspec) {
+        if ($sortspec === 0321 || $sortspec === 0312) {
+            return $sortspec === 0321 ? "first" : "last";
+        } else {
+            $r = [];
+            while ($sortspec !== 0 && ($sortspec !== 03 || empty($r))) {
+                $bit = $sortspec & 7;
+                $sortspec >>= 3;
+                if ($bit >= 1 && $bit <= 4) {
+                    $r[] = (["first", "last", "email", "affiliation"])[$bit - 1];
+                }
+            }
+            return join(" ", $r);
+        }
+    }
+
+    /** @param int $sortspec
+     * @return string */
+    static function make_sorter($c, $sortspec) {
+        $r = [];
+        $first = $c->firstName;
+        $von = "";
+        while ($sortspec !== 0) {
+            if (($sortspec & 077) === 021 && isset($c->unaccentedName)) {
+                $r[] = $c->unaccentedName;
+                $sortspec >>= 6;
+                $first = "";
+            } else {
+                $bit = $sortspec & 7;
+                $sortspec >>= 3;
+                if ($bit === 1) {
+                    $s = $first . $von;
+                    $first = $von = "";
+                } else if ($bit === 2
+                           && $first !== ""
+                           && ($m = Text::analyze_von($c->lastName))) {
+                    $s = $m[1];
+                    $von = " " . $m[0];
+                } else if ($bit === 2) {
+                    $s = $c->lastName;
+                } else if ($bit === 3) {
+                    $s = $c->email;
+                } else if ($bit === 4) {
+                    $s = $c->affiliation;
+                } else {
+                    $s = "";
+                }
+                if ($s !== "") {
+                    $r[] = $s;
+                }
+            }
+        }
+        if ($von !== "") {
+            $r[] = $von;
+        }
+        $t = join(" ", $r);
         if (!is_usascii($t)) {
             $t = UnicodeHelper::deaccent($t);
         }
@@ -383,7 +432,7 @@ class Contact {
     }
 
     static function set_sorter($c, Conf $conf) {
-        $c->sorter = self::make_sorter($c, $conf->sort_by_last);
+        $c->sorter = self::make_sorter($c, $conf->sort_by_last ? 0312 : 0321);
     }
 
     static function compare($a, $b) {
