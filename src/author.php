@@ -155,13 +155,13 @@ class Author {
     }
     /** @return string */
     function name($flags = 0) {
-        if (($flags & (NAME_L | NAME_I)) === 0 && $this->_name !== null) {
+        if (($flags & (NAME_L | NAME_I | NAME_U)) === 0 && $this->_name !== null) {
             $name = $this->_name;
         } else {
             $name = Text::name($this->firstName, $this->lastName, $this->email, $flags);
         }
         if (($flags & NAME_A) !== 0 && $this->affiliation !== "") {
-            $name .= ($name === "" ? "(" : " (") . $this->affiliation . ")";
+            $name = Text::add_affiliation($name, $this->affiliation, $flags);
         }
         return $name;
     }
@@ -169,8 +169,7 @@ class Author {
     function name_h($flags = 0) {
         $name = htmlspecialchars($this->name($flags & ~NAME_A));
         if (($flags & NAME_A) !== 0 && $this->affiliation !== "") {
-            $name .= ($name === "" ? "" : " ") . ' <span class="auaff">('
-                . htmlspecialchars($this->affiliation) . ')</span>';
+            $name = Text::add_affiliation_h($name, $this->affiliation, $flags);
         }
         return $name;
     }

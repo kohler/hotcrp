@@ -180,6 +180,9 @@ class Text {
         } else {
             return "[No name]";
         }
+        if (($flags & NAME_U) !== 0 && !is_usascii($name)) {
+            $name = UnicodeHelper::deaccent($name);
+        }
         if ($email !== "" && ($flags & NAME_E) !== 0) {
             $name .= " <" . $email . ">";
         }
@@ -207,6 +210,37 @@ class Text {
      * @return string */
     static function nameo_h($o, $flags) {
         return htmlspecialchars(self::name($o->firstName, $o->lastName, $o->email, $flags));
+    }
+
+    /** @param string $name
+     * @param string $affiliation
+     * @param int $flags
+     * @return string */
+    static function add_affiliation($name, $affiliation, $flags) {
+        if ($affiliation !== "") {
+            if (($flags & NAME_U) !== 0 && !is_usascii($affiliation)) {
+                $affiliation = UnicodeHelper::deaccent($affiliation);
+            }
+            return $name . ($name === "" ? "" : " ") . "(" . $affiliation . ")";
+        } else {
+            return $name;
+        }
+    }
+
+    /** @param string $name
+     * @param string $affiliation
+     * @param int $flags
+     * @return string */
+    static function add_affiliation_h($name, $affiliation, $flags) {
+        if ($affiliation !== "") {
+            if (($flags & NAME_U) !== 0 && !is_usascii($affiliation)) {
+                $affiliation = UnicodeHelper::deaccent($affiliation);
+            }
+            return $name . ($name === "" ? "" : " ") . "<span class=\"auaff\">("
+                . htmlspecialchars($affiliation) . ")</span>";
+        } else {
+            return $name;
+        }
     }
 
     /** @deprecated

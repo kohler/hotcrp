@@ -174,13 +174,12 @@ class Contact {
             $this->lastName = (string) $user["lastName"];
             $this->unaccentedName = isset($user["unaccentedName"])
                 ? $user["unaccentedName"]
-                : Text::unaccented_name($this);
+                : Text::name($this->firstName, $this->lastName, "", NAME_U);
         } else {
             $nameau = Author::make_keyed($user);
             $this->firstName = $nameau->firstName;
             $this->lastName = $nameau->lastName;
-            $name = Text::name($this->firstName, $this->lastName, "", 0);
-            $this->unaccentedName = is_usascii($name) ? $name : UnicodeHelper::deaccent($name);
+            $this->unaccentedName = $nameau->name(NAME_U);
         }
 
         $this->affiliation = simplify_whitespace((string) ($user["affiliation"] ?? ""));
@@ -719,13 +718,21 @@ class Contact {
         if (($flags & NAME_P) !== 0 && $this->nameAmbiguous) {
             $flags |= NAME_E;
         }
-        return Text::name($this->firstName, $this->lastName, $this->email, $flags);
+        $name = Text::name($this->firstName, $this->lastName, $this->email, $flags);
+        if (($flags & NAME_A) !== 0 && $this->affiliation !== "") {
+            $name = Text::add_affiliation($name, $this->affiliation, $flags);
+        }
+        return $name;
     }
 
     /** @param int $flags
      * @return string */
     function name_h($flags = 0) {
-        return htmlspecialchars($this->name($flags));
+        $name = htmlspecialchars($this->name($flags & ~NAME_A));
+        if (($flags & NAME_A) !== 0 && $this->affiliation !== "") {
+            $name = Text::add_affiliation_h($name, $this->affiliation, $flags);
+        }
+        return $name;
     }
 
     function completion_items() {
