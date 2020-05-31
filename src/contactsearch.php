@@ -215,8 +215,9 @@ class ContactSearch {
         }
 
         if (count($ids) > 1) {
-            usort($ids, function ($a, $b) use ($cs) {
-                return Contact::compare($cs[$a], $cs[$b]);
+            $cf = $this->conf->user_comparator();
+            usort($ids, function ($a, $b) use ($cs, $cf) {
+                return call_user_func($cf, $cs[$a], $cs[$b]);
             });
         }
 

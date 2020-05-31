@@ -18,7 +18,7 @@ class Author {
     private $_deaccents;
     /** @var ?bool */
     public $nonauthor;
-    /** @var ?string */
+    /** @deprecated */
     public $sorter;
 
     function __construct($x = null) {

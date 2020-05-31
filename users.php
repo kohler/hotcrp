@@ -133,7 +133,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
     }
     Dbl::free($result);
 
-    usort($users, "Contact::compare");
+    usort($users, $Conf->user_comparator());
     Contact::load_topic_interests($users);
 
     // NB This format is expected to be parsed by profile.php's bulk upload.

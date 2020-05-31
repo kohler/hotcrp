@@ -655,15 +655,17 @@ class FormulaGraph extends MessageSet {
 
     private function _reviewer_reformat() {
         if (!($axes = $this->_valuemap_axes(Fexpr::FREVIEWER))
-            || !($cids = $this->_valuemap_collect($axes)))
+            || !($cids = $this->_valuemap_collect($axes))) {
             return;
+        }
         $cids = array_filter(array_keys($cids), "is_numeric");
         $result = $this->conf->qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", $cids);
         $this->reviewers = [];
-        while (($c = Contact::fetch($result, $this->conf)))
+        while (($c = Contact::fetch($result, $this->conf))) {
             $this->reviewers[$c->contactId] = $c;
+        }
         Dbl::free($result);
-        uasort($this->reviewers, "Contact::compare");
+        uasort($this->reviewers, $this->conf->user_comparator());
         $i = 0;
         $m = [];
         foreach ($this->reviewers as $c) {

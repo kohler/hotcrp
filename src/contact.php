@@ -46,7 +46,12 @@ class Contact {
 
     public $nameAmbiguous;
     public $preferredEmail = "";
+    /** @deprecated */
     public $sorter = "";
+    /** @var string */
+    private $_sorter;
+    /** @var ?int */
+    private $_sortspec;
     public $sort_position;
     public $name_analysis;
 
@@ -71,7 +76,6 @@ class Contact {
     private $_jdata;
     private $_topic_interest_map;
     private $_name_for_map = [];
-    private $_contact_sorter_map = [];
     const WATCH_REVIEW_EXPLICIT = 1;  // only in PaperWatch
     const WATCH_REVIEW = 2;
     const WATCH_REVIEW_ALL = 4;
@@ -184,7 +188,6 @@ class Contact {
 
         $this->affiliation = simplify_whitespace((string) ($user["affiliation"] ?? ""));
         $this->email = simplify_whitespace((string) ($user["email"] ?? ""));
-        self::set_sorter($this, $this->conf);
 
         $roles = (int) ($user["roles"] ?? 0);
         if ($user["isPC"] ?? false) {
@@ -247,7 +250,6 @@ class Contact {
         if ($this->unaccentedName === "") {
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
         }
-        self::set_sorter($this, $this->conf);
         if (isset($this->roles)) {
             $this->assign_roles((int) $this->roles);
         }
@@ -385,7 +387,8 @@ class Contact {
         }
     }
 
-    /** @param int $sortspec
+    /** @param Contact|Author $c
+     * @param int $sortspec
      * @return string */
     static function make_sorter($c, $sortspec) {
         $r = [];
@@ -424,17 +427,30 @@ class Contact {
         if ($von !== "") {
             $r[] = $von;
         }
-        $t = join(" ", $r);
-        if (!is_usascii($t)) {
-            $t = UnicodeHelper::deaccent($t);
-        }
-        return $t;
+        return join(" ", $r);
     }
 
+    /** @param Contact|Author $c
+     * @param int $sortspec
+     * @return string */
+    static function get_sorter($c, $sortspec) {
+        if ($c instanceof Contact) {
+            if ($c->_sortspec !== $sortspec) {
+                $c->_sorter = self::make_sorter($c, $sortspec);
+                $c->_sortspec = $sortspec;
+            }
+            return $c->_sorter;
+        } else {
+            return self::make_sorter($c, $sortspec);
+        }
+    }
+
+    /** @deprecated */
     static function set_sorter($c, Conf $conf) {
         $c->sorter = self::make_sorter($c, $conf->sort_by_last ? 0312 : 0321);
     }
 
+    /** @deprecated */
     static function compare($a, $b) {
         return strnatcasecmp($a->sorter, $b->sorter);
     }
@@ -865,10 +881,6 @@ class Contact {
             $x = $pc;
         }
 
-        if (isset($x->sorter) && !isset($this->_contact_sorter_map[$cid])) {
-            $this->_contact_sorter_map[$cid] = $x->sorter;
-        }
-
         $res = $this->calculate_name_for($pfx, $x);
         $this->_name_for_map[$key] = $res;
         return $res;
@@ -909,24 +921,11 @@ class Contact {
         uksort($a, function ($a, $b) use ($pcm) {
             if (isset($pcm[$a]) && isset($pcm[$b])) {
                 return $pcm[$a]->sort_position - $pcm[$b]->sort_position;
-            }
-            if (isset($pcm[$a])) {
-                $as = $pcm[$a]->sorter;
-            } else if (isset($this->_contact_sorter_map[$a])) {
-                $as = $this->_contact_sorter_map[$a];
             } else {
-                $x = $this->conf->user_by_id($a);
-                $as = $this->_contact_sorter_map[$a] = $x->sorter;
+                $au = $pcm[$a] ?? $this->conf->cached_user_by_id($a);
+                $bu = $pcm[$b] ?? $this->conf->cached_user_by_id($b);
+                return call_user_func($this->conf->user_comparator(), $au, $bu);
             }
-            if (isset($pcm[$b])) {
-                $bs = $pcm[$b]->sorter;
-            } else if (isset($this->_contact_sorter_map[$b])) {
-                $bs = $this->_contact_sorter_map[$b];
-            } else {
-                $x = $this->conf->user_by_id($b);
-                $bs = $this->_contact_sorter_map[$b] = $x->sorter;
-            }
-            return strcasecmp($as, $bs);
         });
     }
 
@@ -1298,7 +1297,6 @@ class Contact {
     }
 
     function save_cleanup(UserStatus $us) {
-        self::set_sorter($this, $this->conf);
         $this->_disabled = null;
         if (isset($us->diffs["topics"])) {
             $this->_topic_interest_map = null;

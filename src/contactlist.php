@@ -149,23 +149,24 @@ class ContactList {
     }
 
     function _sortBase($a, $b) {
-        return strcasecmp($a->sorter, $b->sorter);
+        return call_user_func($this->conf->user_comparator(), $a, $b);
     }
 
     function _sortEmail($a, $b) {
-        return strcasecmp($a->email, $b->email);
+        return strnatcasecmp($a->email, $b->email);
     }
 
     function _sortAffiliation($a, $b) {
-        $x = strcasecmp($a->affiliation, $b->affiliation);
+        $x = strnatcasecmp($a->affiliation, $b->affiliation);
         return $x ? : $this->_sortBase($a, $b);
     }
 
     function _sortLastVisit($a, $b) {
-        if ($a->activity_at != $b->activity_at)
+        if ($a->activity_at != $b->activity_at) {
             return $a->activity_at < $b->activity_at ? 1 : -1;
-        else
+        } else {
             return $this->_sortBase($a, $b);
+        }
     }
 
     function _sortReviews($a, $b) {

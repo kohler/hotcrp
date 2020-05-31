@@ -2555,6 +2555,8 @@ class PaperInfo {
     }
 
 
+    /** @param Contact $a
+     * @param Contact $b */
     static function notify_user_compare($a, $b) {
         // group authors together, then reviewers
         $act = (int) $a->conflictType;
@@ -2567,7 +2569,7 @@ class PaperInfo {
         if ((bool) $arp !== (bool) $brp) {
             return (bool) $arp ? -1 : 1;
         }
-        return Contact::compare($a, $b);
+        return call_user_func($a->conf->user_comparator(), $a, $b);
     }
 
     function notify_reviews($callback, $sending_user) {
@@ -2591,11 +2593,13 @@ class PaperInfo {
         while (($minic = Contact::fetch($result, $this->conf))) {
             if ($minic->contactId == $lastContactId
                 || ($sending_user && $minic->contactId == $sending_user->contactId)
-                || Contact::is_anonymous_email($minic->email))
+                || Contact::is_anonymous_email($minic->email)) {
                 continue;
+            }
             $lastContactId = $minic->contactId;
-            if ($minic->following_reviews($this, $minic->watch))
+            if ($minic->following_reviews($this, $minic->watch)) {
                 $watchers[$minic->contactId] = $minic;
+            }
         }
         Dbl::free($result);
         usort($watchers, "PaperInfo::notify_user_compare");

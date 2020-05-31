@@ -848,20 +848,18 @@ class PaperList {
 
     /** @param int $contactId1
      * @param int $contactId2 */
-    function _compare_pc($contactId1, $contactId2, $sorter) {
+    function _compare_pc($contactId1, $contactId2, ListSorter $sorter) {
+        assert(!!$sorter->ianno);
         $pc1 = $this->conf->pc_member_by_id($contactId1);
         $pc2 = $this->conf->pc_member_by_id($contactId2);
         if ($pc1 === $pc2) {
-            return 0;
+            return $contactId1 - $contactId2;
         } else if (!$pc1 || !$pc2) {
             return $pc1 ? -1 : 1;
-        } else if (!$sorter->ianno
-                   || $sorter->ianno === ($this->conf->sort_by_last ? 0312 : 0321)) {
-            return Contact::compare($pc1, $pc2);
         } else {
-            $s1 = Contact::make_sorter($pc1, $sorter->ianno);
-            $s2 = Contact::make_sorter($pc2, $sorter->ianno);
-            return strnatcasecmp($s1, $s2);
+            $as = Contact::get_sorter($pc1, $sorter->ianno);
+            $bs = Contact::get_sorter($pc2, $sorter->ianno);
+            return $this->conf->collator()->compare($as, $bs);
         }
     }
 

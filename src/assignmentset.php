@@ -1694,19 +1694,18 @@ class AssignmentSet {
              $index !== null;
              $index = $assigner->next_index) {
             $assigners[] = $assigner = $this->assigners[$index];
-            if ($assigner->contact && !isset($assigner->contact->sorter)) {
-                Contact::set_sorter($assigner->contact, $this->conf);
-            }
         }
         usort($assigners, function ($assigner1, $assigner2) {
             $c1 = $assigner1->contact;
             $c2 = $assigner2->contact;
             '@phan-var ?Contact $c1';
             '@phan-var ?Contact $c2';
-            if ($c1 && $c2) {
-                return strnatcasecmp($c1->sorter, $c2->sorter);
-            } else if ($c1 || $c2) {
-                return $c1 ? -1 : 1;
+            if ($c1 && $c2 && $c1 !== $c2) {
+                return call_user_func($this->conf->user_comparator(), $c1, $c2);
+            } else if (!$c1 && $c2) {
+                return 1;
+            } else if ($c1 && !$c2) {
+                return -1;
             } else {
                 return strcmp($assigner1->type, $assigner2->type);
             }

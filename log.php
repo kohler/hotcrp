@@ -724,7 +724,7 @@ function render_users($users, $via) {
     $all_pc = true;
     $ts = [];
     $last_user = null;
-    usort($users, "Contact::compare");
+    usort($users, $Conf->user_comparator());
     foreach ($users as $user) {
         if ($user === $last_user) {
             continue;

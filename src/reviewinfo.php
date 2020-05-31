@@ -289,7 +289,6 @@ class ReviewInfo implements JsonSerializable {
         $this->lastName = $c->lastName;
         $this->email = $c->email;
         $this->contactTags = $c->contactTags;
-        $this->sorter = $c->sorter;
     }
 
     /** @param string $id

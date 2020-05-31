@@ -969,18 +969,18 @@ class PaperTable {
             }
             if ($match >= 0) {
                 $au = $aulist[$match];
-                if ($au->email === "")
+                if ($au->email === "") {
                     $au->email = $row->email;
+                }
             } else {
                 $contacts[] = $au = $row;
                 $au->nonauthor = true;
             }
             $au->contactId = (int) $row->contactId;
-            Contact::set_sorter($au, $this->conf);
         }
         Dbl::free($result);
 
-        uasort($contacts, "Contact::compare");
+        uasort($contacts, $this->conf->user_comparator());
         return array($aulist, $contacts);
     }
 
@@ -1357,11 +1357,10 @@ class PaperTable {
         } else if (!$this->admin) {
             $contacts = [new Author($this->user)];
             $contacts[0]->contactId = $this->user->contactId;
-            Contact::set_sorter($contacts[0], $this->conf);
         } else {
             $contacts = [];
         }
-        usort($contacts, "Contact::compare");
+        usort($contacts, $this->conf->user_comparator());
 
         echo '<div class="papeg">',
             '<div class="', $this->control_class("contacts", "papet"),

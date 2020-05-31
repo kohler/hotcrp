@@ -874,6 +874,16 @@ class Conf {
         return $this->_collator;
     }
 
+    /** @return callable(string,string):int */
+    function user_comparator() {
+        return function ($a, $b) {
+            $sortspec = $this->sort_by_last ? 0312 : 0321;
+            $as = Contact::get_sorter($a, $sortspec);
+            $bs = Contact::get_sorter($b, $sortspec);
+            return $this->collator()->compare($as, $bs);
+        };
+    }
+
 
     // name
 
@@ -2113,7 +2123,7 @@ class Conf {
                 }
             }
 
-            uasort($pc, "Contact::compare");
+            uasort($pc, $this->user_comparator());
             $this->_pc_users_cache = $pc;
 
             $this->_pc_members_cache = $this->_pc_chairs_cache = [];
