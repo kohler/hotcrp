@@ -239,7 +239,7 @@ class Mailer {
         }
 
         if ($out === "NAME" || $out === "CONTACT") {
-            $t = $r->name;
+            $t = $r->name();
         } else if ($out === "FIRST") {
             $t = $r->firstName;
         } else if ($out === "LAST") {

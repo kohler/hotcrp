@@ -21,6 +21,7 @@ class Author {
     /** @deprecated */
     public $sorter;
 
+    /** @param null|string|object $x */
     function __construct($x = null) {
         if (is_object($x)) {
             $this->firstName = $x->firstName;
@@ -120,21 +121,28 @@ class Author {
      * @return Author */
     static function make_keyed($o) {
         $au = new Author;
+        $au->assign_keyed($o);
+        return $au;
+    }
+    /** @param object|array<string,mixed> $o */
+    function assign_keyed($o) {
+        if (!is_object($o) && !is_array($o)) {
+            throw new Exception("invalid Author::make_keyed");
+        }
         foreach (is_object($o) ? get_object_vars($o) : $o as $k => $v) {
             if (($mk = self::$object_keys[$k] ?? null) !== null
                 && is_string($v)) {
                 if ($mk === "name") {
-                    $au->_name = $v;
-                    list($au->firstName, $au->lastName, $e) = Text::split_name($v, true);
-                    if ($e !== null && $au->email === "") {
-                        $au->email = $e;
+                    $this->_name = $v;
+                    list($this->firstName, $this->lastName, $e) = Text::split_name($v, true);
+                    if ($e !== null && $this->email === "") {
+                        $this->email = $e;
                     }
                 } else {
-                    $au->$mk = $v;
+                    $this->$mk = $v;
                 }
             }
         }
-        return $au;
     }
     /** @param string $s
      * @param int $paren
@@ -208,5 +216,9 @@ class Author {
             ];
         }
         return $this->_deaccents[$component];
+    }
+    /** @return string */
+    function unparse_tabbed() {
+        return "{$this->firstName}\t{$this->lastName}\t{$this->email}\t{$this->affiliation}";
     }
 }

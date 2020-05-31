@@ -2,6 +2,18 @@
 // paperstatus.php -- HotCRP helper for reading/storing papers as JSON
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
+class PaperStatusAuthor extends Author {
+    /** @var ?bool */
+    public $is_contact;
+    /** @var bool */
+    public $is_new = false;
+    /** @var int */
+    public $author_index = -1;
+    /** @var int */
+    public $contact_index = -1;
+    public $disabled;
+}
+
 class PaperStatus extends MessageSet {
     /** @var Conf */
     public $conf;
@@ -251,16 +263,16 @@ class PaperStatus extends MessageSet {
             $pj->authors = array();
             foreach ($prow->author_list() as $au) {
                 $aux = (object) array();
-                if ($au->email) {
+                if ($au->email !== "") {
                     $aux->email = $au->email;
                 }
-                if ($au->firstName) {
+                if ($au->firstName !== "") {
                     $aux->first = $au->firstName;
                 }
-                if ($au->lastName) {
+                if ($au->lastName !== "") {
                     $aux->last = $au->lastName;
                 }
-                if ($au->affiliation) {
+                if ($au->affiliation !== "") {
                     $aux->affiliation = $au->affiliation;
                 }
                 $lemail = strtolower((string) $au->email);
@@ -499,38 +511,46 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    /** @param object $au
+     * @param array<string,PaperStatusAuthor> &$au_by_lemail */
     private function normalize_author($pj, $au, &$au_by_lemail) {
-        $aux = Author::make_keyed($au);
-        $aux->first = simplify_whitespace($aux->firstName);
-        $aux->last = simplify_whitespace($aux->lastName);
+        $aux = new PaperStatusAuthor;
+        $aux->assign_keyed($au);
+        $aux->firstName = simplify_whitespace($aux->firstName);
+        $aux->lastName = simplify_whitespace($aux->lastName);
         $aux->email = simplify_whitespace($aux->email);
         $aux->affiliation = simplify_whitespace($aux->affiliation);
         // borrow from old author information
-        if ($aux->email && $aux->first === "" && $aux->last === "" && $this->prow
+        if ($aux->email
+            && $aux->firstName === ""
+            && $aux->lastName === ""
+            && $this->prow
             && ($old_au = $this->prow->author_by_email($aux->email))) {
-            $aux->first = get($old_au, "first", "");
-            $aux->last = get($old_au, "last", "");
+            $aux->firstName = $old_au->firstName;
+            $aux->lastName = $old_au->lastName;
             if ($aux->affiliation === "") {
-                $aux->affiliation = get($old_au, "affiliation", "");
+                $aux->affiliation = $old_au->affiliation;
             }
         }
         // set contactness and author index
-        if (is_object($au) && isset($au->contact)) {
-            $aux->contact = !!$au->contact;
+        if (isset($au->contact)) {
+            $aux->is_contact = !!$au->contact;
         }
-        if (is_object($au) && isset($au->index) && is_int($au->index)) {
-            $aux->index = $au->index;
+        if (isset($au->index) && is_int($au->index)) {
+            $aux->author_index = $au->index;
         } else {
-            $aux->index = count($pj->authors) + count($pj->bad_authors);
+            $aux->author_index = count($pj->authors) + count($pj->bad_authors);
         }
 
-        if ($aux->first !== "" || $aux->last !== ""
-            || $aux->email !== "" || $aux->affiliation !== "") {
+        if ($aux->firstName !== ""
+            || $aux->lastName !== ""
+            || $aux->email !== ""
+            || $aux->affiliation !== "") {
             $pj->authors[] = $aux;
         } else {
             $pj->bad_authors[] = $aux;
         }
-        if ($aux->email) {
+        if ($aux->email !== "") {
             $lemail = strtolower($aux->email);
             $au_by_lemail[$lemail] = $aux;
             if (!validate_email($lemail)
@@ -562,7 +582,7 @@ class PaperStatus extends MessageSet {
 
     private function valid_contact($email) {
         global $Me;
-        if ($email) {
+        if ($email !== "") {
             if (validate_email($email) || strcasecmp($email, $Me->email) == 0) {
                 return true;
             }
@@ -590,8 +610,10 @@ class PaperStatus extends MessageSet {
             }
             $pj->authors = [];
             foreach ($input_authors as $k => $au) {
-                if (is_string($au) || is_object($au)) {
+                if (is_object($au)) {
                     $this->normalize_author($pj, $au, $au_by_lemail);
+                } else if (is_string($au)) {
+                    $this->normalize_author($pj, (object) ["email" => $au], $au_by_lemail);
                 } else {
                     $this->format_error_at("authors", $au);
                 }
@@ -660,8 +682,7 @@ class PaperStatus extends MessageSet {
         // verify emails on authors marked as contacts
         $pj->bad_contacts = array();
         foreach ($pj->authors ?? [] as $au) {
-            if (($au->contact ?? false)
-                && (!isset($au->email) || !$this->valid_contact($au->email)))
+            if ($au->is_contact && !$this->valid_contact($au->email))
                 $pj->bad_contacts[] = $au;
         }
 
@@ -695,7 +716,16 @@ class PaperStatus extends MessageSet {
                 }
                 if (is_object($v) && ($v->email ?? false)) {
                     if ($this->valid_contact($v->email)) {
-                        $pj->contacts[] = (object) array_merge((array) get($au_by_lemail, strtolower($v->email)), (array) $v);
+                        $aux = new PaperStatusAuthor;
+                        $aux->assign_keyed($v);
+                        $aux->is_contact = true;
+                        if (isset($v->is_new) && is_bool($v->is_new)) {
+                            $aux->is_new = $v->is_new;
+                        }
+                        if (isset($v->index) && is_int($v->index)) {
+                            $aux->contact_index = $v->index;
+                        }
+                        $pj->contacts[] = $aux;
                     } else {
                         $pj->bad_contacts[] = $v;
                     }
@@ -710,8 +740,9 @@ class PaperStatus extends MessageSet {
             foreach ($this->prow->contacts(true) as $cflt) {
                 if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR
                     && ($aux = $au_by_lemail[strtolower($cflt->email)] ?? null)
-                    && !isset($aux->contact))
-                    $aux->contact = true;
+                    && !isset($aux->is_contact)) {
+                    $aux->is_contact = true;
+                }
             }
         }
 
@@ -722,14 +753,21 @@ class PaperStatus extends MessageSet {
             if (!isset($pj->contacts)) {
                 $pj->contacts = [];
                 foreach ($this->prow->contacts(true) as $cflt) {
-                    if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR)
-                        $pj->contacts[] = (object) ["email" => $cflt->email];
+                    if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR) {
+                        $aux = new PaperStatusAuthor;
+                        $aux->email = $cflt->email;
+                        $aux->is_contact = true;
+                        $pj->contacts[] = $aux;
+                    }
                 }
             }
             if (!array_filter($pj->contacts, function ($cflt) {
                     return strcasecmp($this->user->email, $cflt->email) === 0;
                 })) {
-                $pj->contacts[] = (object) ["email" => $this->user->email];
+                $aux = new PaperStatusAuthor;
+                $aux->email = $this->user->email;
+                $aux->is_contact = true;
+                $pj->contacts[] = $aux;
             }
         }
     }
@@ -753,31 +791,31 @@ class PaperStatus extends MessageSet {
 
     static private function author_information($pj) {
         $x = "";
-        foreach ($pj && get($pj, "authors") ? $pj->authors : [] as $au) {
-            $x .= get($au, "first", get($au, "firstName", "")) . "\t"
-                . get($au, "last", get($au, "lastName", "")) . "\t"
-                . get($au, "email", "") . "\t"
-                . get($au, "affiliation", "") . "\n";
+        foreach ($pj->authors as $au) {
+            $x .= $au->unparse_tabbed() . "\n";
         }
         return $x;
     }
 
     static function check_authors(PaperStatus $ps, $pj) {
-        $authors = $pj->authors ?? null;
-        $max_authors = $ps->conf->opt("maxAuthors");
-        if ((is_array($authors) && empty($authors))
-            || ($authors === null && (!$ps->prow || !$ps->prow->author_list()))) {
+        if (isset($pj->authors)) {
+            $authors = $pj->authors;
+            $max_authors = $ps->conf->opt("maxAuthors");
+            if (empty($authors)) {
+                $ps->error_at("authors", $ps->_("Entry required."));
+            } else if ($max_authors > 0 && count($authors) > $max_authors) {
+                $ps->error_at("authors", $ps->_("Each submission can have at most %d authors.", $max_authors));
+            }
+        } else if (!$ps->prow || !$ps->prow->author_list()) {
             $ps->error_at("authors", $ps->_("Entry required."));
-        }
-        if ($max_authors > 0 && is_array($authors) && count($authors) > $max_authors) {
-            $ps->error_at("authors", $ps->_("Each submission can have at most %d authors.", $max_authors));
         }
         if (!empty($pj->bad_authors)) {
             $ps->error_at("authors", $ps->_("Some authors ignored."));
         }
         foreach ($pj->bad_email_authors as $aux) {
             $ps->error_at("authors", null);
-            $ps->error_at("auemail" . $aux->index, $ps->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
+            $k = $aux->author_index >= 0 ? "auemail" . $aux->author_index : "authors";
+            $ps->error_at($k, $ps->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
         if (isset($pj->authors)
             && !$ps->has_error_at("authors")) {
@@ -1020,10 +1058,10 @@ class PaperStatus extends MessageSet {
             }
             unset($cv);
             foreach ($pj->authors as $aux) {
-                if (isset($aux->email)) {
+                if ($aux->email !== "") {
                     $this->update_conflict_value($aux->email, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
-                    if (isset($aux->contact)) {
-                        $this->update_conflict_value($aux->email, CONFLICT_CONTACTAUTHOR, $aux->contact ? CONFLICT_CONTACTAUTHOR : 0);
+                    if ($aux->is_contact !== null) {
+                        $this->update_conflict_value($aux->email, CONFLICT_CONTACTAUTHOR, $aux->is_contact ? CONFLICT_CONTACTAUTHOR : 0);
                     }
                 }
             }
@@ -1056,44 +1094,65 @@ class PaperStatus extends MessageSet {
             }
         }
 
-        foreach ($pj->bad_contacts as $reg) {
+        foreach ($pj->bad_contacts as $aux) {
             $key = "contacts";
-            if (isset($reg->index) && is_int($reg->index)) {
-                $key = "contacts:email_" . $reg->index;
+            if ($aux->contact_index >= 0) {
+                $key = "contacts:email_" . $aux->contact_index;
             }
-            if (!isset($reg->email)) {
+            if ($aux->email === "") {
                 $this->error_at($key, $this->_("Contacts must have valid email addresses."));
             } else {
-                $this->error_at($key, $this->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
+                $this->error_at($key, $this->_("Contact email %s is invalid.", htmlspecialchars($aux->email)));
             }
             $this->error_at("contacts", false);
         }
     }
 
+    /** @param PaperStatusAuthor $au
+     * @return PaperStatusAuthor */
+    private function apply_author($c, $au) {
+        $c = $c ?? new PaperStatusAuthor;
+        if ($c->firstName === "" && $c->lastName === "") {
+            $c->firstName = $au->firstName;
+            $c->lastName = $au->lastName;
+        }
+        if ($c->email === "") {
+            $c->email = $au->email;
+        }
+        if ($c->affiliation === "") {
+            $c->affiliation = $au->affiliation;
+        }
+        if ($au->is_contact) {
+            $c->is_contact = true;
+        }
+        if ($au->is_new) {
+            $c->is_new = true;
+        }
+        if ($au->author_index > 0) {
+            $c->author_index = $au->author_index;
+        }
+        if ($au->contact_index > 0) {
+            $c->contact_index = $au->contact_index;
+        }
+        return $c;
+    }
+
     private function check_contacts_create_user($lemail, $pj) {
         $c = null;
-        foreach ($pj->authors ?? [] as $aux) {
-            if (isset($aux->email)
-                && strcasecmp($aux->email, $lemail) === 0
-                && validate_email($aux->email)) {
-                $c = clone $aux;
-            }
-        }
         foreach ($pj->contacts ?? [] as $aux) {
             if (strcasecmp($aux->email, $lemail) === 0) {
-                $c = $c ?? (object) [];
-                foreach (get_object_vars($aux) as $k => $v) {
-                    $c->$k = $v;
-                }
+                $c = $this->apply_author($c, $aux);
+            }
+        }
+        foreach ($pj->authors ?? [] as $aux) {
+            if (strcasecmp($aux->email, $lemail) === 0
+                && validate_email($aux->email)) {
+                $c = $this->apply_author($c, $aux);
             }
         }
         if ($c) {
             $c->disabled = !!$this->disable_users;
-            if (($c->is_new ?? false) || ($c->contact ?? false)) {
-                $flags = 0;
-            } else {
-                $flags = Contact::SAVE_IMPORT;
-            }
+            $flags = $c->is_new || $c->is_contact ? 0 : Contact::SAVE_IMPORT;
             $u = Contact::create($this->conf, $this->user, $c, $flags);
             if ($u) {
                 if ($u->password_unset()
@@ -1104,8 +1163,10 @@ class PaperStatus extends MessageSet {
                 }
             } else if (!($flags & Contact::SAVE_IMPORT)) {
                 $key = "contacts";
-                if (isset($c->index) && is_int($c->index)) {
-                    $key = "contacts:" . $c->index;
+                if ($c->contact_index >= 0) {
+                    $key = "contacts:" . $c->contact_index;
+                } else if ($c->author_index >= 0) {
+                    $key = "auemail" . $c->author_index;
                 }
                 $this->error_at($key, $this->_("Could not create an account for contact %s.", Text::nameo_h($c, NAME_E)));
                 $this->error_at("contacts", false);
