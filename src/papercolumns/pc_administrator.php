@@ -10,9 +10,11 @@ class Administrator_PaperColumn extends PaperColumn {
         return $pl->user->can_view_manager(null);
     }
     static private function cid(PaperList $pl, PaperInfo $row) {
-        if ($row->managerContactId && $pl->user->can_view_manager($row))
+        if ($row->managerContactId && $pl->user->can_view_manager($row)) {
             return $row->managerContactId;
-        return 0;
+        } else {
+            return 0;
+        }
     }
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
         $sorter->anno = Contact::parse_sortanno($pl->conf, $sorter->anno);

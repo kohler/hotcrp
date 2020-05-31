@@ -755,10 +755,10 @@ class PaperOption implements Abbreviator {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->display_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        if ($ap !== $bp) {
+        if ($ap != $bp) {
             return $ap < $bp ? -1 : 1;
         } else {
-            return Conf::xt_position_compare($a, $b);
+            return strcasecmp($a->title, $b->title) ? : $a->id - $b->id;
         }
     }
 
@@ -769,10 +769,10 @@ class PaperOption implements Abbreviator {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->form_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        if ($ap !== $bp) {
+        if ($ap != $bp) {
             return $ap < $bp ? -1 : 1;
         } else {
-            return Conf::xt_position_compare($a, $b);
+            return strcasecmp($a->title, $b->title) ? : $a->id - $b->id;
         }
     }
 

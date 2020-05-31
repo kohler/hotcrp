@@ -218,11 +218,11 @@ class HotCRPMailer extends Mailer {
     function infer_user_name($r, $contact) {
         // If user hasn't entered a name, try to infer it from author records
         if ($this->row && $this->row->paperId > 0) {
-            $e1 = get_s($contact, "email");
-            $e2 = get_s($contact, "preferredEmail");
+            $e1 = $contact->email ?? "";
+            $e2 = $contact->preferredEmail ?? "";
             foreach ($this->row->author_list() as $au) {
-                if (($au->firstName || $au->lastName)
-                    && $au->email
+                if (($au->firstName !== "" || $au->lastName !== "")
+                    && $au->email !== ""
                     && (strcasecmp($au->email, $e1) === 0
                         || strcasecmp($au->email, $e2) === 0)) {
                     $r->firstName = $au->firstName;
@@ -363,18 +363,18 @@ class HotCRPMailer extends Mailer {
         }
     }
     function kw_paperpc($args, $isbool, $uf) {
-        $cid = get($this->row, $uf->pctype . "ContactId");
-        if ($cid <= 0 || !($u = $this->conf->cached_user_by_id($cid))) {
-            if ($isbool)  {
-                return false;
-            } else if ($this->expansionType == self::EXPAND_EMAIL
-                       || $uf->userx === "EMAIL") {
-                return "<none>";
-            } else {
-                return "(no $uf->pctype assigned)";
-            }
+        $k = $uf->pctype . "ContactId";
+        $cid = $this->row->$k;
+        if ($cid > 0 && ($u = $this->conf->cached_user_by_id($cid))) {
+            return $this->expand_user($u, $uf->userx);
+        } else if ($isbool)  {
+            return false;
+        } else if ($this->expansionType == self::EXPAND_EMAIL
+                   || $uf->userx === "EMAIL") {
+            return "<none>";
+        } else {
+            return "(no $uf->pctype assigned)";
         }
-        return $this->expand_user($u, $uf->userx);
     }
     function kw_reviewname($args) {
         $s = $args === "SUBJECT";
