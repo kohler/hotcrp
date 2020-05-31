@@ -1265,6 +1265,15 @@ xassert_eqq($dt->sort_string(""), "");
 xassert_eqq($dt->sort_string(" a"), " a");
 xassert_eqq($dt->sort_string(" a1 a10 a100 a2"), " a1 a2 a10 a100");
 
+// general collation
+$collator = $Conf->collator();
+xassert($collator->compare("aé", "af") < 0);
+xassert($collator->compare("ad", "aé") < 0);
+xassert($collator->compare("é", "F") < 0);
+xassert($collator->compare("D", "é") < 0);
+xassert($collator->compare("É", "f") < 0);
+xassert($collator->compare("d", "É") < 0);
+
 // GMP shim
 $a = GMPShim::init("0");
 xassert_eqq(GMPShim::testbit($a, 0), false);
