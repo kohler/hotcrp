@@ -29,7 +29,7 @@ $config = [
     // If true, missing properties will be created when
     // they are first seen. If false, we'll report an
     // error message.
-    "allow_missing_properties" => true,
+    "allow_missing_properties" => false,
 
     // Allow null to be cast as any type and for any
     // type to be cast to null.
