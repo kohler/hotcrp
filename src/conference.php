@@ -4347,13 +4347,13 @@ class Conf {
         return $j;
     }
 
-    /** @param Contact|NameInfo|ReviewInfo $r */
+    /** @param Contact|ReviewInfo $r */
     static private function pc_json_sort_by_last($j, $r) {
         if (strlen($r->lastName) !== strlen($j->name)) {
             $j->lastpos = UnicodeHelper::utf16_strlen($r->firstName) + 1;
         }
-        if ($r->nameAmbiguous && $r->name !== "" && $r->email !== "") {
-            $j->emailpos = UnicodeHelper::utf16_strlen($r->name) + 1;
+        if ($r->nameAmbiguous && $j->name !== "" && $r->email !== "") {
+            $j->emailpos = UnicodeHelper::utf16_strlen($j->name) + 1;
         }
     }
 
