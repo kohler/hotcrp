@@ -450,7 +450,7 @@ class CommentInfo {
             $x = "Response";
         }
         if ($contact->can_view_comment_identity($this->prow, $this)) {
-            $x .= " by " . Text::nameo($this->commenter(), NAME_E|NAME_U);
+            $x .= " by " . Text::nameo($this->commenter(), NAME_EB);
         } else if (($p = $this->unparse_commenter_pseudonym($contact))
                    && ($p !== "Author" || !($this->commentType & COMMENTTYPE_RESPONSE))) {
             $x .= " by " . $p;

@@ -870,11 +870,11 @@ class ReviewForm implements JsonSerializable {
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
         if (!$prow || $viewable_identity) {
             if ($rrow && isset($rrow->reviewEmail)) {
-                $x .= "==+== Reviewer: " . Text::name($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail, NAME_EU) . "\n";
+                $x .= "==+== Reviewer: " . Text::name($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail, NAME_EB) . "\n";
             } else if ($rrow && isset($rrow->email)) {
-                $x .= "==+== Reviewer: " . Text::nameo($rrow, NAME_EU) . "\n";
+                $x .= "==+== Reviewer: " . Text::nameo($rrow, NAME_EB) . "\n";
             } else {
-                $x .= "==+== Reviewer: " . Text::nameo($contact, NAME_EU) . "\n";
+                $x .= "==+== Reviewer: " . Text::nameo($contact, NAME_EB) . "\n";
             }
         }
         $time = self::rrow_modified_time($contact, $prow, $rrow);
@@ -997,7 +997,7 @@ $blind\n";
             $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2);
         }
         if ($contact->can_view_review_identity($prow, $rrow) && isset($rrow->lastName)) {
-            $x .= "* Reviewer: " . Text::nameo($rrow, NAME_EU) . "\n";
+            $x .= "* Reviewer: " . Text::nameo($rrow, NAME_EB) . "\n";
         }
         $time = self::rrow_modified_time($contact, $prow, $rrow);
         if ($time > 1) {
@@ -1974,8 +1974,8 @@ class ReviewValues extends MessageSet {
                 || !isset($this->req["reviewerLast"])
                 || strcasecmp($this->req["reviewerFirst"], $rrow->firstName) != 0
                 || strcasecmp($this->req["reviewerLast"], $rrow->lastName) != 0)) {
-            $name1h = Text::name_h($this->req["reviewerFirst"] ?? "", $this->req["reviewerLast"] ?? "", $this->req["reviewerEmail"], NAME_EU);
-            $name2h = Text::nameo_h($rrow, NAME_EU);
+            $name1h = Text::name_h($this->req["reviewerFirst"] ?? "", $this->req["reviewerLast"] ?? "", $this->req["reviewerEmail"], NAME_EB);
+            $name2h = Text::nameo_h($rrow, NAME_EB);
             $msg = $this->conf->_("The review form was meant for %s, but this review belongs to %s. If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", $name1h, $name2h);
             $this->rmsg("reviewerEmail", $msg, self::ERROR);
         } else if ($rrow

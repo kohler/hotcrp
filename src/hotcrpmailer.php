@@ -526,7 +526,7 @@ class HotCRPMailer extends Mailer {
             $row->load_my_contact_info($contact, $contact);
             if (($p = self::prepare_to($contact, $template, $rest))) {
                 $preps[] = $p;
-                $contacts[] = $contact->name_h(NAME_EU);
+                $contacts[] = $contact->name_h(NAME_EB);
             }
         }
         self::send_combined_preparations($preps);

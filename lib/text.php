@@ -172,7 +172,7 @@ class Text {
         } else if (($flags & (NAME_P | NAME_E)) === 0) {
             return "";
         } else if ($email !== "") {
-            if (($flags & NAME_U) !== 0) {
+            if (($flags & NAME_B) !== 0) {
                 return "<" . $email . ">";
             } else {
                 return $email;

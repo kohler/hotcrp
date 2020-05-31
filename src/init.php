@@ -34,8 +34,8 @@ define("VIEWSCORE_AUTHOR", 2);
 define("VIEWSCORE_EMPTYBOUND", 3);     // bound that can see nothing
 
 define("NAME_E", 1);   // include email
-define("NAME_U", 2);   // always put email in angle brackets
-define("NAME_EU", 3);  // NAME_E + NAME_U
+define("NAME_B", 2);   // always put email in angle brackets
+define("NAME_EB", 3);  // NAME_E + NAME_B
 define("NAME_P", 4);   // return email or "[No name]" instead of empty string
 define("NAME_L", 8);   // "last, first"
 define("NAME_I", 16);  // first initials instead of first name
