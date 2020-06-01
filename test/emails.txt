@@ -444,6 +444,32 @@ Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
 
 - Testconf I Submissions
+******** create-vera@bombay.com
+To: Véra Djükuba <vera@bombay.com>
+Subject: [Testconf I] Welcome to the program committee
+
+Greetings,
+
+You have been added to the program committee at the Test Conference I
+(Testconf I) submission site.
+
+        Site: http://hotcrp.lcdf.org/test/
+       Email: vera@bombay.com
+
+You will need a password to sign in. Use this link to set one up:
+
+http://hotcrp.lcdf.org/test/resetpassword/{{}}
+
+Should the link expire, obtain a new link using "Forgot my password".
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
 ******** create-micke@cdt.luth.se
 To: Mikael Degermark <micke@cdt.luth.se>
 Subject: [Testconf I] Account information

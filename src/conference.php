@@ -4352,7 +4352,7 @@ class Conf {
         if (strlen($r->lastName) !== strlen($j->name)) {
             $j->lastpos = UnicodeHelper::utf16_strlen($r->firstName) + 1;
         }
-        if ($r->nameAmbiguous && $j->name !== "" && $r->email !== "") {
+        if (($r->nameAmbiguous ?? false) && $j->name !== "" && $r->email !== "") {
             $j->emailpos = UnicodeHelper::utf16_strlen($j->name) + 1;
         }
     }

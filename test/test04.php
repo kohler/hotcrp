@@ -308,4 +308,16 @@ xassert(!!$v);
 xassert_eqq($v->firstName, "Betty");
 xassert_eqq($v->lastName, "Knowles");
 
+// PC json
+$pc_json = $Conf->hotcrp_pc_json($user_chair);
+xassert_eqq($pc_json[$pc_json["__order__"][0]]->email, "anne1@_.com");
+$Conf->sort_by_last = true;
+$Conf->invalidate_caches(["pc" => true]);
+$pc_json = $Conf->hotcrp_pc_json($user_chair);
+xassert_eqq($pc_json[$pc_json["__order__"][0]]->email, "mgbaker@cs.stanford.edu");
+xassert_eqq($pc_json["12"]->email, "mgbaker@cs.stanford.edu");
+xassert_eqq($pc_json["12"]->lastpos, 5);
+xassert_eqq($pc_json["21"]->email, "vera@bombay.com");
+xassert_eqq($pc_json["21"]->lastpos, 5);
+
 xassert_exit();
