@@ -29,7 +29,7 @@ class Basics_SettingParser extends SettingParser {
         if ($si->name === "opt.contactEmail") {
             $default_contact = $sv->conf->default_site_contact();
             if ($default_contact
-                && $sv->newv("opt.contactName") === $default_contact->name()
+                && $sv->newv("opt.contactName") === Text::name($default_contact->firstName, $default_contact->lastName, "", 0)
                 && $sv->newv("opt.contactEmail") === $default_contact->email
                 && get($sv->conf->opt_override, "contactName") === null
                 && get($sv->conf->opt_override, "contactEmail") === null) {
