@@ -29,7 +29,7 @@ class HotCRPMailPreparation extends MailPreparation {
 }
 
 class HotCRPMailer extends Mailer {
-    /** @var array<string,Contact|stdClass> */
+    /** @var array<string,Contact|Author> */
     protected $contacts = [];
 
     /** @var ?PaperInfo */
@@ -58,7 +58,11 @@ class HotCRPMailer extends Mailer {
     }
 
     static private function make_reviewer_contact($x) {
-        return (object) ["email" => get($x, "reviewEmail"), "firstName" => get($x, "reviewFirstName"), "lastName" => get($x, "reviewLastName")];
+        return Author::make_keyed([
+            "email" => $x->reviewEmail,
+            "firstName" => $x->reviewFirstName,
+            "lastName" => $x->reviewLastName
+        ]);
     }
 
     /** @param ?Contact $recipient */
@@ -121,6 +125,7 @@ class HotCRPMailer extends Mailer {
         return $this->expand_user($c, $type);
     }
 
+    /** @return Tagger */
     private function tagger()  {
         if (!$this->_tagger) {
             $this->_tagger = new Tagger($this->recipient);
@@ -156,8 +161,11 @@ class HotCRPMailer extends Mailer {
         }
 
         $this->conf->au_seerev = $au_seerev;
-        if ($text === "" && $au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE && !empty($rrows))
+        if ($text === ""
+            && $au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
+            && !empty($rrows)) {
             $text = "[Reviews are hidden since you have incomplete reviews of your own.]\n";
+        }
         return $text;
     }
 
@@ -227,7 +235,6 @@ class HotCRPMailer extends Mailer {
                         || strcasecmp($au->email, $e2) === 0)) {
                     $r->firstName = $au->firstName;
                     $r->lastName = $au->lastName;
-                    $r->name = $au->name();
                     return;
                 }
             }

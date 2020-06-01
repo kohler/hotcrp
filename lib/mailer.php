@@ -273,6 +273,8 @@ class Mailer {
         }
     }
 
+    /** @param Author $r
+     * @param Contact|Author $contact */
     function infer_user_name($r, $contact) {
     }
 
