@@ -58,95 +58,15 @@ class Text {
         "with" => true
     ];
 
+    /** @param string $lastName
+     * @return ?array{string,string} */
     static function analyze_von($lastName) {
         // see also split_name; NB intentionally case sensitive
-        if (preg_match('/\A((?:(?:v[ao]n|d[aeiu]|de[nr]|l[ae])\s+)+)(.*)\z/s', $lastName, $m)) {
-            return array(rtrim($m[1]), $m[2]);
+        if (preg_match('/\A((?:(?:v[ao]n(?:|de[nr])|d[aeiu]|de[nr]|l[ae])\s+)+)(.*)\z/s', $lastName, $m)) {
+            return [rtrim($m[1]), $m[2]];
         } else {
             return null;
         }
-    }
-
-    /** @return NameInfo */
-    static function analyze_name_args($args) {
-        $ret = new NameInfo;
-        // collect arguments
-        $delta = 0;
-        if (count($args) == 1) {
-            if (is_string($args[0])) {
-                $args = self::split_name($args[0], true);
-            } else if (is_object($args[0]) && isset($args[0]->name_analysis)) {
-                return $args[0]->name_analysis;
-            }
-        }
-        foreach ($args as $i => $v) {
-            if (is_string($v) || is_bool($v)) {
-                if ($i + $delta < 4) {
-                    $k = self::$argkeys[$i + $delta];
-                    if (!isset($ret->$k)) {
-                        $ret->$k = $v;
-                    }
-                }
-            } else if (is_array($v)) {
-                if (is_associative_array($v)) {
-                    foreach ($v as $k => $x) {
-                        if (($mk = self::$mapkeys[$k] ?? null)
-                            && !isset($ret->$mk))
-                            $ret->$mk = $x;
-                    }
-                    $delta = 3;
-                } else {
-                    for ($j = 0; $j < 3 && $j < count($v); ++$j) {
-                        $k = self::$argkeys[$j];
-                        if (!isset($ret->$k)) {
-                            $ret->$k = $v[$j];
-                        }
-                    }
-                }
-            } else if (is_object($v)) {
-                foreach (self::$mapkeys as $k => $mk) {
-                    if (!isset($ret->$mk)
-                        && isset($v->$k)
-                        && (isset(self::$boolkeys[$mk])
-                            ? is_bool($v->$k)
-                            : is_string($v->$k))) {
-                        $ret->$mk = $v->$k;
-                    }
-                }
-            }
-        }
-        // set defaults
-        $ret->firstName = (string) $ret->firstName;
-        $ret->lastName = (string) $ret->lastName;
-        $ret->email = (string) $ret->email;
-        // compute names
-        if ((string) $ret->name !== ""
-            && $ret->firstName === ""
-            && $ret->lastName === "") {
-            list($ret->firstName, $ret->lastName) = self::split_name($ret->name);
-            $ret->nameAutosplit = true;
-        } else if ((string) $ret->middleName !== "") {
-            $ret->firstName .= ($ret->firstName === "" ? "" : " ") . $ret->middleName;
-        }
-        if ($ret->firstName === "" || $ret->lastName === "") {
-            $ret->name = $ret->firstName . $ret->lastName;
-        } else {
-            $ret->name = $ret->firstName . " " . $ret->lastName;
-        }
-        $ret->unaccentedName = $ret->orderedName = $ret->name;
-        $ret->nameAscii = is_usascii($ret->name);
-        if (!$ret->nameAscii) {
-            $ret->unaccentedName = UnicodeHelper::deaccent($ret->name);
-        }
-        if ($ret->lastFirst && $ret->firstName !== "" && $ret->lastName !== "") {
-            $ret->orderedName = $ret->lastName . ", " . $ret->firstName;
-        }
-        return $ret;
-    }
-
-    /** @return NameInfo */
-    static function analyze_name(/* ... */) {
-        return self::analyze_name_args(func_get_args());
     }
 
     /** @param string $firstName
@@ -182,6 +102,10 @@ class Text {
         }
         if (($flags & NAME_U) !== 0 && !is_usascii($name)) {
             $name = UnicodeHelper::deaccent($name);
+        }
+        if (($flags & NAME_MAILQUOTE) !== 0
+            && preg_match('/[\000-\037()[\]<>@,;:\\".\\\\]/', $name)) {
+            $name = "\"" . addcslashes($name, '"\\') . "\"";
         }
         if ($email !== "" && ($flags & NAME_E) !== 0) {
             $name .= " <" . $email . ">";
@@ -241,124 +165,6 @@ class Text {
         } else {
             return $name;
         }
-    }
-
-    /** @deprecated
-     * @return string */
-    static function user_text(/* ... */) {
-        $r = self::analyze_name_args(func_get_args());
-        if ($r->orderedName !== "" && $r->email !== "") {
-            return "$r->orderedName <$r->email>";
-        } else {
-            return $r->orderedName ? : $r->email;
-        }
-    }
-
-    /** @deprecated
-     * @return string */
-    static function user_html(/* ... */) {
-        $r = self::analyze_name_args(func_get_args());
-        $e = htmlspecialchars($r->email);
-        if ($e !== "" && strpos($e, "@") !== false) {
-            $e = "&lt;<a href=\"mailto:$e\" class=\"mailto\">$e</a>&gt;";
-        } else if ($e !== "") {
-            $e = "&lt;$e&gt;";
-        }
-        if ($r->orderedName !== "") {
-            return htmlspecialchars($r->orderedName) . ($e ? " " . $e : "");
-        } else {
-            return $e ? : "[No name]";
-        }
-    }
-
-    /** @deprecated
-     * @return string */
-    static function user_html_nolink(/* ... */) {
-        $r = self::analyze_name_args(func_get_args());
-        if (($e = $r->email) !== "") {
-            $e = "&lt;" . htmlspecialchars($e) . "&gt;";
-        }
-        if ($r->orderedName !== "") {
-            return htmlspecialchars($r->orderedName) . ($e ? " " . $e : "");
-        } else {
-            return $e ? : "[No name]";
-        }
-    }
-
-    /** @deprecated
-     * @return string */
-    static function name_text(/* ... */) {
-        $r = self::analyze_name_args(func_get_args());
-        if ($r->nameAmbiguous && $r->orderedName !== "" && $r->email !== "") {
-            return "$r->orderedName <$r->email>";
-        } else {
-            return $r->orderedName ? : $r->email;
-        }
-    }
-
-    /** @deprecated
-     * @return string */
-    static function name_html(/* ... */) {
-        $x = call_user_func_array("Text::name_text", func_get_args());
-        return htmlspecialchars($x);
-    }
-
-    /** @return string */
-    static function user_email_to(/* ... */) {
-        $r = self::analyze_name_args(func_get_args());
-        if (($e = $r->email) === "") {
-            $e = "none";
-        }
-        if (($n = $r->orderedName) !== "") {
-            if (preg_match('/[\000-\037()[\]<>@,;:\\".]/', $n)) {
-                $n = "\"" . addcslashes($n, '"\\') . "\"";
-            }
-            return "$n <$e>";
-        } else {
-            return $e;
-        }
-    }
-
-    /** @return string */
-    static function initial($s) {
-        $x = "";
-        if ((string) $s !== "") {
-            if (ctype_alpha($s[0])) {
-                $x = $s[0];
-            } else if (preg_match("/^(\\pL)/us", $s, $m)) {
-                $x = $m[1];
-            }
-            // Don't add a period if first name is a single letter
-            if ($x !== "" && $x !== $s && !str_starts_with($s, "$x ")) {
-                $x .= ".";
-            }
-        }
-        return $x;
-    }
-
-    /** @deprecated
-     * @return string */
-    static function abbrevname_text(/* ... */) {
-        $r = self::analyze_name_args(func_get_args());
-        $u = "";
-        if ($r->lastName !== "") {
-            $t = $r->lastName;
-            if ($r->firstName !== "" && ($u = self::initial($r->firstName)) !== "") {
-                $u .= " "; // non-breaking space
-            }
-        } else if ($r->firstName !== "") {
-            $t = $r->firstName;
-        } else {
-            $t = $r->email ? $r->email : "???";
-        }
-        return $u . $t;
-    }
-
-    /** @deprecated
-     * @return string */
-    static function abbrevname_html(/* ... */) {
-        $x = call_user_func_array("Text::abbrevname_text", func_get_args());
-        return htmlspecialchars($x);
     }
 
     const SUFFIX_REGEX = 'Jr\.?|Sr\.?|Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Junior|Senior|Esquire|I+|IV|V|VI*|IX|XI*|2n?d|3r?d|[4-9]th|1\dth';
@@ -460,12 +266,226 @@ class Text {
         }
     }
 
+    /** @return string */
+    static function initial($s) {
+        $x = "";
+        if ((string) $s !== "") {
+            if (ctype_alpha($s[0])) {
+                $x = $s[0];
+            } else if (preg_match("/^(\\pL)/us", $s, $m)) {
+                $x = $m[1];
+            }
+            // Don't add a period if first name is a single letter
+            if ($x !== "" && $x !== $s && !str_starts_with($s, "$x ")) {
+                $x .= ".";
+            }
+        }
+        return $x;
+    }
+
+
     /** @deprecated
-     * @return string */
+     * @return NameInfo */
+    static function analyze_name_args($args) {
+        $ret = new NameInfo;
+        // collect arguments
+        $delta = 0;
+        if (count($args) == 1) {
+            if (is_string($args[0])) {
+                $args = self::split_name($args[0], true);
+            } else if (is_object($args[0]) && isset($args[0]->name_analysis)) {
+                return $args[0]->name_analysis;
+            }
+        }
+        foreach ($args as $i => $v) {
+            if (is_string($v) || is_bool($v)) {
+                if ($i + $delta < 4) {
+                    $k = self::$argkeys[$i + $delta];
+                    if (!isset($ret->$k)) {
+                        $ret->$k = $v;
+                    }
+                }
+            } else if (is_array($v)) {
+                if (is_associative_array($v)) {
+                    foreach ($v as $k => $x) {
+                        if (($mk = self::$mapkeys[$k] ?? null)
+                            && !isset($ret->$mk))
+                            $ret->$mk = $x;
+                    }
+                    $delta = 3;
+                } else {
+                    for ($j = 0; $j < 3 && $j < count($v); ++$j) {
+                        $k = self::$argkeys[$j];
+                        if (!isset($ret->$k)) {
+                            $ret->$k = $v[$j];
+                        }
+                    }
+                }
+            } else if (is_object($v)) {
+                foreach (self::$mapkeys as $k => $mk) {
+                    if (!isset($ret->$mk)
+                        && isset($v->$k)
+                        && (isset(self::$boolkeys[$mk])
+                            ? is_bool($v->$k)
+                            : is_string($v->$k))) {
+                        $ret->$mk = $v->$k;
+                    }
+                }
+            }
+        }
+        // set defaults
+        $ret->firstName = (string) $ret->firstName;
+        $ret->lastName = (string) $ret->lastName;
+        $ret->email = (string) $ret->email;
+        // compute names
+        if ((string) $ret->name !== ""
+            && $ret->firstName === ""
+            && $ret->lastName === "") {
+            list($ret->firstName, $ret->lastName) = self::split_name($ret->name);
+            $ret->nameAutosplit = true;
+        } else if ((string) $ret->middleName !== "") {
+            $ret->firstName .= ($ret->firstName === "" ? "" : " ") . $ret->middleName;
+        }
+        if ($ret->firstName === "" || $ret->lastName === "") {
+            $ret->name = $ret->firstName . $ret->lastName;
+        } else {
+            $ret->name = $ret->firstName . " " . $ret->lastName;
+        }
+        $ret->unaccentedName = $ret->orderedName = $ret->name;
+        $ret->nameAscii = is_usascii($ret->name);
+        if (!$ret->nameAscii) {
+            $ret->unaccentedName = UnicodeHelper::deaccent($ret->name);
+        }
+        if ($ret->lastFirst && $ret->firstName !== "" && $ret->lastName !== "") {
+            $ret->orderedName = $ret->lastName . ", " . $ret->firstName;
+        }
+        return $ret;
+    }
+
+    /** @deprecated
+     * @return NameInfo
+     * @phan-suppress PhanDeprecatedFunction */
+    static function analyze_name(/* ... */) {
+        return self::analyze_name_args(func_get_args());
+    }
+
+    /** @deprecated
+     * @return string
+     * @phan-suppress PhanDeprecatedFunction  */
+    static function user_text(/* ... */) {
+        $r = self::analyze_name_args(func_get_args());
+        if ($r->orderedName !== "" && $r->email !== "") {
+            return "$r->orderedName <$r->email>";
+        } else {
+            return $r->orderedName ? : $r->email;
+        }
+    }
+
+    /** @deprecated
+     * @return string
+     * @phan-suppress PhanDeprecatedFunction */
+    static function user_html(/* ... */) {
+        $r = self::analyze_name_args(func_get_args());
+        $e = htmlspecialchars($r->email);
+        if ($e !== "" && strpos($e, "@") !== false) {
+            $e = "&lt;<a href=\"mailto:$e\" class=\"mailto\">$e</a>&gt;";
+        } else if ($e !== "") {
+            $e = "&lt;$e&gt;";
+        }
+        if ($r->orderedName !== "") {
+            return htmlspecialchars($r->orderedName) . ($e ? " " . $e : "");
+        } else {
+            return $e ? : "[No name]";
+        }
+    }
+
+    /** @deprecated
+     * @return string
+     * @phan-suppress PhanDeprecatedFunction */
+    static function user_html_nolink(/* ... */) {
+        $r = self::analyze_name_args(func_get_args());
+        if (($e = $r->email) !== "") {
+            $e = "&lt;" . htmlspecialchars($e) . "&gt;";
+        }
+        if ($r->orderedName !== "") {
+            return htmlspecialchars($r->orderedName) . ($e ? " " . $e : "");
+        } else {
+            return $e ? : "[No name]";
+        }
+    }
+
+    /** @deprecated
+     * @return string
+     * @phan-suppress PhanDeprecatedFunction */
+    static function name_text(/* ... */) {
+        $r = self::analyze_name_args(func_get_args());
+        if ($r->nameAmbiguous && $r->orderedName !== "" && $r->email !== "") {
+            return "$r->orderedName <$r->email>";
+        } else {
+            return $r->orderedName ? : $r->email;
+        }
+    }
+
+    /** @deprecated
+     * @return string
+     * @phan-suppress PhanDeprecatedFunction */
+    static function name_html(/* ... */) {
+        $x = call_user_func_array("Text::name_text", func_get_args());
+        return htmlspecialchars($x);
+    }
+
+    /** @return string
+     * @phan-suppress PhanDeprecatedFunction */
+    static function user_email_to(/* ... */) {
+        $r = self::analyze_name_args(func_get_args());
+        if (($e = $r->email) === "") {
+            $e = "none";
+        }
+        if (($n = $r->orderedName) !== "") {
+            if (preg_match('/[\000-\037()[\]<>@,;:\\".]/', $n)) {
+                $n = "\"" . addcslashes($n, '"\\') . "\"";
+            }
+            return "$n <$e>";
+        } else {
+            return $e;
+        }
+    }
+
+    /** @deprecated
+     * @return string
+     * @phan-suppress PhanDeprecatedFunction */
+    static function abbrevname_text(/* ... */) {
+        $r = self::analyze_name_args(func_get_args());
+        $u = "";
+        if ($r->lastName !== "") {
+            $t = $r->lastName;
+            if ($r->firstName !== "" && ($u = self::initial($r->firstName)) !== "") {
+                $u .= " "; // non-breaking space
+            }
+        } else if ($r->firstName !== "") {
+            $t = $r->firstName;
+        } else {
+            $t = $r->email ? $r->email : "???";
+        }
+        return $u . $t;
+    }
+
+    /** @deprecated
+     * @return string
+     * @phan-suppress PhanDeprecatedFunction */
+    static function abbrevname_html(/* ... */) {
+        $x = call_user_func_array("Text::abbrevname_text", func_get_args());
+        return htmlspecialchars($x);
+    }
+
+    /** @deprecated
+     * @return string
+     * @phan-suppress PhanDeprecatedFunction */
     static function unaccented_name(/* ... */) {
         $x = self::analyze_name_args(func_get_args());
         return $x->unaccentedName;
     }
+
 
     /** @return string */
     static function word_regex($word) {

@@ -464,8 +464,8 @@ xassert(!MailPreparation::valid_email("ass@Example.com"));
 xassert(!MailPreparation::valid_email("ass@Example.ORG"));
 xassert(!MailPreparation::valid_email("ass@Example.net"));
 
-$prep1 = new MailPreparation($Conf, (object) ["email" => "ass@butt.com", "contactId" => 0]);
-$prep2 = new MailPreparation($Conf, (object) ["email" => "ass@example.edu", "contactId" => 0]);
+$prep1 = new MailPreparation($Conf, Author::make_email("ass@butt.com"));
+$prep2 = new MailPreparation($Conf, Author::make_email("ass@example.edu"));
 $prep1->sensitive = $prep2->sensitive = true;
 xassert(!$Conf->opt("sendEmail") && $Conf->opt("debugShowSensitiveEmail"));
 $Conf->set_opt("sendEmail", true);
@@ -1247,6 +1247,23 @@ xassert_eqq($mailer->expand("%SITECONTACT%//%ADMINEMAIL%"),
     "Eddie Kohler <ekohler@hotcrp.lcdf.org>//ekohler@hotcrp.lcdf.org\n");
 xassert_eqq($mailer->expand("%URLENC(ADMINEMAIL)% : %OPT(ADMINEMAIL)% : %OPT(NULL)% : %OPT(EMAIL)%"),
     "ekohler%40hotcrp.lcdf.org : ekohler@hotcrp.lcdf.org :  : %OPT(EMAIL)%\n");
+$mailer->reset(null, [
+    "requester_contact" => Author::make_tabbed("Bob\tJones\tbobjones@a.com"),
+    "reviewer_contact" => Author::make_tabbed("France \"Butt\"\tvon Ranjanath\tvanraj@b.com"),
+    "other_contact" => Author::make_email("noname@c.com")
+]);
+xassert_eqq($mailer->expand("%REQUESTERFIRST%"), "Bob\n");
+xassert_eqq($mailer->expand("%REQUESTERFIRST%", "to"), "Bob");
+xassert_eqq($mailer->expand("%REQUESTERNAME%"), "Bob Jones\n");
+xassert_eqq($mailer->expand("%REQUESTERNAME%", "to"), "Bob Jones");
+xassert_eqq($mailer->expand("%REVIEWERFIRST%"), "France \"Butt\"\n");
+xassert_eqq($mailer->expand("%REVIEWERFIRST%", "to"), "\"France \\\"Butt\\\"\"");
+xassert_eqq($mailer->expand("%REVIEWERNAME%"), "France \"Butt\" von Ranjanath\n");
+xassert_eqq($mailer->expand("%REVIEWERNAME%", "to"), "\"France \\\"Butt\\\" von Ranjanath\"");
+xassert_eqq($mailer->expand("%OTHERNAME%"), "noname@c.com\n");
+xassert_eqq($mailer->expand("%OTHERNAME%", "to"), "");
+xassert_eqq($mailer->expand("%OTHERCONTACT%"), "noname@c.com\n");
+xassert_eqq($mailer->expand("%OTHERCONTACT%", "to"), "noname@c.com");
 
 // HTML cleaning
 $err = null;

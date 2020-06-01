@@ -403,10 +403,10 @@ class RequestReview_API {
         if ($user->conf->time_review_open()) {
             foreach ($rrows as $rrow) {
                 if (($reviewer = $user->conf->cached_user_by_id($rrow->contactId))) {
-                    $cc = Text::user_email_to($user);
+                    $cc = Text::nameo($user, NAME_MAILQUOTE|NAME_E);
                     if (($requester = $user->conf->cached_user_by_id($rrow->requestedBy))
                         && $requester->contactId != $user->contactId) {
-                        $cc .= ", " . Text::user_email_to($requester);
+                        $cc .= ", " . Text::nameo($requester, NAME_MAILQUOTE|NAME_E);
                     }
                     HotCRPMailer::send_to($reviewer, "@retractrequest", [
                         "prow" => $prow,

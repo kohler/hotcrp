@@ -899,7 +899,7 @@ class Contact {
     }
 
     /** @param Contact|ReviewInfo|int $x
-     * @return Contact|NameInfo */
+     * @return Contact|Author */
     function name_object_for($x) {
         return $this->name_for("u", $x);
     }

@@ -56,7 +56,7 @@ if (isset($Qreq->cc) && $Me->is_manager()) {
 } else if ($Conf->opt("emailCc")) {
     $Qreq->cc = $Conf->opt("emailCc");
 } else {
-    $Qreq->cc = Text::user_email_to($Conf->site_contact());
+    $Qreq->cc = Text::nameo($Conf->site_contact(), NAME_MAILQUOTE|NAME_E);
 }
 
 if (isset($Qreq->replyto) && $Me->is_manager()) {

@@ -52,7 +52,7 @@ class Author {
     /** @param string $s */
     function assign_string($s) {
         if (($paren = strpos($s, "(")) !== false) {
-            if (preg_match('{\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:%]).*)\z}', $s, $m, 0, $paren + 1)) {
+            if (preg_match('/\G([^()]*)(?:\)|\z)(?:[\s,;.]*|\s*(?:-+|–|—|[#:%]).*)\z/', $s, $m, 0, $paren + 1)) {
                 $this->affiliation = trim($m[1]);
                 $s = rtrim(substr($s, 0, $paren));
             } else {
@@ -143,6 +143,13 @@ class Author {
                 }
             }
         }
+    }
+    /** @param string $email
+     * @return Author */
+    static function make_email($email) {
+        $au = new Author;
+        $au->email = $email;
+        return $au;
     }
     /** @param string $s
      * @param int $paren

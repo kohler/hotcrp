@@ -33,7 +33,9 @@ class PaperTable {
     private $edit_status;
 
     public $editable;
+    /** @var list<PaperOption> */
     public $edit_fields;
+    /** @var int */
     public $edit_fields_position;
 
     private $qreq;

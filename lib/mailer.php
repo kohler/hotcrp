@@ -17,17 +17,13 @@ class MailPreparation {
     public $unique_preparation = false;
     public $reset_capability;
 
-    /** @param Conf $conf */
+    /** @param Conf $conf
+     * @param Contact|Author $recipient */
     function __construct($conf, $recipient) {
         $this->conf = $conf;
         if ($recipient) {
-            if ($recipient->preferredEmail ?? null) {
-                $this->to[] = Text::user_email_to($recipient->firstName, $recipient->lastName, $recipient->preferredEmail);
-                $email = $recipient->preferredEmail;
-            } else {
-                $this->to[] = Text::user_email_to($recipient);
-                $email = $recipient->email;
-            }
+            $email = ($recipient->preferredEmail ?? null) ? : $recipient->email;
+            $this->to[] = Text::name($recipient->firstName, $recipient->lastName, $email, NAME_MAILQUOTE|NAME_E);
             $this->_valid_recipient = self::valid_email($email);
             if ($recipient->contactId) {
                 $this->contactIds[] = $recipient->contactId;
@@ -215,6 +211,9 @@ class Mailer {
     }
 
 
+    /** @param Author|Contact $contact
+     * @param string $out
+     * @return string */
     function expand_user($contact, $out) {
         $r = Author::make_keyed($contact);
         if (is_object($contact) && get_s($contact, "preferredEmail") != "") {
@@ -224,52 +223,34 @@ class Mailer {
         // maybe infer username
         if ($r->firstName === ""
             && $r->lastName === ""
-            && is_object($contact)
-            && (get_s($contact, "email") !== ""
-                || get_s($contact, "preferredEmail") !== "")) {
+            && $r->email !== "") {
             $this->infer_user_name($r, $contact);
         }
 
+        $flags = $this->expansionType === self::EXPAND_EMAIL ? NAME_MAILQUOTE : 0;
         $email = $r->email;
-        if ($email === "") {
-            $email = "<none>";
+        if ($r->email !== "") {
+            $email = $r->email;
+        } else {
+            $email = "none";
+            $flags |= NAME_B;
         }
+
         if ($out === "EMAIL") {
-            return $email;
-        }
-
-        if ($out === "NAME" || $out === "CONTACT") {
-            $t = $r->name();
-        } else if ($out === "FIRST") {
-            $t = $r->firstName;
-        } else if ($out === "LAST") {
-            $t = $r->lastName;
-        } else {
-            $t = "";
-        }
-
-        if ($t !== ""
-            && $this->expansionType === self::EXPAND_EMAIL
-            && preg_match('/[\000-\037()[\]<>@,;:\\".\\\\]/', $t)) {
-            $t = "\"" . addcslashes($t, '"\\') . "\"";
-        }
-
-        if ($out === "CONTACT") {
-            if ($t === "") {
-                return $email;
-            } else if ($email[0] === "<") {
-                return $t . " " . $email;
-            } else {
-                return $t . " <" . $email . ">";
-            }
+            return $flags & NAME_B ? "<$email>" : $email;
+        } else if ($out === "CONTACT") {
+            return Text::name($r->firstName, $r->lastName, $email, $flags | NAME_E);
         } else if ($out === "NAME") {
-            if ($t === "" && $this->expansionType !== self::EXPAND_EMAIL) {
-                return $email;
-            } else {
-                return $t;
+            if ($this->expansionType !== self::EXPAND_EMAIL) {
+                $flags |= NAME_P;
             }
+            return Text::name($r->firstName, $r->lastName, $email, $flags);
+        } else if ($out === "FIRST") {
+            return Text::name($r->firstName, "", "", $flags);
+        } else if ($out === "LAST") {
+            return Text::name("", $r->lastName, "", $flags);
         } else {
-            return $t;
+            return "";
         }
     }
 
@@ -781,13 +762,21 @@ class Mailer {
 }
 
 class MimeText {
+    /** @var string */
     public $in;
+    /** @var int|false */
     public $errorpos;
+    /** @var int|false */
     public $errorlen;
+    /** @var string|false */
     public $errortext;
+    /** @var string */
     public $out;
+    /** @var int */
     public $linelen;
 
+    /** @param string $header
+     * @param string $str */
     function reset($header, $str) {
         if (preg_match('/[\r\n]/', $str)) {
             $this->in = simplify_whitespace($str);
@@ -802,8 +791,10 @@ class MimeText {
     }
 
     /// Quote potentially non-ASCII header text a la RFC2047 and/or RFC822.
+    /** @param string $str
+     * @param int $utf8 */
     private function append($str, $utf8) {
-        if ($utf8) {
+        if ($utf8 > 0) {
             // replace all special characters used by the encoder
             $str = str_replace(array('=',   '_',   '?',   ' '),
                                array('=3D', '=5F', '=3F', '_'), $str);
@@ -832,12 +823,12 @@ class MimeText {
             assert($z > 0);
 
             // add a line break
-            $maxlinelen = ($utf8 ? 76 - 12 : 78);
+            $maxlinelen = $utf8 > 0 ? 76 - 12 : 78;
             if (($this->linelen + $z > $maxlinelen && $this->linelen > 30)
-                || ($utf8 && substr($this->out, strlen($this->out) - 2) == "?=")) {
+                || ($utf8 > 0 && substr($this->out, strlen($this->out) - 2) == "?=")) {
                 $this->out .= Mailer::eol() . " ";
                 $this->linelen = 1;
-                while (!$utf8 && $xstr !== "" && ctype_space($xstr[0])) {
+                while ($utf8 === 0 && $xstr !== "" && ctype_space($xstr[0])) {
                     $xstr = substr($xstr, 1);
                     --$z;
                 }
@@ -845,7 +836,7 @@ class MimeText {
 
             // if encoding, skip intact UTF-8 characters;
             // otherwise, try to break at a space
-            if ($utf8 && $this->linelen + $z > $maxlinelen) {
+            if ($utf8 > 0 && $this->linelen + $z > $maxlinelen) {
                 $z = $maxlinelen - $this->linelen;
                 if ($xstr[$z - 1] == "=") {
                     $z -= 1;
@@ -866,7 +857,7 @@ class MimeText {
             }
 
             // append
-            if ($utf8) {
+            if ($utf8 > 0) {
                 $astr = "=?utf-8?q?" . substr($xstr, 0, $z) . "?=";
             } else {
                 $astr = substr($xstr, 0, $z);
@@ -879,6 +870,9 @@ class MimeText {
         }
     }
 
+    /** @param string $header
+     * @param string $str
+     * @return false|string */
     function encode_email_header($header, $str) {
         $this->reset($header, $str);
         if (strpos($this->in, chr(0xE2)) !== false) {
@@ -972,31 +966,35 @@ class MimeText {
             if ($name !== ""
                 && $name[0] === "\""
                 && preg_match("/\\A\"([^\\\\\"]|\\\\.)*\"\\z/s", $name)) {
-                if ($utf8) {
+                if ($utf8 > 0) {
                     $this->append(substr($name, 1, -1), $utf8);
                 } else {
-                    $this->append($name, false);
+                    $this->append($name, 0);
                 }
-            } else if ($utf8) {
+            } else if ($utf8 > 0) {
                 $this->append($name, $utf8);
             } else {
-                $this->append(rfc2822_words_quote($name), false);
+                $this->append(rfc2822_words_quote($name), 0);
             }
 
             if ($name === "") {
-                $this->append($email, false);
+                $this->append($email, 0);
             } else {
-                $this->append(" <$email>", false);
+                $this->append(" <$email>", 0);
             }
         }
     }
 
+    /** @param string $header
+     * @param string $str
+     * @return string */
     function encode_header($header, $str) {
         $this->reset($header, $str);
-        $this->append($str, !is_usascii($str));
+        $this->append($str, is_usascii($str) ? 0 : 1);
         return $this->out;
     }
 
+    /** @return string|false */
     function unparse_error() {
         if ($this->errorpos !== false) {
             return '<pre>'
@@ -1007,10 +1005,13 @@ class MimeText {
         }
     }
 
+
     static function chr_hexdec_callback($m) {
         return chr(hexdec($m[1]));
     }
 
+    /** @param string $text
+     * @return string */
     static function decode_header($text) {
         if (strlen($text) > 2 && $text[0] == '=' && $text[1] == '?') {
             $out = '';

@@ -26,7 +26,7 @@ function crpmerge($qreq, $MiniMe) {
 
     // send mail at start of process
     HotCRPMailer::send_to($merger->oldu, "@mergeaccount",
-                          ["cc" => Text::user_email_to($merger->newu),
+                          ["cc" => Text::nameo($merger->newu, NAME_MAILQUOTE|NAME_E),
                            "other_contact" => $merger->newu]);
 
     // actually merge users or change email

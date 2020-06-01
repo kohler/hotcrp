@@ -41,7 +41,8 @@ define("NAME_L", 8);   // "last, first"
 define("NAME_I", 16);  // first initials instead of first name
 define("NAME_S", 32);  // "last, first" according to conference preference
 define("NAME_U", 64);  // unaccented
-define("NAME_A", 128); // affiliation (Author only)
+define("NAME_MAILQUOTE", 128); // quote name by RFC822
+define("NAME_A", 256); // affiliation
 
 define("COMMENTTYPE_DRAFT", 1);
 define("COMMENTTYPE_BLIND", 2);
