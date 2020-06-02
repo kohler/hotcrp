@@ -715,19 +715,19 @@ class PaperStatus extends MessageSet {
                     $v->email = $k;
                 }
                 if (is_object($v) && ($v->email ?? false)) {
-                    if ($this->valid_contact($v->email)) {
-                        $aux = new PaperStatusAuthor;
-                        $aux->assign_keyed($v);
-                        $aux->is_contact = true;
-                        if (isset($v->is_new) && is_bool($v->is_new)) {
-                            $aux->is_new = $v->is_new;
-                        }
-                        if (isset($v->index) && is_int($v->index)) {
-                            $aux->contact_index = $v->index;
-                        }
+                    $aux = new PaperStatusAuthor;
+                    $aux->assign_keyed($v);
+                    $aux->is_contact = true;
+                    if (isset($v->is_new) && is_bool($v->is_new)) {
+                        $aux->is_new = $v->is_new;
+                    }
+                    if (isset($v->index) && is_int($v->index)) {
+                        $aux->contact_index = $v->index;
+                    }
+                    if ($this->valid_contact($aux->email)) {
                         $pj->contacts[] = $aux;
                     } else {
-                        $pj->bad_contacts[] = $v;
+                        $pj->bad_contacts[] = $aux;
                     }
                 } else {
                     $this->format_error_at("contacts", $v);
