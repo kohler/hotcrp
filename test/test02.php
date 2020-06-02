@@ -354,6 +354,10 @@ xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0\x9d"), "ab\x7f\x7f");
 xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0"), "ab\x7f");
 xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0å"), "ab\x7få");
 
+xassert_eqq(UnicodeHelper::utf8_to_html_entities("<!á&"), "&lt;!&aacute;&amp;");
+xassert_eqq(UnicodeHelper::utf8_to_html_entities("<!á&", ENT_XML1), "&lt;!&#225;&amp;");
+xassert_eqq(UnicodeHelper::utf8_to_xml_numeric_entities("<!á&"), "&#60;!&#225;&#38;");
+
 xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 10),
             "+ This is\n- a thing\n- to be\n- wrapped.\n");
 xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 9),

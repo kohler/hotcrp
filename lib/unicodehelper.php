@@ -210,7 +210,7 @@ class UnicodeHelper {
         $flag = ($flag & (ENT_HTML401 | ENT_XML1 | ENT_XHTML | ENT_HTML5)) | ENT_QUOTES;
         return preg_replace_callback('/[' . $start . '\200-\377][\200-\277]*/',
                                      function ($m) use ($flag) {
-            if (($f = get(UnicodeHelper::$f_ligature_map, $m[0]))) {
+            if (($f = UnicodeHelper::$f_ligature_map[$m[0]] ?? null)) {
                 return $f;
             }
             $e = htmlentities($m[0], $flag, "UTF-8");
@@ -229,6 +229,40 @@ class UnicodeHelper {
                 $e = "&#" . $n . ";";
             }
             return $e;
+        }, $str);
+    }
+
+    /** @param string $str */
+    static function utf8_to_xml_numeric_entities($str, $flag = ENT_NOQUOTES) {
+        if ($flag & ENT_IGNORE) {
+            $start = "";
+        } else if (($flag & ENT_QUOTES) == ENT_QUOTES) {
+            $start = "&<>\"'";
+        } else if (($flag & ENT_COMPAT) == ENT_COMPAT) {
+            $start = "&<>\"";
+        } else {
+            $start = "&<>";
+        }
+        return preg_replace_callback('/[' . $start . '\200-\377][\200-\277]*/',
+                                     function ($m) {
+            if (($f = UnicodeHelper::$f_ligature_map[$m[0]] ?? null)) {
+                return $f;
+            } else {
+                $n = ord($m[0][0]);
+                if ($n < 0x80) {
+                    // do nothing
+                } else if ($n < 0xE0) {
+                    $n &= 0x1F;
+                } else if ($n < 0xF0) {
+                    $n &= 0x0F;
+                } else {
+                    $n &= 0x07;
+                }
+                for ($i = 1; $i < strlen($m[0]); ++$i) {
+                    $n = ($n << 6) | (ord($m[0][$i]) & 0x3F);
+                }
+                return "&#" . $n . ";";
+            }
         }, $str);
     }
 
