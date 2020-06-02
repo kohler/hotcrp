@@ -133,7 +133,7 @@ class MergeContacts extends MessageSet {
             }
         }
 
-        $us = new UserStatus($this->conf->site_contact(), ["no_notify" => true]);
+        $us = new UserStatus($this->conf->root_user(), ["no_notify" => true]);
         $us->save($cj, $this->newu);
 
         // Remove the old contact record

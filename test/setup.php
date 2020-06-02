@@ -205,7 +205,7 @@ function setup_initialize_database() {
     if (!$json) {
         die_hard("* test/testdb.json error: " . json_last_error_msg() . "\n");
     }
-    $us = new UserStatus($Conf->site_contact());
+    $us = new UserStatus($Conf->root_user());
     $ok = true;
     foreach ($json->contacts as $c) {
         $user = $us->save($c);

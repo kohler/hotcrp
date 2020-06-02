@@ -32,8 +32,8 @@ $match_title = isset($arg["match-title"]);
 $ignore_pid = isset($arg["ignore-pid"]);
 $ignore_errors = isset($arg["ignore-errors"]);
 $add_topics = isset($arg["add-topics"]);
-$site_contact = $Conf->site_contact();
-$site_contact->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TIME);
+$root_user = $Conf->root_user();
+$root_user->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TIME);
 $tf = new ReviewValues($Conf->review_form(), ["no_notify" => true]);
 
 // allow uploading a whole zip archive
@@ -254,7 +254,7 @@ foreach ($jp as &$j) {
 
     // XXX more validation here
     if ($pid && isset($j->reviews) && is_array($j->reviews) && $reviews) {
-        $prow = $Conf->paper_by_id($pid, $site_contact);
+        $prow = $Conf->paper_by_id($pid, $root_user);
         foreach ($j->reviews as $reviewindex => $reviewj) {
             if ($tf->parse_json($reviewj)
                 && isset($tf->req["reviewerEmail"])
@@ -269,7 +269,7 @@ foreach ($jp as &$j) {
                     "disabled" => $disable_users
                 ];
                 $user = Contact::create($Conf, null, $user_req);
-                $tf->check_and_save($site_contact, $prow, null);
+                $tf->check_and_save($root_user, $prow, null);
             } else {
                 $tf->msg_at(null, "invalid review @$reviewindex", MessageSet::ERROR);
             }

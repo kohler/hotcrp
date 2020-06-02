@@ -723,7 +723,7 @@ class PaperOption implements Abbreviator {
 
         if (($x = $args->editable_if ?? null) !== null && $x !== true) {
             $this->editable_if = $x;
-            $this->_editable_search = new PaperSearch($this->conf->site_contact(), $x === false ? "NONE" : $x);
+            $this->_editable_search = new PaperSearch($this->conf->root_user(), $x === false ? "NONE" : $x);
         }
     }
 
@@ -909,7 +909,7 @@ class PaperOption implements Abbreviator {
     protected function set_exists_if($x) {
         if ($x !== null && $x !== true) {
             $this->exists_if = $x;
-            $this->_exists_search = new PaperSearch($this->conf->site_contact(), $x === false ? "NONE" : $x);
+            $this->_exists_search = new PaperSearch($this->conf->root_user(), $x === false ? "NONE" : $x);
         } else {
             $this->exists_if = $this->_exists_search = null;
         }

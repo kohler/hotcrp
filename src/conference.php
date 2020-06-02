@@ -166,6 +166,8 @@ class Conf {
     private $_user_email_cache;
     /** @var ?Contact */
     private $_site_contact;
+    /** @var ?Contact */
+    private $_root_user;
     /** @var ?ReviewForm */
     private $_review_form_cache;
     /** @var ?AbbreviationMatcher<PaperOption|ReviewField|Formula> */
@@ -1164,7 +1166,7 @@ class Conf {
             }
             self::xt_resolve_require($fxt);
             if (!$user) {
-                $user = $this->site_contact();
+                $user = $this->root_user();
             }
             if ($options || isset($fxt->options)) {
                 $fxt->options = $options;
@@ -1827,7 +1829,7 @@ class Conf {
                 $r->grace = $this->settings["resp_grace$isuf"] ?? null;
                 $r->words = $this->settings["resp_words$isuf"] ?? 500;
                 if (($s = $this->settingTexts["resp_search$isuf"] ?? null)) {
-                    $r->search = new PaperSearch($this->site_contact(), $s);
+                    $r->search = new PaperSearch($this->root_user(), $s);
                 }
                 $this->_resp_rounds[] = $r;
             }
@@ -1938,10 +1940,12 @@ class Conf {
             && !$this->opt("disableNonPC");
     }
 
-    /** @return ?object */
+    /** @return Author */
     function default_site_contact() {
-        $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
-        return Dbl::fetch_first_object($result);
+        $result = $this->ql("select firstName, lastName, email, affiliation from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc, contactId asc limit 1");
+        $chair = $result->fetch_object("Author");
+        Dbl::free($result);
+        return $chair;
     }
 
     /** @return Contact */
@@ -1964,6 +1968,18 @@ class Conf {
             $this->_site_contact = new Contact($args, $this);
         }
         return $this->_site_contact;
+    }
+
+    /** @return Contact */
+    function root_user() {
+        if (!$this->_root_user) {
+            $this->_root_user = new Contact([
+                "email" => "rootuser",
+                "isChair" => 1, "isPC" => 1, "is_site_contact" => 1,
+                "contactTags" => null
+            ]);
+        }
+        return $this->_root_user;
     }
 
     /** @param int $id
@@ -2406,7 +2422,7 @@ class Conf {
             }
             $rowset = $this->paper_set(["paperId" => $pids]);
             foreach ($this->tags()->filter("autosearch") as $dt) {
-                $search = new PaperSearch($this->site_contact(), ["q" => $dt->autosearch, "t" => "all"]);
+                $search = new PaperSearch($this->root_user(), ["q" => $dt->autosearch, "t" => "all"]);
                 foreach ($rowset as $prow) {
                     $want = $search->test($prow);
                     if ($prow->has_tag($dt->tag) !== $want)
@@ -2420,7 +2436,7 @@ class Conf {
     function _update_autosearch_tags_csv($csv) {
         if (count($csv) > 1) {
             $this->_updating_autosearch_tags = true;
-            $aset = new AssignmentSet($this->site_contact(), true);
+            $aset = new AssignmentSet($this->root_user(), true);
             $aset->set_search_type("all");
             $aset->parse($csv);
             $aset->execute();
@@ -2594,7 +2610,7 @@ class Conf {
             $q = join(" THEN ", array_map(function ($dt) {
                 return "((" . $dt->autosearch . ") XOR #" . $dt->tag . ")";
             }, $autosearch_dts));
-            $search = new PaperSearch($this->site_contact(), ["q" => $q, "t" => "all"]);
+            $search = new PaperSearch($this->root_user(), ["q" => $q, "t" => "all"]);
             $p = [];
             foreach ($search->paper_ids() as $pid) {
                 $then = $search->thenmap[$pid] ?? 0;

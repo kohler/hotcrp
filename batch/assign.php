@@ -28,8 +28,7 @@ if (empty($arg["_"])) {
 }
 
 $text = convert_to_utf8($text);
-$user = $Conf->site_contact();
-$assignset = new AssignmentSet($user, true);
+$assignset = new AssignmentSet($Conf->root_user(), true);
 $assignset->parse($text, $filename);
 if ($assignset->has_error()) {
     foreach ($assignset->message_texts(true) as $e) {

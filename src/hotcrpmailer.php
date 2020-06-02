@@ -322,7 +322,7 @@ class HotCRPMailer extends Mailer {
         return $this->row->paperId;
     }
     function kw_authors($args, $isbool) {
-        if (!$this->recipient->is_site_contact
+        if (!$this->recipient->is_root_user()
             && !$this->row->has_author($this->recipient)
             && !$this->recipient->can_view_authors($this->row)) {
             return $isbool ? false : "Hidden for blind review";
@@ -419,7 +419,7 @@ class HotCRPMailer extends Mailer {
         if ($m[1] === "Authors") {
             $nau = 0;
             if ($this->row
-                && ($this->recipient->is_site_contact
+                && ($this->recipient->is_root_user()
                     || $this->row->has_author($this->recipient)
                     || $this->recipient->can_view_authors($this->row))) {
                 $nau = count($this->row->author_list());

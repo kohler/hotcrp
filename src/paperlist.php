@@ -664,7 +664,7 @@ class PaperList {
             $this->_current_find_column = $name;
             $fs = $this->conf->paper_columns($name, $this->user, $opt);
             if (!$fs && !isset($this->_column_errors_by_name[$name])) {
-                if ($this->conf->paper_columns($name, $this->conf->site_contact())) {
+                if ($this->conf->paper_columns($name, $this->conf->root_user())) {
                     $this->_column_errors_by_name[$name][] = "Permission error.";
                 } else {
                     $this->_column_errors_by_name[$name][] = "No such column.";

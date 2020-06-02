@@ -209,7 +209,7 @@ class Si {
             trigger_error("setting {$this->name}.group missing");
         }
         if (!$conf->_setting_groups) {
-            $conf->_setting_groups = new GroupedExtensions($conf->site_contact(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
+            $conf->_setting_groups = new GroupedExtensions($conf->root_user(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
         }
         return $conf->_setting_groups->canonical_group($this->group);
     }

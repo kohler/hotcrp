@@ -69,7 +69,7 @@ if ($content === false) {
     exit(1);
 }
 
-$ustatus = new UserStatus($Conf->site_contact(), [
+$ustatus = new UserStatus($Conf->root_user(), [
     "no_notify" => isset($arg["no-notify"]),
     "no_create" => isset($arg["modify-only"]),
     "no_modify" => isset($arg["create-only"])

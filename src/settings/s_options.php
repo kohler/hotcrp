@@ -276,7 +276,7 @@ class Options_SettingParser extends SettingParser {
             } else if ($optec === "search") {
                 $optecs = (string) $sv->reqv("optecs_$xpos");
                 if ($optecs !== "" && $optecs !== "(All)") {
-                    $ps = new PaperSearch($sv->conf->site_contact(), $optecs);
+                    $ps = new PaperSearch($sv->conf->root_user(), $optecs);
                     if (!$this->fake_prow) {
                         $this->fake_prow = new PaperInfo(null, null, $sv->conf);
                     }

@@ -751,7 +751,7 @@ assert_search_papers($user_marina, "admin:me", "4");
 xassert($user_marina->is_manager());
 
 // conflict overrides
-xassert_assign($Conf->site_contact(), "action,paper,user,tag\nconflict,4 5,chair@_.com\ntag,4 5,,testtag");
+xassert_assign($Conf->root_user(), "action,paper,user,tag\nconflict,4 5,chair@_.com\ntag,4 5,,testtag");
 $paper4 = $user_chair->checked_paper_by_id(4);
 $paper5 = $user_chair->checked_paper_by_id(5);
 assert(!$user_chair->can_administer($paper4));

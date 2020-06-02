@@ -27,7 +27,7 @@ if ($comments && !$narrow) {
 
 require_once("$ConfSitePATH/src/init.php");
 
-$user = $Conf->site_contact();
+$user = $Conf->root_user();
 $t = get($arg, "t", "s");
 $searchtypes = PaperSearch::search_types($user, $t);
 if (!isset($searchtypes[$t])) {

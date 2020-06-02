@@ -68,7 +68,7 @@ class PaperStatus extends MessageSet {
 
     function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
-        $this->user = $user ?? $conf->site_contact();
+        $this->user = $user ?? $conf->root_user();
         foreach (["no_notify", "export_ids", "hide_docids", "add_topics",
                   "export_content", "disable_users",
                   "allow_any_content_file", "content_file_prefix"] as $k) {
@@ -206,7 +206,7 @@ class PaperStatus extends MessageSet {
 
         $original_user = $user = $this->user;
         if ($args["forceShow"] ?? false) {
-            $user = $this->conf->site_contact();
+            $user = $this->conf->root_user();
         }
         if (!$prow || !$user->can_view_paper($prow)) {
             return null;

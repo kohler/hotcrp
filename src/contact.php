@@ -109,6 +109,7 @@ class Contact {
     private $_has_approvable;
     /** @var ?int */
     private $_can_view_pc;
+    /** @var bool */
     public $is_site_contact = false;
     /** @var int */
     private $_rights_version = 0;
@@ -954,6 +955,11 @@ class Contact {
     /** @return bool */
     function has_account_here() {
         return $this->contactId > 0;
+    }
+
+    /** @return bool */
+    function is_root_user() {
+        return $this->is_site_contact;
     }
 
     /** @return bool */

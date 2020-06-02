@@ -81,7 +81,7 @@ class UserStatus extends MessageSet {
         return $this->global_self();
     }
     function actor() {
-        return $this->viewer->is_site_contact ? null : $this->viewer;
+        return $this->viewer->is_root_user() ? null : $this->viewer;
     }
 
     function gxt() {
@@ -778,7 +778,7 @@ class UserStatus extends MessageSet {
         if (($no_notify = $this->no_notify) === null) {
             $no_notify = !!$old_cdb_user;
         }
-        $actor = $this->viewer->is_site_contact ? null : $this->viewer;
+        $actor = $this->viewer->is_root_user() ? null : $this->viewer;
         if ($old_user) {
             $old_disabled = $user->disabled ? 1 : 0;
         } else {
@@ -799,7 +799,7 @@ class UserStatus extends MessageSet {
         if ($user->conf->contactdb()
             && (strcasecmp($user->email, $this->viewer->email) !== 0
                 || $this->viewer->is_actas_user()
-                || $this->viewer->is_site_contact)) { // XXX want way in script to modify all
+                || $this->viewer->is_root_user())) { // XXX want way in script to modify all
             $changing_other = true;
         }
         $this->diffs = [];
