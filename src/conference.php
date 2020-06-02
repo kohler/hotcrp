@@ -1977,7 +1977,7 @@ class Conf {
                 "email" => "rootuser",
                 "isChair" => 1, "isPC" => 1, "is_site_contact" => 1,
                 "contactTags" => null
-            ]);
+            ], $this);
         }
         return $this->_root_user;
     }
