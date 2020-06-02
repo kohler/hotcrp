@@ -17,7 +17,7 @@ class User_API {
 
         $users = [];
         if ($user->privChair || $user->can_view_pc()) {
-            $roles = $user->is_manager() ? "" : " and (roles&" . Contact::ROLE_PC . ")!=0";
+            $roles = $user->is_manager() ? "" : " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
             $result = $user->conf->qe("select email, firstName, lastName, affiliation from ContactInfo where email>=? and email<? and not disabled$roles order by email asc", $email, $email . "~");
             while (($u = $result->fetch_object())) {
                 $users[] = $u;
