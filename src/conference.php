@@ -3508,6 +3508,9 @@ class Conf {
             if ($options["title"] ?? false) {
                 $cols[] = "Paper.title";
             }
+            if ($options["authorInformation"] ?? false) {
+                $cols[] = "Paper.authorInformation";
+            }
         } else {
             $cols = ["Paper.*"];
         }
@@ -3620,7 +3623,8 @@ class Conf {
         if ($options["active"]
             ?? $options["myReviews"]
             ?? $options["myOutstandingReviews"]
-            ?? $options["myReviewRequests"] ?? false) {
+            ?? $options["myReviewRequests"]
+            ?? false) {
             $where[] = "timeWithdrawn<=0";
         }
         if ($options["myLead"] ?? false) {
