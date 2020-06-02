@@ -1127,8 +1127,8 @@ $blind\n";
         // From here on, edit mode.
         $forceShow = $viewer->is_admin_force() ? "&amp;forceShow=1" : "";
         $reviewLinkArgs = "p=$prow->paperId" . ($rrow ? "&amp;r=$reviewOrdinal" : "") . "&amp;m=re" . $forceShow;
-        $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
-        $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
+        $reviewPostLink = $this->conf->hoturl_post("review", $reviewLinkArgs);
+        $reviewDownloadLink = $this->conf->hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
 
         echo '<div class="pcard revcard" id="r', $reviewOrdinal, '" data-pid="',
             $prow->paperId, '" data-rid="', ($rrow ? $rrow->reviewId : "new");
@@ -1148,7 +1148,7 @@ $blind\n";
 
         // Links
         if ($rrow) {
-            echo '<div class="float-right"><a href="' . hoturl("review", "r=$reviewOrdinal&amp;text=1" . $forceShow) . '" class="xx">',
+            echo '<div class="float-right"><a href="' . $this->conf->hoturl("review", "r=$reviewOrdinal&amp;text=1" . $forceShow) . '" class="xx">',
                 Ht::img("txt.png", "[Text]", "b"),
                 "&nbsp;<u>Plain text</u></a>",
                 "</div>";
@@ -1216,7 +1216,7 @@ $blind\n";
       <td></td>
       <td><a href=\"$reviewDownloadLink\">Download form</a>
       <span class=\"barsep\">·</span>
-      <span class=\"hint\"><strong>Tip:</strong> Use <a href=\"", hoturl("search"), "\">Search</a> or <a href=\"", hoturl("offline"), "\">Offline reviewing</a> to download or upload many forms at once.</span></td>
+      <span class=\"hint\"><strong>Tip:</strong> Use <a href=\"", $this->conf->hoturl("search"), "\">Search</a> or <a href=\"", $this->conf->hoturl("offline"), "\">Offline reviewing</a> to download or upload many forms at once.</span></td>
     </tr></table></div>\n";
 
         // review card
@@ -1250,7 +1250,7 @@ $blind\n";
             }
 
             if ($ndelegated == 0) {
-                $t = "As a secondary reviewer, you can <a href=\"" . hoturl("assign", "p=$rrow->paperId") . "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
+                $t = "As a secondary reviewer, you can <a href=\"" . $this->conf->hoturl("assign", "p=$rrow->paperId") . "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
             } else if ($rrow->reviewNeedsSubmit == 0) {
                 $t = "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
             } else if ($napproval) {
@@ -2048,7 +2048,7 @@ class ReviewValues extends MessageSet {
 
         if (!$user->timeReview($prow, $rrow)
             && (!isset($this->req["override"]) || !$admin)) {
-            $this->rmsg(null, 'The <a href="' . hoturl("deadlines") . '">deadline</a> for entering this review has passed.' . ($admin ? " Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""), self::ERROR);
+            $this->rmsg(null, 'The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for entering this review has passed.' . ($admin ? " Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""), self::ERROR);
             return false;
         }
 
@@ -2429,7 +2429,7 @@ class ReviewValues extends MessageSet {
         $pids = array();
         foreach ($info as &$x) {
             if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
-                $x = "<a href=\"" . hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
+                $x = "<a href=\"" . $this->conf->hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
                 $pids[] = $m[2];
             }
         }

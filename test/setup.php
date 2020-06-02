@@ -518,7 +518,7 @@ function fetch_review($prow, $user) {
 function save_review($paper, $user, $revreq, $rrow = null) {
     global $Conf;
     $pid = is_object($paper) ? $paper->paperId : $paper;
-    $prow = $user->conf->paper_by_id($pid, $user);
+    $prow = $user->conf->checked_paper_by_id($pid, $user);
     $rf = $Conf->review_form();
     $tf = new ReviewValues($rf);
     $tf->parse_web(new Qrequest("POST", $revreq), false);

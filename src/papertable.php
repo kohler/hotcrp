@@ -2399,7 +2399,7 @@ class PaperTable {
         if ($this->useRequest) {
             $form_js["class"] .= " alert";
         }
-        echo Ht::form(hoturl_post("paper", "p=" . ($this->prow->paperId ? : "new") . "&amp;m=edit"), $form_js);
+        echo Ht::form($this->conf->hoturl_post("paper", "p=" . ($this->prow->paperId ? : "new") . "&amp;m=edit"), $form_js);
         if ($this->prow->paperStorageId > 1
             && $this->prow->timeSubmitted > 0
             && !$this->conf->setting("sub_freeze")) {
@@ -2653,7 +2653,7 @@ class PaperTable {
         if ($this->mode !== "assign"
             && $this->mode !== "edit"
             && $this->user->can_request_review($prow, null, true)) {
-            $t[] = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx revlink">'
+            $t[] = '<a href="' . $this->conf->hoturl("assign", "p=$prow->paperId") . '" class="xx revlink">'
                 . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
         }
 

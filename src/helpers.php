@@ -39,23 +39,27 @@ function cvtnum($value, $default = -1) {
 
 // web helpers
 
+/** @param int|float $n
+ * @return string */
 function unparse_number_pm_html($n) {
     if ($n < 0) {
         return "−" . (-$n); // U+2212 MINUS
     } else if ($n > 0) {
         return "+" . $n;
     } else {
-        return 0;
+        return "0";
     }
 }
 
+/** @param int|float $n
+ * @return string */
 function unparse_number_pm_text($n) {
     if ($n < 0) {
         return "-" . (-$n);
     } else if ($n > 0) {
         return "+" . $n;
     } else {
-        return 0;
+        return "0";
     }
 }
 
@@ -176,16 +180,17 @@ function foldupbutton($foldnum = 0, $content = "", $js = null) {
     return Ht::link(expander(null, $foldnum) . $content, "#", $js);
 }
 
-/** @param bool $open
+/** @param ?bool $open
+ * @param ?int $foldnum
  * @return string */
 function expander($open, $foldnum = null) {
     $f = $foldnum !== null;
     $foldnum = ($foldnum !== 0 ? $foldnum : "");
     $t = '<span class="expander">';
-    if ($open === null || !$open) {
+    if ($open !== true) {
         $t .= '<span class="in0' . ($f ? " fx$foldnum" : "") . '">' . Icons::ui_triangle(2) . '</span>';
     }
-    if ($open === null || $open) {
+    if ($open !== false) {
         $t .= '<span class="in1' . ($f ? " fn$foldnum" : "") . '">' . Icons::ui_triangle(1) . '</span>';
     }
     return $t . '</span>';

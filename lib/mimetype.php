@@ -19,9 +19,13 @@ class Mimetype {
     const FLAG_INLINE = 1;
     const FLAG_UTF8 = 2;
 
+    /** @var string */
     public $mimetype;
+    /** @var ?string */
     public $extension;
+    /** @var ?string */
     public $description;
+    /** @var int */
     public $flags;
 
     private static $tmap = [];
@@ -44,6 +48,10 @@ class Mimetype {
     private static $mime_types = null;
     private static $finfo = null;
 
+    /** @param string $mimetype
+     * @param ?string $extension
+     * @param ?string $description
+     * @param int $flags */
     function __construct($mimetype, $extension,
                          $description = null, $flags = 0) {
         $this->mimetype = $mimetype;
@@ -52,7 +60,7 @@ class Mimetype {
         $this->flags = $flags;
     }
 
-    /** @param string|Mimetype $type
+    /** @param ?string|?Mimetype $type
      * @return ?Mimetype */
     static function lookup($type, $nocreate = false) {
         global $ConfSitePATH;
@@ -123,7 +131,8 @@ class Mimetype {
         }
     }
 
-    /** @param string|Mimetype $type */
+    /** @param ?string|?Mimetype $type
+     * @return string */
     static function type_with_charset($type) {
         if (($x = self::lookup($type, true))) {
             if ($x->flags & self::FLAG_UTF8) {
@@ -132,23 +141,29 @@ class Mimetype {
                 return $x->mimetype;
             }
         } else {
-            return $type;
+            return "";
         }
     }
 
     /** @param string|Mimetype $typea
-     * @param string|Mimetype $typeb */
+     * @param string|Mimetype $typeb
+     * @return bool */
     static function type_equals($typea, $typeb) {
-        return self::type($typea) === self::type($typeb);
+        $ta = self::type($typea);
+        $tb = self::type($typeb);
+        return ($typea && $typea === $typeb)
+            || ($ta !== null && $ta === $tb);
     }
 
-    /** @param string|Mimetype $type */
+    /** @param ?string|?Mimetype $type
+     * @return string */
     static function extension($type) {
         $x = self::lookup($type);
         return $x && $x->extension ? $x->extension : "";
     }
 
-    /** @param string|Mimetype $type */
+    /** @param ?string|?Mimetype $type
+     * @return string */
     static function description($type) {
         $x = self::lookup($type);
         if ($x && $x->description) {

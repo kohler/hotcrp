@@ -32,7 +32,7 @@ class Assign_ListAction extends ListAction {
         if ($mt === "auto") {
             $t = in_array($qreq->t, ["acc", "s"]) ? $qreq->t : "all";
             $q = join("+", $ssel->selection());
-            go(hoturl("autoassign", "q=$q&amp;t=$t&amp;pap=$q"));
+            go($user->conf->hoturl("autoassign", "q=$q&amp;t=$t&amp;pap=$q"));
         }
 
         $mpc = (string) $qreq->markpc;

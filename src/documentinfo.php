@@ -978,7 +978,7 @@ class DocumentInfo implements JsonSerializable {
         assert(!($flags & self::L_REQUIREFORMAT) || !!$this->prow);
         $need_run = false;
         if (($this->documentType == DTYPE_SUBMISSION || $this->documentType == DTYPE_FINAL)
-            && $this->prow) {
+            && $this->prow !== null) {
             list($info, $suffix, $need_run) = $this->link_html_format_info($flags, $suffix);
         }
 
@@ -1018,8 +1018,9 @@ class DocumentInfo implements JsonSerializable {
                     return ["", $suffix, false];
             }
             $runflag = CheckFormat::RUN_NO;
-            if ($flags & self::L_REQUIREFORMAT)
+            if ($flags & self::L_REQUIREFORMAT) {
                 $runflag = CheckFormat::RUN_PREFER_NO;
+            }
             $cf = new CheckFormat($this->conf, $runflag);
             $cf->check_document($this->prow, $this);
             if ($cf->has_error()) {
@@ -1043,21 +1044,25 @@ class DocumentInfo implements JsonSerializable {
     }
 
     function update_metadata($delta, $quiet = false) {
-        if ($this->paperStorageId <= 1)
+        if ($this->paperStorageId <= 1) {
             return false;
+        }
         $length_ok = true;
         $ijstr = Dbl::compare_and_swap($this->conf->dblink,
-            "select infoJson from PaperStorage where paperId=? and paperStorageId=?", [$this->paperId, $this->paperStorageId],
+            "select infoJson from PaperStorage where paperId=? and paperStorageId=?",
+            [$this->paperId, $this->paperStorageId],
             function ($old) use ($delta, &$length_ok) {
                 $j = json_object_replace($old ? json_decode($old) : null, $delta, true);
                 $new = $j ? json_encode($j) : null;
                 $length_ok = $new === null || strlen($new) <= 32768;
                 return $length_ok ? $new : $old;
             },
-            "update PaperStorage set infoJson=?{desired} where paperId=? and paperStorageId=? and infoJson?{expected}e", [$this->paperId, $this->paperStorageId]);
+            "update PaperStorage set infoJson=?{desired} where paperId=? and paperStorageId=? and infoJson?{expected}e",
+            [$this->paperId, $this->paperStorageId]);
         $this->infoJson = is_string($ijstr) ? json_decode($ijstr) : null;
-        if (!$length_ok && !$quiet)
+        if (!$length_ok && !$quiet) {
             error_log(caller_landmark() . ": {$this->conf->dbname}: update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));
+        }
         return $length_ok;
     }
 

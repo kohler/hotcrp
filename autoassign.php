@@ -183,8 +183,11 @@ if ($Qreq->saveassignment
 
 
 class AutoassignerInterface {
+    /** @var Conf */
     private $conf;
+    /** @var Contact */
     private $user;
+    /** @var Qrequest */
     private $qreq;
     private $atype;
     private $atype_review;
@@ -192,6 +195,7 @@ class AutoassignerInterface {
     private $reviewcount;
     private $reviewround;
     private $discordertag;
+    /** @var Autoassigner */
     private $autoassigner;
     private $start_at;
     private $live;
@@ -231,37 +235,42 @@ class AutoassignerInterface {
         if ($this->atype_review) {
             $r = $qreq[$this->atype . "type"];
             if ($r != REVIEW_META && $r != REVIEW_PRIMARY
-                && $r != REVIEW_SECONDARY && $r != REVIEW_PC)
+                && $r != REVIEW_SECONDARY && $r != REVIEW_PC) {
                 $this->errors["ass"] = "Malformed request!";
+            }
         } else if ($this->atype === "clear") {
             $r = $qreq->cleartype;
             if ($r != REVIEW_META && $r != REVIEW_PRIMARY
                 && $r != REVIEW_SECONDARY && $r != REVIEW_PC
                 && $r !== "conflict"
-                && $r !== "lead" && $r !== "shepherd")
+                && $r !== "lead" && $r !== "shepherd") {
                 $this->errors["a-clear"] = "Malformed request!";
+            }
         }
         $this->reviewtype = $r;
 
         if ($this->atype_review) {
             $this->reviewcount = cvtint($qreq[$this->atype . "ct"], -1);
-            if ($this->reviewcount <= 0)
+            if ($this->reviewcount <= 0) {
                 $this->errors[$this->atype . "ct"] = "You must assign at least one review.";
+            }
 
             $this->reviewround = $qreq->rev_round;
             if ($this->reviewround !== ""
-                && ($err = Conf::round_name_error($this->reviewround)))
+                && ($err = Conf::round_name_error($this->reviewround))) {
                 $this->errors["rev_round"] = $err;
+            }
         }
 
         if ($this->atype === "discorder") {
             $tag = trim((string) $qreq->discordertag);
             $tag = $tag === "" ? "discuss" : $tag;
             $tagger = new Tagger($user);
-            if (($tag = $tagger->check($tag, Tagger::NOVALUE)))
+            if (($tag = $tagger->check($tag, Tagger::NOVALUE))) {
                 $this->discordertag = $tag;
-            else
+            } else {
                 $this->errors["discordertag"] = $tagger->error_html;
+            }
         }
 
         $this->ok = empty($this->errors);
@@ -299,14 +308,15 @@ class AutoassignerInterface {
                            Ht::hidden("bpb$i", $this->qreq["bpb$i"]));
                 $badpairs_arg[] = $this->qreq["bpa$i"] . "-" . $this->qreq["bpb$i"];
             }
-        echo Ht::form(hoturl_post("autoassign",
-                                  ["saveassignment" => 1,
-                                   "assigntypes" => join(" ", $atypes),
-                                   "assignpids" => join(" ", $apids),
-                                   "xbadpairs" => count($badpairs_arg) ? join(" ", $badpairs_arg) : null,
-                                   "profile" => $this->qreq->profile,
-                                   "XDEBUG_PROFILE" => $this->qreq->XDEBUG_PROFILE,
-                                   "seed" => $this->qreq->seed]));
+        echo Ht::form($this->conf->hoturl_post("autoassign", [
+                "saveassignment" => 1,
+                "assigntypes" => join(" ", $atypes),
+                "assignpids" => join(" ", $apids),
+                "xbadpairs" => count($badpairs_arg) ? join(" ", $badpairs_arg) : null,
+                "profile" => $this->qreq->profile,
+                "XDEBUG_PROFILE" => $this->qreq->XDEBUG_PROFILE,
+                "seed" => $this->qreq->seed
+            ]));
 
         $atype = $assignset->type_description();
         echo "<h3>Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
@@ -320,12 +330,14 @@ class AutoassignerInterface {
             sort($umap);
             echo '<p style="font-size:65%">Preference unhappiness: ';
             $usum = 0;
-            foreach ($umap as $u)
+            foreach ($umap as $u) {
                 $usum += $u;
-            if (count($umap) % 2 == 0)
+            }
+            if (count($umap) % 2 == 0) {
                 $umedian = ($umap[count($umap) / 2 - 1] + $umap[count($umap) / 2]) / 2;
-            else
+            } else {
                 $umedian = $umap[(count($umap) - 1) / 2];
+            }
             echo 'mean ', sprintf("%.2f", $usum / count($umap)),
                 ', min ', $umap[0],
                 ', 10% ', $umap[(int) (count($umap) * 0.1)],
@@ -335,8 +347,9 @@ class AutoassignerInterface {
                 ', 90% ', $umap[(int) (count($umap) * 0.9)],
                 ', max ', $umap[count($umap) - 1],
                 '<br/>Time: ', sprintf("%.6f", microtime(true) - $this->start_at);
-            foreach ($this->autoassigner->profile as $name => $time)
+            foreach ($this->autoassigner->profile as $name => $time) {
                 echo ', ', sprintf("%s %.6f", htmlspecialchars($name), $time);
+            }
             echo '</p>';
         }
 
@@ -344,9 +357,10 @@ class AutoassignerInterface {
             Ht::submit("submit", "Apply changes", ["class" => "btn-primary"]),
             Ht::submit("download", "Download assignment file"),
             Ht::submit("cancel", "Cancel");
-        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_round", "method", "haspap") as $t)
+        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_round", "method", "haspap") as $t) {
             if (isset($this->qreq[$t]))
                 echo Ht::hidden($t, $this->qreq[$t]);
+        }
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))),
             join("", $badpairs_inputs),
             Ht::hidden("p", join(" ", $SSel->selection())), "\n";
@@ -379,8 +393,10 @@ class AutoassignerInterface {
         set_time_limit(240);
 
         // prepare autoassigner
-        if ($this->qreq->seed && is_numeric($this->qreq->seed))
+        if ($this->qreq->seed
+            && is_numeric($this->qreq->seed)) {
             srand((int) $this->qreq->seed);
+        }
         $this->autoassigner = $autoassigner = new Autoassigner($this->conf, $SSel->selection());
         if ($this->qreq->pctyp === "sel") {
             $n = $autoassigner->select_pc(array_keys($pcsel));
@@ -491,14 +507,14 @@ function divClass($name, $classes = null) {
         return '<div>';
 }
 
-echo Ht::form(hoturl_post("autoassign", array("profile" => $Qreq->profile, "seed" => $Qreq->seed, "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE)), ["id" => "autoassignform"]),
+echo Ht::form($Conf->hoturl_post("autoassign", array("profile" => $Qreq->profile, "seed" => $Qreq->seed, "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE)), ["id" => "autoassignform"]),
     '<div class="helpside"><div class="helpinside">
 Assignment methods:
-<ul><li><a href="', hoturl("autoassign"), '" class="q"><strong>Automatic</strong></a></li>
- <li><a href="', hoturl("manualassign"), '">Manual by PC member</a></li>
- <li><a href="', hoturl("assign") . '">Manual by paper</a></li>
- <li><a href="', hoturl("conflictassign"), '">Potential conflicts</a></li>
- <li><a href="', hoturl("bulkassign"), '">Bulk update</a></li>
+<ul><li><a href="', $Conf->hoturl("autoassign"), '" class="q"><strong>Automatic</strong></a></li>
+ <li><a href="', $Conf->hoturl("manualassign"), '">Manual by PC member</a></li>
+ <li><a href="', $Conf->hoturl("assign") . '">Manual by paper</a></li>
+ <li><a href="', $Conf->hoturl("conflictassign"), '">Potential conflicts</a></li>
+ <li><a href="', $Conf->hoturl("bulkassign"), '">Bulk update</a></li>
 </ul>
 <hr class="hr">
 <p>Types of PC review:</p>

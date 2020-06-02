@@ -6,7 +6,8 @@ class FileFilter {
     public $id;
     public $name;
 
-    static private function load(Conf $conf) {
+    /** @return array<string,FileFilter> */
+    static function all_by_name(Conf $conf) {
         if ($conf->_file_filters === null) {
             $conf->_file_filters = [];
             if (($flist = $conf->opt("documentFilters"))) {
@@ -14,19 +15,14 @@ class FileFilter {
                 expand_json_includes_callback($flist, [$ffa, "_add_json"]);
             }
         }
+        return $conf->_file_filters;
     }
-
     /** @param string $name
      * @return ?FileFilter */
     static function find_by_name(Conf $conf, $name) {
-        self::load($conf);
-        return $conf->_file_filters[$name] ?? null;
+        return (self::all_by_name($conf))[$name] ?? null;
     }
-    /** @return array<string,FileFilter> */
-    static function all_by_name(Conf $conf) {
-        self::load($conf);
-        return $conf->_file_filters;
-    }
+
     /** @param DocumentInfo $doc
      * @param string $name
      * @return DocumentInfo */

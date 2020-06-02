@@ -1444,8 +1444,10 @@ class Formula implements Abbreviator, JsonSerializable {
 
     /** @return bool */
     function check(Contact $user = null) {
-        if ($this->_parse === null || ($user && $user !== $this->user)) {
-            $this->_parse = $this->parse($user ?? $this->user);
+        $user = $user ?? $this->user;
+        assert($user !== null);
+        if ($this->_parse === null || $user !== $this->user) {
+            $this->_parse = $this->parse($user);
             $this->_format = $this->_parse->format;
         }
         return $this->_format !== Fexpr::FERROR;

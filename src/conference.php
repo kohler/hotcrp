@@ -31,12 +31,19 @@ class Track {
 }
 
 class ResponseRound {
+    /** @var string */
     public $name;
+    /** @var int */
     public $number;
+    /** @var int */
     public $open;
+    /** @var ?int */
     public $done;
+    /** @var ?int */
     public $grace;
+    /** @var ?int */
     public $words;
+    /** @var ?PaperSearch */
     public $search;
     function relevant(Contact $user, PaperInfo $prow = null) {
         global $Now;
@@ -94,16 +101,22 @@ class Conf {
     public $default_format;
     /** @var string */
     public $download_prefix;
+    /** @var int */
     public $au_seerev;
+    /** @var ?list<string> */
     public $tag_au_seerev;
-    public $any_response_open;
+    /** @var bool */
     public $tag_seeall;
+    /** @var int */
     public $ext_subreviews;
+    /** @var int */
+    public $any_response_open;
+    /** @var bool */
     public $sort_by_last;
     /** @var array<string,mixed> */
     public $opt;
-    public $opt_override = null;
-    private $_opt_timestamp = null;
+    public $opt_override;
+    private $_opt_timestamp;
     public $paper_opts;
 
     public $headerPrinted = false;
@@ -111,13 +124,16 @@ class Conf {
     public $_session_handler;
     private $_initial_msg_count;
 
+    /** @var ?Collator */
     private $_collator;
     /** @var list<string> */
     private $rounds;
     /** @var ?array<int,string> */
     private $_defined_rounds;
     private $_round_settings;
+    /** @var ?list<ResponseRound> */
     private $_resp_rounds;
+    /** @var ?array<string,list<?string>> */
     private $_tracks;
     /** @var ?TagMap */
     private $_taginfo;
@@ -426,7 +442,7 @@ class Conf {
         $this->au_seerev = $this->settings["au_seerev"] ?? 0;
         $this->tag_au_seerev = null;
         if ($this->au_seerev == self::AUSEEREV_TAGS) {
-            $this->tag_au_seerev = explode(" ", get_s($this->settingTexts, "tag_au_seerev"));
+            $this->tag_au_seerev = explode(" ", $this->settingTexts["tag_au_seerev"] ?? "");
         }
         $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;
         $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;
@@ -1858,6 +1874,7 @@ class Conf {
     }
 
 
+    /** @return ?TextFormat */
     function format_info($format) {
         if ($this->_format_info === null) {
             $this->_format_info = [];
@@ -2213,6 +2230,7 @@ class Conf {
         return isset($this->_pc_tags_cache[strtolower($tag)]);
     }
 
+    /** @return array<string,Contact> */
     function pc_completion_map() {
         $map = $bylevel = [];
         foreach ($this->pc_users() as $pc) {
@@ -2258,6 +2276,7 @@ class Conf {
         return $this->_cdb;
     }
 
+    /** @return ?Contact */
     private function contactdb_user_by_key($key, $value) {
         if (($cdb = $this->contactdb())) {
             $q = "select ContactInfo.*, roles, activity_at";
@@ -2279,10 +2298,12 @@ class Conf {
         }
     }
 
+    /** @return ?Contact */
     function contactdb_user_by_email($email) {
         return $this->contactdb_user_by_key("email", $email);
     }
 
+    /** @return ?Contact */
     function contactdb_user_by_id($id) {
         return $this->contactdb_user_by_key("contactDbId", $id);
     }
@@ -2290,23 +2311,28 @@ class Conf {
 
     // session data
 
+    /** @param string $name */
     function session($name, $defval = null) {
         if (isset($_SESSION[$this->dsn])
-            && isset($_SESSION[$this->dsn][$name]))
+            && isset($_SESSION[$this->dsn][$name])) {
             return $_SESSION[$this->dsn][$name];
-        else
+        } else {
             return $defval;
+        }
     }
 
+    /** @param string $name */
     function save_session($name, $value) {
         if ($value !== null) {
-            if (empty($_SESSION))
+            if (empty($_SESSION)){
                 ensure_session();
+            }
             $_SESSION[$this->dsn][$name] = $value;
         } else if (isset($_SESSION[$this->dsn])) {
             unset($_SESSION[$this->dsn][$name]);
-            if (empty($_SESSION[$this->dsn]))
+            if (empty($_SESSION[$this->dsn])) {
                 unset($_SESSION[$this->dsn]);
+            }
         }
     }
 

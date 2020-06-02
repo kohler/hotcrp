@@ -36,7 +36,7 @@ class DocumentRequest implements JsonSerializable {
             $want_path = true;
         }
 
-        $dtname = null;
+        $dtname = "";
         $base_dtname = "paper";
         if (isset($req["dt"])) {
             $dtname = $req["dt"];
@@ -49,16 +49,16 @@ class DocumentRequest implements JsonSerializable {
         }
 
         if ($want_path) {
-            $s = $this->req_filename = preg_replace(',\A/*,', "", $path);
-            $dtname = null;
+            $s = $this->req_filename = preg_replace('/\A\/*/', "", $path);
+            $dtname = "";
             if (str_starts_with($s, $conf->download_prefix)) {
                 $s = substr($s, strlen($conf->download_prefix));
             }
-            if (preg_match(',\A(?:p|paper|sub|submission)(\d+)/+(.*)\z,', $s, $m)) {
+            if (preg_match('/\A(?:p|paper|sub|submission)(\d+)\/+(.*)\z/', $s, $m)) {
                 $this->paperId = intval($m[1]);
-                if (preg_match(',\A([^/]+)\.[^/]+\z,', $m[2], $mm)) {
+                if (preg_match('/\A([^\/]+)\.[^\/]+\z/', $m[2], $mm)) {
                     $dtname = urldecode($mm[1]);
-                } else if (preg_match(',\A([^/]+)/+(.*)\z,', $m[2], $mm)) {
+                } else if (preg_match('/\A([^\/]+)\/+(.*)\z/', $m[2], $mm)) {
                     $dtname = urldecode($mm[1]);
                     $this->attachment = urldecode($mm[2]);
                 } else if (isset($req["dt"])) {
@@ -95,7 +95,7 @@ class DocumentRequest implements JsonSerializable {
 
         // parse options and filters
         $this->opt = $this->dtype = null;
-        while ((string) $dtname !== "" && $this->dtype === null) {
+        while ($dtname !== "" && $this->dtype === null) {
             if (str_starts_with($dtname, "comment-")
                 && preg_match('{\Acomment-(?:c[aAxX]?\d+|(?:|[a-zA-Z](?:|[-a-zA-Z0-9]*))response)\z}', $dtname)) {
                 $this->dtype = DTYPE_COMMENT;
@@ -136,7 +136,7 @@ class DocumentRequest implements JsonSerializable {
         }
 
         // if nothing found, use the base
-        if ($this->dtype === null && (string) $dtname === "") {
+        if ($this->dtype === null && $dtname === "") {
             $this->opt = $conf->paper_opts->find($base_dtname);
             $this->dtype = $this->opt->id;
         } else if ($this->dtype === null) {

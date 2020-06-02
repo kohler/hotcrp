@@ -376,7 +376,7 @@ class UserStatus extends MessageSet {
             && ($cj->email ?? false)
             && strtolower($old_user->email) !== strtolower($cj->email)
             && $this->conf->user_id_by_email($cj->email)) {
-            $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+            $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . $this->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         }
 
         // Contactdb information
@@ -1416,7 +1416,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             echo '<div class="', $us->control_class("contactTags", "f-i"), '">',
                 Ht::entry("contactTags", join(" ", $tags), ["size" => 60]),
                 "</div>
-  <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p>\n";
+  <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p>\n";
         } else {
             echo join(" ", $tags), "<div class=\"hint\">Tags represent PC subgroups and are set by administrators.</div>\n";
         }

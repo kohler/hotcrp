@@ -680,7 +680,7 @@ class PaperStatus extends MessageSet {
         }
 
         // verify emails on authors marked as contacts
-        $pj->bad_contacts = array();
+        $pj->bad_contacts = [];
         foreach ($pj->authors ?? [] as $au) {
             if ($au->is_contact && !$this->valid_contact($au->email))
                 $pj->bad_contacts[] = $au;

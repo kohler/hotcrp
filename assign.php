@@ -402,7 +402,7 @@ foreach ($requests as $req) {
 
     if ($Me->can_administer($prow)
         || ($req[0] !== 2 && $Me->contactId > 0 && $rrow->requestedBy == $Me->contactId)) {
-        echo Ht::form(hoturl_post("assign", ["p" => $prow->paperId, "action" => "managerequest", "email" => $rrow->email, "round" => $rrow->reviewRound]), ["class" => "fx"]);
+        echo Ht::form($Conf->hoturl_post("assign", ["p" => $prow->paperId, "action" => "managerequest", "email" => $rrow->email, "round" => $rrow->reviewRound]), ["class" => "fx"]);
         if (!isset($rrow->contactId) || !$rrow->contactId) {
             foreach (["firstName", "lastName", "affiliation"] as $k) {
                 echo Ht::hidden($k, $rrow->$k);
@@ -458,7 +458,7 @@ if ($Me->can_administer($prow)) {
     echo '<div class="pcard revcard">',
         '<div class="revcard-head"><h2>PC assignments</h2></div>',
         '<div class="revcard-body">',
-        Ht::form(hoturl_post("assign", "p=$prow->paperId"), array("id" => "ass", "class" => "need-unload-protection"));
+        Ht::form($Conf->hoturl_post("assign", "p=$prow->paperId"), array("id" => "ass", "class" => "need-unload-protection"));
     Ht::stash_script('hiliter_children("#ass")');
 
     if ($Conf->has_topics()) {
@@ -566,7 +566,7 @@ if (!$Me->allow_administer($prow) && $Conf->setting("extrev_chairreq")) {
     $req = "Propose an external review";
 }
 echo '<div class="pcard revcard">',
-    Ht::form(hoturl_post("assign", "p=$prow->paperId"), ["novalidate" => true]),
+    Ht::form($Conf->hoturl_post("assign", "p=$prow->paperId"), ["novalidate" => true]),
     '<div class="revcard-head">',
     "<h2>", $req, "</h2></div><div class=\"revcard-body\">";
 
