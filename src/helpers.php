@@ -83,7 +83,9 @@ function hoturl_post($page, $param = null) {
 
 
 class JsonResult {
+    /** @var ?int */
     public $status;
+    /** @var array<string,mixed> */
     public $content;
 
     function __construct($values = null) {
@@ -106,13 +108,14 @@ class JsonResult {
             assert($this->status && $this->status > 299);
             $this->content = ["ok" => false, "error" => $values];
         } else {
+            assert(is_associative_array($values));
             $this->content = $values;
         }
     }
     static function make($jr, $arg2 = null) {
         if (is_int($jr)) {
             $jr = new JsonResult($jr, $arg2);
-        } else if (!is_object($jr) || !($jr instanceof JsonResult)) {
+        } else if (!($jr instanceof JsonResult)) {
             $jr = new JsonResult($jr);
         }
         return $jr;
@@ -130,8 +133,11 @@ class JsonResult {
 }
 
 class JsonResultException extends Exception {
+    /** @var JsonResult */
     public $result;
+    /** @var bool */
     static public $capturing = false;
+    /** @param JsonResult $j */
     function __construct($j) {
         $this->result = $j;
     }

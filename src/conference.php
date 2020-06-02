@@ -4831,15 +4831,20 @@ class Conf {
             } catch (JsonResultException $ex) {
                 $j = $ex->result;
             }
-            if (is_object($j) && $j instanceof JsonResult) {
-                $j = $j->content;
+            if ($j instanceof JsonResult) {
+                $a = $j->content;
+            } else if (is_object($j)) {
+                $a = get_object_vars($j);
+            } else {
+                assert(is_associative_array($j));
+                $a = $j;
             }
-            if (!($j->ok ?? false) && !($j->error ?? false)) {
-                Conf::msg_error("Internal error.");
-            } else if (($x = $j->error ?? false)) { // XXX many instances of `error` are html
+            if (($x = $a["error"] ?? null)) { // XXX many instances of `error` are html
                 Conf::msg_error(htmlspecialchars($x));
-            } else if (($x = $j->error_html ?? false)) {
+            } else if (($x = $a["error_html"] ?? null)) {
                 Conf::msg_error($x);
+            } else if (!($a["ok"] ?? false)) {
+                Conf::msg_error("Internal error.");
             }
             Navigation::redirect_site($qreq->redirect);
         } else {
