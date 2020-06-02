@@ -22,8 +22,7 @@
  * @property ?string $reviewLastName
  * @property ?string $reviewEmail
  * @property ?string $reviewLastLogin
- * @property ?string $contactTags
- * @property ?string $sorter */
+ * @property ?string $contactTags */
 class ReviewInfo implements JsonSerializable {
     /** @var Conf */
     public $conf;

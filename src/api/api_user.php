@@ -62,8 +62,9 @@ class User_API {
             && ($hash = Filer::sha1_hash_as_text($qreq->clickthrough_id))) {
             if ($user->has_email()) {
                 $dest_user = $user;
-            } else if (ctype_digit((string) $qreq->p)
-                       && ($ru = $user->reviewer_capability_user($qreq->p))) {
+            } else if ($qreq->p
+                       && ctype_digit($qreq->p)
+                       && ($ru = $user->reviewer_capability_user(intval($qreq->p)))) {
                 $dest_user = $ru;
             } else {
                 return new JsonResult(400, "No such user.");

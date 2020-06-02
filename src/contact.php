@@ -46,8 +46,6 @@ class Contact {
 
     public $nameAmbiguous;
     public $preferredEmail = "";
-    /** @deprecated */
-    public $sorter = "";
     /** @var string */
     private $_sorter;
     /** @var ?int */
@@ -613,6 +611,7 @@ class Contact {
         return $this;
     }
 
+    /** @return int */
     function overrides() {
         return $this->_overrides;
     }
@@ -731,10 +730,12 @@ class Contact {
     }
 
 
+    /** @param string $name */
     function session($name, $defval = null) {
         return $this->conf->session($name, $defval);
     }
 
+    /** @param string $name */
     function save_session($name, $value) {
         $this->conf->save_session($name, $value);
     }
@@ -801,6 +802,7 @@ class Contact {
         return $name;
     }
 
+    /** @return array<string,1|2> */
     function completion_items() {
         $items = [];
 
@@ -1157,14 +1159,17 @@ class Contact {
     }
 
 
+    /** @return bool */
     function has_capabilities() {
         return $this->_capabilities !== null;
     }
 
+    /** @param string $name */
     function capability($name) {
         return $this->_capabilities ? $this->_capabilities[$name] ?? null : null;
     }
 
+    /** @return bool */
     function has_author_view_capability() {
         if ($this->_capabilities !== null) {
             foreach ($this->_capabilities as $k => $v) {
@@ -1175,12 +1180,16 @@ class Contact {
         return false;
     }
 
+    /** @param int $pid
+     * @return bool */
     function has_capability_for($pid) {
         return $this->_capabilities !== null
             && (isset($this->_capabilities["@av{$pid}"])
                 || isset($this->_capabilities["@ra{$pid}"]));
     }
 
+    /** @param int $pid
+     * @return ?Contact */
     function reviewer_capability_user($pid) {
         if ($this->_capabilities !== null
             && ($rcid = ($this->_capabilities["@ra{$pid}"] ?? null))) {
@@ -1959,13 +1968,16 @@ class Contact {
         }
     }
 
+    /** @return bool */
     function is_author() {
         $this->check_rights_version();
-        if (!isset($this->_active_roles))
+        if (!isset($this->_active_roles)) {
             $this->load_author_reviewer_status();
+        }
         return ($this->_active_roles & self::ROLE_AUTHOR) !== 0;
     }
 
+    /** @return list<PaperInfo> */
     function authored_papers() {
         $this->check_rights_version();
         if ($this->_authored_papers === null) {
@@ -1974,6 +1986,7 @@ class Contact {
         return $this->_authored_papers;
     }
 
+    /** @return bool */
     function has_review() {
         $this->check_rights_version();
         if (!isset($this->_active_roles)) {
@@ -1982,10 +1995,12 @@ class Contact {
         return ($this->_active_roles & self::ROLE_REVIEWER) !== 0;
     }
 
+    /** @return bool */
     function is_reviewer() {
         return $this->isPC || $this->has_review();
     }
 
+    /** @return bool */
     function is_metareviewer() {
         if (!isset($this->_is_metareviewer)) {
             $this->_is_metareviewer = $this->isPC
@@ -1995,6 +2010,7 @@ class Contact {
         return $this->_is_metareviewer;
     }
 
+    /** @return int */
     function contactdb_roles() {
         if ($this->is_disabled()) {
             return 0;
@@ -2005,6 +2021,7 @@ class Contact {
         }
     }
 
+    /** @return bool */
     function has_outstanding_review() {
         $this->check_rights_version();
         if ($this->_has_outstanding_review === null) {
@@ -2014,23 +2031,28 @@ class Contact {
         return $this->_has_outstanding_review;
     }
 
+    /** @return bool */
     function is_requester() {
         $this->check_rights_version();
-        if (!isset($this->_active_roles))
+        if (!isset($this->_active_roles)) {
             $this->load_author_reviewer_status();
+        }
         return ($this->_active_roles & self::ROLE_REQUESTER) !== 0;
     }
 
+    /** @return bool */
     function is_discussion_lead() {
         $this->check_rights_version();
-        if (!isset($this->_is_lead))
+        if (!isset($this->_is_lead)) {
             $this->_is_lead = $this->contactId > 0
                 && $this->isPC
                 && $this->conf->has_any_lead_or_shepherd()
                 && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactId);
+        }
         return $this->_is_lead;
     }
 
+    /** @return bool */
     function is_explicit_manager() {
         $this->check_rights_version();
         if (!isset($this->_is_explicit_manager)) {
@@ -2043,14 +2065,17 @@ class Contact {
         return $this->_is_explicit_manager;
     }
 
+    /** @return bool */
     function is_manager() {
         return $this->privChair || $this->is_explicit_manager();
     }
 
+    /** @return bool */
     function is_track_manager() {
         return $this->privChair || $this->conf->check_any_admin_tracks($this);
     }
 
+    /** @return bool */
     function has_review_pending_approval($my_request_only = false) {
         $this->check_rights_version();
         if ($this->_has_approvable === null) {
@@ -2080,6 +2105,7 @@ class Contact {
         return ($this->_has_approvable & $flag) !== 0;
     }
 
+    /** @return bool */
     function has_proposal_pending() {
         $this->has_review_pending_approval();
         return ($this->_has_approvable & 4) !== 0;
@@ -2138,6 +2164,7 @@ class Contact {
 
     // topic interests
 
+    /** @return array<int,int> */
     function topic_interest_map() {
         global $Me;
         if ($this->_topic_interest_map === null) {
@@ -2189,6 +2216,7 @@ class Contact {
 
     // permissions policies
 
+    /** @return int */
     private function dangerous_track_mask() {
         if ($this->_dangerous_track_mask === null) {
             $this->_dangerous_track_mask = $this->conf->dangerous_track_mask($this);

@@ -58,17 +58,6 @@ class Text {
         "with" => true
     ];
 
-    /** @param string $lastName
-     * @return ?array{string,string} */
-    static function analyze_von($lastName) {
-        // see also split_name; NB intentionally case sensitive
-        if (preg_match('/\A((?:(?:v[ao]n(?:|de[nr])|d[aeiu]|de[nr]|l[ae])\s+)+)(.*)\z/s', $lastName, $m)) {
-            return [rtrim($m[1]), $m[2]];
-        } else {
-            return null;
-        }
-    }
-
     /** @param string $firstName
      * @param string $lastName
      * @param string $email
@@ -266,6 +255,17 @@ class Text {
         }
     }
 
+    /** @param string $lastName
+     * @return ?array{string,string} */
+    static function analyze_von($lastName) {
+        // see also split_name; NB intentionally case sensitive
+        if (preg_match('/\A((?:(?:v[ao]n(?:|de[nr])|d[aeiu]|de[nr]|l[ae])\s+)+)(.*)\z/s', $lastName, $m)) {
+            return [rtrim($m[1]), $m[2]];
+        } else {
+            return null;
+        }
+    }
+
     /** @return string */
     static function initial($s) {
         $x = "";
@@ -434,7 +434,8 @@ class Text {
         return htmlspecialchars($x);
     }
 
-    /** @return string
+    /** @deprecated
+     * @return string
      * @phan-suppress PhanDeprecatedFunction */
     static function user_email_to(/* ... */) {
         $r = self::analyze_name_args(func_get_args());

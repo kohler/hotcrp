@@ -18,8 +18,6 @@ class Author {
     private $_deaccents;
     /** @var ?bool */
     public $nonauthor;
-    /** @deprecated */
-    public $sorter;
 
     /** @param null|string|object $x */
     function __construct($x = null) {
