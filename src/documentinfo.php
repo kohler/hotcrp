@@ -392,6 +392,11 @@ class DocumentInfo implements JsonSerializable {
         return $s3->copy(substr($s3k, 0, -strlen($extension)), $s3k);
     }
 
+    /** @return string|false */
+    function want_s3_accel_redirect() {
+        return false;
+    }
+
     /** @return bool */
     function load_s3() {
         if (($s3 = $this->conf->s3_docstore())

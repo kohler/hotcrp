@@ -319,6 +319,14 @@ class S3Document extends S3Result {
         return $this->response_headers["content"] ?? null;
     }
 
+    function load_accel_redirect($skey, $accel) {
+        list($url, $hdr) = $this->stream_headers($skey, "GET", []);
+        header("X-Accel-Redirect: $accel$url");
+        foreach ($hdr["header"] as $h) {
+            header($h);
+        }
+    }
+
     /** @return ?CurlS3Document */
     function make_curl_loader($skey, $stream) {
         if (function_exists("curl_init")) {

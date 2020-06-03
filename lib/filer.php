@@ -143,9 +143,10 @@ class Filer {
             return $z->download();
         }
 
+        $s3_accel = $doc->want_s3_accel_redirect();
         if ($doc->size == 0 && !$doc->ensure_size()) {
             return (object) ["error" => true, "error_html" => "Empty file."];
-        } else if (!$doc->ensure_content()) {
+        } else if (!$s3_accel && !$doc->ensure_content()) {
             $error_html = "Don’t know how to download.";
             if ($doc->error && isset($doc->error_html)) {
                 $error_html = $doc->error_html;
@@ -177,7 +178,10 @@ class Filer {
         if ($doc->has_hash()) {
             header("ETag: \"" . $doc->text_hash() . "\"");
         }
-        if (($path = $doc->available_content_file())) {
+
+        if ($s3_accel !== false) {
+            $doc->conf->s3_docstore()->load_accel_redirect($doc->s3_key(), $s3_accel);
+        } else if (($path = $doc->available_content_file())) {
             self::download_file($path, get($doc, "no_cache") || get($doc, "no_accel"));
         } else {
             if (!$zlib_output_compression) {
