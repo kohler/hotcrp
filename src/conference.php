@@ -344,11 +344,7 @@ class Conf {
 
         // GC old capabilities
         if (($this->settings["__capability_gc"] ?? 0) < $Now - 86400) {
-            foreach (array($this->dblink, $this->contactdb()) as $db) {
-                if ($db) {
-                    Dbl::ql($db, "delete from Capability where timeExpires>0 and timeExpires<$Now");
-                }
-            }
+            $this->ql("delete from Capability where timeExpires>0 and timeExpires<$Now");
             $this->q_raw("insert into Settings set name='__capability_gc', value=$Now on duplicate key update value=values(value)");
             $this->settings["__capability_gc"] = $Now;
         }

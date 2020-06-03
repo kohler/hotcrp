@@ -2533,9 +2533,10 @@ class ReviewValues extends MessageSet {
 
     function json_report() {
         $j = [];
-        foreach (["submitted", "updated", "approval_requested", "saved_draft", "author_notified", "unchanged", "blank"] as $k)
+        foreach (["submitted", "updated", "approval_requested", "saved_draft", "author_notified", "unchanged", "blank"] as $k) {
             if ($this->$k)
                 $j[$k] = $this->$k;
+        }
         return $j;
     }
 }
