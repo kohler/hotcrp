@@ -21,7 +21,7 @@ class Mimetype {
 
     /** @var string */
     public $mimetype;
-    /** @var ?string */
+    /** @var string */
     public $extension;
     /** @var ?string */
     public $description;
@@ -49,7 +49,7 @@ class Mimetype {
     private static $finfo = null;
 
     /** @param string $mimetype
-     * @param ?string $extension
+     * @param string $extension
      * @param ?string $description
      * @param int $flags */
     function __construct($mimetype, $extension,
@@ -85,15 +85,16 @@ class Mimetype {
         if (self::$mime_types === null) {
             self::$mime_types = true;
             $t = (string) @file_get_contents("$ConfSitePATH/lib/mime.types");
-            preg_match_all('{^(|#!!\s+)([-a-z0-9]+/\S+)[ \t]*(.*)}m', $t, $ms, PREG_SET_ORDER);
+            preg_match_all('/^(|#!!\s+)([-a-z0-9]+\/\S+)[ \t]*(.*)/m', $t, $ms, PREG_SET_ORDER);
             foreach ($ms as $mm) {
                 if (isset(self::$tmap[$mm[2]])) {
                     continue;
                 }
                 if ($mm[1] === "") {
-                    $exts = [null];
+                    $exts = [""];
                     if ($mm[3]) {
-                        $exts = array_map(function ($x) { return ".$x"; }, preg_split('/\s+/', $mm[3]));
+                        $exts = array_map(function ($x) { return ".$x"; },
+                                          preg_split('/\s+/', $mm[3]));
                     }
                     $m = new Mimetype($mm[2], $exts[0]);
                     self::$tmap[$m->mimetype] = $m;
@@ -159,19 +160,20 @@ class Mimetype {
      * @return string */
     static function extension($type) {
         $x = self::lookup($type);
-        return $x && $x->extension ? $x->extension : "";
+        return $x ? $x->extension : "";
     }
 
     /** @param ?string|?Mimetype $type
      * @return string */
     static function description($type) {
-        $x = self::lookup($type);
-        if ($x && $x->description) {
-            return $x->description;
-        } else if ($x && $x->extension) {
-            return $x->extension;
-        } else if ($x) {
-            return $x->mimetype;
+        if (($x = self::lookup($type))) {
+            if ($x->description) {
+                return $x->description;
+            } else if ($x->extension !== "") {
+                return $x->extension;
+            } else {
+                return $x->mimetype;
+            }
         } else {
             return $type;
         }

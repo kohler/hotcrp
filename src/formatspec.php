@@ -107,10 +107,14 @@ class FormatSpec {
         return !$this->checkers && $this->is_banal_empty();
     }
 
+    /** @return bool */
     function is_banal_empty() {
         return $this->_is_banal_empty;
     }
 
+    /** @param int $pageno
+     * @param string $k
+     * @return bool */
     function is_checkable($pageno, $k) {
         if (!$this->quietpages || !isset($this->quietpages->$k)) {
             return true;
@@ -127,28 +131,29 @@ class FormatSpec {
         }
     }
 
+    /** @param string $k
+     * @return string */
     function unparse_key($k) {
-        if (!$this->$k) {
-            return "";
-        } else if ($k === "papersize") {
+        if ($k === "papersize" && $this->papersize) {
             return join(" OR ", array_map(function ($x) { return self::unparse_dimen($x, "basic"); }, $this->papersize));
-        } else if ($k === "pagelimit") {
-            return $this->pagelimit[0] ? $this->pagelimit[0] . "-" . $this->pagelimit[1] : $this->pagelimit[1];
-        } else if ($k === "columns") {
-            return $this->columns;
-        } else if ($k === "textblock") {
+        } else if ($k === "pagelimit" && $this->pagelimit) {
+            return $this->pagelimit[0] ? $this->pagelimit[0] . "-" . $this->pagelimit[1] : (string) $this->pagelimit[1];
+        } else if ($k === "columns" && $this->columns) {
+            return (string) $this->columns;
+        } else if ($k === "textblock" && $this->textblock) {
             return self::unparse_dimen($this->textblock, "basic");
-        } else if ($k === "bodyfontsize") {
+        } else if ($k === "bodyfontsize" && $this->bodyfontsize) {
             return self::unparse_range($this->bodyfontsize);
-        } else if ($k === "bodylineheight") {
+        } else if ($k === "bodylineheight" && $this->bodylineheight) {
             return self::unparse_range($this->bodylineheight);
-        } else if ($k === "unlimitedref") {
+        } else if ($k === "unlimitedref" && $this->unlimitedref) {
             return "1";
         } else {
             return "";
         }
     }
 
+    /** @return string */
     function unparse() {
         if ($this->checkers) {
             $a = [];
@@ -163,6 +168,7 @@ class FormatSpec {
         }
     }
 
+    /** @return string */
     function unparse_banal() {
         $x = array_fill(0, 7, "");
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref"] as $i => $k) {
@@ -179,7 +185,7 @@ class FormatSpec {
      * @return ?array{int|float,int|float|null,int|float|null} */
     static function parse_range($s) {
         $x1 = $x2 = 0;
-        if (preg_match(',\A([\d.]+)(?:\s*(?:-|–)\s*([\d.]+))?(?:\s*(?:[dD]|Δ|\+\/?-|±)\s*([\d.]+))?\z,', $s, $m)
+        if (preg_match('/\A([\d.]+)(?:\s*(?:-|–)\s*([\d.]+))?(?:\s*(?:[dD]|Δ|\+\/?-|±)\s*([\d.]+))?\z/', $s, $m)
             && ($x0 = cvtnum($m[1], null)) !== null
             && (!isset($m[2]) || $m[2] === "" || ($x1 = cvtnum($m[2], null)) !== null)
             && (!isset($m[3]) || $m[3] === "" || ($x2 = cvtnum($m[3], null)) !== null)) {
@@ -189,7 +195,8 @@ class FormatSpec {
         }
     }
 
-    /** @param array{int|float,int|float|null,int|float|null} $r */
+    /** @param array{int|float,int|float|null,int|float|null} $r
+     * @return string */
     static private function unparse_range($r) {
         if ($r[1] && $r[2]) {
             return "$r[0]-$r[1]±$r[2]";
@@ -198,7 +205,7 @@ class FormatSpec {
         } else if ($r[1]) {
             return "$r[0]-$r[1]";
         } else {
-            return $r[0];
+            return (string) $r[0];
         }
     }
 

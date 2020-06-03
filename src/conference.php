@@ -559,7 +559,7 @@ class Conf {
                   "paperSite", "defaultPaperSite", "contactName",
                   "contactEmail", "docstore"] as $k) {
             if (isset($this->opt[$k]) && is_string($this->opt[$k])
-                && strpos($this->opt[$k], "$") !== false) {
+                && strpos($this->opt[$k], "\$") !== false) {
                 $this->opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $this->opt[$k]);
                 $this->opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $this->short_name, $this->opt[$k]);
             }
@@ -568,13 +568,14 @@ class Conf {
 
         foreach (["emailFrom", "emailSender", "emailCc", "emailReplyTo"] as $k) {
             if (isset($this->opt[$k]) && is_string($this->opt[$k])
-                && strpos($this->opt[$k], "$") !== false) {
-                $this->opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $this->opt[$k]);
+                && strpos($this->opt[$k], "\$") !== false) {
+                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $confid, $this->opt[$k]);
                 if (strpos($this->opt[$k], "confshortname") !== false) {
                     $v = rfc2822_words_quote($this->short_name);
-                    if ($v[0] === "\"" && strpos($this->opt[$k], "\"") !== false)
+                    if ($v[0] === "\"" && strpos($this->opt[$k], "\"") !== false) {
                         $v = substr($v, 1, strlen($v) - 2);
-                    $this->opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $v, $this->opt[$k]);
+                    }
+                    $this->opt[$k] = preg_replace('/\$\{confshortname\}|\$confshortname\b/', $v, $this->opt[$k]);
                 }
             }
         }
