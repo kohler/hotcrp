@@ -8,6 +8,7 @@ class S3Result {
     public $response_headers;
     public $user_data;
 
+    /** @return bool */
     function check_skey($skey) {
         if ((string) $skey !== "") {
             return true;
@@ -23,15 +24,16 @@ class S3Result {
         $this->response_headers = $this->user_data = [];
     }
     function parse_response_lines($w) {
-        if (preg_match('{\AHTTP/[\d.]+\s+(\d+)\s+(.+)\z}', $w[0], $m)) {
+        if (preg_match('/\AHTTP\/[\d.]+\s+(\d+)\s+(.+)\z/', $w[0], $m)) {
             $this->status = (int) $m[1];
             $this->status_text = $m[2];
         }
         for ($i = 1; $i != count($w); ++$i) {
-            if (preg_match('{\A(.*?):\s*(.*)\z}', $w[$i], $m)) {
+            if (preg_match('/\A(.*?):\s*(.*)\z/', $w[$i], $m)) {
                 $this->response_headers[strtolower($m[1])] = $m[2];
-                if (substr($m[1], 0, 11) == "x-amz-meta-")
+                if (substr($m[1], 0, 11) == "x-amz-meta-") {
                     $this->user_data[substr($m[1], 11)] = $m[2];
+                }
             }
         }
     }
@@ -39,8 +41,10 @@ class S3Result {
 
 class S3Document extends S3Result {
     const EMPTY_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-    static private $known_headers = array("cache-control" => 1, "content-disposition" => 1,
-                                          "content-encoding" => 1, "expires" => 1);
+    static private $known_headers = [
+        "cache-control" =>  true, "content-disposition" => true,
+        "content-encoding" => true, "expires" => true
+    ];
 
     private $s3_bucket;
     private $s3_key;
@@ -67,6 +71,7 @@ class S3Document extends S3Result {
         $this->setting_cache_prefix = $opt["setting_cache_prefix"] ?? "__s3";
     }
 
+    /** @return S3Document */
     static function make($opt) {
         foreach (self::$instances as $s3) {
             if ($s3->check_key_secret_bucket($opt["key"], $opt["secret"], $opt["bucket"])
@@ -78,12 +83,14 @@ class S3Document extends S3Result {
         return $s3;
     }
 
+    /** @return bool */
     function check_key_secret_bucket($key, $secret, $bucket) {
         return $this->s3_key === $key
             && $this->s3_secret === $secret
             && $this->s3_bucket === $bucket;
     }
 
+    /** @return array{string,string} */
     function scope_and_signing_key($time) {
         global $Now;
         if ($this->s3_scope === null
@@ -109,6 +116,7 @@ class S3Document extends S3Result {
         return [$this->s3_scope, $this->s3_signing_key];
     }
 
+    /** @return ?int */
     function check_403() {
         if (!$this->reset_key) {
             $this->s3_scope = $this->s3_signing_key = "";
@@ -121,7 +129,7 @@ class S3Document extends S3Result {
     function signature($method, $url, $hdr, $content = null) {
         $current_time = $this->fixed_time ? : time();
 
-        preg_match('{\Ahttps?://([^/?]*)([^?]*)(?:[?]?)(.*)\z}', $url, $m);
+        preg_match('/\Ahttps?:\/\/([^\/?]*)([^?]*)(?:[?]?)(.*)\z/', $url, $m);
         $host = $m[1];
         $resource = $m[2];
         if (substr($resource, 0, 1) !== "/")
@@ -144,16 +152,17 @@ class S3Document extends S3Result {
 
         $chdr = ["Host" => $host];
         foreach ($hdr as $k => $v) {
-            if (strcasecmp($k, "host")) {
+            if (strcasecmp($k, "host") !== 0) {
                 $v = trim($v);
                 $chdr[$k] = $v;
             }
         }
         if (!isset($chdr["x-amz-content-sha256"])) {
-            if ($content !== false && $content !== "" && $content !== null)
+            if ($content !== false && $content !== "" && $content !== null) {
                 $h = hash("sha256", $content);
-            else
+            } else {
                 $h = self::EMPTY_SHA256;
+            }
             $chdr["x-amz-content-sha256"] = $h;
         }
         if (!isset($chdr["x-amz-date"])) {
@@ -238,8 +247,9 @@ class S3Document extends S3Result {
         $this->response_headers["url"] = $url;
         if ($metadata
             && ($w = $metadata["wrapper_data"] ?? null)
-            && is_array($w))
+            && is_array($w)) {
             $this->parse_response_lines($w);
+        }
     }
 
     private function run_stream_once($skey, $method, $args) {
@@ -286,47 +296,58 @@ class S3Document extends S3Result {
 
     function save($skey, $content, $content_type, $user_data = null) {
         $this->run($skey, "HEAD", []);
-        if ($this->status != 200
+        if ($this->status !== 200
             || ($this->response_headers["content-length"] ?? 0) != strlen($content)) {
             $this->run($skey, "PUT", ["content" => $content,
                                       "content_type" => $content_type,
                                       "user_data" => $user_data]);
         }
-        return $this->status == 200;
+        return $this->status === 200;
     }
 
     function load($skey) {
         $this->run($skey, "GET", []);
-        if ($this->status == 404 || $this->status == 500)
+        if ($this->status === 404 || $this->status === 500) {
             return null;
-        if ($this->status != 200) {
+        }
+        if ($this->status !== 200) {
             trigger_error("S3 warning: GET $skey: status $this->status", E_USER_WARNING);
-            if (self::$verbose)
+            if (self::$verbose) {
                 trigger_error("S3 response: " . var_export($this->response_headers, true), E_USER_WARNING);
+            }
         }
         return $this->response_headers["content"] ?? null;
     }
 
+    /** @return ?CurlS3Document */
     function make_curl_loader($skey, $stream) {
-        if (function_exists("curl_init"))
+        if (function_exists("curl_init")) {
             return new CurlS3Document($this, $skey, "GET", [], $stream);
-        else
+        } else {
             return null;
+        }
     }
 
+    /** @param string $skey
+     * @return bool */
     function check($skey) {
         $this->run($skey, "HEAD", []);
-        return $this->status == 200;
+        return $this->status === 200;
     }
 
+    /** @param string $skey
+     * @return bool */
     function delete($skey) {
         $this->run($skey, "DELETE", []);
-        return $this->status == 204;
+        return $this->status === 204;
     }
 
+    /** @param string $src_skey
+     * @param string $dst_skey
+     * @return bool */
     function copy($src_skey, $dst_skey) {
         $this->run($dst_skey, "PUT", ["x-amz-copy-source" => "/" . $this->s3_bucket . "/" . $src_skey]);
-        return $this->status == 200;
+        return $this->status === 200;
     }
 
     function ls($prefix, $args = []) {

@@ -3412,8 +3412,9 @@ class Conf {
         if (count($docs) > 1) {
             $o = $this->option_by_id($docs[0]->documentType);
             $name = $o->dtype_name();
-            if ($docs[0]->documentType <= 0)
+            if ($docs[0]->documentType <= 0) {
                 $name = pluralize($name);
+            }
             $downloadname = $this->download_prefix . "$name.zip";
         }
         $result = Filer::multidownload($docs, $downloadname, $attachment);

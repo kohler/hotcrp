@@ -143,15 +143,14 @@ class Filer {
             return $z->download();
         }
 
-        if (!$doc->ensure_content()) {
+        if ($doc->size == 0 && !$doc->ensure_size()) {
+            return (object) ["error" => true, "error_html" => "Empty file."];
+        } else if (!$doc->ensure_content()) {
             $error_html = "Don’t know how to download.";
             if ($doc->error && isset($doc->error_html)) {
                 $error_html = $doc->error_html;
             }
             return (object) ["error" => true, "error_html" => $error_html];
-        }
-        if ($doc->size == 0 && !$doc->ensure_size()) {
-            return (object) ["error" => true, "error_html" => "Empty file."];
         }
 
         // Print paper
@@ -169,7 +168,7 @@ class Filer {
                 $downloadname = substr($downloadname, $slash + 1);
         }
         header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
-        if (is_array($opts) && get($opts, "cacheable")) {
+        if (is_array($opts) && ($opts["cacheable"] ?? false)) {
             header("Cache-Control: max-age=315576000, private");
             header("Expires: " . gmdate("D, d M Y H:i:s", $Now + 315576000) . " GMT");
         }
@@ -181,8 +180,9 @@ class Filer {
         if (($path = $doc->available_content_file())) {
             self::download_file($path, get($doc, "no_cache") || get($doc, "no_accel"));
         } else {
-            if (!$zlib_output_compression)
+            if (!$zlib_output_compression) {
                 header("Content-Length: " . strlen($doc->content));
+            }
             echo $doc->content;
         }
         return (object) ["error" => false];
