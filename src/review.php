@@ -1053,7 +1053,7 @@ $blind\n";
         $buttons = [];
 
         $submitted = $rrow && $rrow->reviewSubmitted;
-        $disabled = !$user->can_clickthrough("review");
+        $disabled = !$user->can_clickthrough("review", $prow);
         $my_review = !$rrow || $user->is_my_review($rrow);
         $pc_deadline = $user->act_pc($prow) || $user->allow_administer($prow);
         if (!$this->conf->time_review($rrow, $pc_deadline, true)) {

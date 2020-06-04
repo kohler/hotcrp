@@ -1206,14 +1206,16 @@ class Contact {
                 $this->_capabilities[$name] = $newval;
             } else {
                 unset($this->_capabilities[$name]);
-                if (empty($this->_capabilities))
+                if (empty($this->_capabilities)) {
                     $this->_capabilities = null;
+                }
             }
             if ($this->_activated && $name[0] !== "@") {
                 $savecap = [];
-                foreach ($this->_capabilities ? : [] as $k => $v)
+                foreach ($this->_capabilities ? : [] as $k => $v) {
                     if ($k[0] !== "@")
                         $savecap[$k] = $v;
+                }
                 $this->save_session("cap", empty($savecap) ? null : $savecap);
             }
             $this->update_my_rights();
@@ -3550,7 +3552,7 @@ class Contact {
     function can_review(PaperInfo $prow, ReviewInfo $rrow = null, $submit = false) {
         assert(!$rrow || $rrow->paperId == $prow->paperId);
         $rights = $this->rights($prow);
-        if ($submit && !$this->can_clickthrough("review")) {
+        if ($submit && !$this->can_clickthrough("review", $prow)) {
             return false;
         }
         return ($this->rights_owned_review($rights, $rrow)
@@ -3592,7 +3594,7 @@ class Contact {
                        && (!$rrow || $rrow_cid == $this->contactId)) {
                 $whyNot["reviewNotAssigned"] = 1;
             } else if ($this->can_review($prow, $rrow, false)
-                       && !$this->can_clickthrough("review")) {
+                       && !$this->can_clickthrough("review", $prow)) {
                 $whyNot["clickthrough"] = 1;
             } else {
                 $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
@@ -3650,14 +3652,18 @@ class Contact {
         return $whyNot;
     }
 
-    function can_clickthrough($ctype) {
-        if (!$this->privChair && $this->conf->opt("clickthrough_$ctype")) {
-            $csha1 = sha1($this->conf->_i("clickthrough_$ctype"));
-            $data = $this->data("clickthrough");
-            return $data && get($data, $csha1);
-        } else {
+    function can_clickthrough($ctype, PaperInfo $prow = null) {
+        if ($this->privChair || !$this->conf->opt("clickthrough_$ctype"))  {
             return true;
         }
+        $csha1 = sha1($this->conf->_i("clickthrough_$ctype"));
+        $data = $this->data("clickthrough");
+        return ($data && ($data->$csha1 ?? null))
+            || ($prow
+                && $ctype === "review"
+                && $this->_capabilities !== null
+                && ($user = $this->reviewer_capability_user($prow->paperId))
+                && $user->can_clickthrough($ctype, $prow));
     }
 
     function can_view_review_ratings(PaperInfo $prow, ReviewInfo $rrow = null, $override_self = false) {

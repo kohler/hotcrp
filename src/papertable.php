@@ -2933,8 +2933,7 @@ class PaperTable {
         }
 
         // maybe clickthrough
-        $need_clickthrough = $opt["edit"] && !$this->user->can_clickthrough("review");
-        if ($need_clickthrough) {
+        if ($opt["edit"] && !$this->user->can_clickthrough("review", $this->prow)) {
             self::echo_review_clickthrough();
         }
         $rf = $this->conf->review_form();
