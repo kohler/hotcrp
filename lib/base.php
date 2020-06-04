@@ -42,7 +42,8 @@ function is_int_list($x) {
 // string helpers
 
 /** @param string $haystack
- * @param string $needle */
+ * @param string $needle
+ * @return bool */
 function str_starts_with($haystack, $needle) {
     $nl = strlen($needle);
     $hl = strlen($haystack);
@@ -50,7 +51,8 @@ function str_starts_with($haystack, $needle) {
 }
 
 /** @param string $haystack
- * @param string $needle */
+ * @param string $needle
+ * @return bool */
 function str_ends_with($haystack, $needle) {
     $nl = strlen($needle);
     $hl = strlen($haystack);
@@ -58,7 +60,8 @@ function str_ends_with($haystack, $needle) {
 }
 
 /** @param string $haystack
- * @param string $needle */
+ * @param string $needle
+ * @return bool */
 function stri_ends_with($haystack, $needle) {
     $nl = strlen($needle);
     $hl = strlen($haystack);
@@ -66,7 +69,8 @@ function stri_ends_with($haystack, $needle) {
 }
 
 /** @param string $pattern
- * @param string $subject */
+ * @param string $subject
+ * @return int|false */
 function preg_matchpos($pattern, $subject) {
     if (preg_match($pattern, $subject, $m, PREG_OFFSET_CAPTURE)) {
         return $m[0][1];
@@ -75,7 +79,8 @@ function preg_matchpos($pattern, $subject) {
     }
 }
 
-/** @param string $text */
+/** @param string $text
+ * @return string */
 function cleannl($text) {
     if (substr($text, 0, 3) === "\xEF\xBB\xBF") {
         $text = substr($text, 3);
@@ -105,12 +110,14 @@ function space_join(/* $str_or_array, ... */) {
     return $t;
 }
 
-/** @param string $str */
+/** @param string $str
+ * @return bool */
 function is_usascii($str) {
     return !preg_match('/[\x80-\xFF]/', $str);
 }
 
-/** @param string $str */
+/** @param string $str
+ * @return bool */
 function is_valid_utf8($str) {
     return !!preg_match('//u', $str);
 }
@@ -526,8 +533,8 @@ if (PHP_VERSION_ID >= 70300) {
     }
 } else {
     function hotcrp_setcookie($name, $value = "", $options = []) {
-        return setcookie($name, $value, get($options, "expires", 0),
-                         get($options, "path", ""), get($options, "domain", ""),
-                         get($options, "secure", false), get($options, "httponly", false));
+        return setcookie($name, $value, $options["expires"] ?? 0,
+                         $options["path"] ?? "", $options["domain"] ?? "",
+                         $options["secure"] ?? false, $options["httponly"] ?? false);
     }
 }
