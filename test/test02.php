@@ -1280,6 +1280,15 @@ xassert_eqq(CleanHTML::basic_clean('<a href = " javaScript:hello" ><B>Hello</b><
 xassert_eqq(CleanHTML::basic_clean('<a href = "https://hello" onclick="fuck"><B>Hello</b></a>', $err), false);
 xassert_eqq(CleanHTML::basic_clean('<a href =\'https:"""//hello\' butt><B>Hello</b></a>', $err), '<a href="https:&quot;&quot;&quot;//hello" butt><b>Hello</b></a>');
 
+// base48 encoding
+for ($i = 0; $i !== 1000; ++$i) {
+    $n = mt_rand(0, 99);
+    $b = $n === 0 ? "" : random_bytes($n);
+    $t = base48_encode($b);
+    xassert(strspn($t, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV") === strlen($t));
+    xassert_eqq(base48_decode($t), $b);
+}
+
 // tag sorting
 $dt = $Conf->tags();
 xassert_eqq($dt->sort_string(""), "");

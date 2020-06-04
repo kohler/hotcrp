@@ -880,3 +880,59 @@ function decode_token($x, $format = "") {
         return $t;
     }
 }
+
+function base48_encode($bytes) {
+    $convtab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV";
+    $bi = 0;
+    $blen = strlen($bytes);
+    $have = $w = 0;
+    $t = "";
+    while ($bi !== $blen || $have > 0) {
+        while ($have < 11 && $bi !== $blen) {
+            $w |= ord($bytes[$bi]) << $have;
+            $have += 8;
+            ++$bi;
+        }
+        $x = $w & 0x7FF;
+        $t .= $convtab[$x % 48];
+        if ($have > 5) {
+            $t .= $convtab[(int) ($x / 48)];
+        }
+        $w >>= 11;
+        $have -= 11;
+    }
+    return $t;
+}
+
+function base48_decode($text) {
+    $ti = 0;
+    $tlen = strlen($text);
+    $have = $w = 0;
+    $b = "";
+    while ($ti !== $tlen) {
+        $chunk = $idx = 0;
+        while ($ti !== $tlen && $idx !== 2) {
+            $ch = ord($text[$ti]);
+            if ($ch >= 97 && $ch <= 122) {
+                $n = $ch - 97;
+            } else if ($ch >= 65 && $ch <= 86) {
+                $n = $ch - 39;
+            } else {
+                return false;
+            }
+            ++$ti;
+            $chunk += $idx ? $n * 48 : $n;
+            ++$idx;
+        }
+        if ($idx !== 0) {
+            $w |= $chunk << $have;
+            $have += $idx === 1 ? 5 : 11;
+        }
+        while ($have >= 8) {
+            $b .= chr($w & 255);
+            $w >>= 8;
+            $have -= 8;
+        }
+    }
+    return $b;
+}
