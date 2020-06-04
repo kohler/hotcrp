@@ -85,6 +85,9 @@ class PaperTable {
             && !$user->can_view_review($prow, null)
             && $this->conf->timeFinalizePaper($prow)) {
             $this->first_mode = "edit";
+        } else if ($user->can_review($prow, null)
+                   && $qreq->page() === "review") {
+            $this->first_mode = "re";
         } else {
             $this->first_mode = "p";
         }
@@ -2354,7 +2357,7 @@ class PaperTable {
             }
 
             if ($canReview) {
-                $t .= $this->_paptabTabLink("Review", $this->prow->reviewurl(["m" => "re"]), "review48.png", $this->mode === "re" && (!$this->editrrow || $this->editrrow->contactId == $this->user->contactId));
+                $t .= $this->_paptabTabLink("Review", $this->prow->reviewurl(["m" => "re"]), "review48.png", $this->mode === "re" && (!$this->editrrow || $this->user->is_my_review($this->editrrow)));
             }
 
             if ($canAssign) {
