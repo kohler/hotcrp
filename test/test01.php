@@ -96,7 +96,7 @@ check_paper1($user_estrin->checked_paper_by_id(1));
 // grant user capability to read paper 1, check it doesn't allow PC view
 $user_capability = new Contact;
 xassert(!$user_capability->can_view_paper($paper1));
-$user_capability->apply_capability_text(CapabilityManager::capability_text($paper1, "a"));
+$user_capability->apply_capability_text(AuthorView_Capability::make($paper1));
 xassert(!$user_capability->contactId);
 xassert($user_capability->can_view_paper($paper1));
 xassert(!$user_capability->allow_administer($paper1));

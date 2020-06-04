@@ -339,7 +339,7 @@ class HotCRPMailer extends Mailer {
             && isset($this->row->capVersion)
             && $this->recipient->act_author_view($this->row)) {
             if (!$this->censor) {
-                return "cap=" . CapabilityManager::capability_text($this->row, "a");
+                return "cap=" . AuthorView_Capability::make($this->row);
             } else if ($this->censor === self::CENSOR_DISPLAY) {
                 return "cap=HIDDEN";
             }

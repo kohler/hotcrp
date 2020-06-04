@@ -193,7 +193,8 @@ src/author.php
 src/authormatcher.php
 src/autoassigner.php
 src/banal
-src/capability.php
+src/capabilities/cap_authorview.php
+src/capabilities/cap_reviewaccept.php
 src/capabilityinfo.php
 src/checkformat.php
 src/commentinfo.php
