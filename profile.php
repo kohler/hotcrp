@@ -9,11 +9,9 @@ require_once("src/initweb.php");
 function change_email_by_capability($Qreq) {
     global $Conf, $Me;
     ensure_session();
-    $capmgr = $Conf->capability_manager();
-    $capdata = $capmgr->check(trim($Qreq->changeemail));
+    $capdata = CapabilityInfo::find($Conf, trim($Qreq->changeemail), CAPTYPE_CHANGEEMAIL);
     $capcontent = null;
     if (!$capdata
-        || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
         || !$capdata->contactId
         || !($capcontent = json_decode($capdata->data))
         || !is_object($capcontent)
@@ -59,7 +57,7 @@ function change_email_by_capability($Qreq) {
         && $Qreq->go
         && $Qreq->post_ok()) {
         $Acct->change_email($newemail);
-        $capmgr->delete($capdata);
+        $capdata->delete();
         $Conf->confirmMsg("Your email address has been changed.");
         if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId) {
             $Me = $Acct->activate($Qreq);
@@ -264,16 +262,19 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             return $user_status->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
         }
         if (!$newProfile && (!$Me->privChair || $Acct === $Me)) {
+            assert($Acct->contactId > 0);
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
-            $capmgr = $Conf->capability_manager();
-            $capability = $capmgr->create($Acct, CAPTYPE_CHANGEEMAIL, [
-                "timeExpires" => $Now + 259200,
-                "data" => json_encode_db(["oldemail" => $Acct->email, "uemail" => $cj->email])
-            ]);
-            $rest = ["capability" => $capability, "sensitive" => true];
-            $mailer = new HotCRPMailer($Conf, $Acct, $rest);
-            $prep = $mailer->prepare("@changeemail", $rest);
+            $capability = new CapabilityInfo($Conf, false, CAPTYPE_CHANGEEMAIL);
+            $capability->set_user($Acct)->set_expires_after(259200);
+            $capability->data = json_encode_db(["oldemail" => $Acct->email, "uemail" => $cj->email]);
+            if ($capability->create()) {
+                $rest = ["capability" => $capability, "sensitive" => true];
+                $mailer = new HotCRPMailer($Conf, $Acct, $rest);
+                $prep = $mailer->prepare("@changeemail", $rest);
+            } else {
+                $prep = null;
+            }
             if ($prep->can_send()) {
                 $prep->send();
                 $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . ". Use the link it contains to confirm your email change request.");

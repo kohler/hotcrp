@@ -80,11 +80,8 @@ class Signin_Partial {
     static private function _check_reset_code(Contact $user, $qreq) {
         $pw = trim($qreq->password);
         if ($pw
-            && (str_starts_with($pw, "U1") || str_starts_with($pw, "1"))
-            && ($capmgr = $user->conf->capability_manager($pw))
-            && ($capdata = $capmgr->check($pw))
-            && $capdata->capabilityType == CAPTYPE_RESETPASSWORD
-            && ($capuser = $capmgr->user_by_capability_data($capdata))
+            && ($cap = CapabilityInfo::find($user->conf, $pw, CAPTYPE_RESETPASSWORD))
+            && ($capuser = $cap->user())
             && strcasecmp($capuser->email, trim($qreq->email)) === 0) {
             return $pw;
         } else {
@@ -396,15 +393,13 @@ class Signin_Partial {
         }
 
         if ($qreq->resetcap === null
-            && preg_match('/\A\/(U?1[-\w]+)(?:\/|\z)/', $qreq->path(), $m)) {
+            && preg_match('/\A\/(U?[12][-\w]+)(?:\/|\z)/', $qreq->path(), $m)) {
             $qreq->resetcap = $m[1];
         }
 
         // set $this->_reset_cap
         $resetcap = trim((string) $qreq->resetcap);
-        $capmgr = null;
-        '@phan-var ?CapabilityManager $capmgr';
-        if (preg_match('/\A\/?(U?1[-\w]+)\/?\z/', $resetcap, $m)) {
+        if (preg_match('/\A\/?(U?[12][-\w]+)\/?\z/', $resetcap, $m)) {
             $this->_reset_cap = $m[1];
         } else if (strpos($resetcap, "@") !== false) {
             if ($qreq->go
@@ -422,11 +417,9 @@ class Signin_Partial {
 
         // set $this->_reset_capdata and $this->_reset_user
         if ($this->_reset_cap) {
-            $capmgr = $conf->capability_manager($this->_reset_cap);
-            $capdata = $capmgr->check($this->_reset_cap);
-            if ($capdata && $capdata->capabilityType == CAPTYPE_RESETPASSWORD) {
+            if (($capdata = CapabilityInfo::find($conf, $this->_reset_cap, CAPTYPE_RESETPASSWORD))) {
                 $this->_reset_capdata = $capdata;
-                $this->_reset_user = $capmgr->user_by_capability_data($capdata);
+                $this->_reset_user = $capdata->user();
             } else {
                 Ht::error_at("resetcap", "Unknown or expired password reset code. Please check that you entered the code correctly.");
             }
@@ -461,7 +454,7 @@ class Signin_Partial {
                 $accthere->change_password($p1);
                 $accthere->log_activity("Password reset via " . substr($this->_reset_cap, 0, 8) . "...");
                 $conf->msg("Password changed. Use the new password to sign in below.", "xconfirm");
-                $capmgr->delete($this->_reset_capdata);
+                $this->_reset_capdata->delete();
                 $user->save_session("password_reset", (object) [
                     "time" => $Now, "email" => $this->_reset_user->email, "password" => $p1
                 ]);

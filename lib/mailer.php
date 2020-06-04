@@ -417,8 +417,9 @@ class Mailer {
             if (!$cdbu && $this->conf->contactdb()) {
                 error_log("{$this->conf->dbname}: {$this->recipient->email} creating local capability");
             }
-            $capmgr = $this->conf->capability_manager($cdbu ? "U" : null);
-            $cap = $this->preparation->reset_capability = $capmgr->create($this->recipient, CAPTYPE_RESETPASSWORD, ["timeExpires" => time() + 259200]);
+            $capinfo = new CapabilityInfo($this->conf, !!$cdbu, CAPTYPE_RESETPASSWORD);
+            $capinfo->set_user($this->recipient)->set_expires_after(259200);
+            $cap = $capinfo->create();
         }
         return $this->conf->hoturl("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($cap);
     }

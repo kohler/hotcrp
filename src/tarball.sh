@@ -194,6 +194,7 @@ src/authormatcher.php
 src/autoassigner.php
 src/banal
 src/capability.php
+src/capabilityinfo.php
 src/checkformat.php
 src/commentinfo.php
 src/conference.php

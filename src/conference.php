@@ -4606,14 +4606,6 @@ class Conf {
     }
 
 
-    // capabilities
-
-    /** @return CapabilityManager */
-    function capability_manager($for = null) {
-        return new CapabilityManager($this, $for && substr($for, 0, 1) === "U");
-    }
-
-
     // messages
 
     /** @return IntlMsgSet */
