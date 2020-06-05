@@ -61,9 +61,6 @@ define("TAG_REGEX", '~?~?' . TAG_REGEX_NOTWIDDLE);
 define("TAG_MAXLEN", 80);
 define("TAG_INDEXBOUND", 2147483646);
 
-define("CAPTYPE_RESETPASSWORD", 1);
-define("CAPTYPE_CHANGEEMAIL", 2);
-
 global $Now, $ConfSitePATH;
 $Now = time();
 $ConfSitePATH = null;

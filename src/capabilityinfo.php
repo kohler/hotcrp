@@ -3,6 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CapabilityInfo {
+    const RESETPASSWORD = 1;
+    const CHANGEEMAIL = 2;
+
     /** @var Conf */
     public $conf;
     /** @var bool */

@@ -80,7 +80,7 @@ class Signin_Partial {
     static private function _check_reset_code(Contact $user, $qreq) {
         $pw = trim($qreq->password);
         if ($pw
-            && ($cap = CapabilityInfo::find($user->conf, $pw, CAPTYPE_RESETPASSWORD))
+            && ($cap = CapabilityInfo::find($user->conf, $pw, CapabilityInfo::RESETPASSWORD))
             && ($capuser = $cap->user())
             && strcasecmp($capuser->email, trim($qreq->email)) === 0) {
             return $pw;
@@ -417,7 +417,7 @@ class Signin_Partial {
 
         // set $this->_reset_capdata and $this->_reset_user
         if ($this->_reset_cap) {
-            if (($capdata = CapabilityInfo::find($conf, $this->_reset_cap, CAPTYPE_RESETPASSWORD))) {
+            if (($capdata = CapabilityInfo::find($conf, $this->_reset_cap, CapabilityInfo::RESETPASSWORD))) {
                 $this->_reset_capdata = $capdata;
                 $this->_reset_user = $capdata->user();
             } else {

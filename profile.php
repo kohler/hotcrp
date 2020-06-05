@@ -9,7 +9,7 @@ require_once("src/initweb.php");
 function change_email_by_capability($Qreq) {
     global $Conf, $Me;
     ensure_session();
-    $capdata = CapabilityInfo::find($Conf, trim($Qreq->changeemail), CAPTYPE_CHANGEEMAIL);
+    $capdata = CapabilityInfo::find($Conf, trim($Qreq->changeemail), CapabilityInfo::CHANGEEMAIL);
     $capcontent = null;
     if (!$capdata
         || !$capdata->contactId
@@ -265,7 +265,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             assert($Acct->contactId > 0);
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
-            $capability = new CapabilityInfo($Conf, false, CAPTYPE_CHANGEEMAIL);
+            $capability = new CapabilityInfo($Conf, false, CapabilityInfo::CHANGEEMAIL);
             $capability->set_user($Acct)->set_expires_after(259200);
             $capability->data = json_encode_db(["oldemail" => $Acct->email, "uemail" => $cj->email]);
             if ($capability->create()) {

@@ -417,7 +417,7 @@ class Mailer {
             if (!$cdbu && $this->conf->contactdb()) {
                 error_log("{$this->conf->dbname}: {$this->recipient->email} creating local capability");
             }
-            $capinfo = new CapabilityInfo($this->conf, !!$cdbu, CAPTYPE_RESETPASSWORD);
+            $capinfo = new CapabilityInfo($this->conf, !!$cdbu, CapabilityInfo::RESETPASSWORD);
             $capinfo->set_user($this->recipient)->set_expires_after(259200);
             $token = $capinfo->create();
         }
