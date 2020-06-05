@@ -208,10 +208,24 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $fn;
     }
-    function file_contents($name) {
+    /** @param string $name
+     * @return int|false */
+    function file_size($name) {
+        $sz = false;
+        if (array_key_exists($name, $this->____files)) {
+            $sz = $this->____files[$name]["size"];
+        }
+        return $sz;
+    }
+    /** @param string $name
+     * @param int $offset
+     * @param int $maxlen
+     * @return string|false */
+    function file_contents($name, $offset = 0, $maxlen = PHP_INT_MAX) {
         $data = false;
         if (array_key_exists($name, $this->____files)) {
-            $data = @file_get_contents($this->____files[$name]["tmp_name"]);
+            $data = @file_get_contents($this->____files[$name]["tmp_name"],
+                                       false, null, $offset, $maxlen);
         }
         return $data;
     }
