@@ -151,10 +151,12 @@ class Filer {
             return $z->download();
         }
 
-        $s3_accel = $doc->want_s3_accel_redirect();
         if ($doc->size == 0 && !$doc->ensure_size()) {
             return (object) ["error" => true, "error_html" => "Empty file."];
-        } else if (!$s3_accel && !$doc->ensure_content()) {
+        }
+
+        $s3_accel = $doc->want_s3_accel_redirect();
+        if (!$s3_accel && !$doc->ensure_content()) {
             $error_html = "Don’t know how to download.";
             if ($doc->error && isset($doc->error_html)) {
                 $error_html = $doc->error_html;
@@ -162,7 +164,7 @@ class Filer {
             return (object) ["error" => true, "error_html" => $error_html];
         }
 
-        // Print paper
+        // Print headers
         header("Content-Type: " . Mimetype::type_with_charset($doc->mimetype));
         if (is_bool($opts)) {
             $attachment = $opts;
@@ -187,6 +189,7 @@ class Filer {
             header("ETag: \"" . $doc->text_hash() . "\"");
         }
 
+        // Download or redirect
         if ($s3_accel !== false) {
             $doc->conf->s3_docstore()->load_accel_redirect($doc->s3_key(), $s3_accel);
         } else if (($path = $doc->available_content_file())) {
