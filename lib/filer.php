@@ -118,10 +118,9 @@ class Filer {
                 && $filename[strlen($dsp)] !== "/") {
                 // XXX Chromium issue 961617: samesite cookies don't work in
                 // Chrome PDF viewer
-                if (str_ends_with($mimetype, "pdf")) {
-                    header("Accept-Ranges: none");
-                } else {
-                    header("Accept-Ranges: bytes");
+                if (str_ends_with($mimetype, "pdf")
+                    && ($dpr = Conf::$g->opt("docstoreAccelRedirectPdf"))) {
+                    $dar = $dpr;
                 }
                 header("X-Accel-Redirect: $dar" . substr($filename, strlen($dsp)));
                 return;
