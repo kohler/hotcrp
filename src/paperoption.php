@@ -1835,11 +1835,11 @@ class AttachmentsPaperOption extends PaperOption {
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXX does not consider $reqov
         $pt->echo_editable_option_papt($this, $this->title_html() . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid(), "for" => false]);
-        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" id="', $this->formid, '_attachments">';
+        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dtype="', $this->id, '" id="', $this->formid, '_attachments">';
         foreach ($ov->documents() as $i => $doc) {
             $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
-            echo '<div class="has-document" data-document-name="', $oname, '">',
-                '<div class="document-file">',
+            echo '<div class="has-document" data-dtype="', $this->id,
+                '" data-document-name="', $oname, '"><div class="document-file">',
                 $doc->link_html(htmlspecialchars($doc->unique_filename)),
                 '</div><div class="document-stamps">';
             if (($stamps = PaperTable::pdf_stamps_html($doc))) {

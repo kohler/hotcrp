@@ -363,7 +363,7 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
         $action = "final";
     } else if ($Qreq->submitpaper
                && (($prow && $prow->size > 0)
-                   || $Qreq->has_file("paperUpload")
+                   || $Qreq->has_file("opt0")
                    || $Conf->opt("noPapers"))) {
         $action = "submit";
     }

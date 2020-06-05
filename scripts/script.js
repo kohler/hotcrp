@@ -4357,7 +4357,7 @@ function activate_editing($c, cj) {
 
 function render_edit_attachment(i, doc) {
     var hc = new HtmlCollector;
-    hc.push('<div class="has-document compact" data-document-name="cmtdoc_' + doc.docid + '_' + i + '">', '</div>');
+    hc.push('<div class="has-document compact" data-dtype="-2" data-document-name="cmtdoc_' + doc.docid + '_' + i + '">', '</div>');
     hc.push('<div class="document-file">', '</div>');
     render_attachment_link(hc, doc);
     hc.pop();
@@ -7584,7 +7584,8 @@ handle_ui.on("js-add-attachment", function () {
         ++n;
         name = $ea[0].getAttribute("data-document-prefix") + "_new_" + n;
     } while ($f[0]["has_" + name]);
-    var $na = $('<div class="has-document document-new-instance hidden" data-document-name="' + name + '">'
+    var $na = $('<div class="has-document document-new-instance hidden" data-dtype="'
+        + $ea.attr("data-dtype") + '" data-document-name="' + name + '">'
         + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="uich document-uploader"></div>'
         + '<div class="document-actions"><a href="" class="ui js-remove-document document-action">Delete</a></div>'
         + '</div>');
@@ -7599,7 +7600,7 @@ handle_ui.on("js-replace-document", function (event) {
     $ei.find(".document-remover").val("");
     if (!$u.length) {
         var docid = +$ei.attr("data-dtype"),
-            name = docid > 0 ? "opt" + docid : "paperUpload",
+            name = "opt" + docid,
             t = '<div class="document-upload hidden"><input id="' + name + '" type="file" name="' + name + '"';
         if ($ei[0].hasAttribute("data-document-accept"))
             t += ' accept="' + $ei[0].getAttribute("data-document-accept") + '"';
@@ -7617,7 +7618,7 @@ handle_ui.on("document-uploader", function (event) {
         removeClass(doce, "hidden");
         removeClass(doce.parentElement, "hidden");
         var f = doce.closest("form"), n = "has_" + doce.getAttribute("data-document-name");
-        if (!f[n])
+        if (!f.elements[n])
             $(f).append('<input type="hidden" name="' + n + '" value="1">');
     } else {
         $(doce).find(".document-file, .document-stamps, .document-actions, .document-format, .js-replace-document").addClass("hidden");
@@ -8073,7 +8074,7 @@ edit_paper_ui.edit_condition = function () {
 };
 edit_paper_ui.load = function () {
     hiliter_children("#form-paper");
-    $("#form-paper input[name=paperUpload]").trigger("change");
+    $("#form-paper input.primary-document").trigger("change");
     $(".papet").each(add_pslitem_header);
     var h = $(".btn-savepaper").first(),
         k = $("#form-paper").hasClass("alert") ? "" : " hidden";

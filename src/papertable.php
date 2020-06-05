@@ -660,7 +660,7 @@ class PaperTable {
         $t .= ' size="30" class="';
         $k = ["uich", "document-uploader"];
         if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
-            $k[] = "js-check-submittable";
+            $k[] = "js-check-submittable primary-document";
         }
         return $t . join(" ", $k) . '">';
     }
@@ -674,7 +674,7 @@ class PaperTable {
                 || ($dtype == DTYPE_FINAL) !== $this->canUploadFinal)
                 return;
         }
-        $inputid = $dtype > 0 ? "opt" . $dtype : "paperUpload";
+        $inputid = "opt" . $dtype;
 
         $accepts = $docx->mimetypes();
         $field = $docx->field_key();
@@ -736,8 +736,9 @@ class PaperTable {
             echo '</div>';
             if ($has_cf) {
                 echo '<div class="document-format">';
-                if (!$this->cf->failed && $this->cf->has_problem())
+                if (!$this->cf->failed && $this->cf->has_problem()) {
                     echo $this->cf->document_report($this->prow, $doc);
+                }
                 echo '</div>';
             }
         }

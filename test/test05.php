@@ -245,7 +245,7 @@ xassert($newpaper->has_author($user_estrin));
 
 // some erroneous saves concerning required fields
 $qreq = new Qrequest("POST", ["ready" => 1, "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
-$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
@@ -254,7 +254,7 @@ xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
 $qreq = new Qrequest("POST", ["ready" => 1, "title" => "", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
-$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
@@ -263,7 +263,7 @@ xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
 $qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC"]);
-$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
