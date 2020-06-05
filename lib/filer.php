@@ -155,7 +155,8 @@ class Filer {
             return (object) ["error" => true, "error_html" => "Empty file."];
         }
 
-        $s3_accel = $doc->want_s3_accel_redirect();
+        $no_accel = $opts["no_accel"] ?? false;
+        $s3_accel = $no_accel ? false : $doc->s3_accel_redirect();
         if (!$s3_accel && !$doc->ensure_content()) {
             $error_html = "Don’t know how to download.";
             if ($doc->error && isset($doc->error_html)) {
@@ -190,10 +191,12 @@ class Filer {
         }
 
         // Download or redirect
-        if ($s3_accel !== false) {
+        if ($s3_accel) {
             $doc->conf->s3_docstore()->load_accel_redirect($doc->s3_key(), $s3_accel);
+            // XXX Chrome bug
+            header("Accept-Ranges: " . (str_ends_with($doc->mimetype, "pdf") ? "none" : "bytes"));
         } else if (($path = $doc->available_content_file())) {
-            self::download_file($path, $doc->mimetype, $opt["no_accel"] ?? false);
+            self::download_file($path, $doc->mimetype, $no_accel);
         } else {
             if (!$zlib_output_compression) {
                 header("Content-Length: " . strlen($doc->content));
