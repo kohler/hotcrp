@@ -411,17 +411,17 @@ class Mailer {
             return "";
         }
         $this->sensitive = true;
-        $cap = $this->censor ? "HIDDEN" : $this->preparation->reset_capability;
-        if (!$cap) {
+        $token = $this->censor ? "HIDDEN" : $this->preparation->reset_capability;
+        if (!$token) {
             $cdbu = $this->recipient->contactdb_user();
             if (!$cdbu && $this->conf->contactdb()) {
                 error_log("{$this->conf->dbname}: {$this->recipient->email} creating local capability");
             }
             $capinfo = new CapabilityInfo($this->conf, !!$cdbu, CAPTYPE_RESETPASSWORD);
             $capinfo->set_user($this->recipient)->set_expires_after(259200);
-            $cap = $capinfo->create();
+            $token = $capinfo->create();
         }
-        return $this->conf->hoturl("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($cap);
+        return $this->conf->hoturl("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
     }
 
     function expandvar($what, $isbool = false) {

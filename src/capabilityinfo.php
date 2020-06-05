@@ -132,19 +132,31 @@ class CapabilityInfo {
 
     /** @return string|false */
     function create() {
-        assert($this->capabilityType > 0 && $this->salt === null);
+        assert($this->capabilityType > 0);
         foreach (["contactId", "paperId", "timeExpires"] as $k) {
             $this->$k = $this->$k ?? 0;
         }
-        for ($tries = 0; $tries < 4; ++$tries) {
-            $salt = ($this->is_cdb ? "2" : "1") . base48_encode(random_bytes(16));
-            $result = Dbl::ql($this->dblink(), "insert into Capability set capabilityType=?, contactId=?, paperId=?, timeExpires=?, salt=?, data=?", $this->capabilityType, $this->contactId, $this->paperId, $this->timeExpires, $salt, $this->data);
+        $need_salt = !$this->salt;
+        for ($tries = 0; $tries < ($need_salt ? 4 : 1); ++$tries) {
+            if ($need_salt) {
+                $salt = ($this->is_cdb ? "2" : "1") . base48_encode(random_bytes(16));
+            } else {
+                $salt = $this->salt;
+            }
+            $result = Dbl::qe($this->dblink(), "insert into Capability set capabilityType=?, contactId=?, paperId=?, timeExpires=?, salt=?, data=?", $this->capabilityType, $this->contactId, $this->paperId, $this->timeExpires, $salt, $this->data);
             if ($result->affected_rows > 0) {
                 $this->salt = $salt;
                 return $salt;
             }
         }
         return false;
+    }
+
+    /** @return bool */
+    function update() {
+        assert($this->capabilityType > 0 && !!$this->salt);
+        $result = Dbl::qe($this->dblink(), "update Capability set timeExpires=?, data=? where salt=?", $this->timeExpires, $this->data, $this->salt);
+        return !Dbl::is_error($result);
     }
 
     function delete() {
