@@ -399,7 +399,15 @@ class HotCRPMailer extends Mailer {
         }
     }
     function kw_reviewacceptor() {
-        return $this->rrow->reviewId . "ra" . $this->rrow->acceptor()->text;
+        if ($this->rrow && ($acc = $this->rrow->acceptor()->text)) {
+            if (ctype_digit($acc[0])) { // XXX backward compat
+                return $this->rrow->reviewId . "ra" . $acc;
+            } else {
+                return "ra" . $this->rrow->reviewId . $acc;
+            }
+        } else {
+            return false;
+        }
     }
     function kw_reviews() {
         return $this->get_reviews();

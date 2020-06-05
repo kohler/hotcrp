@@ -451,7 +451,8 @@ class ReviewInfo implements JsonSerializable {
             $this->_load_data();
         }
         if (!isset($this->_data->acceptor)) {
-            $this->_data->acceptor = (object) ["text" => hotcrp_random_password(), "at" => $Now];
+            $text = base48_encode(random_bytes(10));
+            $this->_data->acceptor = (object) ["text" => $text, "at" => $Now];
             $this->_save_data();
         }
         return $this->_data->acceptor;
