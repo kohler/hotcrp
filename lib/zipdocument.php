@@ -244,7 +244,7 @@ class ZipDocument {
         if (!$doc->error) {
             set_time_limit(180); // large zip files might download slowly
             $this->download_headers();
-            Filer::download_file($doc->content_file);
+            Filer::download_file($doc->content_file, $this->mimetype);
         }
         $this->clean();
         return $doc;

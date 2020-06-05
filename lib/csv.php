@@ -823,7 +823,7 @@ class CsvGenerator {
         global $zlib_output_compression;
         if ($this->stream) {
             $this->flush($this->stream);
-            Filer::download_file($this->stream_filename);
+            Filer::download_file($this->stream_filename, $this->is_csv() ? "text/csv" : "text/plain");
         } else {
             if (!($this->flags & self::FLAG_FLUSHED) && !$zlib_output_compression) {
                 header("Content-Length: " . $this->lines_length);
