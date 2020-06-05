@@ -215,6 +215,7 @@ class Conf {
     private $_option_type_map;
     private $_option_type_factories;
     private $_capability_factories;
+    private $_capability_types;
     private $_hook_map;
     private $_hook_factories;
     /** @var ?array<string,FileFilter> */
@@ -345,9 +346,7 @@ class Conf {
 
         // GC old capabilities
         if (($this->settings["__capability_gc"] ?? 0) < $Now - 86400) {
-            $this->ql("delete from Capability where timeExpires>0 and timeExpires<$Now");
-            $this->q_raw("insert into Settings set name='__capability_gc', value=$Now on duplicate key update value=values(value)");
-            $this->settings["__capability_gc"] = $Now;
+            $this->cleanup_capabilities();
         }
 
         $this->crosscheck_settings();
@@ -675,6 +674,26 @@ class Conf {
         $this->_list_action_map = $this->_list_action_renderers = $this->_list_action_factories = null;
         $this->_file_filters = null;
         $this->_site_contact = null;
+    }
+
+    private function cleanup_capabilities() {
+        global $Now;
+        $ctmap = $this->capability_type_map();
+        $ct_cleanups = [];
+        foreach ($ctmap as $ctj) {
+            if ($ctj->cleanup_callback ?? null)
+                $ct_cleanups[] = $ctj->type;
+        }
+        if (!empty($ct_cleanups)) {
+            $result = $this->ql("select * from Capability where timeExpires>0 and timeExpires<$Now and capabilityType?a", $ct_cleanups);
+            while (($cap = CapabilityInfo::fetch($result, $this, false))) {
+                call_user_func($ctmap[$cap->capabilityType]->cleanup_callback, $cap);
+            }
+            Dbl::free($result);
+        }
+        $this->ql("delete from Capability where timeExpires>0 and timeExpires<$Now");
+        $this->ql("insert into Settings set name='__capability_gc', value=$Now on duplicate key update value=values(value)");
+        $this->settings["__capability_gc"] = $Now;
     }
 
 
@@ -4996,22 +5015,38 @@ class Conf {
     // capability tokens
 
     function _add_capability_json($fj) {
+        $ok = false;
         if (isset($fj->match) && is_string($fj->match)
             && isset($fj->callback) && is_string($fj->callback)) {
             $this->_capability_factories[] = $fj;
-            return true;
-        } else {
-            return false;
+            $ok = true;
         }
+        if (isset($fj->type) && is_int($fj->type)) {
+            self::xt_add($this->_capability_types, $fj->type, $fj);
+        }
+        return true;
     }
-    function capability_handler($cap) {
+    function capability_type_map() {
         if ($this->_capability_factories === null) {
             $this->_capability_factories = [];
+            $this->_capability_types = [];
             expand_json_includes_callback(["etc/capabilityhandlers.json"], [$this, "_add_capability_json"]);
-            if (($olist = $this->opt("capabilityHandlers")))
+            if (($olist = $this->opt("capabilityHandlers"))) {
                 expand_json_includes_callback($olist, [$this, "_add_capability_json"]);
+            }
             usort($this->_capability_factories, "Conf::xt_priority_compare");
+            // option types are global (cannot be allowed per user)
+            $m = [];
+            foreach (array_keys($this->_capability_types) as $ct) {
+                if (($uf = $this->xt_search_name($this->_capability_types, $ct, null)))
+                    $m[$ct] = $uf;
+            }
+            $this->_capability_types = $m;
         }
+        return $this->_capability_types;
+    }
+    function capability_handler($cap) {
+        $this->capability_type_map();
         $ufs = $this->xt_search_factories($this->_capability_factories, $cap, null);
         return $ufs[0];
     }
