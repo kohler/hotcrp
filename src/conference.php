@@ -179,6 +179,7 @@ class Conf {
     /** @var array<int,Formula> */
     private $_defined_formulas = null;
     private $_emoji_codes = null;
+    /** @var S3Document|null|false */
     private $_s3_document = false;
     /** @var ?IntlMsgSet */
     private $_ims;
@@ -976,15 +977,11 @@ class Conf {
         }
         return $ap < $bp ? -1 : ($ap == $bp ? 0 : 1);
     }
-    /** @param array<string,list<object>> &$a
+    /** @param array<string|int,list<object>> &$a
      * @param object $xt */
     static function xt_add(&$a, $name, $xt) {
-        if (is_string($name)) {
-            $a[$name][] = $xt;
-            return true;
-        } else {
-            return false;
-        }
+        $a[$name][] = $xt;
+        return true;
     }
     static private function xt_combine($xt1, $xt2) {
         foreach (get_object_vars($xt2) as $k => $v) {
@@ -4663,7 +4660,7 @@ class Conf {
     // search keywords
 
     function _add_search_keyword_json($kwj) {
-        if (isset($kwj->name)) {
+        if (isset($kwj->name) && is_string($kwj->name)) {
             return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
         } else if (is_string($kwj->match) && is_string($kwj->expand_callback)) {
             $this->_search_keyword_factories[] = $kwj;
@@ -4693,7 +4690,11 @@ class Conf {
     // assignment parsers
 
     function _add_assignment_parser_json($uf) {
-        return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
+        if (isset($uf->name) && is_string($uf->name)) {
+            return self::xt_add($this->_assignment_parsers, $uf->name, $uf);
+        } else {
+            return false;
+        }
     }
     /** @return ?AssignmentParser */
     function assignment_parser($keyword, Contact $user = null) {
@@ -4718,7 +4719,11 @@ class Conf {
     // formula functions
 
     function _add_formula_function_json($fj) {
-        return self::xt_add($this->_formula_functions, $fj->name, $fj);
+        if (isset($fj->name) && is_string($fj->name)) {
+            return self::xt_add($this->_formula_functions, $fj->name, $fj);
+        } else {
+            return false;
+        }
     }
     function formula_function($fname, Contact $user) {
         if ($this->_formula_functions === null) {
@@ -4736,7 +4741,11 @@ class Conf {
     // API
 
     function _add_api_json($fj) {
-        return self::xt_add($this->_api_map, $fj->name, $fj);
+        if (isset($fj->name) && is_string($fj->name)) {
+            return self::xt_add($this->_api_map, $fj->name, $fj);
+        } else {
+            return false;
+        }
     }
     private function api_map() {
         if ($this->_api_map === null) {
@@ -4900,7 +4909,7 @@ class Conf {
 
     function _add_paper_column_json($fj) {
         $ok = false;
-        if (isset($fj->name)) {
+        if (isset($fj->name) && is_string($fj->name)) {
             $ok = self::xt_add($this->_paper_column_map, $fj->name, $fj);
         }
         if (isset($fj->match)
@@ -5042,8 +5051,9 @@ class Conf {
 
     function _add_mail_template_json($fj) {
         if (isset($fj->name) && is_string($fj->name)) {
-            if (is_array($fj->body))
+            if (is_array($fj->body)) {
                 $fj->body = join("", $fj->body);
+            }
             return self::xt_add($this->_mail_template_map, $fj->name, $fj);
         } else {
             return false;
