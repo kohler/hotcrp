@@ -369,19 +369,27 @@ class DocumentInfo implements JsonSerializable {
         return null;
     }
 
-    /** @return ?string */
-    function s3_key() {
-        if (($hash = $this->text_hash()) === false) {
-            return null;
-        }
+    /** @param string $text_hash
+     * @param string|Mimetype $mimetype
+     * @return string */
+    static function s3_key_for($text_hash, $mimetype) {
         // Format: `doc/%[2/3]H/%h%x`. Why not algorithm in subdirectory?
         // Because S3 works better if keys are partitionable.
-        if (strlen($hash) === 40) {
-            $x = substr($hash, 0, 2);
+        if (strlen($text_hash) === 40) {
+            $x = substr($text_hash, 0, 2);
         } else {
-            $x = substr($hash, strpos($hash, "-") + 1, 3);
+            $x = substr($text_hash, strpos($text_hash, "-") + 1, 3);
         }
-        return "doc/$x/$hash" . Mimetype::extension($this->mimetype);
+        return "doc/$x/$text_hash" . Mimetype::extension($mimetype);
+    }
+
+    /** @return ?string */
+    function s3_key() {
+        if (($hash = $this->text_hash()) !== false) {
+            return self::s3_key_for($hash, $this->mimetype);
+        } else {
+            return null;
+        }
     }
 
     private function s3_upgrade_extension(S3Document $s3, $s3k) {

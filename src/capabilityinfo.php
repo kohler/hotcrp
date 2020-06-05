@@ -49,17 +49,17 @@ class CapabilityInfo {
         } else if (str_starts_with($text, "U1")) {
             $prefix = "U1";
         } else {
-            return null;
+            $prefix = "";
         }
 
-        $iscdb = $prefix !== "1";
+        $iscdb = $prefix === "U1" || $prefix === "2";
         $dblink = $iscdb ? $conf->contactdb() : $conf->dblink;
         if (!$dblink) {
             return null;
         }
 
         $result = Dbl::qe($dblink, "select * from Capability where salt=?", $text);
-        if ($result->num_rows === 0) { // backward compat
+        if ($result->num_rows === 0 && $prefix !== "") { // backward compat
             $decoded = base64_decode(str_replace(["-a", "-b"], ["+", "/"], substr($text, strlen($prefix))));
             if ($decoded !== false && strlen($decoded) >= 5) {
                 error_log(base64_encode($decoded) . json_encode($iscdb));

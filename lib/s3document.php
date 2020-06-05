@@ -202,9 +202,6 @@ class S3Document extends S3Result {
             . $this->s3_key . "/" . $scope
             . ",SignedHeaders=" . substr($chk, 1)
             . ",Signature=" . $signature;
-        if (self::$verbose) {
-            error_log(var_export($hdrarr, true));
-        }
         return ["headers" => $hdrarr, "signature" => $signature];
     }
 
@@ -235,8 +232,9 @@ class S3Document extends S3Result {
     function stream_headers($skey, $method, $args) {
         list($url, $hdr, $content, $content_type) =
             $this->signed_headers($skey, $method, $args);
-        if ((string) $content !== "" && $content_type)
+        if ((string) $content !== "" && $content_type) {
             $hdr[] = "Content-Type: $content_type";
+        }
         return [$url,
             ["header" => $hdr, "content" => (string) $content,
              "protocol_version" => 1.1, "ignore_errors" => true,
@@ -260,6 +258,12 @@ class S3Document extends S3Result {
             $this->parse_stream_response($url, stream_get_meta_data($stream));
             $this->response_headers["content"] = stream_get_contents($stream);
             fclose($stream);
+        }
+        if (self::$verbose) {
+            error_log($method . " " . $url . " -> " . $this->status . " " . $this->status_text);
+            if ($this->status !== 200) {
+                error_log($this->response_headers["content"] ?? "");
+            }
         }
     }
 
@@ -294,17 +298,8 @@ class S3Document extends S3Result {
         }
     }
 
-    function save($skey, $content, $content_type, $user_data = null) {
-        $this->run($skey, "HEAD", []);
-        if ($this->status !== 200
-            || ($this->response_headers["content-length"] ?? 0) != strlen($content)) {
-            $this->run($skey, "PUT", ["content" => $content,
-                                      "content_type" => $content_type,
-                                      "user_data" => $user_data]);
-        }
-        return $this->status === 200;
-    }
-
+    /** @param string $skey
+     * @return ?string */
     function load($skey) {
         $this->run($skey, "GET", []);
         if ($this->status === 404 || $this->status === 500) {
@@ -319,6 +314,8 @@ class S3Document extends S3Result {
         return $this->response_headers["content"] ?? null;
     }
 
+    /** @param string $skey
+     * @param string $accel */
     function load_accel_redirect($skey, $accel) {
         list($url, $hdr) = $this->stream_headers($skey, "GET", []);
         header("X-Accel-Redirect: $accel$url");
@@ -327,7 +324,9 @@ class S3Document extends S3Result {
         }
     }
 
-    /** @return ?CurlS3Document */
+    /** @param string $skey
+     * @param resource $stream
+     * @return ?CurlS3Document */
     function make_curl_loader($skey, $stream) {
         if (function_exists("curl_init")) {
             return new CurlS3Document($this, $skey, "GET", [], $stream);
@@ -344,6 +343,32 @@ class S3Document extends S3Result {
     }
 
     /** @param string $skey
+     * @param string $content
+     * @param string $content_type
+     * @param array<string,string> $user_data
+     * @return bool */
+    function put($skey, $content, $content_type, $user_data = null) {
+        $this->run($skey, "PUT", ["content" => $content,
+                                  "content_type" => $content_type,
+                                  "user_data" => $user_data]);
+        return $this->status === 200;
+    }
+
+    /** @param string $skey
+     * @param string $content
+     * @param string $content_type
+     * @param array<string,string> $user_data
+     * @return bool */
+    function save($skey, $content, $content_type, $user_data = null) {
+        $this->run($skey, "HEAD", []);
+        if ($this->status !== 200
+            || ($this->response_headers["content-length"] ?? 0) != strlen($content)) {
+            $this->put($skey, $content, $content_type, $user_data);
+        }
+        return $this->status === 200;
+    }
+
+    /** @param string $skey
      * @return bool */
     function delete($skey) {
         $this->run($skey, "DELETE", []);
@@ -352,12 +377,50 @@ class S3Document extends S3Result {
 
     /** @param string $src_skey
      * @param string $dst_skey
+     * @param ?string $content_type
+     * @param array<string,string> $user_data
      * @return bool */
-    function copy($src_skey, $dst_skey) {
-        $this->run($dst_skey, "PUT", ["x-amz-copy-source" => "/" . $this->s3_bucket . "/" . $src_skey]);
+    function copy($src_skey, $dst_skey, $content_type = null, $user_data = []) {
+        $arguments = ["x-amz-copy-source" => "/" . $this->s3_bucket . "/" . $src_skey];
+        if ($content_type !== null) {
+            $arguments["content_type"] = $content_type;
+        }
+        $arguments["user_data"] = $user_data;
+        $this->run($dst_skey, "PUT", $arguments);
         return $this->status === 200;
     }
 
+    /** @param string $skey
+     * @param string $content_type
+     * @param array<string,string> $user_data
+     * @return string|false */
+    function multipart_create($skey, $content_type, $user_data = []) {
+        $this->run("{$skey}?uploads", "POST", ["content_type" => $content_type, "user_data" => $user_data]);
+        if ($this->status === 200
+            && preg_match('/<UploadId>(.*?)<\/UploadId>/', $this->response_headers["content"] ?? "", $m)) {
+            return $m[1];
+        } else {
+            return false;
+        }
+    }
+
+    /** @param string $skey
+     * @param string $uploadid
+     * @param list<string> $etags
+     * @return bool */
+    function multipart_complete($skey, $uploadid, $etags) {
+        $content = '<?xml version="1.0" encoding="UTF-8"?>
+<CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/">';
+        foreach ($etags as $i => $etag) {
+            $content .= "\n  <Part><ETag>$etag</ETag><PartNumber>" . ($i + 1) . "</PartNumber></Part>";
+        }
+        $content .= "\n</CompleteMultipartUpload>\n";
+        $this->run("{$skey}?uploadId=$uploadid", "POST", ["content" => $content, "content_type" => "application/xml"]);
+        return $this->status === 200;
+    }
+
+    /** @param string $prefix
+     * @return ?string */
     function ls($prefix, $args = []) {
         $suffix = "?list-type=2&prefix=" . urlencode($prefix);
         foreach (["max-keys", "start-after", "continuation-token"] as $k) {

@@ -181,6 +181,19 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function set_file($name, $finfo) {
         $this->____files[$name] = $finfo;
     }
+    /** @param string $name
+     * @param string $content
+     * @param ?string $filename
+     * @param ?string $mimetype */
+    function set_file_content($name, $content, $filename = null, $mimetype = null) {
+        $this->____files[$name] = [
+            "name" => $filename ?? "__set_file_content.$name",
+            "type" => $mimetype ?? "application/octet-stream",
+            "size" => strlen($content),
+            "content" => $content,
+            "error" => 0
+        ];
+    }
     /** @return bool */
     function has_files() {
         return !empty($this->____files);
@@ -224,8 +237,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function file_contents($name, $offset = 0, $maxlen = PHP_INT_MAX) {
         $data = false;
         if (array_key_exists($name, $this->____files)) {
-            $data = @file_get_contents($this->____files[$name]["tmp_name"],
-                                       false, null, $offset, $maxlen);
+            $finfo = $this->____files[$name];
+            if (isset($finfo["content"])) {
+                $data = substr($finfo["content"], $offset, $maxlen);
+            } else {
+                $data = @file_get_contents($finfo["tmp_name"], false, null, $offset, $maxlen);
+            }
         }
         return $data;
     }
