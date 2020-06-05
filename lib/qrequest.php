@@ -133,12 +133,14 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             $this->$name = $value;
         }
     }
+    /** @return int */
     function count() {
         return count(get_object_vars($this)) - 8;
     }
     function jsonSerialize() {
         return $this->as_array();
     }
+    /** @return array<string,mixed> */
     function as_array() {
         $d = [];
         foreach (get_object_vars($this) as $k => $v) {
@@ -147,6 +149,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $d;
     }
+    /** @param list<string> $keys
+     * @return array<string,mixed> */
     function subset_as_array($keys) {
         $d = [];
         foreach ($keys as $k) {
@@ -155,9 +159,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $d;
     }
+    /** @return object */
     function as_object() {
         return (object) $this->as_array();
     }
+    /** @return list<string> */
     function keys() {
         $d = [];
         foreach (array_keys(get_object_vars($this)) as $k) {
@@ -166,18 +172,26 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $d;
     }
+    /** @param string $key
+     * @return bool */
     function contains($key) {
         return property_exists($this, $key);
     }
+    /** @param string $name */
     function set_file($name, $finfo) {
         $this->____files[$name] = $finfo;
     }
+    /** @return bool */
     function has_files() {
         return !empty($this->____files);
     }
+    /** @param string $name
+     * @return bool */
     function has_file($name) {
         return isset($this->____files[$name]);
     }
+    /** @param string $name
+     * @return ?array{name:string,type:string,size:int,tmp_name:string,error:int} */
     function file($name) {
         $f = null;
         if (array_key_exists($name, $this->____files)) {
@@ -185,6 +199,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $f;
     }
+    /** @param string $name
+     * @return string|false */
     function file_filename($name) {
         $fn = false;
         if (array_key_exists($name, $this->____files)) {

@@ -149,14 +149,15 @@ function json_exit($json, $arg2 = null) {
     if (JsonResultException::$capturing) {
         throw new JsonResultException($json);
     } else {
-        if ($json->status && !isset($json->content["ok"])) {
-            $json->content["ok"] = $json->status <= 299;
-        }
-        if ($json->status && !isset($json->content["status"])) {
-            $json->content["status"] = $json->status;
-        }
-        if ($Qreq->post && !$Qreq->post_ok()) {
-            $json->content["postvalue"] = post_value(true);
+        if ($json->status) {
+            if (!isset($json->content["ok"])) {
+                $json->content["ok"] = $json->status <= 299;
+            }
+            if (!isset($json->content["status"])) {
+                $json->content["status"] = $json->status;
+            }
+        } else if (isset($json->content["status"])) {
+            $json->status = $json->content["status"];
         }
         if ($Qreq && $Qreq->post_ok()) {
             // Don’t set status on unvalidated requests, since that can leak
@@ -881,6 +882,8 @@ function decode_token($x, $format = "") {
     }
 }
 
+/** @param string $bytes
+ * @return string */
 function base48_encode($bytes) {
     $convtab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV";
     $bi = 0;
@@ -904,6 +907,8 @@ function base48_encode($bytes) {
     return $t;
 }
 
+/** @param string $text
+ * @return string|false */
 function base48_decode($text) {
     $ti = 0;
     $tlen = strlen($text);

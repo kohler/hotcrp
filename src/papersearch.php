@@ -1508,8 +1508,9 @@ class PaperID_SearchTerm extends SearchTerm {
             return "Paper.paperId in (" . join(",", $pids) . ")";
         } else {
             $s = [];
-            foreach ($this->r as $r)
+            foreach ($this->r as $r) {
                 $s[] = "(Paper.paperId>={$r[0]} and Paper.paperId<{$r[1]})";
+            }
             return "(" . join(" or ", $s) . ")";
         }
     }
