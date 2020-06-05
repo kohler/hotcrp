@@ -465,7 +465,7 @@ class PaperStatus extends MessageSet {
             }
 
             if ($this->prow
-                && ($docid = get($docj, "docid"))
+                && ($docid = $docj->docid ?? null)
                 && is_int($docid)) {
                 $result = $this->conf->qe("select * from PaperStorage where paperId=? and paperStorageId=? and documentType=?", $this->prow->paperId, $docid, $o->id);
                 $doc = DocumentInfo::fetch($result, $this->conf, $this->prow);

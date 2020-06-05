@@ -319,7 +319,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return ?bool */
-    function store_database() {
+    private function store_database() {
         if (!$this->conf->opt("dbNoPapers")) {
             $content = $this->content();
             for ($p = 0; $p < strlen($content); $p += 400000) {

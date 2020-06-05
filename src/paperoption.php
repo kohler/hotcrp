@@ -1454,7 +1454,7 @@ class DocumentPaperOption extends PaperOption {
                 $ov->error($fup->error_html);
             }
             return $ov;
-        } else if ($qreq["remove_{$this->formid}"]) {
+        } else if ($qreq["{$this->formid}:remove"]) {
             return PaperValue::make($prow, $this);
         } else {
             return null;
@@ -1798,7 +1798,7 @@ class AttachmentsPaperOption extends PaperOption {
         $dids = $anno = [];
         $ov = PaperValue::make($prow, $this, -1);
         foreach ($this->value_dids($prow->force_option($this)) as $i => $did) {
-            if (!isset($qreq["remove_{$this->formid}_{$did}_{$i}"])) {
+            if (!isset($qreq["{$this->formid}_{$did}_{$i}:remove"])) {
                 $ov->anno["dids"][] = $did;
             }
         }
@@ -1835,7 +1835,7 @@ class AttachmentsPaperOption extends PaperOption {
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXX does not consider $reqov
         $pt->echo_editable_option_papt($this, $this->title_html() . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid(), "for" => false]);
-        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dtype="', $this->id, '" id="', $this->formid, '_attachments">';
+        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dtype="', $this->id, '" id="', $this->formid, ':attachments">';
         foreach ($ov->documents() as $i => $doc) {
             $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
             echo '<div class="has-document" data-dtype="', $this->id,
@@ -1849,7 +1849,7 @@ class AttachmentsPaperOption extends PaperOption {
                 Ht::link("Delete", "", ["class" => "ui js-remove-document document-action"]),
                 '</div></div>';
         }
-        echo '</div>', Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}_attachments"]),
+        echo '</div>', Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]),
             "</div>\n\n";
     }
 

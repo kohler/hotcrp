@@ -7644,7 +7644,7 @@ handle_ui.on("js-remove-document", function (event) {
             addClass(holder.parentElement, "hidden");
     } else {
         if (!$r.length)
-            $r = $('<input type="hidden" class="document-remover" name="remove_' + $ei.data("documentName") + '" data-default-value="" value="1">').appendTo($ei.find(".document-actions"));
+            $r = $('<input type="hidden" class="document-remover" name="' + $ei.data("documentName") + ':remove" data-default-value="" value="1">').appendTo($ei.find(".document-actions"));
         $r.val(1);
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
