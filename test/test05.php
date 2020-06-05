@@ -33,11 +33,11 @@ $paper1b->title = $paper1a->title;
 $paper1b->submitted_at = $paper1a->submitted_at;
 xassert_eqq(json_encode($paper1b), json_encode($paper1a));
 
-$doc = DocumentInfo::make_file_upload(-1, DTYPE_SUBMISSION, [
+$doc = DocumentInfo::make_uploaded_file([
         "error" => UPLOAD_ERR_OK, "name" => "amazing-sample.pdf",
         "tmp_name" => "$ConfSitePATH/src/sample.pdf",
         "type" => "application/pdf"
-    ], $Conf);
+    ], -1, DTYPE_SUBMISSION, $Conf);
 xassert_eqq($doc->content_text_signature(), "starts with “%PDF-1.2”");
 $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
 xassert_paper_status($ps);

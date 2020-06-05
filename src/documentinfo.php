@@ -39,6 +39,8 @@ class DocumentInfo implements JsonSerializable {
     public $content_file;
     /** @var ?string */
     public $filestore;
+    /** @var bool */
+    private $_prefer_s3 = false;
 
     /** @var ?string */
     public $unique_filename;
@@ -111,7 +113,11 @@ class DocumentInfo implements JsonSerializable {
         return $di;
     }
 
-    static function make_file_upload($paperId, $documentType, $upload, Conf $conf) {
+    /** @param array $upload
+     * @param int $paperId
+     * @param int $documentType
+     * @return ?DocumentInfo */
+    static function make_uploaded_file($upload, $paperId, $documentType, Conf $conf) {
         if (!$upload || !is_array($upload)) {
             return null;
         }
@@ -145,6 +151,53 @@ class DocumentInfo implements JsonSerializable {
         }
         self::fix_mimetype($args);
         return new DocumentInfo($args, $conf);
+    }
+
+    /** @deprecated */
+    static function make_file_upload($pid, $dt, $f, $conf) {
+        return self::make_uploaded_file($f, $pid, $dt, $conf);
+    }
+
+    /** @param string $token
+     * @param int $paperId
+     * @param int $documentType
+     * @return ?DocumentInfo */
+    static function make_capability($token, $paperId, $documentType, Conf $conf) {
+        if (!$token
+            || !($cap = CapabilityInfo::find($conf, $token, CapabilityInfo::UPLOAD))) {
+            return null;
+        }
+        $capd = json_decode($cap->data);
+        if (!$capd->hash) {
+            return null;
+        }
+        $args = [
+            "paperId" => $paperId,
+            "documentType" => $documentType,
+            "timestamp" => time(),
+            "mimetype" => $capd->mimetype ?? null,
+            "filename" => $capd->filename,
+            "size" => $capd->size,
+            "hash" => $capd->hash
+        ];
+        $doc = new DocumentInfo($args, $conf);
+        $doc->_prefer_s3 = true;
+        return $doc;
+    }
+
+    /** @param string $name
+     * @param int $paperId
+     * @param int $documentType
+     * @return ?DocumentInfo */
+    static function make_request(Qrequest $qreq, $name, $paperId,
+                                 $documentType, Conf $conf) {
+        if (($f1 = $qreq->file($name))) {
+            return self::make_uploaded_file($f1, $paperId, $documentType, $conf);
+        } else if (($f2 = $qreq["{$name}:upload"])) {
+            return self::make_capability($f2, $paperId, $documentType, $conf);
+        } else {
+            return null;
+        }
     }
 
     static function check_json_upload($j) {
@@ -530,7 +583,10 @@ class DocumentInfo implements JsonSerializable {
         }
 
         // ensure content
-        if (!$this->ensure_content()) {
+        $s3 = false;
+        if ($this->_prefer_s3 && $this->check_s3()) {
+            $s3 = true;
+        } else if (!$this->ensure_content()) {
             return $this->add_error_html("Cannot load document.");
         } else if ($this->error) {
             return false;
@@ -547,8 +603,8 @@ class DocumentInfo implements JsonSerializable {
         // store
         $s0 = $this->store_skeleton();
         $s1 = $s0 && $this->store_database();
-        $s2 = $this->store_docstore();
-        $s3 = $this->store_s3();
+        $s2 = !$s3 && $this->store_docstore();
+        $s3 = $s3 || $this->store_s3();
         if ($s0 && ($s1 || $s2 || $s3)) {
             if ($this->error_html) {
                 error_log("Recoverable error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . $this->error_html);

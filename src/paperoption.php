@@ -1447,11 +1447,11 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
-        if ($qreq->has_file($this->formid)) {
+        if (($doc = DocumentInfo::make_request($qreq, $this->formid, $prow->paperId, $this->id, $this->conf))) {
             $ov = PaperValue::make($prow, $this, -1);
-            $ov->anno["document"] = $fup = DocumentInfo::make_file_upload($prow->paperId, $this->id, $qreq->file($this->formid), $this->conf);
-            if (isset($fup->error_html)) {
-                $ov->error($fup->error_html);
+            $ov->anno["document"] = $doc;
+            if (isset($doc->error_html)) {
+                $ov->error($doc->error_html);
             }
             return $ov;
         } else if ($qreq["{$this->formid}:remove"]) {
@@ -1803,12 +1803,11 @@ class AttachmentsPaperOption extends PaperOption {
             }
         }
         for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
-            if (($f = $qreq->file("{$this->formid}_new_$i"))) {
-                $fup = DocumentInfo::make_file_upload($prow->paperId, $this->id, $f, $this->conf);
-                if (isset($fup->error_html)) {
-                    $ov->error($fup->error_html);
+            if (($doc = DocumentInfo::make_request($qreq, "{$this->formid}_new_$i", $prow->paperId, $this->id, $this->conf))) {
+                if (isset($doc->error_html)) {
+                    $ov->error($doc->error_html);
                 }
-                $ov->anno["documents"][] = $fup;
+                $ov->anno["documents"][] = $doc;
             }
         }
         return $ov;

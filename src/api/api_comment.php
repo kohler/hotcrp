@@ -83,8 +83,7 @@ class Comment_API {
             }
         }
         for ($i = 1; $qreq["has_cmtdoc_new_$i"] && count($req["docs"]) < 1000; ++$i) {
-            if (($f = $qreq->file("cmtdoc_new_$i"))) {
-                $doc = DocumentInfo::make_file_upload($prow->paperId, DTYPE_COMMENT, $f, $prow->conf);
+            if (($doc = DocumentInfo::make_request($qreq, "cmtdoc_new_$i", $prow->paperId, DTYPE_COMMENT, $prow->conf))) {
                 if ($doc->save()) {
                     $req["docs"][] = $doc;
                     $changed = true;

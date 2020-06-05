@@ -5,6 +5,7 @@
 class CapabilityInfo {
     const RESETPASSWORD = 1;
     const CHANGEEMAIL = 2;
+    const UPLOAD = 3;
 
     /** @var Conf */
     public $conf;
