@@ -130,6 +130,28 @@ class JsonResult {
             }
         }
     }
+    function emit($validated) {
+        if ($this->status) {
+            if (!isset($this->content["ok"])) {
+                $this->content["ok"] = $this->status <= 299;
+            }
+            if (!isset($this->content["status"])) {
+                $this->content["status"] = $this->status;
+            }
+        } else if (isset($this->content["status"])) {
+            $this->status = $this->content["status"];
+        }
+        if ($validated) {
+            // Don’t set status on unvalidated requests, since that can leak
+            // information (e.g. via <link prefetch onerror>).
+            if ($this->status) {
+                http_response_code($this->status);
+            }
+            header("Access-Control-Allow-Origin: *");
+        }
+        header("Content-Type: application/json; charset=utf-8");
+        echo json_encode_browser($this->content);
+    }
 }
 
 class JsonResultException extends Exception {
@@ -149,26 +171,7 @@ function json_exit($json, $arg2 = null) {
     if (JsonResultException::$capturing) {
         throw new JsonResultException($json);
     } else {
-        if ($json->status) {
-            if (!isset($json->content["ok"])) {
-                $json->content["ok"] = $json->status <= 299;
-            }
-            if (!isset($json->content["status"])) {
-                $json->content["status"] = $json->status;
-            }
-        } else if (isset($json->content["status"])) {
-            $json->status = $json->content["status"];
-        }
-        if ($Qreq && $Qreq->post_ok()) {
-            // Don’t set status on unvalidated requests, since that can leak
-            // information (e.g. via <link prefetch onerror>).
-            if ($json->status) {
-                http_response_code($json->status);
-            }
-            header("Access-Control-Allow-Origin: *");
-        }
-        header("Content-Type: application/json; charset=utf-8");
-        echo json_encode_browser($json->content);
+        $json->emit($Qreq && $Qreq->post_ok());
         exit;
     }
 }
