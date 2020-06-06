@@ -261,7 +261,10 @@ class S3Document extends S3Result {
         }
         if (self::$verbose) {
             error_log($method . " " . $url . " -> " . $this->status . " " . $this->status_text);
-            if ($this->status !== 200) {
+            foreach ($hdr["header"] as $h) {
+                error_log("  $h");
+            }
+            if ($this->status > 299) {
                 error_log($this->response_headers["content"] ?? "");
             }
         }
@@ -377,16 +380,9 @@ class S3Document extends S3Result {
 
     /** @param string $src_skey
      * @param string $dst_skey
-     * @param ?string $content_type
-     * @param array<string,string> $user_data
      * @return bool */
-    function copy($src_skey, $dst_skey, $content_type = null, $user_data = []) {
-        $arguments = ["x-amz-copy-source" => "/" . $this->s3_bucket . "/" . $src_skey];
-        if ($content_type !== null) {
-            $arguments["content_type"] = $content_type;
-        }
-        $arguments["user_data"] = $user_data;
-        $this->run($dst_skey, "PUT", $arguments);
+    function copy($src_skey, $dst_skey) {
+        $this->run($dst_skey, "PUT", ["x-amz-copy-source" => "/" . $this->s3_bucket . "/" . $src_skey]);
         return $this->status === 200;
     }
 
