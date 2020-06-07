@@ -8036,14 +8036,6 @@ function run_edit_conditions() {
     });
 }
 
-function check_still_ready(event) {
-    var sub = this.submitpaper;
-    if (sub && sub.type === "checkbox" && !sub.checked) {
-        if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
-            event.preventDefault();
-    }
-}
-
 function add_pslitem_header() {
     var l = this.firstChild, id;
     if (l.tagName === "LABEL") {
@@ -8063,55 +8055,62 @@ function add_pslitem_header() {
     }
 }
 
-
-function edit_paper_ui(event) {
-    if (event.type === "submit")
-        check_still_ready.call(this, event);
-};
-edit_paper_ui.edit_condition = function () {
-    run_edit_conditions();
-    $("#form-paper").on("change click", "input, select, textarea", run_edit_conditions);
-};
-edit_paper_ui.load = function () {
-    hiliter_children("#form-paper");
-    $("#form-paper input.primary-document").trigger("change");
-    $(".papet").each(add_pslitem_header);
-    var h = $(".btn-savepaper").first(),
-        k = $("#form-paper").hasClass("alert") ? "" : " hidden";
-    $(".pslcard-nav").append('<div class="paper-alert mt-5' + k + '">'
-        + '<button class="ui btn btn-highlight btn-savepaper">'
-        + h.html() + '</button></div>')
-        .find(".btn-savepaper").click(function () {
-            $("#form-paper .btn-savepaper").first().click();
-        });
-};
-edit_paper_ui.prepare = function () {
-    $(".need-tag-index-form").each(function () {
-        $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
-            .find("input").on("change", save_pstagindex);
-    });
-    $(".need-tag-form").each(prepare_pstags);
-    $(".need-paper-select-api").each(function () {
-        removeClass(this, "need-paper-select-api");
-        prepare_paper_select.call(this);
-    });
-};
-edit_paper_ui.load_review = function () {
-    hiliter_children("#form-review");
-    $(".revet").each(add_pslitem_header);
-    if ($(".revet").length) {
-        $(".pslcard > .pslitem:last-child").addClass("mb-3");
+handle_ui.on("js-submit-paper", function (event) {
+    if (event.type === "submit") {
+        var sub = this.elements.submitpaper;
+        if (sub && sub.type === "checkbox" && !sub.checked
+            && this.hasAttribute("data-submitted")) {
+            if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
+                event.preventDefault();
+        }
     }
-    var h = $(".btn-savereview").first(),
-        k = $("#form-review").hasClass("alert") ? "" : " hidden";
-    $(".pslcard-nav").append('<div class="review-alert mt-5' + k + '">'
-        + '<button class="ui btn btn-highlight btn-savereview">'
-        + h.html() + '</button></div>')
-        .find(".btn-savereview").click(function () {
-            $("#form-review .btn-savereview").first().click();
+});
+
+return {
+    edit_condition: function () {
+        run_edit_conditions();
+        $("#form-paper").on("change click", "input, select, textarea", run_edit_conditions);
+    },
+    load: function () {
+        hiliter_children("#form-paper");
+        $("#form-paper input.primary-document").trigger("change");
+        $(".papet").each(add_pslitem_header);
+        var h = $(".btn-savepaper").first(),
+            k = $("#form-paper").hasClass("alert") ? "" : " hidden";
+        $(".pslcard-nav").append('<div class="paper-alert mt-5' + k + '">'
+            + '<button class="ui btn btn-highlight btn-savepaper">'
+            + h.html() + '</button></div>')
+            .find(".btn-savepaper").click(function () {
+                $("#form-paper .btn-savepaper").first().click();
+            });
+    },
+    prepare: function () {
+        $(".need-tag-index-form").each(function () {
+            $(this).removeClass("need-tag-index-form").on("submit", save_pstagindex)
+                .find("input").on("change", save_pstagindex);
         });
+        $(".need-tag-form").each(prepare_pstags);
+        $(".need-paper-select-api").each(function () {
+            removeClass(this, "need-paper-select-api");
+            prepare_paper_select.call(this);
+        });
+    },
+    load_review: function () {
+        hiliter_children("#form-review");
+        $(".revet").each(add_pslitem_header);
+        if ($(".revet").length) {
+            $(".pslcard > .pslitem:last-child").addClass("mb-3");
+        }
+        var h = $(".btn-savereview").first(),
+            k = $("#form-review").hasClass("alert") ? "" : " hidden";
+        $(".pslcard-nav").append('<div class="review-alert mt-5' + k + '">'
+            + '<button class="ui btn btn-highlight btn-savereview">'
+            + h.html() + '</button></div>')
+            .find(".btn-savereview").click(function () {
+                $("#form-review .btn-savereview").first().click();
+            });
+    }
 };
-return edit_paper_ui;
 })($);
 
 

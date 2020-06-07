@@ -2391,7 +2391,8 @@ class PaperTable {
 
     private function _echo_editable_form() {
         $form_js = [
-            "id" => "form-paper", "class" => "need-unload-protection",
+            "id" => "form-paper",
+            "class" => "need-unload-protection ui-submit js-submit-paper",
             "data-alert-toggle" => "paper-alert"
         ];
         if ($this->prow->timeSubmitted > 0) {
@@ -2404,11 +2405,6 @@ class PaperTable {
             $form_js["class"] .= " alert";
         }
         echo Ht::form($this->conf->hoturl_post("paper", "p=" . ($this->prow->paperId ? : "new") . "&amp;m=edit"), $form_js);
-        if ($this->prow->paperStorageId > 1
-            && $this->prow->timeSubmitted > 0
-            && !$this->conf->setting("sub_freeze")) {
-            Ht::stash_script('$("#form-paper").on("submit", edit_paper_ui)');
-        }
         Ht::stash_script('$(edit_paper_ui.load)');
     }
 
