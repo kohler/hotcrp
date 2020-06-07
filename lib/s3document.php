@@ -3,14 +3,16 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class S3Result {
+    /** @var ?int */
     public $status;
     public $status_text;
     public $response_headers;
     public $user_data;
 
-    /** @return bool */
+    /** @param string $skey
+     * @return bool */
     function check_skey($skey) {
-        if ((string) $skey !== "") {
+        if (is_string($skey) && $skey !== "") {
             return true;
         } else {
             $this->status = 404;

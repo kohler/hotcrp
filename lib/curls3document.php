@@ -3,13 +3,21 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CurlS3Document extends S3Result {
+    /** @var S3Document */
     public $s3;
+    /** @var string */
     public $skey;
+    /** @var resource */
     public $curlh;
+    /** @var resource */
     public $hstream;
+    /** @var resource */
     public $dstream;
+    /** @var string */
     public $url;
+    /** @var int */
     public $runindex;
+    /** @var string */
     private $method;
     private $args;
     private $tries;
