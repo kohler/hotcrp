@@ -7590,27 +7590,29 @@ handle_ui.on("js-check-submittable", function (event) {
 });
 
 handle_ui.on("js-add-attachment", function () {
-    var $ea = $($$(this.getAttribute("data-editable-attachments"))),
-        $ei = $ea,
-        $f = $ea.closest("form"),
-        name, n = 0;
-    if ($ea.hasClass("entryi")) {
-        if (!$ea.find(".entry").length)
-            $ea.append('<div class="entry"></div>');
-        $ei = $ea.find(".entry");
+    var attache = $$(this.getAttribute("data-editable-attachments")),
+        f = attache.closest("form"),
+        $ei = $(attache), name, n = 0;
+    if (hasClass(attache, "entryi")) {
+        if (!$ei.find(".entry").length)
+            $ei.append('<div class="entry"></div>');
+        $ei = $ei.find(".entry");
     }
     do {
         ++n;
-        name = $ea[0].getAttribute("data-document-prefix") + "_new_" + n;
-    } while ($f[0].elements["has_" + name]);
-    var $na = $('<div class="has-document document-new-instance hidden" data-dtype="'
-        + $ea.attr("data-dtype") + '" data-document-name="' + name + '">'
-        + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="uich document-uploader"></div>'
-        + '<div class="document-actions"><a href="" class="ui js-cancel-document document-action">Cancel</a></div>'
-        + '</div>');
+        name = attache.getAttribute("data-document-prefix") + "_new_" + n;
+    } while (f.elements["has_" + name]);
+    var max_size = attache.getAttribute("data-document-max-size"),
+        $na = $('<div class="has-document document-new-instance hidden'
+            + '" data-dtype="' + attache.getAttribute("data-dtype")
+            + '" data-document-name="' + name
+            + (max_size == null ? "" : '" data-document-max-size="' + max_size)
+            + '"><div class="document-upload"><input type="file" name="' + name + '" size="15" class="uich document-uploader"></div>'
+            + '<div class="document-actions"><a href="" class="ui js-cancel-document document-action">Cancel</a></div>'
+            + '</div>');
     if (this.id === name)
         this.removeAttribute("id");
-    $f.append('<input type="hidden" name="has_' + name + '" value="1" class="ignore-diff">');
+    $(f).append('<input type="hidden" name="has_' + name + '" value="1" class="ignore-diff">');
     $na.appendTo($ei).find(".document-uploader")[0].click();
 });
 
@@ -8104,6 +8106,11 @@ handle_ui.on("js-submit-paper", function (event) {
                 event.preventDefault();
                 return;
             }
+        }
+        if (is_submit
+            && $(this).find(".prevent-submit").length) {
+            window.alert("Waiting for uploads to complete");
+            event.preventDefault();
         }
     }
 });

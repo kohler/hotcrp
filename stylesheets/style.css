@@ -1546,6 +1546,9 @@ textarea.has-warning,
 select.has-warning {
 	border: 1px solid #855c04;
 }
+.is-confirm {
+	color: #007700;
+}
 
 
 

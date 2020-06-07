@@ -682,13 +682,19 @@ class PaperTable {
         if ($storageId > 1 && $this->user->can_view_pdf($this->prow)) {
             $doc = $this->prow->document($dtype, $storageId, true);
         }
+        $max_size = $docx->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize");
 
+        $heading = $this->edit_title_html($docx);
         $msgs = [];
         if ($accepts) {
             $msgs[] = htmlspecialchars(Mimetype::list_description($accepts));
         }
-        $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
-        $heading = $this->edit_title_html($docx) . ' <span class="n">(' . join(", ", $msgs) . ")</span>";
+        if ($max_size > 0) {
+            $msgs[] = "max " . unparse_byte_size($max_size);
+        }
+        if (!empty($msgs)) {
+            $heading .= ' <span class="n">(' . join(", ", $msgs) . ')</span>';
+        }
         $this->echo_editable_papt($field, $heading, ["for" => $doc ? false : $inputid, "id" => $docx->readable_formid()], $docx);
         $this->echo_field_hint($docx);
         echo Ht::hidden("has_" . $docx->formid, 1),
@@ -699,6 +705,9 @@ class PaperTable {
         }
         if ($accepts) {
             echo ' data-document-accept="', htmlspecialchars(join(",", array_map(function ($m) { return $m->mimetype; }, $accepts))), '"';
+        }
+        if ($max_size > 0) {
+            echo ' data-document-max-size="', $max_size, '"';
         }
         echo '>';
 
@@ -2393,7 +2402,8 @@ class PaperTable {
         $form_js = [
             "id" => "form-paper",
             "class" => "need-unload-protection ui-submit js-submit-paper",
-            "data-alert-toggle" => "paper-alert"
+            "data-alert-toggle" => "paper-alert",
+            "data-upload-limit" => ini_get_bytes("upload_max_filesize")
         ];
         if ($this->prow->timeSubmitted > 0) {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;

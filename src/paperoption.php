@@ -602,6 +602,7 @@ class PaperOption implements Abbreviator {
     private $_exists_search;
     private $editable_if;
     private $_editable_search;
+    public $max_size;
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -720,6 +721,8 @@ class PaperOption implements Abbreviator {
         } else if (isset($args->edit_condition)) { // XXX backwards compat
             $this->set_exists_if($args->edit_condition);
         }
+
+        $this->max_size = $args->max_size ?? null;
 
         if (($x = $args->editable_if ?? null) !== null && $x !== true) {
             $this->editable_if = $x;
@@ -1017,10 +1020,10 @@ class PaperOption implements Abbreviator {
 
     /** @return object */
     function unparse() {
-        $j = (object) array("id" => (int) $this->id,
-                            "name" => $this->name,
-                            "type" => $this->type,
-                            "position" => (int) $this->position);
+        $j = (object) ["id" => (int) $this->id,
+                       "name" => $this->name,
+                       "type" => $this->type,
+                       "position" => (int) $this->position];
         if ($this->description !== null) {
             $j->description = $this->description;
         }
@@ -1045,6 +1048,9 @@ class PaperOption implements Abbreviator {
         }
         if ($this->required) {
             $j->required = true;
+        }
+        if ($this->max_size !== null) {
+            $j->max_size = $this->max_size;
         }
         return $j;
     }
@@ -1833,8 +1839,17 @@ class AttachmentsPaperOption extends PaperOption {
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXX does not consider $reqov
-        $pt->echo_editable_option_papt($this, $this->title_html() . ' <span class="n">(max ' . ini_get("upload_max_filesize") . "B per file)</span>", ["id" => $this->readable_formid(), "for" => false]);
-        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dtype="', $this->id, '" id="', $this->formid, ':attachments">';
+        $max_size = $this->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize");
+        $title = $this->title_html();
+        if ($max_size > 0) {
+            $title .= ' <span class="n">(max ' . unparse_byte_size($max_size) . ' per file)</span>';
+        }
+        $pt->echo_editable_option_papt($this, $title, ["id" => $this->readable_formid(), "for" => false]);
+        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dtype="', $this->id, '" id="', $this->formid, ':attachments"';
+        if ($max_size > 0) {
+            echo ' data-document-max-size="', $max_size, '"';
+        }
+        echo '>';
         foreach ($ov->documents() as $i => $doc) {
             $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
             echo '<div class="has-document" data-dtype="', $this->id,

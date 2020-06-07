@@ -793,7 +793,7 @@ class DocumentInfo implements JsonSerializable {
             }
 
             // call multi_exec
-            while (($mstat = curl_multi_exec($curlm, $mrunning)) == CURLM_CALL_MULTI_PERFORM) {
+            while (($mstat = curl_multi_exec($curlm, $mrunning)) === CURLM_CALL_MULTI_PERFORM) {
             }
             if ($mstat !== CURLM_OK) {
                 break;
