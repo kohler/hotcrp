@@ -2207,19 +2207,19 @@ class PaperTable {
             // produce button
             $save_name = $this->_save_name();
             if (!$whyNot) {
-                $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary btn-savepaper"]), ""];
+                $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary btn-savepaper uic js-mark-submit"]), ""];
             } else if ($this->admin) {
                 $revWhyNot = filter_whynot($whyNot, ["deadline", "rejected"]);
                 $x = whyNotText($revWhyNot) . " Are you sure you want to override the deadline?";
                 $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($this->prow)) {
-                $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper"]);
+                $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper uic js-mark-submit"]);
             } else if ($this->prow->paperId) {
-                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-savepaper btn-primary", "data-contacts-only" => 1]);
+                $buttons[] = Ht::submit("updatecontacts", "Save contacts", ["class" => "btn-savepaper btn-primary uic js-mark-submit", "data-contacts-only" => 1]);
             }
             if (!empty($buttons)) {
-                $buttons[] = Ht::submit("cancel", "Cancel");
+                $buttons[] = Ht::submit("cancel", "Cancel", ["class" => "uic js-mark-submit"]);
                 $buttons[] = "";
             }
             $want_override = $whyNot && !$this->admin;
@@ -2230,7 +2230,7 @@ class PaperTable {
             || !$this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_withdraw_paper", $this->prow, true)) {
             $b = null;
         } else if ($this->prow->timeSubmitted <= 0) {
-            $b = Ht::submit("withdraw", "Withdraw");
+            $b = Ht::submit("withdraw", "Withdraw", ["class" => "uic js-mark-submit"]);
         } else {
             $args = ["class" => "ui js-withdraw"];
             if ($this->user->can_withdraw_paper($this->prow, !$this->admin)) {
@@ -2253,10 +2253,10 @@ class PaperTable {
         if ($want_override && !$this->admin) {
             if ($this->allow_admin) {
                 $buttons[] = "";
-                $buttons[] = [Ht::submit("updateoverride", "Override conflict"), "(admin only)"];
+                $buttons[] = [Ht::submit("updateoverride", "Override conflict", ["class" => "uic js-mark-submit"]), "(admin only)"];
             } else if ($this->user->privChair) {
                 $buttons[] = "";
-                $buttons[] = Ht::submit("updateoverride", "Override conflict", ["disabled" => true, "class" => "need-tooltip", "title" => "You cannot override your conflict because this paper has an administrator."]);
+                $buttons[] = Ht::submit("updateoverride", "Override conflict", ["disabled" => true, "class" => "need-tooltip uic js-mark-submit", "title" => "You cannot override your conflict because this paper has an administrator."]);
             }
         }
 

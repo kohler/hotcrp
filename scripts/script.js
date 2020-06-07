@@ -2004,6 +2004,21 @@ function override_deadlines(callback) {
 }
 handle_ui.on("js-override-deadlines", override_deadlines);
 
+function form_submitter(form, event) {
+    if (event && event.originalEvent && event.originalEvent.submitter) {
+        return event.originalEvent.submitter.name || null;
+    } else if (form.hotcrpSubmitter
+               && form.hotcrpSubmitter[1] >= (new Date).getTime() - 10) {
+        return form.hotcrpSubmitter[0];
+    } else {
+        return null;
+    }
+}
+
+handle_ui.on("js-mark-submit", function () {
+    var f = this.closest("form");
+    f && (f.hotcrpSubmitter = [this.name, (new Date).getTime()]);
+});
 
 
 // initialization
@@ -8076,11 +8091,15 @@ function add_pslitem_header() {
 
 handle_ui.on("js-submit-paper", function (event) {
     if (event.type === "submit") {
-        var sub = this.elements.submitpaper;
-        if (sub && sub.type === "checkbox" && !sub.checked
+        var sub = this.elements.submitpaper,
+            is_submit = (form_submitter(this, event) || "update") === "update";
+        if (is_submit
+            && sub && sub.type === "checkbox" && !sub.checked
             && this.hasAttribute("data-submitted")) {
-            if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered."))
+            if (!window.confirm("Are you sure the paper is no longer ready for review?\n\nOnly papers that are ready for review will be considered.")) {
                 event.preventDefault();
+                return;
+            }
         }
     }
 });
