@@ -7609,7 +7609,7 @@ handle_ui.on("js-add-attachment", function () {
         + '<div class="document-actions"><a href="" class="ui js-cancel-document document-action">Cancel</a></div>'
         + '</div>');
     if (this.id === name)
-        this.id = "";
+        this.removeAttribute("id");
     $f.append('<input type="hidden" name="has_' + name + '" value="1" class="ignore-diff">');
     $na.appendTo($ei).find(".document-uploader")[0].click();
 });
@@ -7631,7 +7631,7 @@ handle_ui.on("js-replace-document", function (event) {
             t += ' accept="' + doce.getAttribute("data-document-accept") + '"';
         t += ' class="uich document-uploader' + (docid > 0 ? "" : " js-check-submittable") + '"></div>';
         if (this.id === name)
-            this.id = "";
+            this.removeAttribute("id");
         $u = $(t).insertBefore($actions).find(".document-uploader");
         $actions.append('<a href="" class="ui js-cancel-document document-action hidden">Cancel</a>');
     }
