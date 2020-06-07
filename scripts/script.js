@@ -681,13 +681,13 @@ function unparse_duration(d, include_msec) {
 
 function unparse_byte_size(n) {
     if (n > 996147)
-        return (Math.round(n / 104857.6) / 10) + "MB";
+        return (Math.round(n / 104857.6) / 10) + "MiB";
     else if (n > 921)
-        return Math.round(doc.size / 1024) + "kB";
+        return Math.round(doc.size / 1024) + "KiB";
     else if (n > 0)
-        return (Math.max(Math.round(doc.size / 102.4), 1) / 10) + "kB";
+        return (Math.max(Math.round(doc.size / 102.4), 1) / 10) + "KiB";
     else
-        return "0kB";
+        return "0B";
 }
 
 var strnatcmp = (function () {
