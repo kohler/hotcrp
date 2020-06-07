@@ -7583,73 +7583,92 @@ handle_ui.on("js-add-attachment", function () {
     do {
         ++n;
         name = $ea[0].getAttribute("data-document-prefix") + "_new_" + n;
-    } while ($f[0]["has_" + name]);
+    } while ($f[0].elements["has_" + name]);
     var $na = $('<div class="has-document document-new-instance hidden" data-dtype="'
         + $ea.attr("data-dtype") + '" data-document-name="' + name + '">'
         + '<div class="document-upload"><input type="file" name="' + name + '" size="15" class="uich document-uploader"></div>'
-        + '<div class="document-actions"><a href="" class="ui js-remove-document document-action">Delete</a></div>'
+        + '<div class="document-actions"><a href="" class="ui js-cancel-document document-action">Cancel</a></div>'
         + '</div>');
     if (this.id === name)
         this.id = "";
+    $f.append('<input type="hidden" name="has_' + name + '" value="1" class="ignore-diff">');
     $na.appendTo($ei).find(".document-uploader")[0].click();
 });
 
 handle_ui.on("js-replace-document", function (event) {
-    var $ei = $(this).closest(".has-document"),
-        $u = $ei.find(".document-uploader");
-    $ei.find(".document-remover").val("");
-    if (!$u.length) {
-        var docid = +$ei.attr("data-dtype"),
+    var doce = this.closest(".has-document"), $doc = $(doce),
+        $actions = $doc.find(".document-actions"),
+        $u = $doc.find(".document-uploader");
+    if (!$actions.length) {
+        $actions = $('<div class="document-actions hidden"></div>').insertBefore($doc.find(".document-replacer"));
+    }
+    if ($u.length) {
+        $u.trigger("hotcrp-change-document");
+    } else {
+        var docid = +doce.getAttribute("data-dtype"),
             name = "opt" + docid,
             t = '<div class="document-upload hidden"><input id="' + name + '" type="file" name="' + name + '"';
-        if ($ei[0].hasAttribute("data-document-accept"))
-            t += ' accept="' + $ei[0].getAttribute("data-document-accept") + '"';
+        if (doce.hasAttribute("data-document-accept"))
+            t += ' accept="' + doce.getAttribute("data-document-accept") + '"';
         t += ' class="uich document-uploader' + (docid > 0 ? "" : " js-check-submittable") + '"></div>';
         if (this.id === name)
             this.id = "";
-        $u = $(t).appendTo($ei).find(".document-uploader");
+        $u = $(t).insertBefore($actions).find(".document-uploader");
+        $actions.append('<a href="" class="ui js-cancel-document document-action hidden">Cancel</a>');
     }
     $u[0].click();
 });
 
 handle_ui.on("document-uploader", function (event) {
-    var doce = this.closest(".has-document");
+    var doce = this.closest(".has-document"), $doc = $(doce);
     if (hasClass(doce, "document-new-instance")) {
         removeClass(doce, "hidden");
         removeClass(doce.parentElement, "hidden");
-        var f = doce.closest("form"), n = "has_" + doce.getAttribute("data-document-name");
-        if (!f.elements[n])
-            $(f).append('<input type="hidden" name="' + n + '" value="1">');
     } else {
-        $(doce).find(".document-file, .document-stamps, .document-actions, .document-format, .js-replace-document").addClass("hidden");
-        $(doce).find(".document-upload").removeClass("hidden");
-        $(doce).find(".js-remove-document").removeClass("undelete").html("Delete");
+        $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").addClass("hidden");
+        $doc.find(".document-upload, .document-actions, .js-cancel-document").removeClass("hidden");
+        $doc.find(".document-remover").remove();
+        $doc.find(".js-remove-document").removeClass("undelete").html("Delete");
     }
 });
 
-handle_ui.on("js-remove-document", function (event) {
-    var $ei = $(this).closest(".has-document"),
-        $r = $ei.find(".document-remover"),
-        $en = $ei.find(".document-file"),
-        f = this.closest("form") /* set before $ei is removed */;
-    if (hasClass(this, "undelete")) {
-        $r.val("");
-        $en.find("del > *").unwrap();
-        $ei.find(".document-stamps, .document-shortformat").removeClass("hidden");
-        $(this).removeClass("undelete").html("Delete");
-    } else if ($ei.hasClass("document-new-instance")) {
-        var holder = $ei[0].parentElement;
-        $ei.remove();
+handle_ui.on("js-cancel-document", function (event) {
+    var doce = this.closest(".has-document"), $doc = $(doce),
+        f = doce.closest("form");
+    $doc.find(".document-uploader").trigger("hotcrp-change-document");
+    if (hasClass(doce, "document-new-instance")) {
+        var holder = doce.parentElement;
+        $doc.remove();
         if (!holder.firstChild && hasClass(holder.parentElement, "has-editable-attachments"))
             addClass(holder.parentElement, "hidden");
     } else {
-        if (!$r.length)
-            $r = $('<input type="hidden" class="document-remover" name="' + $ei.data("documentName") + ':remove" data-default-value="" value="1">').appendTo($ei.find(".document-actions"));
-        $r.val(1);
+        $doc.find(".document-upload").remove();
+        $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").removeClass("hidden");
+        $doc.find(".document-file > del > *").unwrap();
+        $doc.find(".js-cancel-document").remove();
+        var $actions = $doc.find(".document-actions");
+        if (!$actions[0].firstChild)
+            $actions.addClass("hidden");
+    }
+    form_highlight(f);
+});
+
+handle_ui.on("js-remove-document", function (event) {
+    var doce = this.closest(".has-document"), $doc = $(doce),
+        $en = $doc.find(".document-file"),
+        f = this.closest("form") /* set before $doc is removed */;
+    if (hasClass(this, "undelete")) {
+        $doc.find(".document-remover").remove();
+        $en.find("del > *").unwrap();
+        $doc.find(".document-stamps, .document-shortformat").removeClass("hidden");
+        $(this).removeClass("undelete").html("Delete");
+    } else {
+        $('<input type="hidden" class="document-remover" name="' + $doc.data("documentName") + ':remove" data-default-value="" value="1">').appendTo($doc.find(".document-actions"));
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
-        $ei.find(".document-stamps, .document-shortformat").addClass("hidden");
-        $(this).addClass("undelete").html("Undelete");
+        $doc.find(".document-uploader").trigger("hotcrp-change-document");
+        $doc.find(".document-stamps, .document-shortformat").addClass("hidden");
+        $(this).addClass("undelete").html("Restore");
     }
     form_highlight(f);
 });

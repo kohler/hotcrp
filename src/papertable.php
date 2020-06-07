@@ -731,7 +731,7 @@ class PaperTable {
                     ($this->cf->failed || $this->cf->need_run ? "Check format" : "Recheck format"),
                     '</a>';
             } else if ($has_cf && !$this->cf->has_problem()) {
-                echo '<span class="document-action dim">Format OK</span>';
+                echo '<span class="document-action js-check-format dim">Format OK</span>';
             }
             echo '</div>';
             if ($has_cf) {
