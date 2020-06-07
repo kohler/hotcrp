@@ -1539,7 +1539,7 @@ class PaperTable {
                     $checked = in_array($tid, $reqov->value_array());
                     echo '<label class="checki cteltx"><span class="checkc">',
                         Ht::checkbox("top$tid", 1, $checked, $arg),
-                        ' </span>', htmlspecialchars($tg[0]), '</label>';
+                        '</span>', htmlspecialchars($tg[0]), '</label>';
                 } else {
                     echo '<div class="cteltx"><span class="topicg">',
                         htmlspecialchars($tg[0]), '</span></div>';
@@ -1560,7 +1560,7 @@ class PaperTable {
                 echo ($isgroup ? '<label class="checki cteltx">' : '<li class="ctelt"><label class="checki ctelti">'),
                     '<span class="checkc">',
                     Ht::checkbox("top$tid", 1, $checked, $arg),
-                    ' </span>', htmlspecialchars($tname), '</label>',
+                    '</span>', $tname, '</label>',
                     ($isgroup ? '' : '</li>');
             }
             if ($isgroup) {
