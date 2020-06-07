@@ -419,6 +419,19 @@ function ini_get_bytes($varname, $value = null) {
     return (int) ceil(floatval($val) * (1 << (+strpos(".kmg", $last) * 10)));
 }
 
+/** @param int|float $n
+ * @return non-empty-string */
+function unparse_byte_size($n) {
+    if ($n > 996147)
+        return (round($n / 104857.6) / 10) . "MB";
+    else if ($n > 921)
+        return round($n / 1024) . "kB";
+    else if ($n > 0)
+        return (max(round($this->size / 102.4), 1) / 10) . "kB";
+    else
+        return "0kB";
+}
+
 function filter_whynot($whyNot, $keys) {
     $revWhyNot = [];
     foreach ($whyNot as $k => $v) {

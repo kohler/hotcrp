@@ -679,6 +679,17 @@ function unparse_duration(d, include_msec) {
     return neg ? "-" + t : t;
 }
 
+function unparse_byte_size(n) {
+    if (n > 996147)
+        return (Math.round(n / 104857.6) / 10) + "MB";
+    else if (n > 921)
+        return Math.round(doc.size / 1024) + "kB";
+    else if (n > 0)
+        return (Math.max(Math.round(doc.size / 102.4), 1) / 10) + "kB";
+    else
+        return "0kB";
+}
+
 var strnatcmp = (function () {
 try {
     var collator = new Intl.Collator(undefined, {sensitivity: "case", numeric: true});
@@ -4389,14 +4400,7 @@ function render_attachment_link(hc, doc) {
     }
     hc.push(' ' + text_to_html(doc.unique_filename || doc.filename || "Attachment"));
     if (doc.size != null) {
-        hc.push(' <span class="dlsize">(', 'kB)</span>');
-        if (doc.size > 921)
-            hc.push(Math.round(doc.size / 1024));
-        else if (doc.size > 0)
-            hc.push(Math.max(Math.round(doc.size / 102.4), 1) / 10);
-        else
-            hc.push("0");
-        hc.pop();
+        hc.push(' <span class="dlsize">(' + unparse_byte_size(doc.size) + ')</span>');
     }
     hc.pop();
 }

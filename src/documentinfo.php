@@ -1075,12 +1075,8 @@ class DocumentInfo implements JsonSerializable {
             $x .= "&nbsp;" . $html;
         }
         if ($this->size > 0 && !($flags & self::L_NOSIZE)) {
-            $x .= " <span class=\"dlsize\">" . ($html ? "(" : "");
-            if ($this->size > 921)
-                $x .= round($this->size / 1024);
-            else
-                $x .= max(round($this->size / 102.4), 1) / 10;
-            $x .= "kB" . ($html ? ")" : "") . "</span>";
+            $x .= " <span class=\"dlsize\">" . ($html ? "(" : "")
+                . unparse_byte_size($this->size) . ($html ? ")" : "") . "</span>";
         }
         return $x . "</a>" . ($info ? "&nbsp;$info" : "");
     }
