@@ -1530,7 +1530,7 @@ class PaperTable {
         foreach ($topics->group_list() as $tg) {
             $arg = ["class" => "uic js-range-click topic-entry", "id" => false,
                     "data-range-type" => "topic"];
-            $isgroup = count($tg) >= 4;
+            $isgroup = count($tg) > 2;
             if ($isgroup) {
                 echo '<li class="ctelt cteltg"><div class="ctelti">';
                 if (strcasecmp($tg[0], $topics[$tg[1]]) === 0) {
