@@ -680,9 +680,20 @@ function unparse_duration(d, include_msec) {
 }
 
 function unparse_byte_size(n) {
+    if (n > 999499)
+        return (Math.round(n / 100000) / 10) + "MB";
+    else if (n > 9949)
+        return Math.round(n / 1000) + "kB";
+    else if (n > 0)
+        return (Math.max(Math.round(n / 100), 1) / 10) + "kB";
+    else
+        return "0B";
+}
+
+function unparse_byte_size_binary(n) {
     if (n > 996147)
         return (Math.round(n / 104857.6) / 10) + "MiB";
-    else if (n > 921)
+    else if (n > 10188)
         return Math.round(n / 1024) + "KiB";
     else if (n > 0)
         return (Math.max(Math.round(n / 102.4), 1) / 10) + "KiB";
