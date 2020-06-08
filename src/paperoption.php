@@ -1839,7 +1839,7 @@ class AttachmentsPaperOption extends PaperOption {
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXX does not consider $reqov
-        $max_size = $this->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize");
+        $max_size = $this->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize") / 1.024;
         $title = $this->title_html();
         if ($max_size > 0) {
             $title .= ' <span class="n">(max ' . unparse_byte_size($max_size) . ' per file)</span>';
@@ -1847,7 +1847,7 @@ class AttachmentsPaperOption extends PaperOption {
         $pt->echo_editable_option_papt($this, $title, ["id" => $this->readable_formid(), "for" => false]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dtype="', $this->id, '" id="', $this->formid, ':attachments"';
         if ($max_size > 0) {
-            echo ' data-document-max-size="', $max_size, '"';
+            echo ' data-document-max-size="', (int) $max_size, '"';
         }
         echo '>';
         foreach ($ov->documents() as $i => $doc) {

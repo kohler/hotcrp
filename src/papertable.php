@@ -682,7 +682,7 @@ class PaperTable {
         if ($storageId > 1 && $this->user->can_view_pdf($this->prow)) {
             $doc = $this->prow->document($dtype, $storageId, true);
         }
-        $max_size = $docx->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize");
+        $max_size = $docx->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize") / 1.024;
 
         $heading = $this->edit_title_html($docx);
         $msgs = [];
@@ -707,7 +707,7 @@ class PaperTable {
             echo ' data-document-accept="', htmlspecialchars(join(",", array_map(function ($m) { return $m->mimetype; }, $accepts))), '"';
         }
         if ($max_size > 0) {
-            echo ' data-document-max-size="', $max_size, '"';
+            echo ' data-document-max-size="', (int) $max_size, '"';
         }
         echo '>';
 
