@@ -1164,7 +1164,8 @@ class Contact {
         return $this->_capabilities !== null;
     }
 
-    /** @param string $name */
+    /** @param string $name
+     * @return mixed */
     function capability($name) {
         return $this->_capabilities ? $this->_capabilities[$name] ?? null : null;
     }
@@ -1192,18 +1193,21 @@ class Contact {
      * @return ?Contact */
     function reviewer_capability_user($pid) {
         if ($this->_capabilities !== null
-            && ($rcid = ($this->_capabilities["@ra{$pid}"] ?? null))) {
+            && ($rcid = $this->_capabilities["@ra{$pid}"] ?? null)) {
             return $this->conf->cached_user_by_id($rcid);
         } else {
             return null;
         }
     }
 
-    function set_capability($name, $newval) {
+    /** @param string $name
+     * @param mixed $value
+     * @return bool */
+    function set_capability($name, $value) {
         $oldval = $this->capability($name);
-        if ($newval !== $oldval) {
-            if ($newval !== null) {
-                $this->_capabilities[$name] = $newval;
+        if ($value !== $oldval) {
+            if ($value !== null) {
+                $this->_capabilities[$name] = $value;
             } else {
                 unset($this->_capabilities[$name]);
                 if (empty($this->_capabilities)) {
@@ -1219,13 +1223,16 @@ class Contact {
                 $this->save_session("cap", empty($savecap) ? null : $savecap);
             }
             $this->update_my_rights();
+            return true;
+        } else {
+            return false;
         }
-        return $newval !== $oldval;
     }
 
+    /** @param string $text */
     function apply_capability_text($text) {
         // Add capabilities from arguments
-        foreach (preg_split('{\s+}', $text) as $s) {
+        foreach (preg_split('/\s+/', $text) as $s) {
             if ($s !== "") {
                 $isadd = $s[0] !== "-";
                 if ($s[0] === "-" || $s[0] === "+") {

@@ -63,10 +63,9 @@ class CapabilityInfo {
         }
 
         $result = Dbl::qe($dblink, "select * from Capability where salt=?", $text);
-        if ($result->num_rows === 0 && $prefix !== "") { // backward compat
+        if ($result->num_rows === 0 && $prefix !== "") { // XXX backward compat
             $decoded = base64_decode(str_replace(["-a", "-b"], ["+", "/"], substr($text, strlen($prefix))));
             if ($decoded !== false && strlen($decoded) >= 5) {
-                error_log(base64_encode($decoded) . json_encode($iscdb));
                 $result = Dbl::qe($dblink, "select * from Capability where salt=?", $decoded);
             }
         }

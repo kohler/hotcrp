@@ -420,7 +420,7 @@ function ini_get_bytes($varname, $value = null) {
 }
 
 /** @param int|float $n
- * @return non-empty-string */
+ * @return string */
 function unparse_byte_size($n) {
     if ($n > 999499)
         return (round($n / 100000) / 10) . "MB";
@@ -433,7 +433,7 @@ function unparse_byte_size($n) {
 }
 
 /** @param int|float $n
- * @return non-empty-string */
+ * @return string */
 function unparse_byte_size_binary($n) {
     if ($n > 996147) {
         return (round($n / 104857.6) / 10) . "MiB";

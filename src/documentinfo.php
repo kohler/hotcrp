@@ -181,7 +181,7 @@ class DocumentInfo implements JsonSerializable {
             "hash" => $capd->hash
         ];
         $doc = new DocumentInfo($args, $conf);
-        $doc->_prefer_s3 = $capd->s3_uploadid ?? false;
+        $doc->_prefer_s3 = !!($capd->s3_uploadid ?? false);
         return $doc;
     }
 
@@ -484,14 +484,14 @@ class DocumentInfo implements JsonSerializable {
     }
 
     private function handle_load_s3_curl($s3l, $dspath) {
-        if ($s3l->status == 404
+        if ($s3l->status === 404
             && $this->s3_upgrade_extension($s3l->s3, $s3l->skey)) {
             $s3l->run();
         }
         fflush($s3l->dstream);
         fclose($s3l->dstream);
         $unlink = true;
-        if ($s3l->status == 200) {
+        if ($s3l->status === 200) {
             if (rename($dspath . "~", $dspath)) {
                 $this->filestore = $dspath;
                 $this->size = 0;
@@ -507,16 +507,16 @@ class DocumentInfo implements JsonSerializable {
             @unlink($dspath . "~");
         }
         $s3l->close();
-        return $s3l->status == 200;
+        return $s3l->status === 200;
     }
 
     private function load_s3_direct($s3, $s3k, $dspath) {
         $content = $s3->load($s3k);
-        if ($s3->status == 404
+        if ($s3->status === 404
             && $this->s3_upgrade_extension($s3, $s3k)) {
             $content = $s3->load($s3k);
         }
-        if ($s3->status == 200 && (string) $content !== "") {
+        if ($s3->status === 200 && (string) $content !== "") {
             if ($dspath
                 && file_put_contents($dspath, $content) === strlen($content)) {
                 $this->filestore = $dspath;
@@ -526,7 +526,7 @@ class DocumentInfo implements JsonSerializable {
             $this->size = strlen($content);
             return true;
         }
-        if ($s3->status != 200) {
+        if ($s3->status !== 200) {
             error_log("S3 error: GET $s3k: $s3->status $s3->status_text " . json_encode_db($s3->response_headers));
         }
         return false;
@@ -554,7 +554,7 @@ class DocumentInfo implements JsonSerializable {
             $s3k = $this->s3_key();
             $s3->save($s3k, $this->content(), $this->mimetype,
                       ["hotcrp" => json_encode_db($meta)]);
-            if ($s3->status == 200) {
+            if ($s3->status === 200) {
                 return true;
             } else {
                 error_log("S3 error: POST $s3k: $s3->status $s3->status_text " . json_encode_db($s3->response_headers));

@@ -64,7 +64,7 @@ class PaperValue implements JsonSerializable {
         $ov = new PaperValue($prow, $o);
         if ($o->id <= 0) {
             $o->value_load_intrinsic($ov);
-            $ov->anno["intrinsic"] = true;
+            $ov->set_anno("intrinsic", true);
         }
         return $ov;
     }
@@ -139,12 +139,36 @@ class PaperValue implements JsonSerializable {
         $doc = $this->document($index);
         return $doc ? $doc->content() : false;
     }
+    /** @param string $name
+     * @return ?DocumentInfo */
     function attachment($name) {
         return $this->option->attachment($this, $name);
     }
     function invalidate() {
         $this->prow->invalidate_options(true);
         $this->load_value_data();
+    }
+
+    /** @param string $name
+     * @return bool */
+    function has_anno($name) {
+        return isset($this->anno[$name]);
+    }
+    /** @param string $name
+     * @return mixed */
+    function anno($name) {
+        return $this->anno[$name] ?? null;
+    }
+    /** @param string $name
+     * @param mixed $value */
+    function set_anno($name, $value) {
+        $this->anno[$name] = $value;
+    }
+    /** @param string $name
+     * @param mixed $value */
+    function push_anno($name, $value) {
+        $this->anno = $this->anno ?? [];
+        $this->anno[$name][] = $value;
     }
 
     /** @return MessageSet */
@@ -1006,7 +1030,8 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
-    /** @return ?DocumentInfo */
+    /** @param string $name
+     * @return ?DocumentInfo */
     function attachment(PaperValue $ov, $name) {
         return null;
     }
@@ -1444,7 +1469,7 @@ class DocumentPaperOption extends PaperOption {
         }
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
-        $fup = $ov->anno["document"] ?? null;
+        $fup = $ov->anno("document");
         if ($fup && ($doc = $ps->upload_document($fup, $this))) {
             $ov->set_value_data([$doc->paperStorageId], [null]);
         } else {
@@ -1455,7 +1480,7 @@ class DocumentPaperOption extends PaperOption {
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         if (($doc = DocumentInfo::make_request($qreq, $this->formid, $prow->paperId, $this->id, $this->conf))) {
             $ov = PaperValue::make($prow, $this, -1);
-            $ov->anno["document"] = $doc;
+            $ov->set_anno("document", $doc);
             if (isset($doc->error_html)) {
                 $ov->error($doc->error_html);
             }
@@ -1473,7 +1498,7 @@ class DocumentPaperOption extends PaperOption {
             return null;
         } else if (DocumentInfo::check_json_upload($j)) {
             $ov = PaperValue::make($prow, $this, -1);
-            $ov->anno["document"] = $j;
+            $ov->set_anno("document", $j);
             if (isset($j->error_html)) {
                 $ov->error($j->error_html);
             }
@@ -1600,7 +1625,7 @@ class NumericPaperOption extends PaperOption {
         } else {
             $ov = PaperValue::make_estop($prow, $this, "Integer expected.");
         }
-        $ov->anno["request"] = $v;
+        $ov->set_anno("request", $v);
         return $ov;
     }
     function parse_json(PaperInfo $prow, $j) {
@@ -1613,10 +1638,7 @@ class NumericPaperOption extends PaperOption {
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $reqx = $reqov->value;
-        if ($reqov->anno && isset($reqov->anno["request"])) {
-            $reqx = $reqov->anno["request"];
-        }
+        $reqx = $reqov->anno("request") ?? $reqov->value;
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
             Ht::entry($this->formid, $reqx, [
@@ -1775,9 +1797,9 @@ class AttachmentsPaperOption extends PaperOption {
         return empty($attachments) ? null : $attachments;
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
-        $dids = $ov->anno["dids"] ?? [];
+        $dids = $ov->anno("dids") ?? [];
         '@phan-var list<int> $dids';
-        $fups = $ov->anno["documents"] ?? [];
+        $fups = $ov->anno("documents") ?? [];
         '@phan-var list<object> $fups';
         foreach ($fups as $fup) {
             if (($doc = $ps->upload_document($fup, $this))) {
@@ -1805,7 +1827,7 @@ class AttachmentsPaperOption extends PaperOption {
         $ov = PaperValue::make($prow, $this, -1);
         foreach ($this->value_dids($prow->force_option($this)) as $i => $did) {
             if (!isset($qreq["{$this->formid}_{$did}_{$i}:remove"])) {
-                $ov->anno["dids"][] = $did;
+                $ov->push_anno("dids", $did);
             }
         }
         for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
@@ -1813,7 +1835,7 @@ class AttachmentsPaperOption extends PaperOption {
                 if (isset($doc->error_html)) {
                     $ov->error($doc->error_html);
                 }
-                $ov->anno["documents"][] = $doc;
+                $ov->push_anno("documents", $doc);
             }
         }
         return $ov;
@@ -1826,7 +1848,7 @@ class AttachmentsPaperOption extends PaperOption {
         } else {
             $ja = is_array($j) ? $j : [$j];
             $ov = PaperValue::make($prow, $this, -1);
-            $ov->anno["documents"] = $ja;
+            $ov->set_anno("documents", $ja);
             foreach ($ja as $docj) {
                 if (is_object($docj) && isset($docj->error_html)) {
                     $ov->error($docj->error_html);

@@ -1002,6 +1002,8 @@ class Conf {
         $a[$name][] = $xt;
         return true;
     }
+    /** @param object $xt1
+     * @param object $xt2 */
     static private function xt_combine($xt1, $xt2) {
         foreach (get_object_vars($xt2) as $k => $v) {
             if (!property_exists($xt1, $k)
@@ -1010,12 +1012,13 @@ class Conf {
                 $xt1->$k = $v;
         }
     }
+    /** @param ?object $xt
+     * @return bool */
     static function xt_enabled($xt) {
         return $xt && (!isset($xt->disabled) || !$xt->disabled);
     }
-    static function xt_disabled($xt) { // XXX delete this
-        return !$xt || (isset($xt->disabled) && $xt->disabled);
-    }
+    /** @param ?object $xt
+     * @return ?object */
     static function xt_resolve_require($xt) {
         if ($xt
             && isset($xt->require)
