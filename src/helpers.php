@@ -427,7 +427,7 @@ function unparse_byte_size($n) {
     else if ($n > 921)
         return round($n / 1024) . "KiB";
     else if ($n > 0)
-        return (max(round($this->size / 102.4), 1) / 10) . "KiB";
+        return (max(round($n / 102.4), 1) / 10) . "KiB";
     else
         return "0B";
 }
