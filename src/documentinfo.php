@@ -586,9 +586,7 @@ class DocumentInfo implements JsonSerializable {
         $s3 = false;
         if ($this->_prefer_s3 && $this->check_s3()) {
             $s3 = true;
-        } else if (!$this->ensure_content()) {
-            return $this->add_error_html("Cannot load document.");
-        } else if ($this->error) {
+        } else if (!$this->ensure_content() || $this->error) {
             return false;
         }
 
