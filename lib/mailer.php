@@ -162,7 +162,7 @@ class Mailer {
     protected $adminupdate;
     protected $notes;
     protected $preparation;
-    public $capability;
+    public $capability_token;
     protected $sensitive;
 
     protected $expansionType;
@@ -182,7 +182,7 @@ class Mailer {
     function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
         foreach (["width", "censor", "reason", "adminupdate", "notes",
-                  "capability"] as $k) {
+                  "capability_token"] as $k) {
             $this->$k = $settings[$k] ?? null;
         }
         if ($this->width === null) {
@@ -368,10 +368,10 @@ class Mailer {
     }
 
     static function kw_capability($args, $isbool, $m, $uf) {
-        if ($m->capability) {
+        if ($m->capability_token) {
             $m->sensitive = true;
         }
-        return $isbool || $m->capability ? $m->capability : "";
+        return $isbool || $m->capability_token ? $m->capability_token : "";
     }
 
     function kw_login($args, $isbool, $uf) {

@@ -268,8 +268,8 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             $capability = new CapabilityInfo($Conf, false, CapabilityInfo::CHANGEEMAIL);
             $capability->set_user($Acct)->set_expires_after(259200);
             $capability->data = json_encode_db(["oldemail" => $Acct->email, "uemail" => $cj->email]);
-            if ($capability->create()) {
-                $rest = ["capability" => $capability, "sensitive" => true];
+            if (($token = $capability->create())) {
+                $rest = ["capability_token" => $token, "sensitive" => true];
                 $mailer = new HotCRPMailer($Conf, $Acct, $rest);
                 $prep = $mailer->prepare("@changeemail", $rest);
             } else {
