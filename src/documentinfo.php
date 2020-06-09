@@ -181,7 +181,7 @@ class DocumentInfo implements JsonSerializable {
             "hash" => $capd->hash
         ];
         $doc = new DocumentInfo($args, $conf);
-        $doc->_prefer_s3 = !!($capd->s3_uploadid ?? false);
+        $doc->_prefer_s3 = !!($capd->s3_status ?? false);
         return $doc;
     }
 

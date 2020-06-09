@@ -232,7 +232,8 @@ class Mimetype {
             $type = $tx;
         }
         // unreliable sniffs
-        if ($content !== null && $content !== ""
+        if ($content !== null
+            && $content !== ""
             && (!$type || $type === self::BIN_TYPE)) {
             if (strncmp("%!PS-", $content, 5) == 0) {
                 return self::PS_TYPE;

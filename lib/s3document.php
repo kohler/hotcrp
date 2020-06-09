@@ -307,16 +307,19 @@ class S3Document extends S3Result {
      * @return ?string */
     function load($skey) {
         $this->run($skey, "GET", []);
-        if ($this->status === 404 || $this->status === 500) {
+        if ($this->status === 200) {
+            $content = $this->response_headers["content"] ?? null;
+            unset($this->response_headers["content"]);
+            return $content;
+        } else {
+            if ($this->status !== 404 && $this->status !== 500) {
+                trigger_error("S3 warning: GET $skey: status $this->status", E_USER_WARNING);
+                if (self::$verbose) {
+                    trigger_error("S3 response: " . var_export($this->response_headers, true), E_USER_WARNING);
+                }
+            }
             return null;
         }
-        if ($this->status !== 200) {
-            trigger_error("S3 warning: GET $skey: status $this->status", E_USER_WARNING);
-            if (self::$verbose) {
-                trigger_error("S3 response: " . var_export($this->response_headers, true), E_USER_WARNING);
-            }
-        }
-        return $this->response_headers["content"] ?? null;
     }
 
     /** @param string $skey
