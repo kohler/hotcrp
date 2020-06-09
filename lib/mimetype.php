@@ -244,7 +244,7 @@ class Mimetype {
             if (!self::$finfo) {
                 self::$finfo = new finfo(FILEINFO_MIME_TYPE);
             }
-            $type = self::$finfo->buffer(substr($content, 0, 4096));
+            $type = self::$finfo->buffer(substr($content, 0, 2048));
             // canonicalize
             if ($type
                 && !isset(self::$tinfo[$type])

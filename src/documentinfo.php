@@ -210,7 +210,7 @@ class DocumentInfo implements JsonSerializable {
     static function fix_mimetype(&$args) {
         $content = $args["content"] ?? null;
         if ($content === null && isset($args["content_file"])) {
-            $content = file_get_contents($args["content_file"], false, null, 0, 1024);
+            $content = file_get_contents($args["content_file"], false, null, 0, 2048);
         }
         $args["mimetype"] = Mimetype::content_type($content, $args["mimetype"] ?? null);
     }
@@ -715,7 +715,7 @@ class DocumentInfo implements JsonSerializable {
         $s = false;
         if ($this->content === null
             && ($path = $this->available_content_file())) {
-            $s = file_get_contents($path, false, null, 0, 1024);
+            $s = file_get_contents($path, false, null, 0, 2048);
         }
         if ($s === false) {
             $s = $this->content();
