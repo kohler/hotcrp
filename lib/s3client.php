@@ -214,7 +214,7 @@ class S3Client {
      * @param callable(S3Result):T $finisher
      * @return S3Result<T> */
     private function start($skey, $method, $args,
-                           $finisher = "S3Result::finisher") {
+                           $finisher = "S3Result::success_finisher") {
         $klass = $this->result_class;
         return new $klass($this, $skey, $method, $args, $finisher);
     }
