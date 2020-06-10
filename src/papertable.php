@@ -2403,7 +2403,7 @@ class PaperTable {
             "id" => "form-paper",
             "class" => "need-unload-protection ui-submit js-submit-paper",
             "data-alert-toggle" => "paper-alert",
-            "data-upload-limit" => ini_get_bytes("upload_max_filesize")
+            "data-upload-threshold" => ini_get_bytes("upload_max_filesize") >> 1
         ];
         if ($this->prow->timeSubmitted > 0) {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;

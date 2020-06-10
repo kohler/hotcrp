@@ -179,8 +179,8 @@ class Conf {
     /** @var array<int,Formula> */
     private $_defined_formulas = null;
     private $_emoji_codes = null;
-    /** @var S3Document|null|false */
-    private $_s3_document = false;
+    /** @var S3Client|null|false */
+    private $_s3_client = false;
     /** @var ?IntlMsgSet */
     private $_ims;
     private $_format_info;
@@ -407,10 +407,10 @@ class Conf {
             && !($this->settingTexts["s3_bucket"] ?? null)) {
             unset($this->opt["dbNoPapers"]);
         }
-        if ($this->_s3_document
+        if ($this->_s3_client
             && (!isset($this->settingTexts["s3_bucket"])
-                || !$this->_s3_document->check_key_secret_bucket($this->settingTexts["s3_key"], $this->settingTexts["s3_secret"], $this->settingTexts["s3_bucket"]))) {
-            $this->_s3_document = false;
+                || !$this->_s3_client->check_key_secret_bucket($this->settingTexts["s3_key"], $this->settingTexts["s3_secret"], $this->settingTexts["s3_bucket"]))) {
+            $this->_s3_client = false;
         }
 
         // tracks settings
@@ -947,10 +947,10 @@ class Conf {
         return $this->_docstore;
     }
 
-    /** @return ?S3Document */
+    /** @return ?S3Client */
     function s3_docstore() {
         global $Now;
-        if ($this->_s3_document === false) {
+        if ($this->_s3_client === false) {
             if ($this->setting_data("s3_bucket")) {
                 $opts = [
                     "key" => $this->setting_data("s3_key"),
@@ -959,12 +959,12 @@ class Conf {
                     "setting_cache" => $this,
                     "setting_cache_prefix" => "__s3"
                 ];
-                $this->_s3_document = S3Document::make($opts);
+                $this->_s3_client = S3Client::make($opts);
             } else {
-                $this->_s3_document = null;
+                $this->_s3_client = null;
             }
         }
-        return $this->_s3_document;
+        return $this->_s3_client;
     }
 
 

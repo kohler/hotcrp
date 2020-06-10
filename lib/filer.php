@@ -192,7 +192,7 @@ class Filer {
 
         // Download or redirect
         if ($s3_accel) {
-            $doc->conf->s3_docstore()->load_accel_redirect($doc->s3_key(), $s3_accel);
+            $doc->conf->s3_docstore()->get_accel_redirect($doc->s3_key(), $s3_accel);
             // XXX Chrome bug
             header("Accept-Ranges: " . (str_ends_with($doc->mimetype, "pdf") ? "none" : "bytes"));
         } else if (($path = $doc->available_content_file())) {

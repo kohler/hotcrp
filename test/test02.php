@@ -8,7 +8,7 @@ $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 require_once("$ConfSitePATH/test/setup.php");
 
 // S3 unit tests
-$s3d = new S3Document([
+$s3d = new S3Client([
     "key" => "AKIAIOSFODNN7EXAMPLE",
     "secret" => "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
     "bucket" => null,
@@ -19,19 +19,19 @@ $Now = gmmktime(0, 0, 0, 5, 24, 2013);
 
 $sig = $s3d->signature("GET",
                        "https://examplebucket.s3.amazonaws.com/test.txt",
-                       array("Range" => "bytes=0-9"));
+                       ["Range" => "bytes=0-9"]);
 xassert_eqq($sig["signature"], "f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41");
 
 $sig = $s3d->signature("PUT",
                        "https://examplebucket.s3.amazonaws.com/test%24file.text",
-                       array("x-amz-storage-class" => "REDUCED_REDUNDANCY",
-                             "Date" => "Fri, 24 May 2013 00:00:00 GMT"),
-                       "Welcome to Amazon S3.");
+                       ["x-amz-storage-class" => "REDUCED_REDUNDANCY",
+                        "Date" => "Fri, 24 May 2013 00:00:00 GMT",
+                        "content" => "Welcome to Amazon S3."]);
 xassert_eqq($sig["signature"], "98ad721746da40c64f1a55b78f14c238d841ea1380cd77a1b5971af0ece108bd");
 
 $sig = $s3d->signature("GET",
                        "https://examplebucket.s3.amazonaws.com?lifecycle",
-                       array());
+                       []);
 xassert_eqq($sig["signature"], "fea454ca298b7da1c68078a5d1bdbfbbe0d65c699e0f91ac7a200a0136783543");
 
 // Dbl::format_query tests

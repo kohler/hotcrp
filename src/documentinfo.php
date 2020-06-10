@@ -302,6 +302,12 @@ class DocumentInfo implements JsonSerializable {
         return $this->size != 0 || $this->paperStorageId == 1;
     }
 
+    /** @return int */
+    function size() {
+        $this->ensure_size();
+        return $this->size;
+    }
+
     /** @return bool */
     function load_database() {
         if ($this->paperStorageId <= 1) {
@@ -445,7 +451,7 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
-    private function s3_upgrade_extension(S3Document $s3, $s3k) {
+    private function s3_upgrade_extension(S3Client $s3, $s3k) {
         $extension = Mimetype::extension($this->mimetype);
         if ($extension === ".pdf" || $extension === "") {
             return false;
@@ -473,7 +479,7 @@ class DocumentInfo implements JsonSerializable {
             if (($dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR))
                 && function_exists("curl_init")
                 && ($stream = @fopen($dspath . "~", "x+b"))) {
-                $s3l = $s3->make_curl_loader($s3k, $stream);
+                $s3l = $s3->start_curl_get($s3k)->set_response_body_stream($stream);
                 $s3l->run();
                 return $this->handle_load_s3_curl($s3l, $dspath);
             } else {
@@ -486,9 +492,8 @@ class DocumentInfo implements JsonSerializable {
     private function handle_load_s3_curl($s3l, $dspath) {
         if ($s3l->status === 404
             && $this->s3_upgrade_extension($s3l->s3, $s3l->skey)) {
-            $s3l->run();
+            $s3l->reset()->run();
         }
-        fflush($s3l->dstream);
         fclose($s3l->dstream);
         $unlink = true;
         if ($s3l->status === 200) {
@@ -506,38 +511,38 @@ class DocumentInfo implements JsonSerializable {
         if ($unlink) {
             @unlink($dspath . "~");
         }
-        $s3l->close();
         return $s3l->status === 200;
     }
 
     private function load_s3_direct($s3, $s3k, $dspath) {
-        $content = $s3->load($s3k);
-        if ($s3->status === 404
+        $r = $s3->start_get($s3k)->run();
+        if ($r->status === 404
             && $this->s3_upgrade_extension($s3, $s3k)) {
-            $content = $s3->load($s3k);
+            $r = $s3->start_get($s3k)->run();
         }
-        if ($s3->status === 200 && (string) $content !== "") {
+        if ($r->status === 200 && ($b = $r->response_body() ?? "") !== "") {
+            $this->size = strlen($b);
             if ($dspath
-                && file_put_contents($dspath, $content) === strlen($content)) {
+                && file_put_contents($dspath, $b) === $this->size) {
                 $this->filestore = $dspath;
             } else {
-                $this->content = $content;
+                $this->content = $b;
             }
-            $this->size = strlen($content);
             return true;
+        } else {
+            if ($r->status !== 200) {
+                error_log("S3 error: GET $s3k: $r->status $r->status_text " . json_encode_db($r->response_headers));
+            }
+            return false;
         }
-        if ($s3->status !== 200) {
-            error_log("S3 error: GET $s3k: $s3->status $s3->status_text " . json_encode_db($s3->response_headers));
-        }
-        return false;
     }
 
     /** @return bool */
     function check_s3() {
         return ($s3 = $this->conf->s3_docstore())
             && ($s3k = $this->s3_key())
-            && ($s3->check($s3k)
-                || ($this->s3_upgrade_extension($s3, $s3k) && $s3->check($s3k)));
+            && ($s3->head($s3k)
+                || ($this->s3_upgrade_extension($s3, $s3k) && $s3->head($s3k)));
     }
 
     /** @return ?bool */
@@ -551,13 +556,20 @@ class DocumentInfo implements JsonSerializable {
                     $meta["sourcehash"] = Filer::hash_as_text($this->sourceHash);
                 }
             }
+            $user_data = ["hotcrp" => json_encode_db($meta)];
             $s3k = $this->s3_key();
-            $s3->save($s3k, $this->content(), $this->mimetype,
-                      ["hotcrp" => json_encode_db($meta)]);
-            if ($s3->status === 200) {
+
+            if ($s3->head_size($s3k) === $this->size()
+                || (($f = $this->available_content_file())
+                    && $s3->put_file($s3k, $f, $this->mimetype, $user_data))) {
+                return true;
+            }
+
+            $r = $s3->start_put($s3k, $this->content(), $this->mimetype, $user_data)->run();
+            if ($r->status === 200) {
                 return true;
             } else {
-                error_log("S3 error: POST $s3k: $s3->status $s3->status_text " . json_encode_db($s3->response_headers));
+                error_log("S3 error: POST $s3k: $r->status $r->status_text " . json_encode_db($r->response_headers));
                 return $this->add_error_html("Error while saving document to S3.", true);
             }
         }
@@ -749,7 +761,7 @@ class DocumentInfo implements JsonSerializable {
             if ($stoptime === null) {
                 $starttime = $time;
                 $stoptime = $time + 20 * max(ceil(count($pfdocs) / 8), 1);
-                S3Document::$retry_timeout_allowance += 5 * count($pfdocs) / 4;
+                S3Client::$retry_timeout_allowance += 5 * count($pfdocs) / 4;
             }
             if ($time >= $stoptime) {
                 break;
@@ -765,7 +777,7 @@ class DocumentInfo implements JsonSerializable {
                 if (($s3k = $doc->s3_key())
                     && ($dspath = Filer::docstore_path($doc, Filer::FPATH_MKDIR))
                     && ($stream = @fopen($dspath . "~", "x+b"))) {
-                    $s3l = $s3->make_curl_loader($s3k, $stream);
+                    $s3l = $s3->start_curl_get($s3k)->set_response_body_stream($stream);
                     $adocs[] = [$doc, $s3l, 0, $dspath];
                 }
             }
@@ -786,7 +798,7 @@ class DocumentInfo implements JsonSerializable {
             unset($adoc);
             if ($mintime > $time) {
                 usleep((int) (($mintime - $time) * 1000000));
-                S3Document::$retry_timeout_allowance -= $mintime - $time;
+                S3Client::$retry_timeout_allowance -= $mintime - $time;
                 continue;
             }
 

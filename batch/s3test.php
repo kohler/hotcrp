@@ -45,9 +45,10 @@ foreach ($arg["_"] as $fn) {
             $doc->mimetype = Mimetype::content_type($content);
         }
         $s3fn = $doc->s3_key();
-        if (!$s3doc->check($s3fn)) {
-            if (!$quiet)
+        if (!$s3doc->head($s3fn)) {
+            if (!$quiet) {
                 echo "$fn: $s3fn not found\n";
+            }
             $ok = 1;
         } else if ($verbose) {
             echo "$fn: $s3fn OK\n";

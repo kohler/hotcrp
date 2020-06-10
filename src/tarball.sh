@@ -127,7 +127,7 @@ lib/countmatcher.php
 lib/countries.php
 lib/createdb.sh
 lib/csv.php
-lib/curls3document.php
+lib/curls3result.php
 lib/dbhelper.sh
 lib/dbl.php
 lib/filer.php
@@ -150,7 +150,8 @@ lib/qrequest.php
 lib/redirect.php
 lib/restoredb.sh
 lib/runsql.sh
-lib/s3document.php
+lib/s3client.php
+lib/s3result.php
 lib/scoreinfo.php
 lib/tagger.php
 lib/text.php
