@@ -232,14 +232,16 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     /** @param string $name
      * @param int $offset
-     * @param int $maxlen
+     * @param ?int $maxlen
      * @return string|false */
-    function file_contents($name, $offset = 0, $maxlen = PHP_INT_MAX) {
+    function file_contents($name, $offset = 0, $maxlen = null) {
         $data = false;
         if (array_key_exists($name, $this->____files)) {
             $finfo = $this->____files[$name];
             if (isset($finfo["content"])) {
-                $data = substr($finfo["content"], $offset, $maxlen);
+                $data = substr($finfo["content"], $offset, $maxlen ?? PHP_INT_MAX);
+            } else if ($maxlen === null) {
+                $data = @file_get_contents($finfo["tmp_name"], false, null, $offset);
             } else {
                 $data = @file_get_contents($finfo["tmp_name"], false, null, $offset, $maxlen);
             }
