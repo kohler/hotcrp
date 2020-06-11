@@ -3,22 +3,27 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperPDF_SearchTerm extends SearchTerm {
+    /** @var int */
     private $dtype;
+    /** @var bool */
     private $present;
-    private $format;
+    /** @var ?bool */
+    private $format_problem;
     private $format_errf;
     private $cf;
 
-    function __construct(Conf $conf, $dtype, $present, $format = null, $format_errf = null) {
+    function __construct(Conf $conf, $dtype, $present,
+                         $format_problem = null, $format_errf = null) {
+        assert($format_problem === null || $present === true);
         parent::__construct("pdf");
         $this->dtype = $dtype;
         $this->present = $present;
-        $this->format = $format;
+        $this->format_problem = $format_problem;
         $this->format_errf = $format_errf;
-        if ($this->format !== null) {
+        if ($this->format_problem !== null) {
             $this->cf = new CheckFormat($conf, CheckFormat::RUN_PREFER_NO);
         }
-        assert($this->present || $this->format === null);
+        assert($this->present || $this->format_problem === null);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if ($sword->kwdef->final === null) {
@@ -41,18 +46,18 @@ class PaperPDF_SearchTerm extends SearchTerm {
             $srch->warn("“" . htmlspecialchars($sword->keyword . ":" . $word) . "”: Format checking is not enabled.");
             return null;
         } else if ($lword === "good" || $lword === "ok") {
-            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, true);
-        } else if ($lword === "bad") {
             return new PaperPDF_SearchTerm($srch->conf, $dtype, true, false);
+        } else if ($lword === "bad" || $lword === "problem") {
+            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, true);
         } else if (in_array($lword, $errf) || $lword === "error") {
-            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, false, $lword);
+            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, true, $lword);
         } else {
             $srch->warn("“" . htmlspecialchars($word) . "” is not a valid error type for format checking.");
             return null;
         }
     }
     function trivial_rights(Contact $user, PaperSearch $srch) {
-        return $this->dtype === DTYPE_SUBMISSION && $this->format === null;
+        return $this->dtype === DTYPE_SUBMISSION && $this->format_problem === null;
     }
     static function add_columns(SearchQueryInfo $sqi) {
         $sqi->add_column("paperStorageId", "Paper.paperStorageId");
@@ -62,7 +67,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         $sqi->add_column("pdfFormatStatus", "Paper.pdfFormatStatus");
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if ($this->format !== null) {
+        if ($this->format_problem !== null) {
             $this->add_columns($sqi);
         } else {
             if ($this->dtype === DTYPE_SUBMISSION || $this->dtype === null) {
@@ -101,12 +106,12 @@ class PaperPDF_SearchTerm extends SearchTerm {
         if (($sub > 1) !== $this->present) {
             return false;
         }
-        if ($this->format !== null) {
+        if ($this->format_problem !== null) {
             if (($doc = $this->cf->fetch_document($row, $dtype))) {
                 $this->cf->check_document($row, $doc);
             }
             $errf = $doc && !$this->cf->failed ? $this->cf->problem_fields() : ["error"];
-            if (empty($errf) !== $this->format
+            if (empty($errf) === $this->format_problem
                 || ($this->format_errf && !in_array($this->format_errf, $errf))) {
                 return false;
             }
