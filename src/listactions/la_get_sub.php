@@ -59,28 +59,37 @@ class GetCheckFormat_ListAction extends ListAction {
             if ($user->can_view_pdf($prow))
                 $papers[$prow->paperId] = $prow;
         }
-        $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format"]);
+        $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format", "messages"]);
         $csvg->download_headers();
         $csvg->flush();
         $cf = new CheckFormat($user->conf, CheckFormat::RUN_PREFER_NO);
         foreach ($papers as $prow) {
-            $pages = "?";
             if ($prow->mimetype == "application/pdf") {
                 $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
                 if (($doc = $cf->fetch_document($prow, $dtype))) {
                     $cf->check_document($prow, $doc);
                 }
                 if ($doc && !$cf->failed) {
-                    $errf = $cf->problem_fields();
-                    $format = empty($errf) ? "ok" : join(",", $errf);
                     $pages = $cf->pages;
+                    $errf = $cf->problem_fields();
+                    if (empty($errf)) {
+                        $format = "ok";
+                        $messages = "";
+                    } else {
+                        $format = join(" ", $errf);
+                        $messages = join("\n", $cf->message_texts());
+                    }
                 } else {
+                    $pages = "?";
                     $format = "error";
+                    $messages = "Problem running format checker";
                 }
             } else {
+                $pages = "";
                 $format = "notpdf";
+                $messages = "";
             }
-            echo $prow->paperId, ",", CsvGenerator::quote($prow->title), ",", $pages, ",", CsvGenerator::quote($format), "\n";
+            echo $prow->paperId, ",", CsvGenerator::quote($prow->title), ",", $pages, ",", CsvGenerator::quote($format), ",", CsvGenerator::quote($messages), "\n";
             ob_flush();
             flush();
         }

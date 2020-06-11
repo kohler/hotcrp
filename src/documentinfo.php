@@ -1115,6 +1115,7 @@ class DocumentInfo implements JsonSerializable {
                 if (($flags & self::L_SMALL) || $cf->failed) {
                     return ["", $suffix, $cf->need_run];
                 } else {
+                    // XXX assumes CheckFormat::message_texts() is HTML safe
                     return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->message_texts())) . '">ⓘ</span>', $suffix, $cf->need_run];
                 }
             } else {
