@@ -839,7 +839,9 @@ class SettingValues extends MessageSet {
         }
     }
 
-    function render_messages_at($field) {
+    /** @param string $field
+     * @return string */
+    function render_feedback_at($field) {
         $t = "";
         $fname = $field instanceof Si ? $field->name : $field;
         foreach ($this->message_list_at($fname) as $mx) {
@@ -847,8 +849,17 @@ class SettingValues extends MessageSet {
         }
         return $t;
     }
+    /** @param string $field */
+    function echo_feedback_at($field) {
+        echo $this->render_feedback_at($field);
+    }
+    /** @deprecated */
+    function render_messages_at($field) {
+        return $this->render_feedback_at($field);
+    }
+    /** @deprecated */
     function echo_messages_at($field) {
-        echo $this->render_messages_at($field);
+        $this->echo_feedback_at($field);
     }
 
     private function strip_group_js($js) {
@@ -875,7 +886,7 @@ class SettingValues extends MessageSet {
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, self::strip_group_js($js));
         echo '</span>', $this->label($name, $text, ["for" => $name, "class" => $js["label_class"] ?? null]);
-        $this->echo_messages_at($name);
+        $this->echo_feedback_at($name);
         if ($hint) {
             echo '<div class="', self::add_class("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
         }
@@ -934,7 +945,7 @@ class SettingValues extends MessageSet {
                 Ht::radio($name, $k, $k == $x, $this->sjs($name, $item)),
                 '</span>', $label, $label2, $hint, '</div>';
         }
-        $this->echo_messages_at($name);
+        $this->echo_feedback_at($name);
         if ($rest && isset($rest["after"])) {
             echo $rest["after"];
         }
@@ -980,7 +991,7 @@ class SettingValues extends MessageSet {
         if ($horizontal) {
             echo '<div class="entry">';
         }
-        $this->echo_messages_at($name);
+        $this->echo_feedback_at($name);
         echo $control, get_s($js, "control_after");
         $thint = $this->type_hint($si->type);
         if ($hint || $thint) {

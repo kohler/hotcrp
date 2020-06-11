@@ -253,7 +253,7 @@ class Reviews_SettingRenderer {
             '<label for="mailbody_requestreview">Mail template for external review requests</label></a>',
             '<span class="fx"> (<a href="', $sv->conf->hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
             $sv->render_textarea("mailbody_requestreview", ["class" => "text-monospace fx", "cols" => 80, "rows" => 20]);
-        $sv->echo_messages_at("mailbody_requestreview");
+        $sv->echo_feedback_at("mailbody_requestreview");
         echo "</div></div>\n";
     }
 

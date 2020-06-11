@@ -41,7 +41,7 @@ class Options_SettingRenderer {
             . '">' . $sv->label("optvt_$xpos", "Type")
             . '<div class="entry">'
             . Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"])
-            . $sv->render_messages_at("optvt_$xpos")
+            . $sv->render_feedback_at("optvt_$xpos")
             . "</div></div>\n";
 
         $rows = 3;
@@ -54,7 +54,7 @@ class Options_SettingRenderer {
             . '">' . $sv->label("optv_$xpos", "Choices")
             . '<div class="entry">'
             . Ht::textarea("optv_$xpos", $value, $sv->sjs("optv_$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "reviewtext need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"]))
-            . $sv->render_messages_at("optv_$xpos")
+            . $sv->render_feedback_at("optv_$xpos")
             . "</div></div>\n";
     }
     static function render_description_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -63,7 +63,7 @@ class Options_SettingRenderer {
             . '">' . $sv->label("optd_$xpos", "Description")
             . '<div class="entry">'
             . Ht::textarea("optd_$xpos", $o->description, ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "reviewtext settings-opt-description need-autogrow"])
-            . $sv->render_messages_at("optd_$xpos")
+            . $sv->render_feedback_at("optd_$xpos")
             . '</div></div>';
     }
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -73,7 +73,7 @@ class Options_SettingRenderer {
             . '<div class="entry">'
             . '<span class="sep">'
             . Ht::select("optec_$xpos", ["" => "Always shown", "final" => "Shown on final versions"], $o->final ? "final" : "", ["class" => "uich js-settings-option-condition settings-opt-presence", "id" => "optec_$xpos"])
-            . $sv->render_messages_at("optec_$xpos")
+            . $sv->render_feedback_at("optec_$xpos")
             . "</span></div></div>";
     }
     static function render_required_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -82,7 +82,7 @@ class Options_SettingRenderer {
             . '">' . $sv->label("optreq_$xpos", "Required")
             . '<div class="entry">'
             . Ht::select("optreq_$xpos", ["" => "No", "1" => "Yes"], $o->required ? "1" : "", ["id" => "optreq_$xpos"])
-            . $sv->render_messages_at("optreq_$xpos")
+            . $sv->render_feedback_at("optreq_$xpos")
             . "</div></div>";
     }
     static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -91,7 +91,7 @@ class Options_SettingRenderer {
             . '">' . $sv->label("optp_$xpos", "Visible to")
             . '<div class="entry">'
             . Ht::select("optp_$xpos", ["rev" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible", "admin" => "Administrators only"], $o->visibility, ["id" => "optp_$xpos", "class" => "settings-opt-visibility"])
-            . $sv->render_messages_at("optp_$xpos")
+            . $sv->render_feedback_at("optp_$xpos")
             . '</div></div>';
     }
     static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -103,7 +103,7 @@ class Options_SettingRenderer {
                                          "topics" => "Grouped with topics",
                                          "submission" => "Near submission"],
                          $o->display_name(), ["id" => "optdt_$xpos", "class" => "settings-opt-display"])
-            . $sv->render_messages_at("optdt_$xpos")
+            . $sv->render_feedback_at("optdt_$xpos")
             . "</div></div>";
     }
     private function render_option(SettingValues $sv, PaperOption $o = null, $xpos) {
@@ -158,7 +158,7 @@ class Options_SettingRenderer {
 
         echo '<div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "style" => "font-weight:bold", "class" => "need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
-            $sv->render_messages_at("optn_$xpos"),
+            $sv->render_feedback_at("optn_$xpos"),
             Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings-opt-id"]),
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div>';

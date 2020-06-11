@@ -618,15 +618,23 @@ class Ht {
     static function problem_status_at($field) {
         return self::$_msgset ? self::$_msgset->problem_status_at($field) : 0;
     }
-    /** @return iterable<array{?string,string,int}> */
+    /** @param string $field
+     * @return iterable<array{?string,string,int}> */
     static function message_list_at($field) {
         return self::$_msgset ? self::$_msgset->message_list_at($field) : [];
     }
-    /** @return string */
+    /** @param string $field
+     * @return string
+     * @deprecated */
     static function render_messages_at($field) {
+        return self::render_feedback_at($field);
+    }
+    /** @param string $field
+     * @return string */
+    static function render_feedback_at($field) {
         $t = "";
         foreach (self::message_list_at($field) as $mx) {
-            $t .= '<p class="' . MessageSet::status_class($mx[2], "f-h", "is-") . '">' . $mx[1] . '</p>';
+            $t .= '<p class="' . MessageSet::status_class($mx[2], "feedback", "is-") . '">' . $mx[1] . '</p>';
         }
         return $t;
     }

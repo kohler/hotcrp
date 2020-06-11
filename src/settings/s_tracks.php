@@ -57,8 +57,8 @@ class Tracks_SettingRenderer {
             " &nbsp;",
             Ht::entry($tag_ctl, $reqv[1],
                       $sv->sjs($tag_ctl, ["class" => "fx need-suggest pc-tags", "placeholder" => "(tag)", "data-default-value" => $curv[1]]));
-        $sv->echo_messages_at($track_ctl);
-        $sv->echo_messages_at($tag_ctl);
+        $sv->echo_feedback_at($track_ctl);
+        $sv->echo_feedback_at($tag_ctl);
         if ($hint) {
             $klass = "f-h";
             if (str_starts_with($hint, '<div class="fx">')

@@ -315,9 +315,9 @@ class LoginHelper {
             $e = null;
         } else if (isset($info["unset"])) {
             if ($conf->allow_user_self_register()) {
-                $e = "%2[email]\$H does not have a password yet. Check the email address or create a password <a href=\"%2[newaccount]\$H\">here</a>.";
+                $e = "User %2[email]\$H does not have a password yet. Check the email address or create a password <a href=\"%2[newaccount]\$H\">here</a>.";
             } else {
-                $e = "%2[email]\$H does not have a password. Check the email address.";
+                $e = "User %2[email]\$H does not have a password. Check the email address.";
             }
         } else if (isset($info["disabled"])) {
             $e = "Your account on this site is disabled. Contact the site administrator for more information.";
