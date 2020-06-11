@@ -1093,12 +1093,14 @@ class DocumentInfo implements JsonSerializable {
     private function link_html_format_info($flags, $suffix) {
         $need_run = false;
         if (($spects = $this->conf->format_spec($this->documentType)->timestamp)) {
-            if ($this->prow->is_primary_document($this)) {
+            if ($this->prow->is_primary_document($this)
+                && ($flags & self::L_SMALL)) {
                 $specstatus = $this->prow->pdfFormatStatus;
-                if ($specstatus == -$spects && ($flags & self::L_SMALL))
+                if ($specstatus == -$spects) {
                     return ["", $suffix . "x", false];
-                else if ($specstatus == $spects)
+                } else if ($specstatus == $spects) {
                     return ["", $suffix, false];
+                }
             }
             $runflag = CheckFormat::RUN_NO;
             if ($flags & self::L_REQUIREFORMAT) {
@@ -1106,14 +1108,18 @@ class DocumentInfo implements JsonSerializable {
             }
             $cf = new CheckFormat($this->conf, $runflag);
             $cf->check_document($this->prow, $this);
-            if ($cf->has_error()) {
-                if (($flags & self::L_SMALL) || $cf->failed) {
-                    return ["", $suffix . "x", $cf->need_run];
-                } else {
-                    return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->message_texts())) . '">ⓘ</span>', $suffix . "x", $cf->need_run];
+            if ($cf->has_problem()) {
+                if ($cf->has_error() || $cf->failed) {
+                    $suffix .= "x";
                 }
-            } else
+                if (($flags & self::L_SMALL) || $cf->failed) {
+                    return ["", $suffix, $cf->need_run];
+                } else {
+                    return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->message_texts())) . '">ⓘ</span>', $suffix, $cf->need_run];
+                }
+            } else {
                 $need_run = $cf->need_run;
+            }
         }
         return ["", $suffix, $need_run];
     }
