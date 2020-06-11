@@ -843,7 +843,7 @@ class SettingValues extends MessageSet {
         $t = "";
         $fname = $field instanceof Si ? $field->name : $field;
         foreach ($this->message_list_at($fname) as $mx) {
-            $t .= '<div class="' . MessageSet::status_class($mx[2], "settings-ap f-h", "is-") . '">' . $mx[1] . "</div>";
+            $t .= '<div class="' . MessageSet::status_class($mx[2], "feedback", "is-") . '">' . $mx[1] . "</div>";
         }
         return $t;
     }
