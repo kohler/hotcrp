@@ -26,8 +26,7 @@ abstract class S3Result {
      * @param string $method
      * @param array<string,string> $args
      * @param callable(S3Result):T $finisher */
-    function __construct(S3Client $s3, $skey, $method, $args,
-                         $finisher = "S3Result::success_finisher") {
+    function __construct(S3Client $s3, $skey, $method, $args, $finisher) {
         $this->s3 = $s3;
         $this->skey = $skey;
         $this->method = $method;
