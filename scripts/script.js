@@ -8031,14 +8031,14 @@ edit_conditions.not = function (ec, form) {
     return !evaluate_edit_condition(ec.child[0], form);
 };
 edit_conditions.option = function (ec, form) {
-    var fs = form["opt" + ec.id], v;
-    if (fs instanceof HTMLInputElement) {
-        if (fs.type === "radio" || fs.type === "checkbox")
-            v = fs.checked ? fs.value : 0;
+    var e = form.elements["opt" + ec.id], v;
+    if (e instanceof HTMLInputElement) {
+        if (e.type === "radio" || e.type === "checkbox")
+            v = e.checked ? e.value : 0;
         else
-            v = fs.value;
-    } else if ("value" in fs)
-        v = fs.value;
+            v = e.value;
+    } else if (e && "value" in e)
+        v = e.value;
     if (v != null && v !== "")
         v = +v;
     else
@@ -8051,23 +8051,26 @@ edit_conditions.topic = function (ec, form) {
         return has_topics === ec.topics;
     }
     for (var i = 0; i !== ec.topics.length; ++i)
-        if (form["top" + ec.topics[i]].checked)
+        if (form.elements["top" + ec.topics[i]].checked)
             return true;
     return false;
 };
 edit_conditions.title = function (ec, form) {
-    return ec.match === ($.trim(form.title && form.title.value) !== "");
+    var e = form.elements.title;
+    return ec.match === ($.trim(e && e.value) !== "");
 };
 edit_conditions.abstract = function (ec, form) {
-    return ec.match === ($.trim(form.abstract && form.abstract.value) !== "");
+    var e = form.elements.abstract;
+    return ec.match === ($.trim(e && e.value) !== "");
 };
 edit_conditions.collaborators = function (ec, form) {
-    return ec.match === ($.trim(form.collaborators && form.collaborators.value) !== "");
+    var e = form.elements.collaborators;
+    return ec.match === ($.trim(e && e.value) !== "");
 };
 edit_conditions.pc_conflict = function (ec, form) {
     var n = 0, elt;
     for (var i = 0; i !== ec.cids.length; ++i)
-        if ((elt = form["pcc" + ec.cids[i]])
+        if ((elt = form.elements["pcc" + ec.cids[i]])
             && (elt.type === "checkbox" ? elt.checked : +elt.value > 1)) {
             ++n;
             if (ec.compar === "!=" && ec.value === 0)
