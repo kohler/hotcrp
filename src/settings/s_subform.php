@@ -258,7 +258,7 @@ class SubForm_SettingRenderer {
         $cflt = array();
         $confset = $sv->conf->conflict_types();
         foreach ($confset->basic_conflict_types() as $ct) {
-            $cflt[] = "“" . $confset->unparse_html($ct) . "”";
+            $cflt[] = "“" . $confset->unparse_html_description($ct) . "”";
         }
         $sv->echo_checkbox("sub_pcconfsel", "Collect PC conflict descriptions (" . commajoin($cflt, "or") . ")", ["group_class" => "fx"]);
         $sv->echo_checkbox("sub_collab", "Collect authors’ other collaborators as text");

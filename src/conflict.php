@@ -161,6 +161,22 @@ class Conflict {
 
     /** @param int $ct
      * @return string */
+    function unparse_text_description($ct)  {
+        if (!$this->_desc && isset(self::$desc_map[$ct & ~1])) {
+            return $this->conf->_c("conflict_type", self::$desc_map[$ct & ~1]);
+        } else {
+            return $this->unparse_text($ct);
+        }
+    }
+
+    /** @param int $ct
+     * @return string */
+    function unparse_html_description($ct) {
+        return htmlspecialchars($this->unparse_text_description($ct));
+    }
+
+    /** @param int $ct
+     * @return string */
     function unparse_csv($ct) {
         if ($ct <= CONFLICT_MAXUNCONFLICTED) {
             return "N";
