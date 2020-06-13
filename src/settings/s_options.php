@@ -254,21 +254,25 @@ class Options_SettingParser extends SettingParser {
 
         if ($sv->reqv("optd_$xpos") && trim($sv->reqv("optd_$xpos")) != "") {
             $t = CleanHTML::basic_clean($sv->reqv("optd_$xpos"), $err);
-            if ($t !== false)
+            if ($t !== false) {
                 $oarg["description"] = $t;
-            else
+            } else {
                 $sv->error_at("optd_$xpos", $err);
+            }
         }
 
         if (($optvt = $sv->reqv("optvt_$xpos"))) {
             if (($pos = strpos($optvt, ":")) !== false) {
                 $oarg["type"] = substr($optvt, 0, $pos);
-                if (preg_match('/:ds_(\d+)/', $optvt, $m))
+                if (preg_match('/:ds_(\d+)/', $optvt, $m)) {
                     $oarg["display_space"] = (int) $m[1];
-            } else
+                }
+            } else {
                 $oarg["type"] = $optvt;
-        } else
+            }
+        } else {
             $oarg["type"] = "checkbox";
+        }
 
         if (($optec = $sv->reqv("optec_$xpos"))) {
             if ($optec === "final") {
@@ -296,8 +300,9 @@ class Options_SettingParser extends SettingParser {
             $oarg["selector"] = array();
             $seltext = trim(cleannl($sv->reqv("optv_$xpos", "")));
             if ($seltext != "") {
-                foreach (explode("\n", $seltext) as $t)
+                foreach (explode("\n", $seltext) as $t) {
                     $oarg["selector"][] = $t;
+                }
             } else {
                 $sv->error_at("optv_$xpos", "Enter selectors one per line.");
             }
@@ -357,7 +362,7 @@ class Options_SettingParser extends SettingParser {
 
         $deleted_ids = array();
         foreach ($sv->conf->options()->nonfixed() as $o) {
-            $newo = get($this->stashed_options, $o->id);
+            $newo = $this->stashed_options[$o->id] ?? null;
             if (!$newo
                 || ($newo->type !== $o->type
                     && !$newo->change_type($o, true, true)
