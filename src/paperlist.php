@@ -578,14 +578,14 @@ class PaperList {
 
     private function _compute_has($key) {
         if ($key === "paper" || $key === "final") {
-            $opt = $this->conf->paper_opts->find($key);
+            $opt = $this->conf->options()->find($key);
             return $this->user->can_view_some_option($opt)
                 && $this->rowset()->any(function ($row) use ($opt) {
                     return ($opt->id == DTYPE_SUBMISSION ? $row->paperStorageId : $row->finalPaperStorageId) > 1
                         && $this->user->can_view_option($row, $opt);
                 });
         } else if (str_starts_with($key, "opt")
-                   && ($opt = $this->conf->paper_opts->find($key))) {
+                   && ($opt = $this->conf->options()->find($key))) {
             return $this->user->can_view_some_option($opt)
                 && $this->rowset()->any(function ($row) use ($opt) {
                     return ($ov = $row->option($opt))

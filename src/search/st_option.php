@@ -148,7 +148,7 @@ class Option_SearchTerm extends SearchTerm {
         $option_failure = false;
         if (strcasecmp($oname, "none") === 0
             || strcasecmp($oname, "any") === 0) {
-            $omatches = $conf->paper_opts->option_list();
+            $omatches = $conf->options()->normal();
         } else {
             $omatches = $conf->find_all_fields($oname, Conf::FSRCH_OPTION);
         }

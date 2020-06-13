@@ -389,7 +389,7 @@ class Tag_Assigner extends Assigner {
             && str_ends_with($this->tag, ':')) {
             $aset->cleanup_callback("colontag", function ($aset) {
                 $aset->conf->save_setting("has_colontag", 1);
-                $aset->conf->invalidate_caches("taginfo");
+                $aset->conf->invalidate_caches("tags");
             });
         }
         $aset->user->log_activity("Tag " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);

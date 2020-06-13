@@ -113,7 +113,7 @@ class Options_SettingRenderer {
                     "name" => "Field name",
                     "description" => "",
                     "type" => "checkbox",
-                    "position" => count($sv->conf->paper_opts->nonfixed_option_list()) + 1,
+                    "position" => count($sv->conf->options()->nonfixed()) + 1,
                     "display" => "prominent"
                 ], $sv->conf);
         }
@@ -199,7 +199,7 @@ class Options_SettingRenderer {
         echo '<div id="settings_opts" class="c">';
         $self = new Options_SettingRenderer;
         $pos = 0;
-        $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
+        $all_options = array_merge($sv->conf->options()->nonfixed()); // get our own iterator
         foreach ($all_options as $o)
             $self->render_option($sv, $o, ++$pos);
         echo "</div>\n";
@@ -312,7 +312,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     function parse(SettingValues $sv, Si $si) {
-        $new_opts = $sv->conf->paper_opts->nonfixed_option_list();
+        $new_opts = $sv->conf->options()->nonfixed();
 
         // consider option ids
         $optids = array_map(function ($o) { return $o->id; }, $new_opts);
@@ -341,7 +341,7 @@ class Options_SettingParser extends SettingParser {
 
     function unparse_json(SettingValues $sv, Si $si, $j) {
         $oj = [];
-        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $o) {
+        foreach ($sv->conf->options()->nonfixed() as $o) {
             $oj[] = $o->unparse();
         }
         $j->options = $oj;
@@ -356,7 +356,7 @@ class Options_SettingParser extends SettingParser {
         $sv->save("options", empty($newj) ? null : json_encode_db($newj));
 
         $deleted_ids = array();
-        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $o) {
+        foreach ($sv->conf->options()->nonfixed() as $o) {
             $newo = get($this->stashed_options, $o->id);
             if (!$newo
                 || ($newo->type !== $o->type

@@ -131,13 +131,14 @@ class Color_SearchTerm {
             $tags = array_unique(array_merge(array_keys($dt->filter("colors")), $dt->known_styles()));
             $known_style = $dt->known_style($word) . "tag";
             foreach ($tags as $t) {
-                if ($word === "any" || $word === "none") {
-                } else if ($word === "color") {
-                    if (!$dt->is_style($t, TagMap::STYLE_BG))
+                if ($word === "color") {
+                    if (!$dt->is_style($t, TagMap::STYLE_BG)) {
                         continue;
-                } else {
-                    if (array_search($known_style, $dt->styles($t, 0, false)) === false)
+                    }
+                } else if ($word !== "any" && $word !== "none") {
+                    if (array_search($known_style, $dt->styles($t, 0, false)) === false) {
                         continue;
+                    }
                 }
                 $tm->add_tag($t);
             }

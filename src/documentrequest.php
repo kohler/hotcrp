@@ -110,9 +110,9 @@ class DocumentRequest implements JsonSerializable {
             if (($dtnum = cvtint($dtname, null)) !== null) {
                 $this->opt = $conf->option_by_id($dtnum);
             } else if ($this->paperId >= 0) {
-                $this->opt = $conf->paper_opts->find($dtname);
+                $this->opt = $conf->options()->find($dtname);
             } else {
-                $this->opt = $conf->paper_opts->find_nonpaper($dtname);
+                $this->opt = $conf->options()->find_nonpaper($dtname);
             }
             if ($this->opt !== null) {
                 $this->dtype = $this->opt->id;
@@ -137,7 +137,7 @@ class DocumentRequest implements JsonSerializable {
 
         // if nothing found, use the base
         if ($this->dtype === null && $dtname === "") {
-            $this->opt = $conf->paper_opts->find($base_dtname);
+            $this->opt = $conf->options()->find($base_dtname);
             $this->dtype = $this->opt->id;
         } else if ($this->dtype === null) {
             throw new Exception("Document “{$dtname}” not found.");

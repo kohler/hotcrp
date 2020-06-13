@@ -247,6 +247,6 @@ class Tags_SettingParser extends SettingParser {
             }
         }
 
-        $sv->conf->invalidate_caches(["taginfo" => true]);
+        $sv->conf->invalidate_caches(["tags" => true]);
     }
 }

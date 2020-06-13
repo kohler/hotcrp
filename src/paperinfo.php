@@ -674,7 +674,7 @@ class PaperInfo {
             && $this->paperStorageId <= 1) {
             $f["submission"] = true;
         }
-        foreach ($this->conf->paper_opts->option_list() as $o) {
+        foreach ($this->conf->options() as $o) {
             if ($o->test_required($this)
                 && (!$user || $user->can_view_option($this, $o))
                 && !$o->value_present($this->force_option($o))) {
@@ -1561,14 +1561,14 @@ class PaperInfo {
 
     private function _make_option_array() {
         $this->load_options(false, false);
-        $paper_opts = $this->conf->paper_opts;
+        $paper_opts = $this->conf->options();
         $option_array = [];
         foreach ($this->_option_values as $oid => $ovalues) {
             if (($o = $paper_opts->option_by_id($oid))) {
                 $option_array[$oid] = PaperValue::make_multi($this, $o, $ovalues, get($this->_option_data, $oid));
             }
         }
-        foreach ($paper_opts->include_empty_option_list() as $oid => $o) {
+        foreach ($paper_opts->absent() as $oid => $o) {
             if (!isset($option_array[$oid])) {
                 $option_array[$oid] = PaperValue::make_force($this, $o);
             }

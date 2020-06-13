@@ -181,7 +181,7 @@ class Default_PaperSaver extends PaperSaver {
         if (!isset($pj->options)) {
             $pj->options = (object) [];
         }
-        foreach ($user->conf->paper_opts->form_field_list($nnprow) as $o) {
+        foreach ($user->conf->options()->form_fields($nnprow) as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
                 && ($o->id > 0 || $o->type === "intrinsic2")
                 && (!$o->final || $action === "final")) {

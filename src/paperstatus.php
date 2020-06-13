@@ -339,7 +339,7 @@ class PaperStatus extends MessageSet {
         }
 
         $options = array();
-        foreach ($this->conf->paper_opts->option_list() as $o) {
+        foreach ($this->conf->options() as $o) {
             if ($user && !$user->can_edit_option($prow, $o)) {
                 continue;
             }
@@ -376,7 +376,7 @@ class PaperStatus extends MessageSet {
 
 
     static function field_title(Conf $conf, $f) {
-        $o = $conf->paper_opts->find($f);
+        $o = $conf->options()->find($f);
         if (!$o) {
             if ($f === "title") {
                 $o = $conf->option_by_id(PaperOption::TITLEID);
@@ -564,7 +564,7 @@ class PaperStatus extends MessageSet {
         // canonicalize option values to use IDs, not abbreviations
         $new_options = [];
         foreach ($options as $id => $oj) {
-            $omatches = $this->conf->paper_opts->find_all($id);
+            $omatches = $this->conf->options()->find_all($id);
             if (count($omatches) != 1) {
                 $pj->bad_options[$id] = true;
             } else {
@@ -969,7 +969,7 @@ class PaperStatus extends MessageSet {
 
     private function validate_fields() {
         $max_status = 0;
-        foreach ($this->conf->paper_opts->form_field_list($this->_nnprow) as $opt) {
+        foreach ($this->conf->options()->form_fields($this->_nnprow) as $opt) {
             if ($opt->id <= 0 && $opt->type !== "intrinsic2") {
                 continue;
             }
@@ -1347,7 +1347,7 @@ class PaperStatus extends MessageSet {
     static function postexecute_check_required_options(PaperStatus $ps) {
         $prow = null;
         $required_failure = false;
-        foreach ($ps->conf->paper_opts->option_list() as $o) {
+        foreach ($ps->conf->options() as $o) {
             if (!$o->required) {
                 continue;
             }

@@ -262,7 +262,7 @@ if ($pl_text) {
     }
 
     // Options
-    foreach ($Conf->paper_opts->option_list() as $ox) {
+    foreach ($Conf->options() as $ox) {
         if ($pl->has("opt$ox->id")
             && $ox->list_display(null)
             && $ox->example_searches())

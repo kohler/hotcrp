@@ -3103,11 +3103,12 @@ class Contact {
             || ($eos === 1 && ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS));
     }
 
+    /** @return array<int,PaperOption> */
     function user_option_list() {
         if ($this->conf->has_any_accepted() && $this->can_view_some_decision()) {
-            return $this->conf->paper_opts->option_list();
+            return $this->conf->options()->normal();
         } else {
-            return $this->conf->paper_opts->nonfinal_option_list();
+            return $this->conf->options()->nonfinal();
         }
     }
 

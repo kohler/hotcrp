@@ -63,7 +63,7 @@ $Conf->qe("CREATE TABLE `OptionType` (
   PRIMARY KEY  (`optionId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8");
 $qp = $qv = [];
-foreach ($Conf->paper_opts->option_list() as $opt) {
+foreach ($Conf->options() as $opt) {
     if ($opt->type === "checkbox") {
         $qp[] = "(?,?,?,?)";
         $qv[] = $opt->id;

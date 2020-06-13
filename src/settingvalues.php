@@ -1219,30 +1219,34 @@ class SettingValues extends MessageSet {
                 || $v === "0"
                 || !strcasecmp($v, "N/A")
                 || !strcasecmp($v, "same as PC")
-                || ($si->type !== "ndate" && !strcasecmp($v, "none")))
+                || ($si->type !== "ndate" && !strcasecmp($v, "none"))) {
                 return -1;
-            else if (!strcasecmp($v, "none"))
+            } else if (!strcasecmp($v, "none")) {
                 return 0;
-            else if (($v = $this->conf->parse_time($v)) !== false)
+            } else if (($v = $this->conf->parse_time($v)) !== false) {
                 return $v;
+            }
             $err = "Should be a date.";
         } else if ($si->type === "grace") {
-            if (($v = SettingParser::parse_interval($v)) !== false)
+            if (($v = SettingParser::parse_interval($v)) !== false) {
                 return intval($v);
+            }
             $err = "Should be a grace period.";
         } else if ($si->type === "int" || $si->type === "zint") {
-            if (preg_match("/\\A[-+]?[0-9]+\\z/", $v))
+            if (preg_match("/\\A[-+]?[0-9]+\\z/", $v)) {
                 return intval($v);
-            if ($v == "" && $si->placeholder)
+            } else if ($v == "" && $si->placeholder) {
                 return 0;
+            }
             $err = "Should be a number.";
         } else if ($si->type === "string") {
             // Avoid storing the default message in the database
             if (substr($si->name, 0, 9) == "mailbody_") {
                 $t = $this->expand_mail_template(substr($si->name, 9), true);
                 $v = cleannl($v);
-                if ($t["body"] == $v)
+                if ($t["body"] === $v) {
                     return "";
+                }
             }
             return $v;
         } else if ($si->type === "simplestring") {
@@ -1251,11 +1255,13 @@ class SettingValues extends MessageSet {
                    || $si->type === "tagbase") {
             $tagger = new Tagger($this->user);
             $v = trim($v);
-            if ($v === "" && $si->optional)
+            if ($v === "" && $si->optional) {
                 return $v;
+            }
             $v = $tagger->check($v, $si->type === "tagbase" ? Tagger::NOVALUE : 0);
-            if ($v)
+            if ($v) {
                 return $v;
+            }
             $err = $tagger->error_html;
         } else if ($si->type === "emailheader") {
             $mt = new MimeText;
@@ -1266,16 +1272,18 @@ class SettingValues extends MessageSet {
             $err = "Malformed destination list: " . $mt->unparse_error();
         } else if ($si->type === "emailstring") {
             $v = trim($v);
-            if ($v === "" && $si->optional)
+            if ($v === "" && $si->optional) {
                 return "";
-            else if (validate_email($v) || $v === $this->oldv($si->name, null))
+            } else if (validate_email($v) || $v === $this->oldv($si->name, null)) {
                 return $v;
+            }
             $err = "Should be an email address.";
         } else if ($si->type === "urlstring") {
             $v = trim($v);
             if (($v === "" && $si->optional)
-                || preg_match(',\A(?:https?|ftp)://\S+\z,', $v))
+                || preg_match(',\A(?:https?|ftp)://\S+\z,', $v)) {
                 return $v;
+            }
             $err = "Should be a URL.";
         } else if ($si->type === "htmlstring") {
             if (($v = CleanHTML::basic_clean($v, $err)) !== false) {

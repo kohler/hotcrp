@@ -117,7 +117,11 @@ class Conf {
     public $opt;
     public $opt_override;
     private $_opt_timestamp;
+    /** @var PaperOptionList
+     * @deprecated */
     public $paper_opts;
+    /** @var PaperOptionList */
+    private $_paper_opts;
 
     public $headerPrinted = false;
     private $_save_logs = false;
@@ -136,7 +140,7 @@ class Conf {
     /** @var ?array<string,list<?string>> */
     private $_tracks;
     /** @var ?TagMap */
-    private $_taginfo;
+    private $_tag_map;
     private $_track_tags;
     private $_track_sensitivity = 0;
     /** @var ?array<int,string> */
@@ -270,7 +274,8 @@ class Conf {
         $this->opt = $options;
         $this->opt["dbName"] = $this->dbname;
         $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
-        $this->paper_opts = new PaperOptionList($this);
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
+        $this->_paper_opts = $this->paper_opts = new PaperOptionList($this);
         if ($this->dblink && !Dbl::$default_dblink) {
             Dbl::set_default_dblink($this->dblink);
             Dbl::set_error_handler(array($this, "query_error_handler"));
@@ -763,7 +768,7 @@ class Conf {
                 $this->crosscheck_options();
             }
             if (str_starts_with($name, "tag_") || $name === "tracks") {
-                $this->invalidate_caches(["taginfo" => true, "tracks" => true]);
+                $this->invalidate_caches(["tags" => true, "tracks" => true]);
             }
         }
         return $change;
@@ -1231,16 +1236,21 @@ class Conf {
     }
 
 
+    /** @return PaperOptionList */
+    function options() {
+        return $this->_paper_opts;
+    }
+
     /** @param int $id
      * @return ?PaperOption */
     function option_by_id($id) {
-        return $this->paper_opts->option_by_id($id);
+        return $this->_paper_opts->option_by_id($id);
     }
 
     /** @param int $id
      * @return PaperOption */
     function checked_option_by_id($id) {
-        return $this->paper_opts->checked_option_by_id($id);
+        return $this->_paper_opts->checked_option_by_id($id);
     }
 
 
@@ -1386,7 +1396,7 @@ class Conf {
 
     function invalidate_topics() {
         $this->_topic_set = null;
-        $this->paper_opts->invalidate_intrinsic_option(PaperOption::TOPICSID);
+        $this->_paper_opts->invalidate_intrinsic_option(PaperOption::TOPICSID);
     }
 
 
@@ -1409,7 +1419,7 @@ class Conf {
             $this->_abbrev_matcher = new AbbreviationMatcher;
             $this->_abbrev_matcher->set_priority(self::FSRCH_FORMULA, -1);
             // XXX exposes invisible paper options, review fields
-            $this->paper_opts->populate_abbrev_matcher($this->_abbrev_matcher);
+            $this->_paper_opts->populate_abbrev_matcher($this->_abbrev_matcher);
             foreach ($this->all_review_fields() as $f) {
                 $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_REVIEW);
             }
@@ -1471,10 +1481,10 @@ class Conf {
 
     /** @return TagMap */
     function tags() {
-        if (!$this->_taginfo) {
-            $this->_taginfo = TagMap::make($this);
+        if (!$this->_tag_map) {
+            $this->_tag_map = TagMap::make($this);
         }
-        return $this->_taginfo;
+        return $this->_tag_map;
     }
 
 
@@ -2441,8 +2451,9 @@ class Conf {
                 $search = new PaperSearch($this->root_user(), ["q" => $dt->autosearch, "t" => "all"]);
                 foreach ($rowset as $prow) {
                     $want = $search->test($prow);
-                    if ($prow->has_tag($dt->tag) !== $want)
+                    if ($prow->has_tag($dt->tag) !== $want) {
                         $csv[] = "{$prow->paperId}," . CsvGenerator::quote($dt->tag . ($want ? "" : "#clear"));
+                    }
                 }
             }
         }
@@ -2536,7 +2547,7 @@ class Conf {
 
         // no empty text options
         $text_options = array();
-        foreach ($this->paper_opts->option_list() as $ox) {
+        foreach ($this->_paper_opts as $ox) {
             if ($ox->type === "text") {
                 $text_options[] = $ox->id;
             }
@@ -2679,7 +2690,7 @@ class Conf {
         }
 
         $oids = $nonempty_oids = [];
-        foreach ($this->paper_opts->full_option_list() as $o) {
+        foreach ($this->_paper_opts->universal() as $o) {
             if ($o->has_document()) {
                 $oids[] = $o->id;
                 if (!$o->allow_empty_document())
@@ -2737,7 +2748,7 @@ class Conf {
                 $this->_user_cache = $this->_user_email_cache = null;
             }
             if (!$caches || isset($caches["options"])) {
-                $this->paper_opts->invalidate_option_list();
+                $this->_paper_opts->invalidate_options();
                 $this->_formatspec_cache = [];
                 $this->_abbrev_matcher = null;
             }
@@ -2745,8 +2756,8 @@ class Conf {
                 $this->_review_form_cache = $this->_defined_rounds = null;
                 $this->_abbrev_matcher = null;
             }
-            if (!$caches || isset($caches["taginfo"]) || isset($caches["tracks"])) {
-                $this->_taginfo = null;
+            if (!$caches || isset($caches["tags"]) || isset($caches["tracks"])) {
+                $this->_tag_map = null;
             }
             if (!$caches || isset($caches["formulas"])) {
                 $this->_formula_functions = null;
@@ -3589,7 +3600,7 @@ class Conf {
 
         if ($options["options"] ?? false) {
             if ((isset($this->settingTexts["options"]) || isset($this->opt["fixedOptions"]))
-                && $this->paper_opts->count_option_list()) {
+                && $this->_paper_opts->has_universal()) {
                 $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
             } else {
                 $cols[] = "'' as optionIds";

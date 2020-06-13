@@ -1245,7 +1245,7 @@ class DocumentInfo implements JsonSerializable {
             "select finalPaperStorageId from Paper where finalPaperStorageId>1",
             "select documentId from DocumentLink where documentId>1"];
         $document_option_ids = array();
-        foreach ($conf->paper_opts->full_option_list() as $id => $o) {
+        foreach ($conf->options()->universal() as $id => $o) {
             if ($o->has_document())
                 $document_option_ids[] = $id;
         }

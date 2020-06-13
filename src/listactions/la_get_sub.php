@@ -40,7 +40,7 @@ class Get_ListAction extends ListAction {
         }
     }
     function run(Contact $user, $qreq, $ssel) {
-        if (($opts = $user->conf->paper_opts->find_all($qreq->getfn))
+        if (($opts = $user->conf->options()->find_all($qreq->getfn))
             && count($opts) == 1
             && ($o = current($opts))
             && $user->can_view_some_option($o)) {
@@ -128,7 +128,7 @@ class GetAbstract_ListAction extends ListAction {
         $text = $n . str_repeat("=", min(self::WIDTH, strlen($n) - 1)) . "\n\n";
 
         $fr = new FieldRender(FieldRender::CTEXT);
-        foreach ($user->conf->paper_opts->field_list($prow) as $o) {
+        foreach ($user->conf->options()->fields($prow) as $o) {
             if (($o->id <= 0 || $user->allow_view_option($prow, $o))
                 && $o->display_position() !== false) {
                 $fr->clear();

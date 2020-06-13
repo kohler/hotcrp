@@ -219,7 +219,7 @@ class PaperValue implements JsonSerializable {
     }
 }
 
-class PaperOptionList {
+class PaperOptionList implements IteratorAggregate {
     /** @var Conf */
     private $conf;
     /** @var array<int,object> */
@@ -230,8 +230,11 @@ class PaperOptionList {
     private $_ijlist;
     /** @var array<int,?PaperOption> */
     private $_imap = [];
+    /** @var ?array<int,PaperOption> */
     private $_olist;
+    /** @var ?array<int,PaperOption> */
     private $_olist_nonfinal;
+    /** @var ?array<int,PaperOption>|?true */
     private $_olist_include_empty;
     /** @var AbbreviationMatcher<PaperOption> */
     private $_nonpaper_am;
@@ -298,7 +301,7 @@ class PaperOptionList {
     }
 
     function populate_abbrev_matcher(AbbreviationMatcher $am) {
-        $cb = [$this, "get"];
+        $cb = [$this, "option_by_id"];
         $am->add_lazy("paper", $cb, [DTYPE_SUBMISSION], Conf::FSRCH_OPTION);
         $am->add_lazy("submission", $cb, [DTYPE_SUBMISSION], Conf::FSRCH_OPTION);
         $am->add_lazy("final", $cb, [DTYPE_FINAL], Conf::FSRCH_OPTION);
@@ -365,12 +368,6 @@ class PaperOptionList {
         return $this->_omap[$id];
     }
 
-    /** @deprecated
-     *  @return ?PaperOption */
-    function get($id) {
-        return $this->option_by_id($id);
-    }
-
     /** @param int $id
      * @return PaperOption */
     function checked_option_by_id($id) {
@@ -381,19 +378,8 @@ class PaperOptionList {
         return $o;
     }
 
-
-    /** @param int $id
-     * @return PaperOption */
-    function get_force($id) {
-        $o = $this->option_by_id($id);
-        if (!$o) {
-            $o = $this->_omap[$id] = new UnknownPaperOption($this->conf, (object) ["id" => $id]);
-        }
-        return $o;
-    }
-
     /** @return array<int,PaperOption> */
-    function option_list() {
+    function normal() {
         if ($this->_olist === null) {
             $this->_olist = [];
             foreach ($this->option_json_list() as $id => $oj) {
@@ -408,15 +394,20 @@ class PaperOptionList {
         return $this->_olist;
     }
 
+    function getIterator() {
+        $this->normal();
+        return new ArrayIterator($this->_olist);
+    }
+
     /** @return array<int,PaperOption> */
-    function nonfixed_option_list() {
-        return array_filter($this->option_list(), function ($o) {
+    function nonfixed() {
+        return array_filter($this->normal(), function ($o) {
             return $o->id < PaperOption::MINFIXEDID;
         });
     }
 
     /** @return array<int,PaperOption> */
-    function nonfinal_option_list() {
+    function nonfinal() {
         if ($this->_olist_nonfinal === null) {
             $this->_olist_nonfinal = [];
             foreach ($this->option_json_list() as $id => $oj) {
@@ -433,18 +424,7 @@ class PaperOptionList {
     }
 
     /** @return array<int,PaperOption> */
-    function full_option_list() {
-        $list = [];
-        foreach ($this->option_json_list() as $id => $oj) {
-            if (($o = $this->option_by_id($id)))
-                $list[$id] = $o;
-        }
-        uasort($list, "PaperOption::compare");
-        return $list;
-    }
-
-    /** @return array<int,PaperOption> */
-    function include_empty_option_list() {
+    function absent() {
         if ($this->_olist_include_empty === null) {
             $this->option_json_list();
         }
@@ -460,6 +440,47 @@ class PaperOptionList {
             uasort($this->_olist_include_empty, "PaperOption::compare");
         }
         return $this->_olist_include_empty;
+    }
+
+    /** @return array<int,PaperOption> */
+    function universal() {
+        $list = [];
+        foreach ($this->option_json_list() as $id => $oj) {
+            if (($o = $this->option_by_id($id)))
+                $list[$id] = $o;
+        }
+        uasort($list, "PaperOption::compare");
+        return $list;
+    }
+
+    /** @return array<int,PaperOption>
+     * @deprecated */
+    function option_list() {
+        return $this->normal();
+    }
+
+    /** @return array<int,PaperOption>
+     * @deprecated */
+    function nonfixed_option_list() {
+        return $this->nonfixed();
+    }
+
+    /** @return array<int,PaperOption>
+     * @deprecated */
+    function nonfinal_option_list() {
+        return $this->nonfinal();
+    }
+
+    /** @return array<int,PaperOption>
+     * @deprecated */
+    function full_option_list() {
+        return $this->universal();
+    }
+
+    /** @return array<int,PaperOption>
+     * @deprecated */
+    function include_empty_option_list() {
+        return $this->absent();
     }
 
     private function _get_field($id, $oj, $nonfinal) {
@@ -486,20 +507,32 @@ class PaperOptionList {
     }
 
     /** @return array<int,PaperOption> */
-    function field_list(PaperInfo $prow = null) {
+    function fields(PaperInfo $prow = null) {
         $olist = $this->unsorted_field_list($prow);
         uasort($olist, "PaperOption::compare");
         return $olist;
     }
 
     /** @return array<int,PaperOption> */
-    function form_field_list(PaperInfo $prow = null) {
+    function form_fields(PaperInfo $prow = null) {
         $olist = $this->unsorted_field_list($prow);
         uasort($olist, "PaperOption::form_compare");
         return $olist;
     }
 
-    function invalidate_option_list() {
+    /** @return array<int,PaperOption>
+     * @deprecated */
+    function field_list(PaperInfo $prow = null) {
+        return $this->fields($prow);
+    }
+
+    /** @return array<int,PaperOption>
+     * @deprecated */
+    function form_field_list(PaperInfo $prow = null) {
+        return $this->form_fields($prow);
+    }
+
+    function invalidate_options() {
         $this->_jlist = $this->_ijlist = $this->_olist = $this->_olist_nonfinal =
             $this->_nonpaper_am = $this->_olist_include_empty = null;
         $this->_omap = $this->_imap = [];
@@ -510,7 +543,13 @@ class PaperOptionList {
         unset($this->_imap[$id]);
     }
 
-    /** @return int */
+    /** @return bool */
+    function has_universal() {
+        return count($this->option_json_list()) !== 0;
+    }
+
+    /** @return int
+     * @deprecated */
     function count_option_list() {
         return count($this->option_json_list());
     }
@@ -528,7 +567,7 @@ class PaperOptionList {
         } else if ($iname === "" || $iname === "none") {
             return [];
         } else if ($iname === "any") {
-            return $this->option_list();
+            return $this->normal();
         } else if (substr($iname, 0, 3) === "opt"
                    && ctype_digit(substr($iname, 3))) {
             $o = $this->option_by_id((int) substr($iname, 3));
@@ -845,7 +884,7 @@ class PaperOption implements Abbreviator {
 
     private function abbrev_matcher() {
         if ($this->nonpaper) {
-            return $this->conf->paper_opts->nonpaper_abbrev_matcher();
+            return $this->conf->options()->nonpaper_abbrev_matcher();
         } else {
             return $this->conf->abbrev_matcher();
         }
@@ -879,12 +918,12 @@ class PaperOption implements Abbreviator {
     function readable_formid() {
         if ($this->_readable_formid === null) {
             $used = [];
-            foreach ($this->conf->paper_opts->option_list() as $o) {
+            foreach ($this->conf->options() as $o) {
                 if ($o->_readable_formid !== null) {
                     $used[$o->_readable_formid] = true;
                 }
             }
-            foreach ($this->conf->paper_opts->option_list() as $o) {
+            foreach ($this->conf->options() as $o) {
                 if ($o->_readable_formid === null && $o->id > 0) {
                     $s = self::make_readable_formid($o->title);
                     $o->_readable_formid = isset($used[$s]) ? $o->formid : $s;

@@ -361,7 +361,7 @@ function update_schema_missing_sha1($conf) {
 
 function update_schema_selector_options($conf) {
     $oids = [];
-    foreach ($conf->paper_opts->full_option_list() as $opt) {
+    foreach ($conf->options()->universal() as $opt) {
         if ($opt instanceof SelectorPaperOption) {
             $oids[] = $opt->id;
         }
@@ -1004,7 +1004,7 @@ function updateSchema($conf) {
         $conf->update_schema_version(94);
     if ($conf->sversion == 94
         && $conf->ql_ok("alter table PaperOption modify `data` varbinary(32768) DEFAULT NULL")) {
-        foreach ($conf->paper_opts->nonfixed_option_list() as $xopt)
+        foreach ($conf->options()->nonfixed() as $xopt)
             if ($xopt->type === "text")
                 $conf->ql_ok("delete from PaperOption where optionId={$xopt->id} and data=''");
         $conf->update_schema_version(95);
