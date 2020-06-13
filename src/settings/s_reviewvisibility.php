@@ -11,7 +11,10 @@ class ReviewVisibility_SettingParser extends SettingParser {
             $sv->conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
         if ($sv->conf->opt("allow_auseerev_unlessincomplete"))
             $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other submissions";
-        $opts[Conf::AUSEEREV_TAGS] = "<label for=\"au_seerev_" . Conf::AUSEEREV_TAGS . "\">Yes, for submissions with any of these tags:</label>&nbsp; " . $sv->render_entry("tag_au_seerev") . $sv->render_feedback_at("tag_au_seerev");
+        $opts[Conf::AUSEEREV_TAGS] = '<div class="inline-flex-wrap">'
+            . "<label for=\"au_seerev_" . Conf::AUSEEREV_TAGS . "\" class=\"mr-2\">Yes, for submissions with any of these tags:</label>"
+            . "<div>" . $sv->render_feedback_at("tag_au_seerev") . $sv->render_entry("tag_au_seerev")
+            . "</div></div>";
 
         $hint = '<div class="f-hx if-response-active';
         if (!$sv->conf->setting("resp_active"))

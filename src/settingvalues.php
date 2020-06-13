@@ -840,18 +840,21 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $field
+     * @param ?string $classes
      * @return string */
-    function render_feedback_at($field) {
+    function render_feedback_at($field, $classes = null) {
         $t = "";
         $fname = $field instanceof Si ? $field->name : $field;
         foreach ($this->message_list_at($fname) as $mx) {
-            $t .= '<div class="' . MessageSet::status_class($mx[2], "feedback", "is-") . '">' . $mx[1] . "</div>";
+            $class = $classes ? "feedback $classes" : "feedback";
+            $t .= '<div class="' . MessageSet::status_class($mx[2], $class, "is-") . '">' . $mx[1] . "</div>";
         }
         return $t;
     }
-    /** @param string $field */
-    function echo_feedback_at($field) {
-        echo $this->render_feedback_at($field);
+    /** @param string $field
+     * @param ?string $classes */
+    function echo_feedback_at($field, $classes = null) {
+        echo $this->render_feedback_at($field, $classes);
     }
     /** @deprecated */
     function render_messages_at($field) {

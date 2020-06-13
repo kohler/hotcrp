@@ -72,9 +72,11 @@ class Tags_SettingRenderer {
             preg_match_all("{(?:\\A|\\s)(\\S+)=$k(?=\\s|\\z)}", $tag_color_data, $m);
             $sv->set_oldv("tag_color_$k", join(" ", $m[1] ?? []));
             $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
-                . "<td class=\"pad taghl\">$k</td>"
-                . "<td class=\"lentry\" style=\"font-size:1rem\">" . $sv->render_entry("tag_color_$k", ["class" => "need-suggest tags"]) . "</td>"
-                . "<td class=\"remargin-left\"></td></tr>";
+                . "<td class=\"pad taghl align-middle\">$k</td>"
+                . "<td class=\"lentry\" style=\"font-size:1rem\">"
+                  . $sv->render_feedback_at("tag_color_$k", "mb-0")
+                  . $sv->render_entry("tag_color_$k", ["class" => "need-suggest tags"])
+                . "</td><td class=\"remargin-right\"></td></tr>";
         }
 
         echo Ht::hidden("has_tag_color", 1),
@@ -97,7 +99,7 @@ class Tags_SettingParser extends SettingParser {
                                $checkf, $min_idx) {
         $ts = array();
         foreach (preg_split('/\s+/', $sv->reqv($si->name)) as $t) {
-            if ($t !== "" && ($tx = $tagger->check($t, $checkf))) {
+            if ($t !== "" && ($tx = $tagger->check($t, $checkf | Tagger::CHECKVERBOSE))) {
                 list($tag, $idx) = Tagger::unpack($tx);
                 if ($min_idx) {
                     $tx = $tag . "#" . max($min_idx, (float) $idx);
