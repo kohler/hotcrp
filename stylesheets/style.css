@@ -438,15 +438,19 @@ label.checki {
 .d-inline-block {
 	display: inline-block !important;
 }
-.flex-wrap {
-	display: flex;
+.d-flex {
+	display: flex !important;
 	align-items: baseline;
+}
+.d-inline-flex {
+	display: inline-flex !important;
+	align-items: baseline;
+}
+.flex-wrap {
 	flex-wrap: wrap;
 }
-.inline-flex-wrap {
-	display: inline-flex;
-	align-items: baseline;
-	flex-wrap: wrap;
+.align-items-stretch {
+	align-items: stretch !important;
 }
 
 
