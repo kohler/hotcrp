@@ -727,6 +727,11 @@ class TagMap implements IteratorAggregate {
         }
     }
 
+    /** @param array<string,mixed> &$tagmap */
+    function ksort(&$tagmap) {
+        uksort($tagmap, [$this->conf->collator(), "compare"]);
+    }
+
     /** @param list<string> $tags
      * @return list<string> */
     function sort_array($tags) {
