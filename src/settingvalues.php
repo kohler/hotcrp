@@ -421,7 +421,8 @@ class SettingValues extends MessageSet {
     private $saved_si = [];
     private $cleanup_callbacks = [];
     public $need_lock = [];
-    public $changes = [];
+    /** @var associative-array<string,true> */
+    private $diffs = [];
 
     public $req = [];
     public $req_files = [];
@@ -1355,7 +1356,7 @@ class SettingValues extends MessageSet {
         }
 
         // make settings
-        $this->changes = [];
+        $this->diffs = [];
         if (!$this->has_error()
             && (!empty($this->savedv) || !empty($this->saved_si))) {
             $tables = "Settings write";
@@ -1382,24 +1383,26 @@ class SettingValues extends MessageSet {
             foreach ($this->savedv as $n => $v) {
                 if (substr($n, 0, 4) === "opt.") {
                     $okey = substr($n, 4);
-                    if (array_key_exists($okey, $this->conf->opt_override))
+                    if (array_key_exists($okey, $this->conf->opt_override)) {
                         $oldv = $this->conf->opt_override[$okey];
-                    else
+                    } else {
                         $oldv = $this->conf->opt($okey);
+                    }
                     $vi = Si::$option_is_value[$okey] ? 0 : 1;
                     $basev = $vi ? "" : 0;
                     $newv = $v === null ? $basev : $v[$vi];
-                    if ($oldv === $newv)
+                    if ($oldv === $newv) {
                         $v = null; // delete override value in database
-                    else if ($v === null && $oldv !== $basev && $oldv !== null)
+                    } else if ($v === null && $oldv !== $basev && $oldv !== null) {
                         $v = $vi ? [0, ""] : [0, null];
+                    }
                 }
                 if ($v === null
                     ? !isset($dbsettings[$n])
                     : isset($dbsettings[$n]) && (int) $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1]) {
                     continue;
                 }
-                $this->changes[] = $n;
+                $this->diffs[$n] = true;
                 if ($v !== null) {
                     $av[] = [$n, $v[0], $v[1]];
                 } else {
@@ -1416,8 +1419,8 @@ class SettingValues extends MessageSet {
             }
 
             $this->conf->qe_raw("unlock tables");
-            if (!empty($this->changes)) {
-                $this->user->log_activity("Settings edited: " . join(", ", $this->changes));
+            if (!empty($this->diffs)) {
+                $this->user->log_activity("Settings edited: " . join(", ", array_keys($this->diffs)));
             }
 
             // clean up
@@ -1546,7 +1549,13 @@ class SettingValues extends MessageSet {
         $this->error_at($si, "Invalid value.");
     }
 
-    function changes() {
-        return $this->changes;
+    /** @param string $si_name */
+    function mark_diff($siname)  {
+        $this->diffs[$siname] = true;
+    }
+
+    /** @return list<string> */
+    function updated_fields() {
+        return array_keys($this->diffs);
     }
 }

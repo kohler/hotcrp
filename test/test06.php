@@ -170,7 +170,7 @@ $sv = SettingValues::make_request($user_chair, [
     "options_s01" => "1. Reject\n2. Weak reject\n3. Weak accept\n4. Accept\n5. Strong accept\nNo entry\n"
 ]);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "review_form");
+xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 // Now it's OK to save “no entry”
 $tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/^4/m', 'No entry', $review1A), "review1A-6.txt");
@@ -199,7 +199,7 @@ $sv = SettingValues::make_request($user_chair, [
     "options_s01" => "1. Reject\n2. Weak reject\n3. Weak accept\nNo entry\n"
 ]);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "review_form");
+xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 // So the 4 score has been removed
 assert_search_papers($user_chair, "ovemer:4", "");
@@ -215,7 +215,7 @@ $sv = SettingValues::make_request($user_chair, [
     "order_s02" => 0
 ]);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "review_form");
+xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 // Add reviewer expertise back
 $sv = SettingValues::make_request($user_chair, [
@@ -225,7 +225,7 @@ $sv = SettingValues::make_request($user_chair, [
     "order_s02" => 1.5
 ]);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "review_form");
+xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 // It has been removed from the review
 assert_search_papers($user_chair, "has:revexp", "");
@@ -284,7 +284,7 @@ $sv = SettingValues::make_request($user_chair, [
     "shortName_t11" => "Text 11", "order_t11" => 5.11
 ]);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "review_form");
+xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 save_review(1, $user_mgbaker, [
     "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
@@ -333,7 +333,7 @@ $sv = SettingValues::make_request($user_chair, [
     "shortName_t10" => "Text 10", "order_t10" => 0
 ]);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "review_form");
+xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,
@@ -341,7 +341,7 @@ $sv = SettingValues::make_request($user_chair, [
     "shortName_t10" => "Text 10", "order_t10" => 101
 ]);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "review_form");
+xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 $rrow = fetch_review($paper1, $user_mgbaker);
 xassert(!isset($rrow->s16) || (string) $rrow->s16 === "0");
@@ -533,7 +533,7 @@ for ($i = 2; $i <= 16; ++$i)
     $sv[sprintf("order_s%02d", $i)] = $sv[sprintf("order_t%02d", $i)] = -1;
 $sv = SettingValues::make_request($user_chair, $sv);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "review_form");
+xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 // saving a JSON review defaults to ready
 xassert_assign($user_chair, "paper,lead\n17,pdruschel\n");
@@ -849,7 +849,7 @@ $sv = SettingValues::make_request($user_chair, [
     "optvt_1" => "numeric"
 ]);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "options");
+xassert_eqq(join(" ", $sv->updated_fields()), "options");
 assert_search_papers($user_mgbaker, "has:fudge", "1 2 3 4 5");
 
 $sv = SettingValues::make_request($user_chair, [
@@ -860,7 +860,7 @@ $sv = SettingValues::make_request($user_chair, [
     "optvt_1" => "checkbox"
 ]);
 xassert($sv->execute());
-xassert_eqq(join(" ", $sv->changes()), "options");
+xassert_eqq(join(" ", $sv->updated_fields()), "options");
 assert_search_papers($user_mgbaker, "has:fudge", "");
 
 xassert_exit();

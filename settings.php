@@ -45,10 +45,11 @@ $_SESSION["sg"] = $Group;
 if (isset($Qreq->update) && $Qreq->post_ok()) {
     if ($Sv->execute()) {
         $Me->save_session("settings_highlight", $Sv->message_field_map());
-        if (!empty($Sv->changes))
+        if (!empty($Sv->updated_fields())) {
             $Sv->conf->confirmMsg("Changes saved.");
-        else
+        } else {
             $Sv->conf->warnMsg("No changes.");
+        }
         $Sv->report();
         $Conf->self_redirect($Qreq);
     }

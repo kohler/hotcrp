@@ -122,7 +122,7 @@ class Topics_SettingParser extends SettingParser {
         $has_topics = $sv->conf->fetch_ivalue("select exists (select * from TopicArea)");
         $sv->save("has_topics", $has_topics ? 1 : null);
         if ($this->new_topics || $this->deleted_topics || $this->changed_topics) {
-            $sv->changes[] = "topics";
+            $sv->mark_diff("topics");
         }
     }
 }
