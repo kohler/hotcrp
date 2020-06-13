@@ -452,6 +452,9 @@ label.checki {
 .align-items-stretch {
 	align-items: stretch !important;
 }
+.align-items-center {
+	align-items: center !important;
+}
 
 
 /* generic vertical styles */
