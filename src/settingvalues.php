@@ -80,14 +80,15 @@ class Si {
     ];
 
     private function store($key, $j, $jkey, $typecheck) {
-        if (isset($j->$jkey) && call_user_func($typecheck, $j->$jkey))
+        if (isset($j->$jkey) && call_user_func($typecheck, $j->$jkey)) {
             $this->$key = $j->$jkey;
-        else if (isset($j->$jkey))
+        } else if (isset($j->$jkey)) {
             trigger_error("setting {$j->name}.$jkey format error");
+        }
     }
 
     function __construct($j) {
-        if (preg_match('{_(?:\$|n|m?\d+)\z}', $j->name)) {
+        if (preg_match('/_(?:\$|n\d*|m?\d+)\z/', $j->name)) {
             trigger_error("setting {$j->name} name format error");
         }
         $this->name = $this->base_name = $this->json_name = $this->title = $j->name;
@@ -195,10 +196,10 @@ class Si {
     }
 
     function prefix() {
-        return preg_replace('/_(?:\$|n|m?\d+)\z/', "", $this->name);
+        return preg_replace('/_(?:\$|n\d*|m?\d+)\z/', "", $this->name);
     }
     function suffix() {
-        if (preg_match('/_(\$|n|m?\d+)\z/', $this->name, $m)) {
+        if (preg_match('/_(\$|n\d*|m?\d+)\z/', $this->name, $m)) {
             return $m[1];
         } else {
             return "";
@@ -316,7 +317,7 @@ class Si {
             $base_si = $conf->_setting_info[$m[1]];
             if (!$base_si->extensible
                 || ($base_si->extensible === self::X_SIMPLE
-                    && !preg_match('{\A_(?:\$|n|m?\d+)\z}', $m[2]))) {
+                    && !preg_match('/\A_(?:\$|n\d*|m?\d+)\z/', $m[2]))) {
                 if ($base_si->extensible !== false) {
                     error_log("$name: cloning non-extensible setting $base_si->name, " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
                 }
@@ -450,7 +451,7 @@ class SettingValues extends MessageSet {
     }
     function set_req($k, $v) {
         $this->req[$k] = $v;
-        if (preg_match('/\A(?:has_)?(\S+?)(|_n|_m?\d+)\z/', $k, $m)) {
+        if (preg_match('/\A(?:has_)?(\S+?)(|_n\d*|_m?\d+)\z/', $k, $m)) {
             if (!isset($this->req_has_suffixes[$m[1]])) {
                 $this->req_has_suffixes[$m[1]] = [$m[2]];
             } else if (!in_array($m[2], $this->req_has_suffixes[$m[1]])) {
