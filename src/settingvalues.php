@@ -423,6 +423,8 @@ class SettingValues extends MessageSet {
     public $need_lock = [];
     /** @var associative-array<string,true> */
     private $diffs = [];
+    /** @var associative-array<string,true> */
+    private $invalidate_caches = [];
 
     public $req = [];
     public $req_files = [];
@@ -775,15 +777,19 @@ class SettingValues extends MessageSet {
         }
     }
 
+    /** @param string $name
+     * @return bool */
     function has_interest($name) {
         return $this->all_interesting || $this->si_has_interest($this->si($name));
     }
+    /** @return bool */
     function si_has_interest(Si $si) {
         return $this->all_interesting
             || array_key_exists($si->storage(), $this->savedv)
             || $si->is_interesting($this);
     }
 
+    /** @return void */
     function save($name, $value) {
         $si = $this->si($name);
         if (!$si || $si->storage_type === Si::SI_NONE) {
@@ -824,6 +830,7 @@ class SettingValues extends MessageSet {
             $this->savedv[$s] = [$value, null];
         }
     }
+    /** @return bool */
     function update($name, $value) {
         if ($value !== $this->oldv($name)) {
             $this->save($name, $value);
@@ -1425,6 +1432,9 @@ class SettingValues extends MessageSet {
 
             // clean up
             $this->conf->load_settings();
+            if (!empty($this->invalidate_caches)) {
+                $this->conf->invalidate_caches($this->invalidate_caches);
+            }
             foreach ($this->cleanup_callbacks as $cb) {
                 call_user_func($cb[0], $this, $cb[1]);
             }
@@ -1549,9 +1559,22 @@ class SettingValues extends MessageSet {
         $this->error_at($si, "Invalid value.");
     }
 
-    /** @param string $si_name */
+    /** @param string $siname */
     function mark_diff($siname)  {
         $this->diffs[$siname] = true;
+    }
+
+    /** @param string $siname
+     * @return bool */
+    function has_diff($siname) {
+        return $this->diffs[$siname] ?? false;
+    }
+
+    /** @param associative-array<string,true> $caches */
+    function mark_invalidate_caches($caches) {
+        foreach ($caches as $c => $t) {
+            $this->invalidate_caches[$c] = true;
+        }
     }
 
     /** @return list<string> */

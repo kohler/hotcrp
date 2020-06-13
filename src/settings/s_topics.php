@@ -106,8 +106,9 @@ class Topics_SettingParser extends SettingParser {
     }
 
     function save(SettingValues $sv, Si $si) {
-        if ($this->new_topics)
+        if ($this->new_topics) {
             $sv->conf->qe("insert into TopicArea (topicName) values ?v", $this->new_topics);
+        }
         if ($this->deleted_topics) {
             $sv->conf->qe("delete from TopicArea where topicId?a", $this->deleted_topics);
             $sv->conf->qe("delete from PaperTopic where topicId?a", $this->deleted_topics);
@@ -118,11 +119,11 @@ class Topics_SettingParser extends SettingParser {
                 $sv->conf->qe("update TopicArea set topicName=? where topicId=?", $t, $tid);
             }
         }
-        $sv->conf->invalidate_topics();
-        $has_topics = $sv->conf->fetch_ivalue("select exists (select * from TopicArea)");
-        $sv->save("has_topics", $has_topics ? 1 : null);
         if ($this->new_topics || $this->deleted_topics || $this->changed_topics) {
+            $has_topics = $sv->conf->fetch_ivalue("select exists (select * from TopicArea)");
+            $sv->save("has_topics", $has_topics ? 1 : null);
             $sv->mark_diff("topics");
+            $sv->mark_invalidate_caches(["topics" => true, "autosearch" => true]);
         }
     }
 }

@@ -91,6 +91,8 @@ class Tags_SettingRenderer {
 class Tags_SettingParser extends SettingParser {
     private $sv;
     private $tagger;
+    private $diffs = [];
+
     function __construct(SettingValues $sv) {
         $this->sv = $sv;
         $this->tagger = new Tagger($sv->user);
@@ -116,27 +118,28 @@ class Tags_SettingParser extends SettingParser {
     }
     function parse(SettingValues $sv, Si $si) {
         assert($this->sv === $sv);
+        $change = false;
 
         if ($si->name == "tag_chair" && $sv->has_reqv("tag_chair")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
-            $sv->update($si->name, join(" ", $ts));
+            $change = $sv->update($si->name, join(" ", $ts));
         }
 
         if ($si->name == "tag_sitewide" && $sv->has_reqv("tag_sitewide")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
-            $sv->update($si->name, join(" ", $ts));
+            $change = $sv->update($si->name, join(" ", $ts));
         }
 
         if ($si->name == "tag_vote" && $sv->has_reqv("tag_vote")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
-            if ($sv->update("tag_vote", join(" ", $ts))) {
+            if (($change = $sv->update("tag_vote", join(" ", $ts)))) {
                 $sv->need_lock["PaperTag"] = true;
             }
         }
 
         if ($si->name == "tag_approval" && $sv->has_reqv("tag_approval")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            if ($sv->update("tag_approval", join(" ", $ts))) {
+            if (($change = $sv->update("tag_approval", join(" ", $ts)))) {
                 $sv->need_lock["PaperTag"] = true;
             }
         }
@@ -146,7 +149,7 @@ class Tags_SettingParser extends SettingParser {
             if (count($ts) > 1) {
                 $sv->error_at("tag_rank", "Multiple ranking tags are not supported yet.");
             } else {
-                $sv->update("tag_rank", join(" ", $ts));
+                $change = $sv->update("tag_rank", join(" ", $ts));
             }
         }
 
@@ -158,19 +161,26 @@ class Tags_SettingParser extends SettingParser {
                         $ts[] = $t . "=" . $k;
                 }
             }
-            $sv->update("tag_color", join(" ", $ts));
+            $change = $sv->update("tag_color", join(" ", $ts));
         }
 
         if ($si->name == "tag_au_seerev" && $sv->has_reqv("tag_au_seerev")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            $sv->update("tag_au_seerev", join(" ", $ts));
+            $change = $sv->update("tag_au_seerev", join(" ", $ts));
         }
 
+        if ($change) {
+            $this->diffs[$si->name] = true;
+        }
         return true;
     }
 
     function save(SettingValues $sv, Si $si) {
-        if ($si->name == "tag_vote" && $sv->has_savedv("tag_vote")) {
+        if (!isset($this->diffs[$si->name])) {
+            return;
+        }
+
+        if ($si->name == "tag_vote") {
             // check allotments
             $pcm = $sv->conf->pc_members();
             foreach (preg_split('/\s+/', $sv->savedv("tag_vote")) as $t) {
@@ -210,13 +220,14 @@ class Tags_SettingParser extends SettingParser {
                 foreach ($pvals as $pid => $what) {
                     $qv[] = [$pid, $base, $what];
                 }
-                if (count($qv) > 0) {
+                if (!empty($qv)) {
                     $sv->conf->qe("insert into PaperTag values ?v", $qv);
                 }
             }
+            $sv->mark_invalidate_caches(["autosearch" => true]);
         }
 
-        if ($si->name == "tag_approval" && $sv->has_savedv("tag_approval")) {
+        if ($si->name == "tag_approval") {
             $pcm = $sv->conf->pc_members();
             foreach (preg_split('/\s+/', $sv->savedv("tag_approval")) as $t) {
                 if ($t === "") {
@@ -247,8 +258,9 @@ class Tags_SettingParser extends SettingParser {
                     $sv->conf->qe("insert into PaperTag values ?v", $qv);
                 }
             }
+            $sv->mark_invalidate_caches(["autosearch" => true]);
         }
 
-        $sv->conf->invalidate_caches(["tags" => true]);
+        $sv->mark_invalidate_caches(["tags" => true]);
     }
 }

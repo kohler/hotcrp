@@ -358,23 +358,21 @@ class Options_SettingParser extends SettingParser {
             $newj[] = $o->unparse();
         }
         $sv->save("next_optionid", null);
-        $sv->save("options", empty($newj) ? null : json_encode_db($newj));
-
-        $deleted_ids = array();
-        foreach ($sv->conf->options()->nonfixed() as $o) {
-            $newo = $this->stashed_options[$o->id] ?? null;
-            if (!$newo
-                || ($newo->type !== $o->type
-                    && !$newo->change_type($o, true, true)
-                    && !$o->change_type($newo, false, true))) {
-                $deleted_ids[] = $o->id;
+        if ($sv->update("options", empty($newj) ? null : json_encode_db($newj))) {
+            $deleted_ids = array();
+            foreach ($sv->conf->options()->nonfixed() as $o) {
+                $newo = $this->stashed_options[$o->id] ?? null;
+                if (!$newo
+                    || ($newo->type !== $o->type
+                        && !$newo->change_type($o, true, true)
+                        && !$o->change_type($newo, false, true))) {
+                    $deleted_ids[] = $o->id;
+                }
             }
+            if (!empty($deleted_ids)) {
+                $sv->conf->qe("delete from PaperOption where optionId?a", $deleted_ids);
+            }
+            $sv->mark_invalidate_caches(["options" => true, "autosearch" => true]);
         }
-        if (!empty($deleted_ids)) {
-            $sv->conf->qe("delete from PaperOption where optionId?a", $deleted_ids);
-        }
-
-        // invalidate cached option list
-        $sv->conf->invalidate_caches(["options" => true]);
     }
 }

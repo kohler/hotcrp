@@ -2765,8 +2765,14 @@ class Conf {
             if (!$caches || isset($caches["assigners"])) {
                 $this->_assignment_parsers = null;
             }
+            if (!$caches || isset($caches["topics"])) {
+                $this->invalidate_topics();
+            }
             if (!$caches || isset($caches["tracks"])) {
                 Contact::update_rights();
+            }
+            if (isset($caches["autosearch"])) {
+                $this->update_autosearch_tags();
             }
         }
     }
