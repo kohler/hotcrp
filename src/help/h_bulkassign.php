@@ -139,7 +139,9 @@ a conflict type, such as “advisor” or “institutional”.</p>";
     }
 
     static function add_bulk_assignment_action(&$apx, $uf, $hth) {
-        if (!isset($uf->alias)) {
+        if (!isset($uf->alias)
+            && ((bool) ($uf->description ?? false)
+                || (bool) ($uf->description_html ?? false))) {
             $t = '<tr><td class="pad';
             if ($uf->group !== $uf->name) {
                 $t .= ' padl';
