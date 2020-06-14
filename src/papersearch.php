@@ -104,6 +104,8 @@ class SearchSplitter {
         $this->str = $next;
     }
     /** @param string $str
+     * @param int $pos
+     * @param ?callable(string):bool $endf
      * @return int */
     static function span_balanced_parens($str, $pos = 0, $endf = null) {
         $pstack = "";

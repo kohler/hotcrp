@@ -2479,6 +2479,11 @@ class Conf {
         }
     }
 
+    /** @return bool */
+    function is_updating_autosearch_tags() {
+        return $this->_updating_autosearch_tags;
+    }
+
 
     /** @var ?list<string> */
     static private $invariant_row = null;

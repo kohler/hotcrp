@@ -414,24 +414,24 @@ assert_search_papers($user_estrin, "#fart", "2");
 // check twiddle tags
 xassert_assign($Admin, "paper,tag\n1,~fart\n1,~~fart\n1,varghese~fart\n1,mjh~fart\n");
 $paper1->load_tags();
-xassert_eqq(join(" ", paper_tag_normalize($paper1)),
-           "fart chair~fart mjh~fart varghese~fart jon~vote#10 marina~vote#5 ~~fart");
+xassert_eqq(paper_tag_normalize($paper1),
+            "fart chair~fart mjh~fart varghese~fart jon~vote#10 marina~vote#5 ~~fart");
 assert_search_papers($user_chair, "#~~*art", "1");
 
 xassert_assign($Admin, "paper,tag\n1,all#none\n");
 $paper1->load_tags();
-xassert_eqq(join(" ", paper_tag_normalize($paper1)),
-           "mjh~fart varghese~fart jon~vote#10 marina~vote#5");
+xassert_eqq(paper_tag_normalize($paper1),
+            "mjh~fart varghese~fart jon~vote#10 marina~vote#5");
 
 xassert_assign($Admin, "paper,tag\n1,fart\n");
 $paper1->load_tags();
-xassert_eqq(join(" ", paper_tag_normalize($paper1)),
-           "fart mjh~fart varghese~fart jon~vote#10 marina~vote#5");
+xassert_eqq(paper_tag_normalize($paper1),
+            "fart mjh~fart varghese~fart jon~vote#10 marina~vote#5");
 
 xassert_assign($user_varghese, "paper,tag\n1,all#clear\n1,~green\n");
 $paper1->load_tags();
-xassert_eqq(join(" ", paper_tag_normalize($paper1)),
-           "mjh~fart varghese~green jon~vote#10 marina~vote#5");
+xassert_eqq(paper_tag_normalize($paper1),
+            "mjh~fart varghese~green jon~vote#10 marina~vote#5");
 
 xassert_assign($Admin, "paper,tag\nall,fart#clear\n1,fart#4\n2,fart#5\n3,fart#6\n", true);
 assert_search_papers($user_chair, "order:fart", "1 2 3");
@@ -452,6 +452,20 @@ assert_search_papers($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
 $paper8 = $user_chair->checked_paper_by_id(8);
 xassert_eqq($paper8->tag_value("fart"), 4.0);
 xassert(strpos($paper8->all_tags_text(), " fArt#") !== false);
+
+xassert_assign($Admin, "action,paper,tag\ntag,8,fArt#(pid+104)\n", true);
+$paper8 = $user_chair->checked_paper_by_id(8);
+xassert_eqq($paper8->tag_value("fart"), 112.0);
+
+xassert_assign($Admin, "action,paper,tag\ntag,8 9 10,fArt#(pid + 105) fart2#(1==1)\n", true);
+xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(8)), "fArt#113 fart2");
+xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(9)), "fArt#114 fart2");
+xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(10)), "fArt#115 fart2");
+
+xassert_assign($Admin, "action,paper,tag\ntag,8 9 10,fArt#(pid<9 ? 4: false) fart2#clear\n", true);
+xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(8)), "fArt#4");
+xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(9)), "");
+xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(10)), "");
 
 // defined tags: chair
 xassert_assign($user_varghese, "paper,tag\n1,chairtest\n");

@@ -441,7 +441,7 @@ function tag_normalize_compare($a, $b) {
 }
 
 /** @param PaperInfo $prow
- * @return list<string> */
+ * @return string */
 function paper_tag_normalize($prow) {
     $t = array();
     $pcm = $prow->conf->pc_members();
@@ -459,7 +459,7 @@ function paper_tag_normalize($prow) {
         }
     }
     usort($t, "tag_normalize_compare");
-    return $t;
+    return join(" ", $t);
 }
 
 /** @param Contact $who */

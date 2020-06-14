@@ -151,8 +151,8 @@ a conflict type, such as “advisor” or “institutional”.</p>";
                 && $xt->anchorid) {
                 $n = '<a href="#' . $xt->anchorid . '">' . $n . '</a>';
             }
-            $t .= $n . '</td><td class="pad"><code>pid</code>';
-            foreach (get($uf, "parameters", []) as $param) {
+            $t .= $n . '</td><td class="pad"><code>paper</code>';
+            foreach ($uf->parameters ?? [] as $param) {
                 $t .= ', ';
                 if ($param[0] === "[") {
                     $t .= '[<code>' . substr($param, 1, -1) . '</code>]';

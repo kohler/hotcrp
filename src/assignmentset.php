@@ -1261,7 +1261,7 @@ class AssignmentSet {
         }
 
         foreach ([["action", "assignment", "type"],
-                  ["paper", "pid", "paperid", "id"],
+                  ["paper", "pid", "paperid", "id", "search"],
                   ["firstName", "firstname", "first_name", "first", "givenname", "given_name"],
                   ["lastName", "lastname", "last_name", "last", "surname", "familyname", "family_name"],
                   ["reviewtype", "review_type"],

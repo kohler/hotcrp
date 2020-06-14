@@ -139,15 +139,16 @@
     {   "name": "nocontact", "alias": "clearcontact"   },
     {
         "name": "tag", "parser_class": "Tag_AssignmentParser",
-        "remove": false, "next": false,
+        "remove": null, "next": false,
         "parameters": ["tag", "[tag value]"],
-        "description": "Set tag"
+        "description": "Modify tag"
     },
     {   "name": "settag", "alias": "tag"   },
+    {   "name": "addtag", "alias": "tag"   },
     {
         "name": "cleartag", "parser_class": "Tag_AssignmentParser",
         "remove": true,
-        "parameters": ["tag", "[tag value]"], "group": "tag",
+        "parameters": ["tag"], "group": "tag",
         "description": "Remove tag"
     },
     {   "name": "notag", "alias": "cleartag"   },

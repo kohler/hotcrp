@@ -1311,6 +1311,8 @@ class Formula implements Abbreviator, JsonSerializable {
     );
 
     const ALLOW_INDEXED = 1;
+    /** @param ?string $expr
+     * @param int $flags */
     function __construct($expr = null, $flags = 0) {
         if ($flags === true) {
             $flags = self::ALLOW_INDEXED; // XXX backward compat
