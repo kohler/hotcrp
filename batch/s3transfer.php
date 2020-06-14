@@ -6,8 +6,7 @@ if (isset($arg["h"]) || isset($arg["help"])) {
     exit(0);
 }
 
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
 
 $active = false;
 if (isset($arg["a"]) || isset($arg["active"])) {

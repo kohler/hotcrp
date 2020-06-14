@@ -1,9 +1,7 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
-require_once("$ConfSitePATH/lib/getopt.php");
-$arg = getopt_rest($argv, "hn:yq",
-    ["help", "name:", "yes", "quiet"]);
+$arg = Getopt::rest($argv, "hn:yq", ["help", "name:", "yes", "quiet"]);
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) == 0) {
     fwrite(STDOUT, "Usage: php batch/deletepapers.php [-n CONFID] [OPTIONS] PAPER...
@@ -14,7 +12,7 @@ Options include:
     exit(0);
 }
 
-require_once("$ConfSitePATH/src/init.php");
+require_once(SiteLoader::find("src/init.php"));
 
 $yes = isset($arg["y"]) || isset($arg["yes"]);
 $quiet = isset($arg["q"]) || isset($arg["quiet"]);

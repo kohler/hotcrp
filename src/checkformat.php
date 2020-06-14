@@ -338,12 +338,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
-        global $Now, $ConfSitePATH;
+        global $Now;
         $bj = null;
         if (($m = $doc->metadata()) && isset($m->banal)) {
             $bj = $m->banal;
         }
-        $bj_ok = $bj && $bj->at >= @filemtime("$ConfSitePATH/src/banal")
+        $bj_ok = $bj && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
             && get($bj, "args") == self::$banal_args;
         if (!$bj_ok)
             ++$cf->need_run;

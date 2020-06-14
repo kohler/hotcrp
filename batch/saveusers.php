@@ -1,8 +1,7 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/lib/getopt.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
-$arg = getopt_rest($argv, "hn:e:u:r:", ["help", "name:", "no-email", "no-notify", "modify-only", "create-only", "no-modify", "no-create", "expression:", "expr:", "user:", "roles:", "uname:"]);
+$arg = Getopt::rest($argv, "hn:e:u:r:", ["help", "name:", "no-email", "no-notify", "modify-only", "create-only", "no-modify", "no-create", "expression:", "expr:", "user:", "roles:", "uname:"]);
 foreach (["expr" => "e", "expression" => "e", "no-email" => "no-notify",
           "no-create" => "modify-only", "no-modify" => "create-only",
           "user" => "u", "roles" => "r", "help" => "h"] as $long => $short) {
@@ -25,7 +24,7 @@ Options: -n CONFID, --no-modify, --no-create, --no-notify\n");
     exit($status);
 }
 
-require_once("$ConfSitePATH/src/init.php");
+require_once(SiteLoader::find("src/init.php"));
 
 function save_contact(UserStatus $ustatus, $key, $cj, $arg) {
     global $status;

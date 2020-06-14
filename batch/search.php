@@ -1,8 +1,7 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/lib/getopt.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
-$arg = getopt_rest($argv, "hn:t:f:N", ["help", "name:", "type:", "field:", "show:", "header", "no-header", "sitename"]);
+$arg = Getopt::rest($argv, "hn:t:f:N", ["help", "name:", "type:", "field:", "show:", "header", "no-header", "sitename"]);
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/search.php [-n CONFID] [-t COLLECTION] [-f FIELD]+ [QUERY...]
 Output a CSV file containing the FIELDs for the papers matching QUERY.
@@ -20,7 +19,7 @@ if (isset($arg["type"]) && !isset($arg["t"])) {
     $arg["t"] = $arg["type"];
 }
 
-require_once("$ConfSitePATH/src/init.php");
+require_once(SiteLoader::find("src/init.php"));
 
 $user = $Conf->root_user();
 $t = get($arg, "t", "s");

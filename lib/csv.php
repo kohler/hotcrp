@@ -3,8 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 if (!function_exists("gmp_init")) {
-    global $ConfSitePATH;
-    require_once("$ConfSitePATH/lib/polyfills.php");
+    require_once(SiteLoader::find("lib/polyfills.php"));
 }
 
 class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {

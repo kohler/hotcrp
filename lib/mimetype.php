@@ -63,7 +63,6 @@ class Mimetype {
     /** @param ?string|?Mimetype $type
      * @return ?Mimetype */
     static function lookup($type, $nocreate = false) {
-        global $ConfSitePATH;
         if (!$type) {
             return null;
         }
@@ -84,7 +83,7 @@ class Mimetype {
         }
         if (self::$mime_types === null) {
             self::$mime_types = true;
-            $t = (string) @file_get_contents("$ConfSitePATH/lib/mime.types");
+            $t = (string) @file_get_contents(SiteLoader::find("lib/mime.types"));
             preg_match_all('/^(|#!!\s+)([-a-z0-9]+\/\S+)[ \t]*(.*)/m', $t, $ms, PREG_SET_ORDER);
             foreach ($ms as $mm) {
                 if (isset(self::$tmap[$mm[2]])) {

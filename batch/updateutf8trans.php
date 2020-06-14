@@ -1,10 +1,7 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
-require_once("$ConfSitePATH/lib/getopt.php");
-require_once("$ConfSitePATH/lib/unicodehelper.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
 
-$arg = getopt_rest($argv, "hn:f:Vuto:",
+$arg = Getopt::rest($argv, "hn:f:Vuto:",
     ["help", "name:", "file:", "verbose", "unparse", "time", "output:"]);
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/updateutf8trans.php CODEPOINT STRING...\n");
@@ -199,7 +196,6 @@ class Batch_UpdateUTF8Trans {
     }
 
     function run($arg) {
-        global $ConfSitePATH;
         $verbose = isset($arg["V"]) || isset($arg["verbose"]);
         $unparse = isset($arg["u"]) || isset($arg["unparse"]);
         if (isset($arg["t"]) || isset($arg["time"])) {
@@ -228,7 +224,7 @@ class Batch_UpdateUTF8Trans {
         ksort($this->trans[2], SORT_STRING);
         ksort($this->trans[3], SORT_STRING);
 
-        $unicode_helper = file_get_contents("$ConfSitePATH/lib/unicodehelper.php");
+        $unicode_helper = file_get_contents(SiteLoader::find("lib/unicodehelper.php"));
         fwrite(STDOUT, substr($unicode_helper, 0, strpos($unicode_helper, "define(")));
 
         $m = $n = "";

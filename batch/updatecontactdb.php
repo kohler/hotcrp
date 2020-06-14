@@ -1,8 +1,7 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/lib/getopt.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
-$arg = getopt_rest($argv, "hn:pu", ["help", "name:", "papers", "users", "collaborators"]);
+$arg = Getopt::rest($argv, "hn:pu", ["help", "name:", "papers", "users", "collaborators"]);
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
@@ -18,7 +17,7 @@ if (!$users && !$papers && !$collaborators) {
     $users = $papers = true;
 }
 
-require_once("$ConfSitePATH/src/init.php");
+require_once(SiteLoader::find("src/init.php"));
 if (!$Conf->opt("contactdb_dsn")) {
     fwrite(STDERR, "Conference has no contactdb_dsn\n");
     exit(1);

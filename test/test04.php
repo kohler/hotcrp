@@ -2,16 +2,13 @@
 // test04.php -- HotCRP user database tests
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-global $ConfSitePATH;
-$ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
-
 global $Opt;
 $Opt = [
     "contactdb_dsn" => "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/hotcrp_testdb_cdb",
     "contactdb_passwordHmacKeyid" => "c1",
     "obsoletePasswordInterval" => 1
 ];
-require_once("$ConfSitePATH/test/setup.php");
+require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 
 function password($email, $iscdb = false) {
     global $Conf;

@@ -8,8 +8,9 @@ foreach (["c" => "count", "V" => "verbose", "m" => "match",
     if (isset($arg[$s]) && !isset($arg[$l]))
         $arg[$l] = $arg[$s];
 }
-if (isset($arg["silent"]))
+if (isset($arg["silent"])) {
     $arg["quiet"] = false;
+}
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/cleandocstore.php [-c COUNT] [-V] [-m MATCH]\n"
                  . "           [-d|--dry-run] [-o OUTPUTDIR]\n");
@@ -20,8 +21,7 @@ if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
     exit(1);
 }
 
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
 
 $dp = $Conf->docstore();
 if (!$dp) {

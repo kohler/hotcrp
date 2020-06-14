@@ -63,121 +63,15 @@ define("TAG_INDEXBOUND", 2147483646);
 
 global $Now, $ConfSitePATH;
 $Now = time();
-$ConfSitePATH = null;
 
-
-// set $ConfSitePATH (path to conference site)
-function set_path_variables() {
-    global $ConfSitePATH;
-    if (!isset($ConfSitePATH)) {
-        $ConfSitePATH = substr(__FILE__, 0, strrpos(__FILE__, "/"));
-        while ($ConfSitePATH !== "" && !file_exists("$ConfSitePATH/src/init.php")) {
-            $ConfSitePATH = substr($ConfSitePATH, 0, strrpos($ConfSitePATH, "/"));
-        }
-        if ($ConfSitePATH === "") {
-            $ConfSitePATH = "/var/www/html";
-        }
-    }
-    require_once("$ConfSitePATH/lib/navigation.php");
-}
-set_path_variables();
-
-
-// Load code
-class SiteLoader {
-    static $map = [
-        "AbbreviationClass" => "lib/abbreviationmatcher.php",
-        "AssignmentCountSet" => "src/assignmentset.php",
-        "AssignmentParser" => "src/assignmentset.php",
-        "AutoassignerCosts" => "src/autoassigner.php",
-        "BanalSettings" => "src/settings/s_subform.php",
-        "Collator" => "lib/collatorshim.php",
-        "ContactCountMatcher" => "src/papersearch.php",
-        "CsvGenerator" => "lib/csv.php",
-        "CsvParser" => "lib/csv.php",
-        "Fexpr" => "src/formula.php",
-        "FormatChecker" => "src/formatspec.php",
-        "HashAnalysis" => "lib/filer.php",
-        "JsonSerializable" => "lib/json.php",
-        "LoginHelper" => "lib/login.php",
-        "MailPreparation" => "lib/mailer.php",
-        "MimeText" => "lib/mailer.php",
-        "NameInfo" => "lib/text.php",
-        "NumericOrderPaperColumn" => "src/papercolumn.php",
-        "PaperInfoSet" => "src/paperinfo.php",
-        "PaperOptionList" => "src/paperoption.php",
-        "PaperValue" => "src/paperoption.php",
-        "ReviewField" => "src/review.php",
-        "ReviewFieldInfo" => "src/review.php",
-        "ReviewForm" => "src/review.php",
-        "ReviewSearchMatcher" => "src/search/st_review.php",
-        "ReviewValues" => "src/review.php",
-        "SearchSplitter" => "src/papersearch.php",
-        "SearchTerm" => "src/papersearch.php",
-        "SearchWord" => "src/papersearch.php",
-        "SettingParser" => "src/settingvalues.php",
-        "StreamS3Result" => "lib/s3result.php",
-        "TagAnno" => "lib/tagger.php",
-        "TagInfo" => "lib/tagger.php",
-        "TagMap" => "lib/tagger.php",
-        "TextPaperOption" => "src/paperoption.php",
-        "XlsxGenerator" => "lib/xlsx.php"
-    ];
-
-    static $suffix_map = [
-        "_api.php" => ["api_", "api"],
-        "_assigner.php" => ["a_", "assigners"],
-        "_assignmentparser.php" => ["a_", "assigners"],
-        "_capability.php" => ["cap_", "capabilities"],
-        "_fexpr.php" =>  ["f_", "formulas"],
-        "_helptopic.php" => ["h_", "help"],
-        "_listaction.php" => ["la_", "listactions"],
-        "_papercolumn.php" => ["pc_", "papercolumns"],
-        "_papercolumnfactory.php" => ["pc_", "papercolumns"],
-        "_partial.php" => ["p_", "partials"],
-        "_searchterm.php" => ["st_", "search"],
-        "_settingrenderer.php" => ["s_", "settings"],
-        "_settingparser.php" => ["s_", "settings"],
-        "_userinfo.php" => ["u_", "userinfo"]
-    ];
-
-    static function read_main_options() {
-        global $ConfSitePATH, $Opt;
-        if (defined("HOTCRP_OPTIONS")) {
-            $files = [HOTCRP_OPTIONS];
-        } else  {
-            $files = ["$ConfSitePATH/conf/options.php", "$ConfSitePATH/conf/options.inc", "$ConfSitePATH/Code/options.inc"];
-        }
-        foreach ($files as $f) {
-            if ((@include $f) !== false) {
-                $Opt["loaded"][] = $f;
-                break;
-            }
-        }
-    }
-}
-
-spl_autoload_register(function ($class_name) {
-    global $ConfSitePATH;
-    $f = null;
-    if (isset(SiteLoader::$map[$class_name])) {
-        $f = SiteLoader::$map[$class_name];
-    }
-    if (!$f) {
-        $f = strtolower($class_name) . ".php";
-    }
-    foreach (expand_includes($f, ["autoload" => true]) as $fx) {
-        require_once($fx);
-    }
-});
-
-require_once("$ConfSitePATH/lib/polyfills.php");
-require_once("$ConfSitePATH/lib/base.php");
-require_once("$ConfSitePATH/lib/redirect.php");
-require_once("$ConfSitePATH/lib/dbl.php");
-require_once("$ConfSitePATH/src/helpers.php");
-require_once("$ConfSitePATH/src/conference.php");
-require_once("$ConfSitePATH/src/contact.php");
+require_once(SiteLoader::find("lib/navigation.php"));
+require_once(SiteLoader::find("lib/polyfills.php"));
+require_once(SiteLoader::find("lib/base.php"));
+require_once(SiteLoader::find("lib/redirect.php"));
+require_once(SiteLoader::find("lib/dbl.php"));
+require_once(SiteLoader::find("src/helpers.php"));
+require_once(SiteLoader::find("src/conference.php"));
+require_once(SiteLoader::find("src/contact.php"));
 
 
 // Set locale to C (so that, e.g., strtolower() on UTF-8 data doesn't explode)
@@ -190,88 +84,13 @@ if (function_exists("libxml_disable_entity_loader")) {
 }
 
 
-// Set up conference options
-function expand_includes_once($file, $includepath, $globby) {
-    foreach ($file[0] === "/" ? [""] : $includepath as $idir) {
-        $try = $idir . $file;
-        if (!$globby && is_readable($try)) {
-            return [$try];
-        } else if ($globby && ($m = glob($try, GLOB_BRACE))) {
-            return $m;
-        }
-    }
-    return [];
-}
-
-/** @param string|list<string> $files */
-function expand_includes($files, $expansions = array()) {
-    global $Opt, $ConfSitePATH;
-    if (!is_array($files)) {
-        $files = array($files);
-    }
-    $confname = $Opt["confid"] ?? $Opt["dbName"] ?? null;
-    $expansions["confid"] = $expansions["confname"] = $confname;
-    $expansions["siteclass"] = $Opt["siteclass"] ?? null;
-
-    if (isset($expansions["autoload"]) && strpos($files[0], "/") === false) {
-        $includepath = [$ConfSitePATH . "/src/", $ConfSitePATH . "/lib/"];
-    } else {
-        $includepath = [$ConfSitePATH . "/"];
-    }
-    if (isset($Opt["includepath"]) && is_array($Opt["includepath"])) {
-        foreach ($Opt["includepath"] as $i) {
-            if ($i)
-                $includepath[] = str_ends_with($i, "/") ? $i : $i . "/";
-        }
-    }
-
-    $results = array();
-    foreach ($files as $f) {
-        if (strpos((string) $f, '$') !== false) {
-            foreach ($expansions as $k => $v) {
-                if ($v !== false && $v !== null) {
-                    $f = preg_replace(',\$\{' . $k . '\}|\$' . $k . '\b,', $v, $f);
-                } else if (preg_match(',\$\{' . $k . '\}|\$' . $k . '\b,', $f)) {
-                    $f = "";
-                    break;
-                }
-            }
-        }
-        if ((string) $f === "") {
-            continue;
-        }
-        $matches = [];
-        $ignore_not_found = $globby = false;
-        if (str_starts_with($f, "?")) {
-            $ignore_not_found = true;
-            $f = substr($f, 1);
-        }
-        if (preg_match(',[\[\]\*\?\{\}],', $f)) {
-            $ignore_not_found = $globby = true;
-        }
-        $matches = expand_includes_once($f, $includepath, $globby);
-        if (empty($matches)
-            && isset($expansions["autoload"])
-            && ($underscore = strpos($f, "_"))
-            && ($f2 = SiteLoader::$suffix_map[substr($f, $underscore)] ?? null)) {
-            $xincludepath = array_merge($f2[1] ? ["{$ConfSitePATH}/src/{$f2[1]}/"] : [], $includepath);
-            $matches = expand_includes_once($f2[0] . substr($f, 0, $underscore) . ".php", $xincludepath, $globby);
-        }
-        $results = array_merge($results, $matches);
-        if (empty($matches) && !$ignore_not_found) {
-            $results[] = $f[0] === "/" ? $f : $includepath[0] . $f;
-        }
-    }
-    return $results;
-}
-
 function read_included_options(&$files) {
     global $Opt;
     if (is_string($files)) {
         $files = [$files];
     }
     for ($i = 0; $i !== count($files); ++$i) {
-        foreach (expand_includes($files[$i]) as $f) {
+        foreach (SiteLoader::expand_includes($files[$i]) as $f) {
             $key = "missing";
             if ((@include $f) !== false) {
                 $key = "loaded";
@@ -295,7 +114,7 @@ function expand_json_includes_callback($includelist, $callback) {
             }
         }
         if ($expandable) {
-            foreach (expand_includes($expandable) as $f) {
+            foreach (SiteLoader::expand_includes($expandable) as $f) {
                 if (($x = file_get_contents($f)))
                     $includes[] = [$x, $f];
             }

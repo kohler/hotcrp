@@ -1,5 +1,5 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
 $arg = getopt("hn:c:Vm:", ["help", "name:", "count:", "verbose", "match:"]);
 if (isset($arg["c"]) && !isset($arg["count"])) {
@@ -16,7 +16,7 @@ if (isset($arg["h"]) || isset($arg["help"])) {
     exit(0);
 }
 
-require_once("$ConfSitePATH/src/init.php");
+require_once(SiteLoader::find("src/init.php"));
 
 $count = isset($arg["count"]) ? intval($arg["count"]) : null;
 $verbose = isset($arg["verbose"]);

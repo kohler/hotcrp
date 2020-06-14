@@ -251,10 +251,9 @@ class AuthorMatcher extends Author {
     }
 
     static function wordinfo() {
-        global $ConfSitePATH;
         // XXX validate input JSON
         if (self::$wordinfo === null) {
-            self::$wordinfo = (array) json_decode(file_get_contents("$ConfSitePATH/etc/affiliationmatchers.json"));
+            self::$wordinfo = (array) json_decode(file_get_contents(SiteLoader::find("etc/affiliationmatchers.json")));
         }
         return self::$wordinfo;
     }

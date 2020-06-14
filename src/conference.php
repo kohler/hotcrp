@@ -540,8 +540,6 @@ class Conf {
     }
 
     function crosscheck_options() {
-        global $ConfSitePATH;
-
         // set longName, downloadPrefix, etc.
         $confid = $this->opt["confid"];
         if ((!isset($this->opt["longName"]) || $this->opt["longName"] == "")
@@ -641,7 +639,7 @@ class Conf {
         }
         if ($dpath !== "") {
             if ($dpath[0] !== "/") {
-                $dpath = $ConfSitePATH . "/" . $dpath;
+                $dpath = SiteLoader::$root . "/" . $dpath;
             }
             if (strpos($dpath, "%") === false) {
                 $dpath .= ($dpath[strlen($dpath) - 1] === "/" ? "" : "/");
@@ -1032,7 +1030,7 @@ class Conf {
         if ($xt
             && isset($xt->require)
             && !isset(self::$xt_require_resolved[$xt->require])) {
-            foreach (expand_includes($xt->require, ["autoload" => true]) as $f) {
+            foreach (SiteLoader::expand_includes($xt->require, ["autoload" => true]) as $f) {
                 require_once($f);
             }
             self::$xt_require_resolved[$xt->require] = true;
@@ -1229,9 +1227,8 @@ class Conf {
         }
     }
     function emoji_code_map() {
-        global $ConfSitePATH;
         if ($this->_emoji_codes === null) {
-            $this->_emoji_codes = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"));
+            $this->_emoji_codes = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
             $this->_emoji_codes->emoji = (array) $this->_emoji_codes->emoji;
             if (($olist = $this->opt("emojiCodes")))
                 expand_json_includes_callback($olist, [$this, "_add_emoji_code"]);
@@ -3915,7 +3912,6 @@ class Conf {
     /** @param non-empty-string $url
      * @return string */
     function make_css_link($url, $media = null) {
-        global $ConfSitePATH;
         if (str_starts_with($url, "<meta") || str_starts_with($url, "<link")) {
             return $url;
         }
@@ -3925,7 +3921,7 @@ class Conf {
             $t .= $this->opt["assetsUrl"];
         }
         $t .= htmlspecialchars($url);
-        if (!$absolute && ($mtime = @filemtime("$ConfSitePATH/$url")) !== false) {
+        if (!$absolute && ($mtime = @filemtime(SiteLoader::find($url))) !== false) {
             $t .= "?mtime=$mtime";
         }
         if ($media) {
@@ -3937,10 +3933,9 @@ class Conf {
     /** @param non-empty-string $url
      * @return string */
     function make_script_file($url, $no_strict = false, $integrity = null) {
-        global $ConfSitePATH;
         if (str_starts_with($url, "scripts/")) {
             $post = "";
-            if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false) {
+            if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
                 $post = "mtime=$mtime";
             }
             if (($this->opt["strictJavascript"] ?? false) && !$no_strict) {
@@ -4182,7 +4177,7 @@ class Conf {
     }
 
     function header_body($title, $id, $extra = []) {
-        global $ConfSitePATH, $Me, $Now;
+        global $Me, $Now;
         echo "<body";
         if ($id) {
             echo ' id="body-', $id, '"';
@@ -4352,9 +4347,9 @@ class Conf {
                 . "&base=" . urlencode(Navigation::siteurl())
                 . "&version=" . HOTCRP_VERSION;
             $v = HOTCRP_VERSION;
-            if (is_dir("$ConfSitePATH/.git")) {
+            if (is_dir(SiteLoader::find(".git"))) {
                 $args = array();
-                exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git merge-base origin/master HEAD 2>/dev/null", $args);
+                exec("export GIT_DIR=" . escapeshellarg(SiteLoader::$root) . "/.git; git rev-parse HEAD 2>/dev/null; git merge-base origin/master HEAD 2>/dev/null", $args);
                 if (count($args) >= 1) {
                     $m .= "&git-head=" . urlencode($args[0]);
                     $v .= " " . $args[0];
@@ -4377,10 +4372,9 @@ class Conf {
     }
 
     static function git_status() {
-        global $ConfSitePATH;
         $args = array();
-        if (is_dir("$ConfSitePATH/.git")) {
-            exec("export GIT_DIR=" . escapeshellarg($ConfSitePATH) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
+        if (is_dir(SiteLoader::find(".git"))) {
+            exec("export GIT_DIR=" . escapeshellarg(SiteLoader::$root) . "/.git; git rev-parse HEAD 2>/dev/null; git rev-parse v" . HOTCRP_VERSION . " 2>/dev/null", $args);
         }
         return count($args) == 2 ? $args : null;
     }
@@ -5127,7 +5121,7 @@ class Conf {
         if ($this->_mail_template_map === null) {
             $this->_mail_template_map = [];
             if ($this->opt("mailtemplate_include")) { // XXX backwards compatibility
-                global $ConfSitePATH, $mailTemplates;
+                global $mailTemplates;
                 $mailTemplates = [];
                 read_included_options($this->opt["mailtemplate_include"]);
                 '@phan-var-force array<string,mixed> $mailTemplates';

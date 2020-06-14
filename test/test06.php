@@ -3,11 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 /** @phan-file-suppress PhanUndeclaredProperty */
 
-global $ConfSitePATH;
-$ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
-
-require_once("$ConfSitePATH/test/setup.php");
-require_once("$ConfSitePATH/src/settingvalues.php");
+require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 
 // load users
 $user_chair = $Conf->checked_user_by_email("chair@_.com");
@@ -111,7 +107,7 @@ assert_search_papers($user_chair, "ovemer:5", "1");
 // Change a score
 $paper1 = $Conf->checked_paper_by_id(1, $user_chair);
 $rrow = fetch_review($paper1, $user_mgbaker);
-$review1A = file_get_contents("$ConfSitePATH/test/review1A.txt");
+$review1A = file_get_contents(SiteLoader::find("test/review1A.txt"));
 $tf = ReviewValues::make_text($Conf->review_form(), $review1A, "review1A.txt");
 xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_mgbaker));

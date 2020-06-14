@@ -2,10 +2,7 @@
 // test01.php -- HotCRP tests: permissions, assignments, search
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-global $ConfSitePATH;
-$ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
-
-require_once("$ConfSitePATH/test/setup.php");
+require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 $Conf->check_invariants();
 
 $Conf->save_setting("sub_open", 1);

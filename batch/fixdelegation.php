@@ -1,9 +1,7 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
-require_once("$ConfSitePATH/lib/getopt.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
 
-$arg = getopt_rest($argv, "hn:q", array("help", "name:"));
+$arg = Getopt::rest($argv, "hn:q", array("help", "name:"));
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 0) {
     fwrite(STDOUT, "Usage: php batch/fixdelegation.php [-n CONFID]\n");

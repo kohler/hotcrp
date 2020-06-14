@@ -2,10 +2,7 @@
 // test05.php -- HotCRP paper submission tests
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-global $ConfSitePATH;
-$ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
-
-require_once("$ConfSitePATH/test/setup.php");
+require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 $Conf->save_setting("sub_open", 1);
 $Conf->save_setting("sub_update", $Now + 100);
 $Conf->save_setting("sub_sub", $Now + 100);
@@ -35,7 +32,7 @@ xassert_eqq(json_encode($paper1b), json_encode($paper1a));
 
 $doc = DocumentInfo::make_uploaded_file([
         "error" => UPLOAD_ERR_OK, "name" => "amazing-sample.pdf",
-        "tmp_name" => "$ConfSitePATH/src/sample.pdf",
+        "tmp_name" => SiteLoader::find("etc/sample.pdf"),
         "type" => "application/pdf"
     ], -1, DTYPE_SUBMISSION, $Conf);
 xassert_eqq($doc->content_text_signature(), "starts with “%PDF-1.2”");
@@ -213,7 +210,7 @@ xassert_eqq($newpaper->option(1)->value, 10);
 
 // save a new paper
 $qreq = new Qrequest("POST", ["ready" => 1, "has_opt2" => "1", "has_opt2_new_1" => "1", "title" => "Paper about mantis shrimp", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
-$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $qreq->set_file("opt2_new_1", ["name" => "attachment1.pdf", "type" => "application/pdf", "content" => "%PDF-whatever\n", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
@@ -245,7 +242,7 @@ xassert($newpaper->has_author($user_estrin));
 
 // some erroneous saves concerning required fields
 $qreq = new Qrequest("POST", ["ready" => 1, "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
-$qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
@@ -254,7 +251,7 @@ xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
 $qreq = new Qrequest("POST", ["ready" => 1, "title" => "", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC", "abstract" => "They see lots of colors."]);
-$qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
@@ -263,7 +260,7 @@ xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
 $qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC"]);
-$qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);
@@ -275,7 +272,7 @@ $Conf->set_opt("noAbstract", 1);
 $Conf->invalidate_caches();
 
 $qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "auname1" => "David Attenborough", "auemail1" => "atten@_.com", "auaff1" => "BBC"]);
-$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => "$ConfSitePATH/src/sample.pdf", "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
+$qreq->set_file("paperUpload", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_json($pj);

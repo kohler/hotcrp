@@ -2,6 +2,7 @@
 // initweb.php -- HotCRP initialization for web scripts
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+require_once("siteloader.php");
 require_once("init.php");
 global $Conf, $Me, $Qreq;
 

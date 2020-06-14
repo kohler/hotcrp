@@ -2,14 +2,13 @@
 // test/setup.php -- HotCRP helper file to initialize tests
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-global $ConfSitePATH;
-$ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
-define("HOTCRP_OPTIONS", "$ConfSitePATH/test/options.php");
+require_once(preg_replace('/\/test\/[^\/]+/', '/src/siteloader.php', __FILE__));
+define("HOTCRP_OPTIONS", SiteLoader::find("test/options.php"));
 define("HOTCRP_TESTHARNESS", true);
 ini_set("error_log", "");
 ini_set("log_errors", "0");
 ini_set("display_errors", "stderr");
-require_once("$ConfSitePATH/src/init.php");
+require_once(SiteLoader::find("src/init.php"));
 $Conf->set_opt("disablePrintEmail", true);
 $Conf->set_opt("postfixEOL", "\n");
 
@@ -24,12 +23,12 @@ class MailChecker {
     static public $preps = [];
     static public $messagedb = [];
     static function send_hook($fh, $prep) {
-        global $ConfSitePATH;
         $prep->landmark = "";
         foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace) {
             if (isset($trace["file"]) && preg_match(',/test\d,', $trace["file"])) {
-                if (str_starts_with($trace["file"], $ConfSitePATH))
-                    $trace["file"] = substr($trace["file"], strlen($ConfSitePATH) + 1);
+                if (str_starts_with($trace["file"], SiteLoader::$root)) {
+                    $trace["file"] = substr($trace["file"], strlen(SiteLoader::$root) + 1);
+                }
                 $prep->landmark = $trace["file"] . ":" . $trace["line"];
                 break;
             }
@@ -149,7 +148,7 @@ class MailChecker {
         }
     }
 }
-MailChecker::add_messagedb(file_get_contents("$ConfSitePATH/test/emails.txt"));
+MailChecker::add_messagedb(file_get_contents(SiteLoader::find("test/emails.txt")));
 $Conf->add_hook((object) ["event" => "send_mail", "callback" => "MailChecker::send_hook", "priority" => 1000]);
 
 function setup_assignments($assignments, Contact $user) {
@@ -164,9 +163,9 @@ function setup_assignments($assignments, Contact $user) {
 }
 
 function setup_initialize_database() {
-    global $Conf, $ConfSitePATH, $Admin;
+    global $Conf, $Admin;
     // Initialize from an empty database.
-    if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql"))) {
+    if (!$Conf->dblink->multi_query(file_get_contents(SiteLoader::find("src/schema.sql")))) {
         die_hard("* Can't reinitialize database.\n" . $Conf->dblink->error . "\n");
     }
     do {
@@ -187,7 +186,7 @@ function setup_initialize_database() {
 
     // Contactdb.
     if (($cdb = $Conf->contactdb())) {
-        if (!$cdb->multi_query(file_get_contents("$ConfSitePATH/test/cdb-schema.sql"))) {
+        if (!$cdb->multi_query(file_get_contents(SiteLoader::find("test/cdb-schema.sql")))) {
             die_hard("* Can't reinitialize contact database.\n" . $cdb->error);
         }
         while ($cdb->more_results()) {
@@ -201,7 +200,7 @@ function setup_initialize_database() {
     $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
 
     // Load data.
-    $json = json_decode(file_get_contents("$ConfSitePATH/test/db.json"));
+    $json = json_decode(file_get_contents(SiteLoader::find("test/db.json")));
     if (!$json) {
         die_hard("* test/testdb.json error: " . json_last_error_msg() . "\n");
     }

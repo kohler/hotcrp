@@ -1,6 +1,5 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
 
 $optind = null;
 $arg = getopt("acdmn:t", ["absent", "common", "dups", "modifier-bases", "name:", "terminators"], $optind);
@@ -44,8 +43,7 @@ function parse_emoji_data_stdin() {
 }
 
 function list_duplicate_codes() {
-    global $ConfSitePATH;
-    $emoji = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"));
+    $emoji = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
     $codes = $dups = [];
     foreach ((array) $emoji->emoji as $code => $text) {
         if (!isset($codes[$text]))
@@ -86,8 +84,7 @@ function emoji_to_code_set($emoji) {
 }
 
 function list_common_emoji() {
-    global $ConfSitePATH;
-    $emoji = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"));
+    $emoji = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
     $back = emoji_to_code_set($emoji);
 
     $rankings = json_decode(stream_get_contents(STDIN));
@@ -128,8 +125,7 @@ function list_common_emoji() {
 }
 
 function list_terminators() {
-    global $ConfSitePATH;
-    $emoji = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"));
+    $emoji = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
     $x = [];
     foreach ((array) $emoji->emoji as $text) {
         preg_match('/.\z/u', $text, $m);
@@ -189,8 +185,7 @@ function modifier_base_regex() {
 }
 
 function list_absent($args) {
-    global $ConfSitePATH;
-    $emoji = json_decode(file_get_contents("$ConfSitePATH/scripts/emojicodes.json"));
+    $emoji = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
     $codes = [];
     foreach ((array) $emoji->emoji as $text) {
         $codes[$text] = true;

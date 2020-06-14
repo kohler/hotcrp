@@ -1,7 +1,5 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/src/init.php");
-require_once("$ConfSitePATH/lib/getopt.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
 
 $arg = getopt("hn:", array("help", "name:"));
 if (isset($arg["h"]) || isset($arg["help"])) {
@@ -13,11 +11,12 @@ class Fakes {
     private $data = [];
 
     function load($file = null) {
-        global $ConfSitePATH;
-        if ($file === null)
-            $file = "$ConfSitePATH/extra/fakenames.csv";
-        if (($s = file_get_contents($file)) === false)
+        if ($file === null) {
+            $file = SiteLoader::find("extra/fakenames.csv");
+        }
+        if (($s = file_get_contents($file)) === false) {
             return false;
+        }
         $csv = new CsvParser($s);
         while (($x = $csv->next_array())) {
             list($name, $type, $count) = $x;

@@ -1,8 +1,7 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
-require_once("$ConfSitePATH/lib/getopt.php");
-$arg = getopt_rest($argv, "hn:qrf:",
+$arg = Getopt::rest($argv, "hn:qrf:",
     ["help", "name:", "filter=f:", "quiet", "disable", "disable-users",
      "reviews", "match-title", "ignore-pid", "ignore-errors", "add-topics"]);
 if (isset($arg["h"]) || isset($arg["help"])
@@ -22,7 +21,7 @@ Options include:
     exit(0);
 }
 
-require_once("$ConfSitePATH/src/init.php");
+require_once(SiteLoader::find("src/init.php"));
 
 $file = count($arg["_"]) ? $arg["_"][0] : "-";
 $quiet = isset($arg["q"]) || isset($arg["quiet"]);

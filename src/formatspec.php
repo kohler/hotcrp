@@ -90,8 +90,7 @@ class FormatSpec {
     }
 
     function merge_banal() {
-        global $ConfSitePATH;
-        if (($ts = @filemtime("$ConfSitePATH/src/banal")) !== false) {
+        if (($ts = @filemtime(SiteLoader::find("src/banal"))) !== false) {
             $this->timestamp = max($ts, $this->timestamp);
         }
     }

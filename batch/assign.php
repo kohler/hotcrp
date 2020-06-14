@@ -1,8 +1,7 @@
 <?php
-$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSitePATH/lib/getopt.php");
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
-$arg = getopt_rest($argv, "hn:d", ["help", "name:", "dry-run"]);
+$arg = Getopt::rest($argv, "hn:d", ["help", "name:", "dry-run"]);
 if (isset($arg["h"]) || isset($arg["help"]) || count($arg["_"]) > 1) {
     fwrite(STDOUT, "Usage: php batch/assign.php [-n CONFID] [-d|--dry-run] [FILE]
 Perform a CSV bulk assignment.
@@ -12,7 +11,7 @@ Options include:
     exit(0);
 }
 
-require_once("$ConfSitePATH/src/init.php");
+require_once(SiteLoader::find("src/init.php"));
 
 if (empty($arg["_"])) {
     $filename = "<stdin>";

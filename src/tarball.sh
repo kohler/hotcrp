@@ -111,6 +111,7 @@ etc/pagepartials.json
 etc/papercolumns.json
 etc/profilegroups.json
 etc/reviewformlibrary.json
+etc/sample.pdf
 etc/searchkeywords.json
 etc/settinginfo.json
 etc/settinggroups.json
@@ -312,7 +313,6 @@ src/reviewrefusalinfo.php
 src/reviewrequestinfo.php
 src/reviewtable.php
 src/reviewtimes.php
-src/sample.pdf
 src/schema.sql
 src/search/st_admin.php
 src/search/st_author.php
@@ -350,6 +350,7 @@ src/settings/s_topics.php
 src/settings/s_tracks.php
 src/settings/s_users.php
 src/settingvalues.php
+src/siteloader.php
 src/tagrankparser.php
 src/tagsearchmatcher.php
 src/textformat.php

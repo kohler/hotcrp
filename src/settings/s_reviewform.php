@@ -388,9 +388,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
 class ReviewForm_SettingRenderer {
 static function render(SettingValues $sv) {
-    global $ConfSitePATH;
-
-    $samples = json_decode(file_get_contents("$ConfSitePATH/etc/reviewformlibrary.json"));
+    $samples = json_decode(file_get_contents(SiteLoader::find("etc/reviewformlibrary.json")));
 
     $rf = $sv->conf->review_form();
     $req = [];

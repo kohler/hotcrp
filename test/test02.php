@@ -2,10 +2,7 @@
 // test02.php -- HotCRP S3 and database unit tests
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-global $ConfSitePATH;
-$ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
-
-require_once("$ConfSitePATH/test/setup.php");
+require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 
 // S3 unit tests
 $s3d = new S3Client([
