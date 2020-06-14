@@ -45,6 +45,7 @@ class Fexpr implements JsonSerializable {
     const IDX_PC = 1;
     const IDX_REVIEW = 2;
     const IDX_MY = 4;
+    const IDX_TAGPC = 8;
 
     const FNULL = -1;
     const FERROR = -2;
@@ -711,6 +712,13 @@ class Aggregate_Fexpr extends Fexpr {
                 $ok = false;
             }
         }
+        if ($ok
+            && $this->index_type === self::IDX_PC
+            && ($this->op === "sum" || $this->op === "count")
+            && $this->args[0] instanceof Tag_Fexpr
+            && $this->args[0]->inferred_index()) {
+            $this->index_type = self::IDX_TAGPC;
+        }
         return $ok;
     }
 
@@ -1049,6 +1057,21 @@ class FormulaCompiler {
         }
         return '$tags';
     }
+    function _add_tag_pc() {
+        if ($this->check_gvar('$tag_pc')) {
+            $tags = $this->_add_tags();
+            $pc = $this->_add_pc();
+            $this->gstmt[] = "\$tag_pc = [];";
+            $this->gstmt[] = "if ({$tags} !== \"\") {";
+            $this->gstmt[] = "  preg_match_all(\"/(?<= )\d+/\", {$tags}, \$m);";
+            $this->gstmt[] = "  foreach (\$m[0] as \$c) {";
+            $this->gstmt[] = "    if ((\$p = {$pc}[(int) \$c] ?? null))";
+            $this->gstmt[] = "      \$tag_pc[\$p->contactId] = \$p;";
+            $this->gstmt[] = "  }";
+            $this->gstmt[] = "}";
+        }
+        return '$tag_pc';
+    }
     function _add_now() {
         return 'Conf::$now';
     }
@@ -1144,7 +1167,10 @@ class FormulaCompiler {
 
     function loop_variable($index_types) {
         $g = array();
-        assert($index_types === ($index_types & (Fexpr::IDX_REVIEW | Fexpr::IDX_PC)));
+        if ($index_types === Fexpr::IDX_TAGPC) {
+            return $this->_add_tag_pc();
+        }
+        assert(($index_types & ~Fexpr::IDX_TAGPC) === ($index_types & (Fexpr::IDX_REVIEW | Fexpr::IDX_PC)));
         if ($index_types & Fexpr::IDX_PC) {
             $g[] = $this->_add_pc();
         }
@@ -2034,7 +2060,7 @@ class Formula implements Abbreviator, JsonSerializable {
                                          $sortable) {
         $t = "";
         if ($user) {
-            $t .= "assert(\$contact->contactId == $user->contactId);\n  ";
+            $t .= "assert(\$contact->contactXid === $user->contactXid);\n  ";
         }
         $t .= $state->statement_text();
         if ($expr !== null) {
@@ -2082,7 +2108,7 @@ class Formula implements Abbreviator, JsonSerializable {
     static function compile_indexes_function(Contact $user, $index_types) {
         $state = new FormulaCompiler($user);
         $g = $state->loop_variable($index_types);
-        $t = "assert(\$contact->contactId == $user->contactId);\n  "
+        $t = "assert(\$contact->contactXid === $user->contactXid);\n  "
             . join("\n  ", $state->gstmt)
             . "\n  return array_keys($g);\n";
         $args = '$prow, $contact';

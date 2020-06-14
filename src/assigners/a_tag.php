@@ -160,7 +160,9 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         } else if (preg_match('/\A[-+]?(?:\.\d+|\d+|\d+\.\d*)\z/', $xvalue)) {
             $nvalue = (float) $xvalue;
         } else {
-            if (!$this->formula || $this->formula->expression !== $xvalue) {
+            if (!$this->formula
+                || $this->formula->expression !== $xvalue
+                || ($this->formula->user && $this->formula->user !== $state->user)) {
                 $this->formula = new Formula($xvalue);
                 if (!$this->formula->check($state->user)) {
                     return $state->error("“" . htmlspecialchars($xvalue) . "”: Bad tag value.");
