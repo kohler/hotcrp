@@ -132,9 +132,9 @@ class Status_Assigner extends Assigner {
         if (($this->item->pre("_submitted") === 0) !== ($this->item["_submitted"] === 0)) {
             $acsv->add(["pid" => $this->pid, "action" => $this->item["_submitted"] === 0 ? "unsubmit" : "submit"]);
         }
-        if ($this->item->pre("_withdrawn") === 0 && $this->item["_withdrawn"] !== 0) {
+        if ($this->item->pre("_withdrawn") !== 0 && $this->item["_withdrawn"] === 0) {
             $acsv->add(["pid" => $this->pid, "action" => "revive"]);
-        } else if ($this->item->pre("_withdrawn") !== 0 && $this->item["_withdrawn"] === 0) {
+        } else if ($this->item->pre("_withdrawn") === 0 && $this->item["_withdrawn"] !== 0) {
             $x = ["pid" => $this->pid, "action" => "withdraw"];
             if ((string) $this->item["_withdraw_reason"] !== "") {
                 $x["withdraw_reason"] = $this->item["_withdraw_reason"];
