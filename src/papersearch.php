@@ -106,13 +106,14 @@ class SearchSplitter {
     /** @param string $str
      * @return int */
     static function span_balanced_parens($str, $pos = 0, $endf = null) {
-        $pcount = "";
+        $pstack = "";
+        $plast = "";
         $quote = 0;
         $len = strlen($str);
         while ($pos < $len) {
             $ch = $str[$pos];
             // stop when done
-            if ($pcount === ""
+            if ($plast === ""
                 && !$quote
                 && ($endf === null ? ctype_space($ch) : call_user_func($endf, $ch))) {
                 break;
@@ -131,16 +132,26 @@ class SearchSplitter {
                 } else if ($ch === "\"") {
                     $quote = 0;
                 }
+            } else if ($ch === "(") {
+                $pstack .= $plast;
+                $plast = ")";
+            } else if ($ch === "[") {
+                $pstack .= $plast;
+                $plast = "]";
+            } else if ($ch === "{") {
+                $pstack .= $plast;
+                $plast = "}";
+            } else if ($ch === ")" || $ch === "]" || $ch === "}") {
+                do {
+                    $pcleared = $plast;
+                    $plast = (string) substr($pstack, -1);
+                    $pstack = (string) substr($pstack, 0, -1);
+                } while ($ch !== $pcleared && $pcleared !== "");
+                if ($pcleared === "") {
+                    break;
+                }
             } else if ($ch === "\"") {
                 $quote = 1;
-            } else if ($ch === "(") {
-                $pcount .= ")";
-            } else if ($ch === "[") {
-                $pcount .= "]";
-            } else if ($ch === "]") {
-                $pcount .= "}";
-            } else if ($pcount !== "" && $pcount[strlen($pcount) - 1] === $ch) {
-                $pcount = substr($pcount, 0, -1);
             }
             ++$pos;
         }

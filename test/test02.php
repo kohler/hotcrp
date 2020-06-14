@@ -280,6 +280,16 @@ xassert_eqq(Preference_AssignmentParser::parse("xsaonaif"), null);
 xassert_eqq(Preference_AssignmentParser::parse("NONE"), [0, null]);
 xassert_eqq(Preference_AssignmentParser::parse("CONFLICT"), [-100, null]);
 
+// balanced parenthesis tests
+xassert_eqq(SearchSplitter::span_balanced_parens("abc def"), 3);
+xassert_eqq(SearchSplitter::span_balanced_parens("abc() def"), 5);
+xassert_eqq(SearchSplitter::span_balanced_parens("abc()def ghi"), 8);
+xassert_eqq(SearchSplitter::span_balanced_parens("abc(def g)hi"), 12);
+xassert_eqq(SearchSplitter::span_balanced_parens("abc(def g)hi jk"), 12);
+xassert_eqq(SearchSplitter::span_balanced_parens("abc(def g)h)i jk"), 11);
+xassert_eqq(SearchSplitter::span_balanced_parens("abc(def [g)h)i jk"), 12);
+xassert_eqq(SearchSplitter::span_balanced_parens("abc(def sajf"), 12);
+
 // AbbreviationMatcher::make_abbreviation tests
 xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty", new AbbreviationClass), "Nov");
 xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an amazing", new AbbreviationClass), "NovIsAma");
