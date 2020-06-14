@@ -19,12 +19,16 @@ class Track {
     const BITS_ADMIN = 0x80;  // 1 << ADMIN
     const BITS_VIEWADMIN = 0x81;  // (1 << VIEW) | (1 << ADMIN)
 
+    /** @phan-read-only */
     static public $map = [
         "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
         "assrev" => 4, "unassrev" => 5, "viewtracker" => 6, "admin" => 7,
         "hiddentag" => 8, "viewallrev" => 9
     ];
+    /** @phan-read-only */
     static public $zero = [null, null, null, null, null, null, null, null, null, null];
+    /** @param int $perm
+     * @return bool */
     static function permission_required($perm) {
         return $perm === self::ADMIN || $perm === self::HIDDENTAG;
     }
@@ -3908,13 +3912,15 @@ class Conf {
         $this->_active_list = $list;
     }
 
+    /** @param non-empty-string $url
+     * @return string */
     function make_css_link($url, $media = null) {
         global $ConfSitePATH;
         if (str_starts_with($url, "<meta") || str_starts_with($url, "<link")) {
             return $url;
         }
         $t = '<link rel="stylesheet" type="text/css" href="';
-        $absolute = preg_match(',\A(?:https:?:|/),i', $url);
+        $absolute = preg_match('/\A(?:https:?:|\/)/i', $url);
         if (!$absolute) {
             $t .= $this->opt["assetsUrl"];
         }
@@ -3928,6 +3934,8 @@ class Conf {
         return $t . '">';
     }
 
+    /** @param non-empty-string $url
+     * @return string */
     function make_script_file($url, $no_strict = false, $integrity = null) {
         global $ConfSitePATH;
         if (str_starts_with($url, "scripts/")) {
@@ -3964,6 +3972,7 @@ class Conf {
         } else {
             $jquery = "scripts/jquery-{$jqueryVersion}.min.js";
         }
+        '@phan-var non-empty-string $jquery';
         return $this->make_script_file($jquery, true, $integrity);
     }
 
