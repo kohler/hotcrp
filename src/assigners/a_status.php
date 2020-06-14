@@ -14,17 +14,19 @@ class Withdraw_AssignmentFinisher {
         $res = $state->query_items(["type" => "status", "pid" => $this->pid]);
         if (!$res
             || $res[0]["_withdrawn"] <= 0
-            || $res[0]->pre("_withdrawn") > 0)
+            || $res[0]->pre("_withdrawn") > 0) {
             return;
+        }
         $ltre = [];
-        foreach ($state->conf->tags()->filter("votish") as $dt)
+        foreach ($state->conf->tags()->filter("votish") as $dt) {
             $ltre[] = preg_quote(strtolower($dt->tag));
+        }
         $res = $state->query(["type" => "tag", "pid" => $this->pid]);
         $tag_re = '{\A(?:\d+~|)(?:' . join("|", $ltre) . ')\z}i';
         foreach ($res as $x) {
             if (preg_match($tag_re, $x["ltag"])) {
-                $x["_index"] = 0.0;
-                $x["_vote"] = true;
+                $x["_index"] = null;
+                $x["_override"] = true;
                 $state->add($x);
             }
         }
@@ -63,21 +65,24 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         $ch = false;
         if ($this->xtype === "submit") {
             if ($res["_submitted"] === 0) {
-                if (($whynot = $state->user->perm_finalize_paper($prow)))
+                if (($whynot = $state->user->perm_finalize_paper($prow))) {
                     return whyNotText($whynot);
+                }
                 $res["_submitted"] = ($res["_withdrawn"] > 0 ? -Conf::$now : Conf::$now);
             }
         } else if ($this->xtype === "unsubmit") {
             if ($res["_submitted"] !== 0) {
-                if (($whynot = $state->user->perm_update_paper($prow)))
+                if (($whynot = $state->user->perm_update_paper($prow))) {
                     return whyNotText($whynot);
+                }
                 $res["_submitted"] = 0;
             }
         } else if ($this->xtype === "withdraw") {
             if ($res["_withdrawn"] === 0) {
                 assert($res["_submitted"] >= 0);
-                if (($whynot = $state->user->perm_withdraw_paper($prow)))
+                if (($whynot = $state->user->perm_withdraw_paper($prow))) {
                     return whyNotText($whynot);
+                }
                 $res["_withdrawn"] = Conf::$now;
                 $res["_submitted"] = -$res["_submitted"];
                 if ($state->conf->tags()->has_votish) {
@@ -92,13 +97,15 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         } else if ($this->xtype === "revive") {
             if ($res["_withdrawn"] !== 0) {
                 assert($res["_submitted"] <= 0);
-                if (($whynot = $state->user->perm_revive_paper($prow)))
+                if (($whynot = $state->user->perm_revive_paper($prow))) {
                     return whyNotText($whynot);
+                }
                 $res["_withdrawn"] = 0;
-                if ($res["_submitted"] === -100)
+                if ($res["_submitted"] === -100) {
                     $res["_submitted"] = Conf::$now;
-                else
+                } else {
                     $res["_submitted"] = -$res["_submitted"];
+                }
                 $res["_withdraw_reason"] = null;
             }
         }

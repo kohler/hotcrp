@@ -1841,12 +1841,12 @@ class AssignmentSet {
         foreach ($this->cleanup_callbacks as $cb) {
             call_user_func($cb[0], $this, $cb[1]);
         }
+        if (!empty($pids)) {
+            $this->conf->update_autosearch_tags(array_keys($pids), $this->assigned_types());
+        }
         if (!empty($this->cleanup_notify_tracker)
             && $this->conf->opt("trackerCometSite")) {
             MeetingTracker::contact_tracker_comet($this->conf, array_keys($this->cleanup_notify_tracker));
-        }
-        if (!empty($pids)) {
-            $this->conf->update_autosearch_tags(array_keys($pids));
         }
         $this->conf->save_logs(false);
 

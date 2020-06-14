@@ -143,6 +143,8 @@ class Conf {
     private $_tracks;
     /** @var ?TagMap */
     private $_tag_map;
+    /** @var bool */
+    private $_maybe_autosearch;
     private $_track_tags;
     private $_track_sensitivity = 0;
     /** @var ?array<int,string> */
@@ -434,8 +436,9 @@ class Conf {
         // tracks settings
         $this->_tracks = $this->_track_tags = null;
         $this->_track_sensitivity = 0;
-        if (($j = $this->settingTexts["tracks"] ?? null))
+        if (($j = $this->settingTexts["tracks"] ?? null)) {
             $this->crosscheck_track_settings($j);
+        }
 
         // clear caches
         $this->_decisions = $this->_decision_matcher = null;
@@ -462,6 +465,10 @@ class Conf {
         }
         $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;
         $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;
+        $this->_maybe_autosearch = ($this->settings["tag_vote"] ?? 0) > 0
+            || ($this->settings["tag_approval"] ?? 0) > 0
+            || ($this->settings["tag_autosearch"] ?? 0) > 0
+            || !!$this->opt("definedTags");
 
         $this->any_response_open = 0;
         if (($this->settings["resp_active"] ?? 0) > 0) {
@@ -2433,18 +2440,18 @@ class Conf {
         }
     }
 
-    /** @param null|int|list<int>|PaperInfo $paper */
-    function update_autosearch_tags($paper = null) {
-        if ((!$this->setting("tag_autosearch") && !$this->opt("definedTags"))
-            || !$this->tags()->has_autosearch
-            || $this->_updating_autosearch_tags) {
+    /** @param null|int|list<int>|PaperInfo $paper
+     * @param null|string|list<string> $types */
+    function update_autosearch_tags($paper = null, $types = null) {
+        if (!$this->_maybe_autosearch || $this->_updating_autosearch_tags) {
             return;
         }
-        $csv = ["paper,tag"];
+        $tagmap = $this->tags();
+        $csv = ["paper,tag,tag value"];
         if ($paper === null) {
-            foreach ($this->tags()->filter("autosearch") as $dt) {
-                $csv[] = CsvGenerator::quote("#{$dt->tag}") . "," . CsvGenerator::quote("{$dt->tag}#clear");
-                $csv[] = CsvGenerator::quote($dt->autosearch) . "," . CsvGenerator::quote($dt->tag);
+            foreach ($this->tags()->filter("automatic") as $dt) {
+                $csv[] = CsvGenerator::quote("#{$dt->tag}") . "," . CsvGenerator::quote($dt->tag) . ",clear";
+                $csv[] = CsvGenerator::quote($dt->automatic_search()) . "," . CsvGenerator::quote($dt->tag) . "," . CsvGenerator::quote($dt->automatic_formula_expression());
             }
         } else if (!empty($paper)) {
             if (is_int($paper)) {
@@ -2455,12 +2462,15 @@ class Conf {
                 $pids = $paper;
             }
             $rowset = $this->paper_set(["paperId" => $pids]);
-            foreach ($this->tags()->filter("autosearch") as $dt) {
-                $search = new PaperSearch($this->root_user(), ["q" => $dt->autosearch, "t" => "all"]);
+            foreach ($this->tags()->filter("automatic") as $dt) {
+                $search = new PaperSearch($this->root_user(), ["q" => $dt->automatic_search(), "t" => "all"]);
+                $fexpr = $dt->automatic_formula_expression();
                 foreach ($rowset as $prow) {
-                    $want = $search->test($prow);
-                    if ($prow->has_tag($dt->tag) !== $want) {
-                        $csv[] = "{$prow->paperId}," . CsvGenerator::quote($dt->tag . ($want ? "" : "#clear"));
+                    $test = $search->test($prow);
+                    $value = $prow->tag_value($dt->tag);
+                    if (($test || $value !== false)
+                        && ($fexpr !== "0" || $test !== ($value === 0.0))) {
+                        $csv[] = "{$prow->paperId}," . CsvGenerator::quote($dt->tag) . "," . ($test ? CsvGenerator::quote($fexpr) : "clear");
                     }
                 }
             }

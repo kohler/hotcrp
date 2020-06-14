@@ -2343,7 +2343,7 @@ class ReviewValues extends MessageSet {
         }
 
         // notify autosearch
-        $this->conf->update_autosearch_tags($prow);
+        $this->conf->update_autosearch_tags($prow, "review");
 
         // potentially email chair, reviewers, and authors
         $reviewer = $user;

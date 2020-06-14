@@ -188,7 +188,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $tagmap = $state->conf->tags();
         if (!$state->conf->is_updating_autosearch_tags()
             && $xuser === ""
-            && ($tagmap->is_votish($xtag) || $tagmap->is_autosearch($xtag))) {
+            && $tagmap->is_automatic($xtag)) {
             return true;
         }
 
@@ -241,9 +241,6 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             assert(is_float($nvalue));
             $state->add(["type" => "tag", "pid" => $prow->paperId, "ltag" => $ltag,
                          "_tag" => $ntag, "_index" => (float) $nvalue]);
-        }
-        if ($tagmap->is_votish($xtag)) {
-            $this->account_votes($prow->paperId, $xtag, $state);
         }
         return true;
     }
@@ -315,39 +312,14 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         // query
         $res = $state->query(["type" => "tag", "pid" => $prow->paperId, "ltag" => $search_ltag]);
         $tag_re = '{\A' . $xuser . $xtag . '\z}i';
-        $vote_adjustments = [];
         foreach ($res as $x) {
             if (preg_match($tag_re, $x["ltag"])
                 && ($search_ltag
                     || $state->user->can_change_tag($prow, $x["ltag"], $x["_index"], null))) {
                 $state->remove($x);
-                if (($v = $state->conf->tags()->votish_base($x["ltag"]))) {
-                    $vote_adjustments[$v] = true;
-                }
             }
-        }
-        foreach ($vote_adjustments as $vtag => $v) {
-            $this->account_votes($prow->paperId, $vtag, $state);
         }
         return true;
-    }
-    /** @param int $pid
-     * @param string $vtag */
-    private function account_votes($pid, $vtag, AssignmentState $state) {
-        $res = $state->query(["type" => "tag", "pid" => $pid]);
-        $suffix = strtolower("~" . $vtag);
-        $is_vote = $state->conf->tags()->is_vote($vtag);
-        $total = 0.0;
-        foreach ($res as $x) {
-            $ltag = $x["ltag"];
-            if (ctype_digit($ltag[0])
-                && str_ends_with($ltag, $suffix)
-                && $state->conf->pc_member_by_id(intval(substr($ltag, 0, -strlen($suffix))))) {
-                $total += $is_vote ? (float) $x["_index"] : 1.0;
-            }
-        }
-        $state->add(["type" => "tag", "pid" => $pid, "ltag" => strtolower($vtag),
-                     "_tag" => $vtag, "_index" => $total, "_vote" => true]);
     }
 }
 
@@ -358,14 +330,11 @@ class Tag_Assigner extends Assigner {
         parent::__construct($item, $state);
         $this->tag = $item["_tag"];
         $this->index = $item->post("_index");
-        if ($this->index == 0 && $item["_vote"]) {
-            $this->index = null;
-        }
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
         $prow = $state->prow($item["pid"]);
         // check permissions
-        if (!$item["_vote"] && !$item["_override"]) {
+        if (!$item["_override"]) {
             $whyNot = $state->user->perm_change_tag($prow, $item["ltag"],
                 $item->pre("_index"), $item->post("_index"));
             if ($whyNot) {

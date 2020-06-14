@@ -4661,7 +4661,7 @@ class Contact {
 
         self::update_rights();
         if (!($extra["no_autosearch"] ?? false)) {
-            $this->conf->update_autosearch_tags($pid);
+            $this->conf->update_autosearch_tags($pid, "review");
         }
         return $reviewId;
     }
@@ -4699,7 +4699,7 @@ class Contact {
             $this->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
         }
         if (!$extra || !($extra["no_autosearch"] ?? false)) {
-            $this->conf->update_autosearch_tags($rrow->paperId);
+            $this->conf->update_autosearch_tags($rrow->paperId, "review");
         }
         return $result;
     }

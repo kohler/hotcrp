@@ -26,6 +26,7 @@ class TagInfo {
     public $sitewide = false;
     public $rank = false;
     public $public_peruser = false;
+    public $automatic = false;
     public $order_anno = false;
     /** @var ?list<TagAnno> */
     private $_order_anno_list;
@@ -57,7 +58,7 @@ class TagInfo {
         }
     }
     function merge(TagInfo $t) {
-        foreach (["chair", "readonly", "hidden", "track", "votish", "vote", "approval", "sitewide", "rank", "public_peruser", "autosearch"] as $property) {
+        foreach (["chair", "readonly", "hidden", "track", "votish", "vote", "approval", "sitewide", "rank", "public_peruser", "automatic", "autosearch"] as $property) {
             if ($t->$property)
                 $this->$property = $t->$property;
         }
@@ -129,6 +130,28 @@ class TagInfo {
     /** @return bool */
     function has_order_anno() {
         return count($this->order_anno_list()) > 1;
+    }
+    /** @return string|false */
+    function automatic_search() {
+        if ($this->autosearch) {
+            return $this->autosearch;
+        } else if ($this->votish) {
+            return "#*~" . $this->tag;
+        } else {
+            return false;
+        }
+    }
+    /** @return string|false */
+    function automatic_formula_expression() {
+        if ($this->autosearch) {
+            return "0";
+        } else if ($this->vote) {
+            return "let x = sum.pc(#_~{$this->tag}) in x ? x : null";
+        } else if ($this->approval) {
+            return "let x = count.pc(#_~{$this->tag}) in x ? x : null";
+        } else {
+            return false;
+        }
     }
 }
 
@@ -231,6 +254,7 @@ class TagMap implements IteratorAggregate {
     public $has_emoji = false;
     public $has_decoration = false;
     public $has_order_anno = false;
+    public $has_automatic = false;
     public $has_autosearch = false;
     /** @var array<string,TagInfo> */
     private $storage = array();
@@ -472,6 +496,10 @@ class TagMap implements IteratorAggregate {
     /** @param string $tag */
     function is_emoji($tag) {
         return !!$this->check_property($tag, "emoji");
+    }
+    /** @param string $tag */
+    function is_automatic($tag) {
+        return !!$this->check_property($tag, "automatic");
     }
     /** @param string $tag */
     function is_autosearch($tag) {
@@ -813,6 +841,7 @@ class TagMap implements IteratorAggregate {
             $t->vote = ($ti[1] ? : 1);
             $map->has_vote = true;
             $t->votish = $map->has_votish = true;
+            $t->automatic = $map->has_automatic = true;
             if (!$ppu) {
                 $t->public_peruser = $map->has_public_peruser = true;
             }
@@ -822,6 +851,7 @@ class TagMap implements IteratorAggregate {
             $t = $map->add($ti[0]);
             $t->approval = $map->has_approval = true;
             $t->votish = $map->has_votish = true;
+            $t->automatic = $map->has_automatic = true;
             if (!$ppu) {
                 $t->public_peruser = $map->has_public_peruser = true;
             }
@@ -865,8 +895,9 @@ class TagMap implements IteratorAggregate {
         $tx = $conf->setting_data("tag_autosearch") ?? "";
         if ($tx !== "") {
             foreach (json_decode($tx) ? : [] as $tag => $search) {
-                $map->add($tag)->autosearch = $search->q;
-                $map->has_autosearch = true;
+                $t = $map->add($tag);
+                $t->autosearch = $search->q;
+                $t->automatic = $map->has_automatic = $map->has_autosearch = true;
             }
         }
         if (($od = $conf->opt("definedTags"))) {
@@ -887,7 +918,8 @@ class TagMap implements IteratorAggregate {
                     }
                     if (($x = $data->autosearch ?? null)) {
                         $t->autosearch = $x;
-                        $map->has_autosearch = true;
+                        $t->automatic = true;
+                        $map->has_autosearch = $map->has_automatic = true;
                     }
                     if (($x = $data->color ?? null)) {
                         foreach (is_string($x) ? [$x] : $x as $c) {

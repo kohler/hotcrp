@@ -180,82 +180,20 @@ class Tags_SettingParser extends SettingParser {
             return;
         }
 
-        if ($si->name == "tag_vote") {
+        if ($si->name == "tag_vote" || $si->name === "tag_approval") {
             // check allotments
             $pcm = $sv->conf->pc_members();
-            foreach (preg_split('/\s+/', $sv->savedv("tag_vote")) as $t) {
-                if ($t === "") {
-                    continue;
-                }
-                $base = substr($t, 0, strpos($t, "#"));
-                $allotment = substr($t, strlen($base) + 1);
-                $sqlbase = sqlq_for_like($base);
-
-                $result = $sv->conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~{$sqlbase}'");
-                $pvals = [];
-                $cvals = [];
-                $negative = false;
-                while (($row = $result->fetch_row())) {
-                    $pid = (int) $row[0];
-                    $who = (int) substr($row[1], 0, strpos($row[1], "~"));
-                    $value = (float) $row[2];
-                    if ($value < 0) {
-                        $sv->error_at(null, "Removed " . $pcm[$who]->name_h(NAME_P) . "’s negative “{$base}” vote for #$pid.");
-                        $negative = true;
-                    } else {
-                        $pvals[$pid] = ($pvals[$pid] ?? 0) + $value;
-                        $cvals[$who] = ($cvals[$who] ?? 0) + $value;
-                    }
-                }
-
-                foreach ($cvals as $who => $what) {
-                    if ($what > $allotment)
-                        $sv->error_at("tag_vote", $pcm[$who]->name_h(NAME_P) . " already has more than $allotment votes for tag “{$base}”.");
-                }
-
-                $q = ($negative ? " or (tag like '%~{$sqlbase}' and tagIndex<0)" : "");
-                $sv->conf->qe_raw("delete from PaperTag where tag='" . sqlq($base) . "'$q");
-
-                $qv = [];
-                foreach ($pvals as $pid => $what) {
-                    $qv[] = [$pid, $base, $what];
-                }
-                if (!empty($qv)) {
-                    $sv->conf->qe("insert into PaperTag values ?v", $qv);
+            $removals = [];
+            foreach (preg_split('/\s+/', $sv->savedv($si->name)) as $t) {
+                list($tag, $index) = Tagger::unpack($t);
+                if ($tag !== false) {
+                    $removals[] = "right(tag," . (strlen($tag) + 1) . ")='~" . sqlq($tag) . "'";
                 }
             }
-            $sv->mark_invalidate_caches(["autosearch" => true]);
-        }
-
-        if ($si->name == "tag_approval") {
-            $pcm = $sv->conf->pc_members();
-            foreach (preg_split('/\s+/', $sv->savedv("tag_approval")) as $t) {
-                if ($t === "") {
-                    continue;
-                }
-                $result = $sv->conf->q_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
-                $pvals = array();
-                $negative = false;
-                while (($row = $result->fetch_row())) {
-                    $pid = (int) $row[0];
-                    $who = (int) substr($row[1], 0, strpos($row[1], "~"));
-                    if ((float) $row[2] < 0) {
-                        $sv->error_at(null, "Removed " . $pcm[$who]->name_h(NAME_P) . "’s negative “{$t}” approval vote for #$pid.");
-                        $negative = true;
-                    } else {
-                        $pvals[$pid] = ($pvals[$pid] ?? 0) + 1;
-                    }
-                }
-
-                $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
-                $sv->conf->qe_raw("delete from PaperTag where tag='" . sqlq($t) . "'$q");
-
-                $qv = [];
-                foreach ($pvals as $pid => $what) {
-                    $qv[] = [$pid, $t, $what];
-                }
-                if (count($qv) > 0) {
-                    $sv->conf->qe("insert into PaperTag values ?v", $qv);
+            if (!empty($removals)) {
+                $result = $sv->conf->qe_raw("delete from PaperTag where tagIndex<0 and left(tag,1)!='~' and (" . join(" or ", $removals) . ")");
+                if ($result->affected_rows) {
+                    $sv->warning_at($si->name, "Removed negative votes.");
                 }
             }
             $sv->mark_invalidate_caches(["autosearch" => true]);
