@@ -4,8 +4,7 @@
 
 class ReviewAccept_Capability {
     private static function make_review_acceptor($user, $at, $pid, $cid, $uf) {
-        global $Now;
-        if ($at && $at >= $Now - 2592000) {
+        if ($at && $at >= Conf::$now - 2592000) {
             $user->set_capability("@ra$pid", $cid);
             if ($user->is_activated()) {
                 ensure_session();
@@ -17,8 +16,6 @@ class ReviewAccept_Capability {
     }
 
     static function apply_review_acceptor(Contact $user, $uf, $isadd) {
-        global $Now;
-
         $result = $user->conf->qe("select * from PaperReview where reviewId=?", $uf->match_data[1]);
         $rrow = ReviewInfo::fetch($result, $user->conf);
         Dbl::free($result);
@@ -27,7 +24,7 @@ class ReviewAccept_Capability {
             return;
         }
 
-        $result = $user->conf->qe("select * from PaperReviewRefused where `data` is not null and timeRefused>=?", $Now - 604800);
+        $result = $user->conf->qe("select * from PaperReviewRefused where `data` is not null and timeRefused>=?", Conf::$now - 604800);
         while (($refusal = $result->fetch_object())) {
             $data = json_decode((string) $refusal->data);
             if ($data

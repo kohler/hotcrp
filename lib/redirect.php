@@ -91,7 +91,7 @@ if (function_exists("session_create_id")) {
 }
 
 function ensure_session($flags = 0) {
-    global $Conf, $Now;
+    global $Conf;
     if (session_id() !== ""
         && !($flags & ENSURE_SESSION_REGENERATE_ID)) {
         return;
@@ -111,13 +111,13 @@ function ensure_session($flags = 0) {
         }
         $session_data = $_SESSION ? : [];
         $new_sid = session_create_id();
-        $_SESSION["deletedat"] = $Now;
+        $_SESSION["deletedat"] = Conf::$now;
         session_commit();
 
         session_id($new_sid);
         if (!isset($_COOKIE[$sn]) || $_COOKIE[$sn] !== $new_sid) {
             $params = session_get_cookie_params();
-            $params["expires"] = $Now + $params["lifetime"];
+            $params["expires"] = Conf::$now + $params["lifetime"];
             unset($params["lifetime"]);
             hotcrp_setcookie($sn, $new_sid, $params);
         }
@@ -127,7 +127,7 @@ function ensure_session($flags = 0) {
 
     // maybe kill old session
     if (isset($_SESSION["deletedat"])
-        && $_SESSION["deletedat"] < $Now - 30) {
+        && $_SESSION["deletedat"] < Conf::$now - 30) {
         $_SESSION = [];
     }
 
@@ -167,14 +167,13 @@ function post_value($allow_empty = false) {
 }
 
 function kill_session() {
-    global $Now;
     if (($sn = session_name())
         && isset($_COOKIE[$sn])) {
         if (session_id() !== "") {
             session_commit();
         }
         $params = session_get_cookie_params();
-        $params["expires"] = $Now - 86400;
+        $params["expires"] = Conf::$now - 86400;
         unset($params["lifetime"]);
         hotcrp_setcookie($sn, "", $params);
         $_COOKIE[$sn] = "";

@@ -1204,8 +1204,6 @@ class SettingValues extends MessageSet {
 
 
     function parse_value(Si $si) {
-        global $Now;
-
         $v = $this->reqv($si->name);
         if ($v === null) {
             if (in_array($si->type, ["cdate", "checkbox"]))
@@ -1350,8 +1348,6 @@ class SettingValues extends MessageSet {
     }
 
     function execute() {
-        global $Now;
-
         // parse and validate settings
         foreach (Si::si_map($this->conf) as $si) {
             $this->account($si);

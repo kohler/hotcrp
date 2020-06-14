@@ -285,7 +285,7 @@ if (isset($Qreq->accept)
         if ($rrow->reviewModified <= 0) {
             Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
                 where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0",
-                $Now, $prow->paperId, $rrow->reviewId);
+                Conf::$now, $prow->paperId, $rrow->reviewId);
             if ($Me->is_signed_in()) {
                 $rrow->delete_acceptor();
             }

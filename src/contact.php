@@ -529,7 +529,6 @@ class Contact {
 
     /** @return Contact */
     function activate($qreq, $signin = false) {
-        global $Now;
         $this->_activated = true;
 
         // Handle actas requests
@@ -574,8 +573,8 @@ class Contact {
         if (!self::$true_user && $this->email) {
             $trueuser_aucheck = $this->session("trueuser_author_check", 0);
             if (!$this->has_account_here()
-                && $trueuser_aucheck + 600 < $Now) {
-                $this->save_session("trueuser_author_check", $Now);
+                && $trueuser_aucheck + 600 < Conf::$now) {
+                $this->save_session("trueuser_author_check", Conf::$now);
                 $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
                 if (!empty($aupapers))
                     $this->activate_database_account();
@@ -585,7 +584,7 @@ class Contact {
                 foreach ($_SESSION as $k => $v) {
                     if (is_array($v)
                         && isset($v["trueuser_author_check"])
-                        && $v["trueuser_author_check"] + 600 < $Now)
+                        && $v["trueuser_author_check"] + 600 < Conf::$now)
                         unset($_SESSION[$k]["trueuser_author_check"]);
                 }
             }
@@ -670,9 +669,8 @@ class Contact {
     }
 
     private function _contactdb_save_roles($cdbur) {
-        global $Now;
         if (($roles = $this->contactdb_roles())) {
-            Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=values(roles), activity_at=values(activity_at)", $cdbur->contactDbId, $cdbur->confid, $roles, $Now);
+            Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=values(roles), activity_at=values(activity_at)", $cdbur->contactDbId, $cdbur->confid, $roles, Conf::$now);
         } else {
             Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=? and roles=0", $cdbur->contactDbId, $cdbur->confid);
         }
@@ -1247,7 +1245,7 @@ class Contact {
 
 
     function escape($qreq = null) {
-        global $Qreq, $Now;
+        global $Qreq;
         $qreq = $qreq ? : $Qreq;
 
         if ($qreq->ajax) {
@@ -1271,7 +1269,7 @@ class Contact {
                 $x["anchor"] = $qreq->anchor;
             }
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITE_RELATIVE);
-            $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, $Now + 120];
+            $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, Conf::$now + 120];
             if ($qreq->post_ok()) {
                 error_go(false, "You must sign in to access that page. Your changes were not saved; after signing in, you may submit them again.");
             } else {
@@ -1442,7 +1440,6 @@ class Contact {
     }
 
     function apply_updater($updater, $is_cdb) {
-        global $Now;
         if ($is_cdb) {
             $db = $this->conf->contactdb();
             $idk = "contactDbId";
@@ -1463,10 +1460,10 @@ class Contact {
             assert(isset($updater["email"]));
             if (!isset($updater["password"])) {
                 $updater["password"] = validate_email($updater["email"]) ? " unset" : " nologin";
-                $updater["passwordTime"] = $Now;
+                $updater["passwordTime"] = Conf::$now;
             }
             if (!$is_cdb) {
-                $updater["creationTime"] = $Now;
+                $updater["creationTime"] = Conf::$now;
             }
             $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join("=?, ", array_keys($updater)) . "=? on duplicate key update firstName=firstName", array_values($updater));
             if ($result->affected_rows) {
@@ -1698,7 +1695,6 @@ class Contact {
     /** @param string $input
      * @return array{ok:bool} */
     function check_password_info($input, $options = []) {
-        global $Now;
         assert(!$this->conf->external_login());
         $cdbu = $this->contactdb_user();
 
@@ -1752,7 +1748,7 @@ class Contact {
                     $x["local_password"] = $this->password;
                 }
                 if ($this->passwordTime > 0) {
-                    $x["local_password_age"] = ceil(($Now - $this->passwordTime) / 8640) / 10;
+                    $x["local_password_age"] = ceil((Conf::$now - $this->passwordTime) / 8640) / 10;
                 }
             }
             if ($cdbu && $cdbu->password) {
@@ -1761,7 +1757,7 @@ class Contact {
                     $x["cdbu_password"] = $cdbu->password;
                 }
                 if ($cdbu->passwordTime > 0) {
-                    $x["cdb_password_age"] = ceil(($Now - $cdbu->passwordTime) / 8640) / 10;
+                    $x["cdb_password_age"] = ceil((Conf::$now - $cdbu->passwordTime) / 8640) / 10;
                 }
             }
             return $x;
@@ -1785,37 +1781,37 @@ class Contact {
         // update cdb password
         if ($cdb_ok
             || ($cdbu && (string) $cdbu->password === "")) {
-            $updater = ["passwordUseTime" => $Now];
+            $updater = ["passwordUseTime" => Conf::$now];
             if (!$cdb_ok || $this->password_needs_rehash($cdbu->password)) {
                 $updater["password"] = $this->hash_password($input);
             }
             if (!$cdb_ok || !$cdbu->passwordTime) {
-                $updater["passwordTime"] = $Now;
+                $updater["passwordTime"] = Conf::$now;
             }
             $cdbu->apply_updater($updater, true);
 
             // clear local password
             if ($this->contactId > 0 && (string) $this->password !== "") {
-                $this->apply_updater(["passwordUseTime" => $Now, "password" => "", "passwordTime" => $Now], false);
+                $this->apply_updater(["passwordUseTime" => Conf::$now, "password" => "", "passwordTime" => Conf::$now], false);
                 $local_ok = false;
             }
         }
 
         // update local password
         if ($local_ok) {
-            $updater = ["passwordUseTime" => $Now];
+            $updater = ["passwordUseTime" => Conf::$now];
             if ($this->password_needs_rehash($this->password)) {
                 $updater["password"] = $this->hash_password($input);
             }
             if (!$this->passwordTime) {
-                $updater["passwordTime"] = $Now;
+                $updater["passwordTime"] = Conf::$now;
             }
             $this->apply_updater($updater, false);
 
             // complain about local password use
             if ($cdbu) {
-                $t0 = $this->passwordTime ? ceil(($Now - $this->passwordTime) / 8640) / 10 : -1;
-                $t1 = $cdbu->passwordTime ? ceil(($Now - $cdbu->passwordTime) / 8640) / 10 : -1;
+                $t0 = $this->passwordTime ? ceil((Conf::$now - $this->passwordTime) / 8640) / 10 : -1;
+                $t1 = $cdbu->passwordTime ? ceil((Conf::$now - $cdbu->passwordTime) / 8640) / 10 : -1;
                 error_log("{$this->conf->dbname}: user {$this->email}: signing in with local password, which is " . ($this->passwordTime < $cdbu->passwordTime ? "older" : "newer") . " than cdb [{$t0}d/{$t1}d]");
             }
         }
@@ -1831,13 +1827,12 @@ class Contact {
     }
 
     function change_password($new) {
-        global $Now;
         assert(!$this->conf->external_login());
         assert($new !== null);
 
         if ($new && $new[0] !== " ") {
             $hash = $this->hash_password($new);
-            $use_time = $Now;
+            $use_time = Conf::$now;
         } else {
             $hash = $new;
             $use_time = 0;
@@ -1845,12 +1840,12 @@ class Contact {
 
         $cdbu = $this->contactdb_user();
         if ($cdbu) {
-            $cdbu->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], true);
+            $cdbu->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => Conf::$now], true);
             if ($this->contactId && (string) $this->password !== "") {
-                $this->apply_updater(["passwordUseTime" => $use_time, "password" => "", "passwordTime" => $Now], false);
+                $this->apply_updater(["passwordUseTime" => $use_time, "password" => "", "passwordTime" => Conf::$now], false);
             }
         } else if ($this->contactId) {
-            $this->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => $Now], false);
+            $this->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => Conf::$now], false);
         }
         return true;
     }
@@ -1870,26 +1865,24 @@ class Contact {
 
 
     function mark_login() {
-        global $Now;
         // at least one login every 30 days is marked as activity
-        if ((int) $this->activity_at <= $Now - 2592000
+        if ((int) $this->activity_at <= Conf::$now - 2592000
             || (($cdbu = $this->contactdb_user())
-                && ((int) $cdbu->activity_at <= $Now - 2592000))) {
+                && ((int) $cdbu->activity_at <= Conf::$now - 2592000))) {
             $this->mark_activity();
         }
     }
 
     function mark_activity() {
-        global $Now;
-        if ((!$this->activity_at || $this->activity_at < $Now)
+        if ((!$this->activity_at || $this->activity_at < Conf::$now)
             && !$this->is_anonymous_user()) {
-            $this->activity_at = $Now;
+            $this->activity_at = Conf::$now;
             if ($this->contactId) {
-                $this->conf->ql("update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
+                $this->conf->ql("update ContactInfo set lastLogin=".Conf::$now." where contactId=$this->contactId");
             }
             if (($cdbu = $this->contactdb_user())
                 && $cdbu->confid
-                && (int) $cdbu->activity_at <= $Now - 604800) {
+                && (int) $cdbu->activity_at <= Conf::$now - 604800) {
                 $this->_contactdb_save_roles($cdbu);
             }
         }
@@ -3762,12 +3755,11 @@ class Contact {
 
     /** @param ?CommentInfo $crow */
     function can_finalize_comment(PaperInfo $prow, $crow) {
-        global $Now;
         return $crow
             && ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) === (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)
             && ($rrd = get($prow->conf->resp_rounds(), $crow->commentRound))
             && $rrd->open > 0
-            && $rrd->open < $Now
+            && $rrd->open < Conf::$now
             && $prow->conf->setting("resp_active") > 0;
     }
 
@@ -4287,8 +4279,7 @@ class Contact {
 
     function my_deadlines($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
-        global $Now;
-        $dl = (object) ["now" => $Now, "email" => $this->email ? : null];
+        $dl = (object) ["now" => Conf::$now, "email" => $this->email ? : null];
         if ($this->privChair) {
             $dl->is_admin = true;
         } else if ($this->is_track_manager()) {
@@ -4352,7 +4343,7 @@ class Contact {
         if ($this->conf->setting("final_open") > 0) {
             $dl->final = (object) array("open" => true);
             $final_soft = +$this->conf->setting("final_soft");
-            if ($final_soft > $Now) {
+            if ($final_soft > Conf::$now) {
                 $dl->final->done = $final_soft;
             } else {
                 $dl->final->done = +$this->conf->setting("final_done");
@@ -4366,7 +4357,7 @@ class Contact {
         // reviewer deadlines
         $revtypes = array();
         $rev_open = +$this->conf->setting("rev_open");
-        $rev_open = $rev_open > 0 && $rev_open <= $Now;
+        $rev_open = $rev_open > 0 && $rev_open <= Conf::$now;
         if ($this->is_reviewer() && $rev_open) {
             $dl->rev = (object) ["open" => true];
         } else if ($this->privChair) {
@@ -4383,7 +4374,7 @@ class Contact {
                 if ($rev_open) {
                     $dlround->open = true;
                 }
-                if ($h && ($h < $Now || $s < $Now)) {
+                if ($h && ($h < Conf::$now || $s < Conf::$now)) {
                     $dlround->done = $h;
                     $dlround->ishard = true;
                 } else if ($s) {
@@ -4405,8 +4396,8 @@ class Contact {
             $dlx = $graces[$i];
             foreach ($graces[$i + 2] as $k) {
                 if ($dlx->$k
-                    && $dlx->$k - 30 < $Now
-                    && $dlx->$k + $graces[$i + 1] >= $Now) {
+                    && $dlx->$k - 30 < Conf::$now
+                    && $dlx->$k + $graces[$i + 1] >= Conf::$now) {
                     $kgrace = "{$k}_ingrace";
                     $dlx->$kgrace = true;
                 }
@@ -4491,18 +4482,17 @@ class Contact {
     }
 
     function has_reportable_deadline() {
-        global $Now;
         $dl = $this->my_deadlines();
         if (isset($dl->sub->reg) || isset($dl->sub->update) || isset($dl->sub->sub)) {
             return true;
         }
         if (isset($dl->resps)) {
             foreach ($dl->resps as $dlr) {
-                if (isset($dlr->open) && $dlr->open < $Now && ($dlr->done ?? null))
+                if (isset($dlr->open) && $dlr->open < Conf::$now && ($dlr->done ?? null))
                     return true;
             }
         }
-        if (isset($dl->rev) && isset($dl->rev->open) && $dl->rev->open < $Now) {
+        if (isset($dl->rev) && isset($dl->rev->open) && $dl->rev->open < Conf::$now) {
             foreach ($dl->revs as $dlr) {
                 if ($dlr->done ?? null)
                     return true;
@@ -4572,7 +4562,6 @@ class Contact {
      * @param int $reviewer_cid
      * @param int $type */
     function assign_review($pid, $reviewer_cid, $type, $extra = []) {
-        global $Now;
         $result = $this->conf->qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy, reviewSubmitted from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
         $rrow = $result->fetch_object();
         Dbl::free($result);
@@ -4603,7 +4592,7 @@ class Contact {
         if ($type && !$oldtype) {
             $qa = "";
             if ($extra["mark_notify"] ?? null) {
-                $qa .= ", timeRequestNotified=$Now";
+                $qa .= ", timeRequestNotified=" . Conf::$now;
             }
             if ($extra["token"] ?? null) {
                 $qa .= $this->unassigned_review_token();
@@ -4611,7 +4600,7 @@ class Contact {
             if (($new_requester = $extra["requester_contact"] ?? null)) {
                 $new_requester_cid = $new_requester->contactId;
             }
-            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, reviewRound=$round, timeRequested=$Now$qa, requestedBy=$new_requester_cid";
+            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, reviewRound=$round, timeRequested=".Conf::$now."$qa, requestedBy=$new_requester_cid";
         } else if ($type && ($oldtype != $type || $rrow->reviewRound != $round)) {
             $q = "update PaperReview set reviewType=$type, reviewRound=$round";
             if (!$rrow->reviewSubmitted)
@@ -4649,8 +4638,8 @@ class Contact {
                 $this->update_review_delegation($pid, $new_requester_cid, 1);
             }
             if ($type >= REVIEW_PC
-                && $this->conf->setting("pcrev_assigntime", 0) < $Now) {
-                $this->conf->save_setting("pcrev_assigntime", $Now);
+                && $this->conf->setting("pcrev_assigntime", 0) < Conf::$now) {
+                $this->conf->save_setting("pcrev_assigntime", Conf::$now);
             }
         } else if (!$type) {
             if ($oldtype < REVIEW_SECONDARY && $rrow->requestedBy > 0) {

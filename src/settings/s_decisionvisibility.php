@@ -20,8 +20,6 @@ class DecisionVisibility_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
-        global $Now;
-
         if ($sv->has_interest("seedec")
             && $sv->newv("seedec") == Conf::SEEDEC_ALL
             && $sv->newv("au_seerev") == Conf::AUSEEREV_NO) {
@@ -30,7 +28,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
 
         if (($sv->has_interest("seedec") || $sv->has_interest("sub_sub"))
             && $sv->newv("sub_open")
-            && $sv->newv("sub_sub") > $Now
+            && $sv->newv("sub_sub") > Conf::$now
             && $sv->newv("seedec") != Conf::SEEDEC_ALL
             && $sv->conf->fetch_value("select paperId from Paper where outcome<0 limit 1") > 0) {
             $sv->warning_at(null, "Updates will not be allowed for rejected submissions. This exposes decision information that would otherwise be hidden from authors.");

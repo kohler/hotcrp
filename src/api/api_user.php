@@ -56,7 +56,6 @@ class User_API {
     }
 
     static function clickthrough(Contact $user, Qrequest $qreq) {
-        global $Now;
         if ($qreq->accept
             && $qreq->clickthrough_id
             && ($hash = Filer::sha1_hash_as_text($qreq->clickthrough_id))) {
@@ -70,7 +69,7 @@ class User_API {
                 return new JsonResult(400, "No such user.");
             }
             $dest_user->activate_database_account();
-            $dest_user->merge_and_save_data(["clickthrough" => [$hash => $Now]]);
+            $dest_user->merge_and_save_data(["clickthrough" => [$hash => Conf::$now]]);
             $user->log_activity_for($dest_user, "Terms agreed " . substr($hash, 0, 10) . "...");
             return ["ok" => true];
         } else if ($qreq->clickthrough_accept) {

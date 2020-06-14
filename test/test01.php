@@ -6,8 +6,8 @@ require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 $Conf->check_invariants();
 
 $Conf->save_setting("sub_open", 1);
-$Conf->save_setting("sub_update", $Now + 10);
-$Conf->save_setting("sub_sub", $Now + 10);
+$Conf->save_setting("sub_update", Conf::$now + 10);
+$Conf->save_setting("sub_sub", Conf::$now + 10);
 
 // load users
 $user_chair = $Conf->checked_user_by_email("chair@_.com");
@@ -128,8 +128,8 @@ xassert_assign($user_chair, "paper,action,decision\n1,cleardecision,yes\n");
 xassert_eq($Conf->setting("paperacc", 0), 0);
 
 // change submission date
-$Conf->save_setting("sub_update", $Now - 5);
-$Conf->save_setting("sub_sub", $Now - 5);
+$Conf->save_setting("sub_update", Conf::$now - 5);
+$Conf->save_setting("sub_sub", Conf::$now - 5);
 xassert($user_chair->can_update_paper($paper1));
 xassert(!$user_chair->call_with_overrides(Contact::OVERRIDE_CHECK_TIME, "can_update_paper", $paper1));
 xassert(!$user_estrin->can_update_paper($paper1));
@@ -816,8 +816,8 @@ xassert_eqq(sorted_conflicts($paper3, true), "sclin@leland.stanford.edu");
 xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@leland.stanford.edu");
 
 $user_sclin = $Conf->checked_user_by_email("sclin@leland.stanford.edu");
-$Conf->save_setting("sub_update", $Now + 10);
-$Conf->save_setting("sub_sub", $Now + 10);
+$Conf->save_setting("sub_update", Conf::$now + 10);
+$Conf->save_setting("sub_sub", Conf::$now + 10);
 xassert($user_sclin->can_update_paper($paper3));
 xassert_assign($user_sclin, "paper,action,user\n3,conflict,rguerin@ibm.com\n");
 $paper3 = $user_chair->checked_paper_by_id(3);
@@ -869,8 +869,8 @@ xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.
 $paper3->load_conflicts(false);
 xassert_eqq($paper3->conflict_type($user_rguerin), 4);
 
-$Conf->save_setting("sub_update", $Now - 5);
-$Conf->save_setting("sub_sub", $Now - 5);
+$Conf->save_setting("sub_update", Conf::$now - 5);
+$Conf->save_setting("sub_sub", Conf::$now - 5);
 xassert_assign_fail($user_sclin, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n");
 $paper3 = $user_chair->checked_paper_by_id(3);
 xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
@@ -1126,7 +1126,7 @@ $Conf->save_setting("tag_au_seerev", 1, "faart");
 xassert(!$user_author2->can_view_review($paper2, $review2b));
 $Conf->save_setting("resp_active", 1);
 $Conf->save_setting("resp_open", 1);
-$Conf->save_setting("resp_done", $Now + 100);
+$Conf->save_setting("resp_done", Conf::$now + 100);
 xassert($user_author2->can_view_review($paper2, $review2b));
 $Conf->save_setting("au_seerev", Conf::AUSEEREV_NO);
 xassert($user_author2->can_view_review($paper2, $review2b));
@@ -1190,7 +1190,7 @@ xassert($paper16->timeSubmitted < 0);
 xassert($paper16->timeWithdrawn > 0);
 xassert_eqq($paper16->withdrawReason, "Sucky");
 xassert_assign_fail($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
-$Conf->save_setting("sub_sub", $Now + 5);
+$Conf->save_setting("sub_sub", Conf::$now + 5);
 xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
 $paper16 = $user_mogul->checked_paper_by_id(16);
 xassert($paper16->timeSubmitted > 0);

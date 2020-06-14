@@ -4,8 +4,8 @@
 
 require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 $Conf->save_setting("sub_open", 1);
-$Conf->save_setting("sub_update", $Now + 100);
-$Conf->save_setting("sub_sub", $Now + 100);
+$Conf->save_setting("sub_update", Conf::$now + 100);
+$Conf->save_setting("sub_sub", Conf::$now + 100);
 $Conf->save_setting("opt.contentHashMethod", 1, "sha1");
 
 // load users

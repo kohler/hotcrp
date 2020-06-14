@@ -49,7 +49,7 @@ if ($dl->sub->sub ?? false) {
 if ($dl->resps ?? false) {
     foreach ($dl->resps as $rname => $dlr) {
         if (($dlr->open ?? false)
-            && $dlr->open <= $Now
+            && $dlr->open <= Conf::$now
             && ($dlr->done ?? false)) {
             if ($rname == 1) {
                 printDeadline($dlr->done, $Conf->_("Response deadline"),
@@ -75,14 +75,14 @@ if (($dl->rev ?? false) && ($dl->rev->open ?? false)) {
         if ($Viewer->isPC) {
             $ps = +$Conf->setting("pcrev_soft$isuf");
             $ph = +$Conf->setting("pcrev_hard$isuf");
-            if ($ph && ($ph < $Now || $ps < $Now)) {
+            if ($ph && ($ph < Conf::$now || $ps < Conf::$now)) {
                 $thisdl[] = "PH" . $ph;
             } else if ($ps) {
                 $thisdl[] = "PS" . $ps;
             }
         }
         if ($es != $ps || $eh != $ph) {
-            if ($eh && ($eh < $Now || $es < $Now)) {
+            if ($eh && ($eh < Conf::$now || $es < Conf::$now)) {
                 $thisdl[] = "EH" . $eh;
             } else if ($es) {
                 $thisdl[] = "ES" . $es;

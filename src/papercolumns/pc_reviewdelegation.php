@@ -16,7 +16,6 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         return true;
     }
     function content(PaperList $pl, PaperInfo $row) {
-        global $Now;
         $rx = [];
         $row->ensure_reviewer_names();
         $old_overrides = $pl->user->add_overrides(Contact::OVERRIDE_CONFLICT);

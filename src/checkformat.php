@@ -338,7 +338,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
-        global $Now;
         $bj = null;
         if (($m = $doc->metadata()) && isset($m->banal)) {
             $bj = $m->banal;
@@ -347,7 +346,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             && get($bj, "args") == self::$banal_args;
         if (!$bj_ok)
             ++$cf->need_run;
-        if (!$bj_ok || $bj->at < $Now - 86400) {
+        if (!$bj_ok || $bj->at < Conf::$now - 86400) {
             $cf->possible_run = true;
             if ($cf->allow_run == CheckFormat::RUN_YES
                 || (!$bj_ok && $cf->allow_run == CheckFormat::RUN_PREFER_NO))

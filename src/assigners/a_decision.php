@@ -55,12 +55,11 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
             $decyes = 0;
             // accepted papers are always submitted
             if ($dec > 0) {
-                global $Now;
                 Status_AssignmentParser::load_status_state($state);
                 $sm = $state->remove(["type" => "status", "pid" => $prow->paperId]);
                 $sres = $sm[0];
                 if ($sres["_submitted"] === 0) {
-                    $sres["_submitted"] = ($sres["_withdrawn"] > 0 ? -$Now : $Now);
+                    $sres["_submitted"] = ($sres["_withdrawn"] > 0 ? -Conf::$now : Conf::$now);
                 }
                 $state->add($sres);
                 if ($sres["_submitted"] > 0) {
@@ -115,7 +114,6 @@ class Decision_Assigner extends Assigner {
         $locks["Paper"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        global $Now;
         $dec = $this->item->deleted() ? 0 : $this->item["_decision"];
         $aset->stage_qe("update Paper set outcome=? where paperId=?", $dec, $this->pid);
         if ($dec > 0 || $this->item->pre("_decision") > 0) {

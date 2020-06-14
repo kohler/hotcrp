@@ -318,9 +318,8 @@ class SessionList {
     }
 
     function set_cookie(Contact $user) {
-        global $Now;
         $t = round(microtime(true) * 1000);
-        $user->conf->set_cookie("hotlist-info-" . $t, $this->info_string(), $Now + 20);
+        $user->conf->set_cookie("hotlist-info-" . $t, $this->info_string(), Conf::$now + 20);
     }
 
     /** @param int $id */

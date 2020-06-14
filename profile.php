@@ -222,7 +222,7 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_account_here())
 /** @param UserStatus $user_status
  * @param ?Contact $Acct */
 function save_user($cj, $user_status, $Acct, $allow_modification) {
-    global $Conf, $Me, $Now, $newProfile;
+    global $Conf, $Me, $newProfile;
     if ($newProfile) {
         $Acct = null;
     }
@@ -417,7 +417,7 @@ if (!$Qreq->post_ok()) {
         $success = parseBulkFile($Qreq->bulkentry, "");
     }
     if (!$success) {
-        $Me->save_session("profile_bulkentry", array($Now, $Qreq->bulkentry));
+        $Me->save_session("profile_bulkentry", array(Conf::$now, $Qreq->bulkentry));
     }
     $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
 } else if (isset($Qreq->save)) {
@@ -664,7 +664,7 @@ if ($newProfile === 2) {
     if ($Qreq->bulkentry === null
         && ($session_bulkentry = $Me->session("profile_bulkentry"))
         && is_array($session_bulkentry)
-        && $session_bulkentry[0] > $Now - 5) {
+        && $session_bulkentry[0] > Conf::$now - 5) {
         $Qreq->bulkentry = $session_bulkentry[1];
         $Me->save_session("profile_bulkentry", null);
     }

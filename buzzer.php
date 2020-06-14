@@ -6,7 +6,6 @@
 require_once("src/initweb.php");
 
 function kiosk_manager(Contact $user, Qrequest $qreq) {
-    global $Now;
     $kiosks = (array) ($user->conf->setting_json("__tracker_kiosk") ? : array());
     uasort($kiosks, function ($a, $b) {
         return $a->update_at - $b->update_at;
@@ -14,7 +13,7 @@ function kiosk_manager(Contact $user, Qrequest $qreq) {
     $kchange = false;
     // delete old kiosks
     while (!empty($kiosks)
-           && (count($kiosks) > 12 || current($kiosks)->update_at <= $Now - 172800)) {
+           && (count($kiosks) > 12 || current($kiosks)->update_at <= Conf::$now - 172800)) {
         array_shift($kiosks);
         $kchange = true;
         reset($kiosks);
@@ -22,13 +21,13 @@ function kiosk_manager(Contact $user, Qrequest $qreq) {
     // look for new kiosks
     $kiosk_keys = [null, null];
     foreach ($kiosks as $k => $kj) {
-        if ($kj->update_at >= $Now - 7200)
+        if ($kj->update_at >= Conf::$now - 7200)
             $kiosk_keys[$kj->show_papers ? 1 : 0] = $k;
     }
     for ($i = 0; $i <= 1; ++$i) {
         if (!$kiosk_keys[$i]) {
             $key = hotcrp_random_password();
-            $kiosks[$key] = (object) ["update_at" => $Now, "show_papers" => !!$i];
+            $kiosks[$key] = (object) ["update_at" => Conf::$now, "show_papers" => !!$i];
             $kiosk_keys[$i] = $kchange = $key;
         }
     }
@@ -50,9 +49,9 @@ if ($Me->is_track_manager()) {
 }
 
 function kiosk_lookup($key) {
-    global $Conf, $Now;
+    global $Conf;
     $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : []);
-    if (isset($kiosks[$key]) && $kiosks[$key]->update_at >= $Now - 604800) {
+    if (isset($kiosks[$key]) && $kiosks[$key]->update_at >= Conf::$now - 604800) {
         return $kiosks[$key];
     } else {
         return null;

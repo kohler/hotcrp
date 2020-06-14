@@ -2014,11 +2014,10 @@ class PaperTable {
     // Functions for editing
 
     function deadline_setting_is($dname, $dl = "deadline") {
-        global $Now;
         $deadline = $this->conf->printableTimeSetting($dname, "span");
         if ($deadline === "N/A") {
             return "";
-        } else if ($Now < $this->conf->setting($dname)) {
+        } else if (Conf::$now < $this->conf->setting($dname)) {
             return " The $dl is $deadline.";
         } else {
             return " The $dl was $deadline.";
@@ -2041,11 +2040,10 @@ class PaperTable {
     }
 
     private function _edit_message_new_paper() {
-        global $Now;
         $msg = "";
         if (!$this->conf->timeStartPaper()) {
             $sub_open = $this->conf->setting("sub_open");
-            if ($sub_open <= 0 || $sub_open > $Now) {
+            if ($sub_open <= 0 || $sub_open > Conf::$now) {
                 $msg = "The site is not open for submissions." . $this->_deadline_override_message();
             } else {
                 $msg = 'The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadline_setting_is("sub_reg") . $this->_deadline_override_message();
@@ -2382,13 +2380,13 @@ class PaperTable {
     }
 
     static private function _echo_clickthrough($ctype) {
-        global $Conf, $Now;
+        global $Conf;
         $data = $Conf->_i("clickthrough_$ctype");
         $buttons = [Ht::submit("Agree", ["class" => "btnbig btn-success ui js-clickthrough"])];
         echo Ht::form("", ["class" => "ui"]), '<div>', $data,
             Ht::hidden("clickthrough_type", $ctype),
             Ht::hidden("clickthrough_id", sha1($data)),
-            Ht::hidden("clickthrough_time", $Now),
+            Ht::hidden("clickthrough_time", Conf::$now),
             Ht::actions($buttons, ["class" => "aab aabig aabr"]), "</div></form>";
     }
 

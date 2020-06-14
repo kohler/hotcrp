@@ -25,7 +25,6 @@ class MailRecipients {
     }
 
     function __construct($contact, $type, $papersel, $newrev_since) {
-        global $Now;
         $this->conf = $contact->conf;
         $this->contact = $contact;
         assert(!!$contact->isPC);
@@ -158,7 +157,7 @@ class MailRecipients {
             if (preg_match(',\A(?:|n/a|\(?all\)?|0)\z,i', $t)) {
                 $this->newrev_since = 0;
             } else if (($this->newrev_since = $this->conf->parse_time($t)) !== false) {
-                if ($this->newrev_since > $Now) {
+                if ($this->newrev_since > Conf::$now) {
                     $this->conf->warnMsg("That time is in the future.");
                 }
             } else {

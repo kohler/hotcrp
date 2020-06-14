@@ -649,7 +649,6 @@ class CsvGenerator {
     }
 
     private function _flush_stream() {
-        global $Now;
         if ($this->stream === null) {
             $this->stream = false;
             if (($dir = Filer::docstore_tmpdir() ?? tempdir())) {
@@ -657,7 +656,7 @@ class CsvGenerator {
                     $dir .= "/";
                 }
                 for ($i = 0; $i !== 100; ++$i) {
-                    $fn = $dir . "csvtmp-$Now-" . mt_rand(0, 99999999) . ".csv";
+                    $fn = $dir . "csvtmp-" . time() . "-" . mt_rand(0, 99999999) . ".csv";
                     if (($this->stream = @fopen($fn, "xb"))) {
                         $this->stream_filename = $fn;
                         break;

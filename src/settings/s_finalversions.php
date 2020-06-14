@@ -20,11 +20,10 @@ class FinalVersions_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
-        global $Now;
         if ($sv->has_interest("final_open")
             && $sv->newv("final_open")
             && ($sv->newv("final_soft") || $sv->newv("final_done"))
-            && (!$sv->newv("final_done") || $sv->newv("final_done") > $Now)
+            && (!$sv->newv("final_done") || $sv->newv("final_done") > Conf::$now)
             && $sv->newv("seedec") != Conf::SEEDEC_ALL) {
             $sv->warning_at(null, "The system is set to collect final versions, but authors cannot submit final versions until they can see decisions. You may want to update the " . $sv->setting_link("“Who can see decisions” setting", "seedec") . ".");
         }

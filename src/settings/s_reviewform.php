@@ -295,7 +295,6 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     function save(SettingValues $sv, Si $si) {
-        global $Now;
         if (!$sv->update("review_form", json_encode_db($this->nrfj))) {
             return;
         }
@@ -363,7 +362,7 @@ class ReviewForm_SettingParser extends SettingParser {
                     }
                     $max_ordinal = $sv->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $rrow->paperId);
                     if ($max_ordinal !== null) {
-                        $sv->conf->qe("update PaperReview set reviewOrdinal=?, timeDisplayed=? where paperId=? and reviewId=?", $max_ordinal + 1, $Now, $rrow->paperId, $rrow->reviewId);
+                        $sv->conf->qe("update PaperReview set reviewOrdinal=?, timeDisplayed=? where paperId=? and reviewId=?", $max_ordinal + 1, Conf::$now, $rrow->paperId, $rrow->reviewId);
                     }
                 }
             }

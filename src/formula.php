@@ -1050,10 +1050,7 @@ class FormulaCompiler {
         return '$tags';
     }
     function _add_now() {
-        if ($this->check_gvar('$now')) {
-            $this->gstmt[] = "global \$Now;";
-        }
-        return '$Now';
+        return 'Conf::$now';
     }
 
     function loop_cid($aggregate = false) {

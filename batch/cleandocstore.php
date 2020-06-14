@@ -31,7 +31,6 @@ class Batch_CleanDocstore {
     public $ftrees = [];
 
     function fparts_random_match() {
-        global $Now;
         $fmatches = [];
         for ($i = 0; $i !== count($this->ftrees); ++$i) {
             if (!($ftree = $this->ftrees[$i])) {
@@ -44,7 +43,7 @@ class Batch_CleanDocstore {
                 $fm = $ftree->random_match();
                 if ($fm->is_complete()
                     && (($fm->treeid & 1) === 0
-                        || max($fm->atime(), $fm->mtime()) < $Now - 86400)) {
+                        || max($fm->atime(), $fm->mtime()) < Conf::$now - 86400)) {
                     ++$n;
                     $fmatches[] = $fm;
                 } else {
@@ -56,14 +55,13 @@ class Batch_CleanDocstore {
             }
         }
         usort($fmatches, function ($a, $b) {
-            global $Now;
             // week-old temporary files should be removed first
             $at = $a->atime();
-            if (($a->treeid & 1) && $at < $Now - 604800) {
+            if (($a->treeid & 1) && $at < Conf::$now - 604800) {
                 $at = 1;
             }
             $bt = $b->atime();
-            if (($b->treeid & 1) && $bt < $Now - 604800) {
+            if (($b->treeid & 1) && $bt < Conf::$now - 604800) {
                 $bt = 1;
             }
             if ($at !== false && $bt !== false) {

@@ -679,7 +679,6 @@ class UserStatus extends MessageSet {
     /** @param object $cj
      * @param ?Contact $old_user */
     function save($cj, $old_user = null) {
-        global $Now;
         assert(is_object($cj));
         assert(!$old_user || (!$this->no_create && !$this->no_modify));
         $msgcount = $this->message_count();
@@ -865,7 +864,7 @@ class UserStatus extends MessageSet {
         // Changes to the above fields also change the updateTime
         // (changes to the below fields do not).
         if (!empty($cu->qv)) {
-            $user->save_assign_field("updateTime", $Now, $cu);
+            $user->save_assign_field("updateTime", Conf::$now, $cu);
         }
 
         // Follow

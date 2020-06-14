@@ -794,14 +794,13 @@ class ReviewForm implements JsonSerializable {
 
     static private function check_review_author_seen($prow, $rrow, $contact,
                                                      $no_update = false) {
-        global $Now;
         if ($rrow
             && !$rrow->reviewAuthorSeen
             && $contact->act_author_view($prow)
             && !$contact->is_actas_user()) {
             // XXX combination of review tokens & authorship gets weird
             assert($rrow->reviewAuthorModified > 0);
-            $rrow->reviewAuthorSeen = $Now;
+            $rrow->reviewAuthorSeen = Conf::$now;
             if (!$no_update) {
                 if (!self::$review_author_seen) {
                     register_shutdown_function("ReviewForm::update_review_author_seen");

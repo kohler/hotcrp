@@ -545,4 +545,3 @@ function xassert_paper_status(PaperStatus $ps) {
 }
 
 MailChecker::clear();
-echo "* Tests initialized.\n";

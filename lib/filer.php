@@ -139,7 +139,7 @@ class Filer {
     }
     /** @param DocumentInfo|list<DocumentInfo> $doc */
     static function multidownload($doc, $downloadname = null, $opts = null) {
-        global $Now, $zlib_output_compression;
+        global $zlib_output_compression;
         if (is_array($doc) && count($doc) == 1) {
             $doc = $doc[0];
             $downloadname = null;
@@ -182,7 +182,7 @@ class Filer {
         header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
         if (is_array($opts) && ($opts["cacheable"] ?? false)) {
             header("Cache-Control: max-age=315576000, private");
-            header("Expires: " . gmdate("D, d M Y H:i:s", $Now + 315576000) . " GMT");
+            header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
         }
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
@@ -226,7 +226,6 @@ class Filer {
     const FPATH_EXISTS = 1;
     const FPATH_MKDIR = 2;
     static function docstore_path(DocumentInfo $doc, $flags = 0) {
-        global $Now;
         if ($doc->error || !($pattern = $doc->conf->docstore())) {
             return null;
         }
@@ -245,8 +244,8 @@ class Filer {
                     return null;
                 }
             }
-            if (filemtime($path) < $Now - 172800 && !self::$no_touch) {
-                @touch($path, $Now);
+            if (filemtime($path) < Conf::$now - 172800 && !self::$no_touch) {
+                @touch($path, Conf::$now);
             }
         }
         if (($flags & self::FPATH_MKDIR)

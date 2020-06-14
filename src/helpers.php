@@ -457,7 +457,7 @@ function filter_whynot($whyNot, $keys) {
 
 /** @param array{conf:Conf,paperId?:int,reviewId?:int,option?:PaperOption} $whyNot */
 function whyNotText($whyNot, $text_only = false) {
-    global $Conf, $Now;
+    global $Conf;
     if (is_string($whyNot)) {
         $whyNot = array($whyNot => 1);
     }
@@ -569,9 +569,9 @@ function whyNotText($whyNot, $text_only = false) {
             }
         } else if ($start <= 0 || $start == $end) {
             $ms[] = $conf->_c("etime", "Action not available.", $open_dname, $paperId);
-        } else if ($start > 0 && $Now < $start) {
+        } else if ($start > 0 && Conf::$now < $start) {
             $ms[] = $conf->_c("etime", "Action not available until %3\$s.", $open_dname, $paperId, $conf->unparse_time($start));
-        } else if ($end > 0 && $Now > $end) {
+        } else if ($end > 0 && Conf::$now > $end) {
             $ms[] = $conf->_c("etime", "Deadline passed.", $dname, $paperId, $conf->unparse_time($end));
         } else {
             $ms[] = $conf->_c("etime", "Action not available.", $dname, $paperId);

@@ -60,8 +60,6 @@ class SearchConfig_API {
     }
 
     static function save_namedformula(Contact $user, Qrequest $qreq) {
-        global $Now;
-
         // capture current formula set
         $new_formula_by_id = $formula_by_id = $user->conf->named_formulas();
         $max_id = array_reduce($formula_by_id, function ($max, $f) {
@@ -161,10 +159,10 @@ class SearchConfig_API {
                 $fdef = $formula_by_id[$f->formulaId] ?? null;
                 if (!$fdef) {
                     $q[] = "insert into Formula set name=?, expression=?, createdBy=?, timeModified=?";
-                    array_push($qv, $f->name, $f->expression, $user->privChair ? -$user->contactId : $user->contactId, $Now);
+                    array_push($qv, $f->name, $f->expression, $user->privChair ? -$user->contactId : $user->contactId, Conf::$now);
                 } else if ($f->name !== $fdef->name || $f->expression !== $fdef->expression) {
                     $q[] = "update Formula set name=?, expression=?, timeModified=? where formulaId=?";
-                    array_push($qv, $f->name, $f->expression, $Now, $f->formulaId);
+                    array_push($qv, $f->name, $f->expression, Conf::$now, $f->formulaId);
                 }
             }
             if (empty($new_formula_by_id)) {

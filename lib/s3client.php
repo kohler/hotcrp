@@ -56,7 +56,6 @@ class S3Client {
 
     /** @return array{string,string} */
     function scope_and_signing_key($time) {
-        global $Now;
         if ($this->s3_scope === null
             && $this->setting_cache) {
             $this->s3_scope = $this->setting_cache->setting_data($this->setting_cache_prefix . "_scope");
@@ -73,8 +72,8 @@ class S3Client {
             $service_key = hash_hmac("sha256", "s3", $region_key, true);
             $this->s3_signing_key = hash_hmac("sha256", "aws4_request", $service_key, true);
             if ($this->setting_cache) {
-                $this->setting_cache->__save_setting($this->setting_cache_prefix . "_scope", $Now, $this->s3_scope);
-                $this->setting_cache->__save_setting($this->setting_cache_prefix . "_signing_key", $Now, $this->s3_signing_key);
+                $this->setting_cache->__save_setting($this->setting_cache_prefix . "_scope", Conf::$now, $this->s3_scope);
+                $this->setting_cache->__save_setting($this->setting_cache_prefix . "_signing_key", Conf::$now, $this->s3_signing_key);
             }
         }
         return [$this->s3_scope, $this->s3_signing_key];

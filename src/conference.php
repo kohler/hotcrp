@@ -50,7 +50,6 @@ class ResponseRound {
     /** @var ?PaperSearch */
     public $search;
     function relevant(Contact $user, PaperInfo $prow = null) {
-        global $Now;
         if ($user->allow_administer($prow)
             && ($this->done || $this->search || $this->name !== "1")) {
             return true;
@@ -58,20 +57,19 @@ class ResponseRound {
             return $this->open > 0;
         } else {
             return $this->open > 0
-                && $this->open < $Now
+                && $this->open < Conf::$now
                 && (!$this->search || $this->search->filter($prow ? [$prow] : $user->authored_papers()));
         }
     }
     function time_allowed($with_grace) {
-        global $Now;
-        if ($this->open === null || $this->open <= 0 || $this->open > $Now) {
+        if ($this->open === null || $this->open <= 0 || $this->open > Conf::$now) {
             return false;
         }
         $t = $this->done;
         if ($t !== null && $t > 0 && $with_grace && $this->grace) {
             $t += $this->grace;
         }
-        return $t === null || $t <= 0 || $t >= $Now;
+        return $t === null || $t <= 0 || $t >= Conf::$now;
     }
     function instructions(Conf $conf) {
         $m = $conf->_i("resp_instrux_$this->number", false, $this->words);
@@ -243,6 +241,10 @@ class Conf {
 
     /** @var Conf */
     static public $g;
+
+    /** @var int */
+    static public $now;
+
     static public $no_invalidate_caches = false;
     static public $next_xt_subposition = 0;
     static private $xt_require_resolved = [];
@@ -292,14 +294,23 @@ class Conf {
         }
     }
 
+    /** @param int $t */
+    static function set_current_time($t) {
+        global $Now;
+        $Now = Conf::$now = $t;
+    }
+
+    /** @param int $advance_past */
+    static function advance_current_time($advance_past) {
+        self::set_current_time(max(Conf::$now, $advance_past + 1));
+    }
+
 
     //
     // Initialization functions
     //
 
     function load_settings() {
-        global $Now;
-
         // load settings from database
         $this->settings = array();
         $this->settingTexts = array();
@@ -354,7 +365,7 @@ class Conf {
         }
 
         // GC old capabilities
-        if (($this->settings["__capability_gc"] ?? 0) < $Now - 86400) {
+        if (($this->settings["__capability_gc"] ?? 0) < Conf::$now - 86400) {
             $this->cleanup_capabilities();
         }
 
@@ -363,8 +374,6 @@ class Conf {
     }
 
     private function crosscheck_settings() {
-        global $Now;
-
         // enforce invariants
         foreach (["pcrev_any", "extrev_view"] as $x) {
             if (!isset($this->settings[$x])) {
@@ -438,9 +447,9 @@ class Conf {
         $this->_pc_see_pdf = true;
         if (($this->settings["sub_freeze"] ?? 0) <= 0
             && ($so = $this->settings["sub_open"] ?? 0) > 0
-            && $so < $Now
+            && $so < Conf::$now
             && ($ss = $this->settings["sub_sub"] ?? 0) > 0
-            && $ss > $Now
+            && $ss > Conf::$now
             && (($this->settings["pc_seeallpdf"] ?? 0) <= 0
                 || !$this->can_pc_see_active_submissions())) {
             $this->_pc_see_pdf = false;
@@ -684,7 +693,6 @@ class Conf {
     }
 
     private function cleanup_capabilities() {
-        global $Now;
         $ctmap = $this->capability_type_map();
         $ct_cleanups = [];
         foreach ($ctmap as $ctj) {
@@ -692,15 +700,15 @@ class Conf {
                 $ct_cleanups[] = $ctj->type;
         }
         if (!empty($ct_cleanups)) {
-            $result = $this->ql("select * from Capability where timeExpires>0 and timeExpires<$Now and capabilityType?a", $ct_cleanups);
+            $result = $this->ql("select * from Capability where timeExpires>0 and timeExpires<? and capabilityType?a", Conf::$now, $ct_cleanups);
             while (($cap = CapabilityInfo::fetch($result, $this, false))) {
                 call_user_func($ctmap[$cap->capabilityType]->cleanup_callback, $cap);
             }
             Dbl::free($result);
         }
-        $this->ql("delete from Capability where timeExpires>0 and timeExpires<$Now");
-        $this->ql("insert into Settings set name='__capability_gc', value=$Now on duplicate key update value=values(value)");
-        $this->settings["__capability_gc"] = $Now;
+        $this->ql("delete from Capability where timeExpires>0 and timeExpires<".Conf::$now);
+        $this->ql("insert into Settings set name='__capability_gc', value=".Conf::$now." on duplicate key update value=values(value)");
+        $this->settings["__capability_gc"] = Conf::$now;
     }
 
 
@@ -956,7 +964,6 @@ class Conf {
 
     /** @return ?S3Client */
     function s3_docstore() {
-        global $Now;
         if ($this->_s3_client === false) {
             if ($this->setting_data("s3_bucket")) {
                 $opts = [
@@ -2844,10 +2851,7 @@ class Conf {
         return $d;
     }
     function parse_time($d, $reference = null) {
-        global $Now;
-        if ($reference === null) {
-            $reference = $Now;
-        }
+        $reference = $reference ?? Conf::$now;
         if (!isset($this->opt["dateFormatTimezoneRemover"])) {
             $x = array();
             if (function_exists("timezone_abbreviations_list")) {
@@ -2949,8 +2953,7 @@ class Conf {
     /** @param int $timestamp
      * @param int $now */
     function unparse_time_relative($timestamp, $now = 0, $format = 0) {
-        global $Now;
-        $d = abs($timestamp - ($now ? : $Now));
+        $d = abs($timestamp - ($now ? : Conf::$now));
         if ($d >= 5227200) {
             if (!($format & 1)) {
                 return ($format & 8 ? "on " : "") . date($this->_dateFormat("obscure"), $timestamp);
@@ -2984,7 +2987,7 @@ class Conf {
         if ($format & 2) {
             return $d;
         } else {
-            return $timestamp < ($now ? : $Now) ? $d . " ago" : "in " . $d;
+            return $timestamp < ($now ? : Conf::$now) ? $d . " ago" : "in " . $d;
         }
     }
 
@@ -3000,24 +3003,21 @@ class Conf {
     }
 
     function settingsAfter($name) {
-        global $Now;
         $t = $this->settings[$name] ?? null;
-        return $t !== null && $t > 0 && $t <= $Now;
+        return $t !== null && $t > 0 && $t <= Conf::$now;
     }
     function deadlinesAfter($name, $grace = null) {
-        global $Now;
         $t = $this->settings[$name] ?? null;
         if ($t !== null && $t > 0 && $grace
             && ($g = $this->settings[$grace] ?? null)) {
             $t += $g;
         }
-        return $t !== null && $t > 0 && $t <= $Now;
+        return $t !== null && $t > 0 && $t <= Conf::$now;
     }
     function deadlinesBetween($name1, $name2, $grace = null) {
         // see also ResponseRound::time_allowed
-        global $Now;
         $t = $this->settings[$name1] ?? null;
-        if (($t === null || $t <= 0 || $t > $Now) && $name1) {
+        if (($t === null || $t <= 0 || $t > Conf::$now) && $name1) {
             return false;
         }
         $t = $this->settings[$name2] ?? null;
@@ -3025,7 +3025,7 @@ class Conf {
             && ($g = $this->settings[$grace] ?? null)) {
             $t += $g;
         }
-        return $t === null || $t <= 0 || $t >= $Now;
+        return $t === null || $t <= 0 || $t >= Conf::$now;
     }
 
     function timeStartPaper() {
@@ -3058,9 +3058,8 @@ class Conf {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
     function time_review_open() {
-        global $Now;
         $rev_open = $this->settings["rev_open"] ?? 0;
-        return 0 < $rev_open && $rev_open <= $Now;
+        return 0 < $rev_open && $rev_open <= Conf::$now;
     }
     function review_deadline($round, $isPC, $hard) {
         if ($round === null) {
@@ -3072,14 +3071,13 @@ class Conf {
             . ($round ? "_$round" : "");
     }
     function missed_review_deadline($round, $isPC, $hard) {
-        global $Now;
         $rev_open = $this->settings["rev_open"] ?? 0;
-        if (!(0 < $rev_open && $rev_open <= $Now)) {
+        if (!(0 < $rev_open && $rev_open <= Conf::$now)) {
             return "rev_open";
         }
         $dn = $this->review_deadline($round, $isPC, $hard);
         $dv = $this->settings[$dn] ?? 0;
-        if ($dv > 0 && $dv < $Now) {
+        if ($dv > 0 && $dv < Conf::$now) {
             return $dn;
         }
         return false;
@@ -4010,11 +4008,11 @@ class Conf {
     }
 
     function header_head($title, $extra = []) {
-        global $Me, $Now, $ConfSitePATH;
+        global $Me;
         // clear session list cookies
         foreach ($_COOKIE as $k => $v) {
             if (str_starts_with($k, "hotlist-info"))
-                $this->set_cookie($k, "", $Now - 86400);
+                $this->set_cookie($k, "", Conf::$now - 86400);
         }
 
         echo "<!DOCTYPE html>
@@ -4159,17 +4157,16 @@ class Conf {
 
     /** @return bool */
     function has_interesting_deadline($my_deadlines) {
-        global $Now;
         if ($my_deadlines->sub->open ?? false) {
             foreach (["reg", "update", "sub"] as $k) {
-                if ($Now <= get($my_deadlines->sub, $k, 0) || get($my_deadlines->sub, "{$k}_ingrace"))
+                if (Conf::$now <= get($my_deadlines->sub, $k, 0) || get($my_deadlines->sub, "{$k}_ingrace"))
                     return true;
             }
         }
         if (($my_deadlines->is_author ?? false)
             && ($my_deadlines->resps ?? false)) {
             foreach ($my_deadlines->resps as $r) {
-                if ($r->open && ($Now <= $r->done || ($r->ingrace ?? false)))
+                if ($r->open && (Conf::$now <= $r->done || ($r->ingrace ?? false)))
                     return true;
             }
         }
@@ -4177,7 +4174,7 @@ class Conf {
     }
 
     function header_body($title, $id, $extra = []) {
-        global $Me, $Now;
+        global $Me;
         echo "<body";
         if ($id) {
             echo ' id="body-', $id, '"';
@@ -4195,7 +4192,7 @@ class Conf {
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
-        Ht::stash_script("hotcrp_load.time(" . (-(int) date("Z", $Now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
+        Ht::stash_script("hotcrp_load.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
 
         // deadlines settings
         $my_deadlines = null;
@@ -4323,7 +4320,7 @@ class Conf {
                         $this->msg($t, $m[1]);
                     }
                 }
-                hotcrp_setcookie("hotcrpmessage", "", ["expires" => $Now - 3600]);
+                hotcrp_setcookie("hotcrpmessage", "", ["expires" => Conf::$now - 3600]);
             }
         }
         echo "</div></div>\n";
@@ -4339,7 +4336,7 @@ class Conf {
         if ($Me
             && $Me->privChair
             && (!isset($_SESSION["updatecheck"])
-                || $_SESSION["updatecheck"] + 3600 <= $Now)
+                || $_SESSION["updatecheck"] + 3600 <= Conf::$now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {
             $m = isset($this->opt["updatesSite"]) ? $this->opt["updatesSite"] : "//hotcrp.lcdf.org/updates";
             $m .= (strpos($m, "?") === false ? "?" : "&")
@@ -4360,7 +4357,7 @@ class Conf {
                 }
             }
             Ht::stash_script("check_version(\"$m\",\"$v\")");
-            $_SESSION["updatecheck"] = $Now;
+            $_SESSION["updatecheck"] = Conf::$now;
         }
     }
 
@@ -4598,7 +4595,6 @@ class Conf {
 
     /** @return list<list<string>> */
     private static function format_log_values($text, $user, $dest_user, $true_user, $pids) {
-        global $Now;
         if (empty($pids)) {
             $pids = [null];
         }
@@ -4638,7 +4634,7 @@ class Conf {
                 $pid = null;
                 $t = substr($t, 0, 4096);
             }
-            $result[] = [$addr, $user, $dest_user, $true_user, $pid, $Now, $t];
+            $result[] = [$addr, $user, $dest_user, $true_user, $pid, Conf::$now, $t];
             $l = $r;
         }
         return $result;

@@ -46,13 +46,12 @@ class Submissions_SettingRenderer {
 
 class Submissions_SettingParser extends SettingParser {
     function validate(SettingValues $sv, Si $si) {
-        global $Now;
         $d1 = $sv->newv($si->name);
         if ($si->name === "sub_open") {
             if ($d1 <= 0
                 && $sv->oldv("sub_open") > 0
                 && $sv->newv("sub_sub") <= 0) {
-                $sv->save("sub_close", $Now);
+                $sv->save("sub_close", Conf::$now);
             }
         } else if ($si->name === "sub_sub") {
             $sv->check_date_before("sub_reg", "sub_sub", true);

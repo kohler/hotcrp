@@ -178,8 +178,6 @@ class ZipDocument {
 
     /** @return DocumentInfo */
     function create() {
-        global $Now;
-
         if (!empty($this->warnings)) {
             $this->add_as(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         }
@@ -197,7 +195,7 @@ class ZipDocument {
             $this->filestore = $dstore_tmp . hash("sha256", $signature, false) . ".zip";
             // maybe zipfile with that signature already exists
             if (file_exists($this->filestore)) {
-                if (@filemtime($this->filestore) < $Now - 21600) {
+                if (@filemtime($this->filestore) < Conf::$now - 21600) {
                     @touch($this->filestore);
                 }
                 return $this->_make_document();

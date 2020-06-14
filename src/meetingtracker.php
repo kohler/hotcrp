@@ -4,10 +4,9 @@
 
 class MeetingTracker {
     static function lookup(Conf $conf) {
-        global $Now;
         $tracker = $conf->setting_json("tracker");
         if ($tracker
-            && (!$tracker->trackerid || $tracker->update_at >= $Now - 150)) {
+            && (!$tracker->trackerid || $tracker->update_at >= Conf::$now - 150)) {
             return $tracker;
         } else {
             $when = $tracker ? $tracker->update_at + 0.1 : 0;
@@ -16,11 +15,10 @@ class MeetingTracker {
     }
 
     static function expand($tracker) {
-        global $Now;
         if (isset($tracker->ts)) {
             $ts = [];
             foreach ($tracker->ts as $tr) {
-                if ($tr->update_at >= $Now - 150)
+                if ($tr->update_at >= Conf::$now - 150)
                     $ts[] = $tr;
             }
             return $ts;
@@ -65,8 +63,6 @@ class MeetingTracker {
 
 
     static function contact_tracker_comet(Conf $conf, $pids = null) {
-        global $Now;
-
         $comet_dir = $conf->opt("trackerCometUpdateDirectory");
         $comet_url = $conf->opt("trackerCometSite");
         if (!$comet_dir && !$comet_url) {
@@ -90,7 +86,7 @@ class MeetingTracker {
             }
             $suffix = "";
             $count = 0;
-            while (($f = @fopen($comet_dir . $Now . $suffix, "x")) === false
+            while (($f = @fopen($comet_dir . Conf::$now . $suffix, "x")) === false
                    && $count < 20) {
                 $suffix = "x" . mt_rand(0, 65535);
                 ++$count;
@@ -225,7 +221,6 @@ class MeetingTracker {
 
     static private function tracker_new(Contact $user, $trackerid, $xlist,
                                         $start_at, $position, $position_at) {
-        global $Now;
         if ($xlist instanceof SessionList) {
             $url = $xlist->full_site_relative_url();
         } else {
@@ -239,7 +234,7 @@ class MeetingTracker {
             "description" => $xlist->description,
             "start_at" => $start_at,
             "position_at" => $position_at,
-            "update_at" => max($Now, $position_at),
+            "update_at" => max(Conf::$now, $position_at),
             "owner" => $user->contactId,
             "sessionid" => session_id(),
             "position" => $position
@@ -247,7 +242,6 @@ class MeetingTracker {
     }
 
     static private function tracker_save(Conf $conf, $trs, $tracker, $position_at) {
-        global $Now;
         if (empty($trs)) {
             $tracker = (object) [
                 "trackerid" => false,
@@ -263,7 +257,7 @@ class MeetingTracker {
             $tracker = (object) [
                 "trackerid" => $tracker->trackerid,
                 "position_at" => $position_at,
-                "update_at" => max($Now, $position_at),
+                "update_at" => max(Conf::$now, $position_at),
                 "ts" => $trs
             ];
         }
@@ -275,7 +269,6 @@ class MeetingTracker {
         // NB: This is a special API function; it should either return nothing
         // (in which case the result of a `status` api call is returned),
         // or call `json_exit` on error.
-        global $Now;
 
         // track="IDENTIFIER POSITION" or track="IDENTIFIER stop" or track=stop
         if (!$user->is_track_manager() || !$qreq->post_ok()) {
@@ -378,7 +371,7 @@ class MeetingTracker {
                     $position_at = $trs[$match]->position_at;
                 }
             } else {
-                $start_at = $Now;
+                $start_at = Conf::$now;
             }
 
             ensure_session();
@@ -414,8 +407,6 @@ class MeetingTracker {
     }
 
     static function trackerconfig_api(Contact $user, $qreq) {
-        global $Now;
-
         if (!$user->is_track_manager() || !$qreq->post_ok()) {
             return json_exit(403, "Permission error.");
         }
@@ -514,7 +505,7 @@ class MeetingTracker {
                         $new_trackerid = mt_rand(1, 9999999);
                     } while (self::tracker_search($new_trackerid, $trs) !== false);
 
-                    $tr = self::tracker_new($user, $new_trackerid, $xlist, $Now, $position, $position_at);
+                    $tr = self::tracker_new($user, $new_trackerid, $xlist, Conf::$now, $position, $position_at);
                     if ($name !== "") {
                         $tr->name = $name;
                     }
@@ -595,7 +586,6 @@ class MeetingTracker {
 
 
     static private function trinfo($tr, Contact $user) {
-        global $Now;
         $ti = (object) [
             "trackerid" => $tr->trackerid,
             "listid" => $tr->listid,
@@ -603,7 +593,7 @@ class MeetingTracker {
             "start_at" => $tr->start_at,
             "position_at" => $tr->position_at,
             "url" => $tr->url,
-            "calculated_at" => $Now,
+            "calculated_at" => Conf::$now,
             "listinfo" => json_encode_browser([
                 "listid" => $tr->listid,
                 "ids" => SessionList::encode_ids($tr->ids),
@@ -732,7 +722,6 @@ class MeetingTracker {
     }
 
     static function my_deadlines($dl, Contact $user) {
-        global $Now;
         $tracker = self::lookup($user->conf);
         if ($tracker->trackerid && $user->can_view_tracker()) {
             $tis = $trs = [];

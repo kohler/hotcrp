@@ -514,7 +514,6 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
     }
 
     function save($req, Contact $acting_contact) {
-        global $Now;
         if (is_array($req)) {
             $req = (object) $req;
         }
@@ -622,7 +621,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         } else if (!$this->commentId) {
             $change = true;
             $qa = ["contactId, $LinkColumn, commentType, comment, commentOverflow, timeModified, replyTo"];
-            $qb = [$contact->contactId, $this->prow->$LinkColumn, $ctype, "?", "?", $Now, 0];
+            $qb = [$contact->contactId, $this->prow->$LinkColumn, $ctype, "?", "?", Conf::$now, 0];
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {
@@ -639,7 +638,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             }
             if ($displayed) {
                 $qa[] = "timeDisplayed, timeNotified";
-                $qb[] = "$Now, $Now";
+                $qb[] = Conf::$now . ", " . Conf::$now;
             }
             $q = "insert into $Table (" . join(", ", $qa) . ") select " . join(", ", $qb) . "\n";
             if ($is_response) {
@@ -652,24 +651,24 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             }
         } else {
             $change = ($this->commentType >= COMMENTTYPE_AUTHOR) != ($ctype >= COMMENTTYPE_AUTHOR);
-            if ($this->timeModified >= $Now) {
-                $Now = $this->timeModified + 1;
+            if ($this->timeModified >= Conf::$now) {
+                Conf::advance_current_time($this->timeModified);
             }
             // do not notify on updates within 3 hours
             $qa = "";
-            if ($this->timeNotified + 10800 < $Now
+            if ($this->timeNotified + 10800 < Conf::$now
                 || (($ctype & COMMENTTYPE_RESPONSE)
                     && !($ctype & COMMENTTYPE_DRAFT)
                     && ($this->commentType & COMMENTTYPE_DRAFT))) {
-                $qa .= ", timeNotified=$Now";
+                $qa .= ", timeNotified=" . Conf::$now;
             }
             // reset timeDisplayed if you change the comment type
             if ((!$this->timeDisplayed || $this->ordinal_missing($ctype))
                 && ($text !== "" || $docids)
                 && $displayed) {
-                $qa .= ", timeDisplayed=$Now";
+                $qa .= ", timeDisplayed=" . Conf::$now;
             }
-            $q = "update $Table set timeModified=$Now$qa, commentType=$ctype, comment=?, commentOverflow=?, commentTags=? where commentId=$this->commentId";
+            $q = "update $Table set timeModified=" . Conf::$now . $qa . ", commentType=$ctype, comment=?, commentOverflow=?, commentTags=? where commentId=$this->commentId";
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {

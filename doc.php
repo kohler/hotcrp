@@ -63,7 +63,6 @@ function document_history(Contact $user, PaperInfo $prow, $dtype) {
 }
 
 function document_download(Contact $user, $qreq) {
-    global $Now;
     try {
         $dr = new DocumentRequest($qreq, $qreq->path(), $user);
     } catch (Exception $e) {
@@ -90,7 +89,7 @@ function document_download(Contact $user, $qreq) {
         if (ctype_digit($qreq->at)) {
             $time = intval($qreq->at);
         } else if (!($time = $user->conf->parse_time($qreq->at))) {
-            $time = $Now;
+            $time = Conf::$now;
         }
         $want_pj = null;
         foreach (document_history($user, $prow, $dr->dtype) as $pj) {

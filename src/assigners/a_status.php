@@ -58,7 +58,6 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         Status_AssignmentParser::load_status_state($state);
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        global $Now;
         $m = $state->remove(["type" => "status", "pid" => $prow->paperId]);
         $res = $m[0];
         $ch = false;
@@ -66,7 +65,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             if ($res["_submitted"] === 0) {
                 if (($whynot = $state->user->perm_finalize_paper($prow)))
                     return whyNotText($whynot);
-                $res["_submitted"] = ($res["_withdrawn"] > 0 ? -$Now : $Now);
+                $res["_submitted"] = ($res["_withdrawn"] > 0 ? -Conf::$now : Conf::$now);
             }
         } else if ($this->xtype === "unsubmit") {
             if ($res["_submitted"] !== 0) {
@@ -79,7 +78,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                 assert($res["_submitted"] >= 0);
                 if (($whynot = $state->user->perm_withdraw_paper($prow)))
                     return whyNotText($whynot);
-                $res["_withdrawn"] = $Now;
+                $res["_withdrawn"] = Conf::$now;
                 $res["_submitted"] = -$res["_submitted"];
                 if ($state->conf->tags()->has_votish) {
                     Tag_AssignmentParser::load_tag_state($state);
@@ -97,7 +96,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                     return whyNotText($whynot);
                 $res["_withdrawn"] = 0;
                 if ($res["_submitted"] === -100)
-                    $res["_submitted"] = $Now;
+                    $res["_submitted"] = Conf::$now;
                 else
                     $res["_submitted"] = -$res["_submitted"];
                 $res["_withdraw_reason"] = null;
@@ -147,7 +146,6 @@ class Status_Assigner extends Assigner {
         $locks["Paper"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        global $Now;
         $submitted = $this->item["_submitted"];
         $old_submitted = $this->item->pre("_submitted");
         $withdrawn = $this->item["_withdrawn"];

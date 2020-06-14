@@ -46,7 +46,7 @@ $Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
 
 
 function saveAssignments($qreq, $reviewer) {
-    global $Conf, $Me, $Now;
+    global $Conf, $Me;
     $round_number = null;
     $rcid = $reviewer->contactId;
 

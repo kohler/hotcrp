@@ -96,10 +96,9 @@ class Signin_Partial {
     }
 
     static function render_signin_form(Contact $user, Qrequest $qreq, $gx) {
-        global $Now;
         $conf = $user->conf;
         if (($password_reset = $user->session("password_reset"))) {
-            if ($password_reset->time < $Now - 900) {
+            if ($password_reset->time < Conf::$now - 900) {
                 $user->save_session("password_reset", null);
             } else if (!isset($qreq->email)) {
                 $qreq->email = $password_reset->email;
@@ -383,7 +382,6 @@ class Signin_Partial {
 
     // Password reset
     function reset_request(Contact $user, Qrequest $qreq) {
-        global $Now;
         ensure_session();
         $conf = $user->conf;
         if ($qreq->cancel) {
@@ -456,7 +454,9 @@ class Signin_Partial {
                 $conf->msg("Password changed. Use the new password to sign in below.", "xconfirm");
                 $this->_reset_capdata->delete();
                 $user->save_session("password_reset", (object) [
-                    "time" => $Now, "email" => $this->_reset_user->email, "password" => $p1
+                    "time" => Conf::$now,
+                    "email" => $this->_reset_user->email,
+                    "password" => $p1
                 ]);
                 Navigation::redirect($conf->hoturl("signin"));
             }

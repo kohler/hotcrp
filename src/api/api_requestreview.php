@@ -7,7 +7,6 @@ class RequestReview_API {
      * @param Qrequest $qreq
      * @param PaperInfo $prow */
     static function requestreview($user, $qreq, $prow) {
-        global $Now;
         $round = null;
         if ((string) $qreq->round !== ""
             && ($rname = $user->conf->sanitize_round_name($qreq->round)) !== false) {
@@ -100,7 +99,7 @@ class RequestReview_API {
               || ($extrev_chairreq === 2 && $potconflict)) {
             $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
                 $prow->paperId, $email, $xreviewer->firstName, $xreviewer->lastName,
-                $xreviewer->affiliation, $user->contactId, $Now, $reason, $round);
+                $xreviewer->affiliation, $user->contactId, Conf::$now, $reason, $round);
             if ($user->can_administer($prow)) {
                 $msg = "<p>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so you must approve this request for it to take effect.</p>"
                     . PaperInfo::potential_conflict_tooltip_html($potconflict);
@@ -178,7 +177,6 @@ class RequestReview_API {
      * @param Qrequest $qreq
      * @param PaperInfo $prow */
     static function denyreview($user, $qreq, $prow) {
-        global $Now;
         if (!$user->allow_administer($prow)) {
             return new JsonResult(403, "Permission error.");
         }
@@ -201,7 +199,7 @@ class RequestReview_API {
                 $prow->paperId, $email, $reviewer ? $reviewer->contactId : 0,
                 $request->firstName, $request->lastName, $request->affiliation,
                 $request->requestedBy, $request->timeRequested,
-                $user->contactId, $Now, $reason, REVIEW_EXTERNAL,
+                $user->contactId, Conf::$now, $reason, REVIEW_EXTERNAL,
                 $request->reviewRound);
             Dbl::qx_raw("unlock tables");
 
@@ -228,7 +226,6 @@ class RequestReview_API {
      * @param Qrequest $qreq
      * @param PaperInfo $prow */
     static function declinereview($user, $qreq, $prow) {
-        global $Now;
         $xrrows = $refusals = [];
         $email = trim($qreq->email);
         if ($email === "" || $email === "me") {
@@ -290,7 +287,7 @@ class RequestReview_API {
                 on duplicate key update reason=coalesce(values(reason),reason)",
                 $prow->paperId, $rrow->email, $rrow->contactId,
                 $rrow->requestedBy, $rrow->timeRequested,
-                $user->contactId, $Now, $reason, $rrow->reviewType,
+                $user->contactId, Conf::$now, $reason, $rrow->reviewType,
                 $rrow->reviewRound, $rrow->data);
             $user->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
                 $prow->paperId, $rrow->reviewId);
@@ -343,7 +340,6 @@ class RequestReview_API {
      * @param Qrequest $qreq
      * @param PaperInfo $prow */
     static function retractreview($user, $qreq, $prow) {
-        global $Now;
         $xrrows = $xrequests = [];
         $email = trim($qreq->email);
         if ($email === "") {
@@ -424,7 +420,6 @@ class RequestReview_API {
      * @param Qrequest $qreq
      * @param ?PaperInfo $prow */
     static function undeclinereview($user, $qreq, $prow) {
-        global $Now;
         $refusals = [];
         $email = trim($qreq->email);
         if ($email === "" || $email === "me") {

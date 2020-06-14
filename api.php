@@ -49,9 +49,9 @@ if ($Qreq->base !== null) {
 if (!$Me->has_account_here()
     && ($key = $Me->capability("tracker_kiosk"))) {
     $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
-    if (isset($kiosks->$key) && $kiosks->$key->update_at >= $Now - 172800) {
-        if ($kiosks->$key->update_at < $Now - 3600) {
-            $kiosks->$key->update_at = $Now;
+    if (isset($kiosks->$key) && $kiosks->$key->update_at >= Conf::$now - 172800) {
+        if ($kiosks->$key->update_at < Conf::$now - 3600) {
+            $kiosks->$key->update_at = Conf::$now;
             $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
         }
         $Me->tracker_kiosk_state = $kiosks->$key->show_papers ? 2 : 1;
@@ -70,8 +70,9 @@ if ($Qreq->fn === "events") {
     if (!$Me->is_reviewer())
         json_exit(403, ["ok" => false]);
     $from = $Qreq->from;
-    if (!$from || !ctype_digit($from))
-        $from = $Now;
+    if (!$from || !ctype_digit($from)) {
+        $from = Conf::$now;
+    }
     $when = $from;
     $rf = $Conf->review_form();
     $events = new PaperEvents($Me);

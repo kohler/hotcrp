@@ -596,7 +596,6 @@ class PaperStatus extends MessageSet {
 
     private function normalize($pj) {
         // Errors prevent saving
-        global $Now;
 
         // Authors
         $au_by_lemail = [];
@@ -648,12 +647,12 @@ class PaperStatus extends MessageSet {
                 if (is_numeric($pj->$k)) {
                     $pj->$k = (int) $pj->$k;
                 } else if (is_string($pj->$k)) {
-                    $pj->$k = $this->conf->parse_time($pj->$k, $Now);
+                    $pj->$k = $this->conf->parse_time($pj->$k, Conf::$now);
                 } else {
                     $pj->$k = false;
                 }
                 if ($pj->$k === false || $pj->$k < 0) {
-                    $pj->$k = $Now;
+                    $pj->$k = Conf::$now;
                 }
             }
         }
@@ -853,7 +852,6 @@ class PaperStatus extends MessageSet {
     }
 
     static function check_status(PaperStatus $ps, $pj) {
-        global $Now;
         $pj_withdrawn = get($pj, "withdrawn");
         $pj_submitted = get($pj, "submitted");
         $pj_draft = get($pj, "draft");
@@ -883,7 +881,7 @@ class PaperStatus extends MessageSet {
                 $submitted_at = -$submitted_at;
             }
             if (!$ps->prow || $ps->prow->timeWithdrawn <= 0) {
-                $ps->save_paperf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now);
+                $ps->save_paperf("timeWithdrawn", get($pj, "withdrawn_at") ? : Conf::$now);
                 $ps->save_paperf("timeSubmitted", $submitted_at);
                 $ps->mark_diff("status");
             } else if (($ps->prow->submitted_at() > 0) !== $pj_submitted) {
@@ -894,7 +892,7 @@ class PaperStatus extends MessageSet {
             if (!$ps->prow || $ps->prow->timeSubmitted <= 0) {
                 if ($submitted_at <= 0
                     || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN) {
-                    $submitted_at = $Now;
+                    $submitted_at = Conf::$now;
                 }
                 $ps->save_paperf("timeSubmitted", $submitted_at);
                 $ps->mark_diff("status");
@@ -912,10 +910,9 @@ class PaperStatus extends MessageSet {
     }
 
     static function check_final_status(PaperStatus $ps, $pj) {
-        global $Now;
         if (isset($pj->final_submitted)) {
             if ($pj->final_submitted) {
-                $time = get($pj, "final_submitted_at") ? : $Now;
+                $time = get($pj, "final_submitted_at") ? : Conf::$now;
             } else {
                 $time = 0;
             }
@@ -1371,7 +1368,6 @@ class PaperStatus extends MessageSet {
     }
 
     function execute_save() {
-        global $Now;
         $dataOverflow = $this->prow ? $this->prow->dataOverflow : null;
         if (!empty($this->_paper_overflow_upd)) {
             $dataOverflow = $dataOverflow ?? [];
@@ -1436,7 +1432,7 @@ class PaperStatus extends MessageSet {
                 }
             }
 
-            $this->save_paperf("timeModified", $Now);
+            $this->save_paperf("timeModified", Conf::$now);
 
             if (!$need_insert) {
                 $qv = array_values($this->_paper_upd);

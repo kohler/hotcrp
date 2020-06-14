@@ -266,13 +266,12 @@ class Reviews_SettingRenderer {
     }
 
     static function crosscheck(SettingValues $sv) {
-        global $Now;
         $errored = false;
         foreach ($sv->conf->round_list() as $i => $rname) {
             $suf = $i ? "_$i" : "";
             foreach (Conf::$review_deadlines as $deadline) {
                 if ($sv->has_interest($deadline . $suf)
-                    && $sv->newv($deadline . $suf) > $Now
+                    && $sv->newv($deadline . $suf) > Conf::$now
                     && $sv->newv("rev_open") <= 0
                     && !$errored) {
                     $sv->warning_at("rev_open", "A review deadline is set in the future, but the site is not open for reviewing. This is sometimes unintentional.");
@@ -286,7 +285,7 @@ class Reviews_SettingRenderer {
             && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
             && $sv->newv("au_seerev") != Conf::AUSEEREV_TAGS
             && $sv->newv("pcrev_soft") > 0
-            && $Now < $sv->newv("pcrev_soft")
+            && Conf::$now < $sv->newv("pcrev_soft")
             && !$sv->has_error()) {
             $sv->warning_at(null, "Authors can see reviews and comments although it is before the review deadline. This is sometimes unintentional.");
         }

@@ -1394,7 +1394,6 @@ class AssignmentSet {
     }
 
     private function expand_special_user($user, AssignmentParser $aparser, PaperInfo $prow, $req) {
-        global $Now;
         if ($user === "any") {
             $u = $aparser->expand_any_user($prow, $req, $this->astate);
         } else if ($user === "missing") {
@@ -1785,7 +1784,6 @@ class AssignmentSet {
     }
 
     function execute($verbose = false) {
-        global $Now;
         if ($this->has_error() || empty($this->assigners)) {
             if ($verbose && $this->astate->has_messages()) {
                 $this->report_errors();
@@ -1830,7 +1828,7 @@ class AssignmentSet {
         $this->conf->qe("unlock tables");
 
         // confirmation message
-        if ($verbose && $this->conf->setting("pcrev_assigntime") == $Now) {
+        if ($verbose && $this->conf->setting("pcrev_assigntime") == Conf::$now) {
             $this->conf->confirmMsg("Assignments saved! You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".");
         } else if ($verbose) {
             $this->conf->confirmMsg("Assignments saved!");

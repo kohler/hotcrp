@@ -446,13 +446,12 @@ class ReviewInfo implements JsonSerializable {
     }
 
     function acceptor() {
-        global $Now;
         if ($this->_data === null) {
             $this->_load_data();
         }
         if (!isset($this->_data->acceptor)) {
             $text = base48_encode(random_bytes(10));
-            $this->_data->acceptor = (object) ["text" => $text, "at" => $Now];
+            $this->_data->acceptor = (object) ["text" => $text, "at" => Conf::$now];
             $this->_save_data();
         }
         return $this->_data->acceptor;

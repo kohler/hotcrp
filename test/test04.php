@@ -19,10 +19,10 @@ function password($email, $iscdb = false) {
 }
 
 function save_password($email, $encoded_password, $iscdb = false) {
-    global $Conf, $Now;
+    global $Conf;
     $dblink = $iscdb ? $Conf->contactdb() : $Conf->dblink;
-    Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where email=?", $encoded_password, $Now + 1, $Now + 1, $email);
-    $Now += 2;
+    Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where email=?", $encoded_password, Conf::$now + 1, Conf::$now + 1, $email);
+    Conf::advance_current_time(Conf::$now + 2);
 }
 
 if (!$Conf->contactdb()) {
@@ -68,9 +68,9 @@ xassert_neqq(password($marina, true), "ncurses");
 xassert(user($marina)->check_password("ncurses"));
 
 // logging in with global password makes local password obsolete
-$Now += 3;
+Conf::advance_current_time(Conf::$now + 3);
 xassert(user($marina)->check_password("isdevitch"));
-$Now += 3;
+Conf::advance_current_time(Conf::$now + 3);
 xassert(!user($marina)->check_password("ncurses"));
 
 // null contactdb password => password is unset

@@ -69,7 +69,7 @@ function initialize_user_redirect($nav, $uindex, $nusers) {
 }
 
 function initialize_user() {
-    global $Conf, $Me, $Now, $Qreq;
+    global $Conf, $Me, $Qreq;
     $nav = Navigation::get();
 
     // set up session
@@ -155,7 +155,7 @@ function initialize_user() {
 
     // if bounced through login, add post data
     if (isset($_SESSION["login_bounce"][4])
-        && $_SESSION["login_bounce"][4] <= $Now) {
+        && $_SESSION["login_bounce"][4] <= Conf::$now) {
         unset($_SESSION["login_bounce"]);
     }
 
