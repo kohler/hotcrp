@@ -109,6 +109,8 @@ class Filer {
     static function download_file($filename, $mimetype, $no_accel = false) {
         global $zlib_output_compression;
         // if docstoreAccelRedirect, output X-Accel-Redirect header
+        // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
+        // using SameSite cookies!
         if (($dar = Conf::$g->opt("docstoreAccelRedirect"))
             && ($dsp = self::docstore_fixed_prefix(Conf::$g->docstore()))
             && !$no_accel) {
@@ -116,12 +118,6 @@ class Filer {
             if (str_starts_with($filename, $dsp)
                 && strlen($filename) > strlen($dsp)
                 && $filename[strlen($dsp)] !== "/") {
-                // XXX Chromium issue 961617: samesite cookies don't work in
-                // Chrome PDF viewer
-                if (str_ends_with($mimetype, "pdf")
-                    && ($dpr = Conf::$g->opt("docstoreAccelRedirectPdf"))) {
-                    $dar = $dpr;
-                }
                 header("X-Accel-Redirect: $dar" . substr($filename, strlen($dsp)));
                 return;
             }
@@ -193,8 +189,6 @@ class Filer {
         // Download or redirect
         if ($s3_accel) {
             $doc->conf->s3_docstore()->get_accel_redirect($doc->s3_key(), $s3_accel);
-            // XXX Chrome bug
-            header("Accept-Ranges: " . (str_ends_with($doc->mimetype, "pdf") ? "none" : "bytes"));
         } else if (($path = $doc->available_content_file())) {
             self::download_file($path, $doc->mimetype, $no_accel);
         } else {
