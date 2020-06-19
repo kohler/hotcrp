@@ -180,7 +180,10 @@ class Conf {
     private $_review_form_cache;
     /** @var ?AbbreviationMatcher<PaperOption|ReviewField|Formula> */
     private $_abbrev_matcher;
+    /** @var bool */
     private $_date_format_initialized = false;
+    /** @var ?DateTimeZone */
+    private $_dtz;
     private $_formatspec_cache = [];
     /** @var ?non-empty-string */
     private $_docstore;
@@ -2816,7 +2819,10 @@ class Conf {
 
     // times
 
-    private function _date_format($type) {
+    /** @param string $type
+     * @param int|float $t
+     * @return string */
+    private function _date_unparse($type, $t) {
         if (!$this->_date_format_initialized) {
             if (!isset($this->opt["time24hour"]) && isset($this->opt["time24Hour"])) {
                 $this->opt["time24hour"] = $this->opt["time24Hour"];
@@ -2845,19 +2851,33 @@ class Conf {
             $this->_date_format_initialized = true;
         }
         if ($type === "timestamp") {
-            return $this->opt["timestampFormat"];
+            $f = $this->opt["timestampFormat"];
         } else if ($type === "obscure") {
-            return $this->opt["dateFormatObscure"];
+            $f = $this->opt["dateFormatObscure"];
         } else if ($type === "long") {
-            return $this->opt["dateFormatLong"];
+            $f = $this->opt["dateFormatLong"];
+        } else if ($type === "zone") {
+            $f = "T";
         } else {
-            return $this->opt["dateFormat"];
+            $f = $this->opt["dateFormat"];
+        }
+        if ($this !== self::$g && !$this->_dtz && isset($this->opt["timezone"])) {
+            $this->_dtz = timezone_open($this->opt["timezone"]) ? : null;
+        }
+        if ($this->_dtz) {
+            $dt = date_create("@" . (int) $t);
+            $dt->setTimeZone($this->_dtz);
+            return $dt->format($f);
+        } else {
+            return date($f, $t);
         }
     }
+    /** @param int|float $value
+     * @return string */
     private function _unparse_timezone($value) {
         $z = $this->opt["dateFormatTimezone"];
         if ($z === null) {
-            $z = date("T", $value);
+            $z = $this->_date_unparse("zone", $value);
             if ($z === "-12") {
                 $z = "AoE";
             } else if ($z && ($z[0] === "+" || $z[0] === "-")) {
@@ -2871,8 +2891,7 @@ class Conf {
      * @param bool $include_zone
      * @return string */
     function parseableTime($value, $include_zone) {
-        $f = $this->_date_format(false);
-        $d = date($f, $value);
+        $d = $this->_date_unparse("short", $value);
         if ($this->opt["dateFormatSimplifier"]) {
             $d = preg_replace($this->opt["dateFormatSimplifier"], "", $d);
         }
@@ -2934,7 +2953,7 @@ class Conf {
         if ($timestamp <= 0) {
             return "N/A";
         }
-        $t = date($this->_date_format($type), $timestamp);
+        $t = $this->_date_unparse($type, $timestamp);
         if ($this->opt["dateFormatSimplifier"]) {
             $t = preg_replace($this->opt["dateFormatSimplifier"], "", $t);
         }
@@ -2991,7 +3010,7 @@ class Conf {
         $d = abs($timestamp - ($now ? : Conf::$now));
         if ($d >= 5227200) {
             if (!($format & 1)) {
-                return ($format & 8 ? "on " : "") . date($this->_date_format("obscure"), $timestamp);
+                return ($format & 8 ? "on " : "") . $this->_date_unparse("obscure", $timestamp);
             }
             $unit = 5;
         } else if ($d >= 259200) {

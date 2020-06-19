@@ -975,6 +975,8 @@ class Limit_SearchTerm extends SearchTerm {
             if ($sqi->top && $act_reviewer_sql !== "false") {
                 $sqi->add_table("MyReviews", [$this->limit === "ar" ? "left join" : "join", "PaperReview", $act_reviewer_sql]);
             }
+        } else {
+            $act_reviewer_sql = "error";
         }
 
         switch ($this->limit) {
