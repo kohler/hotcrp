@@ -7655,11 +7655,13 @@ handle_ui.on("document-uploader", function (event) {
     var doce = this.closest(".has-document"), $doc = $(doce);
     if (hasClass(doce, "document-new-instance")) {
         removeClass(doce, "hidden");
-        removeClass(doce.parentElement, "hidden");
+        var hea = doce.closest(".has-editable-attachments");
+        hea && removeClass(hea, "hidden");
     } else {
         $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").addClass("hidden");
         $doc.find(".document-upload, .document-actions, .js-cancel-document").removeClass("hidden");
         $doc.find(".document-remover").remove();
+        $doc.find(".js-replace-document").html("Replace");
         $doc.find(".js-remove-document").removeClass("undelete").html("Delete");
     }
 });
@@ -7677,6 +7679,7 @@ handle_ui.on("js-cancel-document", function (event) {
         $doc.find(".document-upload").remove();
         $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").removeClass("hidden");
         $doc.find(".document-file > del > *").unwrap();
+        $doc.find(".js-replace-document").html("Upload");
         $doc.find(".js-cancel-document").remove();
         var $actions = $doc.find(".document-actions");
         if (!$actions[0].firstChild)
