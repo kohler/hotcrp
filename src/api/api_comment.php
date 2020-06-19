@@ -77,7 +77,7 @@ class Comment_API {
 
         // attachments in request
         for ($i = count($req["docs"]) - 1; $i >= 0; --$i) {
-            if ($qreq["remove_cmtdoc_{$req["docs"][$i]->paperStorageId}_{$i}"]) {
+            if ($qreq["cmtdoc_{$req["docs"][$i]->paperStorageId}_{$i}:remove"]) {
                 array_splice($req["docs"], $i, 1);
                 $changed = true;
             }
