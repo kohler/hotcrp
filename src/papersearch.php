@@ -971,8 +971,9 @@ class Limit_SearchTerm extends SearchTerm {
         }
         if (in_array($this->limit, ["ar", "r", "rout"], true)) {
             $sqi->add_reviewer_columns();
-            if ($sqi->top) {
-                $sqi->add_table("MyReviews", [$this->limit === "ar" ? "left join" : "join", "PaperReview", $sqi->user->act_reviewer_sql("MyReviews")]);
+            $act_reviewer_sql = $sqi->user->act_reviewer_sql("MyReviews");
+            if ($sqi->top && $act_reviewer_sql !== "false") {
+                $sqi->add_table("MyReviews", [$this->limit === "ar" ? "left join" : "join", "PaperReview", $act_reviewer_sql]);
             }
         }
 
@@ -987,24 +988,30 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = $sqi->user->act_author_view_sql("PaperConflict");
             break;
         case "ar":
-            if ($sqi->top) {
+            if ($act_reviewer_sql === "false") {
+                $r = "false";
+            } else if ($sqi->top) {
                 $r = "MyReviews.reviewType is not null";
             } else {
-                $r = "exists (select * from PaperReview where paperId=Paper.paperId and " . $sqi->user->act_reviewer_sql("PaperReview") . ")";
+                $r = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql)";
             }
             $ff[] = "(" . $sqi->user->act_author_view_sql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and $r))";
             break;
         case "r":
             // if top, the straight join suffices
-            if (!$sqi->top) {
-                $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and " . $sqi->user->act_reviewer_sql("PaperReview") . ")";
+            if ($act_reviewer_sql === "false") {
+                $ff[] = "false";
+            } else if (!$sqi->top) {
+                $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql)";
             }
             break;
         case "rout":
-            if ($sqi->top) {
+            if ($act_reviewer_sql === "false") {
+                $ff[] = "false";
+            } else if ($sqi->top) {
                 $ff[] = "MyReviews.reviewNeedsSubmit!=0";
             } else {
-                $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and " . $sqi->user->act_reviewer_sql("PaperReview") . " and reviewNeedsSubmit!=0)";
+                $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql and reviewNeedsSubmit!=0)";
             }
             break;
         case "acc":
@@ -1605,8 +1612,8 @@ class SearchQueryInfo {
         $this->user = $srch->user;
     }
     function add_table($table, $joiner = false) {
-        // * All added tables must match at most one Paper row each,
-        //   except MyReviews and Limiter.
+        // All added tables must match at most one Paper row each,
+        // except MyReviews.
         assert($joiner || !count($this->tables));
         if (!isset($this->tables[$table])) {
             $this->tables[$table] = $joiner;
@@ -1636,16 +1643,19 @@ class SearchQueryInfo {
         }
         if ($this->_has_my_review) {
             $this->add_conflict_columns();
-            if ($this->_has_review_signatures) {
-                /* use that */
-            } else if (isset($this->tables["MyReviews"])) {
-                $this->add_column("myReviewPermissions", PaperInfo::my_review_permissions_sql("MyReviews."));
-            } else if (!isset($this->tables["Limiter"])) {
-                $this->add_table("MyReviews", ["left join", "PaperReview", $this->user->act_reviewer_sql("MyReviews")]);
-                $this->add_column("myReviewPermissions", PaperInfo::my_review_permissions_sql("MyReviews."));
-            } else {
-                $this->add_column("myReviewPermissions", "(select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and " . $this->user->act_reviewer_sql("PaperReview") . " group by paperId)");
-            }
+            $this->_add_review_permissions();
+        }
+    }
+    private function _add_review_permissions() {
+        if ($this->_has_review_signatures
+            || isset($this->columns["myReviewPermissions"])) {
+            // nada
+        } else if (($act_reviewer_sql = $this->user->act_reviewer_sql("PaperReview")) === "false") {
+            $this->add_column("myReviewPermissions", "''");
+        } else if (isset($this->tables["MyReviews"])) {
+            $this->add_column("myReviewPermissions", PaperInfo::my_review_permissions_sql("MyReviews."));
+        } else {
+            $this->add_column("myReviewPermissions", "(select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and $act_reviewer_sql  group by paperId)");
         }
     }
     function add_review_signature_columns() {
