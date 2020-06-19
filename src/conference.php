@@ -711,7 +711,7 @@ class Conf {
         $this->settings["__capability_gc"] = Conf::$now;
     }
 
-    private function crosscheck_globals() {
+    function crosscheck_globals() {
         Ht::$img_base = $this->opt["assetsUrl"] . "images/";
 
         if (isset($this->opt["timezone"])) {
