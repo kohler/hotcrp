@@ -373,6 +373,9 @@ class Conf {
 
         $this->crosscheck_settings();
         $this->crosscheck_options();
+        if ($this === Conf::$g) {
+            $this->crosscheck_globals();
+        }
     }
 
     private function crosscheck_settings() {
@@ -635,7 +638,6 @@ class Conf {
         if (!isset($this->opt["scriptAssetsUrl"])) {
             $this->opt["scriptAssetsUrl"] = $this->opt["assetsUrl"];
         }
-        Ht::$img_base = $this->opt["assetsUrl"] . "images/";
 
         // set docstore
         $docstore = $this->opt["docstore"] ?? null;
@@ -669,19 +671,6 @@ class Conf {
             $this->_docstore = null;
         }
 
-        // handle timezone
-        if (function_exists("date_default_timezone_set")) {
-            if (isset($this->opt["timezone"])) {
-                if (!date_default_timezone_set($this->opt["timezone"])) {
-                    self::msg_error("Timezone option “" . htmlspecialchars($this->opt["timezone"]) . "” is invalid; falling back to “America/New_York”.");
-                    date_default_timezone_set("America/New_York");
-                }
-            } else if (!ini_get("date.timezone") && !getenv("TZ")) {
-                date_default_timezone_set("America/New_York");
-            }
-        }
-        $this->_date_format_initialized = false;
-
         // set defaultFormat
         $this->default_format = (int) ($this->opt["defaultFormat"] ?? 0);
         $this->_format_info = null;
@@ -697,6 +686,7 @@ class Conf {
         $this->_list_action_map = $this->_list_action_renderers = $this->_list_action_factories = null;
         $this->_file_filters = null;
         $this->_site_contact = null;
+        $this->_date_format_initialized = false;
     }
 
     private function cleanup_capabilities() {
@@ -716,6 +706,25 @@ class Conf {
         $this->ql("delete from Capability where timeExpires>0 and timeExpires<".Conf::$now);
         $this->ql("insert into Settings set name='__capability_gc', value=".Conf::$now." on duplicate key update value=values(value)");
         $this->settings["__capability_gc"] = Conf::$now;
+    }
+
+    private function crosscheck_globals() {
+        Ht::$img_base = $this->opt["assetsUrl"] . "images/";
+
+        if (isset($this->opt["timezone"])) {
+            if (!date_default_timezone_set($this->opt["timezone"])) {
+                self::msg_error("Timezone option “" . htmlspecialchars($this->opt["timezone"]) . "” is invalid; falling back to “America/New_York”.");
+                date_default_timezone_set("America/New_York");
+            }
+        } else if (!ini_get("date.timezone") && !getenv("TZ")) {
+            date_default_timezone_set("America/New_York");
+        }
+    }
+
+    static function set_primary_instance(Conf $conf) {
+        global $Conf;
+        $Conf = Conf::$g = $conf;
+        $conf->crosscheck_globals();
     }
 
 
@@ -2807,7 +2816,7 @@ class Conf {
 
     // times
 
-    private function _dateFormat($type) {
+    private function _date_format($type) {
         if (!$this->_date_format_initialized) {
             if (!isset($this->opt["time24hour"]) && isset($this->opt["time24Hour"])) {
                 $this->opt["time24hour"] = $this->opt["time24Hour"];
@@ -2858,8 +2867,11 @@ class Conf {
         return $z;
     }
 
+    /** @param int $value
+     * @param bool $include_zone
+     * @return string */
     function parseableTime($value, $include_zone) {
-        $f = $this->_dateFormat(false);
+        $f = $this->_date_format(false);
         $d = date($f, $value);
         if ($this->opt["dateFormatSimplifier"]) {
             $d = preg_replace($this->opt["dateFormatSimplifier"], "", $d);
@@ -2869,6 +2881,9 @@ class Conf {
         }
         return $d;
     }
+    /** @param string $d
+     * @param ?int $reference
+     * @return int|float|false */
     function parse_time($d, $reference = null) {
         $reference = $reference ?? Conf::$now;
         if (!isset($this->opt["dateFormatTimezoneRemover"])) {
@@ -2919,7 +2934,7 @@ class Conf {
         if ($timestamp <= 0) {
             return "N/A";
         }
-        $t = date($this->_dateFormat($type), $timestamp);
+        $t = date($this->_date_format($type), $timestamp);
         if ($this->opt["dateFormatSimplifier"]) {
             $t = preg_replace($this->opt["dateFormatSimplifier"], "", $t);
         }
@@ -2935,7 +2950,8 @@ class Conf {
         }
         return $t;
     }
-    /** @param int|float|null $timestamp */
+    /** @param int|float|null $timestamp
+     * @return ?int */
     function obscure_time($timestamp) {
         if ($timestamp !== null) {
             $timestamp = (int) ($timestamp + 0.5);
@@ -2975,7 +2991,7 @@ class Conf {
         $d = abs($timestamp - ($now ? : Conf::$now));
         if ($d >= 5227200) {
             if (!($format & 1)) {
-                return ($format & 8 ? "on " : "") . date($this->_dateFormat("obscure"), $timestamp);
+                return ($format & 8 ? "on " : "") . date($this->_date_format("obscure"), $timestamp);
             }
             $unit = 5;
         } else if ($d >= 259200) {

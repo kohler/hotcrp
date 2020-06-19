@@ -118,8 +118,8 @@ class Multiconference {
                 echo "{\"error\":\"unconfigured installation\"}\n";
             }
         } else {
-            if (!$Conf) {
-                $Conf = Conf::$g = new Conf($Opt, false);
+            if (!Conf::$g) {
+                Conf::set_primary_instance(new Conf($Opt, false));
             }
             $Me = null;
             header("HTTP/1.1 404 Not Found");
