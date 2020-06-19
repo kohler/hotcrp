@@ -72,11 +72,11 @@ class Home_Partial {
 
     private function render_h2_home($x) {
         ++$this->_nh2;
-        return "<h2 class=\"home home-{$this->_nh2}\">" . $x . "</h2>";
+        return "<h2 class=\"home\">" . $x . "</h2>";
     }
 
     static function render_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
-        echo '<div class="homeinside"><h4>Administration</h4><ul>';
+        echo '<div class="homegrp"><h4>Administration</h4><ul>';
         $gx->render_group("home/sidebar/admin");
         echo '</ul></div>';
     }
@@ -100,7 +100,7 @@ class Home_Partial {
         ob_start();
         $gx->render_group("home/sidebar/info");
         if (($t = ob_get_clean())) {
-            echo '<div class="homeinside"><h4>',
+            echo '<div class="homegrp"><h4>',
                 $user->conf->_c("home", "Conference information"),
                 '</h4><ul>', $t, '</ul></div>';
         }

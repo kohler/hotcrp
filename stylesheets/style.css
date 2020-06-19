@@ -858,18 +858,10 @@ span.hastitle {
 
 /* Main */
 h2.home, h4.home {
-	color: #9e2441;
+	color: #c72047;
+	/* #c72047 #ba2347 #a3213f #9e2441 */
 	margin-bottom: 0.5rem;
 	font-size: 1.15rem;
-}
-h2.home-1 {
-	color: #c72047;
-}
-h2.home-2 {
-	color: #ba2347;
-}
-h2.home-3 {
-	color: #a3213f;
 }
 .homeside {
 	float: right;
@@ -877,25 +869,25 @@ h2.home-3 {
 	position: relative;
 	width: 18em;
 	z-index: 1;
-	background-color: #fffdf0;
-	border: 1px solid #b2a584 /*#9999cc*/;
-	padding: 0.5em 1em 0 0.75em;
-	margin: 0 0 0.5em 1em;
+	margin: 0 0 3rem 2rem;
 }
-.homeinside {
-	padding-bottom: 0.75em;
+.homeside > .homegrp:first-child {
+	margin-top: 0;
+}
+.homeside > .homegrp:last-child {
+	margin-bottom: 0;
 }
 .compact-form > div {
 	max-width: 25em;
 	max-width: 25rem;
 }
-.homeinside h4 {
-	display: inline;
-	color: #555555;
+.homeside h4 {
+	color: #c72047;
+	margin: 0 0 0.25rem;
 }
 .homeside ul {
 	margin: 0;
-	padding: 0 0 0 1.5em;
+	padding: 0;
 	list-style-type: none;
 }
 .homegrp {
