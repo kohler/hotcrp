@@ -43,7 +43,7 @@ class ResponseRound {
     public $open;
     /** @var ?int */
     public $done;
-    /** @var ?int */
+    /** @var int */
     public $grace;
     /** @var ?int */
     public $words;
@@ -66,7 +66,7 @@ class ResponseRound {
             return false;
         }
         $t = $this->done;
-        if ($t !== null && $t > 0 && $with_grace && $this->grace) {
+        if ($t !== null && $t > 0 && $with_grace) {
             $t += $this->grace;
         }
         return $t === null || $t <= 0 || $t >= Conf::$now;
@@ -1865,9 +1865,13 @@ class Conf {
                 $r->number = $i;
                 $r->name = $rname;
                 $isuf = $i ? "_$i" : "";
-                $r->open = $this->settings["resp_open$isuf"] ?? null;
                 $r->done = $this->settings["resp_done$isuf"] ?? null;
-                $r->grace = $this->settings["resp_grace$isuf"] ?? null;
+                $r->grace = $this->settings["resp_grace$isuf"] ?? 0;
+                if (isset($this->settings["resp_open$isuf"])) {
+                    $r->open = $this->settings["resp_open$isuf"];
+                } else if ($r->done && $r->done + $r->grace >= self::$now) {
+                    $r->open = 1;
+                }
                 $r->words = $this->settings["resp_words$isuf"] ?? 500;
                 if (($s = $this->settingTexts["resp_search$isuf"] ?? null)) {
                     $r->search = new PaperSearch($this->root_user(), $s);

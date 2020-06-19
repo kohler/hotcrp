@@ -3190,9 +3190,10 @@ class Contact {
 
     function relevant_resp_rounds() {
         $rrds = [];
-        foreach ($this->conf->resp_rounds() as $rrd)
+        foreach ($this->conf->resp_rounds() as $rrd) {
             if ($rrd->relevant($this))
                 $rrds[] = $rrd;
+        }
         return $rrds;
     }
 
