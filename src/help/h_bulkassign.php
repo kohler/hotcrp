@@ -41,9 +41,11 @@ HotCRP will leave the existing assignment alone.</p>";
 
         echo $hth->subhead("Action overview");
         self::echo_actions($hth->user, $hth);
-        echo '<p><em>Notes:</em> The <code>user</code> parameter can be
-replaced by a combination of <code>email</code>, <code>name</code>,
-<code>first name</code>, and <code>last name</code>. <code>tag</code>
+        echo '<p><em>Notes:</em> The <code>paper</code> parameter
+can be a paper number, like “1”, or a search, like
+“re:jhala #good”. Instead of a <code>user</code> parameter, you can
+supply <code>email</code>, <code>name</code>,
+<code>first name</code>, and/or <code>last name</code>. <code>tag</code>
 columns can contain a tag value, using “tag#value” syntax, or the value
 can be supplied separately.</p>';
 
@@ -106,11 +108,11 @@ syntax, or the value can be specified using the optional <code>tag
 value</code> column.</p>
 
 <p>To clear a tag, use action <code>cleartag</code> or tag value
-<code>none</code>. For example, this file clears all #p tags with value
+<code>clear</code>. For example, this file clears all #p tags with value
 less than 10:</p>
 
 <pre class=\"entryexample\">paper,action,tag
-all,cleartag,p#&lt;10</pre>
+p#&lt;10,cleartag,p</pre>
 
 <p>To add to a tag order, use action <code>nexttag</code>; to add to a gapless
 tag order, use <code>seqnexttag</code>. For example, this file creates a
