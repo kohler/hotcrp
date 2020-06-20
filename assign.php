@@ -26,7 +26,8 @@ function assign_load() {
     $prow = PaperTable::fetch_paper_request($Qreq, $Me);
     if ($prow === null) {
         assign_show_header();
-        Conf::msg_error(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
+        $whyNot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
+        Conf::msg_error(whyNotText($whyNot->set("listViewable", true)));
         $Conf->footer();
         exit;
     } else if (($whynot = $Me->perm_request_review($prow, null, false))) {

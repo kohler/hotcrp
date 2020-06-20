@@ -11,11 +11,11 @@ other aspects of site operation. Users upload a CSV (comma-separated value
 file) to prepare an assignment. HotCRP will display the consequences of the
 requested assignment for confirmation and approval.</p>
 
-<p>Assignment CSVs contain <code>pid</code> and <code>action</code> columns,
-where <code>pid</code> determines which papers are affected and
+<p>Assignment CSVs contain <code>paper</code> and <code>action</code> columns,
+where <code>paper</code> determines which submissions are affected and
 <code>action</code> determines what kind of assignment is performed. The
-<code>pid</code> column can be a simple submission number, like “10”, or a
-search description, like “#manny OR #ramirez”. Other parameter columns depend
+<code>paper</code> column can be a simple submission number, like “10”, or a
+search string, like “#manny OR #ramirez”. Other parameter columns depend
 on action. For instance, the <code>tag</code> action uses the <code>tag</code>
 column to determine what tag to add. Actions requiring a user locate that user
 via the <code>email</code>, <code>name</code>, <code>first name</code>,
@@ -25,7 +25,7 @@ via the <code>email</code>, <code>name</code>, <code>first name</code>,
 #redo, then assigns two primary reviews for submission #1 and one secondary
 review for submission #2:</p>
 
-<pre class=\"entryexample\">pid,action,email,round
+<pre class=\"entryexample\">paper,action,email,round
 #redo,clearreview,all,R1
 1,primary,man@alice.org
 2,secondary,slugger@manny.com

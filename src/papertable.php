@@ -2216,7 +2216,7 @@ class PaperTable {
             if (!$whyNot) {
                 $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary btn-savepaper uic js-mark-submit"]), ""];
             } else if ($this->admin) {
-                $revWhyNot = filter_whynot($whyNot, ["deadline", "rejected"]);
+                $revWhyNot = $whyNot->filter(["deadline", "rejected"]);
                 $x = whyNotText($revWhyNot) . " Are you sure you want to override the deadline?";
                 $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["updateSubmitted"])
@@ -3077,7 +3077,7 @@ class PaperTable {
             && !$user->privChair
             && (!($rrow = $prow->review_of_id($qreq->reviewId))
                 || !$user->can_view_review($prow, $rrow))) {
-            $whynot = ["conf" => $user->conf, "invalidId" => "paper"];
+            $whynot = new PermissionProblem($user->conf, ["invalidId" => "paper"]);
         }
         if ($whynot) {
             $qreq->set_annex("paper_whynot", $whynot);

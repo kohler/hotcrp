@@ -78,8 +78,10 @@ if ($Qreq->post && $Qreq->post_empty()) {
 // grab paper row
 function loadRows() {
     global $prow, $Me, $Qreq;
-    if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me)))
-        errorMsgExit(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
+    if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
+        $whyNot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
+        errorMsgExit(whyNotText($whyNot->set("listViewable", true)));
+    }
 }
 $prow = $ps = null;
 if (strcasecmp((string) $Qreq->p, "new")

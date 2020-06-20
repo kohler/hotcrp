@@ -146,6 +146,7 @@ class AuthorMatcher extends Author {
         }
     }
 
+    /** @return ?TextPregexes */
     function general_pregexes() {
         if ($this->general_pregexes_ === false) {
             $this->prepare();

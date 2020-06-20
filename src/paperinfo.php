@@ -52,7 +52,7 @@ class PaperContactInfo {
     public $allow_author_view;
     /** @var bool */
     public $can_view_decision;
-    /** @var int */
+    /** @var 0|1|2 */
     public $view_authors_state;
 
     // cached by PaperInfo methods
@@ -557,8 +557,10 @@ class PaperInfo {
         return "group_concat({$prefix}reviewType, ' ', coalesce({$prefix}reviewSubmitted,0), ' ', reviewNeedsSubmit)";
     }
 
+    /** @return PermissionProblem */
     function make_whynot($rest = []) {
-        return ["fail" => true, "paperId" => $this->paperId, "conf" => $this->conf] + $rest;
+        $pp = new PermissionProblem($this->conf, ["paperId" => $this->paperId]);
+        return $pp->merge($rest);
     }
 
     function hoturl($param = [], $flags = 0) {

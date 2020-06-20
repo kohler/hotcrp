@@ -29,7 +29,8 @@ function review_error($msg) {
 function review_load() {
     global $Conf, $Me, $Qreq, $prow, $paperTable;
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
-        review_error(whyNotText($Qreq->annex("paper_whynot") + ["listViewable" => true]));
+        $whyNot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
+        review_error(whyNotText($whyNot->set("listViewable", true)));
     }
     $paperTable = new PaperTable($prow, $Qreq);
     $paperTable->resolveReview(true);
@@ -306,7 +307,7 @@ $editAny = $Me->can_review($prow, null);
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
     if (($whyNotPaper = $Me->perm_view_paper($prow))) {
-        review_error(whyNotText($whyNotPaper + ["listViewable" => true]));
+        review_error(whyNotText($whyNotPaper->set("listViewable", true)));
     }
     if (isset($Qreq->reviewId)) {
         Conf::msg_error("You can’t see the reviews for this paper. "

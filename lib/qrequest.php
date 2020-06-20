@@ -251,15 +251,20 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function files() {
         return $this->____files;
     }
+    /** @return bool */
     function has_annexes() {
         return !empty($this->____x);
     }
+    /** @return array<string,mixed> */
     function annexes() {
         return $this->____x;
     }
+    /** @param string $name
+     * @return bool */
     function has_annex($name) {
         return isset($this->____x[$name]);
     }
+    /** @param string $name */
     function annex($name) {
         $x = null;
         if (array_key_exists($name, $this->____x)) {
@@ -267,6 +272,18 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $x;
     }
+    /** @template T
+     * @param string $name
+     * @param class-string<T> $class
+     * @return T */
+    function checked_annex($name, $class) {
+        $x = $this->____x[$name] ?? null;
+        if (!$x || !($x instanceof $class)) {
+            throw new Exception("Bad annex $name.");
+        }
+        return $x;
+    }
+    /** @param string $name */
     function set_annex($name, $x) {
         $this->____x[$name] = $x;
     }
