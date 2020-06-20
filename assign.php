@@ -571,7 +571,7 @@ echo '<div class="pcard revcard">',
     '<div class="revcard-head">',
     "<h2>", $req, "</h2></div><div class=\"revcard-body\">";
 
-echo '<p class="papertext">', $Conf->_i("external-review-request-description", null);
+echo '<p class="w-text">', $Conf->_i("external-review-request-description", null);
 if ($Me->allow_administer($prow)) {
     echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
 }
@@ -586,7 +586,7 @@ $email_class = "fullw";
 if ($Me->can_lookup_user()) {
     $email_class .= " uii js-email-populate";
 }
-echo '<div class="papertext g">',
+echo '<div class="w-text g">',
     '<div class="', Ht::control_class("email", "f-i"), '">',
     Ht::label("Email", "revreq_email"),
     Ht::entry("email", (string) $Qreq->email, ["id" => "revreq_email", "size" => 52, "class" => $email_class, "autocomplete" => "off", "type" => "email"]),

@@ -1201,7 +1201,7 @@ class PaperOption implements Abbreviator {
         }
         echo Ht::textarea($this->formid, $reqov->data(), [
                 "id" => $this->readable_formid(),
-                "class" => $pt->control_class($this->formid, "papertext need-autogrow"),
+                "class" => $pt->control_class($this->formid, "w-text need-autogrow"),
                 "rows" => max($this->display_space, 1),
                 "cols" => 60,
                 "spellcheck" => ($extra["no_spellcheck"] ?? null ? null : "true"),

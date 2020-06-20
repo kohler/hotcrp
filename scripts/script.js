@@ -4223,7 +4223,7 @@ function render_editing(hc, cj) {
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     }
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
-    hc.push_pop('<textarea name="text" class="reviewtext cmttext suggest-emoji need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
+    hc.push_pop('<textarea name="text" class="w-text cmttext suggest-emoji need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
 
     hc.push('<div class="cmteditinfo fold2o fold3c">', '</div>');
 
@@ -4296,7 +4296,7 @@ function render_editing(hc, cj) {
     hc.pop();
 
     // actions: [btnbox], [wordcount] || cancel, save/submit
-    hc.push('<div class="reviewtext aabig aab aabr">', '</div>');
+    hc.push('<div class="w-text aabig aab aabr">', '</div>');
     bnote = edit_allowed(cj) ? "" : '<div class="hint">(admin only)</div>';
     if (btnbox.length)
         hc.push('<div class="aabut aabl"><div class="btnbox">' + btnbox.join("") + '</div></div>');
@@ -4566,8 +4566,9 @@ function submit_editor(evt) {
 }
 
 function render_cmt($c, cj, editing, msg) {
-    var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead, i;
-    cmts[cj_cid(cj)] = cj;
+    var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead, i,
+        cid = cj_cid(cj);
+    cmts[cid] = cj;
     if (cj.is_new && !editing) {
         var ide = $c[0].closest(".cmtid");
         if (!hasClass(ide, "cmtcard")
@@ -4625,20 +4626,18 @@ function render_cmt($c, cj, editing, msg) {
     hc.pop_collapse();
 
     // text
-    hc.push('<div class="cmtv">', '</div>');
     hc.push('<div class="cmtmsg">', '</div>');
     if (msg) {
         hc.push(msg);
     }
-    if (cj.response && cj.draft && cj.text) {
-        hc.push('<div class="msg msg-warning"><strong>This response is a draft.</strong>', '</div>');
-        if (cj.submittable) {
-            hc.push_pop(' It will not be shown to reviewers unless you <a href="" class="ui js-submit-comment">submit it unchanged</a>.');
-        } else {
-            hc.push_pop(' It will not be shown to reviewers.');
-        }
-    }
     hc.pop();
+    if (cj.response && cj.draft && cj.text) {
+        hc.push('<p class="feedback is-warning">Reviewers can’t see this draft response', '.</p>');
+        if (cj.submittable) {
+            hc.push(' unless you <a href="" class="ui js-submit-comment">submit it</a>.');
+        }
+        hc.pop();
+    }
     if (editing) {
         render_editing(hc, cj);
     } else {
@@ -4654,25 +4653,34 @@ function render_cmt($c, cj, editing, msg) {
     // render
     $c.find("textarea, input[type=text]").unautogrow();
     $c.html(hc.render());
+    if (cj.response) {
+        t = (cj.draft ? "Draft " : "") + (cj.response == "1" ? "" : cj.response + " ") + "Response";
+        var $chead_name = chead.find(".cmtcard-header-name");
+        if ($chead_name.html() !== t) {
+            $chead_name.html(t);
+            if ((i = add_pslitem(cid)))
+                $(i).find("a").html(t);
+        }
+    }
 
     // fill body
     if (editing) {
         activate_editing($c, cj);
     } else {
-        (cj.response ? chead.parent() : $c).find("a.cmteditor").click(edit_this);
         if (cj.text !== false) {
             render_cmt_text(cj.format, cj.text || "", cj.response,
                             $c.find(".cmttext"), chead);
-        } else {
-            t = '<div class="is-warning">⚠️ ';
+        } else if (cj.response) {
+            t = '<p class="feedback is-warning">';
             if (cj.word_count)
                 t += cj.word_count + "-word draft";
             else
                 t += "Draft";
             t += " " + (cj.response == "1" ? "" : cj.response + " ") +
-                "response not shown</div>";
+                "response not shown</p>";
             $c.find(".cmttext").html(t);
         }
+        (cj.response ? chead.parent() : $c).find("a.cmteditor").click(edit_this);
     }
 
     return $c;
@@ -4746,16 +4754,16 @@ function add(cj, editing) {
                 t = '<article' + idattr + ' response pcard cmtcard">';
                 if (cj.text !== false) {
                     cdesc = (cj.response == "1" ? "" : cj.response + " ") + "Response";
+                    if (cj.draft)
+                        cdesc = "Draft " + cdesc;
                     t += '<header class="cmtcard-head"><h2><span class="cmtcard-header-name">' +
                         cdesc + '</span></h2></header>';
                 }
-                tx = '</article>';
+                j = $(t + '<div class="cmtcard-body cmtg"></div></article>').insertAfter($c);
             } else {
-                t = '<div id="cc' + cid + '" class="pcard cmtcard">';
+                $c = $('<div id="cc' + cid + '" class="pcard cmtcard"><div class="cmtcard-body"></div></div>').insertAfter($c);
                 cdesc = "Comment";
-                tx = '</div>';
             }
-            $c = $(t + '<div class="cmtcard-body"></div>' + tx).insertAfter($c);
             if (cdesc) {
                 add_pslitem(cj.response ? cid : "cc" + cid, cdesc);
             }
@@ -4764,14 +4772,15 @@ function add(cj, editing) {
             if ($psl.length === 1 && $psl.find("a").text() === "Comment")
                 $psl.find("a").text("Comments");
         }
-        if (cj.response) {
-            j = $('<div class="cmtg"></div>');
-        } else {
-            j = $('<article' + idattr + ' cmtg"></article>');
+        if (!cj.response) {
+            j = $('<article' + idattr + ' cmtg"></article>').appendTo($c.find(".cmtcard-body"));
         }
-        j.appendTo($c.find(".cmtcard-body"));
     }
-    if (editing == null && cj.response && cj.draft && cj.editable) {
+    if (cj.response) {
+        j = j.find(".cmtcard-body");
+    }
+    if (editing == null && cj.response && cj.draft && cj.editable
+        && hotcrp_status.myperm && hotcrp_status.myperm.act_author) {
         editing = true;
     }
     if (!newcmt && cid === "cnew") {
@@ -4891,9 +4900,9 @@ function nextprev_shortcut(evt, key) {
             walk = $j.closest(".cmtcard")[0];
         walk = walk[siblingdir];
         if (walk && !walk.hasAttribute("id") && $(walk).hasClass("cmtcard"))
-            walk = $(walk).find(".cmtg")[jdir]()[0];
+            walk = $(walk).find(".cmtid")[jdir]()[0];
     } else {
-        $j = $(".cmtcard[id], .revcard[id], .cmtcard > .cmtcard-body > .cmtg[id]");
+        $j = $(".cmtid, .revcard[id]");
         walk = $j[jdir]()[0];
     }
     if (walk && walk.hasAttribute("id"))

@@ -53,7 +53,7 @@ class Options_SettingRenderer {
         return $t . '<div class="' . $sv->control_class("optv_$xpos", "entryi fx4")
             . '">' . $sv->label("optv_$xpos", "Choices")
             . '<div class="entry">'
-            . Ht::textarea("optv_$xpos", $value, $sv->sjs("optv_$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "reviewtext need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"]))
+            . Ht::textarea("optv_$xpos", $value, $sv->sjs("optv_$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "w-text need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"]))
             . $sv->render_feedback_at("optv_$xpos")
             . "</div></div>\n";
     }
@@ -62,7 +62,7 @@ class Options_SettingRenderer {
         return '<div class="' . $sv->control_class("optd_$xpos", "entryi fx3")
             . '">' . $sv->label("optd_$xpos", "Description")
             . '<div class="entry">'
-            . Ht::textarea("optd_$xpos", $o->description, ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "reviewtext settings-opt-description need-autogrow"])
+            . Ht::textarea("optd_$xpos", $o->description, ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "w-text settings-opt-description need-autogrow"])
             . $sv->render_feedback_at("optd_$xpos")
             . '</div></div>';
     }

@@ -599,7 +599,7 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .msg + .msg {
 	margin-top: -0.5rem;
 }
-.msg > div, .msg > p, .w-text {
+.msg > div, .msg > p {
 	max-width: 800px;
 }
 .msg > p {
@@ -1462,7 +1462,7 @@ label.f-c, .f-i > label {
 .f-c.n, .f-i > label.n {
 	font-weight: normal;
 }
-.f-h, .f-hx, .feedback {
+.f-h, .f-hx, .feedback, .field-d {
 	color: #555555;
 	font-size: 92%;
 }
@@ -1624,29 +1624,21 @@ img.check {
 	visibility: hidden;
 }
 
-span.textlite {
-	border: solid 1px #aaaadd;
-	padding: 0 4px;
-	background: #fcfcfc;
-}
-.papertext {
-	width: 96%;
-}
-.w-99, .reviewtext {
-	width: 99%;
-}
-.papertext, .reviewtext {
+.w-text {
 	max-width: 720px;
+}
+.w-99, textarea.w-text {
+	width: 99%;
 }
 textarea[name=comment] {
 	min-height: 10em;
 }
-div.formatdescription {
+.formatdescription {
 	font-size: 69%;
 	max-width: 720px;
 	text-align: right;
 	color: #666666;
-	padding-bottom: 5px;
+	margin: 0.25rem 0;
 }
 
 .prevpaperlink, .float-left {
@@ -2728,7 +2720,7 @@ a.badge:active {
 .pslitem > .is-warning:before, .feedback.is-warning:before,
 .pslitem > .is-success:before, .feedback.is-success:before {
 	display: inline-block;
-	vertical-align: -0.075em;
+	vertical-align: -0.1em;
 	padding-right: 0.2em;
 	width: 1.1em;
 	height: 0.9em;
@@ -3158,12 +3150,13 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 .revcard-head {
 	margin-top: 32px;
 	margin-top: 2rem;
-	margin-bottom: 12px;
-	margin-bottom: 0.75rem;
+	margin-bottom: 24px;
+	margin-bottom: 1.5rem;
 }
 .revcard-head h2 {
 	display: inline-block;
 	margin-right: 1.5em;
+	margin-bottom: 0;
 	font-size: 1.17em;
 	color: #d41743;
 }
@@ -3245,10 +3238,9 @@ a:hover .t-editor,
 .field-d {
 	max-width: 720px;
 	margin-bottom: 0.5rem;
-	color: #555555;
 }
 .field-d > p {
-	margin-bottom: 0.5em;
+	margin-bottom: 0.3rem;
 }
 .revcard-render {
 	display: grid;
@@ -3394,11 +3386,11 @@ a:hover .t-editor,
 .cmtcard-head {
 	padding-top: 32px;
 	padding-top: 2rem;
-	padding-bottom: 4px;
 }
 .cmtcard-head h2 {
 	display: inline-block;
 	margin-right: 1.5em;
+	margin-bottom: 0;
 	font-size: 1.17em;
 	color: #c77634;
 }
@@ -3471,6 +3463,12 @@ a:hover .t-editor,
 }
 .format0 {
 	white-space: pre-wrap;
+}
+.cmttext {
+	margin-top: 0.5rem;
+}
+textarea.cmttext {
+	margin-top: 0;
 }
 .revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0 {
 	max-width: 720px;

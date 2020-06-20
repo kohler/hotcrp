@@ -340,10 +340,10 @@ var revfield_template = '<div id="revfield_$" class="settings-revfield f-contain
   </div>\
   <div class="f-i">\
     <label for="description_$">Description</label>\
-    <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="2" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea></div>\
+    <textarea name="description_$" id="description_$" class="w-text need-tooltip" rows="2" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea></div>\
   <div class="f-i reviewrow_options">\
     <label for="options_$">Choices</label>\
-    <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea></div>\
+    <textarea name="options_$" id="options_$" class="w-text need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea></div>\
   <div class="f-i">\
     <button id="moveup_$" class="btn-sm revfield_moveup" type="button">Move up</button><span class="sep"></span>\
 <button id="movedown_$" class="btn-sm revfield_movedown" type="button">Move down</button><span class="sep"></span>\
