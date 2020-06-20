@@ -2819,6 +2819,21 @@ class Conf {
 
     // times
 
+    /** @param string $format
+     * @param int|float $t
+     * @return string */
+    private function _date_format($format, $t) {
+        if ($this !== self::$g && !$this->_dtz && isset($this->opt["timezone"])) {
+            $this->_dtz = timezone_open($this->opt["timezone"]) ? : null;
+        }
+        if ($this->_dtz) {
+            $dt = date_create("@" . (int) $t);
+            $dt->setTimeZone($this->_dtz);
+            return $dt->format($format);
+        } else {
+            return date($format, $t);
+        }
+    }
     /** @param string $type
      * @param int|float $t
      * @return string */
@@ -2861,16 +2876,7 @@ class Conf {
         } else {
             $f = $this->opt["dateFormat"];
         }
-        if ($this !== self::$g && !$this->_dtz && isset($this->opt["timezone"])) {
-            $this->_dtz = timezone_open($this->opt["timezone"]) ? : null;
-        }
-        if ($this->_dtz) {
-            $dt = date_create("@" . (int) $t);
-            $dt->setTimeZone($this->_dtz);
-            return $dt->format($f);
-        } else {
-            return date($f, $t);
-        }
+        return $this->_date_format($f, $t);
     }
     /** @param int|float $value
      * @return string */
@@ -2918,11 +2924,7 @@ class Conf {
                 }
             }
             if (empty($x)) {
-                $z = date("T", $reference);
-                if ($z === "-12") {
-                    $x[] = "AoE";
-                }
-                $x[] = preg_quote($z);
+                $x[] = preg_quote($this->_unparse_timezone($reference));
             }
             $this->opt["dateFormatTimezoneRemover"] =
                 "/(?:\\s|\\A)(?:" . join("|", $x) . ")(?:\\s|\\z)/i";
@@ -2948,8 +2950,9 @@ class Conf {
         }
     }
 
+    // NB must return HTML-safe plaintext
     /** @param int $timestamp */
-    private function _unparse_time($timestamp, $type, $useradjust, $preadjust = null) {
+    private function _unparse_time($timestamp, $type) {
         if ($timestamp <= 0) {
             return "N/A";
         }
@@ -2959,13 +2962,6 @@ class Conf {
         }
         if ($type !== "obscure" && ($z = $this->_unparse_timezone($timestamp))) {
             $t .= " $z";
-        }
-        if ($preadjust) {
-            $t .= $preadjust;
-        }
-        if ($useradjust) {
-            $sp = strpos($useradjust, " ");
-            $t .= "<$useradjust class=\"usertime hidden need-usertime\" data-time=\"$timestamp\"></" . ($sp ? substr($useradjust, 0, $sp) : $useradjust) . ">";
         }
         return $t;
     }
@@ -2985,24 +2981,24 @@ class Conf {
         return $timestamp;
     }
     /** @param int $timestamp */
-    function unparse_time_long($timestamp, $useradjust = false, $preadjust = null) {
-        return $this->_unparse_time($timestamp, "long", $useradjust, $preadjust);
+    function unparse_time_long($timestamp) {
+        return $this->_unparse_time($timestamp, "long");
     }
     /** @param int $timestamp */
     function unparse_time($timestamp) {
-        return $this->_unparse_time($timestamp, "timestamp", false, null);
+        return $this->_unparse_time($timestamp, "timestamp");
     }
     /** @param int $timestamp */
     function unparse_time_obscure($timestamp) {
-        return $this->_unparse_time($timestamp, "obscure", false, null);
+        return $this->_unparse_time($timestamp, "obscure");
     }
     /** @param int $timestamp */
     function unparse_time_point($timestamp) {
-        return date("j M Y", $timestamp);
+        return $this->_date_format("j M Y", $timestamp);
     }
     /** @param int $timestamp */
     function unparse_time_log($timestamp) {
-        return date("d/M/Y:H:i:s O", $timestamp);
+        return $this->_date_format("d/M/Y:H:i:s O", $timestamp);
     }
     /** @param int $timestamp
      * @param int $now */
@@ -3044,15 +3040,38 @@ class Conf {
             return $timestamp < ($now ? : Conf::$now) ? $d . " ago" : "in " . $d;
         }
     }
-
-    function printableTimeSetting($what, $useradjust = false, $preadjust = null) {
-        return $this->unparse_time_long($this->settings[$what] ?? 0, $useradjust, $preadjust);
+    /** @param int $timestamp */
+    function unparse_usertime_span($timestamp) {
+        return '<span class="usertime hidden need-usertime" data-time="' . $timestamp . '"></span>';
     }
-    function printableDeadlineSetting($what, $useradjust = false, $preadjust = null) {
-        if (!isset($this->settings[$what]) || $this->settings[$what] <= 0) {
-            return "No deadline";
+
+    /** @param string $name */
+    function unparse_setting_time($name) {
+        $t = $this->settings[$name] ?? 0;
+        return $this->unparse_time_long($t);
+    }
+    /** @param string $name */
+    function unparse_setting_usertime_span($name) {
+        $t = $this->settings[$name] ?? 0;
+        return $t ? $this->unparse_usertime_span($t) : "";
+    }
+    /** @param string $name
+     * @param string $suffix */
+    function unparse_setting_time_span($name, $suffix = "") {
+        $t = $this->settings[$name] ?? 0;
+        if ($t > 0) {
+            return $this->unparse_time_long($t) . $suffix . $this->unparse_usertime_span($t);
         } else {
-            return "Deadline: " . $this->unparse_time_long($this->settings[$what], $useradjust, $preadjust);
+            return "N/A";
+        }
+    }
+    /** @param string $name */
+    function unparse_setting_deadline_span($name) {
+        $t = $this->settings[$name] ?? 0;
+        if ($t > 0) {
+            return "Deadline: " . $this->unparse_time_long($t) . $this->unparse_usertime_span($t);
+        } else {
+            return "No deadline";
         }
     }
 

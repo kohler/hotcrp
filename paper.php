@@ -275,11 +275,12 @@ function update_paper(Qrequest $qreq, $action) {
         if ((int) $new_prow->timeFinalSubmitted <= 0) {
             $notes[] = $Conf->_("The final version has not yet been submitted.");
         }
-        $deadline = $Conf->printableTimeSetting("final_soft", "span");
-        if ($deadline != "N/A" && $Conf->deadlinesAfter("final_soft")) {
+        $deadline = $Conf->unparse_setting_time_span("final_soft");
+        if ($deadline !== "N/A" && $Conf->deadlinesAfter("final_soft")) {
             $x = $Conf->_("The deadline for submitting final versions was %s.", $deadline);
-            if ($x != "")
+            if ($x != "") {
                 $notes[] = "<strong>$x</strong>";
+            }
         } else if ($deadline != "N/A") {
             $notes[] = $Conf->_("You have until %s to make further changes.", $deadline);
         }
@@ -293,12 +294,12 @@ function update_paper(Qrequest $qreq, $action) {
         } else {
             $notes[] = $Conf->_("The submission is marked as not ready for review.");
         }
-        $deadline = $Conf->printableTimeSetting("sub_update", "span");
-        if ($deadline != "N/A"
+        $deadline = $Conf->unparse_setting_time_span("sub_update");
+        if ($deadline !== "N/A"
             && ($new_prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0)) {
             $notes[] = $Conf->_("Further updates are allowed until %s.", $deadline);
         }
-        $deadline = $Conf->printableTimeSetting("sub_sub", "span");
+        $deadline = $Conf->unparse_setting_time_span("sub_sub");
         if ($deadline != "N/A" && $new_prow->timeSubmitted <= 0) {
             if ($Conf->setting("sub_freeze") > 0) {
                 $x = $Conf->_("If the submission is not completed by %s, it will not be considered.", $deadline);

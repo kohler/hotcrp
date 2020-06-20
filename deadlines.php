@@ -24,7 +24,8 @@ echo "<dl>\n";
 
 function printDeadline($time, $phrase, $description) {
     global $Conf;
-    echo "<dt><strong>", $phrase, "</strong>: ", $Conf->unparse_time_long($time, "span") , "</dt>\n",
+    echo "<dt><strong>", $phrase, "</strong>: ", $Conf->unparse_time_long($time),
+        $Conf->unparse_usertime_span($time), "</dt>\n",
         "<dd>", $description, ($description ? "<br />" : ""), "</dd>";
 }
 

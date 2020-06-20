@@ -277,21 +277,24 @@ class Home_Partial {
                 }
                 if ($conf->time_review($round, $user->isPC, false)) {
                     $dn = $conf->review_deadline($round, $user->isPC, false);
-                    $d = $conf->printableTimeSetting($dn, "span");
-                    if ($d == "N/A") {
-                        $d = $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, true), "span");
+                    if ($conf->setting($dn) <= 0) {
+                        $dn = $conf->review_deadline($round, $user->isPC, true);
                     }
+                    $d = $conf->unparse_setting_time_span($dn);
                     if ($d != "N/A") {
                         echo ' <em class="deadline">Please submit your ', $rname, ($this->_my_rinfo->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</em><br>\n";
                     }
                 } else if ($conf->time_review($round, $user->isPC, true)) {
-                    echo ' <em class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $conf->printableTimeSetting($conf->review_deadline($round, $user->isPC, false), "span"), ".</em><br>\n";
+                    $dn = $conf->review_deadline($round, $user->isPC, false);
+                    $d = $conf->unparse_setting_time_span($dn);
+                    echo ' <em class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $d, ".</em><br>\n";
                 } else {
                     echo ' <em class="deadline"><strong class="overdue">The <a href="', $conf->hoturl("deadlines"), '">deadline</a> for submitting ', $rname, "reviews has passed.</strong></em><br>\n";
                 }
             }
         } else if ($user->isPC && $user->can_review_any()) {
-            $d = $conf->printableTimeSetting($conf->review_deadline(null, $user->isPC, false), "span");
+            $dn = $conf->review_deadline(null, $user->isPC, false);
+            $d = $conf->unparse_setting_time_span($dn);
             if ($d != "N/A") {
                 echo " <em class=\"deadline\">The review deadline is $d.</em><br>\n";
             }
@@ -433,9 +436,9 @@ class Home_Partial {
 
         $startable = $conf->timeStartPaper();
         if ($startable && !$user->has_email()) {
-            echo '<em class="deadline">', $conf->printableDeadlineSetting("sub_reg", "span"), "</em><br />\n<small>You must sign in to start a submission.</small>";
+            echo '<em class="deadline">', $conf->unparse_setting_deadline_span("sub_reg"), "</em><br />\n<small>You must sign in to start a submission.</small>";
         } else if ($startable || $user->privChair) {
-            echo '<strong><a href="', $conf->hoturl("paper", "p=new"), '">New submission</a></strong> <em class="deadline">(', $conf->printableDeadlineSetting("sub_reg", "span"), ")</em>";
+            echo '<strong><a href="', $conf->hoturl("paper", "p=new"), '">New submission</a></strong> <em class="deadline">(', $conf->unparse_setting_deadline_span("sub_reg"), ")</em>";
             if ($user->privChair) {
                 echo '<br><span class="hint">As an administrator, you can start a submission regardless of deadlines and on behalf of others.</span>';
             }
@@ -461,12 +464,12 @@ class Home_Partial {
                 }
             } else if (!$conf->timeUpdatePaper()) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">update deadline</a> has passed, but you can still submit.';
-                $time = $conf->printableTimeSetting("sub_sub", "span", " to submit papers");
+                $time = $conf->unparse_setting_time_span("sub_sub", " to submit papers");
                 if ($time != "N/A") {
                     $deadlines[] = "You have until $time.";
                 }
             } else {
-                $time = $conf->printableTimeSetting("sub_update", "span", " to submit papers");
+                $time = $conf->unparse_setting_time_span("sub_update", " to submit papers");
                 if ($time != "N/A") {
                     $deadlines[] = "You have until $time.";
                 }
@@ -481,7 +484,7 @@ class Home_Partial {
         }
         // NB only has("accepted") if author can see an accepted paper
         if ($plist && $plist->has("accepted")) {
-            $time = $conf->printableTimeSetting("final_soft");
+            $time = $conf->unparse_setting_time_span("final_soft");
             if ($conf->deadlinesAfter("final_soft") && $plist->has("need_final")) {
                 $deadlines[] = "<strong class=\"overdue\">Final versions are overdue.</strong> They were requested by $time.";
             } else if ($time != "N/A") {
