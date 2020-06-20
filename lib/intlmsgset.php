@@ -3,10 +3,14 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class IntlMsg {
+    /** @var ?string */
     public $context;
+    /** @var string */
     public $otext;
     public $require;
+    /** @var float */
     public $priority = 0.0;
+    /** @var ?int */
     public $format;
     public $no_conversions;
     public $template;
@@ -92,8 +96,9 @@ class IntlMsg {
 class IntlMsgSet {
     private $ims = [];
     private $require_resolvers = [];
-    private $_ctx;
+    private $_context_prefix;
     private $_default_priority;
+    private $_default_format;
 
     const PRIO_OVERRIDE = 1000.0;
 
@@ -110,10 +115,10 @@ class IntlMsgSet {
         } else if (!$ctx) {
             $x = $this->addj($m);
         } else {
-            $octx = $this->_ctx;
-            $this->_ctx = $ctx;
+            $octx = $this->_context_prefix;
+            $this->_context_prefix = $ctx;
             $x = $this->addj($m);
-            $this->_ctx = $octx;
+            $this->_context_prefix = $octx;
         }
         return $x;
     }
@@ -122,15 +127,26 @@ class IntlMsgSet {
      * @return bool */
     private function _addj_object($m) {
         if (isset($m->members) && is_array($m->members)) {
-            $octx = $this->_ctx;
+            $octx = $this->_context_prefix;
+            $oprio = $this->_default_priority;
+            $ofmt = $this->_default_format;
             if (isset($m->context) && is_string($m->context)) {
-                $this->_ctx = ((string) $this->_ctx === "" ? "" : $this->_ctx . "/") . $m->context;
+                $cp = $this->_context_prefix ?? "";
+                $this->_context_prefix = ($cp === "" ? $m->context : $cp . "/" . $m->context);
+            }
+            if (isset($m->priority) && (is_int($m->priority) || is_float($m->priority))) {
+                $this->_default_priority = (float) $m->priority;
+            }
+            if (isset($m->format) && is_int($m->format)) {
+                $this->_default_format = $m->format;
             }
             $ret = true;
             foreach ($m->members as $mm) {
                 $ret = $this->addj($mm) && $ret;
             }
-            $this->_ctx = $octx;
+            $this->_context_prefix = $octx;
+            $this->_default_priority = $oprio;
+            $this->_default_format = $ofmt;
             return $ret;
         } else {
             $im = new IntlMsg;
@@ -205,12 +221,11 @@ class IntlMsgSet {
     /** @param string $itext
      * @param IntlMsg $im */
     private function _addj_finish($itext, $im) {
-        if ($this->_ctx) {
-            $im->context = $this->_ctx . ($im->context ? "/" . $im->context : "");
+        if ($this->_context_prefix) {
+            $im->context = $this->_context_prefix . ($im->context ? "/" . $im->context : "");
         }
-        if ($im->priority === null && $this->_default_priority !== null) {
-            $im->priority = $this->_default_priority;
-        }
+        $im->priority = $im->priority ?? $this->_default_priority;
+        $im->format = $im->format ?? $this->_default_format;
         $im->next = $this->ims[$itext] ?? null;
         $this->ims[$itext] = $im;
     }
