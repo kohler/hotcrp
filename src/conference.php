@@ -4720,20 +4720,30 @@ class Conf {
         return $this->_ims;
     }
 
+    /** @param string $itext
+     * @return string */
     function _($itext) {
-        return call_user_func_array([$this->ims(), "x"], func_get_args());
+        return call_user_func_array([$this->ims(), "_"], func_get_args());
     }
 
+    /** @param string $context
+     * @param string $itext
+     * @return string */
     function _c($context, $itext) {
-        return call_user_func_array([$this->ims(), "xc"], func_get_args());
+        return call_user_func_array([$this->ims(), "_c"], func_get_args());
     }
 
+    /** @param string $id
+     * @return string */
     function _i($id) {
-        return call_user_func_array([$this->ims(), "xi"], func_get_args());
+        return call_user_func_array([$this->ims(), "_i"], func_get_args());
     }
 
+    /** @param string $context
+     * @param string $id
+     * @return string */
     function _ci($context, $id) {
-        return call_user_func_array([$this->ims(), "xci"], func_get_args());
+        return call_user_func_array([$this->ims(), "_ci"], func_get_args());
     }
 
     function resolve_ims_requirement($s, $isreq) {

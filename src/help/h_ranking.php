@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Ranking_HelpTopic {
-    static function render($hth) {
+    static function render(HelpRenderer $hth) {
         echo "<p>Paper ranking is a way to extract the PC’s preference order for
 submitted papers.  Each PC member ranks the submitted papers, and a voting
 algorithm, <a href=\"http://en.wikipedia.org/wiki/Schulze_method\">the Schulze

@@ -1192,7 +1192,7 @@ class SettingValues extends MessageSet {
         if (($ctxname = $si->message_context_setting)) {
             $ctxarg = $this->curv($ctxname[0] === "+" ? substr($ctxname, 1) : $ctxname);
         }
-        return $this->conf->ims()->default_itext($msgname, false, $ctxarg);
+        return $this->conf->ims()->default_itext($msgname, null, $ctxarg);
     }
 
     function setting_link($html, $si, $js = null) {

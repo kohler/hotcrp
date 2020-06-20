@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class BulkAssign_HelpTopic {
-    static function render($hth) {
+    static function render(HelpRenderer $hth) {
         echo "
 <p>The ", $hth->hotlink("bulk assignments page", "bulkassign"), " offers
 fine-grained control over review assignments, tags, leads, shepherds, and many
@@ -50,7 +50,7 @@ can be supplied separately.</p>';
         $hth->render_group("bulkassignactions");
     }
 
-    static function render_action_review($hth) {
+    static function render_action_review(HelpRenderer $hth) {
         echo "<p>The <code>review</code> action assigns reviews. The
 <code>review type</code> column sets the review type; it can be
 <code>primary</code>, <code>secondary</code>, <code>pcreview</code> (optional
@@ -126,14 +126,14 @@ all,cleartag,p
 6,nexttag,p</pre>";
     }
 
-    static function render_action_follow($hth) {
+    static function render_action_follow(HelpRenderer $hth) {
         echo "<p>The <code>following</code> column can be “yes” (to receive
 email notifications on updates to reviews and comments), “no” (to block
 notifications), or “default” (to revert to the default, which is based
 on the user’s site preferences).</p>";
     }
 
-    static function render_action_conflict($hth) {
+    static function render_action_conflict(HelpRenderer $hth) {
         echo "<p>The <code>conflict type</code> column can be “yes”, “no”, or
 a conflict type, such as “advisor” or “institutional”.</p>";
     }
@@ -172,7 +172,7 @@ a conflict type, such as “advisor” or “institutional”.</p>";
         }
     }
 
-    static function echo_actions(Contact $user, $hth = null) {
+    static function echo_actions(Contact $user, HelpRenderer $hth = null) {
         $apge = new GroupedExtensions($user, "etc/assignmentparsers.json", $user->conf->opt("assignmentParsers"));
         $apx = [];
         foreach ($apge->groups() as $ufg) {

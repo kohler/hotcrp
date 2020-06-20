@@ -513,8 +513,8 @@ class PaperTable {
         if ($opt->description_format !== null) {
             $fr->value_format = $opt->description_format;
         }
-        $this->conf->ims()->render_xci($fr, "field_description/edit",
-                                       $opt->formid, $opt->description);
+        $this->conf->ims()->render_ci($fr, "field_description/edit",
+                                      $opt->formid, $opt->description);
         if (!$fr->is_empty()) {
             echo $fr->value_html("field-d");
         }

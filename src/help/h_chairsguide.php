@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class ChairsGuide_HelpTopic {
-    static function render_presubmission($hth, $gj) {
+    static function render_presubmission(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("Submission time");
             echo "<p>Follow these steps to prepare to accept submissions.</p>\n\n<ol>\n";
@@ -80,7 +80,7 @@ form also can include:</p>
         }
     }
 
-    static function render_assignments($hth, $gj) {
+    static function render_assignments(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("Assignments");
             echo "<p>After the submission deadline has passed:</p>\n<ol>\n";
@@ -159,7 +159,7 @@ form also can include:</p>
         }
     }
 
-    static function render_chair_conflicts($hth) {
+    static function render_chair_conflicts(HelpRenderer $hth) {
         echo $hth->subhead("Chair conflicts");
         echo "<p>Chairs and system administrators can access any information stored in the
 conference system, including reviewer identities for conflicted papers.
@@ -195,7 +195,7 @@ review tokens; then even web server access logs store only the
 administrator’s identity.</p>\n\n";
     }
 
-    static function render_premeeting($hth, $gj) {
+    static function render_premeeting(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("Before the meeting");
             echo "<ol>\n";
@@ -256,7 +256,7 @@ administrator’s identity.</p>\n\n";
     }
 
 
-    static function render_atmeeting($hth, $gj) {
+    static function render_atmeeting(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("At the meeting");
             echo "<ol>\n";
@@ -294,7 +294,7 @@ administrator’s identity.</p>\n\n";
         }
     }
 
-    static function render_postmeeting($hth, $gj) {
+    static function render_postmeeting(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("After the meeting");
             echo "<ol>\n";

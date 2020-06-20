@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Search_HelpTopic {
-    static function render($hth) {
+    static function render(HelpRenderer $hth) {
         echo "<p>All HotCRP lists are obtained through flexible
 search. Some hints for PC members and chairs:</p>
 

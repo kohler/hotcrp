@@ -432,12 +432,13 @@ class Home_Partial {
             $this->render_h2_home($user->is_author() ? "Your Submissions" : "Submissions");
 
         $startable = $conf->timeStartPaper();
-        if ($startable && !$user->has_email())
+        if ($startable && !$user->has_email()) {
             echo '<em class="deadline">', $conf->printableDeadlineSetting("sub_reg", "span"), "</em><br />\n<small>You must sign in to start a submission.</small>";
-        else if ($startable || $user->privChair) {
+        } else if ($startable || $user->privChair) {
             echo '<strong><a href="', $conf->hoturl("paper", "p=new"), '">New submission</a></strong> <em class="deadline">(', $conf->printableDeadlineSetting("sub_reg", "span"), ")</em>";
-            if ($user->privChair)
+            if ($user->privChair) {
                 echo '<br><span class="hint">As an administrator, you can start a submission regardless of deadlines and on behalf of others.</span>';
+            }
         }
 
         $plist = null;
@@ -453,40 +454,46 @@ class Home_Partial {
             if (!$conf->timeFinalizePaper()) {
                 // Be careful not to refer to a future deadline; perhaps an admin
                 // just turned off submissions.
-                if ($conf->deadlinesBetween("", "sub_sub", "sub_grace"))
+                if ($conf->deadlinesBetween("", "sub_sub", "sub_grace")) {
                     $deadlines[] = "The site is not open for submissions at the moment.";
-                else
+                } else {
                     $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">submission deadline</a> has passed.';
+                }
             } else if (!$conf->timeUpdatePaper()) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">update deadline</a> has passed, but you can still submit.';
                 $time = $conf->printableTimeSetting("sub_sub", "span", " to submit papers");
-                if ($time != "N/A")
+                if ($time != "N/A") {
                     $deadlines[] = "You have until $time.";
+                }
             } else {
                 $time = $conf->printableTimeSetting("sub_update", "span", " to submit papers");
-                if ($time != "N/A")
+                if ($time != "N/A") {
                     $deadlines[] = "You have until $time.";
+                }
             }
         }
         if (!$startable && !count($deadlines)) {
-            if ($conf->deadlinesAfter("sub_open"))
+            if ($conf->deadlinesAfter("sub_open")) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.';
-            else
+            } else {
                 $deadlines[] = "The site is not open for submissions at the moment.";
+            }
         }
         // NB only has("accepted") if author can see an accepted paper
         if ($plist && $plist->has("accepted")) {
             $time = $conf->printableTimeSetting("final_soft");
-            if ($conf->deadlinesAfter("final_soft") && $plist->has("need_final"))
+            if ($conf->deadlinesAfter("final_soft") && $plist->has("need_final")) {
                 $deadlines[] = "<strong class=\"overdue\">Final versions are overdue.</strong> They were requested by $time.";
-            else if ($time != "N/A")
+            } else if ($time != "N/A") {
                 $deadlines[] = "Submit final versions of your accepted papers by $time.";
+            }
         }
         if (!empty($deadlines)) {
-            if ($plist && $plist->count > 0)
+            if ($plist && $plist->count > 0) {
                 echo '<hr class="g">';
-            else if ($startable || $user->privChair)
+            } else if ($startable || $user->privChair) {
                 echo "<br>";
+            }
             echo '<em class="deadline">',
                 join("</em><br>\n<em class=\"deadline\">", $deadlines),
                 "</em>";

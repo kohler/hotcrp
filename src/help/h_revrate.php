@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class RevRate_HelpTopic {
-    static function render($hth) {
+    static function render(HelpRenderer $hth) {
         $what = "PC members";
         if ($hth->conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
             $what = "PC members and external reviewers";

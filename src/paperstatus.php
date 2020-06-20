@@ -121,7 +121,7 @@ class PaperStatus extends MessageSet {
     }
 
     function _() {
-        return call_user_func_array([$this->conf->ims(), "x"], func_get_args());
+        return call_user_func_array([$this->conf->ims(), "_"], func_get_args());
     }
 
     /** @param int $dtype
@@ -644,16 +644,18 @@ class PaperStatus extends MessageSet {
         }
         foreach (["withdrawn_at", "submitted_at", "final_submitted_at"] as $k) {
             if (isset($pj->$k)) {
-                if (is_numeric($pj->$k)) {
-                    $pj->$k = (int) $pj->$k;
-                } else if (is_string($pj->$k)) {
-                    $pj->$k = $this->conf->parse_time($pj->$k, Conf::$now);
+                $v = $pj->$k;
+                if (is_numeric($v)) {
+                    $v = (int) $v;
+                } else if (is_string($v)) {
+                    $v = $this->conf->parse_time($v, Conf::$now);
                 } else {
-                    $pj->$k = false;
+                    $v = false;
                 }
-                if ($pj->$k === false || $pj->$k < 0) {
-                    $pj->$k = Conf::$now;
+                if ($v === false || $v < 0) {
+                    $v = Conf::$now;
                 }
+                $pj->$k = $v;
             }
         }
 

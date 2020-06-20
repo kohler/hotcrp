@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class VoteTags_HelpTopic {
-    static function render($hth) {
+    static function render(HelpRenderer $hth) {
         $votetag = $hth->example_tag("vote");
         echo "<p>Some conferences have PC members vote for papers.
 In <em>allotment voting</em>,
