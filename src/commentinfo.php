@@ -429,12 +429,14 @@ class CommentInfo {
         }
 
         // attachments
-        foreach ($this->attachments() as $doc) {
-            $docj = $doc->unparse_json();
-            if (isset($cj->editable)) {
-                $docj->docid = $doc->paperStorageId;
+        if ($cj->text !== false) {
+            foreach ($this->attachments() as $doc) {
+                $docj = $doc->unparse_json();
+                if (isset($cj->editable)) {
+                    $docj->docid = $doc->paperStorageId;
+                }
+                $cj->docs[] = $docj;
             }
-            $cj->docs[] = $docj;
         }
 
         return $cj;
