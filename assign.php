@@ -135,9 +135,9 @@ if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
         if ($result->content["action"] === "token") {
             $Conf->confirmMsg("Created a new anonymous review. The review token is " . $result->content["review_token"] . ".");
         } else if ($result->content["action"] === "propose") {
-            $Conf->warnMsg($result->content["response"]);
+            $Conf->warnMsg($result->content["message"]);
         } else {
-            $Conf->confirmMsg($result->content["response"]);
+            $Conf->confirmMsg($result->content["message"]);
         }
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override);
         $Conf->self_redirect($Qreq);

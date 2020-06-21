@@ -101,15 +101,15 @@ class RequestReview_API {
                 $prow->paperId, $email, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, Conf::$now, $reason, $round);
             if ($user->can_administer($prow)) {
-                $msg = "<p>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so you must approve this request for it to take effect.</p>"
+                $msg = '<p>' . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so you must approve this request for it to take effect.</p>"
                     . PaperInfo::potential_conflict_tooltip_html($potconflict);
             } else if ($extrev_chairreq === 2) {
-                $msg = "<p>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so an administrator must approve your proposed external review before it can take effect.</p>";
+                $msg = '<p>' . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so an administrator must approve your proposed external review before it can take effect.</p>";
                 if ($user->can_view_authors($prow)) {
                     $msg .= PaperInfo::potential_conflict_tooltip_html($potconflict);
                 }
             } else {
-                $msg = "Proposed an external review from " . $xreviewer->name_h(NAME_E) . ". An administrator must approve this proposal for it to take effect.";
+                $msg = '<p>Proposed an external review from ' . $xreviewer->name_h(NAME_E) . ". An administrator must approve this proposal for it to take effect.</p>";
             }
             $user->log_activity("Review proposal added for $email", $prow);
             $prow->conf->update_autosearch_tags($prow, "review");
@@ -117,7 +117,7 @@ class RequestReview_API {
                                               ["requester_contact" => $requester,
                                                "reviewer_contact" => $xreviewer,
                                                "reason" => $reason]);
-            return new JsonResult(["ok" => true, "action" => "propose", "response" => $msg]);
+            return new JsonResult(["ok" => true, "action" => "propose", "message" => $msg]);
         }
 
         // if we get here, we will (try to) assign a review
@@ -145,7 +145,7 @@ class RequestReview_API {
             "requester_contact" => $requester, "reason" => $reason
         ]);
 
-        return new JsonResult(["ok" => true, "action" => "request", "response" => "Requested an external review from " . $reviewer->name_h(NAME_E) . "."]);
+        return new JsonResult(["ok" => true, "action" => "request", "message" => '<p>Requested an external review from ' . $reviewer->name_h(NAME_E) . '.</p>']);
     }
 
     /** @param Contact $user

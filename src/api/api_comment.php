@@ -157,20 +157,43 @@ class Comment_API {
         return [$xcrow, $ok, $msg];
     }
 
-    /** @return array{?CommentInfo,string} */
-    static private function lookup(Qrequest $qreq, PaperInfo $prow) {
-        if (ctype_digit($qreq->c)) {
-            $crow = self::find_comment("commentId=" . intval($qreq->c), $prow);
-            return [$crow, "No such comment."];
-        } else if (str_ends_with($qreq->c, "response")) {
+    /** @return array{?CommentInfo,string|array<string,mixed>} */
+    static private function lookup(Contact $user, Qrequest $qreq, PaperInfo $prow) {
+        if (str_ends_with($qreq->c, "response")) {
             $rname = substr($qreq->c, 0, -8);
         } else if (str_starts_with($qreq->c, "response")) {
             $rname = substr($qreq->c, 8);
+        } else if ($qreq->response) {
+            $rname = $qreq->response;
+        } else {
+            $rname = false;
+        }
+        $round = $rname === false ? false : $prow->conf->resp_round_number($rname);
+        if ($rname !== false && $round === false) {
+            return [null, "No such response round."];
+        }
+        $rcrow = self::find_response($round, $prow);
+
+        if (ctype_digit($qreq->c)) {
+            $crow = self::find_comment("commentId=" . intval($qreq->c), $prow);
+            if ($crow && $user->can_view_comment($prow, $crow, true)) {
+                return [$crow, null];
+            } else if ($crow || $rname === false || $qreq->is_get()) {
+                return [null, "No such comment."];
+            } else if ($rcrow && $user->can_view_comment($prow, $rcrow)) {
+                return [null, "The response you were editing has been deleted and a new response has been entered. Reload to see it."];
+            } else {
+                return [null, ["error" => "The response you were editing has been deleted. Submit again to create a new response.", "deleted" => true]];
+            }
+        } else if ($round !== false) {
+            if ($rcrow && $user->can_view_comment($prow, $rcrow, true)) {
+                return [$rcrow, null];
+            } else {
+                return [null, "No such response."];
+            }
         } else {
             return [null, "No such comment."];
         }
-        $round = $prow->conf->resp_round_number($rname);
-        return [self::find_response($round, $prow), "No such response."];
     }
 
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
@@ -186,7 +209,7 @@ class Comment_API {
             $qreq->c = ($qreq->response === "1" ? "" : $qreq->response) . "response";
         }
         if ($qreq->c && $qreq->c !== "new") {
-            list($crow, $msg) = self::lookup($qreq, $prow);
+            list($crow, $msg) = self::lookup($user, $qreq, $prow);
             if (!$crow) {
                 return new JsonResult(404, $msg);
             }
@@ -203,10 +226,11 @@ class Comment_API {
         }
         $j = ["ok" => $status <= 299];
         if ($crow && $crow->commentId) {
+            // NB CommentInfo::unparse_json checks can_view_comment
             $j["cmt"] = $crow->unparse_json($user);
         }
         if ($msg) {
-            $j["msg"] = $msg;
+            $j["message"] = $msg;
         }
         return new JsonResult($status, $j);
     }

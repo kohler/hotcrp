@@ -4454,11 +4454,15 @@ function make_save_callback($c) {
                 form.action = hoturl_post("paper", arg);
                 form.submit();
             }
-            var error = data.msg || data.error;
+            var error = data.message || data.error;
             if (!/^<div/.test(error))
                 error = render_xmsg(2, error);
             $c.find(".cmtmsg").html(error);
             $c.find("button, input[type=file]").prop("disabled", false);
+            $c.find("input[name=draft]").remove();
+            if (data.deleted) {
+                $c.c.cid = false;
+            }
             return;
         }
         var cid = cj_cid($c.c),
@@ -4473,9 +4477,9 @@ function make_save_callback($c) {
         }
         if (data.cmt) {
             save_change_id($c, cid, cj_cid(data.cmt));
-            render_cmt($c, data.cmt, editing_response, data.msg);
+            render_cmt($c, data.cmt, editing_response, data.message || data.msg);
         } else {
-            $c.closest(".cmtg").html(data.msg);
+            $c.closest(".cmtg").html(data.message || data.msg);
         }
     };
 }
@@ -7550,8 +7554,6 @@ handle_ui.on("js-check-format", function () {
         },
         success: function (data) {
             clearTimeout(running);
-            if (data.response && !data.result)
-                data.result = data.response; // XXX backward compat
             if (data.ok || data.result)
                 $cf.html(data.result);
         }
