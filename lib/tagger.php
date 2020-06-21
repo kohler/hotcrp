@@ -37,6 +37,7 @@ class TagInfo {
     public $badges;
     public $emoji;
     public $autosearch;
+    public $autosearch_value;
     /** @param string $tag */
     function __construct($tag, TagMap $tagmap) {
         $this->conf = $tagmap->conf;
@@ -58,7 +59,7 @@ class TagInfo {
         }
     }
     function merge(TagInfo $t) {
-        foreach (["chair", "readonly", "hidden", "track", "votish", "vote", "approval", "sitewide", "rank", "public_peruser", "automatic", "autosearch"] as $property) {
+        foreach (["chair", "readonly", "hidden", "track", "votish", "vote", "approval", "sitewide", "rank", "public_peruser", "automatic", "autosearch", "autosearch_value"] as $property) {
             if ($t->$property)
                 $this->$property = $t->$property;
         }
@@ -144,7 +145,7 @@ class TagInfo {
     /** @return string|false */
     function automatic_formula_expression() {
         if ($this->autosearch) {
-            return "0";
+            return $this->autosearch_value ?? "0";
         } else if ($this->vote) {
             return "let x = sum.pc(#_~{$this->tag}) in x ? x : null";
         } else if ($this->approval) {
@@ -158,10 +159,15 @@ class TagInfo {
 class_alias("TagInfo", "TagMapItem");
 
 class TagAnno implements JsonSerializable {
+    /** @var string */
     public $tag;
+    /** @var int */
     public $annoId;
+    /** @var float */
     public $tagIndex;
+    /** @var ?string */
     public $heading;
+    /** @var ?int */
     public $annoFormat;
     public $infoJson;
 
@@ -185,8 +191,9 @@ class TagAnno implements JsonSerializable {
         if ($ta) {
             $ta->annoId = (int) $ta->annoId;
             $ta->tagIndex = (float) $ta->tagIndex;
-            if ($ta->annoFormat !== null)
+            if ($ta->annoFormat !== null) {
                 $ta->annoFormat = (int) $ta->annoFormat;
+            }
         }
         return $ta;
     }
@@ -194,7 +201,8 @@ class TagAnno implements JsonSerializable {
     static function make_empty() {
         return new TagAnno;
     }
-    /** @return TagAnno */
+    /** @param string $h
+     * @return TagAnno */
     static function make_heading($h) {
         $ta = new TagAnno;
         $ta->heading = $h;
@@ -897,6 +905,9 @@ class TagMap implements IteratorAggregate {
             foreach (json_decode($tx) ? : [] as $tag => $search) {
                 $t = $map->add($tag);
                 $t->autosearch = $search->q;
+                if (isset($search->v)) {
+                    $t->autosearch_value = $search->v;
+                }
                 $t->automatic = $map->has_automatic = $map->has_autosearch = true;
             }
         }
@@ -918,6 +929,9 @@ class TagMap implements IteratorAggregate {
                     }
                     if (($x = $data->autosearch ?? null)) {
                         $t->autosearch = $x;
+                        if (isset($data->autosearch_value)) {
+                            $t->autosearch_value = $data->autosearch_value;
+                        }
                         $t->automatic = true;
                         $map->has_autosearch = $map->has_automatic = true;
                     }
