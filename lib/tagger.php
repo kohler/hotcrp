@@ -147,9 +147,9 @@ class TagInfo {
         if ($this->autosearch) {
             return $this->autosearch_value ?? "0";
         } else if ($this->vote) {
-            return "let x = sum.pc(#_~{$this->tag}) in x ? x : null";
+            return "sum.pc(#_~{$this->tag}) || null";
         } else if ($this->approval) {
-            return "let x = count.pc(#_~{$this->tag}) in x ? x : null";
+            return "count.pc(#_~{$this->tag}) || null";
         } else {
             return false;
         }
