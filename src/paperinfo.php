@@ -693,20 +693,6 @@ class PaperInfo {
     }
 
     /** @return int */
-    function pretty_text_title_indent($width = 75) {
-        $n = "Paper #{$this->paperId}: ";
-        $vistitle = $this->unaccented_title();
-        $l = (int) (($width + 0.5 - strlen($vistitle) - strlen($n)) / 2);
-        return strlen($n) + max(0, $l);
-    }
-
-    /** @return string */
-    function pretty_text_title($width = 75) {
-        $l = $this->pretty_text_title_indent($width);
-        return prefix_word_wrap("Paper #{$this->paperId}: ", $this->title, $l);
-    }
-
-    /** @return int */
     function format_of($text, $check_simple = false) {
         return $this->conf->check_format($this->paperFormat, $check_simple ? $text : null);
     }
