@@ -167,9 +167,9 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                         : $viewer->can_view_comment($prow, $rc))) {
                     $rctext .= PaperInfo::review_or_comment_text_separator($last_rc, $rc);
                     if (isset($rc->reviewId)) {
-                        $rctext .= $rf->pretty_text($prow, $rc, $viewer, false, true);
+                        $rctext .= $rf->unparse_text($prow, $rc, $viewer, ReviewForm::UNPARSE_NO_TITLE);
                     } else {
-                        $rctext .= $rc->unparse_text($viewer, true);
+                        $rctext .= $rc->unparse_text($viewer, ReviewForm::UNPARSE_NO_TITLE);
                     }
                     $last_rc = $rc;
                 }

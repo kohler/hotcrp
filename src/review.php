@@ -977,12 +977,18 @@ $blind\n";
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
     }
 
-    function pretty_text(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
-                         $no_update_review_author_seen = false,
-                         $no_title = false) {
-        self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
+    const UNPARSE_NO_AUTHOR_SEEN = 1;
+    const UNPARSE_NO_TITLE = 2;
+    const UNPARSE_FLOWED = 4;
+    function unparse_text(PaperInfo $prow, ReviewInfo $rrow, Contact $contact,
+                          $flags = 0) {
+        self::check_review_author_seen($prow, $rrow, $contact, !!($flags & self::UNPARSE_NO_AUTHOR_SEEN));
 
-        $n = ($no_title ? "" : $this->conf->short_name . " ") . "Review";
+        $n = "";
+        if (!($flags & self::UNPARSE_NO_TITLE)) {
+            $n .= $this->conf->short_name . " ";
+        }
+        $n .= "Review";
         if ($rrow->reviewOrdinal) {
             $n .= " #" . $rrow->unparse_ordinal();
         }
@@ -992,8 +998,9 @@ $blind\n";
         }
         $x = $n . "\n" . str_repeat("=", 75) . "\n";
 
-        if (!$no_title) {
-            $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2);
+        $flowed = ($flags & self::UNPARSE_FLOWED) !== 0;
+        if (!($flags & self::UNPARSE_NO_TITLE)) {
+            $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2, null, $flowed);
         }
         if ($contact->can_view_review_identity($prow, $rrow) && isset($rrow->lastName)) {
             $x .= "* Reviewer: " . Text::nameo($rrow, NAME_EB) . "\n";
@@ -1017,7 +1024,7 @@ $blind\n";
 
             if ($f->has_options) {
                 $y = $f->options[$fval] ?? "";
-                $x .= prefix_word_wrap($fval . ". ", $y, strlen($fval) + 2);
+                $x .= prefix_word_wrap($fval . ". ", $y, strlen($fval) + 2, null, $flowed);
             } else {
                 $x .= $fval . "\n";
             }

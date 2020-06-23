@@ -156,7 +156,11 @@ class HotCRPMailer extends Mailer {
                 if ($text !== "") {
                     $text .= "\n\n*" . str_repeat(" *", 37) . "\n\n\n";
                 }
-                $text .= $rf->pretty_text($this->row, $rrow, $this->recipient, $this->no_send, true);
+                $flags = ReviewForm::UNPARSE_NO_TITLE;
+                if ($this->no_send) {
+                    $flags |= ReviewForm::UNPARSE_NO_AUTHOR_SEEN;
+                }
+                $text .= $rf->unparse_text($this->row, $rrow, $this->recipient, $flags);
             }
         }
 
@@ -171,8 +175,9 @@ class HotCRPMailer extends Mailer {
 
     private function get_comments($tag) {
         // save old au_seerev setting, and reset it so authors can see them.
-        if (!($au_seerev = $this->conf->au_seerev))
+        if (!($au_seerev = $this->conf->au_seerev)) {
             $this->conf->au_seerev = Conf::AUSEEREV_YES;
+        }
         assert(!($this->recipient->overrides() & Contact::OVERRIDE_CONFLICT));
 
         if ($this->comment_row) {
@@ -186,6 +191,10 @@ class HotCRPMailer extends Mailer {
                 && $this->recipient->can_view_comment($this->row, $crow);
         });
 
+        $flags = ReviewForm::UNPARSE_NO_TITLE;
+        if ($this->flowed) {
+            $flags |= ReviewForm::UNPARSE_FLOWED;
+        }
         $text = "";
         if (count($crows) > 1) {
             $text .= "Comments\n" . str_repeat("=", 75) . "\n";
@@ -194,7 +203,7 @@ class HotCRPMailer extends Mailer {
             if ($text !== "") {
                 $text .= "\n";
             }
-            $text .= $crow->unparse_text($this->recipient, true);
+            $text .= $crow->unparse_text($this->recipient, $flags);
         }
 
         $this->conf->au_seerev = $au_seerev;

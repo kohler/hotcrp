@@ -156,7 +156,8 @@ class Mailer {
     /** @var ?Contact */
     public $recipient;
 
-    protected $width = 75;
+    protected $width = 72;
+    protected $flowed = false;
     protected $censor;
     protected $reason;
     protected $adminupdate;
@@ -186,10 +187,11 @@ class Mailer {
             $this->$k = $settings[$k] ?? null;
         }
         if ($this->width === null) {
-            $this->width = 75;
+            $this->width = 72;
         } else if (!$this->width) {
             $this->width = 10000000;
         }
+        $this->flowed = !!$this->conf->opt("mailFormatFlowed");
         $this->sensitive = $settings["sensitive"] ?? false;
     }
 
@@ -538,14 +540,14 @@ class Mailer {
         return $text . $rest;
     }
 
-    private function _lineexpand($line, $info, $indent, $width) {
+    private function _lineexpand($line, $info, $indent) {
         $text = "";
         while (preg_match('/^(.*?)(%#?[-a-zA-Z0-9!@_:.\/]+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
             $text .= $m[1] . $this->expandvar($m[2], false);
             $line = $m[3];
         }
         $text .= $line;
-        return prefix_word_wrap($info, $text, $indent, $width);
+        return prefix_word_wrap($info, $text, $indent, $this->width, $this->flowed);
     }
 
     function expand($text, $field = null) {
@@ -564,15 +566,16 @@ class Mailer {
         }
 
         // width, expansion type based on field
-        $oldExpansionType = $this->expansionType;
-        $width = 100000;
+        $old_expansionType = $this->expansionType;
+        $old_width = $this->width;
         if (isset(self::$email_fields[$field])) {
             $this->expansionType = self::EXPAND_EMAIL;
+            $this->width = 10000000;
         } else if ($field !== "body" && $field != "") {
             $this->expansionType = self::EXPAND_HEADER;
+            $this->width = 10000000;
         } else {
             $this->expansionType = self::EXPAND_BODY;
-            $width = $this->width;
         }
 
         // expand out %IF% and %ELSE% and %ENDIF%.  Need to do this first,
@@ -596,7 +599,7 @@ class Mailer {
                     $text .= $m . "\n";
                 }
             } else if (strpos($line, "%") === false) {
-                $text .= prefix_word_wrap("", $line, 0, $width);
+                $text .= prefix_word_wrap("", $line, 0, $this->width, $this->flowed);
             } else {
                 if ($line[0] === " " || $line[0] === "\t") {
                     if (preg_match('/\A([ \t]*)(%\w+(?:|\([^\)]*\))%)(:.*)\z/s', $line, $m)
@@ -607,17 +610,17 @@ class Mailer {
                         && ($tl = tabLength($m[1], true)) <= 20) {
                         if (str_starts_with($m[2], "%OPT(")) {
                             if (($yes = $this->expandvar($m[2], true))) {
-                                $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), $tl, $width);
+                                $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), $tl, $this->width, $this->flowed);
                             } else if ($yes === null) {
                                 $text .= $line . "\n";
                             }
                         } else {
-                            $text .= $this->_lineexpand($m[2], $m[1], $tl, $width);
+                            $text .= $this->_lineexpand($m[2], $m[1], $tl);
                         }
                         continue;
                     }
                 }
-                $text .= $this->_lineexpand($line, "", 0, $width);
+                $text .= $this->_lineexpand($line, "", 0);
             }
         }
 
@@ -626,7 +629,8 @@ class Mailer {
             $text = rtrim(preg_replace('/[\r\n\f\x0B]+/', ' ', $text));
         }
 
-        $this->expansionType = $oldExpansionType;
+        $this->expansionType = $old_expansionType;
+        $this->width = $old_width;
         return $text;
     }
 
@@ -714,7 +718,8 @@ class Mailer {
             }
         }
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . $eol;
-        $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . $eol;
+        $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8"
+            . ($this->flowed ? "; format=flowed" : "") . $eol;
         $prep->sensitive = $this->sensitive;
     }
 

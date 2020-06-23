@@ -209,10 +209,11 @@ function download_all_text_reviews() {
     $text = "";
     foreach ($prow->viewable_submitted_reviews_and_comments($Me) as $rc) {
         $text .= PaperInfo::review_or_comment_text_separator($lastrc, $rc);
-        if (isset($rc->reviewId))
-            $text .= $rf->pretty_text($prow, $rc, $Me, false, true);
-        else
-            $text .= $rc->unparse_text($Me, true);
+        if (isset($rc->reviewId)) {
+            $text .= $rf->unparse_text($prow, $rc, $Me, ReviewForm::UNPARSE_NO_TITLE);
+        } else {
+            $text .= $rc->unparse_text($Me, ReviewForm::UNPARSE_NO_TITLE);
+        }
         $lastrc = $rc;
     }
     if ($text === "") {
@@ -229,9 +230,10 @@ function download_all_text_reviews() {
 function download_one_text_review(ReviewInfo $rrow) {
     global $rf, $Conf, $Me, $prow, $paperTable;
     $filename = "review-{$prow->paperId}";
-    if ($rrow->reviewOrdinal)
+    if ($rrow->reviewOrdinal) {
         $filename .= unparseReviewOrdinal($rrow->reviewOrdinal);
-    downloadText($rf->pretty_text($prow, $rrow, $Me), $filename, true);
+    }
+    downloadText($rf->unparse_text($prow, $rrow, $Me), $filename, true);
 }
 
 if (isset($Qreq->text)) {

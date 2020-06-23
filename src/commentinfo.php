@@ -442,7 +442,9 @@ class CommentInfo {
         return $cj;
     }
 
-    function unparse_text(Contact $contact, $no_title = false) {
+    /** @param int $flags
+     * @return string */
+    function unparse_text(Contact $contact, $flags = 0) {
         if (!($this->commentType & COMMENTTYPE_RESPONSE)) {
             $ordinal = $this->unparse_ordinal();
             $x = "Comment" . ($ordinal ? " @$ordinal" : "");
@@ -458,15 +460,16 @@ class CommentInfo {
             $x .= " by " . $p;
         }
         $x .= "\n" . str_repeat("-", 75) . "\n";
-        if (!$no_title) {
+        $flowed = ($flags & ReviewForm::UNPARSE_FLOWED) !== 0;
+        if (!($flags & ReviewForm::UNPARSE_NO_TITLE)) {
             $prow = $this->prow;
-            $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2);
+            $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2, null, $flowed);
         }
         if (($tags = $this->viewable_nonresponse_tags($contact))) {
             $tagger = new Tagger($contact);
-            $x .= prefix_word_wrap("* ", $tagger->unparse_hashed($tags), 2);
+            $x .= prefix_word_wrap("* ", $tagger->unparse_hashed($tags), 2, null, $flowed);
         }
-        if (!$no_title || $tags) {
+        if (!($flags & ReviewForm::UNPARSE_NO_TITLE) || $tags) {
             $x .= "\n";
         }
         if ($this->commentOverflow) {
