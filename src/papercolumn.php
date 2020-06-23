@@ -535,7 +535,7 @@ class Abstract_PaperColumn extends PaperColumn {
             $t = '<div class="' . $klass . ' need-format" data-format="'
                 . $format . '.plx">' . $t . '</div>';
         } else {
-            $t = '<div class="' . $klass . ' format0">' . Ht::format0($t) . '</div>';
+            $t = '<div class="' . $klass . ' format0">' . Ht::format0_html($t) . '</div>';
         }
         return $t;
     }

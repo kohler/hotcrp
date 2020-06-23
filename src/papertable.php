@@ -779,7 +779,7 @@ class PaperTable {
             && ($format = $this->prow->format_of($text))) {
             $fr->value .= ' need-format" data-format="' . $format . '">' . $text;
         } else {
-            $fr->value .= ' format0">' . Ht::format0($text);
+            $fr->value .= ' format0">' . Ht::format0_html($text);
         }
         $fr->value .= "</div></div></div>";
         if ($extra) {
