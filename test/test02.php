@@ -312,12 +312,25 @@ xassert_eqq(UnicodeHelper::utf8_prefix("áááááááá", 9), "áááááááá
 xassert_eqq(UnicodeHelper::utf8_prefix("a̓a̓a̓a̓a̓a̓a̓a̓", 7), "a̓a̓a̓a̓a̓a̓a̓");
 xassert_eqq(UnicodeHelper::utf8_prefix("a̓a̓a̓a̓a̓a̓a̓a̓", 8), "a̓a̓a̓a̓a̓a̓a̓a̓");
 xassert_eqq(UnicodeHelper::utf8_prefix("a̓a̓a̓a̓a̓a̓a̓a̓", 9), "a̓a̓a̓a̓a̓a̓a̓a̓");
+xassert_eqq(UnicodeHelper::utf8_word_prefix("a aaaaaaabbb", 7), "a");
 xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 7), "aaaaaaaa");
 xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 8), "aaaaaaaa");
 xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 9), "aaaaaaaa");
 xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 10), "aaaaaaaa");
 xassert_eqq(UnicodeHelper::utf8_word_prefix("\xCC\x90_\xCC\x8E", 1), "\xCC\x90_\xCC\x8E");
 xassert_eqq(UnicodeHelper::utf8_word_prefix("\xCC\x90_ \xCC\x8E", 1), "\xCC\x90_");
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("a aaaaaaabbb", 7), ["a", "aaaaaaabbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 7), ["aaaaaaaa", "bbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 8), ["aaaaaaaa", "bbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 9), ["aaaaaaaa", "bbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 10), ["aaaaaaaa", "bbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("a\naaaaaa bbb", 10), ["a", "aaaaaa bbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("a aaaaaaabbb", 7), ["a", "aaaaaaabbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 7, true), ["aaaaaaaa ", "bbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 8, true), ["aaaaaaaa ", "bbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa   bbb", 9, true), ["aaaaaaaa   ", "bbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("aaaaaaaa bbb", 10, true), ["aaaaaaaa ", "bbb"]);
+xassert_eqq(UnicodeHelper::utf8_line_break_parts("a\naaaaaa bbb", 10), ["a", "aaaaaa bbb"]);
 xassert_eqq(UnicodeHelper::utf8_glyphlen("aaaaaaaa"), 8);
 xassert_eqq(UnicodeHelper::utf8_glyphlen("áááááááá"), 8);
 xassert_eqq(UnicodeHelper::utf8_glyphlen("a̓a̓a̓a̓a̓a̓a̓a̓"), 8);
@@ -371,6 +384,12 @@ xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 9),
             "+ This is\n- a thing\n- to be\n- wrapped.\n");
 xassert_eqq(prefix_word_wrap("+ ", "This\nis\na thing\nto\nbe wrapped.", "- ", 9),
             "+ This\n- is\n- a thing\n- to\n- be\n- wrapped.\n");
+xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 10, true),
+            "+ This is \n- a thing \n- to be \n- wrapped.\n");
+xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 9, true),
+            "+ This is \n- a thing \n- to be \n- wrapped.\n");
+xassert_eqq(prefix_word_wrap("+ ", "This\nis\na thing\nto\nbe wrapped.", "- ", 9, true),
+            "+ This\n- is\n- a thing\n- to\n- be \n- wrapped.\n");
 
 xassert_eqq(!!preg_match('/\A\pZ\z/u', ' '), true);
 

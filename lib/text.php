@@ -488,13 +488,14 @@ class Text {
     }
 
 
-    /** @return string */
+    /** @param string $word
+     * @return string */
     static function word_regex($word) {
         if ($word === "") {
             return "";
         }
-        list($aw, $zw) = array(ctype_alnum($word[0]),
-                               ctype_alnum($word[strlen($word) - 1]));
+        $aw = ctype_alnum($word[0]);
+        $zw = ctype_alnum($word[strlen($word) - 1]);
         return ($aw ? '\b' : '')
             . str_replace(" ", '\s+', preg_quote($word))
             . ($zw ? '\b' : '');
@@ -505,7 +506,8 @@ class Text {
     const UTF8_FINAL_NONLETTERDIGIT = '(?:\z|(?!\pL|\pN)(?=\PM))';
     const UTF8_FINAL_NONLETTER = '(?:\z|(?!\pL)(?=\PM))';
 
-    /** @return string */
+    /** @param string $word
+     * @return string */
     static function utf8_word_regex($word) {
         if ($word === "") {
             return "";

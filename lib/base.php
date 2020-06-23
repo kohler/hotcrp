@@ -172,8 +172,11 @@ function simplify_whitespace($str) {
 /** @param string $prefix
  * @param string $text
  * @param int|string $indent
- * @param int $totWidth */
-function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
+ * @param int $totWidth
+ * @param bool $preserve_space
+ * @return string */
+function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75,
+                          $preserve_space = false) {
     if (is_int($indent)) {
         $indentlen = $indent;
         $indent = str_repeat(" ", $indent);
@@ -187,12 +190,12 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
             $out .= $text[0];
             $text = substr($text, 1);
         }
-    } else if (($line = UnicodeHelper::utf8_line_break($text, $totWidth)) !== false) {
+    } else if (($line = UnicodeHelper::utf8_line_break($text, $totWidth, $preserve_space)) !== false) {
         $out .= $line . "\n";
     }
 
-    while (($line = UnicodeHelper::utf8_line_break($text, $totWidth - $indentlen)) !== false) {
-        $out .= $indent . preg_replace('/^\pZ+/u', '', $line) . "\n";
+    while (($line = UnicodeHelper::utf8_line_break($text, $totWidth - $indentlen, $preserve_space)) !== false) {
+        $out .= $indent . preg_replace('/\A\pZ+/u', '', $line) . "\n";
     }
 
     if ($prefix === false) {

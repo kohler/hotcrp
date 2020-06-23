@@ -284,33 +284,50 @@ class UnicodeHelper {
     }
 
     /** @param string $str
-     * @param int $len */
-    static function utf8_word_prefix($str, $len, &$rest = null) {
+     * @param int $len
+     * @return string */
+    static function utf8_word_prefix($str, $len) {
         if (strlen($str) > $len
             && $len > 0
-            && (preg_match('/\A(\pM*\X{0,' . ($len - 1) . '}(?!\pZ|\s)\X)((?:\pZ|\s)+[\s\S]*)\z/u', $str, $m)
-                || preg_match('/\A(\pM*\X{1,' . $len . '}(?:(?!\pZ|\s)\X)*)([\s\S]*)\z/u', $str, $m))) {
-            $rest = $m[2];
-            return $m[1];
+            && (preg_match('/\A\pM*\X{0,' . ($len - 1) . '}(?!\pZ|\s)\X(?=\pZ|\s)/u', $str, $m)
+                || preg_match('/\A\pM*\X{1,' . $len . '}(?:(?!\pZ|\s)\X)*/u', $str, $m))) {
+            return $m[0];
         } else {
-            $rest = "";
             return $str;
         }
     }
 
     /** @param string &$str
-     * @param int $len */
-    static function utf8_line_break(&$str, $len) {
+     * @param int $len
+     * @param bool $preserve_space
+     * @return string|false */
+    static function utf8_line_break(&$str, $len, $preserve_space = false) {
         if ($str === "") {
             return false;
         }
-        $line = self::utf8_word_prefix($str, $len, $str);
+        $line = self::utf8_word_prefix($str, $len);
         if (($nl = strpos($line, "\n")) !== false) {
-            $str = substr($line, $nl) . $str;
             $line = substr($line, 0, $nl);
         }
-        $str = preg_replace('/\A(?:\pZ|[\t\f\r])*\n?/u', '', $str);
+        $pos = strlen($line);
+        if (preg_match('/\G(?:\pZ|[\t\f\r])*\n?/u', $str, $m, 0, $pos)) {
+            $pos += strlen($m[0]);
+        }
+        if ($preserve_space && $pos !== strlen($line)) {
+            $ends_nl = $str[$pos - 1] === "\n" ? 1 : 0;
+            $line .= substr($str, strlen($line), $pos - strlen($line) - $ends_nl);
+        }
+        $str = substr($str, $pos);
         return $line;
+    }
+
+    /** @param string $str
+     * @param int $len
+     * @param bool $preserve_space
+     * @return array{string|false,string} */
+    static function utf8_line_break_parts($str, $len, $preserve_space = false) {
+        $line = self::utf8_line_break($str, $len, $preserve_space);
+        return [$line, $str];
     }
 
     /** @param string $str
