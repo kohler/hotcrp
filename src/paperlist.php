@@ -429,7 +429,7 @@ class PaperList {
             $sorters = [];
             foreach ($this->_sorters as $sorter) {
                 if ($sorter->field) {
-                    // already prepared (e.g., NumericOrderPaperColumn)
+                    // already prepared (e.g., PaperIDOrder_PaperColumn)
                     $sorters[] = $sorter;
                 } else if ($sorter->type
                            && ($field = $this->find_column($sorter->type))) {

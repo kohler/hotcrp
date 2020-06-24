@@ -283,6 +283,7 @@ src/papercolumns/pc_formulagraph.php
 src/papercolumns/pc_lead.php
 src/papercolumns/pc_option.php
 src/papercolumns/pc_pagecount.php
+src/papercolumns/pc_paperidorder.php
 src/papercolumns/pc_pcconflicts.php
 src/papercolumns/pc_preference.php
 src/papercolumns/pc_preferencelist.php

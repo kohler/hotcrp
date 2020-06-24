@@ -21,7 +21,6 @@ class SiteLoader {
         "MailPreparation" => "lib/mailer.php",
         "MimeText" => "lib/mailer.php",
         "NameInfo" => "lib/text.php",
-        "NumericOrderPaperColumn" => "src/papercolumn.php",
         "PaperInfoSet" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",
         "PaperValue" => "src/paperoption.php",

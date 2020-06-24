@@ -914,21 +914,3 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         return $cs;
     }
 }
-
-class NumericOrderPaperColumn extends PaperColumn {
-    private $order;
-    function __construct(Conf $conf, $order) {
-        parent::__construct($conf, (object) ["name" => "numericorder", "sort" => true]);
-        $this->order = $order;
-    }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $ap = $this->order->position($a->paperId);
-        $bp = $this->order->position($b->paperId);
-        if ($ap !== false && $bp !== false)
-            return $ap < $bp ? -1 : ($ap > $bp ? 1 : 0);
-        else if ($ap !== false || $bp !== false)
-            return $ap === false ? 1 : -1;
-        else
-            return $a->paperId - $b->paperId;
-    }
-}

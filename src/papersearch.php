@@ -1544,7 +1544,7 @@ class PaperID_SearchTerm extends SearchTerm {
     }
     function default_sorter($top, $thenval, PaperSearch $srch) {
         if ($top && !$this->in_order) {
-            $s = ListSorter::make_field(new NumericOrderPaperColumn($srch->conf, $this));
+            $s = ListSorter::make_field(new PaperIDOrder_PaperColumn($srch->conf, $this));
             $s->thenval = $thenval;
             return $s;
         } else {
