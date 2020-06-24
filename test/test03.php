@@ -2,6 +2,7 @@
 // test03.php -- HotCRP min-cost max-flow tests
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+declare(strict_types=1);
 require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 
 function mcmf_assignment_text($m) {

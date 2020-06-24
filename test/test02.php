@@ -2,6 +2,7 @@
 // test02.php -- HotCRP S3 and database unit tests
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+declare(strict_types=1);
 require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 
 // S3 unit tests

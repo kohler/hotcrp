@@ -2,6 +2,7 @@
 // init.php -- HotCRP initialization (test or site)
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+declare(strict_types=1);
 define("HOTCRP_VERSION", "2.102");
 
 // All positive review types must be 1 digit

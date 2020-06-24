@@ -2,6 +2,7 @@
 // test04.php -- HotCRP user database tests
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+declare(strict_types=1);
 global $Opt;
 $Opt = [
     "contactdb_dsn" => "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/hotcrp_testdb_cdb",
