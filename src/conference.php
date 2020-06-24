@@ -2860,9 +2860,6 @@ class Conf {
             if (!isset($this->opt["dateFormatSimplifier"])) {
                 $this->opt["dateFormatSimplifier"] = ($this->opt["time24hour"] ?? false) ? "/:00(?!:)/" : "/:00(?::00|)(?= ?[ap]m)/";
             }
-            if (!isset($this->opt["dateFormatTimezone"])) {
-                $this->opt["dateFormatTimezone"] = null;
-            }
             $this->_date_format_initialized = true;
         }
         if ($type === "timestamp") {
@@ -2881,7 +2878,7 @@ class Conf {
     /** @param int|float $value
      * @return string */
     private function _unparse_timezone($value) {
-        $z = $this->opt["dateFormatTimezone"];
+        $z = $this->opt["dateFormatTimezone"] ?? null;
         if ($z === null) {
             $z = $this->_date_unparse("zone", $value);
             if ($z === "-12") {
