@@ -245,13 +245,13 @@ class Title_PaperColumn extends PaperColumn {
 }
 
 class Status_PaperColumn extends PaperColumn {
-    private $is_long;
+    private $include_submitted;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_BOTH;
     }
     function prepare(PaperList $pl, $visible) {
-        $this->is_long = $pl->search->limit_expect_nonsubmitted();
+        $this->include_submitted = $pl->search->limit_expect_nonsubmitted();
         return true;
     }
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
@@ -263,6 +263,19 @@ class Status_PaperColumn extends PaperColumn {
             }
         }
     }
+    function analyze(PaperList $pl, $fields) {
+        if ($this->is_visible) {
+            foreach ($pl->rowset() as $row) {
+                if ($row->outcome != 0 || $row->paperStorageId <= 1) {
+                    $t = ($pl->user->paper_status_info($row))[1];
+                    if (strlen($t) > 10 && strpos($t, " ") !== false) {
+                        $this->className .= " pl-status-long";
+                        break;
+                    }
+                }
+            }
+        }
+    }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $x = $b->{$sorter->uid} - $a->{$sorter->uid};
         $x = $x ? : ($a->timeWithdrawn > 0 ? 1 : 0) - ($b->timeWithdrawn > 0 ? 1 : 0);
@@ -271,7 +284,7 @@ class Status_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $status_info = $pl->user->paper_status_info($row);
-        if ($this->is_long || $status_info[0] !== "pstat_sub") {
+        if ($this->include_submitted || $status_info[0] !== "pstat_sub") {
             return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
         } else {
             return "";

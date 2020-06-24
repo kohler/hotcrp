@@ -1978,7 +1978,6 @@ td.rlscore {
 
 span.pstat {
 	font-weight: bold;
-	white-space: nowrap;
 }
 .pstat_with {
 	color: #333333;
@@ -2275,6 +2274,9 @@ td.pl_formula {
 }
 .pl_longtext > p:last-child, .pl_shorttext > p:last-child {
 	margin-bottom: 0;
+}
+th.pl-status-long {
+	min-width: 12rem;
 }
 
 .potentialconflict-one, .potentialconflict-many {

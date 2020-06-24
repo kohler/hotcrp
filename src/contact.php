@@ -4643,12 +4643,13 @@ class Contact {
             return ["pstat_with", "Withdrawn"];
         } else if ($row->outcome && $this->can_view_decision($row)) {
             return $this->conf->decision_status_info($row->outcome);
-        } else if ($row->timeSubmitted <= 0 && $row->paperStorageId == 1) {
-            return ["pstat_noup", "No submission"];
         } else if ($row->timeSubmitted > 0) {
             return ["pstat_sub", "Submitted"];
+        } else if ($row->paperStorageId <= 1
+                   && (int) $this->conf->opt("noPapers") !== 1) {
+            return ["pstat_draft", "No submission"];
         } else {
-            return ["pstat_prog", "Not ready"];
+            return ["pstat_draft", "Draft"];
         }
     }
 
