@@ -1428,11 +1428,11 @@ class SettingValues extends MessageSet {
 
             // clean up
             $this->conf->load_settings();
-            if (!empty($this->invalidate_caches)) {
-                $this->conf->invalidate_caches($this->invalidate_caches);
-            }
             foreach ($this->cleanup_callbacks as $cb) {
                 call_user_func($cb[0], $this, $cb[1]);
+            }
+            if (!empty($this->invalidate_caches)) {
+                $this->conf->invalidate_caches($this->invalidate_caches);
             }
         }
         return !$this->has_error();
