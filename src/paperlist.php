@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperListTableRender {
+    /** @var ?string */
     public $table_start;
     public $thead;
     public $tbody_class;
@@ -11,16 +12,25 @@ class PaperListTableRender {
     public $table_end;
     public $error;
 
+    /** @var int */
     public $ncol;
+    /** @var int */
     public $titlecol;
+    /** @var int */
     public $split_ncol = 0;
 
+    /** @var int */
     public $colorindex = 0;
+    /** @var bool */
     public $hascolors = false;
+    /** @var int */
     public $skipcallout;
     public $last_trclass = "";
     public $groupstart = [0];
 
+    /** @param int $ncol
+     * @param int $titlecol
+     * @param int $skipcallout */
     function __construct($ncol, $titlecol, $skipcallout) {
         $this->ncol = $ncol;
         $this->titlecol = $titlecol;
@@ -34,6 +44,9 @@ class PaperListTableRender {
     function tbody_start() {
         return "  <tbody class=\"{$this->tbody_class}\">\n";
     }
+    /** @param string $heading
+     * @param array<string,mixed> $attr
+     * @return string */
     function heading_row($heading, $attr = []) {
         if (!$heading) {
             return "  <tr class=\"plheading\"><td class=\"plheading-blank\" colspan=\"{$this->ncol}\"></td></tr>\n";
@@ -44,11 +57,11 @@ class PaperListTableRender {
                     $x .= " $k=\"" . htmlspecialchars($v) . "\"";
             }
             $x .= ">";
-            $titlecol = get($attr, "no_titlecol") ? 0 : $this->titlecol;
+            $titlecol = ($attr["no_titlecol"] ?? false) ? 0 : $this->titlecol;
             if ($titlecol) {
                 $x .= "<td class=\"plheading-spacer\" colspan=\"{$titlecol}\"></td>";
             }
-            $tdclass = get($attr, "tdclass");
+            $tdclass = $attr["tdclass"] ?? null;
             $x .= "<td class=\"plheading" . ($tdclass ? " $tdclass" : "") . "\" colspan=\"" . ($this->ncol - $titlecol) . "\">";
             return $x . $heading . "</td></tr>\n";
         }
@@ -65,7 +78,9 @@ class PaperListTableRender {
 }
 
 class PaperListReviewAnalysis {
+    /** @var PaperInfo */
     private $prow;
+    /** @var ?ReviewInfo */
     public $rrow = null;
     public $round = "";
     function __construct($rrow, PaperInfo $prow) {
@@ -90,7 +105,7 @@ class PaperListReviewAnalysis {
     function icon_text() {
         $x = "";
         if ($this->rrow->reviewType) {
-            $x = get_s(ReviewForm::$revtype_names, $this->rrow->reviewType);
+            $x = ReviewForm::$revtype_names[$this->rrow->reviewType] ?? "";
         }
         if ($x !== "" && $this->round) {
             $x .= ":" . $this->round;
@@ -482,7 +497,7 @@ class PaperList {
         }
         foreach ($this->sorters() as $s) {
             $s->pl = $this;
-            $s->field->analyze_sort($this, $this->_rowset, $s);
+            $s->field->prepare_sort($this, $s);
         }
         $this->_rowset->sort_by([$this, $thenmap ? "_then_sort_compare" : "_sort_compare"]);
         $this->user->set_overrides($overrides);
@@ -781,7 +796,7 @@ class PaperList {
         assert(empty($this->row_attr));
         foreach ($field_list as $fdef) {
             if ($fdef) {
-                $fdef->is_visible = $all || get($this->_viewing, $fdef->name);
+                $fdef->is_visible = $all || ($this->_viewing[$fdef->name] ?? false);
                 $fdef->has_content = false;
                 if ($fdef->prepare($this, $fdef->is_visible ? 1 : 0)) {
                     $result[] = $fdef;
@@ -1458,7 +1473,7 @@ class PaperList {
                     }
                 }
                 if ($attr || isset($cell["content"])) {
-                    $attr["class"] = rtrim("lld " . get($attr, "class", ""));
+                    $attr["class"] = rtrim("lld " . ($attr["class"] ?? ""));
                     $foot .= "    <td";
                     foreach ($attr as $k => $v) {
                         $foot .= " $k=\"" . htmlspecialchars($v) . "\"";
@@ -1983,9 +1998,9 @@ class PaperList {
                 }
             }
         }
-        if (((get($this->_viewing, "anonau") && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
-             || get($this->_viewing, "aufull"))
-            && !get($this->_viewing, "au")) {
+        if (((($this->_viewing["anonau"] ?? false) && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
+             || ($this->_viewing["aufull"] ?? false))
+            && !($this->_viewing["au"] ?? false)) {
             $res["150 authors"] = "hide:authors";
         }
         ksort($res, SORT_NATURAL);

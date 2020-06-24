@@ -18,7 +18,7 @@ class Lead_PaperColumn extends PaperColumn {
             return 0;
         }
     }
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
         $sorter->ianno = Contact::parse_sortspec($pl->conf, $sorter->anno);
     }
     function sort_name(PaperList $pl, ListSorter $sorter = null) {

@@ -20,8 +20,8 @@ class PageCount_PaperColumn extends PaperColumn {
         $doc = $row->document($dtype);
         return $doc ? $doc->npages() : null;
     }
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
-        foreach ($rows as $row) {
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
+        foreach ($pl->rowset() as $row) {
             $row->{$sorter->uid} = $this->page_count($pl->user, $row);
         }
     }

@@ -3,12 +3,18 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class ScoreInfo {
-    private $_scores = array();
+    private $_scores = [];
+    /** @var bool */
     private $_keyed = true;
+    /** @var bool */
     private $_sorted = false;
+    /** @var int|float */
     private $_sum = 0;
+    /** @var int|float */
     private $_sumsq = 0;
+    /** @var int */
     private $_n = 0;
+    /** @var bool */
     private $_positive;
 
     const COUNT = 0;
@@ -58,6 +64,7 @@ class ScoreInfo {
         return $n ? $sum / $n : null;
     }
 
+    /** @param int|float $x */
     function add($x, $key = null) {
         if (is_bool($x)) {
             $x = $x ? 1 : 0;
@@ -78,34 +85,42 @@ class ScoreInfo {
         }
     }
 
+    /** @return int */
     function count() {
         return $this->_n;
     }
 
+    /** @return int */
     function n() {
         return $this->_n;
     }
 
+    /** @return float */
     function mean() {
-        return $this->_n > 0 ? $this->_sum / $this->_n : 0;
+        return $this->_n > 0 ? $this->_sum / $this->_n : 0.0;
     }
 
+    /** @return float */
     function variance_s() {
-        return $this->_n > 1 ? ($this->_sumsq - $this->_sum * $this->_sum / $this->_n) / ($this->_n - 1) : 0;
+        return $this->_n > 1 ? ($this->_sumsq - $this->_sum * $this->_sum / $this->_n) / ($this->_n - 1) : 0.0;
     }
 
+    /** @return float */
     function stddev_s() {
         return sqrt($this->variance_s());
     }
 
+    /** @return float */
     function variance_p() {
-        return $this->_n > 1 ? ($this->_sumsq - $this->_sum * $this->_sum / $this->_n) / $this->_n : 0;
+        return $this->_n > 1 ? ($this->_sumsq - $this->_sum * $this->_sum / $this->_n) / $this->_n : 0.0;
     }
 
+    /** @return float */
     function stddev_p() {
         return sqrt($this->variance_p());
     }
 
+    /** @return list<int> */
     function counts($max = 0) {
         $counts = $max ? array_fill(0, $max, 0) : array();
         foreach ($this->_scores as $i) {
@@ -126,6 +141,7 @@ class ScoreInfo {
         }
     }
 
+    /** @return int|float */
     function median() {
         $this->sort();
         $a = $this->_keyed ? array_values($this->_scores) : $this->_scores;
@@ -138,14 +154,18 @@ class ScoreInfo {
         }
     }
 
+    /** @return int|float */
     function max() {
         return empty($this->_scores) ? 0 : max($this->_scores);
     }
 
+    /** @return int|float */
     function min() {
         return empty($this->_scores) ? 0 : min($this->_scores);
     }
 
+    /** @param int $stat
+     * @return int|float */
     function statistic($stat) {
         if ($stat == self::COUNT) {
             return $this->_n;
@@ -162,45 +182,54 @@ class ScoreInfo {
         }
     }
 
+    /** @param string $sorter
+     * @return null|int|float|list<int> */
     function sort_data($sorter, $key = null) {
-        if ($sorter == "Y" && $key !== null && $this->_keyed)
-            return get($this->_scores, $key, -1000000);
-        else if ($sorter == "Y" || $sorter == "C" || $sorter == "M") {
+        if ($sorter === "Y" && $key !== null && $this->_keyed) {
+            return $this->_scores[$key] ?? -1000000;
+        } else if ($sorter === "Y" || $sorter === "C" || $sorter === "M") {
             $this->sort();
             return $this->_scores ? array_values($this->_scores) : null;
-        } else if ($sorter == "E")
+        } else if ($sorter === "E") {
             return $this->median();
-        else if ($sorter == "V")
+        } else if ($sorter === "V") {
             return $this->variance_p();
-        else if ($sorter == "D")
+        } else if ($sorter === "D") {
             return $this->max() - $this->min();
-        else
+        } else {
             return $this->mean();
+        }
     }
 
+    /** @return int */
     static function compare($av, $bv, $null_direction = 1) {
-        if ($av === null || $bv === null)
+        if ($av === null || $bv === null) {
             return $av !== null ? -$null_direction : ($bv !== null ? $null_direction : 0);
+        }
         if (is_array($av)) {
             $ap = count($av);
             $bp = count($bv);
             $ax = $bx = -999999;
             do {
                 --$ap;
-                if ($ap >= 0)
+                if ($ap >= 0) {
                     $ax = $av[$ap];
-                else if ($ap == -1)
+                } else if ($ap == -1) {
                     --$ax;
+                }
                 --$bp;
-                if ($bp >= 0)
+                if ($bp >= 0) {
                     $bx = $bv[$bp];
-                else if ($bp == -1)
+                } else if ($bp == -1) {
                     --$bx;
-                if ($ax != $bx)
+                }
+                if ($ax != $bx) {
                     return $ax < $bx ? -1 : 1;
+                }
             } while ($ap >= 0 || $bp >= 0);
-        } else if ($av != $bv)
+        } else if ($av != $bv) {
             return $av < $bv ? -1 : 1;
+        }
         return 0;
     }
 

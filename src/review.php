@@ -311,7 +311,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return "sv " . $this->option_class_prefix . $n;
     }
 
-    /** @param int|string $value
+    /** @param int|float|string $value
      * @param int $flags
      * @param ?string $real_format
      * @return ?string */
@@ -358,6 +358,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return $text;
     }
 
+    /** @param int|float $value */
     function unparse_average($value) {
         assert($this->has_options);
         return (string) $this->unparse_value($value, 0, "%.2f");

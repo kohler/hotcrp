@@ -72,6 +72,11 @@ class PaperColumn extends Column {
         return $j;
     }
 
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
+        /** @phan-suppress-next-line PhanDeprecatedFunction */
+        $this->analyze_sort($pl, $pl->rowset(), $sorter);
+    }
+    /** @deprecated */
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -79,7 +84,8 @@ class PaperColumn extends Column {
         return $a->paperId - $b->paperId;
     }
 
-    function analyze(PaperList $pl, $fields) {
+    /** @param list<PaperColumn> $columns */
+    function analyze(PaperList $pl, $columns) {
     }
 
     /** @return string */
@@ -254,8 +260,8 @@ class Status_PaperColumn extends PaperColumn {
         $this->include_submitted = $pl->search->limit_expect_nonsubmitted();
         return true;
     }
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
-        foreach ($rows as $row) {
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
+        foreach ($pl->rowset() as $row) {
             if ($row->outcome && $pl->user->can_view_decision($row)) {
                 $row->{$sorter->uid} = $row->outcome;
             } else {
@@ -263,7 +269,7 @@ class Status_PaperColumn extends PaperColumn {
             }
         }
     }
-    function analyze(PaperList $pl, $fields) {
+    function analyze(PaperList $pl, $columns) {
         if ($this->is_visible) {
             foreach ($pl->rowset() as $row) {
                 if ($row->outcome != 0 || $row->paperStorageId <= 1) {
@@ -331,8 +337,8 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         }
         return [$done, $started];
     }
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
-        foreach ($rows as $row) {
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
+        foreach ($pl->rowset() as $row) {
             if (!$pl->user->can_view_review_assignment($row, null)) {
                 $row->{$sorter->uid} = -2147483647;
             } else {
@@ -383,7 +389,7 @@ class Authors_PaperColumn extends PaperColumn {
         $this->highlight = $pl->search->field_highlighter("authorInformation");
         return $pl->user->can_view_some_authors();
     }
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
         $sorter->ianno = Contact::parse_sortspec($pl->conf, $sorter->anno);
     }
     function sort_name(PaperList $pl, ListSorter $sorter = null) {
@@ -606,9 +612,9 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
         return [$ranal, $flags];
     }
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
         $k = $sorter->uid;
-        foreach ($rows as $row) {
+        foreach ($pl->rowset() as $row) {
             list($ranal, $flags) = $this->analysis($pl, $row);
             if ($ranal && $ranal->rrow->reviewType) {
                 $row->$k = 2 * $ranal->rrow->reviewType;
@@ -818,8 +824,8 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             $row->$k = $row->$avgk = null;
         }
     }
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
-        foreach ($rows as $row) {
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
+        foreach ($pl->rowset() as $row) {
             self::set_sort_fields($pl, $row, $sorter);
         }
     }

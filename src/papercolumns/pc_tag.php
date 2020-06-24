@@ -69,13 +69,13 @@ class Tag_PaperColumn extends PaperColumn {
     function sort_name(PaperList $pl, ListSorter $sorter = null) {
         return "#$this->dtag";
     }
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
         $k = $sorter->uid;
         $unviewable = $empty = TAG_INDEXBOUND * ($sorter->reverse ? -1 : 1);
         if ($this->editable) {
             $empty = (TAG_INDEXBOUND - 1) * ($sorter->reverse ? -1 : 1);
         }
-        foreach ($rows as $row) {
+        foreach ($pl->rowset() as $row) {
             if (!$pl->user->can_view_tag($row, $this->ltag)) {
                 $row->$k = $unviewable;
             } else if (($row->$k = $row->tag_value($this->ltag)) === false) {

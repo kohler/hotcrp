@@ -65,6 +65,8 @@ class ContactList {
     private $_rating_data;
     /** @var array<int,true> */
     private $_limit_cids;
+    /** @var array<int,array> */
+    private $_sort_data;
 
     function __construct(Contact $user, $sortable = true, $qreq = null) {
         global $contactListFields;
@@ -232,9 +234,11 @@ class ContactList {
         return $this->_sort_paper_list($a, $b, $this->_re_data);
     }
 
-    function _sortScores($a, $b) {
-        if (!($x = ScoreInfo::compare($b->_sort_info, $a->_sort_info, -1))) {
-            $x = ScoreInfo::compare($b->_sort_avg, $a->_sort_avg);
+    function _sort_scores($a, $b) {
+        $ai = $this->_sort_data[$a->contactId];
+        $bi = $this->_sort_data[$b->contactId];
+        if (!($x = ScoreInfo::compare($bi[1], $ai[1], -1))) {
+            $x = ScoreInfo::compare($bi[0], $ai[0]);
         }
         return $x ? ($x < 0 ? -1 : 1) : $this->_sortBase($a, $b);
     }
@@ -283,15 +287,13 @@ class ContactList {
                 if (!in_array($scoresort, ["A", "V", "D"], true)) {
                     $scoresort = "A";
                 }
-                Contact::$allow_nonexistent_properties = true;
                 foreach ($rows as $row) {
                     $scores = $this->_score_data[$fieldId][$row->contactId] ?? [];
                     $scoreinfo = new ScoreInfo($scores, true);
-                    $row->_sort_info = $scoreinfo->sort_data($scoresort);
-                    $row->_sort_avg = $scoreinfo->mean();
+                    $this->_sort_data[$row->contactId] =
+                        [$scoreinfo->sort_data($scoresort), $scoreinfo->mean()];
                 }
-                usort($rows, array($this, "_sortScores"));
-                Contact::$allow_nonexistent_properties = false;
+                usort($rows, [$this, "_sort_scores"]);
             }
             break;
         }

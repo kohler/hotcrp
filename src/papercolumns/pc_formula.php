@@ -36,10 +36,10 @@ class Formula_PaperColumn extends PaperColumn {
         }
         return true;
     }
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
+    function prepare_sort(PaperList $pl, ListSorter $sorter) {
         $formulaf = $this->formula->compile_sortable_function();
         $k = $sorter->uid;
-        foreach ($rows as $row) {
+        foreach ($pl->rowset() as $row) {
             $row->$k = $formulaf($row, null, $pl->user);
         }
     }
