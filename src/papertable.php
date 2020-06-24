@@ -531,19 +531,20 @@ class PaperTable {
         }
     }
 
-    static function pdf_stamps_html($data, $options = null) {
-        global $Conf;
-        $tooltip = !$options || !get($options, "notooltip");
+    /** @param DocumentInfo $doc
+     * @param array{notooltip?:bool} $options
+     * @return string */
+    static function pdf_stamps_html($doc, $options = null) {
+        $tooltip = !$options || !($options["notooltip"] ?? null);
         $t = [];
 
-        $tm = get($data, "timestamp", get($data, "timeSubmitted", 0));
-        if ($tm > 0) {
+        if ($doc->timestamp > 0) {
             $t[] = ($tooltip ? '<span class="nb need-tooltip" aria-label="Upload time">' : '<span class="nb">')
                 . '<svg width="12" height="12" viewBox="0 0 96 96" class="licon"><path d="M48 6a42 42 0 1 1 0 84 42 42 0 1 1 0-84zm0 10a32 32 0 1 0 0 64 32 32 0 1 0 0-64zM48 19A5 5 0 0 0 43 24V46c0 2.352.37 4.44 1.464 5.536l12 12c4.714 4.908 12-2.36 7-7L53 46V24A5 5 0 0 0 43 24z"/></svg>'
-                . " " . $Conf->unparse_time($tm) . "</span>";
+                . " " . $doc->conf->unparse_time($doc->timestamp) . "</span>";
         }
 
-        $ha = new HashAnalysis(get($data, "sha1"));
+        $ha = new HashAnalysis($doc->sha1);
         if ($ha->ok()) {
             $h = $ha->text_data();
             $x = '<span class="nb checksum';
@@ -761,14 +762,14 @@ class PaperTable {
         $fr->title = false;
         $fr->value_format = 5;
 
-        $text = $this->entryData("abstract");
-        if (trim($text) === "") {
+        $html = $this->entryData("abstract");
+        if (trim($html) === "") {
             if ($this->conf->opt("noAbstract"))
                 return;
-            $text = "[No abstract]";
+            $html = "[No abstract]";
         }
         $extra = [];
-        if ($this->allFolded && $this->abstract_foldable($text)) {
+        if ($this->allFolded && $this->abstract_foldable($html)) {
             $extra = ["fold" => "paper", "foldnum" => 6,
                       "foldtitle" => "Toggle full abstract"];
         }
@@ -776,10 +777,10 @@ class PaperTable {
             . $this->papt("abstract", $o->title_html(), $extra)
             . '<div class="pavb abstract';
         if (!$this->entryMatches
-            && ($format = $this->prow->format_of($text))) {
-            $fr->value .= ' need-format" data-format="' . $format . '">' . $text;
+            && ($format = $this->prow->format_of($html))) {
+            $fr->value .= ' need-format" data-format="' . $format . '">' . $html;
         } else {
-            $fr->value .= ' format0">' . Ht::format0_html($text);
+            $fr->value .= ' format0">' . Ht::format0_html($html);
         }
         $fr->value .= "</div></div></div>";
         if ($extra) {
