@@ -242,7 +242,8 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
             $ms[] = $this->conf->_c("eperm", "Permission error.", "unknown", $paperId);
         }
         // finish it off
-        if (isset($this->_a["forceShow"]) && $format === 5) {
+        if (isset($this->_a["forceShow"]) && $format === 5
+            && Navigation::page() !== "api") {
             $ms[] = $this->conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", $this->conf->selfurl(null, ["forceShow" => 1]));
         }
         if (!empty($ms) && isset($this->_a["listViewable"]) && $format === 5) {

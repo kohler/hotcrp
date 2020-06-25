@@ -3469,6 +3469,9 @@ class Conf {
     function selfurl(Qrequest $qreq = null, $params = [], $flags = 0) {
         global $Qreq;
         $qreq = $qreq ? : $Qreq;
+        if (Navigation::page() === "api") {
+            error_log("selfurl for api page: " . debug_string_backtrace());
+        }
 
         $x = [];
         foreach ($qreq as $k => $v) {
