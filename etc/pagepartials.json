@@ -70,11 +70,11 @@
 
 
     {
-        "name": "home/message", "position": 2000,
+        "name": "home/message", "position": 1100,
         "render_callback": "*Home_Partial::render_message"
     },
     {
-        "name": "home/welcome", "position": 2500, "allow_if": "!pc",
+        "name": "home/welcome", "position": 1200, "allow_if": "!pc",
         "render_callback": "*Home_Partial::render_welcome"
     },
     [   "home/signin", 3000, "*Home_Partial::render_signin"   ],
