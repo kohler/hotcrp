@@ -304,10 +304,10 @@ class PaperTable {
     }
 
     private function echoDivEnter() {
-        // 5: topics, 6: abstract, 7: [JavaScript abstract expansion],
+        // 4: topics, 6: abstract, 7: [JavaScript abstract expansion],
         // 8: blind authors, 9: full authors
-        $foldstorage = [5 => "t", 6 => "b", 8 => "a", 9 => "p"];
-        $this->foldnumber = ["topics" => 5];
+        $foldstorage = [4 => "t", 6 => "b", 8 => "a", 9 => "p"];
+        $this->foldnumber = ["topics" => 4];
 
         // other expansions
         $next_foldnum = 10;
