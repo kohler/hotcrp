@@ -73,8 +73,9 @@ if (!Element.prototype.closest) {
 
 if (!String.prototype.startsWith) {
     String.prototype.startsWith = function (search, pos) {
-        pos = !pos || pos < 0 ? 0 : +pos;
-        return this.substring(pos, pos + search.length) === search;
+        pos = pos > 0 ? pos|0 : 0;
+        return this.length >= pos + search.length
+            && this.substring(pos, pos + search.length) === search;
     };
 }
 if (!String.prototype.endsWith) {
@@ -82,7 +83,8 @@ if (!String.prototype.endsWith) {
         if (this_len === undefined || this_len > this.length) {
             this_len = this.length;
         }
-        return this.substring(this_len - search.length, this_len) === search;
+        return this_len >= search.length
+            && this.substring(this_len - search.length, this_len) === search;
     };
 }
 
