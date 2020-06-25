@@ -4370,7 +4370,7 @@ function activate_editing($c, cj) {
             $c.find(".has-editable-attachments .entry").append(render_edit_attachment(i, cj.docs[i]));
     }
 
-    if (!cj.visiblity || cj.blind) {
+    if (!cj.visibility || cj.blind) {
         $c.find("input[name=blind]").prop("checked", true);
     }
 
