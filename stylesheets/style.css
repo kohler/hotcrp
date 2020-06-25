@@ -241,16 +241,14 @@ td.quicklinks, #tracker-connect {
 .ptitle:visited, .pnum:visited, .track:visited {
 	color: #660099;
 }
-.is-error > a {
-	color: #ee0000;
-}
 a:hover, a.nv:hover, a.ui:hover, .btn-link:hover, .js-click-child:hover a.hover-child {
 	color: #c45500;
 }
 a.q, a.u, a.qx {
 	color: black;
 }
-a.qq, a.uu, a.nn, a.mailto, a.btn, a.btn:hover {
+a.qq, a.uu, a.nn, a.mailto, a.btn, a.btn:hover,
+.is-error a, .is-warning a {
 	color: inherit;
 }
 a.btn {
