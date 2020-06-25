@@ -1027,7 +1027,7 @@ class Contact {
             return stripos($this->contactTags, " $t#") !== false;
         }
         if ($this->contactTags === false) {
-            trigger_error(caller_landmark(1, "/^Conf::/") . ": Contact $this->email contactTags missing " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            trigger_error("Contact $this->email contactTags missing\n" . debug_string_backtrace());
             $this->contactTags = null;
         }
         return false;

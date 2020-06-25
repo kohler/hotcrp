@@ -319,7 +319,7 @@ class Si {
                 || ($base_si->extensible === self::X_SIMPLE
                     && !preg_match('/\A_(?:\$|n\d*|m?\d+)\z/', $m[2]))) {
                 if ($base_si->extensible !== false) {
-                    error_log("$name: cloning non-extensible setting $base_si->name, " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+                    error_log("$name: cloning non-extensible setting {$base_si->name}\n" . debug_string_backtrace());
                 }
                 return null;
             }

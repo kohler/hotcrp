@@ -475,10 +475,10 @@ function caller_landmark($position = 1, $skipfunction_re = null) {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
     $fname = null;
     for (++$position; isset($trace[$position]); ++$position) {
-        $fname = get_s($trace[$position], "class");
+        $fname = $trace[$position]["class"] ?? "";
         $fname .= ($fname ? "::" : "") . $trace[$position]["function"];
         if ((!$skipfunction_re || !preg_match($skipfunction_re, $fname))
-            && ($fname !== "call_user_func" || get($trace[$position - 1], "file"))) {
+            && ($fname !== "call_user_func" || ($trace[$position - 1]["file"] ?? false))) {
             break;
         }
     }
@@ -496,6 +496,16 @@ function assert_callback() {
     trigger_error("Assertion backtrace: " . json_encode(array_slice(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), 2)), E_USER_WARNING);
 }
 //assert_options(ASSERT_CALLBACK, "assert_callback");
+
+function debug_string_backtrace() {
+    $s = preg_replace_callback('/^\#(\d+)/m', function ($m) {
+        return "#" . ($m[1] - 1);
+    }, (new Exception)->getTraceAsString());
+    if (SiteLoader::$root) {
+        $s = str_replace(SiteLoader::$root, "[" . (Conf::$g ? Conf::$g->dbname : "HotCRP") . "]", $s);
+    }
+    return substr($s, strpos($s, "\n") + 1);
+}
 
 
 // pcntl helpers

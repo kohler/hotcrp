@@ -50,7 +50,7 @@ function set_session_name(Conf $conf) {
     }
 
     if (session_id() !== "") {
-        error_log("set_session_name with active session at " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) . " / " . Navigation::self() . " / " . session_id() . " / cookie[{$sn}]=" . get($_COOKIE, $sn));
+        error_log("set_session_name with active session / " . Navigation::self() . " / " . session_id() . " / cookie[{$sn}]=" . ($_COOKIE[$sn] ?? "") . "\n" . debug_string_backtrace());
     }
 
     session_name($sn);

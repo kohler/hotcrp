@@ -80,7 +80,7 @@ class PaperColumn extends Column {
     function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        error_log("unexpected compare " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        error_log("unexpected " . get_class($this) . "::compare");
         return $a->paperId - $b->paperId;
     }
 

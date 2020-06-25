@@ -673,7 +673,7 @@ class Mailer {
             throw new Exception("No email in Mailer::send");
         }
         if (!isset($this->recipient->contactId)) {
-            error_log("no contactId in recipient: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            error_log("no contactId in recipient\n" . debug_string_backtrace());
         }
         $mimetext = new MimeText;
 
