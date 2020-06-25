@@ -276,12 +276,6 @@ class PaperList {
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
     }
 
-    function __get($name) {
-        // XXX remove this
-        error_log("PaperList::$name " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        return $name === "contact" ? $this->user : null;
-    }
-
     function table_id() {
         return $this->_table_id;
     }

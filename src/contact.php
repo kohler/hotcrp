@@ -310,8 +310,9 @@ class Contact {
     }
 
     function __set($name, $value) {
-        if (!self::$allow_nonexistent_properties)
+        if (!self::$allow_nonexistent_properties) {
             error_log(caller_landmark(1) . ": writing nonexistent property $name");
+        }
         $this->$name = $value;
     }
 

@@ -330,10 +330,8 @@ function get($var, $idx, $default = null) {
         return array_key_exists($idx, $var) ? $var[$idx] : $default;
     } else if (is_object($var)) {
         return property_exists($var, $idx) ? $var->$idx : $default;
-    } else if ($var === null) {
-        return $default;
     } else {
-        error_log("inappropriate get: " . var_export($var, true) . ": " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        assert($var === null);
         return $default;
     }
 }

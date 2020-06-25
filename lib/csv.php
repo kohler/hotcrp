@@ -737,26 +737,6 @@ class CsvGenerator {
         return $this;
     }
 
-    /** @param list<int|string>|array<string,int|float|string> $row
-     * @return $this
-     * @deprecated */
-    function add($row) {
-        if (is_string($row)) {
-            error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))); // XXX
-            $this->add_string($row);
-        } else if (!empty($row)) {
-            reset($row);
-            if (is_array(current($row)) || is_object(current($row))) {
-                error_log("unexpected CsvGenerator::add(list<array|object>: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))); // XXX
-                /** @phan-suppress-next-line PhanTypeMismatchArgument */
-                $this->append($row);
-            } else {
-                $this->add_row($row);
-            }
-        }
-        return $this;
-    }
-
     /** @param int $flags
      * @return $this */
     function sort($flags = SORT_REGULAR) {
