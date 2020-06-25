@@ -1173,58 +1173,62 @@ class PaperInfo {
 
     /** @return string */
     function sorted_editable_tags(Contact $user) {
-        $tags = $this->all_tags_text();
+        $tags = $this->sorted_viewable_tags($user);
         if ($tags !== "") {
-            $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-            $tags = $this->sorted_viewable_tags($user);
-            if ($tags !== "") {
-                $etags = [];
-                foreach (explode(" ", $tags) as $tag) {
-                    if ($tag !== "" && $user->can_change_tag($this, $tag, 0, 1))
-                        $etags[] = $tag;
-                }
-                $tags = join(" ", $etags);
+            $etags = [];
+            foreach (explode(" ", $tags) as $tag) {
+                if ($tag !== "" && $user->can_change_tag($this, $tag, 0, 1))
+                    $etags[] = $tag;
             }
-            $user->set_overrides($old_overrides);
+            $tags = join(" ", $etags);
         }
         return $tags;
     }
 
-    function add_tag_info_json($pj, Contact $user) {
+    private function _add_override_tag_info_json($pj, $viewable, $viewable_c, Contact $user) {
         $tagger = new Tagger($user);
-        $overrides = 0;
-        if (($can_override = $user->has_overridable_conflict($this))) {
-            $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        }
-        $editable = $this->sorted_editable_tags($user);
-        $viewable = $this->sorted_viewable_tags($user);
         $pj->tags = Tagger::split($viewable);
-        $pj->tags_edit_text = $tagger->unparse($editable);
-        $pj->tags_view_html = $tagger->unparse_link($viewable);
+        $pj->tags_conflicted = Tagger::split($viewable_c);
         if (($decor = $tagger->unparse_decoration_html($viewable))) {
-            $pj->tag_decoration_html = $decor;
+            $decor_c = $tagger->unparse_decoration_html($viewable_c);
+            if ($decor !== $decor_c) {
+                $pj->tag_decoration_html = str_replace('class="tagdecoration"', 'class="tagdecoration fn5"', $decor_c)
+                    .  str_replace('class="tagdecoration"', 'class="tagdecoration fx5"', $decor);
+            } else {
+                $pj->tag_decoration_html = $decor;
+            }
         }
         $tagmap = $this->conf->tags();
         $pj->color_classes = $tagmap->color_classes($viewable);
-        if ($can_override && $viewable) {
-            $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
-            $viewable_c = $this->sorted_viewable_tags($user);
-            if ($viewable_c !== $viewable) {
-                $pj->tags_conflicted = Tagger::split($viewable_c);
-                if ($decor
-                    && ($decor_c = $tagger->unparse_decoration_html($viewable_c)) !== $decor) {
-                    $pj->tag_decoration_html = str_replace('class="tagdecoration"', 'class="tagdecoration fn5"', $decor_c)
-                        . str_replace('class="tagdecoration"', 'class="tagdecoration fx5"', $decor);
+        if ($pj->color_classes
+            && ($color_classes_c = $tagmap->color_classes($viewable_c)) !== $pj->color_classes) {
+            $pj->color_classes_conflicted = $color_classes_c;
+        }
+    }
+
+    function add_tag_info_json($pj, Contact $user) {
+        $viewable = $this->sorted_viewable_tags($user);
+        $tagger = new Tagger($user);
+        $pj->tags_edit_text = $tagger->unparse($this->sorted_editable_tags($user));
+        $pj->tags_view_html = $tagger->unparse_link($viewable);
+        if ($user->has_overridable_conflict($this) && $this->all_tags_text() !== "") {
+            $old_overrides = $user->set_overrides($user->overrides() ^ Contact::OVERRIDE_CONFLICT);
+            $viewable2 = $this->sorted_viewable_tags($user);
+            $user->set_overrides($old_overrides);
+            if ($viewable !== $viewable2) {
+                if ($old_overrides & Contact::OVERRIDE_CONFLICT) {
+                    $this->_add_override_tag_info_json($pj, $viewable, $viewable2, $user);
+                } else {
+                    $this->_add_override_tag_info_json($pj, $viewable2, $viewable, $user);
                 }
-                if ($pj->color_classes
-                    && ($cc_c = $tagmap->color_classes($viewable_c)) !== $pj->color_classes) {
-                    $pj->color_classes_conflicted = $cc_c;
-                }
+                return;
             }
         }
-        if ($can_override) {
-            $user->set_overrides($overrides);
+        $pj->tags = Tagger::split($viewable);
+        if (($decor = $tagger->unparse_decoration_html($viewable))) {
+            $pj->tag_decoration_html = $decor;
         }
+        $pj->color_classes = $this->conf->tags()->color_classes($viewable);
     }
 
 
