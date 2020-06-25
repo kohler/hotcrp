@@ -1213,7 +1213,8 @@ class PaperInfo {
                 $pj->tags_conflicted = Tagger::split($viewable_c);
                 if ($decor
                     && ($decor_c = $tagger->unparse_decoration_html($viewable_c)) !== $decor) {
-                    $pj->tag_decoration_html_conflicted = $decor_c;
+                    $pj->tag_decoration_html = str_replace('class="tagdecoration"', 'class="tagdecoration fn5"', $decor_c)
+                        . str_replace('class="tagdecoration"', 'class="tagdecoration fx5"', $decor);
                 }
                 if ($pj->color_classes
                     && ($cc_c = $tagmap->color_classes($viewable_c)) !== $pj->color_classes) {

@@ -7351,15 +7351,8 @@ $(window).on("hotcrptags", function (evt, rv) {
 
     // set tag decoration
     $ptr.find(".tagdecoration").remove();
-    if (rv.tag_decoration_html) {
-        var decor = rv.tag_decoration_html;
-        if ("tag_decoration_html_conflicted" in rv) {
-            decor = '<span class="fx5">' + decor + '</span>';
-            if (rv.tag_decoration_html_conflicted)
-                decor = '<span class="fn5">' + rv.tag_decoration_html_conflicted + '</span>' + decor;
-        }
-        $ptr.find(".pl_title").append(decor);
-    }
+    if (rv.tag_decoration_html)
+        $ptr.find(".pl_title").append(rv.tag_decoration_html);
 
     // set actual tags
     if (fields.tags && !fields.tags.missing)

@@ -231,10 +231,8 @@ class Title_PaperColumn extends PaperColumn {
                 && ($deco = $pl->tagger->unparse_decoration_html($pl->row_tags_overridable))) {
                 $decx = $pl->tagger->unparse_decoration_html($pl->row_tags);
                 if ($deco !== $decx) {
-                    if ($decx) {
-                        $t .= '<span class="fn5">' . $decx . '</span>';
-                    }
-                    $t .= '<span class="fx5">' . $deco . '</span>';
+                    $t .= str_replace('class="tagdecoration"', 'class="tagdecoration fn5"', $decx)
+                        . str_replace('class="tagdecoration"', 'class="tagdecoration fx5"', $deco);
                 } else {
                     $t .= $deco;
                 }
