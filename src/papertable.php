@@ -1816,7 +1816,7 @@ class PaperTable {
             '<div class="psv">';
         if ($is_editable) {
             // tag report form
-            $treport = PaperApi::tagreport($this->user, $this->prow);
+            $treport = Tags_API::tagreport($this->user, $this->prow);
             $tm0 = $tm1 = [];
             $tms = 0;
             foreach ($treport->tagreport as $tr) {
