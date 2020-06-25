@@ -1343,7 +1343,7 @@ class AssignmentSet {
         $pfield = trim($pfield);
         if ($pfield === "") {
             if ($report_error) {
-                $this->error_here("Missing paper");
+                $this->error_here("Missing paper.");
             }
             return 0;
         }
@@ -1419,7 +1419,7 @@ class AssignmentSet {
             if ($req["action"]) {
                 return $this->error_here("Unknown action “" . htmlspecialchars($req["action"]) . "”.");
             } else {
-                return $this->error_here("Action missing.");
+                return $this->error_here("Missing action.");
             }
         }
         if ($this->enabled_actions !== null

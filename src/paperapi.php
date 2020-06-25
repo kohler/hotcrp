@@ -78,7 +78,7 @@ class PaperApi {
         }
         $assigner = new AssignmentSet($user);
         $assigner->parse(join("\n", $x));
-        $error = join("<br />", $assigner->messages_html());
+        $error = join("<br>", $assigner->messages_html());
         $ok = $assigner->execute();
         $user->remove_overrides(Contact::OVERRIDE_CONFLICT);
 
