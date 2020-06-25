@@ -1538,6 +1538,10 @@ class PaperList {
             $lllgroups, $whichlll, $extra);
     }
 
+    /** @return bool */
+    function is_empty() {
+        return $this->rowset()->is_empty();
+    }
 
     /** @return array{list<int>,list<TagAnno>} */
     function ids_and_groups() {
