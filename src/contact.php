@@ -4198,6 +4198,7 @@ class Contact {
     /** @param string $tag
      * @return bool */
     function can_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
+        assert(!!$tag);
         if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
             || $this->is_site_contact) {
             return true;
@@ -4207,18 +4208,11 @@ class Contact {
         if (!($rights->allow_pc
               && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false)))) {
             if ($this->privChair && $tagmap->has_sitewide) {
-                if (!$tag) {
-                    return true;
-                } else {
-                    $dt = $tagmap->check($tag);
-                    return $dt && $dt->sitewide && !$dt->autosearch;
-                }
+                $dt = $tagmap->check($tag);
+                return $dt && $dt->sitewide && !$dt->autosearch;
             } else {
                 return false;
             }
-        }
-        if (!$tag) {
-            return true;
         }
         $tag = Tagger::base($tag);
         $twiddle = strpos($tag, "~");
@@ -4291,7 +4285,7 @@ class Contact {
                 $whyNot["voteTagNegative"] = true;
             } else {
                 $t = $this->conf->tags()->check($tag);
-                if ($t && $t->vote) {
+                if ($t && $t->votish) {
                     $whyNot["voteTag"] = true;
                 } else if ($t && $t->autosearch) {
                     $whyNot["autosearchTag"] = true;
@@ -4305,16 +4299,50 @@ class Contact {
 
     /** @return bool */
     function can_change_some_tag(PaperInfo $prow = null) {
-        if (!$prow) {
-            return $this->isPC;
+        if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
+            || $this->is_site_contact) {
+            return true;
+        } else if ($prow) {
+            $rights = $this->rights($prow);
+            return ($rights->allow_pc
+                    && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false)))
+                || ($this->privChair && $this->conf->tags()->has_sitewide);
         } else {
-            return $this->can_change_tag($prow, null, null, null);
+            return $this->isPC;
         }
     }
 
     /** @return ?PermissionProblem */
     function perm_change_some_tag(PaperInfo $prow) {
-        return $this->perm_change_tag($prow, null, null, null);
+        if ($this->can_change_some_tag($prow)) {
+            return null;
+        }
+        $rights = $this->rights($prow);
+        $whyNot = $prow->make_whynot();
+        if (!$this->isPC) {
+            $whyNot["permission"] = "change_tag";
+        } else if ($rights->conflictType > CONFLICT_MAXUNCONFLICTED) {
+            $whyNot["conflict"] = true;
+        } else if ($prow->timeWithdrawn > 0)  {
+            $whyNot["withdrawn"] = true;
+        } else {
+            $whyNot["notSubmitted"] = true;
+        }
+        if ($rights->allow_administer) {
+            $whyNot["forceShow"] = true;
+        }
+        return $whyNot;
+    }
+
+    /** @return bool */
+    function can_change_most_tags(PaperInfo $prow = null) {
+        if ($prow) {
+            $rights = $this->rights($prow);
+            return $rights->allow_pc
+                   && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false));
+        } else {
+            return $this->isPC;
+        }
     }
 
     /** @return bool */

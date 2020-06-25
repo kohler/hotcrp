@@ -6907,7 +6907,7 @@ handle_ui.on("js-plinfo-edittags", function () {
         if (focused)
             focus_within($(div).closest("tr")[0]);
     }
-    $.post(hoturl_post("api/settags", {p: pid, forceShow: 1}), start);
+    $.post(hoturl_post("api/settags", {p: pid, forceShow: 1}), start); // XXX should be GET
 });
 
 

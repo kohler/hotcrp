@@ -102,9 +102,9 @@
     ["eperm", "Permission error.", "You aren’t allowed to respond to the reviews for submission #%2$d.", ["$1=respond"]],
     ["eperm", "Permission error.", "You aren’t allowed to edit the contacts of submission #%2$d.", ["$1=edit_contacts"]],
     ["eperm", "Permission error.", "You aren’t allowed to change tags for submission #%2$d.", ["$1=change_tag"]],
-    ["eperm", "Permission error.", "You aren’t allowed to view the %3$s field for submission #%2$d.", ["$1=view_option"]],
-    ["eperm", "Permission error.", "You aren’t allowed to view the %3$s field.", ["$1=view_option", "$2<0"]],
-    ["eperm", "You have been signed out.", "You are viewing this submission via an “author view” link. Sign in to your HotCRP account to make changes.", ["$1=edit_paper"]],
+    ["eperm", "Permission error.", "You aren’t allowed to view the %3[option_title]$s field for submission #%2$d.", ["$1=view_option"]],
+    ["eperm", "Permission error.", "You aren’t allowed to view the %3[option_title]$s field.", ["$1=view_option", "$2<0"]],
+    ["eperm", "You have been signed out.", "Sign in to your HotCRP account to make changes.", ["$1=edit_paper"]],
 
     ["etime", "Action not available.", "Authors can’t view reviews for submission #%2$d now.", ["$1=au_seerev"]],
     ["etime", "Action not available.", "The site is not open for reviewing.", ["$1=rev_open"]],

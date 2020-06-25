@@ -1793,8 +1793,10 @@ class PaperTable {
         if (!$this->prow->paperId || !$this->user->can_view_tags($this->prow)) {
             return;
         }
+
         $tags = $this->prow->all_tags_text();
         $is_editable = $this->user->can_change_some_tag($this->prow);
+        $is_sitewide = $is_editable && !$this->user->can_change_most_tags($this->prow);
         if ($tags === "" && !$is_editable) {
             return;
         }
@@ -1842,6 +1844,13 @@ class PaperTable {
                 echo Ht::msg($tm0, $tms);
             }
             echo "</div>";
+            if ($is_sitewide) {
+                echo '<p class="feedback is-warning">You have a conflict with this submission, so you can only edit its ', Ht::link("site-wide tags", $this->conf->hoturl("settings", "group=tags#tag_sitewide")), '.';
+                if ($this->user->allow_administer($this->prow)) {
+                    echo ' ', Ht::link("Override your conflict", $this->conf->selfurl($this->qreq, ["forceShow" => 1])), ' to view and edit all tags.';
+                }
+                echo '</p>';
+            }
             $editable = $this->prow->sorted_editable_tags($this->user);
             echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest tags">',
                 $tagger->unparse($editable),

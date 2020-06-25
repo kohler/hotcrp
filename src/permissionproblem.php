@@ -89,6 +89,9 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
         '@phan-var ?PaperOption $option';
         $ms = [];
         $quote = $format !== 5 ? function ($x) { return $x; } : "htmlspecialchars";
+        if ($option) {
+            $this->_a["option_title"]  =  $quote($option->title());
+        }
         if (isset($this->_a["invalidId"])) {
             $x = $this->_a["invalidId"] . "Id";
             if (isset($this->_a[$x])) {
@@ -107,11 +110,7 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
             $ms[] = $this->conf->_("You can’t administer submission #%d.", $paperId);
         }
         if (isset($this->_a["permission"])) {
-            if ($this->_a["permission"] === "view_option") {
-                $ms[] = $this->conf->_c("eperm", "Permission error.", $this->_a["permission"], $paperId, $quote($option->title()));
-            } else {
-                $ms[] = $this->conf->_c("eperm", "Permission error.", $this->_a["permission"], $paperId);
-            }
+            $ms[] = $this->conf->_c("eperm", "Permission error.", $this->_a["permission"], $paperId, $this->_a);
         }
         if (isset($this->_a["optionNotAccepted"])) {
             $ms[] = $this->conf->_("The %2\$s field is reserved for accepted submissions.", $paperId, $quote($option->title()));
