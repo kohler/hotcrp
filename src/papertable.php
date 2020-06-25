@@ -185,9 +185,21 @@ class PaperTable {
             $t .= $paperTable->_paptabBeginKnown();
         }
 
+        $body_class = "paper";
+        if ($paperTable
+            && $prow->paperId
+            && $Me->has_overridable_conflict($prow)
+            && ($Me->overrides() & Contact::OVERRIDE_CONFLICT)) {
+            $body_class .= " fold5o";
+        } else {
+            $body_class .= " fold5c";
+        }
+
         $Conf->header($title, $id, [
             "action_bar" => actionBar($action_mode, $qreq),
-            "title_div" => $t, "body_class" => "paper", "paperId" => $qreq->paperId
+            "title_div" => $t,
+            "body_class" => $body_class,
+            "paperId" => $qreq->paperId
         ]);
         if ($format) {
             echo Ht::unstash_script("render_text.on_page()");
