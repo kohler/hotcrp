@@ -51,7 +51,7 @@ class AllTags_API {
             }
         }
         Dbl::free($result);
-        return ["ok" => true, "tags" => $dt->sort_array($tags)];
+        return self::finish_alltags_api($tags, $dt, $user);
     }
 
     static private function hard_alltags_api(Contact $user) {
@@ -68,6 +68,35 @@ class AllTags_API {
                 }
             }
         }
-        return ["ok" => true, "tags" => $user->conf->tags()->sort_array(array_values($tags))];
+        return self::finish_alltags_api(array_values($tags), $user->conf->tags(), $user);
+    }
+
+    static private function finish_alltags_api($tags, TagMap $dt, Contact $user) {
+        $tags = $dt->sort_array($tags);
+        $j = ["ok" => true, "tags" => $tags];
+        if ($dt->has_automatic
+            || ($dt->has_sitewide && $user->privChair)
+            || ($dt->has_readonly && !$user->privChair)) {
+            $readonly = $sitewide = [];
+            foreach ($tags as $tag) {
+                if (($tag[0] !== "~" || $tag[1] === "~")
+                    && ($ti = $dt->check($tag))) {
+                    if ($ti->automatic
+                        || ($ti->readonly && !$user->privChair)) {
+                        $readonly[strtolower($tag)] = true;
+                    }
+                    if ($ti->sitewide && $user->privChair) {
+                        $sitewide[strtolower($tag)] = true;
+                    }
+                }
+            }
+            if (!empty($readonly)) {
+                $j["readonly_tags"] = $readonly;
+            }
+            if (!empty($sitewide)) {
+                $j["sitewide_tags"] = $sitewide;
+            }
+        }
+        return $j;
     }
 }

@@ -1852,9 +1852,9 @@ class PaperTable {
                 echo '</p>';
             }
             $editable = $this->prow->sorted_editable_tags($this->user);
-            echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest tags">',
-                $tagger->unparse($editable),
-                '</textarea>',
+            echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest ',
+                $is_sitewide ? "sitewide-editable-tags" : "editable-tags",
+                '">', $tagger->unparse($editable), '</textarea>',
                 '<div class="aab aabr aab-compact"><div class="aabut">',
                 Ht::submit("save", "Save", ["class" => "btn-primary"]),
                 '</div><div class="aabut">',

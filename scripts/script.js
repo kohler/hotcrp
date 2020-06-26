@@ -5097,16 +5097,43 @@ demand_load.search_completion = demand_load.make(function (resolve, reject) {
     });
 });
 
-demand_load.tags = demand_load.make(function (resolve, reject) {
+demand_load.alltag_info = demand_load.make(function (resolve, reject) {
     if (hotcrp_user.is_pclike)
         $.get(hoturl("api/alltags"), null, function (v) {
-            var tlist = (v && v.tags) || [];
-            tlist.sort(strnatcmp);
-            resolve(tlist);
+            resolve(v && v.tags ? v : {tags: []});
         });
     else
-        resolve([]);
+        resolve({tags: []});
+})
+
+demand_load.tags = demand_load.make(function (resolve, reject) {
+    demand_load.alltag_info().then(function (v) { resolve(v.tags); });
 });
+
+(function () {
+    function filter_tags(tags, filter, remove) {
+        if (filter) {
+            var result = [];
+            for (var i = 0; i !== tags.length; ++i) {
+                if (!filter[tags[i].toLowerCase()] === remove)
+                    result.push(tags[i]);
+            }
+            return result;
+        } else
+            return remove ? tags : [];
+    }
+    demand_load.editable_tags = demand_load.make(function (resolve, reject) {
+        demand_load.alltag_info().then(function (v) {
+            resolve(filter_tags(v.tags, v.readonly_tags, true));
+        });
+    });
+    demand_load.sitewide_editable_tags = demand_load.make(function (resolve, reject) {
+        demand_load.alltag_info().then(function (v) {
+            resolve(filter_tags(filter_tags(v.tags, v.sitewide_tags, false),
+                                v.readonly_tags, true));
+        });
+    });
+})();
 
 demand_load.mentions = demand_load.make(function (resolve, reject) {
     if (hotcrp_user.is_pclike)
@@ -5635,6 +5662,22 @@ suggest.add_builder("tags", function (elt) {
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
         return demand_load.tags().then(make_suggestions(m[2], n[1], {suffix: n[2]}));
+    }
+});
+
+suggest.add_builder("editable-tags", function (elt) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
+        n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
+        return demand_load.editable_tags().then(make_suggestions(m[2], n[1], {suffix: n[2]}));
+    }
+});
+
+suggest.add_builder("sitewide-editable-tags", function (elt) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
+        n = x[1].match(/^([^#\s]*)((?:#[-+]?(?:\d+\.?|\.\d)\d*)?)/);
+        return demand_load.sitewide_editable_tags().then(make_suggestions(m[2], n[1], {suffix: n[2]}));
     }
 });
 
