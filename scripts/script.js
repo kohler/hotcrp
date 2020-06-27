@@ -5124,13 +5124,13 @@ demand_load.tags = demand_load.make(function (resolve, reject) {
     }
     demand_load.editable_tags = demand_load.make(function (resolve, reject) {
         demand_load.alltag_info().then(function (v) {
-            resolve(filter_tags(v.tags, v.readonly_tags, true));
+            resolve(filter_tags(v.tags, v.readonly_tagmap, true));
         });
     });
     demand_load.sitewide_editable_tags = demand_load.make(function (resolve, reject) {
         demand_load.alltag_info().then(function (v) {
-            resolve(filter_tags(filter_tags(v.tags, v.sitewide_tags, false),
-                                v.readonly_tags, true));
+            resolve(filter_tags(filter_tags(v.tags, v.sitewide_tagmap, false),
+                                v.readonly_tagmap, true));
         });
     });
 })();

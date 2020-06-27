@@ -91,10 +91,10 @@ class AllTags_API {
                 }
             }
             if (!empty($readonly)) {
-                $j["readonly_tags"] = $readonly;
+                $j["readonly_tagmap"] = $readonly;
             }
             if (!empty($sitewide)) {
-                $j["sitewide_tags"] = $sitewide;
+                $j["sitewide_tagmap"] = $sitewide;
             }
         }
         return $j;
