@@ -5264,7 +5264,9 @@ demand_load.emoji_completion = function (start) {
             code = sel[i];
             if (!v.completion[code]) {
                 v.completion[code] = {
-                    s: ":" + code + ":", r: v.emoji[code], no_space: true,
+                    s: ":" + code + ":",
+                    r: v.emoji[code],
+                    no_space: true,
                     sh: '<span class="nw">' + v.emoji[code] + " :" + code + ":</span>"
                 };
             }
@@ -5325,6 +5327,7 @@ function make_suggestions(precaret, postcaret, options) {
     // * `options.filter_length`: Integer. Ignore completion items that don’t
     //    match the first `prefix.length + filter_length` characters of
     //    the match region.
+    // * `options.prepend`: Show this before each item.
     //
     // Completion items:
     // * `item.s`: Completion string -- mandatory.
@@ -5404,7 +5407,7 @@ function suggest() {
         wasnav = 0;
     }
 
-    function render_item(titem) {
+    function render_item(titem, prepend) {
         var node = document.createElement("div");
         titem = completion_item(titem);
         node.className = titem.no_space ? "suggestion s9nsp" : "suggestion";
@@ -5412,18 +5415,26 @@ function suggest() {
             node.setAttribute("data-replacement", titem.r);
         if (titem.sh)
             node.innerHTML = titem.sh;
-        else if (titem.d || titem.dh) {
+        else if (titem.d || titem.dh || prepend) {
+            if (prepend) {
+                var s9p = document.createElement("span");
+                s9p.className = "s9p";
+                s9p.appendChild(document.createTextNode(prepend));
+                node.appendChild(s9p);
+            }
             var s9t = document.createElement("span");
             s9t.className = "s9t";
             s9t.appendChild(document.createTextNode(titem.s));
             node.appendChild(s9t);
-            var s9d = document.createElement("span");
-            s9d.className = "s9d";
-            if (titem.dh)
-                s9d.innerHTML = titem.dh;
-            else
-                s9d.appendChild(document.createTextNode(titem.d))
-            node.appendChild(s9d);
+            if (titem.d || titem.dh) {
+                var s9d = document.createElement("span");
+                s9d.className = "s9d";
+                if (titem.dh)
+                    s9d.innerHTML = titem.dh;
+                else
+                    s9d.appendChild(document.createTextNode(titem.d))
+                node.appendChild(s9d);
+            }
         } else
             node.appendChild(document.createTextNode(titem.s));
         return node;
@@ -5467,7 +5478,7 @@ function suggest() {
             div = document.createElement("div");
             div.className = "suggesttable suggesttable" + (i + 1);
             for (i = 0; i !== clist.length; ++i)
-                div.appendChild(render_item(clist[i], i === cinfo.highlight));
+                div.appendChild(render_item(clist[i], cinfo.prepend));
             hintdiv.html(div);
         } else {
             div = hintdiv.content_node();
@@ -5512,8 +5523,12 @@ function suggest() {
             text = complete_elt.getAttribute("data-replacement");
         else if (complete_elt.firstChild.nodeType === Node.TEXT_NODE)
             text = complete_elt.textContent;
-        else
-            text = complete_elt.firstChild.textContent;
+        else {
+            var n = complete_elt.firstChild;
+            while (n && n.className !== "s9t")
+                n = n.nextSibling;
+            text = n.textContent;
+        }
 
         var poss = hintdiv.self().data("autocompletePos");
         var val = elt.value;
@@ -5685,7 +5700,7 @@ suggest.add_builder("papersearch", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagval:|tagvalue:))([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
-        return demand_load.tags().then(make_suggestions(m[2], n[1]));
+        return demand_load.tags().then(make_suggestions(m[2], n[1], {prepend: m[1]}));
     } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
         return demand_load.search_completion().then(make_suggestions(m[2], n[1], {prefix: m[1]}));
