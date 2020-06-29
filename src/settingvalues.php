@@ -4,9 +4,13 @@
 
 // setting information
 class Si {
+    /** @var string */
     public $name;
+    /** @var string */
     public $base_name;
+    /** @var string */
     public $json_name;
+    /** @var string */
     public $title;
     private $group;
     public $position;
@@ -14,6 +18,7 @@ class Si {
     public $type;
     public $internal;
     public $extensible;
+    /** @var int */
     public $storage_type;
     private $storage;
     public $optional = false;

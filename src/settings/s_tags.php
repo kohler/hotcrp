@@ -73,7 +73,7 @@ class Tags_SettingRenderer {
             $sv->set_oldv("tag_color_$k", join(" ", $m[1] ?? []));
             $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
                 . "<td class=\"pad taghl align-middle\">$k</td>"
-                . "<td class=\"lentry\" style=\"font-size:1rem\">"
+                . "<td class=\"lentry\">"
                   . $sv->render_feedback_at("tag_color_$k", "mb-0")
                   . $sv->render_entry("tag_color_$k", ["class" => "need-suggest tags"])
                 . "</td><td class=\"remargin-right\"></td></tr>";
