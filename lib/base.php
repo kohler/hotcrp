@@ -404,7 +404,7 @@ function make_qreq() : Qrequest {
             }
         }
     }
-    if (!empty($errors) && Conf::$g) {
+    if (!empty($errors) && Conf::$main) {
         Conf::msg_error("<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>");
     }
 
@@ -502,7 +502,7 @@ function debug_string_backtrace() {
         return "#" . ($m[1] - 1);
     }, (new Exception)->getTraceAsString());
     if (SiteLoader::$root) {
-        $s = str_replace(SiteLoader::$root, "[" . (Conf::$g ? Conf::$g->dbname : "HotCRP") . "]", $s);
+        $s = str_replace(SiteLoader::$root, "[" . (Conf::$main ? Conf::$main->dbname : "HotCRP") . "]", $s);
     }
     return substr($s, strpos($s, "\n") + 1);
 }

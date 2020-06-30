@@ -70,8 +70,8 @@ class Multiconference {
     static function get_confid($confid) {
         if (self::$cache === null) {
             self::$cache = [];
-            if (Conf::$g && ($xconfid = Conf::$g->opt("confid"))) {
-                self::$cache[$xconfid] = Conf::$g;
+            if (Conf::$main && ($xconfid = Conf::$main->opt("confid"))) {
+                self::$cache[$xconfid] = Conf::$main;
             }
         }
         $conf = self::$cache[$confid] ?? null;
@@ -118,8 +118,8 @@ class Multiconference {
                 echo "{\"error\":\"unconfigured installation\"}\n";
             }
         } else {
-            if (!Conf::$g) {
-                Conf::set_primary_instance(new Conf($Opt, false));
+            if (!Conf::$main) {
+                Conf::set_main_instance(new Conf($Opt, false));
             }
             $Me = null;
             header("HTTP/1.1 404 Not Found");

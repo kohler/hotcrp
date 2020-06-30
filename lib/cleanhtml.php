@@ -5,11 +5,15 @@
 class CleanHTML {
     const BADTAGS_IGNORE = 1;
 
+    /** @var int */
     private $flags;
+    /** @var array<string,mixed> */
     private $goodtags;
+    /** @var array<string,mixed> */
     private $emptytags;
 
-    static private $g;
+    /** @var CleanHTML */
+    static private $main;
 
     function __construct($flags = 0, $goodtags = null, $emptytags = null) {
         if ($goodtags === null)
@@ -149,10 +153,10 @@ class CleanHTML {
 
     /** @return CleanHTML */
     static function basic() {
-        if (!self::$g) {
-            self::$g = new CleanHTML;
+        if (!self::$main) {
+            self::$main = new CleanHTML;
         }
-        return self::$g;
+        return self::$main;
     }
 
     /** @return string|false */

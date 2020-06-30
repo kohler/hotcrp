@@ -796,13 +796,13 @@ class MinCostMaxFlow {
     }
 
     private function make_debug_file() {
-        if (!($dir = Conf::$g->opt("minCostMaxFlowDebug"))) {
+        if (!($dir = Conf::$main->opt("minCostMaxFlowDebug"))) {
             return null;
         }
         $f = null;
         $time = time();
         while (!$f && $time < Conf::$now + 20) {
-            $f = @fopen("$dir/mcmf-".Conf::$g->dbname."-{$time}.txt", "xb");
+            $f = @fopen("$dir/mcmf-".Conf::$main->dbname."-{$time}.txt", "xb");
             ++$time;
         }
         return $f;

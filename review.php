@@ -20,7 +20,7 @@ function review_error($msg) {
     review_header();
     Ht::stash_script("shortcut().add()");
     $msg && Conf::msg_error($msg);
-    Conf::$g->footer();
+    Conf::$main->footer();
     exit;
 }
 

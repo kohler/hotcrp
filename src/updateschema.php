@@ -504,8 +504,8 @@ function updateSchema($conf) {
         time_nanosleep(0, 200000000);
     }
     $conf->update_schema_version(null);
-    $old_conf_g = Conf::$g;
-    Conf::$g = $conf;
+    $old_conf_g = Conf::$main;
+    Conf::$main = $conf;
 
     error_log($conf->dbname . ": updating schema from version " . $conf->sversion);
 
@@ -1749,5 +1749,5 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     }
 
     $conf->ql_ok("delete from Settings where name='__schema_lock'");
-    Conf::$g = $old_conf_g;
+    Conf::$main = $old_conf_g;
 }

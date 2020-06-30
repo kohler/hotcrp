@@ -140,8 +140,9 @@ function document_download(Contact $user, $qreq) {
             json_exit(["ok" => false, "error" => $doc->error ? $doc->error_html : "Internal error."]);
         } else {
             $listing = ArchiveInfo::clean_archive_listing($listing);
-            if ($qreq->fn === "consolidatedlisting")
+            if ($qreq->fn === "consolidatedlisting") {
                 $listing = join(", ", ArchiveInfo::consolidate_archive_listing($listing));
+            }
             json_exit(["ok" => true, "result" => $listing]);
         }
     }

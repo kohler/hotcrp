@@ -245,6 +245,9 @@ class Conf {
     private $_active_list = false;
 
     /** @var Conf */
+    static public $main;
+    /** @var Conf
+     * @deprecated */
     static public $g;
 
     /** @var int */
@@ -376,7 +379,7 @@ class Conf {
 
         $this->crosscheck_settings();
         $this->crosscheck_options();
-        if ($this === Conf::$g) {
+        if ($this === Conf::$main) {
             $this->crosscheck_globals();
         }
     }
@@ -724,9 +727,10 @@ class Conf {
         }
     }
 
-    static function set_primary_instance(Conf $conf) {
+    static function set_main_instance(Conf $conf) {
         global $Conf;
-        $Conf = Conf::$g = $conf;
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
+        $Conf = Conf::$main = Conf::$g = $conf;
         $conf->crosscheck_globals();
     }
 
@@ -2823,7 +2827,7 @@ class Conf {
      * @param int|float $t
      * @return string */
     private function _date_format($format, $t) {
-        if ($this !== self::$g && !$this->_dtz && isset($this->opt["timezone"])) {
+        if ($this !== self::$main && !$this->_dtz && isset($this->opt["timezone"])) {
             $this->_dtz = timezone_open($this->opt["timezone"]) ? : null;
         }
         if ($this->_dtz) {
@@ -3421,7 +3425,7 @@ class Conf {
                 $t = substr($t, $lexpect);
             }
         }
-        if (($flags & self::HOTURL_ABSOLUTE) || $this !== Conf::$g) {
+        if (($flags & self::HOTURL_ABSOLUTE) || $this !== Conf::$main) {
             return $this->opt("paperSite") . "/" . $t;
         } else {
             $siteurl = $nav->site_path_relative;
@@ -3896,7 +3900,7 @@ class Conf {
 
     /** @param string|list<string> $text */
     static function msg_info($text, $minimal = false) {
-        self::msg_on(self::$g, $text, $minimal ? "xinfo" : "info");
+        self::msg_on(self::$main, $text, $minimal ? "xinfo" : "info");
     }
 
     /** @param string|list<string> $text */
@@ -3906,7 +3910,7 @@ class Conf {
 
     /** @param string|list<string> $text */
     static function msg_warning($text, $minimal = false) {
-        self::msg_on(self::$g, $text, $minimal ? "xwarning" : "warning");
+        self::msg_on(self::$main, $text, $minimal ? "xwarning" : "warning");
     }
 
     /** @param string|list<string> $text */
@@ -3916,7 +3920,7 @@ class Conf {
 
     /** @param string|list<string> $text */
     static function msg_confirm($text, $minimal = false) {
-        self::msg_on(self::$g, $text, $minimal ? "xconfirm" : "confirm");
+        self::msg_on(self::$main, $text, $minimal ? "xconfirm" : "confirm");
     }
 
     /** @param string|list<string> $text */
@@ -3927,7 +3931,7 @@ class Conf {
 
     /** @param string|list<string> $text */
     static function msg_error($text, $minimal = false) {
-        self::msg_on(self::$g, $text, $minimal ? "xmerror" : "merror");
+        self::msg_on(self::$main, $text, $minimal ? "xmerror" : "merror");
         return false;
     }
 
@@ -3936,7 +3940,7 @@ class Conf {
         if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true) {
             $text = json_encode_browser($text);
         }
-        self::msg_on(self::$g, Ht::pre_text_wrap($text), "merror");
+        self::msg_on(self::$main, Ht::pre_text_wrap($text), "merror");
         return false;
     }
 

@@ -111,8 +111,8 @@ class Filer {
         // if docstoreAccelRedirect, output X-Accel-Redirect header
         // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
         // using SameSite cookies!
-        if (($dar = Conf::$g->opt("docstoreAccelRedirect"))
-            && ($dsp = self::docstore_fixed_prefix(Conf::$g->docstore()))
+        if (($dar = Conf::$main->opt("docstoreAccelRedirect"))
+            && ($dsp = self::docstore_fixed_prefix(Conf::$main->docstore()))
             && !$no_accel) {
             assert(str_ends_with($dsp, "/"));
             if (str_starts_with($filename, $dsp)
@@ -133,6 +133,7 @@ class Filer {
         // read file directly to output
         readfile($filename);
     }
+
     /** @param DocumentInfo|list<DocumentInfo> $doc */
     static function multidownload($doc, $downloadname = null, $opts = null) {
         global $zlib_output_compression;
@@ -298,7 +299,7 @@ class Filer {
 
     /** @return ?non-empty-string */
     static function docstore_tmpdir(Conf $conf = null) {
-        $conf = $conf ?? Conf::$g;
+        $conf = $conf ?? Conf::$main;
         if (($prefix = self::docstore_fixed_prefix($conf->docstore()))) {
             $tmpdir = $prefix . "tmp/";
             '@phan-var non-empty-string $tmpdir';

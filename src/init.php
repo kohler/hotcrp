@@ -181,9 +181,9 @@ if (isset($Opt["memoryLimit"]) && $Opt["memoryLimit"]) {
 
 // Create the conference
 global $Conf;
-if (!Conf::$g) {
-    Conf::set_primary_instance(new Conf($Opt, true));
+if (!Conf::$main) {
+    Conf::set_main_instance(new Conf($Opt, true));
 }
-if (!Conf::$g->dblink) {
+if (!Conf::$main->dblink) {
     Multiconference::fail_bad_database();
 }
