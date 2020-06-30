@@ -57,18 +57,19 @@ class Batch_CleanDocstore {
         usort($fmatches, function ($a, $b) {
             // week-old temporary files should be removed first
             $at = $a->atime();
-            if (($a->treeid & 1) && $at < Conf::$now - 604800) {
-                $at = 1;
-            }
             $bt = $b->atime();
-            if (($b->treeid & 1) && $bt < Conf::$now - 604800) {
-                $bt = 1;
-            }
-            if ($at !== false && $bt !== false) {
-                return $at < $bt ? -1 : ($at == $bt ? 0 : 1);
-            } else {
+            if ($at === false || $bt === false) {
                 return $at ? -1 : ($bt ? 1 : 0);
             }
+            $aage = Conf::$now - $at;
+            if ($a->treeid & 1) {
+                $aage = $aage > 604800 ? 100000000 : $aage * 2;
+            }
+            $bage = Conf::$now - $bt;
+            if ($b->treeid & 1) {
+                $bage = $bage > 604800 ? 100000000 : $bage * 2;
+            }
+            return $aage > $bage ? -1 : ($aage == $bage ? 0 : 1);
         });
         if (empty($fmatches)) {
             return null;
