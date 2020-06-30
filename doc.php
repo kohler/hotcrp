@@ -152,10 +152,10 @@ function document_download(Contact $user, $qreq) {
         $ifnonematch = null;
         if (function_exists("getallheaders")) {
             foreach (getallheaders() as $k => $v)
-                if (strcasecmp($k, "If-None-Match") == 0)
+                if (strcasecmp($k, "If-None-Match") === 0)
                     $ifnonematch = $v;
         } else {
-            $ifnonematch = get($_SERVER, "HTTP_IF_NONE_MATCH");
+            $ifnonematch = $_SERVER["HTTP_IF_NONE_MATCH"] ?? null;
         }
         if ($ifnonematch && $ifnonematch === "\"" . $doc->text_hash() . "\"") {
             header("HTTP/1.1 304 Not Modified");

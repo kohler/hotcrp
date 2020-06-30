@@ -107,7 +107,6 @@ class Filer {
      * @param ?string $mimetype
      * @param bool $no_accel */
     static function download_file($filename, $mimetype, $no_accel = false) {
-        global $zlib_output_compression;
         // if docstoreAccelRedirect, output X-Accel-Redirect header
         // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
         // using SameSite cookies!
@@ -123,7 +122,7 @@ class Filer {
             }
         }
         // write length header, flush output buffers
-        if (!$zlib_output_compression) {
+        if (zlib_get_coding_type() === false) {
             header("Content-Length: " . filesize($filename));
         }
         flush();
@@ -136,7 +135,6 @@ class Filer {
 
     /** @param DocumentInfo|list<DocumentInfo> $doc */
     static function multidownload($doc, $downloadname = null, $opts = null) {
-        global $zlib_output_compression;
         if (is_array($doc) && count($doc) == 1) {
             $doc = $doc[0];
             $downloadname = null;
@@ -193,7 +191,7 @@ class Filer {
         } else if (($path = $doc->available_content_file())) {
             self::download_file($path, $doc->mimetype, $no_accel);
         } else {
-            if (!$zlib_output_compression) {
+            if (zlib_get_coding_type() === false) {
                 header("Content-Length: " . strlen($doc->content));
             }
             echo $doc->content;

@@ -28,17 +28,6 @@ if ($Conf->opt("redirectToHttps")) {
     Navigation::redirect_http_to_https($Conf->opt("allowLocalHttp"));
 }
 
-// Check and fix zlib output compression
-global $zlib_output_compression;
-$zlib_output_compression = false;
-if (function_exists("zlib_get_coding_type")) {
-    $zlib_output_compression = zlib_get_coding_type();
-}
-if ($zlib_output_compression) {
-    header("Content-Encoding: $zlib_output_compression");
-    header("Vary: Accept-Encoding", false);
-}
-
 // Mark as already expired to discourage caching, but allow the browser
 // to cache for history buttons
 header("Cache-Control: max-age=0,must-revalidate,private");

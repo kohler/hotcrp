@@ -508,6 +508,16 @@ function debug_string_backtrace() {
 }
 
 
+// zlib helper
+
+if (!function_exists("zlib_get_coding_type")) {
+    /** @phan-suppress-next-line PhanRedefineFunctionInternal */
+    function zlib_get_coding_type() {
+        return false;
+    }
+}
+
+
 // pcntl helpers
 
 if (function_exists("pcntl_wifexited") && pcntl_wifexited(0) !== null) {
