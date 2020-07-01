@@ -158,6 +158,15 @@ class CommentInfo {
         }
     }
 
+    /** @return int */
+    function mtime(Contact $viewer) {
+        if ($viewer->can_view_comment_time($this->prow, $this)) {
+            return (int) $this->timeModified;
+        } else {
+            return $this->conf->obscure_time($this->timeModified);
+        }
+    }
+
     private function commenter() {
         if (isset($this->reviewEmail)) {
             return (object) [
