@@ -1826,8 +1826,9 @@ class PaperInfo {
         }
 
         $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " allRatings from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
-        while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
+        while (($rrow = ReviewInfo::fetch($result, null, $this->conf))) {
             $prow = $row_set->get($rrow->paperId);
+            $rrow->set_prow($prow);
             $prow->_review_array[$rrow->reviewId] = $rrow;
         }
         Dbl::free($result);
@@ -2005,7 +2006,7 @@ class PaperInfo {
             && !isset($this->_reviews_have["full"])) {
             $this->_full_review_key = "r$id";
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " allRatings from PaperReview where paperId=? and reviewId=?", $this->paperId, $id);
-            $rrow = ReviewInfo::fetch($result, $this->conf);
+            $rrow = ReviewInfo::fetch($result, $this, $this->conf);
             $this->_full_review = $rrow ? [$rrow] : [];
             Dbl::free($result);
             $this->ensure_full_review_name();
@@ -2029,8 +2030,9 @@ class PaperInfo {
                 $prow->_full_review_key = "u$cid";
             }
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " allRatings from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $row_set->paper_ids(), $cid);
-            while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
+            while (($rrow = ReviewInfo::fetch($result, null, $this->conf))) {
                 $prow = $row_set->get($rrow->paperId);
+                $rrow->set_prow($prow);
                 $prow->_full_review[] = $rrow;
             }
             Dbl::free($result);
@@ -2049,7 +2051,7 @@ class PaperInfo {
             && !isset($this->_reviews_have["full"])) {
             $this->_full_review_key = "o$ordinal";
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " allRatings from PaperReview where paperId=? and reviewOrdinal=?", $this->paperId, $ordinal);
-            $rrow = ReviewInfo::fetch($result, $this->conf);
+            $rrow = ReviewInfo::fetch($result, $this, $this->conf);
             $this->_full_review = $rrow ? [$rrow] : [];
             Dbl::free($result);
             $this->ensure_full_review_name();
@@ -2074,7 +2076,7 @@ class PaperInfo {
 
     private function fresh_review_of($key, $value) {
         $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " allRatings, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles, ContactInfo.contactTags from PaperReview join ContactInfo using (contactId) where paperId=? and $key=? order by paperId, reviewId", $this->paperId, $value);
-        $rrow = ReviewInfo::fetch($result, $this->conf);
+        $rrow = ReviewInfo::fetch($result, $this, $this->conf);
         Dbl::free($result);
         return $rrow;
     }
@@ -2243,7 +2245,7 @@ class PaperInfo {
         $rf = $this->conf->review_form();
         $result = $this->conf->qe("select * from PaperReview where paperId=$this->paperId and reviewId?a", $rids);
         $qs = [];
-        while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
+        while (($rrow = ReviewInfo::fetch($result, $this, $this->conf))) {
             if ($rrow->reviewWordCount === null) {
                 $rrow->reviewWordCount = $rf->word_count($rrow);
                 $qs[] = "update PaperReview set reviewWordCount={$rrow->reviewWordCount} where paperId={$this->paperId} and reviewId={$rrow->reviewId}";

@@ -16,7 +16,7 @@ if (isset($problems["autosearch"]) && isset($arg["fix-autosearch"]))
 if ($Conf->sversion == 174 && (isset($arg["json-reviews"]) || isset($arg["fix-json-reviews"]))) {
     $result = $Conf->qe("select * from PaperReview");
     $q = $qv = [];
-    while (($rrow = ReviewInfo::fetch($result, $Conf))) {
+    while (($rrow = ReviewInfo::fetch($result, null, $Conf))) {
         $tfields = $rrow->tfields ? json_decode($rrow->tfields) : null;
         $need_fix = $unfixable = false;
         foreach (ReviewInfo::$text_field_map as $kin => $kout) {

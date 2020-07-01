@@ -266,7 +266,7 @@ function update_schema_paper_review_tfields(Conf $conf) {
     }
     $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
     $result = $conf->ql("select * from PaperReview");
-    while (($row = ReviewInfo::fetch($result, $conf))) {
+    while (($row = ReviewInfo::fetch($result, null, $conf))) {
         $data = $row->unparse_tfields();
         if ($data !== null) {
             $cleanf("update PaperReview set `tfields`=? where paperId=? and reviewId=?", [$data, $row->paperId, $row->reviewId]);
@@ -280,7 +280,7 @@ function update_schema_paper_review_tfields(Conf $conf) {
 function update_schema_paper_review_null_main_fields(Conf $conf) {
     $rid = [];
     $result = $conf->ql("select * from PaperReview");
-    while (($rrow = ReviewInfo::fetch($result, $conf))) {
+    while (($rrow = ReviewInfo::fetch($result, null, $conf))) {
         $tfields = $rrow->tfields ? json_decode($rrow->tfields, true) : [];
         $any = false;
         foreach (ReviewInfo::$text_field_map as $kmain => $kjson) {
@@ -308,7 +308,7 @@ function update_schema_paper_review_drop_main_fields(Conf $conf) {
         return false;
     }
     $result = $conf->ql("select * from PaperReview where " . join(" or ", $kf));
-    $rrow = ReviewInfo::fetch($result, $conf);
+    $rrow = ReviewInfo::fetch($result, null, $conf);
     Dbl::free($result);
     if ($rrow) {
         error_log("{$conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: nonnull main field cancels schema upgrade");

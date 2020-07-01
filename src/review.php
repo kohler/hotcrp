@@ -819,23 +819,7 @@ class ReviewForm implements JsonSerializable {
      * @param ?ReviewInfo $rrow
      * @return int */
     static private function rrow_modified_time($user, $prow, $rrow) {
-        if (!$prow || !$rrow || !$user->can_view_review_time($prow, $rrow)) {
-            return 0;
-        } else if ($user->view_score_bound($prow, $rrow) >= VIEWSCORE_AUTHORDEC - 1) {
-            if (isset($rrow->reviewAuthorModified)) {
-                return (int) $rrow->reviewAuthorModified;
-            } else {
-                $ran = (int) ($rrow->reviewAuthorNotified ?? 0);
-                $rm = (int) $rrow->reviewModified;
-                if (!$ran || $rm - $ran <= self::NOTIFICATION_DELAY) {
-                    return $rm;
-                } else {
-                    return $ran;
-                }
-            }
-        } else {
-            return $rrow->reviewModified;
-        }
+        return $rrow ? $rrow->mtime($user) : 0;
     }
 
     function textFormHeader($type) {
@@ -878,7 +862,7 @@ class ReviewForm implements JsonSerializable {
             }
         }
         $time = self::rrow_modified_time($contact, $prow, $rrow);
-        if ($time > 1) {
+        if ($time > 0 && $time > $rrow->timeRequested) {
             $x .= "==-== Updated " . $this->conf->unparse_time($time) . "\n";
         }
 
@@ -1007,7 +991,7 @@ $blind\n";
             $x .= "* Reviewer: " . Text::nameo($rrow, NAME_EB) . "\n";
         }
         $time = self::rrow_modified_time($contact, $prow, $rrow);
-        if ($time > 1) {
+        if ($time > 0 && $time > $rrow->timeRequested) {
             $x .= "* Updated: " . $this->conf->unparse_time($time) . "\n";
         }
 
@@ -1367,7 +1351,7 @@ $blind\n";
 
         // time
         $time = self::rrow_modified_time($viewer, $prow, $rrow);
-        if ($time > 1) {
+        if ($time > 0 && $time > $rrow->timeRequested) {
             $rj["modified_at"] = (int) $time;
             $rj["modified_at_text"] = $this->conf->unparse_time_point($time);
         }
@@ -1459,7 +1443,7 @@ $blind\n";
         $updatef = Dbl::make_multi_qe_stager($this->conf->dblink);
         $pids = $rids = [];
         $last_view_score = ReviewInfo::VIEWSCORE_RECOMPUTE;
-        while (($rrow = ReviewInfo::fetch($result, $this->conf, true))) {
+        while (($rrow = ReviewInfo::fetch($result, null, $this->conf, true))) {
             $view_score = $this->nonempty_view_score($rrow);
             if ($last_view_score !== $view_score) {
                 if (!empty($rids)) {

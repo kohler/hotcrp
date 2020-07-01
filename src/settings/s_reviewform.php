@@ -231,7 +231,7 @@ class ReviewForm_SettingParser extends SettingParser {
         // clear fields from json storage
         $clearf = Dbl::make_multi_qe_stager($conf->dblink);
         $result = $conf->qe("select * from PaperReview where sfields is not null or tfields is not null");
-        while (($rrow = ReviewInfo::fetch($result, $conf))) {
+        while (($rrow = ReviewInfo::fetch($result, null, $conf))) {
             $cleared = false;
             foreach ($clear_sfields as $f) {
                 if (isset($rrow->{$f->id})) {
@@ -276,7 +276,7 @@ class ReviewForm_SettingParser extends SettingParser {
             // clear options from json storage
             $clearf = Dbl::make_multi_qe_stager($conf->dblink);
             $result = $conf->qe("select * from PaperReview where sfields is not null");
-            while (($rrow = ReviewInfo::fetch($result, $conf))) {
+            while (($rrow = ReviewInfo::fetch($result, null, $conf))) {
                 $cleared = false;
                 foreach ($clear_sfields as $f) {
                     if (isset($rrow->{$f->id}) && $rrow->{$f->id} > count($f->options)) {
@@ -349,7 +349,7 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($assign_ordinal) {
             $rrows = [];
             $result = $sv->conf->qe("select * from PaperReview where reviewOrdinal=0 and reviewSubmitted>0");
-            while (($rrow = ReviewInfo::fetch($result, $sv->conf))) {
+            while (($rrow = ReviewInfo::fetch($result, null, $sv->conf))) {
                 $rrows[] = $rrow;
             }
             Dbl::free($result);
@@ -445,7 +445,7 @@ submitted. Add a “<code>No entry</code>” line to make the score optional.</p
     while (!empty($unknown_nonempty)) {
         $result = $sv->conf->qe("select * from PaperReview where " . join(" or ", $where) . " limit $limit,100");
         $expect_limit = $limit + 100;
-        while (($rrow = ReviewInfo::fetch($result, $sv->conf))) {
+        while (($rrow = ReviewInfo::fetch($result, null, $sv->conf))) {
             for ($i = 0; $i < count($unknown_nonempty); ++$i) {
                 $fj = $unknown_nonempty[$i];
                 $fid = $fj->internal_id;

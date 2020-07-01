@@ -26,6 +26,8 @@
 class ReviewInfo implements JsonSerializable {
     /** @var Conf */
     public $conf;
+    /** @var ?PaperInfo */
+    public $prow;
     /** @var int */
     public $paperId;
     /** @var int */
@@ -133,8 +135,10 @@ class ReviewInfo implements JsonSerializable {
         return self::$type_revmap[$type] ?? "clearreview";
     }
 
-    private function merge(Conf $conf, $recomputing_view_scores) {
-        $this->conf = $conf;
+    private function merge($recomputing_view_scores, PaperInfo $prow = null,
+                           Conf $conf = null) {
+        $this->conf = $conf ?? $prow->conf;
+        $this->prow = $prow;
         foreach (["paperId", "reviewId", "contactId", "reviewType",
                   "reviewRound", "requestedBy", "reviewBlind",
                   "reviewOrdinal", "reviewNeedsSubmit", "reviewViewScore",
@@ -162,15 +166,18 @@ class ReviewInfo implements JsonSerializable {
             $conf->review_form()->compute_view_scores();
         }
     }
+
     /** @return ?ReviewInfo */
-    static function fetch($result, Conf $conf, $recomputing_view_scores = false) {
+    static function fetch($result, PaperInfo $prow = null, Conf $conf = null,
+                          $recomputing_view_scores = false) {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
         '@phan-var ?ReviewInfo $rrow';
         if ($rrow) {
-            $rrow->merge($conf, $recomputing_view_scores);
+            $rrow->merge($recomputing_view_scores, $prow, $conf);
         }
         return $rrow;
     }
+
     static function review_signature_sql(Conf $conf, $scores = null) {
         $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit, ' ', r.reviewViewScore";
         foreach ($scores ?? [] as $fid) {
@@ -179,6 +186,8 @@ class ReviewInfo implements JsonSerializable {
         }
         return "group_concat($t order by r.reviewId)";
     }
+
+    /** @return ReviewInfo */
     static function make_signature(PaperInfo $prow, $signature) {
         $rrow = new ReviewInfo;
         $rrow->paperId = $prow->paperId;
@@ -205,8 +214,13 @@ class ReviewInfo implements JsonSerializable {
             $rrow->$fid = substr($vals[$i], $eq + 1);
             $prow->_mark_has_score($fid);
         }
-        $rrow->merge($prow->conf, false);
+        $rrow->merge(false, $prow, $prow->conf);
         return $rrow;
+    }
+
+    function set_prow(PaperInfo $prow) {
+        assert(!$this->prow && $this->paperId === $prow->paperId && $this->conf === $prow->conf);
+        $this->prow = $prow;
     }
 
 
@@ -216,6 +230,29 @@ class ReviewInfo implements JsonSerializable {
             && !$this->reviewSubmitted
             && !$this->reviewOrdinal
             && ($this->timeApprovalRequested < 0 || $this->conf->ext_subreviews);
+    }
+
+    /** @return ?int */
+    function mtime(Contact $viewer) {
+        if (!$this->prow || !$viewer->can_view_review_time($this->prow, $this)) {
+            return null;
+        } else if ($viewer->view_score_bound($this->prow, $this) >= VIEWSCORE_AUTHORDEC - 1) {
+            if (isset($this->reviewAuthorModified)) {
+                return (int) $this->reviewAuthorModified;
+            } else {
+                $ran = (int) ($this->reviewAuthorNotified ?? 0);
+                $rm = $this->reviewModified;
+                if (!$ran || $rm - $ran <= ReviewForm::NOTIFICATION_DELAY) {
+                    return $rm;
+                } else {
+                    return $ran;
+                }
+            }
+        } else if ($this->reviewModified > 1) {
+            return $this->reviewModified;
+        } else {
+            return (int) $this->timeRequested;
+        }
     }
 
     /** @return bool */

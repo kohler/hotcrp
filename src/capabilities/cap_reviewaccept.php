@@ -17,7 +17,7 @@ class ReviewAccept_Capability {
 
     static function apply_review_acceptor(Contact $user, $uf, $isadd) {
         $result = $user->conf->qe("select * from PaperReview where reviewId=?", $uf->match_data[1]);
-        $rrow = ReviewInfo::fetch($result, $user->conf);
+        $rrow = ReviewInfo::fetch($result, null, $user->conf);
         Dbl::free($result);
         if ($rrow && $rrow->acceptor_is($uf->match_data[2])) {
             self::make_review_acceptor($user, $rrow->acceptor()->at, $rrow->paperId, $isadd ? (int) $rrow->contactId : null, $uf);

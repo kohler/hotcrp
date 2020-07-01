@@ -84,7 +84,7 @@ class PaperEvents {
 
         $last = null;
         $result = $this->conf->qe_apply($q, $qv);
-        while (($rrow = ReviewInfo::fetch($result, $this->conf))) {
+        while (($rrow = ReviewInfo::fetch($result, null, $this->conf))) {
             $this->rrows[] = $last = $rrow;
         }
         Dbl::free($result);
@@ -112,6 +112,7 @@ class PaperEvents {
                 && !$this->user->act_author_view($prow)
                 && $this->user->following_reviews($prow, (int) $prow->watch)
                 && $this->user->can_view_review($prow, $rrow)) {
+                $rrow->set_prow($prow);
                 return new PaperEvent($prow, $rrow, null);
             }
         }
