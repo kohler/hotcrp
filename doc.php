@@ -123,7 +123,7 @@ function document_download(Contact $user, $qreq) {
     }
     if ($want_docid !== 0 && (!$doc || $doc->paperStorageId != $want_docid)) {
         document_error("404 Not Found", "No such version.");
-    } else if (!$doc) {
+    } else if (!$doc || $doc->paperStorageId <= 1) {
         document_error("404 Not Found", "No such " . ($dr->attachment ? "attachment" : "document") . " “" . htmlspecialchars($dr->req_filename) . "”.");
     }
 
@@ -169,12 +169,14 @@ function document_download(Contact $user, $qreq) {
     if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x)) {
         $opts["cacheable"] = true;
     }
-    if ($user->conf->download_documents([$doc], $opts)) {
+    $doc->filename = $doc->export_filename();
+    $result = Filer::multidownload([$doc], null, $opts);
+    if (!$result->error) {
         DocumentInfo::log_download_activity([$doc], $user);
-        exit;
+    } else {
+        document_error("500 Server Error", $result->error_html);
     }
-
-    document_error("500 Server Error", "");
+    exit;
 }
 
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);

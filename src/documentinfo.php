@@ -1223,7 +1223,8 @@ class DocumentInfo implements JsonSerializable {
         foreach ($docs as $doc) {
             if ($doc->documentType !== DTYPE_COMMENT
                 && $doc->conf === $user->conf
-                && $doc->paperId > 0) {
+                && $doc->paperId > 0
+                && $doc->paperStorageId > 1) {
                 // XXX ignores documents from other conferences
                 $byn[$doc->documentType][$doc->paperId] = true;
                 $any_nonauthor = $any_nonauthor || !$doc->prow || !$doc->prow->has_author($user);

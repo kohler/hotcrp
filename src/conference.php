@@ -3505,6 +3505,7 @@ class Conf {
     // Paper storage
     //
 
+    /** @deprecated */
     function download_documents($docs, $attachment) {
         if (count($docs) == 1
             && $docs[0]->paperStorageId <= 1

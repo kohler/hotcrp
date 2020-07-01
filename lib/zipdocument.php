@@ -100,7 +100,11 @@ class ZipDocument {
 
         // maybe this is a warning container
         if ($doc->error) {
-            $this->warnings[] = "$filename: " . ($doc->error_html ? htmlspecialchars_decode($doc->error_html) : "Unknown error.");
+            $s = $doc->error_html ? htmlspecialchars_decode($doc->error_html) : "Unknown error.";
+            if ($filename) {
+                $s = "$filename: $s";
+            }
+            $this->warnings[] = $s;
             return false;
         }
 

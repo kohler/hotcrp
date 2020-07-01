@@ -171,8 +171,9 @@ class Filer {
         }
         if (!$downloadname) {
             $downloadname = $doc->filename;
-            if (($slash = strrpos($downloadname, "/")) !== false)
+            if (($slash = strrpos($downloadname, "/")) !== false) {
                 $downloadname = substr($downloadname, $slash + 1);
+            }
         }
         header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
         if (is_array($opts) && ($opts["cacheable"] ?? false)) {
