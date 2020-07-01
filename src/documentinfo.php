@@ -968,6 +968,9 @@ class DocumentInfo implements JsonSerializable {
                 $fn .= "/comment-" . $this->_owner->unparse_html_id();
             }
             return $fn . "/" . $this->member_filename();
+        } else if ($this->documentType == DTYPE_EXPORT) {
+            assert(!!$this->filename);
+            return $this->filename;
         } else {
             $o = $this->conf->option_by_id($this->documentType);
             if ($o && $o->nonpaper && $this->paperId < 0) {
@@ -1167,6 +1170,57 @@ class DocumentInfo implements JsonSerializable {
             }
         }
         return null;
+    }
+
+    /** @param array{attachment?:bool,no_accel?:bool,cacheable?:bool} $opts
+     * @return bool */
+    function download($opts = []) {
+        if ($this->size == 0 && !$this->ensure_size()) {
+            $this->error_html = "Empty file.";
+            return false;
+        }
+
+        $no_accel = $opts["no_accel"] ?? false;
+        $s3_accel = $no_accel ? false : $this->s3_accel_redirect();
+        if (!$s3_accel && !$this->ensure_content()) {
+            $this->error_html = $this->error_html ?? "Don’t know how to download.";
+            return false;
+        }
+
+        // Print headers
+        header("Content-Type: " . Mimetype::type_with_charset($this->mimetype));
+        if (isset($opts["attachment"])) {
+            $attachment = $opts["attachment"];
+        } else {
+            $attachment = !Mimetype::disposition_inline($this->mimetype);
+        }
+        $downloadname = $this->export_filename();
+        if (($slash = strrpos($downloadname, "/")) !== false) {
+            $downloadname = substr($downloadname, $slash + 1);
+        }
+        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
+        if ($opts["cacheable"] ?? false) {
+            header("Cache-Control: max-age=315576000, private");
+            header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
+        }
+        // reduce likelihood of XSS attacks in IE
+        header("X-Content-Type-Options: nosniff");
+        if ($this->has_hash()) {
+            header("ETag: \"" . $this->text_hash() . "\"");
+        }
+
+        // Download or redirect
+        if ($s3_accel) {
+            $this->conf->s3_docstore()->get_accel_redirect($this->s3_key(), $s3_accel);
+        } else if (($path = $this->available_content_file())) {
+            Filer::download_file($path, $this->mimetype, $no_accel);
+        } else {
+            if (zlib_get_coding_type() === false) {
+                header("Content-Length: " . strlen($this->content));
+            }
+            echo $this->content;
+        }
+        return true;
     }
 
     function unparse_json() {

@@ -7,6 +7,7 @@ class XlsxGenerator {
     const PROCESSING = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
     const MIMETYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+    /** @var DocumentInfoSet */
     private $zip;
     private $sst = array();
     private $nsst = 0;
@@ -16,7 +17,8 @@ class XlsxGenerator {
     private $widths;
 
     function __construct($downloadname) {
-        $this->zip = new ZipDocument($downloadname, self::MIMETYPE);
+        $this->zip = new DocumentInfoSet($downloadname);
+        $this->zip->set_mimetype(self::MIMETYPE);
     }
 
     static function colname($col) {
@@ -88,7 +90,7 @@ class XlsxGenerator {
             . "<sheetData>" . join("", $rout) . "</sheetData>\n"
             . "</worksheet>\n";
         ++$this->nsheets;
-        $this->zip->add_as($t, "xl/worksheets/sheet" . $this->nsheets . ".xml");
+        $this->zip->add_string_as($t, "xl/worksheets/sheet" . $this->nsheets . ".xml");
     }
 
     private function add_sst() {
@@ -96,7 +98,7 @@ class XlsxGenerator {
         foreach ($this->sst as $k => $v)
             $t[] = "<si><t>" . htmlspecialchars($k) . "</t></si>";
         $t[] = "</sst>\n";
-        $this->zip->add_as(join("", $t), "xl/sharedStrings.xml");
+        $this->zip->add_string_as(join("", $t), "xl/sharedStrings.xml");
     }
 
     private function add_workbook() {
@@ -106,7 +108,7 @@ class XlsxGenerator {
                 . ($i == 1 ? " state=\"visible\"" : "")
                 . " r:id=\"rId" . ($i + 2) . "\"/>";
         $t[] = "</sheets>\n</workbook>\n";
-        $this->zip->add_as(join("", $t), "xl/workbook.xml");
+        $this->zip->add_string_as(join("", $t), "xl/workbook.xml");
     }
 
     private function add_styles() {
@@ -121,7 +123,7 @@ class XlsxGenerator {
             $t[] = "</cellXfs>\n";
         }
         $t[] = "</styleSheet>\n";
-        $this->zip->add_as(join("", $t), "xl/styles.xml");
+        $this->zip->add_string_as(join("", $t), "xl/styles.xml");
     }
 
     private function add_xl_relationships() {
@@ -131,7 +133,7 @@ class XlsxGenerator {
         for ($i = 1; $i <= $this->nsheets; ++$i)
             $t[] = "<Relationship Target=\"worksheets/sheet$i.xml\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Id=\"rId" . ($i + 2) . "\"/>\n";
         $t[] = "</Relationships>\n";
-        $this->zip->add_as(join("", $t), "xl/_rels/workbook.xml.rels");
+        $this->zip->add_string_as(join("", $t), "xl/_rels/workbook.xml.rels");
     }
 
     private function add_content_types() {
@@ -144,12 +146,12 @@ class XlsxGenerator {
         for ($i = 1; $i <= $this->nsheets; ++$i)
             $t[] = "<Override PartName=\"/xl/worksheets/sheet$i.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>\n";
         $t[] = "</Types>\n";
-        $this->zip->add_as(join("", $t), "[Content_Types].xml");
+        $this->zip->add_string_as(join("", $t), "[Content_Types].xml");
 
         $t = array(self::PROCESSING, "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">\n",
                    "<Relationship Target=\"xl/workbook.xml\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Id=\"rId1\"/>\n",
                    "</Relationships>\n");
-        $this->zip->add_as(join("", $t), "_rels/.rels");
+        $this->zip->add_string_as(join("", $t), "_rels/.rels");
     }
 
     function finish() {
@@ -161,14 +163,10 @@ class XlsxGenerator {
         $this->done = true;
     }
 
-    function download_headers() {
-        $this->zip->download_headers();
-    }
-
-    function download() {
-        if (!$this->done)
+    function download($opts = []) {
+        if (!$this->done) {
             $this->finish();
-        return $this->zip->download();
+        }
+        return $this->zip->download($opts);
     }
-
 }

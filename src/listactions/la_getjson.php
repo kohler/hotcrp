@@ -3,7 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class GetJson_ListAction extends ListAction {
+    /** @var bool */
     private $iszip;
+    /** @var ?DocumentInfoSet */
     private $zipdoc;
     function __construct($conf, $fj) {
         $this->iszip = $fj->name === "get/jsonattach";
@@ -22,27 +24,29 @@ class GetJson_ListAction extends ListAction {
         $pj = [];
         $ps = new PaperStatus($user->conf, $user, ["hide_docids" => true]);
         if ($this->iszip) {
-            $this->zipdoc = new ZipDocument($user->conf->download_prefix . "data.zip");
+            $this->zipdoc = new DocumentInfoSet($user->conf->download_prefix . "data.zip");
             $ps->on_document_export([$this, "document_callback"]);
         }
         foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {
             $pj1 = $ps->paper_json($prow);
-            if ($pj1)
+            if ($pj1) {
                 $pj[] = $pj1;
-            else {
+            } else {
                 $pj[] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
-                if ($this->iszip)
-                    $this->zipdoc->warnings[] = "#$prow->paperId: You don’t have permission to administer this paper.";
+                if ($this->iszip) {
+                    $this->zipdoc->add_error_html("#$prow->paperId: You don’t have permission to administer this paper.");
+                }
             }
         }
         $user->set_overrides($old_overrides);
         if (count($pj) == 1) {
             $pj = $pj[0];
             $pj_filename = $user->conf->download_prefix . "paper" . $ssel->selection_at(0) . "-data.json";
-        } else
+        } else {
             $pj_filename = $user->conf->download_prefix . "data.json";
+        }
         if ($this->iszip) {
-            $this->zipdoc->add_as(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
+            $this->zipdoc->add_string_as(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
             $this->zipdoc->download();
         } else {
             header("Content-Type: application/json; charset=utf-8");

@@ -59,8 +59,9 @@ class GetReviewBase_ListAction extends ListAction {
         if (!$this->iszip) {
             $text = $header;
             if (!empty($warnings) && $this->isform) {
-                foreach ($warnings as $w)
+                foreach ($warnings as $w) {
                     $text .= prefix_word_wrap("==-== ", $w, "==-== ");
+                }
                 $text .= "\n";
             } else if (!empty($warnings)) {
                 $text .= join("\n", $warnings) . "\n\n";
@@ -70,15 +71,14 @@ class GetReviewBase_ListAction extends ListAction {
             }
             downloadText($text, $rfname);
         } else {
-            $zip = new ZipDocument($user->conf->download_prefix . "reviews.zip");
-            $zip->warnings = $warnings;
+            $zip = new DocumentInfoSet($user->conf->download_prefix . "reviews.zip");
             foreach ($texts as $pt) {
-                $zip->add_as($header . $pt[1], $user->conf->download_prefix . $rfname . $pt[0] . ".txt");
+                $zip->add_string_as($header . $pt[1], $user->conf->download_prefix . $rfname . $pt[0] . ".txt");
             }
-            $result = $zip->download();
-            if (!$result->error) {
-                exit;
+            foreach ($warnings as $w) {
+                $zip->add_error_html($w);
             }
+            $zip->download();
         }
     }
 }

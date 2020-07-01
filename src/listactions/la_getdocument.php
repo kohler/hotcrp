@@ -28,9 +28,10 @@ class GetDocument_ListAction extends ListAction {
             return null;
         }
     }
+    /** @deprecated */
     static function error_document(PaperOption $opt, PaperInfo $row, $error_html = "") {
         if (!$error_html) {
-            $error_html = htmlspecialchars($row->conf->_("Submission #%d has no %s field.", $row->paperId, $opt->title()));
+            $error_html = $row->conf->_("Submission #%d has no %s field.", $row->paperId, $opt->title_html());
         }
         $x = new DocumentInfo(["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $error_html], $row->conf);
         if (($mimetypes = $opt->mimetypes()) && count($mimetypes) === 1) {
@@ -39,40 +40,29 @@ class GetDocument_ListAction extends ListAction {
         return $x;
     }
     function run(Contact $user, $qreq, $ssel) {
-        $docs = [];
-        $ngood = 0;
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $opt = $user->conf->checked_option_by_id($this->dt);
+        $dn = $user->conf->download_prefix . pluralx($opt->id <= 0 ? 2 : 1, $opt->dtype_name()) . ".zip";
+        $docset = new DocumentInfoSet($dn);
         foreach ($ssel->paper_set($user) as $row) {
             if (($whyNot = $user->perm_view_option($row, $opt))) {
-                $docs[] = self::error_document($opt, $row, whyNotText($whyNot));
+                $docset->add_error_html(whyNotText($whyNot));
             } else if (($doc = $row->document($opt->id))) {
-                $docs[] = $doc;
-                $doc->filename = $doc->export_filename();
-                ++$ngood;
+                $docset->add_as($doc, $doc->export_filename());
             } else {
-                $docs[] = self::error_document($opt, $row);
+                $docset->add_error_html($row->conf->_("Submission #%d has no %s field.", $row->paperId, $opt->title_html()));
             }
         }
         $user->set_overrides($old_overrides);
-        if ($ngood === 1 && count($docs) === 1) {
+        if ($docset->is_empty()) {
+            Conf::msg_error(array_merge(["Nothing to download."], $docset->error_texts()));
+        } else {
             session_write_close();
-            $result = Filer::multidownload($docs, null, ["attachment" => true]);
-        } else if ($ngood > 0) {
-            session_write_close(); // it can take a while to generate the download
-            $result = Filer::multidownload($docs,
-                $user->conf->download_prefix . pluralx($opt->id <= 0 ? 2 : 1, $opt->dtype_name()) . ".zip",
-                ["attachment" => true]);
-        } else {
-            if (!empty($docs)) {
-                Conf::msg_error("Nothing to download.<br />" . join("<br />", array_map(function ($ed) { return $ed->error_html; }, $docs)));
+            if ($docset->download(["attachment" => true, "single" => true])) {
+                DocumentInfo::log_download_activity($docset->as_list(), $user);
+            } else {
+                Conf::msg_error($docset->error_texts());
             }
-            return;
-        }
-        if (!$result->error) {
-            DocumentInfo::log_download_activity($docs, $user);
-        } else {
-            Conf::msg_error($result->error_html);
         }
         // XXX how to return errors?
     }

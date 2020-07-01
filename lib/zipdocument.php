@@ -2,6 +2,7 @@
 // zipdocument.php -- document helper class for zip archives
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+/** @deprecated */
 class ZipDocument {
     /** @var Conf */
     private $conf;

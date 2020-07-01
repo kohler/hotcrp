@@ -133,71 +133,22 @@ class Filer {
         readfile($filename);
     }
 
-    /** @param DocumentInfo|list<DocumentInfo> $doc */
+    /** @param list<DocumentInfo> $doc
+     * @deprecated */
     static function multidownload($doc, $downloadname = null, $opts = null) {
-        if (is_array($doc) && count($doc) == 1) {
-            $doc = $doc[0];
-            $downloadname = null;
-        } else if (is_array($doc)) {
+        if (is_array($doc) && count($doc) === 1) {
+            if ($doc[0]->download($opts)) {
+                return (object) ["error" => false];
+            } else {
+                return (object) ["error" => true, "error_html" => $doc[0]->error_html];
+            }
+        } else {
             $z = new ZipDocument($downloadname);
             foreach ($doc as $d) {
                 $z->add($d);
             }
             return $z->download();
         }
-
-        if ($doc->size == 0 && !$doc->ensure_size()) {
-            return (object) ["error" => true, "error_html" => "Empty file."];
-        }
-
-        $no_accel = $opts["no_accel"] ?? false;
-        $s3_accel = $no_accel ? false : $doc->s3_accel_redirect();
-        if (!$s3_accel && !$doc->ensure_content()) {
-            $error_html = "Don’t know how to download.";
-            if ($doc->error && isset($doc->error_html)) {
-                $error_html = $doc->error_html;
-            }
-            return (object) ["error" => true, "error_html" => $error_html];
-        }
-
-        // Print headers
-        header("Content-Type: " . Mimetype::type_with_charset($doc->mimetype));
-        if (is_bool($opts)) {
-            $attachment = $opts;
-        } else if (is_array($opts) && isset($opts["attachment"])) {
-            $attachment = $opts["attachment"];
-        } else {
-            $attachment = !Mimetype::disposition_inline($doc->mimetype);
-        }
-        if (!$downloadname) {
-            $downloadname = $doc->filename;
-            if (($slash = strrpos($downloadname, "/")) !== false) {
-                $downloadname = substr($downloadname, $slash + 1);
-            }
-        }
-        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
-        if (is_array($opts) && ($opts["cacheable"] ?? false)) {
-            header("Cache-Control: max-age=315576000, private");
-            header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
-        }
-        // reduce likelihood of XSS attacks in IE
-        header("X-Content-Type-Options: nosniff");
-        if ($doc->has_hash()) {
-            header("ETag: \"" . $doc->text_hash() . "\"");
-        }
-
-        // Download or redirect
-        if ($s3_accel) {
-            $doc->conf->s3_docstore()->get_accel_redirect($doc->s3_key(), $s3_accel);
-        } else if (($path = $doc->available_content_file())) {
-            self::download_file($path, $doc->mimetype, $no_accel);
-        } else {
-            if (zlib_get_coding_type() === false) {
-                header("Content-Length: " . strlen($doc->content));
-            }
-            echo $doc->content;
-        }
-        return (object) ["error" => false];
     }
 
     // hash helpers

@@ -169,12 +169,10 @@ function document_download(Contact $user, $qreq) {
     if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x)) {
         $opts["cacheable"] = true;
     }
-    $doc->filename = $doc->export_filename();
-    $result = Filer::multidownload([$doc], null, $opts);
-    if (!$result->error) {
+    if ($doc->download($opts)) {
         DocumentInfo::log_download_activity([$doc], $user);
     } else {
-        document_error("500 Server Error", $result->error_html);
+        document_error("500 Server Error", $doc->error_html);
     }
     exit;
 }
