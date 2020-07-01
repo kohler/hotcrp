@@ -365,6 +365,7 @@ CREATE TABLE `PaperStorage` (
   `paper` longblob,
   `compression` tinyint(1) NOT NULL DEFAULT '0',
   `sha1` varbinary(64) NOT NULL DEFAULT '',
+  `crc32` binary(4) DEFAULT NULL,
   `documentType` int(3) NOT NULL DEFAULT '0',
   `filename` varbinary(255) DEFAULT NULL,
   `infoJson` varbinary(32768) DEFAULT NULL,
@@ -513,7 +514,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 235);
+insert into Settings (name, value) values ('allowPaperOption', 236);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

@@ -20,6 +20,8 @@ class DocumentInfo implements JsonSerializable {
     public $compression;
     /** @var string|false */
     public $sha1 = ""; // binary hash; empty = unhashed, false = not available
+    /** @var ?string|false */
+    private $crc32; // binary hash
     /** @var int */
     public $documentType = 0;
     /** @var ?string */
@@ -79,6 +81,13 @@ class DocumentInfo implements JsonSerializable {
         assert($this->sha1 === false || is_string($this->sha1));
         if ($this->sha1 !== false && $this->sha1 !== "") {
             $this->sha1 = Filer::hash_as_binary($this->sha1);
+        }
+        if ($this->crc32 !== null && $this->crc32 !== "") {
+            if (strlen($this->crc32) === 8 && ctype_xdigit($this->crc32)) {
+                $this->crc32 = hex2bin($this->crc32);
+            } else if (strlen($this->crc32) !== 4) {
+                $this->crc32 = null;
+            }
         }
         $this->size = (int) $this->size;
         if (is_string($this->infoJson)) {
@@ -178,7 +187,8 @@ class DocumentInfo implements JsonSerializable {
             "mimetype" => $capd->mimetype ?? null,
             "filename" => $capd->filename,
             "size" => $capd->size,
-            "hash" => $capd->hash
+            "hash" => $capd->hash,
+            "crc32" => $capd->crc32 ?? null
         ];
         $doc = new DocumentInfo($args, $conf);
         $doc->_prefer_s3 = !!($capd->s3_status ?? false);
@@ -266,7 +276,7 @@ class DocumentInfo implements JsonSerializable {
         $this->content = $content;
         $this->size = strlen($content);
         $this->mimetype = $mimetype;
-        $this->sha1 = "";
+        $this->sha1 = $this->crc32 = "";
     }
 
 
@@ -947,6 +957,35 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
+    /** @return bool */
+    function has_crc32() {
+        return $this->crc32 !== null && $this->crc32 !== "";
+    }
+    /** @return string|false */
+    function crc32() {
+        if ($this->crc32 === null || $this->crc32 === "") {
+            $this->ensure_content();
+            if ($this->content !== null) {
+                $this->crc32 = hash("crc32b", $this->content, true);
+            } else if (($file = $this->available_content_file())) {
+                $this->crc32 = hash_file("crc32b", $file, true);
+            } else {
+                $this->crc32 = false;
+            }
+            if ($this->crc32 !== false && $this->paperStorageId > 0) {
+                $this->conf->ql("update PaperStorage set crc32=? where crc32 is null and paperStorageId=?", $this->crc32, $this->paperStorageId);
+            }
+        }
+        return $this->crc32;
+    }
+    /** @return int|false */
+    function integer_crc32() {
+        if (($s = $this->crc32()) !== false) {
+            return (ord($s[0]) << 24) | (ord($s[1]) << 16) | (ord($s[2]) << 8) | ord($s[3]);
+        } else {
+            return false;
+        }
+    }
 
     /** @return ?string */
     function member_filename() {
