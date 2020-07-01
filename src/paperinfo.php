@@ -1778,18 +1778,15 @@ class PaperInfo {
         return $this->_doclink_array;
     }
 
-    /** @return list<DocumentInfo> */
+    /** @return DocumentInfoSet */
     function linked_documents($linkid, $min, $max, $owner = null) {
-        $docs = [];
+        $docs = new DocumentInfoSet;
         foreach (($this->doclink_array())[$linkid] ?? [] as $lt => $docid) {
             if ($lt >= $min
                 && $lt < $max
                 && ($d = $this->document(-2, $docid))) {
-                $docs[] = $owner ? $d->with_owner($owner) : $d;
+                $docs->add($owner ? $d->with_owner($owner) : $d);
             }
-        }
-        if (!empty($docs)) {
-            DocumentInfo::assign_unique_filenames($docs);
         }
         return $docs;
     }

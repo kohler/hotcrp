@@ -43,7 +43,7 @@ class DocumentInfo implements JsonSerializable {
     private $_prefer_s3 = false;
 
     /** @var ?string */
-    public $unique_filename;
+    private $_member_filename;
     public $sourceHash;
     public $is_partial = false;
     public $filters_applied;
@@ -226,6 +226,22 @@ class DocumentInfo implements JsonSerializable {
         } else {
             $d = clone $this;
             $d->_owner = $owner;
+            return $d;
+        }
+    }
+
+    /** @param string $fn
+     * @return DocumentInfo */
+    function with_member_filename($fn) {
+        assert($fn !== "");
+        if ($this->_member_filename === null) {
+            $this->_member_filename = $fn;
+            return $this;
+        } else if ($this->_member_filename === $fn) {
+            return $this;
+        } else {
+            $d = clone $this;
+            $d->_member_filename = $fn;
             return $d;
         }
     }
@@ -927,6 +943,12 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
+    /** @return ?string */
+    function member_filename() {
+        assert($this->_member_filename !== null);
+        return $this->_member_filename;
+    }
+
     /** @return string */
     function export_filename($filters = null) {
         $fn = $this->conf->download_prefix;
@@ -935,16 +957,17 @@ class DocumentInfo implements JsonSerializable {
         } else if ($this->documentType == DTYPE_FINAL) {
             $fn .= "final" . $this->paperId;
         } else if ($this->documentType == DTYPE_COMMENT) {
-            assert(!$filters && $this->_owner && $this->_owner instanceof CommentInfo);
+            if (!($this->_owner instanceof CommentInfo)) {
+                throw new Exception("bad DocumentInfo::export_filename for comment");
+            }
+            assert(!$filters);
             $fn .= "paper" . $this->paperId;
-            if (!$this->_owner) {
-                $fn .= "/comment";
-            } else if ($this->_owner->is_response()) {
+            if ($this->_owner->is_response()) {
                 $fn .= "/" . $this->_owner->unparse_html_id();
             } else {
                 $fn .= "/comment-" . $this->_owner->unparse_html_id();
             }
-            return $fn . "/" . ($this->unique_filename ? : $this->filename);
+            return $fn . "/" . $this->member_filename();
         } else {
             $o = $this->conf->option_by_id($this->documentType);
             if ($o && $o->nonpaper && $this->paperId < 0) {
@@ -954,12 +977,10 @@ class DocumentInfo implements JsonSerializable {
                 $fn .= "paper" . $this->paperId;
                 $oabbr = $o ? "-" . $o->dtype_name() : "-unknown";
             }
-            if ($o
-                && $o->has_attachments()
-                && ($afn = $this->unique_filename ? : $this->filename)) {
+            if ($o && $o->has_attachments()) {
                 assert(!$filters);
                 // do not decorate with MIME type suffix
-                return $fn . $oabbr . "/" . $afn;
+                return $fn . $oabbr . "/" . $this->member_filename();
             }
             $fn .= $oabbr;
         }
@@ -988,42 +1009,6 @@ class DocumentInfo implements JsonSerializable {
             }
         }
         return $fn;
-    }
-
-    /** @param list<DocumentInfo> $docs */
-    static function assign_unique_filenames($docs) {
-        if (empty($docs)) {
-            return;
-        } else if (count($docs) === 1) {
-            $docs[0]->unique_filename = $docs[0]->filename;
-            return;
-        }
-        $used = [];
-        foreach ($docs as $d) {
-            if (!in_array($d->filename, $used)) {
-                $d->unique_filename = $used[] = $d->filename;
-            } else {
-                $d->unique_filename = null;
-            }
-        }
-        if (count($used) !== count($docs)) {
-            foreach ($docs as $d) {
-                if ($d->unique_filename === null) {
-                    $fn = $d->filename;
-                    while (in_array($fn, $used)) {
-                        if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $fn, $m)) {
-                            $fn = $m[1] . ((int) $m[2] + 1) . $m[3];
-                        } else if (preg_match('/\A(.*?)(\.\w+|)\z/', $fn, $m) && $m[1] !== "") {
-                            $fn = $m[1] . " (1)" . $m[2];
-                        } else {
-                            $fn .= " (1)";
-                        }
-                    }
-                    $d->unique_filename = $fn;
-                    $used[] = $fn;
-                }
-            }
-        }
     }
 
     /** @return string */
@@ -1189,8 +1174,9 @@ class DocumentInfo implements JsonSerializable {
         if ($this->filename) {
             $x["filename"] = $this->filename;
         }
-        if ($this->unique_filename && $this->unique_filename !== $this->filename) {
-            $x["unique_filename"] = $this->unique_filename;
+        if ($this->_member_filename !== null
+            && $this->_member_filename !== $this->filename) {
+            $x["unique_filename"] = $this->_member_filename;
         }
         if ($this->mimetype) {
             $x["mimetype"] = $this->mimetype;

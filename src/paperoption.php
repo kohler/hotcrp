@@ -19,6 +19,8 @@ class PaperValue implements JsonSerializable {
     private $_data;
     /** @var ?list<DocumentInfo> */
     private $_documents;
+    /** @var ?DocumentInfoSet */
+    private $_docset;
     /** @var ?MessageSet */
     private $_ms;
 
@@ -77,7 +79,7 @@ class PaperValue implements JsonSerializable {
     function set_value_data($values, $datas) {
         if ($this->_values != $values) {
             $this->_values = $values;
-            $this->_documents = null;
+            $this->_documents = $this->_docset = null;
         }
         $this->_data = $datas;
         if (empty($this->_values)
@@ -124,7 +126,6 @@ class PaperValue implements JsonSerializable {
                     $this->_documents[] = $d;
                 }
             }
-            DocumentInfo::assign_unique_filenames($this->_documents);
         }
         return $this->_documents;
     }
@@ -138,6 +139,16 @@ class PaperValue implements JsonSerializable {
     function document_content($index) {
         $doc = $this->document($index);
         return $doc ? $doc->content() : false;
+    }
+    /** @return DocumentInfoSet */
+    function document_set() {
+        if ($this->_docset === null) {
+            $this->_docset = new DocumentInfoSet;
+            foreach ($this->documents() as $doc) {
+                $this->_docset->add($doc);
+            }
+        }
+        return $this->_docset;
     }
     /** @param string $name
      * @return ?DocumentInfo */
@@ -1781,11 +1792,7 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function attachment(PaperValue $ov, $name) {
-        foreach ($ov->documents() as $xdoc) {
-            if ($xdoc->unique_filename == $name)
-                return $xdoc;
-        }
-        return null;
+        return $ov->document_set()->document_by_filename($name);
     }
 
     function parse_search($oms) {
@@ -1911,11 +1918,11 @@ class AttachmentsPaperOption extends PaperOption {
             echo ' data-document-max-size="', (int) $max_size, '"';
         }
         echo '>';
-        foreach ($ov->documents() as $i => $doc) {
+        foreach ($ov->document_set() as $i => $doc) {
             $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
             echo '<div class="has-document" data-dtype="', $this->id,
                 '" data-document-name="', $oname, '"><div class="document-file">',
-                $doc->link_html(htmlspecialchars($doc->unique_filename)),
+                $doc->link_html(htmlspecialchars($doc->member_filename())),
                 '</div><div class="document-stamps">';
             if (($stamps = PaperTable::pdf_stamps_html($doc))) {
                 echo $stamps;
@@ -1934,11 +1941,11 @@ class AttachmentsPaperOption extends PaperOption {
 
     function render(FieldRender $fr, PaperValue $ov) {
         $ts = [];
-        foreach ($ov->documents() as $d) {
+        foreach ($ov->document_set() as $d) {
             if ($fr->want_text()) {
-                $ts[] = $d->unique_filename;
+                $ts[] = $d->member_filename();
             } else {
-                $linkname = htmlspecialchars($d->unique_filename);
+                $linkname = htmlspecialchars($d->member_filename());
                 if ($fr->want_list()) {
                     $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
                 } else if ($this->display_position() >= 2000) {

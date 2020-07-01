@@ -209,6 +209,7 @@ src/contactsearch.php
 src/distoptions.php
 src/documentfiletree.php
 src/documentinfo.php
+src/documentinfoset.php
 src/documenthashmatcher.php
 src/documentrequest.php
 src/fieldrender.php

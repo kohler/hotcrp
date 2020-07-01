@@ -229,20 +229,12 @@ class DocumentRequest implements JsonSerializable {
                 break;
             }
         }
-        if (!$doc_crow) {
-            return $this->prow->make_whynot(["documentNotFound" => $this->req_filename]);
-        }
-
-        foreach ($doc_crow->attachments() as $xdoc) {
-            if ($xdoc->unique_filename === $this->attachment) {
-                $this->docid = $xdoc->paperStorageId;
-                break;
-            }
-        }
-        if (!$this->docid) {
-            return $this->prow->make_whynot(["documentNotFound" => $this->req_filename]);
-        } else {
+        if ($doc_crow
+            && ($xdoc = $doc_crow->attachments()->document_by_filename($this->attachment))) {
+            $this->docid = $xdoc->paperStorageId;
             return null;
+        } else {
+            return $this->prow->make_whynot(["documentNotFound" => $this->req_filename]);
         }
     }
 

@@ -314,19 +314,18 @@ class CommentInfo {
         return ($this->commentType & COMMENTTYPE_HASDOC) !== 0;
     }
 
-    /** @return list<DocumentInfo> */
+    /** @return DocumentInfoSet */
     function attachments() {
         if ($this->commentType & COMMENTTYPE_HASDOC) {
             return $this->prow->linked_documents($this->commentId, 0, 1024, $this);
         } else {
-            return [];
+            return new DocumentInfoSet;
         }
     }
 
     /** @return list<int> */
     function attachment_ids() {
-        return array_map(function ($doc) { return $doc->paperStorageId; },
-                         $this->attachments());
+        return $this->attachments()->document_ids();
     }
 
     /** @param bool $editable
