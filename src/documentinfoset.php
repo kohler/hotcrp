@@ -413,6 +413,12 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     /** @return bool */
     private function _download_directly($opts = []) {
+        if (isset($opts["if-none-match"])
+            && $opts["if-none-match"] === "\"" . $this->content_signature() . "\"") {
+            header("HTTP/1.1 304 Not Modified");
+            return true;
+        }
+
         $this->_hotzip_make();
         $filesize = $this->_hotzip_filesize();
 

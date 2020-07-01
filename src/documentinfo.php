@@ -1224,6 +1224,13 @@ class DocumentInfo implements JsonSerializable {
             return false;
         }
 
+        if (isset($opts["if-none-match"])
+            && $this->has_hash()
+            && $opts["if-none-match"] === "\"" . $this->text_hash() . "\"") {
+            header("HTTP/1.1 304 Not Modified");
+            return true;
+        }
+
         $no_accel = $opts["no_accel"] ?? false;
         $s3_accel = $no_accel ? false : $this->s3_accel_redirect();
         if (!$s3_accel && !$this->ensure_content()) {

@@ -34,7 +34,7 @@ class Get_ListAction extends ListAction {
         if (!empty($sel_opt)) {
             return Ht::select("getfn", $sel_opt, $qreq->getfn,
                               ["class" => "want-focus js-submit-action-info-get", "style" => "max-width:10em"])
-                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "data-default-submit-all" => 1, "class" => "uic js-submit-mark"]);
+                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "data-default-submit-all" => 1, "class" => "uic js-submit-mark", "formmethod" => "get"]);
         } else {
             return null;
         }

@@ -250,4 +250,23 @@ class DocumentRequest implements JsonSerializable {
         }
         return $j;
     }
+
+
+    /** @param array $opts
+     * @return array */
+    static function add_server_options($opts = []) {
+        $ifnonematch = null;
+        if (function_exists("getallheaders")) {
+            foreach (getallheaders() as $k => $v) {
+                if (strcasecmp($k, "If-None-Match") === 0)
+                    $ifnonematch = $v;
+            }
+        } else {
+            $ifnonematch = $_SERVER["HTTP_IF_NONE_MATCH"] ?? null;
+        }
+        if ($ifnonematch !== null && !array_key_exists("if-none-match", $opts)) {
+            $opts["if-none-match"] = $ifnonematch;
+        }
+        return $opts;
+    }
 }

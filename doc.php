@@ -147,29 +147,13 @@ function document_download(Contact $user, $qreq) {
         }
     }
 
-    // check for If-Not-Modified
-    if ($doc->has_hash()) {
-        $ifnonematch = null;
-        if (function_exists("getallheaders")) {
-            foreach (getallheaders() as $k => $v)
-                if (strcasecmp($k, "If-None-Match") === 0)
-                    $ifnonematch = $v;
-        } else {
-            $ifnonematch = $_SERVER["HTTP_IF_NONE_MATCH"] ?? null;
-        }
-        if ($ifnonematch && $ifnonematch === "\"" . $doc->text_hash() . "\"") {
-            header("HTTP/1.1 304 Not Modified");
-            exit;
-        }
-    }
-
-    // Actually download paper.
+    // serve document
     session_write_close();      // to allow concurrent clicks
     $opts = ["attachment" => cvtint($qreq->save) > 0];
     if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x)) {
         $opts["cacheable"] = true;
     }
-    if ($doc->download($opts)) {
+    if ($doc->download(DocumentRequest::add_server_options($opts))) {
         DocumentInfo::log_download_activity([$doc], $user);
     } else {
         document_error("500 Server Error", $doc->error_html);
