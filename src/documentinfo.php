@@ -325,6 +325,11 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return bool */
+    function compressible() {
+        return $this->size() <= 10000000 && Mimetype::compressible($this->mimetype);
+    }
+
+    /** @return bool */
     function load_database() {
         if ($this->paperStorageId <= 1) {
             return false;
