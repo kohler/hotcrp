@@ -51,11 +51,14 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_filestore;
     /** @var list<DocumentInfoSet_ZipInfo> */
     private $_zipi;
+    /** @var ?string */
+    private $_signature;
 
     /** @param ?string $filename */
     function __construct($filename = null) {
         $this->conf = Conf::$main;
         $this->_filename = $filename;
+        assert(strpos($filename ?? "", "/") === false);
     }
     /** @param string $mimetype */
     function set_mimetype($mimetype) {
@@ -308,6 +311,16 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         assert($nz === count($this->docs) + 1);
         return $this->_zipi[$nz - 1]->central_end_offset();
     }
+    private function _hotzip_make() {
+        DocumentInfo::prefetch_content($this->docs);
+        $this->_hotzip_progress();
+        if (!empty($this->_errors_html)) {
+            $this->add_string_as(Text::html_to_text(join("\n", $this->_errors_html) . "\n"), "README-warnings.txt");
+            $this->_hotzip_progress();
+        }
+        $this->_hotzip_final();
+        assert($this->_hotzip_filesize() < 0xFFFFFFFF);
+    }
     /** @return string */
     private function content_signature() {
         if ($this->_signature === null) {
@@ -353,15 +366,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             return null;
         }
 
-        DocumentInfo::prefetch_content($this->docs);
-
-        // analyze structure of file
-        $this->_hotzip_progress();
-        if (!empty($this->_errors_html)) {
-            $this->add_string_as(Text::html_to_text(join("\n", $this->_errors_html) . "\n"), "README-warnings.txt");
-            $this->_hotzip_progress();
-        }
-        $this->_hotzip_final();
+        $this->_hotzip_make();
 
         // write data to stream
         for ($i = 0; $i !== count($this->docs); ++$i) {
@@ -406,6 +411,57 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             "content_file" => $this->_filestore
         ], $this->conf);
     }
+    /** @return bool */
+    private function _download_directly($opts = []) {
+        $this->_hotzip_make();
+        $filesize = $this->_hotzip_filesize();
+
+        // Print headers
+        header("Content-Type: " . Mimetype::type_with_charset($this->_mimetype));
+        if (isset($opts["attachment"])) {
+            $attachment = $opts["attachment"];
+        } else {
+            $attachment = !Mimetype::disposition_inline($this->_mimetype);
+        }
+        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($this->_filename));
+        if (zlib_get_coding_type() === false) {
+            header("Content-Length: $filesize");
+        }
+        if ($opts["cacheable"] ?? false) {
+            header("Cache-Control: max-age=315576000, private");
+            header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
+        }
+        // reduce likelihood of XSS attacks in IE
+        header("X-Content-Type-Options: nosniff");
+        header("ETag: \"" . $this->content_signature() . "\"");
+        if ($filesize > 2000000) {
+            header("X-Accel-Buffering: no");
+        }
+
+        for ($i = 0; $i !== count($this->docs); ++$i) {
+            set_time_limit(120);
+            $zi = $this->_zipi[$i];
+            $doc = $this->docs[$i];
+            echo $zi->localh;
+            if ($zi->compressed !== null) {
+                echo $zi->compressed;
+                $sz = strlen($zi->compressed);
+            } else if (($f = $doc->available_content_file())) {
+                $sz = readfile($f);
+            } else {
+                $s = $doc->content();
+                echo $s;
+                $sz = strlen($s);
+            }
+            if ($sz !== $zi->compressed_length) {
+                throw new Exception("Failure creating temporary file (#$i @{$zi->local_offset}).");
+            }
+        }
+        foreach ($this->_zipi as $zi) {
+            echo $zi->centralh;
+        }
+        return true;
+    }
 
     /** @return bool */
     function download($opts = []) {
@@ -415,17 +471,14 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         if (count($this->docs) === 1
             && empty($this->_errors_html)
             && ($opts["single"] ?? false)) {
-            $doc = $this->docs[0];
-        } else if (($doc = $this->make_zip_document())) {
-            set_time_limit(180); // large zip files might download slowly
+            if ($this->docs[0]->download($opts)) {
+                return true;
+            } else {
+                $this->add_error_html($this->docs[0]->error_html);
+                return false;
+            }
         } else {
-            return false;
-        }
-        if ($doc->download($opts)) {
-            return true;
-        } else {
-            $this->add_error_html($doc->error_html);
-            return false;
+            return $this->_download_directly($opts);
         }
     }
 }
