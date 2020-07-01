@@ -690,6 +690,7 @@ class Conf {
         $this->_file_filters = null;
         $this->_site_contact = null;
         $this->_date_format_initialized = false;
+        $this->_dtz = null;
     }
 
     private function cleanup_capabilities() {
@@ -2820,15 +2821,22 @@ class Conf {
 
     // times
 
+    /** @return DateTimeZone */
+    function timezone() {
+        if ($this->_dtz === null) {
+            $this->_dtz = timezone_open($this->opt["timezone"] ?? date_default_timezone_get());
+        }
+        return $this->_dtz;
+    }
     /** @param string $format
      * @param int|float $t
      * @return string */
     private function _date_format($format, $t) {
         if ($this !== self::$main && !$this->_dtz && isset($this->opt["timezone"])) {
-            $this->_dtz = timezone_open($this->opt["timezone"]) ? : null;
+            $this->timezone();
         }
         if ($this->_dtz) {
-            $dt = date_create("@" . (int) $t);
+            $dt = new DateTime("@" . (int) $t);
             $dt->setTimeZone($this->_dtz);
             return $dt->format($format);
         } else {
@@ -2971,7 +2979,7 @@ class Conf {
         }
         if ($timestamp > 0) {
             $offset = 0;
-            if (($zone = timezone_open(date_default_timezone_get()))) {
+            if (($zone = $this->timezone())) {
                 $offset = $zone->getOffset(new DateTime("@$timestamp"));
             }
             $timestamp += 43200 - ($timestamp + $offset) % 86400;
