@@ -200,7 +200,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return true;
     }
     /** @return ?DocumentInfo */
-    private function _make_document() {
+    function make_zip_document() {
         if (($dstore_tmp = Filer::docstore_tmpdir($this->conf))) {
             // calculate hash for zipfile contents
             $xdocs = $this->docs;
@@ -282,7 +282,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             && empty($this->_errors_html)
             && ($opts["single"] ?? false)) {
             $doc = $this->docs[0];
-        } else if (($doc = $this->_make_document())) {
+        } else if (($doc = $this->make_zip_document())) {
             set_time_limit(180); // large zip files might download slowly
         } else {
             return false;
