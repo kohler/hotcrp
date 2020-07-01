@@ -2,6 +2,34 @@
 // documentinfoset.php -- HotCRP document set
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class DocumentInfoSet_ZipInfo {
+    /** @var ?int */
+    public $local_offset;
+    /** @var string */
+    public $localh;
+    /** @var int */
+    public $date = 0;
+    /** @var int */
+    public $time = 0;
+    /** @var int */
+    public $compression;
+    /** @var ?string */
+    public $compressed;
+    /** @var int */
+    public $compressed_length;
+    /** @var ?int */
+    public $central_offset;
+    /** @var ?string */
+    public $centralh;
+
+    function local_end_offset() {
+        return $this->local_offset + strlen($this->localh) + $this->compressed_length;
+    }
+    function central_end_offset() {
+        return $this->central_offset + strlen($this->centralh);
+    }
+}
+
 class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @var Conf */
     private $conf;
@@ -17,10 +45,12 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_mimetype;
     /** @var ?string|false */
     private $_tmpdir;
-    /** @var int */
-    private $_saveindex = 0;
+    /** @var ?list<string> */
+    private $_dirfn;
     /** @var ?string */
     private $_filestore;
+    /** @var list<DocumentInfoSet_ZipInfo> */
+    private $_zipi;
 
     /** @param ?string $filename */
     function __construct($filename = null) {
@@ -35,17 +65,33 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function add(DocumentInfo $doc) {
         return $this->add_as($doc, $doc->filename ?? "");
     }
+    /** @return false */
+    private function _add_fail(DocumentInfo $doc, $fn) {
+        error_log("{$this->conf->dbname}: failing to add #{$doc->paperStorageId} at $fn");
+        return false;
+    }
     /** @param string $fn */
     function add_as(DocumentInfo $doc, $fn) {
         if ($this->_filename) {
             assert(!$doc->error);
+            $slash = strpos($fn, "/");
             if ($doc->error
                 || $fn === ""
-                || str_ends_with($fn, "/")
-                || strpos($fn, "//") !== false
+                || ($slash !== false && str_ends_with($fn, "/"))
+                || ($slash !== false && strpos($fn, "//") !== false)
                 || !preg_match('/\A[^.*\/\s\000-\037\\\\\'"][^*\000-\037\\\\\'"]*\z/', $fn)) {
-                error_log("{$this->conf->dbname}: failing to add #{$doc->paperStorageId} at $fn");
-                return false;
+                return $this->_add_fail($doc, $fn);
+            }
+            while ($slash !== false) {
+                $dir = substr($fn, 0, $slash);
+                if (in_array($dir, $this->ufn)) {
+                    return $this->_add_fail($doc, $fn);
+                } else if (!in_array($dir, $this->_dirfn ?? [])) {
+                    $this->_dirfn[] = $dir;
+                }
+            }
+            if ($this->_dirfn !== null && in_array($fn, $this->_dirfn)) {
+                return $this->_add_fail($doc, $fn);
             }
         }
         while ($fn !== "" && in_array($fn, $this->ufn)) {
@@ -63,11 +109,13 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     /** @param string $text
      * @param string $fn
-     * @param ?string $mimetype */
-    function add_string_as($text, $fn, $mimetype = null) {
+     * @param ?string $mimetype
+     * @param ?int $timestamp */
+    function add_string_as($text, $fn, $mimetype = null, $timestamp = null) {
         return $this->add_as(new DocumentInfo([
             "content" => $text, "size" => strlen($text),
-            "filename" => $fn, "mimetype" => $mimetype ?? "text/plain"
+            "filename" => $fn, "mimetype" => $mimetype ?? "text/plain",
+            "timestamp" => $timestamp ?? Conf::$now
         ], $this->conf), $fn);
     }
     /** @param string $error_html */
@@ -162,59 +210,126 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return $this->_tmpdir;
     }
-    /** @return bool */
-    private function _store_one() {
-        assert($this->_saveindex < count($this->docs));
-        if (!($tmpdir = $this->_tmpdir())) {
-            return false;
-        }
-        $doc = $this->docs[$this->_saveindex];
-        $fn = $this->ufn[$this->_saveindex];
-        ++$this->_saveindex;
-        // create parent directories
-        for ($p = strpos($fn, "/"); $p !== false; $p = strpos($fn, "/", $p + 1)) {
-            $dfn = $tmpdir . "/" . substr($fn, 0, $p);
-            if (!is_dir($dfn)
-                && (file_exists($dfn) || !@mkdir($dfn, 0777))) {
-                $this->_errors_html[] = htmlspecialchars($fn) . ": Filename conflicts with directory.";
-                return false;
+    private function _hotzip_progress() {
+        // assign local headers
+        $this->_zipi = $this->_zipi ?? [];
+        $i = count($this->_zipi);
+        $offset = $i === 0 ? 0 : $this->_zipi[$i - 1]->local_end_offset();
+        while ($i !== count($this->docs)) {
+            $this->_zipi[] = $zi = new DocumentInfoSet_ZipInfo;
+            $doc = $this->docs[$i];
+            $fn = $this->ufn[$i];
+            $zi->local_offset = $offset;
+            if ($doc->compressible()) {
+                $zi->compression = 8;
+                $zi->compressed = gzdeflate($doc->content());
+                $zi->compressed_length = strlen($zi->compressed);
+            } else {
+                $zi->compression = 0;
+                $zi->compressed_length = $doc->size();
             }
-        }
-        // store file in temporary directory
-        $zfn = $tmpdir . "/" . $fn;
-        if (($path = $doc->available_content_file())
-            && @symlink($path, $zfn)) {
-            // OK
-        } else {
-            $content = $doc->content();
-            $trylen = file_put_contents($zfn, $content);
-            if ($trylen !== strlen($content)) {
-                clean_tempdirs();
-                $trylen = file_put_contents($zfn, $content);
+            if ($doc->timestamp > 1) {
+                $dt = new DateTime("@" . (int) $doc->timestamp, $doc->conf->timezone());
+                if (($y = (int) $dt->format("Y")) > 1980) {
+                    $zi->date = (int) $dt->format("j")
+                        | ((int) $dt->format("n") << 5)
+                        | (($y - 1980) << 9);
+                    $zi->time = ((int) $dt->format("s") >> 1)
+                        | ((int) $dt->format("i") << 5)
+                        | ((int) $dt->format("G") << 10);
+                }
             }
-            if ($trylen !== strlen($content)) {
-                $this->_errors_html[] = htmlspecialchars($fn) . ": Could not save.";
-                return false;
-            }
+            $zi->localh = pack("VvvvvvVVVvv",
+                0x04034b50,    // local file header signature
+                10,            // version needed to extract
+                1 << 11,       // general purpose bit flag
+                $zi->compression, // compression method
+                $zi->time,     // last mod file time
+                $zi->date,     // last mod file date
+                $doc->integer_crc32(), // crc-32
+                $zi->compressed_length, // compressed size
+                $doc->size(),  // uncompressed size
+                strlen($fn),   // file name length
+                0              // extra field length
+            ) . $fn;
+            $offset = $zi->local_end_offset();
+            ++$i;
         }
-        return true;
     }
-    /** @return ?DocumentInfo */
-    function make_zip_document() {
-        if (($dstore_tmp = Filer::docstore_tmpdir($this->conf))) {
-            // calculate hash for zipfile contents
+    private function _hotzip_final() {
+        // assign central headers
+        assert(count($this->_zipi) === count($this->docs));
+        $n = count($this->_zipi);
+        $offset = $n === 0 ? 0 : $this->_zipi[$n - 1]->local_end_offset();
+        $central_offset = $offset;
+        for ($i = 0; $i !== $n; ++$i) {
+            $zi = $this->_zipi[$i];
+            $doc = $this->docs[$i];
+            $fn = $this->ufn[$i];
+            $zi->central_offset = $offset;
+            $zi->centralh = pack("VvvvvvvVVVvvvvvVV",
+                0x02014b50,     // central file header signature
+                0x31E,          // version made by
+                10,             // version needed to extract
+                1 << 11,        // general purpose bit flag
+                $zi->compression, // compression method
+                $zi->time,      // last mod file time
+                $zi->date,      // last mod file date
+                $doc->integer_crc32(),  // crc-32
+                $zi->compressed_length, // compressed size
+                $doc->size(),   // uncompressed size
+                strlen($fn),    // file name length
+                0,              // extra field length
+                0,              // file comment length
+                0,              // disk number start
+                0,              // internal file attributes
+                0100644 << 16,  // external file attributes
+                $zi->local_offset // relative offset of local header
+            ) . $fn;
+            $offset += strlen($zi->centralh);
+        }
+        // assign final central offset
+        $this->_zipi[] = $zi = new DocumentInfoSet_ZipInfo;
+        $zi->central_offset = $offset;
+        $zi->centralh = pack("VvvvvVVv",
+            0x06054b50,       // end of central dir signature
+            0,                // number of this disk
+            0,                // number of the disk with the start of the central dir
+            count($this->docs), // total number of entries in the central dir on this disk
+            count($this->docs), // total number of entries in the central dir
+            $offset - $central_offset, // size of the central directory
+            $central_offset, // offset of start of central directory
+            0                 // .ZIP file comment length
+        );
+    }
+    /** @return int */
+    private function _hotzip_filesize() {
+        $nz = count($this->_zipi);
+        assert($nz === count($this->docs) + 1);
+        return $this->_zipi[$nz - 1]->central_end_offset();
+    }
+    /** @return string */
+    private function content_signature() {
+        if ($this->_signature === null) {
             $xdocs = $this->docs;
             usort($xdocs, function ($a, $b) {
                 return strcmp($a->member_filename(), $b->member_filename());
             });
-            $signature = count($xdocs) . "\n";
+            $s = count($xdocs) . "\n";
             foreach ($xdocs as $doc) {
-                $signature .= $doc->member_filename() . "\n" . $doc->text_hash() . "\n";
+                $s .= $doc->member_filename() . "\n" . $doc->text_hash() . "\n";
             }
             if (!empty($this->_errors_html)) {
-                $signature .= "README-warnings.txt\nsha2-" . hash("sha256", join("\n", $this->_errors_html)) . "\n";
+                $s .= "README-warnings.txt\nsha2-" . hash("sha256", join("\n", $this->_errors_html)) . "\n";
             }
-            $this->_filestore = $dstore_tmp . hash("sha256", $signature, false) . ".zip";
+            $this->_signature = "content.sha2-" . hash("sha256", $s);
+        }
+        return $this->_signature;
+    }
+    /** @return ?DocumentInfo */
+    function make_zip_document() {
+        if (($dstore_tmp = Filer::docstore_tmpdir($this->conf))) {
+            $this->_filestore = $dstore_tmp . $this->content_signature() . ".zip";
             // maybe zipfile with that signature already exists
             if (file_exists($this->_filestore)) {
                 if (@filemtime($this->_filestore) < Conf::$now - 21600) {
@@ -224,54 +339,63 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             }
         }
 
-        if (!($tmpdir = $this->_tmpdir())) {
-            $this->add_error_html("Could not create temporary directory.");
-            return null;
-        } else if (!($zipcmd = $this->conf->opt("zipCommand", "zip"))) {
-            $this->add_error_html("<code>zip</code> is not supported on this installation.");
+        // otherwise, need to create new .zip
+        if (!$this->_filestore) {
+            if (!($tmpdir = $this->_tmpdir())) {
+                $this->add_error_html("Cannot create temporary directory.");
+                return null;
+            }
+            $this->_filestore = $tmpdir . "/_hotcrp.zip";
+        }
+
+        if (!($out = fopen($this->_filestore . "~", "wb"))) {
+            $this->add_error_html("Cannot create temporary file.");
             return null;
         }
 
-        DocumentInfo::prefetch_content(array_slice($this->docs, $this->_saveindex));
-        while ($this->_saveindex < count($this->docs)) {
-            $this->_store_one();
-        }
+        DocumentInfo::prefetch_content($this->docs);
+
+        // analyze structure of file
+        $this->_hotzip_progress();
         if (!empty($this->_errors_html)) {
             $this->add_string_as(Text::html_to_text(join("\n", $this->_errors_html) . "\n"), "README-warnings.txt");
-            $this->_store_one();
+            $this->_hotzip_progress();
         }
+        $this->_hotzip_final();
 
-        if (!$this->_filestore) {
-            for ($n = 0; in_array("_hotcrp$n.zip", $this->ufn); ++$n) {
-            }
-            $this->_filestore = $tmpdir . "/_hotcrp$n.zip";
-        }
-        $topfiles = [];
-        $zipopts = "-q";
-        foreach ($this->ufn as $f) {
-            if (($slash = strpos($f, "/")) !== false) {
-                $topdir = substr($f, 0, $slash);
-                if (!in_array($topdir, $topfiles)) {
-                    $topfiles[] = $topdir;
-                    $zipopts = "-rq";
-                }
+        // write data to stream
+        for ($i = 0; $i !== count($this->docs); ++$i) {
+            $zi = $this->_zipi[$i];
+            $doc = $this->docs[$i];
+            $sz = fwrite($out, $zi->localh);
+            if ($zi->compressed !== null) {
+                $sz += fwrite($out, $zi->compressed);
+            } else if (($f = $doc->available_content_file())) {
+                $in = fopen($f, "r");
+                $sz += stream_copy_to_stream($in, $out);
+                fclose($in);
             } else {
-                $topfiles[] = $f;
+                $sz += fwrite($out, $doc->content());
+            }
+            if ($sz !== $zi->local_end_offset() - $zi->local_offset) {
+                $this->add_error_html("Failure creating temporary file (#$i @{$zi->local_offset}).");
+                fclose($out);
+                return null;
             }
         }
-
-        set_time_limit(60);
-        $command = "cd $tmpdir; $zipcmd $zipopts " . escapeshellarg($this->_filestore) . " " . join(" ", array_map("escapeshellarg", $topfiles));
-        $out = system("$command 2>&1", $status);
-        if ($status == 0 && file_exists($this->_filestore)) {
-            return $this->_make_success_document();
-        } else if ($status != 0) {
-            $this->add_error_html("<code>zip</code> returned an error. Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-            return null;
-        } else {
-            $this->add_error_html("<code>zip</code> result unreadable or empty. Its output: <pre>" . htmlspecialchars($out) . "</pre>");
+        $sz = 0;
+        foreach ($this->_zipi as $zi) {
+            $sz += fwrite($out, $zi->centralh);
+        }
+        fclose($out);
+        if ($sz !== $this->_hotzip_filesize() - $this->_zipi[0]->central_offset) {
+            $this->add_error_html("Failure creating temporary file (dir @{$this->_zipi[0]->central_offset}).");
             return null;
         }
+
+        // success
+        rename($this->_filestore . "~", $this->_filestore);
+        return $this->_make_success_document();
     }
     /** @return DocumentInfo */
     private function _make_success_document() {
