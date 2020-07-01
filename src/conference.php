@@ -119,9 +119,6 @@ class Conf {
     public $opt;
     public $opt_override;
     private $_opt_timestamp;
-    /** @var PaperOptionList
-     * @deprecated */
-    public $paper_opts;
     /** @var PaperOptionList */
     private $_paper_opts;
 
@@ -289,7 +286,7 @@ class Conf {
         $this->opt["dbName"] = $this->dbname;
         $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
         /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $this->_paper_opts = $this->paper_opts = new PaperOptionList($this);
+        $this->_paper_opts = new PaperOptionList($this);
         if ($this->dblink && !Dbl::$default_dblink) {
             Dbl::set_default_dblink($this->dblink);
             Dbl::set_error_handler(array($this, "query_error_handler"));
@@ -3501,40 +3498,6 @@ class Conf {
     }
 
 
-    //
-    // Paper storage
-    //
-
-    /** @deprecated */
-    function download_documents($docs, $attachment) {
-        if (count($docs) == 1
-            && $docs[0]->paperStorageId <= 1
-            && (!isset($docs[0]->content) || $docs[0]->content === "")) {
-            self::msg_error("Paper #" . $docs[0]->paperId . " hasn’t been uploaded yet.");
-            return false;
-        }
-
-        foreach ($docs as $doc) {
-            $doc->filename = $doc->export_filename();
-        }
-        $downloadname = false;
-        if (count($docs) > 1) {
-            $o = $this->option_by_id($docs[0]->documentType);
-            $name = $o->dtype_name();
-            if ($docs[0]->documentType <= 0) {
-                $name = pluralize($name);
-            }
-            $downloadname = $this->download_prefix . "$name.zip";
-        }
-        $result = Filer::multidownload($docs, $downloadname, $attachment);
-        if ($result->error) {
-            self::msg_error($result->error_html);
-            return false;
-        } else {
-            return true;
-        }
-    }
-
     /** @param string $basename
      * @param int $flags
      * @return CsvGenerator */
@@ -3814,13 +3777,6 @@ class Conf {
             throw new Exception("Conf::checked_paper_by_id($pid) failed");
         }
         return $prow;
-    }
-
-    /** @deprecated
-     * @param int $pid
-     * @return ?PaperInfo */
-    function fetch_paper($pid, Contact $user = null, $options = []) {
-        return $this->paper_by_id($pid, $user, $options);
     }
 
     /** @return ?PaperInfo */

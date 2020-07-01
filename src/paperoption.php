@@ -464,36 +464,6 @@ class PaperOptionList implements IteratorAggregate {
         return $list;
     }
 
-    /** @return array<int,PaperOption>
-     * @deprecated */
-    function option_list() {
-        return $this->normal();
-    }
-
-    /** @return array<int,PaperOption>
-     * @deprecated */
-    function nonfixed_option_list() {
-        return $this->nonfixed();
-    }
-
-    /** @return array<int,PaperOption>
-     * @deprecated */
-    function nonfinal_option_list() {
-        return $this->nonfinal();
-    }
-
-    /** @return array<int,PaperOption>
-     * @deprecated */
-    function full_option_list() {
-        return $this->universal();
-    }
-
-    /** @return array<int,PaperOption>
-     * @deprecated */
-    function include_empty_option_list() {
-        return $this->absent();
-    }
-
     private function _get_field($id, $oj, $nonfinal) {
         if (!($oj->nonpaper ?? false)
             && !($nonfinal && ($oj->final ?? false))) {
@@ -531,18 +501,6 @@ class PaperOptionList implements IteratorAggregate {
         return $olist;
     }
 
-    /** @return array<int,PaperOption>
-     * @deprecated */
-    function field_list(PaperInfo $prow = null) {
-        return $this->fields($prow);
-    }
-
-    /** @return array<int,PaperOption>
-     * @deprecated */
-    function form_field_list(PaperInfo $prow = null) {
-        return $this->form_fields($prow);
-    }
-
     function invalidate_options() {
         $this->_jlist = $this->_ijlist = $this->_olist = $this->_olist_nonfinal =
             $this->_nonpaper_am = $this->_olist_include_empty = null;
@@ -557,12 +515,6 @@ class PaperOptionList implements IteratorAggregate {
     /** @return bool */
     function has_universal() {
         return count($this->option_json_list()) !== 0;
-    }
-
-    /** @return int
-     * @deprecated */
-    function count_option_list() {
-        return count($this->option_json_list());
     }
 
     /** @return array<int,PaperOption> */

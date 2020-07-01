@@ -186,31 +186,6 @@ class Author {
         }
         return $name;
     }
-    /** @deprecated
-     * @return string */
-    function nameaff_html() {
-        return $this->name_h(NAME_P|NAME_A);
-    }
-    /** @deprecated
-     * @return string */
-    function nameaff_text() {
-        return $this->name(NAME_P|NAME_A);
-    }
-    /** @deprecated
-     * @return string */
-    function name_email_aff_text() {
-        return $this->name(NAME_E|NAME_A);
-    }
-    /** @deprecated
-     * @return string */
-    function abbrevname_text() {
-        return Text::nameo($this, NAME_P|NAME_I);
-    }
-    /** @deprecated
-     * @return string */
-    function abbrevname_html() {
-        return Text::nameo_h($this, NAME_P|NAME_I);
-    }
     /** @return string */
     function deaccent($component) {
         if ($this->_deaccents === null) {

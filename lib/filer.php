@@ -133,24 +133,6 @@ class Filer {
         readfile($filename);
     }
 
-    /** @param list<DocumentInfo> $doc
-     * @deprecated */
-    static function multidownload($doc, $downloadname = null, $opts = null) {
-        if (is_array($doc) && count($doc) === 1) {
-            if ($doc[0]->download($opts)) {
-                return (object) ["error" => false];
-            } else {
-                return (object) ["error" => true, "error_html" => $doc[0]->error_html];
-            }
-        } else {
-            $z = new ZipDocument($downloadname);
-            foreach ($doc as $d) {
-                $z->add($d);
-            }
-            return $z->download();
-        }
-    }
-
     // hash helpers
     static function hash_as_text($hash) {
         assert(is_string($hash));

@@ -93,7 +93,7 @@ class Option_PaperColumnFactory {
         }
         return (object) $cj;
     }
-    static function expand($name, $user, $xfj, $m) {
+    static function expand($name, Contact $user, $xfj, $m) {
         list($ocolon, $oname) = [$m[1], $m[2]];
         if (!$ocolon && $oname === "options") {
             $x = [];
@@ -105,7 +105,7 @@ class Option_PaperColumnFactory {
             }
             return $x;
         }
-        $opts = $user->conf->paper_opts->find_all($oname);
+        $opts = $user->conf->options()->find_all($oname);
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);

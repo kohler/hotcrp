@@ -20,8 +20,9 @@ class GetDocument_ListAction extends ListAction {
             "callback" => "+GetDocument_ListAction"
         ];
     }
-    static function expand($name, $user, $fj) {
-        if (($o = $user->conf->paper_opts->find(substr($name, 4)))
+    /** @param string $name */
+    static function expand($name, Contact $user, $fj) {
+        if (($o = $user->conf->options()->find(substr($name, 4)))
             && $o->is_document()) {
             return [self::list_action_json($o)];
         } else {
