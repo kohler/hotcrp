@@ -209,7 +209,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             });
             $signature = count($xdocs) . "\n";
             foreach ($xdocs as $doc) {
-                $signature .= $doc->filename . "\n" . $doc->text_hash() . "\n";
+                $signature .= $doc->member_filename() . "\n" . $doc->text_hash() . "\n";
             }
             if (!empty($this->_errors_html)) {
                 $signature .= "README-warnings.txt\nsha2-" . hash("sha256", join("\n", $this->_errors_html)) . "\n";
@@ -233,10 +233,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
 
         DocumentInfo::prefetch_content(array_slice($this->docs, $this->_saveindex));
+        while ($this->_saveindex < count($this->docs)) {
+            $this->_store_one();
+        }
         if (!empty($this->_errors_html)) {
             $this->add_string_as(Text::html_to_text(join("\n", $this->_errors_html) . "\n"), "README-warnings.txt");
-        }
-        while ($this->_saveindex < count($this->docs)) {
             $this->_store_one();
         }
 
@@ -245,10 +246,19 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             }
             $this->_filestore = $tmpdir . "/_hotcrp$n.zip";
         }
-        $topfiles = array_filter($this->ufn, function ($f) {
-            return strpos($f, "/") === false;
-        });
-        $zipopts = count($topfiles) === count($this->ufn) ? "-q" : "-rq";
+        $topfiles = [];
+        $zipopts = "-q";
+        foreach ($this->ufn as $f) {
+            if (($slash = strpos($f, "/")) !== false) {
+                $topdir = substr($f, 0, $slash);
+                if (!in_array($topdir, $topfiles)) {
+                    $topfiles[] = $topdir;
+                    $zipopts = "-rq";
+                }
+            } else {
+                $topfiles[] = $f;
+            }
+        }
 
         set_time_limit(60);
         $command = "cd $tmpdir; $zipcmd $zipopts " . escapeshellarg($this->_filestore) . " " . join(" ", array_map("escapeshellarg", $topfiles));
