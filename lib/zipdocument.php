@@ -3,25 +3,32 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class ZipDocument {
+    /** @var Conf */
     private $conf;
+    /** @var string */
     public $filename;
+    /** @var string */
     private $mimetype;
+    /** @var string|false */
     private $filestore;
 
     private $_tmpdir = null;
+    /** @var list<string> */
     public $warnings;
     private $headers;
     private $start_time;
 
     /** @var list<DocumentInfo> */
     private $_docs;
+    /** @var array<string,bool> */
     private $_files;
+    /** @var int */
     private $_saveindex;
+    /** @var int */
     private $_docmem;
 
     function __construct($filename, $mimetype = "application/zip") {
-        global $Conf;
-        $this->conf = $Conf;
+        $this->conf = Conf::$main;
         $this->filename = $filename;
         $this->mimetype = $mimetype;
         $this->clean();

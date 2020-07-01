@@ -15,8 +15,6 @@ class CurlS3Result extends S3Result {
     private $_fstream;
     /** @var ?int */
     private $_fsize;
-    /** @var string */
-    public $url;
     /** @var int */
     public $runindex = 0;
     private $tries;

@@ -12,6 +12,8 @@ abstract class S3Result {
     /** @var string
      * @phan-read-only */
     protected $method;
+    /** @var string */
+    protected $url;
     /** @var array<string,string> */
     protected $args;
     /** @var ?int */
@@ -43,6 +45,16 @@ abstract class S3Result {
         assert($this->status === null || $this->status === 500);
         $this->status = $this->status_text = null;
         $this->response_headers = $this->user_data = [];
+    }
+
+    /** @return string */
+    function method() {
+        return $this->method;
+    }
+
+    /** @return string */
+    function url() {
+        return $this->url;
     }
 
     function parse_response_lines($w) {
@@ -102,7 +114,7 @@ class StreamS3Result extends S3Result {
     }
 
     private function stream_headers() {
-        list($url, $hdr) = $this->s3->signed_headers($this->skey, $this->method, $this->args);
+        list($this->url, $hdr) = $this->s3->signed_headers($this->skey, $this->method, $this->args);
         $content = $this->args["content"] ?? null;
         if ($content !== null) {
             $content_len = floor(strlen($content) * 2.5);
@@ -112,14 +124,13 @@ class StreamS3Result extends S3Result {
                 @ini_set("memory_limit", (string) ((int) $content_len));
             }
         }
-        return [$url,
-            ["header" => $hdr, "content" => $content,
-             "protocol_version" => 1.1, "ignore_errors" => true,
-             "method" => $this->method]];
+        return ["header" => $hdr, "content" => $content,
+                "protocol_version" => 1.1, "ignore_errors" => true,
+                "method" => $this->method];
     }
 
-    private function parse_stream_response($url, $metadata) {
-        $this->response_headers["url"] = $url;
+    private function parse_stream_response($metadata) {
+        $this->response_headers["url"] = $this->url;
         if ($metadata
             && ($w = $metadata["wrapper_data"] ?? null)
             && is_array($w)) {
@@ -128,16 +139,16 @@ class StreamS3Result extends S3Result {
     }
 
     private function run_stream_once() {
-        list($url, $hdr) = $this->stream_headers();
+        $hdr = $this->stream_headers();
         $hdr["header"][] = "Connection: close";
         $context = stream_context_create(["http" => $hdr]);
-        if (($stream = fopen($url, "r", false, $context))) {
-            $this->parse_stream_response($url, stream_get_meta_data($stream));
+        if (($stream = fopen($this->url, "r", false, $context))) {
+            $this->parse_stream_response(stream_get_meta_data($stream));
             $this->body = stream_get_contents($stream);
             fclose($stream);
         }
         if (S3Client::$verbose) {
-            error_log($this->method . " " . $url . " -> " . $this->status . " " . $this->status_text);
+            error_log($this->method . " " . $this->url . " -> " . $this->status . " " . $this->status_text);
             if ($this->status > 299 && ($this->body ?? "") !== "") {
                 error_log(substr($this->body, 0, 1024));
             }
