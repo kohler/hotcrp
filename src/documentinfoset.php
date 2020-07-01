@@ -43,7 +43,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 || $fn === ""
                 || str_ends_with($fn, "/")
                 || strpos($fn, "//") !== false
-                || !preg_match('/\A[^.*\/\s\000-\017\\\\\'"][^*\/\000-\017\\\\\'"]*\z/', $fn)) {
+                || !preg_match('/\A[^.*\/\s\000-\037\\\\\'"][^*\000-\037\\\\\'"]*\z/', $fn)) {
                 error_log("{$this->conf->dbname}: failing to add #{$doc->paperStorageId} at $fn");
                 return false;
             }
