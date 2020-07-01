@@ -191,7 +191,7 @@ class Preference_PaperColumn extends PaperColumn {
         return $t;
     }
 
-    static function expand($name, $user, $xfj, $m) {
+    static function expand($name, Contact $user, $xfj, $m) {
         if (!($fj = (array) $user->conf->basic_paper_column("pref", $user))) {
             return null;
         }

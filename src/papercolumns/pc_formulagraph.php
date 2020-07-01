@@ -42,7 +42,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         return $is_text ? $x : htmlspecialchars($x);
     }
 
-    static function expand($name, $user, $xfj, $m) {
+    static function expand($name, Contact $user, $xfj, $m) {
         $formula = new Formula($m[1], Formula::ALLOW_INDEXED);
         if (!$formula->check($user)) {
             PaperColumn::column_error($user, "Formula error: " . $formula->error_html());

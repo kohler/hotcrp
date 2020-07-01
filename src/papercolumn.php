@@ -905,7 +905,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
             return $f && $f->has_options && $f->displayed && $f->view_score > $vsbound;
         });
     }
-    static function expand($name, $user, $xfj, $m) {
+    static function expand($name, Contact $user, $xfj, $m) {
         return array_map(function ($f) use ($xfj) {
             $cj = (array) $xfj;
             $cj["name"] = $f->search_keyword();

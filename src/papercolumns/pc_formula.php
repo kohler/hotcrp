@@ -165,7 +165,7 @@ class Formula_PaperColumnFactory {
         }
         return new Formula_PaperColumn($f->conf, (object) $cj);
     }
-    static function expand($name, $user, $xfj, $m) {
+    static function expand($name, Contact $user, $xfj, $m) {
         $vsbound = $user->permissive_view_score_bound();
         if ($name === "formulas") {
             return array_map(function ($f) use ($xfj) {

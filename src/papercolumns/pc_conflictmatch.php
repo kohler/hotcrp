@@ -98,7 +98,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         }
     }
 
-    static function expand($name, $user, $xfj, $m) {
+    static function expand($name, Contact $user, $xfj, $m) {
         if (!($fj = (array) $user->conf->basic_paper_column("potentialconflict", $user))) {
             return null;
         }

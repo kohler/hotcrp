@@ -146,7 +146,7 @@ class Tag_PaperColumn extends PaperColumn {
         }
     }
 
-    static function expand($name, $user, $xfj, $m) {
+    static function expand($name, Contact $user, $xfj, $m) {
         $tsm = new TagSearchMatcher($user);
         $tsm->set_avoid_regex(true);
         $tsm->add_check_tag($m[2], true);

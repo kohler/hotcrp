@@ -60,7 +60,7 @@ class TagReport_PaperColumnFactory {
         $cj["tag"] = $tag;
         return (object) $cj;
     }
-    static function expand($name, $user, $xfj, $m) {
+    static function expand($name, Contact $user, $xfj, $m) {
         if (!$user->can_view_most_tags()) {
             return null;
         }

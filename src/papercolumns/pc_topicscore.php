@@ -35,7 +35,7 @@ class TopicScore_PaperColumn extends PaperColumn {
         return (string) $row->topic_interest_score($this->contact);
     }
 
-    static function expand($name, $user, $xfj, $m) {
+    static function expand($name, Contact $user, $xfj, $m) {
         if (!($fj = (array) $user->conf->basic_paper_column("topicscore", $user))) {
             return null;
         }
