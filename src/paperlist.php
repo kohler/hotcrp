@@ -501,7 +501,7 @@ class PaperList {
             $s->pl = null; // break circular ref
         }
         if (!empty($this->search->groupmap)) {
-            $this->_collect_groups($this->_rowset->as_array());
+            $this->_collect_groups($this->_rowset->as_list());
         }
     }
 

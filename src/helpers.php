@@ -551,17 +551,16 @@ function unparseReviewOrdinal($ord) {
     }
 }
 
+/** @param string $text
+ * @param string $filename */
 function downloadText($text, $filename, $inline = false) {
-    global $Conf;
     $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
-    $csvg->set_filename($Conf->download_prefix . $filename . $csvg->extension());
+    $csvg->set_filename(Conf::$main->download_prefix . $filename . $csvg->extension());
     $csvg->set_inline($inline);
     $csvg->download_headers();
-    if ($text !== false) {
-        $csvg->add_string($text);
-        $csvg->download();
-        exit;
-    }
+    $csvg->add_string($text);
+    $csvg->download();
+    exit;
 }
 
 /** @param ?int $expertise

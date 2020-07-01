@@ -251,6 +251,11 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $set->prows = $set->by_pid = [];
     }
     /** @return list<PaperInfo> */
+    function as_list() {
+        return $this->prows;
+    }
+    /** @return list<PaperInfo>
+     * @deprecated */
     function as_array() {
         return $this->prows;
     }
@@ -351,10 +356,10 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->by_pid[$offset] ?? null;
     }
     function offsetSet($offset, $value) {
-        error_log("invalid PaperInfoSet::offsetSet");
+        throw new Exception("invalid PaperInfoSet::offsetSet");
     }
     function offsetUnset($offset) {
-        error_log("invalid PaperInfoSet::offsetSet");
+        throw new Exception("invalid PaperInfoSet::offsetUnset");
     }
 }
 

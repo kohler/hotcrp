@@ -115,20 +115,26 @@ class CommentInfo {
     }
 
 
+    /** @return bool */
     function is_response() {
         return ($this->commentType & COMMENTTYPE_RESPONSE) !== 0;
     }
 
+    /** @param int $ctype
+     * @return bool */
     static private function commenttype_needs_ordinal($ctype) {
         return !($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
             && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY;
     }
 
+    /** @param int $ctype
+     * @return bool */
     private function ordinal_missing($ctype) {
         return self::commenttype_needs_ordinal($ctype)
             && !($ctype >= COMMENTTYPE_AUTHOR ? $this->authorOrdinal : $this->ordinal);
     }
 
+    /** @return ?string */
     function unparse_ordinal() {
         $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
         $o = $is_author ? $this->authorOrdinal : $this->ordinal;
@@ -139,6 +145,7 @@ class CommentInfo {
         }
     }
 
+    /** @return string */
     function unparse_html_id() {
         $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
         $o = $is_author ? $this->authorOrdinal : $this->ordinal;
@@ -261,6 +268,7 @@ class CommentInfo {
         return $n;
     }
 
+    /** @return ?string */
     function searchable_tags(Contact $viewer) {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
@@ -270,6 +278,7 @@ class CommentInfo {
         }
     }
 
+    /** @return ?string */
     function viewable_tags(Contact $viewer) {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
@@ -279,6 +288,7 @@ class CommentInfo {
         }
     }
 
+    /** @return ?string */
     function viewable_nonresponse_tags(Contact $viewer) {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
@@ -292,11 +302,19 @@ class CommentInfo {
         }
     }
 
+    /** @param string $tag
+     * @return bool */
     function has_tag($tag) {
         return $this->commentTags
             && stripos($this->commentTags, " {$tag}#") !== false;
     }
 
+    /** @return bool */
+    function has_attachments() {
+        return ($this->commentType & COMMENTTYPE_HASDOC) !== 0;
+    }
+
+    /** @return list<DocumentInfo> */
     function attachments() {
         if ($this->commentType & COMMENTTYPE_HASDOC) {
             return $this->prow->linked_documents($this->commentId, 0, 1024, $this);
@@ -305,9 +323,24 @@ class CommentInfo {
         }
     }
 
+    /** @return list<int> */
     function attachment_ids() {
         return array_map(function ($doc) { return $doc->paperStorageId; },
                          $this->attachments());
+    }
+
+    /** @param bool $editable
+     * @return list<object> */
+    function attachments_json($editable = false) {
+        $docs = [];
+        foreach ($this->attachments() as $doc) {
+            $docj = $doc->unparse_json();
+            if ($editable) {
+                $docj->docid = $doc->paperStorageId;
+            }
+            $docs[] = $docj;
+        }
+        return $docs;
     }
 
     function unparse_json(Contact $viewer) {
@@ -429,14 +462,8 @@ class CommentInfo {
         }
 
         // attachments
-        if ($cj->text !== false) {
-            foreach ($this->attachments() as $doc) {
-                $docj = $doc->unparse_json();
-                if (isset($cj->editable)) {
-                    $docj->docid = $doc->paperStorageId;
-                }
-                $cj->docs[] = $docj;
-            }
+        if ($cj->text !== false && $this->has_attachments()) {
+            $cj->docs = $this->attachments_json(isset($cj->editable));
         }
 
         return $cj;
@@ -605,7 +632,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $docids = array_map(function ($doc) { return $doc->paperStorageId; }, $docs);
         }
         if ($this->commentType & COMMENTTYPE_HASDOC) {
-            $old_docids = array_map(function ($doc) { return $doc->paperStorageId; }, $this->attachments());
+            $old_docids = $this->attachment_ids();
         }
 
         // notifications

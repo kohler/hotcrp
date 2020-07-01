@@ -927,6 +927,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
+    /** @return string */
     function export_filename($filters = null) {
         $fn = $this->conf->download_prefix;
         if ($this->documentType == DTYPE_SUBMISSION) {
@@ -1025,6 +1026,7 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
+    /** @return string */
     function url($filters = null, $flags = 0) {
         if ($filters === null) {
             $filters = $this->filters_applied;
@@ -1164,12 +1166,13 @@ class DocumentInfo implements JsonSerializable {
         return ArchiveInfo::archive_listing($this, $max_length);
     }
 
+    /** @return ?int */
     function npages() {
-        if ($this->mimetype && $this->mimetype != "application/pdf")
+        if ($this->mimetype && $this->mimetype !== "application/pdf") {
             return null;
-        else if (($m = $this->metadata()) && isset($m->npages))
+        } else if (($m = $this->metadata()) && isset($m->npages)) {
             return $m->npages;
-        else if (($path = $this->content_file())) {
+        } else if (($path = $this->content_file())) {
             $cf = new CheckFormat($this->conf);
             $cf->clear();
             $bj = $cf->run_banal($path);
@@ -1204,12 +1207,13 @@ class DocumentInfo implements JsonSerializable {
     function jsonSerialize() {
         $x = [];
         foreach (get_object_vars($this) as $k => $v) {
-            if ($k === "content" && is_string($v) && strlen($v) > 50)
+            if ($k === "content" && is_string($v) && strlen($v) > 50) {
                 $x[$k] = substr($v, 0, 50) . "…";
-            else if ($k === "sha1" && is_string($v))
+            } else if ($k === "sha1" && is_string($v)) {
                 $x[$k] = Filer::hash_as_text($v);
-            else if ($v !== null && $k !== "conf" && $k !== "prow" && $k[0] !== "_")
+            } else if ($v !== null && $k !== "conf" && $k !== "prow" && $k[0] !== "_") {
                 $x[$k] = $v;
+            }
         }
         return $x;
     }
