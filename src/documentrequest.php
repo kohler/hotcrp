@@ -255,17 +255,46 @@ class DocumentRequest implements JsonSerializable {
     /** @param array $opts
      * @return array */
     static function add_server_options($opts = []) {
-        $ifnonematch = null;
+        $ifnonematch = $range = $ifrange = null;
         if (function_exists("getallheaders")) {
             foreach (getallheaders() as $k => $v) {
-                if (strcasecmp($k, "If-None-Match") === 0)
+                if (strcasecmp($k, "If-None-Match") === 0) {
                     $ifnonematch = $v;
+                } else if (strcasecmp($k, "Range") === 0) {
+                    $range = $v;
+                } else if (strcasecmp($k, "If-Range") === 0) {
+                    $ifrange = $v;
+                }
             }
         } else {
             $ifnonematch = $_SERVER["HTTP_IF_NONE_MATCH"] ?? null;
+            $range = $_SERVER["HTTP_RANGE"] ?? null;
+            $ifrange = $_SERVER["HTTP_IF_RANGE"] ?? null;
         }
         if ($ifnonematch !== null && !array_key_exists("if-none-match", $opts)) {
             $opts["if-none-match"] = $ifnonematch;
+        }
+        if ($range !== null
+            && !array_key_exists("range", $opts)
+            && preg_match('/\Abytes\s*=\s*(?:(?:\d+-\d+|-\d+|\d+-)\s*,?\s*)+\z/', $range)) {
+            $opts["range"] = [];
+            preg_match_all('/\d+-\d+|-\d+|\d+-/', $range, $m);
+            foreach ($m[0] as $t) {
+                $dash = strpos($t, "-");
+                $r1 = $dash === 0 ? null : intval(substr($t, 0, $dash));
+                $r2 = $dash === strlen($t) - 1 ? null : intval(substr($t, $dash + 1));
+                if (($r1 === null && $r2 !== 0)
+                    || $r2 === null
+                    || ($r1 !== null && $r2 !== null && $r1 <= $r2)) {
+                    $opts["range"][] = [$r1, $r2];
+                } else {
+                    unset($opts["range"]);
+                    break;
+                }
+            }
+        }
+        if ($ifrange !== null && !array_key_exists("if-range", $opts)) {
+            $opts["if-range"] = $ifrange;
         }
         return $opts;
     }

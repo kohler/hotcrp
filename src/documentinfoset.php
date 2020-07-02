@@ -312,7 +312,6 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->_zipi[$nz - 1]->central_end_offset();
     }
     private function _hotzip_make() {
-        DocumentInfo::prefetch_content($this->docs);
         $this->_hotzip_progress();
         if (!empty($this->_errors_html)) {
             $this->add_string_as(Text::html_to_text(join("\n", $this->_errors_html) . "\n"), "README-warnings.txt");
@@ -367,6 +366,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
 
         $this->_hotzip_make();
+        DocumentInfo::prefetch_content($this->docs);
 
         // write data to stream
         for ($i = 0; $i !== count($this->docs); ++$i) {
@@ -411,6 +411,60 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             "content_file" => $this->_filestore
         ], $this->conf);
     }
+    /** @param int $r0
+     * @param int $r1
+     * @param int $p0
+     * @param string $s
+     * @return int */
+    static function echo_subrange($r0, $r1, $p0, $s) {
+        $p1 = $p0 + strlen($s);
+        if ($p1 <= $r0 || $r1 <= $p0) {
+            // nothing
+        } else if ($p0 < $r0) {
+            echo substr($s, $r0 - $p0, $r1 - $r0);
+        } else if ($r1 < $p1) {
+            echo substr($s, 0, $r1 - $p0);
+        } else {
+            echo $s;
+        }
+        return $p1;
+    }
+    /** @param int $r0
+     * @param int $r1
+     * @param int $p0
+     * @param string $fn
+     * @param int $sz
+     * @return int */
+    private static function readfile_subrange($r0, $r1, $p0, $fn, $sz) {
+        $p1 = $p0 + $sz;
+        if ($p1 <= $r0 || $r1 <= $p0) {
+            return $p1;
+        }
+        if ($p0 < $r0) {
+            $off = $r0 - $p0;
+        } else {
+            $off = 0;
+        }
+        $len = min($sz, $r1 - $p0) - $off;
+        $f = fopen($fn, "rb");
+        $wlen = 0;
+        if ($f) {
+            if ($off !== 0 && fseek($f, $off) !== 0) {
+                // skip
+            } else if ($off + $len === $sz) {
+                $wlen = fpassthru($f);
+            } else {
+                while ($wlen !== $len
+                       && ($s = fread($f, min($len - $wlen, 32768))) !== false
+                       && $s !== "") {
+                    echo $s;
+                    $wlen += strlen($s);
+                }
+            }
+            fclose($f);
+        }
+        return $wlen === $len ? $p1 : $p0 + $off + $wlen;
+    }
     /** @return bool */
     private function _download_directly($opts = []) {
         if (isset($opts["if-none-match"])
@@ -418,53 +472,99 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             header("HTTP/1.1 304 Not Modified");
             return true;
         }
+        if (isset($opts["if-range"])
+            && $opts["if-range"] !== "\"" . $this->content_signature() . "\"") {
+            unset($opts["range"]);
+        }
 
         $this->_hotzip_make();
         $filesize = $this->_hotzip_filesize();
 
+        $r0 = 0;
+        $r1 = $filesize;
+        if (isset($opts["range"]) && count($opts["range"]) === 1) {
+            if ($opts["range"][0][0] === null) {
+                $r0 = max(0, $filesize - $opts["range"][0][1]);
+            } else {
+                $r0 = min($filesize, $opts["range"][0][0]);
+                if ($opts["range"][0][1] !== null) {
+                    $r1 = min($filesize, $opts["range"][0][1] + 1);
+                }
+            }
+            if ($r0 >= $r1) {
+                header("HTTP/1.1 416 Range not Satisfiable");
+                header("Content-Range: bytes */$filesize");
+                return true;
+            }
+        }
+
         // Print headers
         header("Content-Type: " . Mimetype::type_with_charset($this->_mimetype));
-        if (isset($opts["attachment"])) {
-            $attachment = $opts["attachment"];
-        } else {
-            $attachment = !Mimetype::disposition_inline($this->_mimetype);
-        }
-        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($this->_filename));
         if (zlib_get_coding_type() === false) {
-            header("Content-Length: $filesize");
+            header("Content-Length: " . ($r1 - $r0));
+        }
+        if ($r0 !== 0 || $r1 !== $filesize) {
+            header("HTTP/1.1 206 Partial Content");
+            header("Content-Range: bytes {$r0}-" . ($r1 - 1) . "/$filesize");
+        } else {
+            if (isset($opts["attachment"])) {
+                $attachment = $opts["attachment"];
+            } else {
+                $attachment = !Mimetype::disposition_inline($this->_mimetype);
+            }
+            header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($this->_filename));
+            header("Accept-Ranges: bytes");
+            // reduce likelihood of XSS attacks in IE
+            header("X-Content-Type-Options: nosniff");
+            header("ETag: \"" . $this->content_signature() . "\"");
         }
         if ($opts["cacheable"] ?? false) {
             header("Cache-Control: max-age=315576000, private");
             header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
         }
-        // reduce likelihood of XSS attacks in IE
-        header("X-Content-Type-Options: nosniff");
-        header("ETag: \"" . $this->content_signature() . "\"");
-        if ($filesize > 2000000) {
+        if ($r1 - $r0 > 2000000) {
             header("X-Accel-Buffering: no");
         }
 
-        for ($i = 0; $i !== count($this->docs); ++$i) {
-            set_time_limit(120);
-            $zi = $this->_zipi[$i];
-            $doc = $this->docs[$i];
-            echo $zi->localh;
-            if ($zi->compressed !== null) {
-                echo $zi->compressed;
-                $sz = strlen($zi->compressed);
-            } else if (($f = $doc->available_content_file())) {
-                $sz = readfile($f);
-            } else {
-                $s = $doc->content();
-                echo $s;
-                $sz = strlen($s);
-            }
-            if ($sz !== $zi->compressed_length) {
-                throw new Exception("Failure creating temporary file (#$i @{$zi->local_offset}).");
-            }
+        // Print data
+        $d0 = 0;
+        while ($d0 !== count($this->docs)
+               && $this->_zipi[$d0]->local_end_offset() <= $r0) {
+            ++$d0;
         }
-        foreach ($this->_zipi as $zi) {
-            echo $zi->centralh;
+        $pfd0 = $d1 = $d0;
+        while ($d1 !== count($this->docs)
+               && $this->_zipi[$d1]->local_offset < $r1) {
+            ++$d1;
+        }
+
+        while ($d0 !== $d1) {
+            set_time_limit(120);
+            if ($pfd0 === $d0) {
+                $pfd0 = min($d0 + 12, $d1);
+                DocumentInfo::prefetch_content(array_slice($this->docs, $d0, $pfd0 - $d0));
+            }
+            $zi = $this->_zipi[$d0];
+            $doc = $this->docs[$d0];
+            $p0 = $zi->local_offset;
+            $p0 = self::echo_subrange($r0, $r1, $p0, $zi->localh);
+            assert($p0 === $zi->local_offset + strlen($zi->localh));
+            if ($zi->compressed !== null) {
+                $p0 = self::echo_subrange($r0, $r1, $p0, $zi->compressed);
+            } else if (($f = $doc->available_content_file())) {
+                $p0 = self::readfile_subrange($r0, $r1, $p0, $f, $doc->size());
+            } else {
+                $p0 = self::echo_subrange($r0, $r1, $p0, $doc->content());
+            }
+            if ($p0 !== $zi->local_end_offset()) {
+                throw new Exception("Failure creating temporary file (#$d0 @{$zi->local_offset}).");
+            }
+            ++$d0;
+        }
+        if ($d0 === count($this->docs)) {
+            foreach ($this->_zipi as $zi) {
+                self::echo_subrange($r0, $r1, $zi->central_offset, $zi->centralh);
+            }
         }
         return true;
     }
