@@ -312,26 +312,37 @@ class DocumentInfo implements JsonSerializable {
         return $this->add_error_html("Cannot load document.");
     }
 
-    /** @return bool */
-    function ensure_size() {
-        if ($this->size == 0 && $this->paperStorageId != 1) {
-            if (!$this->ensure_content()) {
-                return false;
-            } else if ($this->content !== null) {
-                $this->size = strlen($this->content);
-            } else if ($this->content_file !== null) {
-                $this->size = (int) filesize($this->content_file);
-            } else if ($this->filestore !== null) {
-                $this->size = (int) filesize($this->filestore);
-            }
+    /** @return int|false */
+    function content_size() {
+        if (!$this->ensure_content()) {
+            return false;
+        } else if ($this->content !== null) {
+            return strlen($this->content);
+        } else if ($this->content_file !== null) {
+            return filesize($this->content_file);
+        } else if ($this->filestore !== null) {
+            return filesize($this->filestore);
+        } else {
+            return false;
         }
-        return $this->size != 0 || $this->paperStorageId == 1;
     }
 
     /** @return int */
     function size() {
         $this->ensure_size();
         return $this->size;
+    }
+
+    /** @return bool */
+    function ensure_size() {
+        if ($this->size == 0 && $this->paperStorageId != 1) {
+            $this->size = (int) $this->content_size();
+        }
+        return $this->size != 0 || $this->paperStorageId == 1;
+    }
+
+    function reset_size() {
+        $this->size = (int) $this->content_size();
     }
 
     /** @return bool */
@@ -350,7 +361,6 @@ class DocumentInfo implements JsonSerializable {
         }
         if ($row !== null && $row[0] !== null) {
             $this->content = $row[1] == 1 ? gzinflate($row[0]) : $row[0];
-            $this->size = strlen($this->content);
             return true;
         } else {
             return false;
@@ -361,7 +371,33 @@ class DocumentInfo implements JsonSerializable {
     function load_docstore() {
         if (($dspath = Filer::docstore_path($this, Filer::FPATH_EXISTS))) {
             $this->filestore = $dspath;
-            $this->size = 0;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /** @return bool */
+    private function check_docstore_size() {
+        assert($this->filestore !== null);
+        if ($this->size == 0 || filesize($this->filestore) == $this->size) {
+            return true;
+        }
+        clearstatcache();
+        return filesize($this->filestore) == $this->size;
+    }
+
+    /** @return bool */
+    function need_content_prefetch() {
+        if ($this->content === null
+            && $this->content_file === null
+            && ((!$this->filestore && !$this->load_docstore())
+                || !$this->check_docstore_size())
+            && $this->conf->s3_docstore()) {
+            if ($this->filestore) {
+                unlink($this->filestore);
+            }
+            $this->filestore = null;
             return true;
         } else {
             return false;
@@ -530,11 +566,9 @@ class DocumentInfo implements JsonSerializable {
         if ($s3l->status === 200) {
             if (rename($dspath . "~", $dspath)) {
                 $this->filestore = $dspath;
-                $this->size = 0;
                 $unlink = false;
             } else {
                 $this->content = file_get_contents($dspath . "~");
-                $this->size = strlen($this->content);
             }
         } else {
             error_log("S3 error: GET $s3l->skey: $s3l->status $s3l->status_text " . json_encode_db($s3l->response_headers));
@@ -552,7 +586,6 @@ class DocumentInfo implements JsonSerializable {
             $r = $s3->start_get($s3k)->run();
         }
         if ($r->status === 200 && ($b = $r->response_body() ?? "") !== "") {
-            $this->size = strlen($b);
             if ($dspath
                 && file_put_contents($dspath, $b) === $this->size) {
                 $this->filestore = $dspath;
@@ -771,10 +804,7 @@ class DocumentInfo implements JsonSerializable {
     static function prefetch_content($docs) {
         $pfdocs = [];
         foreach ($docs as $doc) {
-            if (!$doc->available_content_file()
-                && $doc->content === null
-                && !$doc->load_docstore()
-                && $doc->conf->s3_docstore()) {
+            if ($doc->need_content_prefetch()) {
                 $pfdocs[] = $doc;
             }
         }
