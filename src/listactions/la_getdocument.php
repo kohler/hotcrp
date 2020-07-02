@@ -29,17 +29,6 @@ class GetDocument_ListAction extends ListAction {
             return null;
         }
     }
-    /** @deprecated */
-    static function error_document(PaperOption $opt, PaperInfo $row, $error_html = "") {
-        if (!$error_html) {
-            $error_html = $row->conf->_("Submission #%d has no %s field.", $row->paperId, $opt->title_html());
-        }
-        $x = new DocumentInfo(["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $error_html], $row->conf);
-        if (($mimetypes = $opt->mimetypes()) && count($mimetypes) === 1) {
-            $x->mimetype = $mimetypes[0]->mimetype;
-        }
-        return $x;
-    }
     function run(Contact $user, $qreq, $ssel) {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $opt = $user->conf->checked_option_by_id($this->dt);
