@@ -374,9 +374,8 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             if ($zi->compressed !== null) {
                 $sz += fwrite($out, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
-                $in = fopen($f, "r");
-                $sz += stream_copy_to_stream($in, $out);
-                fclose($in);
+                $filesize = $doc->size();
+                $sz += self::readfile_subrange($out, 0, $filesize, 0, $f, $filesize);
             } else {
                 $sz += fwrite($out, $doc->content());
             }
@@ -418,15 +417,14 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     static function echo_subrange($out, $r0, $r1, $p0, $s) {
         $p1 = $p0 + strlen($s);
         if ($p1 <= $r0 || $r1 <= $p0) {
-            // nothing
+            return strlen($s);
         } else if ($p0 < $r0) {
-            fwrite($out, substr($s, $r0 - $p0, $r1 - $r0));
+            return ($r0 - $p0) + fwrite($out, substr($s, $r0 - $p0, $r1 - $r0));
         } else if ($r1 < $p1) {
-            fwrite($out, substr($s, 0, $r1 - $p0));
+            return fwrite($out, substr($s, 0, $r1 - $p0));
         } else {
-            fwrite($out, $s);
+            return fwrite($out, $s);
         }
-        return $p1;
     }
     /** @param resource $out
      * @param int $r0
@@ -438,23 +436,19 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private static function readfile_subrange($out, $r0, $r1, $p0, $fn, $sz) {
         $p1 = $p0 + $sz;
         if ($p1 <= $r0 || $r1 <= $p0) {
-            return $p1;
+            return $sz;
         }
-        if ($p0 < $r0) {
-            $off = $r0 - $p0;
-        } else {
-            $off = 0;
-        }
+        $off = max(0, $r0 - $p0);
         $len = min($sz, $r1 - $p0) - $off;
-        if ($len === $sz) {
-            $wlen = readfile($fn);
+        if ($len === $sz && $sz < 20000000) {
+            return readfile($fn);
         } else if (($f = fopen($fn, "rb"))) {
             $wlen = stream_copy_to_stream($f, $out, $len, $off);
             fclose($f);
+            return $wlen;
         } else {
-            $wlen = 0;
+            return 0;
         }
-        return $wlen === $len ? $p1 : $p0 + $off + $wlen;
     }
     /** @return bool */
     private function _download_directly($opts = []) {
@@ -490,10 +484,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
 
         // Print headers
-        header("Content-Type: " . Mimetype::type_with_charset($this->_mimetype));
-        if (zlib_get_coding_type() === false) {
-            header("Content-Length: " . ($r1 - $r0));
+        if (zlib_get_coding_type() !== false) {
+            ini_set("zlib.output_compression", "0");
         }
+        header("Content-Type: " . Mimetype::type_with_charset($this->_mimetype));
+        header("Content-Length: " . ($r1 - $r0));
         if ($r0 !== 0 || $r1 !== $filesize) {
             header("HTTP/1.1 206 Partial Content");
             header("Content-Range: bytes {$r0}-" . ($r1 - 1) . "/$filesize");
@@ -520,6 +515,10 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             header("HTTP/1.1 204 No Content");
             return true;
         }
+        flush();
+        while (@ob_end_flush()) {
+            // do nothing
+        }
 
         // Print data
         $d0 = 0;
@@ -543,16 +542,15 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $zi = $this->_zipi[$d0];
             $doc = $this->docs[$d0];
             $p0 = $zi->local_offset;
-            $p0 = self::echo_subrange($out, $r0, $r1, $p0, $zi->localh);
-            assert($p0 === $zi->local_offset + strlen($zi->localh));
+            $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->localh);
             if ($zi->compressed !== null) {
-                $p0 = self::echo_subrange($out, $r0, $r1, $p0, $zi->compressed);
+                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
-                $p0 = self::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
+                $p0 += self::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
             } else {
-                $p0 = self::echo_subrange($out, $r0, $r1, $p0, $doc->content());
+                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $doc->content());
             }
-            if ($p0 !== $zi->local_end_offset()) {
+            if ($p0 < min($r1, $zi->local_end_offset())) {
                 throw new Exception("Failure creating temporary file (#$d0 @{$zi->local_offset}).");
             }
             ++$d0;
