@@ -525,6 +525,10 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         if ($r1 - $r0 > 2000000) {
             header("X-Accel-Buffering: no");
         }
+        if ($opts["head"] ?? false) {
+            header("HTTP/1.1 204 No Content");
+            return true;
+        }
 
         // Print data
         $d0 = 0;

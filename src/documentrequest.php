@@ -296,6 +296,9 @@ class DocumentRequest implements JsonSerializable {
         if ($ifrange !== null && !array_key_exists("if-range", $opts)) {
             $opts["if-range"] = $ifrange;
         }
+        if ($_SERVER["REQUEST_METHOD"] === "HEAD" && !array_key_exists("head", $opts)) {
+            $opts["head"] = true;
+        }
         return $opts;
     }
 }
