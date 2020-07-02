@@ -61,6 +61,7 @@ class GetDocument_ListAction extends ListAction {
             session_write_close();
             if ($docset->download(DocumentRequest::add_server_options(["attachment" => true, "single" => true]))) {
                 DocumentInfo::log_download_activity($docset->as_list(), $user);
+                exit;
             } else {
                 Conf::msg_error($docset->error_texts());
             }
