@@ -1264,7 +1264,7 @@ class DocumentInfo implements JsonSerializable {
         if ($s3_accel) {
             $this->conf->s3_docstore()->get_accel_redirect($this->s3_key(), $s3_accel);
         } else if (($path = $this->available_content_file())) {
-            Filer::download_file($path, $this->mimetype, $no_accel);
+            Filer::download_file($path, $this->mimetype, $opts);
         } else {
             if (zlib_get_coding_type() === false) {
                 header("Content-Length: " . strlen($this->content));

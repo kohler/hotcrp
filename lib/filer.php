@@ -105,14 +105,14 @@ class Filer {
     // download
     /** @param string $filename
      * @param ?string $mimetype
-     * @param bool $no_accel */
-    static function download_file($filename, $mimetype, $no_accel = false) {
+     * @param array $opts */
+    static function download_file($filename, $mimetype, $opts = []) {
         // if docstoreAccelRedirect, output X-Accel-Redirect header
         // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
         // using SameSite cookies!
         if (($dar = Conf::$main->opt("docstoreAccelRedirect"))
             && ($dsp = self::docstore_fixed_prefix(Conf::$main->docstore()))
-            && !$no_accel) {
+            && !($opts["no_accel"] ?? false)) {
             assert(str_ends_with($dsp, "/"));
             if (str_starts_with($filename, $dsp)
                 && strlen($filename) > strlen($dsp)
