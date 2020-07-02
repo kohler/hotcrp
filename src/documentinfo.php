@@ -410,9 +410,18 @@ class DocumentInfo implements JsonSerializable {
         if (!$this->timestamp) {
             $this->timestamp = time();
         }
-        $upd = ["sha1" => $this->binary_hash(), "inactive" => 0];
-        foreach (["paperId", "timestamp", "size", "mimetype", "documentType"] as $k) {
-            $upd[$k] = $this->$k;
+        $upd = [
+            "paperId" => $this->paperId,
+            "sha1" => $this->binary_hash(),
+            "timestamp" => $this->timestamp,
+            "size" => $this->size,
+            "mimetype" => $this->mimetype,
+            "documentType" => $this->documentType,
+            "inactive" => 0
+        ];
+        if (($this->crc32 || $this->size <= 10000000)
+            && ($crc32 = $this->crc32()) !== false) {
+            $upd["crc32"] = $crc32;
         }
         foreach (["filename", "filterType", "originalStorageId"] as $k) {
             if ($this->$k)
