@@ -75,11 +75,12 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     /** @param string $fn */
     function add_as(DocumentInfo $doc, $fn) {
-        if ($this->_filename) {
+        if ($this->_filename) { // might generate a .zip later; check filename
             assert(!$doc->error);
             $slash = strpos($fn, "/");
             if ($doc->error
                 || $fn === ""
+                || strlen($fn) > 1000
                 || ($slash !== false && str_ends_with($fn, "/"))
                 || ($slash !== false && strpos($fn, "//") !== false)
                 || !preg_match('/\A[^.*\/\s\000-\037\\\\\'"][^*\000-\037\\\\\'"]*\z/', $fn)) {
