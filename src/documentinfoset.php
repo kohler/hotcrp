@@ -17,6 +17,8 @@ class DocumentInfoSet_ZipInfo {
     public $compressed;
     /** @var int */
     public $compressed_length;
+    /** @var bool */
+    public $zip64 = false;
     /** @var ?int */
     public $central_offset;
     /** @var ?string */
@@ -244,19 +246,30 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                         | ((int) $dt->format("G") << 10);
                 }
             }
+            if ($zi->compressed_length >= 0xFFFFFFFF
+                || $doc->size() >= 0xFFFFFFFF) {
+                $ex = pack("vvPP",
+                    1,         // ZIP64 tag
+                    8 + 8,     // extra block length
+                    $doc->size(), // uncompressed size
+                    $zi->compressed_length); // compressed size
+                $zi->zip64 = true;
+            } else {
+                $ex = "";
+            }
             $zi->localh = pack("VvvvvvVVVvv",
                 0x04034b50,    // local file header signature
-                10,            // version needed to extract
+                !$zi->zip64 ? 10 : 45, // version needed to extract
                 1 << 11,       // general purpose bit flag
                 $zi->compression, // compression method
                 $zi->time,     // last mod file time
                 $zi->date,     // last mod file date
                 $doc->integer_crc32(), // crc-32
-                $zi->compressed_length, // compressed size
-                $doc->size(),  // uncompressed size
+                !$zi->zip64 ? $zi->compressed_length : 0xFFFFFFFF, // compressed size
+                !$zi->zip64 ? $doc->size() : 0xFFFFFFFF, // uncompressed size
                 strlen($fn),   // file name length
-                0              // extra field length
-            ) . $fn;
+                strlen($ex)    // extra field length
+            ) . $fn . $ex;
             $offset = $zi->local_end_offset();
             ++$i;
         }
@@ -267,43 +280,84 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $n = count($this->_zipi);
         $offset = $n === 0 ? 0 : $this->_zipi[$n - 1]->local_end_offset();
         $central_offset = $offset;
+        $zip64 = false;
         for ($i = 0; $i !== $n; ++$i) {
             $zi = $this->_zipi[$i];
             $doc = $this->docs[$i];
             $fn = $this->ufn[$i];
             $zi->central_offset = $offset;
+            if ($zi->zip64) {
+                $ex = pack("vvPPP",
+                    1,         // ZIP64 tag
+                    8 + 8 + 8, // extra block length
+                    $doc->size(), // uncompressed size
+                    $zi->compressed_length, // compressed size
+                    $zi->local_offset); // relative offset of local header
+                $zip64 = true;
+            } else if ($zi->local_offset >= 0xFFFFFFFF) {
+                $ex = pack("vvP",
+                    1,         // ZIP64 tag
+                    8,         // extra block length
+                    $zi->local_offset); // relative offset of local header
+                $zip64 = true;
+            } else {
+                $ex = "";
+            }
             $zi->centralh = pack("VvvvvvvVVVvvvvvVV",
                 0x02014b50,     // central file header signature
-                0x31E,          // version made by
-                10,             // version needed to extract
+                0x300 + 45,     // version made by
+                $ex === "" ? 10 : 45, // version needed to extract
                 1 << 11,        // general purpose bit flag
                 $zi->compression, // compression method
                 $zi->time,      // last mod file time
                 $zi->date,      // last mod file date
                 $doc->integer_crc32(),  // crc-32
-                $zi->compressed_length, // compressed size
-                $doc->size(),   // uncompressed size
+                !$zi->zip64 ? $zi->compressed_length : 0xFFFFFFFF, // compressed size
+                !$zi->zip64 ? $doc->size() : 0xFFFFFFFF, // uncompressed size
                 strlen($fn),    // file name length
-                0,              // extra field length
+                strlen($ex),    // extra field length
                 0,              // file comment length
                 0,              // disk number start
                 0,              // internal file attributes
                 0100644 << 16,  // external file attributes
-                $zi->local_offset // relative offset of local header
-            ) . $fn;
+                $ex === "" ? $zi->local_offset : 0xFFFFFFFF // relative offset of local header
+            ) . $fn . $ex;
             $offset += strlen($zi->centralh);
         }
         // assign final central offset
         $this->_zipi[] = $zi = new DocumentInfoSet_ZipInfo;
         $zi->central_offset = $offset;
-        $zi->centralh = pack("VvvvvVVv",
+        if ($zip64
+            || $offset >= 0xFFFFFFFF
+            || count($this->docs) >= 0xFFFF) {
+            $ex = pack("VPvvVVPPPP",
+                0x06064b50,   // zip64 end of central dir signature
+                4 + 4 + 4 + 8 + 8 + 8 + 8, // size of this record
+                0x300 + 45,   // version made by
+                45,           // version needed to extract
+                0,            // number of this disk
+                0,            // number of the disk with the start of the central dir
+                count($this->docs), // total number of entries in central dir this disk
+                count($this->docs), // total number of entries in central dir
+                $offset - $central_offset, // size of central dir
+                $central_offset // offset of central dir this disk
+            ) . pack("VVPV",
+                0x07064b50,   // zip64 end of central dir locator
+                0,            // number of disk with start of zip64 end of central dir
+                $offset,      // offset of zip64 end of central dir
+                1);           // total number of disks
+            $zip64 = true;
+        } else {
+            $ex = "";
+        }
+        $zi->centralh = $ex . pack("VvvvvVVv",
             0x06054b50,       // end of central dir signature
             0,                // number of this disk
             0,                // number of the disk with the start of the central dir
-            count($this->docs), // total number of entries in the central dir on this disk
-            count($this->docs), // total number of entries in the central dir
-            $offset - $central_offset, // size of the central directory
-            $central_offset, // offset of start of central directory
+            min(count($this->docs), 0xFFFF), // total entries in central dir this disk
+            min(count($this->docs), 0xFFFF), // total entries in central dir
+            $offset - $central_offset, // size of central dir
+            min($central_offset, 0xFFFFFFFF), // offset of start of central dir
             0                 // .ZIP file comment length
         );
     }
@@ -320,7 +374,6 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $this->_hotzip_progress();
         }
         $this->_hotzip_final();
-        assert($this->_hotzip_filesize() < 0xFFFFFFFF);
     }
     /** @return string */
     private function content_signature() {
