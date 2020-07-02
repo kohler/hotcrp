@@ -292,6 +292,9 @@ class DocumentRequest implements JsonSerializable {
                     break;
                 }
             }
+            if (count($opts["range"] ?? []) > 1) {
+                error_log(Navigation::self() . ": multiple range request “{$range}”");
+            }
         }
         if ($ifrange !== null && !array_key_exists("if-range", $opts)) {
             $opts["if-range"] = $ifrange;
