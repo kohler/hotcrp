@@ -219,6 +219,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $this->_zipi = $this->_zipi ?? [];
         $i = count($this->_zipi);
         $offset = $i === 0 ? 0 : $this->_zipi[$i - 1]->local_end_offset();
+        DocumentInfo::prefetch_crc32(array_slice($this->docs, $i));
         while ($i !== count($this->docs)) {
             $this->_zipi[] = $zi = new DocumentInfoSet_ZipInfo;
             $doc = $this->docs[$i];

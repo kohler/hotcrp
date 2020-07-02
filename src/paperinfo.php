@@ -368,6 +368,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
  * @property ?string $timeFinalSubmitted
  * @property ?string $size
  * @property ?string $mimetype
+ * @property ?string $timestamp
  * @property ?string $blind
  * @property ?string $sha1
  * @property ?string $leadContactId

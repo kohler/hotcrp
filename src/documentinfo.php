@@ -82,7 +82,7 @@ class DocumentInfo implements JsonSerializable {
         if ($this->sha1 !== false && $this->sha1 !== "") {
             $this->sha1 = Filer::hash_as_binary($this->sha1);
         }
-        if ($this->crc32 !== null && $this->crc32 !== "") {
+        if ($this->crc32 !== null) {
             if (strlen($this->crc32) === 8 && ctype_xdigit($this->crc32)) {
                 $this->crc32 = hex2bin($this->crc32);
             } else if (strlen($this->crc32) !== 4) {
@@ -388,7 +388,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return bool */
-    function need_content_prefetch() {
+    function need_prefetch_content() {
         if ($this->content === null
             && $this->content_file === null
             && ((!$this->filestore && !$this->load_docstore())
@@ -804,7 +804,7 @@ class DocumentInfo implements JsonSerializable {
     static function prefetch_content($docs) {
         $pfdocs = [];
         foreach ($docs as $doc) {
-            if ($doc->need_content_prefetch()) {
+            if ($doc->need_prefetch_content()) {
                 $pfdocs[] = $doc;
             }
         }
@@ -993,6 +993,9 @@ class DocumentInfo implements JsonSerializable {
     }
     /** @return string|false */
     function crc32() {
+        if ($this->crc32 === null && $this->paperStorageId > 0 && $this->is_partial) {
+            self::prefetch_crc32([$this]);
+        }
         if ($this->crc32 === null || $this->crc32 === "") {
             $this->ensure_content();
             if ($this->content !== null) {
@@ -1018,6 +1021,32 @@ class DocumentInfo implements JsonSerializable {
             return false;
         }
     }
+
+    /** @param iterable<DocumentInfo> $docs */
+    static function prefetch_crc32($docs) {
+        $need = [];
+        foreach ($docs as $doc) {
+            if ($doc->crc32 === null
+                && $doc->is_partial
+                && $doc->paperStorageId > 0
+                && $doc->conf === Conf::$main) {
+                $need[] = "(paperId=$doc->paperId and paperStorageId=$doc->paperStorageId)";
+            }
+        }
+        if (!empty($need)) {
+            $idmap = [];
+            $result = Conf::$main->qe("select paperStorageId, crc32 from PaperStorage where " . join(" or ", $need));
+            while (($row = $result->fetch_row())) {
+                $idmap[(int) $row[0]] = $row[1] ?? "";
+            }
+            foreach ($docs as $doc) {
+                if (isset($idmap[$doc->paperStorageId])) {
+                    $doc->crc32 = $idmap[$doc->paperStorageId];
+                }
+            }
+        }
+    }
+
 
     /** @return ?string */
     function member_filename() {
