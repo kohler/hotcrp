@@ -1003,8 +1003,10 @@ class DocumentInfo implements JsonSerializable {
                 $this->crc32 = false;
             }
             if ($this->crc32 !== false && $this->paperStorageId > 0) {
-                $this->conf->ql("update PaperStorage set crc32=? where crc32 is null and paperStorageId=?", $this->crc32, $this->paperStorageId);
+                $this->conf->ql("update PaperStorage set crc32=? where paperId=? and paperStorageId=?", $this->crc32, $this->paperId, $this->paperStorageId);
             }
+        } else if ($this->crc32 === "\0\0\0\0") {
+            error_log("{$this->conf->dbname}: #{$this->paperId}/{$this->paperStorageId}: unlikely CRC32 00000000");
         }
         return $this->crc32;
     }
