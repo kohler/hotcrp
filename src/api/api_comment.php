@@ -60,7 +60,7 @@ class Comment_API {
             "submit" => $response && !$qreq->draft,
             "text" => rtrim(cleannl((string) $qreq->text)),
             "blind" => $qreq->blind,
-            "docs" => $crow ? $crow->attachments_json() : []
+            "docs" => $crow ? $crow->attachments()->as_list() : []
         ];
 
         // check if response changed
