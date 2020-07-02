@@ -324,12 +324,8 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @return string */
     private function content_signature() {
         if ($this->_signature === null) {
-            $xdocs = $this->docs;
-            usort($xdocs, function ($a, $b) {
-                return strcmp($a->member_filename(), $b->member_filename());
-            });
-            $s = count($xdocs) . "\n";
-            foreach ($xdocs as $doc) {
+            $s = count($this->docs) . "\n";
+            foreach ($this->docs as $doc) {
                 $s .= $doc->member_filename() . "\n" . $doc->text_hash() . "\n";
             }
             if (!empty($this->_errors_html)) {
@@ -412,31 +408,33 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             "content_file" => $this->_filestore
         ], $this->conf);
     }
-    /** @param int $r0
+    /** @param resource $out
+     * @param int $r0
      * @param int $r1
      * @param int $p0
      * @param string $s
      * @return int */
-    static function echo_subrange($r0, $r1, $p0, $s) {
+    static function echo_subrange($out, $r0, $r1, $p0, $s) {
         $p1 = $p0 + strlen($s);
         if ($p1 <= $r0 || $r1 <= $p0) {
             // nothing
         } else if ($p0 < $r0) {
-            echo substr($s, $r0 - $p0, $r1 - $r0);
+            fwrite($out, substr($s, $r0 - $p0, $r1 - $r0));
         } else if ($r1 < $p1) {
-            echo substr($s, 0, $r1 - $p0);
+            fwrite($out, substr($s, 0, $r1 - $p0));
         } else {
-            echo $s;
+            fwrite($out, $s);
         }
         return $p1;
     }
-    /** @param int $r0
+    /** @param resource $out
+     * @param int $r0
      * @param int $r1
      * @param int $p0
      * @param string $fn
      * @param int $sz
      * @return int */
-    private static function readfile_subrange($r0, $r1, $p0, $fn, $sz) {
+    private static function readfile_subrange($out, $r0, $r1, $p0, $fn, $sz) {
         $p1 = $p0 + $sz;
         if ($p1 <= $r0 || $r1 <= $p0) {
             return $p1;
@@ -447,22 +445,13 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $off = 0;
         }
         $len = min($sz, $r1 - $p0) - $off;
-        $f = fopen($fn, "rb");
-        $wlen = 0;
-        if ($f) {
-            if ($off !== 0 && fseek($f, $off) !== 0) {
-                // skip
-            } else if ($off + $len === $sz) {
-                $wlen = fpassthru($f);
-            } else {
-                while ($wlen !== $len
-                       && ($s = fread($f, min($len - $wlen, 32768))) !== false
-                       && $s !== "") {
-                    echo $s;
-                    $wlen += strlen($s);
-                }
-            }
+        if ($len === $sz) {
+            $wlen = readfile($fn);
+        } else if (($f = fopen($fn, "rb"))) {
+            $wlen = stream_copy_to_stream($f, $out, $len, $off);
             fclose($f);
+        } else {
+            $wlen = 0;
         }
         return $wlen === $len ? $p1 : $p0 + $off + $wlen;
     }
@@ -542,6 +531,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                && $this->_zipi[$d1]->local_offset < $r1) {
             ++$d1;
         }
+        $out = fopen("php://output", "wb");
 
         while ($d0 !== $d1) {
             set_time_limit(120);
@@ -552,14 +542,14 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $zi = $this->_zipi[$d0];
             $doc = $this->docs[$d0];
             $p0 = $zi->local_offset;
-            $p0 = self::echo_subrange($r0, $r1, $p0, $zi->localh);
+            $p0 = self::echo_subrange($out, $r0, $r1, $p0, $zi->localh);
             assert($p0 === $zi->local_offset + strlen($zi->localh));
             if ($zi->compressed !== null) {
-                $p0 = self::echo_subrange($r0, $r1, $p0, $zi->compressed);
+                $p0 = self::echo_subrange($out, $r0, $r1, $p0, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
-                $p0 = self::readfile_subrange($r0, $r1, $p0, $f, $doc->size());
+                $p0 = self::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
             } else {
-                $p0 = self::echo_subrange($r0, $r1, $p0, $doc->content());
+                $p0 = self::echo_subrange($out, $r0, $r1, $p0, $doc->content());
             }
             if ($p0 !== $zi->local_end_offset()) {
                 throw new Exception("Failure creating temporary file (#$d0 @{$zi->local_offset}).");
@@ -568,9 +558,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         if ($d0 === count($this->docs)) {
             foreach ($this->_zipi as $zi) {
-                self::echo_subrange($r0, $r1, $zi->central_offset, $zi->centralh);
+                self::echo_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
             }
         }
+
+        fclose($out);
         return true;
     }
 
