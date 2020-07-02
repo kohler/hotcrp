@@ -260,7 +260,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $zi->localh = pack("VvvvvvVVVvv",
                 0x04034b50,    // local file header signature
                 !$zi->zip64 ? 10 : 45, // version needed to extract
-                1 << 11,       // general purpose bit flag
+                1 << 11,       // general purpose bit flag (UTF-8 filename)
                 $zi->compression, // compression method
                 $zi->time,     // last mod file time
                 $zi->date,     // last mod file date
@@ -307,7 +307,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 0x02014b50,     // central file header signature
                 0x300 + 45,     // version made by
                 $ex === "" ? 10 : 45, // version needed to extract
-                1 << 11,        // general purpose bit flag
+                1 << 11,        // general purpose bit flag (UTF-8 filename)
                 $zi->compression, // compression method
                 $zi->time,      // last mod file time
                 $zi->date,      // last mod file date
@@ -318,7 +318,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 strlen($ex),    // extra field length
                 0,              // file comment length
                 0,              // disk number start
-                0,              // internal file attributes
+                Mimetype::textual($doc->mimetype) ? 1 : 0, // internal file attributes
                 0100644 << 16,  // external file attributes
                 $ex === "" ? $zi->local_offset : 0xFFFFFFFF // relative offset of local header
             ) . $fn . $ex;
