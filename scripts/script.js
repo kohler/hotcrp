@@ -2558,9 +2558,9 @@ var comet_store = (function () {
             x = {};
         if (!x.updated_at
             || x.updated_at + 10 < now_sec()
-            || (x.tracker_status != dl.tracker_status && x.at < dl.now))
+            || (dl && x.tracker_status != dl.tracker_status && x.at < dl.now))
             x.expired = true;
-        else if (x.tracker_status != dl.tracker_status)
+        else if (dl && x.tracker_status != dl.tracker_status)
             x.fresh = true;
         else if (x.at == stored_at)
             x.owned = true;
