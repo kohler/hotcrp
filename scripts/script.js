@@ -997,11 +997,36 @@ function hoturl_go(page, options) {
     window.location = hoturl(page, options);
 }
 
+function hidden_input(name, value) {
+    var input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    return input;
+}
+
 function hoturl_post_go(page, options) {
-    var $form = $('<form method="POST" enctype="multipart/form-data" accept-charset="UTF-8"><input type="hidden" name="____empty____" value="1"></form>');
-    $form[0].action = hoturl_post(page, options);
-    $form.appendTo(document.body);
-    $form.submit();
+    var form = document.createElement("form");
+    form.setAttribute("method", "post");
+    form.setAttribute("enctype", "multipart/form-data");
+    form.setAttribute("accept-charset", "UTF-8");
+    form.action = hoturl_post(page, options);
+    form.appendChild(hidden_input("____empty____", "1"));
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function hoturl_get_form(action) {
+    var form = document.createElement("form");
+    form.setAttribute("method", "get");
+    form.setAttribute("accept-charset", "UTF-8");
+    var m = action.match(/^([^?#]*)((?:\?[^#]*)?)((?:\#.*)?)$/);
+    form.action = m[1];
+    var re = /([^?&=;]*)=([^&=;]*)/g, mm;
+    while ((mm = re.exec(m[2])) !== null) {
+        form.appendChild(hidden_input(urldecode(mm[1]), urldecode(mm[2])));
+    }
+    return form;
 }
 
 
@@ -8521,18 +8546,18 @@ handle_ui.on("js-assign-list-action", function () {
     });
 });
 
-handle_ui.on("js-paperlist-submit", function (event) {
+handle_ui.on("js-submit-paperlist", function (event) {
     // analyze why this is being submitted
     var $self = $(this), fn = $self.data("submitMark");
     $self.removeData("submitMark");
-    if (!fn && this.defaultact)
-        fn = $(this.defaultact).val();
+    if (!fn && this.elements.defaultact)
+        fn = this.elements.defaultact.value;
     if (!fn && document.activeElement) {
-        var $td = $(document.activeElement).closest("td");
-        if ($td.hasClass("lld")) {
-            var $sub = $td.closest(".linelink.active").find("input[type=submit], button[type=submit]");
+        var td = document.activeElement.closest("td");
+        if (td && hasClass(td, "lld")) {
+            var $sub = $(td.closest(".linelink.active")).find("input[type=submit], button[type=submit]");
             if ($sub.length == 1)
-                fn = this.defaultact.value = $sub[0].value;
+                fn = this.elements.defaultact.value = $sub[0].value;
         }
     }
 
@@ -8572,13 +8597,34 @@ handle_ui.on("js-paperlist-submit", function (event) {
     var action = $self.data("originalAction");
     if (!action)
         $self.data("originalAction", (action = this.action));
-    if (fn && /^[-_\w]+$/.test(fn)) {
-        $self.find(".js-submit-action-info-" + fn).each(function () {
-            fn += "-" + ($(this).val() || "");
-        });
-        action = hoturl_add(action, "action=" + encodeURIComponent(fn));
+    if (fn === "get") {
+        var getform = $$("searchgetform"), input;
+        if (!getform) {
+            getform = hoturl_get_form(action);
+            getform.appendChild(hidden_input("forceShow", ""));
+            getform.appendChild(hidden_input("fn", ""));
+            getform.appendChild(hidden_input("p", ""));
+            document.body.appendChild(getform);
+        }
+        if (this.elements.forceShow && this.elements.forceShow.value !== "") {
+            getform.elements.forceShow.value = this.elements.forceShow.value;
+            getform.elements.forceShow.disabled = false;
+        } else {
+            getform.elements.forceShow.disabled = true;
+        }
+        getform.elements.fn.value = fn + "/" + this.elements.getfn.value;
+        getform.elements.p.value = this.elements.p.value;
+        getform.submit();
+        event.preventDefault();
+    } else {
+        if (fn && /^[-_\w]+$/.test(fn)) {
+            $self.find(".js-submit-action-info-" + fn).each(function () {
+                fn += "-" + ($(this).val() || "");
+            });
+            action = hoturl_add(action, "action=" + encodeURIComponent(fn));
+        }
+        this.action = action;
     }
-    this.action = action;
 });
 
 

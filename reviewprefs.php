@@ -338,7 +338,7 @@ if ($Qreq->q) {
 if ($Qreq->sort) {
     $hoturl_args["sort"] = $Qreq->sort;
 }
-echo Ht::form(hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-paperlist-submit assignpc"]),
+echo Ht::form(hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-paperlist assignpc"]),
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1);
 echo "<div class=\"pltable-fullw-container\">\n",

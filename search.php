@@ -57,8 +57,9 @@ if (!$SSel) { /* we might be included by reviewprefs.php */
 // look for search action
 if ($Qreq->fn) {
     $fn = $Qreq->fn;
-    if (strpos($fn, "/") === false && isset($Qreq[$Qreq->fn . "fn"]))
+    if (strpos($fn, "/") === false && isset($Qreq[$Qreq->fn . "fn"])) {
         $fn .= "/" . $Qreq[$Qreq->fn . "fn"];
+    }
     ListAction::call($fn, $Me, $Qreq, $SSel);
 }
 
@@ -71,7 +72,7 @@ if ($Qreq->redisplay) {
             $settings[substr($k, 4)] = true;
         }
     }
-    if (!get($settings, "au") && (get($settings, "anonau") || get($settings, "aufull"))) {
+    if (!isset($settings["au"]) && (isset($settings["anonau"]) || isset($settings["aufull"]))) {
         $settings["au"] = false;
     }
     Session_API::change_display($Me, "pl", $settings);
@@ -527,7 +528,7 @@ if ($pl_text) {
     echo "<div class=\"maintabsep\"></div>\n\n<div class=\"pltable-fullw-container\">";
 
     if ($pl->has("sel")) {
-        echo Ht::form($Conf->selfurl($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel", "class" => "ui-submit js-paperlist-submit"]),
+        echo Ht::form($Conf->selfurl($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel", "class" => "ui-submit js-submit-paperlist"]),
             Ht::hidden("defaultact", "", ["id" => "defaultact"]),
             Ht::hidden("forceShow", (string) $Qreq->forceShow, ["id" => "forceShow"]),
             Ht::hidden_default_submit("default", 1);
