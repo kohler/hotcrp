@@ -434,7 +434,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 $sz += fwrite($out, $doc->content());
             }
             if ($sz !== $zi->local_end_offset() - $zi->local_offset) {
-                $this->add_error_html("Failure creating temporary file (#$i @{$zi->local_offset}).");
+                $this->add_error_html("Failure writing {$this->ufn[$i]}, wrote $sz, expected " . ($zi->local_end_offset() - $zi->local_offset) . ".");
                 fclose($out);
                 return null;
             }
@@ -605,7 +605,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 $p0 += self::echo_subrange($out, $r0, $r1, $p0, $doc->content());
             }
             if ($p0 < min($r1, $zi->local_end_offset())) {
-                throw new Exception("Failure creating temporary file (#$d0 @{$zi->local_offset}).");
+                throw new Exception("Failure writing {$this->ufn[$d0]}, wrote " . ($p0 - $zi->local_offset) . ", expected " . (min($r1, $zi->local_end_offset()) - $zi->local_offset) . ".");
             }
             ++$d0;
         }
