@@ -391,7 +391,7 @@ class DocumentInfo implements JsonSerializable {
                     && $s3->head_size($s3k) === $this->size()) {
                     unlink($path);
                     return false;
-                } else {
+                } else if ($sz !== $this->size) {
                     error_log("{$this->conf->dbname}: #{$this->paperId}/{$this->documentType}/{$this->paperStorageId}: bad size $sz, expected $this->size");
                 }
             }
