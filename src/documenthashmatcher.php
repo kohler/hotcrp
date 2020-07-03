@@ -82,7 +82,11 @@ class DocumentHashMatcher {
             } else if ($fn === "x") {
                 $preg .= $this->extension_preg;
             } else if ($fn === "w") {
-                $preg .= "[^\\/]+";
+                if (str_ends_with($preg, "/")) {
+                    $preg .= "[^.\\/][^\\/]*";
+                } else {
+                    $preg .= "[^\\/]+";
+                }
             } else if ($fn === "a") {
                 $preg .= $this->algo_preg;
             } else if ($fn === "A") {
