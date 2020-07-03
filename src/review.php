@@ -413,6 +413,8 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return $retstr;
     }
 
+    /** @param string $text
+     * @return int|false */
     function parse_option_value($text) {
         assert($this->has_options);
         $text = trim($text);
@@ -420,7 +422,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
             return 0;
         }
         if (!ctype_alnum($text)) {
-            if (preg_match('/\A\s*([A-Z]|[0-9]+)[\s\.]/', $text, $m)) {
+            if (preg_match('/\A([A-Z]|[0-9]+)(?:[\s\.]|\z)/', $text, $m)) {
                 $text = $m[1];
             } else if ($text[0] === "(" || strcasecmp($text, "No entry") === 0) {
                 return 0;
@@ -434,11 +436,15 @@ class ReviewField implements Abbreviator, JsonSerializable {
             } else {
                 return intval($text);
             }
+        } else if ($text === "0") {
+            return 0;
         } else {
             return false;
         }
     }
 
+    /** @param string $text
+     * @return int|string|false */
     function parse_value($text) {
         if ($this->has_options) {
             return $this->parse_option_value($text);
@@ -451,15 +457,18 @@ class ReviewField implements Abbreviator, JsonSerializable {
         }
     }
 
-    /** @return bool */
+    /** @param string $text
+     * @return bool */
     function parse_is_explicit_empty($text) {
         return $this->has_options
             && ($text === "0" || strcasecmp($text, "No entry") === 0);
     }
 
+    /** @param int|string $fval
+     * @return int|string */
     function normalize_option_value($fval) {
         assert($this->has_options);
-        if ($this->parse_option_value($fval)) {
+        if (isset($this->options[$fval])) {
             return $this->option_letter ? $fval : (int) $fval;
         } else {
             return 0;
