@@ -127,6 +127,9 @@ class CurlS3Result extends S3Result {
                 trigger_error("S3 error: $this->method $this->skey: curl failed " . json_encode($this->tries), E_USER_WARNING);
                 $this->status = 598;
             }
+        } else if ((($this->status >= 200 && $this->status < 300) || $this->status === 404)
+                   && curl_errno($this->curlh) !== 0) {
+            error_log($this->method . " " . $this->url . " -> " . $this->status . " " . $this->status_text . ": CURL error " . curl_errno($this->curlh) . "/" . curl_error($this->curlh));
         }
         if ($this->status !== null && S3Client::$verbose) {
             error_log($this->method . " " . $this->url . " -> " . $this->status . " " . $this->status_text);
