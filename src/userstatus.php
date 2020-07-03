@@ -992,6 +992,8 @@ class UserStatus extends MessageSet {
             } else if (($roles & Contact::ROLE_ADMIN)
                        && !($eff_old_roles & Contact::ROLE_ADMIN)) {
                 $user->send_mail("@newaccount.admin");
+            } else {
+                $user->send_mail("@newaccount");
             }
         }
 
