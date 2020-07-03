@@ -82,11 +82,7 @@ class DocumentHashMatcher {
             } else if ($fn === "x") {
                 $preg .= $this->extension_preg;
             } else if ($fn === "w") {
-                if (str_ends_with($preg, "/")) {
-                    $preg .= "[^.\\/][^\\/]*";
-                } else {
-                    $preg .= "[^\\/]+";
-                }
+                $preg .= "[^\\/]+";
             } else if ($fn === "a") {
                 $preg .= $this->algo_preg;
             } else if ($fn === "A") {
@@ -94,9 +90,8 @@ class DocumentHashMatcher {
             } else if ($fn === "j") {
                 $l = min(strlen($this->fixed_hash), 3);
                 $preg .= substr($this->fixed_hash, 0, $l);
-                for (; $l < 3; ++$l) {
+                for (; $l < 3; ++$l)
                     $preg .= "[0-9a-f]";
-                }
                 $preg .= "?";
             } else {
                 if ($fn === "h") {

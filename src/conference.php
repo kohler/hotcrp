@@ -4046,9 +4046,7 @@ class Conf {
         if (($samesite = $this->opt("sessionSameSite", "Lax"))) {
             $opt["samesite"] = $samesite;
         }
-        if (!hotcrp_setcookie($name, $value, $opt)) {
-            error_log(debug_string_backtrace());
-        }
+        hotcrp_setcookie($name, $value, $opt);
     }
 
     function header_head($title, $extra = []) {

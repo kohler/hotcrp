@@ -656,15 +656,15 @@ $review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == -1);
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a));
-$review2c = fetch_review($paper2, $user_external);
-xassert(!$user_mgbaker->can_view_review($paper2, $review2c));
-$review2c = save_review(2, $user_external, $revreq);
+$review2e = fetch_review($paper2, $user_external);
+xassert(!$user_mgbaker->can_view_review($paper2, $review2e));
+$review2e = save_review(2, $user_external, $revreq);
 MailChecker::check_db("test01-review2C");
 $review2d = fetch_review($paper2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 0);
 xassert($user_mgbaker->can_view_review($paper2, $review2a));
-xassert($user_mgbaker->can_view_review($paper2, $review2c));
+xassert($user_mgbaker->can_view_review($paper2, $review2e));
 
 // complex assignments
 assert_search_papers($user_chair, "2 AND re:4", "2");

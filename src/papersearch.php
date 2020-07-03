@@ -3153,7 +3153,7 @@ class PaperSearch {
             $this->_prepare();
             $ht = $this->term()->float["tags"] ?? [];
             foreach ($this->_sorters as $s) {
-                if ($s->type && $s->type[0] === "#")
+                if ($s->type[0] === "#")
                     $ht[] = substr($s->type, 1);
             }
             $this->_highlight_tags = array_values(array_unique($ht));

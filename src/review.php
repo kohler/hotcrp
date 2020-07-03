@@ -991,7 +991,7 @@ $blind\n";
             $x .= "* Reviewer: " . Text::nameo($rrow, NAME_EB) . "\n";
         }
         $time = self::rrow_modified_time($contact, $prow, $rrow);
-        if ($time > 0 && $time > $rrow->timeRequested && $time > $rrow->reviewSubmitted) {
+        if ($time > 0 && $time > $rrow->timeRequested) {
             $x .= "* Updated: " . $this->conf->unparse_time($time) . "\n";
         }
 
@@ -2125,9 +2125,8 @@ class ReviewValues extends MessageSet {
             array_push($qf, "reviewSubmitted=?", "reviewNeedsSubmit=?");
             array_push($qv, $now, 0);
             // $diffinfo->view_score should represent transition to submitted
-            if ($rrow) {
+            if ($rrow)
                 $diffinfo->add_view_score($this->rf->nonempty_view_score($rrow));
-            }
         }
         if ($approvalstate > 0 && $rrow->timeApprovalRequested >= 0) {
             $qf[] = "timeApprovalRequested=?";

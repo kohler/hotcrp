@@ -20,7 +20,6 @@ class Mimetype {
     const FLAG_UTF8 = 2;
     const FLAG_COMPRESSIBLE = 4;
     const FLAG_INCOMPRESSIBLE = 8;
-    const FLAG_TEXTUAL = 16;
 
     /** @var string */
     public $mimetype;
@@ -35,7 +34,7 @@ class Mimetype {
 
     /** @var array<string,array{0:string,1:?string,2:int,3?:string,4?:string,5?:string}> */
     private static $tinfo = [
-        self::TXT_TYPE =>     [".txt", "text", self::FLAG_INLINE | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
+        self::TXT_TYPE =>     [".txt", "text", self::FLAG_INLINE | self::FLAG_COMPRESSIBLE],
         self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE],
         self::PS_TYPE =>      [".ps", "PostScript", self::FLAG_COMPRESSIBLE],
         self::PPT_TYPE =>     [".ppt", "PowerPoint", self::FLAG_INCOMPRESSIBLE, "application/mspowerpoint", "application/powerpoint", "application/x-mspowerpoint"],
@@ -43,7 +42,7 @@ class Mimetype {
                               [".pptx", "PowerPoint", self::FLAG_INCOMPRESSIBLE],
         "video/mp4" =>        [".mp4", null, self::FLAG_INCOMPRESSIBLE],
         "video/x-msvideo" =>  [".avi", null, self::FLAG_INCOMPRESSIBLE],
-        self::JSON_TYPE =>    [".json", "JSON", self::FLAG_UTF8 | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
+        self::JSON_TYPE =>    [".json", "JSON", self::FLAG_UTF8 | self::FLAG_COMPRESSIBLE],
         self::JPG_TYPE =>     [".jpg", "JPEG", self::FLAG_INLINE, ".jpeg"],
         self::PNG_TYPE =>     [".png", "PNG", self::FLAG_INLINE]
     ];
@@ -192,17 +191,6 @@ class Mimetype {
     static function disposition_inline($type) {
         $x = self::lookup($type, true);
         return $x && ($x->flags & self::FLAG_INLINE) !== 0;
-    }
-
-    /** @param string|Mimetype $type
-     * @return bool */
-    static function textual($type) {
-        $x = self::lookup($type, true);
-        if ($x && $x->flags !== 0) {
-            return ($x->flags & self::FLAG_TEXTUAL) !== 0;
-        } else {
-            return str_starts_with($x ? $x->mimetype : $type, "text/");
-        }
     }
 
     /** @param string|Mimetype $type

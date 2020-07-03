@@ -2558,9 +2558,9 @@ var comet_store = (function () {
             x = {};
         if (!x.updated_at
             || x.updated_at + 10 < now_sec()
-            || (dl && x.tracker_status != dl.tracker_status && x.at < dl.now))
+            || (x.tracker_status != dl.tracker_status && x.at < dl.now))
             x.expired = true;
-        else if (dl && x.tracker_status != dl.tracker_status)
+        else if (x.tracker_status != dl.tracker_status)
             x.fresh = true;
         else if (x.at == stored_at)
             x.owned = true;
@@ -8478,7 +8478,7 @@ handle_ui.on("js-edit-view-options", function () {
 });
 
 handle_ui.on("js-select-all", function () {
-    $(this).closest("table.pltable").find("input.js-selector").prop("checked", true);
+    $(this).closest("table.pltable").find("input[name='pap[]']").prop("checked", true);
 });
 
 
@@ -8532,37 +8532,19 @@ handle_ui.on("js-paperlist-submit", function (event) {
         }
     }
 
-    // find what is selected
-    var paps = this.elements["pap[]"];
-    if (paps && paps.length) {
-        paps = Array.prototype.slice.call(paps);
-        for (var i = 0; i !== paps.length; ++i) {
-            paps[i].setAttribute("data-range-type", "pap[]");
-            paps[i].removeAttribute("name");
-        }
-    }
-    var allval = [], chkval = [];
-    $self.find("input.js-selector").each(function () {
-        allval.push(this.value);
-        if (this.checked)
-            chkval.push(this.value);
-    });
-
     // if nothing selected, either select all or error out
-    if (!chkval.length) {
+    $self.find(".js-default-submit-values").remove();
+    if (!$self.find("input[name='pap[]']:checked").length) {
         var subbtn = fn && $self.find("input[type=submit], button[type=submit]").filter("[value=" + fn + "]");
         if (subbtn && subbtn.length == 1 && subbtn.data("defaultSubmitAll")) {
-            chkval = allval;
+            var values = $self.find("input[name='pap[]']").map(function () { return this.value; }).get();
+            $self.append('<div class="js-default-submit-values"><input type="hidden" name="pap" value="' + values.join(" ") + '"></div>');
         } else {
             alert("Select one or more papers first.");
             event.preventDefault();
             return;
         }
     }
-    if (!this.elements.p) {
-        $self.append('<input class="is-selector-submit" type="hidden" name="p">');
-    }
-    this.elements.p.value = chkval.join(" ");
 
     // encode the expected download in the form action, to ease debugging
     var action = $self.data("originalAction");
