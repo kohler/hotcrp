@@ -13,8 +13,10 @@ class CurlS3Result extends S3Result {
     public $dstream;
     /** @var ?resource */
     private $_fstream;
-    /** @var ?int */
+    /** @var int */
     private $_fsize;
+    /** @var int */
+    private $_xsize = 0;
     /** @var int */
     public $runindex = 0;
     private $tries;
@@ -30,7 +32,7 @@ class CurlS3Result extends S3Result {
         if (isset($args["content"])) {
             $this->_fsize = strlen($args["content"]);
         } else if (isset($args["content_file"])) {
-            $this->_fsize = filesize($args["content_file"]);
+            $this->_fsize = (int) filesize($args["content_file"]);
             $this->args["Content-Length"] = (string) $this->_fsize;
         } else {
             $this->_fsize = 0;
@@ -45,6 +47,13 @@ class CurlS3Result extends S3Result {
         return $this;
     }
 
+    /** @param int $xsize
+     * @return $this */
+    function set_expected_size($xsize) {
+        $this->_xsize = $xsize;
+        return $this;
+    }
+
     /** @return $this */
     function reset() {
         $this->status = null;
@@ -56,7 +65,7 @@ class CurlS3Result extends S3Result {
         if ($this->curlh === null) {
             $this->curlh = curl_init();
             curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 3);
-            curl_setopt($this->curlh, CURLOPT_TIMEOUT, 6 + (int) ($this->_fsize >> 19));
+            curl_setopt($this->curlh, CURLOPT_TIMEOUT, 6 + ($this->_fsize >> 19) + ($this->_xsize >> 26));
             $this->hstream = fopen("php://memory", "w+b");
             curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->hstream);
         }
@@ -64,7 +73,7 @@ class CurlS3Result extends S3Result {
             curl_setopt($this->curlh, CURLOPT_FRESH_CONNECT, true);
             $tf = $this->runindex > 2 ? 2 : 1;
             curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 6 * $tf);
-            curl_setopt($this->curlh, CURLOPT_TIMEOUT, 15 * $tf);
+            curl_setopt($this->curlh, CURLOPT_TIMEOUT, 15 * $tf + ($this->_xsize >> 26));
             rewind($this->hstream);
             ftruncate($this->hstream, 0);
             rewind($this->dstream);

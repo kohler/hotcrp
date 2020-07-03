@@ -562,7 +562,7 @@ class DocumentInfo implements JsonSerializable {
             if (($dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR))
                 && function_exists("curl_init")
                 && ($stream = @fopen($dspath . "~", "x+b"))) {
-                $s3l = $s3->start_curl_get($s3k)->set_response_body_stream($stream);
+                $s3l = $s3->start_curl_get($s3k)->set_response_body_stream($stream)->set_expected_size($this->size());
                 $s3l->run();
                 return $this->handle_load_s3_curl($s3l, $dspath);
             } else {
@@ -572,6 +572,9 @@ class DocumentInfo implements JsonSerializable {
         return false;
     }
 
+    /** @param CurlS3Result $s3l
+     * @param string $dspath
+     * @return bool */
     private function handle_load_s3_curl($s3l, $dspath) {
         if ($s3l->status === 404
             && $this->s3_upgrade_extension($s3l->s3, $s3l->skey)) {
@@ -598,6 +601,10 @@ class DocumentInfo implements JsonSerializable {
         return $s3l->status === 200;
     }
 
+    /** @param S3Client $s3
+     * @param string $s3k
+     * @param string $dspath
+     * @return bool */
     private function load_s3_direct($s3, $s3k, $dspath) {
         $r = $s3->start_get($s3k)->run();
         if ($r->status === 404
@@ -857,7 +864,7 @@ class DocumentInfo implements JsonSerializable {
                 if (($s3k = $doc->s3_key())
                     && ($dspath = Filer::docstore_path($doc, Filer::FPATH_MKDIR))
                     && ($stream = @fopen($dspath . "~", "x+b"))) {
-                    $s3l = $s3->start_curl_get($s3k)->set_response_body_stream($stream);
+                    $s3l = $s3->start_curl_get($s3k)->set_response_body_stream($stream)->set_expected_size($doc->size());
                     $adocs[] = [$doc, $s3l, 0, $dspath];
                 }
             }
