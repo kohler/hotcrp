@@ -95,6 +95,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 } else if (!in_array($dir, $this->_dirfn ?? [])) {
                     $this->_dirfn[] = $dir;
                 }
+                $slash = strpos($fn, "/", $slash + 1);
             }
             if ($this->_dirfn !== null && in_array($fn, $this->_dirfn)) {
                 return $this->_add_fail($doc, $fn);
