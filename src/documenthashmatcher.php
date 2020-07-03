@@ -94,8 +94,9 @@ class DocumentHashMatcher {
             } else if ($fn === "j") {
                 $l = min(strlen($this->fixed_hash), 3);
                 $preg .= substr($this->fixed_hash, 0, $l);
-                for (; $l < 3; ++$l)
+                for (; $l < 3; ++$l) {
                     $preg .= "[0-9a-f]";
+                }
                 $preg .= "?";
             } else {
                 if ($fn === "h") {
