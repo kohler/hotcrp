@@ -1048,11 +1048,16 @@ class DocumentInfo implements JsonSerializable {
             while (($row = $result->fetch_row())) {
                 $idmap[(int) $row[0]] = $row[1] ?? "";
             }
+            $need = [];
             foreach ($docs as $doc) {
                 if (isset($idmap[$doc->paperStorageId])) {
                     $doc->crc32 = $idmap[$doc->paperStorageId];
                 }
+                if ($doc->crc32 === null || $doc->crc32 === "") {
+                    $need[] = $doc;
+                }
             }
+            self::prefetch_content($need);
         }
     }
 
