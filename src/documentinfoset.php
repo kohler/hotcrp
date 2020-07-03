@@ -17,6 +17,8 @@ class DocumentInfoSet_ZipInfo {
     public $compressed;
     /** @var int */
     public $compressed_length;
+    /** @var bool */
+    public $zip64 = false;
     /** @var ?int */
     public $central_offset;
     /** @var ?string */
@@ -75,11 +77,12 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     /** @param string $fn */
     function add_as(DocumentInfo $doc, $fn) {
-        if ($this->_filename) {
+        if ($this->_filename) { // might generate a .zip later; check filename
             assert(!$doc->error);
             $slash = strpos($fn, "/");
             if ($doc->error
                 || $fn === ""
+                || strlen($fn) > 1000
                 || ($slash !== false && str_ends_with($fn, "/"))
                 || ($slash !== false && strpos($fn, "//") !== false)
                 || !preg_match('/\A[^.*\/\s\000-\037\\\\\'"][^*\000-\037\\\\\'"]*\z/', $fn)) {
@@ -92,6 +95,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 } else if (!in_array($dir, $this->_dirfn ?? [])) {
                     $this->_dirfn[] = $dir;
                 }
+                $slash = strpos($fn, "/", $slash + 1);
             }
             if ($this->_dirfn !== null && in_array($fn, $this->_dirfn)) {
                 return $this->_add_fail($doc, $fn);
@@ -218,6 +222,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $this->_zipi = $this->_zipi ?? [];
         $i = count($this->_zipi);
         $offset = $i === 0 ? 0 : $this->_zipi[$i - 1]->local_end_offset();
+        DocumentInfo::prefetch_crc32(array_slice($this->docs, $i));
         while ($i !== count($this->docs)) {
             $this->_zipi[] = $zi = new DocumentInfoSet_ZipInfo;
             $doc = $this->docs[$i];
@@ -242,19 +247,30 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                         | ((int) $dt->format("G") << 10);
                 }
             }
+            if ($zi->compressed_length >= 0xFFFFFFFF
+                || $doc->size() >= 0xFFFFFFFF) {
+                $ex = pack("vvPP",
+                    1,         // ZIP64 tag
+                    8 + 8,     // extra block length
+                    $doc->size(), // uncompressed size
+                    $zi->compressed_length); // compressed size
+                $zi->zip64 = true;
+            } else {
+                $ex = "";
+            }
             $zi->localh = pack("VvvvvvVVVvv",
                 0x04034b50,    // local file header signature
-                10,            // version needed to extract
-                1 << 11,       // general purpose bit flag
+                !$zi->zip64 ? 10 : 45, // version needed to extract
+                1 << 11,       // general purpose bit flag (UTF-8 filename)
                 $zi->compression, // compression method
                 $zi->time,     // last mod file time
                 $zi->date,     // last mod file date
                 $doc->integer_crc32(), // crc-32
-                $zi->compressed_length, // compressed size
-                $doc->size(),  // uncompressed size
+                !$zi->zip64 ? $zi->compressed_length : 0xFFFFFFFF, // compressed size
+                !$zi->zip64 ? $doc->size() : 0xFFFFFFFF, // uncompressed size
                 strlen($fn),   // file name length
-                0              // extra field length
-            ) . $fn;
+                strlen($ex)    // extra field length
+            ) . $fn . $ex;
             $offset = $zi->local_end_offset();
             ++$i;
         }
@@ -265,43 +281,84 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $n = count($this->_zipi);
         $offset = $n === 0 ? 0 : $this->_zipi[$n - 1]->local_end_offset();
         $central_offset = $offset;
+        $zip64 = false;
         for ($i = 0; $i !== $n; ++$i) {
             $zi = $this->_zipi[$i];
             $doc = $this->docs[$i];
             $fn = $this->ufn[$i];
             $zi->central_offset = $offset;
+            if ($zi->zip64) {
+                $ex = pack("vvPPP",
+                    1,         // ZIP64 tag
+                    8 + 8 + 8, // extra block length
+                    $doc->size(), // uncompressed size
+                    $zi->compressed_length, // compressed size
+                    $zi->local_offset); // relative offset of local header
+                $zip64 = true;
+            } else if ($zi->local_offset >= 0xFFFFFFFF) {
+                $ex = pack("vvP",
+                    1,         // ZIP64 tag
+                    8,         // extra block length
+                    $zi->local_offset); // relative offset of local header
+                $zip64 = true;
+            } else {
+                $ex = "";
+            }
             $zi->centralh = pack("VvvvvvvVVVvvvvvVV",
                 0x02014b50,     // central file header signature
-                0x31E,          // version made by
-                10,             // version needed to extract
-                1 << 11,        // general purpose bit flag
+                0x300 + 45,     // version made by
+                $ex === "" ? 10 : 45, // version needed to extract
+                1 << 11,        // general purpose bit flag (UTF-8 filename)
                 $zi->compression, // compression method
                 $zi->time,      // last mod file time
                 $zi->date,      // last mod file date
                 $doc->integer_crc32(),  // crc-32
-                $zi->compressed_length, // compressed size
-                $doc->size(),   // uncompressed size
+                !$zi->zip64 ? $zi->compressed_length : 0xFFFFFFFF, // compressed size
+                !$zi->zip64 ? $doc->size() : 0xFFFFFFFF, // uncompressed size
                 strlen($fn),    // file name length
-                0,              // extra field length
+                strlen($ex),    // extra field length
                 0,              // file comment length
                 0,              // disk number start
-                0,              // internal file attributes
+                Mimetype::textual($doc->mimetype) ? 1 : 0, // internal file attributes
                 0100644 << 16,  // external file attributes
-                $zi->local_offset // relative offset of local header
-            ) . $fn;
+                $ex === "" ? $zi->local_offset : 0xFFFFFFFF // relative offset of local header
+            ) . $fn . $ex;
             $offset += strlen($zi->centralh);
         }
         // assign final central offset
         $this->_zipi[] = $zi = new DocumentInfoSet_ZipInfo;
         $zi->central_offset = $offset;
-        $zi->centralh = pack("VvvvvVVv",
+        if ($zip64
+            || $offset >= 0xFFFFFFFF
+            || count($this->docs) >= 0xFFFF) {
+            $ex = pack("VPvvVVPPPP",
+                0x06064b50,   // zip64 end of central dir signature
+                4 + 4 + 4 + 8 + 8 + 8 + 8, // size of this record
+                0x300 + 45,   // version made by
+                45,           // version needed to extract
+                0,            // number of this disk
+                0,            // number of the disk with the start of the central dir
+                count($this->docs), // total number of entries in central dir this disk
+                count($this->docs), // total number of entries in central dir
+                $offset - $central_offset, // size of central dir
+                $central_offset // offset of central dir this disk
+            ) . pack("VVPV",
+                0x07064b50,   // zip64 end of central dir locator
+                0,            // number of disk with start of zip64 end of central dir
+                $offset,      // offset of zip64 end of central dir
+                1);           // total number of disks
+            $zip64 = true;
+        } else {
+            $ex = "";
+        }
+        $zi->centralh = $ex . pack("VvvvvVVv",
             0x06054b50,       // end of central dir signature
             0,                // number of this disk
             0,                // number of the disk with the start of the central dir
-            count($this->docs), // total number of entries in the central dir on this disk
-            count($this->docs), // total number of entries in the central dir
-            $offset - $central_offset, // size of the central directory
-            $central_offset, // offset of start of central directory
+            min(count($this->docs), 0xFFFF), // total entries in central dir this disk
+            min(count($this->docs), 0xFFFF), // total entries in central dir
+            $offset - $central_offset, // size of central dir
+            min($central_offset, 0xFFFFFFFF), // offset of start of central dir
             0                 // .ZIP file comment length
         );
     }
@@ -318,17 +375,12 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $this->_hotzip_progress();
         }
         $this->_hotzip_final();
-        assert($this->_hotzip_filesize() < 0xFFFFFFFF);
     }
     /** @return string */
     private function content_signature() {
         if ($this->_signature === null) {
-            $xdocs = $this->docs;
-            usort($xdocs, function ($a, $b) {
-                return strcmp($a->member_filename(), $b->member_filename());
-            });
-            $s = count($xdocs) . "\n";
-            foreach ($xdocs as $doc) {
+            $s = count($this->docs) . "\n";
+            foreach ($this->docs as $doc) {
                 $s .= $doc->member_filename() . "\n" . $doc->text_hash() . "\n";
             }
             if (!empty($this->_errors_html)) {
@@ -376,14 +428,13 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             if ($zi->compressed !== null) {
                 $sz += fwrite($out, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
-                $in = fopen($f, "r");
-                $sz += stream_copy_to_stream($in, $out);
-                fclose($in);
+                $filesize = $doc->size();
+                $sz += self::readfile_subrange($out, 0, $filesize, 0, $f, $filesize);
             } else {
                 $sz += fwrite($out, $doc->content());
             }
             if ($sz !== $zi->local_end_offset() - $zi->local_offset) {
-                $this->add_error_html("Failure creating temporary file (#$i @{$zi->local_offset}).");
+                $this->add_error_html("Failure writing {$this->ufn[$i]}, wrote $sz, expected " . ($zi->local_end_offset() - $zi->local_offset) . ".");
                 fclose($out);
                 return null;
             }
@@ -411,59 +462,47 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             "content_file" => $this->_filestore
         ], $this->conf);
     }
-    /** @param int $r0
+    /** @param resource $out
+     * @param int $r0
      * @param int $r1
      * @param int $p0
      * @param string $s
      * @return int */
-    static function echo_subrange($r0, $r1, $p0, $s) {
+    static function echo_subrange($out, $r0, $r1, $p0, $s) {
         $p1 = $p0 + strlen($s);
         if ($p1 <= $r0 || $r1 <= $p0) {
-            // nothing
+            return strlen($s);
         } else if ($p0 < $r0) {
-            echo substr($s, $r0 - $p0, $r1 - $r0);
+            return ($r0 - $p0) + fwrite($out, substr($s, $r0 - $p0, $r1 - $r0));
         } else if ($r1 < $p1) {
-            echo substr($s, 0, $r1 - $p0);
+            return fwrite($out, substr($s, 0, $r1 - $p0));
         } else {
-            echo $s;
+            return fwrite($out, $s);
         }
-        return $p1;
     }
-    /** @param int $r0
+    /** @param resource $out
+     * @param int $r0
      * @param int $r1
      * @param int $p0
      * @param string $fn
      * @param int $sz
      * @return int */
-    private static function readfile_subrange($r0, $r1, $p0, $fn, $sz) {
+    private static function readfile_subrange($out, $r0, $r1, $p0, $fn, $sz) {
         $p1 = $p0 + $sz;
         if ($p1 <= $r0 || $r1 <= $p0) {
-            return $p1;
+            return $sz;
         }
-        if ($p0 < $r0) {
-            $off = $r0 - $p0;
-        } else {
-            $off = 0;
-        }
+        $off = max(0, $r0 - $p0);
         $len = min($sz, $r1 - $p0) - $off;
-        $f = fopen($fn, "rb");
-        $wlen = 0;
-        if ($f) {
-            if ($off !== 0 && fseek($f, $off) !== 0) {
-                // skip
-            } else if ($off + $len === $sz) {
-                $wlen = fpassthru($f);
-            } else {
-                while ($wlen !== $len
-                       && ($s = fread($f, min($len - $wlen, 32768))) !== false
-                       && $s !== "") {
-                    echo $s;
-                    $wlen += strlen($s);
-                }
-            }
+        if ($len === $sz && $sz < 20000000) {
+            return readfile($fn);
+        } else if (($f = fopen($fn, "rb"))) {
+            $wlen = stream_copy_to_stream($f, $out, $len, $off);
             fclose($f);
+            return $wlen;
+        } else {
+            return 0;
         }
-        return $wlen === $len ? $p1 : $p0 + $off + $wlen;
     }
     /** @return bool */
     private function _download_directly($opts = []) {
@@ -499,10 +538,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
 
         // Print headers
-        header("Content-Type: " . Mimetype::type_with_charset($this->_mimetype));
-        if (zlib_get_coding_type() === false) {
-            header("Content-Length: " . ($r1 - $r0));
+        if (zlib_get_coding_type() !== false) {
+            ini_set("zlib.output_compression", "0");
         }
+        header("Content-Type: " . Mimetype::type_with_charset($this->_mimetype));
+        header("Content-Length: " . ($r1 - $r0));
         if ($r0 !== 0 || $r1 !== $filesize) {
             header("HTTP/1.1 206 Partial Content");
             header("Content-Range: bytes {$r0}-" . ($r1 - 1) . "/$filesize");
@@ -529,6 +569,10 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             header("HTTP/1.1 204 No Content");
             return true;
         }
+        flush();
+        while (@ob_end_flush()) {
+            // do nothing
+        }
 
         // Print data
         $d0 = 0;
@@ -541,6 +585,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                && $this->_zipi[$d1]->local_offset < $r1) {
             ++$d1;
         }
+        $out = fopen("php://output", "wb");
 
         while ($d0 !== $d1) {
             set_time_limit(120);
@@ -551,25 +596,26 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $zi = $this->_zipi[$d0];
             $doc = $this->docs[$d0];
             $p0 = $zi->local_offset;
-            $p0 = self::echo_subrange($r0, $r1, $p0, $zi->localh);
-            assert($p0 === $zi->local_offset + strlen($zi->localh));
+            $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->localh);
             if ($zi->compressed !== null) {
-                $p0 = self::echo_subrange($r0, $r1, $p0, $zi->compressed);
+                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
-                $p0 = self::readfile_subrange($r0, $r1, $p0, $f, $doc->size());
+                $p0 += self::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
             } else {
-                $p0 = self::echo_subrange($r0, $r1, $p0, $doc->content());
+                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $doc->content());
             }
-            if ($p0 !== $zi->local_end_offset()) {
-                throw new Exception("Failure creating temporary file (#$d0 @{$zi->local_offset}).");
+            if ($p0 < min($r1, $zi->local_end_offset())) {
+                throw new Exception("Failure writing {$this->ufn[$d0]}, wrote " . ($p0 - $zi->local_offset) . ", expected " . (min($r1, $zi->local_end_offset()) - $zi->local_offset) . ".");
             }
             ++$d0;
         }
         if ($d0 === count($this->docs)) {
             foreach ($this->_zipi as $zi) {
-                self::echo_subrange($r0, $r1, $zi->central_offset, $zi->centralh);
+                self::echo_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
             }
         }
+
+        fclose($out);
         return true;
     }
 

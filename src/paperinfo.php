@@ -368,6 +368,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
  * @property ?string $timeFinalSubmitted
  * @property ?string $size
  * @property ?string $mimetype
+ * @property ?string $timestamp
  * @property ?string $blind
  * @property ?string $sha1
  * @property ?string $leadContactId
@@ -1640,7 +1641,7 @@ class PaperInfo {
     }
 
     private function _document_sql() {
-        return "paperId, paperStorageId, timestamp, mimetype, sha1, documentType, filename, infoJson, size, filterType, originalStorageId, inactive";
+        return "paperId, paperStorageId, timestamp, mimetype, sha1, crc32, documentType, filename, infoJson, size, filterType, originalStorageId, inactive";
     }
 
     /** @param int $dtype
@@ -1674,7 +1675,7 @@ class PaperInfo {
                  && $did == $this->finalPaperStorageId))
             && !$full) {
             $infoJson = get($this, $dtype == DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson", false);
-            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => get($this, "timestamp"), "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => get($this, "size"), "infoJson" => $infoJson, "is_partial" => true], $this->conf, $this);
+            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => $this->timestamp ?? null, "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => $this->size ?? null, "infoJson" => $infoJson, "is_partial" => true], $this->conf, $this);
         }
 
         if ($this->_document_array === null) {

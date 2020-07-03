@@ -586,7 +586,7 @@ class ContactList {
             if ($fieldId == self::FIELD_SELECTOR_ON) {
                 $c = ' checked="checked"';
             }
-            return '<input type="checkbox" class="uic js-range-click" name="pap[]" value="' . $row->contactId . '" tabindex="1"' . $c . ' />';
+            return '<input type="checkbox" class="uic js-range-click js-selector" name="pap[]" value="' . $row->contactId . '" tabindex="1"' . $c . ' />';
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
             if (!($topics = $row->topic_interest_map())) {

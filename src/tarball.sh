@@ -158,7 +158,6 @@ lib/tagger.php
 lib/text.php
 lib/unicodehelper.php
 lib/xlsx.php
-lib/zipdocument.php
 
 pages/.htaccess
 pages/home.php
