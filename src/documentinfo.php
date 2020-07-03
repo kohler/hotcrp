@@ -998,7 +998,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     function has_crc32() {
-        return $this->crc32 !== null && $this->crc32 !== "";
+        return is_string($this->crc32) && $this->crc32 !== "";
     }
     /** @return string|false */
     function crc32() {
@@ -1008,11 +1008,17 @@ class DocumentInfo implements JsonSerializable {
         if ($this->crc32 === null || $this->crc32 === "") {
             $this->ensure_content();
             if ($this->content !== null) {
-                $this->crc32 = hash("crc32b", $this->content, true);
+                $c = hash("crc32b", $this->content, true);
             } else if (($file = $this->available_content_file())) {
-                $this->crc32 = hash_file("crc32b", $file, true);
+                $c = hash_file("crc32b", $file, true);
+            } else {
+                $c = false;
+            }
+            if ($c === false || strlen($c) === 4) {
+                $this->crc32 = $c;
             } else {
                 $this->crc32 = false;
+                error_log("{$this->conf->dbname}: #{$this->paperId}/{$this->documentType}/{$this->paperStorageId}: funny CRC32 result");
             }
             if ($this->crc32 !== false && $this->paperStorageId > 0) {
                 $this->conf->ql("update PaperStorage set crc32=? where paperId=? and paperStorageId=?", $this->crc32, $this->paperId, $this->paperStorageId);
