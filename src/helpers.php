@@ -422,20 +422,25 @@ function ini_get_bytes($varname, $value = null) {
 /** @param int|float $n
  * @return string */
 function unparse_byte_size($n) {
-    if ($n > 999499)
+    if ($n > 999949999) {
+        return (round($n / 10000000) / 100) . "GB";
+    } else if ($n > 999499) {
         return (round($n / 100000) / 10) . "MB";
-    else if ($n > 9949)
+    } else if ($n > 9949) {
         return round($n / 1000) . "kB";
-    else if ($n > 0)
+    } else if ($n > 0) {
         return (max(round($n / 100), 1) / 10) . "kB";
-    else
+    } else {
         return "0B";
+    }
 }
 
 /** @param int|float $n
  * @return string */
 function unparse_byte_size_binary($n) {
-    if ($n > 996147) {
+    if ($n > 1073689395) {
+        return (round($n / 10737418.24) / 100) . "GiB";
+    } else if ($n > 1048063) {
         return (round($n / 104857.6) / 10) . "MiB";
     } else if ($n > 10188) {
         return round($n / 1024) . "KiB";

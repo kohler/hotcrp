@@ -682,7 +682,9 @@ function unparse_duration(d, include_msec) {
 }
 
 function unparse_byte_size(n) {
-    if (n > 999499)
+    if (n > 999949999)
+        return (Math.round(n / 10000000) / 100) + "GB";
+    else if (n > 999499)
         return (Math.round(n / 100000) / 10) + "MB";
     else if (n > 9949)
         return Math.round(n / 1000) + "kB";
@@ -693,7 +695,9 @@ function unparse_byte_size(n) {
 }
 
 function unparse_byte_size_binary(n) {
-    if (n > 996147)
+    if (n > 1073689395)
+        return (Math.round(n / 10737418.24) / 100) + "GiB";
+    else if (n > 1048063)
         return (Math.round(n / 104857.6) / 10) + "MiB";
     else if (n > 10188)
         return Math.round(n / 1024) + "KiB";
