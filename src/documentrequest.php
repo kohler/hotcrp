@@ -278,15 +278,22 @@ class DocumentRequest implements JsonSerializable {
             && !array_key_exists("range", $opts)
             && preg_match('/\Abytes\s*=\s*(?:(?:\d+-\d+|-\d+|\d+-)\s*,?\s*)+\z/', $range)) {
             $opts["range"] = [];
+            $lastr = null;
             preg_match_all('/\d+-\d+|-\d+|\d+-/', $range, $m);
             foreach ($m[0] as $t) {
                 $dash = strpos($t, "-");
                 $r1 = $dash === 0 ? null : intval(substr($t, 0, $dash));
                 $r2 = $dash === strlen($t) - 1 ? null : intval(substr($t, $dash + 1));
-                if (($r1 === null && $r2 !== 0)
-                    || $r2 === null
-                    || ($r1 !== null && $r2 !== null && $r1 <= $r2)) {
-                    $opts["range"][] = [$r1, $r2];
+                if ($r1 === null && $r2 !== 0) {
+                    $opts["range"][] = $lastr = [$r1, $r2];
+                } else if ($r2 === null || ($r1 !== null && $r1 <= $r2)) {
+                    if ($lastr !== null && $lastr[0] !== null && $lastr[1] !== null
+                        && $r1 >= $lastr[0] && $r1 - $lastr[1] <= 500) {
+                        $nr = count($opts["range"]);
+                        $opts["range"][$nr - 1][1] = $lastr[1] = $r2;
+                    } else {
+                        $opts["range"][] = $lastr = [$r1, $r2];
+                    }
                 } else {
                     unset($opts["range"]);
                     break;
