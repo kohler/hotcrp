@@ -415,26 +415,33 @@ class ReviewField implements Abbreviator, JsonSerializable {
 
     function parse_option_value($text) {
         assert($this->has_options);
-        if (!$text || !isset($this->options[$text])) {
-            return false;
-        } else if ($this->option_letter) {
-            return $this->option_letter - ord($text);
+        $text = trim($text);
+        if ($text === "") {
+            return 0;
+        }
+        if (!ctype_alnum($text)) {
+            if (preg_match('/\A\s*([A-Z]|[0-9]+)[\s\.]/', $text, $m)) {
+                $text = $m[1];
+            } else if ($text[0] === "(" || strcasecmp($text, "No entry") === 0) {
+                return 0;
+            } else {
+                return false;
+            }
+        }
+        if (isset($this->options[$text])) {
+            if ($this->option_letter) {
+                return $this->option_letter - ord($text);
+            } else {
+                return intval($text);
+            }
         } else {
-            return (int) $text;
+            return false;
         }
     }
 
     function parse_value($text) {
         if ($this->has_options) {
-            $text = trim($text);
-            if ($text === ""
-                || $text === "0"
-                || $text[0] === "("
-                || strcasecmp($text, "No entry") === 0) {
-                return 0;
-            } else {
-                return $this->parse_option_value($text);
-            }
+            return $this->parse_option_value($text);
         } else {
             $text = rtrim($text);
             if ($text !== "") {
