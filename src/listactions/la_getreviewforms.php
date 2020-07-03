@@ -3,11 +3,13 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class GetReviewForms_ListAction extends GetReviewBase_ListAction {
+    private $all;
     function __construct($conf, $fj) {
-        parent::__construct(true, $fj->name === "get/revformz");
+        parent::__construct(true, $fj->zip);
+        $this->all = $fj->all;
     }
     function allow(Contact $user, Qrequest $qreq) {
-        return $user->is_reviewer();
+        return $this->all ? $user->is_manager() : $user->is_reviewer();
     }
     function run(Contact $user, $qreq, $ssel) {
         $rf = $user->conf->review_form();
@@ -24,16 +26,22 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
             if ($whyNot
                 && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"])) {
-                $errors[whyNotText($whyNot, true)] = true;
+                $errors[$whyNot->unparse(0)] = true;
             } else {
                 $t = "";
                 if ($whyNot) {
-                    $t = whyNotText($whyNot, true);
-                    $errors[$t] = false;
-                    if (!isset($whyNot["deadline"]))
-                        $t .= prefix_word_wrap("==-== ", strtoupper($t) . "\n\n", "==-== ");
+                    $m = $whyNot->unparse(0);
+                    $errors[$m] = false;
+                    if (!isset($whyNot["deadline"])) {
+                        $t .= prefix_word_wrap("==-== ", strtoupper($m) . "\n\n", "==-== ");
+                    }
                 }
-                $rrows = $prow->full_reviews_of_user($user);
+                if (!$this->all || !$user->allow_administer($prow)) {
+                    $rrows = $prow->full_reviews_of_user($user);
+                } else {
+                    $prow->ensure_full_reviews();
+                    $rrows = $prow->reviews_by_display($user);
+                }
                 $time = null;
                 if (empty($rrows)) {
                     $rrows[] = null;

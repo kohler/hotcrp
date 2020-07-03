@@ -55,19 +55,35 @@
     },
     {
         "name": "get/revform", "get": true, "paper_optional": true,
-        "title": "Review assignments/Review forms",
+        "title": "Review assignments/Your review forms",
         "position": 2000,
         "allow_if": "reviewer",
         "callback": "+GetReviewForms_ListAction",
-        "zip": false
+        "zip": false, "all": false
     },
     {
         "name": "get/revformz", "get": true, "paper_optional": true,
-        "title": "Review assignments/Review forms (zip)",
+        "title": "Review assignments/Your review forms (zip)",
         "position": 2001,
         "allow_if": "reviewer",
         "callback": "+GetReviewForms_ListAction",
-        "zip": true
+        "zip": true, "all": false
+    },
+    {
+        "name": "get/allrevform", "get": true, "paper_optional": true,
+        "title": "Review assignments/All review forms",
+        "position": 2002,
+        "allow_if": "manager",
+        "callback": "+GetReviewForms_ListAction",
+        "zip": false, "all": true
+    },
+    {
+        "name": "get/allrevformz", "get": true, "paper_optional": true,
+        "title": "Review assignments/All review forms (zip)",
+        "position": 2003,
+        "allow_if": "manager",
+        "callback": "+GetReviewForms_ListAction",
+        "zip": true, "all": true
     },
     {
         "name": "get/revt", "get": true,
