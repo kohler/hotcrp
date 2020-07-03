@@ -377,14 +377,23 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
+    /** @param string $fn
+     * @param int $expected_size
+     * @return int|false */
+    static function filesize_expected($fn, $expected_size) {
+        $sz = @filesize($fn);
+        if ($sz !== $expected_size && $sz !== false) {
+            clearstatcache(true, $fn);
+            $sz = @filesize($fn);
+        }
+        return $sz;
+    }
+
     /** @return bool */
     private function check_docstore_size() {
         assert($this->filestore !== null);
-        if ($this->size == 0 || filesize($this->filestore) == $this->size) {
-            return true;
-        }
-        clearstatcache();
-        return filesize($this->filestore) == $this->size;
+        return $this->size == 0
+            || self::filesize_expected($this->filestore, $this->size) === $this->size;
     }
 
     /** @return bool */
@@ -573,7 +582,10 @@ class DocumentInfo implements JsonSerializable {
         fclose($s3l->dstream);
         $unlink = true;
         if ($s3l->status === 200) {
-            if (rename($dspath . "~", $dspath)) {
+            if (self::filesize_expected($dspath . "~", $this->size) !== $this->size) {
+                error_log("Disk error: GET $s3l->skey: expected size {$this->size}, got " . filesize($dspath . "~"));
+                $s3l->status = 500;
+            } else if (rename($dspath . "~", $dspath)) {
                 $this->filestore = $dspath;
                 $unlink = false;
             } else {
