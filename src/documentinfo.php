@@ -345,6 +345,19 @@ class DocumentInfo implements JsonSerializable {
         $this->size = (int) $this->content_size();
     }
 
+    /** @param string $fn
+     * @param int $expected_size
+     * @return int|false */
+    static function filesize_expected($fn, $expected_size) {
+        $sz = @filesize($fn);
+        if ($sz !== $expected_size && $sz !== false) {
+            clearstatcache(true, $fn);
+            $sz = @filesize($fn);
+        }
+        return $sz;
+    }
+
+
     /** @return bool */
     function compressible() {
         return $this->size() <= 10000000 && Mimetype::compressible($this->mimetype);
@@ -369,48 +382,33 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     function load_docstore() {
-        if (($dspath = Filer::docstore_path($this, Filer::FPATH_EXISTS))) {
-            $this->filestore = $dspath;
+        if (($path = Filer::docstore_path($this, Filer::FPATH_EXISTS))) {
+            if ($this->size != 0) {
+                $sz = self::filesize_expected($path, $this->size);
+                if ($sz !== $this->size
+                    && ($s3 = $this->conf->s3_docstore())
+                    && ($s3k = $this->s3_key())
+                    && $s3->head_size($s3k) === $this->size()) {
+                    unlink($path);
+                    return false;
+                } else {
+                    error_log("{$this->conf->dbname}: #{$this->paperId}/{$this->documentType}/{$this->paperStorageId}: bad size $sz, expected $this->size");
+                }
+            }
+            $this->filestore = $path;
             return true;
         } else {
             return false;
         }
-    }
-
-    /** @param string $fn
-     * @param int $expected_size
-     * @return int|false */
-    static function filesize_expected($fn, $expected_size) {
-        $sz = @filesize($fn);
-        if ($sz !== $expected_size && $sz !== false) {
-            clearstatcache(true, $fn);
-            $sz = @filesize($fn);
-        }
-        return $sz;
-    }
-
-    /** @return bool */
-    private function check_docstore_size() {
-        assert($this->filestore !== null);
-        return $this->size == 0
-            || self::filesize_expected($this->filestore, $this->size) === $this->size;
     }
 
     /** @return bool */
     function need_prefetch_content() {
-        if ($this->content === null
+        return $this->content === null
             && $this->content_file === null
-            && ((!$this->filestore && !$this->load_docstore())
-                || !$this->check_docstore_size())
-            && $this->conf->s3_docstore()) {
-            if ($this->filestore) {
-                unlink($this->filestore);
-            }
-            $this->filestore = null;
-            return true;
-        } else {
-            return false;
-        }
+            && !$this->filestore
+            && !$this->load_docstore()
+            && $this->conf->s3_docstore();
     }
 
     /** @return bool */
@@ -645,8 +643,8 @@ class DocumentInfo implements JsonSerializable {
             $s3k = $this->s3_key();
 
             if ($s3->head_size($s3k) === $this->size()
-                || (($f = $this->available_content_file())
-                    && $s3->put_file($s3k, $f, $this->mimetype, $user_data))) {
+                || (($path = $this->available_content_file())
+                    && $s3->put_file($s3k, $path, $this->mimetype, $user_data))) {
                 return true;
             }
 
@@ -991,8 +989,8 @@ class DocumentInfo implements JsonSerializable {
         $this->ensure_content();
         if ($this->content !== null) {
             return $ha->prefix() . hash($ha->algorithm(), $this->content, true);
-        } else if (($file = $this->available_content_file())
-                   && ($h = hash_file($ha->algorithm(), $file, true)) !== false) {
+        } else if (($path = $this->available_content_file())
+                   && ($h = hash_file($ha->algorithm(), $path, true)) !== false) {
             return $ha->prefix() . $h;
         } else {
             return false;
@@ -1021,8 +1019,8 @@ class DocumentInfo implements JsonSerializable {
             $this->ensure_content();
             if ($this->content !== null) {
                 $c = hash("crc32b", $this->content, true);
-            } else if (($file = $this->available_content_file())) {
-                $c = hash_file("crc32b", $file, true);
+            } else if (($path = $this->available_content_file())) {
+                $c = hash_file("crc32b", $path, true);
             } else {
                 $c = false;
             }
