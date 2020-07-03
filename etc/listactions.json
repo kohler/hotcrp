@@ -51,7 +51,6 @@
         "title": "Review assignments/PC assignments",
         "position": 2099,
         "allow_if": "manager",
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetPcassignments_ListAction"
     },
     {
@@ -59,8 +58,7 @@
         "title": "Review assignments/Review forms",
         "position": 2000,
         "allow_if": "reviewer",
-        "require": "src/listactions/la_get_rev.php",
-        "callback": "+GetReviewForm_ListAction",
+        "callback": "+GetReviewForms_ListAction",
         "zip": false
     },
     {
@@ -68,8 +66,7 @@
         "title": "Review assignments/Review forms (zip)",
         "position": 2001,
         "allow_if": "reviewer",
-        "require": "src/listactions/la_get_rev.php",
-        "callback": "+GetReviewForm_ListAction",
+        "callback": "+GetReviewForms_ListAction",
         "zip": true
     },
     {
@@ -77,45 +74,40 @@
         "title": "Reviews/Reviews with paper info",
         "position": 3050,
         "allow_if": "view_review",
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
-        "zip": false, "abstract": true
+        "zip": false, "abstract": true, "author_view": true
     },
     {
         "name": "get/rev", "get": true,
         "title": "Reviews/Reviews (text)",
         "position": 3100,
         "allow_if": "view_review",
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
-        "zip": false
+        "zip": false, "abstract": false, "author_view": true
     },
     {
         "name": "get/revz", "get": true,
         "title": "Reviews/Reviews (zip)",
         "position": 3105,
         "allow_if": "view_review",
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
-        "zip": true
+        "zip": true, "abstract": false, "author_view": false
     },
     {
         "name": "get/revau", "get": true,
         "title": "Reviews/Reviews (text, author view)",
         "position": 3200,
         "allow_if": ["view_review", "admin"],
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
-        "zip": false, "author_view": true
+        "zip": false, "abstract": false, "author_view": true
     },
     {
         "name": "get/revauz", "get": true,
         "title": "Reviews/Reviews (zip, author view)",
         "position": 3205,
         "allow_if": ["view_review", "admin"],
-        "require": "src/listactions/la_get_rev.php",
         "callback": "+GetReviews_ListAction",
-        "zip": true, "author_view": true
+        "zip": true, "abstract": false, "author_view": true
     },
     {
         "name": "get/revcsv", "get": true,
@@ -207,15 +199,13 @@
         "name": "get/abstract", "get": true,
         "title": "Paper information/Text with abstracts", "display_if_list_has": "abstract",
         "position": 1000,
-        "require": "src/listactions/la_get_sub.php",
-        "callback": "+GetAbstract_ListAction"
+        "callback": "+GetAbstracts_ListAction"
     },
     {
         "name": "get/abstract", "get": true,
         "title": "Paper information/Text", "display_if_list_has": "!abstract",
         "position": 1000,
-        "require": "src/listactions/la_get_sub.php",
-        "callback": "+GetAbstract_ListAction"
+        "callback": "+GetAbstracts_ListAction"
     },
     {
         "name": "get/authors", "get": true,
