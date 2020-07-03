@@ -156,18 +156,25 @@ class Mailer {
     /** @var ?Contact */
     public $recipient;
 
-    protected $width = 72;
+    /** @var int */
+    protected $width;
+    /** @var bool */
     protected $flowed = false;
+    /** @var int */
     protected $censor;
+    /** @var ?string */
     protected $reason;
-    protected $adminupdate;
+    /** @var bool */
+    protected $adminupdate = false;
+    /** @var ?string */
     protected $notes;
-    protected $preparation;
     public $capability_token;
+    /** @var bool */
     protected $sensitive;
 
+    /** @var ?MailPreparation */
+    protected $preparation;
     protected $expansionType;
-
     protected $_unexpanded = [];
     protected $_errors_reported = [];
 
@@ -182,16 +189,16 @@ class Mailer {
     /** @param ?Contact $recipient */
     function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
-        foreach (["width", "censor", "reason", "adminupdate", "notes",
-                  "capability_token"] as $k) {
-            $this->$k = $settings[$k] ?? null;
-        }
-        if ($this->width === null) {
-            $this->width = 72;
-        } else if (!$this->width) {
+        $this->width = $settings["width"] ?? 72;
+        if (!$this->width) {
             $this->width = 10000000;
         }
         $this->flowed = !!$this->conf->opt("mailFormatFlowed");
+        $this->censor = $settings["censor"] ?? self::CENSOR_NONE;
+        $this->reason = $settings["reason"] ?? null;
+        $this->adminupdate = $settings["adminupdate"] ?? false;
+        $this->notes = $settings["notes"] ?? null;
+        $this->capability_token = $settings["capability_token"] ?? null;
         $this->sensitive = $settings["sensitive"] ?? false;
     }
 
