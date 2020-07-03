@@ -545,7 +545,7 @@ class DocumentInfo implements JsonSerializable {
     /** @return string|false */
     function s3_accel_redirect() {
         if (($s3as = $this->conf->opt("s3AccelRedirectThreshold"))
-            && $this->size > $s3as
+            && $this->size >= $s3as
             && $this->conf->s3_docstore()
             && $this->s3_key()
             && ($s3ap = $this->conf->opt("s3AccelRedirect"))) {
