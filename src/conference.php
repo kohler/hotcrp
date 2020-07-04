@@ -678,6 +678,11 @@ class Conf {
         $this->default_format = (int) ($this->opt["defaultFormat"] ?? 0);
         $this->_format_info = null;
 
+        // emails
+        if (($eol = $this->opt["postfixMailer"] ?? $this->opt["postfixEOL"] ?? false)) {
+            $this->opt["postfixEOL"] = is_string($eol) ? $eol : PHP_EOL;
+        }
+
         // other caches
         $sort_by_last = !!($this->opt["sortByLastName"] ?? false);
         if (!$this->sort_by_last != !$sort_by_last) {

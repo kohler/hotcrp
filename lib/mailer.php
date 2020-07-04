@@ -80,7 +80,6 @@ class MailPreparation {
         }
 
         $headers = $this->headers;
-        $eol = Mailer::eol();
         $sent = false;
 
         // create valid To: header
@@ -88,7 +87,8 @@ class MailPreparation {
         if (is_array($to)) {
             $to = join(", ", $to);
         }
-        $to = (new MimeText)->encode_email_header("To: ", $to);
+        $eol = $this->conf->opt("postfixEOL") ?? "\r\n";
+        $to = (new MimeText($eol))->encode_email_header("To: ", $to);
         $headers["to"] = $to . $eol;
         $headers["content-transfer-encoding"] = "Content-Transfer-Encoding: quoted-printable" . $eol;
         // XXX following assumes body is text
@@ -160,6 +160,8 @@ class Mailer {
     public $conf;
     /** @var ?Contact */
     public $recipient;
+    /** @var string */
+    protected $eol;
 
     /** @var int */
     protected $width;
@@ -183,11 +185,10 @@ class Mailer {
     protected $_unexpanded = [];
     protected $_errors_reported = [];
 
-    static private $eol = null;
-
     /** @param ?Contact $recipient */
     function __construct(Conf $conf, $recipient = null, $settings = []) {
         $this->conf = $conf;
+        $this->eol = $conf->opt("postfixEOL") ?? "\r\n";
         $this->reset($recipient, $settings);
     }
 
@@ -195,7 +196,7 @@ class Mailer {
     function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
         $this->width = $settings["width"] ?? 72;
-        if (!$this->width) {
+        if ($this->width <= 0) {
             $this->width = 10000000;
         }
         $this->flowed = !!$this->conf->opt("mailFormatFlowed");
@@ -205,22 +206,6 @@ class Mailer {
         $this->notes = $settings["notes"] ?? null;
         $this->capability_token = $settings["capability_token"] ?? null;
         $this->sensitive = $settings["sensitive"] ?? false;
-    }
-
-    static function eol() {
-        if (self::$eol === null) {
-            if (($x = Conf::$main->opt("postfixMailer")) === null) {
-                $x = Conf::$main->opt("postfixEOL");
-            }
-            if (!$x) {
-                self::$eol = "\r\n";
-            } else if ($x === true || !is_string($x)) {
-                self::$eol = PHP_EOL;
-            } else {
-                self::$eol = $x;
-            }
-        }
-        return self::$eol;
     }
 
 
@@ -686,7 +671,7 @@ class Mailer {
         if (!isset($this->recipient->contactId)) {
             error_log("no contactId in recipient\n" . debug_string_backtrace());
         }
-        $mimetext = new MimeText;
+        $mimetext = new MimeText($this->eol);
 
         // expand the template
         $this->preparation = $prep;
@@ -704,17 +689,16 @@ class Mailer {
             $fromHeader = $mimetext->encode_email_header("From: ", $this->conf->opt("emailFrom"));
             $this->conf->set_opt("emailFromHeader", $fromHeader);
         }
-        $eol = self::eol();
         $prep->headers = [];
         if ($fromHeader) {
-            $prep->headers["from"] = $fromHeader . $eol;
+            $prep->headers["from"] = $fromHeader . $this->eol;
         }
-        $prep->headers["subject"] = $subject . $eol;
+        $prep->headers["subject"] = $subject . $this->eol;
         $prep->headers["to"] = "";
         foreach (self::$email_fields as $lcfield => $field) {
             if (($text = $mail[$lcfield] ?? "") !== "" && $text !== "<none>") {
                 if (($hdr = $mimetext->encode_email_header($field . ": ", $text))) {
-                    $prep->headers[$lcfield] = $hdr . $eol;
+                    $prep->headers[$lcfield] = $hdr . $this->eol;
                 } else {
                     $prep->errors[$lcfield] = $mimetext->unparse_error();
                     $logmsg = "$lcfield: $text";
@@ -728,9 +712,9 @@ class Mailer {
                 }
             }
         }
-        $prep->headers["mime-version"] = "MIME-Version: 1.0" . $eol;
+        $prep->headers["mime-version"] = "MIME-Version: 1.0" . $this->eol;
         $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8"
-            . ($this->flowed ? "; format=flowed" : "") . $eol;
+            . ($this->flowed ? "; format=flowed" : "") . $this->eol;
         $prep->sensitive = $this->sensitive;
     }
 
@@ -791,6 +775,13 @@ class MimeText {
     public $out;
     /** @var int */
     public $linelen;
+    /** @var string */
+    public $eol;
+
+    /** @param string $eol */
+    function __construct($eol = "\r\n") {
+        $this->eol = $eol;
+    }
 
     /** @param string $header
      * @param string $str */
@@ -843,7 +834,7 @@ class MimeText {
             $maxlinelen = $utf8 > 0 ? 76 - 12 : 78;
             if (($this->linelen + $z > $maxlinelen && $this->linelen > 30)
                 || ($utf8 > 0 && substr($this->out, strlen($this->out) - 2) == "?=")) {
-                $this->out .= Mailer::eol() . " ";
+                $this->out .= $this->eol . " ";
                 $this->linelen = 1;
                 while ($utf8 === 0 && $xstr !== "" && ctype_space($xstr[0])) {
                     $xstr = substr($xstr, 1);
