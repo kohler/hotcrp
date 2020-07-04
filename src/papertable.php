@@ -719,8 +719,8 @@ class PaperTable {
         if ($accepts) {
             echo ' data-document-accept="', htmlspecialchars(join(",", array_map(function ($m) { return $m->mimetype; }, $accepts))), '"';
         }
-        if ($max_size > 0) {
-            echo ' data-document-max-size="', (int) $max_size, '"';
+        if ($docx->max_size !== null) {
+            echo ' data-document-max-size="', (int) $docx->max_size, '"';
         }
         echo '>';
 
@@ -2422,8 +2422,7 @@ class PaperTable {
         $form_js = [
             "id" => "form-paper",
             "class" => "need-unload-protection ui-submit js-submit-paper",
-            "data-alert-toggle" => "paper-alert",
-            "data-upload-threshold" => ini_get_bytes("upload_max_filesize") >> 1
+            "data-alert-toggle" => "paper-alert"
         ];
         if ($this->prow->timeSubmitted > 0) {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;

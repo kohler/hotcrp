@@ -4233,7 +4233,11 @@ class Conf {
         if ($list) {
             echo ' data-hotlist="', htmlspecialchars($list->info_string()), '"';
         }
-        echo ">\n";
+        echo ' data-upload-limit="', ini_get_bytes("upload_max_filesize");
+        if (($s = $this->opt("uploadMaxFilesize"))) {
+            echo '" data-document-max-size="', (int) $s;
+        }
+        echo "\">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp_load.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
