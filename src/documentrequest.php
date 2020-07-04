@@ -254,7 +254,7 @@ class DocumentRequest implements JsonSerializable {
 
     /** @param array $opts
      * @return array */
-    static function add_server_options($opts = []) {
+    static function add_connection_options($opts = []) {
         $ifnonematch = $range = $ifrange = null;
         if (function_exists("getallheaders")) {
             foreach (getallheaders() as $k => $v) {

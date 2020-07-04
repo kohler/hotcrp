@@ -48,7 +48,7 @@ class GetDocument_ListAction extends ListAction {
             Conf::msg_error(array_merge(["Nothing to download."], $docset->error_texts()));
         } else {
             session_write_close();
-            if ($docset->download(DocumentRequest::add_server_options(["attachment" => true, "single" => true]))) {
+            if ($docset->download(DocumentRequest::add_connection_options(["attachment" => true, "single" => true]))) {
                 DocumentInfo::log_download_activity($docset->as_list(), $user);
                 exit;
             } else {

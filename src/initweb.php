@@ -21,7 +21,7 @@ if ($Conf->opt("phpSuffix") !== null) {
 }
 
 // Collect $Qreq
-$Qreq = make_qreq();
+$Qreq = Qrequest::make_connection();
 
 // Check for redirect to https
 if ($Conf->opt("redirectToHttps")) {

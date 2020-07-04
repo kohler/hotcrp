@@ -153,7 +153,7 @@ function document_download(Contact $user, $qreq) {
     if ($doc->has_hash() && ($x = $qreq->hash) && $doc->check_text_hash($x)) {
         $opts["cacheable"] = true;
     }
-    if ($doc->download(DocumentRequest::add_server_options($opts))) {
+    if ($doc->download(DocumentRequest::add_connection_options($opts))) {
         DocumentInfo::log_download_activity([$doc], $user);
     } else {
         document_error("500 Server Error", $doc->error_html);

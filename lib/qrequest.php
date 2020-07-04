@@ -322,4 +322,56 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             return null;
         }
     }
+
+    static function make_connection() : Qrequest {
+        $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
+        $qreq->set_page_path(Navigation::page(), Navigation::path());
+        foreach ($_GET as $k => $v) {
+            $qreq->set_req($k, $v);
+        }
+        foreach ($_POST as $k => $v) {
+            $qreq->set_req($k, $v);
+        }
+        if (empty($_POST)) {
+            $qreq->set_post_empty();
+        }
+
+        // $_FILES requires special processing since we want error messages.
+        $errors = [];
+        foreach ($_FILES as $nx => $fix) {
+            if (is_array($fix["error"])) {
+                $fis = [];
+                foreach (array_keys($fix["error"]) as $i) {
+                    $fis[$i ? "$nx.$i" : $nx] = ["name" => $fix["name"][$i], "type" => $fix["type"][$i], "size" => $fix["size"][$i], "tmp_name" => $fix["tmp_name"][$i], "error" => $fix["error"][$i]];
+                }
+            } else {
+                $fis = [$nx => $fix];
+            }
+            foreach ($fis as $n => $fi) {
+                if ($fi["error"] == UPLOAD_ERR_OK) {
+                    if (is_uploaded_file($fi["tmp_name"])) {
+                        $qreq->set_file($n, $fi);
+                    }
+                } else if ($fi["error"] != UPLOAD_ERR_NO_FILE) {
+                    $s = "";
+                    if (isset($fi["name"])) {
+                        $s .= '<span class="lineno">' . htmlspecialchars($fi["name"]) . ':</span> ';
+                    }
+                    if ($fi["error"] == UPLOAD_ERR_INI_SIZE
+                        || $fi["error"] == UPLOAD_ERR_FORM_SIZE) {
+                        $s .= "Uploaded file too big. The maximum upload size is " . ini_get("upload_max_filesize") . "B.";
+                    } else if ($fi["error"] == UPLOAD_ERR_PARTIAL) {
+                        $s .= "File upload interrupted.";
+                    } else {
+                        $s .= "Error uploading file.";
+                    }
+                    $errors[] = $s;
+                }
+            }
+        }
+        if (!empty($errors)) {
+            $qreq->set_annex("upload_errors", $errors);
+        }
+        return $qreq;
+    }
 }

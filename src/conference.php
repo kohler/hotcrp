@@ -4218,7 +4218,7 @@ class Conf {
     }
 
     function header_body($title, $id, $extra = []) {
-        global $Me;
+        global $Me, $Qreq;
         echo "<body";
         if ($id) {
             echo ' id="body-', $id, '"';
@@ -4343,12 +4343,11 @@ class Conf {
         if (($x = $this->opt("maintenance"))) {
             echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
         }
-        if ($Me
-            && ($msgs = $Me->session("msgs"))
-            && !empty($msgs)) {
+        if ($Me && ($msgs = $Me->session("msgs")) && !empty($msgs)) {
             $Me->save_session("msgs", null);
-            foreach ($msgs as $m)
+            foreach ($msgs as $m) {
                 $this->msg($m[0], $m[1]);
+            }
         }
         if (isset($_COOKIE["hotcrpmessage"])) {
             $message = json_decode(rawurldecode($_COOKIE["hotcrpmessage"]));
@@ -4367,14 +4366,18 @@ class Conf {
                 hotcrp_setcookie("hotcrpmessage", "", ["expires" => Conf::$now - 3600]);
             }
         }
+        if ($Qreq && $Qreq->has_annex("upload_errors")) {
+            $this->msg($Qreq->annex("upload_errors"), MessageSet::ERROR);
+        }
         echo "</div></div>\n";
 
         echo "<div id=\"body\" class=\"body\">\n";
 
         // If browser owns tracker, send it the script immediately
         if ($this->setting("tracker")
-            && MeetingTracker::session_owns_tracker($this))
+            && MeetingTracker::session_owns_tracker($this)) {
             echo Ht::unstash();
+        }
 
         // Callback for version warnings
         if ($Me
