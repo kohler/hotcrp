@@ -151,7 +151,8 @@ xassert(!$tf->check_and_save($user_mgbaker, $paper1, fetch_review($paper1, $user
 xassert($tf->has_problem_at("reviewerEmail"));
 
 // Different reviewer with same name (OK)
-$tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5", $review1A)), "review1A-5.txt");
+// Also add a description of the field
+$tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5. Strong accept", $review1A)), "review1A-5.txt");
 xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_mgbaker, $paper1, fetch_review($paper1, $user_mgbaker)));
 xassert(!$tf->has_problem_at("reviewerEmail"));
