@@ -5,10 +5,15 @@
 class MailPreparation {
     /** @var Conf */
     public $conf;
+    /** @var string */
     public $subject = "";
+    /** @var string */
     public $body = "";
+    /** @var string */
     public $preparation_owner = "";
+    /** @var list<string> */
     public $to = [];
+    /** @var list<int> */
     public $contactIds = [];
     private $_valid_recipient = true;
     public $sensitive = false;
@@ -203,10 +208,9 @@ class Mailer {
     }
 
     static function eol() {
-        global $Conf;
         if (self::$eol === null) {
-            if (($x = $Conf->opt("postfixMailer", null)) === null) {
-                $x = $Conf->opt("postfixEOL");
+            if (($x = Conf::$main->opt("postfixMailer")) === null) {
+                $x = Conf::$main->opt("postfixEOL");
             }
             if (!$x) {
                 self::$eol = "\r\n";

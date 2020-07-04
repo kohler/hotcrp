@@ -72,13 +72,11 @@ function hoturl_add_raw($url, $component) {
 }
 
 function hoturl($page, $param = null) {
-    global $Conf;
-    return $Conf->hoturl($page, $param);
+    return Conf::$main->hoturl($page, $param);
 }
 
 function hoturl_post($page, $param = null) {
-    global $Conf;
-    return $Conf->hoturl($page, $param, Conf::HOTURL_POST);
+    return Conf::$main->hoturl($page, $param, Conf::HOTURL_POST);
 }
 
 
@@ -210,8 +208,7 @@ function expander($open, $foldnum = null) {
 /** @param Contact|Author|ReviewInfo|CommentInfo $userlike
  * @return string */
 function actas_link($userlike) {
-    global $Conf;
-    return '<a href="' . $Conf->selfurl(null, ["actas" => $userlike->email])
+    return '<a href="' . Conf::$main->selfurl(null, ["actas" => $userlike->email])
         . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($userlike, NAME_P)])
         . '</a>';
 }
@@ -237,12 +234,12 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
 }
 
 function goPaperForm($baseUrl = null, $args = array()) {
-    global $Conf, $Me;
+    global $Me;
     if ($Me->is_empty()) {
         return "";
     }
-    $list = $Conf->active_list();
-    $x = Ht::form($Conf->hoturl($baseUrl ? : "paper"), ["method" => "get", "class" => "gopaper"]);
+    $list = Conf::$main->active_list();
+    $x = Ht::form(Conf::$main->hoturl($baseUrl ? : "paper"), ["method" => "get", "class" => "gopaper"]);
     if ($baseUrl == "profile") {
         $x .= Ht::entry("u", "", array("id" => "quicklink-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow"));
     } else {
@@ -457,7 +454,7 @@ function whyNotText($whyNot, $text_only = false) {
 }
 
 function actionBar($mode = null, $qreq = null) {
-    global $Me, $Conf;
+    global $Me;
     if ($Me->is_disabled()) {
         return "";
     }
@@ -484,7 +481,7 @@ function actionBar($mode = null, $qreq = null) {
 
     // quicklinks
     $x = "";
-    if (($list = $Conf->active_list())) {
+    if (($list = Conf::$main->active_list())) {
         $x .= '<td class="vbar quicklinks">';
         if (($prev = $list->neighbor_id(-1)) !== false)
             $x .= _one_quicklink($prev, $goBase, $xmode, $listtype, true) . " ";

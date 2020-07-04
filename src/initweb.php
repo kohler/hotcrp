@@ -16,16 +16,16 @@ if (!($_SERVER["REQUEST_METHOD"] === "GET"
 }
 
 // Check for PHP suffix
-if ($Conf->opt("phpSuffix") !== null) {
-    Navigation::get()->php_suffix = $Conf->opt("phpSuffix");
+if (Conf::$main->opt("phpSuffix") !== null) {
+    Navigation::get()->php_suffix = Conf::$main->opt("phpSuffix");
 }
 
 // Collect $Qreq
 $Qreq = Qrequest::make_connection();
 
 // Check for redirect to https
-if ($Conf->opt("redirectToHttps")) {
-    Navigation::redirect_http_to_https($Conf->opt("allowLocalHttp"));
+if (Conf::$main->opt("redirectToHttps")) {
+    Navigation::redirect_http_to_https(Conf::$main->opt("allowLocalHttp"));
 }
 
 // Mark as already expired to discourage caching, but allow the browser
@@ -33,7 +33,7 @@ if ($Conf->opt("redirectToHttps")) {
 header("Cache-Control: max-age=0,must-revalidate,private");
 
 // Set up Content-Security-Policy if appropriate
-$Conf->prepare_content_security_policy();
+Conf::$main->prepare_content_security_policy();
 
 // Don't set up a session if $Me is false
 if ($Me === false) {
@@ -57,17 +57,17 @@ function initialize_user_redirect($nav, $uindex, $nusers) {
 }
 
 function initialize_user() {
-    global $Conf, $Me, $Qreq;
+    global $Me, $Qreq;
+    $conf = Conf::$main;
     $nav = Navigation::get();
 
     // set up session
-    if (isset($Conf->opt["sessionHandler"])) {
-        $sh = $Conf->opt["sessionHandler"];
+    if (($sh = $conf->opt["sessionHandler"] ?? null)) {
         /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName, PhanNonClassMethodCall */
-        $Conf->_session_handler = new $sh($Conf);
-        session_set_save_handler($Conf->_session_handler, true);
+        $conf->_session_handler = new $sh($conf);
+        session_set_save_handler($conf->_session_handler, true);
     }
-    set_session_name($Conf);
+    set_session_name($conf);
     $sn = session_name();
 
     // check CSRF token, using old value of session ID
@@ -77,7 +77,7 @@ function initialize_user() {
         if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
             $Qreq->approve_post();
         } else if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            error_log("{$Conf->dbname}: bad post={$Qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
+            error_log("{$conf->dbname}: bad post={$Qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
         }
     }
     ensure_session(ENSURE_SESSION_ALLOW_EMPTY);
@@ -113,13 +113,13 @@ function initialize_user() {
         && $_SERVER["REQUEST_METHOD"] === "GET"
         && $trueemail
         && strcasecmp($_GET["i"], $trueemail) !== 0) {
-        Conf::msg_error("You are not signed in as " . htmlspecialchars($_GET["i"]) . ". <a href=\"" . $Conf->hoturl("index", ["signin" => 1, "email" => $_GET["i"]]) . "\">Sign in</a>");
+        Conf::msg_error("You are not signed in as " . htmlspecialchars($_GET["i"]) . ". <a href=\"" . $conf->hoturl("index", ["signin" => 1, "email" => $_GET["i"]]) . "\">Sign in</a>");
     }
 
     // look up and activate user
     $Me = null;
     if ($trueemail) {
-        $Me = $Conf->user_by_email($trueemail);
+        $Me = $conf->user_by_email($trueemail);
     }
     if (!$Me) {
         $Me = new Contact($trueemail ? (object) ["email" => $trueemail] : null);
@@ -129,15 +129,15 @@ function initialize_user() {
     // author view capability documents should not be indexed
     if (!$Me->email
         && $Me->has_author_view_capability()
-        && !$Conf->opt("allowIndexPapers")) {
+        && !$conf->opt("allowIndexPapers")) {
         header("X-Robots-Tag: noindex, noarchive");
     }
 
     // redirect if disabled
     if ($Me->is_disabled()) {
-        $gj = $Conf->page_partials($Me)->get($nav->page);
+        $gj = $conf->page_partials($Me)->get($nav->page);
         if (!$gj || !get($gj, "allow_disabled")) {
-            Navigation::redirect_site($Conf->hoturl_site_relative_raw("index"));
+            Navigation::redirect_site($conf->hoturl_site_relative_raw("index"));
         }
     }
 
@@ -151,7 +151,7 @@ function initialize_user() {
         && isset($_SESSION["login_bounce"])
         && !isset($_SESSION["testsession"])) {
         $lb = $_SESSION["login_bounce"];
-        if ($lb[0] == $Conf->dsn
+        if ($lb[0] == $conf->dsn
             && $lb[2] !== "index"
             && $lb[2] == Navigation::page()) {
             assert($Qreq instanceof Qrequest);

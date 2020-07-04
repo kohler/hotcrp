@@ -63,7 +63,7 @@ define("TAG_REGEX", '~?~?' . TAG_REGEX_NOTWIDDLE);
 define("TAG_MAXLEN", 80);
 define("TAG_INDEXBOUND", 2147483646);
 
-global $Now, $ConfSitePATH;
+global $Conf, $Now, $ConfSitePATH;
 
 require_once("siteloader.php");
 require_once(SiteLoader::find("lib/navigation.php"));
@@ -104,7 +104,6 @@ function read_included_options(&$files) {
 }
 
 function expand_json_includes_callback($includelist, $callback) {
-    global $Conf;
     $includes = [];
     foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $str) {
         $expandable = null;
@@ -144,7 +143,7 @@ function expand_json_includes_callback($includelist, $callback) {
                 $v->__subposition = ++Conf::$next_xt_subposition;
             }
             if (!call_user_func($callback, $v, $k, $landmark)) {
-                error_log(($Conf ? "$Conf->dbname: " : "") . "$landmark: Invalid expansion " . json_encode($v) . ".");
+                error_log((Conf::$main ? Conf::$main->dbname . ": " : "") . "$landmark: Invalid expansion " . json_encode($v) . ".");
             }
         }
     }
@@ -181,7 +180,6 @@ if (isset($Opt["memoryLimit"]) && $Opt["memoryLimit"]) {
 
 
 // Create the conference
-global $Conf;
 if (!Conf::$main) {
     Conf::set_main_instance(new Conf($Opt, true));
 }

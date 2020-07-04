@@ -379,7 +379,6 @@ class ReviewInfo implements JsonSerializable {
     }
 
     function unparse_tfields() {
-        global $Conf;
         $data = [];
         foreach (get_object_vars($this) as $k => $v) {
             if (strlen($k) === 3
@@ -393,7 +392,7 @@ class ReviewInfo implements JsonSerializable {
         } else {
             $json = json_encode_db($data);
             if ($json === null) {
-                error_log(($Conf ? "{$Conf->dbname}: " : "") . "review #{$this->paperId}/{$this->reviewId}: text fields cannot be converted to JSON");
+                error_log("{$this->conf->dbname}: review #{$this->paperId}/{$this->reviewId}: text fields cannot be converted to JSON");
             }
             return $json;
         }

@@ -91,7 +91,6 @@ if (function_exists("session_create_id")) {
 }
 
 function ensure_session($flags = 0) {
-    global $Conf;
     if (session_id() !== ""
         && !($flags & ENSURE_SESSION_REGENERATE_ID)) {
         return;
@@ -142,9 +141,9 @@ function ensure_session($flags = 0) {
             session_regenerate_id();
         }
         $_SESSION["testsession"] = false;
-    } else if ($Conf->_session_handler
-               && is_callable([$Conf->_session_handler, "refresh_cookie"])) {
-        call_user_func([$Conf->_session_handler, "refresh_cookie"], $sn, session_id());
+    } else if (Conf::$main->_session_handler
+               && is_callable([Conf::$main->_session_handler, "refresh_cookie"])) {
+        call_user_func([Conf::$main->_session_handler, "refresh_cookie"], $sn, session_id());
     }
 }
 

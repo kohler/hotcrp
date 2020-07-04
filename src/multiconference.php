@@ -95,7 +95,7 @@ class Multiconference {
     }
 
     static function fail_message($errors) {
-        global $Conf, $Me, $Opt;
+        global $Me, $Opt;
         $maintenance = $Opt["maintenance"] ?? null;
 
         if (is_string($errors)) {
@@ -123,12 +123,12 @@ class Multiconference {
             }
             $Me = null;
             header("HTTP/1.1 404 Not Found");
-            $Conf->header("HotCRP Error", "", ["action_bar" => false]);
+            Conf::$main->header("HotCRP Error", "", ["action_bar" => false]);
             foreach ($errors as $i => &$e) {
                 $e = ($i ? "<div class=\"hint\">" : "<p>") . htmlspecialchars($e) . ($i ? "</div>" : "</p>");
             }
             echo join("", $errors);
-            $Conf->footer();
+            Conf::$main->footer();
         }
         exit;
     }
@@ -175,7 +175,7 @@ class Multiconference {
     }
 
     static function fail_bad_database() {
-        global $Conf, $Opt;
+        global $Opt;
         if (isset($Opt["multiconferenceFailureCallback"])) {
             call_user_func($Opt["multiconferenceFailureCallback"], "database");
         }
@@ -188,7 +188,7 @@ class Multiconference {
             $errors[] = "The “{$confid}” conference does not exist. Check your URL to make sure you spelled it correctly.";
         } else {
             $errors[] = "HotCRP was unable to load. A system administrator must fix this problem.";
-            $errors[] = "Error: Unable to connect to database " . Dbl::sanitize_dsn($Conf->dsn);
+            $errors[] = "Error: Unable to connect to database " . Dbl::sanitize_dsn(Conf::$main->dsn);
             if (defined("HOTCRP_TESTHARNESS")) {
                 $errors[] = "You may need to run `lib/createdb.sh -c test/options.php` to create the database.";
             }

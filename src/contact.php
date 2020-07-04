@@ -141,8 +141,7 @@ class Contact {
 
     /** @param ?array<string,null|int|string> $user */
     function __construct($user = null, Conf $conf = null) {
-        global $Conf;
-        $this->conf = $conf ? : $Conf;
+        $this->conf = $conf ?? Conf::$main;
         if ($user) {
             $this->merge($user);
         } else if ($this->contactId || $this->contactDbId) {

@@ -60,9 +60,9 @@ class PaperTable {
     private $quit = false;
 
     function __construct(PaperInfo $prow = null, Qrequest $qreq, $mode = null) {
-        global $Conf, $Me;
+        global $Me;
 
-        $this->conf = $Conf;
+        $this->conf = $prow ? $prow->conf : Conf::$main;
         $this->user = $user = $Me;
         $this->prow = $prow ? : PaperInfo::make_new($user);
         $this->allow_admin = $user->allow_administer($prow);
@@ -124,7 +124,8 @@ class PaperTable {
     }
 
     static function do_header($paperTable, $id, $action_mode, $qreq) {
-        global $Conf, $Me;
+        global $Me;
+        $conf = $paperTable ? $paperTable->conf : Conf::$main;
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
 
@@ -134,11 +135,11 @@ class PaperTable {
             if (($pid = $qreq->paperId) && ctype_digit($pid)) {
                 $title = "#$pid";
             } else {
-                $title = $Conf->_c("paper_title", "Submission");
+                $title = $conf->_c("paper_title", "Submission");
             }
             $t .= '">' . $title;
         } else if (!$prow->paperId) {
-            $title = $Conf->_c("paper_title", "New submission");
+            $title = $conf->_c("paper_title", "New submission");
             $t .= '">' . $title;
         } else {
             $paperTable->initialize_list();
@@ -174,7 +175,7 @@ class PaperTable {
             }
 
             $t .= '</span></span></a>';
-            if ($viewable_tags && $Conf->tags()->has_decoration) {
+            if ($viewable_tags && $conf->tags()->has_decoration) {
                 $tagger = new Tagger($Me);
                 $t .= $tagger->unparse_decoration_html($viewable_tags);
             }
@@ -195,7 +196,7 @@ class PaperTable {
             $body_class .= " fold5c";
         }
 
-        $Conf->header($title, $id, [
+        $conf->header($title, $id, [
             "action_bar" => actionBar($action_mode, $qreq),
             "title_div" => $t,
             "body_class" => $body_class,
@@ -2402,8 +2403,7 @@ class PaperTable {
     }
 
     static private function _echo_clickthrough($ctype) {
-        global $Conf;
-        $data = $Conf->_i("clickthrough_$ctype");
+        $data = Conf::$main->_i("clickthrough_$ctype");
         $buttons = [Ht::submit("Agree", ["class" => "btnbig btn-success ui js-clickthrough"])];
         echo Ht::form("", ["class" => "ui"]), '<div>', $data,
             Ht::hidden("clickthrough_type", $ctype),

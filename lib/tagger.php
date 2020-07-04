@@ -217,7 +217,6 @@ class TagAnno implements JsonSerializable {
         return $ta;
     }
     function jsonSerialize() {
-        global $Conf;
         $j = [];
         if ($this->pos !== null) {
             $j["pos"] = $this->pos;
@@ -237,7 +236,7 @@ class TagAnno implements JsonSerializable {
         }
         if ($this->heading !== null
             && $this->heading !== ""
-            && ($format = $Conf->check_format($this->annoFormat, $this->heading))) {
+            && ($format = Conf::$main->check_format($this->annoFormat, $this->heading))) {
             $j["format"] = +$format;
         }
         return $j;

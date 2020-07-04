@@ -55,7 +55,7 @@ function confHeader() {
 }
 
 function errorMsgExit($msg) {
-    global $Conf, $Qreq;
+    global $Qreq;
     if ($Qreq->ajax) {
         Conf::msg_error($msg);
         json_exit(["ok" => false]);
@@ -71,7 +71,7 @@ function errorMsgExit($msg) {
 
 // general error messages
 if ($Qreq->post && $Qreq->post_empty()) {
-    $Conf->post_missing_msg();
+    Conf::$main->post_missing_msg();
 }
 
 
@@ -162,7 +162,8 @@ function final_submit_watch_callback($prow, $minic) {
 }
 
 function update_paper(Qrequest $qreq, $action) {
-    global $Conf, $Me, $prow, $ps;
+    global $Me, $prow, $ps;
+    $Conf = Conf::$main;
     // XXX lock tables
     $wasSubmitted = $prow && $prow->timeSubmitted > 0;
 

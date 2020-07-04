@@ -24,7 +24,6 @@ class PaperRank {
 
     function __construct($source_tag, $dest_tag, $papersel, $sequential,
                          $header_title = null, $header_id = null) {
-        global $Conf;
         $this->dest_tag = $dest_tag;
         $this->sequential = $sequential;
         $this->papersel = $papersel;
@@ -44,7 +43,7 @@ class PaperRank {
         }
 
         // load current ranks: $userrank maps user => [rank, paper]
-        $result = $Conf->qe_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")");
+        $result = Conf::$main->qe_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")");
         $len = strlen($source_tag) + 1;
         while (($row = $result->fetch_row())) {
             $l = (int) substr($row[1], 0, strlen($row[1]) - $len);
@@ -76,7 +75,6 @@ class PaperRank {
     }
 
     private function _info() {
-        global $Conf;
         $n = count($this->rank);
         if (!$this->info_printed
             && (!count($this->papersel) || $n >= count($this->papersel)
@@ -86,7 +84,7 @@ class PaperRank {
         $pct = round($n / count($this->papersel) * 100);
         if (!$this->info_printed) {
             if ($this->header_title) {
-                $Conf->header($this->header_title, $this->header_id);
+                Conf::$main->header($this->header_title, $this->header_id);
             }
             echo '<div id="foldrankcalculation" class="foldc"><div class="fn info">Calculating ranks; this can take a while.  <span id="rankpercentage">', $pct, '</span>% of ranks assigned<span id="rankdeletedpref"></span>.</div></div>';
             $this->info_printed = true;
