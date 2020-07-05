@@ -584,7 +584,7 @@ class PaperTable {
 
     /** @param PaperOption $o */
     function render_submission(FieldRender $fr, $o) {
-        assert(!$this->editable);
+        assert(!$this->editable && $o->id == 0);
         $fr->title = false;
         $fr->value = "";
         $fr->value_format = 5;
@@ -609,7 +609,7 @@ class PaperTable {
                     $stamps = '<span class="sep"></span>' . $stamps;
                 }
                 if ($dtype == DTYPE_FINAL) {
-                    $dhtml = $o->title_html();
+                    $dhtml = $this->conf->option_by_id($dtype)->title_html();
                 } else {
                     $dhtml = $o->title_html($this->prow->timeSubmitted != 0);
                 }
