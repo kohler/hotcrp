@@ -19,6 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Geoffrey M. Voelker (voelker@cs.ucsd.edu)
+# Eddie Kohler (ekohler@gmail.com)
 #
 
 # todo:
@@ -34,7 +35,7 @@ my($FILE, $banal_text_fudge);
 
 sub usage {
     print <<EOF;
-usage: banal [-report | -stats | -judge [specs]] [-zoom=N] files
+usage: banal [-report | -stats | -json] [-zoom=N] files
 
 banal has three modes of operation:
 
@@ -54,42 +55,10 @@ banal has three modes of operation:
 
          extracts font sizes from a set of pdf files.
 
--judge   compare document formatting against a set of formatting
-         specifications:
-
-         -paper=type     paper type ('letter' and 'A4' currently supported)
-         -pages=num      max number of pages
-         -font=num       min font size
-         -leading=num    min leading
-         -cols=num       max columns
-         -width=inches   max text region width
-         -height=inches  max text region height
-         -fudge=inches   text region fudge factor (helps with latex
-                         overflow; default is $banal_text_fudge inches)
-
-         specifications can consist of any and all elements in any
-         combination.  for example:
-
-         % banal -judge -paper=letter -pages=14 -font=10 -leading=12 -width=6.5 -height=9 *.pdf
-
-         will check whether a set of pdf files conforms to formatting specs
-         that require 8.5" x 11" paper, max 14 pages, min 10 point font,
-         min 12 point leading, and a max text region of 6.5" x 9".
-
--format=lines|list
-
-         lines   report format violations on multiple lines (default)
-
-         list    report format violations on a single line separated by a
-                 comma (e.g., for importing into a spreadsheet).
-
-         % banal -judge -format=list [specs] *.pdf
-
-  -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+-json    print JSON output
 
 -zoom=N   passed to pdftohtml.
 
--json     JSON output
 -pagenum  include page numbers and headings
 
 -max-pages=N  maximum number of pages for JSON
@@ -108,7 +77,7 @@ my ($banal_mode) = "report";
 my (%banal_param, $json_pagenum);
 my ($debug_pdftohtml);
 for (my $i = 0; $i < @ARGV; ) {
-    if ($ARGV[$i] =~ /\A--?(stats|judge|json|report|version)\z/) {
+    if ($ARGV[$i] =~ /\A--?(stats|json|report|version)\z/) {
         $banal_mode = $1;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?debug[-_]pdftohtml\z/) {
@@ -117,18 +86,16 @@ for (my $i = 0; $i < @ARGV; ) {
     } elsif ($ARGV[$i] =~ /\A--?pagen(?:um|o)\z/) {
         $json_pagenum = 1;
         splice @ARGV, $i, 1;
-    } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom|max[-_]pages)=(.*)\z/) {
+    } elsif ($ARGV[$i] =~ /\A--?(zoom|max[-_]pages)=(.*)\z/) {
         my($name) = $1;
         $name =~ s/-/_/g;
         $banal_param{$name} = $2;
         splice @ARGV, $i, 1;
-    } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom|max[-_]pages)\z/ && $i + 1 < @ARGV) {
+    } elsif ($ARGV[$i] =~ /\A--?(zoom|max[-_]pages)\z/ && $i + 1 < @ARGV) {
         my($name) = $1;
         $name =~ s/-/_/g;
         $banal_param{$name} = $ARGV[$i + 1];
         splice @ARGV, $i, 2;
-    } elsif ($ARGV[$i] =~ /\A--?(?:no[-_]app)\z/) {
-        splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A-/) {
         print STDERR "banal: bad option ", $ARGV[$i], "\n";
         usage;
@@ -159,11 +126,6 @@ my $banal_min_nchars = 800;
 
 # fudge factor when judging text regions (in inches).
 $banal_text_fudge = 0.05;
-
-# minimum number of pages that have to fail the text region specs.
-# often papers have 1-2 pages where text on a table or figure extends
-# into the margin.  when judging an entire paper, we'll let those slide...
-my $banal_judge_min_fail_pages = 3;
 
 # policy to use to estimate leading
 my $banal_leading_policy;
@@ -963,198 +925,6 @@ sub report_stats ($) {
             "-";
 }
 
-sub judge_paper_size ($$) {
-    my ($doc, $spec) = @_;
-    my ($msg) = '';
-
-    my ($w) = $doc->{pagespec}->{paperbb}->{width};
-    my ($h) = $doc->{pagespec}->{paperbb}->{height};
-    my ($paperw, $paperh);
-    if ($spec->{paper} eq 'letter') {
-        $paperw = 8.5;
-        $paperh = 11;
-    } elsif ($spec->{paper} eq 'A4') {
-        $paperw = 8.26;
-        $paperh = 11.69;
-    }
-
-    unless (((($paperw - $banal_text_fudge) < $w) &&
-             (($paperw + $banal_text_fudge) > $w)) &&
-            ((($paperh - $banal_text_fudge) < $h) &&
-             (($paperh + $banal_text_fudge) > $h))) {
-        $msg = sprintf ("Paper size: %.2f x %.2f is not $spec->{paper} size\n",
-                        $w, $h);
-    }
-
-    return $msg;
-}
-
-sub judge_page_count ($$) {
-    my ($doc, $spec) = @_;
-    my ($msg) = '';
-
-    if ($doc->{npages} > $spec->{pages}) {
-        $msg = sprintf ("Pages: too many pages %d (max %d)\n",
-                        $doc->{npages}, $spec->{pages});
-    } elsif ($spec->{min_pages} &&
-             ($doc->{npages} < $spec->{min_pages})) {
-        $msg = sprintf ("Pages: too few pages %d (min %d)\n",
-                        $doc->{npages}, $spec->{min_pages});
-    }
-
-    return $msg;
-}
-
-sub judge_body_font ($$) {
-    my ($doc, $spec) = @_;
-    my ($msg) = '';
-    my ($i, $font);
-
-    if (p2h_font_bug ($doc)) {
-        $msg .= "Font: Cannot judge, no font info derived from pdf\n";
-        return $msg;
-    }
-
-    if ($doc->{pagespec}->{bodyfont} < $spec->{font}) {
-        $msg .= sprintf ("Font: body font too small %dpt (min %dpt)\n",
-                         $doc->{pagespec}->{bodyfont}, $spec->{font});
-    }
-    return $msg;
-}
-
-sub judge_leading ($$) {
-    my ($doc, $spec) = @_;
-    my ($msg) = '';
-    my ($lead);
-
-    $lead = $doc->{pagespec}->{lead};
-    if (($spec->{lead} - 0.1) > $lead) {
-        $msg .= sprintf ("Leading: too small %.1fpt (min %.1fpt)\n",
-                         $lead, $spec->{lead});
-    }
-}
-
-sub judge_columns ($$) {
-    my ($doc, $spec) = @_;
-    my ($msg) = '';
-    my ($i, $page);
-
-    # should add a 'strict' option
-    if ($doc->{ncols} > $spec->{cols}) {
-        $msg = sprintf ("Columns: found %d columns, expecting %d\n",
-                        $doc->{ncols}, $spec->{cols});
-    }
-
-    return $msg if (1);
-
-    # skip last page
-    for $i (1..($doc->{npages} - 1)) {
-        $page = $doc->{pages}->{$i};
-
-        next if ($page->{pagespec}->{nchars} < $banal_min_nchars);
-
-        next unless ($spec->{cols} != $page->{pagespec}->{ncols});
-
-        $msg = sprintf ("Columns: found %d columns, expecting %d\n",
-                        $page->{pagespec}->{ncols}, $spec->{cols});
-        last;
-    }
-
-    return $msg;
-}
-
-sub judge_text_region ($$) {
-    my ($doc, $spec) = @_;
-    my ($wmsg, $hmsg) = ('', '');
-    my ($i, $page);
-    my ($width, $height, $width_fail, $height_fail);
-
-    $width_fail = 0;
-    for $i (1..$doc->{npages}) {
-        $page = $doc->{pages}->{$i};
-
-        # ignore pages without much text
-        next if ($page->{pagespec}->{nchars} < $banal_min_nchars);
-
-        $width = $page->{pagespec}->{textbb}->{width};
-        next unless ($spec->{width} &&
-                     ($width > ($spec->{width} + $spec->{fudge})));
-        $width_fail++;
-
-        $wmsg = sprintf ("Width: text too wide %.2fin (max %.2fin)\n",
-                         $width, $spec->{width});
-    }
-
-    # if a small number of pages fail the width spec, it is likely
-    # due to tables or figures extending into the margin.
-    # only check on reasonably long docs.
-    if ($doc->{npages} > (($banal_judge_min_fail_pages - 1) * 2)) {
-        if ($width_fail < $banal_judge_min_fail_pages) {
-            $wmsg = '';
-        }
-    }
-
-
-    $height_fail = 0;
-    for $i (1..$doc->{npages}) {
-        $page = $doc->{pages}->{$i};
-
-        next if ($page->{pagespec}->{nchars} < $banal_min_nchars);
-
-        $height = $page->{pagespec}->{textbb}->{height};
-        next unless ($spec->{height} &&
-                     ($height > ($spec->{height} + $spec->{fudge})));
-        $height_fail++;
-
-        $hmsg = sprintf ("Height: text too high %.2fin (max %.2fin)\n",
-                         $height, $spec->{height});
-    }
-
-    # if a small number of pages fail the height spec, it is likely
-    # due to tables or figures extending into the margin.
-    # only check on reasonably long docs.
-    if ($doc->{npages} > (($banal_judge_min_fail_pages - 1) * 2)) {
-        if ($height_fail < $banal_judge_min_fail_pages) {
-            $hmsg = '';
-        }
-    }
-
-#    $hmsg .= sprintf ("Fail: width $width_fail height $height_fail\n");
-
-    return $wmsg . $hmsg;
-}
-
-sub pass_judgement ($$) {
-    my ($doc, $spec) = @_;
-    my ($page);
-    my ($msg) = '';
-    my ($err);
-
-    if (p2h_serious_font_bug ($doc)) {
-        print STDERR "$banal_filename: Error: pdftohtml encountered font problems...skipping.\n";
-        return;
-    }
-
-    $msg .= judge_paper_size ($doc, $spec) if ($spec->{paper});
-    $msg .= judge_page_count ($doc, $spec) if ($spec->{pages});
-    $msg .= judge_body_font ($doc, $spec) if ($spec->{font});
-    $msg .= judge_leading ($doc, $spec) if ($spec->{lead});
-    $msg .= judge_columns ($doc, $spec) if ($spec->{cols});
-    $msg .= judge_text_region ($doc, $spec) if ($spec->{width} || $spec->{height});
-
-    return if (!$msg);
-
-    if ($banal_param{format} eq 'list') {
-        chop $msg;         # remove trailing newline
-        $msg =~ s/\n/,/g;  # convert newlines to commas
-        print basename ($doc->{fullpath}), ",$msg\n";
-    } else {
-        $msg =~ s/^(.)/  $1/mg;  # indent
-        print $doc->{fullpath}, ":\n";
-        print $msg;
-    }
-}
-
 sub parse_p2h_fonts ($$) {
     my ($line, $page) = @_;
     my (%fonts, $font, $fontid);
@@ -1561,51 +1331,8 @@ sub merge_page ($$) {
     }
 }
 
-sub banal_get_spec () {
-    my ($s) = {};
-
-    return $s unless $banal_mode eq "judge";
-
-    if (exists $banal_param{paper}) {
-        if ($banal_param{paper} ne 'letter' && $banal_param{paper} ne 'A4') {
-            die ("$banal_filename: Error: Unknown paper type.\n");
-        }
-        $s->{paper} = $banal_param{paper};
-    }
-    $s->{pages} = $banal_param{pages} if exists $banal_param{pages};
-    $s->{font} = $banal_param{font} if exists $banal_param{font};
-    $s->{lead} = $banal_param{leading} if exists $banal_param{leading};
-    $s->{cols} = $banal_param{cols} if exists $banal_param{cols};
-    if (defined $banal_param{width}) {
-        $s->{width} = $banal_param{width};
-        $s->{fudge} = $banal_text_fudge;
-    }
-    if (defined $banal_param{height}) {
-        $s->{height} = $banal_param{height};
-        $s->{fudge} = $banal_text_fudge;
-    }
-    if (defined $banal_param{fudge}) {
-        $s->{fudge} = $banal_param{fudge};
-    }
-    return $s;
-}
-
-sub banal_report_spec ($) {
-    my ($spec) = @_;
-
-    print "Judging: ";
-    print "$spec->{paper}, " if ($spec->{paper});
-    print "$spec->{width}in x $spec->{height}in (~$spec->{fudge}), " if ($spec->{width} || $spec->{height});
-    print "$spec->{font}pt font, " if ($spec->{font});
-    print "$spec->{lead}pt leading, " if ($spec->{lead});
-    print "$spec->{cols} cols, " if ($spec->{cols});
-    print "$spec->{pages} pages" if ($spec->{pages});
-    print "\n";
-    print "-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   \n";
-}
-
-sub banal_file ($$) {
-    my ($file, $spec) = @_;
+sub banal_file ($) {
+    my ($file) = @_;
 
     # initialize doc data structure
     my ($doc) = {
@@ -1642,9 +1369,7 @@ sub banal_file ($$) {
     calc_doc_page_types ($doc);
     calc_doc_columns ($doc);
 
-    if ($banal_mode eq "judge") {
-        pass_judgement ($doc, $spec);
-    } elsif ($banal_mode eq "stats") {
+    if ($banal_mode eq "stats") {
         report_stats ($doc);
     } elsif ($banal_mode eq "json") {
         report_json ($doc);
@@ -1749,14 +1474,9 @@ sub banal_version () {
 }
 
 sub main () {
-    my ($spec);
-
     return banal_version () if $banal_mode eq "version";
 
     usage if ($#ARGV < 0);
-
-    $spec = banal_get_spec ();
-    banal_report_spec ($spec) if $banal_mode eq "judge";
 
     if (!banal_config_p2h ($ARGV[0])) {
         return 1;
@@ -1766,7 +1486,7 @@ sub main () {
     foreach my $file (@ARGV) {
         # open input file into FILE
         next unless (banal_open_input ($file));
-        banal_file ($file, $spec);
+        banal_file ($file);
         close $FILE;
         $any = 1;
     }
