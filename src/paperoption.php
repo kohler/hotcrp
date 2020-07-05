@@ -466,7 +466,7 @@ class PaperOptionList implements IteratorAggregate {
 
     private function _get_field($id, $oj, $nonfinal) {
         if (!($oj->nonpaper ?? false)
-            && (!$nonfinal || ($oj->final ?? false))) {
+            && !($nonfinal && ($oj->final ?? false))) {
             return $this->option_by_id($id);
         } else {
             return null;
