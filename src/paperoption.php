@@ -466,7 +466,7 @@ class PaperOptionList implements IteratorAggregate {
 
     private function _get_field($id, $oj, $nonfinal) {
         if (!($oj->nonpaper ?? false)
-            && !($nonfinal && ($oj->final ?? false))) {
+            && (!$nonfinal || ($oj->final ?? false))) {
             return $this->option_by_id($id);
         } else {
             return null;
@@ -601,12 +601,24 @@ class PaperOption implements Abbreviator {
     const COLLABORATORSID = -1007;
     const SUBMISSION_VERSION_ID = -1008;
 
+    /** @var Conf
+     * @readonly */
     public $conf;
+    /** @var int
+     * @readonly */
     public $id;
+    /** @var string
+     * @readonly */
     public $name;
+    /** @var string
+     * @readonly */
     public $formid;
     private $_readable_formid;
+    /** @var string
+     * @readonly */
     private $title;
+    /** @var string
+     * @readonly */
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
     private $_json_key;
@@ -614,9 +626,17 @@ class PaperOption implements Abbreviator {
     public $description;
     public $description_format;
     public $position;
+    /** @var bool
+     * @readonly */
     public $required;
+    /** @var bool
+     * @readonly */
     public $final;
+    /** @var bool
+     * @readonly */
     public $nonpaper;
+    /** @var string
+     * @readonly */
     public $visibility; // "rev", "nonblind", "admin"
     private $display;
     public $display_expand;
@@ -625,8 +645,10 @@ class PaperOption implements Abbreviator {
     private $form_position;
     private $display_position;
     private $exists_if;
+    /** @var ?PaperSearch */
     private $_exists_search;
     private $editable_if;
+    /** @var ?PaperSearch */
     private $_editable_search;
     public $max_size;
 
@@ -959,6 +981,7 @@ class PaperOption implements Abbreviator {
         return $this->required && $this->test_exists($prow);
     }
     protected function set_required($x) {
+        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
         $this->required = $x;
     }
 
@@ -1558,8 +1581,9 @@ class DocumentPaperOption extends PaperOption {
             } else if ($fr->for_page()) {
                 $fr->title = "";
                 $dif = 0;
-                if ($this->display_position() >= 2000)
+                if ($this->display_position() >= 2000) {
                     $dif = DocumentInfo::L_SMALL;
+                }
                 $fr->set_html($d->link_html('<span class="pavfn">' . $this->title_html() . '</span>', $dif));
             } else {
                 $fr->set_html($d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
@@ -1569,17 +1593,21 @@ class DocumentPaperOption extends PaperOption {
 
     function format_spec() {
         $speckey = "sub_banal";
-        if ($this->id)
+        if ($this->id) {
             $speckey .= ($this->id < 0 ? "_m" : "_") . abs($this->id);
+        }
         $fspec = new FormatSpec;
-        if (($xspec = $this->conf->opt($speckey)))
+        if (($xspec = $this->conf->opt($speckey))) {
             $fspec->merge($xspec, $this->conf->opt_timestamp());
-        if (($spects = $this->conf->setting($speckey)) > 0)
+        }
+        if (($spects = $this->conf->setting($speckey)) > 0) {
             $fspec->merge($this->conf->setting_data($speckey) ?? "", $spects);
-        else if ($spects < 0)
+        } else if ($spects < 0) {
             $fspec->clear_banal();
-        if (!$fspec->is_banal_empty())
+        }
+        if (!$fspec->is_banal_empty()) {
             $fspec->merge_banal();
+        }
         return $fspec;
     }
 }
