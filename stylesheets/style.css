@@ -1464,7 +1464,7 @@ label.f-c, .f-i > label {
 	color: #555555;
 	font-size: 92%;
 }
-.feedback {
+.feedback, .field-d {
 	max-width: 720px;
 	margin-bottom: 0.3rem;
 }
@@ -3232,12 +3232,11 @@ a:hover .t-editor,
 	display: block;
 	white-space: pre;
 }
-.papev, .revev {
-	margin: 5px 0;
+.papev {
+	margin-top: 0.5rem;
 }
-.field-d {
-	max-width: 720px;
-	margin-bottom: 0.5rem;
+.revev {
+	margin: 5px 0;
 }
 .field-d > p {
 	margin-bottom: 0.3rem;

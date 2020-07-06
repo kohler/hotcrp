@@ -520,6 +520,7 @@ class PaperTable {
 
     /** @param PaperOption $opt */
     private function echo_field_hint($opt) {
+        assert(!!$this->edit_status);
         echo $this->messages_at($opt->formid, "feedback");
         $fr = new FieldRender(FieldRender::CFHTML);
         $fr->value_format = 5;
@@ -537,7 +538,7 @@ class PaperTable {
     function edit_title_html($opt) {
         $t = $opt->edit_title();
         if (str_ends_with($t, ")")
-            && preg_match('{\A([^()]* +)(\([^()]+\))\z}', $t, $m)) {
+            && preg_match('/\A([^()]* +)(\([^()]+\))\z/', $t, $m)) {
             return htmlspecialchars($m[1]) . '<span class="n">' . htmlspecialchars($m[2]) . '</span>';
         } else {
             return htmlspecialchars($t);

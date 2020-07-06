@@ -1035,7 +1035,8 @@ class PaperOption implements Abbreviator {
     }
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->test_required($ov->prow)
-            && !$this->value_present($ov)) {
+            && !$this->value_present($ov)
+            && !$ov->prow->allow_absent()) {
             $ov->estop("Entry required.");
         }
     }

@@ -79,6 +79,7 @@ class PaperStatus extends MessageSet {
         $this->clear();
     }
 
+    /** @return PaperStatus */
     static function make_prow(Contact $user, PaperInfo $prow) {
         $ps = new PaperStatus($prow->conf, $user);
         $ps->prow = $prow;

@@ -470,6 +470,8 @@ class PaperInfo {
     private $_author_view_user;
     /** @var ?PaperInfoSet */
     public $_row_set;
+    /** @var ?bool */
+    private $_allow_absent;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
 
@@ -659,8 +661,20 @@ class PaperInfo {
     }
 
 
+    /** @return bool */
+    function allow_absent() {
+        return !!$this->_allow_absent;
+    }
+
+    /** @param bool $allow_absent */
+    function set_allow_absent($allow_absent) {
+        assert(!$allow_absent || $this->paperId === 0);
+        $this->_allow_absent = $allow_absent;
+    }
+
     /** @return array<string,true> */
     function missing_fields($registration = false, Contact $user = null) {
+        // XXX this should use value_present()
         $f = [];
         if ($this->title === ""
             || (strlen($this->title) <= 6

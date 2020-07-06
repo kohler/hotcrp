@@ -99,6 +99,7 @@ class Collaborators_PaperOption extends PaperOption {
     }
     function value_check(PaperValue $ov, Contact $user) {
         if (!$this->value_present($ov)
+            && !$ov->prow->allow_absent()
             && ($ov->prow->outcome <= 0 || !$user->can_view_decision($ov->prow))) {
             $ov->warning($this->conf->_("Enter the authors’ external conflicts of interest. If none of the authors have external conflicts, enter “None”."));
         }
@@ -434,7 +435,8 @@ class IntrinsicValue {
     static function value_check($o, PaperValue $ov, Contact $user) {
         if ($o->id === DTYPE_SUBMISSION
             && !$o->conf->opt("noPapers")
-            && !$o->value_present($ov)) {
+            && !$o->value_present($ov)
+            && !$ov->prow->allow_absent()) {
             $ov->warning($o->conf->_("Entry required to complete submission."));
         }
         if ($o->id === PaperOption::AUTHORSID) {
@@ -452,7 +454,8 @@ class IntrinsicValue {
                 }
             }
             $max_authors = $o->conf->opt("maxAuthors");
-            if (!$ov->prow->author_list()) {
+            if (!$ov->prow->author_list()
+                && !$ov->prow->allow_absent()) {
                 $ov->estop("Entry required.");
                 $ov->msg_at("author1", false, MessageSet::ESTOP);
             }
