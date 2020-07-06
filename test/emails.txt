@@ -82,7 +82,8 @@ Subject: [Testconf I] New account
 
 Greetings,
 
-An account has been created for you at the Test Conference I (Testconf I) submission site.
+An account has been created for you at the Test Conference I (Testconf
+I) submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: kohler@seas.harvard.edu
@@ -445,7 +446,8 @@ Subject: [Testconf I] New account
 
 Greetings,
 
-An account has been created for you at the Test Conference I (Testconf I) submission site.
+An account has been created for you at the Test Conference I (Testconf
+I) submission site.
 
         Site: http://hotcrp.lcdf.org/test/
        Email: van@ee.lbl.gov
