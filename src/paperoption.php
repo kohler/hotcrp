@@ -1178,7 +1178,7 @@ class PaperOption implements Abbreviator {
         $default_value = null;
         if ($ov->data() !== $reqov->data()
             && trim($ov->data()) !== trim(cleannl((string) $reqov->data()))) {
-            $default_value = $ov->data();
+            $default_value = $ov->data() ?? "";
         }
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">';
@@ -1410,7 +1410,7 @@ class SelectorPaperOption extends PaperOption {
             }
             echo Ht::select($this->formid, $sel, $reqov->value,
                 ["id" => $this->readable_formid(),
-                 "data-default-value" => $ov->value]);
+                 "data-default-value" => $ov->value ?? 0]);
         } else {
             foreach ($this->selector as $val => $text) {
                 echo '<div class="checki"><label><span class="checkc">',
@@ -1669,13 +1669,14 @@ class NumericPaperOption extends PaperOption {
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $reqx = $reqov->anno("request") ?? $reqov->value;
+        $reqx = $reqov->anno("request") ?? $reqov->value ?? "";
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
             Ht::entry($this->formid, $reqx, [
                 "id" => $this->readable_formid(), "size" => 8,
+                "size" => 8, "inputmode" => "numeric",
                 "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
-                "data-default-value" => $ov->value, "inputmode" => "numeric"
+                "data-default-value" => $ov->value ?? ""
             ]),
             "</div></div>\n\n";
     }

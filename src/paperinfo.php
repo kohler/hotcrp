@@ -672,40 +672,6 @@ class PaperInfo {
         $this->_allow_absent = $allow_absent;
     }
 
-    /** @return array<string,true> */
-    function missing_fields($registration = false, Contact $user = null) {
-        // XXX this should use value_present()
-        $f = [];
-        if ($this->title === ""
-            || (strlen($this->title) <= 6
-                && preg_match('{\A(?:|N/?A|TB[AD])\z}i', $this->title))) {
-            $f["title"] = true;
-        }
-        if ((string) $this->authorInformation === "") {
-            $f["authors"] = true;
-        }
-        $ab = $this->abstract_text();
-        if (($ab === ""
-             || (strlen($ab) <= 6
-                 && preg_match('/\A(?:|N\/?A|TB[AD])\s*\z/i', $ab)))
-            && !$this->conf->opt("noAbstract")) {
-            $f["abstract"] = true;
-        }
-        if (!$registration
-            && !$this->conf->opt("noPapers")
-            && $this->paperStorageId <= 1) {
-            $f["submission"] = true;
-        }
-        foreach ($this->conf->options() as $o) {
-            if ($o->test_required($this)
-                && (!$user || $user->can_view_option($this, $o))
-                && !$o->value_present($this->force_option($o))) {
-                $f[$o->json_key()] = true;
-            }
-        }
-        return $f;
-    }
-
 
     /** @return string */
     function unaccented_title() {

@@ -804,12 +804,12 @@ class PaperStatus extends MessageSet {
             $authors = $pj->authors;
             $max_authors = $ps->conf->opt("maxAuthors");
             if (empty($authors)) {
-                $ps->error_at("authors", $ps->_("Entry required."));
+                $ps->estop_at("authors", $ps->_("Entry required."));
             } else if ($max_authors > 0 && count($authors) > $max_authors) {
-                $ps->error_at("authors", $ps->_("Each submission can have at most %d authors.", $max_authors));
+                $ps->estop_at("authors", $ps->_("Each submission can have at most %d authors.", $max_authors));
             }
         } else if (!$ps->prow || !$ps->prow->author_list()) {
-            $ps->error_at("authors", $ps->_("Entry required."));
+            $ps->estop_at("authors", $ps->_("Entry required."));
         }
         if (!empty($pj->bad_authors)) {
             $ps->error_at("authors", $ps->_("Some authors ignored."));
@@ -817,7 +817,7 @@ class PaperStatus extends MessageSet {
         foreach ($pj->bad_email_authors as $aux) {
             $ps->error_at("authors", null);
             $k = $aux->author_index >= 0 ? "auemail" . $aux->author_index : "authors";
-            $ps->error_at($k, $ps->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
+            $ps->estop_at($k, $ps->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
         if (isset($pj->authors)
             && !$ps->has_error_at("authors")) {

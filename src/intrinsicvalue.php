@@ -6,6 +6,11 @@ class Title_PaperOption extends PaperOption {
     function __construct($conf, $args) {
         parent::__construct($conf, $args);
     }
+    function value_present(PaperValue $ov) {
+        return $ov->value
+            && (strlen($ov->data()) > 6
+                || !preg_match('/\A(?:|N\/?A|TB[AD])\z/i', $ov->data()));
+    }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return (string) $ov->data();
     }
@@ -37,6 +42,11 @@ class Abstract_PaperOption extends PaperOption {
     function __construct($conf, $args) {
         parent::__construct($conf, $args);
         $this->set_required(!$conf->opt("noAbstract"));
+    }
+    function value_present(PaperValue $ov) {
+        return $ov->value
+            && (strlen($ov->data()) > 6
+                || !preg_match('/\A(?:|N\/?A|TB[AD])\z/i', $ov->data()));
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return (string) $ov->data();

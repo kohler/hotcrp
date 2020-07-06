@@ -227,7 +227,7 @@ class MessageSet {
             return $rest;
         }
     }
-    /** @param ?string $field
+    /** @param ?string|false $field
      * @param string $rest
      * @param string $prefix
      * @return string */

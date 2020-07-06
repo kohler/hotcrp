@@ -20,7 +20,7 @@
     },
     {
         "name": "authors", "json_key": "authors", "id": -1001,
-        "form_position": 3001, "type": "intrinsic"
+        "form_position": 3001, "type": "intrinsic", "required": true
     },
     {
         "name": "nonblind", "json_key": "nonblind", "id": -1002,

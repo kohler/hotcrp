@@ -403,14 +403,14 @@ class PaperTable {
         return MessageSet::status_class($this->problem_status_at($f), $rest, $prefix);
     }
 
-    private function echo_editable_papt($what, $heading, $extra = [], PaperOption $opt = null) {
-        if ($opt && !isset($extra["for"])) {
+    private function echo_editable_papt($what, $heading, $extra, PaperOption $opt) {
+        if (!isset($extra["for"])) {
             $for = $opt->readable_formid();
         } else {
             $for = $extra["for"] ?? false;
         }
         echo '<div class="papeg';
-        if ($opt && $opt->exists_condition()) {
+        if ($opt->exists_condition()) {
             echo ' has-edit-condition';
             if (!$opt->test_exists($this->prow)) {
                 echo ' hidden';
@@ -429,7 +429,7 @@ class PaperTable {
             echo '" id="' . $id;
         }
         $klass = "papfn";
-        if ($opt && $opt->required) {
+        if ($opt->required) {
             $klass .= " field-required";
         }
         echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => $klass]), '</h3>';
@@ -665,7 +665,7 @@ class PaperTable {
             " </span>";
         if ($this->conf->setting("sub_freeze")) {
             echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>"),
-                '<p class="settings-ap hint">You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
+                '<p class="settings-ap hint">You must complete the submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
         } else {
             echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review") . "</strong>");
         }
@@ -876,7 +876,7 @@ class PaperTable {
         } else if ($sb === Conf::BLIND_UNTILREVIEW) {
             $title .= ' <span class="n">(blind until review)</span>';
         }
-        $this->echo_editable_papt("authors", $title, ["id" => "authors"]);
+        $this->echo_editable_papt("authors", $title, ["id" => "authors"], $option);
         $this->echo_field_hint($option);
         echo Ht::hidden("has_authors", 1),
             '<div class="papev"><table class="js-row-order">',
@@ -1469,7 +1469,7 @@ class PaperTable {
         if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
             && $this->editable !== "f") {
             $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, !$reqov->value, ["data-default-checked" => !$ov->value]) . "</span>" . $this->edit_title_html($option);
-            $this->echo_editable_papt("nonblind", $heading, ["for" => "checkbox"]);
+            $this->echo_editable_papt("nonblind", $heading, ["for" => "checkbox", "id" => "nonblind"], $option);
             $this->echo_field_hint($option);
             echo Ht::hidden("has_nonblind", 1), "</div>\n\n";
         }
@@ -1541,7 +1541,7 @@ class PaperTable {
         if (!$this->conf->has_topics()) {
             return;
         }
-        $this->echo_editable_papt("topics", $this->edit_title_html($option), ["id" => "topics"]);
+        $this->echo_editable_papt("topics", $this->edit_title_html($option), ["id" => "topics"], $option);
         $this->echo_field_hint($option);
         echo Ht::hidden("has_topics", 1),
             '<div class="papev"><ul class="ctable">';
@@ -1625,7 +1625,6 @@ class PaperTable {
             foreach ($confset->basic_conflict_types() as $ct) {
                 $ctypes[$ct] = $confset->unparse_text($ct);
             }
-            $extra = ["class" => "pcconf-selector"];
             if ($this->admin) {
                 $ctypes["xsep"] = null;
                 $ct = Conflict::set_pinned(Conflict::GENERAL, true);
@@ -1643,7 +1642,7 @@ class PaperTable {
             }
         }
 
-        $this->echo_editable_papt("pc_conflicts", $this->edit_title_html($option), ["id" => "pc_conflicts"]);
+        $this->echo_editable_papt("pc_conflicts", $this->edit_title_html($option), ["id" => "pc_conflicts"], $option);
         $this->echo_field_hint($option);
         echo Ht::hidden("has_pc_conflicts", 1),
             '<div class="papev"><ul class="pc-ctable">';
@@ -2109,22 +2108,18 @@ class PaperTable {
         $can_view_decision = $this->prow->outcome != 0
             && $this->user->can_view_decision($this->prow);
         if ($can_view_decision && $this->prow->outcome < 0) {
-            $this->_main_message("The submission was not accepted." . $this->_forceShow_message(), 1);
+            $this->_main_message("This submission was not accepted." . $this->_forceShow_message(), 1);
         } else if ($this->prow->timeWithdrawn > 0) {
             if ($this->user->can_revive_paper($this->prow)) {
-                $this->_main_message("The submission has been withdrawn, but you can still revive it." . $this->deadline_setting_is("sub_update"), 1);
+                $this->_main_message("This submission has been withdrawn, but you can still revive it." . $this->deadline_setting_is("sub_update"), 1);
             } else {
-                $this->_main_message("The submission has been withdrawn." . $this->_forceShow_message(), 1);
+                $this->_main_message("This submission has been withdrawn." . $this->_forceShow_message(), 1);
             }
         } else if ($this->prow->timeSubmitted <= 0) {
             $whyNot = $this->user->perm_update_paper($this->prow);
             if (!$whyNot) {
                 $t = [];
-                if (empty($this->prow->missing_fields(false, $this->user))) {
-                    $t[] = $this->conf->_("This submission is marked as not ready for review.");
-                } else {
-                    $t[] = $this->conf->_("This submission is incomplete.");
-                }
+                $t[] = $this->conf->_("This submission is not yet ready for review.");
                 if ($this->conf->setting("sub_update")) {
                     $t[] = $this->conf->_("All submissions must be completed by %s to be considered.", $this->conf->unparse_setting_time("sub_update"));
                 } else {
@@ -2133,19 +2128,19 @@ class PaperTable {
                 $this->_main_message(space_join($t), 1);
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($this->prow)) {
-                $this->_main_message('The submission is not ready for review. Although you cannot make any further changes, the current version can be still be submitted for review.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
+                $this->_main_message('This submission is not ready for review. Although you cannot make any further changes, the current version can be still be submitted for review.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
             } else if (isset($whyNot["deadline"])) {
                 if ($this->conf->deadlinesBetween("", "sub_sub", "sub_grace")) {
                     $this->_main_message('The site is not open for updates at the moment.' . $this->_deadline_override_message(), 1);
                 } else {
-                    $this->_main_message('The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
+                    $this->_main_message('The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and this submission will not be reviewed.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
                 }
             } else {
-                $this->_main_message('The submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), 1);
+                $this->_main_message('This submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), 1);
             }
         } else if ($this->user->can_update_paper($this->prow)) {
             if ($this->mode === "edit") {
-                $this->_main_message('<div class="feedback feedback-success">The submission is ready and will be considered for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline") . '</div>', MessageSet::NOTE);
+                $this->_main_message('This submission is ready and will be considered for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), MessageSet::SUCCESS);
             }
         } else if ($this->conf->allow_final_versions()
                    && $this->prow->outcome > 0
@@ -2159,9 +2154,9 @@ class PaperTable {
             }
         } else if ($this->mode === "edit") {
             if ($this->user->can_withdraw_paper($this->prow, true)) {
-                $t = "The submission is under review and can’t be changed, but you can change its contacts or withdraw it from consideration.";
+                $t = "This submission is under review and can’t be changed, but you can change its contacts or withdraw it from consideration.";
             } else {
-                $t = "The submission is under review and can’t be changed or withdrawn, but you can change its contacts.";
+                $t = "This submission is under review and can’t be changed or withdrawn, but you can change its contacts.";
             }
             $this->_main_message($t . $this->_deadline_override_message(), MessageSet::NOTE);
         }
@@ -2192,7 +2187,7 @@ class PaperTable {
                     $fields[] = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
             }
             if (!empty($fields)) {
-                $this->_main_message($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
+                $this->_main_message($this->conf->_c("paper_edit", "Please check %s before completing the submission.", commajoin($fields)), $this->edit_status->problem_status());
             }
         }
     }
@@ -2206,7 +2201,7 @@ class PaperTable {
         if ($include_required && !$this->quit) {
             foreach ($this->edit_fields as $e) {
                 if ($e->required) {
-                    $this->_main_message('<span class="field-required-explanation">* Required field</span>', 0);
+                    $this->_main_message('<span class="field-required-explanation">* Required</span>', 0);
                     break;
                 }
             }
