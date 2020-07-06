@@ -111,7 +111,7 @@
     ["etime", "Action not available.", "The site is not open for submissions.", ["$1=sub_open"]],
     ["etime", "Action not available until %3$s.", "The site will open for reviewing at %3$s.", ["$1=rev_open"]],
     ["etime", "Action not available until %3$s.", "The site will open for submissions at %3$s.", ["$1=sub_open"]],
-    ["etime", "Deadline passed.", "The submission registration deadline has passed. The deadline was %3$s.", ["$1^=sub_reg"]],
+    ["etime", "Deadline passed.", "The registration deadline has passed. The deadline was %3$s.", ["$1^=sub_reg"]],
     ["etime", "Deadline passed.", "The submission update deadline has passed. The deadline was %3$s.", ["$1^=sub_update"]],
     ["etime", "Deadline passed.", "The submission deadline has passed. The deadline was %3$s.", ["$1^=sub_sub"]],
     ["etime", "Deadline passed.", "The deadline for this external review has passed.", ["$1^=extrev_hard"]],

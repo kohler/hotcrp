@@ -428,7 +428,11 @@ class PaperTable {
         if (($id = $extra["id"] ?? false)) {
             echo '" id="' . $id;
         }
-        echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => "papfn"]), '</h3>';
+        $klass = "papfn";
+        if ($opt && $opt->required) {
+            $klass .= " field-required";
+        }
+        echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => $klass]), '</h3>';
     }
 
     /** @param array<string,int|string> $extra */
@@ -2039,7 +2043,7 @@ class PaperTable {
     // Functions for editing
 
     function deadline_setting_is($dname, $dl = "deadline") {
-        $deadline = $this->conf->unparse_setting_deadline_span($dname);
+        $deadline = $this->conf->unparse_setting_time_span($dname);
         if ($deadline === "N/A") {
             return "";
         } else if (Conf::$now < $this->conf->setting($dname)) {
@@ -2063,51 +2067,54 @@ class PaperTable {
             return "";
         }
     }
+    private function _main_message($m, $status) {
+        $this->edit_status->msg_at(":main", $m, $status);
+    }
 
+    private function _edit_message_new_paper_deadline() {
+        $sub_open = $this->conf->setting("sub_open");
+        if ($sub_open <= 0 || $sub_open > Conf::$now) {
+            $msg = "The site is not open for submissions." . $this->_deadline_override_message();
+        } else {
+            $msg = 'The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadline_setting_is("sub_reg") . $this->_deadline_override_message();
+        }
+        $this->_main_message($msg, $this->admin ? 1 : 2);
+    }
     private function _edit_message_new_paper() {
         $msg = "";
+        if ($this->admin || $this->conf->timeStartPaper()) {
+            $t = [$this->conf->_("Enter information about your submission.")];
+            $sub_reg = $this->conf->setting("sub_reg");
+            $sub_upd = $this->conf->setting("sub_update");
+            if ($sub_reg > 0 && $sub_upd > 0 && $sub_reg < $sub_upd) {
+                $t[] = $this->conf->_("All submissions must be registered by %s and completed by %s.", $this->conf->unparse_setting_time("sub_reg"), $this->conf->unparse_setting_time("sub_sub"));
+                if (!$this->conf->opt("noPapers")) {
+                    $t[] = $this->conf->_("PDF upload is not required to register.");
+                }
+            } else if ($sub_upd > 0) {
+                $t[] = $this->conf->_("All submissions must be completed by %s.", $this->conf->unparse_setting_time("sub_update"));
+            }
+            $this->_main_message(space_join($t), 0);
+            if (($v = $this->conf->_i("submit"))) {
+                $this->_main_message($v, 0);
+            }
+        }
         if (!$this->conf->timeStartPaper()) {
-            $sub_open = $this->conf->setting("sub_open");
-            if ($sub_open <= 0 || $sub_open > Conf::$now) {
-                $msg = "The site is not open for submissions." . $this->_deadline_override_message();
-            } else {
-                $msg = 'The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadline_setting_is("sub_reg") . $this->_deadline_override_message();
-            }
-            if (!$this->admin) {
-                $this->quit = true;
-                return '<div class="merror">' . $msg . '</div>';
-            }
-            $msg = Ht::msg($msg, 1);
+            $this->_edit_message_new_paper_deadline();
+            $this->quit = $this->quit || !$this->admin;
         }
-
-        $t = [$this->conf->_("Enter information about your submission.")];
-        $sub_reg = $this->conf->setting("sub_reg");
-        $sub_upd = $this->conf->setting("sub_update");
-        if ($sub_reg > 0 && $sub_upd > 0 && $sub_reg < $sub_upd) {
-            $t[] = $this->conf->_("All submissions must be registered by %s and completed by %s.", $this->conf->unparse_setting_time("sub_reg"), $this->conf->unparse_setting_time("sub_sub"));
-            if (!$this->conf->opt("noPapers")) {
-                $t[] = $this->conf->_("PDF upload is not required to register.");
-            }
-        } else if ($sub_upd > 0) {
-            $t[] = $this->conf->_("All submissions must be completed by %s.", $this->conf->unparse_setting_time("sub_update"));
-        }
-        $msg .= Ht::msg(space_join($t), 0);
-        if (($v = $this->conf->_i("submit"))) {
-            $msg .= Ht::msg($v, 0);
-        }
-        return $msg;
     }
 
     private function _edit_message_for_author() {
         $can_view_decision = $this->prow->outcome != 0
             && $this->user->can_view_decision($this->prow);
         if ($can_view_decision && $this->prow->outcome < 0) {
-            return Ht::msg("The submission was not accepted." . $this->_forceShow_message(), 1);
+            $this->_main_message("The submission was not accepted." . $this->_forceShow_message(), 1);
         } else if ($this->prow->timeWithdrawn > 0) {
             if ($this->user->can_revive_paper($this->prow)) {
-                return Ht::msg("The submission has been withdrawn, but you can still revive it." . $this->deadline_setting_is("sub_update"), 1);
+                $this->_main_message("The submission has been withdrawn, but you can still revive it." . $this->deadline_setting_is("sub_update"), 1);
             } else {
-                return Ht::msg("The submission has been withdrawn." . $this->_forceShow_message(), 1);
+                $this->_main_message("The submission has been withdrawn." . $this->_forceShow_message(), 1);
             }
         } else if ($this->prow->timeSubmitted <= 0) {
             $whyNot = $this->user->perm_update_paper($this->prow);
@@ -2123,32 +2130,32 @@ class PaperTable {
                 } else {
                     $t[] = $this->conf->_("Incomplete submissions will not be considered.");
                 }
-                return Ht::msg(space_join($t), 1);
+                $this->_main_message(space_join($t), 1);
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($this->prow)) {
-                return Ht::msg('The submission is not ready for review. Although you cannot make any further changes, the current version can be still be submitted for review.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
+                $this->_main_message('The submission is not ready for review. Although you cannot make any further changes, the current version can be still be submitted for review.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
             } else if (isset($whyNot["deadline"])) {
                 if ($this->conf->deadlinesBetween("", "sub_sub", "sub_grace")) {
-                    return Ht::msg('The site is not open for updates at the moment.' . $this->_deadline_override_message(), 1);
+                    $this->_main_message('The site is not open for updates at the moment.' . $this->_deadline_override_message(), 1);
                 } else {
-                    return Ht::msg('The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
+                    $this->_main_message('The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
                 }
             } else {
-                return Ht::msg('The submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), 1);
+                $this->_main_message('The submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), 1);
             }
         } else if ($this->user->can_update_paper($this->prow)) {
             if ($this->mode === "edit") {
-                return Ht::msg('The submission is ready and will be considered for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), "confirm");
+                $this->_main_message('<div class="feedback feedback-success">The submission is ready and will be considered for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline") . '</div>', MessageSet::NOTE);
             }
         } else if ($this->conf->allow_final_versions()
                    && $this->prow->outcome > 0
                    && $can_view_decision) {
             if ($this->user->can_submit_final_paper($this->prow)) {
                 if (($t = $this->conf->_i("finalsubmit", false, $this->deadline_setting_is("final_soft")))) {
-                    return Ht::msg($t, 0);
+                    $this->_main_message($t, 0);
                 }
             } else if ($this->mode === "edit") {
-                return Ht::msg("The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message(), 1);
+                $this->_main_message("The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message(), 1);
             }
         } else if ($this->mode === "edit") {
             if ($this->user->can_withdraw_paper($this->prow, true)) {
@@ -2156,31 +2163,25 @@ class PaperTable {
             } else {
                 $t = "The submission is under review and can’t be changed or withdrawn, but you can change its contacts.";
             }
-            return Ht::msg($t . $this->_deadline_override_message(), 0);
+            $this->_main_message($t . $this->_deadline_override_message(), MessageSet::NOTE);
         }
-        return "";
     }
 
-    private function _edit_message() {
-        if (!$this->prow->paperId) {
-            return $this->_edit_message_new_paper();
-        }
-
-        $m = "";
+    private function _edit_message_existing_paper() {
         $has_author = $this->prow->has_author($this->user);
         $can_view_decision = $this->prow->outcome != 0 && $this->user->can_view_decision($this->prow);
         if ($has_author) {
-            $m .= $this->_edit_message_for_author();
+            $this->_edit_message_for_author();
         } else if ($this->conf->allow_final_versions()
                    && $this->prow->outcome > 0
                    && !$this->prow->can_author_view_decision()) {
-            $m .= Ht::msg("The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 0);
+            $this->_main_message("The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 1);
         } else {
-            $m .= Ht::msg("You aren’t a contact for this submission, but as an administrator you can still make changes.", 0);
+            $this->_main_message("You aren’t a contact for this submission, but as an administrator you can still make changes.", MessageSet::NOTE);
         }
         if ($this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_update_paper", $this->prow)
             && ($v = $this->conf->_i("submit"))) {
-            $m .= Ht::msg($v, 0);
+            $this->_main_message($v, 0);
         }
         if ($this->edit_status
             && $this->edit_status->has_problem()
@@ -2191,10 +2192,28 @@ class PaperTable {
                     $fields[] = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
             }
             if (!empty($fields)) {
-                $m .= Ht::msg($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
+                $this->_main_message($this->conf->_c("paper_edit", "Please check %s before completing your submission.", commajoin($fields)), $this->edit_status->problem_status());
             }
         }
-        return $m;
+    }
+
+    private function _echo_edit_messages($include_required) {
+        if (!$this->prow->paperId) {
+            $this->_edit_message_new_paper();
+        } else {
+            $this->_edit_message_existing_paper();
+        }
+        if ($include_required && !$this->quit) {
+            foreach ($this->edit_fields as $e) {
+                if ($e->required) {
+                    $this->_main_message('<span class="field-required-explanation">* Required field</span>', 0);
+                    break;
+                }
+            }
+        }
+        if ($this->edit_status->has_messages_at(":main")) {
+            echo '<div class="papeg">', $this->messages_at(":main", "feedback"), '</div>';
+        }
     }
 
     private function _save_name() {
@@ -2442,7 +2461,9 @@ class PaperTable {
     private function _echo_editable_body() {
         $this->_echo_editable_form();
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
-        echo '<div>';
+        echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">',
+            $this->conf->_($this->prow->paperId ? "Edit Submission" : "New Submission"),
+            '</span></h2></div>';
 
         $this->edit_fields = array_values(array_filter(
             $this->conf->options()->form_fields($this->prow),
@@ -2451,9 +2472,7 @@ class PaperTable {
             }
         ));
 
-        if (($m = $this->_edit_message())) {
-            echo $m;
-        }
+        $this->_echo_edit_messages(true);
 
         if (!$this->quit) {
             for ($this->edit_fields_position = 0;
@@ -2534,9 +2553,7 @@ class PaperTable {
 
             if ($this->mode === "edit") {
                 echo '</div></div><div class="pcard notecard"><div class="papcard-body">';
-                if (($m = $this->_edit_message())) {
-                    echo $m, "<hr class=\"g\">\n";
-                }
+                $this->_echo_edit_messages(false);
                 $this->_echo_editable_form();
                 $option = $this->conf->option_by_id(PaperOption::CONTACTSID);
                 $this->echo_editable_contact_author($option);

@@ -22,6 +22,8 @@ class MessageSet {
     /** @var int */
     private $problem_status;
 
+    const SUCCESS = -2;
+    const NOTE = -1;
     const INFO = 0;
     const WARNING = 1;
     const ERROR = 2;
@@ -73,7 +75,7 @@ class MessageSet {
 
     /** @param false|null|string $field
      * @param false|null|string|list<string> $msg
-     * @param 0|1|2|3 $status */
+     * @param -2|-1|0|1|2|3 $status */
     function msg_at($field, $msg, $status) {
         if ($this->ignore_msgs) {
             return;
@@ -204,15 +206,31 @@ class MessageSet {
         return $this->problem_status_at($field) >= self::ERROR;
     }
 
+    /** @param int $status
+     * @param string $rest
+     * @return string */
     static function status_class($status, $rest = "", $prefix = "has-") {
-        if ($status >= self::WARNING) {
-            if ((string) $rest !== "") {
-                $rest .= " ";
-            }
-            $rest .= $prefix . ($status >= self::ERROR ? "error" : "warning");
+        if ($status >= self::ERROR) {
+            $sclass = "error";
+        } else if ($status === self::WARNING) {
+            $sclass = "warning";
+        } else if ($status === self::SUCCESS) {
+            $sclass = "success";
+        } else if ($status === self::NOTE) {
+            $sclass = "note";
+        } else {
+            $sclass = "";
         }
-        return $rest;
+        if ($sclass !== "") {
+            return $rest . ($rest === "" ? $prefix : " " . $prefix) . $sclass;
+        } else {
+            return $rest;
+        }
     }
+    /** @param ?string $field
+     * @param string $rest
+     * @param string $prefix
+     * @return string */
     function control_class($field, $rest = "", $prefix = "has-") {
         return self::status_class($field ? $this->errf[$field] ?? 0 : 0, $rest, $prefix);
     }
