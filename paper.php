@@ -467,24 +467,27 @@ if ($paperTable->mode == "edit") {
 }
 
 $paperTable->initialize($editable, $editable && $useRequest);
-if (($ps || $prow) && $paperTable->mode === "edit") {
+if ($paperTable->mode === "edit") {
+    $nnprow = $paperTable->prow;
+    if (!$ps && !$prow) {
+        $nnprow->set_allow_absent(true);
+    }
     if ($ps) {
         $ps->ignore_duplicates = true;
     } else {
-        $ps = new PaperStatus($Conf, $Me);
+        $ps = PaperStatus::make_prow($Me, $nnprow);
     }
-    if ($prow) {
-        $old_overrides = $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
-        foreach ($Conf->options()->form_fields($prow) as $o) {
-            if ($Me->can_edit_option($prow, $o)) {
-                $ov = $prow->force_option($o);
-                $ov->set_message_set($ps);
-                $o->value_check($ov, $Me);
-            }
+    $old_overrides = $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
+    foreach ($Conf->options()->form_fields($nnprow) as $o) {
+        if ($Me->can_edit_option($nnprow, $o)) {
+            $ov = $nnprow->force_option($o);
+            $ov->set_message_set($ps);
+            $o->value_check($ov, $Me);
         }
-        $Me->set_overrides($old_overrides);
     }
+    $Me->set_overrides($old_overrides);
     $paperTable->set_edit_status($ps);
+    $nnprow->set_allow_absent(false);
 }
 
 // produce paper table

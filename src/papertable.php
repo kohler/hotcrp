@@ -532,6 +532,7 @@ class PaperTable {
         if (!$fr->is_empty()) {
             echo $fr->value_html("field-d");
         }
+        echo $this->messages_at($opt->formid . ":context", "feedback");
     }
 
     /** @param PaperOption $opt */
