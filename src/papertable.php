@@ -364,18 +364,21 @@ class PaperTable {
         }
 
         // collect folders
-        $folders = ["need-fold-storage"];
+        $folders = [];
         foreach ($this->foldmap as $num => $f) {
             if ($num !== 8 || $this->user->view_authors_state($this->prow) === 1) {
                 $folders[] = "fold" . $num . ($f ? "c" : "o");
             }
         }
-
-        // echo div
-        echo '<div id="foldpaper" class="', join(" ", $folders),
-            '" data-fold-storage-prefix="p." data-fold-storage="',
-            htmlspecialchars(json_encode_browser($foldstorage)), '">';
-        Ht::stash_script("fold_storage()");
+        echo '<div id="foldpaper" class="', join(" ", $folders);
+        if ($this->allFolded) {
+            echo '">';
+        } else {
+            echo (empty($folders) ? "" : " "),
+                'need-fold-storage" data-fold-storage-prefix="p." data-fold-storage="',
+                htmlspecialchars(json_encode_browser($foldstorage)), '">';
+            Ht::stash_script("fold_storage()");
+        }
     }
 
     private function problem_status_at($f) {
