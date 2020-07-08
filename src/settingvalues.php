@@ -25,6 +25,7 @@ class Si {
     public $values;
     public $json_values;
     public $size;
+    /** @var ?non-empty-string */
     public $placeholder;
     public $parser_class;
     public $validator_class;
@@ -105,6 +106,9 @@ class Si {
             if (isset(self::$key_storage[$k])) {
                 $this->store($k, $j, $k, self::$key_storage[$k]);
             }
+        }
+        if ($this->placeholder === "") {
+            $this->placeholder = null;
         }
         if (isset($j->storage)) {
             if (is_string($j->storage) && $j->storage !== "") {
@@ -978,7 +982,7 @@ class SettingValues extends MessageSet {
         if ($si->size && !isset($js["size"])) {
             $js["size"] = $si->size;
         }
-        if ($si->placeholder && !isset($js["placeholder"])) {
+        if ($si->placeholder !== null && !isset($js["placeholder"])) {
             $js["placeholder"] = $si->placeholder;
         }
         if ($si->autogrow) {
@@ -1054,7 +1058,7 @@ class SettingValues extends MessageSet {
         if ($si->size) {
             $rows = $si->size;
         }
-        if ($si->placeholder) {
+        if ($si->placeholder !== null) {
             $js["placeholder"] = $si->placeholder;
         }
         if ($si->autogrow || $si->autogrow === null) {
@@ -1218,7 +1222,7 @@ class SettingValues extends MessageSet {
         }
 
         $v = trim($v);
-        if (($si->placeholder && $si->placeholder === $v)
+        if (($si->placeholder !== null && $si->placeholder === $v)
             || ($si->invalid_value && $si->invalid_value === $v)) {
             $v = "";
         }
@@ -1250,7 +1254,7 @@ class SettingValues extends MessageSet {
         } else if ($si->type === "int" || $si->type === "zint") {
             if (preg_match("/\\A[-+]?[0-9]+\\z/", $v)) {
                 return intval($v);
-            } else if ($v == "" && $si->placeholder) {
+            } else if ($v == "" && $si->placeholder !== null) {
                 return 0;
             }
             $err = "Should be a number.";

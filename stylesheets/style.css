@@ -379,6 +379,10 @@ label.checki {
 	margin-bottom: 1em !important;
 	margin-bottom: 1rem !important;
 }
+.mb-4 {
+	margin-bottom: 1.5em !important;
+	margin-bottom: 1.5rem !important;
+}
 .mb-5 {
 	margin-bottom: 2.25em !important;
 	margin-bottom: 2.25rem !important;
