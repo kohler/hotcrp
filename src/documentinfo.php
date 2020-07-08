@@ -15,6 +15,7 @@ class DocumentInfo implements JsonSerializable {
     /** @var int */
     public $paperStorageId = 0;
     public $timestamp;
+    /** @var string */
     public $mimetype;
     // $paper - translated to $content on load
     public $compression;
@@ -360,7 +361,8 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     function compressible() {
-        return $this->size() <= 10000000 && Mimetype::compressible($this->mimetype);
+        return $this->size() <= 10000000
+            && Mimetype::compressible($this->mimetype);
     }
 
     /** @return bool */

@@ -63,7 +63,7 @@ class Mimetype {
         $this->flags = $flags;
     }
 
-    /** @param ?string|?Mimetype $type
+    /** @param string|Mimetype $type
      * @return ?Mimetype */
     static function lookup($type, $nocreate = false) {
         if (!$type) {
@@ -134,7 +134,7 @@ class Mimetype {
         }
     }
 
-    /** @param ?string|?Mimetype $type
+    /** @param string|Mimetype $type
      * @return string */
     static function type_with_charset($type) {
         if (($x = self::lookup($type, true))) {
@@ -158,14 +158,14 @@ class Mimetype {
             || ($ta !== null && $ta === $tb);
     }
 
-    /** @param ?string|?Mimetype $type
+    /** @param string|Mimetype $type
      * @return string */
     static function extension($type) {
         $x = self::lookup($type);
         return $x ? $x->extension : "";
     }
 
-    /** @param ?string|?Mimetype $type
+    /** @param string|Mimetype $type
      * @return string */
     static function description($type) {
         if (($x = self::lookup($type))) {

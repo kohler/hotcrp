@@ -867,6 +867,7 @@ class PaperOption implements Abbreviator {
         return $this->title ? : $this->conf->_ci("field/edit", $this->formid);
     }
 
+    /** @return AbbreviationMatcher */
     private function abbrev_matcher() {
         if ($this->nonpaper) {
             return $this->conf->options()->nonpaper_abbrev_matcher();
