@@ -483,9 +483,12 @@ class PaperStatus extends MessageSet {
                     "documentType" => $o->id
                 ];
                 foreach (["timestamp", "mimetype", "content", "content_base64",
-                          "content_file", "metadata", "filename"] as $k) {
+                          "content_file", "metadata"] as $k) {
                     if (isset($docj->$k))
                         $args[$k] = $docj->$k;
+                }
+                if (isset($docj->filename)) {
+                    $args["filename"] = DocumentInfo::sanitize_filename($docj->filename);
                 }
                 DocumentInfo::fix_mimetype($args);
                 $doc = new DocumentInfo($args, $this->conf, $this->prow);

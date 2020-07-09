@@ -135,13 +135,9 @@ class DocumentInfo implements JsonSerializable {
             "paperId" => $paperId,
             "documentType" => $documentType,
             "timestamp" => time(),
-            "mimetype" => $upload["type"] ?? null
+            "mimetype" => $upload["type"] ?? null,
+            "filename" => self::sanitize_filename($upload["name"] ?? null)
         ];
-        if (isset($upload["name"])
-            && strlen($upload["name"]) <= 255
-            && is_valid_utf8($upload["name"])) {
-            $args["filename"] = $upload["name"];
-        }
         $fnhtml = isset($args["filename"]) ? " “" . htmlspecialchars($args["filename"]) . "”" : "";
 
         $content = false;
@@ -163,11 +159,6 @@ class DocumentInfo implements JsonSerializable {
         return new DocumentInfo($args, $conf);
     }
 
-    /** @deprecated */
-    static function make_file_upload($pid, $dt, $f, $conf) {
-        return self::make_uploaded_file($f, $pid, $dt, $conf);
-    }
-
     /** @param string $token
      * @param int $paperId
      * @param int $documentType
@@ -186,7 +177,7 @@ class DocumentInfo implements JsonSerializable {
             "documentType" => $documentType,
             "timestamp" => time(),
             "mimetype" => $capd->mimetype ?? null,
-            "filename" => $capd->filename,
+            "filename" => self::sanitize_filename($capd->filename),
             "size" => $capd->size,
             "hash" => $capd->hash,
             "crc32" => $capd->crc32 ?? null
@@ -222,8 +213,31 @@ class DocumentInfo implements JsonSerializable {
         $content = $args["content"] ?? null;
         if ($content === null && isset($args["content_file"])) {
             $content = file_get_contents($args["content_file"], false, null, 0, 2048);
+        } else if ($content === null && isset($args["content_base64"])) {
+            $content = base64_decode(substr($args["content_base64"], 0, 2730));
         }
         $args["mimetype"] = Mimetype::content_type($content, $args["mimetype"] ?? null);
+    }
+
+    /** @param ?string $fn
+     * @return ?string */
+    static function sanitize_filename($fn) {
+        $fn = str_replace(["/", "\\"], "_", $fn ?? "");
+        if (str_starts_with($fn, ".")) {
+            $fn = "_" . substr($fn, 1);
+        }
+        if (strlen($fn) > 255) {
+            if (($dot = strpos($fn, ".", strlen($fn) - 10)) !== false) {
+                $extlen = strlen($fn) - $dot;
+                $fn = substr($fn, 0, 252 - $extlen) . "..." . substr($fn, $dot);
+            } else {
+                $fn = substr($fn, 0, 252) . "...";
+            }
+        }
+        if ($fn !== "" && !is_valid_utf8($fn)) {
+            $fn = UnicodeHelper::utf8_replace_invalid($fn);
+        }
+        return $fn !== "" ? $fn : null;
     }
 
 

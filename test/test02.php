@@ -91,6 +91,15 @@ xassert(!$doc->update_metadata(["too_long" => str_repeat("!", 32768)], true));
 xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
             '{"foo":"bar"}');
 
+xassert_eqq(DocumentInfo::sanitize_filename(""), null);
+xassert_eqq(DocumentInfo::sanitize_filename(".a"), "_a");
+xassert_eqq(DocumentInfo::sanitize_filename("a/b.txt"), "a_b.txt");
+xassert_eqq(DocumentInfo::sanitize_filename("a/\\b.txt"), "a__b.txt");
+xassert_eqq(DocumentInfo::sanitize_filename("a/\x80M.txt"), "a_\x7fM.txt");
+xassert_eqq(DocumentInfo::sanitize_filename(str_repeat("i", 1024) . ".txt"), str_repeat("i", 248) . "....txt");
+xassert_eqq(strlen(DocumentInfo::sanitize_filename(str_repeat("i", 1024) . ".txt")), 255);
+xassert_eqq(DocumentInfo::sanitize_filename(str_repeat("i", 1024)), str_repeat("i", 252) . "...");
+
 // Csv::split_lines tests
 xassert_array_eqq(CsvParser::split_lines(""),
                   array());
