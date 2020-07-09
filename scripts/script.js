@@ -8604,6 +8604,7 @@ handle_ui.on("js-submit-paperlist", function (event) {
             getform.appendChild(hidden_input("forceShow", ""));
             getform.appendChild(hidden_input("fn", ""));
             getform.appendChild(hidden_input("p", ""));
+            getform.setAttribute("id", "searchgetform");
             document.body.appendChild(getform);
         }
         if (this.elements.forceShow && this.elements.forceShow.value !== "") {
