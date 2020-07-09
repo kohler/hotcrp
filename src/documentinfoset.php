@@ -85,7 +85,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 || strlen($fn) > 1000
                 || ($slash !== false && str_ends_with($fn, "/"))
                 || ($slash !== false && strpos($fn, "//") !== false)
-                || !preg_match('/\A[^.*\/\s\000-\037\\\\\'"][^*\000-\037\\\\\'"]*\z/', $fn)) {
+                || !preg_match('/\A[^.*\/\s\000-\037\\\\"][^*\000-\037\\\\"]*\z/', $fn)) {
                 return $this->_add_fail($doc, $fn);
             }
             while ($slash !== false) {
