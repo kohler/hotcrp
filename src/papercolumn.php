@@ -204,8 +204,7 @@ class Title_PaperColumn extends PaperColumn {
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         $collator = $a->conf->collator();
-        return $collator->compare($a->unaccented_title(), $b->unaccented_title())
-            ? : $collator->compare($a->title, $b->title);
+        return $collator->compare($a->title, $b->title);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $t = '<a href="' . $pl->_paperLink($row) . '" class="ptitle taghl';

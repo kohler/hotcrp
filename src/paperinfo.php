@@ -673,11 +673,6 @@ class PaperInfo {
     }
 
 
-    /** @return string */
-    function unaccented_title() {
-        return $this->unaccented_field("title");
-    }
-
     /** @return int */
     function format_of($text, $check_simple = false) {
         return $this->conf->check_format($this->paperFormat, $check_simple ? $text : null);
