@@ -997,9 +997,9 @@ class PaperStatus extends MessageSet {
             $d1 = $ov->data_array();
             $oldv = $this->_nnprow->force_option($ov->id);
             if ($v1 !== $oldv->value_array() || $d1 !== $oldv->data_array()) {
-                $this->mark_diff($ov->option->json_key());
                 if (!$ov->option->value_save($ov, $this)) {
                     // normal option
+                    $this->mark_diff($ov->option->json_key());
                     $this->_option_delid[] = $ov->id;
                     for ($i = 0; $i < count($v1); ++$i) {
                         $qv0 = [-1, $ov->id, $v1[$i], null, null];

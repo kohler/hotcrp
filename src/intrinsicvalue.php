@@ -20,6 +20,7 @@ class Title_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
+        $ps->mark_diff("title");
         $ps->save_paperf("title", $ov->data());
         return true;
     }
@@ -57,6 +58,7 @@ class Abstract_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
+        $ps->mark_diff("abstract");
         $ab = $ov->data();
         if ($ab === null || strlen($ab) < 16383) {
             $ps->save_paperf("abstract", $ab === "" ? null : $ab);
@@ -115,6 +117,7 @@ class Collaborators_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
+        $ps->mark_diff("collaborators");
         $collab = $ov->data();
         if ($collab === null || strlen($collab) < 8190) {
             $ps->save_paperf("collaborators", $collab === "" ? null : $collab);
@@ -165,6 +168,7 @@ class Nonblind_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
+        $ps->mark_diff("nonblind");
         $ps->save_paperf("blind", $ov->value ? 0 : 1);
         return true;
     }
@@ -228,6 +232,7 @@ class Topics_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
+        $ps->mark_diff("topics");
         $ps->_topic_ins = $ov->value_array();
         return true;
     }
@@ -347,6 +352,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
+        // do not mark diff (will be marked later)
         $pcm = $this->conf->pc_members();
         if ($ov->prow->paperId > 0
             ? $ps->user->can_administer($ov->prow)
