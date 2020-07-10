@@ -89,6 +89,7 @@ class PaperStatus extends MessageSet {
 
     function clear() {
         parent::clear();
+        $this->ignore_duplicates = true;
         $this->uploaded_documents = [];
         $this->prow = null;
         $this->diffs = [];

@@ -1038,7 +1038,7 @@ class PaperOption implements Abbreviator {
         if ($this->test_required($ov->prow)
             && !$this->value_present($ov)
             && !$ov->prow->allow_absent()) {
-            $ov->estop("Entry required.");
+            $ov->error("Entry required.");
         }
     }
     /** @return list<int> */

@@ -315,21 +315,18 @@ function update_paper(Qrequest $qreq, $action) {
     $notes = join(" ", array_filter($notes, function ($n) { return $n !== ""; }));
 
     // HTML confirmation
-    if ($ps->has_error()) {
-        $webmsg = $Conf->_("Some or all of your changes were not saved. Please correct these errors and save again.");
-    } else if (empty($ps->diffs)) {
+    if (empty($ps->diffs)) {
         $webmsg = $Conf->_("No changes to submission #%d.", $new_prow->paperId);
     } else {
         $webmsg = $Conf->_("$actiontext submission #%d.", $new_prow->paperId);
     }
+    if ($ps->has_error()) {
+        $webmsg .= " " . $Conf->_("Please correct these issues and save again.");
+    }
     if ($notes || $webnotes) {
         $webmsg .= " " . $notes . $webnotes;
     }
-    if ($ps->has_error()) {
-        $Conf->msg($webmsg, "merror");
-    } else {
-        $Conf->msg($webmsg, $new_prow->$submitkey > 0 ? "confirm" : "warning");
-    }
+    $Conf->msg($webmsg, $new_prow->$submitkey > 0 ? "confirm" : "warning");
 
     // mail confirmation to all contact authors if changed
     if (!empty($ps->diffs)) {
@@ -472,11 +469,7 @@ if ($paperTable->mode === "edit") {
     if (!$ps && !$prow) {
         $nnprow->set_allow_absent(true);
     }
-    if ($ps) {
-        $ps->ignore_duplicates = true;
-    } else {
-        $ps = PaperStatus::make_prow($Me, $nnprow);
-    }
+    $ps = $ps ?? PaperStatus::make_prow($Me, $nnprow);
     $old_overrides = $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
     foreach ($Conf->options()->form_fields($nnprow) as $o) {
         if ($Me->can_edit_option($nnprow, $o)) {
