@@ -1606,12 +1606,9 @@ class PaperTable {
      * @param PaperValue $ov
      * @param PaperValue $reqov */
     function echo_editable_pc_conflicts($option, $ov, $reqov) {
-        if (!$this->conf->setting("sub_pcconf")) {
-            return;
-        } else if ($this->editable === "f" && !$this->admin) {
-            foreach ($this->prow->pc_conflicts() as $cflt) {
-                echo Ht::hidden("pcc" . $cflt->contactId, $cflt->conflictType);
-            }
+        assert(!!$this->conf->setting("sub_pcconf"));
+        if (!$this->conf->setting("sub_pcconf")
+            || ($this->editable === "f" && !$this->admin)) {
             return;
         }
 
