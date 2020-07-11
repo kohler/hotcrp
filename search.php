@@ -265,9 +265,9 @@ if ($pl_text) {
     // Options
     foreach ($Conf->options() as $ox) {
         if ($pl->has("opt$ox->id")
-            && $ox->list_display(null)
-            && $ox->example_searches())
+            && $ox->supports_list_display(PaperOption::LIST_DISPLAY_SUGGEST)) {
             $display_options->checkbox_item(10, $ox->search_keyword(), $ox->name);
+        }
     }
 
     // Reviewers group

@@ -11,16 +11,12 @@ class Option_PaperColumn extends PaperColumn {
         $this->opt = $conf->checked_option_by_id($cj->option_id);
     }
     function prepare(PaperList $pl, $visible) {
-        if (!$pl->user->can_view_some_option($this->opt))
+        if (!$pl->user->can_view_some_option($this->opt)) {
             return false;
+        }
         $pl->qopts["options"] = true;
         $this->fr = new FieldRender(0);
-        $optcj = $this->opt->list_display($this->row);
-        if (is_array($optcj) && isset($optcj["className"])) {
-            $this->className = $optcj["className"];
-        } else {
-            $this->className = "pl_option";
-        }
+        $this->className = preg_replace('/(?: +|\A)(?:pl-no-suggest|pl-prefer-row' . ($this->row ? '|plrd|plr|plc' : '') . ')(?= |\z)/', '', $this->className);
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
@@ -85,12 +81,9 @@ class Option_PaperColumnFactory {
         $cj = (array) $xfj;
         $cj["name"] = $opt->search_keyword();
         $cj["option_id"] = $opt->id;
-        $optcj = $opt->list_display(null);
-        if ($optcj === true) {
-            $cj["column"] = true;
-        } else if (is_array($optcj)) {
-            $cj += $optcj;
-        }
+        $cj["className"] = $opt->list_class;
+        $cj["row"] = strpos($opt->list_class, "pl-prefer-row") !== false;
+        $cj["column"] = !$cj["row"];
         return (object) $cj;
     }
     static function expand($name, Contact $user, $xfj, $m) {
@@ -98,9 +91,7 @@ class Option_PaperColumnFactory {
         if (!$ocolon && $oname === "options") {
             $x = [];
             foreach ($user->user_option_list() as $opt) {
-                if ($opt->display_position() !== false
-                    && $opt->list_display(null)
-                    && $opt->example_searches())
+                if ($opt->supports_list_display(PaperOption::LIST_DISPLAY_SUGGEST))
                     $x[] = self::option_json($xfj, $opt);
             }
             return $x;
@@ -109,8 +100,7 @@ class Option_PaperColumnFactory {
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
-            if ($opt->display_position() !== false
-                && $opt->list_display(null)) {
+            if ($opt->supports_list_display()) {
                 return self::option_json($xfj, $opt);
             }
             PaperColumn::column_error($user, "Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
@@ -123,10 +113,11 @@ class Option_PaperColumnFactory {
         $cs = array_map(function ($opt) {
             return $opt->search_keyword();
         }, array_filter($user->user_option_list(), function ($opt) {
-            return $opt->display_position() !== false && $opt->example_searches();
+            return $opt->supports_list_display(PaperOption::LIST_DISPLAY_SUGGEST);
         }));
-        if (!empty($cs))
+        if (!empty($cs)) {
             array_unshift($cs, "options");
+        }
         return $cs;
     }
 }

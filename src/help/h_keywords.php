@@ -32,6 +32,7 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("very NOT new", "the same");
         echo $hth->search_trow("ve*", "words that <em>start with</em> “ve” in title, abstract, authors");
         echo $hth->search_trow("*me*", "words that <em>contain</em> “me” in title, abstract, authors");
+
         echo $hth->tgroup("Title");
         echo $hth->search_trow("ti:flexible", "title contains “flexible”");
         echo $hth->tgroup("Abstract");
@@ -57,36 +58,30 @@ class Keywords_HelpTopic {
 
         $oex = [];
         foreach ($opts as $o) {
-            $oex = array_merge($o->example_searches(), $oex);
+            $oex = array_merge($oex, $o->search_examples($hth->user, PaperOption::EXAMPLE_HELP));
         }
 
         if (!empty($oex)) {
             echo $hth->tgroup("Submission fields");
-            foreach ($oex as $extype => $oex) {
-                if ($extype === "has") {
-                    $desc = "submission has “" . $oex[1]->title_html() . "” set";
-                    $oabbr = array();
-                    foreach ($opts as $ox) {
-                        if ($ox !== $oex[1] && get($ox->example_searches(), "has"))
-                            $oabbr[] = "“has:" . htmlspecialchars($ox->search_keyword()) . "”";
+            for ($i = 0; $i !== count($oex); ++$i) {
+                if (($ex = $oex[$i]) && $ex->description) {
+                    $others = [];
+                    for ($j = $i + 1; $j !== count($oex); ++$j) {
+                        if ($oex[$j] && $oex[$j]->description === $ex->description) {
+                            $others[] = htmlspecialchars($oex[$j]->q);
+                            $oex[$j] = null;
+                        }
                     }
-                    if (!empty($oabbr)) {
-                        $desc .= '<div class="hint">Other field ' . pluralx(count($oabbr), "search") . ': ' . join(", ", $oabbr) . '</div>';
+                    $q = $ex->q;
+                    if ($ex->param_q) {
+                        $q = preg_replace('/<.*?>\z/', $ex->param_q, $q);
                     }
-                } else if ($extype === "yes") {
-                    $desc = "submission has “" . $oex[1]->title_html() . "” set";
-                } else if ($extype === "numeric") {
-                    $desc = "submission’s “" . $oex[1]->title_html() . "” field has value &gt; 100";
-                } else if ($extype === "selector") {
-                    $desc = "submission’s “" . $oex[1]->title_html() . "” field has value “" . htmlspecialchars($oex[2]) . "”";
-                } else if ($extype === "attachment-count") {
-                    $desc = "submission has more than 2 “" . $oex[1]->title_html() . "” attachments";
-                } else if ($extype === "attachment-filename") {
-                    $desc = "submission has an “" . $oex[1]->title_html() . "” attachment with a .gif extension";
-                } else {
-                    continue;
+                    $desc = call_user_func_array([$hth->conf, "_"], array_merge([$ex->description], $ex->params));
+                    if (!empty($others)) {
+                        $desc .= '<div class="hint">Also ' . join(", ", $others) . '</div>';
+                    }
+                    echo $hth->search_trow($q, $desc);
                 }
-                echo $hth->search_trow($oex[0], $desc);
             }
         }
 

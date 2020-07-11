@@ -3411,7 +3411,9 @@ class PaperSearch {
         }
         foreach ($this->user->user_option_list() as $o) {
             if ($this->user->can_view_some_option($o)) {
-                $o->add_search_completion($res);
+                foreach ($o->search_examples($this->user, PaperOption::EXAMPLE_COMPLETION) as $sex) {
+                    $res[] = $sex->q;
+                }
             }
         }
         if ($this->user->is_reviewer() && $this->conf->has_rounds()

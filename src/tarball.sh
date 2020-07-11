@@ -337,6 +337,7 @@ src/search/st_reviewtoken.php
 src/search/st_revpref.php
 src/search/st_tag.php
 src/search/st_topic.php
+src/searchexample.php
 src/searchselection.php
 src/sessionlist.php
 src/settings/s_basics.php

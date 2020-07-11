@@ -644,6 +644,8 @@ class PaperOption implements Abbreviator {
     public $display_space;
     private $form_position;
     private $display_position;
+    /** @var null|string|false */
+    public $list_class;
     private $exists_if;
     /** @var ?PaperSearch */
     private $_exists_search;
@@ -763,6 +765,8 @@ class PaperOption implements Abbreviator {
         if (($x = $args->display_space ?? null)) {
             $this->display_space = (int) $x;
         }
+
+        $this->list_class = $args->list_class ?? null;
 
         if (property_exists($args, "exists_if")) {
             $this->set_exists_if($args->exists_if);
@@ -1107,27 +1111,6 @@ class PaperOption implements Abbreviator {
         return $j;
     }
 
-    function parse_search($oms) {
-        if (!$oms->quoted && $oms->compar === "=") {
-            if ($oms->vword === "" || strcasecmp($oms->vword, "yes") === 0) {
-                $oms->os[] = new OptionMatcher($this, "!=", null);
-                return true;
-            } else if (strcasecmp($oms->vword, "no") === 0) {
-                $oms->os[] = new OptionMatcher($this, "=", null);
-                return true;
-            }
-        }
-        return false;
-    }
-    function example_searches() {
-        return ["has" => ["has:{$this->search_keyword()}", $this],
-                "yes" => ["{$this->search_keyword()}:any", $this]];
-    }
-    function add_search_completion(&$res) {
-        array_push($res, "has:{$this->search_keyword()}",
-                   "opt:{$this->search_keyword()}");
-    }
-
     function change_type(PaperOption $o, $upgrade, $change_values) {
         return false;
     }
@@ -1223,14 +1206,43 @@ class PaperOption implements Abbreviator {
         $prow->mark_inactive_documents();
     }
 
-    function list_display($isrow) {
-        return false;
-    }
-
     function render(FieldRender $fr, PaperValue $ov) {
     }
 
+    const LIST_DISPLAY_SUGGEST = 1;
+    /** @return bool */
+    function supports_list_display($context = 0) {
+        return $this->display_position() !== false
+            && is_string($this->list_class)
+            && ($context !== self::LIST_DISPLAY_SUGGEST
+                || strpos($this->list_class, "pl-no-suggest") === false);
+    }
+
     function format_spec() {
+        return false;
+    }
+
+    const EXAMPLE_HELP = 0;
+    const EXAMPLE_COMPLETION = 1;
+    /** @param int $context
+     * @return list<SearchExample> */
+    function search_examples(Contact $viewer, $context) {
+        return [];
+    }
+    /** @return SearchExample */
+    function has_search_example() {
+        return new SearchExample("has:" . $this->search_keyword(), "submission field “%s” set", $this->title_html());
+    }
+    function parse_search($oms) {
+        if (!$oms->quoted && $oms->compar === "=") {
+            if ($oms->vword === "" || strcasecmp($oms->vword, "yes") === 0) {
+                $oms->os[] = new OptionMatcher($this, "!=", null);
+                return true;
+            } else if (strcasecmp($oms->vword, "no") === 0) {
+                $oms->os[] = new OptionMatcher($this, "=", null);
+                return true;
+            }
+        }
         return false;
     }
 }
@@ -1238,6 +1250,7 @@ class PaperOption implements Abbreviator {
 class CheckboxPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        $this->list_class = $this->list_class ?? "plc";
     }
 
     function value_compare($av, $bv) {
@@ -1268,10 +1281,6 @@ class CheckboxPaperOption extends PaperOption {
         echo "</div>\n\n";
     }
 
-    function list_display($isrow) {
-        return $isrow ? true : ["column" => true, "className" => "pl_option plc"];
-    }
-
     function render(FieldRender $fr, PaperValue $ov) {
         if ($fr->for_page() && $ov->value) {
             $fr->title = "";
@@ -1279,6 +1288,10 @@ class CheckboxPaperOption extends PaperOption {
         } else {
             $fr->set_bool(!!$ov->value);
         }
+    }
+
+    function search_examples(Contact $viewer, $context) {
+        return [$this->has_search_example()];
     }
 }
 
@@ -1289,6 +1302,7 @@ class SelectorPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->selector = $args->selector;
+        $this->list_class = $this->list_class ?? "";
     }
 
     function selector_options() {
@@ -1296,20 +1310,6 @@ class SelectorPaperOption extends PaperOption {
     }
     function set_selector_options($selector) {
         $this->selector = $selector;
-    }
-    function selector_option_search($idx) {
-        if ($idx <= 0) {
-            return $this->search_keyword() . ":none";
-        } else if ($idx > count($this->selector)) {
-            return false;
-        } else {
-            $am = $this->selector_abbrev_matcher();
-            if (($q = $am->unique_abbreviation($this->selector[$idx - 1], $idx, new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH, 1)))) {
-                return $this->search_keyword() . ":" . $q;
-            } else {
-                return false;
-            }
-        }
     }
     function selector_abbrev_matcher() {
         if (!$this->_selector_am) {
@@ -1328,30 +1328,6 @@ class SelectorPaperOption extends PaperOption {
         $j = parent::unparse();
         $j->selector = $this->selector;
         return $j;
-    }
-
-    function parse_search($oms) {
-        $vs = $this->selector_abbrev_matcher()->find_all($oms->vword);
-        if (empty($vs)) {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” matches no options.";
-            return false;
-        } else if (count($vs) === 1) {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $vs[0]);
-            return true;
-        } else if ($oms->compar === "=" || $oms->compar === "!=") {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $vs);
-            return true;
-        } else {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” matches more than one option.";
-            return false;
-        }
-    }
-    function example_searches() {
-        $x = parent::example_searches();
-        if (($search = $this->selector_option_search(2))) {
-            $x["selector"] = [$search, $this, $this->selector[1]];
-        }
-        return $x;
     }
 
     function change_type(PaperOption $o, $upgrade, $change_values) {
@@ -1423,18 +1399,53 @@ class SelectorPaperOption extends PaperOption {
         echo "</div></div>\n\n";
     }
 
-    function list_display($isrow) {
-        return true;
-    }
-
     function render(FieldRender $fr, PaperValue $ov) {
         $fr->set_text($this->selector[$ov->value - 1] ?? "");
+    }
+
+    function selector_option_search($idx) {
+        if ($idx <= 0) {
+            return "none";
+        } else if ($idx > count($this->selector)) {
+            return false;
+        } else {
+            $am = $this->selector_abbrev_matcher();
+            if (($q = $am->unique_abbreviation($this->selector[$idx - 1], $idx, new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH, 1)))) {
+                return $q;
+            } else {
+                return false;
+            }
+        }
+    }
+    function search_examples(Contact $viewer, $context) {
+        $a = [$this->has_search_example()];
+        if (($q = $this->selector_option_search(2))) {
+            $a[] = new SearchExample($this->search_keyword() . ":<selector>", "submission’s “%s” field has value “%s”", [$this->title_html(), htmlspecialchars($this->selector[1])], $q);
+        }
+        return $a;
+    }
+    function parse_search($oms) {
+        $vs = $this->selector_abbrev_matcher()->find_all($oms->vword);
+        if (empty($vs)) {
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” matches no options.";
+            return false;
+        } else if (count($vs) === 1) {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $vs[0]);
+            return true;
+        } else if ($oms->compar === "=" || $oms->compar === "!=") {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $vs);
+            return true;
+        } else {
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” matches more than one option.";
+            return false;
+        }
     }
 }
 
 class DocumentPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        $this->list_class = $this->list_class ?? "";
     }
 
     function is_document() {
@@ -1570,10 +1581,6 @@ class DocumentPaperOption extends PaperOption {
         return false;
     }
 
-    function list_display($isrow) {
-        return true;
-    }
-
     function render(FieldRender $fr, PaperValue $ov) {
         if ($this->id <= 0 && $fr->for_page()) {
             $fr->table->render_submission($fr, $this);
@@ -1612,28 +1619,16 @@ class DocumentPaperOption extends PaperOption {
         }
         return $fspec;
     }
+
+    function search_examples(Contact $viewer, $context) {
+        return [$this->has_search_example()];
+    }
 }
 
 class NumericPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-    }
-
-    function parse_search($oms) {
-        if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oms->vword, $m)) {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, intval($m[1]));
-            return true;
-        } else if (parent::parse_search($oms)) {
-            return true;
-        } else {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” is not an integer.";
-            return false;
-        }
-    }
-    function example_searches() {
-        $x = parent::example_searches();
-        $x["numeric"] = array("{$this->search_keyword()}:>100", $this);
-        return $x;
+        $this->list_class = $this->list_class ?? "plrd";
     }
 
     function value_present(PaperValue $ov) {
@@ -1682,13 +1677,27 @@ class NumericPaperOption extends PaperOption {
             "</div></div>\n\n";
     }
 
-    function list_display($isrow) {
-        return $isrow ? true : ["column" => true, "className" => "pl_option plrd"];
-    }
-
     function render(FieldRender $fr, PaperValue $ov) {
         if ($ov->value !== null) {
             $fr->set_text((string) $ov->value);
+        }
+    }
+
+    function search_examples(Contact $viewer, $context) {
+        return [
+            $this->has_search_example(),
+            new SearchExample($this->search_keyword() . ":<comparator>", "submission’s “%s” field is greater than 100", $this->title_html(), ">100")
+        ];
+    }
+    function parse_search($oms) {
+        if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oms->vword, $m)) {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, intval($m[1]));
+            return true;
+        } else if (parent::parse_search($oms)) {
+            return true;
+        } else {
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” is not an integer.";
+            return false;
         }
     }
 }
@@ -1696,6 +1705,7 @@ class NumericPaperOption extends PaperOption {
 class TextPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        $this->list_class = $this->list_class ?? "pl-prefer-row pl_text";
     }
     static function expand($name, Contact $user, $fxt, $m) {
         $xt = clone $fxt;
@@ -1704,16 +1714,6 @@ class TextPaperOption extends PaperOption {
         $xt->display_space = +$m[1];
         $xt->title = "Multiline text ({$m[1]} lines)";
         return $xt;
-    }
-
-    function parse_search($oms) {
-        if ($oms->compar === "=" || $oms->compar === "!=") {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "text");
-            return true;
-        } else {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
-            return false;
-        }
     }
 
     function value_present(PaperValue $ov) {
@@ -1745,10 +1745,6 @@ class TextPaperOption extends PaperOption {
         $this->echo_web_edit_text($pt, $ov, $reqov);
     }
 
-    function list_display($isrow) {
-        return ["row" => true, "className" => "pl_textoption"];
-    }
-
     function render(FieldRender $fr, PaperValue $ov) {
         $d = $ov->data();
         if ($d !== null && $d !== "") {
@@ -1757,11 +1753,28 @@ class TextPaperOption extends PaperOption {
             $fr->value_long = true;
         }
     }
+
+    function search_examples(Contact $viewer, $context) {
+        return [
+            $this->has_search_example(),
+            new SearchExample($this->search_keyword() . ":<text>", "submission’s “%s” field contains “hello”", $this->title_html(), "hello")
+        ];
+    }
+    function parse_search($oms) {
+        if ($oms->compar === "=" || $oms->compar === "!=") {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "text");
+            return true;
+        } else {
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
+            return false;
+        }
+    }
 }
 
 class AttachmentsPaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        $this->list_class = $this->list_class ?? "pl-prefer-row";
     }
 
     function has_document() {
@@ -1776,27 +1789,6 @@ class AttachmentsPaperOption extends PaperOption {
 
     function attachment(PaperValue $ov, $name) {
         return $ov->document_set()->document_by_filename($name);
-    }
-
-    function parse_search($oms) {
-        if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oms->vword, $m)) {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $m[1], "attachment-count");
-            return true;
-        } else if (parent::parse_search($oms)) {
-            return true;
-        } else if ($oms->compar === "=" || $oms->compar === "!=") {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "attachment-name");
-            return true;
-        } else {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
-            return false;
-        }
-    }
-    function example_searches() {
-        $x = parent::example_searches();
-        $x["attachment-count"] = array("{$this->search_keyword()}:>2", $this);
-        $x["attachment-filename"] = array("{$this->search_keyword()}:*.gif", $this);
-        return $x;
     }
 
     function value_compare($av, $bv) {
@@ -1918,10 +1910,6 @@ class AttachmentsPaperOption extends PaperOption {
             "</div>\n\n";
     }
 
-    function list_display($isrow) {
-        return true;
-    }
-
     function render(FieldRender $fr, PaperValue $ov) {
         $ts = [];
         foreach ($ov->document_set() as $d) {
@@ -1963,6 +1951,28 @@ class AttachmentsPaperOption extends PaperOption {
             $fr->set_text("None");
         }
     }
+
+    function search_examples(Contact $viewer, $context) {
+        return [
+            $this->has_search_example(),
+            new SearchExample($this->search_keyword() . ":<count>", "submission has three or more “%s” attachments", $this->title_html(), ">2"),
+            new SearchExample($this->search_keyword() . ":<filename>", "submission has “%s” attachment matching “*.gif”", $this->title_html(), "*.gif")
+        ];
+    }
+    function parse_search($oms) {
+        if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oms->vword, $m)) {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $m[1], "attachment-count");
+            return true;
+        } else if (parent::parse_search($oms)) {
+            return true;
+        } else if ($oms->compar === "=" || $oms->compar === "!=") {
+            $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "attachment-name");
+            return true;
+        } else {
+            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
+            return false;
+        }
+    }
 }
 
 class IntrinsicPaperOption extends PaperOption {
@@ -2001,17 +2011,10 @@ class UnknownPaperOption extends PaperOption {
         $args->form_position = $args->display_position = false;
         parent::__construct($conf, $args);
     }
-
     function takes_multiple() {
         return true;
     }
-
     function parse_search($oms) {
         return false;
-    }
-    function example_searches() {
-        return [];
-    }
-    function add_search_completion(&$res) {
     }
 }
