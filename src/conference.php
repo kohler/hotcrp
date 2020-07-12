@@ -72,9 +72,9 @@ class ResponseRound {
         return $t === null || $t <= 0 || $t >= Conf::$now;
     }
     function instructions(Conf $conf) {
-        $m = $conf->_i("resp_instrux_$this->number", false, $this->words);
+        $m = $conf->_i("resp_instrux_$this->number", null, $this->words);
         if ($m === false) {
-            $m = $conf->_i("resp_instrux", false, $this->words);
+            $m = $conf->_i("resp_instrux", null, $this->words);
         }
         return $m;
     }
@@ -4724,28 +4724,28 @@ class Conf {
 
     /** @param string $itext
      * @return string */
-    function _($itext) {
-        return call_user_func_array([$this->ims(), "_"], func_get_args());
+    function _($itext, ...$args) {
+        return $this->ims()->_($itext, ...$args);
     }
 
     /** @param string $context
      * @param string $itext
      * @return string */
-    function _c($context, $itext) {
-        return call_user_func_array([$this->ims(), "_c"], func_get_args());
+    function _c($context, $itext, ...$args) {
+        return $this->ims()->_c($context, $itext, ...$args);
     }
 
     /** @param string $id
      * @return string */
-    function _i($id) {
-        return call_user_func_array([$this->ims(), "_i"], func_get_args());
+    function _i($id, ...$args) {
+        return $this->ims()->_i($id, ...$args);
     }
 
     /** @param string $context
      * @param string $id
      * @return string */
-    function _ci($context, $id) {
-        return call_user_func_array([$this->ims(), "_ci"], func_get_args());
+    function _ci($context, $id, ...$args) {
+        return $this->ims()->_ci($context, $id, ...$args);
     }
 
     function resolve_ims_requirement($s, $isreq) {

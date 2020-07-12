@@ -571,7 +571,7 @@ echo '<div class="pcard revcard">',
     '<div class="revcard-head">',
     "<h2>", $req, "</h2></div><div class=\"revcard-body\">";
 
-echo '<p class="w-text">', $Conf->_i("external-review-request-description", null);
+echo '<p class="w-text">', $Conf->_i("external-review-request-description");
 if ($Me->allow_administer($prow)) {
     echo "\nTo create an anonymous review with a review token, leave Name and Email blank.";
 }

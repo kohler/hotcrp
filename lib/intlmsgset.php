@@ -271,6 +271,7 @@ class IntlMsgSet {
     }
 
     private function find($context, $itext, $args, $priobound) {
+        assert(is_string($args[0]));
         $match = null;
         $matchnreq = $matchctxlen = 0;
         if ($context === "") {
@@ -329,7 +330,7 @@ class IntlMsgSet {
         while ($pos !== false) {
             ++$pos;
             if (preg_match('/(?!\d+)\w+(?=%)/A', $s, $m, 0, $pos)
-                && ($imt = $this->find($context, strtolower($m[0]), [], null))
+                && ($imt = $this->find($context, strtolower($m[0]), [$m[0]], null))
                 && $imt->template) {
                 $t = substr($s, 0, $pos - 1) . $this->expand($imt->otext, $args, null, null, $format);
                 $s = $t . substr($s, $pos + strlen($m[0]) + 1);
@@ -362,37 +363,29 @@ class IntlMsgSet {
         return $s;
     }
 
-    /** @param string $itext
-     * @return string */
-    function _($itext) {
-        $args = func_get_args();
-        if (($im = $this->find(null, $itext, $args, null))) {
+    /** @return string */
+    function _(...$args) {
+        if (($im = $this->find(null, $args[0], $args, null))) {
             $args[0] = $im->otext;
         }
         return $this->expand($args[0], $args, null, $im, null);
     }
 
     /** @param string $context
-     * @param string $itext
      * @return string */
-    function _c($context, $itext) {
-        $args = array_slice(func_get_args(), 1);
-        if (($im = $this->find($context, $itext, $args, null))) {
+    function _c($context, ...$args) {
+        if (($im = $this->find($context, $args[0], $args, null))) {
             $args[0] = $im->otext;
         }
         return $this->expand($args[0], $args, $context, $im, null);
     }
 
     /** @param string $id
-     * @param ?string $itext
      * @return string */
-    function _i($id, $itext = null) {
-        $args = array_slice(func_get_args(), 1);
-        if (empty($args)) {
-            $args[] = "";
-        }
+    function _i($id, ...$args) {
+        $args[0] = $args[0] ?? "";
         if (($im = $this->find(null, $id, $args, null))
-            && ($itext === null || $itext === false || $im->priority > 0.0)) {
+            && ($args[0] === "" || $im->priority > 0.0)) {
             $args[0] = $im->otext;
         }
         return $this->expand($args[0], $args, $id, $im, null);
@@ -400,15 +393,11 @@ class IntlMsgSet {
 
     /** @param string $context
      * @param string $id
-     * @param ?string $itext
      * @return string */
-    function _ci($context, $id, $itext = null) {
-        $args = array_slice(func_get_args(), 2);
-        if (empty($args)) {
-            $args[] = "";
-        }
+    function _ci($context, $id, ...$args) {
+        $args[0] = $args[0] ?? "";
         if (($im = $this->find($context, $id, $args, null))
-            && ($itext === null || $itext === false || $im->priority > 0.0)) {
+            && ($args[0] === "" || $im->priority > 0.0)) {
             $args[0] = $im->otext;
         }
         $cid = (string) $context === "" ? $id : "$context/$id";
@@ -417,15 +406,11 @@ class IntlMsgSet {
 
     /** @param FieldRender $fr
      * @param string $context
-     * @param string $id
-     * @param ?string $itext */
-    function render_ci($fr, $context, $id, $itext = null) {
-        $args = array_slice(func_get_args(), 3);
-        if (empty($args)) {
-            $args[] = "";
-        }
+     * @param string $id */
+    function render_ci($fr, $context, $id, ...$args) {
+        $args[0] = $args[0] ?? "";
         if (($im = $this->find($context, $id, $args, null))
-            && ($itext === null || $itext === false || $im->priority > 0.0)) {
+            && ($args[0] === "" || $im->priority > 0.0)) {
             $args[0] = $im->otext;
             if ($im->format !== null) {
                 $fr->value_format = $im->format;
@@ -436,10 +421,9 @@ class IntlMsgSet {
     }
 
     /** @param string $id
-     * @param string $itext
      * @return string */
-    function default_itext($id, $itext) {
-        $args = array_slice(func_get_args(), 1);
+    function default_itext($id, ...$args) {
+        $args[0] = $args[0] ?? "";
         if (($im = $this->find(null, $id, $args, self::PRIO_OVERRIDE))) {
             $args[0] = $im->otext;
         }

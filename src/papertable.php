@@ -2146,7 +2146,7 @@ class PaperTable {
                    && $this->prow->outcome > 0
                    && $can_view_decision) {
             if ($this->user->can_submit_final_paper($this->prow)) {
-                if (($t = $this->conf->_i("finalsubmit", false, $this->deadline_setting_is("final_soft")))) {
+                if (($t = $this->conf->_i("finalsubmit", null, $this->deadline_setting_is("final_soft")))) {
                     $this->_main_message($t, 0);
                 }
             } else if ($this->mode === "edit") {

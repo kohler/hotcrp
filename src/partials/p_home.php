@@ -130,7 +130,7 @@ class Home_Partial {
     }
 
     function render_message(Contact $user) {
-        if (($t = $user->conf->_i("home", false))) {
+        if (($t = $user->conf->_i("home"))) {
             $user->conf->msg($t, 0);
         }
     }

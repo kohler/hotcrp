@@ -122,8 +122,8 @@ class PaperStatus extends MessageSet {
         return $this->add_topics;
     }
 
-    function _() {
-        return call_user_func_array([$this->conf->ims(), "_"], func_get_args());
+    function _($itext, ...$args) {
+        return $this->conf->_($itext, ...$args);
     }
 
     /** @param int $dtype

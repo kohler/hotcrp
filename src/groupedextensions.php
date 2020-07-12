@@ -64,12 +64,12 @@ class GroupedExtensions {
         return true;
     }
 
-    function __construct(Contact $viewer, $args /* ... */) {
+    function __construct(Contact $viewer, ...$args) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         self::$next_placeholder = 1;
-        foreach (func_get_args() as $i => $arg) {
-            if ($i > 0 && $arg)
+        foreach ($args as $arg) {
+            if ($arg)
                 expand_json_includes_callback($arg, [$this, "_add_json"]);
         }
         $this->reset_context();

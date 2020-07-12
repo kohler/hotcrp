@@ -251,7 +251,7 @@ if (isset($Qreq->redisplay)) {
 
 // Header and body
 $Conf->header("Review preferences", "revpref");
-$Conf->infoMsg($Conf->_i("revprefdescription", false, $Conf->has_topics()));
+$Conf->infoMsg($Conf->_i("revprefdescription", null, $Conf->has_topics()));
 
 
 // search

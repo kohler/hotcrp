@@ -76,7 +76,7 @@ class Keywords_HelpTopic {
                     if ($ex->param_q) {
                         $q = preg_replace('/<.*?>\z/', $ex->param_q, $q);
                     }
-                    $desc = call_user_func_array([$hth->conf, "_"], array_merge([$ex->description], $ex->params));
+                    $desc = $hth->conf->_($ex->description, ...$ex->params);
                     if (!empty($others)) {
                         $desc .= '<div class="hint">Also ' . join(", ", $others) . '</div>';
                     }
