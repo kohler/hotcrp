@@ -253,7 +253,7 @@ class PaperOptionList implements IteratorAggregate {
     private $_adding_fixed;
 
     const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","form_position":1001,"type":"document"}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_position":1002,"display_position":false,"type":"document"}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_position":1002,"type":"document"}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -1583,7 +1583,9 @@ class DocumentPaperOption extends PaperOption {
 
     function render(FieldRender $fr, PaperValue $ov) {
         if ($this->id <= 0 && $fr->for_page()) {
-            $fr->table->render_submission($fr, $this);
+            if ($this->id == 0) {
+                $fr->table->render_submission($fr, $this);
+            }
         } else if (($d = $ov->document(0))) {
             if ($fr->want_text()) {
                 $fr->set_text($d->filename);
