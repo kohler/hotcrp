@@ -8,6 +8,7 @@ class Get_ListAction extends ListAction {
         $sel_opt = [];
         foreach ($gex->members("get") as $rf) {
             if ($pl->action_xt_displayed($rf, $gex)) {
+                assert(!!$rf->get);
                 $as = strpos($rf->title, "/");
                 if ($as === false) {
                     if ($last_group) {
