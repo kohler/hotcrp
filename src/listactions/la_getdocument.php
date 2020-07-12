@@ -13,6 +13,7 @@ class GetDocument_ListAction extends ListAction {
     static function list_action_json(PaperOption $opt) {
         return (object) [
             "name" => "get/" . $opt->dtype_name(),
+            "get" => true,
             "dtype" => $opt->id,
             "title" => "Documents/" . $opt->plural_title(),
             "position" => $opt->display_position(),
