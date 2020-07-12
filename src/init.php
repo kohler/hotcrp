@@ -143,7 +143,7 @@ function expand_json_includes_callback($includelist, $callback) {
                 $v->__subposition = ++Conf::$next_xt_subposition;
             }
             if (!call_user_func($callback, $v, $k, $landmark)) {
-                error_log((Conf::$main ? Conf::$main->dbname . ": " : "") . "$landmark: Invalid expansion " . json_encode($v) . ".");
+                error_log((Conf::$main ? Conf::$main->dbname . ": " : "") . "$landmark: Invalid expansion " . json_encode($v) . "\n" . debug_string_backtrace());
             }
         }
     }

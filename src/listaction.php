@@ -14,6 +14,20 @@ class ListAction {
         return "Unsupported.";
     }
 
+
+    /** @return GroupedExtensions */
+    static function grouped_extensions(Contact $user) {
+        $gex = new GroupedExtensions($user, ["etc/listactions.json"], $user->conf->opt("listActions"));
+        foreach ($gex->members("__expand") as $gj) {
+            if (!isset($gj->allow_if) || $gex->allowed($gj->allow_if, $gj)) {
+                Conf::xt_resolve_require($gj);
+                call_user_func($gj->expand_callback, $gex, $gj);
+            }
+        }
+        return $gex;
+    }
+
+
     /** @param string $name
      * @param SearchSelection|array<int> $selection */
     static private function do_call($name, Contact $user, Qrequest $qreq, $selection) {
@@ -22,24 +36,30 @@ class ListAction {
             && !$qreq->post_ok()) {
             return new JsonResult(403, "Missing credentials.");
         }
-        $uf = $user->conf->list_action($name, $user, $qreq->method());
+        $conf = $user->conf;
+        $gex = self::grouped_extensions($user);
+        $conf->_xt_allow_callback = $conf->make_check_api_json($qreq->method());
+        $uf = $gex->get($name);
+        if (!$uf && ($slash = strpos($name, "/"))) {
+            $uf = $gex->get(substr($name, 0, $slash));
+        }
+        $conf->_xt_allow_callback = null;
         if (!$uf) {
-            if ($user->conf->has_list_action($name, $user, null)) {
+            $gex->reset_context();
+            $conf->_xt_allow_callback = $conf->make_check_api_json(null);
+            $uf1 = $gex->get($name);
+            $conf->_xt_allow_callback = null;
+            if ($uf1) {
                 return new JsonResult(405, "Method not supported.");
-            } else if ($user->conf->has_list_action($name, null, $qreq->method())) {
-                return new JsonResult(403, "Permission error.");
-            } else {
-                return new JsonResult(404, "Function not found.");
             }
         }
         if (is_array($selection)) {
             $selection = new SearchSelection($selection);
         }
-        if (($uf->paper ?? false) && $selection->is_empty()) {
+        if (!$uf || !Conf::xt_resolve_require($uf) || !is_string($uf->callback)) {
+            return new JsonResult(404, "Function not found.");
+        } else if (($uf->paper ?? false) && $selection->is_empty()) {
             return new JsonResult(400, "No papers selected.");
-        }
-        if (!is_string($uf->callback)) {
-            return new JsonResult(400, "Function not found.");
         } else if ($uf->callback[0] === "+") {
             $class = substr($uf->callback, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */

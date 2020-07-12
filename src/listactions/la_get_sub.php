@@ -2,57 +2,6 @@
 // listactions/la_get_sub.php -- HotCRP helper classes for list actions
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class Get_ListAction extends ListAction {
-    static function render(PaperList $pl, Qrequest $qreq) {
-        $actions = array_values($pl->displayable_list_actions("get/"));
-        foreach ($pl->user->user_option_list() as $o) {
-            if ($pl->user->can_view_some_option($o)
-                && $o->is_document()
-                && $pl->has($o->field_key()))
-                $actions[] = GetDocument_ListAction::list_action_json($o);
-        }
-        usort($actions, "Conf::xt_position_compare");
-        $last_group = null;
-        $sel_opt = [];
-        foreach ($actions as $fj) {
-            $as = strpos($fj->title, "/");
-            if ($as === false) {
-                if ($last_group) {
-                    $sel_opt[] = ["optgroup", false];
-                }
-                $last_group = null;
-                $sel_opt[] = ["value" => substr($fj->name, 4), "label" => $fj->title];
-            } else {
-                $group = substr($fj->title, 0, $as);
-                if ($group !== $last_group) {
-                    $sel_opt[] = ["optgroup", $group];
-                    $last_group = $group;
-                }
-                $sel_opt[] = ["value" => substr($fj->name, 4), "label" => substr($fj->title, $as + 1)];
-            }
-        }
-        if (!empty($sel_opt)) {
-            // Note that `js-submit-paperlist` JS handler depends on this
-            return Ht::select("getfn", $sel_opt, $qreq->getfn,
-                              ["class" => "want-focus js-submit-action-info-get", "style" => "max-width:10em"])
-                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "data-default-submit-all" => 1, "class" => "uic js-submit-mark"]);
-        } else {
-            return null;
-        }
-    }
-    function run(Contact $user, $qreq, $ssel) {
-        if (($opts = $user->conf->options()->find_all($qreq->getfn))
-            && count($opts) == 1
-            && ($o = current($opts))
-            && $user->can_view_some_option($o)) {
-            $ga = GetDocument_ListAction::make_list_action($o);
-            return $ga->run($user, $qreq, $ssel);
-        } else {
-            return self::ENOENT;
-        }
-    }
-}
-
 class GetCheckFormat_ListAction extends ListAction {
     function run(Contact $user, $qreq, $ssel) {
         $papers = [];
@@ -95,59 +44,6 @@ class GetCheckFormat_ListAction extends ListAction {
             flush();
         }
         exit;
-    }
-}
-
-class GetAuthors_ListAction extends ListAction {
-    static function contact_map(Conf $conf, $ssel) {
-        $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email, roles, contactTags from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
-        $contact_map = [];
-        while (($row = $result->fetch_object())) {
-            $row->contactId = (int) $row->contactId;
-            $contact_map[$row->contactId] = $row;
-        }
-        return $contact_map;
-    }
-    function allow(Contact $user, Qrequest $qreq) {
-        return $user->can_view_some_authors();
-    }
-    function run(Contact $user, $qreq, $ssel) {
-        $contact_map = self::contact_map($user->conf, $ssel);
-        $texts = array();
-        $want_contacttype = false;
-        foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
-            if (!$user->allow_view_authors($prow)) {
-                continue;
-            }
-            $admin = $user->allow_administer($prow);
-            $contact_emails = [];
-            if ($admin) {
-                $want_contacttype = true;
-                foreach ($prow->contacts() as $cid => $c) {
-                    $c = $contact_map[$cid];
-                    $contact_emails[strtolower($c->email)] = $c;
-                }
-            }
-            foreach ($prow->author_list() as $au) {
-                $line = [$prow->paperId, $prow->title, $au->firstName, $au->lastName, $au->email, $au->affiliation];
-                $lemail = strtolower($au->email);
-                if ($admin && $lemail && isset($contact_emails[$lemail])) {
-                    $line[] = "yes";
-                    unset($contact_emails[$lemail]);
-                } else if ($admin) {
-                    $line[] = "no";
-                }
-                $texts[] = $line;
-            }
-            foreach ($contact_emails as $c) {
-                $texts[] = [$prow->paperId, $prow->title, $c->firstName, $c->lastName, $c->email, $c->affiliation, "contact_only"];
-            }
-        }
-        $header = ["paper", "title", "first", "last", "email", "affiliation"];
-        if ($want_contacttype) {
-            $header[] = "iscontact";
-        }
-        return $user->conf->make_csvg("authors")->select($header)->append($texts);
     }
 }
 

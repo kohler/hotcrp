@@ -1364,35 +1364,18 @@ class PaperList {
         return $t;
     }
 
-    function displayable_list_actions($prefix) {
-        $la = [];
-        foreach ($this->conf->list_action_map() as $name => $fjs) {
-            if (str_starts_with($name, $prefix)) {
-                $uf = null;
-                foreach ($fjs as $fj) {
-                    if (Conf::xt_priority_compare($fj, $uf) <= 0
-                        && $this->conf->xt_allowed($fj, $this->user)
-                        && $this->action_xt_displayed($fj)) {
-                        $uf = $fj;
-                    }
-                }
-                if ($uf) {
-                    $la[$name] = $uf;
-                }
-            }
-        }
-        return $la;
-    }
-
-    function action_xt_displayed($fj) {
-        if (isset($fj->display_if_report)
-            && (str_starts_with($fj->display_if_report, "!")
-                ? $this->_report_id === substr($fj->display_if_report, 1)
-                : $this->_report_id !== $fj->display_if_report)) {
-            return false;
-        }
-        if (isset($fj->display_if)
-            && !$this->conf->xt_check($fj->display_if, $fj, $this->user)) {
+    function action_xt_displayed($fj, GroupedExtensions $gex) {
+        if (!$fj
+            || str_starts_with($fj->name ?? "", "__")
+            || (isset($fj->allow_if)
+                && !$this->conf->xt_allowed($fj, $this->user))
+            || (isset($fj->display_if_report)
+                && (str_starts_with($fj->display_if_report, "!")
+                    ? $this->_report_id === substr($fj->display_if_report, 1)
+                    : $this->_report_id !== $fj->display_if_report))
+            || (isset($fj->display_if)
+                && !$this->conf->xt_check($fj->display_if, $fj, $this->user))
+            || ($fj->disabled ?? false)) {
             return false;
         }
         if (isset($fj->display_if_list_has)) {
@@ -1409,9 +1392,6 @@ class PaperList {
                     return false;
                 }
             }
-        }
-        if (isset($fj->disabled) && $fj->disabled) {
-            return false;
         }
         return true;
     }
@@ -1497,27 +1477,14 @@ class PaperList {
             return "";
         }
 
-        $renderers = [];
-        foreach ($this->conf->list_action_renderers() as $name => $fjs) {
-            $rf = null;
-            foreach ($fjs as $fj) {
-                if (Conf::xt_priority_compare($fj, $rf) <= 0
-                    && $this->conf->xt_allowed($fj, $this->user)
-                    && $this->action_xt_displayed($fj)) {
-                    $rf = $fj;
-                }
-            }
-            if ($rf) {
-                Conf::xt_resolve_require($rf);
-                $renderers[] = $rf;
-            }
-        }
-        usort($renderers, "Conf::xt_position_compare");
-
+        $gex = ListAction::grouped_extensions($this->user);
         $lllgroups = [];
         $whichlll = -1;
-        foreach ($renderers as $rf) {
-            if (($lllg = call_user_func($rf->render_callback, $this, $qreq, $rf))) {
+        foreach ($gex->members("") as $rf) {
+            if (isset($rf->render_callback)
+                && $this->action_xt_displayed($rf, $gex)
+                && Conf::xt_resolve_require($rf)
+                && ($lllg = call_user_func($rf->render_callback, $this, $qreq, $gex, $rf))) {
                 if (is_string($lllg)) {
                     $lllg = [$lllg];
                 }

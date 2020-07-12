@@ -15,18 +15,16 @@ class GetDocument_ListAction extends ListAction {
             "name" => "get/" . $opt->dtype_name(),
             "dtype" => $opt->id,
             "title" => "Documents/" . $opt->plural_title(),
-            "position" => $opt->position + ($opt->final ? 0 : 100),
+            "position" => $opt->display_position(),
             "display_if_list_has" => $opt->field_key(),
             "callback" => "+GetDocument_ListAction"
         ];
     }
-    /** @param string $name */
-    static function expand($name, Contact $user, $fj) {
-        if (($o = $user->conf->options()->find(substr($name, 4)))
-            && $o->is_document()) {
-            return [self::list_action_json($o)];
-        } else {
-            return null;
+    static function expand2(GroupedExtensions $gex) {
+        $user = $gex->viewer();
+        foreach ($user->conf->options()->fields() as $o) {
+            if ($o->is_document() && $user->can_view_some_option($o))
+                $gex->add(self::list_action_json($o));
         }
     }
     function run(Contact $user, $qreq, $ssel) {

@@ -18,7 +18,7 @@ class GroupedExtensions {
     private $_annexes = [];
     static private $next_placeholder;
 
-    function _add_json($fj) {
+    function add($fj) {
         if (is_array($fj)) {
             $fja = $fj;
             if (count($fja) < 3 || !is_string($fja[0])) {
@@ -61,6 +61,9 @@ class GroupedExtensions {
         } else {
             $this->_potential_members[$fj->group][] = $fj->name;
         }
+        if (!empty($this->_raw)) {
+            $this->_raw = [];
+        }
         return true;
     }
 
@@ -70,7 +73,7 @@ class GroupedExtensions {
         self::$next_placeholder = 1;
         foreach ($args as $arg) {
             if ($arg)
-                expand_json_includes_callback($arg, [$this, "_add_json"]);
+                expand_json_includes_callback($arg, [$this, "add"]);
         }
         $this->reset_context();
     }

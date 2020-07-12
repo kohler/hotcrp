@@ -197,7 +197,7 @@ class Conf {
 
     public $xt_context;
     private $_xt_allow_checkers;
-    private $_xt_allow_callback;
+    public $_xt_allow_callback;
 
     /** @var ?array<string,list<object>> */
     private $_formula_functions;
@@ -209,12 +209,6 @@ class Conf {
     private $_assignment_parsers;
     /** @var ?array<string,list<object>> */
     private $_api_map;
-    /** @var ?array<string,list<object>> */
-    private $_list_action_map;
-    /** @var ?array<string,list<object>> */
-    private $_list_action_renderers;
-    /** @var ?list<object> */
-    private $_list_action_factories;
     /** @var ?array<string,list<object>> */
     private $_paper_column_map;
     /** @var ?list<object> */
@@ -691,7 +685,6 @@ class Conf {
         $this->sort_by_last = $sort_by_last;
 
         $this->_api_map = null;
-        $this->_list_action_map = $this->_list_action_renderers = $this->_list_action_factories = null;
         $this->_file_filters = null;
         $this->_site_contact = null;
         $this->_date_format_initialized = false;
@@ -4870,16 +4863,19 @@ class Conf {
             $k = strtolower($method);
             $methodx = $fj->$k ?? null;
             return $methodx
-                || ($method === "POST" && $methodx === null && get($fj, "get"));
+                || ($method === "POST" && $methodx === null && ($fj->get ?? false));
         }
+    }
+    function make_check_api_json($method) {
+        return function ($xt, $user) use ($method) {
+            return $this->check_api_json($xt, $user, $method);
+        };
     }
     function has_api($fn, Contact $user = null, $method = null) {
         return !!$this->api($fn, $user, $method);
     }
     function api($fn, Contact $user = null, $method = null) {
-        $this->_xt_allow_callback = function ($xt, $user) use ($method) {
-            return $this->check_api_json($xt, $user, $method);
-        };
+        $this->_xt_allow_callback = $this->make_check_api_json($method);
         $uf = $this->xt_search_name($this->api_map(), $fn, $user);
         $this->_xt_allow_callback = null;
         return self::xt_enabled($uf) ? $uf : null;
@@ -4962,50 +4958,17 @@ class Conf {
 
     // List action API
 
-    function _add_list_action_json($fj) {
-        $ok = false;
-        if (isset($fj->name) && is_string($fj->name)) {
-            if (isset($fj->render_callback) && is_string($fj->render_callback)) {
-                $ok = self::xt_add($this->_list_action_renderers, $fj->name, $fj);
-            }
-            if (isset($fj->callback) && is_string($fj->callback)) {
-                $ok = self::xt_add($this->_list_action_map, $fj->name, $fj);
-            }
-        } else if (is_string($fj->match) && is_string($fj->expand_callback)) {
-            $this->_list_action_factories[] = $fj;
-            $ok = true;
-        }
-        return $ok;
-    }
+    /** @deprecated */
     function list_action_map() {
-        if ($this->_list_action_map === null) {
-            $this->_list_action_map = $this->_list_action_renderers = $this->_list_action_factories = [];
-            expand_json_includes_callback(["etc/listactions.json"], [$this, "_add_list_action_json"]);
-            if (($olist = $this->opt("listActions"))) {
-                expand_json_includes_callback($olist, [$this, "_add_list_action_json"]);
-            }
-            usort($this->_list_action_factories, "Conf::xt_priority_compare");
-        }
-        return $this->_list_action_map;
+        return [];
     }
-    function list_action_renderers() {
-        $this->list_action_map();
-        return $this->_list_action_renderers;
-    }
+    /** @deprecated */
     function has_list_action($name, Contact $user = null, $method = null) {
-        return !!$this->list_action($name, $user, $method);
+        return false;
     }
+    /** @deprecated */
     function list_action($name, Contact $user = null, $method = null) {
-        $this->_xt_allow_callback = function ($xt, $user) use ($method) {
-            return $this->check_api_json($xt, $user, $method);
-        };
-        $uf = $this->xt_search_name($this->list_action_map(), $name, $user);
-        if (($s = strpos($name, "/")) !== false) {
-            $uf = $this->xt_search_name($this->list_action_map(), substr($name, 0, $s), $user, $uf);
-        }
-        $ufs = $this->xt_search_factories($this->_list_action_factories, $name, $user, $uf);
-        $this->_xt_allow_callback = null;
-        return self::xt_resolve_require($ufs[0]);
+        return null;
     }
 
 

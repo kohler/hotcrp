@@ -254,7 +254,9 @@ src/intrinsicvalue.php
 src/listaction.php
 src/listactions/la_assign.php
 src/listactions/la_decide.php
+src/listactions/la_get.php
 src/listactions/la_getabstracts.php
+src/listactions/la_getauthors.php
 src/listactions/la_getallrevpref.php
 src/listactions/la_getdocument.php
 src/listactions/la_getjson.php
