@@ -10,7 +10,9 @@ class PaperPDF_SearchTerm extends SearchTerm {
     /** @var ?bool */
     private $format_problem;
     private $format_errf;
+    /** @var ?CheckFormat */
     private $cf;
+    private $cf_need_run = 0;
 
     function __construct(Conf $conf, $dtype, $present,
                          $format_problem = null, $format_errf = null) {
@@ -21,7 +23,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         $this->format_problem = $format_problem;
         $this->format_errf = $format_errf;
         if ($this->format_problem !== null) {
-            $this->cf = new CheckFormat($conf, CheckFormat::RUN_PREFER_NO);
+            $this->cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
         }
         assert($this->present || $this->format_problem === null);
     }
@@ -110,6 +112,13 @@ class PaperPDF_SearchTerm extends SearchTerm {
             if (($doc = $this->cf->fetch_document($row, $dtype))) {
                 $this->cf->check_document($row, $doc);
             }
+            if ($this->cf_need_run !== $this->cf->need_run) {
+                if ($this->cf_need_run === 0) {
+                    $srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
+                }
+                $this->cf_need_run = $this->cf->need_run;
+                return true;
+            }
             $errf = $doc && !$this->cf->failed ? $this->cf->problem_fields() : ["error"];
             if (empty($errf) === $this->format_problem
                 || ($this->format_errf && !in_array($this->format_errf, $errf))) {
@@ -121,12 +130,12 @@ class PaperPDF_SearchTerm extends SearchTerm {
 }
 
 class Pages_SearchTerm extends SearchTerm {
-    private $cf;
+    /** @var CountMatcher */
     private $cm;
+    private $cf_timeout = false;
 
     function __construct(CountMatcher $cm, Conf $conf) {
         parent::__construct("pages");
-        $this->cf = new CheckFormat($conf, CheckFormat::RUN_PREFER_NO);
         $this->cm = $cm;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -149,8 +158,21 @@ class Pages_SearchTerm extends SearchTerm {
             && $row->finalPaperStorageId > 1) {
             $dtype = DTYPE_FINAL;
         }
-        return ($doc = $row->document($dtype))
-            && ($np = $doc->npages()) !== null
-            && $this->cm->test($np);
+        $doc = $row->document($dtype);
+        if (!$doc) {
+            return false;
+        }
+        $np = $doc->npages(CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
+        if ($np !== null) {
+            return $this->cm->test($np);
+        } else if (CheckFormat::$runtime >= CheckFormat::TIMEOUT) {
+            if (!$this->cf_timeout) {
+                $srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
+                $this->cf_timeout = true;
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 }
