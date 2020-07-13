@@ -4,14 +4,19 @@
 
 class CheckFormat extends MessageSet implements FormatChecker {
     const RUN_YES = 0;
+    const RUN_IF_NECESSARY = 1;
+    /** @deprecated */
     const RUN_PREFER_NO = 1;
-    const RUN_NO = 2;
+    const RUN_IF_NECESSARY_TIMEOUT = 2;
+    const RUN_NO = 3;
+    const TIMEOUT = 8.0;
 
     /** @var bool */
     const DEBUG = false;
 
     /** @var Conf */
     private $conf;
+    /** @var int */
     public $pages = 0;
     private $body_pages;
     public $metadata_updates = [];
@@ -27,11 +32,15 @@ class CheckFormat extends MessageSet implements FormatChecker {
     public $possible_run = false;
     private $checkers = [];
     static private $banal_args;
+    /** @var int */
     static public $runcount = 0;
+    /** @var float */
+    static public $runtime = 0.0;
 
-    function __construct(Conf $conf, $allow_run = self::RUN_YES) {
+    /** @param ?int $allow_run */
+    function __construct(Conf $conf, $allow_run = null) {
         parent::__construct();
-        $this->allow_run = $allow_run;
+        $this->allow_run = $allow_run ?? self::RUN_YES;
         $this->conf = $conf;
         if (self::$banal_args === null) {
             $z = $this->conf->opt("banalZoom");
@@ -75,10 +84,84 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $this->banal_status = proc_close($banal_proc);
         ++self::$runcount;
         $banal_time = microtime(true) - $tstart;
+        self::$runtime += $banal_time;
         if (self::DEBUG && $banal_time > 0.1) {
             error_log(sprintf("%.6f: %s", $banal_time, $banal_run . escapeshellarg($filename)));
         }
         return json_decode($this->banal_stdout);
+    }
+
+    private function compress_bj($bj) {
+        $bj = clone $bj;
+        $bj->npages = count($bj->pages);
+        $bj->pages = array_slice($bj->pages, 0, 30);
+        $bj->cfmsg = $this->message_list();
+        return $bj;
+    }
+
+    function banal_json(DocumentInfo $doc, CheckFormat $cf = null) {
+        $cf = $cf ?? $this;
+        if ($cf->allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
+            && CheckFormat::$runtime >= CheckFormat::TIMEOUT) {
+            $allow_run = CheckFormat::RUN_NO;
+        } else {
+            $allow_run = $cf->allow_run;
+        }
+
+        $bj = null;
+        if (($m = $doc->metadata()) && isset($m->banal)) {
+            $bj = $m->banal;
+        }
+        $bj_ok = $bj
+            && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
+            && ($bj->args ?? null) == self::$banal_args;
+        if (!$bj_ok) {
+            ++$cf->need_run;
+        }
+        if (!$bj_ok || $bj->at < Conf::$now - 86400) {
+            $cf->possible_run = true;
+            if ($allow_run === CheckFormat::RUN_YES
+                || (!$bj_ok && $allow_run !== CheckFormat::RUN_NO)) {
+                $bj = null;
+            }
+        }
+
+        if ($bj || $allow_run === CheckFormat::RUN_NO) {
+            /* do nothing */;
+        } else if (($path = $doc->content_file())) {
+            // constrain the number of concurrent banal executions to banalLimit
+            // (counter resets every 2 seconds)
+            $t = (int) (time() / 2);
+            $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
+            $limit = $doc->conf->opt("banalLimit") ?? 8;
+            if ($limit > 0 && $n > $limit) {
+                return $cf->msg_fail("Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
+            }
+            if ($limit > 0) {
+                $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
+            }
+
+            $bj = $cf->run_banal($path);
+            if ($bj && is_object($bj) && isset($bj->pages) && is_array($bj->pages)) {
+                $npages = count($bj->pages);
+                if (isset($bj->npages) && is_int($bj->npages)) {
+                    $npages = $bj->npages;
+                }
+                $cf->metadata_updates["npages"] = $npages;
+                $cf->metadata_updates["banal"] = $npages > 30 ? $cf->compress_bj($bj) : $bj;
+                --$cf->need_run;
+            } else {
+                $cf->msg_fail("Error processing file. The file may not be in PDF format or may be corrupted.");
+            }
+
+            if ($limit > 0) {
+                $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
+            }
+        } else {
+            $cf->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
+        }
+
+        return $bj;
     }
 
     protected function body_error_status($error_pages) {
@@ -322,73 +405,17 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function check_file($filename, $spec) {
-        if (is_string($spec))
+        if (is_string($spec)) {
             $spec = new FormatSpec($spec);
+        }
         $this->clear();
         $bj = $this->run_banal($filename);
         $this->check_banal_json($bj, $spec);
     }
 
-    private function compress_bj($bj) {
-        $bj = clone $bj;
-        $bj->npages = count($bj->pages);
-        $bj->pages = array_slice($bj->pages, 0, 30);
-        $bj->cfmsg = $this->message_list();
-        return $bj;
-    }
-
-    function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
-        $bj = null;
-        if (($m = $doc->metadata()) && isset($m->banal)) {
-            $bj = $m->banal;
-        }
-        $bj_ok = $bj && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
-            && get($bj, "args") == self::$banal_args;
-        if (!$bj_ok)
-            ++$cf->need_run;
-        if (!$bj_ok || $bj->at < Conf::$now - 86400) {
-            $cf->possible_run = true;
-            if ($cf->allow_run == CheckFormat::RUN_YES
-                || (!$bj_ok && $cf->allow_run == CheckFormat::RUN_PREFER_NO))
-                $bj = null;
-        }
-
-        if ($bj || $cf->allow_run == CheckFormat::RUN_NO) {
-            /* do nothing */;
-        } else if (($path = $doc->content_file())) {
-            // constrain the number of concurrent banal executions to banalLimit
-            // (counter resets every 2 seconds)
-            $t = (int) (time() / 2);
-            $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
-            $limit = $doc->conf->opt("banalLimit", 8);
-            if ($limit > 0 && $n > $limit)
-                return $cf->msg_fail("Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
-            if ($limit > 0)
-                $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
-
-            $bj = $cf->run_banal($path);
-            if ($bj && is_object($bj) && isset($bj->pages) && is_array($bj->pages)) {
-                $npages = count($bj->pages);
-                if (isset($bj->npages) && is_int($bj->npages))
-                    $npages = $bj->npages;
-                $cf->metadata_updates["npages"] = $npages;
-                $cf->metadata_updates["banal"] = $bj;
-                --$cf->need_run;
-            } else {
-                $cf->msg_fail("Error processing file. The file may not be in PDF format or may be corrupted.");
-            }
-
-            if ($limit > 0)
-                $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
-        } else {
-            $cf->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
-        }
-
-        if ($bj) {
+    function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc) {
+        if (($bj = $cf->banal_json($doc))) {
             $cf->check_banal_json($bj, $spec);
-            if (isset($cf->metadata_updates["banal"])
-                && $cf->pages > 30)
-                $cf->metadata_updates["banal"] = $cf->compress_bj($bj);
         } else {
             $cf->msg_fail(null);
         }
@@ -396,15 +423,17 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
     function fetch_document(PaperInfo $prow, $dtype, $docid = 0) {
         $doc = $prow->document($dtype, $docid, true);
-        if (!$doc || $doc->paperStorageId <= 1)
+        if (!$doc || $doc->paperStorageId <= 1) {
             $this->msg_fail("No such document.");
-        else if ($doc->paperId != $prow->paperId || $doc->documentType != $dtype)
+        } else if ($doc->paperId != $prow->paperId || $doc->documentType != $dtype) {
             $this->msg_fail("The document has changed.");
-        else
+        } else {
             return $doc;
+        }
         return null;
     }
 
+    /** @param string $chk */
     private function checker($chk) {
         if ($chk === "banal" || $chk === "CheckFormat") {
             return $this;
@@ -416,7 +445,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
-    function check_document(PaperInfo $prow, $doc) {
+    function check_document(PaperInfo $prow, DocumentInfo $doc) {
         $this->clear();
         if (!$doc) {
             if (!$this->has_problem_at("error")) {
@@ -429,17 +458,19 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
         $done_me = false;
         $spec = $prow->conf->format_spec($doc->documentType);
-        foreach ($spec->checkers ? : [] as $chk) {
+        foreach ($spec->checkers as $chk) {
             $checker = $this->checker($chk);
             $done_me = $done_me || $checker === $this;
             $checker->check($this, $spec, $prow, $doc);
         }
-        if (!$done_me)
+        if (!$done_me) {
             $this->check($this, $spec, $prow, $doc);
+        }
 
         // save information about the run
-        if (!empty($this->metadata_updates))
+        if (!empty($this->metadata_updates)) {
             $doc->update_metadata($this->metadata_updates);
+        }
         // record check status in `Paper` table
         if ($prow->is_primary_document($doc)
             && !$this->failed
@@ -453,7 +484,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
-    function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
+    function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc) {
         $t = "";
         if ($this->failed) {
             $t .= Ht::msg($this->message_texts_at("error"), 2);
@@ -483,11 +514,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function document_report(PaperInfo $prow, $doc) {
         $spec = $prow->conf->format_spec($doc ? $doc->documentType : DTYPE_SUBMISSION);
         if ($doc) {
-            foreach ($spec->checkers ? : [] as $chk)
+            foreach ($spec->checkers as $chk)
                 if (($checker = $this->checker($chk))
                     && $checker !== $this
-                    && ($report = $checker->report($this, $spec, $prow, $doc)))
+                    && ($report = $checker->report($this, $spec, $prow, $doc))) {
                     return $report;
+            }
         }
         return $this->report($this, $spec, $prow, $doc);
     }
@@ -495,7 +527,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function spec_error_kinds($dtype) {
         $spec = $this->conf->format_spec($dtype);
         $ekinds = $this->error_kinds($spec);
-        foreach ($spec->checkers ? : [] as $chk) {
+        foreach ($spec->checkers as $chk) {
             if (($checker = $this->checker($chk)) && $checker !== $this)
                 $ekinds = $ekinds + $checker->error_kinds($spec);
         }

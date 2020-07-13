@@ -1263,7 +1263,7 @@ class DocumentInfo implements JsonSerializable {
             }
             $runflag = CheckFormat::RUN_NO;
             if ($flags & self::L_REQUIREFORMAT) {
-                $runflag = CheckFormat::RUN_PREFER_NO;
+                $runflag = CheckFormat::RUN_IF_NECESSARY;
             }
             $cf = new CheckFormat($this->conf, $runflag);
             $cf->check_document($this->prow, $this);
@@ -1323,19 +1323,20 @@ class DocumentInfo implements JsonSerializable {
         return ArchiveInfo::archive_listing($this, $max_length);
     }
 
-    /** @return ?int */
-    function npages() {
+    /** @param ?int $allow_run
+     * @return ?int */
+    function npages($allow_run = null) {
         if ($this->mimetype && $this->mimetype !== "application/pdf") {
             return null;
         } else if (($m = $this->metadata()) && isset($m->npages)) {
             return $m->npages;
-        } else if (($path = $this->content_file())) {
-            $cf = new CheckFormat($this->conf);
+        } else if ($this->content_file()) {
+            $cf = new CheckFormat($this->conf, $allow_run);
             $cf->clear();
-            $bj = $cf->run_banal($path);
-            if ($bj && is_object($bj) && isset($bj->pages)) {
-                $this->update_metadata(["npages" => count($bj->pages), "banal" => $bj]);
-                return count($bj->pages);
+            $cf->banal_json($this);
+            if ($cf->metadata_updates) {
+                $this->update_metadata($cf->metadata_updates);
+                return $cf->metadata_updates["npages"];
             }
         }
         return null;

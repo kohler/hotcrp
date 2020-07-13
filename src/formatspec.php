@@ -18,7 +18,8 @@ class FormatSpec {
     /** @var ?array{int|float,int|float|null,int|float|null} */
     public $bodylineheight; // [MIN, MAX, GRACE]
     public $quietpages;     // {ERRORTYPE => IGNOREARRAY}
-    public $checkers;
+    /** @var list<string> */
+    public $checkers = [];
     public $timestamp = 0;
     private $_is_banal_empty = true;
 
@@ -103,7 +104,7 @@ class FormatSpec {
     }
 
     function is_empty() {
-        return !$this->checkers && $this->is_banal_empty();
+        return empty($this->checkers) && $this->is_banal_empty();
     }
 
     /** @return bool */
@@ -319,6 +320,6 @@ class FormatSpec {
 
 interface FormatChecker {
     function error_kinds(FormatSpec $spec);
-    function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc);
-    function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc);
+    function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc);
+    function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc);
 }

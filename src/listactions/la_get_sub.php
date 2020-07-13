@@ -12,7 +12,7 @@ class GetCheckFormat_ListAction extends ListAction {
         $csvg = $user->conf->make_csvg("formatcheck")->select(["paper", "title", "pages", "format", "messages"]);
         $csvg->download_headers();
         $csvg->flush();
-        $cf = new CheckFormat($user->conf, CheckFormat::RUN_PREFER_NO);
+        $cf = new CheckFormat($user->conf, CheckFormat::RUN_IF_NECESSARY);
         foreach ($papers as $prow) {
             if ($prow->mimetype == "application/pdf") {
                 $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;

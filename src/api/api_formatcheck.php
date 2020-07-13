@@ -12,7 +12,7 @@ class FormatCheck_API {
         if (($whynot = $docreq->perm_view_document($user))) {
             json_exit(isset($whynot["permission"]) ? 403 : 404, whyNotText($whynot));
         }
-        $runflag = $qreq->soft ? CheckFormat::RUN_PREFER_NO : CheckFormat::RUN_YES;
+        $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_YES;
         $cf = new CheckFormat($user->conf, $runflag);
         $doc = $cf->fetch_document($docreq->prow, $docreq->dtype, $docreq->docid);
         $cf->check_document($docreq->prow, $doc);
