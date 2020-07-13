@@ -1615,7 +1615,7 @@ class PaperInfo {
         }
     }
 
-    private function _document_sql() {
+    static function document_sql() {
         return "paperId, paperStorageId, timestamp, mimetype, sha1, crc32, documentType, filename, infoJson, size, filterType, originalStorageId, inactive";
     }
 
@@ -1654,7 +1654,7 @@ class PaperInfo {
         }
 
         if ($this->_document_array === null) {
-            $result = $this->conf->qe("select " . $this->_document_sql() . " from PaperStorage where paperId=? and inactive=0", $this->paperId);
+            $result = $this->conf->qe("select " . self::document_sql() . " from PaperStorage where paperId=? and inactive=0", $this->paperId);
             $this->_document_array = [];
             while (($di = DocumentInfo::fetch($result, $this->conf, $this))) {
                 $this->_document_array[$di->paperStorageId] = $di;
@@ -1662,7 +1662,7 @@ class PaperInfo {
             Dbl::free($result);
         }
         if (!array_key_exists($did, $this->_document_array)) {
-            $result = $this->conf->qe("select " . $this->_document_sql() . " from PaperStorage where paperStorageId=?", $did);
+            $result = $this->conf->qe("select " . self::document_sql() . " from PaperStorage where paperStorageId=?", $did);
             $this->_document_array[$did] = DocumentInfo::fetch($result, $this->conf, $this);
             Dbl::free($result);
         }

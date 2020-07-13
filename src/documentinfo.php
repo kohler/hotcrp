@@ -1172,6 +1172,17 @@ class DocumentInfo implements JsonSerializable {
         return $fn;
     }
 
+    /** @param string $suffix
+     * @return string */
+    function suffixed_export_filename($suffix, $filters = null) {
+        $fn = $this->export_filename($filters);
+        if (preg_match('/(\.[A-Za-z0-9]{1,5}(?:\.[A-Za-z0-9]{1,3})?)\z/', $fn, $m)) {
+            return substr($fn, 0, -strlen($m[0])) . $suffix . $m[0];
+        } else {
+            return $fn . $suffix;
+        }
+    }
+
     /** @return string */
     function url($filters = null, $flags = 0) {
         if ($filters === null) {

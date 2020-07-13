@@ -3004,6 +3004,10 @@ class Conf {
     function unparse_time_log($timestamp) {
         return $this->_date_format("d/M/Y:H:i:s O", $timestamp);
     }
+    /** @param int $timestamp */
+    function unparse_time_iso($timestamp) {
+        return $this->_date_format("Ymd\\THis", $timestamp);
+    }
     /** @param int $timestamp
      * @param int $now */
     function unparse_time_relative($timestamp, $now = 0, $format = 0) {
