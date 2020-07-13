@@ -1548,7 +1548,8 @@ class PaperID_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         if (empty($this->r)) {
             return "false";
-        } else if (($pids = $this->paper_ids()) !== false) {
+        } else if ($this->n <= 8 * count($this->r)
+                   && ($pids = $this->paper_ids()) !== false) {
             return "Paper.paperId in (" . join(",", $pids) . ")";
         } else {
             $s = [];
