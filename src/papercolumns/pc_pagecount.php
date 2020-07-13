@@ -10,13 +10,15 @@ class PageCount_PaperColumn extends PaperColumn {
         return $pl->user->can_view_some_pdf();
     }
     function page_count(Contact $user, PaperInfo $row) {
-        if (!$user->can_view_pdf($row))
+        if (!$user->can_view_pdf($row)) {
             return null;
+        }
         $dtype = DTYPE_SUBMISSION;
         if ($row->finalPaperStorageId > 0
             && $row->outcome > 0
-            && $user->can_view_decision($row))
+            && $user->can_view_decision($row)) {
             $dtype = DTYPE_FINAL;
+        }
         $doc = $row->document($dtype);
         return $doc ? $doc->npages() : null;
     }

@@ -18,7 +18,9 @@ class FormatCheck_API {
         $cf->check_document($docreq->prow, $doc);
         return [
             "ok" => !$cf->failed,
+            "npages" => $cf->failed ? null : $cf->pages,
             "result" => $cf->document_report($docreq->prow, $doc),
+            "problem_fields" => $cf->failed ? ["error"] : $cf->problem_fields(),
             "has_error" => $cf->has_error()
         ];
     }
