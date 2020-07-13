@@ -331,6 +331,7 @@ class SearchTerm {
     }
 
 
+    /** @return bool */
     function trivial_rights(Contact $user, PaperSearch $srch) {
         return false;
     }
@@ -359,11 +360,13 @@ class SearchTerm {
         }
     }
 
+    /** @return string */
     function sqlexpr(SearchQueryInfo $sqi) {
         error_log("invalid SearchTerm::sqlexpr");
         return "false";
     }
 
+    /** @return bool */
     function exec(PaperInfo $row, PaperSearch $srch) {
         error_log("invalid SearchTerm::exec");
         return false;
@@ -606,8 +609,9 @@ class And_SearchTerm extends Op_SearchTerm {
                 $newchild[] = $qv;
             }
         }
-        if ($revadj) // must come first
+        if ($revadj) { // must come first
             array_unshift($newchild, $revadj);
+        }
         return $this->_finish_combine($newchild, $any);
     }
 
@@ -1130,10 +1134,11 @@ class TextMatch_SearchTerm extends SearchTerm {
     }
     static function parse($word, SearchWord $sword) {
         if ($sword->kwexplicit && !$sword->quoted) {
-            if ($word === "any")
+            if ($word === "any") {
                 $word = true;
-            else if ($word === "none")
+            } else if ($word === "none") {
                 $word = false;
+            }
         }
         return new TextMatch_SearchTerm($sword->kwdef->name, $word, $sword->quoted);
     }
@@ -1431,13 +1436,17 @@ class Show_SearchTerm {
 }
 
 class PaperID_SearchTerm extends SearchTerm {
+    /** @var list<array{int,int,int,bool,bool}> */
     private $r = [];
+    /** @var int */
     private $n = 0;
     private $in_order = true;
 
     function __construct() {
         parent::__construct("pn");
     }
+    /** @param int $p
+     * @return int */
     private function lower_bound($p) {
         $l = 0;
         $r = count($this->r);
@@ -1454,6 +1463,7 @@ class PaperID_SearchTerm extends SearchTerm {
         }
         return $l;
     }
+    /** @return int|false */
     function position($p) {
         $i = $this->lower_bound($p);
         if ($i < count($this->r) && $p >= $this->r[$i][0]) {
@@ -1463,7 +1473,10 @@ class PaperID_SearchTerm extends SearchTerm {
             return false;
         }
     }
-    private function add_drange($p0, $p1, $rev) {
+    /** @param int $p0
+     * @param int $p1
+     * @param bool $rev */
+    private function add_drange($p0, $p1, $rev, $explicit) {
         while ($p0 < $p1) {
             $i = $this->lower_bound($p0);
             if ($i < count($this->r) && $p0 >= $this->r[$i][0]) {
@@ -1482,20 +1495,23 @@ class PaperID_SearchTerm extends SearchTerm {
                     && $this->in_order
                     && $p0 === $this->r[$i - 1][1]) {
                     $this->r[$i - 1][1] = $p1x;
+                    $this->r[$i - 1][4] = $this->r[$i - 1][4] && $explicit;
                 } else {
                     $n = $this->n + ($rev ? $p1x - $p0 - 1 : 0);
-                    array_splice($this->r, $i, 0, [[$p0, $p1x, $n, $rev]]);
+                    array_splice($this->r, $i, 0, [[$p0, $p1x, $n, $rev, $explicit]]);
                 }
                 $this->n += $p1x - $p0;
             }
             $p0 = max($p0, $p1x);
         }
     }
+    /** @param int $p0
+     * @param int $p1 */
     function add_range($p0, $p1) {
         if ($p0 <= $p1) {
-            $this->add_drange($p0, $p1 + 1, false);
+            $this->add_drange($p0, $p1 + 1, false, $p1 - $p0 <= 4);
         } else {
-            $this->add_drange($p1, $p0 + 1, true);
+            $this->add_drange($p1, $p0 + 1, true, false);
         }
     }
     function merge(PaperID_SearchTerm $st) {
@@ -1504,20 +1520,26 @@ class PaperID_SearchTerm extends SearchTerm {
             usort($rs, function ($a, $b) { return $a[2] - $b[2]; });
         }
         foreach ($rs as $r) {
-            $this->add_drange($r[0], $r[1], $r[3]);
+            $this->add_drange($r[0], $r[1], $r[3], $r[4]);
         }
     }
+    /** @return list<int>|false */
     function paper_ids() {
         if ($this->n <= 1000) {
             $a = [];
             foreach ($this->r as $r) {
-                for ($i = $r[0]; $i < $r[1]; ++$i)
+                for ($i = $r[0]; $i < $r[1]; ++$i) {
                     $a[] = $i;
+                }
             }
             return $a;
         } else {
             return false;
         }
+    }
+    /** @return list<array{int,int,int,bool,bool}> */
+    function ranges() {
+        return $this->r;
     }
 
     function trivial_rights(Contact $user, PaperSearch $srch) {
@@ -1899,8 +1921,9 @@ class PaperSearch {
     }
 
     function warn($text) {
-        if (!$this->_quiet_count)
+        if (!$this->_quiet_count) {
             $this->warnings[] = $text;
+        }
     }
 
 
@@ -1916,42 +1939,49 @@ class PaperSearch {
             $text = $m[1];
             $compar = $m[2] . $m[3];
         }
-        if (($text === "any" || $text === "" || $text === "yes") && !$quoted)
-            return array("", $compar ? : ">0");
-        else if (($text === "none" || $text === "no") && !$quoted)
-            return array("", "=0");
-        else if (!$compar && ctype_digit($text))
-            return array("", "=" . $text);
-        else
-            return array($text, $compar ? : ">0");
+        if (($text === "any" || $text === "" || $text === "yes") && !$quoted) {
+            return ["", $compar ? : ">0"];
+        } else if (($text === "none" || $text === "no") && !$quoted) {
+            return ["", "=0"];
+        } else if (!$compar && ctype_digit($text)) {
+            return ["", "=" . $text];
+        } else {
+            return [$text, $compar ? : ">0"];
+        }
     }
 
     static function check_tautology($compar) {
-        if ($compar === "<0")
+        if ($compar === "<0") {
             return new False_SearchTerm;
-        else if ($compar === ">=0")
+        } else if ($compar === ">=0") {
             return new True_SearchTerm;
-        else
+        } else {
             return null;
+        }
     }
 
     private function make_contact_match($type, $text) {
-        foreach ($this->contact_match as $i => $cm)
+        foreach ($this->contact_match as $i => $cm) {
             if ($cm->type === $type && $cm->text === $text)
                 return $cm;
+        }
         return $this->contact_match[] = new ContactSearch($type, $text, $this->user);
     }
 
     private function matching_contacts_base($type, $word, $quoted, $pc_only) {
-        if ($pc_only)
+        if ($pc_only) {
             $type |= ContactSearch::F_PC;
-        if ($quoted)
+        }
+        if ($quoted) {
             $type |= ContactSearch::F_QUOTED;
-        if (!$quoted && $this->user->isPC)
+        }
+        if (!$quoted && $this->user->isPC) {
             $type |= ContactSearch::F_TAG;
+        }
         $scm = $this->make_contact_match($type, $word);
-        if ($scm->warn_html)
+        if ($scm->warn_html) {
             $this->warn($scm->warn_html);
+        }
         return $scm;
     }
     function matching_uids($word, $quoted, $pc_only) {
@@ -1986,16 +2016,17 @@ class PaperSearch {
             $k = array_map(function ($x) { return $x[0]; }, array_keys($k));
             $k = array_unique($k);
             if (count($k) === 1) {
-                if ($k[0] === "w")
+                if ($k[0] === "w") {
                     return ["timeWithdrawn", ">0"];
-                else if ($k[0] === "s")
+                } else if ($k[0] === "s") {
                     return ["timeSubmitted", ">0"];
-                else if ($k[0] === "u")
+                } else if ($k[0] === "u") {
                     return ["timeSubmitted", "<=0", "timeWithdrawn", "<=0"];
-                else if ($k[0] === "x")
+                } else if ($k[0] === "x") {
                     return ["timeSubmitted", "<=0", "timeWithdrawn", "<=0", "paperStorageId", "<=1"];
-                else
+                } else {
                     return ["timeWithdrawn", "<=0"];
+                }
             }
         }
         return ["outcome", self::decision_matchexpr($conf, $word, $quoted)];
@@ -2006,16 +2037,17 @@ class PaperSearch {
         $args = array();
         while (preg_match('/\A\s*#?(\d+)(?:-#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-            foreach (range($m[1], $m[2]) as $p)
+            foreach (range($m[1], $m[2]) as $p) {
                 $args[$p] = true;
+            }
             $word = $m[3];
         }
         if ($word !== "" || empty($args)) {
             $srch->warn("The <code>reconflict</code> keyword expects a list of paper numbers.");
             return new False_SearchTerm;
-        } else if (!$srch->user->privChair)
+        } else if (!$srch->user->privChair) {
             return new False_SearchTerm;
-        else {
+        } else {
             $result = $srch->conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
             $contacts = array_map("intval", Dbl::fetch_first_columns($result));
             return new Conflict_SearchTerm(">0", $contacts, false);
@@ -2555,10 +2587,6 @@ class PaperSearch {
     }
 
 
-    // QUERY EVALUATION
-    // Check the results of the query, reducing the possibly conservative
-    // overestimate produced by the database to a precise result.
-
     /** @param SearchTerm $qe */
     private function _add_deleted_papers($qe) {
         if ($qe->type === "or" || $qe->type === "then") {
@@ -2573,6 +2601,27 @@ class PaperSearch {
                     $this->_matches[] = (int) $p;
             }
         }
+    }
+
+    /** @param SearchTerm $qe */
+    private function _check_missing_papers($qe) {
+        $ps = [];
+        if ($qe->type === "or" || $qe->type === "then") {
+            assert($qe instanceof Op_SearchTerm);
+            foreach ($qe->child as $subt) {
+                $ps = array_merge($ps, $this->_check_missing_papers($subt));
+            }
+        } else if ($qe->type === "pn") {
+            assert($qe instanceof PaperID_SearchTerm);
+            foreach ($qe->ranges() as $r) {
+                for ($p = $r[0]; $p < $r[1] && $r[4]; ++$p) {
+                    if (array_search($p, $this->_matches) === false) {
+                        $ps[] = $p;
+                    }
+                }
+            }
+        }
+        return $ps;
     }
 
 
@@ -2854,6 +2903,11 @@ class PaperSearch {
         // add deleted papers explicitly listed by number (e.g. action log)
         if ($this->_allow_deleted) {
             $this->_add_deleted_papers($qe);
+        } else if ($this->_named_limit === "s"
+                   && $this->user->privChair
+                   && ($ps = $this->_check_missing_papers($qe))
+                   && $this->conf->fetch_ivalue("select exists (select * from Paper where paperId?a)", $ps)) {
+            $this->warn("Some incomplete or withdrawn submissions also match this search. " . Ht::link("Show all matching submissions", $this->conf->hoturl("search", ["t" => "all", "q" => $this->q])));
         }
 
         // sort information
