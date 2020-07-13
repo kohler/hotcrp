@@ -84,7 +84,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         if ($this->dtype === DTYPE_FINAL || $this->dtype === null) {
             $f[] = "Paper.finalPaperStorageId" . ($this->present ? ">1" : "<=1");
         }
-        return join($this->present ? " or " : " and ", $f);
+        return "(" . join($this->present ? " or " : " and ", $f) . ")";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $dtype = $this->dtype;
