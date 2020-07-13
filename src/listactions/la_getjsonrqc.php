@@ -6,7 +6,7 @@ class GetJsonRQC_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager();
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $results = ["hotcrp_version" => HOTCRP_VERSION];
         if (($git_data = Conf::git_status()))

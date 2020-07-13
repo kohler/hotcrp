@@ -11,7 +11,7 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $this->all ? $user->is_manager() : $user->is_reviewer();
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $rf = $user->conf->review_form();
         if ($ssel->is_empty()) {
             // blank form

@@ -12,7 +12,7 @@ class Decide_ListAction extends ListAction {
                 . Ht::select("decision", $opts, "", ["class" => "want-focus js-submit-action-info-decide"])
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "class" => "uic js-submit-mark"])];
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $aset = new AssignmentSet($user, true);
         $decision = $qreq->decision;
         if (is_numeric($decision)) {

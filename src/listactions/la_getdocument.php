@@ -28,7 +28,7 @@ class GetDocument_ListAction extends ListAction {
                 $gex->add(self::list_action_json($o));
         }
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $opt = $user->conf->checked_option_by_id($this->dt);
         $dn = $user->conf->download_prefix . pluralx($opt->id <= 0 ? 2 : 1, $opt->dtype_name()) . ".zip";

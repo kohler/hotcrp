@@ -61,7 +61,7 @@ class GetAbstracts_ListAction extends ListAction {
 
         return $text . "\n";
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $texts = [];
         $lastpid = null;
         foreach ($ssel->paper_set($user, ["topics" => 1]) as $prow) {

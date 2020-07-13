@@ -12,7 +12,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_review();
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $rf = $user->conf->review_form();
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $au_seerev = $user->conf->au_seerev;

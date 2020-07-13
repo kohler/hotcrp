@@ -15,7 +15,7 @@ class GetAuthors_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_authors();
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $contact_map = self::contact_map($user->conf, $ssel);
         $texts = array();
         $want_contacttype = false;

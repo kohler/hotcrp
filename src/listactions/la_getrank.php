@@ -6,7 +6,7 @@ class GetRank_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->conf->setting("tag_rank") && $user->is_reviewer();
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $settingrank = $user->conf->setting("tag_rank") && $qreq->tag == "~" . $user->conf->setting_data("tag_rank");
         if (!$user->isPC && !($user->is_reviewer() && $settingrank)) {
             return self::EPERM;

@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class GetCheckFormat_ListAction extends ListAction {
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $papers = [];
         foreach ($ssel->paper_set($user) as $prow) {
             if ($user->can_view_pdf($prow))
@@ -52,7 +52,7 @@ class GetContacts_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager();
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $contact_map = GetAuthors_ListAction::contact_map($user->conf, $ssel);
         $texts = [];
         foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
@@ -74,7 +74,7 @@ class GetPcconflicts_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager();
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $confset = $user->conf->conflict_types();
         $pcm = $user->conf->pc_members();
         $csvg = $user->conf->make_csvg("pcconflicts")
@@ -100,7 +100,7 @@ class GetPcconflicts_ListAction extends ListAction {
 }
 
 class GetTopics_ListAction extends ListAction {
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1]) as $row) {
             if ($user->can_view_paper($row)) {
@@ -120,7 +120,7 @@ class GetTopics_ListAction extends ListAction {
 }
 
 class GetCSV_ListAction extends ListAction {
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $search = new PaperSearch($user, $qreq);
         $search->restrict_match([$ssel, "is_selected"]);
         $pl = new PaperList("pl", $search, ["sort" => true, "display" => $qreq->display], $qreq);

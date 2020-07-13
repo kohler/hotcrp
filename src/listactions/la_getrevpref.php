@@ -19,7 +19,7 @@ class GetRevpref_ListAction extends ListAction {
         return [Ht::entry("pref", "", array("class" => "want-focus js-autosubmit", "size" => 4, "data-autosubmit-type" => "setpref"))
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "setpref", "class" => "uic js-submit-mark"])];
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         // maybe download preferences for someone else
         $Rev = $user;
         if ($qreq->reviewer) {

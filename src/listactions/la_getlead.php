@@ -10,7 +10,7 @@ class GetLead_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->isPC;
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $key = $this->type . "ContactId";
         $can_view = "can_view_" . $this->type;
         $texts = [];

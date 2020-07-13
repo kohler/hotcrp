@@ -6,7 +6,7 @@ class GetScores_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_review();
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $rf = $user->conf->review_form();
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         // compose scores; NB chair is always forceShow

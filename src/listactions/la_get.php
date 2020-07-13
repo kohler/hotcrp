@@ -2,7 +2,7 @@
 // listactions/la_get.php -- HotCRP helper classes for list actions
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class Get_ListAction extends ListAction {
+class Get_ListAction {
     static function render(PaperList $pl, Qrequest $qreq, GroupedExtensions $gex) {
         $last_group = null;
         $sel_opt = [];

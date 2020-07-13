@@ -40,7 +40,7 @@ class Tag_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_change_some_tag();
     }
-    function run(Contact $user, $qreq, $ssel) {
+    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $papers = $ssel->selection();
 
         $act = $qreq->tagfn;
