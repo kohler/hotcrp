@@ -55,11 +55,10 @@ banal has three modes of operation:
 
          extracts font sizes from a set of pdf files.
 
--json    print JSON output
-
--zoom=N   passed to pdftohtml.
-
+-json     print JSON output
 -pagenum  include page numbers and headings
+
+-zoom=N   passed to pdftohtml
 
 -max-pages=N  maximum number of pages for JSON
 

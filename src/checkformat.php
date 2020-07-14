@@ -4,13 +4,9 @@
 
 class CheckFormat extends MessageSet implements FormatChecker {
     const RUN_ALWAYS = 0;
-    /** @deprecated */
-    const RUN_YES = 0;
     const RUN_IF_NECESSARY = 1;
     const RUN_IF_NECESSARY_TIMEOUT = 2;
     const RUN_NEVER = 3;
-    /** @deprecated */
-    const RUN_NO = 3;
     const TIMEOUT = 8.0;
 
     const RUN_STARTED = 1;
@@ -29,23 +25,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
     public $banal_stdout;
     public $banal_stderr;
     public $banal_status;
-    /** @var int
-     * @deprecated */
-    public $pages = 0;
     /** @var ?int */
     public $npages;
     /** @var ?int */
     private $body_pages;
     /** @var int */
     public $run_flags = 0;
-    /** @deprecated */
-    public $failed = false;
-    /** @var int
-     * @deprecated */
-    public $need_run = 0;
-    /** @var bool
-     * @deprecated */
-    public $possible_run = false;
     public $metadata_updates = [];
 
     static private $banal_args;
@@ -75,10 +60,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function msg_fail($what) {
-        if ($what) {
-            $this->msg_at("error", $what, self::ERROR);
-        }
-        $this->failed = true;
+        $this->error_at("error", $what);
     }
 
     function run_banal($filename) {
@@ -129,7 +111,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 || ($spec->timestamp && $spec->timestamp === ($bj->timestamp ?? null)));
         $flags = $bj_ok ? 0 : CheckFormat::RUN_DESIRED;
         if (!$bj_ok || $bj->at < Conf::$now - 86400) {
-            $this->possible_run = true;
             $flags |= CheckFormat::RUN_ALLOWED;
             if ($allow_run === CheckFormat::RUN_ALWAYS
                 || (!$bj_ok && $allow_run !== CheckFormat::RUN_NEVER)) {
@@ -161,7 +142,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $this->metadata_updates["npages"] = $this->npages;
                 $this->metadata_updates["banal"] = $bj;
                 $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
-                --$this->need_run;
             } else {
                 $this->msg_fail("Error processing file. The file may not be in PDF format or may be corrupted.");
             }
@@ -170,7 +150,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
             }
         } else {
-            $this->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
+            $this->msg_fail($doc->error_html ?? "Paper cannot be loaded.");
             $flags &= ~CheckFormat::RUN_ALLOWED;
         }
 
@@ -235,7 +215,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 }
             }
             if (!$ok) {
-                $this->msg_at("papersize", "Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper") . ".", self::ERROR);
+                $this->error_at("papersize", "Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper") . ".");
             }
         }
 
@@ -244,7 +224,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $pages = $this->npages;
             assert(is_int($pages));
             if ($pages < $spec->pagelimit[0]) {
-                $this->msg_at("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $pages . ".", self::WARNING);
+                $this->warning_at("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $pages . ".");
             }
             if ($pages > $spec->pagelimit[1]
                 && $spec->unlimitedref
@@ -255,7 +235,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 }
             }
             if ($pages > $spec->pagelimit[1]) {
-                $this->msg_at("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], $spec->unlimitedref ? "non-reference page" : "page") . ", found " . $pages . ".", self::ERROR);
+                $this->error_at("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], $spec->unlimitedref ? "non-reference page" : "page") . ", found " . $pages . ".");
             }
         }
         $this->body_pages = count(array_filter($bj->pages, function ($pg) {
@@ -266,9 +246,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
         if (($spec->columns || $spec->bodyfontsize || $spec->bodylineheight)
             && $this->body_pages < 0.5 * $this->npages) {
             if ($this->body_pages == 0) {
-                $this->msg_at(false, "Warning: No pages seemed to contain body text; results may be off.", self::WARNING);
+                $this->warning_at(null, "Warning: No pages seemed to contain body text; results may be off.");
             } else {
-                $this->msg_at(false, "Warning: Only " . plural($this->body_pages, "page") . " seemed to contain body text; results may be off.", self::WARNING);
+                $this->warning_at(null, "Warning: Only " . plural($this->body_pages, "page") . " seemed to contain body text; results may be off.");
             }
             $nd0_pages = count(array_filter($bj->pages, function ($pg) {
                 return (isset($pg->pagetype) && $pg->pagetype === "blank")
@@ -276,7 +256,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                     || (isset($pg->d) && $pg->d === 0);
             }));
             if ($nd0_pages == $this->npages) {
-                $this->msg_at("notext", "This document appears to contain no text. Perhaps the PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", self::ERROR);
+                $this->error_at("notext", "This document appears to contain no text. Perhaps the PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.");
             }
         }
 
@@ -294,7 +274,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             }
             $maxpages = $spec->pagelimit ? $spec->pagelimit[1] : 0;
             if (count($px) > $maxpages * 0.75) {
-                $this->msg_at("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . self::page_message($px) . ".", self::WARNING);
+                $this->warning_at("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . self::page_message($px) . ".");
             }
         }
 
@@ -372,7 +352,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $this->msg_at("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
             }
             if (!empty($hipx)) {
-                $this->msg_at("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".", self::WARNING);
+                $this->warning_at("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
             }
         }
 
@@ -404,7 +384,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $this->msg_at("bodylineheight", "Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
             }
             if (!empty($hipx)) {
-                $this->msg_at("bodylineheight", "Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".", self::WARNING);
+                $this->warning_at("bodylineheight", "Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
             }
         }
     }
@@ -443,13 +423,10 @@ class CheckFormat extends MessageSet implements FormatChecker {
     // CHECKING ORCHESTRATION
 
     function clear() {
-        parent::clear();
+        $this->clear_messages();
         $this->npages = null;
         $this->metadata_updates = [];
         $this->run_flags = 0;
-        $this->need_run = 0;
-        $this->possible_run = false;
-        $this->failed = false;
     }
 
     /** @param string $chk */
@@ -485,13 +462,11 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function check_document(PaperInfo $prow, DocumentInfo $doc = null) {
+        assert(!$doc || $doc->prow === $prow);
         $this->clear();
         $this->run_flags |= CheckFormat::RUN_STARTED;
-        if (!$doc) {
-            $this->msg_fail("No such document.");
-            return;
-        } else if ($doc->mimetype !== "application/pdf") {
-            $this->msg_fail("The format checker only works for PDF files.");
+        if (!$doc || $doc->mimetype !== "application/pdf") {
+            $this->msg_fail($doc ? "The format checker only works on PDF files." : "No such document.");
             return;
         }
 
@@ -542,6 +517,12 @@ class CheckFormat extends MessageSet implements FormatChecker {
     function need_recheck() {
         assert(($this->run_flags & CheckFormat::RUN_STARTED) !== 0);
         return ($this->run_flags & CheckFormat::RUN_DESIRED) !== 0;
+    }
+
+    /** @return bool */
+    function run_attempted() {
+        assert(($this->run_flags & CheckFormat::RUN_STARTED) !== 0);
+        return ($this->run_flags & CheckFormat::RUN_ATTEMPTED) !== 0;
     }
 
     function document_report(PaperInfo $prow, DocumentInfo $doc) {

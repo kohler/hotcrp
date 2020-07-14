@@ -971,7 +971,7 @@ class Conf {
         if (!isset($this->_formatspec_cache[$dtype])) {
             $o = $this->option_by_id($dtype);
             $spec = $o ? $o->format_spec() : null;
-            $this->_formatspec_cache[$dtype] = $spec ? : new FormatSpec;
+            $this->_formatspec_cache[$dtype] = $spec ?? new FormatSpec;
         }
         return $this->_formatspec_cache[$dtype];
     }

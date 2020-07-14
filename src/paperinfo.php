@@ -1698,6 +1698,23 @@ class PaperInfo {
         }
     }
 
+    /** @param int $dtype
+     * @return ?DocumentInfo */
+    function attachment($dtype, $name) {
+        $ov = $this->option($dtype);
+        return $ov ? $ov->attachment($name) : null;
+    }
+
+    /** @return ?int */
+    function npages() {
+        $doc = $this->document($this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL);
+        return $doc ? $doc->npages() : 0;
+    }
+
+    function invalidate_documents() {
+        $this->_document_array = [];
+    }
+
     function mark_inactive_documents() {
         // see also DocumentInfo::active_document_map
         $dids = [];
@@ -1715,23 +1732,6 @@ class PaperInfo {
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
     }
 
-    function mark_inactive_linked_documents() {
-        // see also DocumentInfo::active_document_map
-        $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType<=? and paperStorageId not in (select documentId from DocumentLink where paperId=?)", $this->paperId, DTYPE_COMMENT, $this->paperId);
-    }
-
-    /** @param int $dtype
-     * @return ?DocumentInfo */
-    function attachment($dtype, $name) {
-        $ov = $this->option($dtype);
-        return $ov ? $ov->attachment($name) : null;
-    }
-
-    /** @return int */
-    function npages() {
-        $doc = $this->document($this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL);
-        return $doc ? $doc->npages() : 0;
-    }
 
     /** @return array<int,array<int,int>> */
     private function doclink_array() {
@@ -1769,6 +1769,11 @@ class PaperInfo {
 
     function invalidate_linked_documents() {
         $this->_doclink_array = null;
+    }
+
+    function mark_inactive_linked_documents() {
+        // see also DocumentInfo::active_document_map
+        $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType<=? and paperStorageId not in (select documentId from DocumentLink where paperId=?)", $this->paperId, DTYPE_COMMENT, $this->paperId);
     }
 
 

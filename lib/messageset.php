@@ -9,11 +9,11 @@ class MessageSet {
     public $ignore_msgs = false;
     /** @var bool */
     public $ignore_duplicates = false;
-    /** @var array<string,true> */
+    /** @var ?array<string,true> */
     private $allow_error;
-    /** @var array<string,true> */
+    /** @var ?array<string,true> */
     private $werror;
-    /** @var array<string,string> */
+    /** @var ?array<string,string> */
     private $canonfield;
     /** @var array<string,int> */
     private $errf;
