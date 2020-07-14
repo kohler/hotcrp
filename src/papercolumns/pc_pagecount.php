@@ -3,8 +3,11 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PageCount_PaperColumn extends PaperColumn {
+    /** @var CheckFormat */
+    private $cf;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
+        $this->cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->user->can_view_some_pdf();
@@ -20,7 +23,7 @@ class PageCount_PaperColumn extends PaperColumn {
             $dtype = DTYPE_FINAL;
         }
         $doc = $row->document($dtype);
-        return $doc ? $doc->npages() : null;
+        return $doc ? $doc->npages($this->cf) : null;
     }
     function prepare_sort(PaperList $pl, ListSorter $sorter) {
         foreach ($pl->rowset() as $row) {
