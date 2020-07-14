@@ -108,7 +108,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
             && ($bj->args ?? null) == self::$banal_args
             && (!isset($bj->cfmsg)
-                || ($spec->timestamp && $spec->timestamp === ($bj->timestamp ?? null)));
+                || ($spec->timestamp && $spec->timestamp === ($bj->spects ?? null)));
         $flags = $bj_ok ? 0 : CheckFormat::RUN_DESIRED;
         if (!$bj_ok || $bj->at < Conf::$now - 86400) {
             $flags |= CheckFormat::RUN_ALLOWED;
@@ -490,7 +490,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
         // record check status in `Paper` table
         if ($prow->is_primary_document($doc)
-            && ($this->run_flags & CheckFormat::RUN_DESIRED) !== 0
+            && ($this->run_flags & CheckFormat::RUN_DESIRED) === 0
             && $this->check_ok()
             && $spec->timestamp) {
             $x = $this->has_error() ? -$spec->timestamp : $spec->timestamp;

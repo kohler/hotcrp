@@ -567,6 +567,78 @@ $s = $doc->content_text_signature();
 --Xassert::$disabled;
 xassert_eqq($s, "cannot be loaded");
 
+// checks of banal interactions, including result caching
+$spects = Conf::$now - 100;
+$Conf->save_setting("sub_banal", $spects, "letter;30;;6.5x9in");
+$Conf->invalidate_caches(["options" => true]);
+xassert_eq($Conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
+
+$ps = new PaperStatus($Conf, null, ["content_file_prefix" => SiteLoader::$root . "/"]);
+$ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content_file\":\"test/sample50pg.pdf\",\"type\":\"application/pdf\"}}"));
+xassert_paper_status($ps);
+xassert($Conf->check_document_inactive_invariants());
+
+$paper3 = $user_estrin->checked_paper_by_id(3);
+$doc = $paper3->document(DTYPE_SUBMISSION);
+$cf = new CheckFormat($Conf, CheckFormat::RUN_NEVER);
+xassert_eqq($doc->npages($cf), null);  // page count not yet calculated
+xassert_eqq($doc->npages(), 50);       // once it IS calculated,
+xassert_eqq($doc->npages($cf), 50);    // it is cached
+
+$paper3 = $user_estrin->checked_paper_by_id(3);
+$doc = $paper3->document(DTYPE_SUBMISSION);
+xassert_eqq($doc->npages($cf), 50);    // ...even on reload
+
+// check format checker; this uses result from previous npages()
+$cf_nec = new CheckFormat($Conf, CheckFormat::RUN_IF_NECESSARY);
+$cf_nec->check_document($paper3, $doc);
+xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit textblock");
+xassert(!$cf_nec->need_recheck());
+xassert(!$cf_nec->run_attempted());
+xassert_eq($paper3->pdfFormatStatus, -$spects);
+
+// change the format spec
+$Conf->save_setting("sub_banal", $spects + 1, "letter;30;;7.5x9in");
+$Conf->invalidate_caches(["options" => true]);
+
+// that actually requires rerunning banal because its cached result is truncated
+$doc = $paper3->document(DTYPE_SUBMISSION);
+$cf_nec->check_document($paper3, $doc);
+xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit");
+xassert(!$cf_nec->need_recheck());
+xassert($cf_nec->run_attempted());
+
+// but then the result is cached
+$paper3->invalidate_documents();
+$doc = $paper3->document(DTYPE_SUBMISSION);
+$cf_nec->check_document($paper3, $doc);
+xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit");
+xassert(!$cf_nec->need_recheck());
+xassert(!$cf_nec->run_attempted());
+
+// new, short document
+$ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content_file\":\"etc/sample.pdf\",\"type\":\"application/pdf\"}}"));
+xassert_paper_status($ps);
+
+// once the format is checked
+$paper3 = $user_estrin->checked_paper_by_id(3);
+$doc = $paper3->document(DTYPE_SUBMISSION);
+$cf_nec->check_document($paper3, $doc);
+xassert_eqq(join(" ", $cf_nec->problem_fields()), "");
+xassert(!$cf_nec->need_recheck());
+xassert($cf_nec->run_attempted());
+
+// we can reuse the banal JSON output on another spec
+$Conf->save_setting("sub_banal", $spects + 1, "letter;1;;7.5x9in");
+$Conf->invalidate_caches(["options" => true]);
+
+$paper3->invalidate_documents();
+$doc = $paper3->document(DTYPE_SUBMISSION);
+$cf_nec->check_document($paper3, $doc);
+xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit");
+xassert(!$cf_nec->need_recheck());
+xassert(!$cf_nec->run_attempted());
+
 $Conf->check_invariants();
 
 xassert_exit();
