@@ -109,34 +109,27 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return json_decode($this->banal_stdout);
     }
 
-    private function compress_bj($bj) {
-        $bj = clone $bj;
-        $bj->npages = count($bj->pages);
-        $bj->pages = array_slice($bj->pages, 0, 30);
-        $bj->cfmsg = $this->message_list();
-        return $bj;
-    }
-
-    function banal_json(DocumentInfo $doc, CheckFormat $cf = null) {
-        $cf = $cf ?? $this;
-        if ($cf->allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
+    private function banal_json(DocumentInfo $doc, FormatSpec $spec) {
+        if ($this->allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
             && CheckFormat::$runtime >= CheckFormat::TIMEOUT) {
             $allow_run = CheckFormat::RUN_NEVER;
         } else {
-            $allow_run = $cf->allow_run;
+            $allow_run = $this->allow_run;
         }
 
         $bj = null;
         if (($m = $doc->metadata()) && isset($m->banal)) {
             $bj = $m->banal;
-            $cf->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
+            $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
         }
         $bj_ok = $bj
             && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
-            && ($bj->args ?? null) == self::$banal_args;
+            && ($bj->args ?? null) == self::$banal_args
+            && (!isset($bj->cfmsg)
+                || ($spec->timestamp && $spec->timestamp === ($bj->timestamp ?? null)));
         $flags = $bj_ok ? 0 : CheckFormat::RUN_DESIRED;
         if (!$bj_ok || $bj->at < Conf::$now - 86400) {
-            $cf->possible_run = true;
+            $this->possible_run = true;
             $flags |= CheckFormat::RUN_ALLOWED;
             if ($allow_run === CheckFormat::RUN_ALWAYS
                 || (!$bj_ok && $allow_run !== CheckFormat::RUN_NEVER)) {
@@ -153,8 +146,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
             $limit = $doc->conf->opt("banalLimit") ?? 8;
             if ($limit > 0 && $n > $limit) {
-                $cf->msg_fail("Server too busy to check paper formats at the moment. This is a transient error; feel free to try again.");
-                $cf->run_flags |= $flags;
+                $this->msg_fail("Server too busy to check paper formats at the moment. This is a transient error; feel free to try again.");
+                $this->run_flags |= $flags;
                 return null;
             }
             if ($limit > 0) {
@@ -162,26 +155,26 @@ class CheckFormat extends MessageSet implements FormatChecker {
             }
 
             $flags |= CheckFormat::RUN_ATTEMPTED;
-            $bj = $cf->run_banal($path);
+            $bj = $this->run_banal($path);
             if ($bj && is_object($bj) && isset($bj->pages) && is_array($bj->pages)) {
-                $cf->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
-                $cf->metadata_updates["npages"] = $cf->npages;
-                $cf->metadata_updates["banal"] = $cf->npages > 30 ? $cf->compress_bj($bj) : $bj;
+                $this->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
+                $this->metadata_updates["npages"] = $this->npages;
+                $this->metadata_updates["banal"] = $bj;
                 $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
-                --$cf->need_run;
+                --$this->need_run;
             } else {
-                $cf->msg_fail("Error processing file. The file may not be in PDF format or may be corrupted.");
+                $this->msg_fail("Error processing file. The file may not be in PDF format or may be corrupted.");
             }
 
             if ($limit > 0) {
                 $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
             }
         } else {
-            $cf->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
+            $this->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
             $flags &= ~CheckFormat::RUN_ALLOWED;
         }
 
-        $cf->run_flags |= $flags;
+        $this->run_flags |= $flags;
         return $bj;
     }
 
@@ -211,7 +204,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
-    private function check_banal_json($bj, $spec) {
+    private function check_banal_json($bj, FormatSpec $spec) {
         if ($bj && isset($bj->cfmsg) && is_array($bj->cfmsg)) {
             foreach ($bj->cfmsg as $m) {
                 $this->msg_at($m[0], $m[1], $m[2]);
@@ -417,7 +410,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc) {
-        if (($bj = $cf->banal_json($doc))) {
+        if (($bj = $cf->banal_json($doc, $spec))) {
             $cf->check_banal_json($bj, $spec);
         } else {
             assert(($cf->run_flags & CheckFormat::RUN_DESIRED) !== 0);
@@ -480,6 +473,17 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $this->check_banal_json($bj, $spec);
     }
 
+    private function truncate_banal_json($bj, FormatSpec $spec) {
+        $bj = clone $bj;
+        $bj->npages = count($bj->pages);
+        $bj->pages = array_slice($bj->pages, 0, 40);
+        $bj->cfmsg = $this->message_list();
+        if ($spec->timestamp) {
+            $bj->spects = $spec->timestamp;
+        }
+        return $bj;
+    }
+
     function check_document(PaperInfo $prow, DocumentInfo $doc = null) {
         $this->clear();
         $this->run_flags |= CheckFormat::RUN_STARTED;
@@ -504,6 +508,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
         // save information about the run
         if (!empty($this->metadata_updates)) {
+            if (isset($this->metadata_updates["banal"]) && $this->npages > 40) {
+                $this->metadata_updates["banal"] = $this->truncate_banal_json($this->metadata_updates["banal"], $spec);
+            }
             $doc->update_metadata($this->metadata_updates);
         }
         // record check status in `Paper` table
