@@ -4,7 +4,9 @@
 
 class Preference_PaperColumn extends PaperColumn {
     private $editable;
+    /** @var Contact */
     private $contact;
+    /** @var Contact */
     private $viewer_contact;
     private $not_me;
     private $show_conflict;
@@ -17,7 +19,7 @@ class Preference_PaperColumn extends PaperColumn {
         if (isset($cj->user)) {
             $this->contact = $conf->pc_member_by_email($cj->user);
         }
-        if (get($cj, "edit")) {
+        if ($cj->edit ?? false) {
             $this->mark_editable();
         }
         $this->statistics = new ScoreInfo;
@@ -29,7 +31,7 @@ class Preference_PaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         $this->viewer_contact = $pl->user;
         $reviewer = $pl->reviewer_user();
-        $this->contact = $this->contact ? : $reviewer;
+        $this->contact = $this->contact ?? $reviewer;
         $this->not_me = $this->contact->contactId !== $pl->user->contactId;
         if (!$pl->user->isPC
             || ($this->not_me && !$pl->user->can_view_preference(null))) {
@@ -121,7 +123,7 @@ class Preference_PaperColumn extends PaperColumn {
             if ($pv_exists) {
                 $t = $this->prefix . unparse_preference_span($pv, true);
             }
-        } else if ($editable && (!$has_conflict || $pv_exists)) {
+        } else if ($editable) {
             $iname = "revpref" . $row->paperId;
             if ($this->not_me) {
                 $iname .= "u" . $this->contact->contactId;
