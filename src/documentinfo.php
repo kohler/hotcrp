@@ -1261,24 +1261,24 @@ class DocumentInfo implements JsonSerializable {
                     return ["", $suffix, false];
                 }
             }
-            $runflag = CheckFormat::RUN_NO;
+            $runflag = CheckFormat::RUN_NEVER;
             if ($flags & self::L_REQUIREFORMAT) {
                 $runflag = CheckFormat::RUN_IF_NECESSARY;
             }
             $cf = new CheckFormat($this->conf, $runflag);
             $cf->check_document($this->prow, $this);
             if ($cf->has_problem()) {
-                if ($cf->has_error() || $cf->failed) {
+                if ($cf->has_error()) {
                     $suffix .= "x";
                 }
-                if (($flags & self::L_SMALL) || $cf->failed) {
-                    return ["", $suffix, $cf->need_run];
+                if (($flags & self::L_SMALL) || !$cf->check_ok()) {
+                    return ["", $suffix, $cf->need_recheck()];
                 } else {
                     // XXX assumes CheckFormat::message_texts() is HTML safe
-                    return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->message_texts())) . '">ⓘ</span>', $suffix, $cf->need_run];
+                    return ['<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->message_texts())) . '">ⓘ</span>', $suffix, $cf->need_recheck()];
                 }
             } else {
-                $need_run = $cf->need_run;
+                $need_run = $cf->need_recheck();
             }
         }
         return ["", $suffix, $need_run];
@@ -1323,23 +1323,20 @@ class DocumentInfo implements JsonSerializable {
         return ArchiveInfo::archive_listing($this, $max_length);
     }
 
-    /** @param ?int $allow_run
+    /** @param ?CheckFormat $cf
      * @return ?int */
-    function npages($allow_run = null) {
+    function npages(CheckFormat $cf = null) {
         if ($this->mimetype && $this->mimetype !== "application/pdf") {
             return null;
         } else if (($m = $this->metadata()) && isset($m->npages)) {
             return $m->npages;
         } else if ($this->content_file()) {
-            $cf = new CheckFormat($this->conf, $allow_run);
-            $cf->clear();
-            $cf->banal_json($this);
-            if ($cf->metadata_updates) {
-                $this->update_metadata($cf->metadata_updates);
-                return $cf->metadata_updates["npages"];
-            }
+            $cf = $cf ?? new CheckFormat($this->conf);
+            $cf->check_document($this->prow, $this);
+            return $cf->npages;
+        } else {
+            return null;
         }
-        return null;
     }
 
     /** @param array{attachment?:bool,no_accel?:bool,cacheable?:bool} $opts

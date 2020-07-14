@@ -3,11 +3,20 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CheckFormat extends MessageSet implements FormatChecker {
+    const RUN_ALWAYS = 0;
+    /** @deprecated */
     const RUN_YES = 0;
     const RUN_IF_NECESSARY = 1;
     const RUN_IF_NECESSARY_TIMEOUT = 2;
+    const RUN_NEVER = 3;
+    /** @deprecated */
     const RUN_NO = 3;
     const TIMEOUT = 8.0;
+
+    const RUN_STARTED = 1;
+    const RUN_ALLOWED = 2;
+    const RUN_DESIRED = 4;
+    const RUN_ATTEMPTED = 8;
 
     /** @var bool */
     const DEBUG = false;
@@ -15,20 +24,30 @@ class CheckFormat extends MessageSet implements FormatChecker {
     /** @var Conf */
     private $conf;
     /** @var int */
-    public $pages = 0;
-    private $body_pages;
-    public $metadata_updates = [];
-    public $failed = false;
+    public $allow_run;
+    private $checkers = [];
     public $banal_stdout;
     public $banal_stderr;
     public $banal_status;
+    /** @var int
+     * @deprecated */
+    public $pages = 0;
+    /** @var ?int */
+    public $npages;
+    /** @var ?int */
+    private $body_pages;
     /** @var int */
-    public $allow_run = self::RUN_YES;
-    /** @var int */
+    public $run_flags = 0;
+    /** @deprecated */
+    public $failed = false;
+    /** @var int
+     * @deprecated */
     public $need_run = 0;
-    /** @var bool */
+    /** @var bool
+     * @deprecated */
     public $possible_run = false;
-    private $checkers = [];
+    public $metadata_updates = [];
+
     static private $banal_args;
     /** @var int */
     static public $runcount = 0;
@@ -38,7 +57,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     /** @param ?int $allow_run */
     function __construct(Conf $conf, $allow_run = null) {
         parent::__construct();
-        $this->allow_run = $allow_run ?? self::RUN_YES;
+        $this->allow_run = $allow_run ?? self::RUN_ALWAYS;
         $this->conf = $conf;
         if (self::$banal_args === null) {
             $z = $this->conf->opt("banalZoom");
@@ -102,7 +121,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $cf = $cf ?? $this;
         if ($cf->allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
             && CheckFormat::$runtime >= CheckFormat::TIMEOUT) {
-            $allow_run = CheckFormat::RUN_NO;
+            $allow_run = CheckFormat::RUN_NEVER;
         } else {
             $allow_run = $cf->allow_run;
         }
@@ -110,22 +129,22 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $bj = null;
         if (($m = $doc->metadata()) && isset($m->banal)) {
             $bj = $m->banal;
+            $cf->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
         }
         $bj_ok = $bj
             && $bj->at >= @filemtime(SiteLoader::find("src/banal"))
             && ($bj->args ?? null) == self::$banal_args;
-        if (!$bj_ok) {
-            ++$cf->need_run;
-        }
+        $flags = $bj_ok ? 0 : CheckFormat::RUN_DESIRED;
         if (!$bj_ok || $bj->at < Conf::$now - 86400) {
             $cf->possible_run = true;
-            if ($allow_run === CheckFormat::RUN_YES
-                || (!$bj_ok && $allow_run !== CheckFormat::RUN_NO)) {
+            $flags |= CheckFormat::RUN_ALLOWED;
+            if ($allow_run === CheckFormat::RUN_ALWAYS
+                || (!$bj_ok && $allow_run !== CheckFormat::RUN_NEVER)) {
                 $bj = null;
             }
         }
 
-        if ($bj || $allow_run === CheckFormat::RUN_NO) {
+        if ($bj || $allow_run === CheckFormat::RUN_NEVER) {
             /* do nothing */;
         } else if (($path = $doc->content_file())) {
             // constrain the number of concurrent banal executions to banalLimit
@@ -135,20 +154,20 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $limit = $doc->conf->opt("banalLimit") ?? 8;
             if ($limit > 0 && $n > $limit) {
                 $cf->msg_fail("Server too busy to check paper formats at the moment. This is a transient error; feel free to try again.");
+                $cf->run_flags |= $flags;
                 return null;
             }
             if ($limit > 0) {
                 $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
             }
 
+            $flags |= CheckFormat::RUN_ATTEMPTED;
             $bj = $cf->run_banal($path);
             if ($bj && is_object($bj) && isset($bj->pages) && is_array($bj->pages)) {
-                $npages = count($bj->pages);
-                if (isset($bj->npages) && is_int($bj->npages)) {
-                    $npages = $bj->npages;
-                }
-                $cf->metadata_updates["npages"] = $npages;
-                $cf->metadata_updates["banal"] = $npages > 30 ? $cf->compress_bj($bj) : $bj;
+                $cf->npages = is_int($bj->npages ?? null) ? $bj->npages : count($bj->pages);
+                $cf->metadata_updates["npages"] = $cf->npages;
+                $cf->metadata_updates["banal"] = $cf->npages > 30 ? $cf->compress_bj($bj) : $bj;
+                $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
                 --$cf->need_run;
             } else {
                 $cf->msg_fail("Error processing file. The file may not be in PDF format or may be corrupted.");
@@ -159,13 +178,15 @@ class CheckFormat extends MessageSet implements FormatChecker {
             }
         } else {
             $cf->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
+            $flags &= ~CheckFormat::RUN_ALLOWED;
         }
 
+        $cf->run_flags |= $flags;
         return $bj;
     }
 
     protected function body_error_status($error_pages) {
-        if ($this->body_pages >= 0.5 * $this->pages
+        if ($this->body_pages >= 0.5 * $this->npages
             && $error_pages >= 0.16 * $this->body_pages) {
             return self::ERROR;
         } else {
@@ -204,7 +225,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
             || !is_array($bj->pages)
             || !is_array($bj->papersize)
             || count($bj->papersize) != 2) {
-            return $this->msg_fail("Analysis failure: no pages or paper size.");
+            $this->msg_fail("Analysis failure: no pages or paper size.");
+            return;
         }
 
         // paper size
@@ -225,11 +247,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
 
         // number of pages
-        $pages = $this->pages = count($bj->pages);
-        if (isset($bj->npages) && is_int($bj->npages)) {
-            $pages = $this->pages = $bj->npages;
-        }
         if ($spec->pagelimit) {
+            $pages = $this->npages;
+            assert(is_int($pages));
             if ($pages < $spec->pagelimit[0]) {
                 $this->msg_at("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $pages . ".", self::WARNING);
             }
@@ -251,7 +271,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
         // body pages exist
         if (($spec->columns || $spec->bodyfontsize || $spec->bodylineheight)
-            && $this->body_pages < 0.5 * $this->pages) {
+            && $this->body_pages < 0.5 * $this->npages) {
             if ($this->body_pages == 0) {
                 $this->msg_at(false, "Warning: No pages seemed to contain body text; results may be off.", self::WARNING);
             } else {
@@ -262,7 +282,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                     || (isset($pg->c) && $pg->c === 0)
                     || (isset($pg->d) && $pg->d === 0);
             }));
-            if ($nd0_pages == $this->pages) {
+            if ($nd0_pages == $this->npages) {
                 $this->msg_at("notext", "This document appears to contain no text. Perhaps the PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", self::ERROR);
             }
         }
@@ -396,43 +416,47 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
-    function clear() {
-        parent::clear();
-        $this->metadata_updates = [];
-        $this->need_run = 0;
-        $this->possible_run = false;
-        $this->failed = false;
-    }
-
-    function check_file($filename, $spec) {
-        if (is_string($spec)) {
-            $spec = new FormatSpec($spec);
-        }
-        $this->clear();
-        $bj = $this->run_banal($filename);
-        $this->check_banal_json($bj, $spec);
-    }
-
     function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc) {
         if (($bj = $cf->banal_json($doc))) {
             $cf->check_banal_json($bj, $spec);
         } else {
+            assert(($cf->run_flags & CheckFormat::RUN_DESIRED) !== 0);
             $cf->msg_fail(null);
         }
     }
 
-    /** @deprecated */
-    function fetch_document(PaperInfo $prow, $dtype, $docid = 0) {
-        $doc = $prow->document($dtype, $docid, true);
-        if (!$doc || $doc->paperStorageId <= 1) {
-            $this->msg_fail("No such document.");
-            return null;
-        } else if ($doc->paperId != $prow->paperId || $doc->documentType != $dtype) {
-            $this->msg_fail("The document has changed.");
-            return null;
-        } else {
-            return $doc;
+    function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc) {
+        $t = "";
+        if ($this->has_problem()) {
+            $msgs = [];
+            foreach ($this->problem_list() as $mx) {
+                $msgs[] = $mx[2] > MessageSet::WARNING ? "<strong>$mx[1]</strong>" : $mx[1];
+            }
+            if ($this->has_error()) {
+                $status = "error";
+                $start = "This document violates the submission format requirements. The most serious errors are in bold.";
+            } else {
+                $status = "warning";
+                $start = "This document may violate the submission format requirements.";
+            }
+            $t .= Ht::msg("<p>$start</p>\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\n<p>Submissions that violate the requirements will not be considered. <strong>However,</strong> the automated format checker can misreport errors (for instance, it can miscalculate margins and text sizes for certain figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.</p>", $status);
+        } else if (!$this->has_problem()) {
+            $t .= Ht::msg("Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", "confirm");
         }
+        return $t;
+    }
+
+
+    // CHECKING ORCHESTRATION
+
+    function clear() {
+        parent::clear();
+        $this->npages = null;
+        $this->metadata_updates = [];
+        $this->run_flags = 0;
+        $this->need_run = 0;
+        $this->possible_run = false;
+        $this->failed = false;
     }
 
     /** @param string $chk */
@@ -447,8 +471,18 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
+    function check_file($filename, $spec) {
+        if (is_string($spec)) {
+            $spec = new FormatSpec($spec);
+        }
+        $this->clear();
+        $bj = $this->run_banal($filename);
+        $this->check_banal_json($bj, $spec);
+    }
+
     function check_document(PaperInfo $prow, DocumentInfo $doc = null) {
         $this->clear();
+        $this->run_flags |= CheckFormat::RUN_STARTED;
         if (!$doc) {
             $this->msg_fail("No such document.");
             return;
@@ -474,8 +508,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
         // record check status in `Paper` table
         if ($prow->is_primary_document($doc)
-            && !$this->failed
-            && !$this->need_run
+            && ($this->run_flags & CheckFormat::RUN_DESIRED) !== 0
+            && $this->check_ok()
             && $spec->timestamp) {
             $x = $this->has_error() ? -$spec->timestamp : $spec->timestamp;
             if ($x != $prow->pdfFormatStatus) {
@@ -485,33 +519,24 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
-    function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc) {
-        $t = "";
-        if ($this->failed) {
-            $t .= Ht::msg($this->message_texts_at("error"), 2);
-        }
-        $msgs = array_filter($this->message_list(), function ($mx) { return $mx[0] != "error" && $mx[2] > MessageSet::INFO; });
-        if ($msgs) {
-            $msgs = array_map(function ($m) {
-                return $m[2] > MessageSet::WARNING ? "<strong>$m[1]</strong>" : $m[1];
-            }, $msgs);
-            if ($this->has_error()) {
-                $status = "error";
-                $start = "This document violates the submission format requirements. The most serious errors are in bold.";
-            } else {
-                $status = "warning";
-                $start = "This document may violate the submission format requirements.";
-            }
-            $t .= Ht::msg("<p>$start</p>\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\n<p>Submissions that violate the requirements will not be considered. <strong>However,</strong> the automated format checker can misreport errors (for instance, it can miscalculate margins and text sizes for certain figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.</p>", $status);
-        } else if ($this->failed) {
-            if ($t === "") {
-                $t .= Ht::msg("Error processing file. The file may not be in PDF format or may be corrupted.", 2);
-            }
-        } else if (!$this->has_problem()) {
-            $t .= Ht::msg("Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", "confirm");
-        }
-        return $t;
+    /** @return bool */
+    function check_ok() {
+        assert(($this->run_flags & CheckFormat::RUN_STARTED) !== 0);
+        return !$this->has_error_at("error");
     }
+
+    /** @return bool */
+    function allow_recheck() {
+        assert(($this->run_flags & CheckFormat::RUN_STARTED) !== 0);
+        return ($this->run_flags & CheckFormat::RUN_ALLOWED) !== 0;
+    }
+
+    /** @return bool */
+    function need_recheck() {
+        assert(($this->run_flags & CheckFormat::RUN_STARTED) !== 0);
+        return ($this->run_flags & CheckFormat::RUN_DESIRED) !== 0;
+    }
+
     function document_report(PaperInfo $prow, DocumentInfo $doc) {
         $spec = $prow->conf->format_spec($doc->documentType);
         foreach ($spec->checkers as $chk)

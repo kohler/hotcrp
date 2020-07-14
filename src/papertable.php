@@ -738,8 +738,9 @@ class PaperTable {
         $has_cf = false;
         if ($doc) {
             if ($doc->mimetype === "application/pdf") {
-                if (!$this->cf)
-                    $this->cf = new CheckFormat($this->conf, CheckFormat::RUN_NO);
+                if (!$this->cf) {
+                    $this->cf = new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
+                }
                 $spec = $this->conf->format_spec($dtype);
                 $has_cf = $spec && !$spec->is_empty();
                 if ($has_cf) {
@@ -757,10 +758,9 @@ class PaperTable {
             if ($dtype > 0) {
                 echo '<a href="" class="ui js-remove-document document-action">Delete</a>';
             }
-            if ($has_cf
-                && ($this->cf->failed || $this->cf->need_run || $this->cf->possible_run)) {
+            if ($has_cf && $this->cf->allow_recheck()) {
                 echo '<a href="" class="ui js-check-format document-action">',
-                    ($this->cf->failed || $this->cf->need_run ? "Check format" : "Recheck format"),
+                    ($this->cf->need_recheck() ? "Check format" : "Recheck format"),
                     '</a>';
             } else if ($has_cf && !$this->cf->has_problem()) {
                 echo '<span class="document-action js-check-format dim">Format OK</span>';
@@ -768,7 +768,7 @@ class PaperTable {
             echo '</div>';
             if ($has_cf) {
                 echo '<div class="document-format">';
-                if (!$this->cf->failed && $this->cf->has_problem()) {
+                if ($this->cf->has_problem() && $this->cf->check_ok()) {
                     echo $this->cf->document_report($this->prow, $doc);
                 }
                 echo '</div>';

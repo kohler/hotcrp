@@ -16,22 +16,16 @@ class GetCheckFormat_ListAction extends ListAction {
         foreach ($papers as $prow) {
             $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
             $doc = $prow->document($dtype, 0, true);
-            if ($doc && $doc->mimetype == "application/pdf") {
+            if ($doc && $doc->mimetype === "application/pdf") {
                 $cf->check_document($prow, $doc);
-                if (!$cf->failed) {
-                    $pages = $cf->pages;
-                    $errf = $cf->problem_fields();
-                    if (empty($errf)) {
-                        $format = "ok";
-                        $messages = "";
-                    } else {
-                        $format = join(" ", $errf);
-                        $messages = join("\n", $cf->message_texts());
-                    }
+                $pages = $cf->npages ?? "?";
+                $errf = $cf->problem_fields();
+                if (empty($errf)) {
+                    $format = "ok";
+                    $messages = "";
                 } else {
-                    $pages = "?";
-                    $format = "error";
-                    $messages = "Problem running format checker";
+                    $format = join(" ", $errf);
+                    $messages = join("\n", $cf->message_texts());
                 }
             } else {
                 $pages = "";

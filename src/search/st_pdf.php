@@ -12,7 +12,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
     private $format_errf;
     /** @var ?CheckFormat */
     private $cf;
-    private $cf_need_run = 0;
+    private $cf_warn = false;
 
     function __construct(Conf $conf, $dtype, $present,
                          $format_problem = null, $format_errf = null) {
@@ -110,15 +110,18 @@ class PaperPDF_SearchTerm extends SearchTerm {
         }
         if ($this->format_problem !== null) {
             $doc = $row->document($dtype, 0, true);
+            if (!$doc || $doc->mimetype !== "application/pdf") {
+                return false;
+            }
             $this->cf->check_document($row, $doc);
-            if ($this->cf_need_run !== $this->cf->need_run) {
-                if ($this->cf_need_run === 0) {
+            if ($this->cf->need_recheck()) {
+                if (!$this->cf_warn) {
                     $srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
+                    $this->cf_warn = true;
                 }
-                $this->cf_need_run = $this->cf->need_run;
                 return true;
             }
-            $errf = $doc && !$this->cf->failed ? $this->cf->problem_fields() : ["error"];
+            $errf = $this->cf->problem_fields();
             if (empty($errf) === $this->format_problem
                 || ($this->format_errf && !in_array($this->format_errf, $errf))) {
                 return false;
@@ -131,11 +134,14 @@ class PaperPDF_SearchTerm extends SearchTerm {
 class Pages_SearchTerm extends SearchTerm {
     /** @var CountMatcher */
     private $cm;
-    private $cf_timeout = false;
+    /** @var CheckFormat */
+    private $cf;
+    private $cf_warn = false;
 
     function __construct(CountMatcher $cm, Conf $conf) {
         parent::__construct("pages");
         $this->cm = $cm;
+        $this->cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $cm = new CountMatcher($word);
@@ -158,16 +164,16 @@ class Pages_SearchTerm extends SearchTerm {
             $dtype = DTYPE_FINAL;
         }
         $doc = $row->document($dtype);
-        if (!$doc) {
+        if (!$doc || $doc->mimetype !== "application/pdf") {
             return false;
         }
-        $np = $doc->npages(CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
+        $np = $doc->npages($this->cf);
         if ($np !== null) {
             return $this->cm->test($np);
-        } else if (CheckFormat::$runtime >= CheckFormat::TIMEOUT) {
-            if (!$this->cf_timeout) {
+        } else if ($this->cf->need_recheck()) {
+            if (!$this->cf_warn) {
                 $srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
-                $this->cf_timeout = true;
+                $this->cf_warn = true;
             }
             return true;
         } else {

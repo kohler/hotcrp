@@ -32,7 +32,7 @@ class BanalSettings {
         echo "</div></div>\n";
     }
     static private function cf_status(CheckFormat $cf) {
-        if ($cf->failed) {
+        if (!$cf->check_ok()) {
             return "failed";
         } else if ($cf->has_error()) {
             return "error";

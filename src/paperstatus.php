@@ -187,7 +187,7 @@ class PaperStatus extends MessageSet {
             && ($spec = $this->conf->format_spec($doc->documentType))
             && !$spec->is_empty()) {
             if (!$this->_cf) {
-                $this->_cf = new CheckFormat($this->conf, CheckFormat::RUN_NO);
+                $this->_cf = new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
             }
             $this->_cf->check_document($this->prow, $doc);
             if ($this->_cf->has_problem()) {

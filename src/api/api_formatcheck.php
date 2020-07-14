@@ -12,15 +12,15 @@ class FormatCheck_API {
         if (($whynot = $docreq->perm_view_document($user))) {
             json_exit(isset($whynot["permission"]) ? 403 : 404, whyNotText($whynot));
         }
-        $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_YES;
+        $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;
         $cf = new CheckFormat($user->conf, $runflag);
         $doc = $docreq->prow->document($docreq->dtype, $docreq->docid, true);
         $cf->check_document($docreq->prow, $doc);
         return [
-            "ok" => !$cf->failed,
-            "npages" => $cf->failed ? null : $cf->pages,
+            "ok" => $cf->check_ok(),
+            "npages" => $cf->npages,
             "result" => $cf->document_report($docreq->prow, $doc),
-            "problem_fields" => $cf->failed ? ["error"] : $cf->problem_fields(),
+            "problem_fields" => $cf->problem_fields(),
             "has_error" => $cf->has_error()
         ];
     }
