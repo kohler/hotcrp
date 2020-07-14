@@ -688,16 +688,26 @@ sub calc_doc_page_types ($) {
 sub calc_doc_columns ($) {
     my ($doc) = @_;
 
-    my (%cols);
+    my (%cols, %first_page);
     foreach my $i (1..$doc->{npages}) {
         my ($page) = $doc->{pages}->{$i};
-        next if !exists $page->{ncols} || !$page->{ncols};
-        $cols{$page->{ncols}}++;
+        my ($ncols) = $page->{ncols};
+        if (defined ($ncols) && $ncols > 0) {
+            $cols{$ncols}++;
+            $first_page{$ncols} = $i if !exists $first_page{$ncols};
+        }
     }
 
     # number of columns on greatest number of pages
-    $doc->{ncols} = modevalkey (\%cols);
-    $doc->{ncols} = 0 if !defined($doc->{ncols});
+    my ($ncols) = 0;
+    my ($mode) = 0;
+    while (my ($k, $v) = each %cols) {
+        if ($v > $mode || ($v == $mode && $first_page{$k} < $first_page{$ncols})) {
+            $ncols = $k;
+            $mode = $v;
+        }
+    }
+    $doc->{ncols} = $ncols;
 }
 
 sub p2h_font_bug ($) {
