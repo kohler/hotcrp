@@ -568,7 +568,7 @@ $s = $doc->content_text_signature();
 xassert_eqq($s, "cannot be loaded");
 
 // checks of banal interactions, including result caching
-$spects = Conf::$now - 100;
+$spects = max(Conf::$now - 100, @filemtime(SiteLoader::find("src/banal")));
 $Conf->save_setting("sub_banal", $spects, "letter;30;;6.5x9in");
 $Conf->invalidate_caches(["options" => true]);
 xassert_eq($Conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
