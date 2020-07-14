@@ -134,7 +134,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
             $limit = $doc->conf->opt("banalLimit") ?? 8;
             if ($limit > 0 && $n > $limit) {
-                return $cf->msg_fail("Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
+                $cf->msg_fail("Server too busy to check paper formats at the moment. This is a transient error; feel free to try again.");
+                return null;
             }
             if ($limit > 0) {
                 $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
@@ -420,6 +421,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
+    /** @deprecated */
     function fetch_document(PaperInfo $prow, $dtype, $docid = 0) {
         $doc = $prow->document($dtype, $docid, true);
         if (!$doc || $doc->paperStorageId <= 1) {
@@ -445,15 +447,14 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
-    function check_document(PaperInfo $prow, DocumentInfo $doc) {
+    function check_document(PaperInfo $prow, DocumentInfo $doc = null) {
         $this->clear();
         if (!$doc) {
-            if (!$this->has_problem_at("error")) {
-                $this->msg_fail("No such document.");
-            }
+            $this->msg_fail("No such document.");
             return;
         } else if ($doc->mimetype !== "application/pdf") {
-            return $this->msg_fail("The format checker only works for PDF files.");
+            $this->msg_fail("The format checker only works for PDF files.");
+            return;
         }
 
         $done_me = false;
@@ -506,8 +507,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
             if ($t === "") {
                 $t .= Ht::msg("Error processing file. The file may not be in PDF format or may be corrupted.", 2);
             }
-            error_log($this->banal_stderr);
-            error_log($this->banal_stdout);
         } else if (!$this->has_problem()) {
             $t .= Ht::msg("Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", "confirm");
         }

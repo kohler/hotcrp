@@ -14,12 +14,11 @@ class GetCheckFormat_ListAction extends ListAction {
         $csvg->flush();
         $cf = new CheckFormat($user->conf, CheckFormat::RUN_IF_NECESSARY);
         foreach ($papers as $prow) {
-            if ($prow->mimetype == "application/pdf") {
-                $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
-                if (($doc = $cf->fetch_document($prow, $dtype))) {
-                    $cf->check_document($prow, $doc);
-                }
-                if ($doc && !$cf->failed) {
+            $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
+            $doc = $prow->document($dtype, 0, true);
+            if ($doc && $doc->mimetype == "application/pdf") {
+                $cf->check_document($prow, $doc);
+                if (!$cf->failed) {
                     $pages = $cf->pages;
                     $errf = $cf->problem_fields();
                     if (empty($errf)) {

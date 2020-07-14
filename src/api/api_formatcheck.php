@@ -14,7 +14,7 @@ class FormatCheck_API {
         }
         $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_YES;
         $cf = new CheckFormat($user->conf, $runflag);
-        $doc = $cf->fetch_document($docreq->prow, $docreq->dtype, $docreq->docid);
+        $doc = $docreq->prow->document($docreq->dtype, $docreq->docid, true);
         $cf->check_document($docreq->prow, $doc);
         return [
             "ok" => !$cf->failed,

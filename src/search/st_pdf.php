@@ -109,9 +109,8 @@ class PaperPDF_SearchTerm extends SearchTerm {
             return false;
         }
         if ($this->format_problem !== null) {
-            if (($doc = $this->cf->fetch_document($row, $dtype))) {
-                $this->cf->check_document($row, $doc);
-            }
+            $doc = $row->document($dtype, 0, true);
+            $this->cf->check_document($row, $doc);
             if ($this->cf_need_run !== $this->cf->need_run) {
                 if ($this->cf_need_run === 0) {
                     $srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
