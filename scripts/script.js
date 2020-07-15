@@ -7645,7 +7645,7 @@ handle_ui.on("js-check-format", function () {
 $(function () {
 var failures = 0;
 function background_format_check() {
-    var needed = $(".need-format-check"), m;
+    var needed = $(".need-format-check"), pid, m;
     if (!needed.length)
         return;
     needed = needed[Math.floor(Math.random() * needed.length)];
@@ -7661,6 +7661,16 @@ function background_format_check() {
                     && img.tagName === "IMG"
                     && (m = img.src.match(/^(.*\/pdff?)x?((?:24)?\.png(?:\?.*)?)$/)))
                     img.src = m[1] + (data.has_error ? "x" : "") + m[2];
+                if ((data && data.ok) || ++failures <= 2)
+                    setTimeout(background_format_check, 2000 + Math.random() * 1000);
+            }
+        });
+    } else if (hasClass(needed, "is-npages")
+               && (pid = needed.closest("[data-pid]"))) {
+        $.ajax(hoturl("api/formatcheck", {p: pid.getAttribute("data-pid"), dtype: needed.getAttribute("data-dtype") || "0", soft: 1}), {
+            success: function (data) {
+                if (data && data.ok)
+                    needed.parentNode.replaceChild(document.createTextNode(data.npages), needed);
                 if ((data && data.ok) || ++failures <= 2)
                     setTimeout(background_format_check, 2000 + Math.random() * 1000);
             }

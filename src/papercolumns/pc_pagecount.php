@@ -12,18 +12,24 @@ class PageCount_PaperColumn extends PaperColumn {
     function prepare(PaperList $pl, $visible) {
         return $pl->user->can_view_some_pdf();
     }
-    function page_count(Contact $user, PaperInfo $row) {
-        if (!$user->can_view_pdf($row)) {
-            return null;
-        }
-        $dtype = DTYPE_SUBMISSION;
+    /** @return 0|-1 */
+    private function dtype(Contact $user, PaperInfo $row) {
         if ($row->finalPaperStorageId > 0
             && $row->outcome > 0
             && $user->can_view_decision($row)) {
-            $dtype = DTYPE_FINAL;
+            return DTYPE_FINAL;
+        } else {
+            return DTYPE_SUBMISSION;
         }
-        $doc = $row->document($dtype);
-        return $doc ? $doc->npages($this->cf) : null;
+    }
+    function page_count(Contact $user, PaperInfo $row) {
+        if ($user->can_view_pdf($row)
+            && ($doc = $row->document($this->dtype($user, $row)))) {
+            return $doc->npages($this->cf);
+        } else {
+            $this->cf->clear();
+            return null;
+        }
     }
     function prepare_sort(PaperList $pl, ListSorter $sorter) {
         foreach ($pl->rowset() as $row) {
@@ -43,7 +49,15 @@ class PageCount_PaperColumn extends PaperColumn {
         return !$pl->user->can_view_pdf($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return (string) $this->page_count($pl->user, $row);
+        if (($pn = $this->page_count($pl->user, $row)) !== null) {
+            return (string) $pn;
+        } else if ($this->cf->need_recheck()) {
+            $dt = $this->dtype($pl->user, $row);
+            return '<span class="need-format-check is-npages"'
+                . ($dt ? ' data-dtype="' . $dt . '"' : '') . '></span>';
+        } else {
+            return "";
+        }
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $this->page_count($pl->user, $row);
