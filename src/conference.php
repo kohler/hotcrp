@@ -181,6 +181,7 @@ class Conf {
     private $_date_format_initialized = false;
     /** @var ?DateTimeZone */
     private $_dtz;
+    /** @var array<int,FormatSpec> */
     private $_formatspec_cache = [];
     /** @var ?non-empty-string */
     private $_docstore;
@@ -970,8 +971,11 @@ class Conf {
     function format_spec($dtype) {
         if (!isset($this->_formatspec_cache[$dtype])) {
             $o = $this->option_by_id($dtype);
-            $spec = $o ? $o->format_spec() : null;
-            $this->_formatspec_cache[$dtype] = $spec ?? new FormatSpec;
+            $spec = ($o ? $o->format_spec() : null) ?? new FormatSpec;
+            if (!$spec->timestamp && $this->opt("banalAlways")) {
+                $spec->timestamp = 1;
+            }
+            $this->_formatspec_cache[$dtype] = $spec;
         }
         return $this->_formatspec_cache[$dtype];
     }

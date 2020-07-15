@@ -20,6 +20,7 @@ class FormatSpec {
     public $quietpages;     // {ERRORTYPE => IGNOREARRAY}
     /** @var list<string> */
     public $checkers = [];
+    /** @var int */
     public $timestamp = 0;
     private $_is_banal_empty = true;
 

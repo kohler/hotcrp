@@ -890,7 +890,7 @@ class PaperTable {
         $aulist = $this->prow->author_list();
         if ($this->useRequest) {
             $n = $nonempty_n = 0;
-            while (1) {
+            while (true) {
                 $auname = $this->qreq["auname" . ($n + 1)];
                 $auemail = $this->qreq["auemail" . ($n + 1)];
                 $auaff = $this->qreq["auaff" . ($n + 1)];

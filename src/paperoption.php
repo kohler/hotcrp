@@ -1218,8 +1218,9 @@ class PaperOption implements Abbreviator {
                 || strpos($this->list_class, "pl-no-suggest") === false);
     }
 
+    /** @return ?FormatSpec */
     function format_spec() {
-        return false;
+        return null;
     }
 
     const EXAMPLE_HELP = 0;
