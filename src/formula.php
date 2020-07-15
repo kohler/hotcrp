@@ -784,7 +784,7 @@ class Aggregate_Fexpr extends Fexpr {
         } else if ($this->op === "count") {
             return ["0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)"];
         } else if ($this->op === "sum") {
-            return ["null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : ~l~) : ~r~)"];
+            return ["null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : +~l~) : ~r~)"];
         } else if ($this->op === "avg") {
             return ["[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)",
                     "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
@@ -797,7 +797,7 @@ class Aggregate_Fexpr extends Fexpr {
                     $q = "1 - $q";
                 }
             }
-            return ["[]", "if (~l~ !== null)\n  array_push(~r~, ~l~);",
+            return ["[]", "if (~l~ !== null)\n  array_push(~r~, +~l~);",
                     "Aggregate_Fexpr::quantile(~x~, $q)"];
         } else if ($this->op === "wavg") {
             return ["[0, 0]", "(~l~ !== null && ~l1~ !== null ? [~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~] : ~r~)",
