@@ -2304,8 +2304,10 @@ class Formula implements Abbreviator, JsonSerializable {
 
 
     /** @return bool */
-    function is_sum() {
-        return $this->check() && $this->_parse->fexpr->op === "sum";
+    function is_sumlike() {
+        return $this->check()
+            && ($this->_parse->fexpr->op === "sum"
+                || $this->_parse->fexpr->op === "count");
     }
 
     /** @return bool */

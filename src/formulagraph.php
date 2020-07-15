@@ -495,7 +495,9 @@ class FormulaGraph extends MessageSet {
         $fxf = $this->fx->compile_json_function();
         $fytrack = $this->fy->compile_extractor_function();
         $fycombine = $this->fy->compile_combiner_function();
-        $reviewf = Formula::compile_indexes_function($this->user, $this->fx->index_type() | $this->fy->index_type() | ($this->fxorder ? $this->fxorder->index_type() : 0));
+        $index_type = $this->fx->index_type() | $this->fy->index_type()
+            | ($this->fxorder ? $this->fxorder->index_type() : 0);
+        $reviewf = Formula::compile_indexes_function($this->user, $index_type);
         $orderf = $ordercf = $order_data = null;
         if ($this->fxorder) {
             $order_data = [];
@@ -525,7 +527,9 @@ class FormulaGraph extends MessageSet {
                 }
                 $y = $fytrack($prow, $rcid, $this->user);
                 $id = $prow->paperId;
-                if ($rrow && $rrow->reviewOrdinal && $this->fx->indexed()) {
+                if ($rrow
+                    && $rrow->reviewOrdinal
+                    && !($index_type & Fexpr::IDX_PC)) {
                     $id .= unparseReviewOrdinal($rrow->reviewOrdinal);
                 }
                 foreach ($queries as $q) {
@@ -543,7 +547,7 @@ class FormulaGraph extends MessageSet {
             }
         }
 
-        $is_sum = $this->fy->is_sum();
+        $is_sum = $this->fy->is_sumlike();
         usort($data, "FormulaGraph::barchart_compare");
         $newdata = [];
         '@phan-var list<array{int|float|bool,int|float|bool,list<int|string>,?string,?string}> $newdata';
@@ -551,22 +555,20 @@ class FormulaGraph extends MessageSet {
         for ($i = 0; $i !== $ndata; ) {
             $d0 = $data[$i];
             $x = $d0[0];
-            $ys = [$d0[1]];
-            $ids = [$d0[2]];
+            $ys = $ids = [];
             $s = $d0[3];
             $q = $d0[4];
-            ++$i;
-            while ($i !== $ndata
-                   && $data[$i][0] == $x
-                   && $data[$i][4] == $q
-                   && (!$is_sum || $data[$i][3] == $s)) {
-                $ys[] = $data[$i][1];
-                $ids[] = $data[$i][2];
-                if ($s && $data[$i][3] != $s) {
+            do {
+                $ys[] = $d0[1];
+                if (!$is_sum || $d0[1][0]) {
+                    $ids[] = $d0[2];
+                }
+                if ($s && $d0[3] != $s) {
                     $s = "";
                 }
                 ++$i;
-            }
+                $d0 = $data[$i] ?? null;
+            } while ($d0 && $d0[0] == $x && (!$is_sum || $d0[3] == $s) && $d0[4] == $q);
             $y = $fycombine($ys);
             if ($reviewf && !$this->fx->indexed()) {
                 $ids = array_values(array_unique($ids));
