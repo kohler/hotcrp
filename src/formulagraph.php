@@ -567,8 +567,10 @@ class FormulaGraph extends MessageSet {
                     $s = "";
                 }
                 ++$i;
-                $d0 = $data[$i] ?? null;
-            } while ($d0 && $d0[0] == $x && (!$is_sum || $d0[3] == $s) && $d0[4] == $q);
+            } while ($i !== $ndata
+                     && ($d0 = $data[$i])[0] == $x
+                     && (!$is_sum || $d0[3] == $s)
+                     && $d0[4] == $q);
             $y = $fycombine($ys);
             if ($reviewf && !$this->fx->indexed()) {
                 $ids = array_values(array_unique($ids));
