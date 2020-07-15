@@ -141,10 +141,15 @@ class FormulaGraph extends MessageSet {
 
         if ($this->fy->error_html()) {
             $this->error_at("fy", "Y axis formula error: " . $this->fy->error_html());
-        } else if (($this->type & self::BARCHART) && !$this->fy->support_combiner()) {
-            $this->error_at("fy", "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.");
-            $this->fy = new Formula("sum(0)", Formula::ALLOW_INDEXED);
-            $this->fy->check($this->user);
+        } else if ($this->type & self::BARCHART) {
+            if ($this->fy->result_format() === Fexpr::FBOOL) {
+                $this->fy = new Formula("sum(" . $fy . ")", Formula::ALLOW_INDEXED);
+                $this->fy->check($this->user);
+            } else if (!$this->fy->support_combiner()) {
+                $this->error_at("fy", "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.");
+                $this->fy = new Formula("sum(0)", Formula::ALLOW_INDEXED);
+                $this->fy->check($this->user);
+            }
         } else if (($this->type & self::CDF) && $this->fx_type === Fexpr::FTAG) {
             $this->error_at("fy", "CDFs by tag don’t make sense.");
         }
