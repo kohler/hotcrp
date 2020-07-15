@@ -461,43 +461,43 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         ], $this->conf);
     }
     /** @param resource $out
-     * @param int $r0
-     * @param int $r1
-     * @param int $p0
-     * @param string $s
+     * @param int $r0 - start of desired range
+     * @param int $r1 - end of desired range
+     * @param int $p0 - start of object
+     * @param string $s - object
      * @return int */
     static function echo_subrange($out, $r0, $r1, $p0, $s) {
-        $p1 = $p0 + strlen($s);
-        if ($p1 <= $r0 || $r1 <= $p0) {
-            return strlen($s);
-        } else if ($p0 < $r0) {
-            return ($r0 - $p0) + fwrite($out, substr($s, $r0 - $p0, $r1 - $r0));
-        } else if ($r1 < $p1) {
-            return fwrite($out, substr($s, 0, $r1 - $p0));
-        } else {
+        $sz = strlen($s);
+        $p1 = $p0 + $sz;
+        if ($p1 <= $r0 || $r1 <= $p0 || $p0 === $p1) {
+            return $sz;
+        } else if ($r0 <= $p0 && $p1 <= $r1) {
             return fwrite($out, $s);
+        } else {
+            $off = max(0, $r0 - $p0);
+            $len = min($sz, $r1 - $p0) - $off;
+            return $off + fwrite($out, substr($s, $off, $len));
         }
     }
     /** @param resource $out
-     * @param int $r0
-     * @param int $r1
-     * @param int $p0
-     * @param string $fn
-     * @param int $sz
+     * @param int $r0 - start of desired range
+     * @param int $r1 - end of desired range
+     * @param int $p0 - start of object
+     * @param string $fn - object
+     * @param int $sz - length of object
      * @return int */
     private static function readfile_subrange($out, $r0, $r1, $p0, $fn, $sz) {
-        $p1 = $p0 + $sz;
-        if ($p1 <= $r0 || $r1 <= $p0) {
+        $p1 = $p0 + $sz; // - end of object
+        if ($p1 <= $r0 || $r1 <= $p0 || $p0 === $p1) {
             return $sz;
-        }
-        $off = max(0, $r0 - $p0);
-        $len = min($sz, $r1 - $p0) - $off;
-        if ($len === $sz && $sz < 20000000) {
+        } else if ($r0 <= $p0 && $p1 <= $r1 && $sz < 20000000) {
             return readfile($fn);
         } else if (($f = fopen($fn, "rb"))) {
-            $wlen = stream_copy_to_stream($f, $out, $len, $off);
+            $off = max(0, $r0 - $p0);
+            $len = min($sz, $r1 - $p0) - $off;
+            $off += stream_copy_to_stream($f, $out, $len, $off);
             fclose($f);
-            return $wlen;
+            return $off;
         } else {
             return 0;
         }
@@ -603,7 +603,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 $p0 += self::echo_subrange($out, $r0, $r1, $p0, $doc->content());
             }
             if ($p0 < min($r1, $zi->local_end_offset())) {
-                throw new Exception("Failure writing {$this->ufn[$d0]}, wrote " . ($p0 - $zi->local_offset) . ", expected " . (min($r1, $zi->local_end_offset()) - $zi->local_offset) . ".");
+                throw new Exception("Failure writing {$this->ufn[$d0]}, wrote " . ($p0 - $zi->local_offset) . ", expected " . (min($r1, $zi->local_end_offset()) - $zi->local_offset));
             }
             ++$d0;
         }
