@@ -4,8 +4,16 @@
 
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
-if (!$Me->privChair && !$Me->isPC)
+if (!$Me->privChair && !$Me->isPC) {
     $Me->escape();
+}
+
+if (isset($Qreq->default) && $Qreq->defaultact) {
+    $Qreq->fn = $Qreq->defaultact;
+} else if (isset($Qreq->default)) {
+    $Qreq->fn = "saveprefs";
+}
+
 
 // set reviewer
 $reviewer = $Me;
@@ -34,35 +42,17 @@ if ($incorrect_reviewer) {
     Conf::msg_error("Reviewer " . htmlspecialchars($Qreq->reviewer) . " is not on the PC.");
 }
 
-// choose a sensible default action (if someone presses enter on a form element)
-if (isset($Qreq->default) && $Qreq->defaultact) {
-    $Qreq->fn = $Qreq->defaultact;
-}
-// backwards compat
-if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "uploadpref", "saveuploadpref", "setpref", "saveprefs"])) {
-    if (isset($Qreq->get)) {
-        $Qreq->fn = "get";
-        $Qreq->getfn = $Qreq->get;
-    } else if (isset($Qreq->getgo) && isset($Qreq->getaction)) {
-        $Qreq->fn = "get";
-        $Qreq->getfn = $Qreq->getaction;
-    } else if (isset($Qreq->upload) || $Qreq->fn === "upload") {
-        $Qreq->fn = "uploadpref";
-    } else if (isset($Qreq->setpaprevpref) || $Qreq->fn === "setpaprevpref") {
-        $Qreq->fn = "setpref";
-    } else {
-        unset($Qreq->fn);
-    }
-}
-if (!isset($Qreq->fn) && isset($Qreq->default)) {
-    $Qreq->fn = "saveprefs";
-}
 
-if ($Qreq->fn === "get"
-    && ($Qreq->getfn === "revpref" || $Qreq->getfn === "revprefx")
-    && !isset($Qreq->pap)
-    && !isset($Qreq->p))
-    $Qreq->p = "all";
+// backwards compat
+if ($Qreq->fn
+    && strpos($Qreq->fn, "/") === false
+    && isset($Qreq[$Qreq->fn . "fn"])) {
+    $Qreq->fn .= "/" . $Qreq[$Qreq->fn . "fn"];
+}
+if (!str_starts_with($Qreq->fn, "get/")
+    && !in_array($Qreq->fn, ["uploadpref", "saveuploadpref", "setpref", "saveprefs"])) {
+    unset($Qreq->fn);
+}
 
 function prefs_hoturl_args() {
     global $Me, $reviewer;
@@ -116,24 +106,23 @@ if ($Qreq->fn === "saveprefs" && $Qreq->post_ok()) {
 }
 
 
-// Select papers
+// paper selection
 global $SSel;
-$SSel = null;
-if ($Qreq->fn === "setpref" || $Qreq->fn === "get" || $Qreq->fn === "saveuploadpref") {
-    $SSel = SearchSelection::make($Qreq, $Me);
-    if ($SSel->is_empty())
-        Conf::msg_error("No papers selected.");
-}
-SearchSelection::clear_request($Qreq);
+$SSel = SearchSelection::make($Qreq, $Me);
+SearchSelectioN::clear_request($Qreq);
 
 
 // Set multiple paper preferences
-if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && $Qreq->post_ok()) {
-    $new_qreq = new Qrequest($Qreq->method());
-    foreach ($SSel->selection() as $p) {
-        $new_qreq["revpref{$p}u{$reviewer->contactId}"] = $Qreq->pref;
+if ($Qreq->fn === "setpref" && $Qreq->post_ok()) {
+    if (!$SSel->is_empty()) {
+        $new_qreq = new Qrequest($Qreq->method());
+        foreach ($SSel->selection() as $p) {
+            $new_qreq["revpref{$p}u{$reviewer->contactId}"] = $Qreq->pref;
+        }
+        savePreferences($new_qreq, false);
+    } else {
+        Conf::msg_error("No papers selected.");
     }
-    savePreferences($new_qreq, false);
 }
 
 
@@ -227,14 +216,12 @@ if ($Qreq->fn === "saveuploadpref" && $Qreq->post_ok() && !$Qreq->cancel) {
 
 
 // Prepare search
-$Qreq->q = get($Qreq, "q", "");
+$Qreq->q = $Qreq->q ?? "";
 $Qreq->t = "editpref";
 
 // Search actions
-if ($Qreq->fn === "get"
-    && $SSel
-    && !$SSel->is_empty()) {
-    ListAction::call("get/{$Qreq->getfn}", $Me, $Qreq, $SSel);
+if (str_starts_with($Qreq->fn, "get/")) {
+    ListAction::call($Qreq->fn, $Me, $Qreq, $SSel);
 }
 
 

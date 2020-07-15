@@ -49,7 +49,7 @@ if (!isset($tOpt[$Qreq->t])) {
 
 // paper selection
 global $SSel;
-if (!$SSel) { /* we might be included by reviewprefs.php */
+if (!$SSel) {
     $SSel = SearchSelection::make($Qreq, $Me);
     SearchSelection::clear_request($Qreq);
 }
