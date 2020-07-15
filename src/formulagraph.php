@@ -587,7 +587,8 @@ class FormulaGraph extends MessageSet {
     private function _valuemap_axes($format) {
         $axes = 0;
         if ((!$this->fx_type && !$format)
-            || ($this->fx_type === Fexpr::FTAG && $format === Fexpr::FTAG)) {
+            || ($this->fx_type === Fexpr::FTAG && $format === Fexpr::FTAG)
+            || ($this->fx_type === Fexpr::FREVIEWER && $format === Fexpr::FREVIEWER)) {
             $axes |= 1;
         }
         if (!($this->type & self::CDF) && $this->fy->result_format() === $format) {
