@@ -254,11 +254,6 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function as_list() {
         return $this->prows;
     }
-    /** @return list<PaperInfo>
-     * @deprecated */
-    function as_array() {
-        return $this->prows;
-    }
     /** @return list<PaperInfo> */
     function all() {
         return $this->prows;

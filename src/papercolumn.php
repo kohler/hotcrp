@@ -73,11 +73,6 @@ class PaperColumn extends Column {
     }
 
     function prepare_sort(PaperList $pl, ListSorter $sorter) {
-        /** @phan-suppress-next-line PhanDeprecatedFunction */
-        $this->analyze_sort($pl, $pl->rowset(), $sorter);
-    }
-    /** @deprecated */
-    function analyze_sort(PaperList $pl, PaperInfoSet $rows, ListSorter $sorter) {
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
         error_log("unexpected " . get_class($this) . "::compare");

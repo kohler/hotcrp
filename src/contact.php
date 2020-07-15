@@ -446,16 +446,7 @@ class Contact {
         }
     }
 
-    /** @deprecated */
-    static function set_sorter($c, Conf $conf) {
-        $c->sorter = self::make_sorter($c, $conf->sort_by_last ? 0312 : 0321);
-    }
-
-    /** @deprecated */
-    static function compare($a, $b) {
-        return strnatcasecmp($a->sorter, $b->sorter);
-    }
-
+    /** @param int $roles */
     private function assign_roles($roles) {
         $this->roles = $roles;
         $this->isPC = ($roles & self::ROLE_PCLIKE) !== 0;

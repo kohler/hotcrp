@@ -238,9 +238,6 @@ class Conf {
 
     /** @var Conf */
     static public $main;
-    /** @var Conf
-     * @deprecated */
-    static public $g;
 
     /** @var int */
     static public $now;
@@ -726,8 +723,7 @@ class Conf {
 
     static function set_main_instance(Conf $conf) {
         global $Conf;
-        /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $Conf = Conf::$main = Conf::$g = $conf;
+        $Conf = Conf::$main = $conf;
         $conf->crosscheck_globals();
     }
 
@@ -4961,22 +4957,6 @@ class Conf {
         } else {
             json_exit($this->call_api($fn, $uf, $user, $qreq, $prow));
         }
-    }
-
-
-    // List action API
-
-    /** @deprecated */
-    function list_action_map() {
-        return [];
-    }
-    /** @deprecated */
-    function has_list_action($name, Contact $user = null, $method = null) {
-        return false;
-    }
-    /** @deprecated */
-    function list_action($name, Contact $user = null, $method = null) {
-        return null;
     }
 
 

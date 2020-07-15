@@ -628,12 +628,6 @@ class Ht {
         return self::$_msgset ? self::$_msgset->message_list_at($field) : [];
     }
     /** @param string $field
-     * @return string
-     * @deprecated */
-    static function render_messages_at($field) {
-        return self::render_feedback_at($field);
-    }
-    /** @param string $field
      * @return string */
     static function render_feedback_at($field) {
         $t = "";

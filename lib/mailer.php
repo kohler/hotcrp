@@ -644,12 +644,6 @@ class Mailer {
         return $prep;
     }
 
-    /** @return MailPreparation
-     * @deprecated */
-    function make_preparation($template, $rest = []) {
-        return $this->prepare($template, $rest);
-    }
-
     function populate_preparation(MailPreparation $prep, $template, $rest = []) {
         // look up template
         if (is_string($template) && $template[0] === "@") {

@@ -874,14 +874,6 @@ class SettingValues extends MessageSet {
     function echo_feedback_at($field, $classes = null) {
         echo $this->render_feedback_at($field, $classes);
     }
-    /** @deprecated */
-    function render_messages_at($field) {
-        return $this->render_feedback_at($field);
-    }
-    /** @deprecated */
-    function echo_messages_at($field) {
-        $this->echo_feedback_at($field);
-    }
 
     private function strip_group_js($js) {
         $njs = [];
