@@ -258,7 +258,6 @@ class DocumentInfo implements JsonSerializable {
     /** @param string $fn
      * @return DocumentInfo */
     function with_member_filename($fn) {
-        assert($fn !== "");
         if ($this->_member_filename === null) {
             $this->_member_filename = $fn;
             return $this;
@@ -1103,7 +1102,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return ?string */
     function member_filename() {
-        assert($this->_member_filename !== null);
+        assert(($this->_member_filename ?? "") !== "");
         return $this->_member_filename;
     }
 

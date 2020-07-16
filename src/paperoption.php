@@ -17,8 +17,6 @@ class PaperValue implements JsonSerializable {
     private $_values;
     /** @var list<?string> */
     private $_data;
-    /** @var ?list<DocumentInfo> */
-    private $_documents;
     /** @var ?DocumentInfoSet */
     private $_docset;
     /** @var ?MessageSet */
@@ -79,7 +77,7 @@ class PaperValue implements JsonSerializable {
     function set_value_data($values, $datas) {
         if ($this->_values != $values) {
             $this->_values = $values;
-            $this->_documents = $this->_docset = null;
+            $this->_docset = null;
         }
         $this->_data = $datas;
         if (empty($this->_values)
@@ -115,40 +113,34 @@ class PaperValue implements JsonSerializable {
         }
         return $this->_data;
     }
-    /** @return list<DocumentInfo> */
-    function documents() {
+    /** @return DocumentInfoSet */
+    function document_set() {
         assert($this->prow || empty($this->_values));
         assert($this->option->has_document());
-        if ($this->_documents === null) {
-            $this->_documents = [];
+        if ($this->_docset === null) {
+            $this->_docset = new DocumentInfoSet;
             foreach ($this->option->value_dids($this) as $did) {
                 if (($d = $this->prow->document($this->id, $did))) {
-                    $this->_documents[] = $d;
+                    $this->_docset->add($d);
                 }
             }
         }
-        return $this->_documents;
+        return $this->_docset;
+    }
+    /** @return list<DocumentInfo> */
+    function documents() {
+        return $this->document_set()->as_list();
     }
     /** @param int $index
      * @return ?DocumentInfo */
     function document($index) {
-        return ($this->documents())[$index] ?? null;
+        return $this->document_set()->document_by_index($index);
     }
     /** @param int $index
      * @return string|false */
     function document_content($index) {
         $doc = $this->document($index);
         return $doc ? $doc->content() : false;
-    }
-    /** @return DocumentInfoSet */
-    function document_set() {
-        if ($this->_docset === null) {
-            $this->_docset = new DocumentInfoSet;
-            foreach ($this->documents() as $doc) {
-                $this->_docset->add($doc);
-            }
-        }
-        return $this->_docset;
     }
     /** @param string $name
      * @return ?DocumentInfo */

@@ -39,8 +39,8 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $ufn = [];
     /** @var list<DocumentInfo> */
     private $docs = [];
-    /** @var list<string> */
-    private $_errors_html = [];
+    /** @var ?list<string> */
+    private $_errors_html;
     /** @var ?string */
     private $_filename;
     /** @var ?string */
@@ -67,6 +67,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $this->_mimetype = $mimetype;
     }
 
+    /** @return bool */
     function add(DocumentInfo $doc) {
         return $this->add_as($doc, $doc->filename ?? "");
     }
@@ -75,10 +76,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         error_log("{$this->conf->dbname}: failing to add #{$doc->paperStorageId} at $fn");
         return false;
     }
-    /** @param string $fn */
+    /** @param string $fn
+     * @return bool */
     function add_as(DocumentInfo $doc, $fn) {
         if ($this->_filename) { // might generate a .zip later; check filename
-            assert(!$doc->error);
+            assert(!$doc->error && $fn !== "");
             $slash = strpos($fn, "/");
             if ($doc->error
                 || $fn === ""
@@ -115,7 +117,8 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @param string $text
      * @param string $fn
      * @param ?string $mimetype
-     * @param ?int $timestamp */
+     * @param ?int $timestamp
+     * @return bool */
     function add_string_as($text, $fn, $mimetype = null, $timestamp = null) {
         return $this->add_as(new DocumentInfo([
             "content" => $text, "size" => strlen($text),
@@ -154,7 +157,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     /** @return list<string> */
     function error_texts() {
-        return $this->_errors_html;
+        return $this->_errors_html ?? [];
     }
     /** @param int $i
      * @return ?DocumentInfo */
