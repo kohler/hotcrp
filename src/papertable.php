@@ -64,7 +64,7 @@ class PaperTable {
 
         $this->conf = $prow ? $prow->conf : Conf::$main;
         $this->user = $user = $Me;
-        $this->prow = $prow ? : PaperInfo::make_new($user);
+        $this->prow = $prow ?? PaperInfo::make_new($user);
         $this->allow_admin = $user->allow_administer($prow);
         $this->admin = $user->can_administer($prow);
         $this->qreq = $qreq;

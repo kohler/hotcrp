@@ -474,7 +474,7 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     private function unsorted_field_list(PaperInfo $prow = null) {
-        $nonfinal = !$prow || $prow->outcome <= 0;
+        $nonfinal = $prow && $prow->outcome <= 0;
         $olist = [];
         foreach ($this->intrinsic_json_list() as $id => $oj) {
             if (($o = $this->_get_field($id, $oj, $nonfinal)))
