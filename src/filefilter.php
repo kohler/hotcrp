@@ -60,11 +60,6 @@ class FileFilter {
     function mimetype(DocumentInfo $doc, $mimetype) {
         return $mimetype;
     }
-
-    /** @deprecated */
-    function apply($doc, PaperInfo $prow) {
-        return $this->exec($doc);
-    }
 }
 
 class FileFilterJsonExpander {
