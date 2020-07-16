@@ -47,33 +47,31 @@ class Preference_PaperColumn extends PaperColumn {
         $this->secondary_sort_topic_score = $pl->report_id() === "pf";
         return true;
     }
-    private function preference_values($row) {
+    private function sortable_preference(PaperInfo $row) {
         if ($this->not_me && !$this->viewer_contact->can_view_preference($row)) {
-            return [null, null];
+            return [-PHP_INT_MAX, null];
         } else {
-            return $row->preference($this->contact);
+            $pv = $row->preference($this->contact);
+            if ($pv[0] === 0 && $pv[1] === null) {
+                if (!$this->contact->can_enter_preference($row)) {
+                    $pv[0] = -PHP_INT_MAX;
+                } else if ($row->has_conflict($this->contact)) {
+                    $pv[0] = $this->editable ? -0.00001 : -PHP_INT_MAX;
+                }
+            }
+            return $pv;
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        list($ap, $ae) = $this->preference_values($a);
-        if ($ap === 0 && $ae === null && $a->has_conflict($this->contact)) {
-            $ap = false;
-        }
-        list($bp, $be) = $this->preference_values($b);
-        if ($bp === 0 && $be === null && $b->has_conflict($this->contact)) {
-            $bp = false;
-        }
-        if ($ap === false || $bp === false) {
-            return $ap === $bp ? 0 : ($ap === false ? 1 : -1);
-        } else if ($ap === null || $bp === null) {
-            return $ap === $bp ? 0 : ($ap === null ? 1 : -1);
-        } else if ($ap !== $bp) {
+        list($ap, $ae) = $this->sortable_preference($a);
+        list($bp, $be) = $this->sortable_preference($b);
+        if ($ap !== $bp) {
             return $ap < $bp ? 1 : -1;
         } else if ($ae !== $be) {
             if (($ae === null) !== ($be === null)) {
                 return $ae === null ? 1 : -1;
             }
-            return (float) $ae < (float) $be ? 1 : -1;
+            return (int) $ae < (int) $be ? 1 : -1;
         }
         if ($this->secondary_sort_topic_score) {
             $at = $a->topic_interest_score($this->contact);
@@ -134,12 +132,10 @@ class Preference_PaperColumn extends PaperColumn {
             if ($has_conflict && $this->show_conflict) {
                 $t .= " " . review_type_icon(-1);
             }
-        } else if ($has_conflict) {
-            if ($this->show_conflict) {
-                $t = review_type_icon(-1);
-            }
-        } else {
+        } else if (!$has_conflict || $pv_exists) {
             $t = str_replace("-", "−" /* U+2212 */, unparse_preference($pv));
+        } else if ($this->show_conflict) {
+            $t = review_type_icon(-1);
         }
 
         // account for statistics and maybe wrap HTML in conflict
@@ -165,7 +161,11 @@ class Preference_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return unparse_preference($this->preference_values($row));
+        if (!$this->not_me || $this->viewer_contact->can_view_preference($row)) {
+            return unparse_preference($row->preference($this->contact));
+        } else {
+            return "";
+        }
     }
     function has_statistics() {
         return !$this->row && !$this->editable;
