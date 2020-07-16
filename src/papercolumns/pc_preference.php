@@ -48,7 +48,10 @@ class Preference_PaperColumn extends PaperColumn {
         return true;
     }
     private function sortable_preference(PaperInfo $row) {
-        if ($this->not_me && !$this->viewer_contact->can_view_preference($row)) {
+        if ($this->not_me
+            && ($this->editable
+                ? !$this->viewer_contact->allow_view_preference($row)
+                : !$this->viewer_contact->can_view_preference($row))) {
             return [-PHP_INT_MAX, null];
         } else {
             $pv = $row->preference($this->contact);
