@@ -118,12 +118,15 @@ class PaperValue implements JsonSerializable {
         assert($this->prow || empty($this->_values));
         assert($this->option->has_document());
         if ($this->_docset === null) {
-            $this->_docset = new DocumentInfoSet;
+            // NB that $this->_docset might be invalidated by value_dids
+            $docset = new DocumentInfoSet;
             foreach ($this->option->value_dids($this) as $did) {
                 if (($d = $this->prow->document($this->id, $did))) {
-                    $this->_docset->add($d);
+                    $docset->add($d);
                 }
             }
+            assert(!$this->_docset);
+            $this->_docset = $docset;
         }
         return $this->_docset;
     }
