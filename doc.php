@@ -129,7 +129,7 @@ function document_download(Contact $user, $qreq) {
 
     // pass through filters
     foreach ($dr->filters as $filter) {
-        $doc = $filter->apply($doc, $prow) ? : $doc;
+        $doc = $filter->exec($doc) ?? $doc;
     }
 
     // check for contents request

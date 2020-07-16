@@ -26,18 +26,23 @@ class FileFilter {
     /** @param DocumentInfo $doc
      * @param string $name
      * @return DocumentInfo */
-    static function apply_named($doc, PaperInfo $prow, $name) {
-        if (($filter = self::find_by_name($prow->conf, $name))
-            && ($xdoc = $filter->apply($doc, $prow))) {
+    static function apply_named(DocumentInfo $doc, $name) {
+        if (($filter = self::find_by_name($doc->conf, $name))
+            && ($xdoc = $filter->exec($doc))) {
             return $xdoc;
         } else {
             return $doc;
         }
     }
 
+    /** @return ?DocumentInfo */
+    function exec(DocumentInfo $doc) {
+        return null;
+    }
+
     /** @param DocumentInfo $doc
      * @return ?DocumentInfo */
-    function find_filtered($doc) {
+    function find_filtered(DocumentInfo $doc) {
         if ($this->id) {
             $result = $doc->conf->qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
             $fdoc = DocumentInfo::fetch($result, $doc->conf);
@@ -52,12 +57,13 @@ class FileFilter {
         return $fdoc;
     }
 
-    function mimetype($doc, $mimetype) {
+    function mimetype(DocumentInfo $doc, $mimetype) {
         return $mimetype;
     }
 
+    /** @deprecated */
     function apply($doc, PaperInfo $prow) {
-        return false;
+        return $this->exec($doc);
     }
 }
 
