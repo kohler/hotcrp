@@ -8,6 +8,7 @@ define("HOTCRP_TESTHARNESS", true);
 ini_set("error_log", "");
 ini_set("log_errors", "0");
 ini_set("display_errors", "stderr");
+ini_set("assert.exception", "1");
 require_once(SiteLoader::find("src/init.php"));
 $Conf->set_opt("disablePrintEmail", true);
 $Conf->set_opt("postfixEOL", "\n");
@@ -250,8 +251,8 @@ class Xassert {
 
 function xassert_error_handler($errno, $emsg, $file, $line) {
     if ((error_reporting() || $errno != E_NOTICE) && Xassert::$disabled <= 0) {
-        if (get(Xassert::$emap, $errno)) {
-            $emsg = Xassert::$emap[$errno] . ":  $emsg";
+        if (($e = Xassert::$emap[$errno] ?? null)) {
+            $emsg = "$e:  $emsg";
         } else {
             $emsg = "PHP Message $errno:  $emsg";
         }
@@ -527,14 +528,12 @@ function save_review($paper, $user, $revreq, $rrow = null) {
 
 /** @return Contact */
 function user($email) {
-    global $Conf;
-    return $Conf->checked_user_by_email($email);
+    return Conf::$main->checked_user_by_email($email);
 }
 
 /** @return ?Contact */
 function maybe_user($email) {
-    global $Conf;
-    return $Conf->user_by_email($email);
+    return Conf::$main->user_by_email($email);
 }
 
 function xassert_paper_status(PaperStatus $ps) {
