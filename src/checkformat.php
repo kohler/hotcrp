@@ -515,7 +515,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
 
     /** @return bool */
     function need_recheck() {
-        assert(($this->run_flags & CheckFormat::RUN_STARTED) !== 0);
         return ($this->run_flags & CheckFormat::RUN_DESIRED) !== 0;
     }
 
