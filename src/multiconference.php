@@ -31,7 +31,7 @@ class Multiconference {
         } else if (!$confid) {
             $base = Navigation::base_absolute(true);
             if (($multis = $Opt["multiconferenceAnalyzer"] ?? null)) {
-                foreach (is_array($multis) ? $multis : array($multis) as $multi) {
+                foreach (is_array($multis) ? $multis : [$multis] as $multi) {
                     list($match, $replace) = explode(" ", $multi);
                     if (preg_match("`\\A$match`", $base, $m)) {
                         $confid = $replace;
@@ -48,7 +48,7 @@ class Multiconference {
 
         if (!$confid) {
             $confid = "__nonexistent__";
-        } else if (!preg_match(',\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z,', $confid)) {
+        } else if (!preg_match('/\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z/', $confid)) {
             $Opt["__original_confid"] = $confid;
             $confid = "__invalid__";
         }
@@ -59,7 +59,7 @@ class Multiconference {
     static function assign_confid(&$opt, $confid) {
         foreach (["dbName", "dbUser", "dbPassword", "dsn"] as $k) {
             if (isset($opt[$k]) && is_string($opt[$k]))
-                $opt[$k] = preg_replace(',\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confid, $opt[$k]);
+                $opt[$k] = preg_replace('/\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b/', $confid, $opt[$k]);
         }
         if (!($opt["dbName"] ?? null) && !($opt["dsn"] ?? null)) {
             $opt["dbName"] = $confid;
@@ -98,11 +98,10 @@ class Multiconference {
         global $Me, $Opt;
         $maintenance = $Opt["maintenance"] ?? null;
 
-        if (is_string($errors)) {
-            $errors = array($errors);
-        }
         if ($maintenance) {
-            $errors = array("The site is down for maintenance. " . (is_string($maintenance) ? $maintenance : "Please check back later."));
+            $errors = ["The site is down for maintenance. " . (is_string($maintenance) ? $maintenance : "Please check back later.")];
+        } else {
+            $errors = is_string($errors) ? [$errors] : $errors;
         }
 
         if (PHP_SAPI == "cli") {
