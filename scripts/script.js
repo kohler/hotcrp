@@ -7645,11 +7645,18 @@ handle_ui.on("js-check-format", function () {
 $(function () {
 var failures = 0;
 function background_format_check() {
-    var needed = $(".need-format-check"), pid, m;
+    var needed = $(".need-format-check"), pid, m, tstart;
     if (!needed.length)
         return;
     needed = needed[Math.floor(Math.random() * needed.length)];
     removeClass(needed, "need-format-check");
+    tstart = now_msec();
+    function next(ok) {
+        if (ok || ++failures <= 2) {
+            var tdelta = now_msec() - tstart;
+            setTimeout(background_format_check, tdelta <= 200 ? 100 : (Math.min(4000, tdelta * 2) + Math.random() * 2000) / 2);
+        }
+    }
     if (needed.tagName === "A"
         && (m = needed.href.match(/\/doc(?:\.php)?\/([^?#]*)/))) {
         $.ajax(hoturl("api/formatcheck", {doc: m[1], soft: 1}), {
@@ -7661,8 +7668,7 @@ function background_format_check() {
                     && img.tagName === "IMG"
                     && (m = img.src.match(/^(.*\/pdff?)x?((?:24)?\.png(?:\?.*)?)$/)))
                     img.src = m[1] + (data.has_error ? "x" : "") + m[2];
-                if ((data && data.ok) || ++failures <= 2)
-                    setTimeout(background_format_check, 2000 + Math.random() * 1000);
+                next(data && data.ok);
             }
         });
     } else if (hasClass(needed, "is-npages")
@@ -7671,12 +7677,11 @@ function background_format_check() {
             success: function (data) {
                 if (data && data.ok)
                     needed.parentNode.replaceChild(document.createTextNode(data.npages), needed);
-                if ((data && data.ok) || ++failures <= 2)
-                    setTimeout(background_format_check, 2000 + Math.random() * 1000);
+                next(data && data.ok);
             }
         });
     } else {
-        setTimeout(background_format_check, 100);
+        next(true);
     }
 }
 $(background_format_check);
