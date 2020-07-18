@@ -299,8 +299,8 @@ xassert_eqq(SearchSplitter::span_balanced_parens("abc(def sajf"), 12);
 
 // AbbreviationMatcher::make_abbreviation tests
 xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty", new AbbreviationClass), "Nov");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an amazing", new AbbreviationClass), "NovIsAma");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an AWESOME", new AbbreviationClass), "NovIsAWESOME");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an amazing", new AbbreviationClass), "NovAma");
+xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an AWESOME", new AbbreviationClass), "NovAWESOME");
 xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", new AbbreviationClass), "NovIsnAWESOME");
 $aclass = new AbbreviationClass;
 $aclass->type = AbbreviationClass::TYPE_LOWERDASH;

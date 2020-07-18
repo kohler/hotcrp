@@ -503,7 +503,7 @@ class AbbreviationMatcher {
             if ($stopwords !== "") {
                 $stopwords .= "|";
             }
-            $xname = preg_replace('/\b(?:' . $stopwords . 'a|an|and|be|did|do|for|in|of|or|the|their|they|this|to|with|you)\b/i', '', $name);
+            $xname = preg_replace('/\b(?:' . $stopwords . 'a|an|and|be|did|do|for|in|is|of|or|the|their|they|this|to|with|you)\b/i', '', $name);
             $name = $xname ? : $name;
         }
         // drop parenthetical remarks
