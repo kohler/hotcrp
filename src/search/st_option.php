@@ -150,12 +150,15 @@ class Option_SearchTerm extends SearchTerm {
         $oname = simplify_whitespace($oname);
 
         // match all options
-        $option_failure = false;
         if (strcasecmp($oname, "none") === 0
             || strcasecmp($oname, "any") === 0) {
             $omatches = $conf->options()->normal();
         } else {
             $omatches = $conf->find_all_fields($oname, Conf::FSRCH_OPTION);
+            if (count($omatches) > 1) {
+                $oms->warnings[] = "“" . htmlspecialchars($word) . "” matches more than one submission field.";
+                error_log($conf->dbname . ": $oname / $word matches more than one submission field");
+            }
         }
         $isany = false;
         if (!$quoted
