@@ -269,7 +269,9 @@ class AbbreviationMatcher {
     private $nanal = 0;
     /** @var array<string,list<int>> */
     private $matches = [];
+    /** @var array<int,Abbreviator> */
     private $abbreviators = [];
+    /** @var array<int,float> */
     private $prio = [];
 
     /** @param T $template */

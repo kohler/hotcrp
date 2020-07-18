@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class OptionMatcher {
+    /** @var PaperOption */
     public $option;
     public $compar;
     public $value;
@@ -10,9 +11,10 @@ class OptionMatcher {
     public $pregexes = null;
     public $match_null = false;
 
-    function __construct($option, $compar, $value = null, $kind = 0) {
-        if ($option->type === "checkbox" && $value === null)
+    function __construct(PaperOption $option, $compar, $value = null, $kind = 0) {
+        if ($option->type === "checkbox" && $value === null) {
             $value = 0;
+        }
         assert(($value !== null && !is_array($value))
                || $compar === "=" || $compar === "!=");
         assert(!$kind || $value !== null);
@@ -83,6 +85,7 @@ class OptionMatcher {
 }
 
 class OptionMatcherSet {
+    /** @var list<OptionMatcher> */
     public $os = [];
     public $warnings = [];
     public $compar;
@@ -92,6 +95,7 @@ class OptionMatcherSet {
 }
 
 class Option_SearchTerm extends SearchTerm {
+    /** @var OptionMatcher */
     private $om;
 
     function __construct(OptionMatcher $om) {
@@ -128,6 +132,7 @@ class Option_SearchTerm extends SearchTerm {
             return new False_SearchTerm;
         }
     }
+    /** @return OptionMatcherSet */
     static function analyze(Conf $conf, $word, $quoted = false) {
         $oms = new OptionMatcherSet;
         if (preg_match('/\A(.*?)([:#](?:[=!<>]=?|≠|≤|≥|)|[=!<>]=?|≠|≤|≥)(.*)\z/', $word, $m)) {

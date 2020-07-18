@@ -194,11 +194,13 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return $this->unparse_json();
     }
 
-    static function unparse_visibility_value($vs) {
-        if (isset(self::$view_score_rmap[$vs]))
-            return self::$view_score_rmap[$vs];
-        else
-            return $vs;
+    /** @int $view_score */
+    static function unparse_visibility_value($view_score) {
+        if (isset(self::$view_score_rmap[$view_score])) {
+            return self::$view_score_rmap[$view_score];
+        } else {
+            return $view_score;
+        }
     }
 
     function unparse_visibility() {
