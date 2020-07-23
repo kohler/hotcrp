@@ -383,6 +383,8 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
  * @property ?string $allReviewerPreference
  * @property ?string $myReviewerPreference
  * @property ?string $myReviewerExpertise
+ * @property ?string $paper_infoJson
+ * @property ?string $final_infoJson
  */
 class PaperInfo {
     /** @var int */
@@ -429,9 +431,9 @@ class PaperInfo {
     private $_option_values;
     /** @var ?array<int,list<?string>> */
     private $_option_data;
+    /** @var array<int,?PaperValue> */
+    private $_option_array = [];
     /** @var ?array<int,PaperValue> */
-    private $_option_array;
-    /** @var array<int,PaperValue> */
     private $_new_option_array;
     /** @var array<int,DocumentInfo> */
     private $_document_array;
@@ -1528,28 +1530,12 @@ class PaperInfo {
         }
     }
 
-    private function _make_option_array() {
-        $this->load_options(false, false);
-        $paper_opts = $this->conf->options();
-        $option_array = [];
-        foreach ($this->_option_values as $oid => $ovalues) {
-            if (($o = $paper_opts->option_by_id($oid))) {
-                $option_array[$oid] = PaperValue::make_multi($this, $o, $ovalues, get($this->_option_data, $oid));
-            }
+    /** @return list<int> */
+    private function stored_option_ids() {
+        if ($this->_option_values === null) {
+            $this->load_options(false, false);
         }
-        foreach ($paper_opts->absent() as $oid => $o) {
-            if (!isset($option_array[$oid])) {
-                $option_array[$oid] = PaperValue::make_force($this, $o);
-            }
-        }
-        return $option_array;
-    }
-
-    private function options() {
-        if ($this->_option_array === null) {
-            $this->_option_array = $this->_make_option_array();
-        }
-        return $this->_option_array;
+        return array_keys($this->_option_values);
     }
 
     /** @param int $id
@@ -1565,37 +1551,44 @@ class PaperInfo {
     /** @param int|PaperOption $o
      * @return ?PaperValue */
     function option($o) {
-        $id = is_object($o) ? $o->id : $o;
-        return ($this->options())[$id] ?? null;
+        $id = is_int($o) ? $o : $o->id;
+        if (!array_key_exists($id, $this->_option_array)
+            && ($opt = is_int($o) ? $this->conf->option_by_id($o) : $o)) {
+            if ($this->_option_values === null) {
+                $this->load_options(false, false);
+            }
+            if (isset($this->_option_values[$id])) {
+                $this->_option_array[$id] = PaperValue::make_multi($this, $opt, $this->_option_values[$id], $this->_option_data[$id] ?? null);
+            } else if ($opt->include_empty) {
+                $this->_option_array[$id] = PaperValue::make_force($this, $opt);
+            } else {
+                $this->_option_array[$id] = null;
+            }
+        }
+        return $this->_option_array[$id] ?? null;
     }
 
     /** @param int|PaperOption $o
      * @return PaperValue */
     function force_option($o) {
-        if (is_object($o)) {
-            return ($this->options())[$o->id] ?? PaperValue::make_force($this, $o);
-        } else {
-            $ov = ($this->options())[$o] ?? null;
-            if (!$ov && ($oforce = $this->conf->option_by_id($o))) {
-                $ov = PaperValue::make_force($this, $oforce);
-            }
+        if (($ov = $this->option($o))) {
             return $ov;
+        } else if (($opt = is_int($o) ? $this->conf->option_by_id($o) : $o)) {
+            return PaperValue::make_force($this, $opt);
+        } else {
+            return null;
         }
     }
 
     /** @param int|PaperOption $o
      * @return PaperValue */
     function new_option($o) {
-        if (is_object($o)) {
-            $ov = $this->_new_option_array[$o->id] ?? null;
-        } else {
-            $ov = $this->_new_option_array[$o] ?? null;
+        $id = is_int($o) ? $o : $o->id;
+        if (!array_key_exists($id, $this->_new_option_array ?? [])) {
+            $this->_new_option_array[$id] = $this->force_option($o);
         }
-        if (!$ov) {
-            $ov = $this->force_option($o);
-            $this->_new_option_array[$ov->id] = $ov;
-        }
-        return $ov;
+        /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
+        return $this->_new_option_array[$id];
     }
 
     function set_new_option(PaperValue $ov) {
@@ -1603,8 +1596,10 @@ class PaperInfo {
     }
 
     function invalidate_options($reload = false) {
+        assert($this->_new_option_array === null);
         unset($this->optionIds);
-        $this->_option_array = $this->_option_values = $this->_option_data = null;
+        $this->_option_values = $this->_option_data = null;
+        $this->_option_array = [];
         if ($reload) {
             $this->load_options(true, true);
         }
@@ -1618,10 +1613,11 @@ class PaperInfo {
      * @param int $did
      * @return ?DocumentInfo */
     function document($dtype, $did = 0, $full = false) {
+        assert(is_int($dtype)); // XXX remove later
         if ($did <= 0) {
-            if ($dtype == DTYPE_SUBMISSION) {
+            if ($dtype === DTYPE_SUBMISSION) {
                 $did = $this->paperStorageId;
-            } else if ($dtype == DTYPE_FINAL) {
+            } else if ($dtype === DTYPE_FINAL) {
                 $did = $this->finalPaperStorageId;
             } else if (($oa = $this->force_option($dtype))
                        && $oa->option->is_document()) {
@@ -1638,13 +1634,14 @@ class PaperInfo {
             return $this->_document_array[$did];
         }
 
-        if ((($dtype == DTYPE_SUBMISSION
+        if ((($dtype === DTYPE_SUBMISSION
               && $did == $this->paperStorageId
               && $this->finalPaperStorageId <= 0)
-             || ($dtype == DTYPE_FINAL
+             || ($dtype === DTYPE_FINAL
                  && $did == $this->finalPaperStorageId))
             && !$full) {
-            $infoJson = get($this, $dtype == DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson", false);
+            $infokey = $dtype === DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson";
+            $infoJson = $this->$infokey ?? false;
             return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => $this->timestamp ?? null, "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => $this->size ?? null, "infoJson" => $infoJson, "is_partial" => true], $this->conf, $this);
         }
 
@@ -1719,9 +1716,9 @@ class PaperInfo {
         if ($this->finalPaperStorageId > 1) {
             $dids[] = $this->finalPaperStorageId;
         }
-        foreach ($this->options() as $oa) {
-            if ($oa->option->has_document()) {
-                $dids = array_merge($dids, $oa->value_array());
+        foreach ($this->stored_option_ids() as $id) {
+            if (($ov = $this->option($id)) && $ov->option->has_document()) {
+                $dids = array_merge($dids, $ov->option->value_dids($ov));
             }
         }
         $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);

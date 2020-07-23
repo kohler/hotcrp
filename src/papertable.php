@@ -1221,7 +1221,7 @@ class PaperTable {
             }
 
             $fr->clear();
-            $o->render($fr, $this->prow->force_option($o->id));
+            $o->render($fr, $this->prow->force_option($o));
             if (!$fr->is_empty()) {
                 $this->clean_render($o, $vos, $fr);
                 $renders[] = new PaperTableFieldRender($o, $vos, $fr);

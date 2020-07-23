@@ -996,7 +996,7 @@ class PaperStatus extends MessageSet {
         foreach ($this->_field_values ?? [] as $ov) {
             $v1 = $ov->value_array();
             $d1 = $ov->data_array();
-            $oldv = $this->_nnprow->force_option($ov->id);
+            $oldv = $this->_nnprow->force_option($ov->option);
             if ($v1 !== $oldv->value_array() || $d1 !== $oldv->data_array()) {
                 if (!$ov->option->value_save($ov, $this)) {
                     // normal option
@@ -1360,7 +1360,7 @@ class PaperStatus extends MessageSet {
             }
             if ($ps->user->can_edit_option($prow, $o)
                 && $o->test_required($prow)
-                && !$o->value_present($prow->force_option($o->id))) {
+                && !$o->value_present($prow->force_option($o))) {
                 $ps->error_at_option($o, "Entry required.");
                 $required_failure = true;
             }
