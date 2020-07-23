@@ -1161,6 +1161,7 @@ class Conf {
      * @param string $name
      * @return ?object */
     function xt_search_name($map, $name, $user, $found = null, $noalias = false) {
+        $iname = $name;
         for ($aliases = 0;
              $aliases < 5 && $name !== null && isset($map[$name]);
              ++$aliases) {
@@ -1183,6 +1184,9 @@ class Conf {
                     $overlay->priority = -PHP_INT_MAX;
                 }
                 if (self::xt_priority_compare($xt, $found) <= 0) {
+                    if (isset($xt->deprecated) && $xt->deprecated) {
+                        error_log("{$this->dbname}: deprecated extension for `{$iname}`\n" . debug_string_backtrace());
+                    }
                     if (isset($xt->alias) && is_string($xt->alias) && !$noalias) {
                         $name = $xt->alias;
                         break;
@@ -1196,13 +1200,11 @@ class Conf {
     }
     /** @param list<object> $factories
      * @param string $name
-     * @return list<object> */
+     * @return non-empty-list<object> */
     function xt_search_factories($factories, $name, $user, $found = null, $reflags = "", $options = null) {
         $xts = [$found];
         foreach ($factories as $fxt) {
-            if (empty($xts)
-                ? self::xt_priority_compare($fxt, $found) >= 0
-                : self::xt_priority_compare($fxt, $xts[0]) > 0) {
+            if (self::xt_priority_compare($fxt, $xts[0]) > 0) {
                 break;
             }
             if ($fxt->match === ".*") {
@@ -1233,9 +1235,11 @@ class Conf {
                 $prio = self::xt_priority_compare($xt, $found);
                 if ($prio <= 0 && $this->xt_checkf($xt, $user)) {
                     if ($prio < 0) {
-                        $xts = [];
+                        $xts = [$xt];
+                        $found = $xt;
+                    } else {
+                        $xts[] = $xt;
                     }
-                    $xts[] = $found = $xt;
                 }
             }
         }
@@ -4778,6 +4782,7 @@ class Conf {
         }
         usort($this->_search_keyword_factories, "Conf::xt_priority_compare");
     }
+    /** @return ?object */
     function search_keyword($keyword, Contact $user = null) {
         if ($this->_search_keyword_base === null) {
             $this->make_search_keyword_map();
@@ -4826,6 +4831,7 @@ class Conf {
             return false;
         }
     }
+    /** @return ?object */
     function formula_function($fname, Contact $user) {
         if ($this->_formula_functions === null) {
             $this->_formula_functions = [];
@@ -4976,6 +4982,7 @@ class Conf {
         }
         return $ok;
     }
+    /** @return array<string,list<object>> */
     function paper_column_map() {
         if ($this->_paper_column_map === null) {
             require_once("papercolumn.php");
@@ -4988,25 +4995,29 @@ class Conf {
         }
         return $this->_paper_column_map;
     }
+    /** @return list<object> */
     function paper_column_factories() {
         $this->paper_column_map();
         return $this->_paper_column_factories;
     }
+    /** @return ?object */
     function basic_paper_column($name, Contact $user = null) {
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
         return self::xt_enabled($uf) ? $uf : null;
     }
+    /** @return list<object> */
     function paper_columns($name, Contact $user, $options = null) {
         if ($name === "" || $name[0] === "?") {
             return [];
         }
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
         $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i", $options);
-        foreach ($ufs as $uf) {
-            if ($uf && ($options || isset($uf->options)))
+        return array_values(array_filter($ufs, function ($uf) use ($options) {
+            if ($uf && ($options || isset($uf->options))) {
                 $uf->options = $options;
-        }
-        return array_filter($ufs, "Conf::xt_resolve_require");
+            }
+            return !!Conf::xt_resolve_require($uf);
+        }));
     }
 
 
@@ -5111,10 +5122,11 @@ class Conf {
         }
         return $this->_mail_keyword_map;
     }
+    /** @return list<object> */
     function mail_keywords($name) {
         $uf = $this->xt_search_name($this->mail_keyword_map(), $name, null);
         $ufs = $this->xt_search_factories($this->_mail_keyword_factories, $name, null, $uf);
-        return array_filter($ufs, "Conf::xt_resolve_require");
+        return array_values(array_filter($ufs, "Conf::xt_resolve_require"));
     }
 
 

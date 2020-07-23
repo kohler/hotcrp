@@ -86,8 +86,8 @@
         "column": true, "sort": true, "completion": true, "callback": "+AssignReview_PaperColumn",
         "position": 840
     },
-    {   "name": "assrev", "alias": "assignment"   },
-    {   "name": "assign", "alias": "assignment"   },
+    {   "name": "assrev", "alias": "assignment", "deprecated": true   },
+    {   "name": "assign", "alias": "assignment", "deprecated": true   },
     {
         "name": "conf",
         "column": true, "sort": true, "completion": false, "className": "plc", "callback": "+Conflict_PaperColumn",
@@ -185,7 +185,7 @@
         "position": 140
     },
     {   "name": "ab", "alias": "abstract"   },
-    {   "name": "abstracts", "alias": "abstract"   },
+    {   "name": "abstracts", "alias": "abstract", "deprecated": true   },
     {
         "name": "authors", "title": "Authors",
         "row": true, "fold": 1, "completion": true, "sort": true,
@@ -221,7 +221,7 @@
         "position": 450
     },
     {   "name": "conflicts", "alias": "pcconflicts"   },
-    {   "name": "pc-conflicts", "alias": "pcconflicts"   },
+    {   "name": "pc-conflicts", "alias": "pcconflicts", "deprecated": true   },
     {   "name": "pcconf", "alias": "pcconflicts"   },
     {
         "name": "allpref", "title": "Preferences",
@@ -229,9 +229,9 @@
         "position": 550
     },
     {   "name": "allrevpref", "alias": "allpref"   },
-    {   "name": "allpreference", "alias": "allpref"   },
+    {   "name": "allpreference", "alias": "allpref", "deprecated": true   },
     {   "name": "allpreferences", "alias": "allpref"   },
-    {   "name": "preferences", "alias": "allpref"   },
+    {   "name": "preferences", "alias": "allpref", "deprecated": true   },
     {
         "name": "alltopicpref", "title": "Preferences with topic scores",
         "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",

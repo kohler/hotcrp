@@ -3377,7 +3377,7 @@ class PaperSearch {
         $x = array();
         foreach ($map as $id => $str) {
             $match = null;
-            foreach (preg_split(',[^a-z0-9_]+,', strtolower($str)) as $word)
+            foreach (preg_split('/[^a-z0-9_]+/', strtolower($str)) as $word)
                 if ($word !== ""
                     && ($m = Text::simple_search($word, $map, $flags))
                     && isset($m[$id]) && count($m) == 1
@@ -3507,9 +3507,9 @@ class PaperSearch {
         if (!$category || $category === "show" || $category === "hide") {
             $cats = array();
             $pl = new PaperList("empty", $this);
-            foreach ($this->conf->paper_column_map() as $cname => $cj) {
-                $cj = $this->conf->basic_paper_column($cname, $this->user);
-                if ($cj
+            foreach ($this->conf->paper_column_map() as $cname => $cjj) {
+                if (!($cjj[0]->deprecated ?? false)
+                    && ($cj = $this->conf->basic_paper_column($cname, $this->user))
                     && isset($cj->completion)
                     && $cj->completion
                     && !str_starts_with($cj->name, "?")

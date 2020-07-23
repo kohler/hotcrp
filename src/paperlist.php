@@ -1045,19 +1045,16 @@ class PaperList {
             }
             list($empty, $content) = $this->_row_field_content($fdef, $row);
             if ($fdef->is_visible) {
-                if ($content !== "") {
-                    $tm .= "<td class=\"pl " . $fdef->className;
-                    if ($fdef->fold) {
-                        $tm .= " fx{$fdef->fold}";
-                    }
-                    $tm .= "\">" . $content . "</td>";
-                } else {
-                    $tm .= "<td";
-                    if ($fdef->fold) {
-                        $tm .= " class=\"fx{$fdef->fold}\"";
-                    }
-                    $tm .= "></td>";
+                $tm .= '<td class="pl';
+                if ($fdef->fold) {
+                    $tm .= " fx{$fdef->fold}";
                 }
+                if ($content !== "") {
+                    $tm .= " " . $fdef->className . '">' . $content;
+                } else {
+                    $tm .= '">';
+                }
+                $tm .= '</td>';
             }
             if ($fdef->is_visible ? $content !== "" : !$empty) {
                 $fdef->has_content = true;
