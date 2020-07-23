@@ -2537,8 +2537,7 @@ class Contact {
     /** @return int */
     function view_conflict_type(PaperInfo $prow = null) {
         if ($prow) {
-            $rights = $this->rights($prow);
-            return $rights->view_conflict_type;
+            return $this->rights($prow)->view_conflict_type;
         } else {
             return 0;
         }
@@ -2546,14 +2545,12 @@ class Contact {
 
     /** @return bool */
     function act_author(PaperInfo $prow) {
-        $rights = $this->rights($prow);
-        return $rights->act_author;
+        return $this->rights($prow)->act_author;
     }
 
     /** @return bool */
     function act_author_view(PaperInfo $prow) {
-        $rights = $this->rights($prow);
-        return $rights->act_author_view;
+        return $this->rights($prow)->act_author_view;
     }
 
     function act_author_view_sql($table, $only_if_complex = false) {
@@ -3005,8 +3002,7 @@ class Contact {
     /* NB caller must check can_view_paper() */
     /** @return 0|1|2 */
     function view_authors_state(PaperInfo $prow) {
-        $rights = $this->rights($prow);
-        return $rights->view_authors_state;
+        return $this->rights($prow)->view_authors_state;
     }
 
     /** @return bool */

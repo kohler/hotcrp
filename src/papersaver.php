@@ -31,30 +31,8 @@ class PaperSaver {
     }
 
     /** @param Qrequest $qreq */
-    static function translate_contact_qreq($qreq) {
-        $n = 1;
-        while (isset($qreq["contact_email_$n"])) {
-            $qreq["contacts:email_$n"] = $qreq["contact_email_$n"];
-            $qreq["contacts:active_$n"] = $qreq["contact_active_$n"];
-            ++$n;
-        }
-        $newi = 1;
-        while (isset($qreq["newcontact_email_$newi"])) {
-            $qreq["contacts:email_$n"] = $qreq["newcontact_email_$newi"];
-            $qreq["contacts:active_$n"] = $qreq["newcontact_active_$newi"];
-            $qreq["contacts:name_$n"] = $qreq["newcontact_name_$newi"];
-            $qreq["contacts:isnew_$n"] = "1";
-            ++$newi;
-            ++$n;
-        }
-    }
-
-    /** @param Qrequest $qreq */
     static function replace_contacts($pj, $qreq) {
         $pj->contacts = [];
-        if (!isset($qreq["contacts:email_1"])) {
-            self::translate_contact_qreq($qreq);
-        }
         for ($n = 1; isset($qreq["contacts:email_$n"]); ++$n) {
             $email = trim($qreq["contacts:email_$n"]);
             if (strcasecmp($email, "Email") === 0) {
