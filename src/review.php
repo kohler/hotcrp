@@ -207,7 +207,8 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return self::unparse_visibility_value($this->view_score);
     }
 
-    /** @return bool */
+    /** @param ?int|string $value
+     * @return bool */
     function value_empty($value) {
         return $value === null
             || $value === ""
@@ -615,6 +616,12 @@ class ReviewForm implements JsonSerializable {
                 && (!$f->round_mask || $f->is_round_visible($rrow));
         });
     }
+    /** @return array<string,ReviewField> */
+    function editable_fields(ReviewInfo $rrow = null) {
+        return array_filter($this->forder, function ($f) use ($rrow) {
+            return !$f->round_mask || $f->is_round_visible($rrow);
+        });
+    }
     /** @return list<ReviewField> */
     function example_fields(Contact $user) {
         $fs = [];
@@ -766,10 +773,8 @@ class ReviewForm implements JsonSerializable {
     /** @return int */
     function nonempty_view_score(ReviewInfo $rrow) {
         $view_score = VIEWSCORE_EMPTY;
-        foreach ($this->forder as $fid => $f) {
-            if (isset($rrow->$fid)
-                && (!$f->round_mask || $f->is_round_visible($rrow))
-                && !$f->value_empty($rrow->$fid)) {
+        foreach ($this->editable_fields($rrow) as $fid => $f) {
+            if (!$f->value_empty($rrow->$fid ?? null)) {
                 $view_score = max($view_score, $f->view_score);
             }
         }
@@ -779,11 +784,8 @@ class ReviewForm implements JsonSerializable {
     /** @return int */
     function word_count(ReviewInfo $rrow) {
         $wc = 0;
-        foreach ($this->forder as $fid => $f) {
-            if (isset($rrow->$fid)
-                && (!$f->round_mask || $f->is_round_visible($rrow))
-                && $f->include_word_count()
-                && $rrow->$fid !== "") {
+        foreach ($this->editable_fields($rrow) as $fid => $f) {
+            if ($f->include_word_count() && !$f->value_empty($rrow->$fid ?? null)) {
                 $wc += count_words($rrow->$fid);
             }
         }
@@ -917,7 +919,8 @@ $blind\n";
             $format_description = $fi->description_text();
         }
         foreach ($this->forder as $fid => $f) {
-            $i++;
+            $i++; // XXX remove $i
+            assert($i === $f->display_order);
             if ($f->view_score <= $revViewScore
                 || ($f->round_mask && !$f->is_round_visible($rrow))) {
                 continue;
@@ -1444,9 +1447,7 @@ $blind\n";
             $xbarsep = "";
         }
         foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f) {
-            if (isset($rrow->$fid)
-                && $f->has_options
-                && (int) $rrow->$fid !== 0) {
+            if ($f->has_options && !$f->value_empty($rrow->$fid ?? null)) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
                     . $f->unparse_value((int) $rrow->$fid, ReviewField::VALUE_SC);
                 $xbarsep = $barsep;
@@ -2061,22 +2062,25 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
-        $qf = $qv = [];
-        $tfields = $sfields = $set_sfields = $set_tfields = [];
-        $view_score = VIEWSCORE_EMPTY;
-        $diffinfo = new ReviewDiffInfo($prow, $rrow);
-        $wc = 0;
+        // initialize tfields/sfields with old values from review
+        // (in case of partial request)
+        $sfields = $tfields = [];
         foreach ($this->rf->forder as $fid => $f) {
-            if ($f->json_storage && $rrow && isset($rrow->$fid)) {
-                if ($f->has_options && (int) $rrow->$fid !== 0) {
+            if ($f->json_storage && $rrow && !$f->value_empty($rrow->$fid ?? null)) {
+                if ($f->has_options) {
                     $sfields[$f->json_storage] = (int) $rrow->$fid;
-                } else if (!$f->has_options && $rrow->$fid !== "") {
+                } else {
                     $tfields[$f->json_storage] = $rrow->$fid;
                 }
             }
-            if ($f->round_mask && !$f->is_round_visible($rrow)) {
-                continue;
-            }
+        }
+
+        $qf = $qv = [];
+        $set_sfields = $set_tfields = [];
+        $view_score = VIEWSCORE_EMPTY;
+        $diffinfo = new ReviewDiffInfo($prow, $rrow);
+        $wc = 0;
+        foreach ($this->rf->editable_fields($rrow) as $fid => $f) {
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if ($fval === false) {
                 $fval = $old_fval;
@@ -2117,7 +2121,7 @@ class ReviewValues extends MessageSet {
                     }
                 }
             }
-            if (!$f->has_options && $f->include_word_count()) {
+            if ($f->include_word_count()) {
                 $wc += count_words($fval);
             }
             if (!$f->value_empty($fval)) {
