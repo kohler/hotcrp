@@ -356,26 +356,29 @@ class Text {
     }
 
     /** @param list<TextPregexes> $regex
-     * @return TextPregexes|false */
+     * @return ?TextPregexes */
     static function merge_pregexes($regex) {
         if (empty($regex)) {
-            return false;
-        }
-        $a = $b = [];
-        foreach ($regex as $x) {
-            if ($x) {
-                $a[] = $x->preg_utf8;
-                if (isset($x->preg_raw)) {
-                    $b[] = $x->preg_raw;
+            return null;
+        } else if (count($regex) === 1) {
+            return $regex[0];
+        } else {
+            $a = $b = [];
+            foreach ($regex as $x) {
+                if ($x) {
+                    $a[] = $x->preg_utf8;
+                    if (isset($x->preg_raw)) {
+                        $b[] = $x->preg_raw;
+                    }
                 }
             }
+            $x = new TextPregexes;
+            $x->preg_utf8 = join("|", $a);
+            if (count($a) === count($b)) {
+                $x->preg_raw = join("|", $b);
+            }
+            return $x;
         }
-        $x = new TextPregexes;
-        $x->preg_utf8 = join("|", $a);
-        if (count($a) == count($b)) {
-            $x->preg_raw = join("|", $b);
-        }
-        return $x;
     }
 
     /** @param ?TextPregexes $reg */

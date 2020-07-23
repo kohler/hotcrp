@@ -3,10 +3,14 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class AuthorMatcher extends Author {
+    /** @var ?TextPregexes */
     private $firstName_matcher;
+    /** @var ?TextPregexes */
     private $lastName_matcher;
     private $affiliation_matcher;
+    /** @var ?TextPregexes|false */
     private $general_pregexes_ = false;
+    /** @var ?TextPregexes */
     private $highlight_pregexes_;
 
     private static $wordinfo;
@@ -154,6 +158,7 @@ class AuthorMatcher extends Author {
         return $this->general_pregexes_;
     }
 
+    /** @return ?TextPregexes */
     function highlight_pregexes() {
         if ($this->general_pregexes_ === false) {
             $this->prepare();
@@ -217,10 +222,16 @@ class AuthorMatcher extends Author {
         }
         return 0;
     }
+    /** @param string|Contact|Author $aux
+     * @param list<AuthorMatcher> $matchers
+     * @return string */
     static function highlight_all($aux, $matchers) {
         $aff_suffix = null;
         if (is_object($aux)) {
             $au = $aux->name(NAME_P);
+            if ($au === "[No name]" && $aux->affiliation !== "") {
+                $au = "All";
+            }
             if ($aux->affiliation !== "") {
                 $au .= " (" . $aux->affiliation . ")";
                 $aff_suffix = "(" . htmlspecialchars($aux->affiliation) . ")";
@@ -229,17 +240,13 @@ class AuthorMatcher extends Author {
             $au = $aux;
         }
         $pregexes = [];
-        '@phan-var list<object> $pregexes';
         foreach ($matchers as $matcher) {
             if (($preg = $matcher->highlight_pregexes())) {
                 $pregexes[] = $preg;
             }
         }
-        if (count($pregexes) > 1) {
-            $pregexes = [Text::merge_pregexes($pregexes)];
-        }
         if (!empty($pregexes)) {
-            $au = Text::highlight($au, $pregexes[0]);
+            $au = Text::highlight($au, Text::merge_pregexes($pregexes));
         }
         if ($aff_suffix !== null && str_ends_with($au, $aff_suffix)) {
             $au = substr($au, 0, -strlen($aff_suffix))
@@ -247,6 +254,8 @@ class AuthorMatcher extends Author {
         }
         return $au;
     }
+    /** @param string|Contact|Author $au
+     * @return string */
     function highlight($au) {
         return self::highlight_all($au, [$this]);
     }

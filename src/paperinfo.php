@@ -793,6 +793,8 @@ class PaperInfo {
         return $collab !== "" && strcasecmp($collab, "none") !== 0;
     }
 
+    /** @param ?callable(Contact,AuthorMatcher,Author,int,string) $callback
+     * @return bool */
     function potential_conflict_callback(Contact $user, $callback) {
         $nproblems = $auproblems = 0;
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
@@ -832,6 +834,11 @@ class PaperInfo {
         return $this->potential_conflict_callback($user, null);
     }
 
+    /** @param Contact $user
+     * @param AuthorMatcher $matcher
+     * @param Author $conflict
+     * @param int $aunum
+     * @param string $why */
     function _potential_conflict_html_callback($user, $matcher, $conflict, $aunum, $why) {
         if ($aunum && $matcher->nonauthor) {
             $matchdesc = "collaborator";
