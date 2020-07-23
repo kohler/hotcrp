@@ -792,6 +792,20 @@ class ReviewForm implements JsonSerializable {
         return $wc;
     }
 
+    /** @return ?int */
+    function full_word_count(ReviewInfo $rrow) {
+        $wc = null;
+        foreach ($this->editable_fields($rrow) as $fid => $f) {
+            if (!$f->has_options) {
+                $wc = $wc ?? 0;
+                if (!$f->value_empty($rrow->$fid ?? null)) {
+                    $wc += count_words($rrow->$fid);
+                }
+            }
+        }
+        return $wc;
+    }
+
 
     static function update_review_author_seen() {
         while (self::$review_author_seen) {
@@ -2327,27 +2341,31 @@ class ReviewValues extends MessageSet {
         // log updates -- but not if review token is used
         if (!$usedReviewToken
             && $diffinfo->nonempty()) {
-            $actions = [];
+            $log_actions = [];
             if (!$rrow) {
-                $actions[] = "started";
+                $log_actions[] = "started";
             }
             if ($newsubmit) {
-                $actions[] = "submitted";
+                $log_actions[] = "submitted";
             }
             if ($rrow && !$newsubmit && $diffinfo->fields()) {
-                $actions[] = "edited";
+                $log_actions[] = "edited";
             }
-            $text = "Review $reviewId " . join(", ", $actions) . ($submit ? "" : " draft");
-            if ($diffinfo->fields()) {
-                $text .= ": " . join(", ", array_map(function ($f) use ($new_rrow) {
-                    if ($f->has_options) {
-                        return $f->search_keyword() . ":" . $f->unparse_value($new_rrow);
-                    } else {
-                        return $f->search_keyword();
-                    }
-                }, $diffinfo->fields()));
+            $log_fields = array_map(function ($f) use ($new_rrow) {
+                if ($f->has_options) {
+                    return $f->search_keyword() . ":" . $f->unparse_value($new_rrow);
+                } else {
+                    return $f->search_keyword();
+                }
+            }, $diffinfo->fields());
+            if (($wc = $this->rf->full_word_count($new_rrow)) !== null) {
+                $log_fields[] = plural($wc, "word");
             }
-            $user->log_activity_for($rrow ? $rrow->contactId : $user->contactId, $text, $prow);
+            $user->log_activity_for($new_rrow->contactId, "Review $reviewId "
+                . join(", ", $log_actions)
+                . ($submit ? "" : " draft")
+                . (empty($log_fields) ? "" : ": ")
+                . join(", ", $log_fields), $prow);
         }
 
         // if external, forgive the requester from finishing their review
