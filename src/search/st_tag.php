@@ -83,17 +83,21 @@ class Tag_SearchTerm extends SearchTerm {
         $tags = $row->searchable_tags($srch->user);
         // autosearch tags are special, splice in their search defs
         foreach ($srch->conf->tags()->filter("autosearch") as $dt) {
-            if ($this->tsm->test(" {$dt->tag}#0")) {
-                $newsrch = new PaperSearch($srch->user, $dt->autosearch);
-                $newec = $newsrch->term()->compile_condition($row, $newsrch);
-                if ($newec === null) {
+            if ($this->tsm->test_ignore_value(" {$dt->tag}#")) {
+                if ($dt->autosearch_value) {
                     return null;
-                } else if ($newec === true) {
-                    return true;
-                } else if ($newec !== false) {
-                    $child[] = $newec;
+                } else if ($this->tsm->test_value(0)) {
+                    $newsrch = new PaperSearch($srch->user, $dt->autosearch);
+                    $newec = $newsrch->term()->compile_condition($row, $newsrch);
+                    if ($newec === null) {
+                        return null;
+                    } else if ($newec === true) {
+                        return true;
+                    } else if ($newec !== false) {
+                        $child[] = $newec;
+                    }
+                    $tags = str_replace(" {$dt->tag}#0", "", $tags);
                 }
-                $tags = str_replace(" {$dt->tag}#0", "", $tags);
             }
         }
         // now complete

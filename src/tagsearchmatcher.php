@@ -23,6 +23,7 @@ class TagSearchMatcher {
     function set_avoid_regex(bool $on) {
         $this->_avoid_regex = $on;
     }
+    /** @return list<string> */
     function error_texts() {
         return $this->_errors ?? [];
     }
@@ -156,6 +157,7 @@ class TagSearchMatcher {
     }
 
 
+    /** @return string|false */
     function sqlexpr($table) {
         if ($this->_mtype > 0) {
             $s = [Dbl::format_query($this->user->conf->dblink,
@@ -169,19 +171,38 @@ class TagSearchMatcher {
         }
     }
 
+    /** @return bool */
     function test_empty() {
         return $this->_mtype === -2;
     }
 
+    /** @param string $taglist
+     * @return bool */
+    function test_ignore_value($taglist) {
+        if ($this->_mtype === 2) {
+            return stripos($taglist, " {$this->_tagpat[0]}#") !== false;
+        } else if ($this->_mtype === -2) {
+            return !preg_match($this->regex(), $taglist);
+        } else {
+            return preg_match($this->regex(), $taglist);
+        }
+    }
+
+    /** @param int|float $value
+     * @return bool */
+    function test_value($value) {
+        foreach ($this->_valm as $valm) {
+            if (!$valm->test($value))
+                return false;
+        }
+        return true;
+    }
+
+    /** @param string $taglist
+     * @return bool */
     function test($taglist) {
         if (empty($this->_valm)) {
-            if ($this->_mtype === 2) {
-                return stripos($taglist, " {$this->_tagpat[0]}#") !== false;
-            } else if ($this->_mtype === -2) {
-                return !preg_match($this->regex(), $taglist);
-            } else {
-                return preg_match($this->regex(), $taglist);
-            }
+            return $this->test_ignore_value($taglist);
         } else {
             $pos = 0;
             while (true) {
@@ -202,12 +223,7 @@ class TagSearchMatcher {
                     return false;
                 }
                 $pos = strpos($taglist, "#", $pos);
-                $val = (float) substr($taglist, $pos + 1);
-                $ok = true;
-                foreach ($this->_valm as $valm) {
-                    $ok = $ok && $valm->test($val);
-                }
-                if ($ok) {
+                if ($this->test_value((float) substr($taglist, $pos + 1))) {
                     return true;
                 }
                 ++$pos;
@@ -215,6 +231,7 @@ class TagSearchMatcher {
         }
     }
 
+    /** @return list<string> */
     function expand() {
         if ($this->_mtype > 0) {
             return $this->_tagpat;
