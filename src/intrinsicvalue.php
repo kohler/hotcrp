@@ -14,7 +14,7 @@ class Title_PaperOption extends PaperOption {
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return (string) $ov->data();
     }
-    function value_load_intrinsic(PaperValue $ov) {
+    function value_force(PaperValue $ov) {
         if ((string) $ov->prow->title !== "") {
             $ov->set_value_data([1], [$ov->prow->title]);
         }
@@ -52,7 +52,7 @@ class Abstract_PaperOption extends PaperOption {
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return (string) $ov->data();
     }
-    function value_load_intrinsic(PaperValue $ov) {
+    function value_force(PaperValue $ov) {
         if (($ab = $ov->prow->abstract_text()) !== "") {
             $ov->set_value_data([1], [$ab]);
         }
@@ -104,7 +104,7 @@ class Collaborators_PaperOption extends PaperOption {
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return (string) $ov->data();
     }
-    function value_load_intrinsic(PaperValue $ov) {
+    function value_force(PaperValue $ov) {
         if (($collab = $ov->prow->collaborators()) !== "") {
             $ov->set_value_data([1], [$collab]);
         }
@@ -162,7 +162,7 @@ class Nonblind_PaperOption extends PaperOption {
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return !!$ov->value;
     }
-    function value_load_intrinsic(PaperValue $ov) {
+    function value_force(PaperValue $ov) {
         if (!$ov->prow->blind) {
             $ov->set_value_data([1], [null]);
         }
@@ -200,7 +200,7 @@ class Topics_PaperOption extends PaperOption {
         }
         return $vs;
     }
-    function value_load_intrinsic(PaperValue $ov) {
+    function value_force(PaperValue $ov) {
         $vs = $ov->prow->topic_list();
         $ov->set_value_data($vs, array_fill(0, count($vs), null));
     }
@@ -331,7 +331,7 @@ class PCConflicts_PaperOption extends PaperOption {
         }
         return $pcc;
     }
-    function value_load_intrinsic(PaperValue $ov) {
+    function value_force(PaperValue $ov) {
         $vm = self::paper_value_map($ov->prow);
         /** @phan-suppress-next-line PhanTypeMismatchArgument */
         $ov->set_value_data(array_keys($vm), array_values($vm));
@@ -447,7 +447,6 @@ class IntrinsicValue {
         } else {
             $ov->set_value_data([], []);
         }
-        $ov->anno["intrinsic"] = true;
     }
     static function value_check($o, PaperValue $ov, Contact $user) {
         if ($o->id === DTYPE_SUBMISSION
@@ -457,7 +456,6 @@ class IntrinsicValue {
             $ov->warning($o->conf->_("Entry required to complete submission."));
         }
         if ($o->id === PaperOption::AUTHORSID) {
-            assert(isset($ov->anno["intrinsic"]));
             $msg1 = $msg2 = false;
             foreach ($ov->prow->author_list() as $n => $au) {
                 if (strpos($au->email, "@") === false

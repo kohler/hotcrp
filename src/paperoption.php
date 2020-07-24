@@ -62,10 +62,7 @@ class PaperValue implements JsonSerializable {
      * @return PaperValue */
     static function make_force($prow, PaperOption $o) {
         $ov = new PaperValue($prow, $o);
-        if ($o->id <= 0) {
-            $o->value_load_intrinsic($ov);
-            $ov->set_anno("intrinsic", true);
-        }
+        $o->value_force($ov);
         return $ov;
     }
     function load_value_data() {
@@ -1026,7 +1023,7 @@ class PaperOption implements Abbreviator {
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return null;
     }
-    function value_load_intrinsic(PaperValue $ov) {
+    function value_force(PaperValue $ov) {
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
     }
@@ -1474,7 +1471,7 @@ class DocumentPaperOption extends PaperOption {
             return false;
         }
     }
-    function value_load_intrinsic(PaperValue $ov) {
+    function value_force(PaperValue $ov) {
         if ($this->id == DTYPE_SUBMISSION) {
             $ov->set_value_data([$ov->prow->paperStorageId], [null]);
         } else if ($this->id == DTYPE_FINAL) {
@@ -1967,7 +1964,7 @@ class IntrinsicPaperOption extends PaperOption {
     function value_check(PaperValue $ov, Contact $user) {
         IntrinsicValue::value_check($this, $ov, $user);
     }
-    function value_load_intrinsic(PaperValue $ov) {
+    function value_force(PaperValue $ov) {
         IntrinsicValue::assign_intrinsic($ov);
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
