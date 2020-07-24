@@ -51,6 +51,7 @@ class SiteLoader {
         "_listaction.php" => ["la_", "listactions"],
         "_papercolumn.php" => ["pc_", "papercolumns"],
         "_papercolumnfactory.php" => ["pc_", "papercolumns"],
+        "_paperoption.php" => ["o_", "options"],
         "_partial.php" => ["p_", "partials"],
         "_searchterm.php" => ["st_", "search"],
         "_settingrenderer.php" => ["s_", "settings"],

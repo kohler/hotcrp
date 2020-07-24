@@ -440,30 +440,32 @@ class PaperOptionList implements IteratorAggregate {
         }
     }
 
-    private function unsorted_field_list(PaperInfo $prow = null) {
+    private function unsorted_field_list(PaperInfo $prow = null, $key = null) {
         $nonfinal = $prow && $prow->outcome <= 0;
         $olist = [];
         foreach ($this->intrinsic_json_list() as $id => $oj) {
-            if (($o = $this->_get_field($id, $oj, $nonfinal)))
+            if ((!$key || ($oj->$key ?? null) !== false)
+                && ($o = $this->_get_field($id, $oj, $nonfinal)))
                 $olist[$id] = $o;
         }
         foreach ($this->option_json_list() as $id => $oj) {
-            if (($o = $this->_get_field($id, $oj, $nonfinal)))
+            if ((!$key || ($oj->$key ?? null) !== false)
+                && ($o = $this->_get_field($id, $oj, $nonfinal)))
                 $olist[$id] = $o;
         }
         return $olist;
     }
 
     /** @return array<int,PaperOption> */
-    function fields(PaperInfo $prow = null) {
-        $olist = $this->unsorted_field_list($prow);
+    function display_fields(PaperInfo $prow = null) {
+        $olist = $this->unsorted_field_list($prow, "display_position");
         uasort($olist, "PaperOption::compare");
         return $olist;
     }
 
     /** @return array<int,PaperOption> */
     function form_fields(PaperInfo $prow = null) {
-        $olist = $this->unsorted_field_list($prow);
+        $olist = $this->unsorted_field_list($prow, "form_position");
         uasort($olist, "PaperOption::form_compare");
         return $olist;
     }
@@ -1183,8 +1185,7 @@ class PaperOption implements Abbreviator {
     const LIST_DISPLAY_SUGGEST = 1;
     /** @return bool */
     function supports_list_display($context = 0) {
-        return $this->display_position() !== false
-            && is_string($this->list_class)
+        return is_string($this->list_class)
             && ($context !== self::LIST_DISPLAY_SUGGEST
                 || strpos($this->list_class, "pl-no-suggest") === false);
     }

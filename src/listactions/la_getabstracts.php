@@ -33,7 +33,7 @@ class GetAbstracts_ListAction extends ListAction {
         $text = $n . str_repeat("=", min(self::WIDTH, strlen($n) - 1)) . "\n\n";
 
         $fr = new FieldRender(FieldRender::CTEXT);
-        foreach ($user->conf->options()->fields($prow) as $o) {
+        foreach ($user->conf->options()->display_fields($prow) as $o) {
             if (($o->id <= 0 || $user->allow_view_option($prow, $o))
                 && $o->display_position() !== false) {
                 $fr->clear();

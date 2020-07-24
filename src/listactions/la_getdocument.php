@@ -23,7 +23,7 @@ class GetDocument_ListAction extends ListAction {
     }
     static function expand2(GroupedExtensions $gex) {
         $user = $gex->viewer();
-        foreach ($user->conf->options()->fields() as $o) {
+        foreach ($user->conf->options()->display_fields() as $o) {
             if ($o->is_document() && $user->can_view_some_option($o))
                 $gex->add(self::list_action_json($o));
         }

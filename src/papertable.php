@@ -324,7 +324,7 @@ class PaperTable {
 
         // other expansions
         $next_foldnum = 10;
-        foreach ($this->conf->options()->fields($this->prow) as $o) {
+        foreach ($this->conf->options()->display_fields($this->prow) as $o) {
             if ($o->display_position() !== false
                 && $o->display_position() >= 1000
                 && $o->display_position() < 5000
@@ -1212,7 +1212,7 @@ class PaperTable {
         $renders = [];
         $fr = new FieldRender(FieldRender::CPAGE);
         $fr->table = $this;
-        foreach ($this->conf->options()->fields($this->prow) as $o) {
+        foreach ($this->conf->options()->display_fields($this->prow) as $o) {
             if ($o->display_position() === false
                 || $o->display_position() < 1000
                 || $o->display_position() >= 5000
