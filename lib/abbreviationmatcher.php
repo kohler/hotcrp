@@ -274,8 +274,11 @@ class AbbreviationMatcher {
     /** @var array<int,float> */
     private $prio = [];
 
+    static private $lazy_marker;
+
     /** @param T $template */
     function __construct($template = null) {
+        self::$lazy_marker = self::$lazy_marker ?? (object) [];
     }
 
     /** @param string $name
@@ -288,7 +291,7 @@ class AbbreviationMatcher {
      * @param callable(...):T $callback
      * @param list $args */
     function add_lazy($name, $callback, $args, int $tflags = 0) {
-        $this->data[] = [$name, null, $this, $tflags, $callback, $args];
+        $this->data[] = [$name, null, self::$lazy_marker, $tflags, $callback, $args];
         $this->matches = [];
     }
     function set_abbreviator(int $tflags, Abbreviator $abbreviator) {
@@ -322,7 +325,7 @@ class AbbreviationMatcher {
      * @return T */
     private function _resolve($i) {
         $d =& $this->data[$i];
-        if ($d[2] === $this) {
+        if ($d[2] === self::$lazy_marker) {
             assert($d[4] !== null);
             $d[2] = call_user_func_array($d[4], $d[5]);
         }
@@ -378,7 +381,7 @@ class AbbreviationMatcher {
             $last_abbreviator = $last_value = null;
             $amt = new AbbreviationMatchTracker($spat, $sisu);
             foreach ($this->data as $i => $d) {
-                if ($d[2] === $this) {
+                if ($d[2] === self::$lazy_marker) {
                     $d[2] = $this->_resolve($i);
                 }
                 if ($d[2] instanceof Abbreviator) {
@@ -423,7 +426,7 @@ class AbbreviationMatcher {
                 $prio = $dprio;
             }
             if ((!$tflags || ($d[3] & $tflags) !== 0) && $prio == $dprio) {
-                if ($d[2] === $this) {
+                if ($d[2] === self::$lazy_marker) {
                     $d[2] = $this->_resolve($i);
                 }
                 if (empty($results) || $d[2] !== $last) {
@@ -465,7 +468,7 @@ class AbbreviationMatcher {
             $sfx = 1;
             foreach ($this->data as $i => $d) {
                 if (!$aclass1->tflags || ($d[3] & $aclass1->tflags) !== 0) {
-                    if ($d[2] === $this) {
+                    if ($d[2] === self::$lazy_marker) {
                         $d[2] = $this->_resolve($i);
                     }
                     if ($d[2] === $data) {
