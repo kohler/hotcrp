@@ -339,13 +339,6 @@ class PaperList {
         if ($v === "show" || $v === "hide") {
             $v = $v === "show";
         }
-        if ($v) {
-            if (($k === "aufull" || $k === "anonau")
-                && !isset($this->_viewing["au"])) {
-                $this->_viewing["au"] = $v;
-                $this->_view_origin["au"] = 3;
-            }
-        }
         $this->_viewing[$k] = $v;
         $this->_view_origin[$k] = $origin;
         $this->_view_field_options[$k] = empty($opts) ? null : $opts;
@@ -356,6 +349,13 @@ class PaperList {
             $this->_view_columns = $this->_view_compact_columns = $v;
         } else if ($k === "columns") {
             $this->_view_columns = $v;
+        } else if (($k === "aufull" || $k === "anonau")
+                   && $origin === 0
+                   && $v === true
+                   && ($this->_view_origin["au"] ?? 1) > 0) {
+            $this->_viewing["au"] = true;
+            $this->_view_origin["au"] = 0;
+            $this->_view_field_options["au"] = null;
         }
     }
     private function set_view_display($str, $origin) {
@@ -931,6 +931,28 @@ class PaperList {
         }
     }
 
+
+    /** @return int */
+    function viewable_author_types() {
+        if ($this->search->limit_author()
+            || $this->conf->submission_blindness() === Conf::BLIND_NEVER) {
+            return 2;
+        } else if ($this->user->is_reviewer()
+                   && ($this->conf->submission_blindness() === Conf::BLIND_UNTILREVIEW
+                       || $this->conf->time_reviewer_view_accepted_authors())) {
+            if (($this->search->limit_accepted()
+                 && $this->conf->time_reviewer_view_accepted_authors())
+                || !$this->user->is_manager()) {
+                return 2;
+            } else {
+                return 3;
+            }
+        } else if ($this->conf->submission_blindness() === Conf::BLIND_OPTIONAL) {
+            return $this->user->is_manager() ? 3 : 2;
+        } else {
+            return $this->user->is_manager() ? 1 : 0;
+        }
+    }
 
     function showing($fname) {
         $fname = self::$view_synonym[$fname] ?? $fname;

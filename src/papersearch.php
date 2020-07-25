@@ -1915,6 +1915,10 @@ class PaperSearch {
         return in_array($this->_limit_qe->limit, ["a", "act", "all"])
             && $this->q !== "re:me";
     }
+    /** @return bool */
+    function limit_accepted() {
+        return $this->_limit_qe->limit === "acc";
+    }
 
     /** @return Contact */
     function reviewer_user() {

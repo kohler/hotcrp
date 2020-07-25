@@ -257,7 +257,7 @@ $pl_text = $pl->table_html(["fold_session_prefix" => "pfdisplay.",
 // DISPLAY OPTIONS
 echo Ht::form($Conf->hoturl("reviewprefs"), [
     "method" => "get", "id" => "searchform",
-    "class" => "has-fold " . ($pl->showing("au") || $pl->showing("anonau") ? "fold10o" : "fold10c")
+    "class" => "has-fold fold10" . ($pl->showing("authors") ? "o" : "c")
 ]);
 
 if ($Me->privChair) {
@@ -285,27 +285,29 @@ echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="e
     Ht::entry("q", $Qreq->q, ["id" => "htctl-prefs-q", "size" => 32]),
     '  ', Ht::submit("redisplay", "Redisplay"), '</div></div>';
 
-function show_pref_element($pl, $name, $text, $sepclass = "", $id = null, $post = "") {
-    return '<li class="checki' . ($sepclass ? " $sepclass" : "")
+function show_pref_element($pl, $name, $text, $extra = []) {
+    return '<li class="' . rtrim("checki " . ($extra["item_class"] ?? ""))
         . '"><span class="checkc">'
-        . Ht::checkbox("show$name", 1, $pl->showing($name), ["class" => "uich js-plinfo ignore-diff", "id" => $id ? : "show$name"])
-        . "</span>" . Ht::label($text) . $post . '</span>';
+        . Ht::checkbox("show$name", 1, $pl->showing($name), [
+            "class" => "uich js-plinfo ignore-diff" . (isset($extra["fold_target"]) ? " js-foldup" : ""),
+            "data-fold-target" => $extra["fold_target"] ?? null
+        ]) . "</span>" . Ht::label($text) . '</span>';
 }
 $show_data = [];
 if ($pl->has("abstract")) {
     $show_data[] = show_pref_element($pl, "abstract", "Abstract");
 }
-if (!$Conf->subBlindAlways()) {
-    $show_data[] = show_pref_element($pl, "au", "Authors");
-} else if ($Me->is_manager() && $Conf->subBlindAlways()) {
-    $show_data[] = show_pref_element($pl, "anonau", "Authors (deblinded)", "", "showau",
-        Ht::checkbox("showau", 1, $pl->showing("anonau"), ["id" => "showau_hidden", "class" => "uich js-plinfo hidden ignore-diff"]));
-}
-if (!$Conf->subBlindAlways() || $Me->is_manager()) {
-    $show_data[] = show_pref_element($pl, "aufull", "Full author info", "fx10");
-}
-if ($Me->is_manager() && !$Conf->subBlindAlways() && !$Conf->subBlindNever()) {
-    $show_data[] = show_pref_element($pl, "anonau", "Deblinded authors", "fx10");
+if (($vat = $pl->viewable_author_types()) !== 0) {
+    $extra = ["fold_target" => 10];
+    if ($vat & 2) {
+        $show_data[] = show_pref_element($pl, "au", "Authors", $extra);
+        $extra = ["item_class" => "fx10"];
+    }
+    if ($vat & 1) {
+        $show_data[] = show_pref_element($pl, "anonau", "Authors (deblinded)", $extra);
+        $extra = ["item_class" => "fx10"];
+    }
+    $show_data[] = show_pref_element($pl, "aufull", "Full author info", $extra);
 }
 if ($Conf->has_topics()) {
     $show_data[] = show_pref_element($pl, "topics", "Topics");

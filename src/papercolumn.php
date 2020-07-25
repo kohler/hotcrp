@@ -61,9 +61,11 @@ class PaperColumn extends Column {
             }
         }
         if (!$this->is_visible) {
+            error_log("missing .. " . json_encode($j));
             $j["missing"] = true;
         }
         if ($this->has_content && !$this->is_visible) {
+            error_log("loadable .. " . json_encode($j));
             $j["loadable"] = true;
         }
         if ($this->fold && $this->fold !== true) {
@@ -380,6 +382,11 @@ class Authors_PaperColumn extends PaperColumn {
         $this->anonau = $pl->showing("anonau");
         $this->highlight = $pl->search->field_highlighter("authorInformation");
         return $pl->user->can_view_some_authors();
+    }
+    function field_json(PaperList $pl) {
+        $j = parent::field_json($pl);
+        $j["aufull"] = $this->aufull;
+        return $j;
     }
     function prepare_sort(PaperList $pl, ListSorter $sorter) {
         $sorter->ianno = Contact::parse_sortspec($pl->conf, $sorter->anno);

@@ -7009,8 +7009,6 @@ function add_field(f) {
         --j;
     field_order.splice(j, 0, f);
     fields[f.name] = f;
-    if (f.name === "authors")
-        fields.au = fields.anonau = fields.aufull = f;
     if (/^(?:#|tag:|tagval:)\S+$/.test(f.name))
         $(window).on("hotcrptags", make_tag_column_callback(f));
     if (f.foldnum === true) {
@@ -7279,7 +7277,7 @@ function make_callback(dofold, type) {
         if (values.stat && f.name in values.stat) {
             render_statistics(values.stat[f.name]);
         }
-        if (type !== "aufull") {
+        if (dofold !== null) {
             fold(self, dofold, f.foldnum);
         }
         check_statistics();
@@ -7294,8 +7292,8 @@ function make_callback(dofold, type) {
         if (f) {
             f.loadable = false;
         }
-        if (type === "aufull") {
-            aufull[!!dofold] = rv;
+        if (type === "authors") {
+            aufull[rv.fields[type].aufull] = rv;
         }
         if (rv.ok) {
             values = rv;
@@ -7330,52 +7328,53 @@ function check_statistics() {
 
 function plinfo(type, dofold) {
     self || initialize();
-    var elt, f = fields[type];
+    var xtype;
+    if (type === "au")
+        type = xtype = "authors"; // special case
+    else if (type === "aufull" || type === "anonau")
+        xtype = "authors";
+    else
+        xtype = type;
+    var f = fields[xtype];
 
-    if ((type === "aufull" || type === "anonau")
-        && !dofold
-        && (elt = document.getElementById("showau"))
-        && !elt.checked) {
-        elt.click();
-    }
-    if ((type === "au" || type === "anonau")
-        && (elt = document.getElementById("showau_hidden"))
-        && elt.checked != document.getElementById("showau").checked) {
-        elt.click();
+    var ses = self.getAttribute("data-fold-session-prefix"), sesv;
+    if (ses) {
+        if (type === "anonau" && !dofold)
+            sesv = ses + "authors=0 " + ses + "anonau=0";
+        else
+            sesv = ses + type + (dofold ? "=1" : "=0");
     }
 
-    var ses = self.getAttribute("data-fold-session-prefix");
-    if ((type === "aufull" && !aufull[!!dofold])
-        || !f
-        || (!dofold && f.loadable && type !== "anonau")) {
+    if (!f || f.loadable || (type === "aufull" && !aufull[!dofold])) {
         // initiate load
-        var loadargs = $.extend({fn: "fieldhtml", f: type}, hotlist_search_params(self, true));
+        var loadargs = {fn: "fieldhtml", f: xtype};
+        if (type === "aufull")
+            loadargs.aufull = dofold ? 0 : 1;
+        else if (xtype === "authors")
+            loadargs.aufull = hasClass(self, "fold" + foldmap("aufull") + "o") ? 1 : 0;
         if (ses) {
-            loadargs.session = ses + type + (dofold ? "=1" : "=0");
+            loadargs.session = sesv;
+            ses = null;
         }
-        if (type === "au" || type === "aufull") {
-            loadargs.f = "authors";
-            if (type === "aufull")
-                loadargs.aufull = dofold ? 0 : 1;
-            else if ((elt = $$("showaufull")))
-                loadargs.aufull = elt.checked ? 1 : 0;
-        }
-        $.get(hoturl_post("api", loadargs), make_callback(dofold, type));
+        $.get(hoturl_post("api", $.extend(loadargs, hotlist_search_params(self, true))),
+              make_callback(type === "aufull" ? null : dofold, xtype));
+        if (type === "anonau" || type === "aufull")
+            fold(self, dofold, foldmap(type));
     } else {
         // display
-        if (type === "aufull") {
-            make_callback(dofold, type)(aufull[!!dofold]);
-        } else {
+        if (type === "aufull")
+            make_callback(null, xtype)(aufull[!dofold]);
+        else {
+            if (type === "anonau" && !dofold)
+                fold(self, dofold, foldmap(xtype));
             fold(self, dofold, foldmap(type));
-        }
-        // update session
-        if (ses) {
-            $.post(hoturl_post("api/session", {v: ses + type + (dofold ? "=1" : "=0")}));
         }
         // update statistics
         check_statistics();
     }
-
+    // update session
+    if (ses)
+        $.post(hoturl_post("api/session", {v: sesv}));
     return false;
 }
 
@@ -7478,26 +7477,26 @@ handle_ui.on("js-override-conflict", function () {
 });
 
 handle_ui.on("js-plinfo", function (event) {
-    var type = this.getAttribute("data-plinfo-field"), dofold = null;
-    if (!type
-        && this.type === "checkbox"
-        && this.name.substring(0, 4) === "show") {
-        type = this.name.substring(4);
-        dofold = !this.checked;
+    if (this.type !== "checkbox" || this.name.substring(0, 4) !== "show")
+        throw new Exception("bad plinfo");
+    var types = [this.name.substring(4)], dofold = !this.checked;
+    if (types[0] === "anonau") {
+        var form = this.closest("form"), showau = form && form.elements.showau;
+        if (!dofold && showau)
+            showau.checked = true;
+        else if (!showau && dofold)
+            types.push("authors");
     }
-    if (type) {
-        self || initialize();
-        type = type.split(/\s+/);
-        for (var i = 0; i != type.length; ++i) {
-            if (type[i] === "force")
-                fold_override(dofold);
-            else if (type[i] === "rownum")
-                fold(self, dofold, 6);
-            else
-                plinfo(type[i], dofold);
-        }
-        event.preventDefault();
+    self || initialize();
+    for (var i = 0; i != types.length; ++i) {
+        if (types[i] === "force")
+            fold_override(dofold);
+        else if (types[i] === "rownum")
+            fold(self, dofold, 6);
+        else
+            plinfo(types[i], dofold);
     }
+    event.preventDefault();
 });
 
 return plinfo;

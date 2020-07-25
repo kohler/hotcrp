@@ -29,6 +29,7 @@ class Search_API {
     }
 
     static function fieldhtml(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+        assert($qreq->f !== "anonau");
         $fdef = $qreq->f ? $user->conf->paper_columns($qreq->f, $user) : [];
         if (count($fdef) > 1) {
             return new JsonResult(400, "“" . htmlspecialchars($qreq->f) . "” expands to more than one field.");
@@ -42,7 +43,7 @@ class Search_API {
         } else if (!isset($qreq->q)) {
             $qreq->q = "";
         }
-        if ($qreq->f == "au" || $qreq->f == "authors") {
+        if ($fdef[0]->name === "authors") {
             $qreq->q = ((int) $qreq->aufull ? "show" : "hide") . ":aufull " . $qreq->q;
         }
         $search = new PaperSearch($user, $qreq);

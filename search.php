@@ -72,9 +72,6 @@ if ($Qreq->redisplay) {
             $settings[substr($k, 4)] = true;
         }
     }
-    if (!isset($settings["au"]) && (isset($settings["anonau"]) || isset($settings["aufull"]))) {
-        $settings["au"] = false;
-    }
     Session_API::change_display($Me, "pl", $settings);
 }
 if ($Qreq->scoresort) {
@@ -216,37 +213,19 @@ $display_options = new Search_DisplayOptions;
 
 if ($pl_text) {
     // Abstract
-    if ($pl->has("abstract"))
+    if ($pl->has("abstract")) {
         $display_options->checkbox_item(1, "abstract", "Abstracts");
+    }
 
     // Authors group
-    $viewAcceptedAuthors = $Me->is_reviewer()
-        && $Conf->time_reviewer_view_accepted_authors()
-        && $pl->has("accepted");
-    $viewAllAuthors = ($Qreq->t == "a"
-                       || ($Qreq->t == "acc" && $viewAcceptedAuthors)
-                       || $Conf->subBlindNever());
-    if (!$Conf->subBlindAlways()
-        || (!$Me->privChair && $viewAcceptedAuthors)
-        || $viewAllAuthors) {
-        $display_options->checkbox_item(1, "au", "Authors", ["id" => "showau"]);
-        if ($Me->privChair && $viewAllAuthors)
-            $display_options_extra .=
-                Ht::checkbox("showanonau", 1, $pl->showing("au"),
-                             ["id" => "showau_hidden", "class" => "uich js-plinfo hidden"]);
-    } else if ($Me->privChair && $Conf->subBlindAlways()) {
-        $display_options->checkbox_item(1, "anonau", "Authors (deblinded)", ["id" => "showau", "disabled" => !$pl->has("anonau")]);
-        $display_options_extra .=
-            Ht::checkbox("showau", 1, $pl->showing("anonau"),
-                         ["id" => "showau_hidden", "class" => "uich js-plinfo hidden"]);
-    }
-    if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair) {
-        $display_options->checkbox_item(1, "aufull", "Full author info", ["id" => "showaufull"]);
-    }
-    if ($Me->privChair
-        && !$Conf->subBlindNever()
-        && (!$Conf->subBlindAlways() || $viewAllAuthors)) {
-        $display_options->checkbox_item(1, "anonau", "Deblinded authors", ["disabled" => !$pl->has("anonau")]);
+    if (($vat = $pl->viewable_author_types()) !== 0) {
+        if ($vat & 2) {
+            $display_options->checkbox_item(1, "au", "Authors");
+        }
+        if ($vat & 1) {
+            $display_options->checkbox_item(1, "anonau", "Authors (deblinded)");
+        }
+        $display_options->checkbox_item(1, "aufull", "Full author info");
     }
     if ($pl->has("collab")) {
         $display_options->checkbox_item(1, "collab", "Collaborators");
@@ -457,7 +436,7 @@ if ($Me->isPC || $Me->privChair) {
 if ($pl->count > 0) {
     echo '<div class="tld is-tla" id="tla-view" style="padding-bottom:1ex">';
 
-    echo Ht::form(hoturl_post("search", "redisplay=1"), array("id" => "foldredisplay", "class" => "fn3 fold5c"));
+    echo Ht::form(hoturl_post("search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
     echo_request_as_hidden_inputs();
 
     echo '<div class="search-ctable">';
