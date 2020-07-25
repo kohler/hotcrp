@@ -221,7 +221,7 @@ class Title_PaperColumn extends PaperColumn {
             . $pl->_contentDownload($row);
 
         if ($this->has_decoration && (string) $row->paperTags !== "") {
-            if ($pl->row_tags_overridable
+            if ($pl->row_tags_overridable !== ""
                 && ($deco = $pl->tagger->unparse_decoration_html($pl->row_tags_overridable))) {
                 $decx = $pl->tagger->unparse_decoration_html($pl->row_tags);
                 if ($deco !== $decx) {
@@ -230,7 +230,7 @@ class Title_PaperColumn extends PaperColumn {
                 } else {
                     $t .= $deco;
                 }
-            } else if ($pl->row_tags) {
+            } else if ($pl->row_tags !== "") {
                 $t .= $pl->tagger->unparse_decoration_html($pl->row_tags);
             }
         }
@@ -739,7 +739,6 @@ class TagList_PaperColumn extends PaperColumn {
         if ($visible && $this->editable) {
             $pl->has_editable_tags = true;
         }
-        $pl->need_tag_attr = true;
         return true;
     }
     function field_json(PaperList $pl) {
@@ -757,7 +756,7 @@ class TagList_PaperColumn extends PaperColumn {
         if ($this->editable) {
             $pl->row_attr["data-tags-editable"] = 1;
         }
-        if ($this->editable || $pl->row_tags || $pl->row_tags_overridable) {
+        if ($this->editable || $pl->row_tags !== "" || $pl->row_tags_overridable !== "") {
             $pl->need_render = true;
             return '<span class="need-tags"></span>';
         } else {

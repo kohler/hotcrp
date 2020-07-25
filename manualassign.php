@@ -281,14 +281,14 @@ if ($reviewer) {
     if (!empty($hlsearch)) {
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     }
-    $pl = new PaperList("reviewAssignment", $search, ["sort" => true, "display" => "show:topics show:reviewers"], $Qreq);
-    echo Ht::form($Conf->hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]), ["class" => "has-fold " . ($pl->showing("au") || $pl->showing("anonau") ? "fold10o" : "fold10c") . " assignpc ignore-diff"]),
+    $pl = new PaperList("reviewAssignment", $search, ["sort" => true], $Qreq);
+    echo Ht::form($Conf->hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]), ["class" => "assignpc ignore-diff"]),
         Ht::hidden("t", $Qreq->t),
         Ht::hidden("q", $Qreq->q);
     $rev_rounds = $Conf->round_selector_options(false);
     $expected_round = $Conf->assignment_round_option(false);
 
-    echo '<div id="searchform">';
+    echo '<div id="searchform" class="has-fold fold10', $pl->showing("authors") ? "o" : "c", '">';
     if (count($rev_rounds) > 1) {
         echo '<div class="entryi"><label for="assrevround">Review round</label><div class="entry">',
             Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : $expected_round, ["id" => "assrevround", "class" => "ignore-diff"]), ' <span class="barsep">·</span> ';

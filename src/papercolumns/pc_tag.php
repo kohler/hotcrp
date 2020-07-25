@@ -60,7 +60,6 @@ class Tag_PaperColumn extends PaperColumn {
         }
         $this->className = ($this->editable ? "pl_edit" : "pl_")
             . ($this->is_value ? "tagval" : "tag");
-        $pl->need_tag_attr = true;
         return true;
     }
     function completion_name() {

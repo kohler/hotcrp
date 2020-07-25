@@ -3202,16 +3202,16 @@ class Conf {
         return $this->settings["sub_blind"];
     }
     function subBlindAlways() {
-        return $this->settings["sub_blind"] == self::BLIND_ALWAYS;
+        return $this->settings["sub_blind"] === self::BLIND_ALWAYS;
     }
     function subBlindNever() {
-        return $this->settings["sub_blind"] == self::BLIND_NEVER;
+        return $this->settings["sub_blind"] === self::BLIND_NEVER;
     }
     function subBlindOptional() {
-        return $this->settings["sub_blind"] == self::BLIND_OPTIONAL;
+        return $this->settings["sub_blind"] === self::BLIND_OPTIONAL;
     }
     function subBlindUntilReview() {
-        return $this->settings["sub_blind"] == self::BLIND_UNTILREVIEW;
+        return $this->settings["sub_blind"] === self::BLIND_UNTILREVIEW;
     }
 
     function is_review_blind($rrow) {

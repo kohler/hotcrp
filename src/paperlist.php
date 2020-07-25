@@ -7,6 +7,7 @@ class PaperListTableRender {
     public $table_start;
     public $thead;
     public $tbody_class;
+    /** @var list<string> */
     public $rows;
     public $tfoot;
     public $table_end;
@@ -133,6 +134,7 @@ class PaperList {
     public $user;
     /** @var PaperSearch */
     public $search;
+    /** @var Qrequest */
     private $qreq;
     /** @var Contact */
     private $_reviewer_user;
@@ -164,6 +166,7 @@ class PaperList {
     /** @var array<string,list<PaperColumn>> */
     private $_columns_by_name;
     private $_column_errors_by_name = [];
+    /** @var ?string */
     private $_current_find_column;
     /** @var list<ListSorter> */
     private $_sorters = [];
@@ -177,13 +180,16 @@ class PaperList {
     public $table_attr;
     public $row_attr;
     public $row_overridable;
+    /** @var string */
     public $row_tags;
+    /** @var string */
     public $row_tags_overridable;
     public $need_render;
     public $has_editable_tags = false;
     public $check_format;
 
     // collected during render and exported to caller
+    /** @var int */
     public $count; // also exported to columns access: 1 more than row index
     private $_has;
     public $error_html = array();
@@ -606,12 +612,10 @@ class PaperList {
                 && $this->rowset()->any(function ($row) {
                     return $row->abstract_text() !== "";
                 });
-        } else if ($key === "openau") {
-            return $this->has("authors")
-                && (!$this->user->is_manager()
-                    || $this->rowset()->any(function ($row) {
-                           return $this->user->can_view_authors($row);
-                       }));
+        } else if ($key === "authors") {
+            return $this->rowset()->any(function ($row) {
+                    return $this->user->allow_view_authors($row);
+                });
         } else if ($key === "anonau") {
             return $this->has("authors")
                 && $this->user->is_manager()
@@ -619,6 +623,15 @@ class PaperList {
                         return $this->user->allow_view_authors($row)
                            && !$this->user->can_view_authors($row);
                     });
+        } else if ($key === "tags") {
+            $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+            $answer = $this->user->can_view_tags(null)
+                && $this->rowset()->any(function ($row) {
+                        return $this->user->can_view_tags($row)
+                            && $row->sorted_viewable_tags($this->user) !== "";
+                    });
+            $this->user->set_overrides($overrides);
+            return $answer;
         } else if ($key === "lead") {
             return $this->conf->has_any_lead_or_shepherd()
                 && $this->rowset()->any(function ($row) {
@@ -652,7 +665,7 @@ class PaperList {
                            && $row->timeFinalSubmitted <= 0;
                    });
         } else {
-            if (!in_array($key, ["sel", "need_review", "authors", "tags"], true)) {
+            if (!in_array($key, ["sel", "need_review"], true)) {
                 error_log("unexpected PaperList::_compute_has({$key})");
             }
             return false;
@@ -894,18 +907,18 @@ class PaperList {
             $this->_default_linkto("finishreview");
             return "id title revtype status";
         case "pl":
-            return "sel id title revtype revstat status authors tags";
+            return "sel id title revtype revstat status";
         case "reqrevs":
-            return "id title revdelegation revstat status authors tags";
+            return "id title revdelegation revstat status";
         case "reviewAssignment":
             $this->_default_linkto("assign");
-            return "id title mypref topicscore desirability assignment authors potentialconflict tags";
+            return "id title mypref topicscore desirability assignment potentialconflict topics reviewers";
         case "conflictassign":
             $this->_default_linkto("assign");
-            return "id title authors potentialconflict revtype editconf tags";
+            return "id title authors potentialconflict revtype editconf";
         case "pf":
             $this->_default_linkto("paper");
-            return "sel id title topicscore revtype editmypref authors tags";
+            return "sel id title topicscore revtype editmypref";
         case "reviewers":
             $this->_default_linkto("assign");
             return "selon id title status";
@@ -1001,7 +1014,7 @@ class PaperList {
         $this->row_attr = [];
         $this->row_overridable = $this->user->has_overridable_conflict($row);
 
-        $this->row_tags = $this->row_tags_overridable = null;
+        $this->row_tags = $this->row_tags_overridable = "";
         if (isset($row->paperTags) && $row->paperTags !== "") {
             if ($this->row_overridable) {
                 $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
@@ -1013,6 +1026,7 @@ class PaperList {
                 $this->row_tags = $row->sorted_viewable_tags($this->user);
             }
         }
+        $this->mark_has("tags", $this->row_tags !== "" || $this->row_tags_overridable !== "");
     }
 
     static private function _prepend_row_header($content, $ch) {
@@ -1090,21 +1104,19 @@ class PaperList {
         }
 
         // tags
-        if ($this->need_tag_attr) {
-            if ($this->row_tags_overridable
-                && $this->row_tags_overridable !== $this->row_tags) {
-                $this->row_attr["data-tags"] = trim($this->row_tags_overridable);
-                $this->row_attr["data-tags-conflicted"] = trim($this->row_tags);
-            } else {
-                $this->row_attr["data-tags"] = trim($this->row_tags);
-            }
+        if ($this->row_tags_overridable !== ""
+            && $this->row_tags_overridable !== $this->row_tags) {
+            $this->row_attr["data-tags"] = trim($this->row_tags_overridable);
+            $this->row_attr["data-tags-conflicted"] = trim($this->row_tags);
+        } else if ($this->row_tags !== "") {
+            $this->row_attr["data-tags"] = trim($this->row_tags);
         }
 
         // row classes
         $trclass = [];
         $cc = "";
         if ($row->paperTags ?? null) {
-            if ($this->row_tags_overridable
+            if ($this->row_tags_overridable !== ""
                 && ($cco = $row->conf->tags()->color_classes($this->row_tags_overridable))) {
                 $ccx = $row->conf->tags()->color_classes($this->row_tags);
                 if ($cco !== $ccx) {
@@ -1114,7 +1126,7 @@ class PaperList {
                 }
                 $cc = $this->_view_force ? $cco : $ccx;
                 $rstate->hascolors = $rstate->hascolors || str_ends_with($cco, " tagbg");
-            } else if ($this->row_tags) {
+            } else if ($this->row_tags !== "") {
                 $cc = $row->conf->tags()->color_classes($this->row_tags);
             }
         }
@@ -1254,9 +1266,8 @@ class PaperList {
             }
         }
         // authorship requires special handling
-        if ($this->has("anonau")) {
-            $classes[] = "fold2" . ($this->showing("anonau") ? "o" : "c");
-        }
+        $classes[] = "fold2" . ($this->showing("anonau") ? "o" : "c");
+        $classes[] = "fold4" . ($this->showing("aufull") ? "o" : "c");
         // row number folding
         if ($has_sel) {
             $classes[] = "fold6" . ($this->showing("rownum") ? "o" : "c");
@@ -1568,7 +1579,7 @@ class PaperList {
         // get field array
         $fieldDef = array();
         $ncol = $titlecol = 0;
-        // folds: au:1, anonau:2, fullrow:3, aufull:4, force:5, rownum:6, statistics:7,
+        // folds: anonau:2, fullrow:3, aufull:4, force:5, rownum:6, statistics:7,
         // statistics-exist:8, [fields]
         $next_fold = 9;
         foreach ($field_list as $fdef) {
@@ -1620,7 +1631,8 @@ class PaperList {
         if ($options["fold_session_prefix"] ?? false) {
             $this->table_attr["data-fold-session-prefix"] = $options["fold_session_prefix"];
             $this->table_attr["data-fold-session"] = json_encode_browser([
-                "2" => "anonau", "5" => "force", "6" => "rownum", "7" => "statistics"
+                "2" => "anonau", "4" => "aufull", "5" => "force",
+                "6" => "rownum", "7" => "statistics"
             ]);
         }
         if ($this->search->is_order_anno) {
