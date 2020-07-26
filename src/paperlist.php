@@ -236,11 +236,11 @@ class PaperList {
             if ($s === null && $report === "pl") {
                 $s = $this->conf->review_form()->default_display();
             }
-            $this->set_view_display($s, 2);
+            $this->set_view_display($s, self::VIEWORIGIN_DEFAULT_DISPLAY);
 
             if (!($args["no_session_display"] ?? false)) {
                 $s = $this->user->session("{$report}display", null);
-                $this->set_view_display($s, 1);
+                $this->set_view_display($s, self::VIEWORIGIN_SESSION);
             }
         }
 
@@ -259,13 +259,13 @@ class PaperList {
                 $options[] = $view_list[$i + 1][0];
                 ++$i;
             }
-            $this->set_view($field, $action, 0, $options);
+            $this->set_view($field, $action, null, $options);
         }
         if ($display !== null) {
-            $this->set_view_display($args["display"], 0);
+            $this->set_view_display($args["display"], null);
         }
         if ($qreq->forceShow !== null) {
-            $this->set_view("force", !!$qreq->forceShow, 0);
+            $this->set_view("force", !!$qreq->forceShow);
         }
         $xsorts = [];
         if ($this->sortable) {
@@ -322,17 +322,22 @@ class PaperList {
         "ccol" => -2, "columns" => -2, "force" => -3, "rownum" => -1, "statistics" => -1
     ];
 
+    const VIEWORIGIN_NONE = -1;
+    const VIEWORIGIN_REPORT = 0;
+    const VIEWORIGIN_DEFAULT_DISPLAY = 1;
+    const VIEWORIGIN_SESSION = 2;
+    const VIEWORIGIN_EXPLICIT = 3;
+
     /** @param string $k
-     * @param 'show'|'hide'|'edit'|bool $v */
-    function set_view($k, $v, $origin = 0, $opts = null) {
+     * @param 'show'|'hide'|'edit'|bool $v
+     * @param ?int $origin */
+    function set_view($k, $v, $origin = null, $opts = null) {
+        $origin = $origin ?? self::VIEWORIGIN_EXPLICIT;
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
         }
-        if (isset(self::$view_synonym[$k])) {
-            $k = self::$view_synonym[$k];
-        }
-        if (isset($this->_view_origin[$k])
-            && $this->_view_origin[$k] < $origin) {
+        $k = self::$view_synonym[$k] ?? $k;
+        if (($this->_view_origin[$k] ?? -1) > $origin) {
             return;
         }
 
@@ -350,17 +355,20 @@ class PaperList {
         } else if ($k === "columns") {
             $this->_view_columns = $v;
         } else if (($k === "aufull" || $k === "anonau")
-                   && $origin === 0
+                   && $origin === self::VIEWORIGIN_EXPLICIT
                    && $v === true
-                   && ($this->_view_origin["au"] ?? 1) > 0) {
+                   && ($this->_view_origin["au"] ?? -1) < self::VIEWORIGIN_EXPLICIT) {
             $this->_viewing["au"] = true;
-            $this->_view_origin["au"] = 0;
+            $this->_view_origin["au"] = $origin;
             $this->_view_field_options["au"] = null;
         }
     }
+
+    /** @param ?string $str
+     * @param int $origin */
     private function set_view_display($str, $origin) {
         assert(!$this->_has_sorters);
-        if ((string) $str === "") {
+        if (($str ?? "") === "") {
             return;
         }
         $splitter = new SearchSplitter($str);
@@ -384,6 +392,13 @@ class PaperList {
         if ($sorters) {
             $this->_sorters = array_merge(ListSorter::compress($sorters), $this->_sorters);
         }
+    }
+
+    /** @param string $k
+     * @return int */
+    function view_origin($k) {
+        $k = self::$view_synonym[$k] ?? $k;
+        return $this->_view_origin[$k] ?? self::VIEWORIGIN_NONE;
     }
 
 
@@ -732,15 +747,16 @@ class PaperList {
         // add explicitly requested columns
         $viewmap_add = [];
         foreach ($this->_viewing as $k => $v) {
-            $f = $this->_expand_view_column($k, !!$v);
-            foreach ($f as $fx) {
-                $viewmap_add[$fx->name] = $v;
-                foreach ($field_list as $ff) {
-                    if ($fx && $fx->name == $ff->name)
-                        $fx = null;
-                }
-                if ($fx) {
-                    $field_list[] = $fx;
+            if ($v) {
+                foreach ($this->_expand_view_column($k, true) as $fx) {
+                    $viewmap_add[$fx->name] = $v;
+                    foreach ($field_list as $ff) {
+                        if ($fx && $fx->name == $ff->name)
+                            $fx = null;
+                    }
+                    if ($fx) {
+                        $field_list[] = $fx;
+                    }
                 }
             }
         }
@@ -767,12 +783,13 @@ class PaperList {
         $field_list = array();
         foreach ($fields as $fid) {
             foreach ($this->find_columns($fid) as $fdef) {
-                $field_list[] = $fdef;
                 $view = self::$view_synonym[$fdef->name] ?? $fdef->name;
                 if (!isset($this->_viewing[$view])) {
-                    $this->_viewing[$view] = !$fdef->fold
-                        && ($fdef->minimal || !$this->_view_compact_columns);
-                    $this->_view_origin[$view] = 3;
+                    $this->_viewing[$view] = $fdef->minimal || !$this->_view_compact_columns;
+                    $this->_view_origin[$view] = self::VIEWORIGIN_REPORT;
+                }
+                if ($this->_viewing[$view]) {
+                    $field_list[] = $fdef;
                 }
             }
         }
@@ -1607,7 +1624,7 @@ class PaperList {
         foreach ($field_list as $fdef) {
             if ($fdef->viewable()) {
                 $fieldDef[$fdef->name] = $fdef;
-                if ($fdef->fold === true) {
+                if ($this->view_origin($fdef->name) !== self::VIEWORIGIN_REPORT) {
                     $fdef->fold = $next_fold;
                     ++$next_fold;
                 }
@@ -1624,10 +1641,11 @@ class PaperList {
         $skipcallout = 0;
         foreach ($fieldDef as $fdef) {
             if ($fdef->viewable_column()) {
-                if ($fdef->position === null || $fdef->position >= 100)
+                if ($fdef->position === null || $fdef->position >= 100) {
                     break;
-                else
+                } else {
                     ++$skipcallout;
+                }
             }
         }
 
@@ -1712,34 +1730,32 @@ class PaperList {
         $this->_analyze_folds($rstate, $fieldDef);
 
         // header cells
-        $colhead = "";
         if (!($options["noheader"] ?? false)) {
-            $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">";
-
+            $ths = "";
             foreach ($fieldDef as $fdef) {
                 if (!$fdef->viewable_column() || !$fdef->is_visible) {
                     continue;
                 }
                 if ($fdef->has_content) {
-                    $colhead .= "<th class=\"pl plh " . $fdef->className;
+                    $ths .= "<th class=\"pl plh " . $fdef->className;
                     if ($fdef->fold) {
-                        $colhead .= " fx" . $fdef->fold;
+                        $ths .= " fx" . $fdef->fold;
                     }
-                    $colhead .= "\">";
+                    $ths .= "\">";
                     if ($fdef->has_content) {
-                        $colhead .= $this->_field_title($fdef);
+                        $ths .= $this->_field_title($fdef);
                     }
-                    $colhead .= "</th>";
+                    $ths .= "</th>";
                 } else {
-                    $colhead .= "<th";
+                    $ths .= "<th";
                     if ($fdef->fold) {
-                        $colhead .= " class=\"fx{$fdef->fold}\"";
+                        $ths .= " class=\"fx{$fdef->fold}\"";
                     }
-                    $colhead .= "></th>";
+                    $ths .= "></th>";
                 }
             }
 
-            $colhead .= "</tr>\n";
+            $colhead = " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">" . $ths . "</tr>\n";
 
             if ($this->search->is_order_anno
                 && isset($this->table_attr["data-drag-tag"])) {
@@ -1754,6 +1770,8 @@ class PaperList {
             }
 
             $colhead .= " </thead>\n";
+        } else {
+            $colhead = "";
         }
 
         // table skeleton including fold classes

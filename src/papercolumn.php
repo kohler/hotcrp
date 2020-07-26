@@ -68,7 +68,7 @@ class PaperColumn extends Column {
             error_log("loadable .. " . json_encode($j));
             $j["loadable"] = true;
         }
-        if ($this->fold && $this->fold !== true) {
+        if ($this->fold) {
             $j["foldnum"] = $this->fold;
         }
         return $j;

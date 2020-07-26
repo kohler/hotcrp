@@ -13,8 +13,8 @@ class Column {
     public $column = false;
     /** @var bool */
     public $row = false;
-    /** @var bool|int */
-    public $fold = false;
+    /** @var ?int */
+    public $fold;
     /** @var bool */
     public $sort = false;
     /** @var bool */
@@ -30,7 +30,7 @@ class Column {
 
     static private $keys = [
         "name" => true, "title" => true, "title_html" => true,
-        "className" => true, "column" => true, "row" => true, "fold" => true,
+        "className" => true, "column" => true, "row" => true,
         "sort" => true, "completion" => true, "minimal" => true,
         "position" => true
     ];

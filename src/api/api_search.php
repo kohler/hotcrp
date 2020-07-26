@@ -31,10 +31,10 @@ class Search_API {
     static function fieldhtml(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         assert($qreq->f !== "anonau");
         $fdef = $qreq->f ? $user->conf->paper_columns($qreq->f, $user) : [];
-        if (count($fdef) > 1) {
-            return new JsonResult(400, "“" . htmlspecialchars($qreq->f) . "” expands to more than one field.");
-        } else if (!$fdef || !isset($fdef[0]->fold) || !$fdef[0]->fold) {
+        if (empty($fdef)) {
             return new JsonResult(404, "No such field.");
+        } else if (count($fdef) > 1) {
+            return new JsonResult(400, "“" . htmlspecialchars($qreq->f) . "” expands to more than one field.");
         }
 
         if (!isset($qreq->q) && $prow) {
