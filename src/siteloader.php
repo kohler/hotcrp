@@ -29,7 +29,6 @@ class SiteLoader {
         "ReviewForm" => "src/review.php",
         "ReviewSearchMatcher" => "src/search/st_review.php",
         "ReviewValues" => "src/review.php",
-        "SearchSplitter" => "src/papersearch.php",
         "SearchTerm" => "src/papersearch.php",
         "SearchWord" => "src/papersearch.php",
         "SettingParser" => "src/settingvalues.php",

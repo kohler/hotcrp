@@ -562,7 +562,7 @@ class PaperList {
         if ($sorters[0]->type
             && $sorters[0]->thenval === -1
             && ($always || (string) $this->qreq->sort != "")
-            && ($sorters[0]->type != "id" || $sorters[0]->reverse)) {
+            && ($sorters[0]->type !== "id" || $sorters[0]->reverse)) {
             if (($fdef = $this->find_column($sorters[0]->type))) {
                 $x = $fdef->sort_name($this, $sorters[0]);
             } else {
