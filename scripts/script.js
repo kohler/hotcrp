@@ -6612,15 +6612,17 @@ function calculate_shift(si, di) {
     if (simax != si && rowanal[simax].tagvalue)
         sdelta += rowanal[simax].tagvalue - rowanal[si].tagvalue;
 
-    var newval = -Infinity, delta = 0, si_moved = false;
     for (i = 0; i < rowanal.length; ++i)
         rowanal[i].newvalue = rowanal[i].tagvalue;
+
+    var newval = -Infinity, delta = 0, si_moved = false;
     function adjust_newval(j) {
         return newval === false ? newval : newval + (rowanal[j].tagvalue - rowanal[si].tagvalue);
     }
 
     for (i = 0; i < rowanal.length; ++i) {
         if (rowanal[i].tagvalue === false) {
+            // In untagged territory
             if (i == 0)
                 newval = 1;
             else if (rowanal[i - 1].tagvalue === false)
@@ -6650,12 +6652,13 @@ function calculate_shift(si, di) {
         } else if (i == si) {
             delta -= sdelta;
             continue;
-        } else if (i >= si && i <= simax)
+        } else if (i >= si && i <= simax) {
             continue;
-        else if (i == di && !si_moved) {
+        } else if (i == di && !si_moved) {
             for (j = si; j <= simax; ++j)
                 rowanal[j].newvalue = adjust_newval(j);
-            delta += sdelta;
+            if (i == 0 || rowanal[i].tagvalue - rowanal[i - 1].tagvalue > 0.0001)
+                delta += sdelta;
             newval = rowanal[simax].newvalue;
             --i;
             si_moved = true;
