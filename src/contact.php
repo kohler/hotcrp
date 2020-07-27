@@ -2296,7 +2296,7 @@ class Contact {
                 $ci->potential_reviewer = !$tracks
                     || !$this->conf->check_track_review_sensitivity()
                     || ($ci->allow_administer
-                        && !($this->_dangerous_track_mask & Track::BITS_REVIEW))
+                        && !($this->dangerous_track_mask() & Track::BITS_REVIEW))
                     || ($this->conf->check_tracks($prow, $this, Track::ASSREV)
                         && $this->conf->check_tracks($prow, $this, Track::UNASSREV));
             } else {
@@ -2432,7 +2432,7 @@ class Contact {
      * @return bool */
     private function _can_administer_for_track(PaperInfo $prow, $rights, $ttype) {
         return $rights->can_administer
-            && (!($this->_dangerous_track_mask & (1 << $ttype))
+            && (!($this->dangerous_track_mask() & (1 << $ttype))
                 || $this->conf->check_tracks($prow, $this, $ttype));
     }
 

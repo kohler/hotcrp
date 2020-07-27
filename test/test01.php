@@ -161,6 +161,22 @@ assert_search_papers($user_shenker, "au:berkeley fountain)", "24");
 
 // sorting works
 assert_search_papers($user_shenker, "au:berkeley sort:title", "24 15 13 1 6");
+assert_search_papers($user_shenker, "au:berkeley sort:[title]", "24 15 13 1 6");
+assert_search_papers($user_shenker, "au:berkeley sort:[title reverse]", "6 1 13 15 24");
+assert_search_papers($user_shenker, "au:berkeley sort:[title down]", "6 1 13 15 24");
+assert_search_papers($user_shenker, "au:berkeley sort:[title down forward]", "24 15 13 1 6");
+assert_search_papers($user_shenker, "au:berkeley sort:[-title]", "6 1 13 15 24");
+assert_search_papers($user_shenker, "au:berkeley sort:-title", "6 1 13 15 24");
+assert_search_papers($user_shenker, "au:berkeley sort:title as:reverse", "6 1 13 15 24");
+
+$pl = new PaperList("empty", new PaperSearch($user_shenker, "editsort:#f"));
+xassert_eqq($pl->sort_etag(), "f");
+$pl = new PaperList("empty", new PaperSearch($user_shenker, "editsort:#~f"));
+xassert_eqq($pl->sort_etag(), $user_shenker->contactId . "~f");
+$pl = new PaperList("empty", new PaperSearch($user_shenker, "sort:#me~f edit:tagval:~f"));
+xassert_eqq($pl->sort_etag(), $user_shenker->contactId . "~f");
+$pl = new PaperList("empty", new PaperSearch($user_shenker, "sort:[#me~f reverse] edit:tagval:~f"));
+xassert_eqq($pl->sort_etag(), "");
 
 // more complex author searches
 assert_search_papers($user_shenker, "au:estrin@usc.edu", "1");
@@ -556,6 +572,11 @@ assert_search_papers($user_chair, "10-12 THEN re:huitema", "10 11 12 8 13");
 assert_search_papers($user_chair, "10-12 HIGHLIGHT re:huitema", "10 11 12");
 assert_search_papers($user_chair, "10-12 THEN re:huitema THEN 5-6", "10 11 12 8 13 5 6");
 assert_search_papers($user_chair, "(10-12 THEN re:huitema) THEN 5-6", "10 11 12 8 13 5 6");
+
+// THEN searches and sorting
+assert_search_papers($user_chair, "10-12 THEN 3-1", "10 11 12 3 2 1");
+assert_search_papers($user_chair, "10-12 THEN 3-1 sort:title", "10 11 12 3 1 2");
+assert_search_papers($user_chair, "(10-12 THEN 3-1) sort:title", "10 12 11 3 2 1");
 
 // NOT searches
 assert_search_papers($user_chair, "#fart", "7 8 1 2 3 6 5 4");

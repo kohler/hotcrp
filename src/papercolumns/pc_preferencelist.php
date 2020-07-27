@@ -6,11 +6,16 @@ class PreferenceList_PaperColumn extends PaperColumn {
     private $topics;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
-        $this->topics = get($cj, "topics");
-        if (isset($cj->options) && in_array("topics", $cj->options)) {
-            $this->topics = true;
-        }
+        $this->topics = !!($cj->topics ?? false);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY_LINK;
+    }
+    function add_decoration($decor) {
+        if ($decor === "topic" || $decor === "topics") {
+            $this->topics = true;
+            return $this->__add_decoration("topics");
+        } else {
+            return parent::add_decoration($decor);
+        }
     }
     function prepare(PaperList $pl, $visible) {
         if ($this->topics && !$pl->conf->has_topics()) {

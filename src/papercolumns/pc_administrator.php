@@ -3,8 +3,12 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Administrator_PaperColumn extends PaperColumn {
+    private $ianno;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
+    }
+    function add_decoration($decor) {
+        return parent::add_user_sort_decoration($decor) || parent::add_decoration($decor);
     }
     function prepare(PaperList $pl, $visible) {
         return $pl->user->can_view_manager(null);
@@ -16,15 +20,11 @@ class Administrator_PaperColumn extends PaperColumn {
             return 0;
         }
     }
-    function prepare_sort(PaperList $pl, ListSorter $sorter) {
-        $sorter->ianno = Contact::parse_sortspec($pl->conf, $sorter->anno);
+    function prepare_sort2(PaperList $pl, $sortindex) {
+        $this->ianno = Contact::parse_sortspec($pl->conf, $this->decorations);
     }
-    function sort_name(PaperList $pl, ListSorter $sorter = null) {
-        return PaperColumn::decorate_user_sort_name($this->name, $pl, $sorter);
-    }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $pl = $sorter->pl;
-        return $pl->_compare_pc(self::cid($pl, $a), self::cid($pl, $b), $sorter);
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+        return $pl->_compare_pc(self::cid($pl, $a), self::cid($pl, $b), $this->ianno);
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !self::cid($pl, $row);

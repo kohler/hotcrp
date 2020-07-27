@@ -171,8 +171,8 @@ class SearchTerm {
         $this->float[$k] = $v;
     }
     /** @param string $k */
-    function get_float($k, $defval = null) {
-        return $this->float[$k] ?? $defval;
+    function get_float($k) {
+        return $this->float[$k] ?? null;
     }
     function apply_strspan($span) {
         $span1 = $this->float["strspan"] ?? null;
@@ -256,9 +256,9 @@ class SearchTerm {
             $srch->contradictions[$x] = true;
         }
     }
-    /** @param int $thenval
-     * @return ?ListSorter */
-    function default_sorter($top, $thenval, PaperSearch $srch) {
+    /** @param bool $top
+     * @return ?PaperColumn */
+    function default_sort_column($top, PaperSearch $srch) {
         return null;
     }
 }
@@ -315,11 +315,30 @@ class Op_SearchTerm extends SearchTerm {
     function __construct($type) {
         parent::__construct($type);
     }
+    static private function strip_sort($v) {
+        $r = [];
+        $copy = true;
+        foreach ($v as $w) {
+            if (preg_match('/\A([a-z]*)sort(:.*)\z/', $w, $m)) {
+                $copy = $m[1] !== "";
+                if ($copy) {
+                    $r[] = $m[1] . $m[2];
+                }
+            } else if (!str_starts_with($w, "as:") || $copy) {
+                $copy = true;
+                $r[] = $w;
+            }
+        }
+        return $r;
+    }
     protected function append($term) {
         if ($term) {
             foreach ($term->float as $k => $v) {
                 $v1 = $this->float[$k] ?? null;
-                if (($k === "sort" || $k === "view" || $k === "tags") && $v1) {
+                if ($k === "view" && $this->type === "then") {
+                    $v = self::strip_sort($v);
+                }
+                if (($k === "view" || $k === "tags") && $v1) {
                     array_splice($this->float[$k], count($v1), 0, $v);
                 } else if ($k === "strspan" && $v1) {
                     $this->apply_strspan($v);
@@ -548,10 +567,10 @@ class And_SearchTerm extends Op_SearchTerm {
             $qv->extract_metadata($top, $srch);
         }
     }
-    function default_sorter($top, $thenval, PaperSearch $srch) {
+    function default_sort_column($top, PaperSearch $srch) {
         $s = null;
         foreach ($this->child as $qv) {
-            $s1 = $qv->default_sorter($top, $thenval, $srch);
+            $s1 = $qv->default_sort_column($top, $srch);
             if ($s && $s1) {
                 return null;
             }
@@ -711,7 +730,7 @@ class Then_SearchTerm extends Op_SearchTerm {
         }
     }
     protected function finish() {
-        $opinfo = strtolower($this->get_float("opinfo", ""));
+        $opinfo = strtolower($this->get_float("opinfo") ?? "");
         $newvalues = $newhvalues = $newhmasks = $newhtypes = [];
 
         foreach ($this->child as $qvidx => $qv) {
@@ -751,7 +770,6 @@ class Then_SearchTerm extends Op_SearchTerm {
         $this->highlight_types = $newhtypes;
         array_splice($newvalues, $this->nthen, 0, $newhvalues);
         $this->child = $newvalues;
-        $this->set_float("sort", []);
         return $this;
     }
 
@@ -1286,23 +1304,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
 
 class Show_SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $word = simplify_whitespace($word);
-        $action = $sword->kwdef->view_action;
-        if (str_starts_with($word, "-") && !$sword->kwdef->sorting) {
-            $action = "hide";
-            $word = substr($word, 1);
-        }
-        $f = [];
-        $viewfield = $word;
-        if ($word !== "" && $sword->kwdef->sorting) {
-            $f["sort"] = [$word];
-            $sort = PaperSearch::parse_sorter($viewfield);
-            $viewfield = $sort->type;
-        }
-        if ($viewfield !== "" && $action) {
-            $f["view"] = [[$viewfield, $action]];
-        }
-        return SearchTerm::make_float($f);
+        return SearchTerm::make_float(["view" => [$sword->kwdef->name . ":" . $sword->qword]]);
     }
     static function parse_heading($word, SearchWord $sword) {
         return SearchTerm::make_float(["heading" => simplify_whitespace($word)]);
@@ -1439,11 +1441,9 @@ class PaperID_SearchTerm extends SearchTerm {
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
         return $this->exec($row, $srch);
     }
-    function default_sorter($top, $thenval, PaperSearch $srch) {
+    function default_sort_column($top, PaperSearch $srch) {
         if ($top && !$this->in_order) {
-            $s = ListSorter::make_field(new PaperIDOrder_PaperColumn($srch->conf, $this));
-            $s->thenval = $thenval;
-            return $s;
+            return new PaperIDOrder_PaperColumn($srch->conf, $this);
         } else {
             return null;
         }
@@ -1554,7 +1554,7 @@ class SearchQueryInfo {
         } else if (isset($this->tables["MyReviews"])) {
             $this->add_column("myReviewPermissions", PaperInfo::my_review_permissions_sql("MyReviews."));
         } else {
-            $this->add_column("myReviewPermissions", "(select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and $act_reviewer_sql  group by paperId)");
+            $this->add_column("myReviewPermissions", "(select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and $act_reviewer_sql group by paperId)");
         }
     }
     function add_review_signature_columns() {
@@ -1636,21 +1636,14 @@ class PaperSearch {
     public $thenmap;
     /** @var ?array<int,TagAnno> */
     public $groupmap;
-    /** @var false|string */
-    public $is_order_anno = false;
     /** @var ?array<int,list<string>> */
     public $highlightmap;
-    /** @var list<ListSorter> */
-    private $_sorters = [];
     private $_default_sort; // XXX should be used more often
     /** @var ?list<string> */
     private $_highlight_tags;
 
     /** @var list<int> */
     private $_matches;
-
-    static private $_sort_keywords = ["by" => "by", "up" => "up", "down" => "down",
-                "rev" => "down", "reverse" => "down", "reversed" => "down", "score" => ""];
 
     static public $search_type_names = [
         "a" => "Your submissions",
@@ -1961,66 +1954,6 @@ class PaperSearch {
         return new False_SearchTerm;
     }
 
-    /** @return ListSorter */
-    static function parse_sorter($text) {
-        $text = str_replace("\"", "", simplify_whitespace($text));
-        $sort = ListSorter::make_empty($text === "");
-        if (($ch1 = substr($text, 0, 1)) === "-" || $ch1 === "+") {
-            $sort->reverse = $ch1 === "-";
-            $text = ltrim(substr($text, 1));
-        }
-
-        // separate text into words
-        $words = [];
-        $bypos = false;
-        while (true) {
-            preg_match('{\A[,\s]*([^\s\(,]*)(.*)\z}s', $text, $m);
-            if ($m[1] === "" && $m[2] === "") {
-                break;
-            }
-            if (substr($m[2], 0, 1) === "(") {
-                $pos = SearchSplitter::span_balanced_parens($m[2]);
-                $m[1] .= substr($m[2], 0, $pos);
-                $m[2] = substr($m[2], $pos);
-            }
-            $words[] = $m[1];
-            $text = ltrim($m[2]);
-            if ($m[1] === "by" && $bypos === false) {
-                $bypos = count($words) - 1;
-            }
-        }
-
-        // go over words
-        $next_words = array();
-        for ($i = 0; $i != count($words); ++$i) {
-            $w = $words[$i];
-            if ($bypos === false || $i > $bypos) {
-                if (($x = self::$_sort_keywords[$w] ?? null) !== null) {
-                    if ($x === "up") {
-                        $sort->reverse = false;
-                    } else if ($x === "down") {
-                        $sort->reverse = true;
-                    }
-                    continue;
-                } else if (($x = ListSorter::canonical_short_score_sort($w))) {
-                    $sort->score = $x;
-                    continue;
-                } else if ($i > $bypos) {
-                    $sort->anno[] = $w;
-                    continue;
-                }
-            }
-            if ($bypos === false || $i < $bypos) {
-                $next_words[] = $w;
-            }
-        }
-
-        if (!empty($next_words)) {
-            $sort->type = join(" ", $next_words);
-        }
-        return $sort;
-    }
-
     private function _expand_saved_search($word, $recursion) {
         if (isset($recursion[$word])) {
             return false;
@@ -2179,13 +2112,6 @@ class PaperSearch {
 
     static private function _shift_word(SearchSplitter $splitter, Conf $conf) {
         if (($x = $splitter->shift()) === "") {
-            return $x;
-        }
-        // `HEADING x` parsed as `HEADING:x`
-        if ($x === "HEADING") {
-            $lspan = $splitter->strspan[0];
-            $x .= ":" . $splitter->shift();
-            $splitter->strspan[0] = $lspan;
             return $x;
         }
         // some keywords may be followed by parentheses
@@ -2507,102 +2433,6 @@ class PaperSearch {
 
     // BASIC QUERY FUNCTION
 
-    /** @param SearchTerm $qe
-     * @param int $thenval */
-    private function _add_sorters($qe, $thenval) {
-        if (($sorters = $qe->get_float("sort"))) {
-            foreach ($sorters as $s) {
-                if (($sx = self::parse_sorter($s))) {
-                    $sx->thenval = $thenval;
-                    $this->_sorters[] = $sx;
-                }
-            }
-        } else if (($sx = $qe->default_sorter(true, $thenval, $this))) {
-            $this->_sorters[] = $sx;
-        }
-    }
-
-    /** @param int $g
-     * @param TagInfo $dt
-     * @param int $anno_index */
-    private function _assign_order_anno_group($g, $dt, $anno_index) {
-        if (($ta = $dt->order_anno_entry($anno_index))) {
-            $this->groupmap[$g] = $ta;
-        } else if (!isset($this->groupmap[$g])) {
-            $ta = new TagAnno;
-            $ta->tag = $dt->tag;
-            $ta->heading = "";
-            $this->groupmap[$g] = $ta;
-        }
-    }
-
-    /** @param SearchTerm $qe
-     * @return ?TagInfo */
-    private function _find_order_anno_tag($qe) {
-        $thetag = null;
-        foreach ($this->_sorters as $sorter) {
-            $tag = $sorter->type ? Tagger::check_tag_keyword($sorter->type, $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID) : false;
-            $ok = $tag && ($thetag === null || $thetag === $tag);
-            $thetag = $ok ? $tag : false;
-        }
-        if (!$thetag) {
-            return null;
-        }
-        $dt = $this->conf->tags()->add(Tagger::base($thetag));
-        if ($dt->has_order_anno()) {
-            return $dt;
-        }
-        foreach ($qe->get_float("view", []) as $vv) {
-            if ($vv[1] === "edit"
-                && ($t = Tagger::check_tag_keyword($vv[0], $this->user, Tagger::NOVALUE | Tagger::ALLOWCONTACTID | Tagger::NOTAGKEYWORD))
-                && strcasecmp($t, $dt->tag) == 0)
-                return $dt;
-        }
-        return null;
-    }
-
-    /** @param SearchTerm $qe
-     * @param PaperInfoSet $rowset */
-    private function _check_order_anno($qe, $rowset) {
-        if (!($dt = $this->_find_order_anno_tag($qe))) {
-            return false;
-        }
-        $this->is_order_anno = $dt->tag;
-        assert(!$this->is_order_anno || $this->is_order_anno[0] !== "~" || $this->is_order_anno[1] === "~");
-
-        $tag_order = [];
-        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        foreach ($this->_matches as $pid) {
-            $row = $rowset->get($pid);
-            if ($row->has_viewable_tag($dt->tag, $this->user)) {
-                $tag_order[] = [$row->paperId, $row->tag_value($dt->tag)];
-            } else {
-                $tag_order[] = [$row->paperId, TAG_INDEXBOUND];
-            }
-        }
-        $this->user->set_overrides($old_overrides);
-        usort($tag_order, "Tagger::id_index_compar");
-
-        $this->thenmap = [];
-        $this->_assign_order_anno_group(0, $dt, -1);
-        $this->groupmap[0]->heading = "none";
-        $cur_then = $aidx = $tidx = 0;
-        $alist = $dt->order_anno_list();
-        while ($aidx < count($alist) || $tidx < count($tag_order)) {
-            if ($tidx == count($tag_order)
-                || ($aidx < count($alist) && $alist[$aidx]->tagIndex <= $tag_order[$tidx][1])) {
-                if ($cur_then != 0 || $tidx != 0 || $aidx != 0) {
-                    ++$cur_then;
-                }
-                $this->_assign_order_anno_group($cur_then, $dt, $aidx);
-                ++$aidx;
-            } else {
-                $this->thenmap[$tag_order[$tidx][0]] = $cur_then;
-                ++$tidx;
-            }
-        }
-    }
-
     /** @return SearchTerm */
     function term() {
         if ($this->_qe === null) {
@@ -2790,14 +2620,6 @@ class PaperSearch {
             $this->warn("Some incomplete or withdrawn submissions also match this search. " . Ht::link("Show all matching submissions", $this->conf->hoturl("search", ["t" => "all", "q" => $this->q])));
         }
 
-        // sort information
-        $this->_add_sorters($qe, -1);
-        if ($thqe) {
-            for ($i = 0; $i < $thqe->nthen; ++$i) {
-                $this->_add_sorters($thqe->child[$i], $this->thenmap ? $i : -1);
-            }
-        }
-
         // group information
         $this->groupmap = [];
         $sole_qe = $qe;
@@ -2809,15 +2631,13 @@ class PaperSearch {
                 $h = $thqe->child[$i]->get_float("heading");
                 if ($h === null) {
                     $span = $thqe->child[$i]->get_float("strspan") ?? [0, 0];
-                    $spanstr = $thqe->child[$i]->get_float("strspan_owner", $this->q);
+                    $spanstr = $thqe->child[$i]->get_float("strspan_owner") ?? $this->q;
                     $h = rtrim(substr($spanstr, $span[0], $span[1] - $span[0]));
                 }
                 $this->groupmap[$i] = TagAnno::make_heading($h);
             }
         } else if (($h = $sole_qe->get_float("heading"))) {
             $this->groupmap[0] = TagAnno::make_heading($h);
-        } else {
-            $this->_check_order_anno($sole_qe, $rowset);
         }
     }
 
@@ -2830,7 +2650,7 @@ class PaperSearch {
     /** @return list<int> */
     function sorted_paper_ids() {
         $this->_prepare();
-        if ($this->_default_sort || $this->_sorters) {
+        if ($this->_default_sort || $this->sort_field_list()) {
             $pl = new PaperList("empty", $this, ["sort" => $this->_default_sort]);
             return $pl->paper_ids();
         } else {
@@ -2844,15 +2664,56 @@ class PaperSearch {
         return $this->highlightmap ?? [];
     }
 
-    /** @return list<array{string,string}> */
-    function view_list() {
-        return $this->term()->get_float("view", []);
+    /** @param iterable<string> $words
+     * @return Generator<array{string,string,list<string>}> */
+    static function view_generator($words) {
+        $action = $keyword = "";
+        $decorations = [];
+        foreach ($words as $w) {
+            $colon = strpos($w, ":");
+            $a = substr($w, 0, $colon);
+            $d = substr($w, $colon + 1);
+            if (str_starts_with($d, "[")) {
+                $d = substr($d, 1, strlen($d) - (str_ends_with($d, "]") ? 2 : 1));
+            }
+            if ($a === "as" || in_array($d, ["reverse", "forward", "up", "down"])) {
+                $decorations[] = $d;
+            } else {
+                if ($keyword !== "") {
+                    yield [$action, $keyword, $decorations];
+                    $decorations = [];
+                }
+                $action = $a;
+                if (($k = SearchSplitter::split_balanced_parens($d))) {
+                    $keyword = $k[0];
+                    if (str_starts_with($keyword, "-")) {
+                        $keyword = substr($keyword, 1);
+                        $decorations[] = "reverse";
+                    } else if (str_starts_with($keyword, "+")) {
+                        $keyword = substr($keyword, 1);
+                    }
+                    if (count($k) > 1) {
+                        $decorations = array_merge($decorations, array_slice($k, 1));
+                    }
+                } else {
+                    $keyword = "";
+                }
+            }
+        }
+        if ($keyword !== "") {
+            yield [$action, $keyword, $decorations];
+        }
     }
 
-    /** @return list<ListSorter> */
-    function sorter_list() {
-        $this->_prepare();
-        return $this->_sorters;
+    /** @return list<string> */
+    private function sort_field_list() {
+        $r = [];
+        foreach (self::view_generator($this->term()->get_float("view") ?? []) as $akd) {
+            if (str_ends_with($akd[0], "sort")) {
+                $r[] = $akd[1];
+            }
+        }
+        return $r;
     }
 
     function restrict_match($callback) {
@@ -3086,9 +2947,9 @@ class PaperSearch {
         if ($this->_highlight_tags === null) {
             $this->_prepare();
             $ht = $this->term()->float["tags"] ?? [];
-            foreach ($this->_sorters as $s) {
-                if ($s->type && $s->type[0] === "#")
-                    $ht[] = substr($s->type, 1);
+            foreach ($this->sort_field_list() as $s) {
+                if (($tag = Tagger::check_tag_keyword($s, $this->user)))
+                    $ht[] = $tag;
             }
             $this->_highlight_tags = array_values(array_unique($ht));
         }

@@ -13,7 +13,7 @@ class Desirability_PaperColumn extends PaperColumn {
             $pl->qopts["allReviewerPreference"] = true;
         return true;
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $ad = $a->desirability();
         $bd = $b->desirability();
         return $bd < $ad ? -1 : ($bd > $ad ? 1 : 0);

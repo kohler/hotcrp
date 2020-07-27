@@ -31,14 +31,14 @@ class PageCount_PaperColumn extends PaperColumn {
             return null;
         }
     }
-    function prepare_sort(PaperList $pl, ListSorter $sorter) {
+    function prepare_sort2(PaperList $pl, $sortindex) {
         foreach ($pl->rowset() as $row) {
-            $row->{$sorter->uid} = $this->page_count($pl->user, $row);
+            $row->{$this->uid} = $this->page_count($pl->user, $row);
         }
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $ac = $a->{$sorter->uid};
-        $bc = $b->{$sorter->uid};
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+        $ac = $a->{$this->uid};
+        $bc = $b->{$this->uid};
         if ($ac === null || $bc === null) {
             return $ac === $bc ? 0 : ($ac === null ? -1 : 1);
         } else {

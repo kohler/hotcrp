@@ -254,40 +254,33 @@
     },
     {
         "name": "show",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true,
-        "view_action": "show", "sorting": false
+        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "as",
-        "parse_callback": "Show_SearchTerm::parse",
-        "view_action": "as", "sorting": false
+        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "hide",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true,
-        "view_action": "hide", "sorting": false
+        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "edit",
-        "parse_callback": "Show_SearchTerm::parse",
-        "view_action": "edit", "sorting": false
+        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "showsort",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true,
-        "view_action": "show", "sorting": true
+        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
     },
     {   "name": "sortshow", "alias": "showsort"   },
     {
         "name": "editsort",
-        "parse_callback": "Show_SearchTerm::parse",
-        "view_action": "edit", "sorting": true
+        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
     },
     {   "name": "sortedit", "alias": "editsort"   },
     {
         "name": "sort",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true,
-        "view_action": false, "sorting": true
+        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "HEADING",

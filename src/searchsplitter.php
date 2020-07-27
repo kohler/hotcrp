@@ -55,6 +55,16 @@ class SearchSplitter {
         $this->set_span_and_pos($result);
         return $result;
     }
+    /** @param string $s
+     * @return list<string> */
+    static function split_balanced_parens($s) {
+        $splitter = new SearchSplitter($s);
+        $w = [];
+        while ($splitter->skip_whitespace()) {
+            $w[] = $splitter->shift_balanced_parens();
+        }
+        return $w;
+    }
     /** @param string $re
      * @param list<string> &$m @phan-output-reference */
     function match($re, &$m = null) {

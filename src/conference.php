@@ -1201,7 +1201,7 @@ class Conf {
     /** @param list<object> $factories
      * @param string $name
      * @return non-empty-list<object> */
-    function xt_search_factories($factories, $name, $user, $found = null, $reflags = "", $options = null) {
+    function xt_search_factories($factories, $name, $user, $found = null, $reflags = "") {
         $xts = [$found];
         foreach ($factories as $fxt) {
             if (self::xt_priority_compare($fxt, $xts[0]) > 0) {
@@ -1219,13 +1219,10 @@ class Conf {
             if (!$user) {
                 $user = $this->root_user();
             }
-            if ($options || isset($fxt->options)) {
-                $fxt->options = $options;
-            }
             if (isset($fxt->expand_callback)) {
                 $r = call_user_func($fxt->expand_callback, $name, $user, $fxt, $m);
             } else {
-                $r = (object) ["name" => $name, "match_data" => $m, "options" => $options];
+                $r = (object) ["name" => $name, "match_data" => $m];
             }
             if (is_object($r)) {
                 $r = [$r];
@@ -5005,19 +5002,15 @@ class Conf {
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
         return self::xt_enabled($uf) ? $uf : null;
     }
-    /** @return list<object> */
-    function paper_columns($name, Contact $user, $options = null) {
+    /** @param string $name
+     * @return list<object> */
+    function paper_columns($name, Contact $user) {
         if ($name === "" || $name[0] === "?") {
             return [];
         }
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
-        $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i", $options);
-        return array_values(array_filter($ufs, function ($uf) use ($options) {
-            if ($uf && ($options || isset($uf->options))) {
-                $uf->options = $options;
-            }
-            return !!Conf::xt_resolve_require($uf);
-        }));
+        $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i");
+        return array_values(array_filter($ufs, "Conf::xt_resolve_require"));
     }
 
 

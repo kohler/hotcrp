@@ -8,6 +8,8 @@ class Session_API {
         return ["ok" => true, "postvalue" => post_value()];
     }
 
+    /** @param string|Qrequest $qreq
+     * @return array{ok:bool,postvalue:string} */
     static function setsession(Contact $user, $qreq) {
         ensure_session();
         if (is_string($qreq)) {

@@ -76,12 +76,6 @@ if ($Qreq->redisplay) {
 }
 if ($Qreq->scoresort) {
     $Qreq->scoresort = ListSorter::canonical_short_score_sort($Qreq->scoresort);
-} else if ($Qreq->sort
-           && ($s = PaperSearch::parse_sorter($Qreq->sort))
-           && $s->score) {
-    $Qreq->scoresort = ListSorter::canonical_short_score_sort($s->score);
-}
-if ($Qreq->scoresort) {
     Session_API::setsession($Me, "scoresort=" . $Qreq->scoresort);
 }
 if ($Qreq->redisplay) {

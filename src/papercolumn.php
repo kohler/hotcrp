@@ -21,14 +21,20 @@ class PaperColumn extends Column {
         parent::__construct($cj);
     }
 
-    static function make(Conf $conf, $cj) {
+    /** @param list<string> $decorations
+     * @return PaperColumn */
+    static function make(Conf $conf, $cj, $decorations = []) {
         if ($cj->callback[0] === "+") {
             $class = substr($cj->callback, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
-            return new $class($conf, $cj);
+            $pc = new $class($conf, $cj);
         } else {
-            return call_user_func($cj->callback, $conf, $cj);
+            $pc = call_user_func($cj->callback, $conf, $cj);
         }
+        foreach ($decorations as $decor) {
+            $pc->add_decoration($decor);
+        }
+        return $pc;
     }
     static function column_error(Contact $user, $msg) {
         assert($user->conf->xt_context instanceof PaperList);
@@ -37,6 +43,13 @@ class PaperColumn extends Column {
 
 
     function mark_editable() {
+    }
+    final function add_user_sort_decoration($decor) {
+        if (in_array($decor, ["name", "last", "first", "email", "affiliation"])) {
+            return $this->__add_decoration($decor);
+        } else {
+            return false;
+        }
     }
 
     function prepare(PaperList $pl, $visible) {
@@ -51,13 +64,15 @@ class PaperColumn extends Column {
         if ($this->className !== "pl_" . $this->name) {
             $j["className"] = $this->className;
         }
-        if ($this->viewable_column()) {
+        if ($this->as_row) {
+            $j["as_row"] = true;
+        } else {
             $j["column"] = true;
             if ($this->has_statistics()) {
                 $j["has_statistics"] = true;
             }
             if ($this->sort) {
-                $j["sort_name"] = $this->sort_name($pl, null);
+                $j["sort_name"] = $this->sort_name2();
             }
         }
         if (!$this->is_visible) {
@@ -71,12 +86,25 @@ class PaperColumn extends Column {
         if ($this->fold) {
             $j["foldnum"] = $this->fold;
         }
+        if (!empty($this->decorations)) {
+            $j["decorations"] = $this->decorations;
+        }
         return $j;
     }
 
+    /** @deprecated */
     function prepare_sort(PaperList $pl, ListSorter $sorter) {
+        throw new Error("fick");
     }
+    /** @deprecated */
     function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
+        throw new Error("fick");
+    }
+
+    /** @param int $sortindex */
+    function prepare_sort2(PaperList $pl, $sortindex) {
+    }
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         error_log("unexpected " . get_class($this) . "::compare");
         return $a->paperId - $b->paperId;
     }
@@ -107,14 +135,12 @@ class PaperColumn extends Column {
             return $this->name;
         }
     }
-    function sort_name(PaperList $pl, ListSorter $sorter = null) {
-        return $this->name;
-    }
-    static function decorate_user_sort_name($name, PaperList $pl, ListSorter $sorter = null) {
-        if ($sorter && $sorter->ianno !== ($pl->conf->sort_by_last ? 0312 : 0321)) {
-            $name .= " by " . Contact::unparse_sortspec($sorter->ianno);
+    function sort_name2() {
+        $decor = $this->decorations;
+        if (!empty($decor)) {
+            $decor = array_diff($decor, ["down"]);
         }
-        return $name;
+        return empty($decor) ? $this->name : $this->name . " " . join(" ", $decor);
     }
 
     /** @return bool */
@@ -144,7 +170,7 @@ class Id_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $a->paperId - $b->paperId;
     }
     function content(PaperList $pl, PaperInfo $row) {
@@ -199,7 +225,7 @@ class Title_PaperColumn extends PaperColumn {
         $this->highlight = $pl->search->field_highlighter("title");
         return true;
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $collator = $a->conf->collator();
         return $collator->compare($a->title, $b->title);
     }
@@ -254,12 +280,12 @@ class Status_PaperColumn extends PaperColumn {
         $this->include_submitted = $pl->search->limit_expect_nonsubmitted();
         return true;
     }
-    function prepare_sort(PaperList $pl, ListSorter $sorter) {
+    function prepare_sort2(PaperList $pl, $sortindex) {
         foreach ($pl->rowset() as $row) {
             if ($row->outcome && $pl->user->can_view_decision($row)) {
-                $row->{$sorter->uid} = $row->outcome;
+                $row->{$this->uid} = $row->outcome;
             } else {
-                $row->{$sorter->uid} = -10000;
+                $row->{$this->uid} = -10000;
             }
         }
     }
@@ -276,8 +302,8 @@ class Status_PaperColumn extends PaperColumn {
             }
         }
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $x = $b->{$sorter->uid} - $a->{$sorter->uid};
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+        $x = $b->{$this->uid} - $a->{$this->uid};
         $x = $x ? : ($a->timeWithdrawn > 0 ? 1 : 0) - ($b->timeWithdrawn > 0 ? 1 : 0);
         $x = $x ? : ($b->timeSubmitted > 0 ? 1 : 0) - ($a->timeSubmitted > 0 ? 1 : 0);
         return $x ? : ($b->paperStorageId > 1 ? 1 : 0) - ($a->paperStorageId > 1 ? 1 : 0);
@@ -331,19 +357,19 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         }
         return [$done, $started];
     }
-    function prepare_sort(PaperList $pl, ListSorter $sorter) {
+    function prepare_sort2(PaperList $pl, $sortindex) {
         foreach ($pl->rowset() as $row) {
             if (!$pl->user->can_view_review_assignment($row, null)) {
-                $row->{$sorter->uid} = -2147483647;
+                $row->{$this->uid} = -2147483647;
             } else {
                 list($done, $started) = $this->data($row, $pl->user);
-                $row->{$sorter->uid} = $done + $started / 1000.0;
+                $row->{$this->uid} = $done + $started / 1000.0;
             }
         }
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $av = $a->{$sorter->uid};
-        $bv = $b->{$sorter->uid};
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+        $av = $a->{$this->uid};
+        $bv = $b->{$this->uid};
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
     function header(PaperList $pl, $is_text) {
@@ -374,8 +400,12 @@ class Authors_PaperColumn extends PaperColumn {
     private $aufull;
     private $anonau;
     private $highlight;
+    private $ianno;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
+    }
+    function add_decoration($decor) {
+        return parent::add_user_sort_decoration($decor) || parent::add_decoration($decor);
     }
     function prepare(PaperList $pl, $visible) {
         $this->aufull = $pl->showing("aufull");
@@ -388,23 +418,20 @@ class Authors_PaperColumn extends PaperColumn {
         $j["aufull"] = $this->aufull;
         return $j;
     }
-    function prepare_sort(PaperList $pl, ListSorter $sorter) {
-        $sorter->ianno = Contact::parse_sortspec($pl->conf, $sorter->anno);
+    function prepare_sort2(PaperList $pl, $sortindex) {
+        $this->ianno = Contact::parse_sortspec($pl->conf, $this->decorations);
     }
-    function sort_name(PaperList $pl, ListSorter $sorter = null) {
-        return PaperColumn::decorate_user_sort_name($this->name, $pl, $sorter);
-    }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $au1 = $sorter->pl->user->allow_view_authors($a) ? $a->author_list() : [];
-        $au2 = $sorter->pl->user->allow_view_authors($b) ? $b->author_list() : [];
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+        $au1 = $pl->user->allow_view_authors($a) ? $a->author_list() : [];
+        $au2 = $pl->user->allow_view_authors($b) ? $b->author_list() : [];
         if (empty($au1) && empty($au2)) {
             return 0;
         } else if (empty($au1) || empty($au2)) {
             return empty($au1) ? 1 : -1;
         }
         for ($i = 0; $i < count($au1) && $i < count($au2); ++$i) {
-            $s1 = Contact::make_sorter($au1[$i], $sorter->ianno);
-            $s2 = Contact::make_sorter($au2[$i], $sorter->ianno);
+            $s1 = Contact::make_sorter($au1[$i], $this->ianno);
+            $s2 = Contact::make_sorter($au2[$i], $this->ianno);
             if (($v = strnatcasecmp($s1, $s2)) !== 0) {
                 return $v;
             }
@@ -566,10 +593,19 @@ class ReviewerType_PaperColumn extends PaperColumn {
     protected $contact;
     private $not_me;
     private $rrow_key;
+    private $brieftitle = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         if (isset($cj->user)) {
             $this->contact = $conf->pc_member_by_email($cj->user);
+        }
+    }
+    function add_decoration($decor) {
+        if ($decor === "brieftitle") {
+            $this->brieftitle = true;
+            return $this->__add_decoration($decor);
+        } else {
+            return parent::add_decoration($decor);
         }
     }
     function contact() {
@@ -611,8 +647,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
         return [$ranal, $flags];
     }
-    function prepare_sort(PaperList $pl, ListSorter $sorter) {
-        $k = $sorter->uid;
+    function prepare_sort2(PaperList $pl, $sortindex) {
+        $k = $this->uid;
         foreach ($pl->rowset() as $row) {
             list($ranal, $flags) = $this->analysis($pl, $row);
             if ($ranal && $ranal->rrow->reviewType) {
@@ -631,12 +667,11 @@ class ReviewerType_PaperColumn extends PaperColumn {
             }
         }
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $k = $sorter->uid;
-        return $b->$k - $a->$k;
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+        return $b->{$this->uid} - $a->{$this->uid};
     }
     function header(PaperList $pl, $is_text) {
-        if (!$this->not_me || $pl->report_id() === "conflictassign") {
+        if (!$this->not_me || $this->brieftitle) {
             return "Review";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " review";
@@ -779,19 +814,24 @@ class ScoreGraph_PaperColumn extends PaperColumn {
     /** @var Contact */
     protected $contact;
     protected $not_me;
+    protected $score_sort;
     /** @var ReviewField */
     protected $format_field;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function sort_name(PaperList $pl, ListSorter $sorter = null) {
-        if ($sorter && $sorter->score) {
-            $score = $sorter->score;
+    function add_decoration($decor) {
+        if (($d = ListSorter::canonical_short_score_sort($decor))) {
+            $this->score_sort = $d;
+            return $this->__add_decoration(ListSorter::canonical_long_score_sort($d),
+                                           ListSorter::long_score_sort_list());
         } else {
-            $score = ListSorter::default_score_sort($pl->user);
+            return parent::add_decoration($decor);
         }
-        $score = ListSorter::canonical_long_score_sort($score);
-        return $this->name . ($score ? " $score" : "");
+    }
+    function score_sort(PaperList $pl) {
+        $this->score_sort = $this->score_sort ?? ListSorter::default_score_sort($pl->user);
+        return $this->score_sort;
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $pl->reviewer_user();
@@ -800,13 +840,16 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             && (!$pl->user->privChair || $pl->conf->has_any_manager())) {
             $pl->qopts["reviewSignatures"] = true;
         }
+        if ($visible === PaperColumn::PREP_SORT) {
+            $this->score_sort($pl);
+        }
     }
     /** @return array<int,int> */
     function score_values(PaperList $pl, PaperInfo $row) {
         throw new Exception("score_values not defined");
     }
-    protected function set_sort_fields(PaperList $pl, PaperInfo $row, ListSorter $sorter) {
-        $k = $sorter->uid;
+    protected function set_sort_fields(PaperList $pl, PaperInfo $row) {
+        $k = $this->uid;
         $avgk = $k . "avg";
         $s = $this->score_values($pl, $row);
         if ($s !== null) {
@@ -816,19 +859,19 @@ class ScoreGraph_PaperColumn extends PaperColumn {
                 && !$row->can_view_review_identity_of($cid, $pl->user)) {
                 $cid = 0;
             }
-            $row->$k = $scoreinfo->sort_data($sorter->score, $cid);
+            $row->$k = $scoreinfo->sort_data($this->score_sort, $cid);
             $row->$avgk = $scoreinfo->mean();
         } else {
             $row->$k = $row->$avgk = null;
         }
     }
-    function prepare_sort(PaperList $pl, ListSorter $sorter) {
+    function prepare_sort2(PaperList $pl, $sortindex) {
         foreach ($pl->rowset() as $row) {
-            self::set_sort_fields($pl, $row, $sorter);
+            self::set_sort_fields($pl, $row);
         }
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        $k = $sorter->uid;
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+        $k = $this->uid;
         if (!($x = ScoreInfo::compare($b->$k, $a->$k, -1))) {
             $k .= "avg";
             $x = ScoreInfo::compare($b->$k, $a->$k);

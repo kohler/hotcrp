@@ -1,29 +1,29 @@
 [
     {
         "name": "sel",
-        "column": true, "minimal": true, "callback": "+Selector_PaperColumn",
+        "minimal": true, "callback": "+Selector_PaperColumn",
         "position": 10
     },
     {
         "name": "selon",
-        "column": true, "minimal": true, "className": "pl_sel", "callback": "+Selector_PaperColumn",
+        "minimal": true, "className": "pl_sel", "callback": "+Selector_PaperColumn",
         "position": 10
     },
     {
         "name": "id", "title": "ID",
-        "column": true, "sort": true, "minimal": true, "completion": true,
+        "sort": true, "minimal": true, "completion": true,
         "callback": "+Id_PaperColumn",
         "position": 50
     },
     {   "name": "pid", "alias": "id"   },
     {
         "name": "title", "title": "Title",
-        "column": true, "sort": true, "minimal": true, "completion": true, "callback": "+Title_PaperColumn",
+        "sort": true, "minimal": true, "completion": true, "callback": "+Title_PaperColumn",
         "position": 120
     },
     {
         "match": "((?:opt:)?)(.+)", "priority": -2000,
-        "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_option",
+        "sort": true, "completion": true, "minimal": true, "className": "pl_option",
         "callback": "+Option_PaperColumn",
         "expand_callback": "Option_PaperColumnFactory::expand",
         "completion_callback": "Option_PaperColumnFactory::completions",
@@ -31,7 +31,7 @@
     },
     {
         "name": "topicscore", "title": "Topic score",
-        "column": true, "sort": true, "completion": true, "className": "pl_topicscore", "callback": "+TopicScore_PaperColumn",
+        "sort": true, "completion": true, "className": "pl_topicscore", "callback": "+TopicScore_PaperColumn",
         "position": 400
     },
     {
@@ -40,12 +40,12 @@
     },
     {
         "name": "desirability", "title": "Desirability",
-        "column": true, "sort": true, "completion": true, "callback": "+Desirability_PaperColumn",
+        "sort": true, "completion": true, "callback": "+Desirability_PaperColumn",
         "position": 410
     },
     {
         "name": "mypref",
-        "column": true, "sort": true, "completion": true, "className": "pl_revpref", "callback": "+Preference_PaperColumn",
+        "sort": true, "completion": true, "className": "pl_revpref", "callback": "+Preference_PaperColumn",
         "position": 500
     },
     {   "name": "mypreference", "alias": "mypref"   },
@@ -55,7 +55,7 @@
     {   "name": "preference", "alias": "mypref"   },
     {
         "name": "editmypref",
-        "column": true, "edit": true, "sort": true, "className": "pl_editrevpref", "callback": "+Preference_PaperColumn",
+        "edit": true, "sort": true, "className": "pl_editrevpref", "callback": "+Preference_PaperColumn",
         "position": 500
     },
     {   "name": "editpreference", "alias": "editmypref"   },
@@ -67,42 +67,42 @@
     },
     {
         "name": "revdelegation", "title": "Requested reviews",
-        "row": true, "className": "pl_text", "callback": "+ReviewDelegation_PaperColumn",
+        "prefer_row": true, "className": "pl_text", "callback": "+ReviewDelegation_PaperColumn",
         "position": 800
     },
     {
         "name": "revtype",
-        "column": true, "sort": true, "completion": true, "className": "pl_revtype", "callback": "+ReviewerType_PaperColumn",
+        "sort": true, "completion": true, "className": "pl_revtype", "callback": "+ReviewerType_PaperColumn",
         "position": 820
     },
     {
         "name": "revstat",
-        "column": true, "sort": true, "completion": true, "className": "pl_revstat",
+        "sort": true, "completion": true, "className": "pl_revstat",
         "callback": "+ReviewStatus_PaperColumn", "allow_if": "reviewer",
         "position": 830
     },
     {
         "name": "assignment",
-        "column": true, "sort": true, "completion": true, "callback": "+AssignReview_PaperColumn",
+        "sort": true, "completion": true, "callback": "+AssignReview_PaperColumn",
         "position": 840
     },
     {   "name": "assrev", "alias": "assignment", "deprecated": true   },
     {   "name": "assign", "alias": "assignment", "deprecated": true   },
     {
         "name": "conf",
-        "column": true, "sort": true, "completion": false, "className": "plc", "callback": "+Conflict_PaperColumn",
+        "sort": true, "completion": false, "className": "plc", "callback": "+Conflict_PaperColumn",
         "position": 855, "is_pc": false
     },
     {   "name": "conflict", "alias": "conf"   },
     {
         "name": "editconf",
-        "column": true, "minimal": true, "className": "plc", "callback": "+Conflict_PaperColumn",
+        "minimal": true, "className": "plc", "callback": "+Conflict_PaperColumn",
         "position": 855, "is_pc": true, "edit": true
     },
     {   "name": "editconflict", "alias": "editconf"   },
     {
         "name": "confdesc",
-        "column": true, "sort": true, "completion": false, "className": "plc", "callback": "+Conflict_PaperColumn",
+        "sort": true, "completion": false, "className": "plc", "callback": "+Conflict_PaperColumn",
         "position": 856, "is_pc": false, "show_description": true
     },
     {   "name": "conflictdesc", "alias": "confdesc"   },
@@ -110,28 +110,28 @@
     {   "name": "conflictdescription", "alias": "confdesc"   },
     {
         "name": "status", "title": "Status",
-        "column": true, "sort": true, "completion": true, "callback": "+Status_PaperColumn",
+        "sort": true, "completion": true, "callback": "+Status_PaperColumn",
         "position": 900
     },
     {
         "name": "statusfull", "title": "Status",
-        "column": true, "sort": true, "completion": false, "className": "pl_status", "callback": "+Status_PaperColumn",
+        "sort": true, "completion": false, "className": "pl_status", "callback": "+Status_PaperColumn",
         "position": 910
     },
     {
         "name": "timestamp", "title": "Timestamp",
-        "column": true, "sort": true, "completion": true, "callback": "+Timestamp_PaperColumn",
+        "sort": true, "completion": true, "callback": "+Timestamp_PaperColumn",
         "position": 920
     },
     {
         "name": "pagecount", "title": "Page count",
-        "column": true, "sort": true, "fold": true, "completion": true, "minimal": true, "className": "plr", "callback": "+PageCount_PaperColumn",
+        "sort": true, "completion": true, "minimal": true, "className": "plr", "callback": "+PageCount_PaperColumn",
         "position": 1000
     },
     {   "name": "pages", "alias": "pagecount"   },
     {
         "match": ".*", "priority": -2100,
-        "column": true, "fold": true, "sort": true, "completion": true, "minimal": true,
+        "sort": true, "completion": true, "minimal": true,
         "className": "pl_score",
         "callback": "+Score_PaperColumn",
         "position": 1100,
@@ -141,7 +141,7 @@
     {
         "name": "?graph",
         "match": "(?:g|graph):?\\((.*)\\)", "priority": -1,
-        "column": true, "fold": true, "sort": true, "minimal": true, "className": "pl_score",
+        "sort": true, "minimal": true, "className": "pl_score",
         "callback": "+FormulaGraph_PaperColumn",
         "position": 1200,
         "expand_callback": "FormulaGraph_PaperColumn::expand",
@@ -149,7 +149,7 @@
     },
     {
         "match": ".*", "priority": -3000,
-        "column": true, "fold": true, "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
+        "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
         "callback": "+Formula_PaperColumn",
         "position": 1300,
         "expand_callback": "Formula_PaperColumnFactory::expand",
@@ -158,7 +158,7 @@
     {
         "match": "(tag:)(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": false,
-        "column": true, "sort": true, "minimal": true,
+        "sort": true, "minimal": true,
         "callback": "+Tag_PaperColumn",
         "expand_callback": "Tag_PaperColumn::expand",
         "position": 1400
@@ -166,7 +166,7 @@
     {
         "match": "(tagval:)(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": true,
-        "column": true, "sort": true, "minimal": true,
+        "sort": true, "minimal": true,
         "callback": "+Tag_PaperColumn",
         "expand_callback": "Tag_PaperColumn::expand",
         "position": 1400
@@ -174,21 +174,21 @@
     {
         "match": "(#)([-a-zA-Z0-9!@*_:.\/~]+)", "priority": -1, "allow_if": "pc",
         "tagvalue": null,
-        "column": true, "sort": true, "completion": "#<tag>", "minimal": true,
+        "sort": true, "completion": "#<tag>", "minimal": true,
         "callback": "+Tag_PaperColumn",
         "expand_callback": "Tag_PaperColumn::expand",
         "position": 1400
     },
     {
         "name": "abstract", "title": "Abstract",
-        "row": true, "fold": true, "completion": true, "callback": "+Abstract_PaperColumn",
+        "prefer_row": true, "completion": true, "callback": "+Abstract_PaperColumn",
         "position": 140
     },
     {   "name": "ab", "alias": "abstract"   },
     {   "name": "abstracts", "alias": "abstract", "deprecated": true   },
     {
         "name": "authors", "title": "Authors",
-        "row": true, "fold": 1, "completion": true, "sort": true,
+        "prefer_row": true, "completion": true, "sort": true,
         "callback": "+Authors_PaperColumn",
         "position": 150
     },
@@ -196,7 +196,7 @@
     {   "name": "author", "alias": "authors"   },
     {
         "name": "potentialconflict",
-        "row": true, "callback": "+ConflictMatch_PaperColumn",
+        "prefer_row": true, "callback": "+ConflictMatch_PaperColumn",
         "position": 155
     },
     {
@@ -205,19 +205,19 @@
     },
     {
         "name": "collab", "title": "Collaborators",
-        "row": true, "fold": true, "completion": true, "callback": "+Collab_PaperColumn",
+        "prefer_row": true, "completion": true, "callback": "+Collab_PaperColumn",
         "position": 160
     },
     {   "name": "co", "alias": "collab"   },
     {   "name": "collaborators", "alias": "collab"   },
     {
         "name": "topics", "title": "Topics",
-        "row": true, "fold": true, "completion": true, "callback": "+Topics_PaperColumn",
+        "prefer_row": true, "completion": true, "callback": "+Topics_PaperColumn",
         "position": 420
     },
     {
         "name": "pcconflicts", "title": "PC conflicts",
-        "row": true, "fold": true, "completion": "pcconflicts", "callback": "+PCConflicts_PaperColumn",
+        "prefer_row": true, "completion": "pcconflicts", "callback": "+PCConflicts_PaperColumn",
         "position": 450
     },
     {   "name": "conflicts", "alias": "pcconflicts"   },
@@ -225,16 +225,17 @@
     {   "name": "pcconf", "alias": "pcconflicts"   },
     {
         "name": "allpref", "title": "Preferences",
-        "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
+        "prefer_row": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
         "position": 550
     },
+    {   "name": "allprefs", "alias": "allpref"   },
     {   "name": "allrevpref", "alias": "allpref"   },
     {   "name": "allpreference", "alias": "allpref", "deprecated": true   },
     {   "name": "allpreferences", "alias": "allpref"   },
     {   "name": "preferences", "alias": "allpref", "deprecated": true   },
     {
         "name": "alltopicpref", "title": "Preferences with topic scores",
-        "row": true, "fold": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
+        "prefer_row": true, "completion": true, "callback": "+PreferenceList_PaperColumn",
         "topics": true, "position": 550
     },
     {   "name": "alltopicrevpref", "alias": "alltopicpref"   },
@@ -242,24 +243,24 @@
     {   "name": "allrevtopicpref", "alias": "alltopicpref"   },
     {
         "name": "reviewers", "title": "Reviewers",
-        "row": true, "fold": true, "completion": true, "callback": "+ReviewerList_PaperColumn",
+        "prefer_row": true, "completion": true, "callback": "+ReviewerList_PaperColumn",
         "position": 850
     },
     {
         "name": "tags", "title": "Tags",
-        "row": true, "fold": true, "completion": true, "callback": "+TagList_PaperColumn",
+        "prefer_row": true, "completion": true, "callback": "+TagList_PaperColumn",
         "position": 1410
     },
     {
         "match": "(?:tagreport:|tagrep:|tagreports\\z)(.*)", "priority": -1,
-        "row": true, "fold": true, "className": "pl_tagrep",
+        "prefer_row": true, "className": "pl_tagrep",
         "callback": "+TagReport_PaperColumn",
         "expand_callback": "TagReport_PaperColumnFactory::expand",
         "position": 1420
     },
     {
         "name": "administrator", "title": "Administrator",
-        "row": true, "sort": true, "fold": true,
+        "prefer_row": true, "sort": true,
         "callback": "+Administrator_PaperColumn",
         "position": 1500
     },
@@ -267,19 +268,19 @@
     {   "name": "admin", "alias": "administrator"   },
     {
         "name": "lead", "title": "Discussion lead",
-        "row": true, "sort": true, "fold": true, "completion": true,
+        "prefer_row": true, "sort": true, "completion": true,
         "callback": "+Lead_PaperColumn",
         "position": 1600
     },
     {
         "name": "shepherd", "title": "Shepherd",
-        "row": true, "sort": true, "fold": true, "completion": true,
+        "prefer_row": true, "sort": true, "completion": true,
         "callback": "+Shepherd_PaperColumn",
         "position": 1700
     },
     {
         "name": "commenters", "title": "Commenters",
-        "row": true, "fold": true, "completion": true, "callback": "+Commenters_PaperColumn",
+        "prefer_row": true, "completion": true, "callback": "+Commenters_PaperColumn",
         "position": 2000
     }
 ]

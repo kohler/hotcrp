@@ -51,7 +51,7 @@ class Tag_SearchTerm extends SearchTerm {
         if (!$negated && ($tagpat = $value->tag_patterns())) {
             $term->set_float("tags", $tagpat);
             if ($sword->kwdef->sorting) {
-                $term->set_float("sort", [($revsort ? "-#" : "#") . $tagpat[0]]);
+                $term->set_float("view", ["sort:" . ($revsort ? "-#" : "#") . $tagpat[0]]);
             }
         }
         if (!$negated && $sword->kwdef->is_hash && $value->single_tag()) {
@@ -111,14 +111,13 @@ class Tag_SearchTerm extends SearchTerm {
             return (object) ["type" => "or", "child" => $child];
         }
     }
-    function default_sorter($top, $thenval, PaperSearch $srch) {
+    function default_sort_column($top, PaperSearch $srch) {
         if ($top && $this->tag1) {
             $dt = $srch->conf->tags()->check(Tagger::base($this->tag1));
             if (($dt && $dt->order_anno) || $this->tag1nz) {
-                $s = new ListSorter("#{$this->tag1}");
-                $s->reverse = $dt && $dt->votish;
-                $s->thenval = $thenval;
-                return $s;
+                $xjs = Tag_PaperColumn::expand("#{$this->tag1}", $srch->user, (object) [], ["#{$this->tag1}", "#", $this->tag1]);
+                assert(count($xjs) === 1 && $xjs[0]->callback === "+Tag_PaperColumn");
+                return PaperColumn::make($srch->conf, $xjs[0], $dt && $dt->votish ? ["reverse"] : []);
             }
         }
         return null;

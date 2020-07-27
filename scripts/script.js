@@ -6034,10 +6034,10 @@ function href_sorter(href, newval) {
 }
 
 function sorter_toggle_reverse(sorter, toggle) {
-    var xsorter = sorter.replace(/[ +]+reverse\b/, "");
+    var xsorter = sorter.replace(/[ +]+(?:reverse|down)\b/, "");
     if (toggle == null)
         toggle = xsorter == sorter;
-    return xsorter + (toggle ? " reverse" : "");
+    return xsorter + (toggle ? " down" : "");
 }
 
 function search_sort_success(tbl, data_href, data) {
@@ -6953,7 +6953,7 @@ function set(f, $j, text) {
     else {
         if (elt.className == "")
             elt.className = "fx" + f.foldnum;
-        if (f.title && (!f.column || text == "Loading")) {
+        if (f.title && (f.as_row || text == "Loading")) {
             if (text.charAt(0) == "<" && (m = /^((?:<(?:div|p|ul|ol|li)[^>]*>)+)([\s\S]*)$/.exec(text)))
                 text = m[1] + '<em class="plx">' + f.title + ':</em> ' + m[2];
             else
@@ -7030,7 +7030,7 @@ function foldmap(type) {
 function field_index(f) {
     var i, index = 0;
     for (i = 0; i !== field_order.length && field_order[i] !== f; ++i)
-        if (!field_order[i].column === !f.column && !field_order[i].missing)
+        if (!field_order[i].as_row === !f.as_row && !field_order[i].missing)
             ++index;
     return index;
 }
@@ -7064,7 +7064,7 @@ function pidxrow(pid) {
 }
 
 function pidfield(pid, f, index) {
-    var row = f.column ? pidrow(pid) : pidxrow(pid);
+    var row = f.as_row ? pidxrow(pid) : pidrow(pid);
     if (row && index == null)
         index = field_index(f);
     return $(row ? row.childNodes[index] : null);
@@ -7233,7 +7233,7 @@ function add_row(f) {
 
 function ensure_field(f) {
     if (f.missing)
-        f.column ? add_column(f) : add_row(f);
+        f.as_row ? add_row(f) : add_column(f);
 }
 
 function make_callback(dofold, type) {

@@ -11,7 +11,7 @@ class Preference_PaperColumn extends PaperColumn {
     private $not_me;
     private $show_conflict;
     private $prefix;
-    private $secondary_sort_topic_score;
+    private $secondary_sort_topic_score = false;
     private $statistics;
     private $override_statistics;
     function __construct(Conf $conf, $cj) {
@@ -23,6 +23,14 @@ class Preference_PaperColumn extends PaperColumn {
             $this->mark_editable();
         }
         $this->statistics = new ScoreInfo;
+    }
+    function add_decoration($decor) {
+        if ($decor === "topicsort") {
+            $this->secondary_sort_topic_score = true;
+            return $this->__add_decoration($decor);
+        } else {
+            return parent::add_decoration($decor);
+        }
     }
     function mark_editable() {
         $this->editable = true;
@@ -41,10 +49,9 @@ class Preference_PaperColumn extends PaperColumn {
             $pl->qopts["topics"] = 1;
         }
         $this->prefix =  "";
-        if ($this->row) {
+        if ($this->as_row) {
             $this->prefix = $pl->user->reviewer_html_for($this->contact);
         }
-        $this->secondary_sort_topic_score = $pl->report_id() === "pf";
         return true;
     }
     private function sortable_preference(PaperInfo $row) {
@@ -65,7 +72,7 @@ class Preference_PaperColumn extends PaperColumn {
             return $pv;
         }
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         list($ap, $ae) = $this->sortable_preference($a);
         list($bp, $be) = $this->sortable_preference($b);
         if ($ap !== $bp) {
@@ -101,7 +108,7 @@ class Preference_PaperColumn extends PaperColumn {
             || $rtcol[0]->contact()->contactId !== $this->contact->contactId;
     }
     function header(PaperList $pl, $is_text) {
-        if ($this->contact === $pl->user || $this->row) {
+        if ($this->contact === $pl->user || $this->as_row) {
             return "Preference";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " preference";
@@ -120,7 +127,7 @@ class Preference_PaperColumn extends PaperColumn {
 
         // compute HTML
         $t = "";
-        if ($this->row) {
+        if ($this->as_row) {
             if ($pv_exists) {
                 $t = $this->prefix . unparse_preference_span($pv, true);
             }
@@ -146,7 +153,7 @@ class Preference_PaperColumn extends PaperColumn {
             && !$editable
             && !$pl->user->can_view_preference($row)
             && $t !== "") {
-            $tag = $this->row ? "div" : "span";
+            $tag = $this->as_row ? "div" : "span";
             $t = "<$tag class=\"fx5\">" . $t . "</$tag>";
             if (!$this->override_statistics) {
                 $this->override_statistics = clone $this->statistics;
@@ -171,7 +178,7 @@ class Preference_PaperColumn extends PaperColumn {
         }
     }
     function has_statistics() {
-        return !$this->row && !$this->editable;
+        return !$this->as_row && !$this->editable;
     }
     private function unparse_statistic($statistics, $stat) {
         $x = $statistics->statistic($stat);

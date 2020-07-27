@@ -16,10 +16,10 @@ class Option_PaperColumn extends PaperColumn {
         }
         $pl->qopts["options"] = true;
         $this->fr = new FieldRender(0);
-        $this->className = preg_replace('/(?: +|\A)(?:pl-no-suggest|pl-prefer-row' . ($this->row ? '|plrd|plr|plc' : '') . ')(?= |\z)/', '', $this->className);
+        $this->className = preg_replace('/(?: +|\A)(?:pl-no-suggest|pl-prefer-row' . ($this->as_row ? '|plrd|plr|plc' : '') . ')(?= |\z)/', '', $this->className);
         return true;
     }
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
+    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $this->opt->value_compare($a->option($this->opt),
                                          $b->option($this->opt));
     }
@@ -39,7 +39,7 @@ class Option_PaperColumn extends PaperColumn {
         }
 
         $fr = $this->fr;
-        $fr->clear(FieldRender::CFLIST | FieldRender::CFHTML | ($this->viewable_row() ? 0 : FieldRender::CFCOLUMN));
+        $fr->clear(FieldRender::CFLIST | FieldRender::CFHTML | ($this->as_row ? 0 : FieldRender::CFCOLUMN));
         $this->opt->render($fr, $ov);
         if ((string) $fr->value === "") {
             return "";
