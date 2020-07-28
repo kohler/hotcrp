@@ -91,7 +91,7 @@ class Default_PaperSaver extends PaperSaver {
         // Authors
         $aukeys = ["name" => "Name", "email" => "Email", "affiliation" => "Affiliation"];
         $authors = [];
-        if (!isset($qreq["auemail1"]) && isset($qreq["authors:email_1"])) {
+        if (isset($qreq["auemail1"]) && !isset($qreq["authors:email_1"])) {
             self::translate_authors_qreq($qreq);
         }
         for ($n = 1; true; ++$n) {
