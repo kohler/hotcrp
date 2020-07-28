@@ -93,18 +93,21 @@ class PaperColumn extends Column {
         return $j;
     }
 
-    /** @deprecated */
+    /** @param int $sortindex */
     function prepare_sort(PaperList $pl, $sortindex) {
+        /** @phan-suppress-next-line PhanDeprecatedFunction */
         $this->prepare_sort2($pl, $sortindex);
     }
-    /** @deprecated */
+    /** @return int */
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+        /** @phan-suppress-next-line PhanDeprecatedFunction */
         return $this->compare2($a, $b, $pl);
     }
 
-    /** @param int $sortindex */
+    /** @deprecated */
     function prepare_sort2(PaperList $pl, $sortindex) {
     }
+    /** @deprecated */
     function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         error_log("unexpected " . get_class($this) . "::compare");
         return $a->paperId - $b->paperId;

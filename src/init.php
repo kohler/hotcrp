@@ -110,8 +110,9 @@ function expand_json_includes_callback($includelist, $callback) {
         if (is_string($str)) {
             if (str_starts_with($str, "@")) {
                 $expandable = substr($str, 1);
-            } else if (!preg_match('/\A[\s\[\{]/', $str)
-                       || ($str[0] === "[" && !preg_match('/\]\s*\z/', $str))) {
+            } else if (!str_starts_with($str, "{")
+                       && (!str_starts_with($str, "[") || !str_ends_with(rtrim($str), "]"))
+                       && !ctype_space($str[0])) {
                 $expandable = $str;
             }
         }

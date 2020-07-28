@@ -378,17 +378,9 @@ class PaperStatus extends MessageSet {
 
 
     static function field_title(Conf $conf, $f) {
-        $o = $conf->options()->find($f);
-        if (!$o) {
-            if ($f === "title") {
-                $o = $conf->option_by_id(PaperOption::TITLEID);
-            } else if ($f === "abstract") {
-                $o = $conf->option_by_id(PaperOption::ABSTRACTID);
-            } else if ($f === "collaborators") {
-                $o = $conf->option_by_id(PaperOption::COLLABORATORSID);
-            } else if (str_starts_with($f, "au")) {
-                $o = $conf->option_by_id(PaperOption::AUTHORSID);
-            }
+        $o = $conf->options()->find_field($f);
+        if (!$o && str_starts_with($f, "au")) {
+            $o = $conf->option_by_id(PaperOption::AUTHORSID);
         }
         return $o ? htmlspecialchars($o->edit_title()) : false;
     }
@@ -1351,8 +1343,8 @@ class PaperStatus extends MessageSet {
     static function postexecute_check_required_options(PaperStatus $ps) {
         $prow = null;
         $required_failure = false;
-        foreach ($ps->conf->options() as $o) {
-            if (!$o->required) {
+        foreach ($ps->conf->options()->form_fields($ps->_nnprow) as $o) {
+            if (!$o->required || ($o->id <= 0 && $o->type !== "intrinsic2")) {
                 continue;
             }
             if (!$prow) {
