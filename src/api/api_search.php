@@ -48,11 +48,7 @@ class Search_API {
         }
         $search = new PaperSearch($user, $qreq);
 
-        $report = "pl";
-        if ($qreq->session && str_starts_with($qreq->session, "pf")) {
-            $report = "pf";
-        }
-        $pl = new PaperList($report, $search);
+        $pl = new PaperList("empty", $search);
         $response = $pl->column_json($qreq->f);
         if (!$response) {
             return ["ok" => false];
