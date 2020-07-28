@@ -309,7 +309,7 @@ if ($reviewer) {
     echo '</div>';
 
     $pl->set_table_id_class("foldpl", "pltable-fullw");
-    echo $pl->table_html(["nofooter" => true, "list" => true]);
+    echo $pl->table_html(["nofooter" => true, "list" => true, "live" => true]);
 
     echo '<div class="aab aabr aabig"><div class="aabut">',
         Ht::submit("update", "Save assignments", ["class" => "btn-primary"]),

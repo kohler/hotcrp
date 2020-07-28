@@ -593,7 +593,7 @@ if (!$Qreq->loadtmpl
 
 
 if (isset($Qreq->monreq)) {
-    $plist = new PaperList("reqrevs", new PaperSearch($Me, ["t" => "req", "q" => ""]), ["foldable" => true]);
+    $plist = new PaperList("reqrevs", new PaperSearch($Me, ["t" => "req", "q" => ""]));
     $plist->set_table_id_class("foldpl", "pltable-fullw");
     $ptext = $plist->table_html(["list" => true]);
     if ($plist->count == 0)

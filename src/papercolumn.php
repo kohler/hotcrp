@@ -77,7 +77,7 @@ class PaperColumn extends Column {
             }
         }
         if (!$this->is_visible) {
-            error_log("missing .. " . json_encode($j));
+            error_log("missing .. " . json_encode($j) . " .. " . debug_string_backtrace());
             $j["missing"] = true;
         }
         if ($this->has_content && !$this->is_visible) {

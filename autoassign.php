@@ -544,7 +544,7 @@ if (isset($Qreq->requery) || isset($Qreq->haspap)) {
         "t" => $Qreq->t, "q" => $Qreq->q,
         "pageurl" => $Conf->hoturl_site_relative_raw("autoassign")
     ]);
-    $plist = new PaperList("reviewersSel", $search, ["display" => "show:reviewers"]);
+    $plist = new PaperList("reviewersSel", $search);
     $plist->set_selection($SSel);
 
     if ($search->paper_ids()) {

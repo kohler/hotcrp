@@ -144,7 +144,6 @@ class PaperList {
     private $_groups;
 
     private $sortable;
-    private $foldable;
     private $_paper_link_page;
     private $_paper_link_mode;
     private $_view_columns = false;
@@ -220,8 +219,6 @@ class PaperList {
         $this->_rowset = $args["rowset"] ?? null;
 
         $this->sortable = isset($args["sort"]) && $args["sort"];
-        $this->foldable = $this->sortable || ($args["foldable"] ?? false)
-            || $this->user->is_manager() /* “Override conflicts” fold */;
 
         $this->_paper_link_page = "";
         if ($qreq->linkto === "paper" || $qreq->linkto === "assign") {
@@ -262,7 +259,6 @@ class PaperList {
                 $this->set_view_display("sort:[" . $qreq->sort . "]", null);
             }
         }
-        $nargsort = count($this->_sortcol);
 
         $qe = $this->search->term();
         if ($qe instanceof Then_SearchTerm) {
@@ -438,6 +434,7 @@ class PaperList {
     }
 
 
+    /** @return PaperInfoSet */
     function rowset() {
         if ($this->_rowset === null) {
             $this->qopts["scores"] = array_keys($this->qopts["scores"]);
@@ -1351,35 +1348,28 @@ class PaperList {
     private function _analyze_folds($rstate, $fieldDef) {
         $classes = &$this->table_attr["class"];
         $jscol = [];
-        $has_sel = false;
-        $has_statistics = $has_loadable_statistics = false;
+        $has_sel = $has_statistics = false;
         foreach ($fieldDef as $fdef) {
-            $j = $fdef->field_json($this);
-            if (isset($j["has_statistics"]) && $j["has_statistics"]) {
-                if ($fdef->has_content) {
-                    $has_loadable_statistics = true;
-                }
-                if ($fdef->has_content && $fdef->is_visible) {
-                    $has_statistics = true;
-                }
-            }
-            $jscol[] = $j;
+            $jscol[] = $j = $fdef->field_json($this);
             if ($fdef->fold) {
                 $classes[] = "fold" . $fdef->fold . ($fdef->is_visible ? "o" : "c");
             }
             if ($fdef instanceof Selector_PaperColumn) {
                 $has_sel = true;
             }
+            if (($j["has_statistics"] ?? false) && $fdef->has_content) {
+                assert(!!$fdef->is_visible);
+                $has_statistics = true;
+            }
         }
         // authorship requires special handling
         $classes[] = "fold2" . ($this->showing("anonau") ? "o" : "c");
         $classes[] = "fold4" . ($this->showing("aufull") ? "o" : "c");
-        // row number folding
-        if ($has_sel) {
-            $classes[] = "fold6" . ($this->showing("rownum") ? "o" : "c");
-        }
         if ($this->user->is_track_manager()) {
             $classes[] = "fold5" . ($this->showing("force") ? "o" : "c");
+        }
+        if ($has_sel) {
+            $classes[] = "fold6" . ($this->showing("rownum") ? "o" : "c");
         }
         $classes[] = "fold7" . ($this->showing("statistics") ? "o" : "c");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
@@ -1430,16 +1420,14 @@ class PaperList {
 
     /** @param PaperListTableRender $rstate
      * @param list<PaperColumn> $fieldDef
+     * @param bool $live
      * @return string */
-    private function _statistics_rows($rstate, $fieldDef) {
-        if (!$this->foldable) {
-            $any = false;
-            foreach ($fieldDef as $fdef) {
-                $any = $any || (!$fdef->as_row && $fdef->has_statistics());
-            }
-            if (!$any) {
-                return "";
-            }
+    private function _statistics_rows($rstate, $fieldDef, $live) {
+        foreach ($fieldDef as $fdef) {
+            $live = $live || (!$fdef->as_row && $fdef->has_statistics());
+        }
+        if (!$live) {
+            return "";
         }
         $t = '  <tr class="pl_statheadrow fx8">';
         if ($rstate->titlecol) {
@@ -1655,6 +1643,7 @@ class PaperList {
         return $this->search->create_session_list_object($this->paper_ids(), $this->_listDescription(), $this->sortdef());
     }
 
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options */
     private function _table_render($options) {
         $this->_prepare();
         // need tags for row coloring
@@ -1718,12 +1707,9 @@ class PaperList {
         $rstate = new PaperListTableRender($ncol, $titlecol, $skipcallout);
 
         // prepare table attributes
-        $this->table_attr["class"] = ["pltable"];
+        $this->table_attr["class"] = ["pltable has-fold"];
         if ($this->_table_class) {
             $this->table_attr["class"][] = $this->_table_class;
-        }
-        if ($options["list"] ?? false) {
-            $this->table_attr["class"][] = "has-hotlist has-fold";
         }
         if ($this->_table_id) {
             $this->table_attr["id"] = $this->_table_id;
@@ -1733,7 +1719,7 @@ class PaperList {
                 $this->table_attr[$n] = $v;
             }
         }
-        if ($options["fold_session_prefix"] ?? false) {
+        if (($options["fold_session_prefix"] ?? "") !== "") {
             $this->table_attr["data-fold-session-prefix"] = $options["fold_session_prefix"];
             $this->table_attr["data-fold-session"] = json_encode_browser([
                 "2" => "anonau", "4" => "aufull", "5" => "force",
@@ -1747,6 +1733,7 @@ class PaperList {
             $this->table_attr["data-order-tag"] = $this->_sort_etag;
         }
         if ($options["list"] ?? false) {
+            $this->table_attr["class"][] = "has-hotlist";
             $this->table_attr["data-hotlist"] = $this->session_list_object()->info_string();
         }
         if ($this->sortable && ($url = $this->search->url_site_relative_raw())) {
@@ -1788,7 +1775,7 @@ class PaperList {
         // statistics rows
         $tfoot = "";
         if (!$this->_view_columns) {
-            $tfoot = $this->_statistics_rows($rstate, $fieldDef);
+            $tfoot = $this->_statistics_rows($rstate, $fieldDef, $options["live"] ?? false);
         }
 
         // analyze folds
@@ -1881,7 +1868,8 @@ class PaperList {
         return $rstate;
     }
 
-    /** @return PaperListTableRender */
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options
+     * @return PaperListTableRender */
     function table_render($options = []) {
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
         $rstate = $this->_table_render($options);
@@ -1889,7 +1877,8 @@ class PaperList {
         return $rstate;
     }
 
-    /** @return string */
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options
+     * @return string */
     function table_html($options = []) {
         $render = $this->table_render($options);
         if ($render->error) {

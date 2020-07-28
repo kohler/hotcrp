@@ -251,7 +251,7 @@ $pl = new PaperList("pf", $search, ["sort" => true], $Qreq);
 $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
 $pl_text = $pl->table_html(["fold_session_prefix" => "pfdisplay.",
                       "footer_extra" => "<div id=\"plactr\">" . Ht::submit("fn", "Save changes", ["data-default-submit-all" => 1, "value" => "saveprefs"]) . "</div>",
-                      "list" => true]);
+                      "list" => true, "live" => true]);
 
 
 // DISPLAY OPTIONS

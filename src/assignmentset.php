@@ -1742,7 +1742,7 @@ class AssignmentSet {
         $plist = new PaperList("reviewers", $search);
         $plist->add_column("autoassignment", new AutoassignmentPaperColumn($this));
         $plist->set_table_id_class("foldpl", "pltable-fullw");
-        echo $plist->table_html(["nofooter" => 1]);
+        echo $plist->table_html(["nofooter" => true]);
 
         if (count(array_intersect_key($deltarev->bypc, $this->conf->pc_members()))) {
             $summary = [];
@@ -1935,7 +1935,7 @@ class AutoassignmentPaperColumn extends PaperColumn {
     /** @var AssignmentSet */
     private $aset;
     function __construct(AssignmentSet $aset) {
-        parent::__construct($aset->conf, (object) ["name" => "autoassignment", "row" => true, "className" => "pl_autoassignment"]);
+        parent::__construct($aset->conf, (object) ["name" => "autoassignment", "prefer_row" => true, "className" => "pl_autoassignment"]);
         $this->aset = $aset;
         $this->override = PaperColumn::OVERRIDE_IFEMPTY_LINK;
     }
