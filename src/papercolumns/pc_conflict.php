@@ -51,7 +51,7 @@ class Conflict_PaperColumn extends PaperColumn {
             return 0;
         }
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $act = $this->conflict_type($pl, $a);
         $bct = $this->conflict_type($pl, $b);
         if ($this->show_description) {

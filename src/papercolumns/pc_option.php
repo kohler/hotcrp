@@ -19,7 +19,7 @@ class Option_PaperColumn extends PaperColumn {
         $this->className = preg_replace('/(?: +|\A)(?:pl-no-suggest|pl-prefer-row' . ($this->as_row ? '|plrd|plr|plc' : '') . ')(?= |\z)/', '', $this->className);
         return true;
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $this->opt->value_compare($a->option($this->opt),
                                          $b->option($this->opt));
     }

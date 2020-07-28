@@ -22,7 +22,7 @@ class Formula_PaperColumn extends PaperColumn {
             return $this->formula->name;
         }
     }
-    function sort_name2() {
+    function sort_name() {
         return $this->formula->name ? : $this->formula->expression;
     }
     function prepare(PaperList $pl, $visible) {
@@ -36,14 +36,14 @@ class Formula_PaperColumn extends PaperColumn {
         }
         return true;
     }
-    function prepare_sort2(PaperList $pl, $sortindex) {
+    function prepare_sort(PaperList $pl, $sortindex) {
         $formulaf = $this->formula->compile_sortable_function();
         $k = $this->uid;
         foreach ($pl->rowset() as $row) {
             $row->$k = $formulaf($row, null, $pl->user);
         }
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $k = $this->uid;
         $as = $a->$k;
         $bs = $b->$k;

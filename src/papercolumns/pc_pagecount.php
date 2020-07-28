@@ -31,12 +31,12 @@ class PageCount_PaperColumn extends PaperColumn {
             return null;
         }
     }
-    function prepare_sort2(PaperList $pl, $sortindex) {
+    function prepare_sort(PaperList $pl, $sortindex) {
         foreach ($pl->rowset() as $row) {
             $row->{$this->uid} = $this->page_count($pl->user, $row);
         }
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $ac = $a->{$this->uid};
         $bc = $b->{$this->uid};
         if ($ac === null || $bc === null) {

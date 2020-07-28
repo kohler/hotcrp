@@ -22,10 +22,10 @@ class Shepherd_PaperColumn extends PaperColumn {
             return 0;
         }
     }
-    function prepare_sort2(PaperList $pl, $sortindex) {
+    function prepare_sort(PaperList $pl, $sortindex) {
         $this->ianno = Contact::parse_sortspec($pl->conf, $this->decorations);
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $pl->_compare_pc(self::cid($pl, $a), self::cid($pl, $b), $this->ianno);
     }
     function content_empty(PaperList $pl, PaperInfo $row) {

@@ -57,10 +57,10 @@ class Tag_PaperColumn extends PaperColumn {
     function completion_name() {
         return "#$this->dtag";
     }
-    function sort_name2() {
+    function sort_name() {
         return "#$this->dtag";
     }
-    function prepare_sort2(PaperList $pl, $sortindex) {
+    function prepare_sort(PaperList $pl, $sortindex) {
         $k = $this->uid;
         $unviewable = $empty = TAG_INDEXBOUND * ($this->sort_reverse ? -1 : 1);
         if ($this->editable) {
@@ -74,7 +74,7 @@ class Tag_PaperColumn extends PaperColumn {
             }
         }
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $k = $this->uid;
         return $a->$k < $b->$k ? -1 : ($a->$k == $b->$k ? 0 : 1);
     }

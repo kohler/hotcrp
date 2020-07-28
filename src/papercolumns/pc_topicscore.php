@@ -23,7 +23,7 @@ class TopicScore_PaperColumn extends PaperColumn {
         }
         return true;
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $at = $a->topic_interest_score($this->contact);
         $bt = $b->topic_interest_score($this->contact);
         return $at < $bt ? 1 : ($at == $bt ? 0 : -1);

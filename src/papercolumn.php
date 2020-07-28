@@ -73,7 +73,7 @@ class PaperColumn extends Column {
                 $j["has_statistics"] = true;
             }
             if ($this->sort) {
-                $j["sort_name"] = $this->sort_name2();
+                $j["sort_name"] = $this->sort_name();
             }
         }
         if (!$this->is_visible) {
@@ -94,12 +94,12 @@ class PaperColumn extends Column {
     }
 
     /** @deprecated */
-    function prepare_sort(PaperList $pl, ListSorter $sorter) {
-        throw new Error("fick");
+    function prepare_sort(PaperList $pl, $sortindex) {
+        $this->prepare_sort2($pl, $sortindex);
     }
     /** @deprecated */
-    function compare(PaperInfo $a, PaperInfo $b, ListSorter $sorter) {
-        throw new Error("fick");
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+        return $this->compare2($a, $b, $pl);
     }
 
     /** @param int $sortindex */
@@ -136,7 +136,7 @@ class PaperColumn extends Column {
             return $this->name;
         }
     }
-    function sort_name2() {
+    function sort_name() {
         $decor = $this->decorations;
         if (!empty($decor)) {
             $decor = array_diff($decor, ["down"]);
@@ -171,7 +171,7 @@ class Id_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $a->paperId - $b->paperId;
     }
     function content(PaperList $pl, PaperInfo $row) {
@@ -226,7 +226,7 @@ class Title_PaperColumn extends PaperColumn {
         $this->highlight = $pl->search->field_highlighter("title");
         return true;
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $collator = $a->conf->collator();
         return $collator->compare($a->title, $b->title);
     }
@@ -281,7 +281,7 @@ class Status_PaperColumn extends PaperColumn {
         $this->include_submitted = $pl->search->limit_expect_nonsubmitted();
         return true;
     }
-    function prepare_sort2(PaperList $pl, $sortindex) {
+    function prepare_sort(PaperList $pl, $sortindex) {
         foreach ($pl->rowset() as $row) {
             if ($row->outcome && $pl->user->can_view_decision($row)) {
                 $row->{$this->uid} = $row->outcome;
@@ -303,7 +303,7 @@ class Status_PaperColumn extends PaperColumn {
             }
         }
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $x = $b->{$this->uid} - $a->{$this->uid};
         $x = $x ? : ($a->timeWithdrawn > 0 ? 1 : 0) - ($b->timeWithdrawn > 0 ? 1 : 0);
         $x = $x ? : ($b->timeSubmitted > 0 ? 1 : 0) - ($a->timeSubmitted > 0 ? 1 : 0);
@@ -358,7 +358,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         }
         return [$done, $started];
     }
-    function prepare_sort2(PaperList $pl, $sortindex) {
+    function prepare_sort(PaperList $pl, $sortindex) {
         foreach ($pl->rowset() as $row) {
             if (!$pl->user->can_view_review_assignment($row, null)) {
                 $row->{$this->uid} = -2147483647;
@@ -368,7 +368,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
             }
         }
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $av = $a->{$this->uid};
         $bv = $b->{$this->uid};
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
@@ -419,10 +419,10 @@ class Authors_PaperColumn extends PaperColumn {
         $j["aufull"] = $this->aufull;
         return $j;
     }
-    function prepare_sort2(PaperList $pl, $sortindex) {
+    function prepare_sort(PaperList $pl, $sortindex) {
         $this->ianno = Contact::parse_sortspec($pl->conf, $this->decorations);
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $au1 = $pl->user->allow_view_authors($a) ? $a->author_list() : [];
         $au2 = $pl->user->allow_view_authors($b) ? $b->author_list() : [];
         if (empty($au1) && empty($au2)) {
@@ -648,7 +648,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
         return [$ranal, $flags];
     }
-    function prepare_sort2(PaperList $pl, $sortindex) {
+    function prepare_sort(PaperList $pl, $sortindex) {
         $k = $this->uid;
         foreach ($pl->rowset() as $row) {
             list($ranal, $flags) = $this->analysis($pl, $row);
@@ -668,7 +668,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
             }
         }
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $b->{$this->uid} - $a->{$this->uid};
     }
     function header(PaperList $pl, $is_text) {
@@ -866,12 +866,12 @@ class ScoreGraph_PaperColumn extends PaperColumn {
             $row->$k = $row->$avgk = null;
         }
     }
-    function prepare_sort2(PaperList $pl, $sortindex) {
+    function prepare_sort(PaperList $pl, $sortindex) {
         foreach ($pl->rowset() as $row) {
             self::set_sort_fields($pl, $row);
         }
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $k = $this->uid;
         if (!($x = ScoreInfo::compare($b->$k, $a->$k, -1))) {
             $k .= "avg";

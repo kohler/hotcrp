@@ -460,7 +460,7 @@ class PaperList {
 
     function _sort_compare($a, $b) {
         foreach ($this->_sortcol as $s) {
-            if (($x = $s->compare2($a, $b, $this))) {
+            if (($x = $s->compare($a, $b, $this))) {
                 return ($x < 0) === $s->sort_reverse ? 1 : -1;
             }
         }
@@ -476,7 +476,7 @@ class PaperList {
         }
         foreach ($this->_sortcol as $s) {
             if (($s->sort_subset === -1 || $s->sort_subset === $a->_sort_subset)
-                && ($x = $s->compare2($a, $b, $this))) {
+                && ($x = $s->compare($a, $b, $this))) {
                 return ($x < 0) === $s->sort_reverse ? 1 : -1;
             }
         }
@@ -523,7 +523,7 @@ class PaperList {
             }
         }
         foreach ($this->sorters() as $i => $s) {
-            $s->prepare_sort2($this, $i);
+            $s->prepare_sort($this, $i);
         }
         $rowset->sort_by([$this, $thenmap ? "_then_sort_compare" : "_sort_compare"]);
         $this->user->set_overrides($overrides);
@@ -628,7 +628,7 @@ class PaperList {
         if ($s0->sort_subset === -1
             && ($always || (string) $this->qreq->sort != "")
             && ($s0->name !== "id" || $s0->sort_reverse)) {
-            return $s0->sort_name2() . ($s0->sort_reverse ? " down" : "");
+            return $s0->sort_name() . ($s0->sort_reverse ? " down" : "");
         } else {
             return "";
         }
@@ -1329,13 +1329,13 @@ class PaperList {
             return $t;
         }
 
-        $sort_name = $fdef->sort_name2();
+        $sort_name = $fdef->sort_name();
         $sort_url = htmlspecialchars(Navigation::siteurl() . $sort_url)
             . (strpos($sort_url, "?") ? "&amp;" : "?") . "sort=" . urlencode($sort_name);
 
         $sort_class = "pl_sort";
         $s0 = ($this->sorters())[0];
-        if ($s0->sort_subset === -1 && $sort_name === $s0->sort_name2()) {
+        if ($s0->sort_subset === -1 && $sort_name === $s0->sort_name()) {
             $sort_class = "pl_sort pl_sorting" . ($s0->sort_reverse ? "_rev" : "_fwd");
             $sort_url .= $s0->sort_reverse ? "" : urlencode(" down");
         }
@@ -2081,7 +2081,7 @@ class PaperList {
         $res = array_values($res);
 
         foreach ($this->sorters() as $s) {
-            $sn = $s->sort_name2() . ($s->sort_reverse ? " down" : "");
+            $sn = $s->sort_name() . ($s->sort_reverse ? " down" : "");
             if (strpos($sn, " ") !== false) {
                 $res[] = "sort:[" . $sn . "]";
             } else {

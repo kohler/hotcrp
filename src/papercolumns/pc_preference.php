@@ -72,7 +72,7 @@ class Preference_PaperColumn extends PaperColumn {
             return $pv;
         }
     }
-    function compare2(PaperInfo $a, PaperInfo $b, PaperList $pl) {
+    function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         list($ap, $ae) = $this->sortable_preference($a);
         list($bp, $be) = $this->sortable_preference($b);
         if ($ap !== $bp) {
