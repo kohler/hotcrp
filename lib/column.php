@@ -43,6 +43,7 @@ class Column {
 
     static private $next_uid = 0;
 
+    /** @param object $arg */
     function __construct($arg) {
         $this->name = $arg->name;
         $this->uid = "__column" . (++self::$next_uid) . "__";

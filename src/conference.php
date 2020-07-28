@@ -1173,9 +1173,7 @@ class Conf {
             $name = null;
             for ($i = 0; $i < $nlist; ++$i) {
                 $xt = $list[$i];
-                while ($i + 1 < $nlist
-                       && isset($xt->merge)
-                       && $xt->merge) {
+                while ($i + 1 < $nlist && ($xt->merge ?? false)) {
                     ++$i;
                     $overlay = $xt;
                     unset($overlay->merge, $overlay->__subposition);
@@ -5032,8 +5030,9 @@ class Conf {
             require_once("paperoption.php");
             $this->_option_type_map = $this->_option_type_factories = [];
             expand_json_includes_callback(["etc/optiontypes.json"], [$this, "_add_option_type_json"]);
-            if (($olist = $this->opt("optionTypes")))
+            if (($olist = $this->opt("optionTypes"))) {
                 expand_json_includes_callback($olist, [$this, "_add_option_type_json"]);
+            }
             usort($this->_option_type_factories, "Conf::xt_priority_compare");
             // option types are global (cannot be allowed per user)
             $m = [];

@@ -17,6 +17,7 @@ class PaperColumn extends Column {
     const PREP_FOLDED = 0; // value matters
     const PREP_VISIBLE = 1; // value matters
 
+    /** @param object $cj */
     function __construct(Conf $conf, $cj) {
         parent::__construct($cj);
     }
