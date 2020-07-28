@@ -1,29 +1,29 @@
 [
     {
         "name": "sel",
-        "minimal": true, "callback": "+Selector_PaperColumn",
+        "callback": "+Selector_PaperColumn",
         "position": 10
     },
     {
-        "name": "selon",
-        "minimal": true, "className": "pl_sel", "callback": "+Selector_PaperColumn",
+        "name": "selon", "deprecated": true,
+        "className": "pl_sel", "callback": "+Selector_PaperColumn",
         "position": 10
     },
     {
         "name": "id", "title": "ID",
-        "sort": true, "minimal": true, "completion": true,
+        "sort": true, "completion": true,
         "callback": "+Id_PaperColumn",
         "position": 50
     },
     {   "name": "pid", "alias": "id"   },
     {
         "name": "title", "title": "Title",
-        "sort": true, "minimal": true, "completion": true, "callback": "+Title_PaperColumn",
+        "sort": true, "completion": true, "callback": "+Title_PaperColumn",
         "position": 120
     },
     {
         "match": "((?:opt:)?)(.+)", "priority": -2000,
-        "sort": true, "completion": true, "minimal": true, "className": "pl_option",
+        "sort": true, "completion": true, "className": "pl_option",
         "callback": "+Option_PaperColumn",
         "expand_callback": "Option_PaperColumnFactory::expand",
         "completion_callback": "Option_PaperColumnFactory::completions",
@@ -96,7 +96,7 @@
     {   "name": "conflict", "alias": "conf"   },
     {
         "name": "editconf",
-        "minimal": true, "className": "plc", "callback": "+Conflict_PaperColumn",
+        "className": "plc", "callback": "+Conflict_PaperColumn",
         "position": 855, "is_pc": true, "edit": true
     },
     {   "name": "editconflict", "alias": "editconf"   },
@@ -125,13 +125,13 @@
     },
     {
         "name": "pagecount", "title": "Page count",
-        "sort": true, "completion": true, "minimal": true, "className": "plr", "callback": "+PageCount_PaperColumn",
+        "sort": true, "completion": true, "className": "plr", "callback": "+PageCount_PaperColumn",
         "position": 1000
     },
     {   "name": "pages", "alias": "pagecount"   },
     {
         "match": ".*", "priority": -2100,
-        "sort": true, "completion": true, "minimal": true,
+        "sort": true, "completion": true,
         "className": "pl_score",
         "callback": "+Score_PaperColumn",
         "position": 1100,
@@ -141,7 +141,7 @@
     {
         "name": "?graph",
         "match": "(?:g|graph):?\\((.*)\\)", "priority": -1,
-        "sort": true, "minimal": true, "className": "pl_score",
+        "sort": true, "className": "pl_score",
         "callback": "+FormulaGraph_PaperColumn",
         "position": 1200,
         "expand_callback": "FormulaGraph_PaperColumn::expand",
@@ -149,7 +149,7 @@
     },
     {
         "match": ".*", "priority": -3000,
-        "sort": true, "completion": true, "minimal": true, "className": "pl_formula",
+        "sort": true, "completion": true, "className": "pl_formula",
         "callback": "+Formula_PaperColumn",
         "position": 1300,
         "expand_callback": "Formula_PaperColumnFactory::expand",
@@ -158,7 +158,7 @@
     {
         "match": "(tag:)(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": false,
-        "sort": true, "minimal": true,
+        "sort": true,
         "callback": "+Tag_PaperColumn",
         "expand_callback": "Tag_PaperColumn::expand",
         "position": 1400
@@ -166,7 +166,7 @@
     {
         "match": "(tagval:)(.*)", "priority": -1, "allow_if": "pc",
         "tagvalue": true,
-        "sort": true, "minimal": true,
+        "sort": true,
         "callback": "+Tag_PaperColumn",
         "expand_callback": "Tag_PaperColumn::expand",
         "position": 1400
@@ -174,7 +174,7 @@
     {
         "match": "(#)([-a-zA-Z0-9!@*_:.\/~]+)", "priority": -1, "allow_if": "pc",
         "tagvalue": null,
-        "sort": true, "completion": "#<tag>", "minimal": true,
+        "sort": true, "completion": "#<tag>",
         "callback": "+Tag_PaperColumn",
         "expand_callback": "Tag_PaperColumn::expand",
         "position": 1400

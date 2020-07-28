@@ -24,10 +24,8 @@ class Column {
     public $fold;
     /** @var bool */
     public $sort = false;
-    /** @var bool */
+    /** @var bool|string */
     public $completion = false;
-    /** @var bool */
-    public $minimal = false;
     /** @var bool */
     public $sort_reverse = false;
     /** @var int */
@@ -65,11 +63,8 @@ class Column {
         if ($arg->sort ?? false) {
             $this->sort = true;
         }
-        if ($arg->completion ?? false) {
-            $this->completion = true;
-        }
-        if ($arg->minimal ?? false) {
-            $this->minimal = true;
+        if (isset($arg->completion)) {
+            $this->completion = $arg->completion;
         }
         if (isset($arg->position)) {
             $this->position = $arg->position;

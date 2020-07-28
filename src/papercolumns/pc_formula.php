@@ -54,9 +54,6 @@ class Formula_PaperColumn extends PaperColumn {
         }
     }
     function analyze(PaperList $pl, $fields) {
-        if (!$this->is_visible) {
-            return;
-        }
         $formulaf = $this->formula_function;
         $this->results = $this->override_results = [];
         $this->real_format = null;

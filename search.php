@@ -161,7 +161,9 @@ if (isset($Qreq->forceShow)) {
 }
 if (isset($Qreq->q)) {
     $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
-    $pl->set_selection($SSel);
+    if ($SSel->count()) {
+        $pl->set_selection($SSel);
+    }
     $pl->qopts["options"] = true; // get efficient access to `has(OPTION)`
     $pl_text = $pl->table_html(["fold_session_prefix" => "pldisplay.", "list" => true, "live" => true]);
     unset($Qreq->atab);
@@ -450,11 +452,12 @@ if ($pl->count > 0) {
     echo '<div style="padding-top:2ex"><table style="margin:0 0 0 auto"><tr>';
 
     // Conflict display
-    if ($Me->privChair)
+    if ($Me->privChair) {
         echo '<td class="padlb">',
-            Ht::checkbox("showforce", 1, !!$Qreq->forceShow,
+            Ht::checkbox("showforce", 1, $pl->showing("force"),
                          ["id" => "showforce", "class" => "uich js-plinfo"]),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
+    }
 
     echo '<td class="padlb">';
     if ($Me->privChair)
@@ -490,11 +493,11 @@ if ($pl_text) {
     if ($Me->has_hidden_papers()
         && !empty($Me->hidden_papers)
         && $Me->is_actas_user()) {
-        $pl->error_html[] = $Conf->_("Papers #%s are totally hidden when viewing the site as another user.", numrangejoin(array_keys($Me->hidden_papers)), count($Me->hidden_papers));
+        $pl->message_set()->warning_at(null, $Conf->_("Papers #%s are totally hidden when viewing the site as another user.", numrangejoin(array_keys($Me->hidden_papers)), count($Me->hidden_papers)));
     }
-    if (!empty($Search->warnings) || !empty($pl->error_html)) {
+    if (!empty($Search->warnings) || $pl->message_set()->has_messages()) {
         echo '<div class="msgs-wide">';
-        $Conf->warnMsg(array_merge($Search->warnings, $pl->error_html), true);
+        $Conf->warnMsg(array_merge($Search->warnings, $pl->message_set()->message_texts()), true);
         echo '</div>';
     }
 

@@ -176,8 +176,17 @@ class Id_PaperColumn extends PaperColumn {
 }
 
 class Selector_PaperColumn extends PaperColumn {
+    private $selectall = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
+    }
+    function add_decoration($decor) {
+        if ($decor === "selected") {
+            $this->selectall = true;
+            return $this->__add_decoration("selected");
+        } else {
+            return parent::add_decoration($decor);
+        }
     }
     function header(PaperList $pl, $is_text) {
         if ($is_text) {
@@ -187,7 +196,7 @@ class Selector_PaperColumn extends PaperColumn {
         }
     }
     protected function checked(PaperList $pl, PaperInfo $row) {
-        return $pl->is_selected($row->paperId, $this->name == "selon");
+        return $pl->is_selected($row->paperId, $this->selectall);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $pl->mark_has("sel");
@@ -283,14 +292,12 @@ class Status_PaperColumn extends PaperColumn {
         }
     }
     function analyze(PaperList $pl, $columns) {
-        if ($this->is_visible) {
-            foreach ($pl->rowset() as $row) {
-                if ($row->outcome != 0 || $row->paperStorageId <= 1) {
-                    $t = ($pl->user->paper_status_info($row))[1];
-                    if (strlen($t) > 10 && strpos($t, " ") !== false) {
-                        $this->className .= " pl-status-long";
-                        break;
-                    }
+        foreach ($pl->rowset() as $row) {
+            if ($row->outcome != 0 || $row->paperStorageId <= 1) {
+                $t = ($pl->user->paper_status_info($row))[1];
+                if (strlen($t) > 10 && strpos($t, " ") !== false) {
+                    $this->className .= " pl-status-long";
+                    break;
                 }
             }
         }

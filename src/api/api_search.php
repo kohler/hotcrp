@@ -29,50 +29,37 @@ class Search_API {
     }
 
     static function fieldhtml(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
-        assert($qreq->f !== "anonau");
-        $fdef = $qreq->f ? $user->conf->paper_columns($qreq->f, $user) : [];
-        if (empty($fdef)) {
-            return new JsonResult(404, "No such field.");
-        } else if (count($fdef) > 1) {
-            return new JsonResult(400, "“" . htmlspecialchars($qreq->f) . "” expands to more than one field.");
+        if ($qreq->f === null) {
+            return new JsonResult(400, "Missing parameter.");
         }
-
         if (!isset($qreq->q) && $prow) {
             $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
             $qreq->q = $prow->paperId;
         } else if (!isset($qreq->q)) {
             $qreq->q = "";
         }
-        if ($fdef[0]->name === "authors") {
-            $qreq->q = ((int) $qreq->aufull ? "show" : "hide") . ":aufull " . $qreq->q;
-        }
-        $search = new PaperSearch($user, $qreq);
 
+        $search = new PaperSearch($user, $qreq);
         $pl = new PaperList("empty", $search);
-        $response = $pl->column_json($qreq->f);
-        if (!$response) {
-            return ["ok" => false];
-        } else {
-            $response["ok"] = true;
-            if ($qreq->session && $qreq->post_ok()) {
-                Session_API::setsession($user, $qreq->session);
-            }
-            return $response;
+        if (isset($qreq->aufull)) {
+            $pl->set_view("aufull", (bool) $qreq->aufull);
         }
+        $response = $pl->column_json($qreq->f);
+
+        $j = ["ok" => !empty($response["fields"])] + $response;
+        foreach ($pl->message_set()->message_texts() as $m) {
+            $j["errors"][] = $m;
+        }
+        if ($j["ok"] && $qreq->session && $qreq->post_ok()) {
+            Session_API::setsession($user, $qreq->session);
+        }
+        return $j;
     }
 
     static function fieldtext(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         if ($qreq->f === null) {
             return new JsonResult(400, "Missing parameter.");
         }
-        $fdefs = [];
-        foreach (preg_split('/\s+/', trim($qreq->f)) as $fid) {
-            if ($user->conf->paper_columns($fid, $user)) {
-                $fdefs[] = $fid;
-            } else if ($fid !== "") {
-                return new JsonResult(404, "No such field “{$fid}”.");
-            }
-        }
 
         if (!isset($qreq->q) && $prow) {
             $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
@@ -81,8 +68,13 @@ class Search_API {
             $qreq->q = "";
         }
         $search = new PaperSearch($user, $qreq);
+        $pl = new PaperList("empty", $search);
+        $response = $pl->text_json($qreq->f);
 
-        $pl = new PaperList("pl", $search);
-        return ["ok" => true, "data" => $pl->text_json($qreq->f)];
+        $j = ["ok" => !empty($response), "data" => $response];
+        foreach ($pl->message_set()->message_texts() as $m) {
+            $j["errors"][] = $m;
+        }
+        return $j;
     }
 }

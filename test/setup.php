@@ -398,10 +398,11 @@ function search_json($user, $text, $cols = "id") {
 }
 
 /** @param Contact $user
+ * @param string $col
  * @return string */
 function search_text_col($user, $text, $col = "id") {
     $pl = new PaperList("empty", new PaperSearch($user, $text));
-    $x = array();
+    $x = [];
     foreach ($pl->text_json($col) as $pid => $p) {
         $x[] = $pid . " " . $p->$col . "\n";
     }

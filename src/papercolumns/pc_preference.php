@@ -95,11 +95,9 @@ class Preference_PaperColumn extends PaperColumn {
     function analyze(PaperList $pl, $fields) {
         $pfcol = $rtcol = [];
         foreach ($fields as $fdef) {
-            if ($fdef instanceof ReviewerType_PaperColumn
-                && $fdef->is_visible) {
+            if ($fdef instanceof ReviewerType_PaperColumn) {
                 $rtcol[] = $fdef;
-            } else if ($fdef instanceof Preference_PaperColumn
-                       && $fdef->is_visible) {
+            } else if ($fdef instanceof Preference_PaperColumn) {
                 $pfcol[] = $fdef;
             }
         }

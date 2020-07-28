@@ -176,9 +176,7 @@ class PaperValue implements JsonSerializable {
 
     /** @return MessageSet */
     function message_set() {
-        if ($this->_ms === null) {
-            $this->_ms = new MessageSet;
-        }
+        $this->_ms = $this->_ms ?? new MessageSet;
         return $this->_ms;
     }
     function set_message_set(MessageSet $ms) {

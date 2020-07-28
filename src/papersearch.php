@@ -2671,12 +2671,17 @@ class PaperSearch {
         $decorations = [];
         foreach ($words as $w) {
             $colon = strpos($w, ":");
+            if ($colon === false
+                || !in_array(substr($w, 0, $colon), ["show", "sort", "edit", "as", "hide", "showsort", "editsort"])) {
+                $w = "show:" . $w;
+                $colon = 4;
+            }
             $a = substr($w, 0, $colon);
             $d = substr($w, $colon + 1);
             if (str_starts_with($d, "[")) {
                 $d = substr($d, 1, strlen($d) - (str_ends_with($d, "]") ? 2 : 1));
             }
-            if ($a === "as" || in_array($d, ["reverse", "forward", "up", "down"])) {
+            if ($a === "as" || in_array($d, ["reverse", "forward", "up", "down", "by", "row", "column"])) {
                 $decorations[] = $d;
             } else {
                 if ($keyword !== "") {

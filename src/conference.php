@@ -2385,18 +2385,13 @@ class Conf {
 
     /** @param string $name */
     function session($name, $defval = null) {
-        if (isset($_SESSION[$this->dsn])
-            && isset($_SESSION[$this->dsn][$name])) {
-            return $_SESSION[$this->dsn][$name];
-        } else {
-            return $defval;
-        }
+        return $_SESSION[$this->dsn][$name] ?? $defval;
     }
 
     /** @param string $name */
     function save_session($name, $value) {
         if ($value !== null) {
-            if (empty($_SESSION)){
+            if (empty($_SESSION)) {
                 ensure_session();
             }
             $_SESSION[$this->dsn][$name] = $value;
