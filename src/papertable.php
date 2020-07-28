@@ -812,16 +812,16 @@ class PaperTable {
         }
     }
 
-    private function editable_author_component_entry($n, $pfx, $au) {
+    private function editable_author_component_entry($n, $component, $au) {
         $auval = "";
-        if ($pfx === "auname") {
+        if ($component === "name") {
             $js = ["size" => "35", "placeholder" => "Name", "autocomplete" => "off", "aria-label" => "Author name"];
             if ($au && $au->firstName && $au->lastName && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au->lastName)) {
                 $auval = $au->lastName . ", " . $au->firstName;
             } else if ($au) {
                 $auval = $au->name();
             }
-        } else if ($pfx === "auemail") {
+        } else if ($component === "email") {
             $js = ["size" => "30", "placeholder" => "Email", "autocomplete" => "off", "aria-label" => "Author email"];
             $auval = $au ? $au->email : "";
         } else {
@@ -831,20 +831,20 @@ class PaperTable {
 
         $val = $auval;
         if ($this->useRequest) {
-            $val = ($pfx === '$' ? "" : (string) $this->qreq["$pfx$n"]);
+            $val = ($n === '$' ? "" : (string) $this->qreq["authors:{$component}_{$n}"]);
         }
 
-        $js["class"] = $this->control_class("$pfx$n", "need-autogrow js-autosubmit e$pfx");
+        $js["class"] = $this->control_class("authors:{$component}_{$n}", "need-autogrow js-autosubmit editable-author-{$component}");
         if ($au && !$this->prow->paperId && !$this->useRequest) {
             $js["class"] .= " ignore-diff";
         }
-        if ($pfx === "auemail" && $this->user->can_lookup_user()) {
+        if ($component === "email" && $this->user->can_lookup_user()) {
             $js["class"] .= " uii js-email-populate";
         }
         if ($val !== $auval) {
             $js["data-default-value"] = $auval;
         }
-        return Ht::entry("$pfx$n", $val, $js);
+        return Ht::entry("authors:{$component}_{$n}", $val, $js);
     }
     private function editable_authors_tr($n, $au, $max_authors) {
         $t = '<tr>';
@@ -852,18 +852,18 @@ class PaperTable {
             $t .= '<td class="rxcaption">' . $n . '.</td>';
         }
         return $t . '<td class="lentry">'
-            . $this->editable_author_component_entry($n, "auemail", $au) . ' '
-            . $this->editable_author_component_entry($n, "auname", $au) . ' '
-            . $this->editable_author_component_entry($n, "auaff", $au)
+            . $this->editable_author_component_entry($n, "email", $au) . ' '
+            . $this->editable_author_component_entry($n, "name", $au) . ' '
+            . $this->editable_author_component_entry($n, "affiliation", $au)
             . '<span class="nb btnbox aumovebox"><button type="button" class="ui qx need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
             . Icons::ui_triangle(0)
             . '</button><button type="button" class="ui qx need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
             . Icons::ui_triangle(2)
             . '</button><button type="button" class="ui qx need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>'
-            . $this->messages_at("author$n")
-            . $this->messages_at("auemail$n")
-            . $this->messages_at("auname$n")
-            . $this->messages_at("auaff$n")
+            . $this->messages_at("authors:$n")
+            . $this->messages_at("authors:email_$n")
+            . $this->messages_at("authors:name_$n")
+            . $this->messages_at("authors:affiliation_$n")
             . '</td></tr>';
     }
 
@@ -891,9 +891,9 @@ class PaperTable {
         if ($this->useRequest) {
             $n = $nonempty_n = 0;
             while (true) {
-                $auname = $this->qreq["auname" . ($n + 1)];
-                $auemail = $this->qreq["auemail" . ($n + 1)];
-                $auaff = $this->qreq["auaff" . ($n + 1)];
+                $auname = $this->qreq["authors:name_" . ($n + 1)];
+                $auemail = $this->qreq["authors:email_" . ($n + 1)];
+                $auaff = $this->qreq["authors:affiliation_" . ($n + 1)];
                 if ($auname === null && $auemail === null && $auaff === null) {
                     break;
                 }

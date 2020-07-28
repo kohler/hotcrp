@@ -804,7 +804,7 @@ class PaperStatus extends MessageSet {
         }
         foreach ($pj->bad_email_authors as $aux) {
             $ps->error_at("authors", null);
-            $k = $aux->author_index >= 0 ? "auemail" . $aux->author_index : "authors";
+            $k = $aux->author_index >= 0 ? "authors:email_{$aux->author_index}" : "authors";
             $ps->estop_at($k, $ps->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
         if (isset($pj->authors)
@@ -1150,11 +1150,12 @@ class PaperStatus extends MessageSet {
                     $this->_created_contacts[] = $u;
                 }
             } else if (!($flags & Contact::SAVE_IMPORT)) {
-                $key = "contacts";
                 if ($c->contact_index >= 0) {
                     $key = "contacts:" . $c->contact_index;
                 } else if ($c->author_index >= 0) {
-                    $key = "auemail" . $c->author_index;
+                    $key = "authors:email_" . $c->author_index;
+                } else {
+                    $key = "contacts";
                 }
                 $this->error_at($key, $this->_("Could not create an account for contact %s.", Text::nameo_h($c, NAME_E)));
                 $this->error_at("contacts", false);

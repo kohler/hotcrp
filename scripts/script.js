@@ -3280,10 +3280,10 @@ handle_ui.on("js-email-populate", function () {
         ln = f.lastName;
         af = f.affiliation;
         placeholder = true;
-    } else if (this.name.substring(0, 7) === "auemail") {
-        var idx = this.name.substring(7);
-        nn = f["auname" + idx];
-        af = f["auaff" + idx];
+    } else if (this.name.substring(0, 13) === "authors:email") {
+        var idx = this.name.substring(13);
+        nn = f["authors:name" + idx];
+        af = f["authors:affiliation" + idx];
     } else if (this.name.substring(0, 14) === "contacts:email") {
         nn = f["contacts:name" + this.name.substring(14)];
     }

@@ -31,6 +31,17 @@ class PaperSaver {
     }
 
     /** @param Qrequest $qreq */
+    static function translate_authors_qreq($qreq) {
+        $n = 1;
+        while (isset($qreq["auemail$n"])) {
+            $qreq["authors:email_$n"] = $qreq["auemail$n"];
+            $qreq["authors:name_$n"] = $qreq["auname$n"];
+            $qreq["authors:affiliation_$n"] = $qreq["auaff$n"];
+            ++$n;
+        }
+    }
+
+    /** @param Qrequest $qreq */
     static function replace_contacts($pj, $qreq) {
         $pj->contacts = [];
         for ($n = 1; isset($qreq["contacts:email_$n"]); ++$n) {
@@ -78,20 +89,20 @@ class Default_PaperSaver extends PaperSaver {
         }
 
         // Authors
-        $aukeys = ["name" => "Name", "email" => "Email", "aff" => "Affiliation"];
+        $aukeys = ["name" => "Name", "email" => "Email", "affiliation" => "Affiliation"];
         $authors = [];
+        if (!isset($qreq["auemail1"]) && isset($qreq["authors:email_1"])) {
+            self::translate_authors_qreq($qreq);
+        }
         for ($n = 1; true; ++$n) {
             $au = (object) ["index" => $n];
             $isnull = $isempty = true;
             foreach ($aukeys as $k => $defaultv) {
-                $v = $qreq["au" . $k . $n];
+                $v = $qreq["authors:{$k}_{$n}"];
                 if ($v !== null) {
                     $isnull = false;
                     $v = simplify_whitespace($v);
                     if ($v !== "" && $v !== $defaultv) {
-                        if ($k === "aff") {
-                            $k = "affiliation";
-                        }
                         $au->$k = $v;
                         $isempty = false;
                     }

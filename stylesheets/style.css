@@ -3310,15 +3310,15 @@ a:hover .t-editor,
 	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%),
 		linear-gradient(to top, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%);
 }
-.eauname, .eauaff, .eauemail {
+.editable-author-name, .editable-author-affiliation, .editable-author-email {
 	margin: 2px 0.5em 2px 0;
 }
-.eauname, .eauaff {
+.editable-author-name, .editable-author-affiliation {
 	min-width: 268px;
 	width: 268px;
 	max-width: 600px;
 }
-.eauemail {
+.editable-author-email {
 	min-width: 248px;
 	width: 248px;
 	max-width: 600px;
