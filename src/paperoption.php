@@ -233,8 +233,6 @@ class PaperOptionList implements IteratorAggregate {
     private $_ijmap;
     /** @var array<int,?PaperOption> */
     private $_imap = [];
-    /** @var array<string,int> */
-    private $_inamemap;
     /** @var ?array<int,PaperOption> */
     private $_olist;
     /** @var ?array<int,PaperOption> */
@@ -341,17 +339,6 @@ class PaperOptionList implements IteratorAggregate {
         }
     }
 
-    /** @return array<string,int> */
-    private function intrinsic_name_map() {
-        if ($this->_inamemap === null) {
-            $this->_inamemap = [];
-            foreach ($this->intrinsic_json_map() as $id => $oj) {
-                $this->_inamemap[$oj->name] = $id;
-            }
-        }
-        return $this->_inamemap;
-    }
-
     /** @param int $id
      * @return ?PaperOption */
     function option_by_id($id) {
@@ -380,6 +367,20 @@ class PaperOptionList implements IteratorAggregate {
             throw new Exception("PaperOptionList::checked_option_by_id($id) failed");
         }
         return $o;
+    }
+
+    /** @param string $key
+     * @return ?PaperOption */
+    function option_by_field_key($key) {
+        // Since this function is rarely used, don’t bother optimizing it.
+        if (($colon = strpos($key, ":"))) {
+            $key = substr($key, 0, $colon);
+        }
+        foreach ($this->unsorted_field_list() as $f) {
+            if ($f->json_key() === $key)
+                return $f;
+        }
+        return null;
     }
 
     /** @return array<int,PaperOption> */
@@ -425,6 +426,18 @@ class PaperOptionList implements IteratorAggregate {
             uasort($this->_olist_nonfinal, "PaperOption::compare");
         }
         return $this->_olist_nonfinal;
+    }
+
+    /** @return array<int,PaperOption> */
+    function nonpaper() {
+        $list = [];
+        foreach ($this->option_json_map() as $id => $oj) {
+            if (($oj->nonpaper ?? false)
+                && ($o = $this->option_by_id($id)))
+                $list[$id] = $o;
+        }
+        uasort($list, "PaperOption::compare");
+        return $list;
     }
 
     /** @return array<int,PaperOption> */
@@ -478,8 +491,7 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     function invalidate_options() {
-        $this->_jlist = $this->_ijmap = $this->_inamemap = $this->_olist = $this->_olist_nonfinal =
-            $this->_nonpaper_am = null;
+        $this->_jlist = $this->_ijmap = $this->_olist = $this->_olist_nonfinal = $this->_nonpaper_am = null;
         $this->_omap = $this->_imap = [];
     }
 
@@ -528,19 +540,6 @@ class PaperOptionList implements IteratorAggregate {
         $omap = $this->find_all($name);
         reset($omap);
         return count($omap) === 1 ? current($omap) : null;
-    }
-
-    /** @return ?PaperOption */
-    function find_field($name) {
-        $omap = $this->find_all($name);
-        if (count($omap) === 1) {
-            reset($omap);
-            return current($omap);
-        } else if (empty($omap) && ($id = ($this->intrinsic_name_map())[$name]) < 0) {
-            return $this->option_by_id($id);
-        } else {
-            return null;
-        }
     }
 
     /** @return AbbreviationMatcher<PaperOption> */
@@ -675,6 +674,7 @@ class PaperOption implements Abbreviator {
     /** @param stdClass $args */
     function __construct(Conf $conf, $args) {
         assert(is_object($args));
+        assert($args->id > 0 || isset($args->json_key));
         if (!is_object($args)) {
             $args = (object) $args;
         }

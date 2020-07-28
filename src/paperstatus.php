@@ -377,14 +377,6 @@ class PaperStatus extends MessageSet {
     }
 
 
-    static function field_title(Conf $conf, $f) {
-        $o = $conf->options()->find_field($f);
-        if (!$o && str_starts_with($f, "au")) {
-            $o = $conf->option_by_id(PaperOption::AUTHORSID);
-        }
-        return $o ? htmlspecialchars($o->edit_title()) : false;
-    }
-
     function msg_at_option(PaperOption $o, $msg, $status) {
         $this->msg_at($o->field_key(), $msg, $status);
     }
@@ -398,16 +390,16 @@ class PaperStatus extends MessageSet {
         $ms = [];
         foreach ($this->message_list() as $mx) {
             if ($mx[1]) {
-                $t = $mx[0] ? (string) self::field_title($this->conf, $mx[0]) : "";
-                $ms[] = $t ? "{$t}: {$mx[1]}" : $mx[1];
+                $o = $mx[0] ? $this->conf->options()->option_by_field_key($mx[0]) : null;
+                $ms[] = ($o ? htmlspecialchars($o->edit_title()) . ": " : "") . $mx[1];
             }
         }
         return $ms;
     }
 
-    function format_error_at($key, $value) {
-        $this->error_at($key, "Format error [" . htmlspecialchars($key) . "]");
-        error_log($this->conf->dbname . ": PaperStatus: format error $key " . gettype($value));
+    function syntax_error_at($key, $value) {
+        $this->error_at($key, "Validation error [" . htmlspecialchars($key) . "]");
+        error_log($this->conf->dbname . ": PaperStatus: syntax error $key " . gettype($value));
     }
 
 
@@ -433,7 +425,7 @@ class PaperStatus extends MessageSet {
             $docj = $docj[0];
         }
         if (!is_object($docj)) {
-            $this->format_error_at($o->field_key(), $docj);
+            $this->syntax_error_at($o->field_key(), $docj);
             return null;
         } else if (get($docj, "error") || get($docj, "error_html")) {
             $this->error_at_option($o, get($docj, "error_html", "Upload error."));
@@ -503,7 +495,7 @@ class PaperStatus extends MessageSet {
         if (isset($pj->$k) && is_string($pj->$k)) {
             $pj->$k = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
         } else if (isset($pj->$k)) {
-            $this->format_error_at($k, $pj->$k);
+            $this->syntax_error_at($k, $pj->$k);
             unset($pj->$k);
         }
     }
@@ -601,7 +593,7 @@ class PaperStatus extends MessageSet {
             if (is_array($pj->authors)) {
                 $input_authors = $pj->authors;
             } else {
-                $this->format_error_at("authors", $pj->authors);
+                $this->syntax_error_at("authors", $pj->authors);
                 $input_authors = [];
             }
             $pj->authors = [];
@@ -611,7 +603,7 @@ class PaperStatus extends MessageSet {
                 } else if (is_string($au)) {
                     $this->normalize_author($pj, (object) ["email" => $au], $au_by_lemail);
                 } else {
-                    $this->format_error_at("authors", $au);
+                    $this->syntax_error_at("authors", $au);
                 }
             }
         }
@@ -666,7 +658,7 @@ class PaperStatus extends MessageSet {
             } else if ($pj->options === false) {
                 $pj->options = (object) array();
             } else {
-                $this->format_error_at("options", $pj->options);
+                $this->syntax_error_at("options", $pj->options);
                 unset($pj->options);
             }
         }
@@ -690,7 +682,7 @@ class PaperStatus extends MessageSet {
             if (is_object($contacts) || is_array($contacts)) {
                 $contacts = (array) $contacts;
             } else {
-                $this->format_error_at("contacts", $contacts);
+                $this->syntax_error_at("contacts", $contacts);
                 $contacts = [];
             }
             $pj->contacts = [];
@@ -728,7 +720,7 @@ class PaperStatus extends MessageSet {
                         $pj->bad_contacts[] = $aux;
                     }
                 } else {
-                    $this->format_error_at("contacts", $v);
+                    $this->syntax_error_at("contacts", $v);
                 }
             }
         }
@@ -837,7 +829,7 @@ class PaperStatus extends MessageSet {
         if (isset($pj->$k) && $pj->$k) {
             $doc = $ps->upload_document($pj->$k, $opt);
         }
-        if (isset($pj->$k) && !$ps->has_error_at($opt->json_key())) {
+        if (isset($pj->$k) && !$ps->has_error_at($opt->field_key())) {
             $null_id = $opt->id ? 0 : 1;
             $new_id = $doc ? $doc->paperStorageId : $null_id;
             $prowk = $opt->id ? "finalPaperStorageId" : "paperStorageId";
@@ -1250,7 +1242,7 @@ class PaperStatus extends MessageSet {
         }
         if ($paperid !== null && !is_int($paperid)) {
             $key = isset($pj->pid) ? "pid" : "id";
-            $this->format_error_at($key, $paperid);
+            $this->syntax_error_at($key, $paperid);
             return false;
         }
 
