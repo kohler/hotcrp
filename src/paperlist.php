@@ -256,10 +256,6 @@ class PaperList {
         }
         $this->set_view_search($qe, -1);
 
-        if (($args["display"] ?? null) !== null) {
-            $this->parse_view($args["display"]);
-        }
-
         if ($qreq->forceShow !== null) {
             $this->set_view("force", !!$qreq->forceShow);
         }
