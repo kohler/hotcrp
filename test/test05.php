@@ -104,7 +104,7 @@ xassert_eqq($docs[1]->paperStorageId, $d1psid);
 xassert($docs[2]->check_text_hash("2e866582768e8954f55b974a2ad8503ef90717ab"));
 xassert_eqq($docs[2]->paperStorageId, $d1psid);
 
-// backwards compatibility
+// backwards compatibility for option storage
 $Conf->qe("delete from PaperOption where paperId=2 and optionId=2");
 $Conf->qe("insert into PaperOption (paperId,optionId,value,data) values (2,2,$d0psid,'0'),(2,2,$d1psid,'1')");
 $paper2 = $user_estrin->checked_paper_by_id(2);
@@ -114,6 +114,17 @@ xassert($docs[0]->check_text_hash("4c18e2ec1d1e6d9e53f57499a66aeb691d687370"));
 xassert_eqq($docs[0]->paperStorageId, $d0psid);
 xassert($docs[1]->check_text_hash("2e866582768e8954f55b974a2ad8503ef90717ab"));
 xassert_eqq($docs[1]->paperStorageId, $d1psid);
+
+// new-style JSON representation
+$ps->save_paper_json(json_decode("{\"id\":2,\"attachments\":[{\"content\":\"%PDF-2\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-1\", \"type\":\"application/pdf\"}]}"));
+xassert_paper_status($ps);
+xassert($Conf->check_document_inactive_invariants());
+
+$paper2 = $user_estrin->checked_paper_by_id(2);
+$docs = $paper2->option(2)->documents();
+xassert_eqq(count($docs), 2);
+xassert($docs[0]->check_text_hash("2e866582768e8954f55b974a2ad8503ef90717ab"));
+xassert($docs[1]->check_text_hash("4c18e2ec1d1e6d9e53f57499a66aeb691d687370"));
 
 // test SHA-256
 $Conf->save_setting("opt.contentHashMethod", 1, "sha256");

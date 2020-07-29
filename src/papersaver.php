@@ -140,12 +140,16 @@ class Default_PaperSaver extends PaperSaver {
         }
 
         // Status
+        unset($pj->status);
         if ($action === "submit") {
             $pj->submitted = true;
+            $pj->draft = false;
         } else if ($action === "final") {
             $pj->final_submitted = $pj->submitted = true;
+            $pj->draft = false;
         } else {
             $pj->submitted = false;
+            $pj->draft = true;
         }
 
         // Paper upload

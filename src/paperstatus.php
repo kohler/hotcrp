@@ -198,9 +198,6 @@ class PaperStatus extends MessageSet {
         return $d;
     }
 
-    private function _maybe_check_format($doc, $name) {
-    }
-
     function paper_json($prow, $args = array()) {
         if (is_int($prow)) {
             $prow = $this->conf->paper_by_id($prow, $this->user, ["topics" => true, "options" => true]);
@@ -247,7 +244,7 @@ class PaperStatus extends MessageSet {
             $pj->status = $submitted_status;
             $pj->submitted = true;
         } else {
-            $pj->status = "inprogress";
+            $pj->status = "draft";
             $pj->draft = true;
         }
         if (($t = $prow->submitted_at())) {
@@ -528,7 +525,7 @@ class PaperStatus extends MessageSet {
         if (isset($au->index) && is_int($au->index)) {
             $aux->author_index = $au->index;
         } else {
-            $aux->author_index = count($pj->authors) + count($pj->bad_authors);
+            $aux->author_index = count($pj->authors) + count($pj->_bad_authors);
         }
 
         if ($aux->firstName !== ""
@@ -537,36 +534,16 @@ class PaperStatus extends MessageSet {
             || $aux->affiliation !== "") {
             $pj->authors[] = $aux;
         } else {
-            $pj->bad_authors[] = $aux;
+            $pj->_bad_authors[] = $aux;
         }
         if ($aux->email !== "") {
             $lemail = strtolower($aux->email);
             $au_by_lemail[$lemail] = $aux;
             if (!validate_email($lemail)
                 && (!$this->prow || !$this->prow->author_by_email($lemail))) {
-                $pj->bad_email_authors[] = $aux;
+                $pj->_bad_email_authors[] = $aux;
             }
         }
-    }
-
-    private function normalize_options($pj, $options) {
-        // canonicalize option values to use IDs, not abbreviations
-        $new_options = [];
-        foreach ($options as $id => $oj) {
-            $omatches = $this->conf->options()->find_all($id);
-            if (count($omatches) != 1) {
-                $pj->bad_options[$id] = true;
-            } else {
-                $o = current($omatches);
-                // XXX setting decision in JSON?
-                if (($o->final && (!$this->prow || $this->prow->outcome <= 0))
-                    || $o->id <= 0) {
-                    continue;
-                }
-                $new_options[(string) $o->id] = $oj;
-            }
-        }
-        $pj->options = (object) $new_options;
     }
 
     private function valid_contact($email) {
@@ -583,25 +560,26 @@ class PaperStatus extends MessageSet {
         return false;
     }
 
-    private function normalize($pj) {
+    private function normalize($ipj) {
         // Errors prevent saving
+        $xpj = (object) [];
 
         // Authors
         $au_by_lemail = [];
-        $pj->bad_authors = $pj->bad_email_authors = [];
-        if (isset($pj->authors)) {
-            if (is_array($pj->authors)) {
-                $input_authors = $pj->authors;
+        $xpj->_bad_authors = $xpj->_bad_email_authors = [];
+        if (isset($ipj->authors)) {
+            if (is_array($ipj->authors)) {
+                $input_authors = $ipj->authors;
             } else {
-                $this->syntax_error_at("authors", $pj->authors);
+                $this->syntax_error_at("authors", $ipj->authors);
                 $input_authors = [];
             }
-            $pj->authors = [];
+            $xpj->authors = [];
             foreach ($input_authors as $k => $au) {
                 if (is_object($au)) {
-                    $this->normalize_author($pj, $au, $au_by_lemail);
+                    $this->normalize_author($xpj, $au, $au_by_lemail);
                 } else if (is_string($au)) {
-                    $this->normalize_author($pj, (object) ["email" => $au], $au_by_lemail);
+                    $this->normalize_author($xpj, (object) ["email" => $au], $au_by_lemail);
                 } else {
                     $this->syntax_error_at("authors", $au);
                 }
@@ -609,57 +587,121 @@ class PaperStatus extends MessageSet {
         }
 
         // Status
-        if (!isset($pj->submitted)) {
-            if (isset($pj->draft)) {
-                $pj->submitted = !$pj->draft;
-            }
-            if (isset($pj->status) && $pj->status === "submitted") {
-                $pj->submitted = true;
-            } else if (isset($pj->status) && $pj->status === "draft") {
-                $pj->submitted = false;
+        $xstatus = (object) [];
+        if (isset($ipj->status) && is_object($ipj->status)) {
+            $istatusstr = null;
+            $istatus = $ipj->status;
+        } else {
+            if (isset($ipj->status) && is_string($ipj->status)) {
+                $istatusstr = $ipj->status;
             } else {
-                $pj->submitted = $this->prow && $this->prow->timeSubmitted != 0;
+                $istatusstr = null;
             }
+            $istatus = $ipj;
         }
-        if (!isset($pj->draft)) {
-            $pj->draft = !$pj->submitted;
-        }
-        if (!isset($pj->withdrawn)) {
-            if (isset($pj->status) && $pj->status === "withdrawn") {
-                $pj->withdrawn = true;
-            } else {
-                $pj->withdrawn = $this->prow && $this->prow->timeWithdrawn != 0;
+        foreach (["submitted", "draft", "withdrawn", "final_submitted"] as $k) {
+            $v = $istatus->$k ?? null;
+            if ($v !== null && !is_bool($v)) {
+                $this->syntax_error_at("status.$k", $v);
+                $v = null;
             }
+            $xstatus->$k = $v;
         }
-        foreach (["withdrawn_at", "submitted_at", "final_submitted_at"] as $k) {
-            if (isset($pj->$k)) {
-                $v = $pj->$k;
-                if (is_numeric($v)) {
-                    $v = (int) $v;
-                } else if (is_string($v)) {
-                    $v = $this->conf->parse_time($v, Conf::$now);
-                } else {
-                    $v = false;
+        foreach (["submitted_at", "withdrawn_at", "final_submitted_at"] as $k) {
+            $v = $istatus->$k ?? null;
+            if (is_numeric($v)) {
+                $v = (float) $v;
+                if ($v < 0) {
+                    $this->error_at("status.$k", "Negative date");
+                    $v = null;
                 }
+            } else if (is_string($v)) {
+                $v = $this->conf->parse_time($v, Conf::$now);
                 if ($v === false || $v < 0) {
-                    $v = Conf::$now;
+                    $this->error_at("status.$k", "Parse error in date");
+                    $v = null;
+                } else {
+                    $v = (float) $v;
                 }
-                $pj->$k = $v;
+            } else if ($v === false) {
+                $v = 0.0;
+            } else if ($v !== null) {
+                $this->syntax_error_at("status.$k", $v);
             }
+            $xstatus->$k = $v;
         }
+        if ($istatusstr === "submitted") {
+            $xstatus->submitted = $xstatus->submitted ?? true;
+            $xstatus->draft = $xstatus->draft ?? false;
+            $xstatus->withdrawn = $xstatus->withdrawn ?? false;
+        } else if ($istatusstr === "draft" || $istatusstr === "inprogress") {
+            $xstatus->submitted = $xstatus->submitted ?? false;
+            $xstatus->draft = $xstatus->draft ?? true;
+            $xstatus->withdrawn = $xstatus->withdrawn ?? false;
+        } else if ($istatusstr === "withdrawn") {
+            $xstatus->withdrawn = $xstatus->withdrawn ?? true;
+        }
+        $xstatus->submitted = $xstatus->submitted ?? ($this->prow && $this->prow->timeSubmitted != 0);
+        $xstatus->draft = $xstatus->draft ?? !$xstatus->submitted;
+        $xstatus->withdrawn = $xstatus->withdrawn ?? ($this->prow && $this->prow->timeWithdrawn != 0);
+        if ($xstatus->submitted !== !$xstatus->draft) {
+            $this->error_at("status.draft", "Draft status conflicts with submitted status");
+        }
+        $xpj->status = $xstatus;
 
         // Options
-        $pj->bad_options = [];
-        if (isset($pj->options)) {
-            if (is_associative_array($pj->options) || is_object($pj->options)) {
-                $this->normalize_options($pj, $pj->options);
-            } else if (is_array($pj->options) && count($pj->options) == 1 && is_object($pj->options[0])) {
-                $this->normalize_options($pj, $pj->options[0]);
-            } else if ($pj->options === false) {
-                $pj->options = (object) array();
+        $xpj->_bad_options = [];
+        $ioptions = (object) [];
+        if (isset($ipj->options)) {
+            if (is_associative_array($ipj->options) || is_object($ipj->options)) {
+                $ioptions = (object) $ipj->options;
+            } else if (is_array($ipj->options)
+                       && count($ipj->options) == 1
+                       && is_object($ipj->options[0])) {
+                $ioptions = $ipj->options[0];
             } else {
-                $this->syntax_error_at("options", $pj->options);
-                unset($pj->options);
+                $this->syntax_error_at("options", $ipj->options);
+            }
+        }
+        $ikeys = [];
+        foreach ($this->conf->options()->form_fields($this->prow) as $o) {
+            if ($o->id > 0 || $o->type === "intrinsic2") {
+                $k = $o->json_key();
+                if (($j = $ipj->$k ?? $ioptions->$k ?? null) !== null) {
+                    $xpj->$k = $j;
+                } else if (($j = $ipj->{$o->field_key()} ?? $ioptions->{$o->field_key()} ?? null) !== null) {
+                    $xpj->$k = $j;
+                    $ikeys[$o->field_key()] = true;
+                } else if (($j = $ipj->{(string) $o->id} ?? null)) {
+                    $xpj->$k = $j;
+                    $ikeys[(string) $o->id] = true;
+                }
+            }
+        }
+        if (isset($ipj->options)) {
+            foreach ((array) $ioptions as $k => $v) {
+                if (!isset($xpj->$k) && !isset($ikeys[$k])) {
+                    $matches = $this->conf->options()->find_all($k);
+                    if (count($matches) === 1) {
+                        $o = current($matches);
+                        $xpj->{$o->json_key()} = $v;
+                    } else {
+                        $xpj->_bad_options[] = $k;
+                    }
+                }
+            }
+        }
+        foreach ((array) $ipj as $k => $v) {
+            if (!isset($xpj->$k) && !isset($ikeys[$k]) && !isset($xstatus->$k)
+                && !in_array($k, ["pid", "options", "status", "decision"])
+                && $k[0] !== "_" && $k[0] !== "\$") {
+                $matches = $this->conf->options()->find_all($k);
+                if (count($matches) === 1) {
+                    $o = current($matches);
+                    $xpj->{$o->json_key()} = $v;
+                } else if (count($matches) > 1) {
+                    $xpj->_bad_options[] = $k;
+                }
             }
         }
 
@@ -670,14 +712,14 @@ class PaperStatus extends MessageSet {
         }
 
         // verify emails on authors marked as contacts
-        $pj->bad_contacts = [];
-        foreach ($pj->authors ?? [] as $au) {
+        $xpj->_bad_contacts = [];
+        foreach ($xpj->authors ?? [] as $au) {
             if ($au->is_contact && !$this->valid_contact($au->email))
-                $pj->bad_contacts[] = $au;
+                $xpj->_bad_contacts[] = $au;
         }
 
         // Contacts
-        $contacts = $pj->contacts ?? null;
+        $contacts = $ipj->contacts ?? null;
         if ($contacts !== null) {
             if (is_object($contacts) || is_array($contacts)) {
                 $contacts = (array) $contacts;
@@ -685,7 +727,7 @@ class PaperStatus extends MessageSet {
                 $this->syntax_error_at("contacts", $contacts);
                 $contacts = [];
             }
-            $pj->contacts = [];
+            $xpj->contacts = [];
             // verify emails on explicitly named contacts
             foreach ($contacts as $k => $v) {
                 if (!$v) {
@@ -715,9 +757,9 @@ class PaperStatus extends MessageSet {
                         $aux->contact_index = $v->index;
                     }
                     if ($this->valid_contact($aux->email)) {
-                        $pj->contacts[] = $aux;
+                        $xpj->contacts[] = $aux;
                     } else {
-                        $pj->bad_contacts[] = $aux;
+                        $xpj->_bad_contacts[] = $aux;
                     }
                 } else {
                     $this->syntax_error_at("contacts", $v);
@@ -726,7 +768,7 @@ class PaperStatus extends MessageSet {
         }
 
         // Inherit contactness
-        if (isset($pj->authors) && $this->prow) {
+        if (isset($xpj->authors) && $this->prow) {
             foreach ($this->prow->contacts(true) as $cflt) {
                 if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR
                     && ($aux = $au_by_lemail[strtolower($cflt->email)] ?? null)
@@ -740,26 +782,28 @@ class PaperStatus extends MessageSet {
         if ($this->prow
             && !$this->user->allow_administer($this->prow)
             && $this->prow->conflict_type($this->user) === CONFLICT_AUTHOR) {
-            if (!isset($pj->contacts)) {
-                $pj->contacts = [];
+            if (!isset($xpj->contacts)) {
+                $xpj->contacts = [];
                 foreach ($this->prow->contacts(true) as $cflt) {
                     if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR) {
                         $aux = new PaperStatusAuthor;
                         $aux->email = $cflt->email;
                         $aux->is_contact = true;
-                        $pj->contacts[] = $aux;
+                        $xpj->contacts[] = $aux;
                     }
                 }
             }
-            if (!array_filter($pj->contacts, function ($cflt) {
+            if (!array_filter($xpj->contacts, function ($cflt) {
                     return strcasecmp($this->user->email, $cflt->email) === 0;
                 })) {
                 $aux = new PaperStatusAuthor;
                 $aux->email = $this->user->email;
                 $aux->is_contact = true;
-                $pj->contacts[] = $aux;
+                $xpj->contacts[] = $aux;
             }
         }
+
+        return $xpj;
     }
 
     function save_paperf($f, $v) {
@@ -799,10 +843,10 @@ class PaperStatus extends MessageSet {
         } else if (!$ps->prow || !$ps->prow->author_list()) {
             $ps->estop_at("authors", $ps->_("Entry required."));
         }
-        if (!empty($pj->bad_authors)) {
+        if (!empty($pj->_bad_authors)) {
             $ps->error_at("authors", $ps->_("Some authors ignored."));
         }
-        foreach ($pj->bad_email_authors as $aux) {
+        foreach ($pj->_bad_email_authors as $aux) {
             $ps->error_at("authors", null);
             $k = $aux->author_index >= 0 ? "authors:email_{$aux->author_index}" : "authors";
             $ps->estop_at($k, $ps->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
@@ -843,9 +887,9 @@ class PaperStatus extends MessageSet {
     }
 
     static function check_status(PaperStatus $ps, $pj) {
-        $pj_withdrawn = $pj->withdrawn ?? null;
-        $pj_submitted = $pj->submitted ?? null;
-        $pj_draft = $pj->draft ?? null;
+        $pj_withdrawn = $pj->status->withdrawn;
+        $pj_submitted = $pj->status->submitted;
+        $pj_draft = $pj->status->draft;
 
         if ($ps->has_error()
             && $pj_submitted
@@ -856,8 +900,8 @@ class PaperStatus extends MessageSet {
         }
 
         $submitted = $pj_submitted;
-        if (isset($pj->submitted_at)) {
-            $submitted_at = $pj->submitted_at;
+        if (isset($pj->status->submitted_at)) {
+            $submitted_at = $pj->status->submitted_at;
         } else if ($ps->prow) {
             $submitted_at = $ps->prow->submitted_at();
         } else {
@@ -872,7 +916,7 @@ class PaperStatus extends MessageSet {
                 $submitted_at = -$submitted_at;
             }
             if (!$ps->prow || $ps->prow->timeWithdrawn <= 0) {
-                $ps->save_paperf("timeWithdrawn", ($pj->withdrawn_at ?? null) ? : Conf::$now);
+                $ps->save_paperf("timeWithdrawn", ($pj->status->withdrawn_at ?? null) ? : Conf::$now);
                 $ps->save_paperf("timeSubmitted", $submitted_at);
                 $ps->mark_diff("status");
             } else if (($ps->prow->submitted_at() > 0) !== $pj_submitted) {
@@ -901,9 +945,9 @@ class PaperStatus extends MessageSet {
     }
 
     static function check_final_status(PaperStatus $ps, $pj) {
-        if (isset($pj->final_submitted)) {
-            if ($pj->final_submitted) {
-                $time = ($pj->final_submitted_at ?? null) ? : Conf::$now;
+        if (isset($pj->status->final_submitted)) {
+            if ($pj->status->final_submitted) {
+                $time = ($pj->status->final_submitted_at ?? null) ? : Conf::$now;
             } else {
                 $time = 0;
             }
@@ -944,13 +988,12 @@ class PaperStatus extends MessageSet {
     }
 
     static function check_options(PaperStatus $ps, $pj) {
-        if (!empty($pj->bad_options)) {
-            $ps->warning_at("options", $ps->_("Unknown options ignored (%2\$s).", count($pj->bad_options), htmlspecialchars(join("; ", array_keys($pj->bad_options)))));
+        if (!empty($pj->_bad_options)) {
+            $ps->warning_at("options", $ps->_("Unknown options ignored (%2\$s).", count($pj->_bad_options), htmlspecialchars(join("; ", array_keys($pj->_bad_options)))));
         }
-        if (isset($pj->options)) {
-            foreach ($pj->options as $oid => $oj) {
-                $o = $ps->conf->option_by_id($oid);
-                self::check_one_option($o, $ps, $oj);
+        foreach ($ps->conf->options()->form_fields($ps->_nnprow) as $o) {
+            if ($o->id > 0 && isset($pj->{$o->json_key()})) {
+                self::check_one_option($o, $ps, $pj->{$o->json_key()});
             }
         }
     }
@@ -1082,7 +1125,7 @@ class PaperStatus extends MessageSet {
             }
         }
 
-        foreach ($pj->bad_contacts as $aux) {
+        foreach ($pj->_bad_contacts as $aux) {
             $key = "contacts";
             if ($aux->contact_index >= 0) {
                 $key = "contacts:email_" . $aux->contact_index;
@@ -1264,7 +1307,7 @@ class PaperStatus extends MessageSet {
         $this->_nnprow = $this->prow ? : PaperInfo::make_new($this->user);
 
         // normalize and check format
-        $this->normalize($pj);
+        $pj = $this->normalize($pj);
         if ($this->has_error()) {
             return false;
         }
