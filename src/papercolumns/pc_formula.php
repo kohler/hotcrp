@@ -15,6 +15,15 @@ class Formula_PaperColumn extends PaperColumn {
         $this->formula = $cj->formula;
         $this->statistics = new ScoreInfo;
     }
+    function add_decoration($decor) {
+        if (preg_match('/\A%\d*(?:\.\d*)[bdeEfFgGoxX]\z/', $decor)) {
+            $this->__add_decoration($decor, [$this->real_format]);
+            $this->real_format = $decor;
+            return true;
+        } else {
+            return parent::add_decoration($decor);
+        }
+    }
     function completion_name() {
         if (strpos($this->formula->name, " ") !== false) {
             return "\"{$this->formula->name}\"";
@@ -56,7 +65,6 @@ class Formula_PaperColumn extends PaperColumn {
     function analyze(PaperList $pl, $fields) {
         $formulaf = $this->formula_function;
         $this->results = $this->override_results = [];
-        $this->real_format = null;
         $isreal = $this->formula->result_format_is_real();
         $override_rows = [];
         foreach ($pl->rowset() as $row) {
