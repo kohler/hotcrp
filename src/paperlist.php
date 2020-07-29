@@ -286,7 +286,7 @@ class PaperList {
         case "reviewAssignment":
             return "id title mypref topicscore desirability assignment potentialconflict topics reviewers [linkto assign]";
         case "conflictassign":
-            return "id title authors aufull potentialconflict [revtype simpleheader] [editconf simpleheader] [linkto assign]";
+            return "id title authors aufull potentialconflict [revtype basicheader] [editconf basicheader] [linkto assign]";
         case "pf":
             return "sel id title topicscore revtype [editmypref topicsort]";
         case "reviewers":

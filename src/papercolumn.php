@@ -598,7 +598,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
     protected $contact;
     private $not_me;
     private $rrow_key;
-    private $simpleheader = false;
+    private $basicheader = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         if (isset($cj->user)) {
@@ -606,8 +606,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
     }
     function add_decoration($decor) {
-        if ($decor === "simpleheader") {
-            $this->simpleheader = true;
+        if ($decor === "basicheader") {
+            $this->basicheader = true;
             return $this->__add_decoration($decor);
         } else {
             return parent::add_decoration($decor);
@@ -676,7 +676,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         return $b->{$this->uid} - $a->{$this->uid};
     }
     function header(PaperList $pl, $is_text) {
-        if (!$this->not_me || $this->simpleheader) {
+        if (!$this->not_me || $this->basicheader) {
             return "Review";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " review";
