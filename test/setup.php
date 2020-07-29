@@ -352,7 +352,7 @@ function xassert_array_eqq($a, $b, $sort = false) {
     if ($a === null && $b === null) {
         // ok
     } else if (is_array($a) && is_array($b)) {
-        if (count($a) !== count($b)) {
+        if (count($a) !== count($b) && !$sort) {
             $problem = "size " . count($a) . " !== " . count($b);
         } else if (is_associative_array($a) || is_associative_array($b)) {
             $problem = "associative arrays";
@@ -361,10 +361,13 @@ function xassert_array_eqq($a, $b, $sort = false) {
                 sort($a);
                 sort($b);
             }
-            for ($i = 0; $i < count($a) && !$problem; ++$i) {
+            for ($i = 0; $i < count($a) && $i < count($b) && !$problem; ++$i) {
                 if ($a[$i] !== $b[$i]) {
                     $problem = "value {$i} differs, " . var_export($a[$i], true) . " !== " . var_export($b[$i], true);
                 }
+            }
+            if (!$problem && count($a) !== count($b)) {
+                $problem = "size " . count($a) . " !== " . count($b);
             }
         }
     } else {
@@ -374,6 +377,17 @@ function xassert_array_eqq($a, $b, $sort = false) {
         ++Xassert::$nsuccess;
     } else {
         trigger_error("Array assertion failed, $problem at " . assert_location() . "\n", E_USER_WARNING);
+        if ($sort) {
+            $aj = json_encode(array_slice($a, 0, 10));
+            if (count($a) > 10) {
+                $aj .= "...";
+            }
+            $bj = json_encode(array_slice($b, 0, 10));
+            if (count($b) > 10) {
+                $bj .= "...";
+            }
+            error_log("  " . $aj . " !== " . $bj);
+        }
     }
     return $problem === "";
 }

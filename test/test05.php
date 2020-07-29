@@ -176,8 +176,7 @@ xassert($newpaper->timeWithdrawn <= 0);
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1]), $newpaper, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_json($pj));
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["status"]);
+xassert_array_eqq(array_keys($ps->diffs), ["status"], true);
 xassert($ps->execute_save());
 xassert_paper_status($ps);
 
@@ -197,23 +196,20 @@ xassert($newpaper->timeWithdrawn <= 0);
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "opt1" => "10", "has_opt1" => "1"]), $newpaper, $user_estrin, "update");
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_json($pj));
-xassert_eqq(count($ps->diffs), 2);
-xassert($ps->diffs["status"]);
-xassert($ps->diffs["calories"]);
+xassert_array_eqq(array_keys($ps->diffs), ["calories", "status"], true);
 xassert($ps->execute_save());
 xassert_paper_status($ps);
 
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "opt1" => "10xxxxx", "has_opt1" => "1"]), $newpaper, $user_estrin, "update");
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert(!$ps->prepare_save_paper_json($pj));
-xassert_eqq(count($ps->diffs), 0);
+xassert_array_eqq($ps->diffs, [], true);
 xassert($ps->has_error_at("opt1"));
 
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "opt1" => "none", "has_opt1" => "1"]), $newpaper, $user_estrin, "update");
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_json($pj));
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["calories"]);
+xassert_array_eqq(array_keys($ps->diffs), ["calories"], true);
 xassert_paper_status($ps);
 
 $newpaper = $user_estrin->checked_paper_by_id($ps->paperId);
@@ -332,8 +328,7 @@ $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "abstract" => " 
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_json($pj);
 xassert(!$ps->has_problem());
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["abstract"]);
+xassert_array_eqq(array_keys($ps->diffs), ["abstract"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->abstract, "They\nsee\r\nlots of\n\n\ncolors.");
 
@@ -346,8 +341,7 @@ $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" 
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_json($pj);
 xassert_paper_status($ps);
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["collaborators"]);
+xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators, "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
 xassert_eqq($nprow1->collaborators(), "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
@@ -356,8 +350,7 @@ $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" 
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_json($pj);
 xassert_paper_status($ps);
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["collaborators"]);
+xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators, "Sal Stolfo
 Guofei Gu
@@ -384,8 +377,7 @@ $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" 
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_json($pj);
 xassert_paper_status($ps);
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["collaborators"]);
+xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators, null);
 xassert_eqq(json_encode_db($nprow1->dataOverflow), json_encode_db(["collaborators" => $long_collab]));
@@ -396,8 +388,7 @@ $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" 
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_json($pj);
 xassert_paper_status($ps);
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["collaborators"]);
+xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators, "One guy (MIT)");
 xassert_eqq($nprow1->dataOverflow, null);
@@ -423,8 +414,7 @@ $ps->save_paper_json((object) [
     "topics" => ["Cloud computing"]
 ]);
 xassert(!$ps->has_problem());
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["topics"]);
+xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), [1]);
 
@@ -433,8 +423,7 @@ $ps->save_paper_json((object) [
     "topics" => (object) ["Cloud computing" => true, "Security" => true]
 ]);
 xassert(!$ps->has_problem());
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["topics"]);
+xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), [1, 3]);
 
@@ -443,8 +432,7 @@ $ps->save_paper_json((object) [
     "topics" => [2, 4]
 ]);
 xassert(!$ps->has_problem());
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["topics"]);
+xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), [2, 4]);
 
@@ -454,8 +442,7 @@ $ps->save_paper_json((object) [
     "topics" => ["architecture", "security"]
 ]);
 xassert(!$ps->has_problem());
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["topics"]);
+xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), [2, 3]);
 
@@ -475,8 +462,7 @@ $ps->save_paper_json((object) [
     "topics" => ["fartchitecture", "architecture"]
 ]);
 xassert(!$ps->has_problem());
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["topics"]);
+xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), [2, 5]);
 
@@ -509,8 +495,7 @@ $ps->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => [$user_varghese->email => true, $user_sally->email => true]
 ]);
 xassert(!$ps->has_problem());
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["pc_conflicts"]);
+xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
 $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1),
     [$user_estrin->contactId, $user_varghese->contactId, $user_sally->contactId]);
@@ -519,8 +504,7 @@ $ps->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => []
 ]);
 xassert(!$ps->has_problem());
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["pc_conflicts"]);
+xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
 $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId]);
 
@@ -528,8 +512,7 @@ $ps->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => [$user_varghese->email]
 ]);
 xassert(!$ps->has_problem());
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["pc_conflicts"]);
+xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
 $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
 
@@ -538,7 +521,7 @@ $ps->save_paper_json((object) [
 ]);
 xassert($ps->has_problem());
 xassert_paper_status($ps);
-xassert_eqq(count($ps->diffs), 0);
+xassert_array_eqq(array_keys($ps->diffs), [], true);
 $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
 xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
@@ -548,8 +531,7 @@ $ps->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => [$user_varghese->email => "advisor"]
 ]);
 xassert(!$ps->has_problem()); // XXX should have problem
-xassert_eqq(count($ps->diffs), 1);
-xassert($ps->diffs["pc_conflicts"]);
+xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
 $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
 xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
@@ -559,7 +541,7 @@ $ps->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => [$user_varghese->email => "advisor", $user_estrin->email => false, $user_chair->email => false]
 ]);
 xassert(!$ps->has_problem()); // XXX should have problem
-xassert_eqq(count($ps->diffs), 0);
+xassert_array_eqq(array_keys($ps->diffs), [], true);
 $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
 xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
