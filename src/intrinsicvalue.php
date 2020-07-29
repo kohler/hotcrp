@@ -328,13 +328,23 @@ class PCConflicts_PaperOption extends PaperOption {
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $pcm = $this->conf->pc_members();
         $confset = $this->conf->conflict_types();
+        $can_view_authors = $ps->user->allow_view_authors($ov->prow);
         $pcc = [];
         foreach (self::value_map($ov) as $k => $v) {
-            if (($pc = $pcm[$k] ?? null) && (int) $v !== 0) {
-                $pcc[$pc->email] = $confset->unparse_json((int) $v);
+            if (($pc = $pcm[$k] ?? null) && Conflict::is_conflicted((int) $v)) {
+                $ct = (int) $v;
+                if (!$can_view_authors) {
+                    // Sometimes users can see conflicts but not authors.
+                    // Don't expose author-ness during that period.
+                    $ct = Conflict::set_pinned(Conflict::nonauthor_part($ct), false);
+                    $ct = $ct ? : Conflict::GENERAL;
+                } else if ($ct & CONFLICT_CONTACTAUTHOR) {
+                    $ct = ($ct | CONFLICT_AUTHOR) & ~CONFLICT_CONTACTAUTHOR;
+                }
+                $pcc[$pc->email] = $confset->unparse_json($ct);
             }
         }
-        return $pcc;
+        return (object) $pcc;
     }
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->conf->setting("sub_pcconf")

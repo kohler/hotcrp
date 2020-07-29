@@ -20,6 +20,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 
 $paper1a = $ps->paper_json(1);
 xassert_eqq($paper1a->title, "Scalable Timers for Soft State Protocols");
+xassert_eqq($paper1a->pc_conflicts->{"estrin@usc.edu"}, "author");
 
 $ps->save_paper_json((object) ["id" => 1, "title" => "Scalable Timers? for Soft State Protocols"]);
 xassert_paper_status($ps);
@@ -29,7 +30,16 @@ $paper1b = $ps->paper_json(1);
 xassert_eqq($paper1b->title, "Scalable Timers? for Soft State Protocols");
 $paper1b->title = $paper1a->title;
 $paper1b->submitted_at = $paper1a->submitted_at;
-xassert_eqq(json_encode($paper1b), json_encode($paper1a));
+$s1 = json_encode($paper1a);
+$s2 = json_encode($paper1b);
+xassert_eqq($s1, $s2);
+if ($s1 !== $s2) {
+    while (substr($s1, 0, 30) === substr($s2, 0, 30)) {
+        $s1 = substr($s1, 10);
+        $s2 = substr($s2, 10);
+    }
+    error_log("   > $s1\n   > $s2");
+}
 
 $doc = DocumentInfo::make_uploaded_file([
         "error" => UPLOAD_ERR_OK, "name" => "amazing-sample.pdf",
