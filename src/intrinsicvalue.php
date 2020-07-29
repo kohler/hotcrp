@@ -448,6 +448,179 @@ class PCConflicts_PaperOption extends PaperOption {
     // XXX no render because paper strip
 }
 
+class Contacts_PaperOption extends PaperOption {
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
+    }
+    /** @param array<int,Author> $ca */
+    static function value_fill(PaperValue $ov, $ca) {
+        // $ov->value_list: contact IDs
+        // $ov->data_list: emails
+        // $ov->anno("users"): list<Author>
+        // $ov->anno("bad_users"): list<Author>
+        $ca = array_filter($ca, function ($c) { return $c->contactId > 0; });
+        $va = array_map(function ($c) { return $c->email; }, $ca);
+        /** @phan-suppress-next-line PhanTypeMismatchArgument */
+        $ov->set_value_data(array_keys($va), array_values($va));
+        $ov->set_anno("users", array_values($ca));
+    }
+    function value_force(PaperValue $ov) {
+        // Papers with 0 paperId have contacts array prepopulated
+        // with the paper creator, so that permission checks work.
+        // We can't use that prepopulated array: the database says there
+        // are no contacts.
+        self::value_fill($ov, $ov->prow->paperId ? $ov->prow->contacts(true) : []);
+    }
+    function value_initial(PaperInfo $prow) {
+        $ov = PaperValue::make($prow, $this);
+        self::value_fill($ov, $ov->prow->contacts(true));
+        return $ov;
+    }
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+        $ca = [];
+        foreach ($ov->anno("users") ?? [] as $c) {
+            if ($c->contactId >= 0)
+                $ca[$c->contactId] = $c;
+        }
+        foreach ($ov->value_list() as $cid) {
+            if (!isset($ca[$cid]))
+                $ps->conf->request_cached_user_by_id($cid);
+        }
+        $j = [];
+        foreach ($ov->value_list() as $cid) {
+            if (($u = $ca[$cid] ?? $ps->conf->cached_user_by_id($cid)))
+                $j[] = Author::unparse_json_of($u);
+        }
+        return $j;
+    }
+    function value_check(PaperValue $ov, Contact $user) {
+        if ($ov->anno("modified")) {
+            if (!count($ov->value_list())) {
+                $ov->error($this->conf->_("Each submission must have at least one contact."));
+            }
+            if (!$user->allow_administer($ov->prow)
+                && $ov->prow->conflict_type($user) >= CONFLICT_CONTACTAUTHOR
+                && self::ca_index($ov->anno("users"), $user->email) === false) {
+                $ov->error($this->conf->_("You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"));
+            }
+        }
+    }
+    function value_save(PaperValue $ov, PaperStatus $ps) {
+        // do not mark diff (will be marked later)
+        $ps->clear_conflict_values(CONFLICT_CONTACTAUTHOR);
+        foreach ($ov->anno("users") as $c) {
+            $ps->update_conflict_value($c->email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+            if ($c->contactId === 0) {
+                $c->conflictType = CONFLICT_CONTACTAUTHOR;
+                $ps->register_user($c);
+            }
+        }
+        return true;
+    }
+    static function ca_index($ca, $email) {
+        foreach ($ca as $i => $c) {
+            if (strcasecmp($c->email, $email) === 0)
+                return $i;
+        }
+        return false;
+    }
+    static function apply_new_users(PaperValue $ov, $new_ca, &$ca) {
+        $bad_ca = [];
+        foreach ($new_ca as $c) {
+            $c->contactId = 0;
+            if (validate_email($c->email)) {
+                $ca[] = $c;
+            } else {
+                if ($c->email === "" || strcasecmp($c->email, "Email") === 0) {
+                    $ov->error("Email address required.");
+                } else {
+                    $ov->error("“" . htmlspecialchars($c->email) . "” is not a valid email address.");
+                }
+                if ($c->author_index) {
+                    $ov->msg_at("contacts:{$c->author_index}", false, MessageSet::ERROR);
+                }
+                $bad_ca[] = $c;
+            }
+        }
+        $ov->set_value_data(array_map(function ($c) { return $c->contactId; }, $ca),
+                            array_map(function ($c) { return $c->email; }, $ca));
+        $ov->set_anno("users", $ca);
+        $ov->set_anno("bad_users", $bad_ca);
+        $ov->set_anno("modified", true);
+    }
+    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+        $ov = PaperValue::make_force($prow, $this);
+        $ca = $ov->anno("users");
+        $bad_ca = $new_ca = [];
+        for ($n = 1; isset($qreq["contacts:email_$n"]); ++$n) {
+            $email = trim($qreq["contacts:email_$n"]);
+            $name = simplify_whitespace((string) $qreq["contacts:name_$n"]);
+            $affiliation = simplify_whitespace((string) $qreq["contacts:affiliation_$n"]);
+            if (($i = self::ca_index($ca, $email)) !== false) {
+                if (!$qreq["contacts:active_$n"]) {
+                    array_splice($ca, $i, 1);
+                }
+            } else if (($email !== "" || $name !== "") && $qreq["contacts:active_$n"]) {
+                $new_ca[] = $c = Author::make_keyed(["email" => $email, "name" => $name, "affiliation" => $affiliation]);
+                $c->author_index = $n;
+            }
+        }
+        self::apply_new_users($ov, $new_ca, $ca);
+        return $ov;
+    }
+    function parse_json(PaperInfo $prow, $j) {
+        $ov = PaperValue::make_force($prow, $this);
+        $ca = $old_ca = $ov->anno("users");
+        $new_ca = [];
+        if (is_object($j) || is_associative_array($j)) {
+            foreach ((array) $j as $k => $v) {
+                $i = self::ca_index($ca, $k);
+                if ($v === false) {
+                    if ($i !== false) {
+                        array_splice($ca, $i, 1);
+                    }
+                } else if ($v === true || is_object($v)) {
+                    if ($i === false) {
+                        $a = $v === true ? [] : (array) $v;
+                        $a["email"] = $k;
+                        $new_ca[] = Author::make_keyed($a);
+                    }
+                } else {
+                    return PaperValue::make_estop($prow, $this, "Validation error.");
+                }
+            }
+        } else if (is_array($j)) {
+            $ca = [];
+            foreach ($j as $v) {
+                if (is_string($v)) {
+                    $email = $v;
+                } else if (is_object($v) && isset($v->email)) {
+                    $email = $v->email;
+                } else {
+                    return PaperValue::make_estop($prow, $this, "Validation error.");
+                }
+                if (self::ca_index($ca, $email) !== false) {
+                    // double mention -- do nothing
+                } else if (($i = self::ca_index($old_ca, $email)) !== false) {
+                    $ca[] = $old_ca[$i];
+                } else {
+                    $a = is_string($v) ? [] : (array) $v;
+                    $a["email"] = $email;
+                    $new_ca[] = Author::make_keyed($a);
+                }
+            }
+        } else {
+            return PaperValue::make_estop($prow, $this, "Validation error.");
+        }
+        self::apply_new_users($ov, $new_ca, $ca);
+        return $ov;
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        $pt->echo_editable_contact_author($this);
+    }
+    // XXX no render because paper strip
+}
+
 class IntrinsicValue {
     static function assign_intrinsic(PaperValue $ov) {
         if ($ov->id === DTYPE_SUBMISSION) {

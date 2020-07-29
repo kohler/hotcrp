@@ -199,28 +199,6 @@ class PaperContactInfo {
     }
 }
 
-class PaperInfo_Conflict {
-    /** @var int */
-    public $contactId;
-    /** @var int */
-    public $conflictType;
-    /** @var string */
-    public $email;
-
-    /** @param int $cid
-     * @param int $ctype
-     * @param ?string $email */
-    function __construct($cid, $ctype, $email = null) {
-        $this->contactId = (int) $cid;
-        $this->conflictType = (int) $ctype;
-        $this->email = $email;
-    }
-    /** @return bool */
-    function is_conflicted() {
-        return $this->conflictType > CONFLICT_MAXUNCONFLICTED;
-    }
-}
-
 class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @var list<PaperInfo> */
     private $prows = [];
@@ -445,10 +423,12 @@ class PaperInfo {
     private $_document_array;
     /** @var ?array<int,array<int,int>> */
     private $_doclink_array;
-    /** @var ?array<int,PaperInfo_Conflict> */
+    /** @var ?array<int,Author> */
     private $_conflict_array;
     /** @var bool */
     private $_conflict_array_email;
+    /** @var ?Contact */
+    private $_paper_owner;
     /** @var ?array<int,ReviewInfo> */
     private $_review_array;
     /** @var int */
@@ -543,7 +523,7 @@ class PaperInfo {
             $prow->topicIds = "";
         $prow->leadContactId = $prow->shepherdContactId = "0";
         $prow->blind = "1";
-        $prow->allConflictType = $user->contactId . " " . CONFLICT_CONTACTAUTHOR;
+        $prow->_paper_owner = $user;
         $prow->check_rights_version();
         $ci = PaperContactInfo::make_empty($prow, $user);
         $ci->conflictType = CONFLICT_CONTACTAUTHOR;
@@ -1334,10 +1314,20 @@ class PaperInfo {
             if ((string) $this->allConflictType !== "") {
                 foreach (explode(",", $this->allConflictType) as $x) {
                     list($cid, $ctype) = explode(" ", $x);
-                    $cflt = new PaperInfo_Conflict((int) $cid, (int) $ctype);
+                    $cflt = new Author;
+                    $cflt->paperId = $this->paperId;
+                    $cflt->contactId = (int) $cid;
+                    $cflt->conflictType = (int) $ctype;
                     $this->_conflict_array[$cflt->contactId] = $cflt;
                 }
             }
+        } else if ($this->paperId === 0 && $this->_paper_owner) {
+            $cflt = new Author($this->_paper_owner);
+            $cflt->paperId = $this->paperId;
+            $cflt->contactId = $this->_paper_owner->contactId;
+            $cflt->conflictType = CONFLICT_CONTACTAUTHOR;
+            $this->_conflict_array = [$cflt->contactId => $cflt];
+            $this->_conflict_array_email = true;
         } else {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             foreach ($row_set as $prow) {
@@ -1345,21 +1335,23 @@ class PaperInfo {
                 $prow->_conflict_array_email = $email;
             }
             if ($email) {
-                $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId?a", $row_set->paper_ids());
+                $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, email, affiliation from PaperConflict join ContactInfo using (contactId) where paperId?a", $row_set->paper_ids());
             } else {
-                $result = $this->conf->qe("select paperId, contactId, conflictType, null from PaperConflict where paperId?a", $row_set->paper_ids());
+                $result = $this->conf->qe("select paperId, contactId, conflictType, '' firstName, '' lastName, '' email, '' affiliation from PaperConflict where paperId?a", $row_set->paper_ids());
             }
-            while ($result && ($row = $result->fetch_row())) {
-                $prow = $row_set->get((int) $row[0]);
-                $cflt = new PaperInfo_Conflict((int) $row[1], (int) $row[2], $row[3]);
-                $prow->_conflict_array[$cflt->contactId] = $cflt;
+            while ($result && ($row = $result->fetch_object("Author"))) {
+                $row->paperId = (int) $row->paperId;
+                $row->contactId = (int) $row->contactId;
+                $row->conflictType = (int) $row->conflictType;
+                $prow = $row_set->get($row->paperId);
+                $prow->_conflict_array[$row->contactId] = $row;
             }
             Dbl::free($result);
         }
     }
 
     /** @param bool $email
-     * @return associative-array<int,PaperInfo_Conflict> */
+     * @return associative-array<int,Author> */
     function conflicts($email = false) {
         if ($this->_conflict_array === null
             || ($email && !$this->_conflict_array_email)) {
@@ -1369,7 +1361,7 @@ class PaperInfo {
     }
 
     /** @param bool $email
-     * @return associative-array<int,PaperInfo_Conflict> */
+     * @return associative-array<int,Author> */
     function pc_conflicts($email = false) {
         return array_intersect_key($this->conflicts($email), $this->conf->pc_members());
     }
@@ -1389,24 +1381,14 @@ class PaperInfo {
     }
 
 
-    /** @return associative-array<int,PaperInfo_Conflict> */
+    /** @return associative-array<int,Author> */
     function contacts($email = false) {
-        $c = array();
+        $c = [];
         foreach ($this->conflicts($email) as $id => $cflt) {
             if ($cflt->conflictType >= CONFLICT_AUTHOR)
                 $c[$id] = $cflt;
         }
         return $c;
-    }
-
-    /** @return list<object> */
-    function named_contacts() {
-        $vals = Dbl::fetch_objects($this->conf->qe("select ContactInfo.contactId, conflictType, email, firstName, lastName, affiliation, roles, contactTags from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId and conflictType>=" . CONFLICT_AUTHOR));
-        foreach ($vals as $v) {
-            $v->contactId = (int) $v->contactId;
-            $v->conflictType = (int) $v->conflictType;
-        }
-        return $vals;
     }
 
 

@@ -2,18 +2,6 @@
 // paperstatus.php -- HotCRP helper for reading/storing papers as JSON
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
-class PaperStatusAuthor extends Author {
-    /** @var ?bool */
-    public $is_contact;
-    /** @var bool */
-    public $is_new = false;
-    /** @var int */
-    public $author_index = -1;
-    /** @var int */
-    public $contact_index = -1;
-    public $disabled;
-}
-
 class PaperStatus extends MessageSet {
     /** @var Conf */
     public $conf;
@@ -61,6 +49,8 @@ class PaperStatus extends MessageSet {
     private $_conflict_values;
     /** @var ?list<array{int,int,int}> */
     private $_conflict_ins;
+    /** @var ?list<Author> */
+    private $_register_users;
     private $_created_contacts;
     private $_paper_submitted;
     private $_documents_changed;
@@ -235,8 +225,7 @@ class PaperStatus extends MessageSet {
             }
         }
 
-        $can_view_authors = !$user || $user->can_view_authors($prow);
-        if ($can_view_authors) {
+        if (!$user || $user->can_view_authors($prow)) {
             $pj->authors = array();
             foreach ($prow->author_list() as $au) {
                 $aux = (object) array();
@@ -253,25 +242,6 @@ class PaperStatus extends MessageSet {
                     $aux->affiliation = $au->affiliation;
                 }
                 $pj->authors[] = $aux;
-            }
-
-            $ocontacts = array();
-            foreach ($prow->contacts(true) as $cflt) {
-                assert($cflt->conflictType >= CONFLICT_AUTHOR);
-                $aux = (object) ["email" => $cflt->email];
-                /*if ($cflt->firstName) {
-                    $aux->first = $cflt->firstName;
-                }
-                if ($cflt->lastName) {
-                    $aux->last = $cflt->lastName;
-                }
-                if ($cflt->affiliation) {
-                    $aux->affiliation = $cflt->affiliation;
-                }*/
-                $ocontacts[] = $aux;
-            }
-            if (!empty($ocontacts)) {
-                $pj->contacts = $ocontacts;
             }
         }
 
@@ -437,14 +407,14 @@ class PaperStatus extends MessageSet {
     }
 
     /** @param object $au
-     * @param array<string,PaperStatusAuthor> &$au_by_lemail */
+     * @param array<string,Author> &$au_by_lemail */
     private function normalize_author($pj, $au, &$au_by_lemail) {
-        $aux = new PaperStatusAuthor;
-        $aux->assign_keyed($au);
+        $aux = Author::make_keyed($au);
         $aux->firstName = simplify_whitespace($aux->firstName);
         $aux->lastName = simplify_whitespace($aux->lastName);
         $aux->email = simplify_whitespace($aux->email);
         $aux->affiliation = simplify_whitespace($aux->affiliation);
+        $aux->conflictType = CONFLICT_AUTHOR;
         // borrow from old author information
         if ($aux->email
             && $aux->firstName === ""
@@ -459,7 +429,7 @@ class PaperStatus extends MessageSet {
         }
         // set contactness and author index
         if (isset($au->contact)) {
-            $aux->is_contact = !!$au->contact;
+            $aux->conflictType = CONFLICT_AUTHOR | ($au->contact ? CONFLICT_CONTACTAUTHOR : 0);
         }
         if (isset($au->index) && is_int($au->index)) {
             $aux->author_index = $au->index;
@@ -646,63 +616,13 @@ class PaperStatus extends MessageSet {
 
         // load previous conflicts
         // old conflicts
-        foreach ($this->prow ? $this->prow->conflicts(true) : [] as $cflt) {
-            $this->_conflict_values[strtolower($cflt->email)] = [$cflt->conflictType, 0, 0];
-        }
-
-        // verify emails on authors marked as contacts
-        $xpj->_bad_contacts = [];
-        foreach ($xpj->authors ?? [] as $au) {
-            if ($au->is_contact && !$this->valid_contact($au->email))
-                $xpj->_bad_contacts[] = $au;
-        }
-
-        // Contacts
-        $contacts = $ipj->contacts ?? null;
-        if ($contacts !== null) {
-            if (is_object($contacts) || is_array($contacts)) {
-                $contacts = (array) $contacts;
-            } else {
-                $this->syntax_error_at("contacts", $contacts);
-                $contacts = [];
+        if ($this->prow) {
+            foreach ($this->prow->conflicts(true) as $cflt) {
+                $this->_conflict_values[strtolower($cflt->email)] = [$cflt->conflictType, 0, 0];
             }
-            $xpj->contacts = [];
-            // verify emails on explicitly named contacts
-            foreach ($contacts as $k => $v) {
-                if (!$v) {
-                    continue;
-                }
-                if ($v === true) {
-                    $v = (object) [];
-                } else if (is_string($v) && is_int($k)) {
-                    $v = trim($v);
-                    if ($this->valid_contact($v))  {
-                        $v = (object) ["email" => $v];
-                    } else {
-                        $v = Author::make_keyed(["name" => $v]);
-                    }
-                }
-                if (is_object($v) && !($v->email ?? false) && is_string($k)) {
-                    $v->email = $k;
-                }
-                if (is_object($v) && ($v->email ?? false)) {
-                    $aux = new PaperStatusAuthor;
-                    $aux->assign_keyed($v);
-                    $aux->is_contact = true;
-                    if (isset($v->is_new) && is_bool($v->is_new)) {
-                        $aux->is_new = $v->is_new;
-                    }
-                    if (isset($v->index) && is_int($v->index)) {
-                        $aux->contact_index = $v->index;
-                    }
-                    if ($this->valid_contact($aux->email)) {
-                        $xpj->contacts[] = $aux;
-                    } else {
-                        $xpj->_bad_contacts[] = $aux;
-                    }
-                } else {
-                    $this->syntax_error_at("contacts", $v);
-                }
+            if (!$this->user->allow_administer($this->prow)
+                && $this->prow->conflict_type($this->user) === CONFLICT_AUTHOR) {
+                $this->update_conflict_value(strtolower($this->user->email), CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
             }
         }
 
@@ -710,35 +630,9 @@ class PaperStatus extends MessageSet {
         if (isset($xpj->authors) && $this->prow) {
             foreach ($this->prow->contacts(true) as $cflt) {
                 if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR
-                    && ($aux = $au_by_lemail[strtolower($cflt->email)] ?? null)
-                    && !isset($aux->is_contact)) {
-                    $aux->is_contact = true;
+                    && ($aux = $au_by_lemail[strtolower($cflt->email)] ?? null)) {
+                    $aux->conflictType |= CONFLICT_CONTACTAUTHOR;
                 }
-            }
-        }
-
-        // If user modifies paper, make them a contact (not just an author)
-        if ($this->prow
-            && !$this->user->allow_administer($this->prow)
-            && $this->prow->conflict_type($this->user) === CONFLICT_AUTHOR) {
-            if (!isset($xpj->contacts)) {
-                $xpj->contacts = [];
-                foreach ($this->prow->contacts(true) as $cflt) {
-                    if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR) {
-                        $aux = new PaperStatusAuthor;
-                        $aux->email = $cflt->email;
-                        $aux->is_contact = true;
-                        $xpj->contacts[] = $aux;
-                    }
-                }
-            }
-            if (!array_filter($xpj->contacts, function ($cflt) {
-                    return strcasecmp($this->user->email, $cflt->email) === 0;
-                })) {
-                $aux = new PaperStatusAuthor;
-                $aux->email = $this->user->email;
-                $aux->is_contact = true;
-                $xpj->contacts[] = $aux;
             }
         }
 
@@ -787,7 +681,7 @@ class PaperStatus extends MessageSet {
         }
         foreach ($pj->_bad_email_authors as $aux) {
             $ps->error_at("authors", null);
-            $k = $aux->author_index >= 0 ? "authors:email_{$aux->author_index}" : "authors";
+            $k = $aux->author_index !== null ? "authors:email_{$aux->author_index}" : "authors";
             $ps->estop_at($k, $ps->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
         if (isset($pj->authors)
@@ -911,7 +805,7 @@ class PaperStatus extends MessageSet {
 
     static function check_one_option(PaperOption $opt, PaperStatus $ps, $oj) {
         if ($oj === null) {
-            $ov = null;
+            $ov = $ps->prow ? null : $opt->value_initial($ps->_nnprow);
         } else if ($oj instanceof PaperValue) {
             $ov = $oj;
         } else {
@@ -995,6 +889,16 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    /** @param int $bit */
+    function clear_conflict_values($bit) {
+        foreach ($this->_conflict_values as $lemail => &$cv) {
+            if (((($cv[0] & ~$cv[1]) | $cv[2]) & $bit) !== 0) {
+                $cv[1] |= $bit;
+                $cv[2] &= ~$bit;
+            }
+        }
+    }
+
     /** @param string $email
      * @param int $mask
      * @param int $new */
@@ -1013,6 +917,18 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    function register_user(Author $c) {
+        foreach ($this->_register_users ?? [] as $au) {
+            if (strcasecmp($au->email, $c->email) === 0) {
+                $au->merge($c);
+                $au->conflictType |= $c->conflictType;
+                $au->author_index = $au->author_index ?? $c->author_index;
+                return;
+            }
+        }
+        $this->_register_users[] = clone $c;
+    }
+
     /** @param ?array{int,int,int} $cv
      * @return int */
     static function new_conflict_value($cv) {
@@ -1029,147 +945,63 @@ class PaperStatus extends MessageSet {
             unset($cv);
             foreach ($pj->authors as $aux) {
                 if ($aux->email !== "") {
-                    $this->update_conflict_value($aux->email, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
-                    if ($aux->is_contact !== null) {
-                        $this->update_conflict_value($aux->email, CONFLICT_CONTACTAUTHOR, $aux->is_contact ? CONFLICT_CONTACTAUTHOR : 0);
+                    $this->update_conflict_value($aux->email, $aux->conflictType, $aux->conflictType);
+                    $cv = $this->_conflict_values[strtolower($aux->email)];
+                    if (!Conflict::is_author($cv[0])) {
+                        $this->register_user($aux);
                     }
                 }
             }
         }
+    }
 
-        // new contacts
-        if (isset($pj->contacts)) {
-            foreach ($this->_conflict_values as &$cv) {
-                if (($cv[0] & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) === CONFLICT_CONTACTAUTHOR) {
-                    $cv[1] |= CONFLICT_CONTACTAUTHOR;
-                    $cv[2] &= ~CONFLICT_CONTACTAUTHOR;
-                }
+    /** @param Author $au
+     * @param list<string> &$diff_lemail */
+    private function create_user($au, &$diff_lemail) {
+        $c = Author::unparse_json_of($au);
+        $c->disabled = !!$this->disable_users;
+        $flags = $au->conflictType & CONFLICT_CONTACTAUTHOR ? 0 : Contact::SAVE_IMPORT;
+        $u = Contact::create($this->conf, $this->user, $c, $flags);
+        if ($u) {
+            if ($u->password_unset()
+                && !$u->activity_at
+                && !$u->isPC
+                && !$u->is_disabled()) {
+                $this->_created_contacts[] = $u;
             }
-            unset($cv);
-            foreach ($pj->contacts as $aux) {
-                $this->update_conflict_value($aux->email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
-            }
-        }
-
-        // check for errors
-        if ($this->prow) {
-            if (!array_filter($this->_conflict_values, function ($cv) { return (self::new_conflict_value($cv) & CONFLICT_CONTACTAUTHOR) !== 0; })
-                && array_filter($this->prow->contacts(), function ($cflt) { return $cflt->conflictType >= CONFLICT_CONTACTAUTHOR; })) {
-                $this->error_at("contacts", $this->_("Each submission must have at least one contact."));
-            }
-
-            if (!$this->user->allow_administer($this->prow)
-                && self::new_conflict_value($this->_conflict_values[strtolower($this->user->email)] ?? null) < CONFLICT_AUTHOR) {
-                $this->error_at("contacts", $this->_("You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"));
-            }
-        }
-
-        foreach ($pj->_bad_contacts as $aux) {
-            $key = "contacts";
-            if ($aux->contact_index >= 0) {
-                $key = "contacts:email_" . $aux->contact_index;
-            }
-            if ($aux->email === "") {
-                $this->error_at($key, $this->_("Contacts must have valid email addresses."));
+            $diff_lemail[] = strtolower($au->email);
+            $this->diffs["contacts"] = true;
+        } else if (!($flags & Contact::SAVE_IMPORT)) {
+            if ($au->author_index >= 0) {
+                $key = "contacts:" . $au->author_index;
             } else {
-                $this->error_at($key, $this->_("Contact email %s is invalid.", htmlspecialchars($aux->email)));
+                $key = "contacts";
             }
+            $this->error_at($key, $this->_("Could not create an account for contact %s.", Text::nameo_h($au, NAME_E)));
             $this->error_at("contacts", false);
-        }
-    }
-
-    /** @param PaperStatusAuthor $au
-     * @return PaperStatusAuthor */
-    private function apply_author($c, $au) {
-        $c = $c ?? new PaperStatusAuthor;
-        if ($c->firstName === "" && $c->lastName === "") {
-            $c->firstName = $au->firstName;
-            $c->lastName = $au->lastName;
-        }
-        if ($c->email === "") {
-            $c->email = $au->email;
-        }
-        if ($c->affiliation === "") {
-            $c->affiliation = $au->affiliation;
-        }
-        if ($au->is_contact) {
-            $c->is_contact = true;
-        }
-        if ($au->is_new) {
-            $c->is_new = true;
-        }
-        if ($au->author_index > 0) {
-            $c->author_index = $au->author_index;
-        }
-        if ($au->contact_index > 0) {
-            $c->contact_index = $au->contact_index;
-        }
-        return $c;
-    }
-
-    private function check_contacts_create_user($lemail, $pj) {
-        $c = null;
-        foreach ($pj->contacts ?? [] as $aux) {
-            if (strcasecmp($aux->email, $lemail) === 0) {
-                $c = $this->apply_author($c, $aux);
-            }
-        }
-        foreach ($pj->authors ?? [] as $aux) {
-            if (strcasecmp($aux->email, $lemail) === 0
-                && validate_email($aux->email)) {
-                $c = $this->apply_author($c, $aux);
-            }
-        }
-        if ($c) {
-            $c->disabled = !!$this->disable_users;
-            $flags = $c->is_new || $c->is_contact ? 0 : Contact::SAVE_IMPORT;
-            $u = Contact::create($this->conf, $this->user, $c, $flags);
-            if ($u) {
-                if ($u->password_unset()
-                    && !$u->activity_at
-                    && !$u->isPC
-                    && !$u->is_disabled()) {
-                    $this->_created_contacts[] = $u;
-                }
-                $this->diffs["contacts"] = true;
-            } else if (!($flags & Contact::SAVE_IMPORT)) {
-                if ($c->contact_index >= 0) {
-                    $key = "contacts:" . $c->contact_index;
-                } else if ($c->author_index >= 0) {
-                    $key = "authors:email_" . $c->author_index;
-                } else {
-                    $key = "contacts";
-                }
-                $this->error_at($key, $this->_("Could not create an account for contact %s.", Text::nameo_h($c, NAME_E)));
-                $this->error_at("contacts", false);
-            }
         }
     }
 
     private function check_contacts_last($pj) {
         // check for differences
-        $new_contact_lemail = [];
         $diff_lemail = [];
         foreach ($this->_conflict_values ?? [] as $lemail => $cv) {
-            if (($cv[0] ^ self::new_conflict_value($cv)) & (CONFLICT_AUTHOR - 1)) {
+            $ncv = self::new_conflict_value($cv);
+            if (($cv[0] ^ $ncv) & (CONFLICT_AUTHOR - 1)) {
                 $this->diffs["pc_conflicts"] = true;
             }
-            if (($cv[0] ^ self::new_conflict_value($cv)) >= CONFLICT_AUTHOR) {
-                if ($cv[0] >= CONFLICT_AUTHOR) {
-                    $this->diffs["contacts"] = true;
-                } else {
-                    $new_contact_lemail[] = $lemail;
-                }
+            if (($cv[0] ^ $ncv) >= CONFLICT_AUTHOR && $cv[0] >= CONFLICT_AUTHOR) {
+                $this->diffs["contacts"] = true;
             }
-            if ($cv[0] !== self::new_conflict_value($cv)) {
+            if ($cv[0] !== $ncv) {
                 $diff_lemail[] = $lemail;
             }
         }
 
         // create new contacts
         if (!$this->has_error_at("contacts")) {
-            foreach ($new_contact_lemail as $lemail) {
-                $this->check_contacts_create_user($lemail, $pj);
+            foreach ($this->_register_users ?? [] as $au) {
+                $this->create_user($au, $diff_lemail);
             }
         }
 
@@ -1261,6 +1093,7 @@ class PaperStatus extends MessageSet {
         self::check_one_option($conf->checked_option_by_id(PaperOption::COLLABORATORSID), $this, $pj->collaborators ?? null);
         self::check_one_option($conf->checked_option_by_id(PaperOption::ANONYMITYID), $this, $pj->nonblind ?? null);
         self::check_one_option($conf->checked_option_by_id(PaperOption::PCCONFID), $this, $pj->pc_conflicts ?? null);
+        self::check_one_option($conf->checked_option_by_id(PaperOption::CONTACTSID), $this, $pj->contacts ?? null);
         $this->check_conflicts($pj);
         self::check_one_pdf($conf->checked_option_by_id(DTYPE_SUBMISSION), $this, $pj);
         self::check_one_pdf($conf->checked_option_by_id(DTYPE_FINAL), $this, $pj);

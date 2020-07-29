@@ -18,6 +18,12 @@ class Author {
     private $_deaccents;
     /** @var ?bool */
     public $nonauthor;
+    /** @var ?int */
+    public $paperId;
+    /** @var ?int */
+    public $conflictType;
+    /** @var ?int */
+    public $author_index;
 
     /** @param null|string|object $x */
     function __construct($x = null) {
@@ -46,6 +52,19 @@ class Author {
         $au = new Author;
         $au->assign_string($s);
         return $au;
+    }
+    /** @param Author|Contact $o */
+    function merge($o) {
+        if ($this->email === "") {
+            $this->email = $o->email;
+        }
+        if ($this->firstName === "" && $this->lastName === "") {
+            $this->firstName = $o->firstName;
+            $this->lastName = $o->lastName;
+        }
+        if ($this->affiliation === "") {
+            $this->affiliation = $o->affiliation;
+        }
     }
     /** @param string $s */
     function assign_string($s) {
@@ -197,8 +216,25 @@ class Author {
         }
         return $this->_deaccents[$component];
     }
+    /** @return bool */
+    function is_conflicted() {
+        assert($this->conflictType !== null);
+        return $this->conflictType > CONFLICT_MAXUNCONFLICTED;
+    }
     /** @return string */
     function unparse_tabbed() {
         return "{$this->firstName}\t{$this->lastName}\t{$this->email}\t{$this->affiliation}";
+    }
+    /** @param Contact|Author $o
+     * @return object */
+    static function unparse_json_of($o) {
+        $j = [];
+        foreach (["email", "firstName", "lastName", "affiliation"] as $i => $k) {
+            if ($o->$k !== "") {
+                $jk = $i >= 1 && $i <= 2 ? substr($k, 0, -4) : $k;
+                $j[$jk] = $o->$k;
+            }
+        }
+        return (object) $j;
     }
 }

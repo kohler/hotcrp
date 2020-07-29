@@ -1016,6 +1016,12 @@ class PaperOption implements Abbreviator {
         return false;
     }
 
+    function value_force(PaperValue $ov) {
+    }
+    /** @return ?PaperValue */
+    function value_initial(PaperInfo $prow) {
+        return null;
+    }
     /** @return bool */
     function value_present(PaperValue $ov) {
         return !!$ov->value;
@@ -1051,8 +1057,6 @@ class PaperOption implements Abbreviator {
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return null;
-    }
-    function value_force(PaperValue $ov) {
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
     }
