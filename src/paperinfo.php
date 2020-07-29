@@ -396,11 +396,17 @@ class PaperInfo {
     public $authorInformation;
     public $abstract;
     public $collaborators;
+    /** @var ?string */
     public $timeSubmitted;
+    /** @var ?string */
     public $timeWithdrawn;
+    /** @var ?string */
     public $paperStorageId;
+    /** @var ?string */
     public $finalPaperStorageId;
+    /** @var int */
     public $managerContactId;
+    /** @var ?string */
     public $paperFormat;
     public $outcome;
     public $dataOverflow;
@@ -672,7 +678,7 @@ class PaperInfo {
 
     /** @return int */
     function format_of($text, $check_simple = false) {
-        return $this->conf->check_format($this->paperFormat, $check_simple ? $text : null);
+        return $this->conf->check_format((int) $this->paperFormat, $check_simple ? $text : null);
     }
 
     /** @return int */

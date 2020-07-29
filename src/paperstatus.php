@@ -102,13 +102,13 @@ class PaperStatus extends MessageSet {
         $this->_joindocs = [];
     }
 
+    /** @param callable(object,DocumentInfo,int,PaperStatus):(?bool) $cb */
     function on_document_export($cb) {
-        // arguments: $document_json, DocumentInfo $doc, $dtype, PaperStatus $pstatus
         $this->_on_document_export[] = $cb;
     }
 
+    /** @param callable(object,PaperInfo):(?bool) $cb */
     function on_document_import($cb) {
-        // arguments: $document_json, $prow
         $this->_on_document_import[] = $cb;
     }
 

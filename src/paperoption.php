@@ -1476,8 +1476,17 @@ class DocumentPaperOption extends PaperOption {
         return $o instanceof DocumentPaperOption;
     }
 
+    function value_force(PaperValue $ov) {
+        if ($this->id === DTYPE_SUBMISSION && $ov->prow->paperStorageId > 1) {
+            $ov->set_value_data([(int) $ov->prow->paperStorageId], [null]);
+        } else if ($this->id === DTYPE_FINAL && $ov->prow->finalPaperStorageId > 1) {
+            $ov->set_value_data([(int) $ov->prow->finalPaperStorageId], [null]);
+        } else {
+            $ov->set_value_data([], []);
+        }
+    }
     function value_present(PaperValue $ov) {
-        return $ov->value > ($this->id <= 0 ? 1 : 0);
+        return $ov->value !== null && $ov->value > ($this->id <= 0 ? 1 : 0);
     }
     function value_compare($av, $bv) {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
@@ -1491,20 +1500,12 @@ class DocumentPaperOption extends PaperOption {
         }
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
-        if ($ov->value === null
-            || $ov->value <= ($this->id <= 0 ? 1 : 0)) {
+        if (!$this->value_present($ov)) {
             return null;
         } else if (($doc = $ps->document_to_json($this->id, $ov->value))) {
             return $doc;
         } else {
             return false;
-        }
-    }
-    function value_force(PaperValue $ov) {
-        if ($this->id == DTYPE_SUBMISSION) {
-            $ov->set_value_data([$ov->prow->paperStorageId], [null]);
-        } else if ($this->id == DTYPE_FINAL) {
-            $ov->set_value_data([$ov->prow->finalPaperStorageId], [null]);
         }
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {

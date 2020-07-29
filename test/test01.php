@@ -1209,7 +1209,7 @@ xassert_eq($paper16->timeWithdrawn, 0);
 xassert_eqq($paper16->withdrawReason, null);
 xassert_assign($user_chair, "paper,action,reason\n16,withdraw,Paper is bad\n");
 $paper16b = $user_chair->checked_paper_by_id(16);
-xassert_eq($paper16b->timeSubmitted, -$paper16->timeSubmitted);
+xassert_eq((int) $paper16b->timeSubmitted, -(int) $paper16->timeSubmitted);
 xassert($paper16b->timeWithdrawn > 0);
 xassert_eqq($paper16b->withdrawReason, "Paper is bad");
 xassert_eqq($paper16b->all_tags_text(), "");

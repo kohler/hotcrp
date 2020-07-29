@@ -451,9 +451,9 @@ class PCConflicts_PaperOption extends PaperOption {
 class IntrinsicValue {
     static function assign_intrinsic(PaperValue $ov) {
         if ($ov->id === DTYPE_SUBMISSION) {
-            $ov->set_value_data([$ov->prow->paperStorageId], [null]);
+            $ov->set_value_data([(int) $ov->prow->paperStorageId], [null]);
         } else if ($ov->id === DTYPE_FINAL) {
-            $ov->set_value_data([$ov->prow->finalPaperStorageId], [null]);
+            $ov->set_value_data([(int) $ov->prow->finalPaperStorageId], [null]);
         } else {
             $ov->set_value_data([], []);
         }
