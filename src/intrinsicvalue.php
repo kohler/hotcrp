@@ -6,6 +6,11 @@ class Title_PaperOption extends PaperOption {
     function __construct($conf, $args) {
         parent::__construct($conf, $args);
     }
+    function value_force(PaperValue $ov) {
+        if ((string) $ov->prow->title !== "") {
+            $ov->set_value_data([1], [$ov->prow->title]);
+        }
+    }
     function value_present(PaperValue $ov) {
         return $ov->value
             && (strlen($ov->data()) > 6
@@ -13,11 +18,6 @@ class Title_PaperOption extends PaperOption {
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return (string) $ov->data();
-    }
-    function value_force(PaperValue $ov) {
-        if ((string) $ov->prow->title !== "") {
-            $ov->set_value_data([1], [$ov->prow->title]);
-        }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         $ps->mark_diff("title");
@@ -44,6 +44,11 @@ class Abstract_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
         $this->set_required(!$conf->opt("noAbstract"));
     }
+    function value_force(PaperValue $ov) {
+        if (($ab = $ov->prow->abstract_text()) !== "") {
+            $ov->set_value_data([1], [$ab]);
+        }
+    }
     function value_present(PaperValue $ov) {
         return $ov->value
             && (strlen($ov->data()) > 6
@@ -51,11 +56,6 @@ class Abstract_PaperOption extends PaperOption {
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         return (string) $ov->data();
-    }
-    function value_force(PaperValue $ov) {
-        if (($ab = $ov->prow->abstract_text()) !== "") {
-            $ov->set_value_data([1], [$ab]);
-        }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         $ps->mark_diff("abstract");
@@ -101,13 +101,13 @@ class Collaborators_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
         $this->set_exists_if(!!$this->conf->setting("sub_collab"));
     }
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
-        return (string) $ov->data();
-    }
     function value_force(PaperValue $ov) {
         if (($collab = $ov->prow->collaborators()) !== "") {
             $ov->set_value_data([1], [$collab]);
         }
+    }
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+        return (string) $ov->data();
     }
     function value_check(PaperValue $ov, Contact $user) {
         if (!$this->value_present($ov)
@@ -159,13 +159,13 @@ class Nonblind_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
         $this->set_exists_if($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL);
     }
-    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
-        return !!$ov->value;
-    }
     function value_force(PaperValue $ov) {
         if (!$ov->prow->blind) {
             $ov->set_value_data([1], [null]);
         }
+    }
+    function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
+        return !!$ov->value;
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         $ps->mark_diff("nonblind");
@@ -192,22 +192,22 @@ class Topics_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
         $this->set_exists_if(!!$this->conf->setting("has_topics"));
     }
+    function value_force(PaperValue $ov) {
+        $vs = $ov->prow->topic_list();
+        $ov->set_value_data($vs, array_fill(0, count($vs), null));
+    }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
-        $vs = $ov->value_array();
+        $vs = $ov->value_list();
         if (!empty($vs) && !$ps->export_ids()) {
             $tmap = $ps->conf->topic_set();
             $vs = array_map(function ($t) use ($tmap) { return $tmap[$t]; }, $vs);
         }
         return $vs;
     }
-    function value_force(PaperValue $ov) {
-        $vs = $ov->prow->topic_list();
-        $ov->set_value_data($vs, array_fill(0, count($vs), null));
-    }
     function value_store(PaperValue $ov, PaperStatus $ps) {
-        $vs = $ov->value_array();
-        $bad_topics = $ov->anno ? $ov->anno["bad_topics"] ?? null : null;
-        $new_topics = $ov->anno ? $ov->anno["new_topics"] ?? null : null;
+        $vs = $ov->value_list();
+        $bad_topics = $ov->anno("bad_topics");
+        $new_topics = $ov->anno("new_topics");
         '@phan-var ?list<string> $new_topics';
         if ($ps->add_topics() && !empty($new_topics)) {
             // add new topics to topic list
@@ -233,7 +233,7 @@ class Topics_PaperOption extends PaperOption {
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
         $ps->mark_diff("topics");
-        $ps->_topic_ins = $ov->value_array();
+        $ps->_topic_ins = $ov->value_list();
         return true;
     }
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
@@ -258,7 +258,7 @@ class Topics_PaperOption extends PaperOption {
             $j = [];
         }
         if (!is_array($j) || $bad) {
-            return PaperValue::make_estop($prow, $this, "Format error.");
+            return PaperValue::make_estop($prow, $this, "Validation error.");
         }
 
         $topicset = $prow->conf->topic_set();
@@ -271,7 +271,7 @@ class Topics_PaperOption extends PaperOption {
                     $bad_topics[] = $tk;
                 }
             } else if (!is_string($tk)) {
-                return PaperValue::make_estop($prow, $this, "Format error.");
+                return PaperValue::make_estop($prow, $this, "Validation error.");
             } else if (($tk = trim($tk)) !== "") {
                 $tid = array_search($tk, $topicset->as_array(), true);
                 if ($tid !== false) {
@@ -318,7 +318,12 @@ class PCConflicts_PaperOption extends PaperOption {
     }
     /** @return array<int,?string> */
     static private function value_map(PaperValue $ov) {
-        return array_combine($ov->value_array(), $ov->data_array());
+        return array_combine($ov->value_list(), $ov->data_list());
+    }
+    function value_force(PaperValue $ov) {
+        $vm = self::paper_value_map($ov->prow);
+        /** @phan-suppress-next-line PhanTypeMismatchArgument */
+        $ov->set_value_data(array_keys($vm), array_values($vm));
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $pcm = $this->conf->pc_members();
@@ -330,11 +335,6 @@ class PCConflicts_PaperOption extends PaperOption {
             }
         }
         return $pcc;
-    }
-    function value_force(PaperValue $ov) {
-        $vm = self::paper_value_map($ov->prow);
-        /** @phan-suppress-next-line PhanTypeMismatchArgument */
-        $ov->set_value_data(array_keys($vm), array_values($vm));
     }
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->conf->setting("sub_pcconf")
@@ -394,11 +394,11 @@ class PCConflicts_PaperOption extends PaperOption {
                 if (is_string($x)) {
                     $ja[strtolower($x)] = true;
                 } else {
-                    return PaperValue::make_estop($prow, $this, "Format error.");
+                    return PaperValue::make_estop($prow, $this, "Validation error.");
                 }
             }
         } else {
-            return PaperValue::make_estop($prow, $this, "Format error.");
+            return PaperValue::make_estop($prow, $this, "Validation error.");
         }
 
         $vm = self::paper_value_map($prow);
@@ -425,7 +425,7 @@ class PCConflicts_PaperOption extends PaperOption {
                     $this->update_value_map($vm, $pc->contactId, $ct);
                 }
             } else {
-                return PaperValue::make_estop($prow, $this, "Format error.");
+                return PaperValue::make_estop($prow, $this, "Validation error.");
             }
         }
         /** @phan-suppress-next-line PhanTypeMismatchArgument */

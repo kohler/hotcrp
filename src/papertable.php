@@ -1559,7 +1559,7 @@ class PaperTable {
                 if (strcasecmp($tg[0], $topics[$tg[1]]) === 0) {
                     $tid = $tg[1];
                     $arg["data-default-checked"] = isset($ptopics[$tid]);
-                    $checked = in_array($tid, $reqov->value_array());
+                    $checked = in_array($tid, $reqov->value_list());
                     echo '<label class="checki cteltx"><span class="checkc">',
                         Ht::checkbox("top$tid", 1, $checked, $arg),
                         '</span>', htmlspecialchars($tg[0]), '</label>';
@@ -1579,7 +1579,7 @@ class PaperTable {
                     $tname = $topics->unparse_name_html($tid);
                 }
                 $arg["data-default-checked"] = isset($ptopics[$tid]);
-                $checked = in_array($tid, $reqov->value_array());
+                $checked = in_array($tid, $reqov->value_list());
                 echo ($isgroup ? '<label class="checki cteltx">' : '<li class="ctelt"><label class="checki ctelti">'),
                     '<span class="checkc">',
                     Ht::checkbox("top$tid", 1, $checked, $arg),
@@ -1635,8 +1635,8 @@ class PaperTable {
 
         $ctmaps = [[], []];
         foreach ([$ov, $reqov] as $num => $value) {
-            $vs = $value->value_array();
-            $ds = $value->data_array();
+            $vs = $value->value_list();
+            $ds = $value->data_list();
             for ($i = 0; $i !== count($vs); ++$i) {
                 $ctmaps[$num][$vs[$i]] = (int) $ds[$i];
             }

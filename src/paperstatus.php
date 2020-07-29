@@ -427,8 +427,8 @@ class PaperStatus extends MessageSet {
         if (!is_object($docj)) {
             $this->syntax_error_at($o->field_key(), $docj);
             return null;
-        } else if (get($docj, "error") || get($docj, "error_html")) {
-            $this->error_at_option($o, get($docj, "error_html", "Upload error."));
+        } else if (($docj->error ?? false) || ($docj->error_html ?? false)) {
+            $this->error_at_option($o, $docj->error_html ?? "Upload error.");
             return null;
         }
         assert(!isset($docj->filter));
@@ -843,9 +843,9 @@ class PaperStatus extends MessageSet {
     }
 
     static function check_status(PaperStatus $ps, $pj) {
-        $pj_withdrawn = get($pj, "withdrawn");
-        $pj_submitted = get($pj, "submitted");
-        $pj_draft = get($pj, "draft");
+        $pj_withdrawn = $pj->withdrawn ?? null;
+        $pj_submitted = $pj->submitted ?? null;
+        $pj_draft = $pj->draft ?? null;
 
         if ($ps->has_error()
             && $pj_submitted
@@ -872,7 +872,7 @@ class PaperStatus extends MessageSet {
                 $submitted_at = -$submitted_at;
             }
             if (!$ps->prow || $ps->prow->timeWithdrawn <= 0) {
-                $ps->save_paperf("timeWithdrawn", get($pj, "withdrawn_at") ? : Conf::$now);
+                $ps->save_paperf("timeWithdrawn", ($pj->withdrawn_at ?? null) ? : Conf::$now);
                 $ps->save_paperf("timeSubmitted", $submitted_at);
                 $ps->mark_diff("status");
             } else if (($ps->prow->submitted_at() > 0) !== $pj_submitted) {
@@ -903,7 +903,7 @@ class PaperStatus extends MessageSet {
     static function check_final_status(PaperStatus $ps, $pj) {
         if (isset($pj->final_submitted)) {
             if ($pj->final_submitted) {
-                $time = get($pj, "final_submitted_at") ? : Conf::$now;
+                $time = ($pj->final_submitted_at ?? null) ? : Conf::$now;
             } else {
                 $time = 0;
             }
@@ -978,10 +978,10 @@ class PaperStatus extends MessageSet {
 
     private function save_fields() {
         foreach ($this->_field_values ?? [] as $ov) {
-            $v1 = $ov->value_array();
-            $d1 = $ov->data_array();
+            $v1 = $ov->value_list();
+            $d1 = $ov->data_list();
             $oldv = $this->_nnprow->force_option($ov->option);
-            if ($v1 !== $oldv->value_array() || $d1 !== $oldv->data_array()) {
+            if ($v1 !== $oldv->value_list() || $d1 !== $oldv->data_list()) {
                 if (!$ov->option->value_save($ov, $this)) {
                     // normal option
                     $this->mark_diff($ov->option->json_key());
@@ -1237,7 +1237,7 @@ class PaperStatus extends MessageSet {
         assert(!$this->hide_docids);
         assert(is_object($pj));
 
-        $paperid = get($pj, "pid", get($pj, "id", null));
+        $paperid = $pj->pid ?? $pj->id ?? null;
         if ($paperid !== null && is_int($paperid) && $paperid <= 0) {
             $paperid = null;
         }

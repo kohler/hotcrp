@@ -100,15 +100,25 @@ class PaperValue implements JsonSerializable {
         return count($this->_values);
     }
     /** @return list<int> */
-    function value_array() {
+    function value_list() {
         return $this->_values;
     }
     /** @return list<?string> */
-    function data_array() {
+    function data_list() {
         if ($this->_data === null) {
             $this->load_value_data();
         }
         return $this->_data;
+    }
+    /** @return list<int>
+     * @deprecated */
+    function value_array() {
+        return $this->value_list();
+    }
+    /** @return list<?string>
+     * @deprecated */
+    function data_array() {
+        return $this->data_list();
     }
     /** @return DocumentInfoSet */
     function document_set() {
@@ -1789,15 +1799,15 @@ class AttachmentsPaperOption extends PaperOption {
     }
     function value_dids(PaperValue $ov) {
         $j = null;
-        foreach ($ov->data_array() as $d) {
+        foreach ($ov->data_list() as $d) {
             if ($d !== null && str_starts_with($d, "{"))
                 $j = json_decode($d);
         }
         if ($j && isset($j->all_dids)) {
             return $j->all_dids;
         } else {
-            $values = $ov->value_array();
-            $data = $ov->data_array();
+            $values = $ov->value_list();
+            $data = $ov->data_list();
             array_multisort($data, SORT_NUMERIC, $values);
             return $values;
         }
