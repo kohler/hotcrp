@@ -424,11 +424,11 @@ class PCConflicts_PaperOption extends PaperOption {
                 && (is_bool($v) || is_int($v) || is_string($v))) {
                 $pc = $prow->conf->pc_member_by_email($email);
                 if (!$pc) {
-                    $pv->msg("“{$email}” is not a PC member’s email.", MessageSet::WARNING);
+                    $pv->msg("“" . htmlspecialchars($email) . "” is not a PC member’s email.", MessageSet::WARNING);
                 }
                 $ct = $confset->parse_json($v);
                 if ($ct === false) {
-                    $pv->msg("“{$v}” does not describe a conflict type.", MessageSet::WARNING);
+                    $pv->msg("“" . htmlspecialchars($v) . "” does not describe a conflict type.", MessageSet::WARNING);
                     $ct = Conflict::GENERAL;
                 }
                 if ($pc) {
