@@ -636,7 +636,7 @@ class PaperOption implements Abbreviator {
     public $include_empty;
     /** @var string
      * @readonly */
-    public $visibility; // "rev", "nonblind", "admin"
+    public $visibility; // "rev", "nonblind", "conflict", "admin"
     private $display;
     public $display_expand;
     public $display_group;
@@ -710,7 +710,7 @@ class PaperOption implements Abbreviator {
         $this->include_empty = !!($args->include_empty ?? false);
 
         $vis = $args->visibility ?? $args->view_type ?? null;
-        if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin") {
+        if (!in_array($vis, ["rev", "nonblind", "conflict", "admin"])) {
             $vis = "rev";
         }
         $this->visibility = $vis;

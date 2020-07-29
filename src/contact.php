@@ -3077,6 +3077,8 @@ class Contact {
         } else if ($rights->allow_pc_broad || $rights->review_status > 0) {
             if ($oview === "nonblind") {
                 return $rights->view_authors_state;
+            } else if ($oview === "conflict") {
+                return $this->can_view_conflicts($prow) ? 2 : 0;
             } else {
                 return !$oview || $oview === "rev" ? 2 : 0;
             }

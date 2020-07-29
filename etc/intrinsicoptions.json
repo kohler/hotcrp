@@ -20,7 +20,8 @@
     },
     {
         "name": "authors", "json_key": "authors", "id": -1001,
-        "form_position": 3001, "type": "intrinsic", "required": true
+        "form_position": 3001, "type": "intrinsic", "required": true,
+        "visibility": "nonblind"
     },
     {
         "name": "nonblind", "json_key": "nonblind", "id": -1002,
@@ -31,7 +32,7 @@
     {
         "name": "contacts", "json_key": "contacts", "id": -1003,
         "form_position": 3003, "display_position": false,
-        "type": "intrinsic"
+        "type": "intrinsic", "visibility": "conflict"
     },
     {
         "name": "topics", "json_key": "topics", "id": -1005,
@@ -43,12 +44,12 @@
         "name": "pcconf", "json_key": "pc_conflicts", "id": -1006,
         "form_position": 5001, "display_position": false,
         "type": "intrinsic2", "require": "src/intrinsicvalue.php",
-        "callback": "+PCConflicts_PaperOption"
+        "callback": "+PCConflicts_PaperOption", "visibility": "nonblind"
     },
     {
         "name": "collaborators", "json_key": "collaborators", "id": -1007,
         "form_position": 5002, "display_space": 5,
         "type": "intrinsic2", "require": "src/intrinsicvalue.php",
-        "callback": "+Collaborators_PaperOption"
+        "callback": "+Collaborators_PaperOption", "visibility": "nonblind"
     }
 ]
