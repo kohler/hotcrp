@@ -723,7 +723,7 @@ class PaperList {
     }
 
     private function _compute_has($key) {
-        if ($key === "paper" || $key === "final") {
+        if ($key === "paper" || $key === "submission" || $key === "final") {
             $opt = $this->conf->options()->find($key);
             return $this->user->can_view_some_option($opt)
                 && $this->rowset()->any(function ($row) use ($opt) {

@@ -250,7 +250,7 @@ class PaperOptionList implements IteratorAggregate {
     private $_accumulator;
     private $_adding_fixed;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"paper","readable_formid":"submission","form_position":1001,"type":"document"}';
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"submission","form_position":1001,"type":"document"}';
     const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_position":1002,"type":"document"}';
 
     function __construct(Conf $conf) {
@@ -698,10 +698,9 @@ class PaperOption implements Abbreviator {
         }
         $this->type = $args->type ?? null;
 
-        $this->_json_key = $args->json_key ?? null;
+        $this->_json_key = $this->_readable_formid = $args->json_key ?? null;
         $this->_search_keyword = $args->search_keyword ?? $this->_json_key;
         $this->formid = $this->id > 0 ? "opt{$this->id}" : $this->_json_key;
-        $this->_readable_formid = $args->readable_formid ?? $this->_json_key;
 
         $this->description = $args->description ?? null;
         $this->description_format = $args->description_format ?? null;
@@ -938,7 +937,7 @@ class PaperOption implements Abbreviator {
     }
     /** @return string */
     function dtype_name() {
-        return $this->json_key();
+        return $this->id ? $this->json_key() : "paper";
     }
 
     function display() {
