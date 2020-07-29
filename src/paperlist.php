@@ -1027,7 +1027,7 @@ class PaperList {
     }
 
     /** @return string */
-    private function _row_field_content(PaperColumn $fdef, PaperInfo $row) {
+    private function _column_html(PaperColumn $fdef, PaperInfo $row) {
         assert(!!$fdef->is_visible);
         $content = "";
         $override = $fdef->override;
@@ -1107,7 +1107,7 @@ class PaperList {
         }
     }
 
-    private function _row_content($rstate, PaperInfo $row, $fieldDef) {
+    private function _row_html($rstate, PaperInfo $row, $fieldDef) {
         // filter
         if ($this->_row_filter
             && !call_user_func($this->_row_filter, $this, $row)) {
@@ -1121,7 +1121,7 @@ class PaperList {
             if ($fdef->as_row) {
                 continue;
             }
-            $content = $this->_row_field_content($fdef, $row);
+            $content = $this->_column_html($fdef, $row);
             $tm .= '<td class="pl';
             if ($fdef->fold) {
                 $tm .= " fx{$fdef->fold}";
@@ -1141,7 +1141,7 @@ class PaperList {
             if (!$fdef->as_row) {
                 continue;
             }
-            $content = $this->_row_field_content($fdef, $row);
+            $content = $this->_column_html($fdef, $row);
             if ($content !== ""
                 && ($ch = $fdef->header($this, false))) {
                 if ($content[0] === "<") {
@@ -1700,7 +1700,7 @@ class PaperList {
             if ($grouppos >= 0) {
                 $grouppos = $this->_groups_for($grouppos, $rstate, $body, false);
             }
-            $body[] = $this->_row_content($rstate, $row, $fieldDef);
+            $body[] = $this->_row_html($rstate, $row, $fieldDef);
             if ($this->need_render && !$need_render) {
                 Ht::stash_script('$(plinfo.render_needed)', 'plist_render_needed');
                 $need_render = true;
@@ -1865,7 +1865,7 @@ class PaperList {
             $this->_row_setup($row);
             $p = ["id" => $row->paperId];
             foreach ($field_list as $fdef) {
-                if (($content = $this->_row_field_content($fdef, $row)) !== "") {
+                if (($content = $this->_column_html($fdef, $row)) !== "") {
                     $p[$fdef->name] = $content;
                 }
             }
