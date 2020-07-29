@@ -1362,41 +1362,40 @@ class PaperTable {
     }
 
 
-    private function editable_newcontact_row($anum) {
+    private function editable_newcontact_row($anum, $reqov, Author $au = null) {
         if ($anum === '$') {
-            $checked = true;
             $name = $email = "";
         } else {
-            $checked = !$this->useRequest || $this->qreq["contacts:active_$anum"];
-            $email = (string) ($this->useRequest ? $this->qreq["contacts:email_$anum"] : "");
-            $name = (string) ($this->useRequest ? $this->qreq["contacts:name_$anum"] : "");
+            $email = $au->email;
+            $name = $au->name();
         }
-        $email = $email === "Email" ? "" : $email;
-        $name = $name === "Name" ? "" : $name;
-
-        return '<div class="' . $this->control_class("contacts:$anum", "checki")
+        $reqidx = $au && $au->author_index ? $au->author_index : '$';
+        error_log("$email $reqidx");
+        return '<div class="'
+            . ($reqov ? $reqov->message_set()->control_class("contacts:$reqidx", "checki") : "checki")
             . '"><span class="checkc">'
-            . Ht::checkbox("contacts:active_$anum", 1, $checked, ["data-default-checked" => true, "id" => false])
-            . ' </span>'
-            . Ht::entry("contacts:email_$anum", $email, ["size" => 30, "placeholder" => "Email", "class" => $this->control_class("contacts:email_$anum", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off"])
+            . Ht::checkbox("contacts:active_$anum", 1, true, ["data-default-checked" => false, "id" => false])
+            . '</span>'
+            . Ht::entry("contacts:email_$anum", $email, ["size" => 30, "placeholder" => "Email", "class" => $this->control_class("contacts:email_$reqidx", "want-focus js-autosubmit uii js-email-populate ignore-diff"), "autocomplete" => "off", "data-default-value" => ""])
             . '  '
-            . Ht::entry("contacts:name_$anum", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off"])
-            . Ht::hidden("contacts:isnew_$anum", "1")
-            . $this->messages_at("contacts:$anum")
-            . $this->messages_at("contacts:name_$anum")
-            . $this->messages_at("contacts:email_$anum")
+            . Ht::entry("contacts:name_$anum", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit ignore-diff", "autocomplete" => "off", "data-default-value" => ""])
+            . $this->messages_at("contacts:$reqidx")
+            . $this->messages_at("contacts:name_$reqidx")
+            . $this->messages_at("contacts:email_$reqidx")
             . '</div>';
     }
 
-    function echo_editable_contact_author($option) {
-        if ($this->prow) {
-            list($aulist, $contacts) = $this->_analyze_authors();
-            $contacts = array_merge($aulist, $contacts);
-        } else if (!$this->admin) {
-            $contacts = [new Author($this->user)];
-            $contacts[0]->contactId = $this->user->contactId;
-        } else {
-            $contacts = [];
+    /** @param Contacts_PaperOption $option
+     * @param PaperValue $ov
+     * @param PaperValue $reqov */
+    function echo_editable_contact_author($option, $ov, $reqov) {
+        $contacts = $ov->anno("users") ?? [];
+        foreach ($ov->prow->author_list() as $au) {
+            if (!$option->value_by_email($ov, $au->email)
+                && validate_email($au->email)) {
+                $au->conflictType = CONFLICT_AUTHOR;
+                $contacts[] = $au;
+            }
         }
         usort($contacts, $this->conf->user_comparator());
 
@@ -1411,52 +1410,39 @@ class PaperTable {
         echo Ht::hidden("has_contacts", 1),
             '<div class="papev js-row-order"><div>';
 
-        $req_cemail = [];
-        if ($this->useRequest) {
-            for ($cidx = 1; isset($this->qreq["contacts:email_$cidx"]); ++$cidx) {
-                if ($this->qreq["contacts:active_$cidx"])
-                    $req_cemail[strtolower($this->qreq["contacts:email_$cidx"])] = $cidx;
-            }
-        }
-
         $cidx = 1;
+        $foundreqau = [];
         foreach ($contacts as $au) {
-            $reqidx = $req_cemail[strtolower($au->email)] ?? null;
-            if ($au->nonauthor
-                && (strcasecmp($this->user->email, $au->email) != 0 || $this->allow_admin)) {
-                $ctl = Ht::hidden("contacts:email_$cidx", $au->email)
-                    . Ht::checkbox("contacts:active_$cidx", 1, !$this->useRequest || $reqidx, ["data-default-checked" => true, "id" => false]);
-            } else if ($au->contactId) {
-                $ctl = Ht::hidden("contacts:email_$cidx", $au->email)
-                    . Ht::hidden("contacts:active_$cidx", 1)
-                    . Ht::checkbox(null, null, true, ["disabled" => true, "id" => false]);
-            } else if ($au->email && validate_email($au->email)) {
-                $ctl = Ht::hidden("contacts:email_$cidx", $au->email)
-                    . Ht::checkbox("contacts:active_$cidx", 1, $this->useRequest && $reqidx, ["data-default-checked" => false, "id" => false]);
-            } else {
-                continue;
-            }
+            $foundreqau[] = $reqau = $option->value_by_email($reqov, $au->email);
+            $fixed = $au->contactId > 0 && ($au->conflictType & CONFLICT_AUTHOR) !== 0;
             echo '<div class="',
-                $reqidx ? $this->control_class("contacts:$reqidx", "checki") : "checki",
-                '"><label><span class="checkc">', $ctl, ' </span>',
-                Text::nameo_h($au, NAME_E);
-            if ($au->nonauthor) {
-                echo ' (<em>non-author</em>)';
-            }
+                $reqau && $reqau->author_index
+                    ? $this->control_class("contacts:{$reqau->author_index}", "checki")
+                    : "checki",
+                '"><label><span class="checkc">',
+                Ht::hidden("contacts:email_$cidx", $au->email),
+                Ht::checkbox("contacts:active_$cidx", 1, $reqau || $fixed,
+                    ["data-default-checked" => $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR,
+                     "disabled" => $fixed, "id" => false]),
+                '</span>',
+                Text::nameo_h($au, NAME_E),
+                $au->conflictType & CONFLICT_AUTHOR ? '' : ' (<em>non-author</em>)';
             if ($this->user->privChair
-                && $au->contactId
-                && $au->contactId != $this->user->contactId) {
-                echo '&nbsp;', actas_link($au);
+                && $au->contactId !== $this->user->contactId) {
+                echo ' ', actas_link($au);
             }
-            echo '</label>', $this->messages_at("contacts:$cidx"), '</div>';
+            echo '</label></div>';
             ++$cidx;
         }
         echo '</div><div data-row-template="',
-            htmlspecialchars($this->editable_newcontact_row('$')),
+            htmlspecialchars($this->editable_newcontact_row('$', null, null)),
             '">';
-        if ($this->useRequest) {
-            while ($this->qreq["contacts:isnew_$cidx"]) {
-                echo $this->editable_newcontact_row($cidx);
+
+        $reqcontacts = array_merge($reqov->anno("users"), $reqov->anno("bad_users") ?? []);
+        usort($reqcontacts, function ($a, $b) { return $a->author_index - $b->author_index; });
+        foreach ($reqcontacts as $reqau) {
+            if (!in_array($reqau, $foundreqau)) {
+                echo $this->editable_newcontact_row($cidx, $reqov, $reqau);
                 ++$cidx;
             }
         }
@@ -1540,6 +1526,8 @@ class PaperTable {
             "</div></div></div>\n\n";
     }
 
+    /** @param PaperOption $option
+     * @param PaperValue $reqov */
     function echo_editable_topics($option, $reqov) {
         if (!$this->conf->has_topics()) {
             return;
@@ -2550,8 +2538,15 @@ class PaperTable {
                 echo '</div></div><div class="pcard notecard"><div class="papcard-body">';
                 $this->_echo_edit_messages(false);
                 $this->_echo_editable_form();
-                $option = $this->conf->option_by_id(PaperOption::CONTACTSID);
-                $this->echo_editable_contact_author($option);
+                $o = $this->conf->option_by_id(PaperOption::CONTACTSID);
+                assert($o instanceof Contacts_PaperOption);
+                $ov = $reqov = $this->prow->force_option($o);
+                if ($this->useRequest
+                    && $this->qreq["has_{$o->formid}"]
+                    && ($x = $o->parse_web($this->prow, $this->qreq))) {
+                    $reqov = $x;
+                }
+                $this->echo_editable_contact_author($o, $ov, $reqov);
                 $this->echo_actions();
                 echo "</form>";
             }

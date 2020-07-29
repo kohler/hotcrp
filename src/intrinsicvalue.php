@@ -524,6 +524,13 @@ class Contacts_PaperOption extends PaperOption {
         }
         return false;
     }
+    /** @param string $email
+     * @return ?Author */
+    function value_by_email(PaperValue $ov, $email) {
+        $ca = $ov->anno("users") ?? [];
+        $i = self::ca_index($ca, $email);
+        return $i !== false ? $ca[$i] : null;
+    }
     static function apply_new_users(PaperValue $ov, $new_ca, &$ca) {
         $bad_ca = [];
         foreach ($new_ca as $c) {
@@ -557,7 +564,8 @@ class Contacts_PaperOption extends PaperOption {
             $name = simplify_whitespace((string) $qreq["contacts:name_$n"]);
             $affiliation = simplify_whitespace((string) $qreq["contacts:affiliation_$n"]);
             if (($i = self::ca_index($ca, $email)) !== false) {
-                if (!$qreq["contacts:active_$n"]) {
+                if (!$qreq["contacts:active_$n"]
+                    && ($ca[$i]->conflictType & CONFLICT_AUTHOR) === 0) {
                     array_splice($ca, $i, 1);
                 }
             } else if (($email !== "" || $name !== "") && $qreq["contacts:active_$n"]) {
@@ -576,10 +584,12 @@ class Contacts_PaperOption extends PaperOption {
             foreach ((array) $j as $k => $v) {
                 $i = self::ca_index($ca, $k);
                 if ($v === false) {
-                    if ($i !== false) {
+                    if ($i !== false
+                        && ($ca[$i]->conflictType & CONFLICT_AUTHOR) === 0) {
                         array_splice($ca, $i, 1);
                     }
-                } else if ($v === true || is_object($v)) {
+                } else if ($v === true
+                           || (is_object($v) && strcasecmp($v->email ?? $k, $k) === 0)) {
                     if ($i === false) {
                         $a = $v === true ? [] : (array) $v;
                         $a["email"] = $k;
@@ -590,7 +600,9 @@ class Contacts_PaperOption extends PaperOption {
                 }
             }
         } else if (is_array($j)) {
-            $ca = [];
+            $ca = array_values(array_filter($ca, function ($au) {
+                return ($au->conflictType & CONFLICT_AUTHOR) !== 0;
+            }));
             foreach ($j as $v) {
                 if (is_string($v)) {
                     $email = $v;
@@ -616,7 +628,7 @@ class Contacts_PaperOption extends PaperOption {
         return $ov;
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $pt->echo_editable_contact_author($this);
+        $pt->echo_editable_contact_author($this, $ov, $reqov);
     }
     // XXX no render because paper strip
 }
@@ -672,8 +684,6 @@ class IntrinsicValue {
     static function echo_web_edit($o, PaperTable $pt, $ov, $reqov) {
         if ($o->id === PaperOption::AUTHORSID) {
             $pt->echo_editable_authors($o);
-        } else if ($o->id === PaperOption::CONTACTSID) {
-            $pt->echo_editable_contact_author($o);
         }
     }
 }

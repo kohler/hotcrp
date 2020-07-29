@@ -87,7 +87,7 @@ class PaperStatus extends MessageSet {
         $this->_topic_ins = null;
         $this->_field_values = $this->_option_delid = $this->_option_ins = [];
         $this->_conflict_values = [];
-        $this->_conflict_ins = null;
+        $this->_conflict_ins = $this->_register_users = $this->_created_contacts = null;
         $this->_paper_submitted = $this->_documents_changed = false;
         $this->_joindocs = [];
     }
@@ -970,7 +970,6 @@ class PaperStatus extends MessageSet {
                 $this->_created_contacts[] = $u;
             }
             $diff_lemail[] = strtolower($au->email);
-            $this->diffs["contacts"] = true;
         } else if (!($flags & Contact::SAVE_IMPORT)) {
             if ($au->author_index >= 0) {
                 $key = "contacts:" . $au->author_index;
@@ -983,22 +982,13 @@ class PaperStatus extends MessageSet {
     }
 
     private function check_contacts_last($pj) {
-        // check for differences
+        // check for differences, create new contacts
         $diff_lemail = [];
         foreach ($this->_conflict_values ?? [] as $lemail => $cv) {
-            $ncv = self::new_conflict_value($cv);
-            if (($cv[0] ^ $ncv) & (CONFLICT_AUTHOR - 1)) {
-                $this->diffs["pc_conflicts"] = true;
-            }
-            if (($cv[0] ^ $ncv) >= CONFLICT_AUTHOR && $cv[0] >= CONFLICT_AUTHOR) {
-                $this->diffs["contacts"] = true;
-            }
-            if ($cv[0] !== $ncv) {
+            if ($cv[0] !== self::new_conflict_value($cv)) {
                 $diff_lemail[] = $lemail;
             }
         }
-
-        // create new contacts
         if (!$this->has_error_at("contacts")) {
             foreach ($this->_register_users ?? [] as $au) {
                 $this->create_user($au, $diff_lemail);
@@ -1014,6 +1004,13 @@ class PaperStatus extends MessageSet {
             while (($row = $result->fetch_row())) {
                 /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
                 $cv = $this->_conflict_values[strtolower($row[1])];
+                $ncv = self::new_conflict_value($cv);
+                if (($cv[0] ^ $ncv) & (CONFLICT_AUTHOR - 1)) {
+                    $this->diffs["pc_conflicts"] = true;
+                }
+                if (($cv[0] >= CONFLICT_AUTHOR) !== ($ncv >= CONFLICT_AUTHOR)) {
+                    $this->diffs["contacts"] = true;
+                }
                 $this->_conflict_ins[] = [(int) $row[0], $cv[1], $cv[2]];
             }
             Dbl::free($result);
