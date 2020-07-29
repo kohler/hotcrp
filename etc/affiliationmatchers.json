@@ -209,6 +209,9 @@
     "computing": {
         "weak": true
     },
+    "conservancy": {
+        "weak": true
+    },
     "consulting": {
         "weak": true
     },
@@ -222,6 +225,9 @@
         "weak": true
     },
     "dept": {
+        "weak": true
+    },
+    "development": {
         "weak": true
     },
     "east": {
@@ -354,6 +360,9 @@
     "science": {
         "weak": true
     },
+    "sciences": {
+        "weak": true
+    },
     "security": {
         "weak": true
     },
@@ -426,12 +435,15 @@
         "weak": true, "alternate": ["university"]
     },
     "university": {
-        "weak": true, "alternate": ["u"]
+        "weak": true, "alternate": ["u", "univ"]
     },
     "west": {
         "weak": true
     },
 
+    "africa": {
+        "weak": true
+    },
     "america": {
         "weak": true
     },
@@ -452,6 +464,9 @@
     },
     "australian": {
         "alternate": [{"word": "anu", "if": "national university"}]
+    },
+    "bangalore": {
+        "weak": true
     },
     "barbara": {
         "alternate": [{"word": "ucsb", "if": "university california santa"}],
@@ -583,17 +598,20 @@
     "hewlett": {
         "alternate": [{"word": "hp", "if": "packard"}]
     },
-    "hong": {
-        "weak": true
-    },
     "hkust": {
         "alternate": ["hong kong university science technology"]
+    },
+    "hong": {
+        "weak": true
     },
     "hp": {
         "alternate": ["hewlett packard"]
     },
     "huawei": {
         "nameish": false
+    },
+    "hyderabad": {
+        "weak": true
     },
     "ibm": {
         "nameish": false
