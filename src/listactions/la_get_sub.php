@@ -116,7 +116,10 @@ class GetCSV_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $search = new PaperSearch($user, $qreq);
         $search->restrict_match([$ssel, "is_selected"]);
-        $pl = new PaperList("pl", $search, ["sort" => true, "display" => $qreq->display], $qreq);
+        assert(!isset($qreq->display));
+        $pl = new PaperList("pl", $search, ["sort" => true], $qreq);
+        $pl->add_report_default_view();
+        $pl->add_session_view();
         $pl->set_view("sel", false);
         list($header, $data) = $pl->text_csv();
         return $user->conf->make_csvg("data", CsvGenerator::FLAG_ITEM_COMMENTS)

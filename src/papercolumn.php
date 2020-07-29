@@ -405,10 +405,15 @@ class Authors_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function add_decoration($decor) {
-        return parent::add_user_sort_decoration($decor) || parent::add_decoration($decor);
+        if ($decor === "full" || $decor === "short") {
+            $this->aufull = $decor === "full";
+            return $this->__add_decoration($this->aufull ? "full" : null, ["full"]);
+        } else {
+            return parent::add_user_sort_decoration($decor) || parent::add_decoration($decor);
+        }
     }
     function prepare(PaperList $pl, $visible) {
-        $this->aufull = $pl->showing("aufull");
+        $this->aufull = $this->aufull ?? $pl->showing("aufull");
         $this->anonau = $pl->showing("anonau");
         $this->highlight = $pl->search->field_highlighter("authorInformation");
         return $pl->user->can_view_some_authors();
@@ -593,7 +598,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
     protected $contact;
     private $not_me;
     private $rrow_key;
-    private $brieftitle = false;
+    private $simpleheader = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         if (isset($cj->user)) {
@@ -601,8 +606,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
         }
     }
     function add_decoration($decor) {
-        if ($decor === "brieftitle") {
-            $this->brieftitle = true;
+        if ($decor === "simpleheader") {
+            $this->simpleheader = true;
             return $this->__add_decoration($decor);
         } else {
             return parent::add_decoration($decor);
@@ -671,7 +676,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         return $b->{$this->uid} - $a->{$this->uid};
     }
     function header(PaperList $pl, $is_text) {
-        if (!$this->not_me || $this->brieftitle) {
+        if (!$this->not_me || $this->simpleheader) {
             return "Review";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " review";

@@ -23,6 +23,8 @@ class Search_API {
 
         $search = new PaperSearch($user, ["t" => $t, "q" => $q, "qt" => $qreq->qt, "urlbase" => $qreq->urlbase, "reviewer" => $qreq->reviewer]);
         $pl = new PaperList($qreq->report ? : "pl", $search, ["sort" => true], $qreq);
+        $pl->add_report_default_view();
+        $pl->add_session_view();
         $ih = $pl->ids_and_groups();
         return ["ok" => true, "ids" => $ih[0], "groups" => $ih[1],
                 "hotlist" => $pl->session_list_object()->info_string()];

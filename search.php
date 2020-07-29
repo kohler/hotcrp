@@ -155,7 +155,10 @@ if (isset($Qreq->q)) {
 } else {
     $Search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => "NONE"]);
 }
-$pl = new PaperList("pl", $Search, ["sort" => true, "display" => $Qreq->display], $Qreq);
+assert(!isset($Qreq->display));
+$pl = new PaperList("pl", $Search, ["sort" => true], $Qreq);
+$pl->add_report_default_view();
+$pl->add_session_view();
 if (isset($Qreq->forceShow)) {
     $pl->set_view("force", !!$Qreq->forceShow);
 }

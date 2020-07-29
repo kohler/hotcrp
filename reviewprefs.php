@@ -248,6 +248,8 @@ $search = new PaperSearch($Me, [
     "pageurl" => $Conf->hoturl_site_relative_raw("reviewprefs")
 ]);
 $pl = new PaperList("pf", $search, ["sort" => true], $Qreq);
+$pl->add_report_default_view();
+$pl->add_session_view();
 $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
 $pl_text = $pl->table_html(["fold_session_prefix" => "pfdisplay.",
                       "footer_extra" => "<div id=\"plactr\">" . Ht::submit("fn", "Save changes", ["data-default-submit-all" => 1, "value" => "saveprefs"]) . "</div>",

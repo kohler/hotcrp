@@ -8,7 +8,7 @@ class Conflict_PaperColumn extends PaperColumn {
     private $not_me;
     private $show_description;
     private $editable = false;
-    private $brieftitle = false;
+    private $simpleheader = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
@@ -22,8 +22,8 @@ class Conflict_PaperColumn extends PaperColumn {
         }
     }
     function add_decoration($decor) {
-        if ($decor === "brieftitle") {
-            $this->brieftitle = true;
+        if ($decor === "simpleheader") {
+            $this->simpleheader = true;
             return $this->__add_decoration($decor);
         } else {
             return parent::add_decoration($decor);
@@ -62,7 +62,7 @@ class Conflict_PaperColumn extends PaperColumn {
     }
     function header(PaperList $pl, $is_text) {
         if ((!$this->show_user && !$this->not_me && !$this->editable)
-            || $this->brieftitle) {
+            || $this->simpleheader) {
             return "Conflict";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " conflict";

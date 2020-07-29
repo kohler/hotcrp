@@ -8506,7 +8506,7 @@ handle_ui.on("js-edit-view-options", function () {
         hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
         hc.push('<h2>View options</h2>');
         hc.push('<div class="f-i"><div class="f-c">Default view options</div>', '</div>');
-        hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "") + '</div>');
+        hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "(none)") + '</div>');
         hc.pop();
         hc.push('<div class="f-i"><div class="f-c">Current view options</div>', '</div>');
         hc.push('<textarea class="reportdisplay-current w-99 need-autogrow" name="display" rows="1" cols="60">' + escape_entities(display_current || "") + '</textarea>');

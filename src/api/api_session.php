@@ -80,10 +80,13 @@ class Session_API {
 
     static function change_display(Contact $user, $report, $settings) {
         $search = new PaperSearch($user, "NONE");
-        $pl = new PaperList($report, $search, ["sort" => true, "no_session_display" => true]);
+        $pl = new PaperList($report, $search, ["sort" => true]);
+        $pl->add_report_default_view();
         $vd = $pl->viewer_list();
 
         $pl = new PaperList($report, $search, ["sort" => true]);
+        $pl->add_report_default_view();
+        $pl->add_session_view();
         foreach ($settings as $k => $v) {
             $pl->set_view($k, $v);
         }

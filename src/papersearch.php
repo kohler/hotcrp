@@ -2710,6 +2710,25 @@ class PaperSearch {
         }
     }
 
+    /** @param string|bool $action
+     * @param string $keyword
+     * @param ?list<string> $decorations
+     * @return string */
+    static function unparse_view($action, $keyword, $decorations) {
+        if (is_bool($action)) {
+            $action = $action ? "show" : "hide";
+        }
+        if (!ctype_alnum($keyword)
+            && SearchSplitter::span_balanced_parens($keyword) !== strlen($keyword)) {
+            $keyword = "\"" . $keyword . "\"";
+        }
+        if ($decorations) {
+            return $action . ":[" . $keyword . " " . join(" ", $decorations) . "]";
+        } else {
+            return $action . ":" . $keyword;
+        }
+    }
+
     /** @return list<string> */
     private function sort_field_list() {
         $r = [];

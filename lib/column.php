@@ -74,6 +74,11 @@ class Column {
         }
     }
 
+    /** @return list<string> */
+    function decorations() {
+        return $this->decorations ?? [];
+    }
+
     /** @param string $decor
      * @return bool */
     function add_decoration($decor) {
