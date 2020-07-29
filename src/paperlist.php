@@ -1037,45 +1037,38 @@ class PaperList {
             $override = 0;
         }
         if ($override <= 0) {
-            $empty = $fdef->content_empty($this, $row);
-            if (!$empty) {
+            if (!$fdef->content_empty($this, $row)) {
                 $content = $fdef->content($this, $row);
             }
         } else if ($override === PaperColumn::OVERRIDE_BOTH) {
             $content1 = $content2 = "";
-            $empty1 = $fdef->content_empty($this, $row);
-            if (!$empty1) {
+            if (!$fdef->content_empty($this, $row)) {
                 $content1 = $fdef->content($this, $row);
             }
             $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-            $empty2 = $fdef->content_empty($this, $row);
-            if (!$empty2) {
+            if (!$fdef->content_empty($this, $row)) {
                 $content2 = $fdef->content($this, $row);
             }
             $this->user->set_overrides($overrides);
-            $empty = $empty1 && $empty2;
             $content = $this->_wrap_conflict($content1, $content2, $fdef);
         } else if ($override === PaperColumn::OVERRIDE_FORCE) {
             $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-            $empty = $fdef->content_empty($this, $row);
-            if (!$empty) {
+            if (!$fdef->content_empty($this, $row)) {
                 $content = $fdef->content($this, $row);
             }
             $this->user->set_overrides($overrides);
         } else { // $override > 0
-            $empty = $fdef->content_empty($this, $row);
-            if ($empty) {
+            if (!$fdef->content_empty($this, $row)) {
+                $content = $fdef->content($this, $row);
+            } else {
                 $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-                $empty = $fdef->content_empty($this, $row);
-                if (!$empty) {
+                if (!$fdef->content_empty($this, $row)) {
                     if ($override === PaperColumn::OVERRIDE_IFEMPTY_LINK) {
                         $content = '<em>Hidden for conflict</em> · <a class="ui js-override-conflict" href="">Override</a>';
                     }
                     $content = $this->_wrap_conflict($content, $fdef->content($this, $row), $fdef);
                 }
                 $this->user->set_overrides($overrides);
-            } else {
-                $content = $fdef->content($this, $row);
             }
         }
         return $content;
