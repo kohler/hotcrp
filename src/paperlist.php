@@ -225,7 +225,7 @@ class PaperList {
         $this->sortable = isset($args["sort"]) && $args["sort"];
 
         if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"])) {
-            $this->_paper_linkto = $qreq->linkto;
+            $this->set_view("linkto", true, null, [$qreq->linkto]);
         }
         $this->_atab = $qreq->atab;
 
@@ -388,8 +388,7 @@ class PaperList {
             $this->_view_kanban = $v;
         } else if ($k === "linkto") {
             if (!empty($decorations)
-                && in_array($decorations[0], ["paper", "paperedit", "assign", "finishreview"])
-                && $this->_paper_linkto === null) {
+                && in_array($decorations[0], ["paper", "paperedit", "assign", "finishreview"])) {
                 $this->_paper_linkto = $decorations[0];
             }
         } else if (($k === "aufull" || $k === "anonau")
