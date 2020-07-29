@@ -21,9 +21,13 @@ $ps = new PaperStatus($Conf, $user_estrin);
 $paper1a = $ps->paper_json(1);
 xassert_eqq($paper1a->title, "Scalable Timers for Soft State Protocols");
 xassert_eqq($paper1a->pc_conflicts->{"estrin@usc.edu"}, "author");
+$paper1 = $Conf->checked_paper_by_id(1);
+xassert_eqq($paper1->conflict_type($user_estrin), CONFLICT_AUTHOR);
 
 $ps->save_paper_json((object) ["id" => 1, "title" => "Scalable Timers? for Soft State Protocols"]);
 xassert_paper_status($ps);
+$paper1->invalidate_conflicts();
+xassert_eqq($paper1->conflict_type($user_estrin), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
 
 $paper1b = $ps->paper_json(1);
 
@@ -157,6 +161,7 @@ xassert($ps->prepare_save_paper_json($pj));
 xassert($ps->diffs["title"]);
 xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
+xassert($ps->diffs["contacts"]);
 xassert($ps->execute_save());
 xassert_paper_status($ps);
 
@@ -172,6 +177,7 @@ xassert_eqq($aus[0]->lastName, "Flay");
 xassert_eqq($aus[0]->email, "flay@_.com");
 xassert($newpaper->timeSubmitted <= 0);
 xassert($newpaper->timeWithdrawn <= 0);
+xassert_eqq($newpaper->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1]), $newpaper, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
@@ -577,6 +583,55 @@ $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
 xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 xassert_eqq($nprow1->conflict_type($user_varghese), 5);
+
+// contact author cannot remove themselves
+$ps->save_paper_json((object) [
+    "id" => $npid1, "contacts" => []
+]);
+xassert($ps->has_problem());
+xassert_eqq($ps->message_texts_at("contacts"), ["Each submission must have at least one contact.", "You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"]);
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu"]), $nprow1, $user_estrin, "submit");
+$ps->save_paper_json($pj);
+xassert($ps->has_problem());
+xassert_eqq($ps->message_texts_at("contacts"), ["Each submission must have at least one contact.", "You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"]);
+
+$ps->save_paper_json((object) [
+    "id" => $npid1, "contacts" => ["estrin@usc.edu"]
+]);
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), [], true);
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "", "contacts:active_2" => 1]), $nprow1, $user_estrin, "submit");
+$ps->save_paper_json($pj);
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), [], true);
+
+xassert(!$Conf->user_id_by_email("festrin@fusc.fedu"));
+$ps->save_paper_json((object) [
+    "id" => $npid1, "contacts" => ["estrin@usc.edu", (object) ["email" => "festrin@fusc.fedu", "name" => "Feborah Festrin"]]
+]);
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+$new_user = $Conf->user_by_email("festrin@fusc.fedu");
+xassert(!!$new_user);
+xassert_eqq($new_user->firstName, "Feborah");
+xassert_eqq($new_user->lastName, "Festrin");
+$nprow1->invalidate_conflicts();
+xassert($nprow1->has_author($new_user));
+
+xassert(!$Conf->user_id_by_email("gestrin@gusc.gedu"));
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "festrin@fusc.fedu", "contacts:email_3" => "gestrin@gusc.gedu", "contacts:name_3" => "Geborah Gestrin", "contacts:active_3" => 1]), $nprow1, $user_estrin, "submit");
+$ps->save_paper_json($pj);
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+$new_user2 = $Conf->user_by_email("gestrin@gusc.gedu");
+xassert(!!$new_user2);
+xassert_eqq($new_user2->firstName, "Geborah");
+xassert_eqq($new_user2->lastName, "Gestrin");
+$nprow1->invalidate_conflicts();
+xassert(!$nprow1->has_author($new_user));
+xassert($nprow1->has_author($new_user2));
 
 // check some content_text_signature functionality
 $doc = new DocumentInfo(["content" => "ABCdefGHIjklMNO"], $Conf);

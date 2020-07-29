@@ -1060,7 +1060,7 @@ class PaperStatus extends MessageSet {
 
             if (!$this->user->allow_administer($this->prow)
                 && self::new_conflict_value($this->_conflict_values[strtolower($this->user->email)] ?? null) < CONFLICT_AUTHOR) {
-                $this->error_at("contacts", $this->_("You can’t remove yourself as submission contact. (Ask another contact to remove you.)"));
+                $this->error_at("contacts", $this->_("You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"));
             }
         }
 
