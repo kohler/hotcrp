@@ -3,7 +3,7 @@ require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__))
 
 $arg = Getopt::rest($argv, "hn:t:xwacN", ["help", "name:", "type:", "narrow", "wide", "all", "no-header", "comments", "sitename"]);
 if (isset($arg["h"]) || isset($arg["help"])) {
-    fwrite(STDOUT, "Usage: php batch/reviews.php [-n CONFID] [-t COLLECTION] [-acx] [QUERY...]
+    fwrite(STDOUT, "Usage: php batch/reviewcsv.php [-n CONFID] [-t COLLECTION] [-acx] [QUERY...]
 Output a CSV file containing all reviews for the papers matching QUERY.
 
 Options include:
@@ -20,17 +20,20 @@ $narrow = isset($arg["x"]) || isset($arg["narrow"]);
 $all = isset($arg["a"]) || isset($arg["all"]);
 $comments = isset($arg["c"]) || isset($arg["comments"]);
 if ($comments && !$narrow) {
-    fwrite(STDERR, "batch/reviews.php: ‘-c’ requires ‘--narrow’ format.\n");
+    fwrite(STDERR, "batch/reviewcsv.php: ‘-c’ requires ‘--narrow’ format.\n");
+    exit(1);
+} else if ($narrow && (isset($arg["w"]) || isset($arg["wide"]))) {
+    fwrite(STDERR, "batch/reviewcsv.php: ‘--wide’ and ‘--narrow’ contradict.\n");
     exit(1);
 }
 
 require_once(SiteLoader::find("src/init.php"));
 
 $user = $Conf->root_user();
-$t = get($arg, "t", "s");
+$t = $arg["t"] ?? "s";
 $searchtypes = PaperSearch::search_types($user, $t);
 if (!isset($searchtypes[$t])) {
-    fwrite(STDERR, "batch/reviews.php: No search collection ‘{$t}’.\n");
+    fwrite(STDERR, "batch/reviewcsv.php: No search collection ‘{$t}’.\n");
     exit(1);
 }
 
@@ -118,7 +121,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
                 $x["format"] = $rrow->reviewFormat;
             }
             foreach ($rf->paper_visible_fields($user, $prow, $rrow) as $fid => $f) {
-                $fv = $f->unparse_value(get($rrow, $fid), ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
+                $fv = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
                 if ($fv === "") {
                     // ignore
                 } else if ($narrow) {
