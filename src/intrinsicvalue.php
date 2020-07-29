@@ -107,7 +107,7 @@ class Collaborators_PaperOption extends PaperOption {
         }
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
-        return (string) $ov->data();
+        return $ov->value ? $ov->data() : null;
     }
     function value_check(PaperValue $ov, Contact $user) {
         if (!$this->value_present($ov)

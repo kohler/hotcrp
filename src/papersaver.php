@@ -154,14 +154,14 @@ class Default_PaperSaver extends PaperSaver {
 
         // Paper upload
         if ($action === "final") {
-            $fname = $qreq->has_file("opt-1") ? "opt-1" : "paperUpload";
+            $fname = $qreq->has_file("opt-1") ? "opt-1" : "paperUpload"; // XXX paperUpload backwards compat
             if (($f1 = $qreq->file($fname))) {
                 $pj->final = DocumentInfo::make_uploaded_file($f1, $pj->pid, DTYPE_FINAL, $user->conf);
             } else if (($f2 = $qreq["opt-1:upload"])) {
                 $pj->final = DocumentInfo::make_capability($f2, $pj->pid, DTYPE_FINAL, $user->conf);
             }
         } else if ($action === "update" || $action === "submit") {
-            $fname = $qreq->has_file("opt0") ? "opt0" : "paperUpload";
+            $fname = $qreq->has_file("opt0") ? "opt0" : "paperUpload"; // XXX paperUpload backwards compat
             if (($f1 = $qreq->file($fname))) {
                 $pj->submission = DocumentInfo::make_uploaded_file($f1, $pj->pid, DTYPE_SUBMISSION, $user->conf);
             } else if (($f2 = $qreq["opt0:upload"])) {
@@ -171,9 +171,6 @@ class Default_PaperSaver extends PaperSaver {
 
         // Options
         $nnprow = $prow ? : PaperInfo::make_new($user);
-        if (!isset($pj->options)) {
-            $pj->options = (object) [];
-        }
         foreach ($user->conf->options()->form_fields($nnprow) as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
                 && ($o->id > 0 || $o->type === "intrinsic2")
@@ -184,15 +181,8 @@ class Default_PaperSaver extends PaperSaver {
                 if ($ov === false) {
                     throw new Error("option {$o->id} {$o->title()} should implement parse_web but doesn't");
                 }
-                if ($o->id <= 0) {
-                    $pj->$okey = $ov;
-                } else {
-                    $pj->options->$okey = $ov;
-                }
+                $pj->$okey = $ov;
             }
-        }
-        if (!count(get_object_vars($pj->options))) {
-            unset($pj->options);
         }
     }
 }

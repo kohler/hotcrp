@@ -1501,7 +1501,7 @@ class DocumentPaperOption extends PaperOption {
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         if (!$this->value_present($ov)) {
             return null;
-        } else if (($doc = $ps->document_to_json($this->id, $ov->value))) {
+        } else if (($doc = $ps->document_to_json($this, $ov->value))) {
             return $doc;
         } else {
             return false;
@@ -1815,7 +1815,7 @@ class AttachmentsPaperOption extends PaperOption {
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $attachments = [];
         foreach ($ov->documents() as $doc) {
-            if (($doc = $ps->document_to_json($this->id, $doc)))
+            if (($doc = $ps->document_to_json($this, $doc)))
                 $attachments[] = $doc;
         }
         return empty($attachments) ? null : $attachments;

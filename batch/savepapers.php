@@ -238,6 +238,7 @@ foreach ($jp as &$j) {
     if (!$quiet) {
         fwrite(STDERR, $pid ? "saved\n" : "failed\n");
     }
+    // XXX does not change decision
     $prefix = $pidtext . ": ";
     foreach ($ps->landmarked_message_texts() as $msg) {
         fwrite(STDERR, $prefix . htmlspecialchars_decode($msg) . "\n");

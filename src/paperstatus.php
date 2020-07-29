@@ -126,11 +126,11 @@ class PaperStatus extends MessageSet {
         return $this->conf->_($itext, ...$args);
     }
 
-    /** @param int $dtype
+    /** @param PaperOption $o
      * @param int|DocumentInfo $docid */
-    function document_to_json($dtype, $docid, $field = false) {
+    function document_to_json(PaperOption $o, $docid) {
         if (is_int($docid)) {
-            $doc = $this->prow ? $this->prow->document($dtype, $docid) : null;
+            $doc = $this->prow ? $this->prow->document($o->id, $docid) : null;
         } else {
             $doc = $docid;
             $docid = $doc->paperStorageId;
@@ -173,7 +173,7 @@ class PaperStatus extends MessageSet {
             $d->content_base64 = base64_encode($content);
         }
         foreach ($this->_on_document_export as $cb) {
-            if (call_user_func($cb, $d, $doc, $dtype, $this) === false)
+            if (call_user_func($cb, $d, $doc, $o->id, $this) === false)
                 return null;
         }
         if (!count(get_object_vars($d))) {
@@ -182,7 +182,6 @@ class PaperStatus extends MessageSet {
 
         // maybe warn about format check
         if ($d
-            && $field
             && $doc->mimetype === "application/pdf"
             && ($spec = $this->conf->format_spec($doc->documentType))
             && !$spec->is_empty()) {
@@ -191,7 +190,7 @@ class PaperStatus extends MessageSet {
             }
             $this->_cf->check_document($this->prow, $doc);
             if ($this->_cf->has_problem()) {
-                $this->msg_at($field, false, $this->_cf->problem_status());
+                $this->msg_at($o->field_key(), false, $this->_cf->problem_status());
             }
         }
 
@@ -220,17 +219,69 @@ class PaperStatus extends MessageSet {
 
         $pj = (object) [];
         $pj->pid = (int) $prow->paperId;
-        $pj->title = $prow->title;
+
+        foreach ($this->conf->options()->form_fields($this->prow) as $opt) {
+            if (($opt->id >= -1 || $opt->type === "intrinsic2")
+                && (!$user || $user->can_view_option($this->prow, $opt))) {
+                $ov = $prow->force_option($opt);
+                $oj = $opt->value_unparse_json($ov, $this);
+                if ($oj !== null) {
+                    if ($this->export_ids) {
+                        $pj->{$opt->field_key()} = $oj;
+                    } else {
+                        $pj->{$opt->json_key()} = $oj;
+                    }
+                }
+            }
+        }
+
+        $can_view_authors = !$user || $user->can_view_authors($prow);
+        if ($can_view_authors) {
+            $pj->authors = array();
+            foreach ($prow->author_list() as $au) {
+                $aux = (object) array();
+                if ($au->email !== "") {
+                    $aux->email = $au->email;
+                }
+                if ($au->firstName !== "") {
+                    $aux->first = $au->firstName;
+                }
+                if ($au->lastName !== "") {
+                    $aux->last = $au->lastName;
+                }
+                if ($au->affiliation !== "") {
+                    $aux->affiliation = $au->affiliation;
+                }
+                $pj->authors[] = $aux;
+            }
+
+            $ocontacts = array();
+            foreach ($prow->contacts(true) as $cflt) {
+                assert($cflt->conflictType >= CONFLICT_AUTHOR);
+                $aux = (object) ["email" => $cflt->email];
+                /*if ($cflt->firstName) {
+                    $aux->first = $cflt->firstName;
+                }
+                if ($cflt->lastName) {
+                    $aux->last = $cflt->lastName;
+                }
+                if ($cflt->affiliation) {
+                    $aux->affiliation = $cflt->affiliation;
+                }*/
+                $ocontacts[] = $aux;
+            }
+            if (!empty($ocontacts)) {
+                $pj->contacts = $ocontacts;
+            }
+        }
 
         $submitted_status = "submitted";
         if ($prow->outcome != 0 && $user->can_view_decision($prow)) {
             $pj->decision = $this->conf->decision_name($prow->outcome);
             if ($pj->decision === false) {
                 $pj->decision = (int) $prow->outcome;
-                $submitted_status = $pj->decision > 0 ? "accepted" : "rejected";
-            } else {
-                $submitted_status = $pj->decision;
             }
+            $submitted_status = $pj->decision > 0 ? "accepted" : "rejected";
         }
 
         if ($prow->timeWithdrawn > 0) {
@@ -251,121 +302,9 @@ class PaperStatus extends MessageSet {
             $pj->submitted_at = $t;
         }
 
-        $can_view_authors = !$user
-            || $user->can_view_authors($prow);
-        if ($can_view_authors) {
-            $contacts = array();
-            foreach ($prow->named_contacts() as $cflt) {
-                $contacts[strtolower($cflt->email)] = $cflt;
-            }
-
-            $pj->authors = array();
-            foreach ($prow->author_list() as $au) {
-                $aux = (object) array();
-                if ($au->email !== "") {
-                    $aux->email = $au->email;
-                }
-                if ($au->firstName !== "") {
-                    $aux->first = $au->firstName;
-                }
-                if ($au->lastName !== "") {
-                    $aux->last = $au->lastName;
-                }
-                if ($au->affiliation !== "") {
-                    $aux->affiliation = $au->affiliation;
-                }
-                $lemail = strtolower((string) $au->email);
-                if ($lemail
-                    && ($cflt = $contacts[$lemail] ?? null)
-                    && $cflt->conflictType >= CONFLICT_AUTHOR) {
-                    $aux->contact = true;
-                    unset($contacts[$lemail]);
-                }
-                $pj->authors[] = $aux;
-            }
-
-            $other_contacts = array();
-            foreach ($contacts as $cflt) {
-                if ($cflt->conflictType >= CONFLICT_AUTHOR) {
-                    $aux = (object) ["email" => $cflt->email];
-                    if ($cflt->firstName) {
-                        $aux->first = $cflt->firstName;
-                    }
-                    if ($cflt->lastName) {
-                        $aux->last = $cflt->lastName;
-                    }
-                    if ($cflt->affiliation) {
-                        $aux->affiliation = $cflt->affiliation;
-                    }
-                    $other_contacts[] = $aux;
-                }
-            }
-            if (!empty($other_contacts)) {
-                $pj->contacts = $other_contacts;
-            }
-        }
-
-        if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL) {
-            $pj->nonblind = !$prow->blind;
-        }
-
-        if ($prow->abstract_text() !== "" || !$this->conf->opt("noAbstract")) {
-            $pj->abstract = $prow->abstract_text();
-        }
-
-        $topics = array();
-        foreach ($prow->topic_map() as $tid => $tname) {
-            $topics[$this->export_ids ? $tid : $tname] = true;
-        }
-        if (!empty($topics)) {
-            $pj->topics = (object) $topics;
-        }
-
-        if ($prow->paperStorageId > 1
-            && (!$user || $user->can_view_pdf($prow))
-            && ($doc = $this->document_to_json(DTYPE_SUBMISSION, (int) $prow->paperStorageId, "paper"))) {
-            $pj->submission = $doc;
-        }
-
-        if ($prow->finalPaperStorageId > 1
-            && (!$user || $user->can_view_pdf($prow))
-            && ($doc = $this->document_to_json(DTYPE_FINAL, (int) $prow->finalPaperStorageId, "final"))) {
-            $pj->final = $doc;
-        }
         if ($prow->timeFinalSubmitted > 0) {
             $pj->final_submitted = true;
             $pj->final_submitted_at = (int) $prow->timeFinalSubmitted;
-        }
-
-        $options = array();
-        foreach ($this->conf->options() as $o) {
-            if ($user && !$user->can_edit_option($prow, $o)) {
-                continue;
-            }
-            $ov = $prow->force_option($o);
-            $oj = $o->value_unparse_json($ov, $this);
-            if ($oj !== null) {
-                $options[$this->export_ids ? $o->id : $o->json_key()] = $oj;
-            }
-        }
-        if (!empty($options)) {
-            $pj->options = (object) $options;
-        }
-
-        if ($can_view_authors) {
-            $confset = $this->conf->conflict_types();
-            $pcconflicts = array();
-            foreach ($prow->pc_conflicts(true) as $id => $cflt) {
-                if (($ct = Conflict::noncontact_part($cflt->conflictType))) {
-                    $pcconflicts[$cflt->email] = $confset->unparse_json($ct);
-                }
-            }
-            if (!empty($pcconflicts)) {
-                $pj->pc_conflicts = (object) $pcconflicts;
-            }
-            if (($collab = $prow->collaborators()) !== "") {
-                $pj->collaborators = $collab;
-            }
         }
 
         $this->ignore_msgs = $original_no_msgs;
@@ -1192,6 +1131,7 @@ class PaperStatus extends MessageSet {
                     && !$u->is_disabled()) {
                     $this->_created_contacts[] = $u;
                 }
+                $this->diffs["contacts"] = true;
             } else if (!($flags & Contact::SAVE_IMPORT)) {
                 if ($c->contact_index >= 0) {
                     $key = "contacts:" . $c->contact_index;
@@ -1215,8 +1155,9 @@ class PaperStatus extends MessageSet {
                 $this->diffs["pc_conflicts"] = true;
             }
             if (($cv[0] ^ self::new_conflict_value($cv)) >= CONFLICT_AUTHOR) {
-                $this->diffs["contacts"] = true;
-                if ($cv[0] < CONFLICT_AUTHOR) {
+                if ($cv[0] >= CONFLICT_AUTHOR) {
+                    $this->diffs["contacts"] = true;
+                } else {
                     $new_contact_lemail[] = $lemail;
                 }
             }
