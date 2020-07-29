@@ -2034,6 +2034,7 @@ class Conf {
                 "isChair" => 1, "isPC" => 1, "is_site_contact" => 1,
                 "contactTags" => null
             ], $this);
+            $this->_root_user->set_overrides(Contact::OVERRIDE_CONFLICT);
         }
         return $this->_root_user;
     }
