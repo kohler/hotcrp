@@ -172,6 +172,17 @@ class Reviews_SettingRenderer {
         }
         echo "</div>\n";
 
+
+        $hint = "";
+        if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
+            $hint = '<p class="settings-ag f-h">' . $sv->setting_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
+        }
+        $sv->echo_radio_table("pc_seeblindrev", [0 => "Yes",
+                1 => "Only after completing a review for the same submission"],
+            'Can PC members see <strong>reviewer names<span class="fn2"> and comments</span></strong> except for conflicts?',
+            ["after" => $hint, "fold" => 1]);
+
+
         $hint = "";
         if ($sv->conf->has_any_metareviews()) {
             $hint .= ' Metareviewers can always see associated reviews and reviewer names.';
@@ -187,22 +198,12 @@ class Reviews_SettingRenderer {
                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
                   Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same submission"],
-            'Can PC members <strong>see all reviews<span class="fx2"> and comments</span></strong> except for conflicts?',
+            'Can PC members see <strong>review contents<span class="fx2"> and comments</span></strong> except for conflicts?',
             ["after" => $hint, "fold" => Conf::PCSEEREV_IFCOMPLETE]);
 
         echo '<div class="form-nearby form-g">';
         $sv->echo_checkbox("lead_seerev", "Discussion leads can always see submitted reviews and reviewer names");
         echo '</div>';
-
-
-        $hint = "";
-        if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
-            $hint = '<p class="settings-ag f-h">' . $sv->setting_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
-        }
-        $sv->echo_radio_table("pc_seeblindrev", [0 => "Yes",
-                1 => "Only after completing a review for the same submission"],
-            'Can PC members see <strong><span class="fn2">comments and </span>reviewer names</strong> except for conflicts?',
-            ["after" => $hint, "fold" => 1]);
 
 
         echo '<div class="form-g">';

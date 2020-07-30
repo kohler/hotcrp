@@ -212,12 +212,11 @@ administrator’s identity.</p>\n\n";
   "; authors are informed via email of any review changes.</p></li>\n";
 
         } else if ($gj->itemid === 2) {
-            echo "<li><p>Set <strong>", $hth->setting_link("PC can see all reviews", "pc_seeallrev"),
-  "</strong> if you haven’t already, allowing the program
-  committee to see reviews and scores for
-  non-conflicted papers.  (During most conferences’ review periods, a PC member
-  can see a paper’s reviews only after completing their own
-  review for that paper.  This supposedly reduces bias.)</p></li>\n";
+            echo "<li><p>Set <strong>", $hth->setting_link("PC can see review contents", "pc_seeallrev"),
+  "</strong> to “Yes” (optional). This opens up the reviews to the program committee,
+  allowing everyone to see scores and read reviews for non-conflicted papers.
+  (During most conferences’ review periods, a PC member can see a paper’s reviews
+  only after completing their own review for that paper.)</p></li>\n";
 
         } else if ($gj->itemid === 3) {
             echo "<li><p><strong>", $hth->search_link("Examine paper scores", "show:scores"),
