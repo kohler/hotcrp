@@ -1370,7 +1370,6 @@ class PaperTable {
             $name = $au->name();
         }
         $reqidx = $au && $au->author_index ? $au->author_index : '$';
-        error_log("$email $reqidx");
         return '<div class="'
             . ($reqov ? $reqov->message_set()->control_class("contacts:$reqidx", "checki") : "checki")
             . '"><span class="checkc">'
