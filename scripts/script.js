@@ -1145,6 +1145,7 @@ function form_highlight(form, elt) {
 
 function hiliter_children(form) {
     form = $(form)[0];
+    addClass(form, "want-diff-alert");
     form_highlight(form);
     $(form).on("change input", "input, select, textarea", function () {
         if (!hasClass(this, "ignore-diff") && !hasClass(form, "ignore-diff"))
@@ -3320,7 +3321,7 @@ handle_ui.on("js-email-populate", function () {
         function handle(e, v) {
             if (placeholder)
                 e.setAttribute("placeholder", v);
-            else if (e.value === "" || e.value === e.defaultValue)
+            else if (e.value === "" || e.value === input_default_value(e))
                 e.value = e.defaultValue = v;
         }
         fn && handle(fn, data.firstName || "");
@@ -3405,6 +3406,12 @@ function row_order_change(e, delta, action) {
         min_rows = Math.max(+$tbody.attr("data-min-rows") || 0, 1),
         autogrow = $tbody.attr("data-row-order-autogrow");
 
+    var defaults = {};
+    $tbody.find("input, select, textarea").each(function () {
+        if (this.name)
+            defaults[this.name] = input_default_value(this);
+    });
+
     if (action < 0) {
         tooltip.erase();
         $r.remove();
@@ -3468,10 +3475,21 @@ function row_order_change(e, delta, action) {
                 } else
                     new_index = i;
             }
-            if (m && m[2] != new_index)
-                this.setAttribute("name", m[1] + new_index);
+            if (m && m[2] != new_index) {
+                this.name = m[1] + new_index;
+                if (this.name in defaults) {
+                    if (input_is_checkboxlike(this))
+                        this.setAttribute("data-default-checked", defaults[this.name] ? "true" : "false");
+                    else
+                        this.setAttribute("data-default-value", defaults[this.name]);
+                }
+            }
         });
     }
+
+    var form = $tbody[0].closest("form");
+    if (form && hasClass(form, "want-diff-alert"))
+        form_highlight(form);
 }
 
 function row_order_ui(event) {
