@@ -384,7 +384,7 @@ class PaperInfo {
     public $finalPaperStorageId;
     /** @var int */
     public $managerContactId;
-    /** @var ?string */
+    /** @var ?int */
     public $paperFormat;
     public $outcome;
     public $dataOverflow;
@@ -477,6 +477,9 @@ class PaperInfo {
         }
         $this->paperId = (int) $this->paperId;
         $this->managerContactId = (int) $this->managerContactId;
+        if (isset($this->paperFormat)) {
+            $this->paperFormat = (int) $this->paperFormat;
+        }
         if ($contact) {
             if (property_exists($this, "myReviewPermissions")
                 || property_exists($this, "reviewSignatures")) {
@@ -658,7 +661,7 @@ class PaperInfo {
 
     /** @return int */
     function format_of($text, $check_simple = false) {
-        return $this->conf->check_format((int) $this->paperFormat, $check_simple ? $text : null);
+        return $this->conf->check_format($this->paperFormat, $check_simple ? $text : null);
     }
 
     /** @return int */
