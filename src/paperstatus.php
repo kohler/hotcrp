@@ -40,6 +40,7 @@ class PaperStatus extends MessageSet {
     private $_nnprow;
     private $_paper_upd;
     private $_paper_overflow_upd;
+    /** @var ?list<int> */
     public $_topic_ins; // set by Topics_PaperOption
     /** @var associative-array<int,PaperValue> */
     private $_field_values;
@@ -51,8 +52,11 @@ class PaperStatus extends MessageSet {
     private $_conflict_ins;
     /** @var ?list<Author> */
     private $_register_users;
+    /** @var ?list<Contact> */
     private $_created_contacts;
+    /** @var bool */
     private $_paper_submitted;
+    /** @var bool */
     private $_documents_changed;
     private $_joindocs;
 
@@ -614,6 +618,16 @@ class PaperStatus extends MessageSet {
             }
         }
 
+        // Inherit contactness
+        if (isset($xpj->authors) && $this->prow) {
+            foreach ($this->prow->contacts(true) as $cflt) {
+                if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR
+                    && ($aux = $au_by_lemail[strtolower($cflt->email)] ?? null)) {
+                    $aux->conflictType |= CONFLICT_CONTACTAUTHOR;
+                }
+            }
+        }
+
         // load previous conflicts
         // old conflicts
         if ($this->prow) {
@@ -623,16 +637,6 @@ class PaperStatus extends MessageSet {
             if (!$this->user->allow_administer($this->prow)
                 && $this->prow->conflict_type($this->user) === CONFLICT_AUTHOR) {
                 $this->update_conflict_value(strtolower($this->user->email), CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
-            }
-        }
-
-        // Inherit contactness
-        if (isset($xpj->authors) && $this->prow) {
-            foreach ($this->prow->contacts(true) as $cflt) {
-                if ($cflt->conflictType >= CONFLICT_CONTACTAUTHOR
-                    && ($aux = $au_by_lemail[strtolower($cflt->email)] ?? null)) {
-                    $aux->conflictType |= CONFLICT_CONTACTAUTHOR;
-                }
             }
         }
 
@@ -795,9 +799,10 @@ class PaperStatus extends MessageSet {
         if (isset($ps->_topic_ins)) {
             $ps->conf->qe("delete from PaperTopic where paperId=?", $ps->paperId);
             if (!empty($ps->_topic_ins)) {
-                $ti = array_map(function ($tid) use ($ps) {
-                    return [$ps->paperId, $tid];
-                }, $ps->_topic_ins);
+                $ti = [];
+                foreach ($ps->_topic_ins as $tid) {
+                    $ti[] = [$ps->paperId, $tid];
+                }
                 $ps->conf->qe("insert into PaperTopic (paperId,topicId) values ?v", $ti);
             }
         }

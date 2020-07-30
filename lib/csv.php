@@ -687,6 +687,7 @@ class CsvGenerator {
     function add_row($row) {
         if (!empty($row)) {
             $is_array = is_array($row);
+            assert(is_array($row));
             if (!$is_array) {
                 $row = (array) $row;
             }
