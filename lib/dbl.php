@@ -57,27 +57,30 @@ class Dbl_MultiResult {
     private $dblink;
     private $flags;
     private $qstr;
-    private $more;
 
     function __construct(mysqli $dblink, $flags, $qstr, $result) {
         $this->dblink = $dblink;
-        $this->flags = $flags;
+        $this->flags = $flags | Dbl::F_MULTI | ($result ? Dbl::F_MULTI_OK : 0);
         $this->qstr = $qstr;
-        $this->more = $result;
     }
     /** @return false|Dbl_Result */
     function next() {
         // XXX does processing stop at first error?
-        if ($this->more === null) {
-            $this->more = $this->dblink->more_results() ? $this->dblink->next_result() : -1;
-        }
-        if ($this->more === -1) {
-            return false;
-        } else if ($this->more) {
+        if ($this->flags & Dbl::F_MULTI_OK) {
             $result = $this->dblink->store_result();
-            $this->more = null;
-        } else {
+        } else if ($this->flags & Dbl::F_MULTI) {
             $result = false;
+        } else {
+            return false;
+        }
+        if ($this->dblink->more_results()) {
+            if ($this->dblink->next_result()) {
+                $this->flags |= Dbl::F_MULTI_OK;
+            } else {
+                $this->flags &= ~Dbl::F_MULTI_OK;
+            }
+        } else {
+            $this->flags &= ~(Dbl::F_MULTI | Dbl::F_MULTI_OK);
         }
         return Dbl::do_result($this->dblink, $this->flags, $this->qstr, $result);
     }
@@ -95,8 +98,9 @@ class Dbl {
     const F_ERROR = 8;
     const F_ALLOWERROR = 16;
     const F_MULTI = 32;
-    const F_ECHO = 64;
-    const F_NOEXEC = 128;
+    const F_MULTI_OK = 64; // internal
+    const F_ECHO = 128;
+    const F_NOEXEC = 256;
 
     static public $nerrors = 0;
     static public $default_dblink;
