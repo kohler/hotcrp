@@ -486,6 +486,11 @@ function pc_conflict_keys($prow) {
 function pc_conflict_types($prow) {
     return array_map(function ($cflt) { return $cflt->conflictType; }, $prow->pc_conflicts());
 }
+function contact_emails($prow) {
+    $e = array_map(function ($cflt) { return $cflt->email; }, $prow->contacts(true));
+    sort($e);
+    return $e;
+}
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId]);
 xassert_eqq(pc_conflict_types($nprow1), [$user_estrin->contactId => CONFLICT_CONTACTAUTHOR]);
 
@@ -632,6 +637,30 @@ xassert_eqq($new_user2->lastName, "Gestrin");
 $nprow1->invalidate_conflicts();
 xassert(!$nprow1->has_author($new_user));
 xassert($nprow1->has_author($new_user2));
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1]), $nprow1, $user_estrin, "submit");
+$ps->save_paper_json($pj);
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), [], true);
+$nprow1->invalidate_conflicts();
+xassert_array_eqq(contact_emails($nprow1), ["estrin@usc.edu", "gestrin@gusc.gedu"], true);
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "atten@_.com", "contacts:active_1" => 1]), $nprow1, $user_estrin, "submit");
+$ps->save_paper_json($pj);
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+$nprow1->invalidate_conflicts();
+xassert_array_eqq(contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu", "gestrin@gusc.gedu"], true);
+$user_atten = $Conf->checked_user_by_email("ATTEN@_.coM");
+xassert_eqq($nprow1->conflict_type($user_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "gestrin@gusc.gedu", "contacts:email_2" => "atten@_.com"]), $nprow1, $user_estrin, "submit");
+$ps->save_paper_json($pj);
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+$nprow1->invalidate_conflicts();
+xassert_array_eqq(contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu"], true);
+xassert_eqq($nprow1->conflict_type($user_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
 
 // check some content_text_signature functionality
 $doc = new DocumentInfo(["content" => "ABCdefGHIjklMNO"], $Conf);
