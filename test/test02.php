@@ -1367,4 +1367,17 @@ xassert_eqq(GMPShim::scan1($a, 0), 63);
 xassert_eqq(GMPShim::scan1($a, 63), 63);
 xassert_eqq(GMPShim::scan1($a, 64), 127);
 
+// multiquery errors
+$mresult = Dbl::multi_q("select 0 from dual; select u2410ufwqoidvhslaihwqhwf from ahselhg1huql; select 1 from dual");
+$result = $mresult->next();
+xassert($result instanceof mysqli_result);
+xassert_array_eqq($result->fetch_row(), ["0"]);
+Dbl::free($result);
+$result = $mresult->next();
+xassert_neqq($result->errno, 0);
+xassert_eqq($result->fetch_row(), null);
+Dbl::free($result);
+$result = $mresult->next();
+xassert_eqq($result, false);
+
 xassert_exit();
