@@ -1413,19 +1413,25 @@ class PaperTable {
         $foundreqau = [];
         foreach ($contacts as $au) {
             $foundreqau[] = $reqau = $option->value_by_email($reqov, $au->email);
-            $fixed = $au->contactId > 0 && ($au->conflictType & CONFLICT_AUTHOR) !== 0;
             echo '<div class="',
                 $reqau && $reqau->author_index
                     ? $this->control_class("contacts:{$reqau->author_index}", "checki")
                     : "checki",
                 '"><label><span class="checkc">',
-                Ht::hidden("contacts:email_$cidx", $au->email),
-                Ht::checkbox("contacts:active_$cidx", 1, $reqau || $fixed,
-                    ["data-default-checked" => $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR,
-                     "disabled" => $fixed, "id" => false]),
-                '</span>',
-                Text::nameo_h($au, NAME_E),
-                $au->conflictType & CONFLICT_AUTHOR ? '' : ' (<em>non-author</em>)';
+                Ht::hidden("contacts:email_$cidx", $au->email);
+            if (($au->contactId > 0 && ($au->conflictType & CONFLICT_AUTHOR) !== 0)
+                || ($au->contactId === $this->user->contactId && $ov->prow->paperId <= 0)) {
+                echo Ht::hidden("contacts:active_$cidx", 1),
+                    Ht::checkbox(null, 1, true, ["disabled" => true, "id" => false]);
+            } else {
+                echo Ht::checkbox("contacts:active_$cidx", 1, !!$reqau,
+                    ["data-default-checked" => $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR, "id" => false]);
+            }
+            echo '</span>', Text::nameo_h($au, NAME_E);
+            if (($au->conflictType & CONFLICT_AUTHOR) === 0
+                && $ov->prow->paperId > 0) {
+                echo ' (<em>non-author</em>)';
+            }
             if ($this->user->privChair
                 && $au->contactId !== $this->user->contactId) {
                 echo ' ', actas_link($au);

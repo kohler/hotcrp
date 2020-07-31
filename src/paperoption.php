@@ -1018,10 +1018,6 @@ class PaperOption implements Abbreviator {
 
     function value_force(PaperValue $ov) {
     }
-    /** @return ?PaperValue */
-    function value_initial(PaperInfo $prow) {
-        return null;
-    }
     /** @return bool */
     function value_present(PaperValue $ov) {
         return !!$ov->value;

@@ -452,29 +452,21 @@ class Contacts_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
     }
-    /** @param array<int,Author> $ca */
-    static function value_fill(PaperValue $ov, $ca) {
+    function value_force(PaperValue $ov) {
         // $ov->value_list: contact IDs
         // $ov->data_list: emails
         // $ov->anno("users"): list<Author>
         // $ov->anno("bad_users"): list<Author>
-        $ca = array_filter($ca, function ($c) { return $c->contactId > 0; });
-        $va = array_map(function ($c) { return $c->email; }, $ca);
-        /** @phan-suppress-next-line PhanTypeMismatchArgument */
+        // NB fake papers start out with this user as contact
+        $ca = $va = [];
+        foreach ($ov->prow->contacts(true) as $cflt) {
+            if ($cflt->contactId > 0) {
+                $ca[] = $cflt;
+                $va[$cflt->contactId] = $cflt->email;
+            }
+        }
         $ov->set_value_data(array_keys($va), array_values($va));
         $ov->set_anno("users", array_values($ca));
-    }
-    function value_force(PaperValue $ov) {
-        // Papers with 0 paperId have contacts array prepopulated
-        // with the paper creator, so that permission checks work.
-        // We can't use that prepopulated array: the database says there
-        // are no contacts.
-        self::value_fill($ov, $ov->prow->paperId ? $ov->prow->contacts(true) : []);
-    }
-    function value_initial(PaperInfo $prow) {
-        $ov = PaperValue::make($prow, $this);
-        self::value_fill($ov, $ov->prow->contacts(true));
-        return $ov;
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $ca = [];
@@ -495,7 +487,9 @@ class Contacts_PaperOption extends PaperOption {
     }
     function value_check(PaperValue $ov, Contact $user) {
         if ($ov->anno("modified")) {
-            if (!count($ov->value_list())) {
+            if (count($ov->value_list()) === 0
+                && $ov->prow->paperId > 0
+                && count($ov->prow->contacts()) > 0) {
                 $ov->error($this->conf->_("Each submission must have at least one contact."));
             }
             if (!$user->allow_administer($ov->prow)
@@ -531,7 +525,7 @@ class Contacts_PaperOption extends PaperOption {
         $i = self::ca_index($ca, $email);
         return $i !== false ? $ca[$i] : null;
     }
-    static function apply_new_users(PaperValue $ov, $new_ca, &$ca) {
+    static private function apply_new_users(PaperValue $ov, $new_ca, &$ca) {
         $bad_ca = [];
         foreach ($new_ca as $c) {
             $c->contactId = 0;

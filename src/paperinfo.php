@@ -428,7 +428,7 @@ class PaperInfo {
     /** @var bool */
     private $_conflict_array_email;
     /** @var ?Contact */
-    private $_paper_owner;
+    private $_paper_creator;
     /** @var ?array<int,ReviewInfo> */
     private $_review_array;
     /** @var int */
@@ -526,7 +526,7 @@ class PaperInfo {
             $prow->topicIds = "";
         $prow->leadContactId = $prow->shepherdContactId = "0";
         $prow->blind = "1";
-        $prow->_paper_owner = $user;
+        $prow->_paper_creator = $user;
         $prow->check_rights_version();
         $ci = PaperContactInfo::make_empty($prow, $user);
         $ci->conflictType = CONFLICT_CONTACTAUTHOR;
@@ -1324,10 +1324,10 @@ class PaperInfo {
                     $this->_conflict_array[$cflt->contactId] = $cflt;
                 }
             }
-        } else if ($this->paperId === 0 && $this->_paper_owner) {
-            $cflt = new Author($this->_paper_owner);
+        } else if ($this->paperId === 0 && $this->_paper_creator) {
+            $cflt = new Author($this->_paper_creator);
             $cflt->paperId = $this->paperId;
-            $cflt->contactId = $this->_paper_owner->contactId;
+            $cflt->contactId = $this->_paper_creator->contactId;
             $cflt->conflictType = CONFLICT_CONTACTAUTHOR;
             $this->_conflict_array = [$cflt->contactId => $cflt];
             $this->_conflict_array_email = true;

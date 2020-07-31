@@ -810,7 +810,7 @@ class PaperStatus extends MessageSet {
 
     static function check_one_option(PaperOption $opt, PaperStatus $ps, $oj) {
         if ($oj === null) {
-            $ov = $ps->prow ? null : $opt->value_initial($ps->_nnprow);
+            $ov = null;
         } else if ($oj instanceof PaperValue) {
             $ov = $oj;
         } else {
@@ -1019,6 +1019,14 @@ class PaperStatus extends MessageSet {
                 $this->_conflict_ins[] = [(int) $row[0], $cv[1], $cv[2]];
             }
             Dbl::free($result);
+        }
+        // if creating a paper, user must always be contact
+        if (!$this->_nnprow->paperId
+            && $this->user->contactId > 0) {
+            // NB ok to have multiple inserters for same user
+            $this->_conflict_ins = $this->_conflict_ins ?? [];
+            $this->_conflict_ins[] = [$this->user->contactId, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR];
+            $this->diffs["contacts"] = true;
         }
     }
 
