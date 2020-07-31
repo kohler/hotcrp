@@ -199,6 +199,8 @@ class Conf {
     public $xt_context;
     private $_xt_allow_checkers;
     public $_xt_allow_callback;
+    /** @var int */
+    private $_xt_checks = 0;
 
     /** @var ?array<string,list<object>> */
     private $_formula_functions;
@@ -1185,11 +1187,14 @@ class Conf {
                     if (isset($xt->deprecated) && $xt->deprecated) {
                         error_log("{$this->dbname}: deprecated extension for `{$iname}`\n" . debug_string_backtrace());
                     }
-                    if (isset($xt->alias) && is_string($xt->alias) && !$noalias) {
+                    if (!isset($xt->alias) || !is_string($xt->alias) || $noalias) {
+                        ++$this->_xt_checks;
+                        if ($this->xt_checkf($xt, $user)) {
+                            return $xt;
+                        }
+                    } else {
                         $name = $xt->alias;
                         break;
-                    } else if ($this->xt_checkf($xt, $user)) {
-                        return $xt;
                     }
                 }
             }
@@ -5002,8 +5007,12 @@ class Conf {
         if ($name === "" || $name[0] === "?") {
             return [];
         }
+        $nchecks = $this->_xt_checks;
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
         $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i");
+        if (empty($ufs) || $ufs === [null]) {
+            PaperColumn::column_error($user, $nchecks === $this->_xt_checks ? "No matching field." : "You can’t view that field.", true);
+        }
         return array_values(array_filter($ufs, "Conf::xt_resolve_require"));
     }
 

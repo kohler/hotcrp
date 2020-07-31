@@ -8,36 +8,44 @@ class SearchConfig_API {
         if ($report !== "pl" && $report !== "pf") {
             return new JsonResult(400, "Bad request.");
         }
-        if ($qreq->method() !== "GET" && $user->privChair) {
+        $search = new PaperSearch($user, "NONE");
+
+        if ($qreq->method() === "POST" && $user->privChair) {
             if (!isset($qreq->display)) {
                 return new JsonResult(400, "Bad request.");
             }
-            $base_display = "";
-            if ($report === "pl") {
-                $base_display = $user->conf->review_form()->default_display();
+            $pl = new PaperList($report, $search, ["sort" => true]);
+            $pl->apply_view_report_default();
+            $default_view = $pl->unparse_view(true);
+            $pl->parse_view($qreq->display, PaperList::VIEWORIGIN_EXPLICIT);
+            $parsed_view = $pl->unparse_view(true);
+
+            // check for errors
+            $pl->table_html();
+            if ($pl->message_set()->has_error()) {
+                return new JsonResult([
+                    "ok" => false,
+                    "errors" => $pl->message_set()->error_texts()
+                ]);
             }
-            $display = simplify_whitespace($qreq->display);
-            if ($display === $base_display) {
+
+            if ($parsed_view === $default_view) {
                 $user->conf->save_setting("{$report}display_default", null);
             } else {
-                $user->conf->save_setting("{$report}display_default", 1, $display);
+                $user->conf->save_setting("{$report}display_default", 1, join(" ", $parsed_view));
             }
             $user->save_session("{$report}display", null);
         }
 
-        $search = new PaperSearch($user, "NONE");
         $pl = new PaperList($report, $search, ["sort" => true]);
-        $vb = $pl->viewer_list();
-
-        $pl = new PaperList($report, $search, ["sort" => true]);
-        $pl->add_report_default_view();
-        $vd = PaperList::viewer_diff($pl->viewer_list(), $vb);
+        $pl->apply_view_report_default();
+        $vd = $pl->unparse_view(true);
 
         $search = new PaperSearch($user, $qreq->q ?? "NONE");
         $pl = new PaperList($report, $search, ["sort" => $qreq->sort ?? true]);
-        $pl->add_report_default_view();
-        $pl->add_session_view();
-        $vr = PaperList::viewer_diff($pl->viewer_list(), $vb);
+        $pl->apply_view_report_default();
+        $pl->apply_view_session();
+        $vr = $pl->unparse_view(true);
 
         return new JsonResult([
             "ok" => true, "report" => $report,

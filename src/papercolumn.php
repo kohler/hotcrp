@@ -37,9 +37,13 @@ class PaperColumn extends Column {
         }
         return $pc;
     }
-    static function column_error(Contact $user, $msg) {
-        assert($user->conf->xt_context instanceof PaperList);
-        $user->conf->xt_context->column_error($msg);
+    /** @param string $msg
+     * @param bool $is_default */
+    static function column_error(Contact $user, $msg, $is_default = false) {
+        $c = $user->conf->xt_context;
+        if ($c instanceof PaperList) {
+            $c->column_error($msg, $is_default);
+        }
     }
 
 
@@ -408,13 +412,16 @@ class Authors_PaperColumn extends PaperColumn {
         if ($decor === "full" || $decor === "short") {
             $this->aufull = $decor === "full";
             return $this->__add_decoration($this->aufull ? "full" : null, ["full"]);
+        } else if ($decor === "anon" || $decor === "noanon") {
+            $this->anonau = $decor === "anon";
+            return $this->__add_decoration($this->anonau ? "anon" : "noanon", ["anon", "noanon"]);
         } else {
             return parent::add_user_sort_decoration($decor) || parent::add_decoration($decor);
         }
     }
     function prepare(PaperList $pl, $visible) {
-        $this->aufull = $this->aufull ?? $pl->showing("aufull");
-        $this->anonau = $pl->showing("anonau");
+        $this->aufull = $this->aufull ?? $pl->viewing("aufull");
+        $this->anonau = $this->anonau ?? $pl->viewing("anonau");
         $this->highlight = $pl->search->field_highlighter("authorInformation");
         return $pl->user->can_view_some_authors();
     }

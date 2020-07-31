@@ -248,8 +248,9 @@ $search = new PaperSearch($Me, [
     "pageurl" => $Conf->hoturl_site_relative_raw("reviewprefs")
 ]);
 $pl = new PaperList("pf", $search, ["sort" => true], $Qreq);
-$pl->add_report_default_view();
-$pl->add_session_view();
+$pl->apply_view_report_default();
+$pl->apply_view_session();
+$pl->apply_view_qreq();
 $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
 $pl_text = $pl->table_html(["fold_session_prefix" => "pfdisplay.",
                       "footer_extra" => "<div id=\"plactr\">" . Ht::submit("fn", "Save changes", ["data-default-submit-all" => 1, "value" => "saveprefs"]) . "</div>",
@@ -259,7 +260,7 @@ $pl_text = $pl->table_html(["fold_session_prefix" => "pfdisplay.",
 // DISPLAY OPTIONS
 echo Ht::form($Conf->hoturl("reviewprefs"), [
     "method" => "get", "id" => "searchform",
-    "class" => "has-fold fold10" . ($pl->showing("authors") ? "o" : "c")
+    "class" => "has-fold fold10" . ($pl->viewing("authors") ? "o" : "c")
 ]);
 
 if ($Me->privChair) {
@@ -290,7 +291,7 @@ echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="e
 function show_pref_element($pl, $name, $text, $extra = []) {
     return '<li class="' . rtrim("checki " . ($extra["item_class"] ?? ""))
         . '"><span class="checkc">'
-        . Ht::checkbox("show$name", 1, $pl->showing($name), [
+        . Ht::checkbox("show$name", 1, $pl->viewing($name), [
             "class" => "uich js-plinfo ignore-diff" . (isset($extra["fold_target"]) ? " js-foldup" : ""),
             "data-fold-target" => $extra["fold_target"] ?? null
         ]) . "</span>" . Ht::label($text) . '</span>';

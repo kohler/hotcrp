@@ -3143,11 +3143,11 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
     if (event_modkey(event) || event_key(event) !== "Enter") {
         return;
     }
-    var $f = $(event.target).closest("form"),
-        type = $f.data("autosubmitType"),
-        defaulte = $f[0] ? $f[0]["default"] : null;
+    var f = event.target.closest("form"),
+        type = $(f).data("autosubmitType"),
+        defaulte = f ? f.elements["default"] : null;
     if (defaulte && type) {
-        $f[0].defaultact.value = type;
+        f.elements.defaultact.value = type;
         event.target.blur();
         defaulte.click();
     }
@@ -3159,6 +3159,15 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
 
 handle_ui.on("js-submit-mark", function (event) {
     $(this).closest("form").data("submitMark", event.target.value);
+});
+
+handle_ui.on("js-keydown-enter-submit", function (event) {
+    if (event.type === "keydown"
+        && !(event_modkey(event) & (event_modkey.SHIFT | event_modkey.ALT))
+        && event_key(event) === "Enter") {
+        $(event.target.closest("form")).trigger("submit");
+        event.preventDefault();
+    }
 });
 
 
@@ -8513,8 +8522,22 @@ handle_ui.on("js-edit-view-options", function () {
         $.ajax(hoturl_post("api/viewoptions"), {
             method: "POST", data: $(this).serialize(),
             success: function (data) {
-                if (data.ok)
+                if (data.ok) {
                     $d.close();
+                    location.reload();
+                } else {
+                    var ta = $d.find("[name=display]")[0];
+                    while (ta.previousSibling
+                           && hasClass(ta.previousSibling, "feedback")) {
+                        ta.parentElement.removeChild(ta.previousSibling);
+                    }
+                    data.errors = data.errors || ["Error saving view options."];
+                    for (var i in data.errors) {
+                        $('<p class="feedback is-error">' + data.errors[i] + '</p>').insertBefore(ta);
+                    }
+                    addClass(ta, "has-error");
+                    ta.focus();
+                }
             }
         });
         event.preventDefault();
@@ -8527,7 +8550,7 @@ handle_ui.on("js-edit-view-options", function () {
         hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "(none)") + '</div>');
         hc.pop();
         hc.push('<div class="f-i"><div class="f-c">Current view options</div>', '</div>');
-        hc.push('<textarea class="reportdisplay-current w-99 need-autogrow" name="display" rows="1" cols="60">' + escape_entities(display_current || "") + '</textarea>');
+        hc.push('<textarea class="reportdisplay-current w-99 need-autogrow uikd js-keydown-enter-submit" name="display" rows="1" cols="60">' + escape_entities(display_current || "") + '</textarea>');
         hc.pop();
         hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save options as default</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();

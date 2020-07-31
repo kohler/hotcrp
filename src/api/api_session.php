@@ -81,18 +81,12 @@ class Session_API {
     static function change_display(Contact $user, $report, $settings) {
         $search = new PaperSearch($user, "NONE");
         $pl = new PaperList($report, $search, ["sort" => true]);
-        $pl->add_report_default_view();
-        $vd = $pl->viewer_list();
-
-        $pl = new PaperList($report, $search, ["sort" => true]);
-        $pl->add_report_default_view();
-        $pl->add_session_view();
+        $pl->apply_view_report_default();
+        $pl->apply_view_session();
         foreach ($settings as $k => $v) {
             $pl->set_view($k, $v);
         }
-        $vd = PaperList::viewer_diff($pl->viewer_list(), $vd);
-        $vd = array_filter($vd, function ($x) { return !str_starts_with($x, "sort:"); });
-
+        $vd = array_filter($pl->unparse_view(true), function ($x) { return !str_starts_with($x, "sort:"); });
         $user->save_session("{$report}display", join(" ", $vd));
     }
 }

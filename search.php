@@ -157,11 +157,9 @@ if (isset($Qreq->q)) {
 }
 assert(!isset($Qreq->display));
 $pl = new PaperList("pl", $Search, ["sort" => true], $Qreq);
-$pl->add_report_default_view();
-$pl->add_session_view();
-if (isset($Qreq->forceShow)) {
-    $pl->set_view("force", !!$Qreq->forceShow);
-}
+$pl->apply_view_report_default();
+$pl->apply_view_session();
+$pl->apply_view_qreq();
 if (isset($Qreq->q)) {
     $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
     if ($SSel->count()) {
@@ -200,7 +198,7 @@ class Search_DisplayOptions {
         global $pl;
         $options["class"] = "uich js-plinfo";
         $x = '<label class="checki"><span class="checkc">'
-            . Ht::checkbox("show$type", 1, $pl->showing($type), $options)
+            . Ht::checkbox("show$type", 1, $pl->viewing($type), $options)
             . '</span>' . $title . '</label>';
         $this->item($column, $x);
     }
@@ -457,7 +455,7 @@ if ($pl->count > 0) {
     // Conflict display
     if ($Me->privChair) {
         echo '<td class="padlb">',
-            Ht::checkbox("showforce", 1, $pl->showing("force"),
+            Ht::checkbox("showforce", 1, $pl->viewing("force"),
                          ["id" => "showforce", "class" => "uich js-plinfo"]),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
     }

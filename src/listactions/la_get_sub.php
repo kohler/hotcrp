@@ -118,8 +118,8 @@ class GetCSV_ListAction extends ListAction {
         $search->restrict_match([$ssel, "is_selected"]);
         assert(!isset($qreq->display));
         $pl = new PaperList("pl", $search, ["sort" => true], $qreq);
-        $pl->add_report_default_view();
-        $pl->add_session_view();
+        $pl->apply_view_report_default();
+        $pl->apply_view_session();
         $pl->set_view("sel", false);
         list($header, $data) = $pl->text_csv();
         return $user->conf->make_csvg("data", CsvGenerator::FLAG_ITEM_COMMENTS)

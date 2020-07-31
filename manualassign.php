@@ -202,7 +202,7 @@ echo '<tr><td colspan="2"><div class="aab aabr">',
 function show_ass_element($pl, $name, $text, $extra = []) {
     return '<li class="' . rtrim("checki " . ($extra["item_class"] ?? ""))
         . '"><span class="checkc">'
-        . Ht::checkbox("show$name", 1, $pl->showing($name), [
+        . Ht::checkbox("show$name", 1, $pl->viewing($name), [
             "class" => "uich js-plinfo ignore-diff" . (isset($extra["fold_target"]) ? " js-foldup" : ""),
             "data-fold-target" => $extra["foldup"] ?? null
         ]) . "</span>" . Ht::label($text) . '</li>';
@@ -280,13 +280,15 @@ if ($reviewer) {
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     }
     $pl = new PaperList("reviewAssignment", $search, ["sort" => true], $Qreq);
+    $pl->apply_view_session();
+    $pl->apply_view_qreq();
     echo Ht::form($Conf->hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]), ["class" => "assignpc ignore-diff"]),
         Ht::hidden("t", $Qreq->t),
         Ht::hidden("q", $Qreq->q);
     $rev_rounds = $Conf->round_selector_options(false);
     $expected_round = $Conf->assignment_round_option(false);
 
-    echo '<div id="searchform" class="has-fold fold10', $pl->showing("authors") ? "o" : "c", '">';
+    echo '<div id="searchform" class="has-fold fold10', $pl->viewing("authors") ? "o" : "c", '">';
     if (count($rev_rounds) > 1) {
         echo '<div class="entryi"><label for="assrevround">Review round</label><div class="entry">',
             Ht::select("rev_round", $rev_rounds, $Qreq->rev_round ? : $expected_round, ["id" => "assrevround", "class" => "ignore-diff"]), ' <span class="barsep">·</span> ';
