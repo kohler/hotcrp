@@ -666,7 +666,6 @@ class IntrinsicValue {
             $max_authors = $o->conf->opt("maxAuthors");
             if (!$ov->prow->author_list()
                 && !$ov->prow->allow_absent()) {
-                $ov->error("Entry required.");
                 $ov->msg_at("author1", false, MessageSet::ERROR);
             }
             if ($max_authors > 0
