@@ -198,6 +198,32 @@ xassert_eqq($aus[0]->lastName, "Flay");
 xassert_eqq($aus[0]->email, "flay@_.com");
 xassert($newpaper->timeSubmitted > 0);
 xassert($newpaper->timeWithdrawn <= 0);
+xassert_eqq($newpaper->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+
+// saving explicitly-empty contact list still assigns a contact
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_contacts" => 1]), null, $user_estrin, "update");
+$ps = new PaperStatus($Conf, $user_estrin);
+xassert($ps->prepare_save_paper_json($pj));
+xassert($ps->diffs["title"]);
+xassert($ps->diffs["abstract"]);
+xassert($ps->diffs["authors"]);
+xassert($ps->diffs["contacts"]);
+xassert($ps->execute_save());
+xassert_paper_status($ps);
+
+$newpaperx = $user_estrin->checked_paper_by_id($ps->paperId);
+xassert($newpaperx);
+xassert_eqq($newpaperx->title, "New paper");
+xassert_eqq($newpaperx->abstract, "This is an abstract");
+xassert_eqq($newpaperx->abstract_text(), "This is an abstract");
+xassert_eqq(count($newpaperx->author_list()), 1);
+$aus = $newpaperx->author_list();
+xassert_eqq($aus[0]->firstName, "Bobby");
+xassert_eqq($aus[0]->lastName, "Flay");
+xassert_eqq($aus[0]->email, "flay@_.com");
+xassert($newpaperx->timeSubmitted <= 0);
+xassert($newpaperx->timeWithdrawn <= 0);
+xassert_eqq($newpaperx->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "opt1" => "10", "has_opt1" => "1"]), $newpaper, $user_estrin, "update");
 $ps = new PaperStatus($Conf, $user_estrin);
