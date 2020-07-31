@@ -352,7 +352,7 @@ function update_paper(Qrequest $qreq, $action) {
         }
     }
 
-    $prow = $new_prow;
+    $Conf->paper = $prow = $new_prow;
     return !$ps->has_error();
 }
 
