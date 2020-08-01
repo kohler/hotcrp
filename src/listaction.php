@@ -14,8 +14,7 @@ class ListAction {
     }
 
 
-    /** @param callable(string,object,?Contact,Conf):(?bool) $list_checker
-     * @return GroupedExtensions */
+    /** @return GroupedExtensions */
     static function grouped_extensions(Contact $user) {
         $gex = new GroupedExtensions($user, ["etc/listactions.json"], $user->conf->opt("listActions"));
         foreach ($gex->members("__expand") as $gj) {
@@ -37,7 +36,7 @@ class ListAction {
             return new JsonResult(403, "Missing credentials.");
         }
         $conf = $user->conf;
-        $gex = self::grouped_extensions($user, "ListAction::null_xt_check_list");
+        $gex = self::grouped_extensions($user);
         $conf->_xt_allow_callback = $conf->make_check_api_json($qreq->method());
         $uf = $gex->get($name);
         if (!$uf && ($slash = strpos($name, "/"))) {

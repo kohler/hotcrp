@@ -1081,14 +1081,6 @@ class Conf {
         $this->xt_context = $context;
         return $old;
     }
-    private function xt_check_allow_checkers($e, $xt, $user) {
-        foreach ($this->_xt_allow_checkers as $ch) {
-            if (($x = call_user_func($ch, $e, $xt, $user, $this)) !== null) {
-                return $x;
-            }
-        }
-        return null;
-    }
     function xt_check($expr, $xt, Contact $user = null) {
         foreach (is_array($expr) ? $expr : [$expr] as $e) {
             assert(is_bool($e) || is_string($e));

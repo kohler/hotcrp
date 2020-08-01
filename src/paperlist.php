@@ -1595,7 +1595,7 @@ class PaperList implements XtContext {
             return "";
         }
 
-        $gex = ListAction::grouped_extensions($this->user, [$this, "xt_check_element"]);
+        $gex = ListAction::grouped_extensions($this->user);
         $gex->add_xt_checker([$this, "xt_check_element"]);
         $gex->filter_by("display_if");
         $lllgroups = [];
