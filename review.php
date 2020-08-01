@@ -190,12 +190,15 @@ function downloadForm($qreq) {
     $rrow = $paperTable->rrow;
     $use_request = (!$rrow || $rrow->contactId == $Me->contactId)
         && $prow->review_type($Me) > 0;
-    $text = $rf->textFormHeader(false) . $rf->textForm($prow, $rrow, $Me, $use_request ? $qreq : null);
     $filename = "review-{$prow->paperId}";
     if ($rrow && $rrow->reviewOrdinal) {
         $filename .= unparseReviewOrdinal($rrow->reviewOrdinal);
     }
-    downloadText($text, $filename, false);
+    $Conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
+        ->set_inline(false)
+        ->add_string($rf->textFormHeader(false) . $rf->textForm($prow, $rrow, $Me, $use_request ? $qreq : null))
+        ->download();
+    exit;
 }
 
 if (isset($Qreq->downloadForm)) {
@@ -220,11 +223,13 @@ function download_all_text_reviews() {
         $whyNot = $Me->perm_view_review($prow, null) ? : $prow->make_whynot();
         return Conf::msg_error(whyNotText($whyNot));
     }
-    $text = $Conf->short_name . " Paper #{$prow->paperId} Reviews and Comments\n"
-        . str_repeat("=", 75) . "\n"
-        . prefix_word_wrap("", "Paper #{$prow->paperId} {$prow->title}", 0, 75)
-        . "\n\n" . $text;
-    downloadText($text, "reviews-{$prow->paperId}", true);
+    $Conf->make_csvg("reviews-{$prow->paperId}", CsvGenerator::TYPE_STRING)
+        ->add_string($Conf->short_name . " Paper #{$prow->paperId} Reviews and Comments\n"
+            . str_repeat("=", 75) . "\n"
+            . prefix_word_wrap("", "Paper #{$prow->paperId} {$prow->title}", 0, 75)
+            . "\n\n" . $text)
+        ->download();
+    exit;
 }
 
 function download_one_text_review(ReviewInfo $rrow) {
@@ -233,7 +238,10 @@ function download_one_text_review(ReviewInfo $rrow) {
     if ($rrow->reviewOrdinal) {
         $filename .= unparseReviewOrdinal($rrow->reviewOrdinal);
     }
-    downloadText($rf->unparse_text($prow, $rrow, $Me), $filename, true);
+    $Conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
+        ->add_string($rf->unparse_text($prow, $rrow, $Me))
+        ->download();
+    exit;
 }
 
 if (isset($Qreq->text)) {

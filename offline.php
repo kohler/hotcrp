@@ -15,8 +15,11 @@ if ($Qreq->post && $Qreq->post_empty())
 
 // download blank review form action
 if (isset($Qreq->downloadForm)) {
-    $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n";
-    downloadText($text, "review");
+    $Conf->make_csvg("review", CsvGenerator::TYPE_STRING)
+        ->set_inline(false)
+        ->add_string($rf->textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n")
+        ->download();
+    exit;
 }
 
 

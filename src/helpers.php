@@ -554,7 +554,8 @@ function unparseReviewOrdinal($ord) {
 }
 
 /** @param string $text
- * @param string $filename */
+ * @param string $filename
+ * @deprecated */
 function downloadText($text, $filename, $inline = false) {
     $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
     $csvg->set_filename(Conf::$main->download_prefix . $filename . $csvg->extension());

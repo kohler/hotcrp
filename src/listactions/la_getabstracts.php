@@ -73,7 +73,9 @@ class GetAbstracts_ListAction extends ListAction {
             }
         }
         if (!empty($texts)) {
-            downloadText(join("", $texts), "abstract" . (count($texts) === 1 ? $lastpid : "s"));
+            $filename = "abstract" . (count($texts) === 1 ? $lastpid : "s");
+            return $user->conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
+                ->add_string(join("", $texts));
         }
     }
 }

@@ -471,14 +471,16 @@ class CsvGenerator {
     const TYPE_COMMA = 0;
     const TYPE_PIPE = 1;
     const TYPE_TAB = 2;
+    const TYPE_STRING = 3;
     const FLAG_TYPE = 3;
-    const FLAG_ALWAYS_QUOTE = 4;
-    const FLAG_CRLF = 8;
-    const FLAG_CR = 16;
+    const FLAG_ALWAYS_QUOTE = 8;
+    const FLAG_CRLF = 16;
+    const FLAG_CR = 32;
     const FLAG_LF = 0;
-    const FLAG_ITEM_COMMENTS = 32;
+    const FLAG_ITEM_COMMENTS = 64;
     const FLAG_HEADERS = 256;
-    const FLAG_FLUSHED = 512;
+    const FLAG_HTTP_HEADERS = 512;
+    const FLAG_FLUSHED = 1024;
 
     /** @var int */
     private $type;
@@ -531,6 +533,7 @@ class CsvGenerator {
 
     /** @param int $flags */
     function __construct($flags = self::TYPE_COMMA) {
+        assert($flags === ($flags & 255));
         $this->type = $flags & self::FLAG_TYPE;
         $this->flags = $flags & 255;
         if ($this->flags & self::FLAG_CRLF) {
@@ -545,6 +548,7 @@ class CsvGenerator {
      * @return $this */
     function select($selection, $header = null) {
         assert($this->lines_length === 0 && !($this->flags & self::FLAG_FLUSHED));
+        assert(($this->flags & self::FLAG_TYPE) !== self::TYPE_STRING);
         if ($header === false || $header === []) {
             $this->selection = $selection;
         } else if ($header === true) {
@@ -755,6 +759,7 @@ class CsvGenerator {
 
 
     function download_headers() {
+        assert(($this->flags & self::FLAG_HTTP_HEADERS) === 0);
         if ($this->is_csv()) {
             header("Content-Type: text/csv; charset=utf-8; header=" . ($this->flags & self::FLAG_HEADERS ? "present" : "absent"));
         } else {
@@ -771,6 +776,7 @@ class CsvGenerator {
         header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=" . mime_quote_string($filename));
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
+        $this->flags |= self::FLAG_HTTP_HEADERS;
     }
 
     /** @return int */
@@ -799,6 +805,9 @@ class CsvGenerator {
     }
 
     function download() {
+        if (($this->flags & self::FLAG_HTTP_HEADERS) === 0) {
+            $this->download_headers();
+        }
         if ($this->stream) {
             $this->flush($this->stream);
             Filer::download_file($this->stream_filename, $this->is_csv() ? "text/csv" : "text/plain");

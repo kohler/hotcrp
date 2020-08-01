@@ -53,7 +53,9 @@ class GetRank_ListAction extends ListAction {
                     $lastIndex = $tv;
                 }
             }
-            $text = "action,paper,title
+            return $user->conf->make_csvg("rank", CsvGenerator::TYPE_STRING)
+                ->set_inline(false)
+                ->add_string("action,paper,title
 tag," . CsvGenerator::quote(trim($qreq->tag)) . "
 
 # Edit the rank order by rearranging the following lines.
@@ -65,9 +67,8 @@ tag," . CsvGenerator::quote(trim($qreq->tag)) . "
 # same rank as the preceding paper. Lines starting with \">>\", \">>>\",
 # and so forth indicate rank gaps between papers. When you are done,
 # upload the file here:\n"
-                . "# " . $user->conf->hoturl_absolute("offline", null, Conf::HOTURL_RAW) . "\n\n"
-                . $real . ($real === "" ? "" : "\n") . $null;
-            downloadText($text, "rank");
+                    . "# " . $user->conf->hoturl_absolute("offline", null, Conf::HOTURL_RAW) . "\n\n"
+                    . $real . ($real === "" ? "" : "\n") . $null);
         } else {
             Conf::msg_error($tagger->error_html);
         }

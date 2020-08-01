@@ -15,9 +15,9 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
         $rf = $user->conf->review_form();
         if ($ssel->is_empty()) {
             // blank form
-            $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $user, null) . "\n";
-            downloadText($text, "review");
-            return;
+            return $user->conf->make_csvg("review", CsvGenerator::TYPE_STRING)
+                ->set_inline(false)
+                ->add_string($rf->textFormHeader("blank") . $rf->textForm(null, null, $user, null) . "\n");
         }
 
         $texts = $errors = [];
