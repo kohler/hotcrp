@@ -526,7 +526,7 @@ class PaperTable {
     }
 
     /** @param PaperOption $opt */
-    private function echo_field_hint($opt) {
+    function echo_field_hint($opt) {
         assert(!!$this->edit_status);
         echo $this->messages_at($opt->formid, "feedback");
         $fr = new FieldRender(FieldRender::CFHTML);
@@ -1113,32 +1113,6 @@ class PaperTable {
         }
     }
 
-    /** @param PaperOption $o */
-    function render_topics(FieldRender $fr, $o) {
-        if (!($tmap = $this->prow->topic_map())) {
-            return;
-        }
-        $interests = $this->user->topic_interest_map();
-        $lenclass = count($tmap) < 4 ? "long" : "short";
-        $topics = $this->conf->topic_set();
-        $ts = [];
-        foreach ($tmap as $tid => $tname) {
-            $t = '<li class="topicti';
-            if ($interests) {
-                $t .= ' topic' . ($interests[$tid] ?? 0);
-            }
-            $x = $topics->unparse_name_html($tid);
-            if ($this->user->isPC) {
-                $x = Ht::link($x, $this->conf->hoturl("search", ["q" => "topic:" . SearchWord::quote($tname)]), ["class" => "qq"]);
-            }
-            $ts[] = $t . '">' . $x . '</li>';
-            $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
-        }
-        $fr->title = $o->title(count($ts));
-        $fr->set_html('<ul class="topict topict-' . $lenclass . '">' . join("", $ts) . '</ul>');
-        $fr->value_long = true;
-    }
-
     /** @param PaperOption $o
      * @param int $vos
      * @param FieldRender $fr */
@@ -1362,113 +1336,6 @@ class PaperTable {
     }
 
 
-    private function editable_newcontact_row($anum, $reqov, Author $au = null) {
-        if ($anum === '$') {
-            $name = $email = "";
-        } else {
-            $email = $au->email;
-            $name = $au->name();
-        }
-        $reqidx = $au && $au->author_index ? $au->author_index : '$';
-        return '<div class="'
-            . ($reqov ? $reqov->message_set()->control_class("contacts:$reqidx", "checki") : "checki")
-            . '"><span class="checkc">'
-            . Ht::checkbox("contacts:active_$anum", 1, true, ["data-default-checked" => false, "id" => false])
-            . '</span>'
-            . Ht::entry("contacts:email_$anum", $email, ["size" => 30, "placeholder" => "Email", "class" => $this->control_class("contacts:email_$reqidx", "want-focus js-autosubmit uii js-email-populate ignore-diff"), "autocomplete" => "off", "data-default-value" => ""])
-            . '  '
-            . Ht::entry("contacts:name_$anum", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit ignore-diff", "autocomplete" => "off", "data-default-value" => ""])
-            . $this->messages_at("contacts:$reqidx")
-            . $this->messages_at("contacts:name_$reqidx")
-            . $this->messages_at("contacts:email_$reqidx")
-            . '</div>';
-    }
-
-    /** @param Contacts_PaperOption $option
-     * @param PaperValue $ov
-     * @param PaperValue $reqov */
-    function echo_editable_contact_author($option, $ov, $reqov) {
-        $contacts = $ov->anno("users") ?? [];
-        foreach ($ov->prow->author_list() as $au) {
-            if (!$option->value_by_email($ov, $au->email)
-                && validate_email($au->email)) {
-                $au->conflictType = CONFLICT_AUTHOR;
-                $contacts[] = $au;
-            }
-        }
-        usort($contacts, $this->conf->user_comparator());
-
-        echo '<div class="papeg">',
-            '<div class="', $this->control_class("contacts", "papet"),
-            '" id="contacts"><label class="', $this->control_class("contacts", "papfn", "is-"), '">',
-            $this->edit_title_html($option),
-            '</label></div>';
-
-        // Editable version
-        $this->echo_field_hint($option);
-        echo Ht::hidden("has_contacts", 1),
-            '<div class="papev js-row-order"><div>';
-
-        $cidx = 1;
-        $foundreqau = [];
-        foreach ($contacts as $au) {
-            $foundreqau[] = $reqau = $option->value_by_email($reqov, $au->email);
-            echo '<div class="',
-                $reqau && $reqau->author_index
-                    ? $this->control_class("contacts:{$reqau->author_index}", "checki")
-                    : "checki",
-                '"><label><span class="checkc">',
-                Ht::hidden("contacts:email_$cidx", $au->email);
-            if (($au->contactId > 0 && ($au->conflictType & CONFLICT_AUTHOR) !== 0)
-                || ($au->contactId === $this->user->contactId && $ov->prow->paperId <= 0)) {
-                echo Ht::hidden("contacts:active_$cidx", 1),
-                    Ht::checkbox(null, 1, true, ["disabled" => true, "id" => false]);
-            } else {
-                echo Ht::checkbox("contacts:active_$cidx", 1, !!$reqau,
-                    ["data-default-checked" => $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR, "id" => false]);
-            }
-            echo '</span>', Text::nameo_h($au, NAME_E);
-            if (($au->conflictType & CONFLICT_AUTHOR) === 0
-                && $ov->prow->paperId > 0) {
-                echo ' (<em>non-author</em>)';
-            }
-            if ($this->user->privChair
-                && $au->contactId !== $this->user->contactId) {
-                echo ' ', actas_link($au);
-            }
-            echo '</label></div>';
-            ++$cidx;
-        }
-        echo '</div><div data-row-template="',
-            htmlspecialchars($this->editable_newcontact_row('$', null, null)),
-            '">';
-
-        $reqcontacts = array_merge($reqov->anno("users"), $reqov->anno("bad_users") ?? []);
-        usort($reqcontacts, function ($a, $b) { return $a->author_index - $b->author_index; });
-        foreach ($reqcontacts as $reqau) {
-            if (!in_array($reqau, $foundreqau)) {
-                echo $this->editable_newcontact_row($cidx, $reqov, $reqau);
-                ++$cidx;
-            }
-        }
-        echo '</div><div class="ug">',
-            Ht::button("Add contact", ["class" => "ui row-order-ui addrow"]),
-            "</div></div></div>\n\n";
-    }
-
-    /** @param PaperOption $option
-     * @param PaperValue $ov
-     * @param PaperValue $reqov */
-    function echo_editable_anonymity($option, $ov, $reqov) {
-        if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
-            && $this->editable !== "f") {
-            $heading = '<span class="checkc">' . Ht::checkbox("blind", 1, !$reqov->value, ["data-default-checked" => !$ov->value]) . "</span>" . $this->edit_title_html($option);
-            $this->echo_editable_papt("nonblind", $heading, ["for" => "checkbox", "id" => "nonblind"], $option);
-            $this->echo_field_hint($option);
-            echo Ht::hidden("has_nonblind", 1), "</div>\n\n";
-        }
-    }
-
     private function _papstrip_framework() {
         if (!$this->npapstrip) {
             echo '<article class="pcontainer"><div class="pcard-left',
@@ -1531,61 +1398,6 @@ class PaperTable {
             "</div></div></div>\n\n";
     }
 
-    /** @param PaperOption $option
-     * @param PaperValue $reqov */
-    function echo_editable_topics($option, $reqov) {
-        if (!$this->conf->has_topics()) {
-            return;
-        }
-        $this->echo_editable_papt("topics", $this->edit_title_html($option), ["id" => "topics"], $option);
-        $this->echo_field_hint($option);
-        echo Ht::hidden("has_topics", 1),
-            '<div class="papev"><ul class="ctable">';
-        $ptopics = $this->prow->topic_map();
-        $topics = $this->conf->topic_set();
-        foreach ($topics->group_list() as $tg) {
-            $arg = ["class" => "uic js-range-click topic-entry", "id" => false,
-                    "data-range-type" => "topic"];
-            $isgroup = count($tg) > 2;
-            if ($isgroup) {
-                echo '<li class="ctelt cteltg"><div class="ctelti">';
-                if (strcasecmp($tg[0], $topics[$tg[1]]) === 0) {
-                    $tid = $tg[1];
-                    $arg["data-default-checked"] = isset($ptopics[$tid]);
-                    $checked = in_array($tid, $reqov->value_list());
-                    echo '<label class="checki cteltx"><span class="checkc">',
-                        Ht::checkbox("top$tid", 1, $checked, $arg),
-                        '</span>', htmlspecialchars($tg[0]), '</label>';
-                } else {
-                    echo '<div class="cteltx"><span class="topicg">',
-                        htmlspecialchars($tg[0]), '</span></div>';
-                }
-                echo '<div class="checki">';
-            }
-            for ($i = 1; $i !== count($tg); ++$i) {
-                $tid = $tg[$i];
-                if ($isgroup) {
-                    $tname = htmlspecialchars($topics->subtopic_name($tid));
-                    if ($tname === "")
-                        continue;
-                } else {
-                    $tname = $topics->unparse_name_html($tid);
-                }
-                $arg["data-default-checked"] = isset($ptopics[$tid]);
-                $checked = in_array($tid, $reqov->value_list());
-                echo ($isgroup ? '<label class="checki cteltx">' : '<li class="ctelt"><label class="checki ctelti">'),
-                    '<span class="checkc">',
-                    Ht::checkbox("top$tid", 1, $checked, $arg),
-                    '</span>', $tname, '</label>',
-                    ($isgroup ? '' : '</li>');
-            }
-            if ($isgroup) {
-                echo '</div></div></li>';
-            }
-        }
-        echo "</ul></div></div>\n\n";
-    }
-
     function echo_editable_option_papt(PaperOption $o, $heading = null, $rest = []) {
         if (!$heading) {
             $heading = $this->edit_title_html($o);
@@ -1593,127 +1405,6 @@ class PaperTable {
         $this->echo_editable_papt($o->formid, $heading, $rest, $o);
         $this->echo_field_hint($o);
         echo Ht::hidden("has_{$o->formid}", 1);
-    }
-
-    /** @param PaperOption $option
-     * @param PaperValue $ov
-     * @param PaperValue $reqov */
-    function echo_editable_pc_conflicts($option, $ov, $reqov) {
-        assert(!!$this->conf->setting("sub_pcconf"));
-        if (!$this->conf->setting("sub_pcconf")
-            || ($this->editable === "f" && !$this->admin)) {
-            return;
-        }
-
-        $pcm = $this->conf->full_pc_members();
-        if (empty($pcm)) {
-            return;
-        }
-
-        $selectors = $this->conf->setting("sub_pcconfsel");
-        $confset = $this->conf->conflict_types();
-        $ctypes = [];
-        if ($selectors) {
-            $ctypes[0] = $confset->unparse_text(0);
-            foreach ($confset->basic_conflict_types() as $ct) {
-                $ctypes[$ct] = $confset->unparse_text($ct);
-            }
-            if ($this->admin) {
-                $ctypes["xsep"] = null;
-                $ct = Conflict::set_pinned(Conflict::GENERAL, true);
-                $ctypes[$ct] = $confset->unparse_text($ct);
-            }
-            $author_ctype = $confset->unparse_html(CONFLICT_AUTHOR);
-        }
-
-        $ctmaps = [[], []];
-        foreach ([$ov, $reqov] as $num => $value) {
-            $vs = $value->value_list();
-            $ds = $value->data_list();
-            for ($i = 0; $i !== count($vs); ++$i) {
-                $ctmaps[$num][$vs[$i]] = (int) $ds[$i];
-            }
-        }
-
-        $this->echo_editable_papt("pc_conflicts", $this->edit_title_html($option), ["id" => "pc_conflicts"], $option);
-        $this->echo_field_hint($option);
-        echo Ht::hidden("has_pc_conflicts", 1),
-            '<div class="papev"><ul class="pc-ctable">';
-
-        foreach ($pcm as $id => $p) {
-            $ct = $pct = $ctmaps[0][$p->contactId] ?? 0;
-            if ($this->useRequest) {
-                $ct = $ctmaps[1][$p->contactId] ?? 0;
-            }
-            $pcconfmatch = false;
-            '@phan-var false|array{string,list<string>} $pcconfmatch';
-            if ($this->prow->paperId && $pct < CONFLICT_AUTHOR) {
-                $pcconfmatch = $this->prow->potential_conflict_html($p, $pct <= 0);
-            }
-
-            $label = $this->user->reviewer_html_for($p);
-            if ($p->affiliation) {
-                $label .= '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</span>';
-            }
-
-            echo '<li class="ctelt"><div class="ctelti';
-            if (!$selectors) {
-                echo ' checki';
-            }
-            echo ' clearfix';
-            if (Conflict::is_conflicted($pct)) {
-                echo ' boldtag';
-            }
-            if ($pcconfmatch) {
-                echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($pcconfmatch));
-            }
-            echo '"><label>';
-
-            $js = ["id" => "pcc$id"];
-            if (Conflict::is_author($pct)
-                || (!$this->admin && Conflict::is_pinned($pct))) {
-                if ($selectors) {
-                    echo '<span class="pcconf-editselector"><strong>';
-                    if (Conflict::is_author($pct)) {
-                        echo "Author";
-                    } else if (Conflict::is_conflicted($pct)) {
-                        echo "Conflict"; // XXX conflict type?
-                    } else {
-                        echo "Non-conflict";
-                    }
-                    echo '</strong></span>';
-                } else {
-                    echo '<span class="checkc">', Ht::checkbox(null, 1, Conflict::is_conflicted($pct), ["disabled" => true]), '</span>';
-                }
-                echo Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry", "disabled" => true]);
-            } else if ($selectors) {
-                $xctypes = $ctypes;
-                if (!isset($xctypes[$ct])) {
-                    $xctypes[$ct] = $confset->unparse_text($ct);
-                }
-                $js["class"] = "conflict-entry";
-                $js["data-default-value"] = $pct;
-                echo '<span class="pcconf-editselector">',
-                    Ht::select("pcc$id", $xctypes, $ct, $js),
-                    '</span>';
-            } else {
-                $js["data-default-checked"] = Conflict::is_conflicted($pct);
-                $js["data-range-type"] = "pcc";
-                $js["class"] = "uic js-range-click conflict-entry";
-                $checked = Conflict::is_conflicted($ct);
-                echo '<span class="checkc">',
-                    Ht::hidden("has_pcc$id", 1),
-                    Ht::checkbox("pcc$id", $checked ? $ct : Conflict::GENERAL, $checked, $js),
-                    '</span>';
-            }
-
-            echo $label, "</label>";
-            if ($pcconfmatch) {
-                echo $pcconfmatch[0];
-            }
-            echo "</div></li>";
-        }
-        echo "</ul></div></div>\n\n";
     }
 
     private function papstripPCConflicts() {
@@ -2551,7 +2242,7 @@ class PaperTable {
                     && ($x = $o->parse_web($this->prow, $this->qreq))) {
                     $reqov = $x;
                 }
-                $this->echo_editable_contact_author($o, $ov, $reqov);
+                $o->echo_web_edit($this, $ov, $reqov);
                 $this->echo_actions();
                 echo "</form>";
             }

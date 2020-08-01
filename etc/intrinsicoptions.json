@@ -3,7 +3,7 @@
         "name": "title", "json_key": "title", "id": -1000,
         "form_position": 1, "required": true, "display_space": 1,
         "type": "intrinsic2", "include_empty": true,
-        "require": "src/intrinsicvalue.php", "callback": "+Title_PaperOption"
+        "callback": "+Title_PaperOption"
     },
     {
         "name": "submission_version", "json_key": false, "id": -1008,
@@ -15,7 +15,7 @@
         "name": "abstract", "json_key": "abstract", "id": -1004,
         "form_position": 2001, "display_space": 5, "display_expand": true,
         "type": "intrinsic2", "include_empty": true,
-        "require": "src/intrinsicvalue.php", "callback": "+Abstract_PaperOption"
+        "callback": "+Abstract_PaperOption"
     },
     {
         "name": "authors", "json_key": "authors", "id": -1001,
@@ -26,30 +26,30 @@
         "name": "nonblind", "json_key": "nonblind", "id": -1002,
         "form_position": 3002, "display_position": false,
         "type": "intrinsic2", "include_empty": true,
-        "require": "src/intrinsicvalue.php", "callback": "+Nonblind_PaperOption"
+        "callback": "+Nonblind_PaperOption"
     },
     {
         "name": "contacts", "json_key": "contacts", "id": -1003,
         "form_position": 3003, "display_position": false, "visibility": "conflict",
         "type": "intrinsic2", "include_empty": true,
-        "require": "src/intrinsicvalue.php", "callback": "+Contacts_PaperOption"
+        "callback": "+Contacts_PaperOption"
     },
     {
         "name": "topics", "json_key": "topics", "id": -1005,
         "form_position": 3501, "display_group": "topics",
         "type": "intrinsic2", "include_empty": true,
-        "require": "src/intrinsicvalue.php", "callback": "+Topics_PaperOption"
+        "callback": "+Topics_PaperOption"
     },
     {
         "name": "pcconf", "json_key": "pc_conflicts", "id": -1006,
         "form_position": 5001, "display_position": false, "visibility": "nonblind",
         "type": "intrinsic2", "include_empty": true,
-        "require": "src/intrinsicvalue.php", "callback": "+PCConflicts_PaperOption"
+        "callback": "+PCConflicts_PaperOption"
     },
     {
         "name": "collaborators", "json_key": "collaborators", "id": -1007,
         "form_position": 5002, "display_space": 5, "visibility": "nonblind",
         "type": "intrinsic2", "include_empty": true,
-        "require": "src/intrinsicvalue.php", "callback": "+Collaborators_PaperOption"
+        "callback": "+Collaborators_PaperOption"
     }
 ]

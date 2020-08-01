@@ -277,6 +277,13 @@ src/mailclasses.php
 src/meetingtracker.php
 src/mergecontacts.php
 src/multiconference.php
+src/options/o_abstract.php
+src/options/o_collaborators.php
+src/options/o_contacts.php
+src/options/o_nonblind.php
+src/options/o_pcconflicts.php
+src/options/o_title.php
+src/options/o_topics.php
 src/paperapi.php
 src/papercolumn.php
 src/papercolumns/pc_administrator.php
