@@ -29,7 +29,7 @@
 
 
     {   "name": "security", "title": "Security", "position": 200,
-        "allow_if": "UserStatus::xt_allow_security",
+        "allow_if": "profile_security",
         "request_callback": "UserStatus::request_security"   },
     [   "security/currentpassword", 10, "UserStatus::render_current_password"   ],
     {   "name": "security/newpassword", "position": 100,

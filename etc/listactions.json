@@ -155,7 +155,7 @@
         "name": "get/revpref", "get": true,
         "title": "Preference file",
         "position": 1,
-        "allow_if": "pc", "display_if_report": "pf",
+        "allow_if": "pc", "display_if": "listreport:pf",
         "callback": "+GetRevpref_ListAction",
         "abstracts": false
     },
@@ -163,7 +163,7 @@
         "name": "get/revprefx", "get": true,
         "title": "Preference file with abstracts",
         "position": 2,
-        "allow_if": "pc", "display_if_report": "pf",
+        "allow_if": "pc", "display_if": "listreport:pf",
         "callback": "+GetRevpref_ListAction",
         "abstracts": true
     },
@@ -177,27 +177,27 @@
     {
         "name": "get/checkformat", "get": true,
         "title": "Documents/Format check",
-        "position": 9999, "display_if_list_has": "paper",
+        "position": 9999, "display_if": "listhas:paper",
         "allow_if": "manager",
         "require": "src/listactions/la_get_sub.php",
         "callback": "+GetCheckFormat_ListAction"
     },
     {
         "name": "get/abstract", "get": true,
-        "title": "Paper information/Text with abstracts", "display_if_list_has": "abstract",
+        "title": "Paper information/Text with abstracts", "display_if": "listhas:abstract",
         "position": 10000,
         "callback": "+GetAbstracts_ListAction"
     },
     {
         "name": "get/abstract", "get": true,
-        "title": "Paper information/Text", "display_if_list_has": "!abstract",
+        "title": "Paper information/Text", "display_if": "!listhas:abstract",
         "position": 10000,
         "callback": "+GetAbstracts_ListAction"
     },
     {
         "name": "get/authors", "get": true,
         "title": "Paper information/Authors",
-        "position": 10001, "display_if_list_has": "authors",
+        "position": 10001, "display_if": "listhas:authors",
         "require": "src/listactions/la_get_sub.php",
         "callback": "+GetAuthors_ListAction"
     },
@@ -231,40 +231,40 @@
         "name": "tag", "post": true,
         "render_callback": "Tag_ListAction::render", "title": "Tag",
         "position": 500,
-        "allow_if": "pc", "display_if_report": "!pf",
+        "allow_if": "pc", "display_if": "!listreport:pf",
         "callback": "+Tag_ListAction"
     },
     {
         "name": "assign", "post": true,
         "render_callback": "Assign_ListAction::render", "title": "Assign",
         "position": 700,
-        "allow_if": "manager", "display_if_report": "!pf",
+        "allow_if": "manager", "display_if": "!listreport:pf",
         "callback": "+Assign_ListAction"
     },
     {
         "name": "decide", "post": true,
         "render_callback": "Decide_ListAction::render", "title": "Decide",
         "position": 900,
-        "allow_if": "manager", "display_if_report": "!pf",
+        "allow_if": "manager", "display_if": "!listreport:pf",
         "callback": "+Decide_ListAction"
     },
     {
         "name": "mail", "get": true,
         "render_callback": "Mail_ListAction::render", "title": "Mail",
         "position": 1000,
-        "allow_if": "manager", "display_if_report": "!pf",
+        "allow_if": "manager", "display_if": "!listreport:pf",
         "callback": "+Mail_ListAction"
     },
     {
         "name": "uploadpref",
         "render_callback": "GetRevpref_ListAction::render_upload", "title": "Upload",
-        "allow_if": "pc", "display_if_report": "pf",
+        "allow_if": "pc", "display_if": "listreport:pf",
         "position": 100
     },
     {
         "name": "setpref",
         "render_callback": "GetRevpref_ListAction::render_set", "title": "Set preferences",
-        "allow_if": "pc", "display_if_report": "pf",
+        "allow_if": "pc", "display_if": "listreport:pf",
         "position": 200
     }
 ]

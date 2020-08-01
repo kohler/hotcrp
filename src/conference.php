@@ -80,6 +80,15 @@ class ResponseRound {
     }
 }
 
+interface XtContext {
+    /** @param string $str
+     * @param object $xt
+     * @param ?Contact $user
+     * @param Conf $conf
+     * @return ?bool */
+    function xt_check_element($str, $xt, $user, Conf $conf);
+}
+
 class Conf {
     /** @var ?mysqli */
     public $dblink;
@@ -196,8 +205,8 @@ class Conf {
     private $_updating_autosearch_tags = false;
     private $_cdb = false;
 
+    /** @var ?XtContext */
     public $xt_context;
-    private $_xt_allow_checkers;
     public $_xt_allow_callback;
     /** @var int */
     private $_xt_checks = 0;
@@ -1065,17 +1074,12 @@ class Conf {
         }
         return $xt && (!isset($xt->disabled) || !$xt->disabled) ? $xt : null;
     }
+    /** @param XtContext $context
+     * @return ?XtContext */
     function xt_swap_context($context) {
         $old = $this->xt_context;
         $this->xt_context = $context;
         return $old;
-    }
-    function xt_add_allow_checker($checker) {
-        $this->_xt_allow_checkers[] = $checker;
-        return count($this->_xt_allow_checkers) - 1;
-    }
-    function xt_remove_allow_checker($checker_index) {
-        unset($this->_xt_allow_checkers[$checker_index]);
     }
     private function xt_check_allow_checkers($e, $xt, $user) {
         foreach ($this->_xt_allow_checkers as $ch) {
@@ -1087,6 +1091,7 @@ class Conf {
     }
     function xt_check($expr, $xt, Contact $user = null) {
         foreach (is_array($expr) ? $expr : [$expr] as $e) {
+            assert(is_bool($e) || is_string($e));
             $not = false;
             if (is_string($e)
                 && strlen($e) > 0
@@ -1096,9 +1101,6 @@ class Conf {
             }
             if (!is_string($e)) {
                 $b = $e;
-            } else if ($this->_xt_allow_checkers
-                       && ($x = $this->xt_check_allow_checkers($e, $xt, $user)) !== null) {
-                $b = $x;
             } else if ($e === "chair" || $e === "admin") {
                 $b = !$user || $user->privChair;
             } else if ($e === "manager") {
@@ -1126,9 +1128,12 @@ class Conf {
             } else if (str_starts_with($e, "user.")) {
                 $f = substr($e, 5);
                 $b = !$user || $user->$f();
+            } else if ($this->xt_context
+                       && ($x = $this->xt_context->xt_check_element($e, $xt, $user, $this)) !== null) {
+                $b = $x;
             } else {
                 error_log("unknown xt_check $e");
-                $b = !!$this->setting($e);
+                $b = false;
             }
             if ($not ? $b : !$b) {
                 return false;

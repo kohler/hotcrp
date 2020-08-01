@@ -87,6 +87,7 @@ class UserStatus extends MessageSet {
     function gxt() {
         if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
+            $this->_gxt->add_xt_checker([$this, "xt_allow_security"]);
             $this->initialize_gxt();
         }
         return $this->_gxt;
@@ -105,10 +106,8 @@ class UserStatus extends MessageSet {
                     && !$this->conf->contactdb()
                     && !$this->conf->opt("chairHidePasswords")));
     }
-    static function xt_allow_security($xt, Contact $user, Conf $conf) {
-        $us = $conf->xt_context->arg(0);
-        assert($us instanceof UserStatus);
-        return $us->allow_security();
+    function xt_allow_security($e, $xt, Contact $user, Conf $conf) {
+        return $e === "profile_security" ? $this->allow_security() : null;
     }
 
     static function user_paper_info(Conf $conf, $cid) {

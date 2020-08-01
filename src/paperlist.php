@@ -127,7 +127,7 @@ class PaperListReviewAnalysis {
     }
 }
 
-class PaperList {
+class PaperList implements XtContext {
     /** @var Conf */
     public $conf;
     /** @var Contact */
@@ -278,6 +278,16 @@ class PaperList {
         }
 
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
+    }
+
+    function xt_check_element($e, $xt, $user, Conf $conf) {
+        if (str_starts_with($e, "listhas:")) {
+            return $this->has(substr($e, 8));
+        } else if (str_starts_with($e, "listreport:")) {
+            return $this->_report_id === substr($e, 11);
+        } else {
+            return null;
+        }
     }
 
     /** @return string */
@@ -1504,38 +1514,6 @@ class PaperList {
         return $t;
     }
 
-    function action_xt_displayed($fj, GroupedExtensions $gex) {
-        if (!$fj
-            || str_starts_with($fj->name ?? "", "__")
-            || (isset($fj->allow_if)
-                && !$this->conf->xt_allowed($fj, $this->user))
-            || (isset($fj->display_if_report)
-                && (str_starts_with($fj->display_if_report, "!")
-                    ? $this->_report_id === substr($fj->display_if_report, 1)
-                    : $this->_report_id !== $fj->display_if_report))
-            || (isset($fj->display_if)
-                && !$this->conf->xt_check($fj->display_if, $fj, $this->user))
-            || ($fj->disabled ?? false)) {
-            return false;
-        }
-        if (isset($fj->display_if_list_has)) {
-            $ifl = $fj->display_if_list_has;
-            foreach (is_array($ifl) ? $ifl : [$ifl] as $h) {
-                if (!is_bool($h)) {
-                    if (str_starts_with($h, "!")) {
-                        $h = !$this->has(substr($h, 1));
-                    } else {
-                        $h = $this->has($h);
-                    }
-                }
-                if (!$h) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
     static function render_footer_row($arrow_ncol, $ncol, $header,
                             $lllgroups, $activegroup = -1, $extra = null) {
         $foot = "<tr class=\"pl_footrow\">\n   ";
@@ -1617,12 +1595,14 @@ class PaperList {
             return "";
         }
 
-        $gex = ListAction::grouped_extensions($this->user);
+        $gex = ListAction::grouped_extensions($this->user, [$this, "xt_check_element"]);
+        $gex->add_xt_checker([$this, "xt_check_element"]);
+        $gex->filter_by("display_if");
         $lllgroups = [];
         $whichlll = -1;
         foreach ($gex->members("") as $rf) {
             if (isset($rf->render_callback)
-                && $this->action_xt_displayed($rf, $gex)
+                && !str_starts_with($rf->name, "__")
                 && Conf::xt_resolve_require($rf)
                 && ($lllg = call_user_func($rf->render_callback, $this, $qreq, $gex, $rf))) {
                 if (is_string($lllg)) {

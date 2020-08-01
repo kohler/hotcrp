@@ -7,7 +7,7 @@ class Get_ListAction {
         $last_group = null;
         $sel_opt = [];
         foreach ($gex->members("get") as $rf) {
-            if ($pl->action_xt_displayed($rf, $gex)) {
+            if (!str_starts_with($rf->name, "__")) {
                 assert(!!$rf->get);
                 $as = strpos($rf->title, "/");
                 if ($as === false) {

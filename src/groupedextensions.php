@@ -2,7 +2,7 @@
 // src/groupedextensions.php -- HotCRP extensible groups
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class GroupedExtensions {
+class GroupedExtensions implements XtContext {
     private $_jall = [];
     private $_potential_members = [];
     /** @var Conf */
@@ -16,6 +16,8 @@ class GroupedExtensions {
     private $_render_state;
     private $_render_stack;
     private $_annexes = [];
+    /** @var list<callable(string,object,?Contact,Conf):(?bool)> */
+    private $_xt_checkers = [];
     static private $next_placeholder;
 
     function add($fj) {
@@ -87,6 +89,35 @@ class GroupedExtensions {
     /** @return Contact */
     function viewer() {
         return $this->viewer;
+    }
+
+    /** @var callable(string,object,?Contact,Conf):(?bool) $checker */
+    function add_xt_checker($checker) {
+        $this->_xt_checkers[] = $checker;
+    }
+    function xt_check_element($str, $xt, $user, Conf $conf) {
+        foreach ($this->_xt_checkers as $cf) {
+            if (($x = call_user_func($cf, $str, $xt, $user, $conf)) !== null)
+                return $x;
+        }
+        return null;
+    }
+
+    /** @param string $key */
+    function filter_by($key) {
+        $old_context = $this->conf->xt_swap_context($this);
+        foreach ($this->_jall as &$jl) {
+            for ($i = 0; $i !== count($jl); ) {
+                if (isset($jl[$i]->$key)
+                    && !$this->conf->xt_check($jl[$i]->$key, $jl[$i], $this->viewer)) {
+                    array_splice($jl, $i, 1);
+                } else {
+                    ++$i;
+                }
+            }
+        }
+        $this->_raw = [];
+        $this->conf->xt_context = $old_context;
     }
 
     function get_raw($name) {
