@@ -533,7 +533,7 @@ class AssignerContacts {
                 $cargs["firstName"] = "Jane Q.";
                 $cargs["lastName"] = "Public";
                 $cargs["affiliation"] = "Unaffiliated";
-                $cargs["disabled"] = 1;
+                $cargs["disabled"] = true;
             }
             $c = new Contact($cargs, $this->conf);
             self::$next_fake_id -= 1;

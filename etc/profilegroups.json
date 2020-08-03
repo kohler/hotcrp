@@ -2,7 +2,8 @@
     {   "name": "main", "title": "Profile", "position": 100,
         "unparse_json_callback": "UserStatus::unparse_json_main",
         "request_callback": "UserStatus::request_main",
-        "parse_csv_callback": "UserStatus::parse_csv_main"
+        "parse_csv_callback": "UserStatus::parse_csv_main",
+        "save_early_callback": "UserStatus::save_main"
     },
     {
         "name": "main/main", "position": 1000,
@@ -26,11 +27,14 @@
     },
     [   "main/tags", 8000, "UserStatus::render_tags"   ],
     [   "main/actions", 1000000, "UserStatus::render_actions"   ],
+    {   "name": "topics", "position": 400,
+        "save_callback": "UserStatus::save_topics"   },
 
 
     {   "name": "security", "title": "Security", "position": 200,
         "allow_if": "profile_security",
-        "request_callback": "UserStatus::request_security"   },
+        "request_callback": "UserStatus::request_security",
+        "save_callback": "UserStatus::save_security"   },
     [   "security/currentpassword", 10, "UserStatus::render_current_password"   ],
     {   "name": "security/newpassword", "position": 100,
         "render_callback": "UserStatus::render_new_password",

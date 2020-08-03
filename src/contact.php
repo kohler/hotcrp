@@ -2,11 +2,6 @@
 // contact.php -- HotCRP helper class representing system users
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class Contact_Update {
-    public $qv = [];
-    public $cdb_qf = [];
-}
-
 /** @property ?string $__isAuthor__
  * @property ?string $__hasReview__ */
 class Contact {
@@ -48,6 +43,7 @@ class Contact {
     /** @var bool */
     public $_slice = false;
 
+    /** @var ?bool */
     public $nameAmbiguous;
     /** @var string */
     private $_sorter;
@@ -155,10 +151,51 @@ class Contact {
     /** @var ?list<PaperInfo> */
     private $_authored_papers;
 
+    /** @var ?array */
+    private $_mod_undo;
+
     // Per-paper DB information, usually null
     public $conflictType;
     public $myReviewPermissions;
     public $watch;
+
+    const PROP_LOCAL = 0x01;
+    const PROP_CDB = 0x02;
+    const PROP_SLICE = 0x04;
+    const PROP_DATA = 0x08;
+    const PROP_NULL = 0x10;
+    const PROP_STRING = 0x20;
+    const PROP_INT = 0x40;
+    const PROP_BOOL = 0x80;
+    const PROP_STRINGLIST = 0x100;
+    const PROP_NAME = 0x1000;
+    const PROP_PASSWORD = 0x2000;
+    const PROP_UPDATE = 0x4000;
+    const PROP_IMPORT = 0x8000;
+    static public $props = [
+        "firstName" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SLICE | self::PROP_NAME | self::PROP_UPDATE | self::PROP_IMPORT,
+        "lastName" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SLICE | self::PROP_NAME | self::PROP_UPDATE | self::PROP_IMPORT,
+        "email" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SLICE,
+        "preferredEmail" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING,
+        "affiliation" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SLICE | self::PROP_UPDATE | self::PROP_IMPORT,
+        "phone" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE,
+        "country" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE | self::PROP_IMPORT,
+        "password" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_PASSWORD,
+        "passwordTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_PASSWORD,
+        "passwordUseTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_PASSWORD,
+        "collaborators" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE | self::PROP_IMPORT,
+        "creationTime" => self::PROP_LOCAL | self::PROP_INT,
+        "updateTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT,
+        "lastLogin" => self::PROP_LOCAL | self::PROP_INT,
+        "defaultWatch" => self::PROP_LOCAL | self::PROP_INT,
+        "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
+        "disabled" => self::PROP_LOCAL | self::PROP_BOOL | self::PROP_SLICE,
+        "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
+        "address" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRINGLIST | self::PROP_UPDATE,
+        "city" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE,
+        "state" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE,
+        "zip" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE
+    ];
 
 
     /** @param ?array<string,mixed> $user */
@@ -175,14 +212,14 @@ class Contact {
     static function fetch($result, Conf $conf) {
         $user = $result ? $result->fetch_object("Contact", [null, $conf]) : null;
         '@phan-var ?Contact $user';
-        if ($user && !is_int($user->contactId)) {
+        if ($user && !$user->conf) {
             $user->conf = $conf;
             $user->db_load();
         }
         return $user;
     }
 
-    /** @param array<string,null|int|string> $user */
+    /** @param array<string,mixed> $user */
     private function merge($user) {
         if (is_object($user)) {
             $user = (array) $user;
@@ -194,7 +231,11 @@ class Contact {
         if (isset($user["contactDbId"])) {
             $this->contactDbId = (int) $user["contactDbId"];
         }
+        if (isset($user["confid"])) {
+            $this->confid = $user["confid"];
+        }
 
+        // handle slice properties
         if (isset($user["firstName"]) && isset($user["lastName"])) {
             $this->firstName = (string) $user["firstName"];
             $this->lastName = (string) $user["lastName"];
@@ -211,6 +252,9 @@ class Contact {
         $this->affiliation = simplify_whitespace((string) ($user["affiliation"] ?? ""));
         $this->email = simplify_whitespace((string) ($user["email"] ?? ""));
 
+        if (isset($user["is_site_contact"])) {
+            $this->is_site_contact = $user["is_site_contact"];
+        }
         $roles = (int) ($user["roles"] ?? 0);
         if ($user["isPC"] ?? false) {
             $roles |= self::ROLE_PC;
@@ -224,42 +268,40 @@ class Contact {
         if ($roles !== 0) {
             $this->assign_roles($roles);
         }
+
         if (array_key_exists("contactTags", $user)) {
             $this->contactTags = $user["contactTags"];
         } else {
             $this->contactTags = $this->contactId ? false : null;
         }
+
         if (isset($user["disabled"])) {
             $this->disabled = !!$user["disabled"];
         }
 
-        foreach (["preferredEmail", "phone", "country", "gender"] as $k) {
-            if (isset($user[$k]))
-                $this->$k = simplify_whitespace($user[$k]);
-        }
-        if (isset($user["collaborators"])) {
-            $this->collaborators = $user["collaborators"];
-        }
-        if (isset($user["password"])) {
-            $this->password = (string) $user["password"];
-        }
-        foreach (["defaultWatch", "passwordTime", "passwordUseTime",
-                  "updateTime", "creationTime", "birthday"] as $k) {
-            if (isset($user[$k]))
-                $this->$k = (int) $user[$k];
+        // handle other properties
+        foreach (self::$props as $prop => $shape) {
+            if (array_key_exists($prop, $user)
+                && ($shape & (self::PROP_SLICE | self::PROP_DATA)) === 0) {
+                $this->$prop = $user[$prop];
+                if ($this->$prop === null
+                    ? ($shape & self::PROP_NULL) === 0
+                    : (($shape & self::PROP_STRING) !== 0 && !is_string($this->$prop))
+                      || (($shape & self::PROP_INT) !== 0 && !is_int($this->$prop))
+                      || (($shape & self::PROP_BOOL) !== 0 && !is_bool($this->$prop))) {
+                    error_log("{$this->conf->dbname}: user {$this->email}: bad property $prop " . debug_string_backtrace());
+                }
+            }
         }
         if (isset($user["activity_at"])) {
             $this->activity_at = (int) $user["activity_at"];
-        } else if (isset($user["lastLogin"])) {
-            $this->activity_at = (int) $user["lastLogin"];
+        } else {
+            $this->activity_at = $this->lastLogin;
         }
-        if (isset($user["data"]) && $user["data"]) {
+        if (array_key_exists("data", $user)) {
             $this->data = $user["data"];
         }
         $this->_jdata = null;
-        if (isset($user["is_site_contact"])) {
-            $this->is_site_contact = $user["is_site_contact"];
-        }
         $this->_disabled = null;
         $this->_contactdb_user = false;
     }
@@ -269,6 +311,7 @@ class Contact {
         $this->contactDbId = (int) $this->contactDbId;
         assert($this->contactId > 0 || ($this->contactId == 0 && $this->contactDbId > 0));
 
+        // handle slice properties
         if ($this->unaccentedName === "") {
             $this->unaccentedName = Text::name($this->firstName, $this->lastName, "", NAME_U);
         }
@@ -280,41 +323,53 @@ class Contact {
         }
         $this->_slice = isset($this->_slice) && $this->_slice;
 
-        $this->password = (string) $this->password;
-        foreach (["defaultWatch", "passwordTime", "passwordUseTime",
-                  "updateTime", "creationTime"] as $k) {
-            $this->$k = (int) $this->$k;
-        }
-        if (!$this->activity_at && isset($this->lastLogin)) {
-            $this->activity_at = (int) $this->lastLogin;
-        }
-        if (isset($this->birthday)) {
-            $this->birthday = (int) $this->birthday;
-        }
-        $this->_jdata = null;
+        // handle special role markers
         if (isset($this->__isAuthor__)) {
             $this->_db_roles = ((int) $this->__isAuthor__ > 0 ? self::ROLE_AUTHOR : 0)
                 | ((int) $this->__hasReview__ > 0 ? self::ROLE_REVIEWER : 0);
         }
+
+        // handle other properties
+        if (!$this->_slice) {
+            foreach (self::$props as $prop => $shape) {
+                if (($shape & (self::PROP_SLICE | self::PROP_DATA | self::PROP_STRING)) === 0
+                    && isset($this->$prop)) {
+                    if (($shape & self::PROP_INT) !== 0) {
+                        $this->$prop = (int) $this->$prop;
+                    } else {
+                        assert(($shape & self::PROP_BOOL) !== 0);
+                        $this->$prop = (bool) $this->$prop;
+                    }
+                }
+            }
+            if (!$this->activity_at && $this->lastLogin) {
+                $this->activity_at = $this->lastLogin;
+            }
+        }
+
+        $this->_jdata = null;
         $this->_disabled = null;
         $this->_contactdb_user = false;
     }
 
     function unslice_using($x) {
-        $this->password = (string) $x->password;
-        foreach (["preferredEmail", "phone", "country",
-                  "collaborators", "gender"] as $k) {
-            $this->$k = $x->$k;
+        foreach (self::$props as $prop => $shape) {
+            if (($shape & (self::PROP_LOCAL | self::PROP_SLICE | self::PROP_DATA)) === self::PROP_LOCAL) {
+                $value = $x->$prop;
+                if ($value === null || ($shape & self::PROP_STRING) !== 0) {
+                    $this->$prop = $value;
+                } else if (($shape & self::PROP_INT) !== 0) {
+                    $this->$prop = (int) $value;
+                } else {
+                    assert(($shape & self::PROP_BOOL) !== 0);
+                    $this->$prop = (bool) $value;
+                }
+            }
+            $this->activity_at = $this->lastLogin;
+            $this->data = $x->data;
+            $this->_jdata = null;
+            $this->_slice = false;
         }
-        $this->birthday = isset($x->birthday) ? (int) $x->birthday : null;
-        foreach (["passwordTime", "passwordUseTime", "creationTime",
-                  "updateTime", "defaultWatch"] as $k) {
-            $this->$k = (int) $x->$k;
-        }
-        $this->activity_at = $this->lastLogin = (int) $x->lastLogin;
-        $this->data = $x->data;
-        $this->_jdata = null;
-        $this->_slice = false;
     }
 
     function unslice() {
@@ -707,6 +762,21 @@ class Contact {
         return $this->_contactdb_user;
     }
 
+    /** @return ?Contact */
+    function ensure_contactdb_user($refresh = false) {
+        assert($this->has_email());
+        if ($this->contactDbId && !$this->contactId) {
+            return $this;
+        } else if (($u = $this->contactdb_user($refresh))) {
+            return $u;
+        } else if ($this->conf->contactdb()) {
+            $this->_contactdb_user = new Contact(["email" => $this->email, "confid" => true]);
+            return $this->_contactdb_user;
+        } else {
+            return null;
+        }
+    }
+
     private function _contactdb_save_roles($cdbur) {
         if (($roles = $this->contactdb_roles())) {
             Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=values(roles), activity_at=values(activity_at)", $cdbur->contactDbId, $cdbur->confid, $roles, Conf::$now);
@@ -715,10 +785,8 @@ class Contact {
         }
     }
 
-    /** @param ?list<string> $update_keys
-     * @param bool $only_update_empty
-     * @return int|false */
-    function contactdb_update($update_keys = null, $only_update_empty = false) {
+    /** @return int|false */
+    function contactdb_update() {
         if (!($cdb = $this->conf->contactdb())
             || !$this->has_account_here()
             || !validate_email($this->email)) {
@@ -726,40 +794,29 @@ class Contact {
         }
 
         $cdbur = $this->conf->contactdb_user_by_email($this->email);
-        $cdbux = $cdbur ? : new Contact(null, $this->conf);
-        $upd = [];
-        // update cdb names only if BOTH cdb names are empty
-        if (!$only_update_empty || (($cdbux->firstName ?? "") === ""
-                                    && ($cdbux->lastName ?? "") === "")) {
-            foreach (["firstName", "lastName"] as $k) {
-                if (($this->$k ?? "") !== ""
-                    && (!$cdbur || in_array($k, $update_keys ?? []))) {
-                    $upd[$k] = $this->$k;
-                }
+        $cdbux = $cdbur ?? new Contact(["email" => $this->email, "confid" => true], $this->conf);
+        foreach (self::$props as $prop => $shape) {
+            if (($shape & self::PROP_CDB) !== 0
+                && ($shape & self::PROP_PASSWORD) === 0
+                && ($value = $this->prop1($prop, $shape)) !== null
+                && $value !== ""
+                && $prop !== "updateTime") {
+                $cdbux->set_prop($prop, $value, true);
             }
         }
-        // update other cdb fields if empty
-        foreach (["affiliation", "country", "collaborators", "birthday", "gender"] as $k) {
-            if (($this->$k ?? "") !== ""
-                && (!$only_update_empty || ($cdbux->$k ?? "") === "")
-                && (!$cdbur || in_array($k, $update_keys ?? [])))
-                $upd[$k] = $this->$k;
+        if (!$cdbur && str_starts_with($this->password, " ")) {
+            $cdbux->set_prop("password", $this->password);
+            $cdbux->set_prop("passwordTime", $this->passwordTime);
+            $cdbux->set_prop("passwordUseTime", $this->passwordUseTime);
         }
-        if (!$cdbur) {
-            $upd["email"] = $this->email;
-            if ($this->password
-                && $this->password !== "*"
-                && ($this->password[0] !== " " || $this->password[1] === "\$")) {
-                $upd["password"] = $this->password;
-                $upd["passwordTime"] = $this->passwordTime;
-            }
-        }
-        if (!empty($upd)) {
-            $cdbux->apply_updater($upd, true);
+        if (!empty($cdbux->_mod_undo)) {
+            assert(!!$cdbux->confid);
+            $cdbux->save_prop();
             $this->_contactdb_user = false;
         }
-        $cdbur = $cdbur ? : $this->conf->contactdb_user_by_email($this->email);
-        if ($cdbur->confid
+        $cdbur = $cdbur ?? $this->conf->contactdb_user_by_email($this->email);
+        if ($cdbur
+            && $cdbur->confid
             && (int) $cdbur->roles !== $this->contactdb_roles()) {
             $this->_contactdb_save_roles($cdbur);
         }
@@ -1148,6 +1205,21 @@ class Contact {
         }
     }
 
+    /** @param ?string $key */
+    function set_data($key, $value) {
+        $d = $this->make_data();
+        if (($d->$key ?? null) !== $value) {
+            if (!array_key_exists("data", $this->_mod_undo ?? [])) {
+                $this->_mod_undo["data"] = $this->data;
+            }
+            if ($value !== null) {
+                $d->$key = $value;
+            } else {
+                unset($d->$key);
+            }
+        }
+    }
+
     /** @return ?string */
     private function encode_data() {
         $t = json_encode_db($this->make_data());
@@ -1321,53 +1393,6 @@ class Contact {
     }
 
 
-    static private $cdb_fields = [
-        "firstName" => true, "lastName" => true, "affiliation" => true,
-        "country" => true, "collaborators" => true, "birthday" => true,
-        "gender" => true
-    ];
-
-    /** @param string $k
-     * @param string|int|null $v */
-    function save_assign_field($k, $v, Contact_Update $cu) {
-        if ($k === "contactTags") {
-            if ($v !== null && trim($v) === "") {
-                $v = null;
-            }
-        } else if ($k !== "collaborators" && $k !== "defaultWatch") {
-            $v = simplify_whitespace($v);
-            if ($k === "birthday" && !$v) {
-                $v = null;
-            }
-        }
-        // change contactdb
-        if (isset(self::$cdb_fields[$k])
-            && $this->$k !== $v) {
-            $cu->cdb_qf[] = $k;
-        }
-        // change local version
-        if ($this->$k !== $v || !$this->contactId) {
-            $cu->qv[$k] = $v;
-            $this->$k = $v;
-            if ($k === "email") {
-                $this->_contactdb_user = false;
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function save_cleanup(UserStatus $us) {
-        $this->_disabled = null;
-        if (isset($us->diffs["topics"])) {
-            $this->_topic_interest_map = null;
-        }
-        if (isset($us->diffs["roles"])) {
-            $this->conf->invalidate_caches(["pc" => 1]);
-        }
-    }
-
     const SAVE_ANY_EMAIL = 1;
     const SAVE_IMPORT = 2;
     const SAVE_ROLES = 4;
@@ -1385,7 +1410,7 @@ class Contact {
             $this->password = $cdbu->password;
         }
         $this->email = $email;
-        $this->contactdb_update(null, true);
+        $this->contactdb_update();
 
         if ($this->roles & Contact::ROLE_PCLIKE) {
             $this->conf->invalidate_caches(["pc" => 1]);
@@ -1426,7 +1451,178 @@ class Contact {
         }
     }
 
-    /** @param int $new_roles */
+
+    /** @param string $prop
+     * @param int $shape */
+    private function prop1($prop, $shape) {
+        if ($this->_slice && ($shape & self::PROP_SLICE) === 0) {
+            $this->unslice();
+        }
+        if (($shape & self::PROP_DATA) !== 0) {
+            return $this->data($prop);
+        } else {
+            return $this->$prop;
+        }
+    }
+
+    /** @param string $prop */
+    function prop($prop) {
+        $shape = self::$props[$prop] ?? 0;
+        if ($shape === 0) {
+            throw new Exception("bad prop $prop");
+        }
+        if (($shape & self::PROP_LOCAL) !== 0
+            && !$this->confid) {
+            $value = $this->prop1($prop, $shape);
+            if (($shape & self::PROP_CDB) === 0
+                || ($value !== null
+                    && ($value !== "" || ($shape & self::PROP_NULL) !== 0)
+                    && (($shape & self::PROP_NAME) !== 0 || $this->firstName !== "" || $this->lastName !== ""))) {
+                return $value;
+            }
+        }
+        if (($shape & self::PROP_CDB) !== 0
+            && ($cdbu = $this->contactdb_user())) {
+            return $cdbu->prop1($prop, $shape);
+        } else {
+            return ($shape & self::PROP_NULL) !== 0 ? null : "";
+        }
+    }
+
+    /** @param string $prop
+     * @param mixed $value
+     * @return bool */
+    function set_prop($prop, $value, $ifempty = false) {
+        $shape = self::$props[$prop] ?? 0;
+        if ($shape === 0) {
+            throw new Exception("bad prop $prop");
+        }
+        if (($value !== null || ($shape & self::PROP_NULL) === 0)
+            && ((($shape & self::PROP_INT) !== 0 && !is_int($value))
+                || (($shape & self::PROP_BOOL) !== 0 && !is_bool($value))
+                || (($shape & self::PROP_STRING) !== 0 && !is_string($value))
+                || (($shape & self::PROP_STRINGLIST) !== 0 && !is_string_list($value)))) {
+            throw new Exception("bad prop type $prop");
+        }
+        if (($shape & ($this->confid ? self::PROP_CDB : self::PROP_LOCAL)) !== 0) {
+            $old = $this->prop1($prop, $shape);
+            if ($ifempty) {
+                if ($old !== null && $old !== "") {
+                    return false;
+                } else if (($shape & self::PROP_NAME) !== 0) {
+                    $prop2 = $prop === "firstName" ? "lastName" : "firstName";
+                    $old2 = $this->_mod_undo[$prop2] ?? $this->$prop2;
+                    if ($old2 !== null && $old2 !== "") {
+                        return false;
+                    }
+                }
+            }
+            if ($old !== $value) {
+                if (($shape & self::PROP_DATA) !== 0) {
+                    $this->set_data($prop, $value);
+                } else {
+                    if (!array_key_exists($prop, $this->_mod_undo ?? [])) {
+                        $this->_mod_undo[$prop] = $old;
+                    }
+                    $this->$prop = $value;
+                }
+                if (($shape & self::PROP_UPDATE) !== 0) {
+                    if (!array_key_exists("updateTime", $this->_mod_undo)) {
+                        $this->_mod_undo["updateTime"] = $this->updateTime;
+                    }
+                    $this->updateTime = Conf::$now;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @return bool */
+    function prop_changed() {
+        return !empty($this->_mod_undo);
+    }
+
+    /** @return bool */
+    function save_prop() {
+        if (empty($this->_mod_undo)) {
+            return true;
+        } else if ($this->confid) {
+            $db = $this->conf->contactdb();
+            $idk = "contactDbId";
+            $flag = self::PROP_CDB;
+        } else {
+            $db = $this->conf->dblink;
+            $idk = "contactId";
+            $flag = self::PROP_LOCAL;
+        }
+        if (!$this->$idk) {
+            if (!array_key_exists("password", $this->_mod_undo)) {
+                $this->password = validate_email($this->email) ? " unset" : " nologin";
+                $this->passwordTime = Conf::$now;
+            }
+        }
+        $qf = $qv = [];
+        foreach (self::$props as $prop => $shape) {
+            if (array_key_exists($prop, $this->_mod_undo)
+                || (!$this->$idk
+                    && ($shape & $flag) !== 0
+                    && ($shape & self::PROP_NULL) === 0)) {
+                $qf[] = "{$prop}=?";
+                $value = $this->prop1($prop, $shape);
+                if ($value === false || $value === true) {
+                    $qv[] = (int) $value;
+                } else {
+                    $qv[] = $value;
+                }
+            }
+        }
+        if (array_key_exists("data", $this->_mod_undo)) {
+            $qf[] = "`data`=?";
+            $qv[] = $this->data = $this->encode_data();
+        }
+        if ((array_key_exists("firstName", $this->_mod_undo)
+             || array_key_exists("lastName", $this->_mod_undo))
+            && !$this->confid) {
+            $qf[] = "unaccentedName=?";
+            $qv[] = Text::name($this->firstName, $this->lastName, "", NAME_U);
+        }
+        if ($this->$idk) {
+            $qv[] = $this->$idk;
+            $result = Dbl::qe_apply($db, "update ContactInfo set " . join(", ", $qf) . " where {$idk}=?", $qv);
+        } else {
+            assert($this->email !== "");
+            $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join(", ", $qf) . " on duplicate key update firstName=firstName", $qv);
+            if ($result->affected_rows) {
+                $this->$idk = (int) $result->insert_id;
+                if (!$this->confid) {
+                    $this->contactXid = (int) $result->insert_id;
+                }
+            }
+        }
+        $ok = !Dbl::is_error($result);
+        Dbl::free($result);
+        if ($ok) {
+            // invalidate caches
+            $this->_disabled = null;
+            $this->_mod_undo = null;
+        } else {
+            error_log("{$this->conf->dbname}: save {$this->email} fails " . debug_string_backtrace());
+        }
+        return $ok;
+    }
+
+    function abort_prop() {
+        foreach ($this->_mod_undo as $prop => $value) {
+            $this->$prop = $value;
+        }
+        $this->_mod_undo = $this->_disabled = $this->_jdata = null;
+    }
+
+
+    /** @param int $new_roles
+     * @param ?Contact $actor
+     * @return bool */
     function save_roles($new_roles, $actor) {
         $old_roles = $this->roles;
         // ensure there's at least one system administrator
@@ -1445,82 +1641,28 @@ class Contact {
             }
         }
         // save the roles bits
-        if ($old_roles != $new_roles) {
+        if ($old_roles !== $new_roles) {
             $this->conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
             $this->assign_roles($new_roles);
+            $this->conf->invalidate_caches(["pc" => true]);
         }
-        return $old_roles != $new_roles;
+        return $old_roles !== $new_roles;
     }
 
-    private function _make_create_updater($reg, $is_cdb) {
-        $cj = [];
-        if ($this->firstName === "" && $this->lastName === "") {
-            if (($reg->firstName ?? "") !== "") {
-                $cj["firstName"] = (string) $reg->firstName;
-            }
-            if (($reg->lastName ?? "") !== "") {
-                $cj["lastName"] = (string) $reg->lastName;
-            }
-        }
-        foreach (["affiliation", "country", "gender", "birthday",
-                  "preferredEmail", "phone"] as $k) {
-            if ((string) $this->$k === ""
-                && isset($reg->$k)
-                && $reg->$k !== "")
-                $cj[$k] = (string) $reg->$k;
-        }
-        if ($reg instanceof Contact
-            && (string) $this->collaborators === "") {
-            $cj["collaborators"] = (string) $reg->collaborators();
-        }
-        if ($is_cdb ? !$this->contactDbId : !$this->contactId) {
-            $cj["email"] = $reg->email;
-        }
-        return $cj;
-    }
-
-    function apply_updater($updater, $is_cdb) {
-        if ($is_cdb) {
-            $db = $this->conf->contactdb();
-            $idk = "contactDbId";
-        } else {
-            $db = $this->conf->dblink;
-            $idk = "contactId";
-            if (isset($updater["firstName"]) || isset($updater["lastName"])) {
-                $updater["firstName"] = $updater["firstName"] ?? $this->firstName;
-                $updater["lastName"] = $updater["lastName"] ?? $this->lastName;
-                $updater["unaccentedName"] = Text::name($this->firstName, $this->lastName, "", NAME_U);
-            }
-        }
-        if ($this->$idk) {
-            $qv = array_values($updater);
-            $qv[] = $this->$idk;
-            $result = Dbl::qe_apply($db, "update ContactInfo set " . join("=?, ", array_keys($updater)) . "=? where $idk=?", $qv);
-        } else {
-            assert(isset($updater["email"]));
-            if (!isset($updater["password"])) {
-                $updater["password"] = validate_email($updater["email"]) ? " unset" : " nologin";
-                $updater["passwordTime"] = Conf::$now;
-            }
-            if (!$is_cdb) {
-                $updater["creationTime"] = Conf::$now;
-            }
-            $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join("=?, ", array_keys($updater)) . "=? on duplicate key update firstName=firstName", array_values($updater));
-            if ($result->affected_rows) {
-                $updater[$idk] = (int) $result->insert_id;
-                if ($idk === "contactId") {
-                    $updater["contactXid"] = (int) $result->insert_id;
+    private function _set_create_prop($reg) {
+        if ($reg instanceof Contact) {
+            foreach (self::$props as $prop => $shape) {
+                if (($shape & self::PROP_IMPORT) !== 0) {
+                    $this->set_prop($prop, $reg->prop1($prop, $shape));
                 }
             }
+        } else {
+            $this->set_prop("firstName", $reg->firstName ?? "", true);
+            $this->set_prop("lastName", $reg->lastName ?? "", true);
+            $this->set_prop("affiliation", $reg->affiliation ?? "", true);
+            $this->set_prop("phone", $reg->phone ?? "", true);
+            $this->set_prop("country", $reg->country ?? "", true);
         }
-        $ok = !Dbl::is_error($result);
-        if ($ok) {
-            foreach ($updater as $k => $v) {
-                $this->$k = $v;
-            }
-        }
-        Dbl::free($result);
-        return $ok;
     }
 
     static function create(Conf $conf, $actor, $reg, $flags = 0, $roles = 0) {
@@ -1540,13 +1682,10 @@ class Contact {
         if (isset($reg->name) && !isset($reg->firstName) && !isset($reg->lastName)) {
             list($reg->firstName, $reg->lastName) = Text::split_name($reg->name);
         }
-        if (isset($reg->preferred_email) && !isset($reg->preferredEmail)) {
-            $reg->preferredEmail = $reg->preferred_email;
-        }
 
         // look up existing accounts
         $valid_email = validate_email($reg->email);
-        $u = $conf->user_by_email($reg->email) ? : new Contact(null, $conf);
+        $u = $conf->user_by_email($reg->email) ?? new Contact(["email" => $reg->email], $conf);
         if (($cdb = $conf->contactdb()) && $valid_email) {
             $cdbu = $conf->contactdb_user_by_email($reg->email);
         } else {
@@ -1557,13 +1696,10 @@ class Contact {
 
         // if local does not exist, create it
         if (!$u->contactId) {
-            if (($flags & self::SAVE_IMPORT) && !$cdbu) {
+            if ((($flags & self::SAVE_IMPORT) !== 0 && !$cdbu)
+                || (($flags & self::SAVE_ANY_EMAIL) === 0 && !$valid_email)) {
                 return null;
-            }
-            if (!$valid_email && !($flags & self::SAVE_ANY_EMAIL)) {
-                return null;
-            }
-            if ($valid_email) {
+            } else if ($valid_email) {
                 // update registration from authorship information
                 $aupapers = self::email_authored_papers($conf, $reg->email, $reg);
             }
@@ -1571,29 +1707,28 @@ class Contact {
 
         // create or update contactdb user
         if ($cdb && $valid_email) {
-            if (!$cdbu)  {
-                $cdbu = new Contact(null, $conf);
-            }
-            if (($upd = $cdbu->_make_create_updater($reg, true))) {
-                $cdbu->apply_updater($upd, true);
+            $cdbu = $cdbu ?? new Contact(["email" => $reg->email, "confid" => true], $conf);
+            $cdbu->_set_create_prop($reg);
+            if ($cdbu->save_prop()) {
                 $u->_contactdb_user = false;
             }
         }
 
         // create or update local user
-        $upd = $u->_make_create_updater($cdbu ? : $reg, false);
+        $u->_set_create_prop($cdbu ?? $reg);
         if (!$u->contactId) {
             if (($cdbu && $cdbu->disabled)
-                || get($reg, "disabled")) {
-                $upd["disabled"] = 1;
+                || ($reg->disabled ?? false)) {
+                $u->set_prop("disabled", true);
             }
             if ($cdbu) {
-                $upd["password"] = "";
-                $upd["passwordTime"] = $cdbu->passwordTime;
+                $u->set_prop("password", "");
+                $u->set_prop("passwordTime", $cdbu->passwordTime);
+                $u->set_prop("passwordUseTime", 0);
             }
         }
-        if ($upd && !($u->apply_updater($upd, false))) {
-            // failed because concurrent create (unlikely)
+        if (!$u->save_prop()) {
+            // maybe failed because concurrent create (unlikely)
             $u = $conf->user_by_email($reg->email);
         }
 
@@ -1814,39 +1949,42 @@ class Contact {
 
         // create cdb user
         if (!$cdbu && $this->conf->contactdb()) {
-            $this->contactdb_update(null, true);
+            $this->contactdb_update();
             $cdbu = $this->contactdb_user();
         }
 
         // update cdb password
         if ($cdb_ok
             || ($cdbu && (string) $cdbu->password === "")) {
-            $updater = ["passwordUseTime" => Conf::$now];
             if (!$cdb_ok || $this->password_needs_rehash($cdbu->password)) {
-                $updater["password"] = $this->hash_password($input);
+                $cdbu->set_prop("password", $this->hash_password($input));
             }
             if (!$cdb_ok || !$cdbu->passwordTime) {
-                $updater["passwordTime"] = Conf::$now;
+                $cdbu->set_prop("passwordTime", Conf::$now);
             }
-            $cdbu->apply_updater($updater, true);
+            $cdbu->set_prop("passwordUseTime", Conf::$now);
+            $cdbu->save_prop();
 
             // clear local password
             if ($this->contactId > 0 && (string) $this->password !== "") {
-                $this->apply_updater(["passwordUseTime" => Conf::$now, "password" => "", "passwordTime" => Conf::$now], false);
+                $this->set_prop("password", "");
+                $this->set_prop("passwordTime", Conf::$now);
+                $this->set_prop("passwordUseTime", Conf::$now);
+                $this->save_prop();
                 $local_ok = false;
             }
         }
 
         // update local password
         if ($local_ok) {
-            $updater = ["passwordUseTime" => Conf::$now];
             if ($this->password_needs_rehash($this->password)) {
-                $updater["password"] = $this->hash_password($input);
+                $this->set_prop("password", $this->hash_password($input));
             }
             if (!$this->passwordTime) {
-                $updater["passwordTime"] = Conf::$now;
+                $this->set_prop("passwordTime", Conf::$now);
             }
-            $this->apply_updater($updater, false);
+            $this->set_prop("passwordUseTime", Conf::$now);
+            $this->save_prop();
 
             // complain about local password use
             if ($cdbu) {
@@ -1879,13 +2017,18 @@ class Contact {
         }
 
         $cdbu = $this->contactdb_user();
-        if ($cdbu) {
-            $cdbu->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => Conf::$now], true);
-            if ($this->contactId && (string) $this->password !== "") {
-                $this->apply_updater(["passwordUseTime" => $use_time, "password" => "", "passwordTime" => Conf::$now], false);
-            }
-        } else if ($this->contactId) {
-            $this->apply_updater(["passwordUseTime" => $use_time, "password" => $hash, "passwordTime" => Conf::$now], false);
+        $saveu = $cdbu ?? ($this->contactId ? $this : null);
+        if ($saveu) {
+            $saveu->set_prop("password", $hash);
+            $saveu->set_prop("passwordTime", Conf::$now);
+            $saveu->set_prop("passwordUseTime", $use_time);
+            $saveu->save_prop();
+        }
+        if ($saveu === $cdbu && $this->contactId && (string) $this->password !== "") {
+            $this->set_prop("password", "");
+            $this->set_prop("passwordTime", Conf::$now);
+            $this->set_prop("passwordUseTime", $use_time);
+            $this->save_prop();
         }
         return true;
     }

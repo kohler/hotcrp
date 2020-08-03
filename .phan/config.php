@@ -39,6 +39,7 @@ $config = [
     "backward_compatibility_checks" => false,
 
     //"redundant_condition_detection" => true,
+    //"dead_code_detection" => true,
 
     // Only emit critical issues to start with
     // (0 is low severity, 5 is normal severity, 10 is critical)
