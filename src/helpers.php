@@ -507,7 +507,7 @@ function actionBar($mode = null, $qreq = null) {
         $x .= '<td class="vbar gopaper">' . goPaperForm($goBase, $xmode) . '</td>';
     }
 
-    return $x ? '<table class="vbar"><tr>' . $x . '</tr></table>' : '';
+    return '<table class="vbar"><tr>' . $x . '</tr></table>';
 }
 
 function parseReviewOrdinal($t) {

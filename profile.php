@@ -115,8 +115,8 @@ if (!$Me->is_signed_in()) {
 
 $newProfile = 0;
 $UserStatus = new UserStatus($Me);
-$UserStatus->set_context(["args" => [$UserStatus]]);
 $UserStatus->set_user($Me);
+$UserStatus->set_context(["args" => [$UserStatus]]);
 
 if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
     $Qreq->u = $Qreq->user ? : $Qreq->contact;

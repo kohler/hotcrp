@@ -196,6 +196,7 @@ h2.leftmenu {
 table.vbar {
 	float: right;
 	font-size: smaller;
+	min-height: 0.75rem;
 }
 #top > table.vbar {
 	margin-top: 8px;
