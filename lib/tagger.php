@@ -285,7 +285,6 @@ class TagMap implements IteratorAggregate {
     private $canonical_style_lmap = [];
     private $basic_badges;
 
-    private static $emoji_code_map = null;
     private static $multicolor_map = [];
 
     function __construct(Conf $conf) {
@@ -981,6 +980,7 @@ class Tagger {
     /** @var int */
     private $_contactId = 0;
 
+    /** @readonly */
     private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
 
 
@@ -1041,16 +1041,6 @@ class Tagger {
     /** @param bool $sequential */
     static function value_increment($sequential) {
         return $sequential ? 1 : self::$value_increment_map[mt_rand(0, 9)];
-    }
-
-    /** @param array{int,float} $a
-     * @param array{int,float} $b */
-    static function id_index_compar($a, $b) {
-        if ($a[1] != $b[1]) {
-            return $a[1] < $b[1] ? -1 : 1;
-        } else {
-            return $a[0] - $b[0];
-        }
     }
 
 

@@ -2,26 +2,6 @@
 // text.php -- HotCRP text helper functions
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class NameInfo {
-    public $firstName;
-    public $lastName;
-    public $affiliation;
-    public $email;
-    public $name;
-    public $orderedName;
-    public $unaccentedName;
-    public $middleName;
-    public $lastFirst;
-    public $nameAmbiguous;
-    public $nameAutosplit;
-    public $nameAscii;
-    static function make_last_first() {
-        $ni = new NameInfo;
-        $ni->lastFirst = true;
-        return $ni;
-    }
-}
-
 class TextPregexes {
     public $value;
     public $preg_raw;
@@ -30,26 +10,7 @@ class TextPregexes {
 }
 
 class Text {
-    static private $argkeys = array("firstName", "lastName", "email",
-                                    "middleName", "lastFirst", "nameAmbiguous", "name");
-    static private $mapkeys = array("firstName" => "firstName",
-                                    "first" => "firstName",
-                                    "lastName" => "lastName",
-                                    "last" => "lastName",
-                                    "givenName" => "firstName",
-                                    "given" => "firstName",
-                                    "familyName" => "lastName",
-                                    "family" => "lastName",
-                                    "email" => "email",
-                                    "middleName" => "middleName",
-                                    "middle" => "middleName",
-                                    "lastFirst" => "lastFirst",
-                                    "nameAmbiguous" => "nameAmbiguous",
-                                    "name" => "name",
-                                    "fullName" => "name",
-                                    "affiliation" => "affiliation");
-    static private $boolkeys = array("lastFirst" => true,
-                                     "nameAmbiguous" => true);
+    /** @readonly */
     static private $boring_words = [
         "a" => true, "an" => true, "as" => true, "be" => true,
         "by" => true, "did" => true, "do" => true, "for" => true,
@@ -462,7 +423,6 @@ class Text {
     }
 
     const SEARCH_UNPRIVILEGE_EXACT = 2;
-    const SEARCH_NO_SPECIAL = 8;
 
     static function simple_search($needle, $haystacks, $flags = 0) {
         if (!($flags & self::SEARCH_UNPRIVILEGE_EXACT)) {

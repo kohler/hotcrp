@@ -3056,11 +3056,6 @@ class Conf {
         $t = $this->settings[$name] ?? 0;
         return $this->unparse_time_long($t);
     }
-    /** @param string $name */
-    function unparse_setting_usertime_span($name) {
-        $t = $this->settings[$name] ?? 0;
-        return $t ? $this->unparse_usertime_span($t) : "";
-    }
     /** @param string $name
      * @param string $suffix */
     function unparse_setting_time_span($name, $suffix = "") {
@@ -3081,10 +3076,6 @@ class Conf {
         }
     }
 
-    function settingsAfter($name) {
-        $t = $this->settings[$name] ?? null;
-        return $t !== null && $t > 0 && $t <= Conf::$now;
-    }
     function deadlinesAfter($name, $grace = null) {
         $t = $this->settings[$name] ?? null;
         if ($t !== null && $t > 0 && $grace

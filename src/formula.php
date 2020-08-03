@@ -1577,8 +1577,6 @@ class Formula implements Abbreviator, JsonSerializable {
             return [$t, "", $t];
     }
 
-    const ARGUMENT_REGEX = '((?:"[^"]*"|[-#a-zA-Z0-9_.@!*?~]+|:(?="|[-#a-zA-Z0-9_.@+!*\/?~]+(?![()])))+)';
-
     private function _parse_function(&$t, $name, $kwdef) {
         $ff = new FormulaCall($this, $kwdef, $name);
         $args = $kwdef->args ?? false;

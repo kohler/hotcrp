@@ -132,7 +132,9 @@ class Contact {
     private $_rights_version = 0;
     /** @var int */
     public $tracker_kiosk_state = 0;
+    /** @var ?array<string,mixed> */
     private $_capabilities;
+    /** @var ?list<int> */
     private $_review_tokens;
     const OVERRIDE_CONFLICT = 1;
     const OVERRIDE_TIME = 2;
@@ -159,7 +161,7 @@ class Contact {
     public $watch;
 
 
-    /** @param ?array<string,null|int|string> $user */
+    /** @param ?array<string,mixed> $user */
     function __construct($user = null, Conf $conf = null) {
         $this->conf = $conf ?? Conf::$main;
         if ($user) {
@@ -2154,29 +2156,28 @@ class Contact {
 
     // review tokens
 
+    /** @return list<int> */
     function review_tokens() {
-        return $this->_review_tokens ? : [];
+        return $this->_review_tokens ?? [];
     }
 
+    /** @return int|false */
     function active_review_token_for(PaperInfo $prow, ReviewInfo $rrow = null) {
-        if ($this->_review_tokens) {
-            if ($rrow) {
-                if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->_review_tokens))
-                    return (int) $rrow->reviewToken;
-            } else {
-                foreach ($prow->reviews_by_id() as $rrow)
-                    if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->_review_tokens))
-                        return (int) $rrow->reviewToken;
+        if ($this->_review_tokens !== null) {
+            foreach ($rrow ? [$rrow] : $prow->reviews_by_id() as $rr) {
+                if (($t = (int) $rrow->reviewToken) !== 0
+                    && in_array($t, $this->_review_tokens, true))
+                    return $t;
             }
         }
         return false;
     }
 
+    /** @param false|int $token
+     * @param bool $on */
     function change_review_token($token, $on) {
         assert(($token === false && $on === false) || is_int($token));
-        if (!$this->_review_tokens) {
-            $this->_review_tokens = [];
-        }
+        $this->_review_tokens = $this->_review_tokens ?? [];
         $old_ntokens = count($this->_review_tokens);
         if (!$on && $token === false) {
             $this->_review_tokens = [];

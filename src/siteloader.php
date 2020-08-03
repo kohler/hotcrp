@@ -20,7 +20,6 @@ class SiteLoader {
         "LoginHelper" => "lib/login.php",
         "MailPreparation" => "lib/mailer.php",
         "MimeText" => "lib/mailer.php",
-        "NameInfo" => "lib/text.php",
         "PaperInfoSet" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",
         "PaperValue" => "src/paperoption.php",
