@@ -38,6 +38,20 @@ function is_int_list($x) {
     }
 }
 
+/** @param mixed $x
+ * @return bool */
+function is_string_list($x) {
+    if (is_array($x) && array_values($x) === $x) {
+        foreach ($x as $i) {
+            if (!is_string($i))
+                return false;
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
 
 // string helpers
 

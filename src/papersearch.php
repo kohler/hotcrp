@@ -1614,7 +1614,9 @@ class PaperSearch {
 
     /** @var string */
     public $q;
+    /** @var string */
     private $_qt;
+    /** @var list<string> */
     private $_qt_fields;
     /** @var ?SearchTerm */
     private $_qe;
@@ -1627,10 +1629,10 @@ class PaperSearch {
     /** @var ?string */
     private $_match_preg_query;
 
-    private $contact_match = array();
-    public $_query_options = array();
+    private $contact_match = [];
+    public $_query_options = [];
     public $_has_review_adjustment = false;
-    private $_ssRecursion = array();
+    private $_ssRecursion = [];
     private $_allow_deleted = false;
     /** @var ?array<int,int> */
     public $thenmap;
@@ -1668,9 +1670,10 @@ class PaperSearch {
 
 
     // NB: `$options` can come from an unsanitized user request.
+    /** @param string|array|Qrequest $options */
     function __construct(Contact $user, $options) {
         if (is_string($options)) {
-            $options = array("q" => $options);
+            $options = ["q" => $options];
         }
 
         // contact facts

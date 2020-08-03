@@ -256,15 +256,13 @@ if ($reviewer) {
     }
 
     // Conflict information
-    if ($reviewer->collaborators()) {
-        echo '<div class="f-i"><label>Collaborators</label>';
-        $cos = [];
-        foreach (explode("\n", $reviewer->collaborators()) as $co) {
-            if ($co !== "")
-                $cos[] = htmlspecialchars(trim($co));
-        }
-        echo join("; ", $cos), '</div>';
+    $any = false;
+    foreach ($reviewer->collaborator_generator() as $m) {
+        echo ($any ? ';</span> ' : '<div class="f-i"><label>Collaborators</label>'),
+            '<span class="nw">', $m->name_h(NAME_A);
+        $any = true;
     }
+    echo $any ? '</span></div>' : '';
 
     $show = " show:au" . ($Conf->setting("sub_collab") ? " show:co" : "");
     echo '<div class="f-i">',

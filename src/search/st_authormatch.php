@@ -14,23 +14,27 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         if ($word === "any" && $sword->kwexplicit && !$sword->quoted) {
             $type = substr($type, 0, 2);
             return new TextMatch_SearchTerm($type === "co" ? "co" : "au", true, false);
-        } else if (($matcher = AuthorMatcher::make_string_guess($word)))
+        } else if (($matcher = AuthorMatcher::make_string_guess($word))) {
             return new AuthorMatch_SearchTerm($type, $matcher);
-        else
+        } else {
             return new False_SearchTerm;
+        }
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        if ($this->type !== "comatch")
+        if ($this->type !== "comatch") {
             $sqi->add_column("authorInformation", "Paper.authorInformation");
-        if ($this->type !== "aumatch")
+        }
+        if ($this->type !== "aumatch") {
             $sqi->add_column("collaborators", "Paper.collaborators");
-        if ($this->type === "aumatch")
+        }
+        if ($this->type === "aumatch") {
             return "Paper.authorInformation!=''";
-        else if ($this->type === "comatch")
+        } else if ($this->type === "comatch") {
             return "Paper.collaborators!=''";
-        else
+        } else {
             return "(Paper.authorInformation!='' or Paper.collaborators!='')";
+        }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         if (!$srch->user->allow_view_authors($row))
@@ -38,23 +42,27 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         $anymatch = false;
         if ($this->type !== "comatch"
             && $row->field_match_pregexes($this->matcher->general_pregexes(), "authorInformation")) {
-            foreach ($row->author_list() as $au)
+            foreach ($row->author_list() as $au) {
                 if ($this->matcher->test($au, true))
                     return true;
+            }
         }
         if ($this->type !== "aumatch"
             && $row->field_match_pregexes($this->matcher->general_pregexes(), "collaborators")) {
-            foreach ($row->collaborator_list() as $au)
+            foreach ($row->collaborator_list() as $au) {
                 if ($this->matcher->test($au, true))
                     return true;
+            }
         }
         return false;
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
-        if ($this->type !== "comatch")
+        if ($this->type !== "comatch") {
             $srch->regex["au"][] = $this->matcher->general_pregexes();
-        if ($this->type !== "aumatch")
+        }
+        if ($this->type !== "aumatch") {
             $srch->regex["co"][] = $this->matcher->general_pregexes();
+        }
     }
 }

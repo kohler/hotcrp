@@ -366,7 +366,6 @@ xassert_eqq($nprow1->abstract, "They\nsee\r\nlots of\n\n\ncolors.");
 
 // collaborators saving
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
-xassert_eqq((string) $nprow1->collaborators, "");
 xassert_eqq($nprow1->collaborators(), "");
 
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => "  John Fart\rMIT\n\nButt Man (UCLA)"]), $nprow1, $user_estrin, "submit");
@@ -375,7 +374,6 @@ $ps->save_paper_json($pj);
 xassert_paper_status($ps);
 xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
-xassert_eqq($nprow1->collaborators, "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
 xassert_eqq($nprow1->collaborators(), "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
 
 $pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 1, "collaborators" => "Sal Stolfo, Guofei Gu, Manos Antonakakis, Roberto Perdisci, Weidong Cui, Xiapu Luo, Rocky Chang, Kapil Singh, Helen Wang, Zhichun Li, Junjie Zhang, David Dagon, Nick Feamster, Phil Porras."]), $nprow1, $user_estrin, "submit");
@@ -384,7 +382,7 @@ $ps->save_paper_json($pj);
 xassert_paper_status($ps);
 xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
-xassert_eqq($nprow1->collaborators, "Sal Stolfo
+xassert_eqq($nprow1->collaborators(), "Sal Stolfo
 Guofei Gu
 Manos Antonakakis
 Roberto Perdisci
@@ -422,9 +420,8 @@ $ps->save_paper_json($pj);
 xassert_paper_status($ps);
 xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
-xassert_eqq($nprow1->collaborators, "One guy (MIT)");
-xassert_eqq($nprow1->dataOverflow, null);
 xassert_eqq($nprow1->collaborators(), "One guy (MIT)");
+xassert_eqq($nprow1->dataOverflow, null);
 
 // topic saving
 $Conf->qe("insert into TopicArea (topicName) values ('Cloud computing'), ('Architecture'), ('Security'), ('Cloud networking')");

@@ -768,9 +768,8 @@ class PaperInfo {
     function collaborator_list() {
         if ($this->_collaborator_array === null) {
             $this->_collaborator_array = [];
-            foreach (explode("\n", $this->collaborators()) as $co) {
-                if (($m = AuthorMatcher::make_collaborator_line($co)))
-                    $this->_collaborator_array[] = $m;
+            foreach (Contact::make_collaborator_generator($this->collaborators()) as $m) {
+                $this->_collaborator_array[] = $m;
             }
         }
         return $this->_collaborator_array;

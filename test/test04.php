@@ -118,7 +118,7 @@ xassert_eqq($te->firstName, "Te");
 xassert_eqq($te->lastName, "Thamrongrattanarit");
 xassert_eqq($te->affiliation, "Brandeis University");
 xassert($te->check_password("isdevitch"));
-xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
+xassert_eqq($te->collaborators(), "Computational Linguistics Magazine");
 
 // changing email should work too, but not change cdb except for defaults
 $result = Dbl::qe($Conf->contactdb(), "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@_.com', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
@@ -169,7 +169,7 @@ xassert_eqq($te->email, "te@_.com");
 xassert_eqq($te->firstName, "Te");
 xassert_eqq($te->lastName, "Thamrongrattanarit");
 xassert_eqq($te->affiliation, "Brandeis University");
-xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
+xassert_eqq($te->collaborators(), "Computational Linguistics Magazine");
 
 // create a user in cdb: create, then delete from local db
 $anna = "akhmatova@poema.ru";
@@ -205,7 +205,23 @@ xassert($user_van->act_author_view($paper1));
 $us->save((object) ["email" => "anne1@_.com", "tags" => ["a#1"], "roles" => (object) ["pc" => true]]);
 $us->save((object) ["email" => "anne2@_.com", "first" => "Anne", "last" => "Dudfield", "data" => (object) ["data_test" => 139], "tags" => ["a#2", "b#3"], "roles" => (object) ["sysadmin" => true], "collaborators" => "derpo\n"]);
 $user_anne1 = user("anne1@_.com");
+xassert_eqq($user_anne1->firstName, "");
+xassert_eqq($user_anne1->lastName, "");
+xassert_eqq($user_anne1->collaborators(), "");
+xassert_eqq($user_anne1->tag_value("a"), 1.0);
+xassert_eqq($user_anne1->tag_value("b"), false);
+xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
+xassert_eqq($user_anne1->data("data_test"), null);
+xassert_eqq($user_anne1->email, "anne1@_.com");
 $user_anne2 = user("anne2@_.com");
+xassert_eqq($user_anne2->firstName, "Anne");
+xassert_eqq($user_anne2->lastName, "Dudfield");
+xassert_eqq($user_anne2->collaborators(), "All (derpo)");
+xassert_eqq($user_anne2->tag_value("a"), 2.0);
+xassert_eqq($user_anne2->tag_value("b"), 3.0);
+xassert_eqq($user_anne2->roles, Contact::ROLE_ADMIN);
+xassert_eqq($user_anne2->data("data_test"), 139);
+xassert_eqq($user_anne2->email, "anne2@_.com");
 xassert_assign($user_chair, "paper,action,user\n1,conflict,anne2@_.com");
 xassert($user_anne1 && $user_anne2);
 $merger = new MergeContacts($user_anne2, $user_anne1);

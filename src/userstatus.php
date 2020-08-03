@@ -157,12 +157,13 @@ class UserStatus extends MessageSet {
     }
 
     function autocomplete($what) {
-        if ($this->self)
+        if ($this->self) {
             return $what;
-        else if ($what === "email" || $what === "username" || $what === "current-password")
+        } else if ($what === "email" || $what === "username" || $what === "current-password") {
             return "nope";
-        else
+        } else {
             return "off";
+        }
     }
 
     static function unparse_roles_json($roles) {
@@ -748,7 +749,7 @@ class UserStatus extends MessageSet {
             return false;
         }
 
-        $user = $old_user ? : $old_cdb_user;
+        $user = $old_user ?? $old_cdb_user;
 
         // normalize and check for errors
         if (!isset($cj->id)) {

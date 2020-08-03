@@ -26,7 +26,9 @@ class PaperListTableRender {
     public $hascolors = false;
     /** @var int */
     public $skipcallout;
+    /** @var string */
     public $last_trclass = "";
+    /** @var list<int> */
     public $groupstart = [0];
 
     /** @param int $ncol
@@ -371,13 +373,6 @@ class PaperList implements XtContext {
     function viewing($fname) {
         $fname = self::$view_synonym[$fname] ?? $fname;
         return ($this->_viewf[$fname] ?? 0) >= self::VIEW_SHOW;
-    }
-
-    /** @param string $fname
-     * @return bool
-     * @deprecated */
-    function showing($fname) {
-        return $this->viewing($fname);
     }
 
     /** @param string $k

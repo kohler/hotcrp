@@ -704,15 +704,10 @@ class ContactList {
         case self::FIELD_COLLABORATORS:
             if ($this->user->isPC && ($row->roles & Contact::ROLE_PC)) {
                 $t = [];
-                foreach (explode("\n", $row->collaborators()) as $collab) {
-                    if (preg_match(',\A(.*?)\s*(\(.*\))\s*\z,', $collab, $m)) {
-                        $t[] = '<span class="nw">' . htmlspecialchars($m[1])
-                            . ' <span class="auaff">' . htmlspecialchars($m[2]) . '</span></span>';
-                    } else if (($collab = trim($collab)) !== "" && strcasecmp($collab, "None")) {
-                        $t[] = '<span class="nw">' . htmlspecialchars($collab) . '</span>';
-                    }
+                foreach ($row->collaborator_generator() as $co) {
+                    $t[] = (empty($t) ? '' : ';</span> ') . '<span class="nw">' . $co->name_h(NAME_A);
                 }
-                return join("; ", $t);
+                return empty($t) ? "" : join("", $t) . '</span>';
             } else {
                 return "";
             }

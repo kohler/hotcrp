@@ -241,6 +241,7 @@ class Conf {
     private $_mail_keyword_map;
     private $_mail_keyword_factories;
     private $_mail_template_map;
+    /** @var ?GroupedExtensions */
     private $_page_partials;
 
     /** @var ?PaperInfo */

@@ -26,6 +26,7 @@ class Contact {
     public $contactXid = 0;
     /** @var Conf */
     public $conf;
+    /** @var ?string */
     public $confid;
 
     /** @var string */
@@ -40,46 +41,60 @@ class Contact {
     public $email = "";
     /** @var int */
     public $roles = 0;
+    /** @var ?string */
     public $contactTags;
+    /** @var bool|'deleted' */
     public $disabled = false;
+    /** @var bool */
     public $_slice = false;
 
     public $nameAmbiguous;
-    public $preferredEmail = "";
     /** @var string */
     private $_sorter;
     /** @var ?int */
     private $_sortspec;
+    /** @var ?int */
     public $sort_position;
-    public $name_analysis;
 
-    public $country;
+    /** @var ?string */
     public $collaborators;
+    public $preferredEmail = "";
+    /** @var ?string */
+    public $country;
+    /** @var ?string */
     public $phone;
+    /** @var ?int */
     public $birthday;
+    /** @var ?string */
     public $gender;
 
+    /** @var string */
     private $password = "";
+    /** @var int */
     private $passwordTime = 0;
+    /** @var int */
     private $passwordUseTime = 0;
+    /** @var false|null|Contact */
     private $_contactdb_user = false;
 
+    /** @var ?bool */
     private $_disabled;
     public $activity_at = false;
-    private $lastLogin;
+    private $lastLogin = 0;
     public $creationTime = 0;
     private $updateTime = 0;
     private $data;
     /** @var ?object */
     private $_jdata;
-    private $_topic_interest_map;
-    private $_name_for_map = [];
     const WATCH_REVIEW_EXPLICIT = 1;  // only in PaperWatch
     const WATCH_REVIEW = 2;
     const WATCH_REVIEW_ALL = 4;
     const WATCH_REVIEW_MANAGED = 8;
     const WATCH_FINAL_SUBMIT_ALL = 32;
     public $defaultWatch = self::WATCH_REVIEW;
+
+    private $_topic_interest_map;
+    private $_name_for_map = [];
 
     // Roles
     const ROLE_PC = 1;
@@ -89,6 +104,12 @@ class Contact {
     const ROLE_AUTHOR = 16;
     const ROLE_REVIEWER = 32;
     const ROLE_REQUESTER = 64;
+    /** @var bool */
+    public $isPC = false;
+    /** @var bool */
+    public $privChair = false;
+    /** @var bool */
+    public $is_site_contact = false;
     /** @var ?int */
     private $_db_roles;
     /** @var ?int */
@@ -107,18 +128,12 @@ class Contact {
     private $_has_approvable;
     /** @var ?int */
     private $_can_view_pc;
-    /** @var bool */
-    public $is_site_contact = false;
     /** @var int */
     private $_rights_version = 0;
-    /** @var bool */
-    public $isPC = false;
-    /** @var bool */
-    public $privChair = false;
+    /** @var int */
     public $tracker_kiosk_state = 0;
     private $_capabilities;
     private $_review_tokens;
-    private $_activated = false;
     const OVERRIDE_CONFLICT = 1;
     const OVERRIDE_TIME = 2;
     const OVERRIDE_CHECK_TIME = 4;
@@ -127,10 +142,15 @@ class Contact {
     /** @var int */
     private $_overrides = 0;
     public $hidden_papers;
+
+    /** @var bool */
+    private $_activated = false;
+
     /** @var ?non-empty-list<AuthorMatcher> */
     private $_aucollab_matchers;
     /** @var ?TextPregexes|false */
     private $_aucollab_general_pregexes;
+    /** @var ?list<PaperInfo> */
     private $_authored_papers;
 
     // Per-paper DB information, usually null
@@ -316,14 +336,37 @@ class Contact {
     }
 
 
+    /** @return string */
     function collaborators() {
         $this->_slice && $this->unslice();
-        return $this->collaborators;
+        return $this->collaborators ?? "";
     }
 
+    /** @return Generator<AuthorMatcher> */
+    static function make_collaborator_generator($s) {
+        $pos = 0;
+        while (($eol = strpos($s, "\n", $pos)) !== false) {
+            if ($eol !== $pos
+                && ($m = AuthorMatcher::make_collaborator_line(substr($s, $pos, $eol - $pos))) !== null) {
+                yield $m;
+            }
+            $pos = $eol + 1;
+        }
+        if (strlen($s) !== $pos
+            && ($m = AuthorMatcher::make_collaborator_line(substr($s, $pos))) !== null) {
+            yield $m;
+        }
+    }
+
+    /** @return Generator<AuthorMatcher> */
+    function collaborator_generator() {
+        return self::make_collaborator_generator($this->collaborators());
+    }
+
+    /** @return string */
     function country() {
         $this->_slice && $this->unslice();
-        return $this->country;
+        return $this->country ?? "";
     }
 
 
@@ -569,8 +612,9 @@ class Contact {
                 && $trueuser_aucheck + 600 < Conf::$now) {
                 $this->save_session("trueuser_author_check", Conf::$now);
                 $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
-                if (!empty($aupapers))
+                if (!empty($aupapers)) {
                     $this->activate_database_account();
+                }
             }
             if ($this->has_account_here()
                 && $trueuser_aucheck) {
@@ -1092,6 +1136,7 @@ class Contact {
         return $this->_jdata;
     }
 
+    /** @param ?string $key */
     function data($key = null) {
         $d = $this->make_data();
         if ($key) {
@@ -2173,10 +2218,14 @@ class Contact {
             } else {
                 $result = $this->conf->qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
                 $this->_topic_interest_map = Dbl::fetch_iimap($result);
-                $this->_sort_topic_interest_map();
+                $this->_sort_topic_interests();
             }
         }
         return $this->_topic_interest_map;
+    }
+
+    function invalidate_topic_interests() {
+        $this->_topic_interest_map = null;
     }
 
     /** @param Contact[] $contacts */
@@ -2200,11 +2249,11 @@ class Contact {
             Dbl::free($result);
         }
         foreach ($contacts as $c) {
-            $c->_sort_topic_interest_map();
+            $c->_sort_topic_interests();
         }
     }
 
-    private function _sort_topic_interest_map() {
+    private function _sort_topic_interests() {
         $this->conf->topic_set()->ksort($this->_topic_interest_map);
     }
 
@@ -4352,12 +4401,8 @@ class Contact {
     function aucollab_matchers() {
         if ($this->_aucollab_matchers === null) {
             $this->_aucollab_matchers = [new AuthorMatcher($this)];
-            $c = (string) $this->collaborators();
-            if ($c !== "") {
-                foreach (explode("\n", $c) as $co) {
-                    if (($m = AuthorMatcher::make_collaborator_line($co)))
-                        $this->_aucollab_matchers[] = $m;
-                }
+            foreach ($this->collaborator_generator() as $m) {
+                $this->_aucollab_matchers[] = $m;
             }
         }
         return $this->_aucollab_matchers;
