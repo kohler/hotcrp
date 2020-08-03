@@ -80,6 +80,7 @@ class UserStatus extends MessageSet {
     function global_self() {
         return $this->self ? $this->user->contactdb_user() : null;
     }
+    /** @deprecated */
     function global_user() { // XXX
         return $this->global_self();
     }
@@ -90,7 +91,7 @@ class UserStatus extends MessageSet {
     function gxt() {
         if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
-            $this->_gxt->add_xt_checker([$this, "xt_allow_security"]);
+            $this->_gxt->add_xt_checker([$this, "xt_allower"]);
             $this->initialize_gxt();
         }
         return $this->_gxt;
@@ -109,8 +110,16 @@ class UserStatus extends MessageSet {
                     && !$this->conf->contactdb()
                     && !$this->conf->opt("chairHidePasswords")));
     }
-    function xt_allow_security($e, $xt, Contact $user, Conf $conf) {
-        return $e === "profile_security" ? $this->allow_security() : null;
+    function xt_allower($e, $xt, Contact $user, Conf $conf) {
+        if ($e === "profile_security") {
+            return $this->allow_security();
+        } else if ($e === "self") {
+            return $this->self;
+        } else if ($e === "global_self") {
+            return $this->self && $this->global_self();
+        } else {
+            return null;
+        }
     }
 
     static function user_paper_info(Conf $conf, $cid) {
