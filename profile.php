@@ -512,6 +512,7 @@ if ($Qreq->t && $Qreq->t !== $profile_topic && $Qreq->method() === "GET") {
     $Qreq->t = $profile_topic === "main" ? null : $profile_topic;
     $Conf->self_redirect($Qreq);
 }
+$UserStatus->set_context(["root" => $profile_topic]);
 
 // set session list
 if (!$newProfile
@@ -695,7 +696,7 @@ if ($newProfile === 2) {
     }
     echo '</h2>';
 
-    $UserStatus->set_context(["root" => $profile_topic, "args" => [$UserStatus, $Qreq]]);
+    $UserStatus->set_context(["args" => [$UserStatus, $Qreq]]);
     $UserStatus->render_group($profile_topic);
 
     if ($UserStatus->global_self() && false) {
