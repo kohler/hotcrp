@@ -10,8 +10,8 @@
         "render_callback": "UserStatus::render_main"
     },
     {
-        "name": "main/demographics", "position": 3000,
-        "render_callback": "UserStatus::render_demographics"
+        "name": "main/country", "position": 3000,
+        "render_callback": "UserStatus::render_country"
     },
     {
         "name": "main/roles", "position": 5000,

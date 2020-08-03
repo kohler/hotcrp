@@ -116,6 +116,7 @@ if (!$Me->is_signed_in()) {
 $newProfile = 0;
 $UserStatus = new UserStatus($Me);
 $UserStatus->set_context(["args" => [$UserStatus]]);
+$UserStatus->set_user($Me);
 
 if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
     $Qreq->u = $Qreq->user ? : $Qreq->contact;
@@ -444,7 +445,7 @@ if (!$Qreq->post_ok()) {
         } else {
             $xcj = [];
             if ($newProfile) {
-                foreach (["roles", "follow", "tags"] as $k) {
+                foreach (["pctype", "ass", "contactTags"] as $k) {
                     if (isset($cj->$k))
                         $xcj[$k] = $cj->$k;
                 }
@@ -572,20 +573,23 @@ if (!$newProfile) {
 // compute current form json
 if ($useRequest) {
     $UserStatus->ignore_msgs = true;
-    $formcj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
-    $UserStatus->set_context(["args" => [$UserStatus, $formcj, $Qreq]]);
-    $UserStatus->request_group("");
 } else {
-    $formcj = $userj;
+    if (($cdbu = $Acct->contactdb_user())) {
+        $Acct->import_prop($cdbu);
+        if ($Acct->prop_changed()) {
+            $Acct->save_prop();
+        }
+    }
 }
 if (($prdj = $Me->session("profile_redirect"))) {
     $Me->save_session("profile_redirect", null);
     foreach ($prdj as $k => $v) {
         if ($k === "warning_fields") {
-            foreach ($v as $k)
+            foreach ($v as $k) {
                 $UserStatus->warning_at($k, null);
+            }
         } else {
-            $formcj->$k = $v;
+            $Qreq->$k = $v;
         }
     }
 }
@@ -679,9 +683,12 @@ if ($newProfile === 2) {
     }
 
     echo '<div id="foldaccount" class="';
-    if (isset($formcj->roles) && in_array("pc", $formcj->roles)) {
+    if ($Qreq->pctype === "chair"
+        || $Qreq->pctype === "pc"
+        || (!isset($Qreq->pctype) && ($Acct->roles & Contact::ROLE_PC) !== 0)) {
         echo "fold1o fold2o";
-    } else if (isset($formcj->roles) && in_array("sysadmin", $formcj->roles)) {
+    } else if ($Qreq->ass
+               || (!isset($Qreq->pctype) && ($Acct->roles & Contact::ROLE_ADMIN) !== 0)) {
         echo "fold1c fold2o";
     } else {
         echo "fold1c fold2c";
@@ -699,7 +706,7 @@ if ($newProfile === 2) {
     }
     echo '</h2>';
 
-    $UserStatus->set_context(["root" => $profile_topic, "args" => [$UserStatus, $userj, $formcj]]);
+    $UserStatus->set_context(["root" => $profile_topic, "args" => [$UserStatus, $Qreq]]);
     $UserStatus->render_group($profile_topic);
 
     if ($UserStatus->global_self() && false) {

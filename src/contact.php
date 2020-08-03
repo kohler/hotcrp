@@ -1471,22 +1471,26 @@ class Contact {
         if ($shape === 0) {
             throw new Exception("bad prop $prop");
         }
-        if (($shape & self::PROP_LOCAL) !== 0
-            && !$this->confid) {
-            $value = $this->prop1($prop, $shape);
-            if (($shape & self::PROP_CDB) === 0
-                || ($value !== null
-                    && ($value !== "" || ($shape & self::PROP_NULL) !== 0)
-                    && (($shape & self::PROP_NAME) !== 0 || $this->firstName !== "" || $this->lastName !== ""))) {
-                return $value;
+        return $this->prop1($prop, $shape);
+    }
+
+    /** @param string $prop */
+    function gprop($prop) {
+        $shape = self::$props[$prop] ?? 0;
+        if ($shape === 0) {
+            throw new Exception("bad prop $prop");
+        }
+        $value = $this->prop1($prop, $shape);
+        if ($value === null || ($value === "" && ($shape & self::PROP_NULL) !== 0)) {
+            if (($shape & self::PROP_CDB) !== 0
+                && ($cdbu = $this->contactdb_user())
+                && $cdbu !== $this
+                && (($shape & self::PROP_NAME) === 0
+                    || ($this->firstName === "" && $this->lastName === ""))) {
+                $value = $cdbu->prop1($prop, $shape);
             }
         }
-        if (($shape & self::PROP_CDB) !== 0
-            && ($cdbu = $this->contactdb_user())) {
-            return $cdbu->prop1($prop, $shape);
-        } else {
-            return ($shape & self::PROP_NULL) !== 0 ? null : "";
-        }
+        return $value;
     }
 
     /** @param string $prop
@@ -1649,7 +1653,7 @@ class Contact {
         return $old_roles !== $new_roles;
     }
 
-    private function _set_create_prop($reg) {
+    function import_prop($reg) {
         if ($reg instanceof Contact) {
             foreach (self::$props as $prop => $shape) {
                 if (($shape & self::PROP_IMPORT) !== 0) {
@@ -1708,14 +1712,14 @@ class Contact {
         // create or update contactdb user
         if ($cdb && $valid_email) {
             $cdbu = $cdbu ?? new Contact(["email" => $reg->email, "confid" => true], $conf);
-            $cdbu->_set_create_prop($reg);
+            $cdbu->import_prop($reg);
             if ($cdbu->save_prop()) {
                 $u->_contactdb_user = false;
             }
         }
 
         // create or update local user
-        $u->_set_create_prop($cdbu ?? $reg);
+        $u->import_prop($cdbu ?? $reg);
         if (!$u->contactId) {
             if (($cdbu && $cdbu->disabled)
                 || ($reg->disabled ?? false)) {
