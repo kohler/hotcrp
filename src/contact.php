@@ -59,10 +59,12 @@ class Contact {
     public $country;
     /** @var ?string */
     public $phone;
-    /** @var ?int */
-    public $birthday;
-    /** @var ?string */
-    public $gender;
+
+    public $demoSharing;
+    public $demoBirthday;
+    public $demoGender;
+    public $demoEthnicity;
+    public $demoAccess;
 
     /** @var string */
     private $password = "";
