@@ -31,7 +31,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
             && $sv->newv("sub_sub") > Conf::$now
             && $sv->newv("seedec") != Conf::SEEDEC_ALL
             && $sv->conf->fetch_value("select paperId from Paper where outcome<0 limit 1") > 0) {
-            $sv->warning_at(null, "Updates will not be allowed for rejected submissions. This exposes decision information that would otherwise be hidden from authors.");
+            $sv->warning_at(null, "Updates will not be allowed for rejected submissions. As a result, authors can discover information about decisions that would otherwise be hidden.");
         }
 
         if ($sv->has_interest("au_seerev")
