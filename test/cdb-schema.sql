@@ -49,8 +49,6 @@ CREATE TABLE `ContactInfo` (
   `collaborators` varbinary(8192) DEFAULT NULL,
   `passwordUseTime` int(11) NOT NULL DEFAULT '0',
   `updateTime` int(11) NOT NULL DEFAULT '0',
-  `birthday` int(11) DEFAULT NULL,
-  `gender` varbinary(24) DEFAULT NULL,
   PRIMARY KEY (`contactDbId`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
