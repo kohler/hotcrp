@@ -2981,13 +2981,13 @@ function foldup(event, opts) {
 
 handle_ui.on("js-foldup", foldup);
 $(document).on("unfold", ".js-unfold-focus", function (event, opts) {
-    focus_within(this, ".fx" + (opts.n || "") + " *");
+    opts.nofocus || focus_within(this, ".fx" + (opts.n || "") + " *");
 });
 $(document).on("fold", ".js-fold-focus", function (event, opts) {
-    focus_within(this, ".fn" + (opts.n || "") + " *");
+    opts.nofocus || focus_within(this, ".fn" + (opts.n || "") + " *");
 });
 $(function () {
-    $(".uich.js-foldup").each(function () { foldup.call(this, null); });
+    $(".uich.js-foldup").each(function () { foldup.call(this, {nofocus: true}); });
 });
 
 
