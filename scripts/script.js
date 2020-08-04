@@ -2958,7 +2958,7 @@ function foldup(event, opts) {
         }
         if (value !== null) {
             var values = (e.getAttribute("data-" + foldname + "-values") || "").split(/\s+/);
-            opts.f = values.indexOf(this.value) < 0;
+            opts.f = values.indexOf(value) < 0;
         }
     }
     dofold = !hasClass(e, foldname + "c");
