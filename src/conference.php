@@ -2352,8 +2352,9 @@ class Conf {
         return $this->_cdb;
     }
 
-    /** @return ?Contact */
-    private function contactdb_user_by_key($key, $value) {
+    /** @param string $where
+     * @return null|Dbl_Result|mysqli_result */
+    function contactdb_user_result($where, $value) {
         if (($cdb = $this->contactdb())) {
             $q = "select ContactInfo.*, roles, activity_at";
             $qv = [];
@@ -2365,7 +2366,15 @@ class Conf {
                 $qv[] = $this->dbname;
             }
             $qv[] = $value;
-            $result = Dbl::ql_apply($cdb, "$q where ContactInfo.$key=?", $qv);
+            return Dbl::ql_apply($cdb, "$q where $where", $qv);
+        } else {
+            return null;
+        }
+    }
+
+    /** @return ?Contact */
+    private function contactdb_user_by_key($key, $value) {
+        if (($result = $this->contactdb_user_result("ContactInfo.$key=?", $value))) {
             $acct = Contact::fetch($result, $this);
             Dbl::free($result);
             return $acct;

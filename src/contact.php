@@ -783,6 +783,33 @@ class Contact {
         }
     }
 
+    /** @param iterable<Contact> $users */
+    static function ensure_contactdb_users(Conf $conf, $users) {
+        if (($cdb = $conf->contactdb())) {
+            $emails = [];
+            foreach ($users as $user) {
+                if ($user->has_email()
+                    && !self::is_anonymous_email($user->email)
+                    && $user->_contactdb_user === false) {
+                    $emails[strtolower($user->email)] = null;
+                }
+            }
+            if (!empty($emails)) {
+                $result = $conf->contactdb_user_result("ContactInfo.email?a", array_keys($emails));
+                while (($cdbu = Contact::fetch($result, $conf))) {
+                    $emails[strtolower($cdbu->email)] = $cdbu;
+                }
+                Dbl::free($result);
+                foreach ($users as $user) {
+                    $lemail = strtolower($user->email);
+                    if (array_key_exists($lemail, $emails)) {
+                        $user->_contactdb_user = $emails[$lemail];
+                    }
+                }
+            }
+        }
+    }
+
     /** @param Contact $cdbu */
     private function _contactdb_save_roles($cdbu) {
         if ($cdbu->cdb_confid > 0) {
