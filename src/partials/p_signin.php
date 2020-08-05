@@ -125,6 +125,15 @@ class Signin_Partial {
     }
 
     static function render_signin_form_description(Contact $user, Qrequest $qreq) {
+        if (($su = Contact::session_users())) {
+            $nav = Navigation::get();
+            $links = [];
+            foreach ($su as $i => $email) {
+                $usuf = count($su) > 1 ? "u/{$i}/" : "";
+                $links[] = '<a href="' . htmlspecialchars($nav->base_path_relative . $usuf) . '">' . htmlspecialchars($email) . '</a>';
+            }
+            echo '<p class="is-warning"><span class="warning-mark"></span> ', $user->conf->_("You are already signed in as %s. Use this form to add another account.", commajoin($links)), '</p>';
+        }
         echo '<p class="mb-5">',
             $user->conf->_("Sign in to submit or review papers."), '</p>';
     }
