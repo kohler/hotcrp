@@ -126,7 +126,7 @@ class Revpref_SearchTerm extends SearchTerm {
         }
         $q .= " group by paperId";
         $thistab = "Revpref_" . count($sqi->tables);
-        $sqi->add_table($thistab, array("left join", "($q)"));
+        $sqi->add_table($thistab, ["left join", "($q)"]);
         return "coalesce($thistab.count,0)" . $this->rpsm->countexpr();
     }
     function exec(PaperInfo $row, PaperSearch $srch) {

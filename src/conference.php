@@ -19,13 +19,13 @@ class Track {
     const BITS_ADMIN = 0x80;  // 1 << ADMIN
     const BITS_VIEWADMIN = 0x81;  // (1 << VIEW) | (1 << ADMIN)
 
-    /** @phan-read-only */
+    /** @readonly */
     static public $map = [
         "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
         "assrev" => 4, "unassrev" => 5, "viewtracker" => 6, "admin" => 7,
         "hiddentag" => 8, "viewallrev" => 9
     ];
-    /** @phan-read-only */
+    /** @readonly */
     static public $zero = [null, null, null, null, null, null, null, null, null, null];
     /** @param int $perm
      * @return bool */
@@ -3574,7 +3574,7 @@ class Conf {
         $joins = ["Paper"];
 
         if ($options["minimal"] ?? false) {
-            $cols = ["Paper.paperId, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.outcome, Paper.leadContactId"];
+            $cols = ["Paper.paperId, Paper.timeSubmitted, Paper.timeWithdrawn, Paper.outcome, Paper.leadContactId, Paper.managerContactId"];
             if ($this->submission_blindness() === self::BLIND_OPTIONAL) {
                 $cols[] = "Paper.blind";
             }

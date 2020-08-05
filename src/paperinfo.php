@@ -338,41 +338,47 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
 }
 
 class PaperInfo {
-    /** @var int */
-    public $paperId;
     /** @var Conf */
     public $conf;
+
+    // Always available, even in "minimal" paper skeletons
+    /** @var int */
+    public $paperId;
+    /** @var ?string */
+    public $timeSubmitted;
+    /** @var ?string */
+    public $timeWithdrawn;
+    /** @var int */
+    public $outcome;
+    /** @var ?int */
+    public $leadContactId;
+    /** @var int */
+    public $managerContactId;
+
+    // Always available if submission blindness
+    /** @var ?string */
+    public $blind;
+
+    // Often available
     /** @var string */
     public $title;
     /** @var ?string */
     public $authorInformation;
     /** @var ?string */
-    public $blind;
-    /** @var ?string */
     public $abstract;
     /** @var ?string */
     public $collaborators;
     /** @var ?string */
-    public $timeSubmitted;
-    /** @var ?string */
     public $timeFinalSubmitted;
-    /** @var ?string */
-    public $timeWithdrawn;
     /** @var ?string */
     public $withdrawReason;
     /** @var ?string */
-    public $leadContactId;
-    /** @var ?string */
     public $shepherdContactId;
-    /** @var int */
-    public $managerContactId;
     /** @var ?int */
     public $paperFormat;
     /** @var ?string */
     public $capVersion;
-    /** @var ?string */
-    public $outcome;
-    /** @var ?string */
+    /** @var ?array<string,mixed> */
     public $dataOverflow;
 
     /** @var ?string */
@@ -390,6 +396,7 @@ class PaperInfo {
     /** @var ?string */
     public $sha1;
 
+    // Obtained by joins from other tables
     /** @var ?string */
     public $paper_infoJson;
     /** @var ?string */
@@ -447,6 +454,7 @@ class PaperInfo {
     /** @var ?string */
     public $commentSkeletonInfo;
 
+    // Not in database
     /** @var array<int,PaperContactInfo> */
     private $_contact_info = [];
     /** @var int */
@@ -530,6 +538,10 @@ class PaperInfo {
             }
         }
         $this->paperId = (int) $this->paperId;
+        $this->outcome = (int) $this->outcome;
+        if (isset($this->leadContactId)) {
+            $this->leadContactId = (int) $this->leadContactId;
+        }
         $this->managerContactId = (int) $this->managerContactId;
         if (isset($this->paperFormat)) {
             $this->paperFormat = (int) $this->paperFormat;
@@ -574,7 +586,8 @@ class PaperInfo {
         $prow->abstract = $prow->title = $prow->collaborators =
             $prow->authorInformation = $prow->paperTags = $prow->optionIds =
             $prow->topicIds = "";
-        $prow->leadContactId = $prow->shepherdContactId = "0";
+        $prow->leadContactId = 0;
+        $prow->shepherdContactId = "0";
         $prow->blind = "1";
         $prow->_paper_creator = $user;
         $prow->check_rights_version();

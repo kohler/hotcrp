@@ -507,7 +507,7 @@ class ContactList {
             foreach ($prows as $prow) {
                 if ($prow->leadContactId
                     && $this->user->can_view_lead($prow)) {
-                    $c = (int) $prow->leadContactId;
+                    $c = $prow->leadContactId;
                     $this->_lead_data[$c] = ($this->_lead_data[$c] ?? 0) + 1;
                 }
             }

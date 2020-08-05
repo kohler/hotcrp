@@ -7,10 +7,10 @@ abstract class S3Result {
     /** @var S3Client */
     public $s3;
     /** @var string
-     * @phan-read-only */
+     * @readonly */
     public $skey;
     /** @var string
-     * @phan-read-only */
+     * @readonly */
     protected $method;
     /** @var string */
     protected $url;

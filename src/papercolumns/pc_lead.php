@@ -16,8 +16,8 @@ class Lead_PaperColumn extends PaperColumn {
             && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
     static private function cid(PaperList $pl, PaperInfo $row) {
-        if ($row->leadContactId && $pl->user->can_view_lead($row)) {
-            return (int) $row->leadContactId;
+        if ($row->leadContactId > 0 && $pl->user->can_view_lead($row)) {
+            return $row->leadContactId;
         } else {
             return 0;
         }
@@ -32,9 +32,9 @@ class Lead_PaperColumn extends PaperColumn {
         return !self::cid($pl, $row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $pl->_content_pc((int) $row->leadContactId);
+        return $pl->_content_pc($row->leadContactId);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $pl->_text_pc((int) $row->leadContactId);
+        return $pl->_text_pc($row->leadContactId);
     }
 }

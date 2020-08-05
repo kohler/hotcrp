@@ -649,7 +649,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
             && (!$this->not_me || $pl->user->can_view_conflicts($row))) {
             $flags |= self::F_CONFLICT;
         }
-        if ($row->leadContactId == $this->contact->contactId
+        if ($row->leadContactId === $this->contact->contactId
             && (!$this->not_me || $pl->user->can_view_lead($row))) {
             $flags |= self::F_LEAD;
         }

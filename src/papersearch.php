@@ -1494,12 +1494,22 @@ class ContactCountMatcher extends CountMatcher {
 }
 
 class SearchQueryInfo {
+    /** @var Conf
+     * @readonly */
     public $conf;
+    /** @var PaperSearch
+     * @readonly */
     public $srch;
+    /** @var Contact
+     * @readonly */
     public $user;
+    /** @var array<string,mixed> */
     public $tables = [];
+    /** @var array<string,string> */
     public $columns = [];
+    /** @var bool */
     public $negated = false;
+    /** @var bool */
     public $top = true;
     private $_has_my_review = false;
     private $_has_review_signatures = false;
@@ -1594,13 +1604,13 @@ class SearchQueryInfo {
 
 class PaperSearch {
     /** @var Conf
-     * @phan-read-only */
+     * @readonly */
     public $conf;
     /** @var Contact
-     * @phan-read-only */
+     * @readonly */
     public $user;
     /** @var int
-     * @phan-read-only */
+     * @readonly */
     public $cid;
 
     /** @var Contact|null|false */
@@ -2473,6 +2483,9 @@ class PaperSearch {
         if ($this->conf->has_any_lead_or_shepherd()) {
             $sqi->add_column("leadContactId", "Paper.leadContactId");
         }
+        if ($this->conf->submission_blindness() === Conf::BLIND_OPTIONAL) {
+            $sqi->add_column("blind", "Paper.blind");
+        }
 
         $filter = SearchTerm::andjoin_sqlexpr([
             $this->_limit_qe->sqlexpr($sqi), $qe->sqlexpr($sqi)
@@ -2508,9 +2521,6 @@ class PaperSearch {
         }
         if ($this->_query_options["reviewWordCounts"] ?? false) {
             $sqi->add_review_word_count_columns();
-        }
-        if ($this->conf->submission_blindness() === Conf::BLIND_OPTIONAL) {
-            $sqi->add_column("blind", "Paper.blind");
         }
         if ($this->_query_options["authorInformation"] ?? false) {
             $sqi->add_column("authorInformation", "Paper.authorInformation");

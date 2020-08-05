@@ -2465,8 +2465,7 @@ class Contact {
             $tracks = $this->conf->has_tracks();
             $am_lead = $this->contactId > 0
                 && $this->isPC
-                && isset($prow->leadContactId)
-                && $prow->leadContactId == $this->contactId;
+                && $prow->leadContactId === $this->contactId;
             $isPC = $this->isPC
                 && (!$tracks
                     || $ci->reviewType >= REVIEW_PC
@@ -3176,8 +3175,7 @@ class Contact {
             $rights = $this->rights($prow);
             return $rights->can_administer
                 || ($this->contactId > 0
-                    && isset($prow->leadContactId)
-                    && $prow->leadContactId == $this->contactId)
+                    && $prow->leadContactId === $this->contactId)
                 || (($rights->allow_pc || $rights->allow_review)
                     && $this->can_view_review_identity($prow, null));
         } else {
@@ -3664,8 +3662,7 @@ class Contact {
                 || (($rights->reviewType >= REVIEW_PC
                      || ($this->contactId > 0
                          && $this->isPC
-                         && isset($prow->leadContactId)
-                         && $prow->leadContactId == $this->contactId))
+                         && $prow->leadContactId === $this->contactId))
                     && $this->conf->setting("extrev_chairreq", 0) >= 0))
             && (!$check_time
                 || $this->conf->time_review($round, false, true)
@@ -3683,8 +3680,7 @@ class Contact {
             && (($rights->reviewType < REVIEW_PC
                  && ($this->contactId <= 0
                      || !$this->isPC
-                     || !isset($prow->leadContactId)
-                     || $prow->leadContactId != $this->contactId))
+                     || $prow->leadContactId !== $this->contactId))
                 || $this->conf->setting("extrev_chairreq", 0) < 0)) {
             $whyNot["permission"] = "request_review";
         } else {

@@ -691,7 +691,7 @@ class MeetingTracker {
                     if ($prow->conflictType > CONFLICT_MAXUNCONFLICTED) {
                         $p->is_conflict = true;
                     }
-                    if ($prow->leadContactId == $user->contactId) {
+                    if ($prow->leadContactId === $user->contactId) {
                         $p->is_lead = true;
                     }
                 }

@@ -3,9 +3,11 @@
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class UserStatus extends MessageSet {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly */
     public $viewer;
     /** @var Contact */
     public $user;
