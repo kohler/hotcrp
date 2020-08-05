@@ -19,7 +19,7 @@ class GetAllRevpref_ListAction extends ListAction {
                 $pref = $prow->preference($p);
                 $cflt = $conflicts[$cid] ?? null;
                 $is_cflt = $cflt && $cflt->is_conflicted();
-                $tv = $prow->topicIds ? $prow->topic_interest_score($p) : 0;
+                $tv = $prow->topicIds !== "" ? $prow->topic_interest_score($p) : 0;
                 if ($pref[0] !== 0 || $pref[1] !== null || $is_cflt || $tv) {
                     $texts[] = array("paper" => $prow->paperId, "title" => $prow->title, "first" => $p->firstName, "last" => $p->lastName, "email" => $p->email,
                                 "preference" => $pref[0] ? : "",

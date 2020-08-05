@@ -82,12 +82,13 @@ class PaperContactInfo {
     static function make_my(PaperInfo $prow, $user, $object) {
         $ci = PaperContactInfo::make_empty($prow, $user);
         $ci->conflictType = (int) $object->conflictType;
-        if (property_exists($object, "myReviewPermissions")) {
+        if (isset($object->myReviewPermissions)) {
             $ci->mark_my_review_permissions($object->myReviewPermissions);
         } else if ($object instanceof PaperInfo
-                   && property_exists($object, "reviewSignatures")) {
-            foreach ($object->reviews_of_user($user->contactId, $user->review_tokens()) as $rrow)
+                   && $object->reviewSignatures !== null) {
+            foreach ($object->reviews_of_user($user->contactId, $user->review_tokens()) as $rrow) {
                 $ci->mark_review($rrow);
+            }
         }
         return $ci;
     }
@@ -336,34 +337,6 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
 }
 
-/** @property ?string $pdfFormatStatus
- * @property ?string $withdrawReason
- * @property ?string $timeFinalSubmitted
- * @property ?string $size
- * @property ?string $mimetype
- * @property ?string $timestamp
- * @property ?string $blind
- * @property ?string $sha1
- * @property ?string $leadContactId
- * @property ?string $shepherdContactId
- * @property ?string $capVersion
- *
- * @property ?string $paperTags
- * @property ?string $optionIds
- * @property ?string $topicIds
- * @property ?string $conflictType
- * @property ?string $watch
- * @property ?string $allConflictType
- * @property ?string $reviewSignatures
- * @property ?string $reviewWordCountSignature
- * @property ?string $commentSkeletonInfo
- * @property ?string $myReviewPermissions
- * @property ?string $allReviewerPreference
- * @property ?string $myReviewerPreference
- * @property ?string $myReviewerExpertise
- * @property ?string $paper_infoJson
- * @property ?string $final_infoJson
- */
 class PaperInfo {
     /** @var int */
     public $paperId;
@@ -371,31 +344,112 @@ class PaperInfo {
     public $conf;
     /** @var string */
     public $title;
+    /** @var ?string */
     public $authorInformation;
+    /** @var ?string */
+    public $blind;
+    /** @var ?string */
     public $abstract;
+    /** @var ?string */
     public $collaborators;
     /** @var ?string */
     public $timeSubmitted;
     /** @var ?string */
+    public $timeFinalSubmitted;
+    /** @var ?string */
     public $timeWithdrawn;
     /** @var ?string */
-    public $paperStorageId;
+    public $withdrawReason;
     /** @var ?string */
-    public $finalPaperStorageId;
+    public $leadContactId;
+    /** @var ?string */
+    public $shepherdContactId;
     /** @var int */
     public $managerContactId;
     /** @var ?int */
     public $paperFormat;
+    /** @var ?string */
+    public $capVersion;
+    /** @var ?string */
     public $outcome;
+    /** @var ?string */
     public $dataOverflow;
-    // $paperTags: DO NOT LIST (property_exists() is meaningful)
-    // $optionIds: DO NOT LIST (property_exists() is meaningful)
-    // $topicIds: DO NOT LIST (property_exists() is meaningful)
-    // $allConflictType: DO NOT LIST (property_exists() is meaningful)
-    // $reviewSignatures: DO NOT LIST (property_exists() is meaningful)
+
+    /** @var ?string */
+    public $paperStorageId;
+    /** @var ?string */
+    public $finalPaperStorageId;
+    /** @var ?string */
+    public $pdfFormatStatus;
+    /** @var ?string */
+    public $size;
+    /** @var ?string */
+    public $mimetype;
+    /** @var ?string */
+    public $timestamp;
+    /** @var ?string */
+    public $sha1;
+
+    /** @var ?string */
+    public $paper_infoJson;
+    /** @var ?string */
+    public $final_infoJson;
+
+    /** @var ?string */
+    public $paperTags;
+    /** @var ?string */
+    public $optionIds;
+    /** @var ?string */
+    public $topicIds;
+    /** @var ?string */
+    public $allConflictType;
+    /** @var ?string */
+    public $myReviewerPreference;
+    /** @var ?string */
+    public $myReviewerExpertise;
+    /** @var ?string */
+    public $allReviewerPreference;
+
+    /** @var ?string */
+    public $myReviewPermissions;
+    /** @var ?string */
+    public $conflictType;
+    /** @var ?string */
+    public $watch;
+
+    /** @var ?string */
+    public $reviewSignatures;
+    /** @var ?string */
+    public $reviewWordCountSignature;
+    /** @var ?string */
+    public $overAllMeritSignature;
+    /** @var ?string */
+    public $reviewerQualificationSignature;
+    /** @var ?string */
+    public $noveltySignature;
+    /** @var ?string */
+    public $technicalMeritSignature;
+    /** @var ?string */
+    public $interestToCommunitySignature;
+    /** @var ?string */
+    public $longevitySignature;
+    /** @var ?string */
+    public $grammarSignature;
+    /** @var ?string */
+    public $likelyPresentationSignature;
+    /** @var ?string */
+    public $suitableForShortSignature;
+    /** @var ?string */
+    public $potentialSignature;
+    /** @var ?string */
+    public $fixabilitySignature;
+
+    /** @var ?string */
+    public $commentSkeletonInfo;
 
     /** @var array<int,PaperContactInfo> */
     private $_contact_info = [];
+    /** @var int */
     private $_rights_version = 0;
     /** @var ?list<Author> */
     private $_author_array;
@@ -481,22 +535,18 @@ class PaperInfo {
             $this->paperFormat = (int) $this->paperFormat;
         }
         if ($contact) {
-            if (property_exists($this, "myReviewPermissions")
-                || property_exists($this, "reviewSignatures")) {
+            if ($this->myReviewPermissions !== null
+                || $this->reviewSignatures !== null) {
                 $this->_rights_version = Contact::$rights_version;
                 $this->load_my_contact_info($contact, $this);
             } else {
-                assert(!property_exists($this, "conflictType"));
+                assert($this->conflictType === null);
             }
-            if (property_exists($this, "myReviewerPreference")) {
+            if ($this->myReviewerPreference !== null) {
                 $rp = (int) $this->myReviewerPreference;
                 $re = $this->myReviewerExpertise;
                 $this->_prefs_cid = [$contact->contactId, [$rp, $re !== null ? (int) $re : null]];
             }
-        }
-        foreach (["paperTags", "optionIds"] as $k) {
-            if (property_exists($this, $k) && $this->$k === null)
-                $this->$k = "";
         }
         if (isset($this->dataOverflow) && is_string($this->dataOverflow)) {
             $this->dataOverflow = json_decode($this->dataOverflow, true);
@@ -579,9 +629,8 @@ class PaperInfo {
         if ($this->_rights_version !== Contact::$rights_version) {
             if ($this->_rights_version) {
                 $this->_contact_info = $this->_reviews_have = [];
-                $this->_review_array = $this->_conflict_array = null;
+                $this->reviewSignatures = $this->_review_array = $this->allConflictType = $this->_conflict_array = null;
                 ++$this->_review_array_version;
-                unset($this->reviewSignatures, $this->allConflictType);
             }
             $this->_rights_version = Contact::$rights_version;
         }
@@ -604,7 +653,7 @@ class PaperInfo {
         $cid = $user->contactXid;
         if (!array_key_exists($cid, $this->_contact_info)) {
             if ($this->_review_array
-                || property_exists($this, "reviewSignatures")) {
+                || $this->reviewSignatures !== null) {
                 $ci = PaperContactInfo::make_empty($this, $user);
                 if (($c = ($this->conflicts())[$cid] ?? null)) {
                     $ci->conflictType = $c->conflictType;
@@ -1053,20 +1102,19 @@ class PaperInfo {
 
     /** @return bool */
     function has_tag($tag) {
-        if (!property_exists($this, "paperTags")) {
+        if ($this->paperTags === null) {
             $this->load_tags();
         }
-        return $this->paperTags !== null
-            && $this->paperTags !== ""
+        return $this->paperTags !== ""
             && stripos($this->paperTags, " $tag#") !== false;
     }
 
     /** @return bool */
     function has_any_tag($tags) {
-        if (!property_exists($this, "paperTags")) {
+        if ($this->paperTags === null) {
             $this->load_tags();
         }
-        if ($this->paperTags !== null && $this->paperTags !== "") {
+        if ($this->paperTags !== "") {
             foreach ($tags as $tag) {
                 if (stripos($this->paperTags, " $tag#") !== false)
                     return true;
@@ -1084,11 +1132,10 @@ class PaperInfo {
     /** @param string $tag
      * @return false|float */
     function tag_value($tag) {
-        if (!property_exists($this, "paperTags")) {
+        if ($this->paperTags === null) {
             $this->load_tags();
         }
-        if ($this->paperTags !== null
-            && $this->paperTags !== ""
+        if ($this->paperTags !== ""
             && ($pos = stripos($this->paperTags, " $tag#")) !== false) {
             return (float) substr($this->paperTags, $pos + strlen($tag) + 2);
         } else {
@@ -1098,10 +1145,10 @@ class PaperInfo {
 
     /** @return string */
     function all_tags_text() {
-        if (!property_exists($this, "paperTags")) {
+        if ($this->paperTags === null) {
             $this->load_tags();
         }
-        return $this->paperTags ?? "";
+        return $this->paperTags;
     }
 
     /** @return string */
@@ -1208,13 +1255,13 @@ class PaperInfo {
     private function load_topics() {
         $row_set = $this->_row_set ? : new PaperInfoSet($this);
         foreach ($row_set as $prow) {
-            $prow->topicIds = null;
+            $prow->topicIds = "";
         }
         if ($this->conf->has_topics()) {
             $result = $this->conf->qe("select paperId, group_concat(topicId) from PaperTopic where paperId?a group by paperId", $row_set->paper_ids());
             while ($result && ($row = $result->fetch_row())) {
                 $prow = $row_set->get((int) $row[0]);
-                $prow->topicIds = (string) $row[1];
+                $prow->topicIds = $row[1] ?? "";
             }
             Dbl::free($result);
         }
@@ -1222,20 +1269,20 @@ class PaperInfo {
 
     /** @return bool */
     function has_topics() {
-        if (!property_exists($this, "topicIds")) {
+        if ($this->topicIds === null) {
             $this->load_topics();
         }
-        return $this->topicIds !== null && $this->topicIds !== "";
+        return $this->topicIds !== "";
     }
 
     /** @return list<int> */
     function topic_list() {
         if ($this->_topics_array === null) {
-            if (!property_exists($this, "topicIds")) {
+            if ($this->topicIds === null) {
                 $this->load_topics();
             }
             $this->_topics_array = [];
-            if ($this->topicIds !== null && $this->topicIds !== "") {
+            if ($this->topicIds !== "") {
                 foreach (explode(",", $this->topicIds) as $t) {
                     $this->_topics_array[] = (int) $t;
                 }
@@ -1303,17 +1350,16 @@ class PaperInfo {
     }
 
     function invalidate_topics() {
-        unset($this->topicIds);
-        $this->_topics_array = $this->_topic_interest_score_array = null;
+        $this->topicIds = $this->_topics_array = $this->_topic_interest_score_array = null;
     }
 
 
     /** @param bool $email */
     function load_conflicts($email) {
-        if (!$email && property_exists($this, "allConflictType")) {
+        if (!$email && $this->allConflictType !== null) {
             $this->_conflict_array = [];
             $this->_conflict_array_email = $email;
-            if ((string) $this->allConflictType !== "") {
+            if ($this->allConflictType !== "") {
                 foreach (explode(",", $this->allConflictType) as $x) {
                     list($cid, $ctype) = explode(" ", $x);
                     $cflt = new Author;
@@ -1378,8 +1424,7 @@ class PaperInfo {
     }
 
     function invalidate_conflicts() {
-        unset($this->allConflictType);
-        $this->_conflict_array = null;
+        $this->allConflictType = $this->_conflict_array = null;
     }
 
 
@@ -1397,13 +1442,13 @@ class PaperInfo {
     function load_preferences() {
         if ($this->_row_set && ++$this->_row_set->loaded_allprefs >= 10) {
             $row_set = $this->_row_set->filter(function ($prow) {
-                return !property_exists($prow, "allReviewerPreference");
+                return $prow->allReviewerPreference === null;
             });
         } else {
             $row_set = new PaperInfoSet($this);
         }
         foreach ($row_set as $prow) {
-            $prow->allReviewerPreference = null;
+            $prow->allReviewerPreference = "";
             $prow->_prefs_array = $prow->_prefs_cid = $prow->_desirability = null;
         }
         $result = $this->conf->qe("select paperId, " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId?a group by paperId", $row_set->paper_ids());
@@ -1416,12 +1461,12 @@ class PaperInfo {
 
     /** @return array<int,array{int,?int}> */
     function preferences() {
-        if (!property_exists($this, "allReviewerPreference")) {
+        if ($this->allReviewerPreference === null) {
             $this->load_preferences();
         }
         if ($this->_prefs_array === null) {
             $x = array();
-            if ($this->allReviewerPreference !== null && $this->allReviewerPreference !== "") {
+            if ($this->allReviewerPreference !== "") {
                 $p = preg_split('/[ ,]/', $this->allReviewerPreference);
                 for ($i = 0; $i + 2 < count($p); $i += 3) {
                     if ($p[$i+1] !== "0" || $p[$i+2] !== ".")
@@ -1439,7 +1484,7 @@ class PaperInfo {
         $cid = is_int($contact) ? $contact : $contact->contactId;
         if ($this->_prefs_cid === null
             && $this->_prefs_array === null
-            && !property_exists($this, "allReviewerPreference")) {
+            && $this->allReviewerPreference === null) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             foreach ($row_set as $prow) {
                 $prow->_prefs_cid = [$cid, null];
@@ -1493,11 +1538,10 @@ class PaperInfo {
 
     private function load_options($only_me, $need_data) {
         if ($this->_option_values === null
-            && ($this->paperId === 0
-                || (isset($this->optionIds) && $this->optionIds === ""))) {
+            && ($this->paperId === 0 || $this->optionIds === "")) {
             $this->_option_values = $this->_option_data = [];
         } else if ($this->_option_values === null
-                   && isset($this->optionIds)
+                   && $this->optionIds !== null
                    && !$need_data) {
             $this->_option_values = [];
             preg_match_all('/(\d+)#(-?\d+)/', $this->optionIds, $m);
@@ -1594,8 +1638,7 @@ class PaperInfo {
 
     function invalidate_options($reload = false) {
         assert($this->_new_option_array === null);
-        unset($this->optionIds);
-        $this->_option_values = $this->_option_data = null;
+        $this->optionIds = $this->_option_values = $this->_option_data = null;
         $this->_option_array = [];
         if ($reload) {
             $this->load_options(true, true);
@@ -1769,12 +1812,11 @@ class PaperInfo {
     function load_reviews($always = false) {
         ++$this->_review_array_version;
 
-        if (property_exists($this, "reviewSignatures")
+        if ($this->reviewSignatures !== null
             && $this->_review_array === null
             && !$always) {
             $this->_review_array = $this->_reviews_have = [];
-            if ($this->reviewSignatures !== null
-                && $this->reviewSignatures !== "") {
+            if ($this->reviewSignatures !== "") {
                 foreach (explode(",", $this->reviewSignatures) as $rs) {
                     $rrow = ReviewInfo::make_signature($this, $rs);
                     $this->_review_array[$rrow->reviewId] = $rrow;
@@ -2197,11 +2239,13 @@ class PaperInfo {
             } else {
                 $this->_reviews_have[$fid] = true;
                 $k = $rfi->main_storage . "Signature";
-                if (!property_exists($this, $k))
+                if ($this->$k === null) {
                     $this->load_review_fields($rfi->main_storage);
+                }
                 $x = explode(",", $this->$k);
-                foreach ($this->reviews_by_id_order() as $i => $rrow)
+                foreach ($this->reviews_by_id_order() as $i => $rrow) {
                     $rrow->$fid = (int) $x[$i];
+                }
             }
         }
     }
@@ -2233,10 +2277,10 @@ class PaperInfo {
     function ensure_review_word_counts() {
         if (!isset($this->_reviews_have["reviewWordCount"])) {
             $this->_reviews_have["reviewWordCount"] = true;
-            if (!property_exists($this, "reviewWordCountSignature")) {
+            if ($this->reviewWordCountSignature === null) {
                 $this->load_review_fields("reviewWordCount", true);
             }
-            $x = explode(",", $this->reviewWordCountSignature ?? "");
+            $x = explode(",", $this->reviewWordCountSignature);
             $bad_ids = [];
 
             foreach ($this->reviews_by_id_order() as $i => $rrow) {
@@ -2399,12 +2443,12 @@ class PaperInfo {
     function all_comment_skeletons() {
         if ($this->_comment_skeleton_array === null) {
             if ($this->_comment_array !== null
-                || !property_exists($this, "commentSkeletonInfo")) {
+                || $this->commentSkeletonInfo === null) {
                 return $this->all_comments();
             }
             $this->_comment_skeleton_array = [];
             preg_match_all('/(\d+);(\d+);(\d+);(\d+);([^|]*)/',
-                           $this->commentSkeletonInfo ?? "", $ms, PREG_SET_ORDER);
+                           $this->commentSkeletonInfo, $ms, PREG_SET_ORDER);
             foreach ($ms as $m) {
                 $c = new CommentInfo([
                         "commentId" => $m[1], "contactId" => $m[2],
@@ -2542,7 +2586,7 @@ class PaperInfo {
     function notify_reviews($callback, $sending_user) {
         $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
                 password, roles, contactTags, defaultWatch,
-                " . self::my_review_permissions_sql() . " myReviewPermissions,
+                coalesce(" . self::my_review_permissions_sql() . ", '') myReviewPermissions,
                 conflictType, watch, preferredEmail, disabled
         from ContactInfo
         left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)
@@ -2586,7 +2630,7 @@ class PaperInfo {
     function notify_final_submit($callback, $sending_user) {
         $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
                 password, roles, contactTags, defaultWatch,
-                " . self::my_review_permissions_sql() . " myReviewPermissions,
+                coalesce(" . self::my_review_permissions_sql() . ", '') myReviewPermissions,
                 conflictType, watch, preferredEmail, disabled
         from ContactInfo
         left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)

@@ -1538,7 +1538,7 @@ class SearchQueryInfo {
     }
     function finish_reviewer_columns() {
         if ($this->_has_review_signatures) {
-            $this->add_column("reviewSignatures", "(select " . ReviewInfo::review_signature_sql($this->conf, $this->_review_scores) . " from PaperReview r where r.paperId=Paper.paperId)");
+            $this->add_column("reviewSignatures", "coalesce((select " . ReviewInfo::review_signature_sql($this->conf, $this->_review_scores) . " from PaperReview r where r.paperId=Paper.paperId), '')");
         }
         if ($this->_has_my_review) {
             $this->add_conflict_columns();
@@ -1552,9 +1552,9 @@ class SearchQueryInfo {
         } else if (($act_reviewer_sql = $this->user->act_reviewer_sql("PaperReview")) === "false") {
             $this->add_column("myReviewPermissions", "''");
         } else if (isset($this->tables["MyReviews"])) {
-            $this->add_column("myReviewPermissions", PaperInfo::my_review_permissions_sql("MyReviews."));
+            $this->add_column("myReviewPermissions", "coalesce(" . PaperInfo::my_review_permissions_sql("MyReviews.") . ", '')");
         } else {
-            $this->add_column("myReviewPermissions", "(select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and $act_reviewer_sql group by paperId)");
+            $this->add_column("myReviewPermissions", "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and $act_reviewer_sql group by paperId), '')");
         }
     }
     function add_review_signature_columns() {
@@ -1571,7 +1571,7 @@ class SearchQueryInfo {
     function add_review_word_count_columns() {
         $this->add_review_signature_columns();
         if (!isset($this->columns["reviewWordCountSignature"])) {
-            $this->add_column("reviewWordCountSignature", "(select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId)");
+            $this->add_column("reviewWordCountSignature", "coalesce((select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId), '')");
         }
     }
     function add_rights_columns() {
@@ -1587,7 +1587,7 @@ class SearchQueryInfo {
     }
     function add_allConflictType_column() {
         if (!isset($this->columns["allConflictType"])) {
-            $this->add_column("allConflictType", "(select group_concat(contactId, ' ', conflictType) from PaperConflict where PaperConflict.paperId=Paper.paperId)");
+            $this->add_column("allConflictType", "coalesce((select group_concat(contactId, ' ', conflictType) from PaperConflict where PaperConflict.paperId=Paper.paperId), '')");
         }
     }
 }

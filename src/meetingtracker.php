@@ -645,7 +645,7 @@ class MeetingTracker {
 
         $col = "";
         if ($show_pc_conflicts) {
-            $col = ", (select group_concat(contactId, ' ', conflictType) from PaperConflict where paperId=p.paperId) allConflictType";
+            $col = ", coalesce((select group_concat(contactId, ' ', conflictType) from PaperConflict where paperId=p.paperId), '') allConflictType";
             $pcm = $user->conf->pc_members();
         }
         if ($user->contactId) {

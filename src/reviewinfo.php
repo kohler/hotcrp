@@ -87,6 +87,7 @@ class ReviewInfo implements JsonSerializable {
         "likelyPresentation" => "s08", "suitableForShort" => "s09",
         "potential" => "s10", "fixability" => "s11"
     ];
+    // see also Signature properties in PaperInfo
     /** @var list<?non-empty-string> */
     static private $new_score_fields = [
         null, "overAllMerit", "reviewerQualification", "novelty",

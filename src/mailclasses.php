@@ -359,9 +359,9 @@ class MailRecipients {
         }
         if ($needreview) {
             if (!$revmatch || $this->type === "rev") {
-                $q .= ", " . PaperInfo::my_review_permissions_sql("PaperReview.") . " myReviewPermissions";
+                $q .= ", coalesce(" . PaperInfo::my_review_permissions_sql("PaperReview.") . ", '') myReviewPermissions";
             } else {
-                $q .= ", (select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId group by paperId) myReviewPermissions";
+                $q .= ", coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId group by paperId), '') myReviewPermissions";
             }
         } else {
             $q .= ", '' myReviewPermissions";

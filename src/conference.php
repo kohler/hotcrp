@@ -3622,9 +3622,9 @@ class Conf {
         if (($options["reviewSignatures"] ?? false)
             || ($options["scores"] ?? null)
             || ($options["reviewWordCounts"] ?? false)) {
-            $cols[] = "(select " . ReviewInfo::review_signature_sql($this, $options["scores"] ?? null) . " from PaperReview r where r.paperId=Paper.paperId) reviewSignatures";
+            $cols[] = "coalesce((select " . ReviewInfo::review_signature_sql($this, $options["scores"] ?? null) . " from PaperReview r where r.paperId=Paper.paperId), '') reviewSignatures";
             if ($options["reviewWordCounts"] ?? false) {
-                $cols[] = "(select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId) reviewWordCountSignature";
+                $cols[] = "coalesce((select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId), '') reviewWordCountSignature";
             }
         } else if ($user) {
             // need myReviewPermissions
@@ -3632,21 +3632,21 @@ class Conf {
                 $joins[] = "left join PaperReview on ($reviewjoin)";
             }
             if ($no_paperreview || $paperreview_is_my_reviews) {
-                $cols[] = PaperInfo::my_review_permissions_sql("PaperReview.") . " myReviewPermissions";
+                $cols[] = "coalesce(" . PaperInfo::my_review_permissions_sql("PaperReview.") . ", '') myReviewPermissions";
             } else {
-                $cols[] = "(select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where $reviewjoin group by paperId) myReviewPermissions";
+                $cols[] = "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where $reviewjoin group by paperId), '') myReviewPermissions";
             }
         }
 
         // fields
         if ($options["topics"] ?? false) {
-            $cols[] = "(select group_concat(topicId) from PaperTopic where PaperTopic.paperId=Paper.paperId) topicIds";
+            $cols[] = "coalesce((select group_concat(topicId) from PaperTopic where PaperTopic.paperId=Paper.paperId), '') topicIds";
         }
 
         if ($options["options"] ?? false) {
             if ((isset($this->settingTexts["options"]) || isset($this->opt["fixedOptions"]))
                 && $this->_paper_opts->has_universal()) {
-                $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
+                $cols[] = "coalesce((select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId), '') optionIds";
             } else {
                 $cols[] = "'' as optionIds";
             }
@@ -3655,7 +3655,7 @@ class Conf {
         if (($options["tags"] ?? false)
             || ($user && $user->isPC)
             || $this->has_tracks()) {
-            $cols[] = "(select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where PaperTag.paperId=Paper.paperId) paperTags";
+            $cols[] = "coalesce((select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where PaperTag.paperId=Paper.paperId), '') paperTags";
         }
 
         if ($options["reviewerPreference"] ?? false) {
@@ -3665,12 +3665,12 @@ class Conf {
         }
 
         if ($options["allReviewerPreference"] ?? false) {
-            $cols[] = "(select " . $this->query_all_reviewer_preference() . " from PaperReviewPreference where PaperReviewPreference.paperId=Paper.paperId) allReviewerPreference";
+            $cols[] = "coalesce((select " . $this->query_all_reviewer_preference() . " from PaperReviewPreference where PaperReviewPreference.paperId=Paper.paperId), '') allReviewerPreference";
         }
 
         if ($options["allConflictType"] ?? false) {
             // See also SearchQueryInfo::add_allConflictType_column
-            $cols[] = "(select group_concat(contactId, ' ', conflictType) from PaperConflict where PaperConflict.paperId=Paper.paperId) allConflictType";
+            $cols[] = "coalesce((select group_concat(contactId, ' ', conflictType) from PaperConflict where PaperConflict.paperId=Paper.paperId), '') allConflictType";
         }
 
         if (($options["watch"] ?? false) && $contactId) {

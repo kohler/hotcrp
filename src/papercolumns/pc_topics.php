@@ -23,7 +23,7 @@ class Topics_PaperColumn extends PaperColumn {
         return true;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !isset($row->topicIds) || $row->topicIds == "";
+        return $row->topicIds === "";
     }
     function content(PaperList $pl, PaperInfo $row) {
         return $pl->conf->topic_set()->unparse_list_html($row->topic_list(), $this->interest_contact ? $this->interest_contact->topic_interest_map() : null);
