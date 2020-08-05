@@ -7,8 +7,9 @@ require_once("lib/navigation.php");
 if (!isset($_GET["fn"])) {
     $fn = Navigation::path_component(0, true);
     if ($fn && ctype_digit($fn)) {
-        if (!isset($_GET["p"]))
+        if (!isset($_GET["p"])) {
             $_GET["p"] = $fn;
+        }
         $fn = Navigation::path_component(1, true);
     }
     if ($fn) {

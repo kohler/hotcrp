@@ -574,7 +574,7 @@ class Contact {
     /** @return int */
     static function session_user_index($email) {
         foreach (self::session_users() as $i => $u) {
-            if (strcasecmp($u, $email) == 0) {
+            if (strcasecmp($u, $email) === 0) {
                 return $i;
             }
         }

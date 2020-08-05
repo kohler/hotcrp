@@ -44,7 +44,11 @@ if ($Me === false) {
 // Initialize user
 function initialize_user_redirect($nav, $uindex, $nusers) {
     if ($nav->page === "api") {
-        json_exit(["ok" => false, "error" => "You have been signed out."]);
+        if ($nusers === 0) {
+            json_exit(["ok" => false, "error" => "You have been signed out."]);
+        } else {
+            json_exit(["ok" => false, "error" => "Bad user specification."]);
+        }
     } else if ($_SERVER["REQUEST_METHOD"] === "GET") {
         $page = $nusers > 0 ? "u/$uindex/" : "";
         if ($nav->page !== "index" || $nav->path !== "") {
@@ -95,9 +99,12 @@ function initialize_user() {
 
     $uindex = 0;
     if ($nav->shifted_path === "") {
-        if (isset($_GET["i"]) && $_SERVER["REQUEST_METHOD"] === "GET") {
+        // redirect to `/u` version
+        if (isset($_GET["i"])) {
             $uindex = Contact::session_user_index($_GET["i"]);
-        } else if (count($userset) > 1 && $_SERVER["REQUEST_METHOD"] === "GET") {
+        } else if ($_SERVER["REQUEST_METHOD"] === "GET"
+                   && $nav->page !== "api"
+                   && count($userset) > 1) {
             $uindex = -1;
         }
     } else if (substr($nav->shifted_path, 0, 2) === "u/") {
@@ -110,10 +117,9 @@ function initialize_user() {
     }
 
     if (isset($_GET["i"])
-        && $_SERVER["REQUEST_METHOD"] === "GET"
         && $trueemail
         && strcasecmp($_GET["i"], $trueemail) !== 0) {
-        Conf::msg_error("You are not signed in as " . htmlspecialchars($_GET["i"]) . ". <a href=\"" . $conf->hoturl("index", ["signin" => 1, "email" => $_GET["i"]]) . "\">Sign in</a>");
+        Conf::msg_error("You are signed in as " . htmlspecialchars($trueemail) . ", not " . htmlspecialchars($_GET["i"]) . ". <a href=\"" . $conf->hoturl("signin", ["email" => $_GET["i"]]) . "\">Sign in</a>");
     }
 
     // look up and activate user

@@ -2255,7 +2255,7 @@ class PaperTable {
             && $this->user->act_author_view($this->prow)
             && !$this->user->contactId) {
             echo '<div class="pcard papcard">',
-                "To edit this submission, <a href=\"", $this->conf->hoturl("index"), "\">sign in using your email and password</a>.",
+                "To edit this submission, <a href=\"", $this->conf->hoturl("signin"), "\">sign in using your email and password</a>.",
                 '</div>';
         }
 
@@ -2609,7 +2609,7 @@ class PaperTable {
         // review messages
         $msgs = [];
         if ($this->editrrow && !$this->user->is_signed_in()) {
-            $msgs[] = $this->conf->_("You followed a review link to edit this review. You can also <a href=\"%s\">sign in to the site</a>.", $this->conf->hoturl("index", ["signin" => 1, "email" => $this->editrrow->email, "cap" => null]));
+            $msgs[] = $this->conf->_("You followed a review link to edit this review. You can also <a href=\"%s\">sign in to the site</a>.", $this->conf->hoturl("signin", ["email" => $this->editrrow->email, "cap" => null]));
         }
         if (!$this->rrow && !$this->prow->review_type($this->user)) {
             $msgs[] = "You haven’t been assigned to review this submission, but you can review it anyway.";
