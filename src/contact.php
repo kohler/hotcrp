@@ -13,16 +13,17 @@ class Contact {
     /** @var int */
     static public $next_xid = -1;
 
+    /** @var Conf */
+    public $conf;
+
     /** @var int */
     public $contactId = 0;
     /** @var int */
     public $contactDbId = 0;
     /** @var int */
     public $contactXid = 0;
-    /** @var Conf */
-    public $conf;
-    /** @var ?string */
-    public $confid;
+    /** @var int */
+    public $cdb_confid = 0;
 
     /** @var string */
     public $firstName = "";
@@ -233,8 +234,8 @@ class Contact {
         if (isset($user["contactDbId"])) {
             $this->contactDbId = (int) $user["contactDbId"];
         }
-        if (isset($user["confid"])) {
-            $this->confid = $user["confid"];
+        if (isset($user["cdb_confid"])) {
+            $this->cdb_confid = $user["cdb_confid"];
         }
 
         // handle slice properties
@@ -311,6 +312,7 @@ class Contact {
     private function db_load() {
         $this->contactId = $this->contactXid = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
+        $this->cdb_confid = (int) $this->cdb_confid;
         assert($this->contactId > 0 || ($this->contactId == 0 && $this->contactDbId > 0));
 
         // handle slice properties
@@ -754,14 +756,12 @@ class Contact {
     function contactdb_user($refresh = false) {
         if ($this->contactDbId && !$this->contactId) {
             return $this;
-        } else if ($refresh || $this->_contactdb_user === false) {
-            $cdbu = null;
-            if ($this->has_email()) {
-                $cdbu = $this->conf->contactdb_user_by_email($this->email);
+        } else {
+            if ($this->_contactdb_user === false || $refresh) {
+                $this->_contactdb_user = $this->conf->contactdb_user_by_email($this->email);
             }
-            $this->_contactdb_user = $cdbu;
+            return $this->_contactdb_user;
         }
-        return $this->_contactdb_user;
     }
 
     /** @return ?Contact */
@@ -769,21 +769,28 @@ class Contact {
         assert($this->has_email());
         if ($this->contactDbId && !$this->contactId) {
             return $this;
-        } else if (($u = $this->contactdb_user($refresh))) {
-            return $u;
-        } else if ($this->conf->contactdb()) {
-            $this->_contactdb_user = new Contact(["email" => $this->email, "confid" => true]);
-            return $this->_contactdb_user;
         } else {
-            return null;
+            if ($this->_contactdb_user === false || $refresh) {
+                $this->_contactdb_user = $this->conf->contactdb_user_by_email($this->email);
+            }
+            if ($this->_contactdb_user === null
+                && $this->conf->contactdb()
+                && $this->has_email()
+                && !self::is_anonymous_email($this->email)) {
+                $this->_contactdb_user = new Contact(["email" => $this->email, "cdb_confid" => -1]);
+            }
+            return $this->_contactdb_user;
         }
     }
 
-    private function _contactdb_save_roles($cdbur) {
-        if (($roles = $this->contactdb_roles())) {
-            Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=values(roles), activity_at=values(activity_at)", $cdbur->contactDbId, $cdbur->confid, $roles, Conf::$now);
-        } else {
-            Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=? and roles=0", $cdbur->contactDbId, $cdbur->confid);
+    /** @param Contact $cdbu */
+    private function _contactdb_save_roles($cdbu) {
+        if ($cdbu->cdb_confid > 0) {
+            if (($roles = $this->contactdb_roles())) {
+                Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=values(roles), activity_at=values(activity_at)", $cdbu->contactDbId, $cdbu->cdb_confid, $roles, Conf::$now);
+            } else {
+                Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=? and roles=0", $cdbu->contactDbId, $cdbu->cdb_confid);
+            }
         }
     }
 
@@ -796,7 +803,7 @@ class Contact {
         }
 
         $cdbur = $this->conf->contactdb_user_by_email($this->email);
-        $cdbux = $cdbur ?? new Contact(["email" => $this->email, "confid" => true], $this->conf);
+        $cdbux = $cdbur ?? new Contact(["email" => $this->email, "cdb_confid" => -1], $this->conf);
         foreach (self::$props as $prop => $shape) {
             if (($shape & self::PROP_CDB) !== 0
                 && ($shape & self::PROP_PASSWORD) === 0
@@ -812,17 +819,15 @@ class Contact {
             $cdbux->set_prop("passwordUseTime", $this->passwordUseTime);
         }
         if (!empty($cdbux->_mod_undo)) {
-            assert(!!$cdbux->confid);
+            assert($cdbux->cdb_confid !== 0);
             $cdbux->save_prop();
             $this->_contactdb_user = false;
         }
         $cdbur = $cdbur ?? $this->conf->contactdb_user_by_email($this->email);
-        if ($cdbur
-            && $cdbur->confid
-            && (int) $cdbur->roles !== $this->contactdb_roles()) {
+        if ($cdbur && $cdbur->roles !== $this->contactdb_roles()) {
             $this->_contactdb_save_roles($cdbur);
         }
-        return $cdbur ? (int) $cdbur->contactDbId : false;
+        return $cdbur ? $cdbur->contactDbId : false;
     }
 
 
@@ -1510,7 +1515,7 @@ class Contact {
                 || (($shape & self::PROP_STRINGLIST) !== 0 && !is_string_list($value)))) {
             throw new Exception("bad prop type $prop");
         }
-        if (($shape & ($this->confid ? self::PROP_CDB : self::PROP_LOCAL)) !== 0) {
+        if (($shape & ($this->cdb_confid !== 0 ? self::PROP_CDB : self::PROP_LOCAL)) !== 0) {
             $old = $this->prop1($prop, $shape);
             if ($ifempty) {
                 if ($old !== null && $old !== "") {
@@ -1553,7 +1558,7 @@ class Contact {
     function save_prop() {
         if (empty($this->_mod_undo)) {
             return true;
-        } else if ($this->confid) {
+        } else if ($this->cdb_confid !== 0) {
             $db = $this->conf->contactdb();
             $idk = "contactDbId";
             $flag = self::PROP_CDB;
@@ -1589,7 +1594,7 @@ class Contact {
         }
         if ((array_key_exists("firstName", $this->_mod_undo)
              || array_key_exists("lastName", $this->_mod_undo))
-            && !$this->confid) {
+            && $this->cdb_confid === 0) {
             $qf[] = "unaccentedName=?";
             $qv[] = Text::name($this->firstName, $this->lastName, "", NAME_U);
         }
@@ -1601,7 +1606,7 @@ class Contact {
             $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join(", ", $qf) . " on duplicate key update firstName=firstName", $qv);
             if ($result->affected_rows) {
                 $this->$idk = (int) $result->insert_id;
-                if (!$this->confid) {
+                if ($this->cdb_confid === 0) {
                     $this->contactXid = (int) $result->insert_id;
                 }
             }
@@ -1717,7 +1722,7 @@ class Contact {
 
         // create or update contactdb user
         if ($cdb && $valid_email) {
-            $cdbu = $cdbu ?? new Contact(["email" => $reg->email, "confid" => true], $conf);
+            $cdbu = $cdbu ?? new Contact(["email" => $reg->email, "cdb_confid" => -1], $conf);
             $cdbu->import_prop($reg);
             if ($cdbu->save_prop()) {
                 $u->_contactdb_user = false;
@@ -1749,7 +1754,7 @@ class Contact {
         if ($aupapers) {
             $u->save_authored_papers($aupapers);
             if ($cdbu) {
-                // can't use `$cdbu` itself b/c no `confid`
+                // can't use `$cdbu` itself b/c `cdb_confid` might be missing
                 $u->_contactdb_save_roles($u->contactdb_user());
             }
         }
@@ -2074,7 +2079,6 @@ class Contact {
                 $this->conf->ql("update ContactInfo set lastLogin=".Conf::$now." where contactId=$this->contactId");
             }
             if (($cdbu = $this->contactdb_user())
-                && $cdbu->confid
                 && (int) $cdbu->activity_at <= Conf::$now - 604800) {
                 $this->_contactdb_save_roles($cdbu);
             }

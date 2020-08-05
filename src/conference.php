@@ -2358,10 +2358,10 @@ class Conf {
             $q = "select ContactInfo.*, roles, activity_at";
             $qv = [];
             if (($confid = $this->opt("contactdb_confid"))) {
-                $q .= ", ? confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
+                $q .= ", ? cdb_confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
                 array_push($qv, $confid, $confid);
             } else {
-                $q .= ", Conferences.confid from ContactInfo left join Conferences on (Conferences.`dbname`=?) left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)";
+                $q .= ", coalesce(Conferences.confid, -1) cdb_confid from ContactInfo left join Conferences on (Conferences.`dbname`=?) left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)";
                 $qv[] = $this->dbname;
             }
             $qv[] = $value;
@@ -2374,12 +2374,18 @@ class Conf {
         }
     }
 
-    /** @return ?Contact */
+    /** @param string $email
+     * @return ?Contact */
     function contactdb_user_by_email($email) {
-        return $this->contactdb_user_by_key("email", $email);
+        if ($email !== "" && !Contact::is_anonymous_email($email)) {
+            return $this->contactdb_user_by_key("email", $email);
+        } else {
+            return null;
+        }
     }
 
-    /** @return ?Contact */
+    /** @param int $id
+     * @return ?Contact */
     function contactdb_user_by_id($id) {
         return $this->contactdb_user_by_key("contactDbId", $id);
     }
