@@ -131,8 +131,9 @@ function expand_json_includes_callback($includelist, $callback) {
             $x = json_decode($entry);
             if ($x === null && json_last_error()) {
                 $x = Json::decode($entry);
-                if ($x === null)
+                if ($x === null) {
                     error_log("$landmark: Invalid JSON: " . Json::last_error_msg());
+                }
             }
             $entry = $x;
         }
