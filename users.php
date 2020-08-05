@@ -115,19 +115,38 @@ if ((isset($Qreq->pap) && is_array($Qreq->pap))
 }
 
 if ($getaction == "nameemail" && isset($papersel) && $Viewer->isPC) {
-    $result = $Conf->qe_raw("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
-    $people = [];
-    while (($row = $result->fetch_assoc())) {
-        $people[] = $row;
+    $result = $Conf->qe_raw("select * from ContactInfo where " . paperselPredicate($papersel));
+    $users = [];
+    while (($user = Contact::fetch($result, $Conf))) {
+        $users[] = $user;
     }
-    csv_exit($Conf->make_csvg("users")
-             ->select(["first", "last", "email", "affiliation"])
-             ->append($people));
+    Dbl::free($result);
+
+    usort($users, $Conf->user_comparator());
+    Contact::ensure_contactdb_users($Conf, $users);
+
+    $texts = [];
+    $has_country = false;
+    foreach ($users as $u) {
+        $texts[] = $line = [
+            "first" => $u->firstName,
+            "last" => $u->lastName,
+            "email" => $u->email,
+            "affiliation" => $u->affiliation,
+            "country" => $u->country()
+        ];
+        $has_country = $has_country || $line["country"] !== "";
+    }
+    $header = ["first", "last", "email", "affiliation"];
+    if ($has_country) {
+        $header[] = "country";
+    }
+    csv_exit($Conf->make_csvg("users")->select($header)->append($texts));
 }
 
 if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
+    $result = $Conf->qe_raw("select * from ContactInfo where " . paperselPredicate($papersel));
     $users = [];
-    $result = $Conf->qe_raw("select ContactInfo.* from ContactInfo where " . paperselPredicate($papersel));
     while (($user = Contact::fetch($result, $Conf))) {
         $users[] = $user;
     }
@@ -135,26 +154,41 @@ if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
 
     usort($users, $Conf->user_comparator());
     Contact::load_topic_interests($users);
+    Contact::ensure_contactdb_users($Conf, $users);
 
     // NB This format is expected to be parsed by profile.php's bulk upload.
     $tagger = new Tagger($Viewer);
     $people = [];
+    $has_preferred_email = $has_tags = $has_topics =
+        $has_phone = $has_country = $has_disabled = false;
     $has = (object) [];
     foreach ($users as $user) {
-        $row = ["first" => $user->firstName, "last" => $user->lastName,
-            "email" => $user->email, "phone" => $user->phone,
-            "disabled" => !!$user->is_disabled(), "affiliation" => $user->affiliation,
-            "collaborators" => rtrim($user->collaborators())];
+        $row = [
+            "first" => $user->firstName,
+            "last" => $user->lastName,
+            "email" => $user->email,
+            "affiliation" => $user->affiliation,
+            "country" => $user->country(),
+            "phone" => $user->phone,
+            "disabled" => $user->is_disabled() ? "yes" : "",
+            "collaborators" => rtrim($user->collaborators())
+        ];
+        $has_country = $has_country || $row["country"] !== "";
+        $has_phone = $has_phone || ($row["phone"] ?? "") !== "";
+        $has_disabled = $has_disabled || $user->is_disabled();
         if ($user->preferredEmail && $user->preferredEmail !== $user->email) {
             $row["preferred_email"] = $user->preferredEmail;
+            $has_preferred_email = true;
         }
         if ($user->contactTags) {
             $row["tags"] = $tagger->unparse($user->contactTags);
+            $has_tags = $has_tags || $row["tags"] !== "";
         }
         foreach ($user->topic_interest_map() as $t => $i) {
             $row["topic$t"] = $i;
+            $has_topics = true;
         }
-        $f = array();
+        $f = [];
         if ($user->defaultWatch & Contact::WATCH_REVIEW) {
             $f[] = "reviews";
         }
@@ -168,10 +202,7 @@ if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
         if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL) {
             $f[] = "allfinal";
         }
-        if (empty($f)) {
-            $f[] = "none";
-        }
-        $row["follow"] = join(",", $f);
+        $row["follow"] = empty($f) ? "none" : join(" ", $f);
         if ($user->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
             $r = array();
             if ($user->roles & Contact::ROLE_CHAIR) {
@@ -183,37 +214,37 @@ if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
             if ($user->roles & Contact::ROLE_ADMIN) {
                 $r[] = "sysadmin";
             }
-            $row["roles"] = join(",", $r);
+            $row["roles"] = join(" ", $r);
         } else {
             $row["roles"] = "";
         }
         $people[] = $row;
-
-        foreach ($row as $k => $v) {
-            if ($v !== null && $v !== false && $v !== "") {
-                $has->$k = true;
-            }
-        }
     }
 
-    $header = array("first", "last", "email");
-    if (isset($has->preferred_email)) {
+    $header = ["first", "last", "email", "affiliation"];
+    if ($has_country) {
+        $header[] = "country";
+    }
+    if ($has_phone) {
+        $header[] = "phone";
+    }
+    if ($has_disabled) {
+        $header[] = "disabled";
+    }
+    if ($has_preferred_email) {
         $header[] = "preferred_email";
     }
     $header[] = "roles";
-    if (isset($has->tags)) {
+    if ($has_tags) {
         $header[] = "tags";
     }
-    array_push($header, "affiliation", "collaborators", "follow");
-    if (isset($has->phone)) {
-        $header[] = "phone";
-    }
+    $header[] = "collaborators";
+    $header[] = "follow";
     $selection = $header;
-    foreach ($Conf->topic_set() as $t => $tn) {
-        $k = "topic$t";
-        if (isset($has->$k)) {
+    if ($has_topics) {
+        foreach ($Conf->topic_set() as $t => $tn) {
             $header[] = "topic: " . $tn;
-            $selection[] = $k;
+            $selection[] = "topic$t";
         }
     }
     csv_exit($Conf->make_csvg("pcinfo")->select($selection, $header)->append($people));

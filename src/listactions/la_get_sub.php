@@ -40,29 +40,6 @@ class GetCheckFormat_ListAction extends ListAction {
     }
 }
 
-/* NB this search action is actually unavailable via the UI */
-class GetContacts_ListAction extends ListAction {
-    function allow(Contact $user, Qrequest $qreq) {
-        return $user->is_manager();
-    }
-    function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        $contact_map = GetAuthors_ListAction::contact_map($user->conf, $ssel);
-        $texts = [];
-        foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
-            if ($user->allow_administer($prow)) {
-                foreach ($prow->contacts() as $cid => $c) {
-                    $a = $contact_map[$cid];
-                    $aa = $prow->author_by_email($a->email) ? : $a;
-                    $texts[] = [$prow->paperId, $prow->title, $aa->firstName, $aa->lastName, $aa->email, $aa->affiliation];
-                }
-            }
-        }
-        return $user->conf->make_csvg("contacts")
-            ->select(["paper", "title", "first", "last", "email", "affiliation"])
-            ->append($texts);
-    }
-}
-
 class GetPcconflicts_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager();

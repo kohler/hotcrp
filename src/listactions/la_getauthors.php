@@ -3,52 +3,78 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class GetAuthors_ListAction extends ListAction {
-    static function contact_map(Conf $conf, $ssel) {
-        $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email, roles, contactTags from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
-        $contact_map = [];
-        while (($row = $result->fetch_object())) {
-            $row->contactId = (int) $row->contactId;
-            $contact_map[$row->contactId] = $row;
+    /** @return array<mixed,Contact> */
+    static function contact_map(Conf $conf, SearchSelection $ssel) {
+        $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email, country, roles, contactTags from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
+        $users = [];
+        while (($u = Contact::fetch($result, $conf))) {
+            $users[strtolower($u->email)] = $users[$u->contactId] = $u;
         }
-        return $contact_map;
+        return $users;
     }
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_authors();
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        $contact_map = self::contact_map($user->conf, $ssel);
-        $texts = array();
-        $want_contacttype = false;
+        $texts = [];
+        $users = null;
+        $has_iscontact = $has_country = false;
         foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
             if (!$user->allow_view_authors($prow)) {
                 continue;
             }
-            $admin = $user->allow_administer($prow);
-            $contact_emails = [];
-            if ($admin) {
-                $want_contacttype = true;
-                foreach ($prow->contacts() as $cid => $c) {
-                    $c = $contact_map[$cid];
-                    $contact_emails[strtolower($c->email)] = $c;
-                }
+            if ($users === null) {
+                $users = self::contact_map($user->conf, $ssel);
+                Contact::ensure_contactdb_users($user->conf, $users);
             }
+            $admin = $user->allow_administer($prow);
+            $aucid = [];
             foreach ($prow->author_list() as $au) {
-                $line = [$prow->paperId, $prow->title, $au->firstName, $au->lastName, $au->email, $au->affiliation];
+                $line = [
+                    "paper" => $prow->paperId,
+                    "title" => $prow->title,
+                    "first" => $au->firstName,
+                    "last" => $au->lastName,
+                    "email" => $au->email,
+                    "affiliation" => $au->affiliation
+                ];
                 $lemail = strtolower($au->email);
-                if ($admin && $lemail && isset($contact_emails[$lemail])) {
-                    $line[] = "yes";
-                    unset($contact_emails[$lemail]);
-                } else if ($admin) {
-                    $line[] = "no";
+                if ($lemail !== "" && ($u = $users[$lemail] ?? null)) {
+                    $line["country"] = $u->country();
+                    $has_country = $has_country || $line["country"] !== "";
+                    if ($admin) {
+                        $line["iscontact"] = "yes";
+                        $has_iscontact = true;
+                    }
+                    $aucid[$u->contactId] = true;
                 }
                 $texts[] = $line;
             }
-            foreach ($contact_emails as $c) {
-                $texts[] = [$prow->paperId, $prow->title, $c->firstName, $c->lastName, $c->email, $c->affiliation, "contact_only"];
+            if ($admin) {
+                foreach ($prow->contacts() as $cid => $c) {
+                    if (!isset($aucid[$cid])) {
+                        $u = $users[$cid];
+                        $texts[] = $line = [
+                            "paper" => $prow->paperId,
+                            "title" => $prow->title,
+                            "first" => $u->firstName,
+                            "last" => $u->lastName,
+                            "email" => $u->email,
+                            "affiliation" => $u->affiliation,
+                            "country" => $u->country(),
+                            "iscontact" => "nonauthor"
+                        ];
+                        $has_country = $has_country || $line["country"] !== "";
+                        $has_iscontact = true;
+                    }
+                }
             }
         }
         $header = ["paper", "title", "first", "last", "email", "affiliation"];
-        if ($want_contacttype) {
+        if ($has_country) {
+            $header[] = "country";
+        }
+        if ($has_iscontact) {
             $header[] = "iscontact";
         }
         return $user->conf->make_csvg("authors")->select($header)->append($texts);

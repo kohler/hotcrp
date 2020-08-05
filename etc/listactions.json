@@ -202,11 +202,6 @@
         "callback": "+GetAuthors_ListAction"
     },
     {
-        "name": "get/contact", "get": true,
-        "require": "src/listactions/la_get_sub.php", "display_if": false,
-        "callback": "+GetContacts_ListAction"
-    },
-    {
         "name": "get/topics", "get": true,
         "title": "Paper information/Topics", "display_if": "conf.has_topics",
         "position": 10050,
