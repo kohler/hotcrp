@@ -438,7 +438,7 @@ class Signin_Partial {
                 Ht::error_at("password", "Passwords cannot begin or end with spaces.");
                 Ht::error_at("password2");
             } else if (strlen($p1) <= 5) {
-                Ht::error_at("password", "Password too short.");
+                Ht::error_at("password", "Passwords must be at least six characters long.");
                 Ht::error_at("password2");
             } else if (!Contact::valid_password($p1)) {
                 Ht::error_at("password", "Invalid password.");
