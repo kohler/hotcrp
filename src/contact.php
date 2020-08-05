@@ -1659,7 +1659,11 @@ class Contact {
         if ($reg instanceof Contact) {
             foreach (self::$props as $prop => $shape) {
                 if (($shape & self::PROP_IMPORT) !== 0) {
-                    $this->set_prop($prop, $reg->prop1($prop, $shape));
+                    $value = $reg->prop1($prop, $shape);
+                    if ($value === null && ($shape & self::PROP_NULL) === 0) {
+                        $value = "";
+                    }
+                    $this->set_prop($prop, $value, true);
                 }
             }
         } else {
