@@ -7627,11 +7627,12 @@ function transfer_form_values($dst, $src, names) {
 
 // login UI
 handle_ui.on("js-signin", function (event) {
-    var form = this;
+    var form = this, signin = document.getElementById("signin_signin");
+    signin && (signin.disabled = true);
     $.get(hoturl("api/session"), function (data) {
         if (data && data.postvalue) {
             siteurl_postvalue = data.postvalue;
-            form.post && (form.post.value = siteurl_postvalue);
+            form.elements.post && (form.elements.post.value = siteurl_postvalue);
         }
         form.submit();
     });

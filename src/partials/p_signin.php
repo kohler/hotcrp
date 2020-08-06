@@ -239,7 +239,7 @@ class Signin_Partial {
     // newaccount
     static private function mail_user(Conf $conf, $info) {
         $user = $info["user"];
-        $prep = $user->send_mail($info["mailtemplate"], get($info, "mailrest"));
+        $prep = $user->send_mail($info["mailtemplate"], $info["mailrest"] ?? null);
         if (!$prep)  {
             if ($conf->opt("sendEmail")) {
                 $conf->msg("The email address you provided seems invalid. Please try again.", 2);
@@ -343,7 +343,7 @@ class Signin_Partial {
             $info = LoginHelper::forgot_password_info($user->conf, $qreq, false);
             if ($info["ok"]) {
                 self::mail_user($user->conf, $info);
-                Navigation::redirect(get($info, "redirect", $qreq->annex("redirect")));
+                Navigation::redirect($info["redirect"] ?? $qreq->annex("redirect"));
             } else {
                 LoginHelper::login_error($user->conf, $qreq, $info);
             }
@@ -506,7 +506,7 @@ class Signin_Partial {
         if (!isset($qreq->autopassword)
             || trim($qreq->autopassword) !== $qreq->autopassword
             || strlen($qreq->autopassword) < 16
-            || !preg_match('{\A[-0-9A-Za-z@_+=]*\z}', $qreq->autopassword)) {
+            || !preg_match('/\A[-0-9A-Za-z@_+=]*\z/', $qreq->autopassword)) {
             $qreq->autopassword = hotcrp_random_password();
         }
         echo '<div class="f-i"><label for="autopassword">Suggested strong password</label>',
