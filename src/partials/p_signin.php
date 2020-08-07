@@ -482,7 +482,8 @@ class Signin_Partial {
     function render_reset_body(Contact $user, Qrequest $qreq, $gx, $gj) {
         echo '<div class="homegrp" id="homeaccount">',
             Ht::form($user->conf->hoturl("resetpassword"), ["class" => "compact-form"]),
-            Ht::hidden("post", post_value());
+            Ht::hidden("post", post_value()),
+            Ht::hidden("go", 1);
         if ($this->_reset_user) {
             echo Ht::hidden("resetcap", $this->_reset_cap);
             $gx->render_group("resetpassword/form");
