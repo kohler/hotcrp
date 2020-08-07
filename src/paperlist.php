@@ -130,13 +130,20 @@ class PaperListReviewAnalysis {
 }
 
 class PaperList implements XtContext {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly  */
     public $user;
-    /** @var PaperSearch */
+    /** @var Tagger
+     * @readonly  */
+    public $tagger;
+    /** @var PaperSearch
+     * @readonly  */
     public $search;
-    /** @var Qrequest */
+    /** @var Qrequest
+     * @readonly  */
     private $qreq;
     /** @var Contact */
     private $_reviewer_user;
@@ -149,7 +156,9 @@ class PaperList implements XtContext {
     private $sortable;
     /** @var ?string */
     private $_paper_linkto;
+    /** @var bool */
     private $_view_kanban = false;
+    /** @var bool */
     private $_view_force = false;
     /** @var array<string,int> */
     private $_viewf = [];
@@ -191,8 +200,6 @@ class PaperList implements XtContext {
 
     // columns access
     public $qopts; // set by PaperColumn::prepare
-    /** @var Tagger */
-    public $tagger;
     /** @var bool */
     public $need_tag_attr;
     /** @var array */
@@ -444,7 +451,7 @@ class PaperList implements XtContext {
 
     private function _add_sorter($name, $decorations, $sort_subset) {
         assert(!$this->_sortcol_fixed);
-        // Do not use $this->find_columns(), because decorations for sorters
+        // Do not use ensure_columns_by_name(), because decorations for sorters
         // might differ.
         $old_context = $this->conf->xt_swap_context($this);
         $fs = $this->conf->paper_columns($name, $this->user);
@@ -649,7 +656,7 @@ class PaperList implements XtContext {
         if (!$this->_sortcol_fixed) {
             $this->_sortcol_fixed = true;
             if (empty($this->_sortcol)) {
-                $this->_sortcol[] = $this->find_column("id");
+                $this->_sortcol[] = ($this->ensure_columns_by_name("id"))[0];
             }
             $this->_sort_etag = "";
             if ($this->search->thenmap === null
@@ -922,7 +929,7 @@ class PaperList implements XtContext {
 
     /** @param string $str
      * @return list<PaperColumn> */
-    private function find_columns($str) {
+    private function ensure_columns_by_name($str) {
         list($name, $viewdecorations) = self::parse_column($str);
         if (!array_key_exists($name, $this->_columns_by_name)) {
             $this->_current_find_column = $name;
@@ -946,16 +953,10 @@ class PaperList implements XtContext {
         return $this->_columns_by_name[$name];
     }
 
-    /** @param string $name
-     * @return ?PaperColumn */
-    private function find_column($name) {
-        return ($this->find_columns($name))[0] ?? null;
-    }
-
     private function _expand_view_column($k) {
         if (!isset(self::$view_fake[$k])
             && ($this->_viewf[$k] ?? 0) >= self::VIEW_SHOW) {
-            $fs = $this->find_columns($k);
+            $fs = $this->ensure_columns_by_name($k);
             if (!$fs && $this->view_origin($k) >= self::VIEWORIGIN_EXPLICIT) {
                 foreach ($this->_column_errors_by_name[$k] ?? [] as $err) {
                     $this->message_set()->error_at($k, "Can’t show " . htmlspecialchars($k) . ": " . $err);
@@ -965,6 +966,13 @@ class PaperList implements XtContext {
         } else {
             return [];
         }
+    }
+
+    /** @param string $name
+     * @return ?PaperColumn */
+    function column_by_name($name) {
+        $cols = $this->_columns_by_name[$name];
+        return count($cols) === 1 ? $cols[0] : null;
     }
 
     /** @return list<PaperColumn> */

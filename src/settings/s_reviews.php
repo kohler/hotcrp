@@ -129,7 +129,7 @@ class Reviews_SettingRenderer {
         }
 
         echo '<div id="roundtable">', Ht::hidden("has_tag_rounds", 1);
-        $round_map = edb_map($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
+        $round_map = Dbl::fetch_map($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
         $num_printed = 0;
         foreach ($roundorder as $i => $rname) {
             if ($i ? $rname !== ";" : $print_round0) {

@@ -425,8 +425,7 @@ function assert_search_papers($user, $text, $result) {
 
 /** @return bool */
 function assert_query($q, $b) {
-    $result = Dbl::qe_raw($q);
-    return xassert_eqq(join("\n", edb_first_columns($result)), $b);
+    return xassert_eqq(join("\n", Dbl::fetch_first_columns($q)), $b);
 }
 
 function tag_normalize_compare($a, $b) {
