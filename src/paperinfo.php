@@ -356,7 +356,7 @@ class PaperInfo {
     public $managerContactId;
 
     // Always available if submission blindness
-    /** @var ?string */
+    /** @var ?bool */
     public $blind;
 
     // Often available
@@ -543,6 +543,9 @@ class PaperInfo {
             $this->leadContactId = (int) $this->leadContactId;
         }
         $this->managerContactId = (int) $this->managerContactId;
+        if (isset($this->blind)) {
+            $this->blind = (bool) $this->blind;
+        }
         if (isset($this->paperFormat)) {
             $this->paperFormat = (int) $this->paperFormat;
         }
@@ -588,7 +591,7 @@ class PaperInfo {
             $prow->topicIds = "";
         $prow->leadContactId = 0;
         $prow->shepherdContactId = "0";
-        $prow->blind = "1";
+        $prow->blind = true;
         $prow->_paper_creator = $user;
         $prow->check_rights_version();
         $ci = PaperContactInfo::make_empty($prow, $user);

@@ -1120,7 +1120,7 @@ class PaperStatus extends MessageSet {
         $this->save_fields();
         if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL) {
             $want_blind = $this->conf->submission_blindness() != Conf::BLIND_NEVER;
-            if (!$this->prow || (bool) $this->prow->blind !== $want_blind) {
+            if (!$this->prow || $this->prow->blind !== $want_blind) {
                 $this->save_paperf("blind", $want_blind ? 1 : 0);
                 if ($this->prow) {
                     $this->mark_diff("blind");
