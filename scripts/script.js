@@ -769,10 +769,13 @@ function event_key(evt) {
     } else if ((x = evt.charCode)) {
         return charCode_map[x] || String.fromCharCode(x);
     } else if ((x = evt.keyCode)) {
-        if (keyCode_map[x])
+        if (keyCode_map[x]) {
             return keyCode_map[x];
-        else if ((x >= 48 && x <= 57) || (x >= 65 && x <= 90))
+        } else if ((x >= 48 && x <= 57) || (x >= 65 && x <= 90)) {
             return String.fromCharCode(x);
+        } else {
+            return "";
+        }
     } else {
         return "";
     }
