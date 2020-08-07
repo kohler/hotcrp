@@ -94,11 +94,13 @@ class IntlMsg {
 }
 
 class IntlMsgSet {
+    /** @var array<string,IntlMsg> */
     private $ims = [];
     private $require_resolvers = [];
     private $_context_prefix;
     private $_default_priority;
     private $_default_format;
+    private $_recursion = 0;
 
     const PRIO_OVERRIDE = 1000.0;
 
@@ -272,6 +274,9 @@ class IntlMsgSet {
 
     private function find($context, $itext, $args, $priobound) {
         assert(is_string($args[0]));
+        if (++$this->_recursion > 5) {
+            throw new Exception("too much recursion");
+        }
         $match = null;
         $matchnreq = $matchctxlen = 0;
         if ($context === "") {
@@ -312,6 +317,7 @@ class IntlMsgSet {
                 $matchctxlen = $ctxlen;
             }
         }
+        --$this->_recursion;
         return $match;
     }
 
@@ -332,7 +338,14 @@ class IntlMsgSet {
             if (preg_match('/(?!\d+)\w+(?=%)/A', $s, $m, 0, $pos)
                 && ($imt = $this->find($context, strtolower($m[0]), [$m[0]], null))
                 && $imt->template) {
-                $t = substr($s, 0, $pos - 1) . $this->expand($imt->otext, $args, null, null, $format);
+                $t = substr($s, 0, $pos - 1);
+                ++$this->_recursion;
+                if ($this->_recursion < 5) {
+                    $t .= $this->expand($imt->otext, $args, null, null, $format);
+                } else {
+                    error_log("RECURSION ERROR ON {$m[0]} " . debug_string_backtrace());
+                }
+                --$this->_recursion;
                 $s = $t . substr($s, $pos + strlen($m[0]) + 1);
                 $pos = strlen($t);
             } else if (($im && $im->no_conversions) || count($args) === 1) {
