@@ -132,6 +132,16 @@ class UserStatus extends MessageSet {
         }
     }
 
+    /** @return bool */
+    function only_update_empty(Contact $user) {
+        return $this->no_update_profile
+            || ($user->cdb_confid !== 0
+                && (strcasecmp($user->email, $this->viewer->email) !== 0
+                    || $this->viewer->is_actas_user()
+                    || $this->viewer->is_root_user()));
+                       // XXX want way in script to modify all
+    }
+
     static function user_paper_info(Conf $conf, $cid) {
         $pinfo = (object) ["soleAuthor" => [], "author" => [], "review" => [], "comment" => []];
 
@@ -877,13 +887,9 @@ class UserStatus extends MessageSet {
 
     static function save_main(UserStatus $us, Contact $user, $cj) {
         // Profile properties
-        $us->set_profile_prop($user, $cj, $us->no_update_profile);
+        $us->set_profile_prop($user, $cj, $us->only_update_empty($user));
         if (($cdbu = $user->contactdb_user())) {
-            $only_empty = $us->no_update_profile
-                || strcasecmp($user->email, $us->viewer->email) !== 0
-                || $us->viewer->is_actas_user()
-                || $us->viewer->is_root_user(); // XXX want way in script to modify all
-            $us->set_profile_prop($cdbu, $cj, $only_empty);
+            $us->set_profile_prop($cdbu, $cj, $us->only_update_empty($cdbu));
         }
 
         // Disabled
@@ -1258,7 +1264,7 @@ class UserStatus extends MessageSet {
     }
 
     static function render_current_password(UserStatus $us, Qrequest $qreq) {
-        echo '<p class="w-text">You must enter your current password to make changes to ',
+        echo '<p class="w-text">Re-enter your current password to make changes to ',
             $us->self ? "" : "other users’ ",
             'security settings.</p>',
             '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',

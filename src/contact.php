@@ -432,6 +432,12 @@ class Contact {
         return $this->country ?? "";
     }
 
+    /** @return string */
+    function orcid() {
+        $this->_slice && $this->unslice();
+        return $this->orcid ?? "";
+    }
+
 
     // A sort specification is an integer divided into units of 3 bits.
     // A unit of 1 === first, 2 === last, 3 === email, 4 === affiliation.
