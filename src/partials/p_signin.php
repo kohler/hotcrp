@@ -108,7 +108,7 @@ class Signin_Partial {
         $unfolded = $gx->root === "signin" || $qreq->signin;
         echo '<div class="homegrp fold', ($unfolded ? "o" : "c"),
             '" id="homeacct">',
-            Ht::form($conf->hoturl("signin"), ["class" => "ui-submit uin js-signin compact-form"]),
+            Ht::form($conf->hoturl("signin"), ["class" => "compact-form ui-submit uin js-signin"]),
             Ht::hidden("post", post_value(true));
         if (!$unfolded) {
             echo Ht::unstash_script('fold("homeacct",false)');
@@ -248,7 +248,7 @@ class Signin_Partial {
                 $conf->msg("The system cannot send email at this time. You’ll need help from the site administrator to sign in.", 2);
             }
         } else if ($info["mailtemplate"] === "@newaccount") {
-            $conf->msg("Sent mail to " . htmlspecialchars($user->email) . ". When you receive that mail, follow the link to set an initial password and sign in to the site.", "xconfirm");
+            $conf->msg("Sent mail to " . htmlspecialchars($user->email) . ". When you receive that mail, follow the link to set a password and sign in to the site.", "xconfirm");
         } else {
             $conf->msg("Sent mail to " . htmlspecialchars($user->email) . ". When you receive that mail, follow the link to reset your password.", "xconfirm");
             if ($prep->reset_capability) {
@@ -314,14 +314,14 @@ class Signin_Partial {
     }
     static function render_create_body(Contact $user, Qrequest $qreq, $gx, $gj) {
         echo '<div class="homegrp" id="homeaccount">',
-            Ht::form($user->conf->hoturl("newaccount"), ["class" => "compact-form"]),
+            Ht::form($user->conf->hoturl("newaccount"), ["class" => "compact-form ui-submit uin js-signin"]),
             Ht::hidden("post", post_value());
         if (($m = self::_create_message($user->conf))) {
             echo '<p class="mb-5">', $m, '</p>';
         }
         self::_render_email_entry($user, $qreq, "email");
         echo '<div class="popup-actions">',
-            Ht::submit("go", "Create account", ["class" => "btn-success", "value" => 1]),
+            Ht::submit("Create account", ["class" => "btn-success"]),
             Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
             '</div>';
         echo '</form></div>';
@@ -361,7 +361,7 @@ class Signin_Partial {
     }
     static function render_forgot_body(Contact $user, Qrequest $qreq, $gx, $gj) {
         echo '<div class="homegrp" id="homeaccount">',
-            Ht::form($user->conf->hoturl("forgotpassword"), ["class" => "compact-form"]),
+            Ht::form($user->conf->hoturl("forgotpassword"), ["class" => "compact-form ui-submit uin js-signin"]),
             Ht::hidden("post", post_value());
         $gx->render_group("forgotpassword/form");
         echo '</form></div>';
@@ -380,10 +380,7 @@ class Signin_Partial {
     }
     function render_forgot_form_actions() {
         echo '<div class="popup-actions">',
-            Ht::submit("go", "Reset password", [
-                "class" => $this->_reset_user ? "btn-danger" : "btn-primary",
-                "value" => 1
-            ]),
+            Ht::submit("Reset password", ["class" => $this->_reset_user ? "btn-danger" : "btn-primary"]),
             Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
             '</div>';
     }
@@ -496,7 +493,7 @@ class Signin_Partial {
         Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
     }
     static function render_reset_form_description() {
-        echo '<p class="mb-5">Use this form to reset your password. You may want to use the random password we’ve chosen.</p>';
+        echo '<p class="mb-5">Use this form to set a new password. You may want to use the random password we’ve chosen.</p>';
     }
     function render_reset_form_email() {
         echo '<div class="f-i"><label>Email</label>', htmlspecialchars($this->_reset_user->email), '</div>',
