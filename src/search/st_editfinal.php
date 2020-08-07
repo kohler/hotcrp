@@ -17,7 +17,6 @@ class EditFinal_SearchTerm extends SearchTerm {
         }
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $sqi->add_column("outcome", "Paper.outcome");
         return "(Paper.outcome>0)";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {

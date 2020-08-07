@@ -18,7 +18,6 @@ class Decision_SearchTerm extends SearchTerm {
         return new Decision_SearchTerm($dec);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $sqi->add_column("outcome", "Paper.outcome");
         return "(Paper.outcome" . CountMatcher::sqlexpr_using($this->match) . ")";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {

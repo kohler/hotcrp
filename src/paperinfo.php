@@ -205,7 +205,9 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $prows = [];
     /** @var array<int,PaperInfo> */
     private $by_pid = [];
+    /** @var bool */
     private $_need_pid_sort = false;
+    /** @var int */
     public $loaded_allprefs = 0;
     function __construct(PaperInfo $prow = null) {
         if ($prow) {
@@ -344,20 +346,18 @@ class PaperInfo {
     // Always available, even in "minimal" paper skeletons
     /** @var int */
     public $paperId;
-    /** @var ?string */
+    /** @var int */
     public $timeSubmitted;
-    /** @var ?string */
+    /** @var int */
     public $timeWithdrawn;
     /** @var int */
     public $outcome;
-    /** @var ?int */
+    /** @var int */
     public $leadContactId;
     /** @var int */
     public $managerContactId;
-
-    // Always available if submission blindness
     /** @var ?bool */
-    public $blind;
+    public $blind;         // always available if submission blindness is optional
 
     // Often available
     /** @var string */
@@ -368,11 +368,11 @@ class PaperInfo {
     public $abstract;
     /** @var ?string */
     public $collaborators;
-    /** @var ?string */
+    /** @var ?int */
     public $timeFinalSubmitted;
     /** @var ?string */
     public $withdrawReason;
-    /** @var ?string */
+    /** @var ?int */
     public $shepherdContactId;
     /** @var ?int */
     public $paperFormat;
@@ -540,13 +540,19 @@ class PaperInfo {
             }
         }
         $this->paperId = (int) $this->paperId;
+        $this->timeSubmitted = (int) $this->timeSubmitted;
+        $this->timeWithdrawn = (int) $this->timeWithdrawn;
         $this->outcome = (int) $this->outcome;
-        if (isset($this->leadContactId)) {
-            $this->leadContactId = (int) $this->leadContactId;
-        }
+        $this->leadContactId = (int) $this->leadContactId;
         $this->managerContactId = (int) $this->managerContactId;
         if (isset($this->blind)) {
             $this->blind = (bool) $this->blind;
+        }
+        if (isset($this->timeFinalSubmitted)) {
+            $this->timeFinalSubmitted = (int) $this->timeFinalSubmitted;
+        }
+        if (isset($this->shepherdContactId)) {
+            $this->shepherdContactId = (int) $this->shepherdContactId;
         }
         if (isset($this->paperFormat)) {
             $this->paperFormat = (int) $this->paperFormat;
@@ -591,8 +597,7 @@ class PaperInfo {
         $prow->abstract = $prow->title = $prow->collaborators =
             $prow->authorInformation = $prow->paperTags = $prow->optionIds =
             $prow->topicIds = "";
-        $prow->leadContactId = 0;
-        $prow->shepherdContactId = "0";
+        $prow->shepherdContactId = 0;
         $prow->blind = true;
         $prow->_paper_creator = $user;
         $prow->check_rights_version();
@@ -949,12 +954,12 @@ class PaperInfo {
     /** @return int */
     function submitted_at() {
         if ($this->timeSubmitted > 0) {
-            return (int) $this->timeSubmitted;
+            return $this->timeSubmitted;
         } else if ($this->timeWithdrawn > 0) {
             if ($this->timeSubmitted == -100) {
                 return self::SUBMITTED_AT_FOR_WITHDRAWN;
             } else if ($this->timeSubmitted < -100) {
-                return -(int) $this->timeSubmitted;
+                return -$this->timeSubmitted;
             }
         }
         return 0;

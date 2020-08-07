@@ -1585,12 +1585,6 @@ class SearchQueryInfo {
         }
     }
     function add_rights_columns() {
-        if (!isset($this->columns["managerContactId"])) {
-            $this->columns["managerContactId"] = "Paper.managerContactId";
-        }
-        if (!isset($this->columns["leadContactId"])) {
-            $this->columns["leadContactId"] = "Paper.leadContactId";
-        }
         // XXX could avoid the following if user is privChair for everything:
         $this->add_conflict_columns();
         $this->add_reviewer_columns();
@@ -2480,9 +2474,8 @@ class PaperSearch {
         $sqi->add_column("timeSubmitted", "Paper.timeSubmitted");
         $sqi->add_column("timeWithdrawn", "Paper.timeWithdrawn");
         $sqi->add_column("outcome", "Paper.outcome");
-        if ($this->conf->has_any_lead_or_shepherd()) {
-            $sqi->add_column("leadContactId", "Paper.leadContactId");
-        }
+        $sqi->add_column("leadContactId", "Paper.leadContactId");
+        $sqi->add_column("managerContactId", "Paper.managerContactId");
         if ($this->conf->submission_blindness() === Conf::BLIND_OPTIONAL) {
             $sqi->add_column("blind", "Paper.blind");
         }

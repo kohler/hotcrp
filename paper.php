@@ -255,7 +255,7 @@ function update_paper(Qrequest $qreq, $action) {
     $logtext = "Paper " . join(", ", $actions);
     if ($action === "final") {
         $logtext .= " final";
-        if ((int) $new_prow->timeFinalSubmitted <= 0) {
+        if ($new_prow->timeFinalSubmitted <= 0) {
             $logtext .= " draft";
         }
     } else if ($new_prow->timeSubmitted <= 0) {
@@ -273,7 +273,7 @@ function update_paper(Qrequest $qreq, $action) {
     // additional information
     $notes = [];
     if ($action == "final") {
-        if ((int) $new_prow->timeFinalSubmitted <= 0) {
+        if ($new_prow->timeFinalSubmitted <= 0) {
             $notes[] = $Conf->_("The final version has not yet been submitted.");
         }
         $deadline = $Conf->unparse_setting_time_span("final_soft");

@@ -17,7 +17,7 @@ class Shepherd_PaperColumn extends PaperColumn {
     }
     static private function cid(PaperList $pl, PaperInfo $row) {
         if ($row->shepherdContactId && $pl->user->can_view_shepherd($row)) {
-            return (int) $row->shepherdContactId;
+            return $row->shepherdContactId;
         } else {
             return 0;
         }
@@ -32,9 +32,9 @@ class Shepherd_PaperColumn extends PaperColumn {
         return !self::cid($pl, $row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $pl->_content_pc((int) $row->shepherdContactId);
+        return $pl->_content_pc($row->shepherdContactId);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $pl->_text_pc((int) $row->shepherdContactId);
+        return $pl->_text_pc($row->shepherdContactId);
     }
 }

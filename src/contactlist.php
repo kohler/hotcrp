@@ -518,7 +518,7 @@ class ContactList {
             foreach ($prows as $prow) {
                 if ($prow->shepherdContactId
                     && $this->user->can_view_shepherd($prow)) {
-                    $c = (int) $prow->shepherdContactId;
+                    $c = $prow->shepherdContactId;
                     $this->_shepherd_data[$c] = ($this->_shepherd_data[$c] ?? 0) + 1;
                 }
             }

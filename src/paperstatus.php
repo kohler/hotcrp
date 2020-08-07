@@ -278,7 +278,7 @@ class PaperStatus extends MessageSet {
 
         if ($prow->timeFinalSubmitted > 0) {
             $pj->final_submitted = true;
-            $pj->final_submitted_at = (int) $prow->timeFinalSubmitted;
+            $pj->final_submitted_at = $prow->timeFinalSubmitted;
         }
 
         $this->ignore_msgs = $original_no_msgs;

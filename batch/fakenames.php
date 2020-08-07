@@ -25,7 +25,7 @@ class Fakes {
             if (!isset($this->data[$type]))
                 $this->data[$type] = [0];
             $max = $this->data[$type][count($this->data[$type]) - 1];
-            $max += (int) ($count * 10 + 0.5);
+            $max += (int) ((float) $count * 10 + 0.5);
             array_push($this->data[$type], $name, $max);
         }
         return true;
