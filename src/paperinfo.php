@@ -465,8 +465,10 @@ class PaperInfo {
     private $_collaborator_array;
     /** @var ?array<int,array{int,?int}> */
     private $_prefs_array;
-    /** @var ?array{int,?array{int,?int}} */
-    private $_prefs_cid;
+    /** @var ?int */
+    private $_pref1_cid;
+    /** @var ?array{int,?int} */
+    private $_pref1;
     /** @var ?int */
     private $_desirability;
     /** @var ?list<int> */
@@ -558,9 +560,9 @@ class PaperInfo {
                 assert($this->conflictType === null);
             }
             if ($this->myReviewerPreference !== null) {
-                $rp = (int) $this->myReviewerPreference;
                 $re = $this->myReviewerExpertise;
-                $this->_prefs_cid = [$contact->contactId, [$rp, $re !== null ? (int) $re : null]];
+                $this->_pref1 = [(int) $this->myReviewerPreference, $re === null ? $re : (int) $re];
+                $this->_pref1_cid = $contact->contactId;
             }
         }
         if (isset($this->dataOverflow) && is_string($this->dataOverflow)) {
@@ -1465,7 +1467,7 @@ class PaperInfo {
         }
         foreach ($row_set as $prow) {
             $prow->allReviewerPreference = "";
-            $prow->_prefs_array = $prow->_prefs_cid = $prow->_desirability = null;
+            $prow->_prefs_array = $prow->_pref1_cid = $prow->_pref1 = $prow->_desirability = null;
         }
         $result = $this->conf->qe("select paperId, " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId?a group by paperId", $row_set->paper_ids());
         while ($result && ($row = $result->fetch_row())) {
@@ -1498,26 +1500,26 @@ class PaperInfo {
      * @return array{int,?int,?int} */
     function preference($contact, $include_topic_score = false) {
         $cid = is_int($contact) ? $contact : $contact->contactId;
-        if ($this->_prefs_cid === null
+        if ($this->_pref1_cid === null
             && $this->_prefs_array === null
             && $this->allReviewerPreference === null) {
             $row_set = $this->_row_set ? : new PaperInfoSet($this);
             foreach ($row_set as $prow) {
-                $prow->_prefs_cid = [$cid, null];
+                $prow->_pref1_cid = $cid;
+                $prow->_pref1 = null;
             }
             $result = $this->conf->qe("select paperId, preference, expertise from PaperReviewPreference where paperId?a and contactId=?", $row_set->paper_ids(), $cid);
             while ($result && ($row = $result->fetch_row())) {
                 $prow = $row_set->get((int) $row[0]);
-                $prow->_prefs_cid[1] = [(int) $row[1], $row[2] === null ? null : (int) $row[2]];
+                $prow->_pref1 = [(int) $row[1], $row[2] === null ? null : (int) $row[2]];
             }
             Dbl::free($result);
         }
-        if ($this->_prefs_cid !== null && $this->_prefs_cid[0] == $cid) {
-            $pref = $this->_prefs_cid[1];
+        if ($this->_pref1_cid === $cid) {
+            $pref = $this->_pref1 ?? [0, null];
         } else {
-            $pref = ($this->preferences())[$cid] ?? null;
+            $pref = ($this->preferences())[$cid] ?? [0, null];
         }
-        $pref = $pref ? : [0, null];
         if ($include_topic_score) {
             $pref[] = $this->topic_interest_score($contact);
         }
