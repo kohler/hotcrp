@@ -365,6 +365,9 @@ label.checki {
 .small {
 	font-size: smaller;
 }
+.font-weight-bold {
+	font-weight: bold;
+}
 .font-italic {
 	font-style: italic;
 }

@@ -4796,7 +4796,7 @@ function add(cj, editing) {
                 $c = $('<div id="ccactions" class="pcard cmtcard"><div class="cmtcard-body"><div class="aab aabig"></div></div></div>').appendTo(".pcontainer");
             }
             if (!$c.find("a[href='#" + cid + "']").length) {
-                t = '<div class="aabut"><a href="#' + cid + '" class="btn ui js-edit-comment">Add ';
+                t = '<div class="aabut"><a href="#' + cid + '" class="btn uic js-edit-comment">Add ';
                 if (cj.response) {
                     t += (cj.response == "1" ? "" : cj.response + " ") + "response";
                 } else {
@@ -8940,7 +8940,10 @@ function row_click(evt) {
     evt.preventDefault();
 }
 handle_ui.on("js-edit-comment", function (event) {
-    return papercomment.edit_id(this.hash.substring(1));
+    if (this.tagName !== "A" || event_key.is_default_a(event)) {
+        event.preventDefault();
+        papercomment.edit_id(this.hash.substring(1));
+    }
 });
 
 function default_click(evt) {

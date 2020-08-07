@@ -2396,7 +2396,7 @@ class PaperTable {
         if (!$this->allreviewslink
             && !$nocmt
             && $this->user->can_comment($prow, null)) {
-            $t[] = '<a class="ui js-edit-comment xx revlink" href="#cnew">'
+            $t[] = '<a class="uic js-edit-comment xx revlink" href="#cnew">'
                 . Ht::img("comment48.png", "[Add comment]", $dlimgjs) . "&nbsp;<u>Add comment</u></a>";
             $any_comments = true;
         }
@@ -2420,9 +2420,9 @@ class PaperTable {
                     if ($cr->commentId) {
                         $what = $cr->commentType & COMMENTTYPE_DRAFT ? "Edit draft" : "Edit";
                     }
-                    $t[] = '<a class="ui js-edit-comment xx revlink" href="#' . $cid . '">'
+                    $t[] = '<a class="uic js-edit-comment xx revlink" href="#' . $cid . '">'
                         . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
-                        . ($cflttype >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
+                        . ($cflttype >= CONFLICT_AUTHOR ? '<u class="font-weight-bold">' : '<u>')
                         . $what . ($rrd->name == "1" ? "" : " $rrd->name") . ' response</u></a>';
                     $any_comments = true;
                 }
