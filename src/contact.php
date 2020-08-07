@@ -59,6 +59,8 @@ class Contact {
     /** @var ?string */
     public $country;
     /** @var ?string */
+    public $orcid;
+    /** @var ?string */
     public $phone;
 
     public $demoSharing;

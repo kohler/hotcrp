@@ -1756,6 +1756,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql_ok("alter table ContactInfo drop `gender`")) {
         $conf->update_schema_version(237);
     }
+    if ($conf->sversion == 237
+        && $conf->ql_ok("alter table ContactInfo add `orcid` varbinary(64) DEFAULT NULL")) {
+        $conf->update_schema_version(238);
+    }
 
     $conf->ql_ok("delete from Settings where name='__schema_lock'");
     Conf::$main = $old_conf_g;
