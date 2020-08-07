@@ -406,9 +406,7 @@ class Signin_Partial {
         if (preg_match('/\A\/?(U?[12][-\w]+)\/?\z/', $resetcap, $m)) {
             $this->_reset_cap = $m[1];
         } else if (strpos($resetcap, "@") !== false) {
-            if ($qreq->go
-                && $qreq->method() === "POST"
-                && $qreq->post_ok()) {
+            if ($qreq->method() === "POST" && $qreq->post_ok()) {
                 $nqreq = new Qrequest("POST", ["email" => $resetcap]);
                 $nqreq->approve_post();
                 $nqreq->set_annex("redirect", $user->conf->hoturl("resetpassword"));
@@ -431,7 +429,6 @@ class Signin_Partial {
 
         // check passwords
         if ($this->_reset_user
-            && $qreq->go
             && $qreq->method() === "POST"
             && $qreq->post_ok()) {
             $p1 = (string) $qreq->password;
@@ -482,8 +479,7 @@ class Signin_Partial {
     function render_reset_body(Contact $user, Qrequest $qreq, $gx, $gj) {
         echo '<div class="homegrp" id="homeaccount">',
             Ht::form($user->conf->hoturl("resetpassword"), ["class" => "compact-form"]),
-            Ht::hidden("post", post_value()),
-            Ht::hidden("go", 1);
+            Ht::hidden("post", post_value());
         if ($this->_reset_user) {
             echo Ht::hidden("resetcap", $this->_reset_cap);
             $gx->render_group("resetpassword/form");
