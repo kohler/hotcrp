@@ -262,40 +262,68 @@ class AbbreviationClass {
 }
 
 /** @template T */
+class AbbreviationInstance {
+    /** @var string */
+    public $name;
+    /** @var ?string */
+    public $dedash_name;
+    /** @var ?T */
+    public $value;
+    /** @var int */
+    public $tflags;
+    /** @var callable(...):T */
+    public $loader;
+    /** @var list<mixed> */
+    public $loader_args;
+
+    /** @param string $name
+     * @param T $value
+     * @param int $tflags */
+    function __construct($name, $value, $tflags) {
+        $this->name = $name;
+        $this->value = $value;
+        $this->tflags = $tflags;
+    }
+
+    /** @return T */
+    function value() {
+        if ($this->loader !== null) {
+            $this->value = call_user_func_array($this->loader, $this->loader_args);
+            $this->loader = $this->loader_args = null;
+        }
+        return $this->value;
+    }
+}
+
+/** @template T */
 class AbbreviationMatcher {
-    /** @var list<array{string,?string,T,int,?string,?list}> */
+    /** @var list<AbbreviationInstance> */
     private $data = [];
     /** @var int */
     private $nanal = 0;
     /** @var array<string,list<int>> */
     private $matches = [];
-    /** @var array<int,Abbreviator> */
-    private $abbreviators = [];
     /** @var array<int,float> */
     private $prio = [];
 
-    static private $lazy_marker;
-
     /** @param T $template */
     function __construct($template = null) {
-        self::$lazy_marker = self::$lazy_marker ?? (object) [];
     }
 
     /** @param string $name
      * @param T $data */
     function add($name, $data, int $tflags = 0) {
-        $this->data[] = [$name, null, $data, $tflags];
+        $this->data[] = new AbbreviationInstance($name, $data, $tflags);
         $this->matches = [];
     }
     /** @param string $name
      * @param callable(...):T $callback
      * @param list $args */
     function add_lazy($name, $callback, $args, int $tflags = 0) {
-        $this->data[] = [$name, null, self::$lazy_marker, $tflags, $callback, $args];
+        $this->data[] = $d = new AbbreviationInstance($name, null, $tflags);
+        $d->loader = $callback;
+        $d->loader_args = $args;
         $this->matches = [];
-    }
-    function set_abbreviator(int $tflags, Abbreviator $abbreviator) {
-        $this->abbreviators[$tflags] = $abbreviator;
     }
     function set_priority(int $tflags, float $prio) {
         $this->prio[$tflags] = $prio;
@@ -310,26 +338,16 @@ class AbbreviationMatcher {
 
     private function _analyze() {
         while ($this->nanal < count($this->data)) {
-            $name = $uname = simplify_whitespace($this->data[$this->nanal][0]);
+            $d = $this->data[$this->nanal];
+            $name = $uname = simplify_whitespace($d->name);
             if (!is_usascii($name)) {
                 $name = UnicodeHelper::normalize($name);
                 $uname = UnicodeHelper::deaccent($name);
             }
-            $this->data[$this->nanal][0] = $name;
-            $this->data[$this->nanal][1] = self::dedash($uname);
+            $d->name = $name;
+            $d->dedash_name = self::dedash($uname);
             ++$this->nanal;
         }
-    }
-
-    /** @param int $i
-     * @return T */
-    private function _resolve($i) {
-        $d =& $this->data[$i];
-        if ($d[2] === self::$lazy_marker) {
-            assert($d[4] !== null);
-            $d[2] = call_user_func_array($d[4], $d[5]);
-        }
-        return $d[2];
     }
 
     private function _find_all($pattern) {
@@ -357,13 +375,13 @@ class AbbreviationMatcher {
         $mclass = 0;
         $matches = [];
         foreach ($this->data as $i => $d) {
-            if (strcasecmp($dupat, $d[1]) === 0) {
+            if (strcasecmp($dupat, $d->dedash_name) === 0) {
                 if ($mclass === 0) {
                     $matches = [];
                 }
                 $mclass = 1;
                 $matches[] = $i;
-            } else if ($mclass === 0 && preg_match($re, $d[1])) {
+            } else if ($mclass === 0 && preg_match($re, $d->dedash_name)) {
                 $matches[] = $i;
             }
         }
@@ -372,7 +390,7 @@ class AbbreviationMatcher {
             $amt = new AbbreviationMatchTracker($spat, $sisu);
             foreach ($matches as $i) {
                 $d = $this->data[$i];
-                $amt->check($d[0], $i, strlen($d[0]) !== strlen($d[1]));
+                $amt->check($d->name, $i, strlen($d->name) !== strlen($d->dedash_name));
             }
             $matches = $amt->matches();
         }
@@ -381,23 +399,19 @@ class AbbreviationMatcher {
             $last_abbreviator = $last_value = null;
             $amt = new AbbreviationMatchTracker($spat, $sisu);
             foreach ($this->data as $i => $d) {
-                if ($d[2] === self::$lazy_marker) {
-                    $d[2] = $this->_resolve($i);
-                }
-                if ($d[2] instanceof Abbreviator) {
-                    $abbreviator = $d[2];
-                } else if (isset($this->abbreviators[$d[3]])) {
-                    $abbreviator = $this->abbreviators[$d[3]];
+                $value = $d->value();
+                if ($value instanceof Abbreviator) {
+                    $abbreviator = $value;
                 } else {
                     continue;
                 }
                 if ($last_abbreviator === $abbreviator
-                    && $last_value === $d[2]) {
+                    && $last_value === $value) {
                     continue;
                 }
                 $last_abbreviator = $abbreviator;
-                $last_value = $d[2];
-                if (($abbrs = $abbreviator->abbreviations_for($d[0], $d[2]))) {
+                $last_value = $value;
+                if (($abbrs = $abbreviator->abbreviations_for($d->name, $value))) {
                     foreach (is_string($abbrs) ? [$abbrs] : $abbrs as $abbr) {
                         $amt->check($abbr, $i);
                     }
@@ -420,17 +434,15 @@ class AbbreviationMatcher {
         $prio = $tflags ? ($this->prio[$tflags] ?? false) : false;
         foreach ($this->matches[$pattern] as $i) {
             $d = $this->data[$i];
-            $dprio = $this->prio[$d[3]] ?? 0.0;
+            $dprio = $this->prio[$d->tflags] ?? 0.0;
             if ($prio === false || $dprio > $prio) {
                 $results = [];
                 $prio = $dprio;
             }
-            if ((!$tflags || ($d[3] & $tflags) !== 0) && $prio == $dprio) {
-                if ($d[2] === self::$lazy_marker) {
-                    $d[2] = $this->_resolve($i);
-                }
-                if (empty($results) || $d[2] !== $last) {
-                    $results[] = $last = $d[2];
+            if ((!$tflags || ($d->tflags & $tflags) !== 0) && $prio == $dprio) {
+                $value = $d->loader ? $d->value() : $d->value;
+                if (empty($results) || $value !== $last) {
+                    $results[] = $last = $value;
                 }
             }
         }
@@ -467,24 +479,20 @@ class AbbreviationMatcher {
             $pfx = self::make_abbreviation($name, $aclass1) . ".";
             $sfx = 1;
             foreach ($this->data as $i => $d) {
-                if (!$aclass1->tflags || ($d[3] & $aclass1->tflags) !== 0) {
-                    if ($d[2] === self::$lazy_marker) {
-                        $d[2] = $this->_resolve($i);
-                    }
-                    if ($d[2] === $data) {
+                if (!$aclass1->tflags || ($d->tflags & $aclass1->tflags) !== 0) {
+                    $value = $d->value();
+                    if ($value === $data) {
                         return $pfx . $sfx;
                     }
-                    if ($d[2] instanceof Abbreviator) {
-                        $abbreviator = $d[2];
-                    } else if (isset($this->abbreviators[$d[3]])) {
-                        $abbreviator = $this->abbreviators[$d[3]];
+                    if ($value instanceof Abbreviator) {
+                        $abbreviator = $value;
                     } else {
                         $abbreviator = null;
                     }
                     if ($abbreviator) {
-                        $tries = $abbreviator->abbreviations_for($d[0], $d[2]);
+                        $tries = $abbreviator->abbreviations_for($d->name, $value);
                     } else {
-                        $tries = self::make_abbreviation($d[0], $aclass1);
+                        $tries = self::make_abbreviation($d->name, $aclass1);
                     }
                     foreach (is_string($tries) ? [$tries] : $tries as $s) {
                         if ($s === $pfx . $sfx) {
