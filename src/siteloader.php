@@ -4,7 +4,6 @@
 
 class SiteLoader {
     static $map = [
-        "AbbreviationClass" => "lib/abbreviationmatcher.php",
         "AssignmentCountSet" => "src/assignmentset.php",
         "AssignmentParser" => "src/assignmentset.php",
         "AutoassignerCosts" => "src/autoassigner.php",

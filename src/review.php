@@ -521,8 +521,6 @@ class ReviewForm implements JsonSerializable {
     /** @var array<string,ReviewField> */
     public $forder;    // displayed fields in display order, key id
     public $fieldName;
-    /** @var ?string */
-    private $_stopwords;
 
     static public $revtype_names = [
         "None", "External", "PC", "Secondary", "Primary", "Meta"
@@ -644,36 +642,6 @@ class ReviewForm implements JsonSerializable {
                 $f->_search_keyword = $am->find_abbreviation($f->name, $e, AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE);
             }
         }
-    }
-
-    /** @return string */
-    function stopwords() {
-        // Produce a list of common words in review field names that should be
-        // avoided in abbreviations.
-        // For instance, if three review fields start with "Double-blind
-        // question:", we want to avoid those words.
-        if ($this->_stopwords === null) {
-            $bits = [];
-            $bit = 1;
-            foreach ($this->forder as $f) {
-                $words = preg_split('/[^A-Za-z0-9_.\']+/', strtolower(UnicodeHelper::deaccent($f->name)));
-                if (count($words) <= 4) { // Few words --> all of them meaningful
-                    continue;
-                }
-                foreach ($words as $w) {
-                    $bits[$w] = ($bits[$w] ?? 0) | $bit;
-                }
-                $bit <<= 1;
-            }
-            $stops = [];
-            foreach ($bits as $w => $v) {
-                if ($v & ($v - 1)) {
-                    $stops[] = str_replace("'", "", $w);
-                }
-            }
-            $this->_stopwords = join("|", $stops);
-        }
-        return $this->_stopwords;
     }
 
     /** @return string */

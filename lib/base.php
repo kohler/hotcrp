@@ -242,10 +242,6 @@ function friendly_boolean($x) {
     }
 }
 
-interface Abbreviator {
-    public function abbreviations_for($name, $data);
-}
-
 
 // email and MIME helpers
 

@@ -235,48 +235,6 @@ class AbbreviationMatchTracker {
     }
 }
 
-class AbbreviationClass {
-    const TYPE_CAMELCASE = 0;
-    const TYPE_LOWERDASH = 1;
-    const TYPE_ASIS = 2;
-    public $type;
-    public $nwords;
-    public $drop_parens = true;
-    public $stopwords = "";
-    public $tflags = 0;
-    public $index = 0;
-    public $force = false;
-
-    function __construct($type = self::TYPE_CAMELCASE, $nwords = 3) {
-        $this->type = $type;
-        $this->nwords = $nwords;
-    }
-    function step() {
-        if ($this->nwords < 3) {
-            $this->nwords = 3;
-            return true;
-        }
-        ++$this->index;
-        if ($this->index >= 1) {
-            $this->drop_parens = false;
-        }
-        if ($this->index >= 2) {
-            $this->stopwords = false;
-        }
-        if ($this->index > $this->nwords) {
-            $this->nwords = $this->index;
-        }
-        if ($this->type === self::TYPE_ASIS) {
-            if ($this->index === 6) {
-                $this->nwords = 0;
-            }
-            return $this->index <= 6;
-        } else {
-            return $this->index <= 5;
-        }
-    }
-}
-
 /** @template T */
 class AbbreviationEntry {
     /** @var string */
@@ -422,9 +380,6 @@ class AbbreviationMatcher {
         if (empty($this->matches)) {
             $this->_analyze();
         }
-        // A call to Abbreviator::abbreviation_for() might call back in
-        // to AbbreviationMatcher::find_all(). Short-circuit that call.
-        $this->matches[$pattern] = [];
 
         $spat = $upat = simplify_whitespace($pattern);
         if (($sisu = !is_usascii($spat))) {
@@ -463,31 +418,6 @@ class AbbreviationMatcher {
             $matches = $amt->matches();
         }
 
-        if (empty($matches)) {
-            $last_abbreviator = $last_value = null;
-            $amt = new AbbreviationMatchTracker($spat, $sisu);
-            foreach ($this->data as $i => $d) {
-                $value = $d->value();
-                if ($value instanceof Abbreviator) {
-                    $abbreviator = $value;
-                } else {
-                    continue;
-                }
-                if ($last_abbreviator === $abbreviator
-                    && $last_value === $value) {
-                    continue;
-                }
-                $last_abbreviator = $abbreviator;
-                $last_value = $value;
-                if (($abbrs = $abbreviator->abbreviations_for($d->name, $value))) {
-                    foreach (is_string($abbrs) ? [$abbrs] : $abbrs as $abbr) {
-                        $amt->check($abbr, $i);
-                    }
-                }
-            }
-            $matches = $amt->matches();
-        }
-
         $this->matches[$pattern] = $matches;
     }
 
@@ -495,9 +425,6 @@ class AbbreviationMatcher {
         if (empty($this->xmatches)) {
             $this->_analyze();
         }
-        // A call to Abbreviator::abbreviation_for() might call back in
-        // to AbbreviationMatcher::find_all(). Short-circuit that call.
-        $this->xmatches[$pattern] = [];
 
         $upat = $pattern;
         if (!is_usascii($upat)) {
