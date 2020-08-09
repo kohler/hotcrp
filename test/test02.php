@@ -297,16 +297,6 @@ xassert_eqq(SearchSplitter::span_balanced_parens("abc(def g)h)i jk"), 11);
 xassert_eqq(SearchSplitter::span_balanced_parens("abc(def [g)h)i jk"), 12);
 xassert_eqq(SearchSplitter::span_balanced_parens("abc(def sajf"), 12);
 
-// AbbreviationMatcher::make_abbreviation tests
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty", new AbbreviationClass), "Nov");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an amazing", new AbbreviationClass), "NovAma");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty is an AWESOME", new AbbreviationClass), "NovAWESOME");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", new AbbreviationClass), "NovIsnAWESOME");
-$aclass = new AbbreviationClass;
-$aclass->type = AbbreviationClass::TYPE_LOWERDASH;
-xassert_eqq(AbbreviationMatcher::make_abbreviation("novelty isn't an AWESOME", $aclass), "novelty-isnt-awesome");
-xassert_eqq(AbbreviationMatcher::make_abbreviation("_format", $aclass), "format");
-
 // simplify_whitespace
 xassert_eqq(simplify_whitespace("abc def GEH îjk"), "abc def GEH îjk");
 xassert_eqq(simplify_whitespace("\x7Fabc\x7Fdef       GEH îjk"), "abc def GEH îjk");
@@ -458,8 +448,9 @@ xassert_eqq(array_keys(Text::simple_search("ACM badges: available, functional, r
 xassert_eqq(array_keys(Text::simple_search("ACM badges: functional, replicated", $opts, Text::SEARCH_UNPRIVILEGE_EXACT)), ["afr", "fr"]);
 
 $am = new AbbreviationMatcher;
-foreach ($opts as $d => $dname)
+foreach ($opts as $d => $dname) {
     $am->add($dname, $d);
+}
 xassert_eqq($am->find_all("ACM badges: available, functional, replicated"), ["afr"]);
 xassert_eqq($am->find_all("ACM badges: functional, replicated"), ["fr"]);
 xassert_eqq($am->find_all("available"), ["a", "af", "afr", "ar", "arr"]);
@@ -840,7 +831,6 @@ xassert_eqq($am->find_all("elan"), [1, 5]);
 xassert_eqq($am->find_all("elan", 1), [1]);
 xassert_eqq($am->find_all("elan", 2), [5]);
 xassert_eqq($am->find_all("elan", 3), [1, 5]);
-xassert_eqq($am->find_all("é"), [1, 5]);
 $am->add("élange", 6, 2);
 xassert_eqq($am->find_all("ela"), [1, 5, 6]);
 xassert_eqq($am->find_all("elan"), [1, 5]);
@@ -854,7 +844,6 @@ xassert(AbbreviationMatcher::is_camel_word("OveMer"));
 xassert(!AbbreviationMatcher::is_camel_word("Ovemer"));
 xassert(!AbbreviationMatcher::is_camel_word("ovemer"));
 xassert(!AbbreviationMatcher::is_camel_word("ove mer"));
-xassert(AbbreviationMatcher::is_camel_word("ove-mer"));
 
 $am->add("99 Problems", 7);
 xassert_eqq($am->find_all("99p"), [7]);
@@ -869,62 +858,64 @@ xassert_eqq($am->find_all("99p"), [7]);
 xassert_eqq($am->find_all("?"), [8]);
 
 $am = new AbbreviationMatcher;
-$am->add("Overall merit", 1);
-$am->add("Overall merit 2", 2);
-$am->add("Overall merit 3", 3);
-$am->add("Overall merit 4", 4);
-xassert_eqq($am->find_all("OveMer"), [1]);
+$am->add("Overall merit", 0);
+$am->add("Overall merit 2", 1);
+$am->add("Overall merit 3", 2);
+$am->add("Overall merit 4", 3);
+xassert_eqq($am->find_all("OveMer"), [0]);
 xassert_eqq($am->find_all("merit overall"), []);
-xassert_eqq($am->find_all("OveMer2"), [2]);
-xassert_eqq($am->find_all("overall merit*"), [1, 2, 3, 4]);
-xassert_eqq($am->find_all("OveMer*"), [1, 2, 3, 4]);
+xassert_eqq($am->find_all("OveMer2"), [1]);
+xassert_eqq($am->find_all("overall merit*"), [0, 1, 2, 3]);
+xassert_eqq($am->find_all("OveMer*"), [0, 1, 2, 3]);
 
-$am->add("PC Person", 5);
-$am->add("PC Person 2", 6);
-$am->add("P. C. Person 3", 7);
-$am->add("P. C. Person 20", 8);
-xassert_eqq($am->find_all("PCPer"), [5]);
-xassert_eqq($am->find_all("PCPer2"), [6]);
-xassert_eqq($am->find_all("PCPer3"), [7]);
-xassert_eqq($am->find_all("PCPer20"), [8]);
-xassert_eqq($am->find_all("Per"), [5, 6, 7, 8]);
-xassert_eqq($am->find_all("20"), [8]);
-xassert_eqq($am->find_all("2"), [2, 6]);
+$am->add("PC Person", 4);
+$am->add("PC Person 2", 5);
+$am->add("P. C. Person 3", 6);
+$am->add("P. C. Person 20", 7);
+xassert_eqq($am->find_all("PCPer"), [4]);
+xassert_eqq($am->find_all("PCPer2"), [5]);
+xassert_eqq($am->find_all("PCPer3"), [6]);
+xassert_eqq($am->find_all("PCPer20"), [7]);
+xassert_eqq($am->find_all("Per"), [4, 5, 6, 7]);
+xassert_eqq($am->find_all("20"), [7]);
+xassert_eqq($am->find_all("2"), [1, 5]);
 
-$am->add("Number 2", 9);
-$am->add("Number 2 Bis", 10);
-$am->add("2 Butts", 11);
-xassert_eqq($am->find_all("2"), [2, 6, 9, 10, 11]);
+$am->add("Number 2", 8);
+$am->add("Number 2 Bis", 9);
+$am->add("2 Butts", 10);
+xassert_eqq($am->find_all("2"), [1, 5, 8, 9, 10]);
 
 $am = new AbbreviationMatcher;
-$am->add("France Land", 5);
-$am->add("France Land Flower", 6);
-$am->add("France Land Ripen", 7);
-$am->add("Glass Flower", 8);
-$am->add("Glass Flower Milk", 9);
-$am->add("Flower Cheese", 10);
-$am->add("Anne France", 11);
-xassert_eqq($am->find_all("flower"), [6, 8, 9, 10]);
-xassert_eqq($am->find_all("flo"), [6, 8, 9, 10]);
-xassert_eqq($am->find_all("fra"), [5, 6, 7, 11]);
+$am->add("France Land", 0);
+$am->add("France Land Flower", 1);
+$am->add("France Land Ripen", 2);
+$am->add("Glass Flower", 3);
+$am->add("Glass Flower Milk", 4);
+$am->add("Flower Cheese", 5);
+$am->add("Anne France", 6);
+xassert_eqq($am->find_all("flower"), [1, 3, 4, 5]);
+xassert_eqq($am->find_all("flo"), [1, 3, 4, 5]);
+xassert_eqq($am->find_all("fra"), [0, 1, 2, 6]);
+xassert_eqq($am->find_all("fra*"), [0, 1, 2]);
+xassert_eqq($am->find_all("*fra*"), [0, 1, 2, 6]);
 
-$am->add("France", 12);
-xassert_eqq($am->find_all("fra"), [12]);
-xassert_eqq($am->find_all("fra*"), [5, 6, 7, 12]);
-xassert_eqq($am->find_all("*fra*"), [5, 6, 7, 11, 12]);
+$am->add("France", 7);
+xassert_eqq($am->find_all("fra"), [7]);
+xassert_eqq($am->find_all("fra*"), [0, 1, 2, 7]);
+xassert_eqq($am->find_all("*fra*"), [0, 1, 2, 6, 7]);
 
 // AbbreviationMatcher tests taken from old abbreviation styles
 $am = new AbbreviationMatcher;
-$am->add("Cover Letter", 1);
-$am->add("Other Artifact", 2);
-xassert_eqq($am->find_all("other-artifact"), [2]);
-xassert_eqq($am->find_all("cover-letter"), [1]);
+$am->add("Cover Letter", 0);
+$am->add("Other Artifact", 1);
+xassert_eqq($am->find_all("other-artifact"), [1]);
+xassert_eqq($am->find_all("cover-letter"), [0]);
 
 $am = new AbbreviationMatcher;
-$am->add("Second Round Paper", 1);
-$am->add("Second Round Response (PDF)", 2);
-xassert_eqq($am->find_all("second-round-paper"), [1]);
-xassert_eqq($am->find_all("second-round-response--pdf"), [2]);
+$am->add("Second Round Paper", 0);
+$am->add("Second Round Response (PDF)", 1);
+xassert_eqq($am->find_all("second-round-paper"), [0]);
+xassert_eqq($am->find_all("second-round-response--pdf"), [1]);
 
 $am = new AbbreviationMatcher;
 $am->add("Paper is co-authored with at least one PC member", 1);
@@ -1380,4 +1371,5 @@ Dbl::free($result);
 $result = $mresult->next();
 xassert_eqq($result, false);
 
+//error_log(sprintf("%.06f %.06f", AbbreviationMatcher::$t0, AbbreviationMatcher::$t1));
 xassert_exit();

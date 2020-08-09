@@ -112,6 +112,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         });
     }
 
+    const MFLAG_GROUP = 1;
     /** @return AbbreviationMatcher<int> */
     function abbrev_matcher() {
         if ($this->_topic_abbrev_matcher === null) {
@@ -121,7 +122,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
             }
             foreach ($this->group_list() as $tg) {
                 for ($i = 1; count($tg) > 2 && $i !== count($tg); ++$i) {
-                    $this->_topic_abbrev_matcher->add($tg[0], $tg[$i], 1);
+                    $this->_topic_abbrev_matcher->add($tg[0], $tg[$i], self::MFLAG_GROUP);
                 }
             }
         }

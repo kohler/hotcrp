@@ -8,9 +8,11 @@
 // 3. Case-insensitive match with [-_.–—] replaced by spaces
 // 2. Case-insensitive word match with [-_.–—] replaced by spaces
 // 1. Case-insensitive CamelCase match with [-_.–—] replaced by spaces
+//
 // If a word match is performed, prefer matches that match more complete words.
 // Words must appear in order, so pattern "hello kitty" does not match "kitty
 // hello".
+//
 // If the pattern has no Unicode characters, these steps are performed against
 // the deaccented subject (so subjects “élan” and “elan” match pattern “elan”
 // with the same priority). If the pattern has Unicode characters, then exact
@@ -18,13 +20,27 @@
 // priority match for pattern “élan”).
 
 class AbbreviationMatchTracker {
+    /** @var bool
+     * @readonly */
     private $isu;
+    /** @var string
+     * @readonly */
     private $pattern;
+    /** @var string
+     * @readonly */
     private $dpattern;
+    /** @var string
+     * @readonly */
     private $upattern;
+    /** @var string
+     * @readonly */
     private $dupattern;
     private $imatchre;
+    /** @var bool
+     * @readonly */
     private $is_camel_word;
+    /** @var 0|1|2
+     * @readonly */
     private $has_star;
     private $camelwords;
     private $mclass = 1;
@@ -98,13 +114,13 @@ class AbbreviationMatchTracker {
         if (!$this->camelwords) {
             $this->camelwords = [];
             $x = $this->pattern;
-            while (preg_match('{\A[-_.]*([a-z]+|[A-Z][a-z]*|[0-9]+)(.*)\z}', $x, $m)) {
+            while (preg_match('/\A[-_.]*([a-z]+|[A-Z][a-z]*|[0-9]+)(.*)\z/', $x, $m)) {
                 $this->camelwords[] = $m[1];
                 $this->camelwords[] = $m[2] !== "" && ctype_alnum(substr($m[2], 0, 1));
                 $x = $m[2];
             }
         }
-        $swords = preg_split('{\s+}', $subject);
+        $swords = preg_split('/\s+/', $subject);
         $ppos = $spos = $demerits = $skipped = 0;
         while (isset($this->camelwords[$ppos]) && isset($swords[$spos])) {
             $pword = $this->camelwords[$ppos];
@@ -262,7 +278,7 @@ class AbbreviationClass {
 }
 
 /** @template T */
-class AbbreviationInstance {
+class AbbreviationEntry {
     /** @var string */
     public $name;
     /** @var ?string */
@@ -279,17 +295,30 @@ class AbbreviationInstance {
     /** @param string $name
      * @param T $value
      * @param int $tflags */
-    function __construct($name, $value, $tflags) {
+    function __construct($name, $value, $tflags = 0) {
         $this->name = $name;
         $this->value = $value;
         $this->tflags = $tflags;
     }
 
+    /** @template T
+     * @param string $name
+     * @param callable(...):T $loader
+     * @param list<mixed> $loader_args
+     * @param int $tflags
+     * @return AbbreviationEntry<T> */
+    static function make_lazy($name, $loader, $loader_args, $tflags = 0) {
+        $x = new AbbreviationEntry($name, null, $tflags);
+        $x->loader = $loader;
+        $x->loader_args = $loader_args;
+        return $x;
+    }
+
     /** @return T */
     function value() {
-        if ($this->loader !== null) {
+        if ($this->value === null && $this->loader !== null) {
             $this->value = call_user_func_array($this->loader, $this->loader_args);
-            $this->loader = $this->loader_args = null;
+            assert($this->value !== null);
         }
         return $this->value;
     }
@@ -297,7 +326,7 @@ class AbbreviationInstance {
 
 /** @template T */
 class AbbreviationMatcher {
-    /** @var list<AbbreviationInstance> */
+    /** @var list<AbbreviationEntry> */
     private $data = [];
     /** @var int */
     private $nanal = 0;
@@ -313,16 +342,14 @@ class AbbreviationMatcher {
     /** @param string $name
      * @param T $data */
     function add($name, $data, int $tflags = 0) {
-        $this->data[] = new AbbreviationInstance($name, $data, $tflags);
+        $this->data[] = new AbbreviationEntry($name, $data, $tflags);
         $this->matches = [];
     }
     /** @param string $name
-     * @param callable(...):T $callback
-     * @param list $args */
-    function add_lazy($name, $callback, $args, int $tflags = 0) {
-        $this->data[] = $d = new AbbreviationInstance($name, null, $tflags);
-        $d->loader = $callback;
-        $d->loader_args = $args;
+     * @param callable(...):T $loader
+     * @param list $loader_args */
+    function add_lazy($name, $loader, $loader_args, int $tflags = 0) {
+        $this->data[] = AbbreviationEntry::make_lazy($name, $loader, $loader_args, $tflags);
         $this->matches = [];
     }
     function set_priority(int $tflags, float $prio) {
@@ -330,10 +357,10 @@ class AbbreviationMatcher {
     }
 
     static function dedash($text) {
-        return preg_replace('{(?:[-_.\s]|–|—)+}', " ", $text);
+        return preg_replace('/(?:[-_.\s]|–|—)+/', " ", $text);
     }
     static function is_camel_word($text) {
-        return preg_match('{\A[-_.A-Za-z0-9]*(?:[A-Za-z](?=[-_.A-Z0-9])|[0-9](?=[-_.A-Za-z]))[-_.A-Za-z0-9]*\*?\z}', $text);
+        return preg_match('/\A[-_.A-Za-z0-9]*(?:[A-Za-z](?=[-_.A-Z0-9])|[0-9](?=[-_.A-Za-z]))[-_.A-Za-z0-9]*\*?\z/', $text);
     }
 
     private function _analyze() {
@@ -365,10 +392,10 @@ class AbbreviationMatcher {
         }
         $dupat = self::dedash($upat);
         if (self::is_camel_word($upat)) {
-            $re = preg_replace('{([A-Za-z](?=[A-Z0-9 ])|[0-9](?=[A-Za-z ]))}', '$1(?:|.*\b)', $dupat);
+            $re = preg_replace('/([A-Za-z](?=[A-Z0-9 ])|[0-9](?=[A-Za-z ]))/', '$1(?:|.*\b)', $dupat);
             $re = '{\b' . str_replace(" ", "", $re) . '}i';
         } else {
-            $re = join('.*\b', preg_split('{[^A-Za-z0-9*]+}', $dupat));
+            $re = join('.*\b', preg_split('/[^A-Za-z0-9*]+/', $dupat));
             $re = '{\b' . str_replace("*", ".*", $re) . '}i';
         }
 
@@ -440,7 +467,7 @@ class AbbreviationMatcher {
                 $prio = $dprio;
             }
             if ((!$tflags || ($d->tflags & $tflags) !== 0) && $prio == $dprio) {
-                $value = $d->loader ? $d->value() : $d->value;
+                $value = $d->value ?? $d->value();
                 if (empty($results) || $value !== $last) {
                     $results[] = $last = $value;
                 }

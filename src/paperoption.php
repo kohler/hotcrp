@@ -234,7 +234,7 @@ class PaperOptionList implements IteratorAggregate {
     /** @var Conf */
     private $conf;
     /** @var array<int,object> */
-    private $_jlist;
+    private $_jmap;
     /** @var array<int,?PaperOption> */
     private $_omap = [];
     /** @var array<int,object> */
@@ -268,9 +268,9 @@ class PaperOptionList implements IteratorAggregate {
             && $oj->id > 0
             && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed) {
             if ($this->conf->xt_allowed($oj)
-                && (!isset($this->_jlist[$oj->id])
-                    || Conf::xt_priority_compare($oj, $this->_jlist[$oj->id]) <= 0)) {
-                $this->_jlist[$oj->id] = $oj;
+                && (!isset($this->_jmap[$oj->id])
+                    || Conf::xt_priority_compare($oj, $this->_jmap[$oj->id]) <= 0)) {
+                $this->_jmap[$oj->id] = $oj;
             }
             return true;
         } else {
@@ -278,10 +278,17 @@ class PaperOptionList implements IteratorAggregate {
         }
     }
 
+    /** @param array<int,object> $jmap */
+    function set_option_json_map($jmap) {
+        $this->_jmap = $jmap;
+        $this->_omap = [];
+        $this->_olist = $this->_olist_nonfinal = $this->_nonpaper_am = null;
+    }
+
     /** @return array<int,object> */
     private function option_json_map() {
-        if ($this->_jlist === null) {
-            $this->_jlist = [];
+        if ($this->_jmap === null) {
+            $this->_jmap = [];
             if (($olist = $this->conf->setting_json("options"))) {
                 $this->_adding_fixed = false;
                 expand_json_includes_callback($olist, [$this, "_add_json"]);
@@ -290,20 +297,20 @@ class PaperOptionList implements IteratorAggregate {
                 $this->_adding_fixed = true;
                 expand_json_includes_callback($olist, [$this, "_add_json"]);
             }
-            $this->_jlist = array_filter($this->_jlist, "Conf::xt_enabled");
+            $this->_jmap = array_filter($this->_jmap, "Conf::xt_enabled");
         }
-        return $this->_jlist;
+        return $this->_jmap;
     }
 
     function populate_abbrev_matcher(AbbreviationMatcher $am) {
         $cb = [$this, "option_by_id"];
-        $am->add_lazy("paper", $cb, [DTYPE_SUBMISSION], Conf::FSRCH_OPTION);
-        $am->add_lazy("submission", $cb, [DTYPE_SUBMISSION], Conf::FSRCH_OPTION);
-        $am->add_lazy("final", $cb, [DTYPE_FINAL], Conf::FSRCH_OPTION);
+        $am->add_lazy("paper", $cb, [DTYPE_SUBMISSION], Conf::MFLAG_OPTION);
+        $am->add_lazy("submission", $cb, [DTYPE_SUBMISSION], Conf::MFLAG_OPTION);
+        $am->add_lazy("final", $cb, [DTYPE_FINAL], Conf::MFLAG_OPTION);
         foreach ($this->option_json_map() as $id => $oj) {
-            if (!($oj->nonpaper ?? false)) {
-                $am->add_lazy($oj->name, $cb, [$id], Conf::FSRCH_OPTION);
-                $am->add_lazy("opt{$id}", $cb, [$id], Conf::FSRCH_OPTION);
+            if (($oj->nonpaper ?? false) !== true) {
+                $am->add_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
+                $am->add_lazy("opt{$id}", $cb, [$id], Conf::MFLAG_OPTION);
             }
         }
     }
@@ -396,9 +403,8 @@ class PaperOptionList implements IteratorAggregate {
         if ($this->_olist === null) {
             $this->_olist = [];
             foreach ($this->option_json_map() as $id => $oj) {
-                if (!($oj->nonpaper ?? false)
+                if (($oj->nonpaper ?? false) !== true
                     && ($o = $this->option_by_id($id))) {
-                    assert(!$o->nonpaper);
                     $this->_olist[$id] = $o;
                 }
             }
@@ -424,8 +430,8 @@ class PaperOptionList implements IteratorAggregate {
         if ($this->_olist_nonfinal === null) {
             $this->_olist_nonfinal = [];
             foreach ($this->option_json_map() as $id => $oj) {
-                if (!($oj->nonpaper ?? false)
-                    && !($oj->final ?? false)
+                if (($oj->nonpaper ?? false) !== true
+                    && ($oj->final ?? false) !== true
                     && ($o = $this->option_by_id($id))) {
                     assert(!$o->nonpaper && !$o->final);
                     $this->_olist_nonfinal[$id] = $o;
@@ -440,7 +446,7 @@ class PaperOptionList implements IteratorAggregate {
     function nonpaper() {
         $list = [];
         foreach ($this->option_json_map() as $id => $oj) {
-            if (($oj->nonpaper ?? false)
+            if (($oj->nonpaper ?? false) === true
                 && ($o = $this->option_by_id($id)))
                 $list[$id] = $o;
         }
@@ -460,8 +466,8 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     private function _get_field($id, $oj, $nonfinal) {
-        if (!($oj->nonpaper ?? false)
-            && !($nonfinal && ($oj->final ?? false))) {
+        if (($oj->nonpaper ?? false) !== true
+            && !($nonfinal && ($oj->final ?? false) === true)) {
             return $this->option_by_id($id);
         } else {
             return null;
@@ -499,7 +505,7 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     function invalidate_options() {
-        $this->_jlist = $this->_ijmap = $this->_olist = $this->_olist_nonfinal = $this->_nonpaper_am = null;
+        $this->_jmap = $this->_ijmap = $this->_olist = $this->_olist_nonfinal = $this->_nonpaper_am = null;
         $this->_omap = $this->_imap = [];
     }
 
@@ -536,7 +542,7 @@ class PaperOptionList implements IteratorAggregate {
                 $name = substr($name, 4);
             }
             $omap = [];
-            foreach ($this->conf->find_all_fields($name, Conf::FSRCH_OPTION) as $o) {
+            foreach ($this->conf->find_all_fields($name, Conf::MFLAG_OPTION) as $o) {
                 $omap[$o->id] = $o;
             }
             return $omap;
@@ -557,7 +563,7 @@ class PaperOptionList implements IteratorAggregate {
         if (!$this->_nonpaper_am) {
             $this->_nonpaper_am = new AbbreviationMatcher;
             foreach ($this->option_json_map() as $id => $oj) {
-                if (($oj->nonpaper ?? false)
+                if (($oj->nonpaper ?? false) === true
                     && ($o = $this->option_by_id($id))) {
                     assert($o->nonpaper);
                     $this->_nonpaper_am->add($o->name, $o);
@@ -618,7 +624,8 @@ class PaperOption implements Abbreviator {
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
     private $_json_key;
-    private $_search_keyword;
+    /** @var ?string */
+    public $_search_keyword;
     public $description;
     public $description_format;
     public $position;
@@ -705,9 +712,9 @@ class PaperOption implements Abbreviator {
         $this->description = $args->description ?? null;
         $this->description_format = $args->description_format ?? null;
         $this->required = !!($args->required ?? false);
-        $this->final = !!($args->final ?? false);
-        $this->nonpaper = !!($args->nonpaper ?? false);
-        $this->include_empty = !!($args->include_empty ?? false);
+        $this->final = ($args->final ?? false) === true;
+        $this->nonpaper = ($args->nonpaper ?? false) === true;
+        $this->include_empty = ($args->include_empty ?? false) === true;
 
         $vis = $args->visibility ?? $args->view_type ?? null;
         if (!in_array($vis, ["rev", "nonblind", "conflict", "admin"])) {

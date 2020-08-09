@@ -1309,7 +1309,7 @@ class Conf {
 
     /** @return ?Formula */
     function find_named_formula($text) {
-        return $this->abbrev_matcher()->find1($text, self::FSRCH_FORMULA);
+        return $this->abbrev_matcher()->find1($text, self::MFLAG_FORMULA);
     }
 
     /** @return array<int,Formula> */
@@ -1438,23 +1438,23 @@ class Conf {
     }
 
 
-    const FSRCH_OPTION = 1;
-    const FSRCH_REVIEW = 2;
-    const FSRCH_FORMULA = 4;
+    const MFLAG_OPTION = 1;
+    const MFLAG_REVIEW = 2;
+    const MFLAG_FORMULA = 4;
 
     /** @return AbbreviationMatcher<PaperOption|ReviewField|Formula> */
     function abbrev_matcher() {
         if (!$this->_abbrev_matcher) {
             $this->_abbrev_matcher = new AbbreviationMatcher;
-            $this->_abbrev_matcher->set_priority(self::FSRCH_FORMULA, -1);
+            $this->_abbrev_matcher->set_priority(self::MFLAG_FORMULA, -1);
             // XXX exposes invisible paper options, review fields
             $this->_paper_opts->populate_abbrev_matcher($this->_abbrev_matcher);
             foreach ($this->all_review_fields() as $f) {
-                $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_REVIEW);
+                $this->_abbrev_matcher->add($f->name, $f, self::MFLAG_REVIEW);
             }
             foreach ($this->named_formulas() as $f) {
                 if ($f->name) {
-                    $this->_abbrev_matcher->add($f->name, $f, self::FSRCH_FORMULA);
+                    $this->_abbrev_matcher->add($f->name, $f, self::MFLAG_FORMULA);
                 }
             }
         }
@@ -1495,7 +1495,7 @@ class Conf {
     /** @param string $text
      * @return ?ReviewField */
     function find_review_field($text) {
-        return $this->abbrev_matcher()->find1($text, self::FSRCH_REVIEW);
+        return $this->abbrev_matcher()->find1($text, self::MFLAG_REVIEW);
     }
     /** @param string $fid
      * @return ReviewField */

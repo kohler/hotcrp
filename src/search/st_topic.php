@@ -49,13 +49,15 @@ class Topic_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $tm = "";
-        if ($this->topics === [])
+        if ($this->topics === []) {
             return "false";
-        else if (is_array($this->topics))
+        } else if (is_array($this->topics)) {
             $tm = " and topicId in (" . join(",", $this->topics) . ")";
+        }
         $t = "exists (select * from PaperTopic where paperId=Paper.paperId$tm)";
-        if ($this->negated)
+        if ($this->negated) {
             $t = "not $t";
+        }
         return $t;
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
@@ -70,8 +72,9 @@ class Topic_SearchTerm extends SearchTerm {
     }
     function compile_condition(PaperInfo $row, PaperSearch $srch) {
         $o = (object) ["type" => "topic", "topics" => $this->topics];
-        if ($this->negated)
+        if ($this->negated) {
             $o = (object) ["type" => "not", "child" => [$o]];
+        }
         return $o;
     }
 }

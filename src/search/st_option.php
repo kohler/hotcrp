@@ -154,7 +154,7 @@ class Option_SearchTerm extends SearchTerm {
             || strcasecmp($oname, "any") === 0) {
             $omatches = $conf->options()->normal();
         } else {
-            $omatches = $conf->find_all_fields($oname, Conf::FSRCH_OPTION);
+            $omatches = $conf->find_all_fields($oname, Conf::MFLAG_OPTION);
             if (count($omatches) > 1) {
                 $oms->warnings[] = "“" . htmlspecialchars($word) . "” matches more than one submission field.";
                 error_log($conf->dbname . ": $oname / $word matches more than one submission field");

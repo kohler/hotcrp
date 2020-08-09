@@ -49,7 +49,8 @@ class ReviewField implements Abbreviator, JsonSerializable {
     public $name;
     public $name_html;
     public $description;
-    private $_search_keyword;
+    /** @var ?string */
+    public $_search_keyword;
     /** @var bool */
     public $has_options;
     public $options = [];
@@ -122,7 +123,7 @@ class ReviewField implements Abbreviator, JsonSerializable {
         } else {
             $this->displayed = $this->display_order = false;
         }
-        $this->round_mask = get_i($j, "round_mask");
+        $this->round_mask = $j->round_mask ?? 0;
         if ($this->has_options) {
             $options = $j->options ?? [];
             $ol = $j->option_letter ?? 0;
@@ -2476,10 +2477,11 @@ class ReviewValues extends MessageSet {
     }
 
     private function _single_approval_state() {
-        if ($this->text !== null || $this->single_approval < 0)
+        if ($this->text !== null || $this->single_approval < 0) {
             return null;
-        else
+        } else {
             return $this->single_approval == 0 ? 2 : 3;
+        }
     }
 
     function finish() {
