@@ -66,7 +66,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
     }
 }
 
-class CsvParser {
+class CsvParser implements Iterator {
     /** @var list<string|list<string>> */
     private $lines;
     /** @var int */
@@ -85,6 +85,12 @@ class CsvParser {
     private $used;
     /** @var int */
     private $nused = 0;
+    /** @var int */
+    private $_rewind_pos = 0;
+    /** @var ?CsvRow */
+    private $_current;
+    /** @var ?int */
+    private $_current_pos = 0;
 
     const TYPE_COMMA = 1;
     const TYPE_PIPE = 2;
@@ -92,6 +98,7 @@ class CsvParser {
     const TYPE_TAB = 4;
     const TYPE_DOUBLEBAR = 8;
     const TYPE_GUESS = 7;
+    const TYPE_HEADER = 16;
 
     /** @param string $str
      * @return list<string> */
@@ -108,8 +115,11 @@ class CsvParser {
      * @param int $type */
     function __construct($str, $type = self::TYPE_COMMA) {
         $this->lines = is_array($str) ? $str : self::split_lines($str);
-        $this->set_type($type);
+        $this->set_type($type & ~self::TYPE_HEADER);
         $this->used = gmp_init("0");
+        if ($type & self::TYPE_HEADER) {
+            $this->set_header($this->next_list());
+        }
     }
 
     /** @param int $type */
@@ -148,6 +158,7 @@ class CsvParser {
             $header = $header->as_array();
         }
         $this->header = $header;
+        $this->_rewind_pos = $this->lpos;
 
         // The column map defaults to mapping header field names to field indexes.
         // Exceptions:
@@ -291,12 +302,6 @@ class CsvParser {
     /** @return int */
     function lineno() {
         return $this->lpos;
-    }
-
-    /** @deprecated
-     * @return array|false */
-    function next() {
-        return $this->next_map();
     }
 
     /** @deprecated
@@ -484,6 +489,42 @@ class CsvParser {
             }
         }
         return $a;
+    }
+
+    /** @return CsvRow */
+    function current() {
+        if ($this->_current === null) {
+            $this->_current = $this->next_row();
+        }
+        return $this->_current;
+    }
+
+    /** @return int */
+    function key() {
+        return $this->_current_pos;
+    }
+
+    /** @return void */
+    function next() {
+        if ($this->_current === null) {
+            $this->next_list();
+        }
+        $this->skip_empty();
+        $this->_current = null;
+        $this->_current_pos = $this->lpos;
+    }
+
+    /** @return void */
+    function rewind() {
+        $this->lpos = $this->_rewind_pos;
+        $this->skip_empty();
+        $this->_current = null;
+        $this->_current_pos = $this->lpos;
+    }
+
+    /** @return bool */
+    function valid() {
+        return $this->lpos != count($this->lines);
     }
 }
 
