@@ -27,7 +27,7 @@ class TagRankParser {
         $csva = [["paper", "action", "tag", "landmark", "message"]];
 
         if (!$csv->header()) {
-            if (!($req = $csv->next_array())) {
+            if (!($req = $csv->next_list())) {
                 $csva[] = ["", "error", "", $filename, "Empty file."];
                 return $csva;
             }

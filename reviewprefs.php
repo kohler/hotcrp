@@ -143,7 +143,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
     $text = preg_replace('/^==-== /m', '#', $text);
     $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
     $csv->set_comment_chars("#");
-    $line = $csv->next_array();
+    $line = $csv->next_list();
 
     // Parse header
     if ($line && preg_grep('{\A(?:paper|pid|paper[\s_]*id|id)\z}i', $line)) {

@@ -78,9 +78,12 @@ class CsvParser {
     private $header = false;
     /** @var array<string,int> */
     private $hmap = [];
+    /** @var false|string */
     private $comment_chars = false;
     private $comment_function;
+    /** @var GMP */
     private $used;
+    /** @var int */
     private $nused = 0;
 
     const TYPE_COMMA = 1;
@@ -111,7 +114,7 @@ class CsvParser {
 
     /** @param int $type */
     private function set_type($type) {
-        $this->type = $type;
+        $this->type = $type ? : self::TYPE_COMMA;
         if ($this->type === self::TYPE_COMMA) {
             $this->typefn = "parse_comma";
         } else if ($this->type === self::TYPE_BAR) {
@@ -290,45 +293,62 @@ class CsvParser {
         return $this->lpos;
     }
 
-    /** @return array|false */
+    /** @deprecated
+     * @return array|false */
     function next() {
         return $this->next_map();
     }
 
-    /** @return list<string>|false */
+    /** @deprecated
+     * @return list<string>|false */
     function next_array() {
-        while ($this->lpos < count($this->lines)) {
+        return $this->next_list();
+    }
+
+    /** @return bool */
+    private function skip_empty() {
+        $nl = count($this->lines);
+        while ($this->lpos !== $nl) {
             $line = $this->lines[$this->lpos];
-            ++$this->lpos;
             if (is_array($line)) {
-                $a = $line;
+                return true;
             } else if ($line === "" || $line[0] === "\n" || $line[0] === "\r") {
-                continue;
-            } else if ($this->comment_chars
+                // skip
+            } else if ($this->comment_chars !== false
                        && strpos($this->comment_chars, $line[0]) !== false) {
                 if ($this->comment_function) {
                     call_user_func($this->comment_function, $line, $this);
                 }
-                continue;
             } else {
-                $fn = $this->typefn;
-                $a = $this->$fn($line);
+                return true;
             }
-            $this->nused = max($this->nused, count($a));
-            return $a;
+            ++$this->lpos;
         }
         return false;
     }
 
+    /** @return list<string>|false */
+    function next_list() {
+        if ($this->skip_empty()) {
+            $line = $this->lines[$this->lpos];
+            ++$this->lpos;
+            $a = is_array($line) ? $line : $this->{$this->typefn}($line);
+            $this->nused = max($this->nused, count($a));
+            return $a;
+        } else {
+            return false;
+        }
+    }
+
     /** @return CsvRow|false */
     function next_row() {
-        $a = $this->next_array();
+        $a = $this->next_list();
         return $a === false ? false : new CsvRow($this, $a);
     }
 
     /** @return array|false */
     function next_map() {
-        return $this->as_map($this->next_array());
+        return $this->as_map($this->next_list());
     }
 
     /** @param null|false|string|list<string> $line */

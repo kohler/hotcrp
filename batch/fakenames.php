@@ -18,7 +18,7 @@ class Fakes {
             return false;
         }
         $csv = new CsvParser($s);
-        while (($x = $csv->next_array())) {
+        while (($x = $csv->next_list())) {
             list($name, $type, $count) = $x;
             if ((string) $type === "")
                 continue;

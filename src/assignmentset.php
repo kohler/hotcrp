@@ -1243,7 +1243,7 @@ class AssignmentSet {
 
     private function install_csv_header($csv) {
         if (!$csv->header()) {
-            if (!($req = $csv->next_array())) {
+            if (!($req = $csv->next_list())) {
                 return $this->error_at($csv->lineno(), "empty file");
             }
             if (!self::is_csv_header($req)) {

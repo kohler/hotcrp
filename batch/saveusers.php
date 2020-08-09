@@ -88,7 +88,7 @@ if (isset($arg["u"])) {
 } else if (!preg_match('/\A\s*[\[\{]/i', $content)) {
     $csv = new CsvParser(cleannl(convert_to_utf8($content)));
     $csv->set_comment_chars("#%");
-    $line = $csv->next_array();
+    $line = $csv->next_list();
     if ($line && preg_grep('{\Aemail\z}i', $line)) {
         $csv->set_header($line);
     } else {
