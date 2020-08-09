@@ -302,6 +302,15 @@ class PaperOptionList implements IteratorAggregate {
         return $this->_jmap;
     }
 
+    private function add_abbrev_matcher(AbbreviationMatcher $am, $id, $oj) {
+        $cb = [$this, "option_by_id"];
+        $am->add_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
+        $am->add_lazy("opt{$id}", $cb, [$id], Conf::MFLAG_OPTION);
+        if ($oj->search_keyword ?? null) {
+            $am->add_lazy($oj->search_keyword, $cb, [$id], Conf::MFLAG_OPTION);
+        }
+    }
+
     function populate_abbrev_matcher(AbbreviationMatcher $am) {
         $cb = [$this, "option_by_id"];
         $am->add_lazy("paper", $cb, [DTYPE_SUBMISSION], Conf::MFLAG_OPTION);
@@ -309,8 +318,24 @@ class PaperOptionList implements IteratorAggregate {
         $am->add_lazy("final", $cb, [DTYPE_FINAL], Conf::MFLAG_OPTION);
         foreach ($this->option_json_map() as $id => $oj) {
             if (($oj->nonpaper ?? false) !== true) {
-                $am->add_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
-                $am->add_lazy("opt{$id}", $cb, [$id], Conf::MFLAG_OPTION);
+                $this->add_abbrev_matcher($am, $id, $oj);
+            }
+        }
+    }
+
+    function assign_search_keywords($nonpaper, AbbreviationMatcher $am) {
+        $cb = [$this, "option_by_id"];
+        foreach ($this->option_json_map() as $id => $oj) {
+            if ((($oj->nonpaper ?? false) === true) === $nonpaper
+                && ($oj->search_keyword ?? null) === null) {
+                $e = AbbreviationEntry::make_lazy("", $cb, [$id], Conf::MFLAG_OPTION);
+                $s = $am->find_abbreviation(UnicodeHelper::deaccent($oj->name), $e,
+                    AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE,
+                    Conf::MFLAG_OPTION);
+                $oj->search_keyword = $s;
+                if (($o = $this->_omap[$id] ?? null)) {
+                    $o->_search_keyword = $s;
+                }
             }
         }
     }
@@ -563,13 +588,11 @@ class PaperOptionList implements IteratorAggregate {
         if (!$this->_nonpaper_am) {
             $this->_nonpaper_am = new AbbreviationMatcher;
             foreach ($this->option_json_map() as $id => $oj) {
-                if (($oj->nonpaper ?? false) === true
-                    && ($o = $this->option_by_id($id))) {
-                    assert($o->nonpaper);
-                    $this->_nonpaper_am->add($o->name, $o);
-                    $this->_nonpaper_am->add($o->formid, $o);
+                if (($oj->nonpaper ?? false) === true) {
+                    $this->add_abbrev_matcher($this->_nonpaper_am, $id, $oj);
                 }
             }
+            $this->assign_search_keywords(true, $this->_nonpaper_am);
         }
         return $this->_nonpaper_am;
     }
@@ -591,7 +614,7 @@ class PaperOptionList implements IteratorAggregate {
     }
 }
 
-class PaperOption implements Abbreviator {
+class PaperOption {
     const MINFIXEDID = 1000000;
     const TITLEID = -1000;
     const AUTHORSID = -1001;
@@ -887,23 +910,10 @@ class PaperOption implements Abbreviator {
         }
     }
     /** @return string */
-    function abbreviations_for($name, $data) {
-        assert($this === $data);
-        return $this->search_keyword();
-    }
-    /** @return string */
     function search_keyword() {
         if ($this->_search_keyword === null) {
             $am = $this->abbrev_matcher();
-            $aclass = new AbbreviationClass;
-            $this->_search_keyword = $am->unique_abbreviation($this->name, $this, $aclass);
-            if (!$this->_search_keyword) {
-                $aclass->type = AbbreviationClass::TYPE_LOWERDASH;
-                $this->_search_keyword = $am->unique_abbreviation($this->name, $this, $aclass);
-            }
-            if (!$this->_search_keyword) {
-                $this->_search_keyword = $this->formid;
-            }
+            assert($this->_search_keyword !== null);
         }
         return $this->_search_keyword;
     }
@@ -934,8 +944,8 @@ class PaperOption implements Abbreviator {
     function json_key() {
         if ($this->_json_key === null) {
             $am = $this->abbrev_matcher();
-            $aclass = new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH, 4);
-            $this->_json_key = $am->unique_abbreviation($this->name, $this, $aclass);
+            $e = AbbreviationEntry::make_lazy("", [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
+            $this->_json_key = $am->find_abbreviation($this->name, $e, AbbreviationMatcher::ABBR_UNDERSCORE);
             if (!$this->_json_key) {
                 $this->_json_key = $this->formid;
             }
@@ -1416,12 +1426,8 @@ class SelectorPaperOption extends PaperOption {
         } else if ($idx > count($this->selector)) {
             return false;
         } else {
-            $am = $this->selector_abbrev_matcher();
-            if (($q = $am->unique_abbreviation($this->selector[$idx - 1], $idx, new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH, 1)))) {
-                return $q;
-            } else {
-                return false;
-            }
+            $e = new AbbreviationEntry("", $idx);
+            return $this->selector_abbrev_matcher()->find_abbreviation($this->selector[$idx - 1], $e, AbbreviationMatcher::ABBR_DASH);
         }
     }
     function search_examples(Contact $viewer, $context) {

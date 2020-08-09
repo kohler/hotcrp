@@ -33,7 +33,7 @@ class ReviewFieldInfo {
     }
 }
 
-class ReviewField implements Abbreviator, JsonSerializable {
+class ReviewField implements JsonSerializable {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
@@ -270,21 +270,16 @@ class ReviewField implements Abbreviator, JsonSerializable {
         return [$this->unparse_value($f), $this->unparse_value($l)];
     }
 
-    function abbreviations_for($name, $data) {
-        return $this->search_keyword();
-    }
     function search_keyword() {
         if ($this->_search_keyword === null) {
-            $aclass = new AbbreviationClass;
-            $aclass->stopwords = $this->conf->review_form()->stopwords();
-            $aclass->force = true;
-            $this->_search_keyword = $this->conf->abbrev_matcher()->unique_abbreviation($this->name, $this, $aclass);
+            $this->conf->abbrev_matcher();
+            assert($this->_search_keyword !== null);
         }
         return $this->_search_keyword;
     }
     function abbreviation1() {
-        $aclass = new AbbreviationClass(AbbreviationClass::TYPE_LOWERDASH);
-        return AbbreviationMatcher::make_abbreviation($this->name, $aclass);
+        $e = new AbbreviationEntry("", $this, Conf::MFLAG_REVIEW);
+        return $this->conf->abbrev_matcher()->find_abbreviation($this->name, $e, AbbreviationMatcher::ABBR_DASH);
     }
     function web_abbreviation() {
         return '<span class="need-tooltip" data-tooltip="' . $this->name_html
@@ -636,6 +631,19 @@ class ReviewForm implements JsonSerializable {
             }
         }
         return $fs;
+    }
+    function populate_abbrev_matcher(AbbreviationMatcher $am) {
+        foreach ($this->all_fields() as $f) {
+            $am->add($f->name, $f, Conf::MFLAG_REVIEW);
+        }
+    }
+    function assign_search_keywords(AbbreviationMatcher $am) {
+        foreach ($this->all_fields() as $f) {
+            if ($f->_search_keyword === null) {
+                $e = new AbbreviationEntry("", $f, Conf::MFLAG_REVIEW);
+                $f->_search_keyword = $am->find_abbreviation($f->name, $e, AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE);
+            }
+        }
     }
 
     /** @return string */

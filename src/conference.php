@@ -1449,12 +1449,17 @@ class Conf {
             $this->_abbrev_matcher->set_priority(self::MFLAG_FORMULA, -1);
             // XXX exposes invisible paper options, review fields
             $this->_paper_opts->populate_abbrev_matcher($this->_abbrev_matcher);
-            foreach ($this->all_review_fields() as $f) {
-                $this->_abbrev_matcher->add($f->name, $f, self::MFLAG_REVIEW);
-            }
+            $this->review_form()->populate_abbrev_matcher($this->_abbrev_matcher);
             foreach ($this->named_formulas() as $f) {
                 if ($f->name) {
                     $this->_abbrev_matcher->add($f->name, $f, self::MFLAG_FORMULA);
+                }
+            }
+            $this->_paper_opts->assign_search_keywords(false, $this->_abbrev_matcher);
+            $this->review_form()->assign_search_keywords($this->_abbrev_matcher);
+            foreach ($this->named_formulas() as $f) {
+                if ($f->name) {
+                    $f->assign_search_keyword($this->_abbrev_matcher);
                 }
             }
         }

@@ -1276,7 +1276,7 @@ class FormulaParse {
     public $lerrors;
 }
 
-class Formula implements Abbreviator, JsonSerializable {
+class Formula implements JsonSerializable {
     /** @var Conf */
     public $conf;
     /** @var ?Contact */
@@ -1372,15 +1372,16 @@ class Formula implements Abbreviator, JsonSerializable {
     }
 
 
-    function abbreviations_for($name, $data) {
-        return $this->abbreviation();
+    function assign_search_keyword(AbbreviationMatcher $am) {
+        assert($this->_abbreviation === null);
+        $e = new AbbreviationEntry("", $this, Conf::MFLAG_FORMULA);
+        $this->_abbreviation = $am->find_abbreviation($this->name, $e, AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE);
     }
 
     function abbreviation() {
         if ($this->_abbreviation === null) {
-            $aclass = new AbbreviationClass;
-            $aclass->force = true;
-            $this->_abbreviation = $this->conf->abbrev_matcher()->unique_abbreviation($this->name, $this, $aclass);
+            $this->conf->abbrev_matcher();
+            assert($this->_abbreviation !== null);
         }
         return $this->_abbreviation;
     }
