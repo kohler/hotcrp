@@ -568,6 +568,15 @@ xassert_array_eqq(Text::split_first_prefix("Dr."), ["Dr.", ""]);
 xassert_array_eqq(Text::split_first_prefix("Dr. John"), ["John", "Dr."]);
 xassert_array_eqq(Text::split_first_prefix("Dr. Prof."), ["Prof.", "Dr."]);
 xassert_array_eqq(Text::split_first_prefix("Dr. Prof. Mr. Bob"), ["Bob", "Dr. Prof. Mr."]);
+xassert_eqq(Text::name("Bob", "Jones", "", 0), "Bob Jones");
+xassert_eqq(Text::name("Bob", "Jones", "", NAME_L), "Jones, Bob");
+xassert_eqq(Text::name("Bob", "Jones", "", NAME_PARSABLE), "Bob Jones");
+xassert_eqq(Text::name("Bob", "von Jones", "", 0), "Bob von Jones");
+xassert_eqq(Text::name("Bob", "von Jones", "", NAME_L), "von Jones, Bob");
+xassert_eqq(Text::name("Bob", "von Jones", "", NAME_PARSABLE), "Bob von Jones");
+xassert_eqq(Text::name("Bob", "Ferreira Costa", "", 0), "Bob Ferreira Costa");
+xassert_eqq(Text::name("Bob", "Ferreira Costa", "", NAME_L), "Ferreira Costa, Bob");
+xassert_eqq(Text::name("Bob", "Ferreira Costa", "", NAME_PARSABLE), "Ferreira Costa, Bob");
 
 // author matching
 $aum = AuthorMatcher::make_string_guess("ETH Zürich");

@@ -26,6 +26,11 @@ class Text {
      * @return string */
     static function name($firstName, $lastName, $email, $flags) {
         if ($firstName !== "" && $lastName !== "") {
+            if (($flags & (NAME_L | NAME_PARSABLE)) === NAME_PARSABLE
+                && substr_count($lastName, " ") !== 0
+                && !preg_match('/\A(?:v[oa]n |d[eu] )?\S+(?: jr\.?| sr\.?| i+v?i*)?\z/i', $lastName)) {
+                $flags |= NAME_L;
+            }
             if (($flags & NAME_I) !== 0
                 && ($initial = self::initial($firstName)) !== "") {
                 $firstName = $initial;

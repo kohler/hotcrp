@@ -32,7 +32,7 @@ class Author {
             $this->lastName = $x->lastName;
             $this->email = $x->email;
             $this->affiliation = $x->affiliation;
-        } else if ((string) $x !== "") {
+        } else if ($x !== null && $x !== "") {
             $this->assign_string($x);
         }
     }
@@ -215,6 +215,10 @@ class Author {
             ];
         }
         return $this->_deaccents[$component];
+    }
+    /** @return bool */
+    function is_empty() {
+        return $this->email === "" && $this->firstName === "" && $this->lastName === "" && $this->affiliation === "";
     }
     /** @return bool */
     function is_conflicted() {

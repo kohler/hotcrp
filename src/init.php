@@ -45,6 +45,7 @@ define("NAME_S", 32);  // "last, first" according to conference preference
 define("NAME_U", 64);  // unaccented
 define("NAME_MAILQUOTE", 128); // quote name by RFC822
 define("NAME_A", 256); // affiliation
+define("NAME_PARSABLE", 512); // `last, first` if `first last` would be ambiguous
 
 define("COMMENTTYPE_DRAFT", 1);
 define("COMMENTTYPE_BLIND", 2);
