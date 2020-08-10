@@ -349,10 +349,10 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     function ensure_size() {
-        if ($this->size == 0 && $this->paperStorageId != 1) {
+        if ($this->size == 0 && $this->paperStorageId !== 1) {
             $this->size = (int) $this->content_size();
         }
-        return $this->size != 0 || $this->paperStorageId == 1;
+        return $this->size != 0 || $this->paperStorageId === 1;
     }
 
     function reset_size() {

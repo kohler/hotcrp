@@ -779,6 +779,7 @@ class AbbreviationMatcher {
                 && self::is_strict_camel_word(substr($name, 1))) {
                 $s = preg_replace('/([a-z\'])([A-Z])/', '$1 $2', $name);
                 $e2 = clone $e;
+                /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
                 $e2->name = trim($s);
                 $this->data[] = $e2;
                 $this->matches = [];

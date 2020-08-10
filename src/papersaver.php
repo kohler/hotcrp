@@ -31,17 +31,6 @@ class PaperSaver {
     }
 
     /** @param Qrequest $qreq */
-    static function translate_authors_qreq($qreq) {
-        $n = 1;
-        while (isset($qreq["auemail$n"])) {
-            $qreq["authors:email_$n"] = $qreq["auemail$n"];
-            $qreq["authors:name_$n"] = $qreq["auname$n"];
-            $qreq["authors:affiliation_$n"] = $qreq["auaff$n"];
-            ++$n;
-        }
-    }
-
-    /** @param Qrequest $qreq */
     static function replace_contacts($pj, $qreq) {
         $pj->contacts = [];
         for ($n = 1; isset($qreq["contacts:email_$n"]); ++$n) {
@@ -88,57 +77,6 @@ class Default_PaperSaver extends PaperSaver {
             return;
         }
 
-        // Authors
-        $aukeys = ["name" => "Name", "email" => "Email", "affiliation" => "Affiliation"];
-        $authors = [];
-        if (isset($qreq["auemail1"]) && !isset($qreq["authors:email_1"])) {
-            self::translate_authors_qreq($qreq);
-        }
-        for ($n = 1; true; ++$n) {
-            $au = (object) ["index" => $n];
-            $isnull = $isempty = true;
-            foreach ($aukeys as $k => $defaultv) {
-                $v = $qreq["authors:{$k}_{$n}"];
-                if ($v !== null) {
-                    $isnull = false;
-                    $v = simplify_whitespace($v);
-                    if ($v !== "" && $v !== $defaultv) {
-                        $au->$k = $v;
-                        $isempty = false;
-                    }
-                }
-            }
-
-            if ($isnull) {
-                break;
-            } else if ($isempty) {
-                continue;
-            }
-
-            // some people enter email in the affiliation slot
-            if (isset($au->affiliation) && validate_email($au->affiliation)) {
-                if (!isset($au->email)) {
-                    $au->email = $au->affiliation;
-                    unset($au->affiliation);
-                } else if (!validate_email($au->email)) {
-                    if (!isset($au->name) || strpos($au->name, " ") === false) {
-                        $au->name = trim(get($au, "name", "") . " " . $au->email);
-                        $au->email = $au->affiliation;
-                        unset($au->affiliation);
-                    } else {
-                        $x = $au->affiliation;
-                        $au->affiliation = $au->email;
-                        $au->email = $x;
-                    }
-                }
-            }
-
-            $authors[] = $au;
-        }
-        if ($n !== 1) {
-            $pj->authors = $authors;
-        }
-
         // Status
         unset($pj->status);
         if ($action === "submit") {
@@ -152,36 +90,13 @@ class Default_PaperSaver extends PaperSaver {
             $pj->draft = true;
         }
 
-        // Paper upload
-        if ($action === "final") {
-            $fname = $qreq->has_file("opt-1") ? "opt-1" : "paperUpload"; // XXX paperUpload backwards compat
-            if (($f1 = $qreq->file($fname))) {
-                $pj->final = DocumentInfo::make_uploaded_file($f1, $pj->pid, DTYPE_FINAL, $user->conf);
-            } else if (($f2 = $qreq["opt-1:upload"])) {
-                $pj->final = DocumentInfo::make_capability($f2, $pj->pid, DTYPE_FINAL, $user->conf);
-            }
-        } else if ($action === "update" || $action === "submit") {
-            $fname = $qreq->has_file("opt0") ? "opt0" : "paperUpload"; // XXX paperUpload backwards compat
-            if (($f1 = $qreq->file($fname))) {
-                $pj->submission = DocumentInfo::make_uploaded_file($f1, $pj->pid, DTYPE_SUBMISSION, $user->conf);
-            } else if (($f2 = $qreq["opt0:upload"])) {
-                $pj->submission = DocumentInfo::make_capability($f2, $pj->pid, DTYPE_SUBMISSION, $user->conf);
-            }
-        }
-
-        // Options
+        // Fields
         $nnprow = $prow ? : PaperInfo::make_new($user);
         foreach ($user->conf->options()->form_fields($nnprow) as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
-                && ($o->id > 0 || $o->type === "intrinsic2")
                 && (!$o->final || $action === "final")) {
                 // XXX test_editable
-                $okey = $o->json_key();
-                $ov = $o->parse_web($nnprow, $qreq);
-                if ($ov === false) {
-                    throw new Error("option {$o->id} {$o->title()} should implement parse_web but doesn't");
-                }
-                $pj->$okey = $ov;
+                $pj->{$o->json_key()} = $o->parse_web($nnprow, $qreq);
             }
         }
     }

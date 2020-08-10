@@ -627,17 +627,6 @@ class PaperTable {
         }
     }
 
-    /** @param PaperOption $o */
-    function render_submission_version(FieldRender $fr, $o) {
-        if ($this->user->can_view_pdf($this->prow)
-            && $this->prow->finalPaperStorageId > 1
-            && $this->prow->paperStorageId > 1) {
-            $fr->title = false;
-            $dname = $this->conf->_c("field", "Submission version");
-            $fr->set_html('<p class="pgsm"><small>' . $this->prow->document(DTYPE_SUBMISSION)->link_html(htmlspecialchars($dname), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>");
-        }
-    }
-
     private function is_ready($checkbox) {
         if ($this->useRequest) {
             return !!$this->qreq->submitpaper
@@ -810,116 +799,6 @@ class PaperTable {
                 . '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" role="button" aria-expanded="false" data-fold-target="6">[more]</a></div>'
                 . Ht::unstash_script("render_text.on_page()");
         }
-    }
-
-    private function editable_author_component_entry($n, $component, $au) {
-        $auval = "";
-        if ($component === "name") {
-            $js = ["size" => "35", "placeholder" => "Name", "autocomplete" => "off", "aria-label" => "Author name"];
-            if ($au && $au->firstName && $au->lastName && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au->lastName)) {
-                $auval = $au->lastName . ", " . $au->firstName;
-            } else if ($au) {
-                $auval = $au->name();
-            }
-        } else if ($component === "email") {
-            $js = ["size" => "30", "placeholder" => "Email", "autocomplete" => "off", "aria-label" => "Author email"];
-            $auval = $au ? $au->email : "";
-        } else {
-            $js = ["size" => "32", "placeholder" => "Affiliation", "autocomplete" => "off", "aria-label" => "Author affiliation"];
-            $auval = $au ? $au->affiliation : "";
-        }
-
-        $val = $auval;
-        if ($this->useRequest) {
-            $val = ($n === '$' ? "" : (string) $this->qreq["authors:{$component}_{$n}"]);
-        }
-
-        $js["class"] = $this->control_class("authors:{$component}_{$n}", "need-autogrow js-autosubmit editable-author-{$component}");
-        if ($au && !$this->prow->paperId && !$this->useRequest) {
-            $js["class"] .= " ignore-diff";
-        }
-        if ($component === "email" && $this->user->can_lookup_user()) {
-            $js["class"] .= " uii js-email-populate";
-        }
-        if ($val !== $auval) {
-            $js["data-default-value"] = $auval;
-        }
-        return Ht::entry("authors:{$component}_{$n}", $val, $js);
-    }
-    private function editable_authors_tr($n, $au, $max_authors) {
-        $t = '<tr>';
-        if ($max_authors !== 1) {
-            $t .= '<td class="rxcaption">' . $n . '.</td>';
-        }
-        return $t . '<td class="lentry">'
-            . $this->editable_author_component_entry($n, "email", $au) . ' '
-            . $this->editable_author_component_entry($n, "name", $au) . ' '
-            . $this->editable_author_component_entry($n, "affiliation", $au)
-            . '<span class="nb btnbox aumovebox"><button type="button" class="ui qx need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
-            . Icons::ui_triangle(0)
-            . '</button><button type="button" class="ui qx need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
-            . Icons::ui_triangle(2)
-            . '</button><button type="button" class="ui qx need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>'
-            . $this->messages_at("authors:$n")
-            . $this->messages_at("authors:email_$n")
-            . $this->messages_at("authors:name_$n")
-            . $this->messages_at("authors:affiliation_$n")
-            . '</td></tr>';
-    }
-
-    /** @param PaperOption $option */
-    function echo_editable_authors($option) {
-        $max_authors = (int) $this->conf->opt("maxAuthors");
-        $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
-
-        $sb = $this->conf->submission_blindness();
-        $title = $this->edit_title_html($option);
-        if ($sb === Conf::BLIND_ALWAYS) {
-            $title .= ' <span class="n">(blind)</span>';
-        } else if ($sb === Conf::BLIND_UNTILREVIEW) {
-            $title .= ' <span class="n">(blind until review)</span>';
-        }
-        $this->echo_editable_papt("authors", $title, ["id" => "authors"], $option);
-        $this->echo_field_hint($option);
-        echo Ht::hidden("has_authors", 1),
-            '<div class="papev"><table class="js-row-order">',
-            '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
-            ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
-            'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', null, $max_authors)), '">';
-
-        $aulist = $this->prow->author_list();
-        if ($this->useRequest) {
-            $n = $nonempty_n = 0;
-            while (true) {
-                $auname = $this->qreq["authors:name_" . ($n + 1)];
-                $auemail = $this->qreq["authors:email_" . ($n + 1)];
-                $auaff = $this->qreq["authors:affiliation_" . ($n + 1)];
-                if ($auname === null && $auemail === null && $auaff === null) {
-                    break;
-                }
-                ++$n;
-                if ((string) $auname !== "" || (string) $auemail !== "" || (string) $auaff !== "") {
-                    $nonempty_n = $n;
-                }
-            }
-            while (count($aulist) < $nonempty_n) {
-                $aulist[] = null;
-            }
-        } else if (empty($aulist) && !$this->admin) {
-            $aulist[] = $this->user;
-        }
-
-        $tr_maxau = $max_authors <= 0 ? 0 : max(count($aulist), $max_authors);
-        for ($n = 1; $n <= count($aulist); ++$n) {
-            echo $this->editable_authors_tr($n, $aulist[$n - 1] ?? null, $tr_maxau);
-        }
-        if ($max_authors <= 0 || $n <= $max_authors) {
-            do {
-                echo $this->editable_authors_tr($n, null, $tr_maxau);
-                ++$n;
-            } while ($n <= $min_authors);
-        }
-        echo "</tbody></table></div></div>\n\n";
     }
 
     private function authorData($table, $type, $viewAs = null) {

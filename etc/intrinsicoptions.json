@@ -6,9 +6,10 @@
         "callback": "+Title_PaperOption"
     },
     {
-        "name": "Submission version", "json_key": false, "id": -1008,
+        "name": "Submission version", "json_key": false, "id": -1008, "final": true,
         "form_position": false, "display_position": 1999,
-        "type": "intrinsic"
+        "type": "intrinsic2", "include_empty": true,
+        "callback": "+SubmissionVersion_PaperOption"
     },
     {
         "name": "Abstract", "json_key": "abstract", "id": -1004,
@@ -19,7 +20,8 @@
     {
         "name": "Authors", "json_key": "authors", "id": -1001,
         "form_position": 3001, "required": true, "visibility": "nonblind",
-        "type": "intrinsic"
+        "type": "intrinsic2", "include_empty": true,
+        "callback": "+Authors_PaperOption"
     },
     {
         "name": "Submission anonymity", "json_key": "nonblind", "id": -1002,

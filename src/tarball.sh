@@ -250,7 +250,6 @@ src/helprenderer.php
 src/hotcrpmailer.php
 src/init.php
 src/initweb.php
-src/intrinsicvalue.php
 src/listaction.php
 src/listactions/la_assign.php
 src/listactions/la_decide.php
@@ -278,10 +277,12 @@ src/meetingtracker.php
 src/mergecontacts.php
 src/multiconference.php
 src/options/o_abstract.php
+src/options/o_authors.php
 src/options/o_collaborators.php
 src/options/o_contacts.php
 src/options/o_nonblind.php
 src/options/o_pcconflicts.php
+src/options/o_submissionversion.php
 src/options/o_title.php
 src/options/o_topics.php
 src/paperapi.php

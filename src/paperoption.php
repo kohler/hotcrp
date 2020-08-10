@@ -120,6 +120,11 @@ class PaperValue implements JsonSerializable {
     function data_array() {
         return $this->data_list();
     }
+    /** @param int $index
+     * @return ?string */
+    function data_by_index($index) {
+        return ($this->data_list())[$index] ?? null;
+    }
     /** @return DocumentInfoSet */
     function document_set() {
         assert($this->prow || empty($this->_values));
@@ -705,8 +710,7 @@ class PaperOption {
         "slides" => "+DocumentPaperOption",
         "video" => "+DocumentPaperOption",
         "document" => "+DocumentPaperOption",
-        "attachments" => "+AttachmentsPaperOption",
-        "intrinsic" => "+IntrinsicPaperOption"
+        "attachments" => "+AttachmentsPaperOption"
     ];
 
     /** @param stdClass $args */
@@ -1490,18 +1494,18 @@ class DocumentPaperOption extends PaperOption {
 
     function value_force(PaperValue $ov) {
         if ($this->id === DTYPE_SUBMISSION && $ov->prow->paperStorageId > 1) {
-            $ov->set_value_data([(int) $ov->prow->paperStorageId], [null]);
+            $ov->set_value_data([$ov->prow->paperStorageId], [null]);
         } else if ($this->id === DTYPE_FINAL && $ov->prow->finalPaperStorageId > 1) {
-            $ov->set_value_data([(int) $ov->prow->finalPaperStorageId], [null]);
+            $ov->set_value_data([$ov->prow->finalPaperStorageId], [null]);
         } else {
             $ov->set_value_data([], []);
         }
     }
     function value_present(PaperValue $ov) {
-        return $ov->value !== null && $ov->value > ($this->id <= 0 ? 1 : 0);
+        return $ov->value !== null && $ov->value > 1;
     }
     function value_compare($av, $bv) {
-        return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
+        return ($av && $av->value > 1 ? 1 : 0) - ($bv && $bv->value > 1 ? 1 : 0);
     }
     function value_dids(PaperValue $ov) {
         if ($ov->value > 1) {
@@ -1520,24 +1524,40 @@ class DocumentPaperOption extends PaperOption {
             return false;
         }
     }
+    function value_check(PaperValue $ov, Contact $user) {
+        if ($this->id === DTYPE_SUBMISSION
+            && !$this->conf->opt("noPapers")
+            && ($ov->value ?? 0) <= 1
+            && !$ov->prow->allow_absent()) {
+            $ov->warning($this->conf->_("Entry required to complete submission."));
+        }
+    }
     function value_store(PaperValue $ov, PaperStatus $ps) {
         $fup = $ov->anno("document");
         if ($fup && ($doc = $ps->upload_document($fup, $this))) {
             $ov->set_value_data([$doc->paperStorageId], [null]);
         } else {
-            $ov->set_value_data([], []);
+            $ov->estop(null);
+        }
+    }
+    function value_save(PaperValue $ov, PaperStatus $ps) {
+        if ($this->id <= 0) {
+            $ps->save_paperf($this->id ? "finalPaperStorageId" : "paperStorageId", $ov->value ?? 0);
+            return true;
+        } else {
+            return false;
         }
     }
 
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
-        if (($doc = DocumentInfo::make_request($qreq, $this->formid, $prow->paperId, $this->id, $this->conf))) {
+        if (($doc = DocumentInfo::make_request($qreq, "opt{$this->id}", $prow->paperId, $this->id, $this->conf))) {
             $ov = PaperValue::make($prow, $this, -1);
             $ov->set_anno("document", $doc);
             if (isset($doc->error_html)) {
                 $ov->error($doc->error_html);
             }
             return $ov;
-        } else if ($qreq["{$this->formid}:remove"]) {
+        } else if ($qreq["opt{$this->id}:remove"]) {
             return PaperValue::make($prow, $this);
         } else {
             return null;
@@ -1987,36 +2007,6 @@ class AttachmentsPaperOption extends PaperOption {
         } else {
             $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
             return false;
-        }
-    }
-}
-
-class IntrinsicPaperOption extends PaperOption {
-    function __construct(Conf $conf, $args) {
-        parent::__construct($conf, $args);
-    }
-
-    function value_present(PaperValue $ov) {
-        if ($this->id >= DTYPE_FINAL) {
-            return $ov->value > 1;
-        } else {
-            return !!$ov->value;
-        }
-    }
-    function value_check(PaperValue $ov, Contact $user) {
-        IntrinsicValue::value_check($this, $ov, $user);
-    }
-    function value_force(PaperValue $ov) {
-        IntrinsicValue::assign_intrinsic($ov);
-    }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        IntrinsicValue::echo_web_edit($this, $pt, $ov, $reqov);
-    }
-    function render(FieldRender $fr, PaperValue $ov) {
-        if ($this->id === PaperOption::AUTHORSID) {
-            $fr->table->render_authors($fr, $this);
-        } else if ($this->id === PaperOption::SUBMISSION_VERSION_ID) {
-            $fr->table->render_submission_version($fr, $this);
         }
     }
 }

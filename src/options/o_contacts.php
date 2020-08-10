@@ -59,7 +59,6 @@ class Contacts_PaperOption extends PaperOption {
         foreach ($ov->anno("users") as $c) {
             $ps->update_conflict_value($c->email, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
             if ($c->contactId === 0) {
-                $c->conflictType = CONFLICT_CONTACTAUTHOR;
                 $ps->register_user($c);
             }
         }

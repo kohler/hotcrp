@@ -381,9 +381,9 @@ class PaperInfo {
     /** @var ?array<string,mixed> */
     public $dataOverflow;
 
-    /** @var ?string */
+    /** @var ?int */
     public $paperStorageId;
-    /** @var ?string */
+    /** @var ?int */
     public $finalPaperStorageId;
     /** @var ?string */
     public $pdfFormatStatus;
@@ -556,6 +556,12 @@ class PaperInfo {
         }
         if (isset($this->paperFormat)) {
             $this->paperFormat = (int) $this->paperFormat;
+        }
+        if (isset($this->paperStorageId)) {
+            $this->paperStorageId = (int) $this->paperStorageId;
+        }
+        if (isset($this->finalPaperStorageId)) {
+            $this->finalPaperStorageId = (int) $this->finalPaperStorageId;
         }
         if ($contact) {
             if ($this->myReviewPermissions !== null
@@ -759,14 +765,21 @@ class PaperInfo {
         return $this->conf->format_info($this->paperFormat);
     }
 
+    /** @param string $authorInformation
+     * @return list<Author> */
+    static function parse_author_list($authorInformation) {
+        $au = [];
+        foreach (explode("\n", $authorInformation) as $line) {
+            if ($line !== "")
+                $au[] = Author::make_tabbed($line);
+        }
+        return $au;
+    }
+
     /** @return list<Author> */
     function author_list() {
         if (!isset($this->_author_array)) {
-            $this->_author_array = array();
-            foreach (explode("\n", $this->authorInformation) as $line) {
-                if ($line != "")
-                    $this->_author_array[] = Author::make_tabbed($line);
-            }
+            $this->_author_array = self::parse_author_list($this->authorInformation);
         }
         return $this->_author_array;
     }
@@ -814,6 +827,16 @@ class PaperInfo {
         } else {
             return 0;
         }
+    }
+
+    /** @param string $email
+     * @return int */
+    function conflict_type_by_email($email) {
+        foreach ($this->conflicts(true) as $cflt) {
+            if (strcasecmp($cflt->email, $email) === 0)
+                return $cflt->conflictType;
+        }
+        return 0;
     }
 
     /** @param Contact|int $contact
@@ -1735,9 +1758,9 @@ class PaperInfo {
         return $doc->paperStorageId > 1
             && (($doc->paperStorageId == $this->paperStorageId
                  && $this->finalPaperStorageId <= 0
-                 && $doc->documentType == DTYPE_SUBMISSION)
+                 && $doc->documentType === DTYPE_SUBMISSION)
                 || ($doc->paperStorageId == $this->finalPaperStorageId
-                    && $doc->documentType == DTYPE_FINAL));
+                    && $doc->documentType === DTYPE_FINAL));
     }
 
     /** @param int $dtype

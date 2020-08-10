@@ -53,7 +53,7 @@ function document_history(Contact $user, PaperInfo $prow, $dtype) {
         && $dtype >= DTYPE_FINAL) {
         $result = $prow->conf->qe("select paperId, paperStorageId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $prow->paperId, $dtype);
         while (($doc = DocumentInfo::fetch($result, $prow->conf, $prow))) {
-            if (!get($actives, $doc->paperStorageId))
+            if (!isset($actives[$doc->paperStorageId]))
                 $pjs[] = document_history_element($doc);
         }
         Dbl::free($result);
@@ -121,7 +121,7 @@ function document_download(Contact $user, $qreq) {
     } else {
         $doc = $prow->document($dr->dtype, $request_docid);
     }
-    if ($want_docid !== 0 && (!$doc || $doc->paperStorageId != $want_docid)) {
+    if ($want_docid !== 0 && (!$doc || $doc->paperStorageId !== $want_docid)) {
         document_error("404 Not Found", "No such version.");
     } else if (!$doc || $doc->paperStorageId <= 1) {
         document_error("404 Not Found", "No such " . ($dr->attachment ? "attachment" : "document") . " “" . htmlspecialchars($dr->req_filename) . "”.");
