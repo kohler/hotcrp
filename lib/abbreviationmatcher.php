@@ -524,7 +524,7 @@ class AbbreviationMatcher {
                 }
             }
         } else {
-            preg_match_all('/[A-Za-z~0-9?!*^$@#\/]+/', $upat, $m);
+            preg_match_all('/[A-Za-z0-9~?!*.]+/', $upat, $m);
             foreach ($m[0] as $w) {
                 $re .= $re === "" ? " " : ".*? ";
                 $re .= preg_quote($w, "/");
