@@ -441,23 +441,11 @@ xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"]), ["yes"]);
 xassert_eqq(Text::simple_search("Yes", ["yes", "no", "yes-really"], Text::SEARCH_UNPRIVILEGE_EXACT), ["yes", 2 => "yes-really"]);
 xassert_eqq(Text::simple_search("Yes", ["yes-maybe", "no", "yes-really"], 0), ["yes-maybe", 2 => "yes-really"]);
 
-$opts = ["x" => "None", "a" => "ACM badges: available", "af" => "ACM badges: available, functional", "afr" => "ACM badges: available, functional, replicated", "ar" => "ACM badges: available, reusable", "arr" => "ACM badges: available, reusable, replicated", "f" => "ACM badges: functional", "fr" => "ACM badges: functional, replicated", "r" => "ACM badges: reusable", "rr" => "ACM badges: reusable, replicated"];
-xassert_eqq(array_keys(Text::simple_search("ACM badges: available, functional, replicated", $opts)), ["afr"]);
-xassert_eqq(array_keys(Text::simple_search("ACM badges: functional, replicated", $opts)), ["fr"]);
-xassert_eqq(array_keys(Text::simple_search("ACM badges: available, functional, replicated", $opts, Text::SEARCH_UNPRIVILEGE_EXACT)), ["afr"]);
-xassert_eqq(array_keys(Text::simple_search("ACM badges: functional, replicated", $opts, Text::SEARCH_UNPRIVILEGE_EXACT)), ["afr", "fr"]);
-
-$am = new AbbreviationMatcher;
-foreach ($opts as $d => $dname) {
-    $am->add($dname, $d);
-}
-xassert_eqq($am->find_all("ACM badges: available, functional, replicated"), ["afr"]);
-xassert_eqq($am->find_all("ACM badges: functional, replicated"), ["fr"]);
-xassert_eqq($am->find_all("available"), ["a", "af", "afr", "ar", "arr"]);
-xassert_eqq($am->find_all("ACM badges: available"), ["a"]);
-xassert_eqq($am->find_all("acm-badges-available"), ["a"]);
-xassert_eqq($am->find_all("ACMBadAva"), ["a"]);
-xassert_eqq($am->find_all("ava"), ["a", "af", "afr", "ar", "arr"]);
+$acm_badge_opts = ["x" => "None", "a" => "ACM badges: available", "af" => "ACM badges: available, functional", "afr" => "ACM badges: available, functional, replicated", "ar" => "ACM badges: available, reusable", "arr" => "ACM badges: available, reusable, replicated", "f" => "ACM badges: functional", "fr" => "ACM badges: functional, replicated", "r" => "ACM badges: reusable", "rr" => "ACM badges: reusable, replicated"];
+xassert_eqq(array_keys(Text::simple_search("ACM badges: available, functional, replicated", $acm_badge_opts)), ["afr"]);
+xassert_eqq(array_keys(Text::simple_search("ACM badges: functional, replicated", $acm_badge_opts)), ["fr"]);
+xassert_eqq(array_keys(Text::simple_search("ACM badges: available, functional, replicated", $acm_badge_opts, Text::SEARCH_UNPRIVILEGE_EXACT)), ["afr"]);
+xassert_eqq(array_keys(Text::simple_search("ACM badges: functional, replicated", $acm_badge_opts, Text::SEARCH_UNPRIVILEGE_EXACT)), ["afr", "fr"]);
 
 // Qrequest tests
 $q = new Qrequest("GET", ["a" => 1, "b" => 2]);
@@ -949,6 +937,38 @@ xassert_eqq($am->find_all("OneHunThiFin"), [4]);
 xassert_eqq($am->find_all("one-hundr-thi"), [3]);
 xassert_eqq($am->find_all("one-hundred-things"), [3]);
 xassert_eqq($am->find_all("OneFin"), [4]);
+
+$am = new AbbreviationMatcher;
+foreach ($acm_badge_opts as $d => $dname) {
+    $am->add($dname, $d);
+}
+xassert_eqq($am->find_all("ACM badges: available, functional, replicated"), ["afr"]);
+xassert_eqq($am->find_all("ACM badges: functional, replicated"), ["fr"]);
+xassert_eqq($am->find_all("available"), ["a", "af", "afr", "ar", "arr"]);
+xassert_eqq($am->find_all("ACM badges: available"), ["a"]);
+xassert_eqq($am->find_all("acm-badges-available"), ["a"]);
+xassert_eqq($am->find_all("ACMBadAva"), ["a"]);
+xassert_eqq($am->find_all("ava"), ["a", "af", "afr", "ar", "arr"]);
+
+$am = new AbbreviationMatcher;
+$topic_ex = ["Applications - Computer Vision",
+             "Applications - NLP",
+             "Applications - Other Systems",
+             "Applications - Search Engines",
+             "Empirical Studies - Qualitative",
+             "Empirical Studies - Quantitative",
+             "Human-Computer Interaction and Information Visualization",
+             "Law, Policy, and Humanistic/Critical Analysis",
+             "Measurement and Algorithm Audits",
+             "Statistics, Machine Learning, Data Mining",
+             "Systems (Programming Languages, Databases)",
+             "Theory and Privacy"];
+foreach ($topic_ex as $i => $topic) {
+    $am->add($topic, $i);
+}
+foreach ($topic_ex as $i => $topic) {
+    xassert_eqq($am->find_all($topic), [$i]);
+}
 
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
