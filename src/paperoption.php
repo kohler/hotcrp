@@ -328,8 +328,8 @@ class PaperOptionList implements IteratorAggregate {
         foreach ($this->option_json_map() as $id => $oj) {
             if ((($oj->nonpaper ?? false) === true) === $nonpaper
                 && ($oj->search_keyword ?? null) === null) {
-                $e = AbbreviationEntry::make_lazy("", $cb, [$id], Conf::MFLAG_OPTION);
-                $s = $am->find_abbreviation($oj->name, $e,
+                $e = AbbreviationEntry::make_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
+                $s = $am->find_abbreviation($e,
                     AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE,
                     Conf::MFLAG_OPTION);
                 $oj->search_keyword = $s;
@@ -944,8 +944,8 @@ class PaperOption {
     function json_key() {
         if ($this->_json_key === null) {
             $am = $this->abbrev_matcher();
-            $e = AbbreviationEntry::make_lazy("", [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
-            $this->_json_key = $am->find_abbreviation($this->name, $e, AbbreviationMatcher::ABBR_UNDERSCORE);
+            $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
+            $this->_json_key = $am->find_abbreviation($e, AbbreviationMatcher::ABBR_UNDERSCORE);
             if (!$this->_json_key) {
                 $this->_json_key = $this->formid;
             }
@@ -1426,8 +1426,8 @@ class SelectorPaperOption extends PaperOption {
         } else if ($idx > count($this->selector)) {
             return false;
         } else {
-            $e = new AbbreviationEntry("", $idx);
-            return $this->selector_abbrev_matcher()->find_abbreviation($this->selector[$idx - 1], $e, AbbreviationMatcher::ABBR_DASH);
+            $e = new AbbreviationEntry($this->selector[$idx - 1], $idx);
+            return $this->selector_abbrev_matcher()->find_abbreviation($e, AbbreviationMatcher::ABBR_DASH);
         }
     }
     function search_examples(Contact $viewer, $context) {

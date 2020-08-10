@@ -732,13 +732,12 @@ class AbbreviationMatcher {
     const ABBR_DASH = 1;
     const ABBR_UNDERSCORE = 2;
     const ABBR_FORCE = 4;
-    /** @param string $iname
-     * @param int $class
+    /** @param int $class
      * @param int $tflags
      * @return string|false */
-    function find_abbreviation($iname, AbbreviationEntry $e, $class, $tflags = 0) {
+    function find_abbreviation(AbbreviationEntry $e, $class, $tflags = 0) {
         // Strip parenthetical remarks when that preserves uniqueness
-        $name = simplify_whitespace(UnicodeHelper::deaccent($iname));
+        $name = simplify_whitespace(UnicodeHelper::deaccent($e->name));
         if (($xname = self::deparenthesize($name)) !== ""
             && $this->test_all_matches($xname, $e, $tflags)) {
             $name = $xname;

@@ -278,8 +278,8 @@ class ReviewField implements JsonSerializable {
         return $this->_search_keyword;
     }
     function abbreviation1() {
-        $e = new AbbreviationEntry("", $this, Conf::MFLAG_REVIEW);
-        return $this->conf->abbrev_matcher()->find_abbreviation($this->name, $e, AbbreviationMatcher::ABBR_DASH);
+        $e = new AbbreviationEntry($this->name, $this, Conf::MFLAG_REVIEW);
+        return $this->conf->abbrev_matcher()->find_abbreviation($e, AbbreviationMatcher::ABBR_DASH);
     }
     function web_abbreviation() {
         return '<span class="need-tooltip" data-tooltip="' . $this->name_html
@@ -638,8 +638,8 @@ class ReviewForm implements JsonSerializable {
     function assign_search_keywords(AbbreviationMatcher $am) {
         foreach ($this->all_fields() as $f) {
             if ($f->_search_keyword === null) {
-                $e = new AbbreviationEntry("", $f, Conf::MFLAG_REVIEW);
-                $f->_search_keyword = $am->find_abbreviation($f->name, $e, AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE);
+                $e = new AbbreviationEntry($f->name, $f, Conf::MFLAG_REVIEW);
+                $f->_search_keyword = $am->find_abbreviation($e, AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE);
             }
         }
     }
