@@ -1455,6 +1455,7 @@ class Conf {
                     $this->_abbrev_matcher->add($f->name, $f, self::MFLAG_FORMULA);
                 }
             }
+            $this->_abbrev_matcher->add_deparenthesized();
             $this->_paper_opts->assign_search_keywords(false, $this->_abbrev_matcher);
             $this->review_form()->assign_search_keywords($this->_abbrev_matcher);
             foreach ($this->named_formulas() as $f) {

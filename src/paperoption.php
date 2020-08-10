@@ -329,7 +329,7 @@ class PaperOptionList implements IteratorAggregate {
             if ((($oj->nonpaper ?? false) === true) === $nonpaper
                 && ($oj->search_keyword ?? null) === null) {
                 $e = AbbreviationEntry::make_lazy("", $cb, [$id], Conf::MFLAG_OPTION);
-                $s = $am->find_abbreviation(UnicodeHelper::deaccent($oj->name), $e,
+                $s = $am->find_abbreviation($oj->name, $e,
                     AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE,
                     Conf::MFLAG_OPTION);
                 $oj->search_keyword = $s;

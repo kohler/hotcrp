@@ -2,6 +2,15 @@
 // abbreviationmatcher.php -- HotCRP abbreviation matcher helper class
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+// New match priority (higher = more priority):
+// if no star:
+//    +2 no skipped non-stopwords, full words
+//    +1 no skipped non-stopwords
+//    +0 otherwise
+// if star:
+//    +1 no skipped non-stopwords at beginning
+//    +0 otherwise
+
 // Match priority (higher = more priority):
 // 5. Exact match
 // 4. Exact match with [-_.–—] replaced by spaces
@@ -250,6 +259,8 @@ class AbbreviationEntry {
     /** @var list<mixed> */
     public $loader_args;
 
+    const TFLAG_LITERAL = 0x10000000;
+
     /** @param string $name
      * @param T $value
      * @param int $tflags */
@@ -288,13 +299,15 @@ class AbbreviationMatcher {
     private $data = [];
     /** @var int */
     private $nanal = 0;
+    /** @var int */
+    private $ndeparen = 0;
     /** @var array<string,list<int>> */
     private $matches = [];
     /** @var array<int,float> */
     private $prio = [];
 
     /** @var list<string> */
-    private $xtesters = [];
+    private $ltesters = [];
     /** @var array<string,list<int>> */
     private $xmatches = [];
 
@@ -305,6 +318,7 @@ class AbbreviationMatcher {
     /** @param string $name
      * @param T $data */
     function add($name, $data, int $tflags = 0) {
+        $name = simplify_whitespace(UnicodeHelper::deaccent($name));
         $this->data[] = new AbbreviationEntry($name, $data, $tflags);
         $this->matches = [];
         $this->xmatches = [];
@@ -313,44 +327,68 @@ class AbbreviationMatcher {
      * @param callable(...):T $loader
      * @param list $loader_args */
     function add_lazy($name, $loader, $loader_args, int $tflags = 0) {
+        $name = simplify_whitespace(UnicodeHelper::deaccent($name));
         $this->data[] = AbbreviationEntry::make_lazy($name, $loader, $loader_args, $tflags);
         $this->matches = [];
         $this->xmatches = [];
     }
-    private function _add_with_name(AbbreviationEntry $e, $name) {
-        $e = clone $e;
-        $e->name = $name;
-        $this->data[] = $e;
-        if (!empty($this->xmatches)) {
-            $this->matches[$e->name] = [count($this->data) - 1];
-            $this->xmatches[$e->name] = [count($this->data) - 1];
+    function add_deparenthesized() {
+        $this->_analyze();
+        while ($this->ndeparen !== $this->nanal) {
+            $e = $this->data[$this->ndeparen];
+            if (($s = self::deparenthesize($e->name)) !== ""
+                && !in_array(self::make_xtester(strtolower($s)), $this->ltesters)) {
+                $e = clone $e;
+                $e->name = $s;
+                $this->data[] = $e;
+                $this->matches = [];
+                $this->xmatches = [];
+            }
+            ++$this->ndeparen;
         }
     }
+    private function _add_clone_literal($name, AbbreviationEntry $e) {
+        assert($this->nanal === count($this->data));
+        $e = clone $e;
+        $e->tflags |= AbbreviationEntry::TFLAG_LITERAL; // only match this literally
+        $e->name = $e->dedash_name = $name;
+        $this->data[] = $e;
+        $this->ltesters[] = " " . $name;
+        ++$this->nanal;
+        $this->matches[$name] = $this->xmatches[$name] = [count($this->data) - 1];
+    }
+
     function set_priority(int $tflags, float $prio) {
         $this->prio[$tflags] = $prio;
     }
 
-    static function dedash($text) {
-        return preg_replace('/(?:[-_.\s]|–|—)+/', " ", $text);
+    /** @param string $s
+     * @return string */
+    static function dedash($s) {
+        return preg_replace('/(?:[-_.\s]|–|—)+/', " ", $s);
     }
-    static function is_camel_word_old($text) {
-        return preg_match('/\A[-_.A-Za-z0-9]*(?:[A-Za-z](?=[-_.A-Z0-9])|[0-9](?=[-_.A-Za-z]))[-_.A-Za-z0-9]*\*?\z/', $text);
+    /** @param string $s
+     * @return string */
+    static function is_camel_word_old($s) {
+        return preg_match('/\A[-_.A-Za-z0-9]*(?:[A-Za-z](?=[-_.A-Z0-9])|[0-9](?=[-_.A-Za-z]))[-_.A-Za-z0-9]*\*?\z/', $s);
     }
-    static function is_camel_word($text) {
-        return preg_match('/\A[_.A-Za-z0-9]*(?:[A-Za-z](?=[_.A-Z0-9])|[0-9](?=[_.A-Za-z]))[_.A-Za-z0-9~?!]*\*?\z/', $text);
+    /** @param string $s
+     * @return string */
+    static function is_camel_word($s) {
+        return preg_match('/\A[_.A-Za-z0-9~?!\']*(?:[A-Za-z](?=[_.A-Z0-9])|[0-9](?=[_.A-Za-z]))[_.A-Za-z0-9~?!\']*\*?\z/', $s);
     }
     /** @param string $s
      * @return string */
     static function make_xtester($s) {
         if (strpbrk($s, "\'()[]") !== false) {
-            preg_match_all('/[A-Za-z~?!][A-Za-z0-9~?!\'()\[\]]*|(?:[0-9]|\.[0-9])[0-9.]*/', $s, $m);
+            preg_match_all('/[A-Za-z~?!][A-Za-z~?!\'()\[\]]*|(?:[0-9]|\.[0-9])[0-9.]*/', $s, $m);
             if (!empty($m[0])) {
                 return preg_replace('/[\'()\[\]]/', "", " " . join(" ", $m[0]));
             } else {
                 return "";
             }
         } else {
-            preg_match_all('/[A-Za-z~?!][A-Za-z0-9~?!]*|(?:[0-9]|\.[0-9])[0-9.]*/', $s, $m);
+            preg_match_all('/[A-Za-z~?!][A-Za-z~?!]*|(?:[0-9]|\.[0-9])[0-9.]*/', $s, $m);
             if (!empty($m[0])) {
                 return " " . join(" ", $m[0]);
             } else {
@@ -358,9 +396,26 @@ class AbbreviationMatcher {
             }
         }
     }
+    /** @param string $s
+     * @param bool $case_sensitive
+     * @return string */
+    static function xtester_remove_stops($s, $case_sensitive = false) {
+        return preg_replace('/ (?:a|an|and|are|at|be|been|can|did|do|for|has|how|if|in|is|isnt|it|new|of|on|or|that|the|their|they|this|to|we|were|what|which|with|you)(?= |\z)/i', "", $s);
+    }
+    /** @param string $name
+     * @return string */
+    static private function deparenthesize($name) {
+        if ((strpos($name, "(") !== false || strpos($name, "[") !== false)
+            && ($xname = preg_replace('/(?:\s+|\A)(?:\(.*?\)|\[.*?\])(?=\s|\z)/', "", $name)) !== ""
+            && $xname !== $name) {
+            return $xname;
+        } else {
+            return "";
+        }
+    }
 
     private function _analyze() {
-        assert($this->nanal === count($this->xtesters));
+        assert($this->nanal === count($this->ltesters));
         while ($this->nanal < count($this->data)) {
             $d = $this->data[$this->nanal];
             $name = $uname = simplify_whitespace($d->name);
@@ -370,8 +425,7 @@ class AbbreviationMatcher {
             }
             $d->name = $name;
             $d->dedash_name = self::dedash($uname);
-            $uname = strtolower($uname);
-            $this->xtesters[] = self::make_xtester($uname);
+            $this->ltesters[] = self::make_xtester(strtolower($uname));
             ++$this->nanal;
         }
     }
@@ -436,6 +490,7 @@ class AbbreviationMatcher {
         $iscamel = self::is_camel_word($upat);
         if ($iscamel) {
             preg_match_all('/[A-Za-z~][a-z~?!]+|[A-Z][A-Z]*(?![a-z])|[-+]?(?:[0-9]|\.[0-9])[0-9.]*/', $upat, $m);
+            //error_log($upat . " " . join(",", $m[0]));
             foreach ($m[0] as $w) {
                 $re .= $re === "" ? " " : "(?:.*? )??";
                 if (strlen($w) > 1 && ctype_upper($w)) {
@@ -461,11 +516,11 @@ class AbbreviationMatcher {
                 ++$npatternw;
             }
         }
-        $starpos = strpos($pattern, "*");
+        $starpos = strpos($upat, "*");
         $re = strtolower($re);
         $re = '/' . ($starpos === false ? $re : str_replace("\\*", ".*", $re)) . '/s';
         //error_log("! $re");
-        $xt = preg_grep($re, $this->xtesters);
+        $xt = preg_grep($re, $this->ltesters);
         if (count($xt) > 1 && $starpos !== 0) {
             //error_log("! $re " . json_encode($xt));
             $status = 0;
@@ -475,42 +530,55 @@ class AbbreviationMatcher {
             } else {
                 $re = str_replace(".*?", "(.*?)", $re);
             }
-            if (!str_ends_with($pattern, "*")) {
+            if (!str_ends_with($upat, "*")) {
                 $re = substr($re, 0, -2) . '(.*)/s';
                 ++$npatternw;
             }
             //error_log("! $re");
             foreach (array_keys($xt) as $i) {
-                $t = $this->xtesters[$i];
-                preg_match($re, $t, $m, PREG_OFFSET_CAPTURE);
+                $t = $this->ltesters[$i];
+                preg_match($re, $t, $m);
                 assert(count($m) === $npatternw);
-                if ($m[0][1] !== 0) {
-                    // does not start at first word
-                    $this_status = 0;
-                } else if ($starpos !== false) {
-                    // has star: investigate no further
-                    $this_status = 1;
+                // check for missing words
+                $skips = "";
+                if ($m[0] !== $t) {
+                    $skips = substr($t, 0, strlen($t) - strlen($m[0]));
+                }
+                // compute status. if no star:
+                //    +2 no skipped non-stopwords, full words
+                //    +1 no skipped non-stopwords
+                //    +0 otherwise
+                // if star:
+                //    +1 no skipped non-stopwords at beginning
+                //    +0 otherwise
+                if ($starpos !== false) {
+                    $this_status = self::xtester_remove_stops($skips) === "" ? 1 : 0;
                 } else {
-                    // no star, starts at first word
-                    $nfullwords = 0;
-                    $everyword = true;
-                    for ($j = 1; $everyword && $j < $npatternw - 1; ++$j) {
-                        $x = $m[$j][0];
-                        $nfullwords += $x === "" || $x === " " ? 1 : 0;
+                    $full_words = true;
+                    for ($j = 1; $j < $npatternw; ++$j) {
+                        $x = $m[$j];
+                        if ($x !== "" && $x[0] !== " ") {
+                            $full_words = false;
+                        }
                         $sp = strpos($x, " ");
-                        $everyword = $sp === false || $sp === strlen($x) - 1;
+                        if ($sp !== false && $sp !== strlen($x) - 1) {
+                            $end = strlen($x) - (str_ends_with($x, " ") ? 1 : 0);
+                            $skips .= substr($x, $sp, $end - $sp);
+                        }
                     }
-                    $x = $m[$npatternw - 1][0];
-                    if ($everyword && strpos($x, " ") === false) {
-                        // starts at first word, ends at last word
-                        $nfullwords += $x === "" || $x === " " ? 1 : 0;
-                        $this_status = $nfullwords !== 0 ? 2 : 1;
+                    $noskips = self::xtester_remove_stops($skips) === "";
+                    if ($noskips && $full_words) {
+                        $this_status = 2;
+                    } else if ($noskips) {
+                        $this_status = 1;
                     } else {
                         $this_status = 0;
                     }
                 }
-                //error_log("! $re $t $this_status");
-                if ($this_status > $status) {
+                //error_log("! $re $t $this_status S<$skips>");
+                if ($this_status !== 2 && ($this->data[$i]->tflags & AbbreviationEntry::TFLAG_LITERAL) !== 0) {
+                    // skip
+                } else if ($this_status > $status) {
                     $xtx = [$i];
                     $status = $this_status;
                 } else if ($this_status === $status) {
@@ -528,7 +596,7 @@ class AbbreviationMatcher {
         $prio = $tflags ? ($this->prio[$tflags] ?? false) : false;
         foreach ($m as $i) {
             $d = $this->data[$i];
-            $dprio = $this->prio[$d->tflags] ?? 0.0;
+            $dprio = $this->prio[$d->tflags & 255] ?? 0.0;
             if ($prio === false || $dprio > $prio) {
                 $r = [];
                 $prio = $dprio;
@@ -551,6 +619,10 @@ class AbbreviationMatcher {
             }
         }
         return $r;
+    }
+
+    function nentries() {
+        return count($this->data);
     }
 
     /** @param string $pattern
@@ -591,7 +663,7 @@ class AbbreviationMatcher {
         $prio = $tflags ? ($this->prio[$tflags] ?? false) : false;
         foreach ($this->xmatches[$pattern] as $i) {
             $d = $this->data[$i];
-            $dprio = $this->prio[$d->tflags] ?? 0.0;
+            $dprio = $this->prio[$d->tflags & 255] ?? 0.0;
             if ($prio === false || $dprio > $prio) {
                 $results = [];
                 $prio = $dprio;
@@ -622,7 +694,7 @@ class AbbreviationMatcher {
         $n = $nok = 0;
         foreach ($this->find_entries($pattern, $tflags) as $e) {
             ++$n;
-            if ($test->tflags === $e->tflags
+            if ($test->tflags === ($e->tflags & 255)
                 && ($test->value !== null
                     ? $test->value === $e->value
                     : $test->loader === $e->loader && $test->loader_args === $e->loader_args)) {
@@ -647,6 +719,15 @@ class AbbreviationMatcher {
         return str_replace(" ", "", $s);
     }
 
+    private function _finish_abbreviation($cname, AbbreviationEntry $e, $class, $csp) {
+        if ($class === (self::ABBR_CAMEL | self::ABBR_FORCE)
+            && $csp > 1
+            && !$this->find_entries(strtolower($cname), 0)) {
+            $this->_add_clone_literal(strtolower($cname), $e);
+        }
+        return $cname;
+    }
+
     const ABBR_CAMEL = 0;
     const ABBR_DASH = 1;
     const ABBR_UNDERSCORE = 2;
@@ -656,17 +737,9 @@ class AbbreviationMatcher {
      * @param int $tflags
      * @return string|false */
     function find_abbreviation($iname, AbbreviationEntry $e, $class, $tflags = 0) {
-        // Prefer alphanumeric identifiers like “A1” or “P02” if present
-        $hasnum = strpbrk($iname, "0123456789") !== false;
-        if ($hasnum
-            && preg_match('/(?:\A|[^A-Za-z0-9])([A-Z]{1,3}\d[\d.]*[a-z]{0,3})(?=\z|[^A-Za-z0-9])/', $iname, $m)
-            && $this->test_all_matches($m[1], $e, $tflags)) {
-            return $m[1];
-        }
         // Strip parenthetical remarks when that preserves uniqueness
-        $name = $iname;
-        if ((strpos($name, "(") !== false || strpos($name, "[") !== false)
-            && ($xname = preg_replace('/(?:\s+|\A)(?:\(.*?\)|\[.*?\])(?=\s|\z)/', "", $name)) !== ""
+        $name = simplify_whitespace(UnicodeHelper::deaccent($iname));
+        if (($xname = self::deparenthesize($name)) !== ""
             && $this->test_all_matches($xname, $e, $tflags)) {
             $name = $xname;
         }
@@ -674,7 +747,8 @@ class AbbreviationMatcher {
         $name = self::make_xtester($name);
         // Strip stop words when that preserves uniqueness
         if (substr_count($name, " ") > 2
-            && ($sname = preg_replace('/ (?:a|an|and|are|at|be|been|can|did|do|for|has|how|if|in|is|isnt|it|new|of|on|or|that|the|their|they|this|to|what|which|with|you)(?= |\z)/i', "", $name)) !== ""
+            && ($sname = self::xtester_remove_stops($name)) !== ""
+            && strlen($sname) !== strlen($name)
             && $this->test_all_matches($sname, $e, $tflags)) {
             $name = $sname;
         }
@@ -683,24 +757,28 @@ class AbbreviationMatcher {
             $cname = ucwords($name);
             $csp = substr_count($cname, " ");
             if ($csp === 1) {
+                // only one word
                 $xcname = substr($cname, 1, strlen($cname) < 7 ? 6 : 3);
                 if ($this->test_all_matches($xcname, $e, $tflags)) {
-                    return $xcname;
+                    return $this->_finish_abbreviation($xcname, $e, $class, $csp);
                 }
                 $cname = substr($cname, 1);
             } else {
+                $hasnum = strpbrk($cname, "0123456789") !== false;
                 $cname = preg_replace('/([A-Z][a-z][a-z])[A-Za-z~!?]*/', '$1', $cname);
                 if ($csp > 3) {
+                    // try first three words
                     $xcname = self::camel_contract($cname, 3, 0, $hasnum);
                     if ($this->test_all_matches($xcname, $e, $tflags)) {
-                        return $xcname;
+                        return $this->_finish_abbreviation($xcname, $e, $class, $csp);
                     }
+                    // try successive groups of four words
                     $icname = $cname;
                     for ($sp = $csp; $sp >= 4; --$sp) {
                         $spos = strpos($icname, " ", 1);
                         $xcname = self::camel_contract($icname, 3, $spos, $hasnum);
                         if ($this->test_all_matches($xcname, $e, $tflags)) {
-                            return $xcname;
+                            return $this->_finish_abbreviation($xcname, $e, $class, $csp);
                         }
                         $icname = substr($icname, $spos);
                     }
@@ -716,18 +794,14 @@ class AbbreviationMatcher {
         }
         // Add suffix
         if ($this->test_all_matches($cname, $e, $tflags)) {
-            if ($class === (self::ABBR_CAMEL | self::ABBR_FORCE)
-                && $csp > 1) {
-                $this->_add_with_name($e, strtolower($cname));
-            }
-            return $cname;
+            return $this->_finish_abbreviation($cname, $e, $class, $csp);
         } else if (($class & self::ABBR_FORCE) !== 0) {
             $cname .= ".";
             $suffix = 1;
             while ($this->find_entries($cname . $suffix, 0)) {
                 ++$suffix;
             }
-            $this->_add_with_name($e, $cname . $suffix);
+            $this->_add_clone_literal($cname . $suffix, $e);
             return $cname . $suffix;
         } else {
             return false;
