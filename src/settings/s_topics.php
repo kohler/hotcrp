@@ -98,9 +98,7 @@ class Topics_SettingParser extends SettingParser {
             }
         }
         if (!$sv->has_error()) {
-            foreach (["TopicArea", "PaperTopic", "TopicInterest"] as $t) {
-                $sv->need_lock[$t] = true;
-            }
+            $sv->request_write_lock("TopicArea", "PaperTopic", "TopicInterest");
             return true;
         }
     }

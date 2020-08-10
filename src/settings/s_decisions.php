@@ -88,7 +88,7 @@ class Decisions_SettingParser extends SettingParser {
                 }
             }
         }
-        $sv->need_lock["Paper"] = true;
+        $sv->request_write_lock("Paper");
         return true;
     }
 

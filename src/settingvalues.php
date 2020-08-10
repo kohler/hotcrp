@@ -430,6 +430,8 @@ class SettingValues extends MessageSet {
     private $saved_si = [];
     private $cleanup_callbacks = [];
     public $need_lock = [];
+    /** @var array<string,int> */
+    private $_table_lock = [];
     /** @var associative-array<string,true> */
     private $diffs = [];
     /** @var associative-array<string,true> */
@@ -1348,6 +1350,20 @@ class SettingValues extends MessageSet {
         }
     }
 
+    /** @param string ...$tables */
+    function request_read_lock(...$tables) {
+        foreach ($tables as $t) {
+            $this->_table_lock[$t] = max($this->_table_lock[$t] ?? 0, 1);
+        }
+    }
+
+    /** @param string ...$tables */
+    function request_write_lock(...$tables) {
+        foreach ($tables as $t) {
+            $this->_table_lock[$t] = max($this->_table_lock[$t] ?? 0, 2);
+        }
+    }
+
     function execute() {
         // parse and validate settings
         foreach (Si::si_map($this->conf) as $si) {
@@ -1358,15 +1374,15 @@ class SettingValues extends MessageSet {
                 $this->saved_si[] = $si;
             }
         }
+        $this->request_write_lock(...array_keys($this->need_lock));
 
         // make settings
         $this->diffs = [];
         if (!$this->has_error()
             && (!empty($this->savedv) || !empty($this->saved_si))) {
             $tables = "Settings write";
-            foreach ($this->need_lock as $t => $need) {
-                if ($need)
-                    $tables .= ", $t write";
+            foreach ($this->_table_lock as $t => $need) {
+                $tables .= ", $t " . ($need < 2 ? "read" : "write");
             }
             $this->conf->qe_raw("lock tables $tables");
 

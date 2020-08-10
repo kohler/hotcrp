@@ -203,7 +203,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $this->nrfj->{$finfo->id} = $fj;
         }
 
-        $sv->need_lock["PaperReview"] = true;
+        $sv->request_write_lock("PaperReview");
         return true;
     }
 

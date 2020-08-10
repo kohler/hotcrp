@@ -339,7 +339,7 @@ class Options_SettingParser extends SettingParser {
         if (!$sv->has_error()) {
             uasort($new_opts, "PaperOption::compare");
             $this->stashed_options = $new_opts;
-            $sv->need_lock["PaperOption"] = true;
+            $sv->request_write_lock("PaperOption");
             return true;
         }
     }

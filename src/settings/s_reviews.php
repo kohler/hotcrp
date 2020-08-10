@@ -390,8 +390,7 @@ class Round_SettingParser extends SettingParser {
 
         // register callback if we need to change reviews' rounds
         if (!empty($this->rev_round_changes)) {
-            $sv->need_lock["PaperReview"] = $sv->need_lock["ReviewRequest"] =
-                $sv->need_lock["PaperReviewRefused"] = true;
+            $sv->request_write_lock("PaperReview", "ReviewRequest", "PaperReviewRefused");
             return true;
         } else {
             return false;
