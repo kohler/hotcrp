@@ -771,17 +771,18 @@ class PaperInfo {
         return $this->_author_array;
     }
 
-    /** @return ?Author */
+    /** @param string $email
+     * @return ?Author */
     function author_by_email($email) {
         foreach ($this->author_list() as $a) {
-            if (strcasecmp($a->email, $email) == 0 && (string) $email !== "")
+            if ($a->email !== "" && strcasecmp($a->email, $email) === 0)
                 return $a;
         }
         return null;
     }
 
     /** @return string */
-    function parse_author_list() {
+    function regenerate_author_list() {
         $ai = "";
         foreach ($this->_author_array as $au) {
             $ai .= $au->firstName . "\t" . $au->lastName . "\t" . $au->email . "\t" . $au->affiliation . "\n";

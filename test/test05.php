@@ -155,9 +155,10 @@ $paper3b = $ps->paper_json(3);
 xassert_eqq($paper3b->submission->hash, "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
 
 // test submitting a new paper
-$pj = PaperSaver::apply_all(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com"]), null, $user_estrin, "update");
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com"]), null, $user_estrin, "update");
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_json($pj));
+xassert_paper_status($ps);
 xassert($ps->diffs["title"]);
 xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
@@ -201,7 +202,7 @@ xassert($newpaper->timeWithdrawn <= 0);
 xassert_eqq($newpaper->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 
 // saving explicitly-empty contact list still assigns a contact
-$pj = PaperSaver::apply_all(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_contacts" => 1]), null, $user_estrin, "update");
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_contacts" => 1]), null, $user_estrin, "update");
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_json($pj));
 xassert($ps->diffs["title"]);
@@ -259,7 +260,7 @@ xassert($newpaper->timeWithdrawn <= 0);
 xassert_eqq($newpaper->option(1)->value, 10);
 
 // check old author entry syntax
-$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "auname1" => "Robert Flay", "auemail1" => "flay@_.com"]), $newpaper, $user_estrin, "update");
+$pj = PaperSaver::apply_all(new Qrequest("POST", ["ready" => 0, "has_authors" => "1", "auname1" => "Robert Flay", "auemail1" => "flay@_.com"]), $newpaper, $user_estrin, "update");
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_json($pj));
 xassert($ps->diffs["authors"]);
@@ -281,7 +282,7 @@ xassert($newpaper->timeWithdrawn <= 0);
 xassert_eqq($newpaper->option(1)->value, 10);
 
 // save a new paper
-$qreq = new Qrequest("POST", ["ready" => 1, "has_opt2" => "1", "has_opt2_new_1" => "1", "title" => "Paper about mantis shrimp", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:aff_1" => "BBC", "abstract" => "They see lots of colors."]);
+$qreq = new Qrequest("POST", ["ready" => 1, "has_opt2" => "1", "has_opt2_new_1" => "1", "title" => "Paper about mantis shrimp", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:aff_1" => "BBC", "abstract" => "They see lots of colors."]);
 $qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $qreq->set_file("opt2_new_1", ["name" => "attachment1.pdf", "type" => "application/pdf", "content" => "%PDF-whatever\n", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
@@ -313,7 +314,7 @@ xassert_eqq($newpaper->option(2)->document(0)->text_hash(), "sha2-38b74d4ab9d389
 xassert($newpaper->has_author($user_estrin));
 
 // some erroneous saves concerning required fields
-$qreq = new Qrequest("POST", ["ready" => 1, "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors."]);
+$qreq = new Qrequest("POST", ["ready" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors."]);
 $qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
@@ -322,7 +323,7 @@ xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
-$qreq = new Qrequest("POST", ["ready" => 1, "title" => "", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors."]);
+$qreq = new Qrequest("POST", ["ready" => 1, "title" => "", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors."]);
 $qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
@@ -331,7 +332,7 @@ xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
-$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC"]);
+$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC"]);
 $qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);
@@ -343,7 +344,7 @@ xassert_eq($ps->error_texts(), ["Entry required."]);
 $Conf->set_opt("noAbstract", 1);
 $Conf->invalidate_caches();
 
-$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC"]);
+$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC"]);
 $qreq->set_file("opt0", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $pj = PaperSaver::apply_all($qreq, null, $user_estrin, "submit");
 $ps = new PaperStatus($Conf, $user_estrin);

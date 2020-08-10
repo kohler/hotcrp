@@ -78,7 +78,7 @@ class MergeContacts extends MessageSet {
                 if (strcasecmp($au->email, $this->oldu->email) == 0)
                     $au->email = $this->newu->email;
             $q[] = "update Paper set authorInformation=? where paperId=?";
-            array_push($qv, $row->parse_author_list(), $row->paperId);
+            array_push($qv, $row->regenerate_author_list(), $row->paperId);
         }
         if (!empty($q)) {
             $mresult = Dbl::multi_qe_apply($this->conf->dblink, join(";", $q), $qv);
