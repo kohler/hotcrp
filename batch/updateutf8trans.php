@@ -1,5 +1,5 @@
 <?php
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
 $arg = Getopt::rest($argv, "hn:f:Vuto:",
     ["help", "name:", "file:", "verbose", "unparse", "time", "output:"]);
@@ -10,6 +10,7 @@ if (isset($arg["h"]) || isset($arg["help"])) {
     exit(0);
 }
 
+require_once(SiteLoader::$root . "/lib/unicodehelper.php");
 
 function quote_key($k) {
     if (strlen($k) == 2) {
