@@ -2,16 +2,26 @@
 // abbreviationmatcher.php -- HotCRP abbreviation matcher helper class
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-// New match priority (higher = more priority):
-// if no star:
-//    +2 no skipped non-stopwords, full words
+// NEW MATCH PRIORITY (higher = more priority)
+// All matches are case-insensitive, ignore differences in accents, and ignore
+// most punctuation.
+//
+// If pattern does not contain *:
+//    +2 no skipped non-stopwords, all full word matches
 //    +1 no skipped non-stopwords
 //    +0 otherwise
-// if star:
-//    +1 no skipped non-stopwords at beginning
+// If pattern contains *:
+//    +1 no skipped non-stopwords at beginning and pattern doesn't start with *
 //    +0 otherwise
+//
+// Patterns that look like CamelCaseWords are separated at case boundaries.
+// Digit sequences are not prefix-matched, so a pattern like “X1” will not
+// match subject “X 100”.
+//
+// The subject list can be “deparenthesized”, allowing parenthesized expressions
+// to be skipped without penalty. See `add_deparenthesized`.
 
-// Match priority (higher = more priority):
+// OLD match priority (higher = more priority):
 // 5. Exact match
 // 4. Exact match with [-_.–—] replaced by spaces
 // 3. Case-insensitive match with [-_.–—] replaced by spaces
@@ -21,12 +31,6 @@
 // If a word match is performed, prefer matches that match more complete words.
 // Words must appear in order, so pattern "hello kitty" does not match "kitty
 // hello".
-//
-// If the pattern has no Unicode characters, these steps are performed against
-// the deaccented subject (so subjects “élan” and “elan” match pattern “elan”
-// with the same priority). If the pattern has Unicode characters, then exact
-// matches take priority over deaccented matches (so subject “élan” is a higher
-// priority match for pattern “élan”).
 
 class AbbreviationMatchTracker {
     /** @var bool
@@ -246,17 +250,22 @@ class AbbreviationMatchTracker {
 
 /** @template T */
 class AbbreviationEntry {
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $name;
     /** @var ?string */
     public $dedash_name;
-    /** @var ?T */
+    /** @var ?T
+     * @readonly */
     public $value;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $tflags;
-    /** @var callable(...):T */
+    /** @var callable(...):T
+     * @readonly */
     public $loader;
-    /** @var list<mixed> */
+    /** @var list<mixed>
+     * @readonly */
     public $loader_args;
 
     const TFLAG_LITERAL = 0x10000000;
@@ -275,7 +284,8 @@ class AbbreviationEntry {
      * @param callable(...):T $loader
      * @param list<mixed> $loader_args
      * @param int $tflags
-     * @return AbbreviationEntry<T> */
+     * @return AbbreviationEntry<T>
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_lazy($name, $loader, $loader_args, $tflags = 0) {
         $x = new AbbreviationEntry($name, null, $tflags);
         $x->loader = $loader;
@@ -283,7 +293,8 @@ class AbbreviationEntry {
         return $x;
     }
 
-    /** @return T */
+    /** @return T
+     * @suppress PhanAccessReadOnlyProperty */
     function value() {
         if ($this->value === null && $this->loader !== null) {
             $this->value = call_user_func_array($this->loader, $this->loader_args);
@@ -316,21 +327,25 @@ class AbbreviationMatcher {
     }
 
     /** @param string $name
-     * @param T $data */
+     * @param T $data
+     * @return AbbreviationEntry */
     function add($name, $data, int $tflags = 0) {
         $name = simplify_whitespace(UnicodeHelper::deaccent($name));
-        $this->data[] = new AbbreviationEntry($name, $data, $tflags);
+        $this->data[] = $e = new AbbreviationEntry($name, $data, $tflags);
         $this->matches = [];
         $this->xmatches = [];
+        return $e;
     }
     /** @param string $name
      * @param callable(...):T $loader
-     * @param list $loader_args */
+     * @param list $loader_args
+     * @return AbbreviationEntry */
     function add_lazy($name, $loader, $loader_args, int $tflags = 0) {
         $name = simplify_whitespace(UnicodeHelper::deaccent($name));
-        $this->data[] = AbbreviationEntry::make_lazy($name, $loader, $loader_args, $tflags);
+        $this->data[] = $e = AbbreviationEntry::make_lazy($name, $loader, $loader_args, $tflags);
         $this->matches = [];
         $this->xmatches = [];
+        return $e;
     }
     function add_deparenthesized() {
         $this->_analyze();
@@ -339,6 +354,7 @@ class AbbreviationMatcher {
             if (($s = self::deparenthesize($e->name)) !== ""
                 && !in_array(self::make_xtester(strtolower($s)), $this->ltesters)) {
                 $e = clone $e;
+                /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
                 $e->name = $s;
                 $this->data[] = $e;
                 $this->matches = [];
@@ -346,7 +362,9 @@ class AbbreviationMatcher {
             }
             ++$this->ndeparen;
         }
+        $this->ndeparen = count($this->data);
     }
+    /** @suppress PhanAccessReadOnlyProperty */
     private function _add_clone_literal($name, AbbreviationEntry $e) {
         assert($this->nanal === count($this->data));
         $e = clone $e;
@@ -375,7 +393,12 @@ class AbbreviationMatcher {
     /** @param string $s
      * @return bool */
     static function is_camel_word($s) {
-        return preg_match('/\A[_.A-Za-z0-9~?!\']*(?:[A-Za-z](?=[_.A-Z0-9])|[0-9](?=[_.A-Za-z]))[_.A-Za-z0-9~?!\']*\*?\z/', $s);
+        return preg_match('/\A[_.A-Za-z0-9~?!\'*]*(?:[A-Za-z][_.A-Z0-9]|[0-9][_.A-Za-z])[_.A-Za-z0-9~?!\'*]*\z/', $s);
+    }
+    /** @param string $s
+     * @return bool */
+    static function is_strict_camel_word($s) {
+        return preg_match('/\A[A-Za-z0-9~?!\']*[a-z\'][A-Z][.A-Za-z0-9~?!\']*\z/', $s);
     }
     /** @param string $s
      * @return string */
@@ -414,18 +437,13 @@ class AbbreviationMatcher {
         }
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     private function _analyze() {
         assert($this->nanal === count($this->ltesters));
         while ($this->nanal < count($this->data)) {
             $d = $this->data[$this->nanal];
-            $name = $uname = simplify_whitespace($d->name);
-            if (!is_usascii($name)) {
-                $name = UnicodeHelper::normalize($name);
-                $uname = UnicodeHelper::deaccent($name);
-            }
-            $d->name = $name;
-            $d->dedash_name = self::dedash($uname);
-            $this->ltesters[] = self::make_xtester(strtolower($uname));
+            $d->dedash_name = self::dedash($d->name);
+            $this->ltesters[] = self::make_xtester(strtolower($d->name));
             ++$this->nanal;
         }
     }
@@ -755,6 +773,19 @@ class AbbreviationMatcher {
         if (($class & 3) === self::ABBR_CAMEL) {
             $cname = ucwords($name);
             $csp = substr_count($cname, " ");
+            // only one word -- maybe it's a CamelWord we should separate
+            if ($csp === 1
+                && ($class & self::ABBR_FORCE) !== 0
+                && self::is_strict_camel_word(substr($name, 1))) {
+                $s = preg_replace('/([a-z\'])([A-Z])/', '$1 $2', $name);
+                $e2 = clone $e;
+                $e2->name = trim($s);
+                $this->data[] = $e2;
+                $this->matches = [];
+                $this->xmatches = [];
+                $cname = ucwords($s);
+                $csp = substr_count($cname, " ");
+            }
             if ($csp === 1) {
                 // only one word
                 $xcname = substr($cname, 1, strlen($cname) < 7 ? 6 : 3);

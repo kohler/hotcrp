@@ -847,6 +847,7 @@ xassert(!AbbreviationMatcher::is_camel_word("ove mer"));
 
 $am->add("99 Problems", 7);
 xassert_eqq($am->find_all("99p"), [7]);
+xassert_eqq($am->find_all("9p"), []);
 
 $am->add("?", 8);
 xassert_eqq($am->find_all("ela"), [1, 5, 6]);
@@ -918,8 +919,27 @@ xassert_eqq($am->find_all("second-round-paper"), [0]);
 xassert_eqq($am->find_all("second-round-response--pdf"), [1]);
 
 $am = new AbbreviationMatcher;
-$am->add("Paper is co-authored with at least one PC member", 1);
-xassert_eqq($am->find_all("paper-is-co-authored-with-at-least-one-pc-member"), [1]);
+$am->add("Paper is co-authored with at least one PC member", 0);
+xassert_eqq($am->find_all("paper-is-co-authored-with-at-least-one-pc-member"), [0]);
+xassert_eqq($am->find_all("paper-co-authored-pc"), [0]);
+xassert_eqq($am->find_all("paper-coauthored-pc"), []);
+
+$am->add("Comments for the PC", 1);
+$am->add("ACM Computing Classification", 2);
+xassert_eqq($am->find_all("ComPC"), [1]);
+xassert_eqq($am->find_all("ComPC*"), [1]);
+xassert_eqq($am->find_all("*ComPC*"), [1, 2]);
+xassert_eqq($am->find_all("compc"), []);
+xassert_eqq($am->find_all("ACMComp"), [2]);
+
+$am->add("One hundred things", 3);
+$am->add("One hundred things (Final)", 4);
+$am->add_deparenthesized();
+xassert_eqq($am->find_all("OneHunThi"), [3]);
+xassert_eqq($am->find_all("OneHunThiFin"), [4]);
+xassert_eqq($am->find_all("one-hundr-thi"), [3]);
+xassert_eqq($am->find_all("one-hundred-things"), [3]);
+xassert_eqq($am->find_all("OneFin"), [4]);
 
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
