@@ -693,11 +693,15 @@ class UserStatus extends MessageSet {
 
 
     static function crosscheck_main(UserStatus $us, Contact $user) {
-        if ($user->firstName === "" && $user->lastName === "") {
+        $cdbu = $user->contactdb_user();
+        if ($user->firstName === ""
+            && $user->lastName === ""
+            && ($user->contactId > 0 || !$cdbu || ($cdbu->firstName === "" && $cdbu->lastName === ""))) {
             $us->warning_at("firstName", "Please enter your name.");
             $us->warning_at("lastName", false);
         }
-        if ($user->affiliation === "") {
+        if ($user->affiliation === ""
+            && ($user->contactId > 0 || !$cdbu || $cdbu->affiliation === "")) {
             $us->warning_at("affiliation", "Please enter your affiliation (use “None” or “Unaffiliated” if you have none).");
         }
         if ($user->is_pc_member()) {
