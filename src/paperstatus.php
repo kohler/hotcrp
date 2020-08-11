@@ -391,7 +391,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function normalize($ipj) {
+    private function _normalize($ipj) {
         // Errors prevent saving
         $xpj = (object) [];
 
@@ -544,15 +544,15 @@ class PaperStatus extends MessageSet {
         $this->diffs[$diff] = true;
     }
 
-    static function check_status(PaperStatus $ps, $pj) {
+    private function _check_status($pj) {
         $pj_withdrawn = $pj->status->withdrawn;
         $pj_submitted = $pj->status->submitted;
         $pj_draft = $pj->status->draft;
 
-        if ($ps->has_error()
+        if ($this->has_error()
             && $pj_submitted
             && !$pj_withdrawn
-            && (!$ps->prow || $ps->prow->timeSubmitted == 0)) {
+            && (!$this->prow || $this->prow->timeSubmitted == 0)) {
             $pj_submitted = false;
             $pj_draft = true;
         }
@@ -560,8 +560,8 @@ class PaperStatus extends MessageSet {
         $submitted = $pj_submitted;
         if (isset($pj->status->submitted_at)) {
             $submitted_at = $pj->status->submitted_at;
-        } else if ($ps->prow) {
-            $submitted_at = $ps->prow->submitted_at();
+        } else if ($this->prow) {
+            $submitted_at = $this->prow->submitted_at();
         } else {
             $submitted_at = 0;
         }
@@ -573,91 +573,91 @@ class PaperStatus extends MessageSet {
             } else {
                 $submitted_at = -$submitted_at;
             }
-            if (!$ps->prow || $ps->prow->timeWithdrawn <= 0) {
-                $ps->save_paperf("timeWithdrawn", ($pj->status->withdrawn_at ?? null) ? : Conf::$now);
-                $ps->save_paperf("timeSubmitted", $submitted_at);
-                $ps->mark_diff("status");
-            } else if (($ps->prow->submitted_at() > 0) !== $pj_submitted) {
-                $ps->save_paperf("timeSubmitted", $submitted_at);
-                $ps->mark_diff("status");
+            if (!$this->prow || $this->prow->timeWithdrawn <= 0) {
+                $this->save_paperf("timeWithdrawn", ($pj->status->withdrawn_at ?? null) ? : Conf::$now);
+                $this->save_paperf("timeSubmitted", $submitted_at);
+                $this->mark_diff("status");
+            } else if (($this->prow->submitted_at() > 0) !== $pj_submitted) {
+                $this->save_paperf("timeSubmitted", $submitted_at);
+                $this->mark_diff("status");
             }
         } else if ($pj_submitted) {
-            if (!$ps->prow || $ps->prow->timeSubmitted <= 0) {
+            if (!$this->prow || $this->prow->timeSubmitted <= 0) {
                 if ($submitted_at <= 0
                     || $submitted_at === PaperInfo::SUBMITTED_AT_FOR_WITHDRAWN) {
                     $submitted_at = Conf::$now;
                 }
-                $ps->save_paperf("timeSubmitted", $submitted_at);
-                $ps->mark_diff("status");
+                $this->save_paperf("timeSubmitted", $submitted_at);
+                $this->mark_diff("status");
             }
-            if ($ps->prow && $ps->prow->timeWithdrawn != 0) {
-                $ps->save_paperf("timeWithdrawn", 0);
-                $ps->mark_diff("status");
+            if ($this->prow && $this->prow->timeWithdrawn != 0) {
+                $this->save_paperf("timeWithdrawn", 0);
+                $this->mark_diff("status");
             }
-        } else if ($ps->prow && ($ps->prow->timeWithdrawn > 0 || $ps->prow->timeSubmitted > 0)) {
-            $ps->save_paperf("timeSubmitted", 0);
-            $ps->save_paperf("timeWithdrawn", 0);
-            $ps->mark_diff("status");
+        } else if ($this->prow && ($this->prow->timeWithdrawn > 0 || $this->prow->timeSubmitted > 0)) {
+            $this->save_paperf("timeSubmitted", 0);
+            $this->save_paperf("timeWithdrawn", 0);
+            $this->mark_diff("status");
         }
-        $ps->_paper_submitted = $pj_submitted && !$pj_withdrawn;
+        $this->_paper_submitted = $pj_submitted && !$pj_withdrawn;
     }
 
-    static function check_final_status(PaperStatus $ps, $pj) {
+    private function _check_final_status($pj) {
         if (isset($pj->status->final_submitted)) {
             if ($pj->status->final_submitted) {
                 $time = ($pj->status->final_submitted_at ?? null) ? : Conf::$now;
             } else {
                 $time = 0;
             }
-            if (!$ps->prow || $ps->prow->timeFinalSubmitted != $time) {
-                $ps->save_paperf("timeFinalSubmitted", $time);
-                $ps->mark_diff("final_status");
+            if (!$this->prow || $this->prow->timeFinalSubmitted != $time) {
+                $this->save_paperf("timeFinalSubmitted", $time);
+                $this->mark_diff("final_status");
             }
         }
     }
 
-    static function execute_topics(PaperStatus $ps) {
-        if (isset($ps->_topic_ins)) {
-            $ps->conf->qe("delete from PaperTopic where paperId=?", $ps->paperId);
-            if (!empty($ps->_topic_ins)) {
+    private function _execute_topics() {
+        if (isset($this->_topic_ins)) {
+            $this->conf->qe("delete from PaperTopic where paperId=?", $this->paperId);
+            if (!empty($this->_topic_ins)) {
                 $ti = [];
-                foreach ($ps->_topic_ins as $tid) {
-                    $ti[] = [$ps->paperId, $tid];
+                foreach ($this->_topic_ins as $tid) {
+                    $ti[] = [$this->paperId, $tid];
                 }
-                $ps->conf->qe("insert into PaperTopic (paperId,topicId) values ?v", $ti);
+                $this->conf->qe("insert into PaperTopic (paperId,topicId) values ?v", $ti);
             }
         }
     }
 
-    static function check_one_option(PaperOption $opt, PaperStatus $ps, $oj) {
+    private function _check_one_field(PaperOption $opt, $oj) {
         if ($oj === null) {
             $ov = null;
         } else if ($oj instanceof PaperValue) {
             $ov = $oj;
         } else {
-            $ov = $opt->parse_json($ps->_nnprow, $oj);
+            $ov = $opt->parse_json($this->_nnprow, $oj);
         }
         if ($ov !== null) {
             if (!$ov->has_error()) {
-                $opt->value_store($ov, $ps);
+                $opt->value_store($ov, $this);
             }
-            $ps->_nnprow->set_new_option($ov);
-            $ps->_field_values[$opt->id] = $ov;
+            $this->_nnprow->set_new_option($ov);
+            $this->_field_values[$opt->id] = $ov;
         }
     }
 
-    static function check_fields(PaperStatus $ps, $pj) {
+    private function _check_fields($pj) {
         if (!empty($pj->_bad_options)) {
-            $ps->warning_at("options", $ps->_("Unknown options ignored (%2\$s).", count($pj->_bad_options), htmlspecialchars(join("; ", array_keys($pj->_bad_options)))));
+            $this->warning_at("options", $this->_("Unknown options ignored (%2\$s).", count($pj->_bad_options), htmlspecialchars(join("; ", array_keys($pj->_bad_options)))));
         }
-        foreach ($ps->conf->options()->form_fields($ps->_nnprow) as $o) {
+        foreach ($this->conf->options()->form_fields($this->_nnprow) as $o) {
             if (isset($pj->{$o->json_key()})) {
-                self::check_one_option($o, $ps, $pj->{$o->json_key()});
+                $this->_check_one_field($o, $pj->{$o->json_key()});
             }
         }
     }
 
-    private function validate_fields() {
+    private function _validate_fields() {
         $max_status = 0;
         foreach ($this->conf->options()->form_fields($this->_nnprow) as $opt) {
             $ov = $this->_nnprow->new_option($opt);
@@ -675,7 +675,7 @@ class PaperStatus extends MessageSet {
         return $max_status < MessageSet::ESTOP;
     }
 
-    private function save_fields() {
+    private function _save_fields() {
         foreach ($this->_field_values ?? [] as $ov) {
             if ($ov->has_error()) {
                 continue;
@@ -703,15 +703,15 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    static function execute_options(PaperStatus $ps) {
-        if (!empty($ps->_option_delid)) {
-            $ps->conf->qe("delete from PaperOption where paperId=? and optionId?a", $ps->paperId, $ps->_option_delid);
+    private function _execute_options() {
+        if (!empty($this->_option_delid)) {
+            $this->conf->qe("delete from PaperOption where paperId=? and optionId?a", $this->paperId, $this->_option_delid);
         }
-        if (!empty($ps->_option_ins)) {
-            foreach ($ps->_option_ins as &$x) {
-                $x[0] = $ps->paperId;
+        if (!empty($this->_option_ins)) {
+            foreach ($this->_option_ins as &$x) {
+                $x[0] = $this->paperId;
             }
-            $ps->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $ps->_option_ins);
+            $this->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $this->_option_ins);
         }
     }
 
@@ -789,7 +789,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function check_contacts_last($pj) {
+    private function _check_contacts_last($pj) {
         // check for differences, create new contacts
         $diff_lemail = [];
         foreach ($this->_conflict_values ?? [] as $lemail => $cv) {
@@ -835,7 +835,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function execute_conflicts() {
+    private function _execute_conflicts() {
         if ($this->_conflict_ins !== null) {
             $cfltf = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_ERROR);
             $auflags = CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR;
@@ -895,23 +895,23 @@ class PaperStatus extends MessageSet {
         $this->_nnprow = $this->prow ? : PaperInfo::make_new($this->user);
 
         // normalize and check format
-        $pj = $this->normalize($pj);
+        $pj = $this->_normalize($pj);
         if ($this->has_error()) {
             return false;
         }
 
         // save parts and track diffs
         $conf = $this->conf;
-        self::check_fields($this, $pj);
-        self::check_status($this, $pj);
-        self::check_final_status($this, $pj);
+        $this->_check_fields($pj);
+        $this->_check_status($pj);
+        $this->_check_final_status($pj);
 
         // don't save if serious error
-        if (!$this->validate_fields()) {
+        if (!$this->_validate_fields()) {
             return false;
         }
 
-        $this->save_fields();
+        $this->_save_fields();
         if ($this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {
             $want_blind = $this->conf->submission_blindness() !== Conf::BLIND_NEVER;
             if (!$this->prow || $this->prow->blind !== $want_blind) {
@@ -921,7 +921,7 @@ class PaperStatus extends MessageSet {
                 }
             }
         }
-        $this->check_contacts_last($pj);
+        $this->_check_contacts_last($pj);
         return true;
     }
 
@@ -945,38 +945,38 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    static function preexecute_set_default_columns(PaperStatus $ps) {
+    private function _preexecute_set_default_columns() {
         foreach (["title" => "", "abstract" => "", "authorInformation" => "",
                   "paperStorageId" => 0, "finalPaperStorageId" => 0] as $f => $v) {
-            if (!isset($ps->_paper_upd[$f])) {
-                $ps->_paper_upd[$f] = $v;
+            if (!isset($this->_paper_upd[$f])) {
+                $this->_paper_upd[$f] = $v;
             }
         }
     }
 
-    static function postexecute_check_required_options(PaperStatus $ps) {
+    private function _postexecute_check_required_options() {
         $prow = null;
         $required_failure = false;
-        foreach ($ps->conf->options()->form_fields($ps->_nnprow) as $o) {
+        foreach ($this->conf->options()->form_fields($this->_nnprow) as $o) {
             if (!$o->required) {
                 continue;
             }
             if (!$prow) {
-                $prow = $ps->conf->paper_by_id($ps->paperId, $ps->user, ["options" => true]);
+                $prow = $this->conf->paper_by_id($this->paperId, $this->user, ["options" => true]);
             }
-            if ($ps->user->can_edit_option($prow, $o)
+            if ($this->user->can_edit_option($prow, $o)
                 && $o->test_required($prow)
                 && !$o->value_present($prow->force_option($o))) {
-                $ps->error_at_option($o, "Entry required.");
+                $this->error_at_option($o, "Entry required.");
                 $required_failure = true;
             }
         }
         if ($required_failure
-            && (!$ps->prow || $ps->prow->timeSubmitted == 0)) {
+            && (!$this->prow || $this->prow->timeSubmitted == 0)) {
             // Some required option was missing and the paper was not submitted
             // before, so it shouldn't be submitted now.
-            $ps->conf->qe("update Paper set timeSubmitted=0 where paperId=?", $ps->paperId);
-            $ps->_paper_submitted = false;
+            $this->conf->qe("update Paper set timeSubmitted=0 where paperId=?", $this->paperId);
+            $this->_paper_submitted = false;
         }
     }
 
@@ -1041,7 +1041,7 @@ class PaperStatus extends MessageSet {
         if (!empty($this->_paper_upd)) {
             $need_insert = $this->paperId <= 0;
             if ($need_insert) {
-                self::preexecute_set_default_columns($this);
+                $this->_preexecute_set_default_columns();
             }
 
             if (isset($this->_paper_upd["paperStorageId"])
@@ -1081,12 +1081,12 @@ class PaperStatus extends MessageSet {
             }
         }
 
-        self::execute_topics($this);
-        self::execute_options($this);
-        $this->execute_conflicts();
+        $this->_execute_topics();
+        $this->_execute_options();
+        $this->_execute_conflicts();
 
         if ($this->_paper_submitted) {
-            self::postexecute_check_required_options($this);
+            $this->_postexecute_check_required_options();
         }
 
         // maybe update `papersub` settings
