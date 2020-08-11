@@ -203,6 +203,10 @@
         "title": "Tags &amp; tracks",
         "render_callback": "Tags_SettingRenderer::render"
     },
+    {
+        "name": "__crosscheck/tags", "position": 700,
+        "crosscheck_callback": "Tags_SettingParser::crosscheck"
+    },
     [   "tags/main/chair", 10, "Tags_SettingRenderer::render_tag_chair"   ],
     [   "tags/main/sitewide", 20, "Tags_SettingRenderer::render_tag_sitewide"   ],
     [   "tags/main/approval", 30, "Tags_SettingRenderer::render_tag_approval"   ],

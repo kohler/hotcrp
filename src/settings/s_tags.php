@@ -201,4 +201,32 @@ class Tags_SettingParser extends SettingParser {
 
         $sv->mark_invalidate_caches(["tags" => true]);
     }
+
+    static function crosscheck(SettingValues $sv) {
+        $vs = $problems = [];
+        foreach (["tag_approval", "tag_vote", "tag_rank"] as $n) {
+            foreach (Tagger::split_unpack($sv->newv($n)) as $ti) {
+                $ltag = strtolower($ti[0]);
+                $vs[$ltag] = $vs[$ltag] ?? [$ti[0]];
+                $vs[$ltag][] = $n;
+                if (count($vs[$ltag]) > 2) {
+                    $problems[$ltag] = true;
+                }
+            }
+        }
+        $descriptions = [
+            "tag_approval" => "approval voting",
+            "tag_vote" => "allotment voting",
+            "tag_rank" => "ranking"
+        ];
+        foreach ($problems as $ltag => $v) {
+            $xs = $vs[$ltag];
+            $ms = [];
+            for ($i = 1; $i !== count($xs); ++$i) {
+                $ms[] = $descriptions[$xs[$i]];
+                $sv->warning_at($xs[$i], null);
+            }
+            $sv->warning_at($xs[1], "Tag “" . htmlspecialchars($xs[0]) . "” should be used for at most one of " . commajoin($ms) . ".");
+        }
+    }
 }
