@@ -41,21 +41,29 @@ function show_help_topics($hth) {
 }
 
 
-echo '<div class="leftmenu-left"><nav class="leftmenu-menu"><h1 class="leftmenu">Help</h1><div class="leftmenu-list">';
+echo '<div class="leftmenu-left"><nav class="leftmenu-menu"><h1 class="leftmenu">';
+if ($topic !== "topics") {
+    echo '<a href="', $Conf->hoturl("help"), '" class="qq uic js-leftmenu">Help</a>';
+} else {
+    echo "Help";
+}
+echo '</h1><ul class="leftmenu-list">';
+$gap = false;
 foreach ($help_topics->groups() as $gj) {
     if (isset($gj->title)) {
-        echo '<div class="leftmenu-item',
-            ($gj->name === "topics" ? " mb-3" : ""),
+        echo '<li class="leftmenu-item',
+            ($gap ? " leftmenu-item-gap3" : ""),
             ($gj->name === $topic ? ' active">' : ' ui js-click-child">');
         if ($gj->name === $topic) {
             echo $gj->title;
         } else {
             echo Ht::link($gj->title, $Conf->hoturl("help", "t=$gj->name"));
         }
-        echo '</div>';
+        echo '</li>';
+        $gap = $gj->name === "topics";
     }
 }
-echo "</div></nav></div>\n",
+echo "</ul></nav></div>\n",
     '<main id="helpcontent" class="leftmenu-content main-column">',
     '<h2 class="leftmenu">', $topicj->title, '</h2>';
 $hth->render_group($topic, true);

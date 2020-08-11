@@ -33,7 +33,7 @@ html {
 	padding-right: 12px;
 }
 h1.leftmenu, h2.leftmenu {
-	margin-bottom: 16px;
+	margin-bottom: 8px;
 }
 table.vbar {
 	margin-right: 12px;
@@ -43,6 +43,7 @@ body.leftmenu, body.paper {
 }
 body.leftmenu > #top {
 	background: #ecf2f4;
+	min-height: auto;
 }
 body.paper > #top {
 	background: #dce4e8;
@@ -100,16 +101,30 @@ h2.paptitle {
 	padding-bottom: 12px;
 	background: #ecf2f4;
 }
+h1.leftmenu > a:after {
+	content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='0.9em' height='0.9em' viewBox='0 0 18 16' preserveAspectRatio='none'%3E%3Cpath d='M7 3L17 9L7 15' fill='none' stroke='%23222' stroke-width='1.5'/%3E%3C/svg%3E");
+}
 .leftmenu-if-left {
 	display: none;
 }
 .leftmenu-list {
+	display: none;
 	-webkit-columns: 100px 4;
 	-moz-columns: 100px 4;
 	columns: 100px 4;
 	-webkit-column-gap: 18px;
 	-moz-column-gap: 18px;
 	column-gap: 18px;
+}
+.leftmenu-list.shown {
+	display: block;
+}
+.leftmenu-item {
+	margin-right: 12px;
+	padding-top: 4px;
+}
+.leftmenu-item-gap3, .leftmenu-item-gap4 {
+	margin-top: 0 !important;
 }
 .pspcard-fold {
 	display: block;

@@ -599,7 +599,9 @@ echo Ht::form(hoturl_post("profile", $form_params),
               ["id" => "form-profile", "class" => "need-unload-protection"]);
 
 // left menu
-echo '<div class="leftmenu-left"><nav class="leftmenu-menu"><h1 class="leftmenu">Account</h1><div class="leftmenu-list">';
+echo '<div class="leftmenu-left"><nav class="leftmenu-menu">',
+    '<h1 class="leftmenu"><a href="" class="uic js-leftmenu qq">Account</a></h1>',
+    '<ul class="leftmenu-list">';
 
 if ($Me->privChair) {
     foreach ([["New account", "new"], ["Bulk update", "bulk"], ["Your profile", null]] as $t) {
@@ -607,7 +609,7 @@ if ($Me->privChair) {
             continue;
         }
         $active = $t[1] && $newProfile === ($t[1] === "new" ? 1 : 2);
-        echo '<div class="leftmenu-item',
+        echo '<li class="leftmenu-item',
             ($active ? ' active' : ' ui js-click-child'),
             ' font-italic', '">';
         if ($active) {
@@ -615,26 +617,26 @@ if ($Me->privChair) {
         } else {
             echo Ht::link($t[0], $Conf->selfurl(null, ["u" => $t[1], "t" => null]));
         }
-        echo '</div>';
+        echo '</li>';
     }
 }
 
 if (!$newProfile) {
     $first = $Me->privChair;
     foreach ($UserStatus->gxt()->members("", "title") as $gj) {
-        echo '<div class="leftmenu-item',
+        echo '<li class="leftmenu-item',
             ($gj->name === $profile_topic ? ' active' : ' ui js-click-child'),
-            ($first ? ' mt-4' : ''), '">';
+            ($first ? ' leftmenu-item-gap4' : ''), '">';
         if ($gj->name === $profile_topic) {
             echo $gj->title;
         } else {
             echo Ht::link($gj->title, $Conf->selfurl(null, ["t" => $gj->name]));
         }
-        echo '</div>';
+        echo '</li>';
         $first = false;
     }
 
-    echo '</div><div class="leftmenu-if-left if-alert mt-5">',
+    echo '</ul><div class="leftmenu-if-left if-alert mt-5">',
         Ht::submit("save", "Save changes", ["class" => "btn-primary"]),
         '</div>';
 } else {
@@ -644,28 +646,17 @@ if (!$newProfile) {
 echo '</nav></div>',
     '<main id="profilecontent" class="leftmenu-content main-column">';
 
-if ($UserStatus->has_messages()) {
-    $status = 0;
-    $msgs = [];
-    foreach ($UserStatus->message_list() as $m) {
-        $status = max($m[2], $status);
-        $msgs[] = $m[1];
-    }
-    echo '<div class="msgs-wide">', Ht::msg($msgs, $status), "</div>\n";
+if ($newProfile === 2
+    && $Qreq->bulkentry === null
+    && ($session_bulkentry = $Me->session("profile_bulkentry"))
+    && is_array($session_bulkentry)
+    && $session_bulkentry[0] > Conf::$now - 5) {
+    $Qreq->bulkentry = $session_bulkentry[1];
+    $Me->save_session("profile_bulkentry", null);
 }
 
 if ($newProfile === 2) {
-    if ($Qreq->bulkentry === null
-        && ($session_bulkentry = $Me->session("profile_bulkentry"))
-        && is_array($session_bulkentry)
-        && $session_bulkentry[0] > Conf::$now - 5) {
-        $Qreq->bulkentry = $session_bulkentry[1];
-        $Me->save_session("profile_bulkentry", null);
-    }
-
     echo '<h2 class="leftmenu">Bulk update</h2>';
-    $UserStatus->set_context(["args" => [$UserStatus, $Qreq]]);
-    $UserStatus->render_group("__bulk");
 } else {
     echo Ht::hidden("profile_contactid", $Acct->contactId);
     if (isset($Qreq->redirect)) {
@@ -695,10 +686,22 @@ if ($newProfile === 2) {
         echo htmlspecialchars($UserStatus->gxt()->get($profile_topic)->title);
     }
     echo '</h2>';
+}
 
-    $UserStatus->set_context(["args" => [$UserStatus, $Qreq]]);
-    $UserStatus->render_group($profile_topic);
+if ($UserStatus->has_messages()) {
+    $status = 0;
+    $msgs = [];
+    foreach ($UserStatus->message_list() as $m) {
+        $status = max($m[2], $status);
+        $msgs[] = $m[1];
+    }
+    echo '<div class="msgs-wide">', Ht::msg($msgs, $status), "</div>\n";
+}
 
+$UserStatus->set_context(["args" => [$UserStatus, $Qreq]]);
+$UserStatus->render_group($newProfile === 2 ? "__bulk" : $profile_topic);
+
+if ($newProfile !== 2) {
     if ($UserStatus->global_self() && false) {
         echo '<div class="form-g"><div class="checki"><label><span class="checkc">',
             Ht::checkbox("saveglobal", 1, $useRequest ? !!$Qreq->saveglobal : true, ["class" => "ignore-diff"]),

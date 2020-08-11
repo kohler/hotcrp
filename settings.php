@@ -67,16 +67,18 @@ echo $Conf->make_script_file("scripts/settings.js"), "\n";
 echo Ht::form(hoturl_post("settings", "group=$Group"),
               ["id" => "settingsform", "class" => "need-unload-protection"]);
 
-echo '<div class="leftmenu-left"><nav class="leftmenu-menu"><h1 class="leftmenu">Settings</h1><div class="leftmenu-list">';
+echo '<div class="leftmenu-left"><nav class="leftmenu-menu">',
+    '<h1 class="leftmenu"><a href="" class="uic js-leftmenu qq">Settings</a></h1>',
+    '<ul class="leftmenu-list">';
 foreach ($Sv->group_members("") as $gj) {
     if ($gj->name === $Group) {
-        echo '<div class="leftmenu-item active">', $gj->title, '</div>';
+        echo '<li class="leftmenu-item active">', $gj->title, '</li>';
     } else if ($gj->title) {
-        echo '<div class="leftmenu-item ui js-click-child">',
-            '<a href="', hoturl("settings", "group={$gj->name}"), '">', $gj->title, '</a></div>';
+        echo '<li class="leftmenu-item ui js-click-child">',
+            '<a href="', hoturl("settings", "group={$gj->name}"), '">', $gj->title, '</a></li>';
     }
 }
-echo '</div><div class="leftmenu-if-left if-alert mt-5">',
+echo '</ul><div class="leftmenu-if-left if-alert mt-5">',
     Ht::submit("update", "Save changes", ["class" => "btn-primary"]),
     "</div></nav></div>\n",
     '<main class="leftmenu-content main-column">',

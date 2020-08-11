@@ -114,6 +114,7 @@ body.leftmenu {
 	padding-bottom: 24px;
 }
 body.leftmenu > #top {
+	min-height: 88px;
 	padding-bottom: 8px;
 }
 body.paper > #top {
@@ -260,13 +261,13 @@ a.attention, .btn-link:active {
 	color: red;
 }
 a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,
-div.papmode.active > a, div.papmode.active:hover > a.noul, div.leftmenu-item > a,
+div.papmode.active > a, div.papmode.active:hover > a.noul, .leftmenu-item > a,
 a.pnum, a.ptitle, a.mailto, u.x, .noul {
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 }
 a.q:hover, a.qq:hover, a.x:hover,
-div.papmode.active:hover > a, div.leftmenu-item:hover > a,
+div.papmode.active:hover > a, .leftmenu-item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
@@ -1394,6 +1395,11 @@ th.settings-simplehead {
 	padding-top: 16px;
 	font-size: smaller;
 }
+.leftmenu-list {
+	padding-left: 0;
+	list-style-type: none;
+	margin-bottom: 0;
+}
 .leftmenu-item {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
@@ -1402,6 +1408,14 @@ th.settings-simplehead {
 	margin-left: -5px;
 	cursor: pointer;
 	clear: left;
+}
+.leftmenu-item-gap3 {
+	margin-top: 1em !important;
+	margin-top: 1rem !important;
+}
+.leftmenu-item-gap4 {
+	margin-top: 1.5em !important;
+	margin-top: 1.5rem !important;
 }
 .leftmenu-item.active {
 	padding-top: 3px;

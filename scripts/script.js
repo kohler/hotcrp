@@ -3706,24 +3706,7 @@ return render_text;
 })($);
 
 
-// abstract
-$(function () {
-    function check_abstract_height() {
-        var want_hidden = $("#foldpaper").hasClass("fold6c");
-        if (want_hidden) {
-            var $ab = $(".abstract");
-            if ($ab.length && $ab.height() > $ab.closest(".paperinfo-abstract").height() - $ab.position().top)
-                want_hidden = false;
-        }
-        $("#foldpaper").toggleClass("fold7c", want_hidden);
-    }
-    if ($(".paperinfo-abstract").length) {
-        check_abstract_height();
-        $("#foldpaper").on("fold unfold renderText", check_abstract_height);
-        $(window).on("resize", check_abstract_height);
-    }
-});
-
+// left menus
 var add_pslitem = (function () {
 var pslcard, observer, linkmap;
 function observer_fn(entries) {
@@ -3761,6 +3744,42 @@ return function (id, name, elt) {
     }
 };
 })();
+
+handle_ui.on("js-leftmenu", function (event) {
+    var nav = this.closest("nav"), list = nav.firstChild;
+    while (list.tagName !== "UL") {
+        list = list.nextSibling;
+    }
+    var liststyle = window.getComputedStyle(list);
+    if (liststyle.display === "none") {
+        addClass(list, "shown");
+        event.preventDefault();
+    } else if (liststyle.display === "block") {
+        removeClass(list, "shown");
+        event.preventDefault();
+    } else if (this.href === "") {
+        event.preventDefault();
+    }
+});
+
+
+// abstract
+$(function () {
+    function check_abstract_height() {
+        var want_hidden = $("#foldpaper").hasClass("fold6c");
+        if (want_hidden) {
+            var $ab = $(".abstract");
+            if ($ab.length && $ab.height() > $ab.closest(".paperinfo-abstract").height() - $ab.position().top)
+                want_hidden = false;
+        }
+        $("#foldpaper").toggleClass("fold7c", want_hidden);
+    }
+    if ($(".paperinfo-abstract").length) {
+        check_abstract_height();
+        $("#foldpaper").on("fold unfold renderText", check_abstract_height);
+        $(window).on("resize", check_abstract_height);
+    }
+});
 
 
 // reviews
