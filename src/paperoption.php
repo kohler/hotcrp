@@ -314,6 +314,13 @@ class PaperOptionList implements IteratorAggregate {
         if ($oj->search_keyword ?? null) {
             $am->add_lazy($oj->search_keyword, $cb, [$id], Conf::MFLAG_OPTION);
         }
+        if ($oj->json_key ?? null) {
+            $jkc = str_replace("_", " ", $oj->json_key);
+            if (strcasecmp($jkc, $oj->name) !== 0
+                && strcasecmp($jkc, $oj->search_keyword ?? "") !== 0) {
+                $am->add_lazy($oj->json_key, $cb, [$id], Conf::MFLAG_OPTION);
+            }
+        }
     }
 
     function populate_abbrev_matcher(AbbreviationMatcher $am) {
