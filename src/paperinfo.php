@@ -1430,9 +1430,9 @@ class PaperInfo {
                 $prow->_conflict_array_email = $email;
             }
             if ($email) {
-                $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, email, affiliation from PaperConflict join ContactInfo using (contactId) where paperId?a", $row_set->paper_ids());
+                $result = $this->conf->qe("select paperId, PaperConflict.contactId, conflictType, firstName, lastName, affiliation, email from PaperConflict join ContactInfo using (contactId) where paperId?a", $row_set->paper_ids());
             } else {
-                $result = $this->conf->qe("select paperId, contactId, conflictType, '' firstName, '' lastName, '' email, '' affiliation from PaperConflict where paperId?a", $row_set->paper_ids());
+                $result = $this->conf->qe("select paperId, contactId, conflictType, '' firstName, '' lastName, '' affiliation, '' email from PaperConflict where paperId?a", $row_set->paper_ids());
             }
             while ($result && ($row = $result->fetch_object("Author"))) {
                 $row->paperId = (int) $row->paperId;
@@ -2134,7 +2134,7 @@ class PaperInfo {
     }
 
     private function fresh_review_of($key, $value) {
-        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " allRatings, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles, ContactInfo.contactTags from PaperReview join ContactInfo using (contactId) where paperId=? and $key=? order by paperId, reviewId", $this->paperId, $value);
+        $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " allRatings, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.affiliation, ContactInfo.email, ContactInfo.roles, ContactInfo.contactTags from PaperReview join ContactInfo using (contactId) where paperId=? and $key=? order by paperId, reviewId", $this->paperId, $value);
         $rrow = ReviewInfo::fetch($result, $this, $this->conf);
         Dbl::free($result);
         return $rrow;
@@ -2433,7 +2433,7 @@ class PaperInfo {
 
     static function fetch_comment_query() {
         return "select PaperComment.*,
-            firstName reviewFirstName, lastName reviewLastName, email reviewEmail
+            firstName reviewFirstName, lastName reviewLastName, affiliation reviewAffiliation, email reviewEmail
             from PaperComment
             join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)";
     }
@@ -2631,7 +2631,7 @@ class PaperInfo {
     }
 
     function notify_reviews($callback, $sending_user) {
-        $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
+        $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email,
                 password, roles, contactTags, defaultWatch,
                 coalesce(" . self::my_review_permissions_sql() . ", '') myReviewPermissions,
                 conflictType, watch, preferredEmail, disabled
@@ -2675,7 +2675,7 @@ class PaperInfo {
     }
 
     function notify_final_submit($callback, $sending_user) {
-        $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, email,
+        $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email,
                 password, roles, contactTags, defaultWatch,
                 coalesce(" . self::my_review_permissions_sql() . ", '') myReviewPermissions,
                 conflictType, watch, preferredEmail, disabled

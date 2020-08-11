@@ -532,7 +532,7 @@ class HotCRPMailer extends Mailer {
         global $Me;
 
         $result = $row->conf->qe("select ContactInfo.contactId,
-                firstName, lastName, email, preferredEmail, password,
+                firstName, lastName, affiliation, email, preferredEmail, password,
                 roles, disabled, contactTags,
                 conflictType, '' myReviewPermissions
                 from ContactInfo join PaperConflict using (contactId)

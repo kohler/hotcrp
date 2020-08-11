@@ -2,9 +2,6 @@
 // commentinfo.php -- HotCRP helper class for comments
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-/** @property ?string $reviewFirstName
- * @property ?string $reviewLastName
- * @property ?string $reviewEmail */
 class CommentInfo {
     /** @var Conf */
     public $conf;
@@ -30,6 +27,15 @@ class CommentInfo {
     public $commentRound;
     public $commentFormat;
     public $commentOverflow;
+
+    /** @var ?string */
+    public $reviewFirstName;
+    /** @var ?string */
+    public $reviewLastName;
+    /** @var ?string */
+    public $reviewAffiliation;
+    /** @var ?string */
+    public $reviewEmail;
 
     static private $visibility_map = [
         COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc",
@@ -170,8 +176,8 @@ class CommentInfo {
     private function commenter() {
         if (isset($this->reviewEmail)) {
             return (object) [
-                "firstName" => $this->reviewFirstName ?? null,
-                "lastName" => $this->reviewLastName ?? null,
+                "firstName" => $this->reviewFirstName,
+                "lastName" => $this->reviewLastName,
                 "email" => $this->reviewEmail
             ];
         } else {
@@ -183,8 +189,9 @@ class CommentInfo {
         if ($this->commentType & COMMENTTYPE_RESPONSE) {
             $rname = $this->conf->resp_round_name($this->commentRound);
             $t = $rname == "1" ? "Response" : "$rname Response";
-            if ($this->commentType & COMMENTTYPE_DRAFT)
+            if ($this->commentType & COMMENTTYPE_DRAFT) {
                 $t = "Draft $t";
+            }
             return $t;
         } else {
             return null;

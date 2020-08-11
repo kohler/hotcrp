@@ -669,7 +669,7 @@ class FormulaGraph extends MessageSet {
             return;
         }
         $cids = array_filter(array_keys($cids), "is_numeric");
-        $result = $this->conf->qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", $cids);
+        $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, roles, contactTags from ContactInfo where contactId ?a", $cids);
         $this->reviewers = [];
         while (($c = Contact::fetch($result, $this->conf))) {
             $this->reviewers[$c->contactId] = $c;

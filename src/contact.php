@@ -504,6 +504,9 @@ class Contact {
      * @param int $sortspec
      * @return string */
     static function make_sorter($c, $sortspec) {
+        if (!($c instanceof Contact) && !($c instanceof Author)) {
+            error_log(debug_string_backtrace());
+        }
         $r = [];
         $first = $c->firstName;
         $von = "";
@@ -518,13 +521,12 @@ class Contact {
                 if ($bit === 1) {
                     $s = $first . $von;
                     $first = $von = "";
-                } else if ($bit === 2
-                           && $first !== ""
-                           && ($m = Text::analyze_von($c->lastName))) {
-                    $s = $m[1];
-                    $von = " " . $m[0];
                 } else if ($bit === 2) {
                     $s = $c->lastName;
+                    if ($first !== "" && ($m = Text::analyze_von($s))) {
+                        $s = $m[1];
+                        $von = " " . $m[0];
+                    }
                 } else if ($bit === 3) {
                     $s = $c->email;
                 } else if ($bit === 4) {
@@ -540,7 +542,7 @@ class Contact {
         if ($von !== "") {
             $r[] = $von;
         }
-        return join(" ", $r);
+        return join(",", $r);
     }
 
     /** @param Contact|Author $c

@@ -952,7 +952,7 @@ class Conf {
         return $this->_collator;
     }
 
-    /** @return callable(string,string):int */
+    /** @return callable(Contact|Author,Contact|Author):int */
     function user_comparator() {
         return function ($a, $b) {
             $sortspec = $this->sort_by_last ? 0312 : 0321;
@@ -2007,7 +2007,7 @@ class Conf {
 
     /** @return Author */
     function default_site_contact() {
-        $result = $this->ql("select firstName, lastName, email, affiliation from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc, contactId asc limit 1");
+        $result = $this->ql("select firstName, lastName, affiliation, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc, contactId asc limit 1");
         $chair = $result->fetch_object("Author");
         Dbl::free($result);
         return $chair;

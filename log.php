@@ -360,7 +360,7 @@ class LogRowGenerator {
         unset($this->need_users[0]);
         $this->need_users = array_diff_key($this->need_users, $this->users);
         if (!empty($this->need_users)) {
-            $result = $this->conf->qe("select contactId, firstName, lastName, email, contactTags, roles from ContactInfo where contactId?a", array_keys($this->need_users));
+            $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, contactTags, roles from ContactInfo where contactId?a", array_keys($this->need_users));
             while (($user = Contact::fetch($result, $this->conf))) {
                 $this->users[$user->contactId] = $user;
                 unset($this->need_users[$user->contactId]);
@@ -372,7 +372,7 @@ class LogRowGenerator {
                 $user = $this->users[$cid] = new Contact(["contactId" => $cid, "disabled" => 1], $this->conf);
                 $user->disabled = "deleted";
             }
-            $result = $this->conf->qe("select contactId, firstName, lastName, email, 1 disabled from DeletedContactInfo where contactId?a", array_keys($this->need_users));
+            $result = $this->conf->qe("select contactId, firstName, lastName, '' affiliation, email, 1 disabled from DeletedContactInfo where contactId?a", array_keys($this->need_users));
             while (($user = Contact::fetch($result, $this->conf))) {
                 $this->users[$user->contactId] = $user;
                 $user->disabled = "deleted";
