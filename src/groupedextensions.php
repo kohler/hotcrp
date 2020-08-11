@@ -90,6 +90,10 @@ class GroupedExtensions implements XtContext {
     function viewer() {
         return $this->viewer;
     }
+    /** @return ?string */
+    function root() {
+        return $this->root;
+    }
 
     /** @var callable(string,object,?Contact,Conf):(?bool) $checker */
     function add_xt_checker($checker) {
@@ -97,7 +101,7 @@ class GroupedExtensions implements XtContext {
     }
     function xt_check_element($str, $xt, $user, Conf $conf) {
         foreach ($this->_xt_checkers as $cf) {
-            if (($x = call_user_func($cf, $str, $xt, $user, $conf)) !== null)
+            if (($x = $cf($str, $xt, $user, $conf)) !== null)
                 return $x;
         }
         return null;
@@ -207,13 +211,11 @@ class GroupedExtensions implements XtContext {
     }
     function call_callback($cb, $gj) {
         Conf::xt_resolve_require($gj);
-        $args = $this->_render_state[0];
-        $args[] = $gj;
         if (is_string($cb) && $cb[0] === "*") {
             $colons = strpos($cb, ":");
             $cb = [$this->callable(substr($cb, 1, $colons - 1)), substr($cb, $colons + 2)];
         }
-        return call_user_func_array($cb, $args);
+        return $cb(...$this->_render_state[0], ...[$gj]);
     }
 
     function set_context($options) {

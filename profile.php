@@ -555,7 +555,7 @@ if (!$useRequest
 // set warnings about user json
 if (!$newProfile && !$useRequest) {
     $UserStatus->gxt()->set_context(["args" => [$UserStatus, $Acct]]);
-    foreach ($UserStatus->gxt()->members("", "crosscheck_callback") as $gj) {
+    foreach ($UserStatus->gxt()->members("__crosscheck", "crosscheck_callback") as $gj) {
         $UserStatus->gxt()->call_callback($gj->crosscheck_callback, $gj);
     }
 }

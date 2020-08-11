@@ -3,7 +3,10 @@
         "unparse_json_callback": "UserStatus::unparse_json_main",
         "request_callback": "UserStatus::request_main",
         "parse_csv_callback": "UserStatus::parse_csv_main",
-        "save_early_callback": "UserStatus::save_main",
+        "save_early_callback": "UserStatus::save_main"
+    },
+    {
+        "name": "__crosscheck/main", "position": 100,
         "crosscheck_callback": "UserStatus::crosscheck_main"
     },
     {

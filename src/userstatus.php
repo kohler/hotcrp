@@ -1187,9 +1187,9 @@ class UserStatus extends MessageSet {
 
     function parse_csv_group($g, $cj, $line) {
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
-            if (isset($gj->parse_csv_callback)) {
+            if (($cb = $gj->parse_csv_callback ?? null)) {
                 Conf::xt_resolve_require($gj);
-                call_user_func($gj->parse_csv_callback, $this, $cj, $line, $gj);
+                $cb($this, $cj, $line, $gj);
             }
         }
     }
