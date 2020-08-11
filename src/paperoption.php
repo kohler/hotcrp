@@ -309,24 +309,24 @@ class PaperOptionList implements IteratorAggregate {
 
     private function add_abbrev_matcher(AbbreviationMatcher $am, $id, $oj) {
         $cb = [$this, "option_by_id"];
-        $am->add_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
-        $am->add_lazy("opt{$id}", $cb, [$id], Conf::MFLAG_OPTION);
+        $am->add_phrase_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
+        $am->add_keyword_lazy("opt{$id}", $cb, [$id], Conf::MFLAG_OPTION);
         $oj->search_keyword = $oj->search_keyword ?? $oj->json_key ?? null;
         if ($oj->search_keyword) {
-            $am->add_lazy($oj->search_keyword, $cb, [$id], Conf::MFLAG_OPTION);
+            $am->add_keyword_lazy($oj->search_keyword, $cb, [$id], Conf::MFLAG_OPTION);
         }
         if (($oj->json_key ?? null)
             && $oj->json_key !== $oj->search_keyword
             && strcasecmp(str_replace("_", " ", $oj->json_key), $oj->name) !== 0) {
-            $am->add_lazy($oj->json_key, $cb, [$id], Conf::MFLAG_OPTION);
+            $am->add_keyword_lazy($oj->json_key, $cb, [$id], Conf::MFLAG_OPTION);
         }
     }
 
     function populate_abbrev_matcher(AbbreviationMatcher $am) {
         $cb = [$this, "option_by_id"];
-        $am->add_lazy("paper", $cb, [DTYPE_SUBMISSION], Conf::MFLAG_OPTION);
-        $am->add_lazy("submission", $cb, [DTYPE_SUBMISSION], Conf::MFLAG_OPTION);
-        $am->add_lazy("final", $cb, [DTYPE_FINAL], Conf::MFLAG_OPTION);
+        $am->add_keyword_lazy("paper", $cb, [DTYPE_SUBMISSION], Conf::MFLAG_OPTION);
+        $am->add_keyword_lazy("submission", $cb, [DTYPE_SUBMISSION], Conf::MFLAG_OPTION);
+        $am->add_keyword_lazy("final", $cb, [DTYPE_FINAL], Conf::MFLAG_OPTION);
         foreach ($this->option_json_map() as $id => $oj) {
             if (($oj->nonpaper ?? false) !== true) {
                 $this->add_abbrev_matcher($am, $id, $oj);
@@ -340,9 +340,7 @@ class PaperOptionList implements IteratorAggregate {
             if ((($oj->nonpaper ?? false) === true) === $nonpaper
                 && ($oj->search_keyword ?? null) === null) {
                 $e = AbbreviationEntry::make_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
-                $s = $am->find_abbreviation($e,
-                    AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE,
-                    Conf::MFLAG_OPTION);
+                $s = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL, Conf::MFLAG_OPTION);
                 $oj->search_keyword = $s;
                 if (($o = $this->_omap[$id] ?? null)) {
                     $o->_search_keyword = $s;
@@ -955,7 +953,7 @@ class PaperOption {
         if ($this->_json_key === null) {
             $am = $this->abbrev_matcher();
             $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
-            $this->_json_key = $am->find_abbreviation($e, AbbreviationMatcher::ABBR_UNDERSCORE);
+            $this->_json_key = $am->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE);
             if (!$this->_json_key) {
                 $this->_json_key = $this->formid;
             }
@@ -1344,10 +1342,10 @@ class SelectorPaperOption extends PaperOption {
         if (!$this->_selector_am) {
             $this->_selector_am = new AbbreviationMatcher;
             foreach ($this->selector as $id => $name) {
-                $this->_selector_am->add($name, $id + 1);
+                $this->_selector_am->add_phrase($name, $id + 1);
             }
             if (!$this->required) {
-                $this->_selector_am->add("none", 0);
+                $this->_selector_am->add_keyword("none", 0);
             }
         }
         return $this->_selector_am;
@@ -1439,7 +1437,7 @@ class SelectorPaperOption extends PaperOption {
             return false;
         } else {
             $e = new AbbreviationEntry($this->selector[$idx - 1], $idx);
-            return $this->selector_abbrev_matcher()->find_abbreviation($e, AbbreviationMatcher::ABBR_DASH);
+            return $this->selector_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
         }
     }
     function search_examples(Contact $viewer, $context) {

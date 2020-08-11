@@ -8,7 +8,7 @@
 //
 // If pattern does not contain *:
 //    +2 no skipped non-stopwords, all full word matches
-//    +1 no skipped non-stopwords
+//    +1 no skipped non-stopwords, match not stored as keyword
 //    +0 otherwise
 // If pattern contains *:
 //    +1 no skipped non-stopwords at beginning and pattern doesn't start with *
@@ -268,7 +268,7 @@ class AbbreviationEntry {
      * @readonly */
     public $loader_args;
 
-    const TFLAG_LITERAL = 0x10000000;
+    const TFLAG_KW = 0x10000000;
 
     /** @param string $name
      * @param T $value
@@ -326,32 +326,64 @@ class AbbreviationMatcher {
     function __construct($template = null) {
     }
 
+    private function add_entry(AbbreviationEntry $e, $isphrase) {
+        $i = count($this->data);
+        $this->data[] = $e;
+        if (!($e->tflags & AbbreviationEntry::TFLAG_KW)) {
+            $this->matches = $this->xmatches = [];
+            if ($isphrase
+                && strpos($e->name, " ") === false
+                && self::is_strict_camel_word($e->name)) {
+                $e2 = clone $e;
+                /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+                $e2->name = preg_replace('/([a-z\'](?=[A-Z])|[A-Z](?=[A-Z][a-z]))/', '$1 ', $e->name);
+                $this->data[] = $e2;
+            }
+        } else if ($this->nanal === $i) {
+            $e->dedash_name = self::dedash($e->name);
+            $lname = strtolower($e->name);
+            $this->ltesters[] = " " . $lname;
+            $this->matches[$e->name] = $this->xmatches[$e->name] = [$i];
+            ++$this->nanal;
+        }
+        return $e;
+    }
     /** @param string $name
      * @param T $data
      * @return AbbreviationEntry */
-    function add($name, $data, int $tflags = 0) {
+    function add_phrase($name, $data, int $tflags = 0) {
         $name = simplify_whitespace(UnicodeHelper::deaccent($name));
-        $this->data[] = $e = new AbbreviationEntry($name, $data, $tflags);
-        $this->matches = [];
-        $this->xmatches = [];
-        return $e;
+        return $this->add_entry(new AbbreviationEntry($name, $data, $tflags), true);
     }
     /** @param string $name
      * @param callable(...):T $loader
      * @param list $loader_args
      * @return AbbreviationEntry */
-    function add_lazy($name, $loader, $loader_args, int $tflags = 0) {
+    function add_phrase_lazy($name, $loader, $loader_args, int $tflags = 0) {
         $name = simplify_whitespace(UnicodeHelper::deaccent($name));
-        $this->data[] = $e = AbbreviationEntry::make_lazy($name, $loader, $loader_args, $tflags);
-        $this->matches = [];
-        $this->xmatches = [];
-        return $e;
+        return $this->add_entry(AbbreviationEntry::make_lazy($name, $loader, $loader_args, $tflags), true);
+    }
+    /** @param string $name
+     * @param T $data
+     * @return AbbreviationEntry */
+    function add_keyword($name, $data, int $tflags = 0) {
+        assert(strpos($name, " ") === false);
+        return $this->add_entry(new AbbreviationEntry($name, $data, $tflags | AbbreviationEntry::TFLAG_KW), false);
+    }
+    /** @param string $name
+     * @param callable(...):T $loader
+     * @param list $loader_args
+     * @return AbbreviationEntry */
+    function add_keyword_lazy($name, $loader, $loader_args, int $tflags = 0) {
+        assert(strpos($name, " ") === false);
+        return $this->add_entry(AbbreviationEntry::make_lazy($name, $loader, $loader_args, $tflags | AbbreviationEntry::TFLAG_KW), false);
     }
     function add_deparenthesized() {
         $this->_analyze();
         while ($this->ndeparen !== $this->nanal) {
             $e = $this->data[$this->ndeparen];
-            if (($s = self::deparenthesize($e->name)) !== ""
+            if (($e->tflags & AbbreviationEntry::TFLAG_KW) === 0
+                && ($s = self::deparenthesize($e->name)) !== ""
                 && !in_array(self::make_xtester(strtolower($s)), $this->ltesters)) {
                 $e = clone $e;
                 /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
@@ -363,17 +395,6 @@ class AbbreviationMatcher {
             ++$this->ndeparen;
         }
         $this->ndeparen = count($this->data);
-    }
-    /** @suppress PhanAccessReadOnlyProperty */
-    private function _add_clone_literal($name, AbbreviationEntry $e) {
-        assert($this->nanal === count($this->data));
-        $e = clone $e;
-        $e->tflags |= AbbreviationEntry::TFLAG_LITERAL; // only match this literally
-        $e->name = $e->dedash_name = $name;
-        $this->data[] = $e;
-        $this->ltesters[] = " " . $name;
-        ++$this->nanal;
-        $this->matches[$name] = $this->xmatches[$name] = [count($this->data) - 1];
     }
 
     function set_priority(int $tflags, float $prio) {
@@ -398,7 +419,7 @@ class AbbreviationMatcher {
     /** @param string $s
      * @return bool */
     static function is_strict_camel_word($s) {
-        return preg_match('/\A[A-Za-z0-9~?!\']*[a-z\'][A-Z][.A-Za-z0-9~?!\']*\z/', $s);
+        return preg_match('/\A[A-Za-z0-9~?!\']*(?:[a-z\'][A-Z]|[A-Z][A-Z][a-z])[.A-Za-z0-9~?!\']*\z/', $s);
     }
     /** @param string $s
      * @return string */
@@ -524,7 +545,7 @@ class AbbreviationMatcher {
                 }
             }
         } else {
-            preg_match_all('/[A-Za-z0-9~?!*.]+/', $upat, $m);
+            preg_match_all('/[A-Za-z~?!*][A-Za-z~?!*]*|(?:[0-9]|\.[0-9])[0-9.]*/', $upat, $m);
             foreach ($m[0] as $w) {
                 $re .= $re === "" ? " " : ".*? ";
                 $re .= preg_quote($w, "/");
@@ -564,7 +585,7 @@ class AbbreviationMatcher {
                 }
                 // compute status. if no star:
                 //    +2 no skipped non-stopwords, full words
-                //    +1 no skipped non-stopwords
+                //    +1 no skipped non-stopwords, not stored as keyword
                 //    +0 otherwise
                 // if star:
                 //    +1 no skipped non-stopwords at beginning
@@ -587,16 +608,14 @@ class AbbreviationMatcher {
                     $noskips = self::xtester_remove_stops($skips) === "";
                     if ($noskips && $full_words) {
                         $this_status = 2;
-                    } else if ($noskips) {
+                    } else if ($noskips && ($this->data[$i]->tflags & AbbreviationEntry::TFLAG_KW) === 0) {
                         $this_status = 1;
                     } else {
                         $this_status = 0;
                     }
                 }
-                //error_log("! $re $t $this_status S<$skips>");
-                if ($this_status !== 2 && ($this->data[$i]->tflags & AbbreviationEntry::TFLAG_LITERAL) !== 0) {
-                    // skip
-                } else if ($this_status > $status) {
+                //error_log("! $re $t $this_status:$status S<$skips>");
+                if ($this_status > $status) {
                     $xtx = [$i];
                     $status = $this_status;
                 } else if ($this_status === $status) {
@@ -737,23 +756,28 @@ class AbbreviationMatcher {
         return str_replace(" ", "", $s);
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     private function _finish_abbreviation($cname, AbbreviationEntry $e, $class, $csp) {
-        if ($class === (self::ABBR_CAMEL | self::ABBR_FORCE)
+        if ($class === (self::KW_CAMEL | self::KW_ENSURE)
             && $csp > 1
             && !$this->find_entries(strtolower($cname), 0)) {
-            $this->_add_clone_literal(strtolower($cname), $e);
+            $e2 = clone $e;
+            $e2->name = strtolower($cname);
+            $e2->tflags |= AbbreviationEntry::TFLAG_KW;
+            $this->add_entry($e2, false);
         }
         return $cname;
     }
 
-    const ABBR_CAMEL = 0;
-    const ABBR_DASH = 1;
-    const ABBR_UNDERSCORE = 2;
-    const ABBR_FORCE = 4;
+    const KW_CAMEL = 0;
+    const KW_DASH = 1;
+    const KW_UNDERSCORE = 2;
+    const KW_ENSURE = 4;
     /** @param int $class
      * @param int $tflags
-     * @return string|false */
-    function find_abbreviation(AbbreviationEntry $e, $class, $tflags = 0) {
+     * @return string|false
+     * @suppress PhanAccessReadOnlyProperty */
+    function find_entry_keyword(AbbreviationEntry $e, $class, $tflags = 0) {
         // Strip parenthetical remarks when that preserves uniqueness
         $name = simplify_whitespace(UnicodeHelper::deaccent($e->name));
         if (($xname = self::deparenthesize($name)) !== ""
@@ -770,21 +794,13 @@ class AbbreviationMatcher {
             $name = $sname;
         }
         // Obtain an abbreviation by type
-        if (($class & 3) === self::ABBR_CAMEL) {
+        if (($class & 3) === self::KW_CAMEL) {
             $cname = ucwords($name);
             $csp = substr_count($cname, " ");
-            // only one word -- maybe it's a CamelWord we should separate
+            // check for a CamelWord we should separate
             if ($csp === 1
-                && ($class & self::ABBR_FORCE) !== 0
                 && self::is_strict_camel_word(substr($name, 1))) {
-                $s = preg_replace('/([a-z\'])([A-Z])/', '$1 $2', $name);
-                $e2 = clone $e;
-                /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-                $e2->name = trim($s);
-                $this->data[] = $e2;
-                $this->matches = [];
-                $this->xmatches = [];
-                $cname = ucwords($s);
+                $cname = ucwords(preg_replace('/([a-z\'](?=[A-Z])|[A-Z](?=[A-Z][a-z]))/', '$1 ', $cname));
                 $csp = substr_count($cname, " ");
             }
             if ($csp === 1) {
@@ -816,7 +832,7 @@ class AbbreviationMatcher {
                 }
                 $cname = self::camel_contract($cname, 0, false, $hasnum);
             }
-        } else if (($class & 3) === self::ABBR_UNDERSCORE) {
+        } else if (($class & 3) === self::KW_UNDERSCORE) {
             $cname = str_replace(" ", "_", strtolower(substr($name, 1)));
             $csp = 0;
         } else {
@@ -826,16 +842,26 @@ class AbbreviationMatcher {
         // Add suffix
         if ($this->test_all_matches($cname, $e, $tflags)) {
             return $this->_finish_abbreviation($cname, $e, $class, $csp);
-        } else if (($class & self::ABBR_FORCE) !== 0) {
+        } else if (($class & self::KW_ENSURE) !== 0) {
             $cname .= ".";
             $suffix = 1;
             while ($this->find_entries($cname . $suffix, 0)) {
                 ++$suffix;
             }
-            $this->_add_clone_literal($cname . $suffix, $e);
+            $e2 = clone $e;
+            $e2->name = $cname . $suffix;
+            $e2->tflags |= AbbreviationEntry::TFLAG_KW;
+            $this->add_entry($e2, false);
             return $cname . $suffix;
         } else {
             return false;
         }
+    }
+
+    /** @param int $class
+     * @param int $tflags
+     * @return string|false */
+    function ensure_entry_keyword(AbbreviationEntry $e, $class, $tflags = 0) {
+        return $this->find_entry_keyword($e, $class | self::KW_ENSURE, $tflags);
     }
 }

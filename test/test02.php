@@ -809,10 +809,10 @@ xassert($s[3]->compare_by($s[4], "C") > 0);
 
 // AbbreviationMatcher
 $am = new AbbreviationMatcher;
-$am->add("élan", 1, 1);
-$am->add("eclat", 2);
-$am->add("Should the PC Suck?", 3);
-$am->add("Should P. C. Rock?", 4);
+$am->add_phrase("élan", 1, 1);
+$am->add_phrase("eclat", 2);
+$am->add_phrase("Should the PC Suck?", 3);
+$am->add_phrase("Should P. C. Rock?", 4);
 xassert_eqq($am->find_all("elan"), [1]);
 xassert_eqq($am->find_all("el"), [1]);
 xassert_eqq($am->find_all("él"), [1]);
@@ -823,12 +823,12 @@ xassert_eqq($am->find_all("should-the-pc-suck"), [3]);
 xassert_eqq($am->find_all("should-the pc-suck"), [3]);
 xassert_eqq($am->find_all("ShoPCSuc"), [3]);
 xassert_eqq($am->find_all("ShoPCRoc"), [4]);
-$am->add("élan", 5, 2);
+$am->add_phrase("élan", 5, 2);
 xassert_eqq($am->find_all("elan"), [1, 5]);
 xassert_eqq($am->find_all("elan", 1), [1]);
 xassert_eqq($am->find_all("elan", 2), [5]);
 xassert_eqq($am->find_all("elan", 3), [1, 5]);
-$am->add("élange", 6, 2);
+$am->add_phrase("élange", 6, 2);
 xassert_eqq($am->find_all("ela"), [1, 5, 6]);
 xassert_eqq($am->find_all("elan"), [1, 5]);
 xassert_eqq($am->find_all("elange"), [6]);
@@ -842,11 +842,11 @@ xassert(!AbbreviationMatcher::is_camel_word("Ovemer"));
 xassert(!AbbreviationMatcher::is_camel_word("ovemer"));
 xassert(!AbbreviationMatcher::is_camel_word("ove mer"));
 
-$am->add("99 Problems", 7);
+$am->add_phrase("99 Problems", 7);
 xassert_eqq($am->find_all("99p"), [7]);
 xassert_eqq($am->find_all("9p"), []);
 
-$am->add("?", 8);
+$am->add_phrase("?", 8);
 xassert_eqq($am->find_all("ela"), [1, 5, 6]);
 xassert_eqq($am->find_all("elan"), [1, 5]);
 xassert_eqq($am->find_all("elange"), [6]);
@@ -856,20 +856,20 @@ xassert_eqq($am->find_all("99p"), [7]);
 xassert_eqq($am->find_all("?"), [8]);
 
 $am = new AbbreviationMatcher;
-$am->add("Overall merit", 0);
-$am->add("Overall merit 2", 1);
-$am->add("Overall merit 3", 2);
-$am->add("Overall merit 4", 3);
+$am->add_phrase("Overall merit", 0);
+$am->add_phrase("Overall merit 2", 1);
+$am->add_phrase("Overall merit 3", 2);
+$am->add_phrase("Overall merit 4", 3);
 xassert_eqq($am->find_all("OveMer"), [0]);
 xassert_eqq($am->find_all("merit overall"), []);
 xassert_eqq($am->find_all("OveMer2"), [1]);
 xassert_eqq($am->find_all("overall merit*"), [0, 1, 2, 3]);
 xassert_eqq($am->find_all("OveMer*"), [0, 1, 2, 3]);
 
-$am->add("PC Person", 4);
-$am->add("PC Person 2", 5);
-$am->add("P. C. Person 3", 6);
-$am->add("P. C. Person 20", 7);
+$am->add_phrase("PC Person", 4);
+$am->add_phrase("PC Person 2", 5);
+$am->add_phrase("P. C. Person 3", 6);
+$am->add_phrase("P. C. Person 20", 7);
 xassert_eqq($am->find_all("PCPer"), [4]);
 xassert_eqq($am->find_all("PCPer2"), [5]);
 xassert_eqq($am->find_all("PCPer3"), [6]);
@@ -878,59 +878,59 @@ xassert_eqq($am->find_all("Per"), [4, 5, 6, 7]);
 xassert_eqq($am->find_all("20"), [7]);
 xassert_eqq($am->find_all("2"), [1, 5]);
 
-$am->add("Number 2", 8);
-$am->add("Number 2 Bis", 9);
-$am->add("2 Butts", 10);
+$am->add_phrase("Number 2", 8);
+$am->add_phrase("Number 2 Bis", 9);
+$am->add_phrase("2 Butts", 10);
 xassert_eqq($am->find_all("2"), [1, 5, 8, 9, 10]);
 
 $am = new AbbreviationMatcher;
-$am->add("France Land", 0);
-$am->add("France Land Flower", 1);
-$am->add("France Land Ripen", 2);
-$am->add("Glass Flower", 3);
-$am->add("Glass Flower Milk", 4);
-$am->add("Flower Cheese", 5);
-$am->add("Anne France", 6);
+$am->add_phrase("France Land", 0);
+$am->add_phrase("France Land Flower", 1);
+$am->add_phrase("France Land Ripen", 2);
+$am->add_phrase("Glass Flower", 3);
+$am->add_phrase("Glass Flower Milk", 4);
+$am->add_phrase("Flower Cheese", 5);
+$am->add_phrase("Anne France", 6);
 xassert_eqq($am->find_all("flower"), [1, 3, 4, 5]);
 xassert_eqq($am->find_all("flo"), [1, 3, 4, 5]);
 xassert_eqq($am->find_all("fra"), [0, 1, 2, 6]);
 xassert_eqq($am->find_all("fra*"), [0, 1, 2]);
 xassert_eqq($am->find_all("*fra*"), [0, 1, 2, 6]);
 
-$am->add("France", 7);
+$am->add_phrase("France", 7);
 xassert_eqq($am->find_all("fra"), [7]);
 xassert_eqq($am->find_all("fra*"), [0, 1, 2, 7]);
 xassert_eqq($am->find_all("*fra*"), [0, 1, 2, 6, 7]);
 
 // AbbreviationMatcher tests taken from old abbreviation styles
 $am = new AbbreviationMatcher;
-$am->add("Cover Letter", 0);
-$am->add("Other Artifact", 1);
+$am->add_phrase("Cover Letter", 0);
+$am->add_phrase("Other Artifact", 1);
 xassert_eqq($am->find_all("other-artifact"), [1]);
 xassert_eqq($am->find_all("cover-letter"), [0]);
 
 $am = new AbbreviationMatcher;
-$am->add("Second Round Paper", 0);
-$am->add("Second Round Response (PDF)", 1);
+$am->add_phrase("Second Round Paper", 0);
+$am->add_phrase("Second Round Response (PDF)", 1);
 xassert_eqq($am->find_all("second-round-paper"), [0]);
 xassert_eqq($am->find_all("second-round-response--pdf"), [1]);
 
 $am = new AbbreviationMatcher;
-$am->add("Paper is co-authored with at least one PC member", 0);
+$am->add_phrase("Paper is co-authored with at least one PC member", 0);
 xassert_eqq($am->find_all("paper-is-co-authored-with-at-least-one-pc-member"), [0]);
 xassert_eqq($am->find_all("paper-co-authored-pc"), [0]);
 xassert_eqq($am->find_all("paper-coauthored-pc"), []);
 
-$am->add("Comments for the PC", 1);
-$am->add("ACM Computing Classification", 2);
+$am->add_phrase("Comments for the PC", 1);
+$am->add_phrase("ACM Computing Classification", 2);
 xassert_eqq($am->find_all("ComPC"), [1]);
 xassert_eqq($am->find_all("ComPC*"), [1]);
 xassert_eqq($am->find_all("*ComPC*"), [1, 2]);
 xassert_eqq($am->find_all("compc"), []);
 xassert_eqq($am->find_all("ACMComp"), [2]);
 
-$am->add("One hundred things", 3);
-$am->add("One hundred things (Final)", 4);
+$am->add_phrase("One hundred things", 3);
+$am->add_phrase("One hundred things (Final)", 4);
 $am->add_deparenthesized();
 xassert_eqq($am->find_all("OneHunThi"), [3]);
 xassert_eqq($am->find_all("OneHunThiFin"), [4]);
@@ -940,7 +940,7 @@ xassert_eqq($am->find_all("OneFin"), [4]);
 
 $am = new AbbreviationMatcher;
 foreach ($acm_badge_opts as $d => $dname) {
-    $am->add($dname, $d);
+    $am->add_phrase($dname, $d);
 }
 xassert_eqq($am->find_all("ACM badges: available, functional, replicated"), ["afr"]);
 xassert_eqq($am->find_all("ACM badges: functional, replicated"), ["fr"]);
@@ -964,18 +964,48 @@ $topic_ex = ["Applications - Computer Vision",
              "Systems (Programming Languages, Databases)",
              "Theory and Privacy"];
 foreach ($topic_ex as $i => $topic) {
-    $am->add($topic, $i);
+    $am->add_phrase($topic, $i);
 }
 foreach ($topic_ex as $i => $topic) {
     xassert_eqq($am->find_all($topic), [$i]);
 }
 
 $am = new AbbreviationMatcher;
-$am->add("opt0", 0);
-$am->add("opt1", 1);
-$am->add("opt2", 2);
-$am->add("opt-1", -1);
-$am->add("opt-2", -2);
+$am->add_keyword("ACMCCS", 0);
+$e = $am->add_phrase("ACM Keywords", 1);
+$am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
+$e = $am->add_phrase("ACM References", 2);
+$am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
+$e = $am->add_phrase("ACM Supplemental Material", 3);
+$am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
+xassert_eqq($am->find_all("acmccs"), [0]);
+xassert_eqq($am->find_all("acm"), [0, 1, 2, 3]);
+
+$e = $am->add_phrase("ACMCamelCase", 4);
+xassert_eqq($am->find_all("ACMCamCas"), [4]);
+xassert_eqq($am->find_entry_keyword($e, AbbreviationMatcher::KW_CAMEL), "ACMCamCas");
+
+$am = new AbbreviationMatcher;
+$e1 = $am->add_phrase("Comments", 1);
+$e2 = $am->add_phrase("Comments", 2);
+$e3 = $am->add_phrase("Comments", 3);
+$e4 = $am->add_phrase("Comments", 4);
+$am->ensure_entry_keyword($e1, AbbreviationMatcher::KW_CAMEL);
+$am->ensure_entry_keyword($e2, AbbreviationMatcher::KW_CAMEL);
+$am->ensure_entry_keyword($e3, AbbreviationMatcher::KW_CAMEL);
+$am->ensure_entry_keyword($e4, AbbreviationMatcher::KW_CAMEL);
+xassert_eqq($am->find_all("Com"), [1, 2, 3, 4]);
+xassert_eqq($am->find_all("Comments.1"), [1]);
+xassert_eqq($am->find_all("Comments.2"), [2]);
+xassert_eqq($am->find_all("Comments.3"), [3]);
+xassert_eqq($am->find_all("Comments.4"), [4]);
+
+$am = new AbbreviationMatcher;
+$am->add_keyword("opt0", 0);
+$am->add_keyword("opt1", 1);
+$am->add_keyword("opt2", 2);
+$am->add_keyword("opt-1", -1);
+$am->add_keyword("opt-2", -2);
 xassert_eqq($am->find_all("opt0"), [0]);
 xassert_eqq($am->find_all("opt1"), [1]);
 xassert_eqq($am->find_all("opt2"), [2]);

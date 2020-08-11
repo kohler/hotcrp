@@ -1368,10 +1368,10 @@ class Conf {
         if ($this->_decision_matcher === null) {
             $this->_decision_matcher = new AbbreviationMatcher;
             foreach ($this->decision_map() as $d => $dname) {
-                $this->_decision_matcher->add($dname, $d);
+                $this->_decision_matcher->add_phrase($dname, $d);
             }
             foreach (["none", "unknown", "undecided", "?"] as $dname) {
-                $this->_decision_matcher->add($dname, 0);
+                $this->_decision_matcher->add_phrase($dname, 0);
             }
         }
         return $this->_decision_matcher;
@@ -1452,7 +1452,7 @@ class Conf {
             $this->review_form()->populate_abbrev_matcher($this->_abbrev_matcher);
             foreach ($this->named_formulas() as $f) {
                 if ($f->name) {
-                    $this->_abbrev_matcher->add($f->name, $f, self::MFLAG_FORMULA);
+                    $this->_abbrev_matcher->add_phrase($f->name, $f, self::MFLAG_FORMULA);
                 }
             }
             $this->_abbrev_matcher->add_deparenthesized();

@@ -112,17 +112,18 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         });
     }
 
-    const MFLAG_GROUP = 1;
+    const MFLAG_TOPIC = 1;
+    const MFLAG_GROUP = 2;
     /** @return AbbreviationMatcher<int> */
     function abbrev_matcher() {
         if ($this->_topic_abbrev_matcher === null) {
             $this->_topic_abbrev_matcher = new AbbreviationMatcher;
             foreach ($this->_topic_map as $tid => $tname) {
-                $this->_topic_abbrev_matcher->add($tname, $tid);
+                $this->_topic_abbrev_matcher->add_phrase($tname, $tid, self::MFLAG_TOPIC);
             }
             foreach ($this->group_list() as $tg) {
                 for ($i = 1; count($tg) > 2 && $i !== count($tg); ++$i) {
-                    $this->_topic_abbrev_matcher->add($tg[0], $tg[$i], self::MFLAG_GROUP);
+                    $this->_topic_abbrev_matcher->add_phrase($tg[0], $tg[$i], self::MFLAG_GROUP);
                 }
             }
         }

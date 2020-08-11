@@ -1375,7 +1375,7 @@ class Formula implements JsonSerializable {
     function assign_search_keyword(AbbreviationMatcher $am) {
         assert($this->_abbreviation === null);
         $e = new AbbreviationEntry($this->name, $this, Conf::MFLAG_FORMULA);
-        $this->_abbreviation = $am->find_abbreviation($e, AbbreviationMatcher::ABBR_CAMEL | AbbreviationMatcher::ABBR_FORCE);
+        $this->_abbreviation = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
     }
 
     function abbreviation() {
