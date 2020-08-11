@@ -658,7 +658,7 @@ class PaperOption {
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
     private $_json_key;
-    /** @var ?string */
+    /** @var null|string|false */
     public $_search_keyword;
     public $description;
     public $description_format;
@@ -919,7 +919,7 @@ class PaperOption {
             return $this->conf->abbrev_matcher();
         }
     }
-    /** @return string */
+    /** @return string|false */
     function search_keyword() {
         if ($this->_search_keyword === null) {
             $am = $this->abbrev_matcher();
@@ -1241,7 +1241,8 @@ class PaperOption {
     function supports_list_display($context = 0) {
         return is_string($this->list_class)
             && ($context !== self::LIST_DISPLAY_SUGGEST
-                || strpos($this->list_class, "pl-no-suggest") === false);
+                || strpos($this->list_class, "pl-no-suggest") === false)
+            && $this->search_keyword() !== false;
     }
 
     /** @return ?FormatSpec */
@@ -1258,6 +1259,7 @@ class PaperOption {
     }
     /** @return SearchExample */
     function has_search_example() {
+        assert($this->search_keyword() !== false);
         return new SearchExample("has:" . $this->search_keyword(), "submission field “%s” set", $this->title_html());
     }
     function parse_search($oms) {

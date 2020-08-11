@@ -58,7 +58,9 @@ class Keywords_HelpTopic {
 
         $oex = [];
         foreach ($opts as $o) {
-            $oex = array_merge($oex, $o->search_examples($hth->user, PaperOption::EXAMPLE_HELP));
+            if ($o->search_keyword() !== false) {
+                $oex = array_merge($oex, $o->search_examples($hth->user, PaperOption::EXAMPLE_HELP));
+            }
         }
 
         if (!empty($oex)) {
