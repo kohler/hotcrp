@@ -146,10 +146,10 @@ class TagInfo {
     function automatic_formula_expression() {
         if ($this->autosearch) {
             return $this->autosearch_value ?? "0";
-        } else if ($this->vote) {
-            return "sum.pc(#_~{$this->tag}) || null";
         } else if ($this->approval) {
             return "count.pc(#_~{$this->tag}) || null";
+        } else if ($this->vote) {
+            return "sum.pc(#_~{$this->tag}) || null";
         } else {
             return false;
         }
