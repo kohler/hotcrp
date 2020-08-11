@@ -311,15 +311,14 @@ class PaperOptionList implements IteratorAggregate {
         $cb = [$this, "option_by_id"];
         $am->add_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
         $am->add_lazy("opt{$id}", $cb, [$id], Conf::MFLAG_OPTION);
-        if ($oj->search_keyword ?? null) {
+        $oj->search_keyword = $oj->search_keyword ?? $oj->json_key ?? null;
+        if ($oj->search_keyword) {
             $am->add_lazy($oj->search_keyword, $cb, [$id], Conf::MFLAG_OPTION);
         }
-        if ($oj->json_key ?? null) {
-            $jkc = str_replace("_", " ", $oj->json_key);
-            if (strcasecmp($jkc, $oj->name) !== 0
-                && strcasecmp($jkc, $oj->search_keyword ?? "") !== 0) {
-                $am->add_lazy($oj->json_key, $cb, [$id], Conf::MFLAG_OPTION);
-            }
+        if (($oj->json_key ?? null)
+            && $oj->json_key !== $oj->search_keyword
+            && strcasecmp(str_replace("_", " ", $oj->json_key), $oj->name) !== 0) {
+            $am->add_lazy($oj->json_key, $cb, [$id], Conf::MFLAG_OPTION);
         }
     }
 
