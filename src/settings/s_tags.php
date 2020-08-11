@@ -226,7 +226,7 @@ class Tags_SettingParser extends SettingParser {
                 $ms[] = $descriptions[$xs[$i]];
                 $sv->warning_at($xs[$i], null);
             }
-            $sv->warning_at($xs[1], "Tag “" . htmlspecialchars($xs[0]) . "” should be used for at most one of " . commajoin($ms) . ".");
+            $sv->warning_at($xs[1], "Tag “" . htmlspecialchars($xs[0]) . "” used for " . commajoin($ms) . ".");
         }
     }
 }

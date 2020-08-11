@@ -694,6 +694,9 @@ class UserStatus extends MessageSet {
 
     static function crosscheck_main(UserStatus $us, Contact $user) {
         $cdbu = $user->contactdb_user();
+        if ($us->gxt()->root() !== "main") {
+            return;
+        }
         if ($user->firstName === ""
             && $user->lastName === ""
             && ($user->contactId > 0 || !$cdbu || ($cdbu->firstName === "" && $cdbu->lastName === ""))) {
