@@ -167,10 +167,8 @@ function update_paper(Qrequest $qreq, $action) {
     // XXX lock tables
     $wasSubmitted = $prow && $prow->timeSubmitted > 0;
 
-    $pj = PaperSaver::apply_all($qreq, $prow, $Me, $action);
-
     $ps = new PaperStatus($Conf, $Me);
-    $prepared = $ps->prepare_save_paper_json($pj);
+    $prepared = $ps->prepare_save_paper_web($qreq, $prow, $action);
 
     if (!$prepared) {
         if (!$prow && $qreq->has_files()) {
@@ -386,9 +384,8 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
 
 if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
     if ($Me->can_administer($prow) || $Me->act_author_view($prow)) {
-        $pj = PaperSaver::apply_all($Qreq, $prow, $Me, "updatecontacts");
         $ps = new PaperStatus($Conf, $Me);
-        if ($ps->prepare_save_paper_json($pj)) {
+        if ($ps->prepare_save_paper_web($Qreq, $prow, "updatecontacts")) {
             if (!$ps->diffs) {
                 Conf::msg_warning($Conf->_("No changes to submission #%d.", $prow->paperId));
             } else if ($ps->execute_save()) {

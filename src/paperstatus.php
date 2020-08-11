@@ -864,6 +864,42 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    /** @param ?PaperInfo $prow
+     * @param string $action
+     * @return bool */
+    function prepare_save_paper_web(Qrequest $qreq, $prow, $action) {
+        $pj = (object) [];
+        $pj->pid = $prow && $prow->paperId > 0 ? $prow->paperId : -1;
+
+        // Status
+        $updatecontacts = $action === "updatecontacts";
+        if ($action === "submit") {
+            $pj->submitted = true;
+            $pj->draft = false;
+        } else if ($action === "final") {
+            $pj->final_submitted = $pj->submitted = true;
+            $pj->draft = false;
+        } else if (!$updatecontacts) {
+            $pj->submitted = false;
+            $pj->draft = true;
+        }
+
+        // Fields
+        $nnprow = $prow ?? PaperInfo::make_new($this->user);
+        foreach ($this->conf->options()->form_fields($nnprow) as $o) {
+            if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
+                && (!$o->final || $action === "final")
+                && (!$updatecontacts || $o->id === PaperOption::CONTACTSID)) {
+                // XXX test_editable
+                $pj->{$o->json_key()} = $o->parse_web($nnprow, $qreq);
+            }
+        }
+
+        return $this->prepare_save_paper_json($pj);
+    }
+
+    /** @param object $pj
+     * @return bool */
     function prepare_save_paper_json($pj) {
         assert(!$this->hide_docids);
         assert(is_object($pj));
@@ -892,7 +928,7 @@ class PaperStatus extends MessageSet {
             $this->error_at("pid", $this->_("Saving submission with different ID"));
             return false;
         }
-        $this->_nnprow = $this->prow ? : PaperInfo::make_new($this->user);
+        $this->_nnprow = $this->prow ?? PaperInfo::make_new($this->user);
 
         // normalize and check format
         $pj = $this->_normalize($pj);
@@ -1109,8 +1145,22 @@ class PaperStatus extends MessageSet {
         return true;
     }
 
+    /** @param object $pj
+     * @return int|false */
     function save_paper_json($pj) {
         if ($this->prepare_save_paper_json($pj)) {
+            $this->execute_save();
+            return $this->paperId;
+        } else {
+            return false;
+        }
+    }
+
+    /** @param ?PaperInfo $prow
+     * @param string $action
+     * @return int|false */
+    function save_paper_web(Qrequest $qreq, $prow, $action) {
+        if ($this->prepare_save_paper_web($qreq, $prow, $action)) {
             $this->execute_save();
             return $this->paperId;
         } else {
