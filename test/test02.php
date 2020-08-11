@@ -970,6 +970,18 @@ foreach ($topic_ex as $i => $topic) {
     xassert_eqq($am->find_all($topic), [$i]);
 }
 
+$am = new AbbreviationMatcher;
+$am->add("opt0", 0);
+$am->add("opt1", 1);
+$am->add("opt2", 2);
+$am->add("opt-1", -1);
+$am->add("opt-2", -2);
+xassert_eqq($am->find_all("opt0"), [0]);
+xassert_eqq($am->find_all("opt1"), [1]);
+xassert_eqq($am->find_all("opt2"), [2]);
+xassert_eqq($am->find_all("opt-1"), [-1]);
+xassert_eqq($am->find_all("opt-2"), [-2]);
+
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
 xassert_eqq(Filer::docstore_fixed_prefix(""), null);
