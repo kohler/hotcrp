@@ -43,7 +43,9 @@ class PaperStatus extends MessageSet {
     public $_topic_ins; // set by Topics_PaperOption
     /** @var associative-array<int,PaperValue> */
     private $_field_values;
+    /** @var ?list<int> */
     private $_option_delid;
+    /** @var ?list<list> */
     private $_option_ins;
     /** @var associative-array<string,array{int,int,int}> */
     private $_conflict_values;
@@ -232,7 +234,7 @@ class PaperStatus extends MessageSet {
         if (!$user || $user->can_view_authors($prow)) {
             $pj->authors = [];
             foreach ($prow->author_list() as $au) {
-                $pj->authors[] = Author::unparse_json_of($au);
+                $pj->authors[] = $au->unparse_nae_json();
             }
         }
 
@@ -361,7 +363,8 @@ class PaperStatus extends MessageSet {
 
             if (!$doc) {
                 $args = [
-                    "paperId" => $this->paperId, "sha1" => (string) $dochash,
+                    "paperId" => $this->paperId,
+                    "sha1" => (string) $dochash,
                     "documentType" => $o->id
                 ];
                 foreach (["timestamp", "mimetype", "content", "content_base64",
@@ -616,19 +619,6 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function _execute_topics() {
-        if (isset($this->_topic_ins)) {
-            $this->conf->qe("delete from PaperTopic where paperId=?", $this->paperId);
-            if (!empty($this->_topic_ins)) {
-                $ti = [];
-                foreach ($this->_topic_ins as $tid) {
-                    $ti[] = [$this->paperId, $tid];
-                }
-                $this->conf->qe("insert into PaperTopic (paperId,topicId) values ?v", $ti);
-            }
-        }
-    }
-
     private function _check_one_field(PaperOption $opt, $oj) {
         if ($oj === null) {
             $ov = null;
@@ -703,18 +693,6 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function _execute_options() {
-        if (!empty($this->_option_delid)) {
-            $this->conf->qe("delete from PaperOption where paperId=? and optionId?a", $this->paperId, $this->_option_delid);
-        }
-        if (!empty($this->_option_ins)) {
-            foreach ($this->_option_ins as &$x) {
-                $x[0] = $this->paperId;
-            }
-            $this->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $this->_option_ins);
-        }
-    }
-
     /** @param int $bit */
     function clear_conflict_values($bit) {
         foreach ($this->_conflict_values as $lemail => &$cv) {
@@ -765,11 +743,11 @@ class PaperStatus extends MessageSet {
     /** @param Author $au
      * @param list<string> &$diff_lemail */
     private function create_user($au, &$diff_lemail) {
-        $c = Author::unparse_json_of($au);
-        $c->disabled = !!$this->disable_users;
-        $conflictType = self::new_conflict_value($this->_conflict_values[strtolower($c->email)] ?? null);
+        $j = $au->unparse_nae_json();
+        $j->disabled = !!$this->disable_users;
+        $conflictType = self::new_conflict_value($this->_conflict_values[strtolower($j->email)] ?? null);
         $flags = $conflictType & CONFLICT_CONTACTAUTHOR ? 0 : Contact::SAVE_IMPORT;
-        $u = Contact::create($this->conf, $this->user, $c, $flags);
+        $u = Contact::create($this->conf, $this->user, $j, $flags);
         if ($u) {
             if ($u->password_unset()
                 && !$u->activity_at
@@ -832,35 +810,6 @@ class PaperStatus extends MessageSet {
             $this->_conflict_ins = $this->_conflict_ins ?? [];
             $this->_conflict_ins[] = [$this->user->contactId, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR];
             $this->diffs["contacts"] = true;
-        }
-    }
-
-    private function _execute_conflicts() {
-        if ($this->_conflict_ins !== null) {
-            $cfltf = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_ERROR);
-            $auflags = CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR;
-            foreach ($this->_conflict_ins as $ci) {
-                if (($ci[1] & (CONFLICT_AUTHOR - 1)) === ((CONFLICT_AUTHOR - 1) & ~1)) {
-                    $cfltf("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=if(conflictType&1,((conflictType&~?)|?),((conflictType&~?)|?))",
-                        [$this->paperId, $ci[0], $ci[2],
-                         $ci[1] & $auflags, $ci[2] & $auflags, $ci[1], $ci[2]]);
-                } else {
-                    $cfltf("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=((conflictType&~?)|?)",
-                        [$this->paperId, $ci[0], $ci[2], $ci[1], $ci[2]]);
-                }
-            }
-            $cfltf("delete from PaperConflict where paperId=? and conflictType=0", [$this->paperId]);
-            $cfltf(null);
-        }
-        if ($this->_created_contacts !== null) {
-            $rest = ["prow" => $this->conf->paper_by_id($this->paperId)];
-            if ($this->user->can_administer($rest["prow"])
-                && !$rest["prow"]->has_author($this->user)) {
-                $rest["adminupdate"] = true;
-            }
-            foreach ($this->_created_contacts as $u) {
-                $u->send_mail("@newaccount.paper", $rest);
-            }
         }
     }
 
@@ -947,7 +896,10 @@ class PaperStatus extends MessageSet {
             return false;
         }
 
+        // prepare changes for saving
         $this->_save_fields();
+
+        // correct blindness setting
         if ($this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {
             $want_blind = $this->conf->submission_blindness() !== Conf::BLIND_NEVER;
             if (!$this->prow || $this->prow->blind !== $want_blind) {
@@ -957,13 +909,28 @@ class PaperStatus extends MessageSet {
                 }
             }
         }
+
+        // don't save if creating a mostly-empty paper
+        if ($this->paperId <= 0) {
+            if (!array_diff(array_keys($this->_paper_upd), ["authorInformation", "blind"])
+                && (!isset($this->_paper_upd["authorInformation"])
+                    || $this->_paper_upd["authorInformation"] === (new Author($this->user))->unparse_tabbed())
+                && empty($this->_topic_ins)
+                && empty($this->_option_ins)) {
+                $this->error_at(null, "Empty submission. Please fill out the submission fields and try again.");
+                return false;
+            }
+        }
+
         $this->_check_contacts_last($pj);
         return true;
     }
 
+
+    /** @return int */
     private function unused_random_pid() {
         $n = max(100, 3 * $this->conf->fetch_ivalue("select count(*) from Paper"));
-        while (1) {
+        while (true) {
             $pids = [];
             while (count($pids) < 10) {
                 $pids[] = mt_rand(1, $n);
@@ -987,32 +954,6 @@ class PaperStatus extends MessageSet {
             if (!isset($this->_paper_upd[$f])) {
                 $this->_paper_upd[$f] = $v;
             }
-        }
-    }
-
-    private function _postexecute_check_required_options() {
-        $prow = null;
-        $required_failure = false;
-        foreach ($this->conf->options()->form_fields($this->_nnprow) as $o) {
-            if (!$o->required) {
-                continue;
-            }
-            if (!$prow) {
-                $prow = $this->conf->paper_by_id($this->paperId, $this->user, ["options" => true]);
-            }
-            if ($this->user->can_edit_option($prow, $o)
-                && $o->test_required($prow)
-                && !$o->value_present($prow->force_option($o))) {
-                $this->error_at_option($o, "Entry required.");
-                $required_failure = true;
-            }
-        }
-        if ($required_failure
-            && (!$this->prow || $this->prow->timeSubmitted == 0)) {
-            // Some required option was missing and the paper was not submitted
-            // before, so it shouldn't be submitted now.
-            $this->conf->qe("update Paper set timeSubmitted=0 where paperId=?", $this->paperId);
-            $this->_paper_submitted = false;
         }
     }
 
@@ -1056,6 +997,86 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    private function _execute_topics() {
+        if (isset($this->_topic_ins)) {
+            $this->conf->qe("delete from PaperTopic where paperId=?", $this->paperId);
+            if (!empty($this->_topic_ins)) {
+                $ti = [];
+                foreach ($this->_topic_ins as $tid) {
+                    $ti[] = [$this->paperId, $tid];
+                }
+                $this->conf->qe("insert into PaperTopic (paperId,topicId) values ?v", $ti);
+            }
+        }
+    }
+
+    private function _execute_options() {
+        if (!empty($this->_option_delid)) {
+            $this->conf->qe("delete from PaperOption where paperId=? and optionId?a", $this->paperId, $this->_option_delid);
+        }
+        if (!empty($this->_option_ins)) {
+            foreach ($this->_option_ins as &$x) {
+                $x[0] = $this->paperId;
+            }
+            $this->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $this->_option_ins);
+        }
+    }
+
+    private function _execute_conflicts() {
+        if ($this->_conflict_ins !== null) {
+            $cfltf = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_ERROR);
+            $auflags = CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR;
+            foreach ($this->_conflict_ins as $ci) {
+                if (($ci[1] & (CONFLICT_AUTHOR - 1)) === ((CONFLICT_AUTHOR - 1) & ~1)) {
+                    $cfltf("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=if(conflictType&1,((conflictType&~?)|?),((conflictType&~?)|?))",
+                        [$this->paperId, $ci[0], $ci[2],
+                         $ci[1] & $auflags, $ci[2] & $auflags, $ci[1], $ci[2]]);
+                } else {
+                    $cfltf("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=((conflictType&~?)|?)",
+                        [$this->paperId, $ci[0], $ci[2], $ci[1], $ci[2]]);
+                }
+            }
+            $cfltf("delete from PaperConflict where paperId=? and conflictType=0", [$this->paperId]);
+            $cfltf(null);
+        }
+        if ($this->_created_contacts !== null) {
+            $rest = ["prow" => $this->conf->paper_by_id($this->paperId)];
+            if ($this->user->can_administer($rest["prow"])
+                && !$rest["prow"]->has_author($this->user)) {
+                $rest["adminupdate"] = true;
+            }
+            foreach ($this->_created_contacts as $u) {
+                $u->send_mail("@newaccount.paper", $rest);
+            }
+        }
+    }
+
+    private function _postexecute_check_required_options() {
+        $prow = null;
+        $required_failure = false;
+        foreach ($this->conf->options()->form_fields($this->_nnprow) as $o) {
+            if (!$o->required) {
+                continue;
+            }
+            if (!$prow) {
+                $prow = $this->conf->paper_by_id($this->paperId, $this->user, ["options" => true]);
+            }
+            if ($this->user->can_edit_option($prow, $o)
+                && $o->test_required($prow)
+                && !$o->value_present($prow->force_option($o))) {
+                $this->error_at_option($o, "Entry required.");
+                $required_failure = true;
+            }
+        }
+        if ($required_failure
+            && (!$this->prow || $this->prow->timeSubmitted == 0)) {
+            // Some required option was missing and the paper was not submitted
+            // before, so it shouldn't be submitted now.
+            $this->conf->qe("update Paper set timeSubmitted=0 where paperId=?", $this->paperId);
+            $this->_paper_submitted = false;
+        }
+    }
+
     function execute_save() {
         $dataOverflow = $this->prow ? $this->prow->dataOverflow : null;
         if (!empty($this->_paper_overflow_upd)) {
@@ -1075,18 +1096,13 @@ class PaperStatus extends MessageSet {
         }
 
         if (!empty($this->_paper_upd)) {
-            $need_insert = $this->paperId <= 0;
-            if ($need_insert) {
-                $this->_preexecute_set_default_columns();
-            }
-
+            $this->save_paperf("timeModified", Conf::$now);
             if (isset($this->_paper_upd["paperStorageId"])
                 || isset($this->_paper_upd["finalPaperStorageId"])) {
                 $this->_update_joindoc();
             }
 
-            $this->save_paperf("timeModified", Conf::$now);
-
+            $need_insert = $this->paperId <= 0;
             if (!$need_insert) {
                 $qv = array_values($this->_paper_upd);
                 $qv[] = $this->paperId;
@@ -1098,7 +1114,9 @@ class PaperStatus extends MessageSet {
                     $need_insert = true;
                 }
             }
+
             if ($need_insert) {
+                $this->_preexecute_set_default_columns();
                 if (($random_pids = $this->conf->setting("random_pids"))) {
                     $this->conf->qe("lock tables Paper write");
                     $this->_paper_upd["paperId"] = $this->unused_random_pid();

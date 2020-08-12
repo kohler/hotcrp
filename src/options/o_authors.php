@@ -17,11 +17,10 @@ class Authors_PaperOption extends PaperOption {
         }
         $au = [];
         foreach (PaperInfo::parse_author_list($ov->data_by_index(0) ?? "") as $auth) {
-            $j = Author::unparse_json_of($auth);
+            $au[] = $j = $auth->unparse_nae_json();
             if ($auth->email !== "" && in_array(strtolower($auth->email), $lemails)) {
                 $j->contact = true;
             }
-            $au[] = $j;
         }
         return $au;
     }
@@ -213,9 +212,12 @@ class Authors_PaperOption extends PaperOption {
     private function editable_authors_tr($pt, $n, $au, $reqau, $shownum) {
         // on new paper, default to editing user as first author
         $ignore_diff = false;
-        if ($n === 1 && !$au && !$reqau && !$pt->user->can_administer($pt->prow)) {
-            $ignore_diff = true;
+        if ($n === 1
+            && !$au
+            && !$pt->user->can_administer($pt->prow)
+            && (!$reqau || $reqau->nae_equals($pt->user))) {
             $reqau = new Author($pt->user);
+            $ignore_diff = true;
         }
 
         $t = '<tr>';

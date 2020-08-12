@@ -35,7 +35,7 @@ class Contacts_PaperOption extends PaperOption {
         $j = [];
         foreach ($ov->value_list() as $cid) {
             if (($u = $ca[$cid] ?? $ps->conf->cached_user_by_id($cid)))
-                $j[] = Author::unparse_json_of($u);
+                $j[] = Author::unparse_nae_json_for($u);
         }
         return $j;
     }

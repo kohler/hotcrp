@@ -940,6 +940,11 @@ class Contact {
         return $name;
     }
 
+    /** @return object */
+    function unparse_nae_json() {
+        return Author::unparse_nae_json_for($this);
+    }
+
     /** @return array<string,1|2> */
     function completion_items() {
         $items = [];

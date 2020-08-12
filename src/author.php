@@ -225,18 +225,27 @@ class Author {
         assert($this->conflictType !== null);
         return $this->conflictType > CONFLICT_MAXUNCONFLICTED;
     }
+    /** @param Author|Contact $x
+     * @return bool */
+    function nae_equals($x) {
+        return $this->email === $x->email && $this->firstName === $x->firstName && $this->lastName === $x->lastName && $this->affiliation === $x->affiliation;
+    }
     /** @return string */
     function unparse_tabbed() {
         return "{$this->firstName}\t{$this->lastName}\t{$this->email}\t{$this->affiliation}";
     }
-    /** @param Contact|Author $o
+    /** @return object */
+    function unparse_nae_json() {
+        return self::unparse_nae_json_for($this);
+    }
+    /** @param Author|Contact $x
      * @return object */
-    static function unparse_json_of($o) {
+    static function unparse_nae_json_for($x) {
         $j = [];
         foreach (["email", "firstName", "lastName", "affiliation"] as $i => $k) {
-            if ($o->$k !== "") {
+            if ($x->$k !== "") {
                 $jk = $i >= 1 && $i <= 2 ? substr($k, 0, -4) : $k;
-                $j[$jk] = $o->$k;
+                $j[$jk] = $x->$k;
             }
         }
         return (object) $j;
