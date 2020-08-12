@@ -76,13 +76,8 @@ class PaperValue implements JsonSerializable {
             $this->_values = $values;
             $this->_docset = null;
         }
+        $this->value = $this->_values[0] ?? null;
         $this->_data = $datas;
-        if (empty($this->_values)
-            || (count($this->_values) !== 1 && $this->option->takes_multiple())) {
-            $this->value = null;
-        } else {
-            $this->value = $this->_values[0] ?? null;
-        }
     }
     /** @return ?string */
     function data() {
@@ -1036,11 +1031,6 @@ class PaperOption {
         return false;
     }
 
-    /** @return bool */
-    function takes_multiple() {
-        return false;
-    }
-
     function value_force(PaperValue $ov) {
     }
     /** @return bool */
@@ -1825,9 +1815,6 @@ class AttachmentsPaperOption extends PaperOption {
     function has_attachments() {
         return true;
     }
-    function takes_multiple() {
-        return true;
-    }
 
     function attachment(PaperValue $ov, $name) {
         return $ov->document_set()->document_by_filename($name);
@@ -2022,9 +2009,6 @@ class UnknownPaperOption extends PaperOption {
         $args->type = "__unknown" . $args->id . "__";
         $args->form_position = $args->display_position = false;
         parent::__construct($conf, $args);
-    }
-    function takes_multiple() {
-        return true;
     }
     function parse_search($oms) {
         return false;
