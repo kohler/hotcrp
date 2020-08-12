@@ -534,6 +534,7 @@ class AbbreviationMatcher {
         }
 
         $upat = $pattern;
+        $lpattern = strtolower($pattern);
         if (!is_usascii($upat)) {
             $upat = UnicodeHelper::deaccent(UnicodeHelper::normalize($upat));
         }
@@ -542,47 +543,47 @@ class AbbreviationMatcher {
         $npatternw = 0;
         $iscamel = self::is_camel_word($upat);
         if ($iscamel) {
-            preg_match_all('/[A-Za-z~][a-z~?!]+|[A-Z][A-Z]*(?![a-z])|(?:[0-9]|\.[0-9])[0-9.]*|[-_]+/', $upat, $m);
+            preg_match_all('/[A-Za-z~][a-z~?!]+|[A-Z][A-Z]*(?![a-z])|(?:[0-9]|\.[0-9])[0-9.]*/', $upat, $m);
             //error_log($upat . " " . join(",", $m[0]));
             $sep = " ";
             foreach ($m[0] as $w) {
-                if ($w[0] === "-" || $w[0] === "_") {
-                    $sep .= $sep === " " ? $w[0] : $w[0] . "?";
+                $re .= $sep;
+                $sep = "(?:.*? )??";
+                if (strlen($w) > 1 && ctype_upper($w)) {
+                    $re .= join($sep, str_split($w));
+                    $npatternw += strlen($w) - 1;
                 } else {
-                    $re .= $sep;
-                    $sep = "(?:.*? )??";
-                    if (strlen($w) > 1 && ctype_upper($w)) {
-                        $re .= join($sep, str_split($w));
-                        $npatternw += strlen($w) - 1;
-                    } else {
-                        $re .= preg_quote($w, "/");
-                    }
-                    if (ctype_digit($w[strlen($w) - 1])) {
-                        $re .= "(?![0-9])";
-                    }
-                    ++$npatternw;
+                    $re .= preg_quote($w, "/");
                 }
+                if (ctype_digit($w[strlen($w) - 1])) {
+                    $re .= "(?![0-9])";
+                }
+                ++$npatternw;
             }
         } else {
-            preg_match_all('/[A-Za-z~?!*][A-Za-z~?!*]*|(?:[0-9]|\.[0-9])[0-9.]*|[-_]+/', $upat, $m);
+            preg_match_all('/[A-Za-z~?!*][A-Za-z~?!*]*|(?:[0-9]|\.[0-9])[0-9.]*/', $upat, $m);
             $sep = " ";
             foreach ($m[0] as $w) {
-                if ($w[0] === "-" || $w[0] === "_") {
-                    $sep = $sep === " " ? " " . $w[0] : ".*?[" . $w[0] . " ]";
-                } else {
-                    $re .= $sep . preg_quote($w, "/");
-                    if (ctype_digit($w[strlen($w) - 1])) {
-                        $re .= "(?![0-9])";
-                    }
-                    $sep = ".*? ";
-                    ++$npatternw;
+                $re .= $sep . preg_quote($w, "/");
+                if (ctype_digit($w[strlen($w) - 1])) {
+                    $re .= "(?![0-9])";
                 }
+                $sep = ".*? ";
+                ++$npatternw;
             }
         }
-        $starpos = strpos($upat, "*");
+
         $re = strtolower($re);
-        $re = '/' . ($starpos === false ? $re : str_replace("\\*", ".*", $re)) . '/s';
-        //error_log("! $re");
+        $starpos = strpos($upat, "*");
+        if ($starpos !== false) {
+            $re = '/' . str_replace('\\*', '.*', $re) . '/s';
+        } else if (strpos($lpattern, " ") !== false) {
+            $re = '/' . $re . '/s';
+        } else {
+            $re = '/\A ' . preg_quote($lpattern, "/") . '\z|' . $re . '/s';
+        }
+        $full_match_length = strlen($lpattern) + 1;
+
         $xt = preg_grep($re, $this->ltesters);
         if (count($xt) > 1 && $starpos !== 0) {
             //error_log("! $re " . json_encode($xt));
@@ -617,6 +618,8 @@ class AbbreviationMatcher {
                 //    +0 otherwise
                 if ($starpos !== false) {
                     $this_status = self::xtester_remove_stops($skips) === "" ? 1 : 0;
+                } else if ($skips === "" && strlen($t) === $full_match_length) {
+                    $this_status = 3;
                 } else {
                     $full_words = true;
                     for ($j = 1; $j < $npatternw; ++$j) {
@@ -652,8 +655,9 @@ class AbbreviationMatcher {
         } else {
             $xtx = array_keys($xt);
         }
+
         $this->xmatches[$pattern] = $xtx;
-        if (($lpattern = strtolower($pattern)) !== $pattern) {
+        if ($lpattern !== $pattern) {
             $this->lxmatches[$lpattern][] = $pattern;
         }
     }
