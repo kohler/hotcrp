@@ -847,13 +847,16 @@ class SettingValues extends MessageSet {
             return false;
         }
     }
-    function cleanup_callback($name, $func, $arg = null) {
-        if (!isset($this->cleanup_callbacks[$name])) {
-            $this->cleanup_callbacks[$name] = [$func, null];
+    /** @param ?string $name
+     * @param callable $func */
+    function cleanup_callback($name, $func, ...$args) {
+        if ($name !== null) {
+            foreach ($this->cleanup_callbacks as $cb) {
+                if ($cb[0] === $name)
+                    return;
+            }
         }
-        if (func_num_args() > 2) {
-            $this->cleanup_callbacks[$name][1][] = $arg;
-        }
+        $this->cleanup_callbacks[] = [$name, $func, $args];
     }
 
     /** @param string $field
@@ -1442,8 +1445,9 @@ class SettingValues extends MessageSet {
 
             // clean up
             $this->conf->load_settings();
-            foreach ($this->cleanup_callbacks as $cb) {
-                call_user_func($cb[0], $this, $cb[1]);
+            foreach ($this->cleanup_callbacks as $cba) {
+                $cb = $cba[1];
+                $cb($this, ...$cba[2]);
             }
             if (!empty($this->invalidate_caches)) {
                 $this->conf->invalidate_caches($this->invalidate_caches);
