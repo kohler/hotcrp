@@ -640,7 +640,7 @@ if (!$newProfile) {
         Ht::submit("save", "Save changes", ["class" => "btn-primary"]),
         '</div>';
 } else {
-    echo '</div>';
+    echo '</ul>';
 }
 
 echo '</nav></div>',
