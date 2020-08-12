@@ -187,11 +187,11 @@ class Contacts_PaperOption extends PaperOption {
         return '<div class="'
             . ($reqov ? $reqov->message_set()->control_class("contacts:$reqidx", "checki") : "checki")
             . '"><span class="checkc">'
-            . Ht::checkbox("contacts:active_$anum", 1, true, ["data-default-checked" => false, "id" => false])
+            . Ht::checkbox("contacts:active_$anum", 1, true, ["data-default-checked" => false, "id" => false, "class" => "ignore-diff"])
             . '</span>'
-            . Ht::entry("contacts:email_$anum", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:email_$reqidx", "want-focus js-autosubmit uii js-email-populate ignore-diff"), "autocomplete" => "off", "data-default-value" => ""])
+            . Ht::entry("contacts:email_$anum", $email, ["size" => 30, "placeholder" => "Email", "class" => $pt->control_class("contacts:email_$reqidx", "want-focus js-autosubmit uii js-email-populate"), "autocomplete" => "off", "data-default-value" => ""])
             . '  '
-            . Ht::entry("contacts:name_$anum", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit ignore-diff", "autocomplete" => "off", "data-default-value" => ""])
+            . Ht::entry("contacts:name_$anum", $name, ["size" => 35, "placeholder" => "Name", "class" => "js-autosubmit", "autocomplete" => "off", "data-default-value" => ""])
             . $pt->messages_at("contacts:$reqidx")
             . $pt->messages_at("contacts:name_$reqidx")
             . $pt->messages_at("contacts:email_$reqidx")
