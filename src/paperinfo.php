@@ -519,6 +519,8 @@ class PaperInfo {
     public $_row_set;
     /** @var ?bool */
     private $_allow_absent;
+    /** @var ?int */
+    private $_pause_mark_inactive_documents;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
 
@@ -1794,21 +1796,39 @@ class PaperInfo {
         $this->_document_array = [];
     }
 
+    function pause_mark_inactive_documents() {
+        if ($this->_pause_mark_inactive_documents !== 2) {
+            $this->_pause_mark_inactive_documents = 1;
+        }
+    }
+
+    function resume_mark_inactive_documents() {
+        $paused = $this->_pause_mark_inactive_documents;
+        $this->_pause_mark_inactive_documents = null;
+        if ($paused === 2) {
+            $this->mark_inactive_documents();
+        }
+    }
+
     function mark_inactive_documents() {
         // see also DocumentInfo::active_document_map
-        $dids = [];
-        if ($this->paperStorageId > 1) {
-            $dids[] = $this->paperStorageId;
-        }
-        if ($this->finalPaperStorageId > 1) {
-            $dids[] = $this->finalPaperStorageId;
-        }
-        foreach ($this->stored_option_ids() as $id) {
-            if (($ov = $this->option($id)) && $ov->option->has_document()) {
-                $dids = array_merge($dids, $ov->option->value_dids($ov));
+        if (!$this->_pause_mark_inactive_documents) {
+            $dids = [];
+            if ($this->paperStorageId > 1) {
+                $dids[] = $this->paperStorageId;
             }
+            if ($this->finalPaperStorageId > 1) {
+                $dids[] = $this->finalPaperStorageId;
+            }
+            foreach ($this->stored_option_ids() as $id) {
+                if (($ov = $this->option($id)) && $ov->option->has_document()) {
+                    $dids = array_merge($dids, $ov->option->value_dids($ov));
+                }
+            }
+            $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
+        } else {
+            $this->_pause_mark_inactive_documents = 2;
         }
-        $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
     }
 
 

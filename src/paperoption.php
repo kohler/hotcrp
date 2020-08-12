@@ -14,9 +14,9 @@ class PaperValue implements JsonSerializable {
     /** @var ?array<string,mixed> */
     public $anno;
     /** @var list<int> */
-    private $_values;
+    private $_values = [];
     /** @var list<?string> */
-    private $_data;
+    private $_data = [];
     /** @var ?DocumentInfoSet */
     private $_docset;
     /** @var ?MessageSet */
@@ -27,8 +27,6 @@ class PaperValue implements JsonSerializable {
         $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
-        $this->_values = [];
-        $this->_data = [];
     }
     /** @param PaperInfo $prow
      * @param ?int $value
@@ -1200,6 +1198,7 @@ class PaperOption {
         return true;
     }
 
+    /** @param list<DocumentInfo|int> $docids */
     function save_document_links($docids, PaperInfo $prow) {
         $qv = [];
         foreach ($docids as $doc) {

@@ -15,6 +15,7 @@ class Author {
     private $_name;
     /** @var ?int */
     public $contactId;
+    /** @var ?array{string,string,string} */
     private $_deaccents;
     /** @var ?bool */
     public $nonauthor;
@@ -205,7 +206,8 @@ class Author {
         }
         return $name;
     }
-    /** @return string */
+    /** @param 0|1|2 $component
+     * @return string */
     function deaccent($component) {
         if ($this->_deaccents === null) {
             $this->_deaccents = [
