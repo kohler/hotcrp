@@ -971,6 +971,7 @@ foreach ($topic_ex as $i => $topic) {
 }
 
 $am = new AbbreviationMatcher;
+$am->add_phrase("ACM Computing Classification", 0);
 $am->add_keyword("ACMCCS", 0);
 $e = $am->add_phrase("ACM Keywords", 1);
 $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
@@ -1011,6 +1012,25 @@ xassert_eqq($am->find_all("opt1"), [1]);
 xassert_eqq($am->find_all("opt2"), [2]);
 xassert_eqq($am->find_all("opt-1"), [-1]);
 xassert_eqq($am->find_all("opt-2"), [-2]);
+
+$am = new AbbreviationMatcher;
+$am->add_keyword("opt0", 0);
+$am->add_keyword("opt1", 1);
+$am->add_keyword("opt2", 2);
+$am->add_keyword("opt-1", -1);
+$am->add_keyword("opt-2", -2);
+$am->add_phrase("whatever, man", 3);
+xassert_eqq($am->find_all("opt0"), [0]);
+xassert_eqq($am->find_all("opt1"), [1]);
+xassert_eqq($am->find_all("opt2"), [2]);
+xassert_eqq($am->find_all("opt-1"), [-1]);
+xassert_eqq($am->find_all("opt-2"), [-2]);
+
+$am = new AbbreviationMatcher;
+$am->add_phrase("Yes - I confirm that I will speak.", 0);
+$am->add_phrase("No - I'm sorry, but I can't present my proposal.", 1);
+$am->add_keyword("none", 3);
+xassert_eqq($am->find_all("No"), [1]);
 
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
