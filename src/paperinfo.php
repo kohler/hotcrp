@@ -1140,6 +1140,10 @@ class PaperInfo {
     }
 
 
+    function invalidate_tags() {
+        $this->paperTags = null;
+    }
+
     function load_tags() {
         $result = $this->conf->qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=? group by paperId", $this->paperId);
         $this->paperTags = "";
@@ -1236,7 +1240,7 @@ class PaperInfo {
 
     /** @return string */
     function sorted_viewable_tags(Contact $user) {
-        // XXX don't sort until required
+        // XXX currently always sorted, shouldn't sort until required
         return $this->viewable_tags($user);
     }
 

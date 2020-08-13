@@ -394,6 +394,18 @@ class Tag_Assigner extends Assigner {
                 $aset->conf->invalidate_caches("tags");
             });
         }
+        $isperm = strncasecmp($this->tag, 'perm:', 5) === 0;
+        if ($this->index !== null && $isperm) {
+            $aset->cleanup_callback("permtag", function ($aset) {
+                $aset->conf->save_setting("has_permtag", 1);
+            });
+            if (!$aset->conf->is_known_perm_tag($this->tag)) {
+                $aset->warning_at($this->item->landmark, "Unknown permission “" . htmlspecialchars($this->tag) . "”.");
+            }
+        }
+        if ($aset->conf->tags()->is_track($this->tag) || $isperm) {
+            $aset->cleanup_update_rights();
+        }
         $aset->user->log_activity("Tag " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);
         $aset->cleanup_notify_tracker($this->pid);
     }

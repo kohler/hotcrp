@@ -13,6 +13,15 @@ class Tags_API {
         if (!$ret->ok) {
             return $ret;
         }
+        if ($user->can_administer($prow)
+            && stripos($prow->all_tags_text(), " perm:") !== false) {
+            foreach (Tagger::split_unpack($prow->sorted_editable_tags($user)) as $ti) {
+                if (strncasecmp($ti[0], "perm:", 5) === 0
+                    && !$prow->conf->is_known_perm_tag($ti[0])) {
+                    $ret->tagreport[] = (object) ["tag" => $ti[0], "status" => 1, "message" => "unknown permission"];
+                }
+            }
+        }
         if (($vt = $user->conf->tags()->filter("vote"))) {
             $myprefix = $user->contactId . "~";
             $qv = $myvotes = array();

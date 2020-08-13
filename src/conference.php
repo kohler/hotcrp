@@ -157,6 +157,8 @@ class Conf {
     private $_track_tags;
     /** @var int */
     private $_track_sensitivity = 0;
+    /** @var bool */
+    private $_has_permtag = false;
     /** @var ?array<int,string> */
     private $_decisions;
     /** @var ?AbbreviationMatcher<int> */
@@ -452,6 +454,9 @@ class Conf {
         $this->_track_sensitivity = 0;
         if (($j = $this->settingTexts["tracks"] ?? null)) {
             $this->crosscheck_track_settings($j);
+        }
+        if (($this->settings["has_permtag"] ?? 0) > 0) {
+            $this->_has_permtag = true;
         }
 
         // clear caches
@@ -1696,7 +1701,18 @@ class Conf {
 
     /** @return bool */
     function rights_need_tags() {
-        return $this->_track_tags !== null;
+        return $this->_track_tags !== null || $this->_has_permtag;
+    }
+
+    /** @return bool */
+    function has_perm_tags() {
+        return $this->_has_permtag;
+    }
+
+    /** @param string $tag
+     * @return bool */
+    function is_known_perm_tag($tag) {
+        return preg_match('/\A(?:perm:)?(?:author-read-review)\z/i', $tag);
     }
 
 
@@ -2684,6 +2700,12 @@ class Conf {
         $any = $this->invariantq("select tag from PaperTag where tag like '%:' limit 1");
         if ($any && !$this->setting("has_colontag")) {
             $this->invariant_error($ie, "has_colontag", "has tag {0} but no has_colontag");
+        }
+
+        // has_permtag is defined
+        $any = $this->invariantq("select tag from PaperTag where tag like 'perm:%' limit 1");
+        if ($any && !$this->setting("has_permtag")) {
+            $this->invariant_error($ie, "has_permtag", "has tag {0} but no has_permtag");
         }
 
         // has_topics is defined

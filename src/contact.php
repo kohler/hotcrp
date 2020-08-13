@@ -146,6 +146,8 @@ class Contact {
     private $_overrides = 0;
     /** @var ?array<int,bool> */
     public $hidden_papers;
+    /** @var ?array<string,true> */
+    private $_author_perm_tags;
 
     /** @var bool */
     private $_activated = false;
@@ -2214,9 +2216,36 @@ class Contact {
                 $this->_has_outstanding_review = $this->_is_lead =
                 $this->_is_explicit_manager = $this->_is_metareviewer =
                 $this->_can_view_pc = $this->_dangerous_track_mask =
-                $this->_has_approvable = $this->_authored_papers = null;
+                $this->_has_approvable = $this->_authored_papers =
+                $this->_author_perm_tags = null;
             $this->_rights_version = self::$rights_version;
         }
+    }
+
+    /** @param string $tag
+     * @return bool */
+    function some_author_perm_tag_allows($tag) {
+        $this->check_rights_version();
+        if ($this->_author_perm_tags === null) {
+            $this->_author_perm_tags = [];
+            $qe = $qv = [];
+            if (($pids = $this->author_view_capability_paper_ids())) {
+                $qe[] = "paperId?a";
+                $qv[] = $pids;
+            }
+            if ($this->contactId > 0) {
+                $qe[] = "exists(select * from PaperConflict where paperId=PaperTag.paperId and contactId=? and conflictType>=" . CONFLICT_AUTHOR . ")";
+                $qv[] = $this->contactId;
+            }
+            if (!empty($qe)) {
+                $result = $this->conf->qe_apply("select distinct tag from PaperTag where tag like 'perm:%' and tagIndex>=0 and (" . join(" or ", $qe) . ")", $qv);
+                while (($row = $result->fetch_row())) {
+                    $this->_author_perm_tags[strtolower(substr($row[0], 5))] = true;
+                }
+                Dbl::free($result);
+            }
+        }
+        return isset($this->_author_perm_tags[$tag]);
     }
 
     /** @return bool */
@@ -2812,6 +2841,7 @@ class Contact {
     }
 
     function act_author_view_sql($table, $only_if_complex = false) {
+        // see also _author_perm_tags
         $m = [];
         if ($this->_capabilities !== null && !$this->isPC) {
             foreach ($this->author_view_capability_paper_ids() as $pid) {
@@ -3487,13 +3517,18 @@ class Contact {
 
     /** @return bool */
     private function can_view_submitted_review_as_author(PaperInfo $prow) {
-        return $prow->can_author_respond()
-            || $this->conf->au_seerev == Conf::AUSEEREV_YES
-            || ($this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
-                && (!$this->has_review()
-                    || !$this->has_outstanding_review()))
-            || ($this->conf->au_seerev == Conf::AUSEEREV_TAGS
-                && $prow->has_any_tag($this->conf->tag_au_seerev));
+        if ($this->conf->has_perm_tags()
+            && ($v = $prow->tag_value("perm:author-read-review")) !== null) {
+            return $v >= 0;
+        } else {
+            return $prow->can_author_respond()
+                || $this->conf->au_seerev == Conf::AUSEEREV_YES
+                || ($this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
+                    && (!$this->has_review()
+                        || !$this->has_outstanding_review()))
+                || ($this->conf->au_seerev == Conf::AUSEEREV_TAGS
+                    && $prow->has_any_tag($this->conf->tag_au_seerev));
+        }
     }
 
     /** @return bool */
@@ -3503,7 +3538,9 @@ class Contact {
                 && ($this->conf->au_seerev !== 0
                     || $this->conf->any_response_open === 2
                     || ($this->conf->any_response_open === 1
-                        && !empty($this->relevant_resp_rounds()))));
+                        && !empty($this->relevant_resp_rounds()))
+                    || ($this->conf->has_perm_tags()
+                        && $this->some_author_perm_tag_allows("author-read-review"))));
     }
 
     private function seerev_setting(PaperInfo $prow, $rbase, $rights) {

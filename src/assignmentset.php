@@ -1042,6 +1042,19 @@ class AssignmentSet {
         $this->astate->msg($this->astate->landmark, $msg, 2);
         return false;
     }
+    /** @param null|false|int|string $landmark
+     * @param string $msg
+     * @return false */
+    function warning_at($landmark, $msg) {
+        $this->astate->msg($landmark, $msg, 1);
+        return false;
+    }
+    /** @param string $msg
+     * @return false */
+    function warning_here($msg) {
+        $this->astate->msg($this->astate->landmark, $msg, 2);
+        return false;
+    }
     function clear_errors() {
         $this->astate->clear_messages();
     }

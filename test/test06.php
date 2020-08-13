@@ -843,7 +843,17 @@ assert_search_papers($user_mgbaker, "(internet OR datagram) 13 19", "13 19");
 xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
 $Conf->save_setting("au_seerev", 2);
 xassert($user_mjh->can_view_review($paper17, $rrow17m));
+xassert_assign_fail($user_mgbaker, "paper,tag\n17,perm:author-read-review\n");
+xassert_assign_fail($user_mjh, "paper,tag\n17,perm:author-read-review\n");
+xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#-1\n");
+$paper17->invalidate_tags();
+xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
 $Conf->save_setting("au_seerev", null);
+xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#0\n");
+$paper17->invalidate_tags();
+xassert($user_mjh->can_view_review($paper17, $rrow17m));
+xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#clear\n");
+$paper17->invalidate_tags();
 xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
 
 // paper options
