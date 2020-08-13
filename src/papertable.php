@@ -1480,11 +1480,8 @@ class PaperTable {
         if (!$this->user->can_view_tag($this->prow, $tag)) {
             return "";
         }
-        $class = "is-nonempty-tags float-right";
-        if (($totval = $this->prow->tag_value($tag)) === false) {
-            $totval = "";
-            $class .= " hidden";
-        }
+        $totval = $this->prow->tag_value($tag) ?? "";
+        $class = "is-nonempty-tags float-right" . ($totval === "" ? " hidden" : "");
         $reverse = $type !== "rank";
         $extradiv = "";
         if (($type === "vote" || $type === "approval")
@@ -1514,9 +1511,7 @@ class PaperTable {
 
     private function papstrip_rank($tag) {
         $id = "rank_" . html_id_encode($tag);
-        if (($myval = $this->prow->tag_value($this->user->contactId . "~$tag")) === false) {
-            $myval = "";
-        }
+        $myval = $this->prow->tag_value($this->user->contactId . "~$tag") ?? "";
         $totmark = $this->papstrip_tag_float($tag, "overall", "rank");
 
         $this->papstrip_tag_entry($id);
@@ -1538,9 +1533,7 @@ class PaperTable {
 
     private function papstrip_allotment($tag, $allotment) {
         $id = "vote_" . html_id_encode($tag);
-        if (($myval = $this->prow->tag_value($this->user->contactId . "~$tag")) === false) {
-            $myval = "";
-        }
+        $myval = $this->prow->tag_value($this->user->contactId . "~$tag") ?? "";
         $totmark = $this->papstrip_tag_float($tag, "total", "vote");
 
         $this->papstrip_tag_entry($id);
@@ -1560,9 +1553,7 @@ class PaperTable {
 
     private function papstrip_approval($tag) {
         $id = "approval_" . html_id_encode($tag);
-        if (($myval = $this->prow->tag_value($this->user->contactId . "~$tag")) === false) {
-            $myval = "";
-        }
+        $myval = $this->prow->tag_value($this->user->contactId . "~$tag") ?? "";
         $totmark = $this->papstrip_tag_float($tag, "total", "approval");
 
         $this->papstrip_tag_entry(null);

@@ -738,11 +738,11 @@ class PaperList implements XtContext {
         $cur_then = $aidx = $pidx = 0;
         $plist = $this->_rowset->as_list();
         $alist = $dt->order_anno_list();
-        $ptagval = $pidx < count($plist) ? $plist[$pidx]->tag_value($etag) : false;
+        $ptagval = $pidx < count($plist) ? $plist[$pidx]->tag_value($etag) : null;
         while ($aidx < count($alist) || $pidx < count($plist)) {
             if ($pidx == count($plist)
                 || ($aidx < count($alist)
-                    && ($ptagval === false || $alist[$aidx]->tagIndex <= $ptagval))) {
+                    && ($ptagval === null || $alist[$aidx]->tagIndex <= $ptagval))) {
                 if ($cur_then !== 0 || $pidx !== 0 || $aidx !== 0) {
                     ++$cur_then;
                 }
@@ -751,7 +751,7 @@ class PaperList implements XtContext {
             } else {
                 $srch->thenmap[$plist[$pidx]->paperId] = $cur_then;
                 ++$pidx;
-                $ptagval = $pidx < count($plist) ? $plist[$pidx]->tag_value($etag) : false;
+                $ptagval = $pidx < count($plist) ? $plist[$pidx]->tag_value($etag) : null;
             }
         }
     }

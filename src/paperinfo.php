@@ -1179,7 +1179,7 @@ class PaperInfo {
     }
 
     /** @param string $tag
-     * @return false|float */
+     * @return ?float */
     function tag_value($tag) {
         if ($this->paperTags === null) {
             $this->load_tags();
@@ -1188,7 +1188,7 @@ class PaperInfo {
             && ($pos = stripos($this->paperTags, " $tag#")) !== false) {
             return (float) substr($this->paperTags, $pos + strlen($tag) + 2);
         } else {
-            return false;
+            return null;
         }
     }
 

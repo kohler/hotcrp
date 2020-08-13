@@ -69,7 +69,7 @@ class Tag_PaperColumn extends PaperColumn {
         foreach ($pl->rowset() as $row) {
             if (!$pl->user->can_view_tag($row, $this->etag)) {
                 $row->$k = $unviewable;
-            } else if (($row->$k = $row->tag_value($this->etag)) === false) {
+            } else if (($row->$k = $row->tag_value($this->etag)) === null) {
                 $row->$k = $empty;
             }
         }
@@ -101,7 +101,7 @@ class Tag_PaperColumn extends PaperColumn {
         if ($this->editable
             && ($t = $this->edit_content($pl, $row, $v))) {
             return $t;
-        } else if ($v === false) {
+        } else if ($v === null) {
             return "";
         } else if ($v >= 0.0 && $this->emoji) {
             return Tagger::unparse_emoji_html($this->emoji, $v);
@@ -111,13 +111,14 @@ class Tag_PaperColumn extends PaperColumn {
             return (string) $v;
         }
     }
+    /** @param ?float $v */
     private function edit_content($pl, $row, $v) {
         if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0)) {
             return false;
         }
         if (!$this->is_value) {
             return "<input type=\"checkbox\" class=\"uic js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\""
-                . ($v !== false ? ' checked="checked"' : '') . " />";
+                . ($v !== null ? ' checked="checked"' : '') . " />";
         }
         $t = '<input type="text" class="edittagval';
         if ($this->editsort) {
@@ -125,10 +126,10 @@ class Tag_PaperColumn extends PaperColumn {
             $pl->need_render = true;
         }
         return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
-            . ($v !== false ? htmlspecialchars((string) $v) : "") . '" tabindex="2" />';
+            . ($v !== null ? htmlspecialchars((string) $v) : "") . '" tabindex="2" />';
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (($v = $row->tag_value($this->etag)) === false) {
+        if (($v = $row->tag_value($this->etag)) === null) {
             return "";
         } else if ($v === 0.0 && !$this->is_value) {
             return "Y";

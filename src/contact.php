@@ -1187,7 +1187,7 @@ class Contact {
     }
 
     /** @param string $t
-     * @return float|false */
+     * @return ?float */
     function tag_value($t) {
         if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0) {
             return 0.0;
@@ -1195,7 +1195,7 @@ class Contact {
                    && ($p = stripos($this->contactTags, " $t#")) !== false) {
             return (float) substr($this->contactTags, $p + strlen($t) + 2);
         } else {
-            return false;
+            return null;
         }
     }
 

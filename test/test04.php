@@ -209,7 +209,7 @@ xassert_eqq($user_anne1->firstName, "");
 xassert_eqq($user_anne1->lastName, "");
 xassert_eqq($user_anne1->collaborators(), "");
 xassert_eqq($user_anne1->tag_value("a"), 1.0);
-xassert_eqq($user_anne1->tag_value("b"), false);
+xassert_eqq($user_anne1->tag_value("b"), null);
 xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
 xassert_eqq($user_anne1->data("data_test"), null);
 xassert_eqq($user_anne1->email, "anne1@_.com");

@@ -370,8 +370,8 @@ class HotCRPMailer extends Mailer {
         }
         $value = $this->row->tag_value($tag);
         if ($isbool) {
-            return $value !== false;
-        } else if ($value !== false) {
+            return $value !== null;
+        } else if ($value !== null) {
             return (string) $value;
         } else {
             $this->_tagless[$this->row->paperId] = true;

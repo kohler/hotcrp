@@ -18,28 +18,28 @@ class GetRank_ListAction extends ListAction {
             $pset->sort_by(function ($p1, $p2) use ($tag) {
                 $tv1 = $p1->tag_value($tag);
                 $tv2 = $p2->tag_value($tag);
-                if ($tv1 === false && $tv2 === false) {
+                if ($tv1 === null && $tv2 === null) {
                     return $p1->paperId - $p2->paperId;
-                } else if ($tv1 === false || $tv2 === false) {
-                    return $tv1 === false ? 1 : -1;
+                } else if ($tv1 === null || $tv2 === null) {
+                    return $tv1 === null ? 1 : -1;
                 } else if ($tv1 != $tv2) {
                     return $tv1 < $tv2 ? -1 : 1;
                 } else {
                     return $p1->paperId - $p2->paperId;
                 }
             });
-            $lastIndex = false;
+            $lastIndex = null;
             foreach ($pset as $prow) {
                 if ($user->can_change_tag($prow, $tag, null, 1)) {
                     $csvt = CsvGenerator::quote($prow->title);
                     $tv = $prow->tag_value($tag);
                     $tail = ",$prow->paperId,$csvt\n";
-                    if ($tv === false || $lastIndex === false) {
+                    if ($tv === null || $lastIndex === null) {
                         $delta = $tv;
                     } else {
                         $delta = $tv - $lastIndex;
                     }
-                    if ($tv === false) {
+                    if ($tv === null) {
                         $null .= "X" . $tail;
                     } else if ($delta == 1) {
                         $real .= $tail;

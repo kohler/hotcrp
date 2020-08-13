@@ -67,7 +67,7 @@ class ReviewerMatch_Fexpr extends Fexpr {
         if (($a = get(self::$tagmap, $tag)) === null) {
             $a = array();
             foreach ($conf->pc_members() as $pc) {
-                if (($v = $pc->tag_value($tag)) !== false) {
+                if (($v = $pc->tag_value($tag)) !== null) {
                     $a[$pc->contactId] = $v ? : true;
                 }
             }
