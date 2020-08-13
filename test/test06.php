@@ -11,6 +11,7 @@ $user_chair = $Conf->checked_user_by_email("chair@_.com");
 $user_mgbaker = $Conf->checked_user_by_email("mgbaker@cs.stanford.edu"); // pc
 $user_diot = $Conf->checked_user_by_email("christophe.diot@sophia.inria.fr"); // pc, red
 $user_pdruschel = $Conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
+$user_mjh = $Conf->checked_user_by_email("mjh@isi.edu"); // pc
 $Conf->save_setting("rev_open", 1);
 
 // 1-18 have 3 assignments, reset have 0
@@ -648,6 +649,7 @@ $user_mgbaker->assign_review(17, $user_external->contactId, REVIEW_EXTERNAL,
     ["round_number" => $Conf->round_number("R2", false)]);
 xassert(!$user_external->can_view_review($paper17, $rrow17m));
 xassert(!$user_external->can_view_review_identity($paper17, $rrow17m));
+xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
 $Conf->save_setting("extrev_view", 0);
 save_review(17, $user_external, [
     "ovemer" => 2, "revexp" => 1, "papsum" => "Hi", "comaut" => "Bye", "ready" => true
@@ -836,6 +838,13 @@ assert_search_papers($user_mgbaker, ["t" => "rout", "q" => "internet"], "13");
 assert_search_papers($user_mgbaker, ["t" => "r", "q" => "internet OR datagram"], "13 19");
 assert_search_papers($user_mgbaker, ["t" => "rout", "q" => "internet OR datagram"], "13 19");
 assert_search_papers($user_mgbaker, "(internet OR datagram) 13 19", "13 19");
+
+// author review visibility
+xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
+$Conf->save_setting("au_seerev", 2);
+xassert($user_mjh->can_view_review($paper17, $rrow17m));
+$Conf->save_setting("au_seerev", null);
+xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
 
 // paper options
 assert_search_papers($user_mgbaker, "has:calories", "1 2 3 4 5");
