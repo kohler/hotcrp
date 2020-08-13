@@ -2499,12 +2499,12 @@ class PaperSearch {
             $sqi->add_rights_columns();
         }
         // XXX some of this should be shared with paperQuery
-        if (($need_filter && $this->conf->has_track_tags())
+        if (($need_filter && $this->conf->rights_need_tags())
             || ($this->_query_options["tags"] ?? false)
             || ($this->user->privChair
                 && $this->conf->has_any_manager()
                 && $this->conf->tags()->has_sitewide)) {
-            $sqi->add_column("paperTags", "(select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag where PaperTag.paperId=Paper.paperId)");
+            $sqi->add_column("paperTags", "coalesce((select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag where PaperTag.paperId=Paper.paperId), '')");
         }
         if ($this->_query_options["reviewSignatures"] ?? false) {
             $sqi->add_review_signature_columns();

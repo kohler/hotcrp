@@ -126,7 +126,9 @@ class Conf {
     public $sort_by_last;
     /** @var array<string,mixed> */
     public $opt;
+    /** @var array<string,mixed> */
     public $opt_override;
+    /** @var ?int */
     private $_opt_timestamp;
     /** @var PaperOptionList */
     private $_paper_opts;
@@ -151,7 +153,9 @@ class Conf {
     private $_tag_map;
     /** @var bool */
     private $_maybe_autosearch;
+    /** @var ?list<string> */
     private $_track_tags;
+    /** @var int */
     private $_track_sensitivity = 0;
     /** @var ?array<int,string> */
     private $_decisions;
@@ -323,7 +327,7 @@ class Conf {
         // load settings from database
         $this->settings = array();
         $this->settingTexts = array();
-        foreach ($this->opt_override ? : [] as $k => $v) {
+        foreach ($this->opt_override ?? [] as $k => $v) {
             if ($v === null) {
                 unset($this->opt[$k]);
             } else {
@@ -1528,11 +1532,6 @@ class Conf {
         return $this->_tracks !== null;
     }
 
-    /** @return bool */
-    function has_track_tags() {
-        return $this->_track_tags !== null;
-    }
-
     /** @return list<string> */
     function track_tags() {
         return $this->_track_tags ?? [];
@@ -1692,6 +1691,12 @@ class Conf {
             }
         }
         return $m;
+    }
+
+
+    /** @return bool */
+    function rights_need_tags() {
+        return $this->_track_tags !== null;
     }
 
 

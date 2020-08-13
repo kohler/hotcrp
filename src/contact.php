@@ -144,6 +144,7 @@ class Contact {
     const OVERRIDE_EDIT_CONDITIONS = 16;
     /** @var int */
     private $_overrides = 0;
+    /** @var ?array<int,bool> */
     public $hidden_papers;
 
     /** @var bool */
@@ -722,6 +723,7 @@ class Contact {
     function overrides() {
         return $this->_overrides;
     }
+
     /** @param int $overrides
      * @return int */
     function set_overrides($overrides) {
@@ -732,16 +734,19 @@ class Contact {
         $this->_overrides = $overrides;
         return $old_overrides;
     }
+
     /** @param int $overrides
      * @return int */
     function add_overrides($overrides) {
         return $this->set_overrides($this->_overrides | $overrides);
     }
+
     /** @param int $overrides
      * @return int */
     function remove_overrides($overrides) {
         return $this->set_overrides($this->_overrides & ~$overrides);
     }
+
     /** @param int $overrides
      * @param string $method */
     function call_with_overrides($overrides, $method /* , arguments... */) {
@@ -1319,7 +1324,7 @@ class Contact {
 
 
     /** @return bool */
-    function has_capabilities() {
+    function has_capability() {
         return $this->_capabilities !== null;
     }
 
@@ -1329,23 +1334,28 @@ class Contact {
         return $this->_capabilities ? $this->_capabilities[$name] ?? null : null;
     }
 
-    /** @return bool */
-    function has_author_view_capability() {
-        if ($this->_capabilities !== null) {
-            foreach ($this->_capabilities as $k => $v) {
-                if (str_starts_with($k, "@av"))
-                    return true;
-            }
-        }
-        return false;
-    }
-
     /** @param int $pid
      * @return bool */
     function has_capability_for($pid) {
         return $this->_capabilities !== null
             && (isset($this->_capabilities["@av{$pid}"])
                 || isset($this->_capabilities["@ra{$pid}"]));
+    }
+
+    /** @return bool */
+    function has_author_view_capability() {
+        return $this->_capabilities !== null && $this->author_view_capability_paper_ids();
+    }
+
+    /** @return list<int> */
+    function author_view_capability_paper_ids() {
+        $pids = [];
+        foreach ($this->_capabilities ?? [] as $k => $v) {
+            if (str_starts_with($k, "@av") && ctype_digit(substr($k, 3))) {
+                $pids[] = (int) substr($k, 3);
+            }
+        }
+        return $pids;
     }
 
     /** @param int $pid
@@ -1364,8 +1374,8 @@ class Contact {
      * @return bool */
     function set_capability($name, $value) {
         $oldval = $this->capability($name);
-        if ($value !== $oldval) {
-            if ($value !== null) {
+        if (($value ? : null) !== $oldval) {
+            if ($value) {
                 $this->_capabilities[$name] = $value;
             } else {
                 unset($this->_capabilities[$name]);
@@ -2804,11 +2814,8 @@ class Contact {
     function act_author_view_sql($table, $only_if_complex = false) {
         $m = [];
         if ($this->_capabilities !== null && !$this->isPC) {
-            foreach ($this->_capabilities as $k => $v) {
-                if (str_starts_with($k, "@av")
-                    && $v
-                    && ctype_digit(substr($k, 3)))
-                    $m[] = "Paper.paperId=" . substr($k, 3);
+            foreach ($this->author_view_capability_paper_ids() as $pid) {
+                $m[] = "Paper.paperId=" . $pid;
             }
         }
         if (empty($m) && $this->contactId && $only_if_complex) {

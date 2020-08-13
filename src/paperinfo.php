@@ -1095,7 +1095,7 @@ class PaperInfo {
     /** @return int */
     function review_type($contact) {
         $this->check_rights_version();
-        if (is_object($contact) && $contact->has_capabilities()) {
+        if (is_object($contact) && $contact->has_capability()) {
             $ci = $this->contact_info($contact);
             return $ci ? $ci->reviewType : 0;
         }
