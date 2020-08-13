@@ -854,6 +854,8 @@ class TagMap implements IteratorAggregate {
 
     static function make(Conf $conf) {
         $map = new TagMap($conf);
+        $t = $map->add("perm:*");
+        $t->chair = $t->readonly = true;
         $ct = $conf->setting_data("tag_chair") ?? "";
         foreach (Tagger::split_unpack($ct) as $ti) {
             $t = $map->add($ti[0]);
@@ -863,8 +865,6 @@ class TagMap implements IteratorAggregate {
             $t = $map->add(Tagger::base($tn));
             $t->chair = $t->readonly = $t->track = true;
         }
-        $t = $map->add("perm:*");
-        $t->chair = $t->readonly = true;
         $ct = $conf->setting_data("tag_hidden") ?? "";
         foreach (Tagger::split_unpack($ct) as $ti) {
             $map->add($ti[0])->hidden = $map->has_hidden = true;
