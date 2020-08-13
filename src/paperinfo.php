@@ -1813,6 +1813,7 @@ class PaperInfo {
     function mark_inactive_documents() {
         // see also DocumentInfo::active_document_map
         if (!$this->_pause_mark_inactive_documents) {
+            $this->_pause_mark_inactive_documents = 2;
             $dids = [];
             if ($this->paperStorageId > 1) {
                 $dids[] = $this->paperStorageId;
@@ -1826,6 +1827,7 @@ class PaperInfo {
                 }
             }
             $this->conf->qe("update PaperStorage set inactive=1 where paperId=? and documentType>=? and paperStorageId?A", $this->paperId, DTYPE_FINAL, $dids);
+            $this->_pause_mark_inactive_documents = null;
         } else {
             $this->_pause_mark_inactive_documents = 2;
         }
