@@ -119,10 +119,9 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
                             AssignmentState $state) {
         // parse tag into parts
         $xvalue = trim((string) $req["tag_value"]);
-        if (!preg_match('/\A([-+]?#?)(|~~|[^-~+#]*~)([a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*)(\z|#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*)\z/', $tag, $m)) {
+        if (!preg_match('/\A([-+]?#?)(|~~|[^-~+#]*~)([a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*)(\z|#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*)\z/', $tag, $m)
+            || ($m[4] !== "" && $m[4] !== "#")) {
             return $state->error("“" . htmlspecialchars($tag) . "”: Invalid tag.");
-        } else if ($m[4] !== "" && $m[4] !== "#") {
-            return $state->error("“" . htmlspecialchars($tag) . "”: Tag value comparisons no longer accepted here. Try using a search in the <code>paper</code> column.");
         } else if ($xvalue !== "" && $m[5] !== "") {
             return $state->error("“" . htmlspecialchars($tag) . "”: You have a <code>tag value</code> column, so the tag value specified here is ignored.");
         } else if (($this->remove || str_starts_with($m[1], "-")) && $m[5] !== "") {
@@ -236,6 +235,13 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             && $dt->allotment
             && !$dt->approval) {
             $nvalue = false;
+        }
+        if (str_starts_with($ltag, "perm:") && $nvalue !== false) {
+            if (!$state->conf->is_known_perm_tag($ltag)) {
+                $state->warning("#" . htmlspecialchars($ntag) . ": Unknown permission.");
+            } else if ($nvalue != 1 && $nvalue != -1) {
+                $state->warning("#" . htmlspecialchars($ntag) . ": Permission tags should have value 1 (allow) or -1 (deny).");
+            }
         }
 
         // perform assignment
@@ -403,9 +409,6 @@ class Tag_Assigner extends Assigner {
             $aset->cleanup_callback("permtag", function ($aset) {
                 $aset->conf->save_setting("has_permtag", 1);
             });
-            if (!$aset->conf->is_known_perm_tag($this->tag)) {
-                $aset->warning_at($this->item->landmark, "Unknown permission “" . htmlspecialchars($this->tag) . "”.");
-            }
         }
         if ($aset->conf->tags()->is_track($this->tag) || $isperm) {
             $aset->cleanup_update_rights();

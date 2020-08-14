@@ -1055,6 +1055,10 @@ class AssignmentSet {
         $this->astate->clear_messages();
     }
 
+    /** @return iterable<MessageItem> */
+    function message_list() {
+        return $this->astate->message_list();
+    }
     /** @return list<string> */
     function messages_html($landmarks = false) {
         $es = [];

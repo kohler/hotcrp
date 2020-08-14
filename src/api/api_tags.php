@@ -4,51 +4,97 @@
 
 class Tags_API {
     /** @param ?PaperInfo $prow */
-    static function tagreport(Contact $user, $prow) {
+    static function tagmessages(Contact $user, $prow) {
         $ret = (object) ["ok" => $user->can_view_tags($prow)];
         if ($prow) {
             $ret->pid = $prow->paperId;
         }
-        $ret->tagreport = [];
-        if (!$ret->ok) {
-            return $ret;
-        }
-        if ($user->can_administer($prow)
-            && stripos($prow->all_tags_text(), " perm:") !== false) {
-            foreach (Tagger::split_unpack($prow->sorted_editable_tags($user)) as $ti) {
-                if (strncasecmp($ti[0], "perm:", 5) === 0
-                    && !$prow->conf->is_known_perm_tag($ti[0])) {
-                    $ret->tagreport[] = (object) ["tag" => $ti[0], "status" => 1, "message" => "Unknown permission"];
-                }
-            }
-        }
-        if (($vt = $user->conf->tags()->filter("allotment"))) {
-            $myprefix = $user->contactId . "~";
-            $qv = $myvotes = array();
-            foreach ($vt as $lbase => $t) {
-                $qv[] = $myprefix . $lbase;
-                $myvotes[$lbase] = 0;
-            }
-            $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag join Paper using (paperId) where timeSubmitted>0 and tag?a group by tag", $qv);
-            while (($row = $result->fetch_row())) {
-                $lbase = strtolower(substr($row[0], strlen($myprefix)));
-                $myvotes[$lbase] += +$row[1];
-            }
-            Dbl::free($result);
-            foreach ($vt as $lbase => $t) {
-                if ($myvotes[$lbase] < $t->allotment) {
-                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 0, "message" => plural($t->allotment - $myvotes[$lbase], "vote") . " remaining", "search" => "editsort:-#~{$t->tag}"];
-                } else if ($myvotes[$lbase] > $t->allotment) {
-                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 1, "message" => plural($myvotes[$lbase] - $t->allotment, "overvote"), "search" => "editsort:-#~{$t->tag}"];
-                }
-            }
+        if ($ret->ok
+            && $prow
+            && (stripos($prow->all_tags_text(), "perm:") !== false
+                || $user->conf->tags()->has_allotment)) {
+            $ret->message_list = self::paper_tagmessages($user, $prow);
+        } else if ($ret->ok && !$prow) {
+            $ret->message_list = self::generic_tagmessages($user);
+        } else {
+            $ret->message_list = [];
         }
         return $ret;
     }
+    static private function paper_tagmessages(Contact $user, PaperInfo $prow) {
+        $tagmap = $user->conf->tags();
+        $want_perm = $user->can_administer($prow);
+        $mypfx = $user->contactId . "~";
+        $rep = $vt = [];
+        foreach (Tagger::split_unpack($prow->sorted_editable_tags($user)) as $ti) {
+            if (strncasecmp($ti[0], "perm:", 5) === 0
+                && $want_perm) {
+                if (!$prow->conf->is_known_perm_tag($ti[0])) {
+                    $rep[] = (object) ["status" => 1, "message" => "#{$ti[0]}: Unknown permission."];
+                } else if ($ti[1] != -1 && $ti[1] != 1) {
+                    $rep[] = (object) ["status" => 1, "message" => "#{$ti[0]}: Permission tags should have value 1 (allow) or -1 (deny)."];
+                }
+            }
+            if (str_starts_with($ti[0], $mypfx)
+                && ($dt = $tagmap->check(substr($ti[0], strlen($mypfx))))
+                && $dt->allotment) {
+                $vt[strtolower($ti[0])] = $dt;
+            }
+        }
+        if (!empty($vt)) {
+            $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag join Paper using (paperId) where timeSubmitted>0 and tag?a group by tag", array_keys($vt));
+            while (($row = $result->fetch_row())) {
+                $dt = $vt[strtolower($row[0])];
+                if ((float) $row[1] > $dt->allotment) {
+                    $rep[] = (object) ["status" => 1, "message" => "#~{$dt->tag}: Your vote total ({$row[1]}) is over the allotment ({$dt->allotment}).", "search" => "editsort:-#~{$dt->tag}"];
+                }
+            }
+            Dbl::free($result);
+        }
+        return $rep;
+    }
+    static private function generic_tagmessages(Contact $user) {
+        $mypfx = $user->contactId . "~";
+        $rep = $vt = [];
+        foreach ($user->conf->tags()->filter("allotment") as $dt) {
+            $vt[$mypfx . strtolower($dt->tag)] = [$dt, 0.0];
+        }
+        if (!empty($vt)) {
+            $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag join Paper using (paperId) where timeSubmitted>0 and tag?a group by tag", array_keys($vt));
+            while (($row = $result->fetch_row())) {
+                $vt[$row[0]][1] = (float) $row[1];
+            }
+            Dbl::free($result);
+            foreach ($vt as $tv) {
+                $dt = $tv[0];
+                if ($tv[1] < $dt->allotment) {
+                    $rep[] = (object) ["status" => 0, "message" => "#~{$dt->tag}: " . ($dt->allotment - $tv[1]) . " of " . plural($dt->allotment, "vote") . " remaining.", "search" => "editsort:-#~{$dt->tag}"];
+                } else if ($tv[1] > $dt->allotment) {
+                    $rep[] = (object) ["status" => 1, "message" => "#~{$dt->tag}: Your vote total ({$tv[1]}) is over the allotment ({$dt->allotment}).", "search" => "editsort:-#~{$dt->tag}"];
+                }
+            }
+        }
+        return $rep;
+    }
 
     /** @param ?PaperInfo $prow */
-    static function tagreport_api(Contact $user, $qreq, $prow) {
-        return new JsonResult((array) self::tagreport($user, $prow));
+    static function tagmessages_api(Contact $user, $qreq, $prow) {
+        return new JsonResult((array) self::tagmessages($user, $prow));
+    }
+
+    static private function combine_message_lists($ms1, $ms2) {
+        foreach ($ms2 as $mx2) {
+            foreach ($ms1 as $mx1) {
+                if ($mx1->message === $mx2->message) {
+                    $mx2 = null;
+                    break;
+                }
+            }
+            if ($mx2) {
+                $ms1[] = $mx2;
+            }
+        }
+        return $ms1;
     }
 
     /** @param ?PaperInfo $prow */
@@ -87,14 +133,15 @@ class Tags_API {
         }
         $assigner = new AssignmentSet($user);
         $assigner->parse(join("\n", $x));
-        $error = join("<br>", $assigner->messages_html());
+        $mlist = $assigner->message_list();
         $ok = $assigner->execute();
 
         // exit
         if ($ok && $prow) {
             $prow->load_tags();
-            $taginfo = self::tagreport($user, $prow);
+            $taginfo = self::tagmessages($user, $prow);
             $prow->add_tag_info_json($taginfo, $user);
+            $taginfo->message_list = self::combine_message_lists($mlist, $taginfo->message_list);
             $jr = new JsonResult($taginfo);
         } else if ($ok) {
             $p = [];
@@ -106,7 +153,7 @@ class Tags_API {
             }
             $jr = new JsonResult(["ok" => true, "p" => (object) $p]);
         } else {
-            $jr = new JsonResult(["ok" => false, "error" => $error]);
+            $jr = new JsonResult(["ok" => false, "message_list" => $mlist]);
         }
         return $jr;
     }

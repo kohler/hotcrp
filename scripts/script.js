@@ -1048,6 +1048,21 @@ function render_xmsg(status, msg) {
     return '<div class="msg msg-' + status + '">' + msg + '</div>';
 }
 
+function render_feedback(msg, status) {
+    if (typeof msg === "string")
+        msg = msg === "" ? [] : [msg];
+    if (msg.length === 0)
+        return '';
+    if (status === 0 || status === 1 || status === 2)
+        status = ["note", "warning", "error"][status];
+    var t = [], i;
+    for (var i = 0; i !== msg.length; ++i) {
+        var tag = msg[i].indexOf('<p') < 0 ? 'p' : 'div';
+        t.push('<' + tag + ' class="feedback is-' + status + '">' + msg[i] + '</' + tag + '>');
+    }
+    return t.join('');
+}
+
 
 // ui
 var handle_ui = (function ($) {
@@ -8003,30 +8018,20 @@ function prepare_paper_select() {
     $(ctl).on("change blur", change).on("keyup", keyup).on("keypress", keypress);
 }
 
-function reduce_tag_report(tagreport, min_status, tags) {
-    var status = 0, t = [];
-    function in_tags(tag) {
-        tag = tag.toLowerCase();
-        for (var i = 0; i !== tags.length; ++i) {
-            var x = tags[i].toLowerCase();
-            if (x === tag
-                || (x.length > tag.length
-                    && x.charAt(tag.length) === "#"
-                    && x.substring(0, tag.length) === tag)) {
-                return true;
-            }
+function render_tag_messages(message_list) {
+    var $me = $(this), t0 = '', t1 = '', i, m, t;
+    for (i = 0; i !== message_list.length; ++i) {
+        var tr = message_list[i];
+        if ((m = tr.message.match(/^(#[-+a-zA-Z0-9!@*_:.\/]*?)(: .*)$/))) {
+            t = render_feedback('<a href="' + hoturl_html("search", {q: m[1]}) + '" class="q">' + m[1] + '</a>' + m[2], tr.status);
+        } else {
+            t = render_feedback(tr.message, tr.status);
         }
-        return false;
+        t0 += t;
+        tr.status > 0 && (t1 += t);
     }
-    for (var i = 0; i != tagreport.length; ++i) {
-        var tr = tagreport[i];
-        if (tr.status < min_status || (tags && !in_tags(tr.tag)))
-            continue;
-        status = Math.max(status, tr.status);
-        var search = tr.search || "#" + tr.tag;
-        t.push('<a href="' + hoturl_html("search", {q: search}) + '" class="q">#' + tr.tag + '</a>: ' + tr.message);
-    }
-    return [status, t];
+    $me.find(".want-tag-report").html(t0);
+    $me.find(".want-tag-report-warnings").html(t1);
 }
 
 function prepare_pstags() {
@@ -8035,24 +8040,24 @@ function prepare_pstags() {
         $ta = $f.find("textarea");
     removeClass(this, "need-tag-form");
     function handle_tag_report(data) {
-        if (data.ok && data.tagreport) {
-            var tx = reduce_tag_report(data.tagreport, 0);
-            $f.find(".want-tag-report").html(render_xmsg(tx[0], tx[1]));
-            tx = reduce_tag_report(data.tagreport, 1);
-            $f.find(".want-tag-report-warnings").html(render_xmsg(tx[0], tx[1]));
-        }
+        data.message_list && render_tag_messages.call(self, data.message_list);
     }
     $f.on("keydown", "textarea", function (event) {
         var key = event_key(event);
-        if ((key === "Enter" || key === "Escape") && !event_modkey(event)) {
-            $f[0][key === "Enter" ? "save" : "cancel"].click();
-            event.preventDefault();
-            event.stopImmediatePropagation();
+        if (key === "Enter" || key === "Escape") {
+            var mod = event_modkey(event);
+            if (mod === 0 || (key === "Enter" && mod === event_modkey.META)) {
+                $f[0][key === "Enter" ? "save" : "cancel"].click();
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
         }
     });
     $f.find("button[name=cancel]").on("click", function (evt) {
         $ta.val($ta.prop("defaultValue"));
-        $f.find(".msg-error").remove();
+        $ta.removeClass("has-error");
+        $f.find(".is-error").remove();
+        $f.find(".btn-highlight").removeClass("btn-highlight");
         foldup.call($ta[0], evt, {f: true});
     });
     $f.on("submit", save_pstags);
@@ -8060,7 +8065,7 @@ function prepare_pstags() {
         $f.data("everOpened", true);
         $f.find("input").prop("disabled", false);
         if (!$f.data("noTagReport")) {
-            $.get(hoturl("api/tagreport", {p: $f.attr("data-pid")}), handle_tag_report);
+            $.get(hoturl("api/tagmessages", {p: $f.attr("data-pid")}), handle_tag_report);
         }
         $f.removeData("noTagReport");
         $ta.autogrow();
@@ -8086,26 +8091,34 @@ function prepare_pstags() {
 }
 
 function save_pstags(evt) {
-    var $f = $(this);
+    var f = this, $f = $(f);
     evt.preventDefault();
     $f.find("input").prop("disabled", true);
     $.ajax(hoturl_post("api/settags", {p: $f.attr("data-pid")}), {
         method: "POST", data: $f.serialize(), timeout: 4000,
         success: function (data) {
             $f.find("input").prop("disabled", false);
-            $f.find(".msg-error").remove();
             if (data.ok) {
-                foldup.call($f[0], null, {f: true});
+                if (!data.message_list || !data.message_list.length)
+                    foldup.call($f[0], null, {f: true});
                 $(window).trigger("hotcrptags", [data]);
-            } else if (data.error) {
-                $f.find(".js-tag-editor").prepend(render_xmsg(2, data.error));
+                removeClass(f.elements.tags, "has-error");
+                removeClass(f.elements.save, "btn-highlight");
+            } else {
+                addClass(f.elements.tags, "has-error");
+                addClass(f.elements.save, "btn-highlight");
+                data.message_list = data.message_list || [];
+                data.message_list.push({message: "Your changes were not saved. Please correct these errors and try again.", status: 2});
             }
+            if (data.message_list)
+                render_tag_messages.call($f[0], data.message_list);
         }
     });
 }
 
 function save_pstagindex(event) {
-    var self = this, $f = $(self).closest("form"), tags = [], inputs = [];
+    var self = this, $f = $(self).closest("form"),
+        assignments = [], inputs = [];
     if (event.type === "submit")
         event.preventDefault();
     if (hasClass($f[0], "submitting"))
@@ -8119,35 +8132,55 @@ function save_pstagindex(event) {
                 v = this.checked ? this.value : "";
             else
                 v = $.trim(this.value);
-            tags.push(t + "#" + (v === "" ? "clear" : v));
+            assignments.push(t + "#" + (v === "" ? "clear" : v));
         }
     });
+    function interesting(m) {
+        for (var i = 0; i !== assignments.length; ++i) {
+            var pound = assignments[i].indexOf("#"),
+                start = "#" + assignments[i].substring(0, pound) + ": ";
+            if (start.length > 3 && m.startsWith(start))
+                return true;
+        }
+        return false;
+    }
     function done(data) {
-        var message = [];
+        var messages = "", i, status = 0;
         $f.removeClass("submitting");
-        if (data.ok) {
+        if (!data.ok) {
+            messages += render_feedback("Your changes were not saved.", 2);
+            status = 2;
+        }
+        if (data.message_list) {
+            for (i = 0; i !== data.message_list.length; ++i) {
+                var mx = data.message_list[i];
+                if (mx.status > 1 || interesting(mx.message)) {
+                    messages += render_feedback(mx.message, mx.status);
+                    status = Math.max(status, mx.status);
+                }
+            }
+        }
+        if (data.ok && messages === "") {
             foldup.call($f[0], null, {f: true});
-            $(window).trigger("hotcrptags", [data]);
-            message = reduce_tag_report(data.tagreport, 1, tags)[1];
         } else {
             focus_within($f);
-            message = [data.error];
         }
+        data.ok && $(window).trigger("hotcrptags", [data]);
 
         $f.find(".psfn .savesuccess, .psfn .savefailure").remove();
         var $s = $("<span class=\"save" + (data.ok ? "success" : "failure") + "\"></span>");
         $s.appendTo($f.find(".psfn").first());
         if (data.ok)
             $s.delay(1000).fadeOut();
-        if (message.length) {
-            make_bubble(message.join("<br>"), "errorbubble").dir("l")
+        if (messages !== "") {
+            make_bubble(messages, status > 1 ? "errorbubble" : "warningbubble").dir("l")
                 .near($(inputs[0]).is(":visible") ? inputs[0] : $f.find(".psfn")[0])
                 .removeOn($f.find("input"), "input")
                 .removeOn(document.body, "fold");
         }
     }
     $.post(hoturl_post("api/settags", {p: $f.attr("data-pid")}),
-            {"addtags": tags.join(" ")}, done);
+            {"addtags": assignments.join(" ")}, done);
 }
 
 function evaluate_compar(x, compar, y) {

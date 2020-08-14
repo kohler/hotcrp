@@ -3518,8 +3518,8 @@ class Contact {
     /** @return bool */
     private function can_view_submitted_review_as_author(PaperInfo $prow) {
         if ($this->conf->has_perm_tags()
-            && ($v = $prow->tag_value("perm:author-read-review")) !== null) {
-            return $v >= 0;
+            && ($v = $prow->tag_value("perm:author-read-review"))) {
+            return $v > 0;
         } else {
             return $prow->can_author_respond()
                 || $this->conf->au_seerev == Conf::AUSEEREV_YES

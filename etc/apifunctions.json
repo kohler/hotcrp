@@ -129,8 +129,11 @@
         "callback": "TagAnno_API::set"
     },
     {
-        "name": "tagreport", "paper": true, "get": true,
-        "callback": "Tags_API::tagreport_api"
+        "name": "tagmessages", "paper": true, "get": true,
+        "callback": "Tags_API::tagmessages_api"
+    },
+    {
+        "name": "tagreport", "alias": "tagmessages"
     },
     {
         "name": "trackerconfig", "post": true,

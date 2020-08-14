@@ -1358,6 +1358,18 @@ class PaperTable {
         $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || $this->qreq->atab === "manager");
     }
 
+    /** @param string $msg
+     * @param int $status */
+    private function echo_tag_report_message($msg, $status) {
+        echo '<p class="', MessageSet::status_class($status, "feedback", "is-"), '">';
+        if (preg_match('/\A(#' . TAG_REGEX . '?)(: .*)\z/s', $msg, $m)) {
+            echo Ht::link($m[1], $this->conf->hoturl("search", ["q" => $m[1]]), ["class" => "q"]), $m[2];
+        } else {
+            echo $msg;
+        }
+        echo '</p>';
+    }
+
     private function papstripTags() {
         if (!$this->prow->paperId || !$this->user->can_view_tags($this->prow)) {
             return;
@@ -1386,31 +1398,21 @@ class PaperTable {
         echo $this->papt("tags", "Tags", ["type" => "ps", "fold" => $is_editable ? "tags" : false]),
             '<div class="psv">';
         if ($is_editable) {
-            // tag report form
-            $treport = Tags_API::tagreport($this->user, $this->prow);
-            $tm0 = $tm1 = [];
-            $tms = 0;
-            foreach ($treport->tagreport as $tr) {
-                $search = isset($tr->search) ? $tr->search : "#" . $tr->tag;
-                $tm = Ht::link("#" . $tr->tag, $this->conf->hoturl("search", ["q" => $search]), ["class" => "q"]) . ": " . $tr->message;
-                $tms = max($tms, $tr->status);
-                $tm0[] = $tm;
-                if ($tr->status > 0 && $this->prow->has_tag($tagger->expand($tr->tag))) {
-                    $tm1[] = $tm;
-                }
-            }
+            $treport = Tags_API::tagmessages($this->user, $this->prow);
 
             // uneditable
             echo '<div class="fn want-tag-report-warnings">';
-            if (!empty($tm1)) {
-                echo Ht::msg($tm1, 1);
+            foreach ($treport->message_list as $tr) {
+                if ($tr->status > 0) {
+                    $this->echo_tag_report_message($tr->message, $tr->status);
+                }
             }
             echo '</div><div class="fn js-tag-result">',
                 ($tx === "" ? "None" : $tx), '</div>';
 
             echo '<div class="fx js-tag-editor"><div class="want-tag-report">';
-            if (!empty($tm0)) {
-                echo Ht::msg($tm0, $tms);
+            foreach ($treport->message_list as $tr) {
+                $this->echo_tag_report_message($tr->message, $tr->status);
             }
             echo "</div>";
             if ($is_sitewide) {

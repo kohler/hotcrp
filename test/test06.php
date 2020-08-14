@@ -849,7 +849,7 @@ xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#-1\n");
 $paper17->invalidate_tags();
 xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
 $Conf->save_setting("au_seerev", null);
-xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#0\n");
+xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#1\n");
 $paper17->invalidate_tags();
 xassert($user_mjh->can_view_review($paper17, $rrow17m));
 xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#clear\n");
