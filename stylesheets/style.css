@@ -1582,7 +1582,10 @@ textarea.has-warning,
 select.has-warning {
 	border: 1px solid #855c04;
 }
-.is-success, .is-confirm {
+.feedback.is-success {
+	color: inherit;
+}
+.is-confirm {
 	color: #006600;
 }
 .is-note {

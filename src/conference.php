@@ -1712,7 +1712,7 @@ class Conf {
     /** @param string $tag
      * @return bool */
     function is_known_perm_tag($tag) {
-        return preg_match('/\A(?:perm:)?(?:author-read-review)\z/i', $tag);
+        return preg_match('/\A(?:perm:)?(?:author-read-review|author-edit)\z/i', $tag);
     }
 
 
@@ -3702,7 +3702,7 @@ class Conf {
 
         if (($options["tags"] ?? false)
             || ($user && $user->isPC)
-            || $this->has_tracks()) {
+            || $this->rights_need_tags()) {
             $cols[] = "coalesce((select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where PaperTag.paperId=Paper.paperId), '') paperTags";
         }
 

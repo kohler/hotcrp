@@ -54,6 +54,8 @@ class PaperContactInfo {
     public $can_view_decision;
     /** @var 0|1|2 */
     public $view_authors_state;
+    /** @var ?string */
+    public $perm_tags;
 
     // cached by PaperInfo methods
     /** @var ?list<ReviewInfo> */
@@ -191,12 +193,23 @@ class PaperContactInfo {
         Dbl::free($result);
     }
 
+    /** @return PaperContactInfo */
     function get_forced_rights() {
         if (!$this->forced_rights_link) {
             $ci = $this->forced_rights_link = clone $this;
             $ci->vsreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
         }
         return $this->forced_rights_link;
+    }
+
+    /** @return float */
+    function perm_tag_value($tag) {
+        if ($this->perm_tags !== null
+            && ($pos = stripos($this->perm_tags, " perm:$tag#")) !== false) {
+            return (float) substr($this->perm_tags, $pos + strlen($tag) + 7);
+        } else {
+            return 0.0;
+        }
     }
 }
 
