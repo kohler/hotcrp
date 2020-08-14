@@ -1484,7 +1484,7 @@ class PaperTable {
         $class = "is-nonempty-tags float-right" . ($totval === "" ? " hidden" : "");
         $reverse = $type !== "rank";
         $extradiv = "";
-        if (($type === "vote" || $type === "approval")
+        if (($type === "allotment" || $type === "approval")
             && $this->user->can_view_peruser_tag($this->prow, $tag)) {
             $class .= " need-tooltip";
             $extradiv = ' data-tooltip-dir="h" data-tooltip-info="votereport" data-tag="' . htmlspecialchars($tag) . '"';
@@ -1534,7 +1534,7 @@ class PaperTable {
     private function papstrip_allotment($tag, $allotment) {
         $id = "vote_" . html_id_encode($tag);
         $myval = $this->prow->tag_value($this->user->contactId . "~$tag") ?? "";
-        $totmark = $this->papstrip_tag_float($tag, "total", "vote");
+        $totmark = $this->papstrip_tag_float($tag, "total", "allotment");
 
         $this->papstrip_tag_entry($id);
         echo Ht::form("", ["class" => "need-tag-index-form", "data-pid" => $this->prow->paperId]);
@@ -1896,8 +1896,8 @@ class PaperTable {
             if ($this->user->can_change_tag($this->prow, "~$ltag", null, 0)) {
                 if ($t->approval) {
                     $this->papstrip_approval($t->tag);
-                } else if ($t->vote) {
-                    $this->papstrip_allotment($t->tag, $t->vote);
+                } else if ($t->allotment) {
+                    $this->papstrip_allotment($t->tag, $t->allotment);
                 } else if ($t->rank) {
                     $this->papstrip_rank($t->tag);
                 }

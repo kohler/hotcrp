@@ -18,11 +18,11 @@ class Tags_API {
             foreach (Tagger::split_unpack($prow->sorted_editable_tags($user)) as $ti) {
                 if (strncasecmp($ti[0], "perm:", 5) === 0
                     && !$prow->conf->is_known_perm_tag($ti[0])) {
-                    $ret->tagreport[] = (object) ["tag" => $ti[0], "status" => 1, "message" => "unknown permission"];
+                    $ret->tagreport[] = (object) ["tag" => $ti[0], "status" => 1, "message" => "Unknown permission"];
                 }
             }
         }
-        if (($vt = $user->conf->tags()->filter("vote"))) {
+        if (($vt = $user->conf->tags()->filter("allotment"))) {
             $myprefix = $user->contactId . "~";
             $qv = $myvotes = array();
             foreach ($vt as $lbase => $t) {
@@ -36,10 +36,10 @@ class Tags_API {
             }
             Dbl::free($result);
             foreach ($vt as $lbase => $t) {
-                if ($myvotes[$lbase] < $t->vote) {
-                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 0, "message" => plural($t->vote - $myvotes[$lbase], "vote") . " remaining", "search" => "editsort:-#~{$t->tag}"];
-                } else if ($myvotes[$lbase] > $t->vote) {
-                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 1, "message" => plural($myvotes[$lbase] - $t->vote, "overvote"), "search" => "editsort:-#~{$t->tag}"];
+                if ($myvotes[$lbase] < $t->allotment) {
+                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 0, "message" => plural($t->allotment - $myvotes[$lbase], "vote") . " remaining", "search" => "editsort:-#~{$t->tag}"];
+                } else if ($myvotes[$lbase] > $t->allotment) {
+                    $ret->tagreport[] = (object) ["tag" => "~{$t->tag}", "status" => 1, "message" => plural($myvotes[$lbase] - $t->allotment, "overvote"), "search" => "editsort:-#~{$t->tag}"];
                 }
             }
         }

@@ -4510,16 +4510,14 @@ class Contact {
         }
         if ($twiddle !== false) {
             $t = $this->conf->tags()->check(substr($tag, $twiddle + 1));
-            return !($t && $t->vote && $index < 0);
+            return !($t && $t->allotment && $index < 0);
         } else {
             $t = $this->conf->tags()->check($tag);
             if (!$t) {
                 return true;
-            } else if ($t->vote
-                       || $t->approval
+            } else if ($t->automatic
                        || ($t->track && !$this->privChair)
-                       || ($t->hidden && !$this->can_view_hidden_tags($prow))
-                       || $t->autosearch) {
+                       || ($t->hidden && !$this->can_view_hidden_tags($prow))) {
                 return false;
             } else {
                 return $rights->can_administer

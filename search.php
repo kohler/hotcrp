@@ -260,9 +260,10 @@ if ($pl_text) {
         $opt = array("disabled" => ($Qreq->t == "a" && !$Me->privChair));
         $display_options->checkbox_item(20, "tags", "Tags", $opt);
         if ($Me->privChair) {
-            foreach ($Conf->tags() as $t)
-                if ($t->vote || $t->approval || $t->rank)
+            foreach ($Conf->tags() as $t) {
+                if ($t->allotment || $t->approval || $t->rank)
                     $display_options->checkbox_item(20, "tagreport:{$t->tag}", "#~{$t->tag} report", $opt);
+            }
         }
     }
 

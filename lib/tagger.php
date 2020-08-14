@@ -21,8 +21,8 @@ class TagInfo {
     public $hidden = false;
     public $track = false;
     public $votish = false;
-    public $vote = false;
     public $approval = false;
+    public $allotment = false;
     public $sitewide = false;
     public $rank = false;
     public $public_peruser = false;
@@ -59,7 +59,7 @@ class TagInfo {
         }
     }
     function merge(TagInfo $t) {
-        foreach (["chair", "readonly", "hidden", "track", "votish", "vote", "approval", "sitewide", "rank", "public_peruser", "automatic", "autosearch", "autosearch_value"] as $property) {
+        foreach (["chair", "readonly", "hidden", "track", "votish", "allotment", "approval", "sitewide", "rank", "public_peruser", "automatic", "autosearch", "autosearch_value"] as $property) {
             if ($t->$property)
                 $this->$property = $t->$property;
         }
@@ -148,7 +148,7 @@ class TagInfo {
             return $this->autosearch_value ?? "0";
         } else if ($this->approval) {
             return "count.pc(#_~{$this->tag}) || null";
-        } else if ($this->vote) {
+        } else if ($this->allotment) {
             return "sum.pc(#_~{$this->tag}) || null";
         } else {
             return false;
@@ -255,8 +255,8 @@ class TagMap implements IteratorAggregate {
     public $has_hidden = false;
     public $has_public_peruser = false;
     public $has_votish = false;
-    public $has_vote = false;
     public $has_approval = false;
+    public $has_allotment = false;
     public $has_sitewide = false;
     public $has_rank = false;
     public $has_colors = false;
@@ -341,7 +341,7 @@ class TagMap implements IteratorAggregate {
             return false;
         }
     }
-    /** @return TagInfo */
+    /** @return ?TagInfo */
     private function update_patterns($tag, $ltag, TagInfo $t = null) {
         if (!$this->pattern_re) {
             $a = [];
@@ -500,8 +500,8 @@ class TagMap implements IteratorAggregate {
     }
     /** @param string $tag
      * @return bool */
-    function is_vote($tag) {
-        return !!$this->check_property($tag, "vote");
+    function is_allotment($tag) {
+        return !!$this->check_property($tag, "allotment");
     }
     /** @param string $tag
      * @return bool */
@@ -878,8 +878,8 @@ class TagMap implements IteratorAggregate {
         $vt = $conf->setting_data("tag_vote") ?? "";
         foreach (Tagger::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
-            $t->vote = ($ti[1] ? : 1);
-            $map->has_vote = true;
+            $t->allotment = ($ti[1] ? : 1);
+            $map->has_allotment = true;
             $t->votish = $map->has_votish = true;
             $t->automatic = $map->has_automatic = true;
             if (!$ppu) {
@@ -1305,7 +1305,7 @@ class Tagger {
         $dt = $this->conf->tags();
         if ($dt->has_votish
             && ($dt->is_votish($base)
-                || ($base[0] === "~" && $dt->is_vote(substr($base, 1))))) {
+                || ($base[0] === "~" && $dt->is_allotment(substr($base, 1))))) {
             $q = "#$base showsort:-#$base";
         } else if ($base === $tag) {
             $q = "#$base";

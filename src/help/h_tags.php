@@ -186,9 +186,9 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
     }
 
     function render_example_allotment() {
-        $vt = $this->hth->example_tag("vote");
+        $vt = $this->hth->example_tag("allotment");
         echo "<p><strong>Vote for papers.</strong>
- The chair can define tags used for allotment voting", $this->hth->current_tag_list("vote"), ".",
+ The chair can define tags used for allotment voting", $this->hth->current_tag_list("allotment"), ".",
     $this->hth->setting_link("tag_vote"),
     " Each PC member is assigned an allotment of votes to distribute among papers.
  For instance, if “#{$vt}” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “#~{$vt}#5”.

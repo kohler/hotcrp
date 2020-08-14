@@ -30,8 +30,8 @@ class Tags_SettingRenderer {
     }
     static function render_tag_vote(SettingValues $sv) {
         $x = [];
-        foreach ($sv->conf->tags()->filter("vote") as $t) {
-            $x[] = "{$t->tag}#{$t->vote}";
+        foreach ($sv->conf->tags()->filter("allotment") as $t) {
+            $x[] = "{$t->tag}#{$t->allotment}";
         }
         $sv->set_oldv("tag_vote", join(" ", $x));
         $sv->echo_entry_group("tag_vote", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)");
@@ -226,7 +226,9 @@ class Tags_SettingParser extends SettingParser {
                 $ms[] = $descriptions[$xs[$i]];
                 $sv->warning_at($xs[$i], null);
             }
-            $sv->warning_at($xs[1], "Tag “" . htmlspecialchars($xs[0]) . "” used for " . commajoin($ms) . ".");
+            $sv->warning_at($xs[1], "Tag “" . htmlspecialchars($xs[0])
+                . "” used for " . (count($ms) > 2 ? "all of " : "both ")
+                . commajoin($ms) . ".");
         }
     }
 }

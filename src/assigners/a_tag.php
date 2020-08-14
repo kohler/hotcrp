@@ -230,7 +230,11 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
                 $nvalue = 0.0;
             }
         }
-        if ($nvalue <= 0 && $tagmap->is_vote($xtag)) {
+        if ($nvalue <= 0
+            && $tagmap->has_allotment
+            && ($dt = $tagmap->check($xtag))
+            && $dt->allotment
+            && !$dt->approval) {
             $nvalue = false;
         }
 

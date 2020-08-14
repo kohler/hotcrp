@@ -4,7 +4,7 @@
 
 class VoteTags_HelpTopic {
     static function render(HelpRenderer $hth) {
-        $votetag = $hth->example_tag("vote");
+        $votetag = $hth->example_tag("allotment");
         echo "<p>Some conferences have PC members vote for papers. In
 <em>allotment voting</em>, each PC member is assigned a vote allotment to
 distribute among unconflicted papers; a PC member might assign one vote to one
@@ -14,7 +14,7 @@ might help determine which papers to discuss.</p>
 
 <p>HotCRP supports voting through ", $hth->help_link("tags", "tags"), ".
 The chair can ", $hth->setting_link("define a set of voting tags", "tag_vote"),
-" and allotments" . $hth->current_tag_list("vote") . ".
+" and allotments" . $hth->current_tag_list("allotment") . ".
 Votes are represented as twiddle tags, and the vote total is automatically
 computed and shown in the public tag.</p>
 
