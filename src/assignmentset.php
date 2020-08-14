@@ -110,8 +110,10 @@ class AssignmentState {
     /** @var array<string,object> */
     public $finisher_map = [];
     public $paper_exact_match = true;
+    /** @var list<MessageItem> */
     private $msgs = [];
-    private $first_nonexact_error;
+    /** @var list<int> */
+    private $nonexact_msgi = [];
     public $has_error = false;
     public $has_user_error = false;
 
@@ -353,7 +355,7 @@ class AssignmentState {
 
     /** @param null|false|int|string $landmark
      * @param string $msg
-     * @param 0|1|2|4 $status */
+     * @param 0|1|2 $status */
     function msg($landmark, $msg, $status) {
         if (is_string($landmark)) {
             $l = $landmark;
@@ -366,13 +368,13 @@ class AssignmentState {
         }
         $n = count($this->msgs) - 1;
         if ($n >= 0
-            && $this->msgs[$n][0] === $l
-            && $this->msgs[$n][1] === $msg) {
-            $this->msgs[$n][2] = max($this->msgs[$n][2], $status);
+            && $this->msgs[$n]->field === $l
+            && $this->msgs[$n]->message === $msg) {
+            $this->msgs[$n]->status = max($this->msgs[$n]->status, $status);
         } else {
-            $this->msgs[] = [$l, $msg, $status];
+            $this->msgs[] = new MessageItem($l, $msg, $status);
         }
-        if ($status == 2) {
+        if ($status === 2) {
             $this->has_error = true;
         }
     }
@@ -395,11 +397,11 @@ class AssignmentState {
     /** @param string $msg
      * @return false */
     function paper_error($msg) {
-        $s = $this->paper_exact_match ? 2 : self::ERROR_NONEXACT_MATCH;
-        $this->msg($this->landmark, $msg, $s);
-        if ($s === self::ERROR_NONEXACT_MATCH
-            && $this->first_nonexact_error === null) {
-            $this->first_nonexact_error = count($this->msgs) - 1;
+        if ($this->paper_exact_match) {
+            $this->msg($this->landmark, $msg, 2);
+        } else {
+            $this->msg($this->landmark, $msg, 1);
+            $this->nonexact_msgi[] = count($this->msgs) - 1;
         }
         return false;
     }
@@ -408,28 +410,22 @@ class AssignmentState {
     function has_messages() {
         return !empty($this->msgs);
     }
-    /** @return list<array{int,string,int}> */
+    /** @return iterable<MessageItem> */
     function message_list() {
         return $this->msgs;
     }
-    /** @param 0|1|2 $status */
-    function resolve_nonexact_errors($status) {
-        if ($this->first_nonexact_error !== null) {
-            for ($i = $this->first_nonexact_error; $i < count($this->msgs); ++$i) {
-                if ($this->msgs[$i][2] === self::ERROR_NONEXACT_MATCH) {
-                    $this->msgs[$i][2] = $status;
-                }
-            }
-            if ($status === 2) {
+    function mark_matching_errors() {
+        foreach ($this->nonexact_msgi as $i) {
+            if ($this->msgs[$i]->status < 2) {
+                $this->msgs[$i]->status = 2;
                 $this->has_error = true;
             }
-            $this->first_nonexact_error = null;
         }
+        $this->nonexact_msgi = [];
     }
     function clear_messages() {
-        $this->msgs = [];
+        $this->msgs = $this->nonexact_msgi = [];
         $this->has_error = $this->has_user_error = false;
-        $this->first_nonexact_error = null;
     }
 }
 
@@ -1062,10 +1058,10 @@ class AssignmentSet {
     /** @return list<string> */
     function messages_html($landmarks = false) {
         $es = [];
-        foreach ($this->astate->message_list() as $e) {
-            $t = $e[1];
-            if ($landmarks && $e[0]) {
-                $t = '<span class="lineno">' . htmlspecialchars((string) $e[0]) . ':</span> ' . $t;
+        foreach ($this->astate->message_list() as $mx) {
+            $t = $mx->message;
+            if ($landmarks && $mx->field) {
+                $t = '<span class="lineno">' . htmlspecialchars($mx->field) . ':</span> ' . $t;
             }
             if (empty($es) || $es[count($es) - 1] !== $t) {
                 $es[] = $t;
@@ -1089,10 +1085,10 @@ class AssignmentSet {
     /** @return list<string> */
     function message_texts($landmarks = false) {
         $es = [];
-        foreach ($this->astate->message_list() as $e) {
-            $t = htmlspecialchars_decode(preg_replace(',<(?:[^\'">]|\'[^\']*\'|"[^"]*")*>,', "", $e[1]));
-            if ($landmarks && $e[0]) {
-                $t = $e[0] . ': ' . $t;
+        foreach ($this->astate->message_list() as $mx) {
+            $t = htmlspecialchars_decode(preg_replace(',<(?:[^\'">]|\'[^\']*\'|"[^"]*")*>,', "", $mx->message));
+            if ($landmarks && $mx->field) {
+                $t = $mx->field . ': ' . $t;
             }
             if (empty($es) || $es[count($es) - 1] !== $t) {
                 $es[] = $t;
@@ -1503,7 +1499,9 @@ class AssignmentSet {
             }
         }
 
-        $this->astate->resolve_nonexact_errors($any_success ? 1 : 2);
+        if (!$any_success) {
+            $this->astate->mark_matching_errors();
+        }
         return $any_success;
     }
 

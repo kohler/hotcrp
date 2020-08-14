@@ -209,7 +209,7 @@ class PaperValue implements JsonSerializable {
     function has_error() {
         return $this->_ms && $this->_ms->has_error();
     }
-    /** @return list<array{?string,string,int}> */
+    /** @return list<MessageItem> */
     function message_list() {
         return $this->_ms ? $this->_ms->message_list() : [];
     }

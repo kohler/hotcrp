@@ -555,14 +555,14 @@ class SettingValues extends MessageSet {
             parent::warning_at($fname, $html);
         }
     }
-    /** @param array{?string,string,int} $mx */
+    /** @param MessageItem $mx */
     private function report_mx(&$msgs, &$lastmsg, $mx) {
-        $t = $mx[1];
-        if ($mx[2] === MessageSet::WARNING) {
+        $t = $mx->message;
+        if ($mx->status === MessageSet::WARNING) {
             $t = "Warning: " . $t;
         }
         $loc = null;
-        if ($mx[0] && ($si = Si::get($this->conf, $mx[0])) && $si->title) {
+        if ($mx->field && ($si = Si::get($this->conf, $mx->field)) && $si->title) {
             $loc = htmlspecialchars($si->title);
             if ($si->anchorid !== false) {
                 $loc = Ht::link($loc, $si->sv_hoturl($this));

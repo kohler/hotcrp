@@ -19,6 +19,7 @@ class SiteLoader {
         "JsonSerializable" => "lib/json.php",
         "LoginHelper" => "lib/login.php",
         "MailPreparation" => "lib/mailer.php",
+        "MessageItem" => "lib/messageset.php",
         "MimeText" => "lib/mailer.php",
         "PaperInfoSet" => "src/paperinfo.php",
         "PaperOptionList" => "src/paperoption.php",

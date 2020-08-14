@@ -397,7 +397,7 @@ class PaperTable {
         }
     }
     function has_problem_at($f) {
-        return $this->problem_status_at($f) != 0;
+        return $this->problem_status_at($f) > 0;
     }
     function has_error_class($f) {
         return $this->has_problem_at($f) ? " has-error" : "";

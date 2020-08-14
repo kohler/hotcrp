@@ -454,7 +454,10 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $bj = clone $bj;
         $bj->npages = count($bj->pages);
         $bj->pages = array_slice($bj->pages, 0, 40);
-        $bj->cfmsg = $this->message_list();
+        $bj->cfmsg = [];
+        foreach ($this->message_list() as $mx) {
+            $bj->cfmsg[] = [$mx->field, $mx->message, $mx->status];
+        }
         if ($spec->timestamp) {
             $bj->spects = $spec->timestamp;
         }
