@@ -2919,7 +2919,7 @@ class Contact {
         $rights = $this->rights($prow);
         if (!$rights->allow_author || $prow->timeWithdrawn > 0) {
             return false;
-        } else if (($v = $rights->perm_tag_value("author-edit"))) {
+        } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
         } else {
             return ($prow->outcome >= 0 && $this->conf->timeUpdatePaper($prow))
@@ -2965,7 +2965,7 @@ class Contact {
         $rights = $this->rights($prow);
         if (!$rights->allow_author || $prow->timeWithdrawn > 0) {
             return false;
-        } else if (($v = $rights->perm_tag_value("author-edit"))) {
+        } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
         } else {
             return $this->conf->timeFinalizePaper($prow)
@@ -3053,7 +3053,7 @@ class Contact {
         $rights = $this->rights($prow);
         if (!$rights->allow_author || $prow->timeWithdrawn <= 0) {
             return false;
-        } else if (($v = $rights->perm_tag_value("author-edit"))) {
+        } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
         } else {
             return $this->conf->timeFinalizePaper($prow)
@@ -3097,7 +3097,7 @@ class Contact {
         $rights = $this->rights($prow);
         if (!$rights->allow_author || !$rights->can_view_decision) {
             return false;
-        } else if (($v = $rights->perm_tag_value("author-edit"))) {
+        } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
         } else {
             return $rights->allow_administer
@@ -3115,7 +3115,7 @@ class Contact {
         $rights = $this->rights($prow);
         if (!$rights->allow_author || !$rights->can_view_decision) {
             return false;
-        } else if (($v = $rights->perm_tag_value("author-edit"))) {
+        } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
         } else {
             return $this->conf->time_submit_final_version()
