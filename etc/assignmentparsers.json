@@ -191,17 +191,17 @@
     },
     {
         "name": "unsubmit", "parser_class": "Status_AssignmentParser",
-        "type": "unsubmit",
+        "type": "unsubmit", "group": "submit",
         "parameters": [], "description": "Mark submission as not ready for review"
     },
     {
         "name": "withdraw", "parser_class": "Status_AssignmentParser",
-        "type": "withdraw",
+        "type": "withdraw", "group": "submit",
         "parameters": [], "description": "Withdraw submission"
     },
     {
         "name": "revive", "parser_class": "Status_AssignmentParser",
-        "type": "revive",
+        "type": "revive", "group": "submit",
         "parameters": [], "description": "Revive (unwithdraw) submission"
     },
     {   "name": "unwithdraw", "alias": "revive"   },
