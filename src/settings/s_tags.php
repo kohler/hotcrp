@@ -203,32 +203,24 @@ class Tags_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
-        $vs = $problems = [];
-        foreach (["tag_approval", "tag_vote", "tag_rank"] as $n) {
-            foreach (Tagger::split_unpack($sv->newv($n)) as $ti) {
-                $ltag = strtolower($ti[0]);
-                $vs[$ltag] = $vs[$ltag] ?? [$ti[0]];
-                $vs[$ltag][] = $n;
-                if (count($vs[$ltag]) > 2) {
-                    $problems[$ltag] = true;
-                }
-            }
-        }
+        $vs = [];
         $descriptions = [
             "tag_approval" => "approval voting",
             "tag_vote" => "allotment voting",
             "tag_rank" => "ranking"
         ];
-        foreach ($problems as $ltag => $v) {
-            $xs = $vs[$ltag];
-            $ms = [];
-            for ($i = 1; $i !== count($xs); ++$i) {
-                $ms[] = $descriptions[$xs[$i]];
-                $sv->warning_at($xs[$i], null);
+        foreach (array_keys($descriptions) as $n) {
+            foreach (Tagger::split_unpack($sv->newv($n)) as $ti) {
+                $lx = &$vs[strtolower($ti[0])];
+                $lx = $lx ?? [];
+                $lx[] = $n;
+                if (count($lx) === 2) {
+                    $sv->warning_at($lx[0], "Tag “" . htmlspecialchars($ti[0]) . "” is also used for " . $descriptions[$n] . ".");
+                }
+                if (count($lx) > 1) {
+                    $sv->warning_at($n, "Tag “" . htmlspecialchars($ti[0]) . "” is also used for " . $descriptions[$lx[0]] . ".");
+                }
             }
-            $sv->warning_at($xs[1], "Tag “" . htmlspecialchars($xs[0])
-                . "” used for " . (count($ms) > 2 ? "all of " : "both ")
-                . commajoin($ms) . ".");
         }
     }
 }
