@@ -56,7 +56,7 @@ class TagReport_PaperColumn extends PaperColumn {
 class TagReport_PaperColumnFactory {
     static private function column_json($xfj, $tag) {
         $cj = (array) $xfj;
-        $cj["name"] = "tagreport:" . strtolower($tag);
+        $cj["name"] = "tagreport:" . $tag;
         $cj["tag"] = $tag;
         return (object) $cj;
     }
