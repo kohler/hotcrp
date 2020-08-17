@@ -96,7 +96,9 @@ class MergeContacts extends MessageSet {
                 $qv[] = [$pid, $this->newu->contactId, $pnew[$pid]];
             }
         }
-        $this->q("insert into PaperConflict (paperId,contactId,conflictType) values ?v on duplicate key update conflictType=values(conflictType)", $qv);
+        if (!empty($qv)) {
+            $this->q("insert into PaperConflict (paperId,contactId,conflictType) values ?v on duplicate key update conflictType=values(conflictType)", $qv);
+        }
         $this->q("delete from PaperConflict where contactId=?", $this->oldu->contactId);
         $this->conf->q_raw("unlock tables");
 
