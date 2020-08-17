@@ -31,7 +31,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 if (!$can_view_authors) {
                     // Sometimes users can see conflicts but not authors.
                     // Don't expose author-ness during that period.
-                    $ct = Conflict::set_pinned(Conflict::nonauthor_part($ct), false);
+                    $ct = Conflict::set_pinned(Conflict::pc_part($ct), false);
                     $ct = $ct ? : Conflict::GENERAL;
                 } else if ($ct & CONFLICT_CONTACTAUTHOR) {
                     $ct = ($ct | CONFLICT_AUTHOR) & ~CONFLICT_CONTACTAUTHOR;
@@ -63,9 +63,9 @@ class PCConflicts_PaperOption extends PaperOption {
         if ($ov->prow->paperId > 0
             ? $ps->user->can_administer($ov->prow)
             : $ps->user->privChair) {
-            $mask = CONFLICT_AUTHOR - 1;
+            $mask = CONFLICT_PCMASK;
         } else {
-            $mask = (CONFLICT_AUTHOR - 1) & ~1;
+            $mask = CONFLICT_PCMASK & ~1;
         }
         foreach (self::value_map($ov) as $k => $v) {
             $ps->update_conflict_value($pcm[$k]->email, $mask, ((int) $v) & $mask);
@@ -73,7 +73,7 @@ class PCConflicts_PaperOption extends PaperOption {
         return true;
     }
     private function update_value_map(&$vm, $k, $v) {
-        $vm[$k] = (($vm[$k] ?? 0) & ~(CONFLICT_AUTHOR - 1)) | $v;
+        $vm[$k] = (($vm[$k] ?? 0) & ~CONFLICT_PCMASK) | $v;
     }
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         $vm = self::paper_value_map($prow);
@@ -108,7 +108,7 @@ class PCConflicts_PaperOption extends PaperOption {
 
         $vm = self::paper_value_map($prow);
         foreach ($vm as $k => &$v) {
-            $v &= ~(CONFLICT_AUTHOR - 1);
+            $v &= ~CONFLICT_PCMASK;
         }
         unset($v);
 

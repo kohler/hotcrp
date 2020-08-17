@@ -80,7 +80,8 @@ CREATE TABLE `DeletedContactInfo` (
   `firstName` varbinary(120) NOT NULL,
   `lastName` varbinary(120) NOT NULL,
   `unaccentedName` varbinary(240) NOT NULL,
-  `email` varchar(120) NOT NULL
+  `email` varchar(120) NOT NULL,
+  `affiliation` varbinary(2048) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -513,7 +514,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 238);
+insert into Settings (name, value) values ('allowPaperOption', 239);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

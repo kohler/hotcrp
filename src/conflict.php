@@ -46,8 +46,22 @@ class Conflict {
     }
     /** @param int $ct
      * @return int */
-    static function nonauthor_part($ct) {
+    static function pc_part($ct) {
         return $ct & 31;
+    }
+    /** @param int $ct1
+     * @param int $ct2
+     * @return int */
+    static function merge($ct1, $ct2) {
+        if ($ct2 >= CONFLICT_AUTHOR && $ct1 < CONFLICT_AUTHOR) {
+            $ct1 |= CONFLICT_CONTACTAUTHOR;
+        }
+        if (($ct2 & CONFLICT_PCMASK) !== 0
+            && (($ct1 & CONFLICT_PCMASK) === 0
+                || (($ct1 & 1) === 0 && ($ct2 & 1) !== 0))) {
+            $ct1 = ($ct1 & ~CONFLICT_PCMASK) | ($ct2 & CONFLICT_PCMASK);
+        }
+        return $ct1;
     }
 
     function __construct(Conf $conf) {

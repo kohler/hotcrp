@@ -714,7 +714,7 @@ class PaperStatus extends MessageSet {
             $this->_conflict_values[$lemail] = [0, 0, 0];
         }
         $cv = &$this->_conflict_values[$lemail];
-        if ($mask !== ((CONFLICT_AUTHOR - 1) & ~1)
+        if ($mask !== (CONFLICT_PCMASK & ~1)
             || ((($cv[0] & ~$cv[1]) | $cv[2]) & 1) === 0) {
             $cv[1] |= $mask;
             $cv[2] = ($cv[2] & ~$mask) | $new;
@@ -792,7 +792,7 @@ class PaperStatus extends MessageSet {
                 /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
                 $cv = $this->_conflict_values[strtolower($row[1])];
                 $ncv = self::new_conflict_value($cv);
-                if (($cv[0] ^ $ncv) & (CONFLICT_AUTHOR - 1)) {
+                if (($cv[0] ^ $ncv) & CONFLICT_PCMASK) {
                     $this->diffs["pc_conflicts"] = true;
                 }
                 if (($cv[0] >= CONFLICT_AUTHOR) !== ($ncv >= CONFLICT_AUTHOR)) {
@@ -1027,7 +1027,7 @@ class PaperStatus extends MessageSet {
             $cfltf = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_ERROR);
             $auflags = CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR;
             foreach ($this->_conflict_ins as $ci) {
-                if (($ci[1] & (CONFLICT_AUTHOR - 1)) === ((CONFLICT_AUTHOR - 1) & ~1)) {
+                if (($ci[1] & CONFLICT_PCMASK) === (CONFLICT_PCMASK & ~1)) {
                     $cfltf("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=if(conflictType&1,((conflictType&~?)|?),((conflictType&~?)|?))",
                         [$this->paperId, $ci[0], $ci[2],
                          $ci[1] & $auflags, $ci[2] & $auflags, $ci[1], $ci[2]]);

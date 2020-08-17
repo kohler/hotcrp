@@ -15,6 +15,7 @@ define("REVIEW_REQUEST", -1);
 define("REVIEW_REFUSAL", -2);
 
 define("CONFLICT_MAXUNCONFLICTED", 1);
+define("CONFLICT_PCMASK", 31);
 define("CONFLICT_AUTHOR", 32);
 define("CONFLICT_CONTACTAUTHOR", 64);
 

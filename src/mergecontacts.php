@@ -22,22 +22,29 @@ class MergeContacts extends MessageSet {
 
     private function add_error($msg) {
         $this->error_at("merge", $msg);
+        error_log($msg);
+        error_log(debug_string_backtrace());
     }
-    private function merge1($table, $idfield) {
-        $result = $this->conf->q("update $table set $idfield=? where $idfield=?",
-                                 $this->newu->contactId, $this->oldu->contactId);
+    private function q($q, ...$args) {
+        $result = $this->conf->q_apply($q, $args);
         if ($result->errno) {
             $this->add_error($this->conf->db_error_html(true));
         }
     }
-    private function merge1_ignore($table, $idfield) {
-        $result1 = $this->conf->q("update ignore $table set $idfield=? where $idfield=?",
-                                  $this->newu->contactId, $this->oldu->contactId);
-        $result2 = $this->conf->q("delete from $table where $idfield=?",
-                                  $this->oldu->contactId);
-        if ($result2->errno) {
+    private function qx($q, ...$args) {
+        $result = Dbl::qx_apply($this->conf->dblink, $q, $args);
+        if ($result->errno) {
             $this->add_error($this->conf->db_error_html(true));
         }
+    }
+    private function merge1($table, $idfield) {
+        $this->q("update $table set $idfield=? where $idfield=?",
+                 $this->newu->contactId, $this->oldu->contactId);
+    }
+    private function merge1_ignore($table, $idfield) {
+        $this->qx("update ignore $table set $idfield=? where $idfield=?",
+                  $this->newu->contactId, $this->oldu->contactId);
+        $this->q("delete from $table where $idfield=?", $this->oldu->contactId);
     }
     private function replace_contact_string($k) {
         return (string) $this->oldu->$k !== "" && (string) $this->newu->$k === "";
@@ -64,65 +71,86 @@ class MergeContacts extends MessageSet {
     private function merge() {
         assert($this->oldu->contactId && $this->newu->contactId);
 
-        $this->conf->q_raw("lock tables Paper write, ContactInfo write, PaperConflict write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, PaperWatch write, ReviewRating write");
-
+        // Paper and PaperConflict
+        $this->conf->q_raw("lock tables Paper write, PaperConflict write");
         $this->merge1("Paper", "leadContactId");
         $this->merge1("Paper", "shepherdContactId");
         $this->merge1("Paper", "managerContactId");
 
-        // paper authorship
-        $result = $this->conf->qe_raw("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($this->oldu->email) . "\t%'"));
-        $q = $qv = [];
-        while (($row = PaperInfo::fetch($result, null, $this->conf))) {
-            foreach ($row->author_list() as $au)
-                if (strcasecmp($au->email, $this->oldu->email) == 0)
-                    $au->email = $this->newu->email;
-            $q[] = "update Paper set authorInformation=? where paperId=?";
-            array_push($qv, $row->regenerate_author_list(), $row->paperId);
-        }
-        if (!empty($q)) {
-            $mresult = Dbl::multi_qe_apply($this->conf->dblink, join(";", $q), $qv);
-            $mresult->free_all();
-        }
-
-        // ensure uniqueness in PaperConflict
-        $result = $this->conf->qe("select paperId, conflictType from PaperConflict where contactId=?", $this->oldu->contactId);
-        $qv = [];
+        $result = $this->conf->qe("select paperId, contactId, conflictType from PaperConflict where contactId=? or contactId=?", $this->oldu->contactId, $this->newu->contactId);
+        $pold = $pnew = [];
         while (($row = $result->fetch_row())) {
-            $qv[] = [$row[0], $this->newu->contactId, $row[1]];
+            $pid = (int) $row[0];
+            if ($row[1] == $this->oldu->contactId) {
+                $pold[$pid] = (int) $row[2];
+                $pnew[$pid] = $pnew[$pid] ?? 0;
+            } else {
+                $pnew[$pid] = (int) $row[2];
+            }
         }
-        if ($qv) {
-            $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $qv);
-        }
-        $this->conf->qe("delete from PaperConflict where contactId=?", $this->oldu->contactId);
+        Dbl::free($result);
 
-        // merge more things
-        $this->merge1("ActionLog", "contactId");
-        $this->merge1("ActionLog", "destContactId");
+        $qv = [];
+        foreach ($pold as $pid => $ctype) {
+            if (($pnew[$pid] = Conflict::merge($pnew[$pid], $pold[$pid]))) {
+                $qv[] = [$pid, $this->newu->contactId, $pnew[$pid]];
+            }
+        }
+        $this->q("insert into PaperConflict (paperId,contactId,conflictType) values ?v on duplicate key update conflictType=values(conflictType)", $qv);
+        $this->q("delete from PaperConflict where contactId=?", $this->oldu->contactId);
+        $this->conf->q_raw("unlock tables");
+
+        // TopicInterest, PaperReviewPreference, PaperWatch
+        $this->conf->q_raw("lock tables TopicInterest write, PaperReviewPreference write, PaperWatch write");
         $this->merge1_ignore("TopicInterest", "contactId");
-        $this->merge1("PaperComment", "contactId");
+        $this->merge1_ignore("PaperReviewPreference", "contactId");
+        $this->merge1_ignore("PaperWatch", "contactId");
+        $this->conf->q_raw("unlock tables");
 
-        // archive duplicate reviews
+        // PaperReview
+        $this->conf->q_raw("lock tables PaperReview write");
         $this->merge1_ignore("PaperReview", "contactId");
         $this->merge1("PaperReview", "requestedBy");
-        $this->merge1_ignore("PaperReviewPreference", "contactId");
+        $this->conf->q_raw("unlock tables");
+
+        // PaperComment
+        $this->conf->q_raw("lock tables PaperComment write");
+        $this->merge1("PaperComment", "contactId");
+        $this->conf->q_raw("unlock tables");
+
+        // PaperReviewRefused, ReviewRating, ReviewRequest
+        $this->conf->q_raw("lock tables PaperReviewRefused write, ReviewRating write, ReviewRequest write");
         $this->merge1("PaperReviewRefused", "contactId");
         $this->merge1("PaperReviewRefused", "requestedBy");
         $this->merge1("PaperReviewRefused", "refusedBy");
-        $this->merge1("ReviewRequest", "requestedBy");
-        $this->merge1_ignore("PaperWatch", "contactId");
         $this->merge1_ignore("ReviewRating", "contactId");
-
+        $this->merge1("ReviewRequest", "requestedBy");
         $this->conf->qe_raw("unlock tables");
+
+        // PaperTag, TagAnno
+        if ($this->oldu->roles & Contact::ROLE_PCLIKE) {
+            $this->conf->qe_raw("lock tables PaperTag write, PaperTagAnno write");
+            $this->qx("update ignore PaperTag set tag=concat('" . $this->newu->contactId . "~',substring(tag," . (strlen($this->oldu->contactId) + 2) . ")) where tag like '" . $this->oldu->contactId . "~%'");
+            $this->q("delete from PaperTag where tag like '" . $this->oldu->contactId . "~%'");
+            $this->qx("update ignore PaperTagAnno set tag=concat('" . $this->newu->contactId . "~',substring(tag," . (strlen($this->oldu->contactId) + 2) . ")) where tag like '" . $this->oldu->contactId . "~%'");
+            $this->q("delete from PaperTagAnno where tag like '" . $this->oldu->contactId . "~%'");
+            $this->conf->qe_raw("unlock tables");
+        }
+
+        // ActionLog, Formula
+        $this->conf->q_raw("lock tables ActionLog write, Formula write");
+        $this->merge1("ActionLog", "contactId");
+        $this->merge1("ActionLog", "destContactId");
+        $this->merge1("Formula", "createdBy");
+        $this->conf->q_raw("unlock tables");
+
         Contact::update_rights();
 
         // merge user data via Contact::save_json
         $cj = $this->basic_user_json();
-
         if (($this->oldu->roles | $this->newu->roles) != $this->newu->roles) {
             $cj->roles = UserStatus::unparse_roles_json($this->oldu->roles | $this->newu->roles);
         }
-
         $cj->tags = [];
         foreach (Tagger::split_unpack($this->newu->contactTags) as $ti) {
             $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
@@ -132,18 +160,20 @@ class MergeContacts extends MessageSet {
                 $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
             }
         }
-
         $us = new UserStatus($this->conf->root_user(), ["no_notify" => true]);
         $us->save($cj, $this->newu);
 
-        // Remove the old contact record
+        // remove the old contact record
         if (!$this->has_error()) {
-            $this->conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?", $this->oldu->contactId, $this->oldu->firstName, $this->oldu->lastName, $this->oldu->unaccentedName, $this->oldu->email);
+            $this->conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?, affiliation=?", $this->oldu->contactId, $this->oldu->firstName, $this->oldu->lastName, $this->oldu->unaccentedName, $this->oldu->email, $this->oldu->affiliation);
             $result = $this->conf->q("delete from ContactInfo where contactId=?", $this->oldu->contactId);
             if ($result->errno) {
                 $this->add_error($this->conf->db_error_html(true));
             }
         }
+
+        // update autosearch tags
+        $this->conf->update_autosearch_tags();
     }
 
     function run() {

@@ -1074,10 +1074,15 @@ class Contact {
         uksort($a, function ($a, $b) use ($pcm) {
             if (isset($pcm[$a]) && isset($pcm[$b])) {
                 return $pcm[$a]->sort_position - $pcm[$b]->sort_position;
-            } else {
-                $au = $pcm[$a] ?? $this->conf->cached_user_by_id($a);
-                $bu = $pcm[$b] ?? $this->conf->cached_user_by_id($b);
+            }
+            $au = $pcm[$a] ?? $this->conf->cached_user_by_id($a);
+            $bu = $pcm[$b] ?? $this->conf->cached_user_by_id($b);
+            if ($au && $bu) {
                 return call_user_func($this->conf->user_comparator(), $au, $bu);
+            } else if ($au || $bu) {
+                return $au ? -1 : 1;
+            } else {
+                return $a - $b;
             }
         });
     }

@@ -80,7 +80,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             if (($colon = strpos($text, ":")) !== false) {
                 $text = substr($text, $colon + 1);
             }
-            $old_ct_na = Conflict::nonauthor_part($old_ct);
+            $old_ct_na = Conflict::pc_part($old_ct);
             if ($text === "") {
                 if ($old_ct_na <= CONFLICT_MAXUNCONFLICTED) {
                     $ct = Conflict::set_pinned(Conflict::GENERAL, $admin);
@@ -97,7 +97,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
                 $ct = Conflict::set_pinned($ct, false);
             }
         }
-        $mask = $this->iscontact ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR - 1;
+        $mask = $this->iscontact ? CONFLICT_CONTACTAUTHOR : CONFLICT_PCMASK;
         $matcher = $this->_matcher($req, $state->conf);
         if (($matcher && !$matcher->test($old_ct & $mask))
             || (!$this->iscontact && Conflict::is_pinned($old_ct) && !$admin)) {
@@ -178,13 +178,13 @@ class Conflict_Assigner extends Assigner {
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $old_ct = $this->item->pre("_ctype") ?? 0;
-        if (($old_ct ^ $this->ctype) & (CONFLICT_AUTHOR - 1)) {
+        if (Conflict::pc_part($old_ct ^ $this->ctype)) {
             $acsv->add([
                 "pid" => $this->pid,
                 "action" => "conflict",
                 "email" => $this->contact->email,
                 "name" => $this->contact->name(),
-                "conflict" => $aset->conf->conflict_types()->unparse_assignment($this->ctype & (CONFLICT_AUTHOR - 1))
+                "conflict" => $aset->conf->conflict_types()->unparse_assignment(Conflict::pc_part($this->ctype))
             ]);
         }
         if (($old_ct ^ $this->ctype) & CONFLICT_CONTACTAUTHOR) {
