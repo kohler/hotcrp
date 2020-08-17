@@ -13,7 +13,8 @@ class Tags_SettingRenderer {
         // Remove `~~` tags from the set of defined chair-only tags. (They can
         // get on the list if they're defined in some other way.)
         $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
-            return !str_starts_with($t->tag, "~~");
+            return !str_starts_with($t->tag, "~~")
+                && $t->tag !== "perm:*";
         });
         $sv->set_oldv("tag_chair", self::render_tags($ts));
         $sv->echo_entry_group("tag_chair", null, ["class" => "need-suggest tags"], "PC members can see these tags, but only administrators can change them.");
