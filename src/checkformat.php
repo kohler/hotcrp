@@ -64,7 +64,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function run_banal($filename) {
-        $env = [];
+        $env = ["PATH" => getenv("PATH")];
         if (($pdftohtml = $this->conf->opt("pdftohtml"))) {
             $env["PHP_PDFTOHTML"] = $pdftohtml;
         }
