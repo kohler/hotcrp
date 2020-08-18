@@ -25,8 +25,9 @@ class Options_SettingRenderer {
 
         $jtypes = $sv->conf->option_type_map();
         if (!isset($jtypes[$optvt])
-            && ($made_type = $sv->conf->option_type($optvt)))
+            && ($made_type = $sv->conf->option_type($optvt))) {
             $jtypes[$optvt] = $made_type;
+        }
         uasort($jtypes, "Conf::xt_position_compare");
 
         $otypes = [];
@@ -34,7 +35,7 @@ class Options_SettingRenderer {
             if (!isset($uf->display_if)
                 || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)
                 || $uf->name === $optvt)
-                $otypes[$uf->name] = get($uf, "title", $uf->name);
+                $otypes[$uf->name] = $uf->title ?? $uf->name;
         }
 
         $t = '<div class="' . $sv->control_class("optvt_$xpos", "entryi")
@@ -114,7 +115,8 @@ class Options_SettingRenderer {
                     "description" => "",
                     "type" => "checkbox",
                     "position" => count($sv->conf->options()->nonfixed()) + 1,
-                    "display" => "prominent"
+                    "display" => "prominent",
+                    "json_key" => "__fake__"
                 ], $sv->conf);
         }
 
@@ -185,7 +187,7 @@ class Options_SettingRenderer {
             Ht::button(Icons::ui_movearrow(0), ["class" => "btn-licon ui js-settings-option-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_movearrow(2), ["class" => "btn-licon ui js-settings-option-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
-            Ht::button(Icons::ui_trash(), ["class" => "btn-licon ui js-settings-option-move delete need-tooltip", "aria-label" => "Delete", "data-option-exists" => get($this->have_options, $o->id)]),
+            Ht::button(Icons::ui_trash(), ["class" => "btn-licon ui js-settings-option-move delete need-tooltip", "aria-label" => "Delete", "data-option-exists" => $this->have_options[$o->id] ?? false]),
             "</div></div>\n";
 
         echo '</div>';
@@ -200,8 +202,9 @@ class Options_SettingRenderer {
         $self = new Options_SettingRenderer;
         $pos = 0;
         $all_options = array_merge($sv->conf->options()->nonfixed()); // get our own iterator
-        foreach ($all_options as $o)
+        foreach ($all_options as $o) {
             $self->render_option($sv, $o, ++$pos);
+        }
         echo "</div>\n";
 
         ob_start();
@@ -220,7 +223,7 @@ class Options_SettingRenderer {
             $options = (array) json_decode($sv->newv("options"));
             usort($options, function ($a, $b) { return $a->position - $b->position; });
             foreach ($options as $pos => $o)
-                if (get($o, "visibility") === "nonblind")
+                if (($o->visibility ?? null) === "nonblind")
                     $sv->warning_at("optp_" . ($pos + 1), "The “" . htmlspecialchars($o->name) . "” field is “visible if authors are visible,” but authors are not visible. You may want to change " . $sv->setting_link("Settings &gt; Submissions &gt; Blind submission", "sub_blind") . " to “Blind until review.”");
         }
     }
@@ -296,7 +299,7 @@ class Options_SettingParser extends SettingParser {
         }
 
         $jtype = $sv->conf->option_type($oarg["type"]);
-        if ($jtype && get($jtype, "has_selector")) {
+        if ($jtype && ($jtype->has_selector ?? false)) {
             $oarg["selector"] = array();
             $seltext = trim(cleannl($sv->reqv("optv_$xpos", "")));
             if ($seltext != "") {
