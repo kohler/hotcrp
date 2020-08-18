@@ -143,8 +143,9 @@ class Option_SearchTerm extends SearchTerm {
 
         $os = $srch->conf->abbrev_matcher()->findp($oname, Conf::MFLAG_OPTION);
         if (empty($os)) {
-            if ($srch->conf->abbrev_matcher()->find_all($oname, Conf::MFLAG_OPTION)) {
-                $srch->warn("“" . htmlspecialchars($oname) . "” matches more than one submission field.");
+            if (($os2 = $srch->conf->abbrev_matcher()->find_all($oname, Conf::MFLAG_OPTION))) {
+                $ts = array_map(function ($o) { return "“" . htmlspecialchars($o->search_keyword()) . "”"; }, $os2);
+                $srch->warn("“" . htmlspecialchars($oname) . "” matches more than one submission field. Try " . commajoin($ts, " or ") . ", or use “" . htmlspecialchars($oname) . "*” to match them all.");
             } else {
                 $srch->warn("“" . htmlspecialchars($oname) . "” matches no submission fields.");
             }
