@@ -17,7 +17,7 @@ class Preference_API {
                 return Conf::paper_error_json_result($whynot);
             }
         }
-        if (!$u->can_enter_preference($prow)) {
+        if (!$u->can_enter_preference($prow, true)) {
             return new JsonResult(403, "Can’t enter preference for #{$prow->paperId}.");
         }
 

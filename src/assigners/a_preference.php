@@ -22,7 +22,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         return array_filter($state->pc_users(),
             function ($u) use ($prow) {
-                return $u->can_enter_preference($prow);
+                return $u->can_enter_preference($prow, true);
             });
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
@@ -34,7 +34,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         } else if ($contact->contactId !== $state->user->contactId
                    && !$state->user->can_administer($prow)) {
             return "Can’t change other users’ preferences for #{$prow->paperId}.";
-        } else if (!$contact->can_enter_preference($prow)) {
+        } else if (!$contact->can_enter_preference($prow, true)) {
             if ($contact->contactId !== $state->user->contactId) {
                 return $contact->name_h(NAME_E) . " can’t enter preference for #{$prow->paperId}.";
             } else {

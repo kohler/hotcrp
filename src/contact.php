@@ -3844,6 +3844,19 @@ class Contact {
     }
 
     /** @return bool */
+    function can_become_reviewer(PaperInfo $prow = null) {
+        if ($prow) {
+            $rights = $this->rights($prow);
+            return $rights->allow_review
+                || ($rights->allow_pc
+                    && $this->conf->check_tracks($prow, $this, Track::ASSREV));
+        } else {
+            return $this->isPC
+                && $this->conf->check_all_tracks($this, Track::ASSREV);
+        }
+    }
+
+    /** @return bool */
     function can_become_reviewer_ignore_conflict(PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
@@ -3881,9 +3894,11 @@ class Contact {
     }
 
     /** @return bool */
-    function can_enter_preference(PaperInfo $prow) {
+    function can_enter_preference(PaperInfo $prow, $submit = false) {
         return $this->isPC
-            && $this->can_become_reviewer_ignore_conflict($prow)
+            && ($submit
+                ? $this->can_become_reviewer_ignore_conflict($prow)
+                : $this->can_become_reviewer($prow))
             && ($this->can_view_paper($prow)
                 || ($prow->timeWithdrawn > 0
                     && ($prow->timeSubmitted < 0
