@@ -64,8 +64,9 @@ class CheckFormat extends MessageSet implements FormatChecker {
     }
 
     function run_banal($filename) {
+        $env = [];
         if (($pdftohtml = $this->conf->opt("pdftohtml"))) {
-            putenv("PHP_PDFTOHTML=" . $pdftohtml);
+            $env["PHP_PDFTOHTML"] = $pdftohtml;
         }
         $banal_run = "perl src/banal -json ";
         if (self::$banal_args) {
@@ -74,7 +75,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $banal_run .= escapeshellarg($filename);
         $pipes = null;
         $tstart = microtime(true);
-        $banal_proc = proc_open($banal_run, [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
+        $banal_proc = proc_open($banal_run, [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes, SiteLoader::$root, $env);
         // read stderr first -- if there are warnings, we must or banal might
         // block forever!
         $this->banal_stderr = stream_get_contents($pipes[2]);
@@ -200,6 +201,10 @@ class CheckFormat extends MessageSet implements FormatChecker {
             || count($bj->papersize) != 2) {
             $this->msg_fail("Analysis failure: no pages or paper size.");
             return;
+        }
+
+        if (!isset($this->npages)) {
+            $this->npages = $bj->npages ?? count($bj->pages);
         }
 
         // paper size
@@ -446,6 +451,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $spec = new FormatSpec($spec);
         }
         $this->clear();
+        $this->run_flags |= CheckFormat::RUN_STARTED;
         $bj = $this->run_banal($filename);
         $this->check_banal_json($bj, $spec);
     }
