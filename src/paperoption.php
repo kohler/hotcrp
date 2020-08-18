@@ -1528,11 +1528,12 @@ class DocumentPaperOption extends PaperOption {
         }
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
-        $fup = $ov->anno("document");
-        if ($fup && ($doc = $ps->upload_document($fup, $this))) {
-            $ov->set_value_data([$doc->paperStorageId], [null]);
-        } else {
-            $ov->estop(null);
+        if (($fup = $ov->anno("document"))) {
+            if (($doc = $ps->upload_document($fup, $this))) {
+                $ov->set_value_data([$doc->paperStorageId], [null]);
+            } else {
+                $ov->estop(null);
+            }
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
