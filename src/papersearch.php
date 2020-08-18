@@ -1543,6 +1543,9 @@ class SearchQueryInfo {
         $this->add_conflict_table();
         $this->columns["conflictType"] = "PaperConflict.conflictType";
     }
+    function add_options_columns() {
+        $this->columns["optionIds"] = "coalesce((select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId), '')";
+    }
     function add_reviewer_columns() {
         $this->_has_my_review = true;
     }

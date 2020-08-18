@@ -338,6 +338,7 @@ src/search/st_decision.php
 src/search/st_editfinal.php
 src/search/st_formula.php
 src/search/st_option.php
+src/search/st_optionpresent.php
 src/search/st_paperpc.php
 src/search/st_paperstatus.php
 src/search/st_pdf.php

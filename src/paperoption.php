@@ -1261,6 +1261,10 @@ class PaperOption {
         }
         return false;
     }
+    /** @return array|bool|null */
+    function present_script_expression() {
+        return null;
+    }
 }
 
 class CheckboxPaperOption extends PaperOption {
@@ -1308,6 +1312,9 @@ class CheckboxPaperOption extends PaperOption {
 
     function search_examples(Contact $viewer, $context) {
         return [$this->has_search_example()];
+    }
+    function present_script_expression() {
+        return ["type" => "checkbox", "id" => $this->id];
     }
 }
 
@@ -1451,6 +1458,9 @@ class SelectorPaperOption extends PaperOption {
             $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” matches more than one option.";
             return false;
         }
+    }
+    function present_script_expression() {
+        return ["type" => "selector", "id" => $this->id];
     }
 }
 
@@ -1655,6 +1665,9 @@ class DocumentPaperOption extends PaperOption {
     function search_examples(Contact $viewer, $context) {
         return [$this->has_search_example()];
     }
+    function present_script_expression() {
+        return ["type" => "document_count", "id" => $this->id];
+    }
 }
 
 class NumericPaperOption extends PaperOption {
@@ -1732,6 +1745,9 @@ class NumericPaperOption extends PaperOption {
             return false;
         }
     }
+    function present_script_expression() {
+        return ["type" => "text_present", "id" => $this->id];
+    }
 }
 
 class TextPaperOption extends PaperOption {
@@ -1800,6 +1816,9 @@ class TextPaperOption extends PaperOption {
             $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
             return false;
         }
+    }
+    function present_script_expression() {
+        return ["type" => "text_present", "id" => $this->id];
     }
 }
 
@@ -2001,6 +2020,9 @@ class AttachmentsPaperOption extends PaperOption {
             $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
             return false;
         }
+    }
+    function present_script_expression() {
+        return ["type" => "document_count", "id" => $this->id];
     }
 }
 

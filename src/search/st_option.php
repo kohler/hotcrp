@@ -114,7 +114,50 @@ class Option_SearchTerm extends SearchTerm {
             return null;
         }
     }
+    /** @param list<PaperOption> $os */
+    static private function make_present($os) {
+        $sts = [];
+        foreach ($os as $o) {
+            $sts[] = new OptionPresent_SearchTerm($o, count($os) > 1);
+        }
+        return count($sts) === 1 ? $sts[0] : SearchTerm::make_op("or", $sts);
+    }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        // new, preferred path
+        if ($sword->kwdef->name === "option") {
+            if (!$sword->quoted && strcasecmp($word, "any") === 0) {
+                return self::make_present($srch->conf->options()->normal());
+            } else if (!$sword->quoted && strcasecmp($word, "none") === 0) {
+                return self::make_present($srch->conf->options()->normal())->negate();
+            } else if (preg_match('/\A(.*?)(?:[:#]|(?=[=!<>]|≠|≤|≥))(.*)\z/', $word, $m)) {
+                $oname = $m[1];
+                $ocontent = $m[2];
+            } else {
+                $oname = $word;
+                $ocontent = "any";
+            }
+        } else {
+            $oname = $sword->kwdef->name;
+            $ocontent = $word;
+        }
+
+        $os = $srch->conf->abbrev_matcher()->findp($oname, Conf::MFLAG_OPTION);
+        if (empty($os)) {
+            if ($srch->conf->abbrev_matcher()->find_all($oname, Conf::MFLAG_OPTION)) {
+                $srch->warn("“" . htmlspecialchars($oname) . "” matches more than one submission field.");
+            } else {
+                $srch->warn("“" . htmlspecialchars($oname) . "” matches no submission fields.");
+            }
+            return new False_SearchTerm;
+        }
+
+        if (!$sword->quoted && strcasecmp($ocontent, "any") === 0) {
+            return self::make_present($os);
+        } else if (!$sword->quoted && strcasecmp($ocontent, "none") === 0) {
+            return self::make_present($os)->negate();
+        }
+
+        // old path
         if ($sword->kwdef->name !== "option") {
             $word = $sword->kwdef->name . ":" . $word;
         }

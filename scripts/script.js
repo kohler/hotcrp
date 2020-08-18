@@ -7868,19 +7868,18 @@ handle_ui.on("js-remove-document", function (event) {
         $en = $doc.find(".document-file"),
         f = this.closest("form") /* set before $doc is removed */;
     if (hasClass(this, "undelete")) {
-        $doc.find(".document-remover").remove();
+        $doc.find(".document-remover").val("").trigger("change").remove();
         $en.find("del > *").unwrap();
         $doc.find(".document-stamps, .document-shortformat").removeClass("hidden");
         $(this).removeClass("undelete").html("Delete");
     } else {
-        $('<input type="hidden" class="document-remover" name="' + $doc.data("documentName") + ':remove" data-default-value="" value="1">').appendTo($doc.find(".document-actions"));
+        $('<input type="hidden" class="document-remover" name="' + $doc.data("documentName") + ':remove" data-default-value="" value="1">').appendTo($doc.find(".document-actions")).trigger("change");
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
         $doc.find(".document-uploader").trigger("hotcrp-change-document");
         $doc.find(".document-stamps, .document-shortformat").addClass("hidden");
         $(this).addClass("undelete").html("Restore");
     }
-    form_highlight(f);
 });
 
 handle_ui.on("js-withdraw", function (event) {
@@ -8226,6 +8225,34 @@ edit_conditions.or = function (ec, form) {
 edit_conditions.not = function (ec, form) {
     return !evaluate_edit_condition(ec.child[0], form);
 };
+edit_conditions.checkbox = function (ec, form) {
+    var e = form.elements["opt" + ec.id];
+    return e && e.checked;
+};
+edit_conditions.selector = function (ec, form) {
+    var e = form.elements["opt" + ec.id];
+    return e && e.value ? +e.value : false;
+};
+edit_conditions.text_present = function (ec, form) {
+    var e = form.elements["opt" + ec.id],
+        v = e ? e.value : "";
+    return $.trim(v) !== "";
+};
+edit_conditions.document_count = function (ec, form) {
+    var n = 0;
+    $(form).find(".has-document").each(function () {
+        if (this.getAttribute("data-dtype") == ec.id) {
+            var name = this.getAttribute("data-document-name"), e;
+            if ((e = form.elements[name])) {
+                n += e.value ? 1 : 0;
+            } else if ($(this).find(".document-file").length
+                       && !form.elements[name + ":remove"]) {
+                n += 1;
+            }
+        }
+    });
+    return n;
+};
 edit_conditions.option = function (ec, form) {
     var e = form.elements["opt" + ec.id], v;
     if (e instanceof HTMLInputElement) {
@@ -8328,7 +8355,10 @@ handle_ui.on("js-submit-paper", function (event) {
 return {
     edit_condition: function () {
         run_edit_conditions();
-        $("#form-paper").on("change click", "input, select, textarea", run_edit_conditions);
+        $("#form-paper").on("change click", "input, select, textarea, file", run_edit_conditions);
+    },
+    evaluate_edit_condition: function (ec) {
+        return evaluate_edit_condition(typeof ec === "string" ? JSON.parse(ec) : ec, $("#form-paper")[0]);
     },
     load: function () {
         hiliter_children("#form-paper");
