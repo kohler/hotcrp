@@ -418,7 +418,7 @@ class PaperTable {
             if (!$opt->test_exists($this->prow)) {
                 echo ' hidden';
             }
-            echo '" data-edit-condition="', htmlspecialchars(json_encode($opt->compile_exists_condition($this->prow)));
+            echo '" data-edit-condition="', htmlspecialchars(json_encode($opt->exists_script_expression($this->prow)));
             Ht::stash_script('$(edit_paper_ui.edit_condition)', 'edit_condition');
         }
         echo '"><h3 class="', $this->control_class($what, "papet");

@@ -78,7 +78,7 @@ class Tag_SearchTerm extends SearchTerm {
         }
         return $ok;
     }
-    function compile_condition(PaperInfo $row, PaperSearch $srch) {
+    function script_expression(PaperInfo $row, PaperSearch $srch) {
         $child = [];
         $tags = $row->searchable_tags($srch->user);
         // autosearch tags are special, splice in their search defs
@@ -88,7 +88,7 @@ class Tag_SearchTerm extends SearchTerm {
                     return null;
                 } else if ($this->tsm->test_value(0)) {
                     $newsrch = new PaperSearch($srch->user, $dt->autosearch);
-                    $newec = $newsrch->term()->compile_condition($row, $newsrch);
+                    $newec = $newsrch->term()->script_expression($row, $newsrch);
                     if ($newec === null) {
                         return null;
                     } else if ($newec === true) {

@@ -22,7 +22,7 @@ class EditFinal_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $row->can_author_edit_final_paper();
     }
-    function compile_condition(PaperInfo $row, PaperSearch $srch) {
+    function script_expression(PaperInfo $row, PaperSearch $srch) {
         return $this->exec($row, $srch);
     }
 }

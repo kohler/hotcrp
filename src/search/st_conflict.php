@@ -49,7 +49,7 @@ class Conflict_SearchTerm extends SearchTerm {
         }
         return $this->csm->test($n);
     }
-    function compile_condition(PaperInfo $row, PaperSearch $srch) {
+    function script_expression(PaperInfo $row, PaperSearch $srch) {
         if (!$this->ispc)
             return null;
         if (!$srch->conf->setting("sub_pcconf"))

@@ -976,9 +976,9 @@ class PaperOption {
     function exists_condition() {
         return $this->exists_if;
     }
-    function compile_exists_condition(PaperInfo $prow) {
+    function exists_script_expression(PaperInfo $prow) {
         assert($this->_exists_search !== null);
-        return $this->_exists_search->term()->compile_condition($prow, $this->_exists_search);
+        return $this->_exists_search->term()->script_expression($prow, $this->_exists_search);
     }
     protected function set_exists_if($x) {
         if ($x !== null && $x !== true) {

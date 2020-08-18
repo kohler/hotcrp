@@ -289,7 +289,7 @@ class Options_SettingParser extends SettingParser {
                     if (!$this->fake_prow) {
                         $this->fake_prow = new PaperInfo(null, null, $sv->conf);
                     }
-                    if ($ps->term()->compile_condition($this->fake_prow, $ps) === null) {
+                    if ($ps->term()->script_expression($this->fake_prow, $ps) === null) {
                         $sv->error_at("optecs_$xpos", "Search too complex for field condition. (Not all search keywords are supported for field conditions.)");
                     } else {
                         $oarg["exists_if"] = $optecs;

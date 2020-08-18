@@ -29,7 +29,7 @@ class OptionPresent_SearchTerm extends SearchTerm {
             && ($ov = $row->option($this->option))
             && $this->option->value_present($ov);
     }
-    function compile_condition(PaperInfo $row, PaperSearch $srch) {
+    function script_expression(PaperInfo $row, PaperSearch $srch) {
         if ($srch->user->can_view_option($row, $this->option)) {
             return $this->option->present_script_expression();
         } else {

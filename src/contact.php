@@ -3428,7 +3428,7 @@ class Contact {
             || ($opt->id === 0 && $this->allow_edit_final_paper($prow))) {
             return 0;
         } else if (!$opt->test_exists($prow)) {
-            return $opt->compile_exists_condition($prow) ? 1 : 0;
+            return $opt->exists_script_expression($prow) ? 1 : 0;
         } else {
             return 2;
         }
