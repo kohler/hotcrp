@@ -82,6 +82,9 @@ class Tags_API {
         return new JsonResult((array) self::tagmessages($user, $prow));
     }
 
+    /** @param list<MessageItem> $ms1
+     * @param list<MessageItem> $ms2
+     * @return list<MessageItem> */
     static private function combine_message_lists($ms1, $ms2) {
         foreach ($ms2 as $mx2) {
             foreach ($ms1 as $mx1) {

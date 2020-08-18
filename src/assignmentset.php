@@ -410,7 +410,7 @@ class AssignmentState {
     function has_messages() {
         return !empty($this->msgs);
     }
-    /** @return iterable<MessageItem> */
+    /** @return list<MessageItem> */
     function message_list() {
         return $this->msgs;
     }
@@ -1055,7 +1055,7 @@ class AssignmentSet {
         $this->astate->clear_messages();
     }
 
-    /** @return iterable<MessageItem> */
+    /** @return list<MessageItem> */
     function message_list() {
         return $this->astate->message_list();
     }

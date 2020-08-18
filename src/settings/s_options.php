@@ -4,6 +4,7 @@
 
 class Options_SettingRenderer {
     private $option_classes = [];
+    /** @var ?array<int,int> */
     private $have_options = null;
     static private function find_option_req(SettingValues $sv, PaperOption $o, $xpos) {
         if ($o->id) {
@@ -172,8 +173,9 @@ class Options_SettingRenderer {
 
         if ($o->id && $this->have_options === null) {
             $this->have_options = [];
-            foreach ($sv->conf->fetch_rows("select optionId, count(distinct paperId) from PaperOption group by optionId") as $row)
-                $this->have_options[$row[0]] = $row[1];
+            foreach ($sv->conf->fetch_rows("select optionId, count(distinct paperId) from PaperOption group by optionId") as $row) {
+                $this->have_options[(int) $row[0]] = (int) $row[1];
+            }
         }
 
         echo '<div class="f-i entryi"><label></label><div class="btnp entry">',

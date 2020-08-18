@@ -205,6 +205,7 @@ class Tags_SettingParser extends SettingParser {
 
     static function crosscheck(SettingValues $sv) {
         $vs = [];
+        '@phan-var array<string,list<string>> $vs';
         $descriptions = [
             "tag_approval" => "approval voting",
             "tag_vote" => "allotment voting",

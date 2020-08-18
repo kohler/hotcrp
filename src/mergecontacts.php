@@ -131,10 +131,11 @@ class MergeContacts extends MessageSet {
 
         // PaperTag, TagAnno
         if ($this->oldu->roles & Contact::ROLE_PCLIKE) {
+            $oldpfxlen = strlen((string) $this->oldu->contactId) + 2;
             $this->conf->qe_raw("lock tables PaperTag write, PaperTagAnno write");
-            $this->qx("update ignore PaperTag set tag=concat('" . $this->newu->contactId . "~',substring(tag," . (strlen($this->oldu->contactId) + 2) . ")) where tag like '" . $this->oldu->contactId . "~%'");
+            $this->qx("update ignore PaperTag set tag=concat('" . $this->newu->contactId . "~',substring(tag," . $oldpfxlen . ")) where tag like '" . $this->oldu->contactId . "~%'");
             $this->q("delete from PaperTag where tag like '" . $this->oldu->contactId . "~%'");
-            $this->qx("update ignore PaperTagAnno set tag=concat('" . $this->newu->contactId . "~',substring(tag," . (strlen($this->oldu->contactId) + 2) . ")) where tag like '" . $this->oldu->contactId . "~%'");
+            $this->qx("update ignore PaperTagAnno set tag=concat('" . $this->newu->contactId . "~',substring(tag," . $oldpfxlen . ")) where tag like '" . $this->oldu->contactId . "~%'");
             $this->q("delete from PaperTagAnno where tag like '" . $this->oldu->contactId . "~%'");
             $this->conf->qe_raw("unlock tables");
         }
