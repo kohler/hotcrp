@@ -762,7 +762,7 @@ class AbbreviationMatcher {
      * @return list<T> */
     function findp($pattern, $tflags = 0) {
         $a = $this->find_all($pattern, $tflags);
-        if (count($a) <= 1 || strpos($pattern, "*") === false) {
+        if (count($a) <= 1 || strpos($pattern, "*") !== false) {
             return $a;
         } else {
             return [];
