@@ -730,7 +730,6 @@ class AbbreviationMatcher {
             }
         }
         $results = [];
-        $last = false;
         $prio = $tflags ? ($this->prio[$tflags] ?? false) : false;
         foreach ($this->xmatches[$pattern] as $i) {
             $d = $this->data[$i];
@@ -741,8 +740,8 @@ class AbbreviationMatcher {
             }
             if ((!$tflags || ($d->tflags & $tflags) !== 0) && $prio == $dprio) {
                 $value = $d->value ?? $d->value();
-                if (empty($results) || $value !== $last) {
-                    $results[] = $last = $value;
+                if (empty($results) || !in_array($value, $results, true)) {
+                    $results[] = $value;
                 }
             }
         }
