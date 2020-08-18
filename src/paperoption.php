@@ -1249,21 +1249,38 @@ class PaperOption {
         assert($this->search_keyword() !== false);
         return new SearchExample("has:" . $this->search_keyword(), "submission field “%s” set", $this->title_html());
     }
-    function parse_search($oms) {
-        if (!$oms->quoted && $oms->compar === "=") {
-            if ($oms->vword === "" || strcasecmp($oms->vword, "yes") === 0) {
-                $oms->os[] = new OptionMatcher($this, "!=", null);
-                return true;
-            } else if (strcasecmp($oms->vword, "no") === 0) {
-                $oms->os[] = new OptionMatcher($this, "=", null);
-                return true;
-            }
+    /** @return ?SearchTerm */
+    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+        return null;
+    }
+    /** @return ?SearchTerm */
+    final function parse_boolean_search(SearchWord $sword, PaperSearch $srch) {
+        $lword = strtolower($sword->cword);
+        if (in_array($sword->compar, ["", "=", "!="], true)
+            && in_array($lword, ["yes", "no", "y", "n", "true", "false"], true)) {
+            $v = $lword[0] === "y" || $lword[0] === "t";
+            return (new OptionPresent_SearchTerm($this))->negate_if($v !== ($sword->compar !== "!="));
+        } else {
+            return null;
         }
-        return false;
     }
     /** @return array|bool|null */
     function present_script_expression() {
         return null;
+    }
+    /** @return array|bool|null */
+    function value_script_expression() {
+        return null;
+    }
+
+    /** @param string &$t
+     * @return ?Fexpr */
+    function parse_fexpr(FormulaCall $fcall, &$t) {
+        return null;
+    }
+    /** @return Fexpr */
+    final function present_fexpr() {
+        return new OptionPresent_Fexpr($this);
     }
 }
 
@@ -1313,8 +1330,18 @@ class CheckboxPaperOption extends PaperOption {
     function search_examples(Contact $viewer, $context) {
         return [$this->has_search_example()];
     }
+    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+        return $this->parse_boolean_search($sword, $srch);
+    }
     function present_script_expression() {
         return ["type" => "checkbox", "id" => $this->id];
+    }
+    function value_script_expression() {
+        return $this->present_script_expression();
+    }
+
+    function parse_fexpr(FormulaCall $fcall, &$t) {
+        return $this->present_fexpr();
     }
 }
 
@@ -1433,7 +1460,7 @@ class SelectorPaperOption extends PaperOption {
             return false;
         } else {
             $e = new AbbreviationEntry($this->selector[$idx - 1], $idx);
-            return $this->selector_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
+            return $this->selector_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE);
         }
     }
     function search_examples(Contact $viewer, $context) {
@@ -1443,24 +1470,30 @@ class SelectorPaperOption extends PaperOption {
         }
         return $a;
     }
-    function parse_search($oms) {
-        $vs = $this->selector_abbrev_matcher()->find_all($oms->vword);
+    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+        $vs = $this->selector_abbrev_matcher()->findp($sword->cword);
         if (empty($vs)) {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” matches no options.";
-            return false;
-        } else if (count($vs) === 1) {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $vs[0]);
-            return true;
-        } else if ($oms->compar === "=" || $oms->compar === "!=") {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $vs);
-            return true;
+            $pfx = htmlspecialchars($this->search_keyword()) . " (" . $this->title_html() . ")";
+            if ($sword->cword === "") {
+                $srch->warn("$pfx search: Selector missing.");
+            } else if (($vs2 = $this->selector_abbrev_matcher()->find_all($sword->cword))) {
+                $ts = array_map(function ($x) { return "“" . htmlspecialchars($this->selector[$x - 1]) . "”"; }, $vs2);
+                $srch->warn("$pfx search: “" . htmlspecialchars($sword->cword) . "” matches more than one choice. Try " . commajoin($ts, " or ") . ", or use “" . htmlspecialchars($sword->cword) . "*” to match them all.");
+            } else {
+                $srch->warn("$pfx search: No choice matches “" . htmlspecialchars($sword->cword) . "”.");
+            }
+            return null;
+        } else if (in_array($sword->compar, ["", "=", "!="], true)) {
+            return (new OptionValueIn_SearchTerm($this, $vs))->negate_if($sword->compar === "!=");
         } else {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” matches more than one option.";
-            return false;
+            return null;
         }
     }
     function present_script_expression() {
         return ["type" => "selector", "id" => $this->id];
+    }
+    function value_script_expression() {
+        return $this->present_script_expression();
     }
 }
 
@@ -1665,6 +1698,9 @@ class DocumentPaperOption extends PaperOption {
     function search_examples(Contact $viewer, $context) {
         return [$this->has_search_example()];
     }
+    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+        return $this->parse_boolean_search($sword, $srch);
+    }
     function present_script_expression() {
         return ["type" => "document_count", "id" => $this->id];
     }
@@ -1734,19 +1770,22 @@ class NumericPaperOption extends PaperOption {
             new SearchExample($this->search_keyword() . ":<comparator>", "submission’s “%s” field is greater than 100", $this->title_html(), ">100")
         ];
     }
-    function parse_search($oms) {
-        if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oms->vword, $m)) {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, intval($m[1]));
-            return true;
-        } else if (parent::parse_search($oms)) {
-            return true;
+    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+        if (preg_match('/\A[-+]?(?:\d+|\d+\.\d*|\.\d+)\z/', $sword->cword)) {
+            return new OptionValue_SearchTerm($this, CountMatcher::comparator_value($sword->compar), (float) $sword->cword);
         } else {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->vword) . "” is not an integer.";
-            return false;
+            return null;
         }
     }
     function present_script_expression() {
         return ["type" => "text_present", "id" => $this->id];
+    }
+    function value_script_expression() {
+        return ["type" => "numeric", "id" => $this->id];
+    }
+
+    function parse_fexpr(FormulaCall $fcall, &$t) {
+        return new OptionValue_Fexpr($this);
     }
 }
 
@@ -1808,13 +1847,11 @@ class TextPaperOption extends PaperOption {
             new SearchExample($this->search_keyword() . ":<text>", "submission’s “%s” field contains “hello”", $this->title_html(), "hello")
         ];
     }
-    function parse_search($oms) {
-        if ($oms->compar === "=" || $oms->compar === "!=") {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "text");
-            return true;
+    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+        if ($sword->compar === "") {
+            return new OptionText_SearchTerm($this, $sword->cword);
         } else {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
-            return false;
+            return null;
         }
     }
     function present_script_expression() {
@@ -2004,21 +2041,16 @@ class AttachmentsPaperOption extends PaperOption {
         return [
             $this->has_search_example(),
             new SearchExample($this->search_keyword() . ":<count>", "submission has three or more “%s” attachments", $this->title_html(), ">2"),
-            new SearchExample($this->search_keyword() . ":<filename>", "submission has “%s” attachment matching “*.gif”", $this->title_html(), "*.gif")
+            new SearchExample($this->search_keyword() . ":\"<filename>\"", "submission has “%s” attachment matching “*.gif”", $this->title_html(), "*.gif")
         ];
     }
-    function parse_search($oms) {
-        if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oms->vword, $m)) {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $m[1], "attachment-count");
-            return true;
-        } else if (parent::parse_search($oms)) {
-            return true;
-        } else if ($oms->compar === "=" || $oms->compar === "!=") {
-            $oms->os[] = new OptionMatcher($this, $oms->compar, $oms->vword, "attachment-name");
-            return true;
+    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+        if (preg_match('/\A[-+]?\d+\z/', $sword->cword)) {
+            return new DocumentCount_SearchTerm($this, $sword->compar, (int) $sword->cword);
+        } else if ($sword->compar === "" || $sword->compar === "!=") {
+            return new DocumentName_SearchTerm($this, $sword->compar !== "!=", $sword->cword);
         } else {
-            $oms->warnings[] = "“" . $this->title_html() . "” search “" . htmlspecialchars($oms->compar . $oms->vword) . "” too complex.";
-            return false;
+            return null;
         }
     }
     function present_script_expression() {
@@ -2031,8 +2063,5 @@ class UnknownPaperOption extends PaperOption {
         $args->type = "__unknown" . $args->id . "__";
         $args->form_position = $args->display_position = false;
         parent::__construct($conf, $args);
-    }
-    function parse_search($oms) {
-        return false;
     }
 }

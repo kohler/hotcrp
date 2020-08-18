@@ -3,12 +3,21 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class SearchWord {
+    /** @var string */
     public $qword;
+    /** @var string */
     public $word;
+    /** @var bool */
     public $quoted;
     public $keyword;
+    /** @var ?bool */
     public $kwexplicit;
     public $kwdef;
+    /** @var ?string */
+    public $compar;
+    /** @var ?string */
+    public $cword;
+    /** @param string $qword */
     function __construct($qword) {
         $this->qword = $this->word = $qword;
         $this->quoted = $qword !== "" && $qword[0] === "\""
@@ -17,6 +26,8 @@ class SearchWord {
             $this->word = substr($qword, 1, -1);
         }
     }
+    /** @param string $text
+     * @return string */
     static function quote($text) {
         if ($text === ""
             || !preg_match('{\A[-A-Za-z0-9_.@/]+\z}', $text)) {
@@ -24,6 +35,8 @@ class SearchWord {
         }
         return $text;
     }
+    /** @param string $text
+     * @return string */
     static function unquote($text) {
         if ($text !== ""
             && $text[0] === "\""
@@ -2004,6 +2017,8 @@ class PaperSearch {
         return $qe;
     }
 
+    /** @param string $keyword
+     * @param bool $kwexplicit */
     private function _search_keyword(&$qt, SearchWord $sword, $keyword, $kwexplicit) {
         $word = $sword->word;
         $sword->keyword = $keyword;

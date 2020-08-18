@@ -7,6 +7,19 @@ class TextPregexes {
     public $preg_raw;
     public $preg_utf8;
     public $simple;
+
+    /** @param string $text
+     * @param string|false $deaccented_text
+     * @return bool */
+    function match($text, $deaccented_text) {
+        if (!isset($this->preg_raw)) {
+            return !!preg_match('{' . $this->preg_utf8 . '}ui', $text);
+        } else if ($deaccented_text && $deaccented_text !== $text) {
+            return !!preg_match('{' . $this->preg_utf8 . '}ui', $deaccented_text);
+        } else {
+            return !!preg_match('{' . $this->preg_raw . '}i', $text);
+        }
+    }
 }
 
 class Text {
@@ -349,15 +362,7 @@ class Text {
 
     /** @param ?TextPregexes $reg */
     static function match_pregexes($reg, $text, $deaccented_text) {
-        if (!$reg) {
-            return false;
-        } else if (!isset($reg->preg_raw)) {
-            return !!preg_match('{' . $reg->preg_utf8 . '}ui', $text);
-        } else if ($deaccented_text && $deaccented_text !== $text) {
-            return !!preg_match('{' . $reg->preg_utf8 . '}ui', $deaccented_text);
-        } else {
-            return !!preg_match('{' . $reg->preg_raw . '}i', $text);
-        }
+        return $reg && $reg->match($text, $deaccented_text);
     }
 
 

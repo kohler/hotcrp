@@ -14,6 +14,7 @@ class SiteLoader {
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
         "Fexpr" => "src/formula.php",
+        "FormulaCall" => "src/formula.php",
         "FormatChecker" => "src/formatspec.php",
         "HashAnalysis" => "lib/filer.php",
         "JsonSerializable" => "lib/json.php",

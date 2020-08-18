@@ -76,7 +76,7 @@ class Keywords_HelpTopic {
                     }
                     $q = $ex->q;
                     if ($ex->param_q) {
-                        $q = preg_replace('/<.*?>\z/', $ex->param_q, $q);
+                        $q = preg_replace('/<.*?>(?=\z|"\z)/', $ex->param_q, $q);
                     }
                     $desc = $hth->conf->_($ex->description, ...$ex->params);
                     if (!empty($others)) {

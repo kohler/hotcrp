@@ -279,7 +279,7 @@ class ReviewField implements JsonSerializable {
     }
     function abbreviation1() {
         $e = new AbbreviationEntry($this->name, $this, Conf::MFLAG_REVIEW);
-        return $this->conf->abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
+        return $this->conf->abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE);
     }
     function web_abbreviation() {
         return '<span class="need-tooltip" data-tooltip="' . $this->name_html

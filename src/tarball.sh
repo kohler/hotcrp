@@ -220,7 +220,8 @@ src/formulas/f_author.php
 src/formulas/f_conflict.php
 src/formulas/f_decision.php
 src/formulas/f_now.php
-src/formulas/f_option.php
+src/formulas/f_optionpresent.php
+src/formulas/f_optionvalue.php
 src/formulas/f_pdfsize.php
 src/formulas/f_pref.php
 src/formulas/f_reviewer.php
@@ -335,10 +336,15 @@ src/search/st_authormatch.php
 src/search/st_comment.php
 src/search/st_conflict.php
 src/search/st_decision.php
+src/search/st_documentcount.php
+src/search/st_documentname.php
 src/search/st_editfinal.php
 src/search/st_formula.php
 src/search/st_option.php
 src/search/st_optionpresent.php
+src/search/st_optiontext.php
+src/search/st_optionvalue.php
+src/search/st_optionvaluein.php
 src/search/st_paperpc.php
 src/search/st_paperstatus.php
 src/search/st_pdf.php

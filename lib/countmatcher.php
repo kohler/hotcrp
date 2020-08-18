@@ -127,15 +127,29 @@ class CountMatcher {
             return $str;
         }
     }
+    /** @param string $str
+     * @return ?int */
+    static function comparator_value($str) {
+        return self::$opmap[$str] ?? null;
+    }
+    /** @param int $compar
+     * @return ?string */
+    static function unparse_comparator_value($compar) {
+        return self::$oparray[$compar] ?? null;
+    }
+    /** @param string $str
+     * @return ?string */
     static function canonical_comparator($str) {
         if (($x = self::$opmap[trim($str)])) {
             return self::$oparray[$x];
         } else {
-            return false;
+            return null;
         }
     }
+    /** @param string $countexpr
+     * @return ?countexpr */
     static function canonicalize($countexpr) {
         $x = new CountMatcher($countexpr);
-        return $x->allowed ? $x->countexpr() : false;
+        return $x->allowed ? $x->countexpr() : null;
     }
 }

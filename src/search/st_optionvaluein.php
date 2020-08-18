@@ -1,23 +1,23 @@
 <?php
-// search/st_optionpresent.php -- HotCRP helper class for searching for papers
+// search/st_optionvaluein.php -- HotCRP helper class for searching for papers
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class OptionPresent_SearchTerm extends SearchTerm {
+class OptionValueIn_SearchTerm extends SearchTerm {
     /** @var PaperOption */
     private $option;
-    private $is_multi;
-
-    function __construct(PaperOption $o, $is_multi = false) {
-        parent::__construct("optionpresent");
+    private $values;
+    /** @param list<int> $values */
+    function __construct(PaperOption $o, $values) {
+        parent::__construct("optionvaluein");
         $this->option = $o;
-        $this->is_multi = $is_multi;
+        $this->values = $values;
     }
     function debug_json() {
         return [$this->type, $this->option->search_keyword()];
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_options_columns();
-        if (!$this->is_multi && !$sqi->negated && !$this->option->include_empty) {
+        if (!$sqi->negated && !$this->option->include_empty) {
             return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
         } else {
             return "true";
@@ -26,11 +26,16 @@ class OptionPresent_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $srch->user->can_view_option($row, $this->option)
             && ($ov = $row->option($this->option))
-            && $this->option->value_present($ov);
+            && $ov->value !== null
+            && in_array($ov->value, $this->values, true);
     }
     function script_expression(PaperInfo $row, PaperSearch $srch) {
         if ($srch->user->can_view_option($row, $this->option)) {
-            return $this->option->present_script_expression();
+            if (($se = $this->option->value_script_expression())) {
+                return ["type" => "in", "child" => [$se], "values" => $this->values];
+            } else {
+                return null;
+            }
         } else {
             return false;
         }

@@ -24,7 +24,7 @@ class FormulaCall {
 
     function __construct(Formula $formula, $kwdef, $name) {
         $this->formula = $formula;
-        $this->name = $kwdef->name;
+        $this->name = $kwdef ? $kwdef->name : "";
         $this->text = $name;
         $this->kwdef = $kwdef;
     }
@@ -1072,6 +1072,14 @@ class FormulaCompiler {
         }
         return '$tag_pc';
     }
+    function _add_option_value(PaperOption $o) {
+        $n = '$ov_' . ($o->id < 0 ? "m" . -$o->id : $o->id);
+        if ($this->check_gvar($n)) {
+            $this->queryOptions["options"] = true;
+            $this->gstmt[] = "$n = " . $this->_prow() . "->option({$o->id});";
+        }
+        return $n;
+    }
     function _add_now() {
         return 'Conf::$now';
     }
@@ -1737,46 +1745,45 @@ class Formula implements JsonSerializable {
         }
     }
 
-    private function _parse_option($pos1, $pos2, $text) {
-        $os = Option_SearchTerm::analyze($this->conf, $text);
-        foreach ($os->warnings as $w) {
-            $this->lerror($pos1, $pos2, $w);
+    private function _parse_one_option($pos1, &$t, PaperOption $opt) {
+        $fc = new FormulaCall($this, null, $opt->search_keyword());
+        $fc->pos1 = $pos1;
+        $fc->pos2 = -strlen($t);
+        $nerrors = count($this->_lerrors);
+        if (($fex = $opt->parse_fexpr($fc, $t))) {
+            return $fex;
+        } else if (count($this->_lerrors) === $nerrors) {
+            $fc->lerror("This submission field can’t be used in formulas.");
+            return Constant_Fexpr::cerror($fc->pos1, $fc->pos2);
         }
-        $e = null;
-        foreach ($os->os as $o) {
-            $ex = new Option_Fexpr($o->option);
-            if ($o->kind) {
-                $this->lerror($pos1, $pos2, "Option can’t be used in formulas.");
-            } else if ($o->value === null) {
-                $ex = $o->compar === "=" ? $ex : new Not_Fexpr($ex);
-            } else if (is_array($o->value) && $o->compar === "!=") {
-                $ex = new Not_Fexpr(new In_Fexpr($ex, $o->value));
-            } else if (is_array($o->value)) {
-                $ex = new In_Fexpr($ex, $o->value);
+    }
+
+    private function _parse_option($pos1, &$t) {
+        if (!preg_match('/\A[A-Za-z0-9_.@]+/', $t, $m)) {
+            $this->lerror($pos1, $pos1, "Submission field missing.");
+            return Constant_Fexpr::cerror($pos1, $pos1);
+        }
+
+        $oname = $m[0];
+        $t = substr($t, strlen($m[0]));
+        $opt = $this->conf->abbrev_matcher()->find1($oname, Conf::MFLAG_OPTION);
+        if (!$opt) {
+            if (($os2 = $this->conf->abbrev_matcher()->find_all($oname, Conf::MFLAG_OPTION))) {
+                $ts = array_map(function ($o) { return "“" . htmlspecialchars($o->search_keyword()) . "”"; }, $os2);
+                $this->lerror($pos1, -strlen($t), "“" . htmlspecialchars($oname) . "” matches more than one submission field. Try " . commajoin($ts, " or ") . ".");
             } else {
-                $op = self::$_oprewrite[$o->compar] ?? $o->compar;
-                assert(in_array($op, ["==", "!=", "<", ">", "<=", ">="]));
-                $ex2 = new Constant_Fexpr($o->value, $o->option);
-                if ($op === "==" || $op === "!=") {
-                    $ex = new Equality_Fexpr($op, $ex, $ex2);
-                } else {
-                    $ex = new Inequality_Fexpr($op, $ex, $ex2);
-                }
+                $this->lerror($pos1, -strlen($t), "“" . htmlspecialchars($oname) . "” matches no submission fields.");
             }
-            $e = $e ? new Or_Fexpr($e, $ex) : $ex;
+            return Constant_Fexpr::cerror($pos1, -strlen($t));
         }
-        if (!$e) {
-            $e = Constant_Fexpr::cnull();
-        } else if ($os->negated) {
-            $e = new Not_Fexpr($e);
-        }
-        return $e;
+
+        return $this->_parse_one_option($pos1, $t, $opt);
     }
 
     private function _parse_field($pos1, &$t, $f) {
         $pos2 = -strlen($t);
         if ($f instanceof PaperOption) {
-            return $this->_parse_option($pos1, $pos2, $f->search_keyword());
+            return $this->_parse_one_option($pos1, $t, $f);
         } else if ($f instanceof ReviewField) {
             if ($f->has_options) {
                 return $this->_reviewer_decoration($t, new Score_Fexpr($f));
@@ -1848,9 +1855,8 @@ class Formula implements JsonSerializable {
         } else if ($t[0] === "o"
                    && preg_match('/\Aopt(?:ion)?:\s*(.*)\z/s', $t, $m)) {
             $pos1 = -strlen($m[1]);
-            $rest = self::_pop_argument($m[1]);
-            $t = $rest[2];
-            $e = $this->_parse_option($pos1, -strlen($t), $rest[1]);
+            $t = $m[1];
+            $e = $this->_parse_option($pos1, $t);
         } else if ($t[0] === "d"
                    && preg_match('/\A(?:dec|decision):\s*([-a-zA-Z0-9_.#@*]+)(.*)\z/si', $t, $m)) {
             $me = PaperSearch::decision_matchexpr($this->conf, $m[1], false);

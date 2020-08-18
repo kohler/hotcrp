@@ -8201,7 +8201,7 @@ function evaluate_compar(x, compar, y) {
 }
 
 function evaluate_edit_condition(ec, form) {
-    if (ec === false || ec === true) {
+    if (ec === true || ec === false || typeof ec === "number") {
         return ec;
     } else if (edit_conditions[ec.type]) {
         return edit_conditions[ec.type](ec, form);
@@ -8235,8 +8235,13 @@ edit_conditions.selector = function (ec, form) {
 };
 edit_conditions.text_present = function (ec, form) {
     var e = form.elements["opt" + ec.id],
-        v = e ? e.value : "";
-    return $.trim(v) !== "";
+        v = $.trim(e ? e.value : "");
+    return v !== "";
+};
+edit_conditions.numeric = function (ec, form) {
+    var e = form.elements["opt" + ec.id],
+        v = $.trim(e ? e.value : ""), n;
+    return v !== "" && !isNaN((n = parseFloat(v))) ? n : null;
 };
 edit_conditions.document_count = function (ec, form) {
     var n = 0;
@@ -8253,21 +8258,15 @@ edit_conditions.document_count = function (ec, form) {
     });
     return n;
 };
-edit_conditions.option = function (ec, form) {
-    var e = form.elements["opt" + ec.id], v;
-    if (e instanceof HTMLInputElement) {
-        if (e.type === "radio" || e.type === "checkbox")
-            v = e.checked ? e.value : 0;
-        else
-            v = e.value;
-    } else if (e && "value" in e)
-        v = e.value;
-    if (v != null && v !== "")
-        v = +v;
-    else
-        v = null;
-    return evaluate_compar(v, ec.compar, ec.value);
+edit_conditions.compar = function (ec, form) {
+    return evaluate_compar(evaluate_edit_condition(ec.child[0], form),
+                           ec.compar,
+                           evaluate_edit_condition(ec.child[1], form));
 };
+edit_conditions["in"] = function (ec, form) {
+    var v = evaluate_edit_condition(ec.child[0], form);
+    return ec.values.indexOf(v) >= 0;
+}
 edit_conditions.topic = function (ec, form) {
     if (ec.topics === false || ec.topics === true) {
         var has_topics = $(form).find(".topic-entry").filter(":checked").length > 0;

@@ -589,8 +589,8 @@ assert_search_papers($user_chair, "-#fart", "9 10 11 12 13 14 15 16 17 18 19 20 
 assert_search_papers($user_chair, "has:calories", "1 2 3 4 5");
 assert_search_papers($user_chair, "opt:calories", "1 2 3 4 5");
 assert_search_papers($user_chair, "-opt:calories", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
-assert_search_papers($user_chair, "calories:yes", "1 2 3 4 5");
-assert_search_papers($user_chair, "calories:no", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+assert_search_papers($user_chair, "calories:any", "1 2 3 4 5");
+assert_search_papers($user_chair, "calories:none", "6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 assert_search_papers($user_chair, "calories>200", "1 3 4");
 assert_search_papers($user_chair, "calories:<1000", "2 5");
 assert_search_papers($user_chair, "calories:1040", "3 4");
