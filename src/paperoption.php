@@ -1250,7 +1250,7 @@ class PaperOption {
         return new SearchExample("has:" . $this->search_keyword(), "submission field “%s” set", $this->title_html());
     }
     /** @return ?SearchTerm */
-    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+    function parse_search(SearchWord $sword, PaperSearch $srch) {
         return null;
     }
     /** @return ?SearchTerm */
@@ -1330,7 +1330,7 @@ class CheckboxPaperOption extends PaperOption {
     function search_examples(Contact $viewer, $context) {
         return [$this->has_search_example()];
     }
-    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+    function parse_search(SearchWord $sword, PaperSearch $srch) {
         return $this->parse_boolean_search($sword, $srch);
     }
     function present_script_expression() {
@@ -1470,7 +1470,7 @@ class SelectorPaperOption extends PaperOption {
         }
         return $a;
     }
-    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+    function parse_search(SearchWord $sword, PaperSearch $srch) {
         $vs = $this->selector_abbrev_matcher()->findp($sword->cword);
         if (empty($vs)) {
             $pfx = htmlspecialchars($this->search_keyword()) . " (" . $this->title_html() . ")";
@@ -1698,7 +1698,7 @@ class DocumentPaperOption extends PaperOption {
     function search_examples(Contact $viewer, $context) {
         return [$this->has_search_example()];
     }
-    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+    function parse_search(SearchWord $sword, PaperSearch $srch) {
         return $this->parse_boolean_search($sword, $srch);
     }
     function present_script_expression() {
@@ -1770,7 +1770,7 @@ class NumericPaperOption extends PaperOption {
             new SearchExample($this->search_keyword() . ":<comparator>", "submission’s “%s” field is greater than 100", $this->title_html(), ">100")
         ];
     }
-    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+    function parse_search(SearchWord $sword, PaperSearch $srch) {
         if (preg_match('/\A[-+]?(?:\d+|\d+\.\d*|\.\d+)\z/', $sword->cword)) {
             return new OptionValue_SearchTerm($this, CountMatcher::comparator_value($sword->compar), (float) $sword->cword);
         } else {
@@ -1847,7 +1847,7 @@ class TextPaperOption extends PaperOption {
             new SearchExample($this->search_keyword() . ":<text>", "submission’s “%s” field contains “hello”", $this->title_html(), "hello")
         ];
     }
-    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+    function parse_search(SearchWord $sword, PaperSearch $srch) {
         if ($sword->compar === "") {
             return new OptionText_SearchTerm($this, $sword->cword);
         } else {
@@ -2044,7 +2044,7 @@ class AttachmentsPaperOption extends PaperOption {
             new SearchExample($this->search_keyword() . ":\"<filename>\"", "submission has “%s” attachment matching “*.gif”", $this->title_html(), "*.gif")
         ];
     }
-    function parse_search2(SearchWord $sword, PaperSearch $srch) {
+    function parse_search(SearchWord $sword, PaperSearch $srch) {
         if (preg_match('/\A[-+]?\d+\z/', $sword->cword)) {
             return new DocumentCount_SearchTerm($this, $sword->compar, (int) $sword->cword);
         } else if ($sword->compar === "" || $sword->compar === "!=") {

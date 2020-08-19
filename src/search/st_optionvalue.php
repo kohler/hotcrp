@@ -2,9 +2,7 @@
 // search/st_optionvalue.php -- HotCRP helper class for searching for papers
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class OptionValue_SearchTerm extends SearchTerm {
-    /** @var PaperOption */
-    private $option;
+class OptionValue_SearchTerm extends Option_SearchTerm {
     /** @var int */
     private $compar;
     /** @var int */
@@ -12,21 +10,12 @@ class OptionValue_SearchTerm extends SearchTerm {
     /** @param int $compar
      * @param int|float $value */
     function __construct(PaperOption $o, $compar, $value) {
-        parent::__construct("optionvalue");
-        $this->option = $o;
+        parent::__construct("optionvalue", $o);
         $this->compar = $compar;
         $this->value = $value;
     }
     function debug_json() {
         return [$this->type, $this->option->search_keyword()];
-    }
-    function sqlexpr(SearchQueryInfo $sqi) {
-        $sqi->add_options_columns();
-        if (!$sqi->negated && !$this->option->include_empty) {
-            return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
-        } else {
-            return "true";
-        }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $srch->user->can_view_option($row, $this->option)

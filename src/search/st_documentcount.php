@@ -2,9 +2,7 @@
 // search/st_documentcount.php -- HotCRP helper class for searching for papers
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class DocumentCount_SearchTerm extends SearchTerm {
-    /** @var PaperOption */
-    private $option;
+class DocumentCount_SearchTerm extends Option_SearchTerm {
     /** @var int */
     private $compar;
     /** @var int */
@@ -12,8 +10,7 @@ class DocumentCount_SearchTerm extends SearchTerm {
     /** @param string $compar
      * @param int $value */
     function __construct(PaperOption $o, $compar, $value) {
-        parent::__construct("documentcount");
-        $this->option = $o;
+        parent::__construct("documentcount", $o);
         $this->compar = CountMatcher::comparator_value($compar);
         $this->value = $value;
     }
@@ -22,13 +19,7 @@ class DocumentCount_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_options_columns();
-        if (!$sqi->negated
-            && !$this->option->include_empty
-            && !CountMatcher::compare(0, $this->compar, $this->value)) {
-            return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
-        } else {
-            return "true";
-        }
+        return CountMatcher::compare(0, $this->compar, $this->value) ? "true" : parent::sqlexpr($sqi);
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         if ($srch->user->can_view_option($row, $this->option)

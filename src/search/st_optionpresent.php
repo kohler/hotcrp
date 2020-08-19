@@ -2,14 +2,11 @@
 // search/st_optionpresent.php -- HotCRP helper class for searching for papers
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class OptionPresent_SearchTerm extends SearchTerm {
-    /** @var PaperOption */
-    private $option;
+class OptionPresent_SearchTerm extends Option_SearchTerm {
     private $is_multi;
 
     function __construct(PaperOption $o, $is_multi = false) {
-        parent::__construct("optionpresent");
-        $this->option = $o;
+        parent::__construct("optionpresent", $o);
         $this->is_multi = $is_multi;
     }
     function debug_json() {
@@ -17,11 +14,7 @@ class OptionPresent_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_options_columns();
-        if (!$this->is_multi && !$sqi->negated && !$this->option->include_empty) {
-            return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
-        } else {
-            return "true";
-        }
+        return $this->is_multi ? "true" : parent::sqlexpr($sqi);
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $srch->user->can_view_option($row, $this->option)

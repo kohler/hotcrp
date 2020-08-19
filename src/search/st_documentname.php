@@ -2,9 +2,7 @@
 // search/st_documentname.php -- HotCRP helper class for searching for papers
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class DocumentName_SearchTerm extends SearchTerm {
-    /** @var PaperOption */
-    private $option;
+class DocumentName_SearchTerm extends Option_SearchTerm {
     /** @var bool */
     private $want;
     /** @var string */
@@ -14,21 +12,12 @@ class DocumentName_SearchTerm extends SearchTerm {
     /** @param bool $want
      * @param string $match */
     function __construct(PaperOption $o, $want, $match) {
-        parent::__construct("documentname");
-        $this->option = $o;
+        parent::__construct("documentname", $o);
         $this->want = $want;
         $this->match = $match;
     }
     function debug_json() {
         return [$this->type, $this->option->search_keyword(), $this->match];
-    }
-    function sqlexpr(SearchQueryInfo $sqi) {
-        $sqi->add_options_columns();
-        if (!$sqi->negated && !$this->option->include_empty) {
-            return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
-        } else {
-            return "true";
-        }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         if ($srch->user->can_view_option($row, $this->option)

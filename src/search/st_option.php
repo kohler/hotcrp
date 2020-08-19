@@ -2,7 +2,24 @@
 // search/st_option.php -- HotCRP helper class for searching for papers
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class Option_SearchTerm {
+class Option_SearchTerm extends SearchTerm {
+    /** @var PaperOption */
+    protected $option;
+
+    /** @param string $type */
+    function __construct($type, PaperOption $option) {
+        parent::__construct($type);
+        $this->option = $option;
+    }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        $sqi->add_options_columns();
+        if (!$sqi->negated && !$this->option->include_empty) {
+            return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
+        } else {
+            return "true";
+        }
+    }
+
     static function parse_factory($keyword, Contact $user, $kwfj, $m) {
         $f = $user->conf->find_all_fields($keyword);
         if (count($f) === 1 && $f[0] instanceof PaperOption) {
@@ -74,7 +91,7 @@ class Option_SearchTerm {
         $ts = [];
         foreach ($os as $o) {
             $nwarn = count($srch->warnings);
-            if (($st = $o->parse_search2($sword, $srch))) {
+            if (($st = $o->parse_search($sword, $srch))) {
                 $ts[] = $st;
             } else if ($nwarn === count($srch->warnings)) {
                 $srch->warn("Submission field " . htmlspecialchars($o->search_keyword()) . " (" . $o->title_html() . ") does not understand search “" . htmlspecialchars($ocontent) . "”.");
