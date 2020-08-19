@@ -1014,6 +1014,12 @@ xassert_eqq($am->find_all("opt-1"), [-1]);
 xassert_eqq($am->find_all("opt-2"), [-2]);
 
 $am = new AbbreviationMatcher;
+$am->add_phrase("confused", 0);
+$am->add_phrase("_confused", 1);
+xassert_eqq($am->find_all("confused"), [0]);
+xassert_eqq($am->find_all("_confused"), [1]);
+
+$am = new AbbreviationMatcher;
 $am->add_keyword("opt0", 0);
 $am->add_keyword("opt1", 1);
 $am->add_keyword("opt2", 2);
