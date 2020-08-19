@@ -479,7 +479,7 @@ class UserStatus extends MessageSet {
         }
         if (is_string($collaborators)) {
             $old_collab = rtrim(cleannl($collaborators));
-            $new_collab = AuthorMatcher::fix_collaborators($old_collab);
+            $new_collab = AuthorMatcher::fix_collaborators($old_collab) ?? "";
             if ($old_collab !== $new_collab) {
                 $this->warning_at("collaborators", "Collaborators changed to follow our required format. You may want to look them over.");
             }
@@ -958,8 +958,10 @@ class UserStatus extends MessageSet {
                   "city" => "address",
                   "state" => "address",
                   "zip" => "address"] as $prop => $diff) {
-            if (isset($cj->$prop) && $user->set_prop($prop, $cj->$prop, $only_empty))
+            if (($v = $cj->$prop ?? null) !== null
+                && $user->set_prop($prop, $v, $only_empty)) {
                 $this->diffs[$diff] = true;
+            }
         }
     }
 
@@ -1014,8 +1016,7 @@ class UserStatus extends MessageSet {
         foreach (["firstName", "lastName", "preferredEmail", "affiliation",
                   "collaborators", "addressLine1", "addressLine2",
                   "city", "state", "zipCode", "country", "phone"] as $k) {
-            $v = $qreq[$k];
-            if ($v !== null && ($cj->id !== "new" || trim($v) !== ""))
+            if (($v = $qreq[$k]) !== null)
                 $cj->$k = $v;
         }
 

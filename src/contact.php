@@ -1563,6 +1563,7 @@ class Contact {
      * @param mixed $value
      * @return bool */
     function set_prop($prop, $value, $ifempty = false) {
+        // validate argument
         $shape = self::$props[$prop] ?? 0;
         if ($shape === 0) {
             throw new Exception("bad prop $prop");
@@ -1574,38 +1575,48 @@ class Contact {
                 || (($shape & self::PROP_STRINGLIST) !== 0 && !is_string_list($value)))) {
             throw new Exception("bad prop type $prop");
         }
-        if (($shape & ($this->cdb_confid !== 0 ? self::PROP_CDB : self::PROP_LOCAL)) !== 0) {
-            $old = $this->prop1($prop, $shape);
-            if ($ifempty) {
-                if ($old !== null && $old !== "") {
+        // check if property applies here
+        if (($shape & ($this->cdb_confid !== 0 ? self::PROP_CDB : self::PROP_LOCAL)) === 0) {
+            return false;
+        }
+        // check ifempty update
+        $old = $this->prop1($prop, $shape);
+        if ($ifempty) {
+            if ($old !== null && $old !== "") {
+                return false;
+            } else if (($shape & self::PROP_NAME) !== 0) {
+                $prop2 = $prop === "firstName" ? "lastName" : "firstName";
+                $old2 = $this->_mod_undo[$prop2] ?? $this->$prop2;
+                if ($old2 !== null && $old2 !== "") {
                     return false;
-                } else if (($shape & self::PROP_NAME) !== 0) {
-                    $prop2 = $prop === "firstName" ? "lastName" : "firstName";
-                    $old2 = $this->_mod_undo[$prop2] ?? $this->$prop2;
-                    if ($old2 !== null && $old2 !== "") {
-                        return false;
-                    }
                 }
-            }
-            if ($old !== $value) {
-                if (($shape & self::PROP_DATA) !== 0) {
-                    $this->set_data($prop, $value);
-                } else {
-                    if (!array_key_exists($prop, $this->_mod_undo ?? [])) {
-                        $this->_mod_undo[$prop] = $old;
-                    }
-                    $this->$prop = $value;
-                }
-                if (($shape & self::PROP_UPDATE) !== 0) {
-                    if (!array_key_exists("updateTime", $this->_mod_undo)) {
-                        $this->_mod_undo["updateTime"] = $this->updateTime;
-                    }
-                    $this->updateTime = Conf::$now;
-                }
-                return true;
             }
         }
-        return false;
+        // check for no change
+        if ($value === "" && ($shape & self::PROP_NULL) !== 0) {
+            $value = null;
+        }
+        if ($old === $value
+            && ($value !== null
+                || ($this->cdb_confid !== 0 ? $this->contactDbId : $this->contactId))) {
+            return false;
+        }
+        // save
+        if (($shape & self::PROP_DATA) !== 0) {
+            $this->set_data($prop, $value);
+        } else {
+            if (!array_key_exists($prop, $this->_mod_undo ?? [])) {
+                $this->_mod_undo[$prop] = $old;
+            }
+            $this->$prop = $value;
+        }
+        if (($shape & self::PROP_UPDATE) !== 0) {
+            if (!array_key_exists("updateTime", $this->_mod_undo)) {
+                $this->_mod_undo["updateTime"] = $this->updateTime;
+            }
+            $this->updateTime = Conf::$now;
+        }
+        return true;
     }
 
     /** @return bool */
