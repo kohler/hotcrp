@@ -147,7 +147,7 @@ class CountMatcher {
         }
     }
     /** @param string $countexpr
-     * @return ?countexpr */
+     * @return ?string */
     static function canonicalize($countexpr) {
         $x = new CountMatcher($countexpr);
         return $x->allowed ? $x->countexpr() : null;
