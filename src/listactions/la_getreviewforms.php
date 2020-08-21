@@ -56,6 +56,6 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
             }
         }
 
-        $this->finish($user, $texts, $errors);
+        return $this->finish($user, $texts, $errors);
     }
 }

@@ -60,7 +60,8 @@ class GetReviewBase_ListAction extends ListAction {
             foreach ($texts as $pt) {
                 $text .= $pt[1];
             }
-            return $user->conf->make_csvg($rfname, CsvGenerator::TYPE_STRING)->add_string($text);
+            return $user->conf->make_csvg($rfname, CsvGenerator::TYPE_STRING)
+                ->set_inline(false)->add_string($text);
         } else {
             $zip = new DocumentInfoSet($user->conf->download_prefix . "reviews.zip");
             foreach ($texts as $pt) {

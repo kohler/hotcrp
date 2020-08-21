@@ -75,6 +75,6 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
         if (!empty($pids)) {
             $user->log_activity("Download reviews", array_keys($pids));
         }
-        $this->finish($user, $texts, $errors);
+        return $this->finish($user, $texts, $errors);
     }
 }
