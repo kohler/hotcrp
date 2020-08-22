@@ -19,10 +19,14 @@ class MessageItem implements ArrayAccess, JsonSerializable {
         $this->status = $status;
     }
 
+    /** @deprecated */
     function offsetExists($offset) {
+        error_log((Conf::$main ? Conf::$main->dbname : "<>") . ": MessageItem::offsetExists: " . debug_string_backtrace());
         return $offset === 0 || $offset === 1 || $offset === 2;
     }
+    /** @deprecated */
     function offsetGet($offset) {
+        error_log((Conf::$main ? Conf::$main->dbname : "<>") . ": MessageItem::offsetGet: " . debug_string_backtrace());
         if ($offset === 0) {
             return $this->field;
         } else if ($offset === 1) {
@@ -31,9 +35,11 @@ class MessageItem implements ArrayAccess, JsonSerializable {
             return $this->status;
         }
     }
+    /** @deprecated */
     function offsetSet($offset, $value) {
         throw new Exception;
     }
+    /** @deprecated */
     function offsetUnset($offset) {
         throw new Exception;
     }
@@ -95,6 +101,7 @@ class MessageSet {
     /** @param string $field
      * @return string */
     function canonical_field($field) {
+        assert(!!$field);
         return $field ? $this->canonfield[$field] ?? $field : $field;
     }
     /** @param string $field */
@@ -177,22 +184,22 @@ class MessageSet {
         $this->msg_at($field, $msg, $status);
     }
     /** @param false|null|string $field
-     * @param false|null|string|list<string> $msg */
+     * @param false|null|string $msg */
     function estop_at($field, $msg) {
         $this->msg_at($field, $msg, self::ESTOP);
     }
     /** @param false|null|string $field
-     * @param false|null|string|list<string> $msg */
+     * @param false|null|string $msg */
     function error_at($field, $msg) {
         $this->msg_at($field, $msg, self::ERROR);
     }
     /** @param false|null|string $field
-     * @param false|null|string|list<string> $msg */
+     * @param false|null|string $msg */
     function warning_at($field, $msg) {
         $this->msg_at($field, $msg, self::WARNING);
     }
     /** @param false|null|string $field
-     * @param false|null|string|list<string> $msg */
+     * @param false|null|string $msg */
     function info_at($field, $msg) {
         $this->msg_at($field, $msg, self::INFO);
     }

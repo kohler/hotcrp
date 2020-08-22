@@ -655,10 +655,10 @@ class PaperStatus extends MessageSet {
             if (!$ov->has_error()) {
                 $ov->option->value_check($ov, $this->user);
             }
-            foreach ($ov->message_list() as $i => $m) {
-                $max_status = max($max_status, $m[2]);
-                if ($i < $errorindex || $m[2] >= MessageSet::ERROR) {
-                    $this->msg_at($m[0], $m[1], $m[2]);
+            foreach ($ov->message_list() as $i => $mx) {
+                $max_status = max($max_status, $mx->status);
+                if ($i < $errorindex || $mx->status >= MessageSet::ERROR) {
+                    $this->msg_at($mx->field, $mx->message, $mx->status);
                 }
             }
         }
