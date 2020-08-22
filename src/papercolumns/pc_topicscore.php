@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class TopicScore_PaperColumn extends PaperColumn {
+    /** @var Contact */
     private $contact;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
@@ -11,7 +12,7 @@ class TopicScore_PaperColumn extends PaperColumn {
         }
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $this->contact ? : $pl->reviewer_user();
+        $this->contact = $this->contact ?? $pl->reviewer_user();
         if (!$pl->conf->has_topics()
             || !$pl->user->isPC
             || ($this->contact->contactId !== $pl->user->contactId

@@ -190,7 +190,7 @@ class Preference_PaperColumn extends PaperColumn {
             return sprintf("%.2f", $x);
         }
     }
-    function statistic(PaperList $pl, $stat) {
+    function statistic_html(PaperList $pl, $stat) {
         $t = $this->unparse_statistic($this->statistics, $stat);
         if ($this->override_statistics) {
             $tt = $this->unparse_statistic($this->override_statistics, $stat);

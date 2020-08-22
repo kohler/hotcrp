@@ -158,7 +158,7 @@ class PaperColumn extends Column {
         return false;
     }
     /** @return false|string */
-    function statistic(PaperList $pl, $stat) {
+    function statistic_html(PaperList $pl, $stat) {
         return false;
     }
 }

@@ -12,6 +12,10 @@ class ScoreInfo {
     private $_sum = 0;
     /** @var int|float */
     private $_sumsq = 0;
+    /** @var int|float */
+    private $_min = 0;
+    /** @var int|float */
+    private $_max = 0;
     /** @var int */
     private $_n = 0;
     /** @var bool */
@@ -23,9 +27,23 @@ class ScoreInfo {
     const SUM = 3;
     const VARIANCE_P = 4;
     const STDDEV_P = 5;
+    const MIN = 6;
+    const MAX = 7;
 
-    static public $stat_names = ["Count", "Mean", "Median", "Total", "Variance", "Standard deviation"];
-    static public $stat_keys = ["count", "mean", "median", "total", "var_p", "stddev_p"];
+    static public $stat_names = ["Count", "Mean", "Median", "Total", "Variance", "Standard deviation", "Minimum", "Maximum"];
+    static public $stat_keys = ["count", "mean", "median", "total", "var_p", "stddev_p", "min", "max"];
+
+    /** @param int $stat
+     * @return bool */
+    static function statistic_is_int($stat) {
+        return $stat === self::COUNT;
+    }
+
+    /** @param int $stat
+     * @return bool */
+    static function statistic_is_sample($stat) {
+        return $stat === self::MEDIAN || $stat === self::MIN || $stat === self::MAX;
+    }
 
     function __construct($data = null, $positive = false) {
         $this->_positive = $positive;
@@ -82,6 +100,12 @@ class ScoreInfo {
             $this->_sumsq += $x * $x;
             ++$this->_n;
             $this->_sorted = false;
+            if ($this->_n === 1 || $this->_min > $x) {
+                $this->_min = $x;
+            }
+            if ($this->_n === 1 || $this->_max < $x) {
+                $this->_max = $x;
+            }
         }
     }
 
@@ -156,29 +180,33 @@ class ScoreInfo {
 
     /** @return int|float */
     function max() {
-        return empty($this->_scores) ? 0 : max($this->_scores);
+        return $this->_max;
     }
 
     /** @return int|float */
     function min() {
-        return empty($this->_scores) ? 0 : min($this->_scores);
+        return $this->_min;
     }
 
     /** @param int $stat
      * @return int|float */
     function statistic($stat) {
-        if ($stat == self::COUNT) {
+        if ($stat === self::COUNT) {
             return $this->_n;
-        } else if ($stat == self::MEAN) {
+        } else if ($stat === self::MEAN) {
             return $this->mean();
-        } else if ($stat == self::MEDIAN) {
+        } else if ($stat === self::MEDIAN) {
             return $this->median();
-        } else if ($stat == self::SUM) {
+        } else if ($stat === self::SUM) {
             return $this->_sum;
-        } else if ($stat == self::VARIANCE_P) {
+        } else if ($stat === self::VARIANCE_P) {
             return $this->variance_p();
-        } else if ($stat == self::STDDEV_P) {
+        } else if ($stat === self::STDDEV_P) {
             return $this->stddev_p();
+        } else if ($stat === self::MIN) {
+            return $this->min();
+        } else if ($stat === self::MAX) {
+            return $this->max();
         }
     }
 

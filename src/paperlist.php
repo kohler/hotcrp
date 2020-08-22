@@ -1498,7 +1498,7 @@ class PaperList implements XtContext {
                 }
                 $class = "plstat " . $fdef->className;
                 if ($fdef->has_statistics()) {
-                    $content = $fdef->statistic($this, $stat);
+                    $content = $fdef->statistic_html($this, $stat);
                 } else if ($col == $rstate->titlecol) {
                     $content = ScoreInfo::$stat_names[$stat];
                     $class = "plstat pl_statheader";
@@ -1957,7 +1957,7 @@ class PaperList implements XtContext {
             if ($fdef->has_statistics()) {
                 $stat = [];
                 foreach (self::$stats as $s) {
-                    $stat[ScoreInfo::$stat_keys[$s]] = $fdef->statistic($this, $s);
+                    $stat[ScoreInfo::$stat_keys[$s]] = $fdef->statistic_html($this, $s);
                 }
                 $stats[$fdef->name] = $stat;
             }

@@ -3,12 +3,19 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Formula_PaperColumn extends PaperColumn {
+    /** @var Formula */
     public $formula;
+    /** @var callable */
     private $formula_function;
+    /** @var ScoreInfo */
     private $statistics;
+    /** @var ?ScoreInfo */
     private $override_statistics;
+    /** @var array<int,mixed> */
     private $results;
+    /** @var ?array<int,mixed> */
     private $override_results;
+    /** @var ?string */
     private $real_format;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
@@ -141,7 +148,7 @@ class Formula_PaperColumn extends PaperColumn {
             return is_int($x) ? $x : sprintf("%.2f", $x);
         }
     }
-    function statistic(PaperList $pl, $stat) {
+    function statistic_html(PaperList $pl, $stat) {
         if ($stat === ScoreInfo::SUM
             && !$this->formula->result_format_is_real()) {
             return "—";
