@@ -200,7 +200,7 @@ class FormulaGraph extends MessageSet {
             ++$this->_qstyle_index;
         }
         $this->_qstyles[] = $style;
-        $psearch = new PaperSearch($this->user, array("q" => $q));
+        $psearch = new PaperSearch($this->user, ["q" => $q]);
         foreach ($psearch->paper_ids() as $pid) {
             $this->papermap[$pid][] = $qn;
         }

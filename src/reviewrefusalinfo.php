@@ -17,11 +17,11 @@ class ReviewRefusalInfo {
     public $contactId;
     /** @var int */
     public $requestedBy;
-    /** @var ?string */
+    /** @var ?int */
     public $timeRequested;
     /** @var ?int */
     public $refusedBy;
-    /** @var ?string */
+    /** @var ?int */
     public $timeRefused;
     /** @var int */
     public $refusedReviewType;
@@ -41,8 +41,14 @@ class ReviewRefusalInfo {
         $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
         $this->requestedBy = (int) $this->requestedBy;
-        if (isset($this->refusedBy)) {
+        if ($this->timeRequested !== null) {
+            $this->timeRequested = (int) $this->timeRequested;
+        }
+        if ($this->refusedBy !== null) {
             $this->refusedBy = (int) $this->refusedBy;
+        }
+        if ($this->timeRefused !== null) {
+            $this->timeRefused = (int) $this->timeRefused;
         }
         $this->refusedReviewType = (int) $this->refusedReviewType;
         if ($this->reviewRound !== null) {

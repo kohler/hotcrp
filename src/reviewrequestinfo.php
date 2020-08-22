@@ -35,6 +35,9 @@ class ReviewRequestInfo {
         if ($this->reviewRound !== null) {
             $this->reviewRound = (int) $this->reviewRound;
         }
+        if ($this->contactId !== null) {
+            $this->contactId = (int) $this->contactId;
+        }
         $this->reviewType = REVIEW_REQUEST;
     }
 

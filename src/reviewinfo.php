@@ -2,17 +2,7 @@
 // reviewinfo.php -- HotCRP class representing reviews
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-/** @property ?string $timeRequested
- * @property ?string $timeRequestNotified
- * @property ?string $reviewAuthorModified
- * @property ?string $reviewNotified
- * @property ?string $reviewAuthorNotified
- * @property ?string $reviewEditVersion
- * @property null|int|string $reviewWordCount
- * @property ?string $reviewFormat
- * @property ?string $data
- * @property ?string $sfields
- * @property ?string $tfields
+/** @property ?string $data
  *
  * @property ?string $allRatings
  * @property ?string $firstName
@@ -28,39 +18,64 @@ class ReviewInfo implements JsonSerializable {
     public $conf;
     /** @var ?PaperInfo */
     public $prow;
+
+    // fields always present
     /** @var int */
     public $paperId;
     /** @var int */
     public $reviewId;
     /** @var int */
     public $contactId;
+    /** @var int */
     public $reviewToken;
     /** @var int */
     public $reviewType;
+    /** @var int */
     public $reviewRound;
+    /** @var int */
     public $requestedBy;
-    //public $timeRequested;
-    //public $timeRequestNotified;
+    /** @var int */
     public $reviewBlind;
     /** @var int */
     public $reviewModified;
-    //public $reviewAuthorModified;
     /** @var ?int */
     public $reviewSubmitted;
-    //public $reviewNotified;
-    //public $reviewAuthorNotified;
     /** @var ?int */
     public $reviewAuthorSeen;
+    /** @var int */
     public $reviewOrdinal;
+    /** @var int */
     public $timeDisplayed;
+    /** @var int */
     public $timeApprovalRequested;
-    //public $reviewEditVersion;
+    /** @var int */
     public $reviewNeedsSubmit;
     /** @var int */
     public $reviewViewScore;
+
+    // sometimes loaded
+    /** @var ?int */
+    public $timeRequested;
+    /** @var ?int */
+    public $timeRequestNotified;
+    /** @var ?int */
+    public $reviewAuthorModified;
+    /** @var ?int */
+    public $reviewNotified;
+    /** @var ?int */
+    public $reviewAuthorNotified;
+    /** @var ?int */
+    public $reviewEditVersion;
+    /** @var ?int */
+    public $reviewWordCount;
+    /** @var ?int */
+    public $reviewFormat;
+    /** @var ?string */
+    public $sfields;
+    /** @var ?string */
+    public $tfields;
+
     // ... scores ...
-    //public $reviewWordCount;
-    //public $reviewFormat;
     //public $data;
     private $_data;
 
@@ -140,18 +155,52 @@ class ReviewInfo implements JsonSerializable {
                            Conf $conf = null) {
         $this->conf = $conf ?? $prow->conf;
         $this->prow = $prow;
-        foreach (["paperId", "reviewId", "contactId", "reviewType",
-                  "reviewRound", "requestedBy", "reviewBlind",
-                  "reviewOrdinal", "reviewNeedsSubmit", "reviewViewScore",
-                  "reviewModified"] as $k) {
-            assert($this->$k !== null, "null $k");
-            $this->$k = (int) $this->$k;
+        $this->paperId = (int) $this->paperId;
+        $this->reviewId = (int) $this->reviewId;
+        $this->contactId = (int) $this->contactId;
+        $this->reviewToken = (int) $this->reviewToken;
+        $this->reviewType = (int) $this->reviewType;
+        $this->reviewRound = (int) $this->reviewRound;
+        $this->requestedBy = (int) $this->requestedBy;
+        $this->reviewBlind = (int) $this->reviewBlind;
+        $this->reviewModified = (int) $this->reviewModified;
+        if ($this->reviewSubmitted !== null) {
+            $this->reviewSubmitted = (int) $this->reviewSubmitted;
         }
-        foreach (["reviewSubmitted", "reviewAuthorSeen"] as $k) {
-            if (isset($this->$k)) {
-                $this->$k = (int) $this->$k;
-            }
+        if ($this->reviewAuthorSeen !== null) {
+            $this->reviewAuthorSeen = (int) $this->reviewAuthorSeen;
         }
+        $this->reviewOrdinal = (int) $this->reviewOrdinal;
+        $this->timeDisplayed = (int) $this->timeDisplayed;
+        $this->timeApprovalRequested = (int) $this->timeApprovalRequested;
+        $this->reviewNeedsSubmit = (int) $this->reviewNeedsSubmit;
+        $this->reviewViewScore = (int) $this->reviewViewScore;
+
+        if ($this->timeRequested !== null) {
+            $this->timeRequested = (int) $this->timeRequested;
+        }
+        if ($this->timeRequestNotified !== null) {
+            $this->timeRequestNotified = (int) $this->timeRequestNotified;
+        }
+        if ($this->reviewAuthorModified !== null) {
+            $this->reviewAuthorModified = (int) $this->reviewAuthorModified;
+        }
+        if ($this->reviewNotified !== null) {
+            $this->reviewNotified = (int) $this->reviewNotified;
+        }
+        if ($this->reviewAuthorNotified !== null) {
+            $this->reviewAuthorNotified = (int) $this->reviewAuthorNotified;
+        }
+        if ($this->reviewEditVersion !== null) {
+            $this->reviewEditVersion = (int) $this->reviewEditVersion;
+        }
+        if ($this->reviewWordCount !== null) {
+            $this->reviewWordCount = (int) $this->reviewWordCount;
+        }
+        if ($this->reviewFormat !== null) {
+            $this->reviewFormat = (int) $this->reviewFormat;
+        }
+
         if (isset($this->tfields) && ($x = json_decode($this->tfields, true))) {
             foreach ($x as $k => $v) {
                 $this->$k = $v;
@@ -195,7 +244,7 @@ class ReviewInfo implements JsonSerializable {
         $vals = explode(" ", $signature);
         $rrow->reviewId = (int) $vals[0];
         $rrow->contactId = (int) $vals[1];
-        $rrow->reviewToken = $vals[2];
+        $rrow->reviewToken = (int) $vals[2];
         $rrow->reviewType = (int) $vals[3];
         $rrow->reviewRound = (int) $vals[4];
         $rrow->requestedBy = (int) $vals[5];

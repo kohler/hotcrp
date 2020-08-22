@@ -2350,8 +2350,9 @@ class PaperInfo {
                 $rrow->reviewWordCount = $rf->word_count($rrow);
                 $qs[] = "update PaperReview set reviewWordCount={$rrow->reviewWordCount} where paperId={$this->paperId} and reviewId={$rrow->reviewId}";
             }
-            $my_rrow = get($this->_review_array, $rrow->reviewId);
-            $my_rrow->reviewWordCount = (int) $rrow->reviewWordCount;
+            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
+            $my_rrow = $this->_review_array[$rrow->reviewId];
+            $my_rrow->reviewWordCount = $rrow->reviewWordCount;
         }
         Dbl::free($result);
         if (!empty($qs)) {

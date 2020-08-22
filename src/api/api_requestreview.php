@@ -351,7 +351,7 @@ class RequestReview_API {
         }
         $result = $user->conf->qe("select * from ReviewRequest where paperId=? and email=?",
             $prow->paperId, $email);
-        while (($req = $result->fetch_object())) {
+        while (($req = ReviewRequestInfo::fetch($result))) {
             $xrequests[] = $req;
         }
         Dbl::free($result);

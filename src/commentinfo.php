@@ -441,7 +441,7 @@ class CommentInfo {
                 $cj->author_email = $email;
             } else if ($viewer->review_tokens()
                        && ($rrows = $this->prow->reviews_of_user(-1, $viewer->review_tokens()))) {
-                $cj->review_token = encode_token((int) $rrows[0]->reviewToken);
+                $cj->review_token = encode_token($rrows[0]->reviewToken);
             }
         }
         if ((!$idable

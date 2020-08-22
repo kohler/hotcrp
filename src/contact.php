@@ -2419,9 +2419,9 @@ class Contact {
     function active_review_token_for(PaperInfo $prow, ReviewInfo $rrow = null) {
         if ($this->_review_tokens !== null) {
             foreach ($rrow ? [$rrow] : $prow->reviews_by_id() as $rr) {
-                if (($t = (int) $rrow->reviewToken) !== 0
-                    && in_array($t, $this->_review_tokens, true))
-                    return $t;
+                if ($rrow->reviewToken !== 0
+                    && in_array($rrow->reviewToken, $this->_review_tokens, true))
+                    return $rrow->reviewToken;
             }
         }
         return false;
@@ -3516,20 +3516,21 @@ class Contact {
         return $rrow
             && ($rrow->contactId == $this->contactId
                 || ($this->_review_tokens
-                    && $rrow->reviewToken
-                    && in_array($rrow->reviewToken, $this->_review_tokens))
+                    && $rrow->reviewToken !== 0
+                    && in_array($rrow->reviewToken, $this->_review_tokens, true))
                 || ($this->_capabilities !== null
                     && ($this->_capabilities["@ra" . $rrow->paperId] ?? null) == $rrow->contactId));
     }
 
-    /** @return bool */
-    function is_owned_review($rbase = null) { // review/request/refusal
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @return bool */
+    function is_owned_review($rbase = null) {
         return $rbase
             && $rbase->contactId > 0
-            && ($rbase->contactId == $this->contactId
+            && ($rbase->contactId === $this->contactId
                 || ($this->_review_tokens
-                    && $rbase->reviewToken
-                    && in_array($rbase->reviewToken, $this->_review_tokens))
+                    && $rbase->reviewToken !== 0
+                    && in_array($rbase->reviewToken, $this->_review_tokens, true))
                 || ($rbase->requestedBy == $this->contactId
                     && $rbase->reviewType == REVIEW_EXTERNAL
                     && $this->conf->ext_subreviews)
@@ -3537,7 +3538,8 @@ class Contact {
                     && ($this->_capabilities["@ra" . $rbase->paperId] ?? null) == $rbase->contactId));
     }
 
-    /** @return bool */
+    /** @param ?ReviewInfo $rrow
+     * @return bool */
     function can_view_review_assignment(PaperInfo $prow, $rrow) {
         if (!$rrow || $rrow->reviewType > 0) {
             $rights = $this->rights($prow);
@@ -3588,6 +3590,9 @@ class Contact {
                         && $this->some_author_perm_tag_allows("author-read-review"))));
     }
 
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @param PaperContactInfo $rights
+     * @return int */
     private function seerev_setting(PaperInfo $prow, $rbase, $rights) {
         $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
@@ -3606,6 +3611,9 @@ class Contact {
         return -1;
     }
 
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @param PaperContactInfo $rights
+     * @return int */
     private function seerevid_setting(PaperInfo $prow, $rbase, $rights) {
         $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
@@ -3720,7 +3728,8 @@ class Contact {
         return $whyNot;
     }
 
-    /** @return bool */
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @return bool */
     function can_view_review_identity(PaperInfo $prow, $rbase = null) {
         $rights = $this->rights($prow);
         // See also PaperInfo::can_view_review_identity_of.
@@ -3764,7 +3773,8 @@ class Contact {
         return $answer;
     }
 
-    /** @return bool */
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @return bool */
     function can_view_review_round(PaperInfo $prow, $rbase = null) {
         $rights = $this->rights($prow);
         return $rights->can_administer
@@ -3781,7 +3791,8 @@ class Contact {
                 && $rrow->reviewAuthorSeen <= $rrow->reviewAuthorModified);
     }
 
-    /** @return bool */
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @return bool */
     function can_view_review_requester(PaperInfo $prow, $rbase = null) {
         $rights = $this->rights($prow);
         return $this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
@@ -3972,7 +3983,8 @@ class Contact {
                     || $this->override_deadlines($rights)));
     }
 
-    /** @return ?PermissionProblem */
+    /** @param ?ReviewInfo $rrow
+     * @return ?PermissionProblem */
     function perm_review(PaperInfo $prow, $rrow, $submit = false) {
         if ($this->can_review($prow, $rrow, $submit)) {
             return null;
@@ -4015,7 +4027,8 @@ class Contact {
         return $whyNot;
     }
 
-    /** @return ?PermissionProblem */
+    /** @param ?ReviewInfo $rrow
+     * @return ?PermissionProblem */
     function perm_submit_review(PaperInfo $prow, $rrow) {
         return $this->perm_review($prow, $rrow, true);
     }
@@ -4129,7 +4142,8 @@ class Contact {
         }
         if ($this->_review_tokens) {
             foreach ($prow->reviews_of_user($crow->contactId) as $rrow) {
-                if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->_review_tokens))
+                if ($rrow->reviewToken !== 0
+                    && in_array($rrow->reviewToken, $this->_review_tokens, true))
                     return true;
             }
         }
@@ -4942,7 +4956,8 @@ class Contact {
                 if ($this->_review_tokens) {
                     $tokens = [];
                     foreach ($prow->reviews_by_id() as $rrow) {
-                        if ($rrow->reviewToken && in_array($rrow->reviewToken, $this->_review_tokens))
+                        if ($rrow->reviewToken !== 0
+                            && in_array($rrow->reviewToken, $this->_review_tokens, true))
                             $tokens[$rrow->reviewToken] = true;
                     }
                     if (!empty($tokens)) {
@@ -5037,12 +5052,12 @@ class Contact {
      * @param int $reviewer_cid
      * @param int $type */
     function assign_review($pid, $reviewer_cid, $type, $extra = []) {
-        $result = $this->conf->qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy, reviewSubmitted from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
-        $rrow = $result->fetch_object();
+        $result = $this->conf->qe("select * from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
+        $rrow = ReviewInfo::fetch($result, null, $this->conf);
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
         $type = max((int) $type, 0);
-        $oldtype = $rrow ? (int) $rrow->reviewType : 0;
+        $oldtype = $rrow ? $rrow->reviewType : 0;
         $round = $extra["round_number"] ?? null;
         $new_requester_cid = $this->contactId;
 
@@ -5121,11 +5136,12 @@ class Contact {
                 $this->update_review_delegation($pid, $rrow->requestedBy, -1);
             }
             // Mark rev_tokens setting for future update by update_rev_tokens_setting
-            if ($rrow->reviewToken ?? null) {
+            if ($rrow->reviewToken !== 0) {
                 $this->conf->settings["rev_tokens"] = -1;
             }
         } else {
-            if ($type == REVIEW_SECONDARY && $oldtype != REVIEW_SECONDARY
+            if ($type == REVIEW_SECONDARY
+                && $oldtype != REVIEW_SECONDARY
                 && !$rrow->reviewSubmitted) {
                 $this->update_review_delegation($pid, $reviewer_cid, 0);
             }

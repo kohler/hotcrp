@@ -161,7 +161,7 @@ if (isset($Qreq->deletereview)
             $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
             $Conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
-            if ($paperTable->editrrow->reviewToken != 0) {
+            if ($paperTable->editrrow->reviewToken !== 0) {
                 $Conf->update_rev_tokens_setting(-1);
             }
             if ($paperTable->editrrow->reviewType == REVIEW_META) {
