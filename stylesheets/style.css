@@ -1737,7 +1737,7 @@ span.author, span.conflict {
 	color: #ff0000;
 }
 pre.entryexample {
-	padding: 0.5em;
+	padding: 0.4em 0.5em;
 	background: #eeeeee;
 	border: 1px solid #dddddd;
 	display: table;
