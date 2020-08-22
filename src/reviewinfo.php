@@ -513,7 +513,7 @@ class ReviewInfo implements JsonSerializable {
     function jsonSerialize() {
         $j = ["confid" => $this->conf->dbname];
         foreach (get_object_vars($this) as $k => $v) {
-            if ($k !== "conf" && $k !== "_data") {
+            if ($k !== "conf" && $k !== "prow" && $k !== "_data") {
                 $j[$k] = $v;
             }
         }
