@@ -5,11 +5,14 @@
 class TopicScore_PaperColumn extends PaperColumn {
     /** @var Contact */
     private $contact;
+    /** @var ScoreInfo */
+    private $statistics;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         if (isset($cj->user)) {
             $this->contact = $conf->pc_member_by_email($cj->user);
         }
+        $this->statistics = new ScoreInfo;
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ?? $pl->reviewer_user();
@@ -30,10 +33,19 @@ class TopicScore_PaperColumn extends PaperColumn {
         return $at < $bt ? 1 : ($at == $bt ? 0 : -1);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return htmlspecialchars((string) $row->topic_interest_score($this->contact));
+        $v = $row->topic_interest_score($this->contact);
+        $this->statistics->add($v);
+        return htmlspecialchars((string) $v);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $row->topic_interest_score($this->contact);
+    }
+    function has_statistics() {
+        return true;
+    }
+    function statistic_html(PaperList $pl, $stat) {
+        $v = $this->statistics->statistic($stat);
+        return is_int($v) ? $v : sprintf("%.2f", $v);
     }
 
     static function expand($name, Contact $user, $xfj, $m) {
