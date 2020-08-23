@@ -1367,7 +1367,7 @@ $blind\n";
         }
 
         // ratings
-        if ((string) $rrow->allRatings !== ""
+        if ($rrow->has_ratings()
             && $viewer->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
             $rj["ratings"] = array_values($rrow->ratings());
             if ($flags & self::RJ_UNPARSE_RATINGS) {

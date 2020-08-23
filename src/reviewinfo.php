@@ -2,9 +2,7 @@
 // reviewinfo.php -- HotCRP class representing reviews
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-/** @property ?string $data
- *
- * @property ?string $allRatings */
+/** @property ?string $data */
 class ReviewInfo implements JsonSerializable {
     /** @var Conf */
     public $conf;
@@ -84,6 +82,8 @@ class ReviewInfo implements JsonSerializable {
     public $contactTags;
     /** @var ?int */
     public $lastLogin;
+    /** @var ?string */
+    public $ratingSignature;
 
     const VIEWSCORE_RECOMPUTE = -100;
 
@@ -456,24 +456,42 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
-    static function compare_id($a, $b) {
-        if ($a->paperId != $b->paperId) {
-            return (int) $a->paperId < (int) $b->paperId ? -1 : 1;
-        } else if ($a->reviewId != $b->reviewId) {
-            return (int) $a->reviewId < (int) $b->reviewId ? -1 : 1;
-        } else {
-            return 0;
+
+    function ensure_ratings() {
+        if ($this->ratingSignature === null) {
+            if ($this->conf->setting("rev_ratings") === REV_RATINGS_NONE) {
+                $this->ratingSignature = "";
+            } else if ($this->prow) {
+                $this->prow->ensure_review_ratings($this);
+            } else {
+                $result = $this->conf->qe("select " . $this->conf->query_ratings() . " from PaperReview where paperId=? and reviewId=?", $this->paperId, $this->reviewId);
+                $row = $result->fetch_row();
+                Dbl::free($result);
+                $this->ratingSignature = $row ? $row[0] : "";
+            }
         }
     }
 
+    /** @return bool */
+    function has_ratings() {
+        $this->ensure_ratings();
+        return $this->ratingSignature !== "";
+    }
+
+    /** @return bool */
+    function has_multiple_ratings() {
+        $this->ensure_ratings();
+        return strpos($this->ratingSignature, ",") !== false;
+    }
 
     /** @return array<int,int> */
     function ratings() {
+        $this->ensure_ratings();
         $ratings = [];
-        if ((string) $this->allRatings !== "") {
-            foreach (explode(",", $this->allRatings) as $rx) {
+        if ($this->ratingSignature !== "") {
+            foreach (explode(",", $this->ratingSignature) as $rx) {
                 list($cid, $rating) = explode(" ", $rx);
-                $ratings[(int) $cid] = intval($rating);
+                $ratings[(int) $cid] = (int) $rating;
             }
         }
         return $ratings;
@@ -482,11 +500,12 @@ class ReviewInfo implements JsonSerializable {
     /** @param int|Contact $user
      * @return ?int */
     function rating_of_user($user) {
+        $this->ensure_ratings();
         $cid = is_object($user) ? $user->contactId : $user;
         $str = ",$cid ";
-        $pos = strpos("," . $this->allRatings, $str);
+        $pos = strpos("," . $this->ratingSignature, $str);
         if ($pos !== false) {
-            return intval(substr($this->allRatings, $pos + strlen($str) - 1));
+            return intval(substr($this->ratingSignature, $pos + strlen($str) - 1));
         } else {
             return null;
         }

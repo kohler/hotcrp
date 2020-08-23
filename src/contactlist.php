@@ -478,7 +478,7 @@ class ContactList {
                     $pids[] = $prow->paperId;
                 }
             }
-            $result = $this->conf->qe("select paperId, reviewId, " . $this->conf->query_ratings() . " allRatings from PaperReview where paperId ?a group by paperId, reviewId", $pids);
+            $result = $this->conf->qe("select paperId, reviewId, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId ?a group by paperId, reviewId", $pids);
             while (($row = $result->fetch_row())) {
                 $ratings[$row[0]][$row[1]] = $row[2];
             }
@@ -489,7 +489,7 @@ class ContactList {
                     foreach ($prow->reviews_by_id() as $rrow) {
                         if (isset($ratings[$prow->paperId][$rrow->reviewId])
                             && $this->user->can_view_review_ratings($prow, $rrow)) {
-                            $rrow->allRatings = $ratings[$prow->paperId][$rrow->reviewId];
+                            $rrow->ratingSignature = $ratings[$prow->paperId][$rrow->reviewId];
                             $cid = $rrow->contactId;
                             $this->_rating_data[$cid] = $this->_rating_data[$cid] ?? [0, 0];
                             foreach ($rrow->ratings() as $rate) {

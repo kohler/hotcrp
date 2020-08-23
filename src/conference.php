@@ -3560,8 +3560,8 @@ class Conf {
     //
 
     function query_ratings() {
-        if ($this->setting("rev_ratings") != REV_RATINGS_NONE) {
-            return "(select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId)";
+        if ($this->setting("rev_ratings") !== REV_RATINGS_NONE) {
+            return "coalesce((select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId),'')";
         } else {
             return "''";
         }

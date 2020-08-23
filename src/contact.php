@@ -4102,7 +4102,7 @@ class Contact {
             || $rrow->contactId != $this->contactId
             || $this->can_administer($prow)
             || $this->conf->setting("pc_seeallrev")
-            || (isset($rrow->allRatings) && strpos($rrow->allRatings, ",") !== false)) {
+            || $rrow->has_multiple_ratings()) {
             return true;
         }
         // Do not show rating counts if rater identity is unambiguous.
