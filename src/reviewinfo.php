@@ -2,7 +2,6 @@
 // reviewinfo.php -- HotCRP class representing reviews
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-/** @property ?string $data */
 class ReviewInfo implements JsonSerializable {
     /** @var Conf */
     public $conf;
@@ -55,19 +54,62 @@ class ReviewInfo implements JsonSerializable {
     /** @var ?int */
     public $reviewAuthorNotified;
     /** @var ?int */
-    public $reviewEditVersion;
+    public $reviewEditVersion;  // NB also used to check if `data` was loaded
     /** @var ?int */
     public $reviewWordCount;
     /** @var ?int */
     public $reviewFormat;
     /** @var ?string */
+    public $tfields;
+    /** @var ?string */
     public $sfields;
     /** @var ?string */
-    public $tfields;
-
-    // ... scores ...
-    //public $data;
+    private $data;
     private $_data;
+
+    // scores
+    /** @var ?int */
+    public $overAllMerit;
+    /** @var ?int */
+    public $reviewerQualification;
+    /** @var ?int */
+    public $novelty;
+    /** @var ?int */
+    public $technicalMerit;
+    /** @var ?int */
+    public $interestToCommunity;
+    /** @var ?int */
+    public $longevity;
+    /** @var ?int */
+    public $grammar;
+    /** @var ?int */
+    public $likelyPresentation;
+    /** @var ?int */
+    public $suitableForShort;
+    /** @var ?int */
+    public $potential;
+    /** @var ?int */
+    public $fixability;
+    /** @var ?string */
+    public $t01;
+    /** @var ?string */
+    public $t02;
+    /** @var ?string */
+    public $t03;
+    /** @var ?string */
+    public $t04;
+    /** @var ?string */
+    public $t05;
+    /** @var ?string */
+    public $t06;
+    /** @var ?string */
+    public $t07;
+    /** @var ?string */
+    public $t08;
+    /** @var ?string */
+    public $t09;
+    /** @var ?string */
+    public $t10;
 
     // sometimes joined
     /** @var ?string */
@@ -207,6 +249,39 @@ class ReviewInfo implements JsonSerializable {
             $this->reviewFormat = (int) $this->reviewFormat;
         }
 
+        if ($this->overAllMerit !== null) {
+            $this->overAllMerit = (int) $this->overAllMerit;
+        }
+        if ($this->reviewerQualification !== null) {
+            $this->reviewerQualification = (int) $this->reviewerQualification;
+        }
+        if ($this->novelty !== null) {
+            $this->novelty = (int) $this->novelty;
+        }
+        if ($this->technicalMerit !== null) {
+            $this->technicalMerit = (int) $this->technicalMerit;
+        }
+        if ($this->interestToCommunity !== null) {
+            $this->interestToCommunity = (int) $this->interestToCommunity;
+        }
+        if ($this->longevity !== null) {
+            $this->longevity = (int) $this->longevity;
+        }
+        if ($this->grammar !== null) {
+            $this->grammar = (int) $this->grammar;
+        }
+        if ($this->likelyPresentation !== null) {
+            $this->likelyPresentation = (int) $this->likelyPresentation;
+        }
+        if ($this->suitableForShort !== null) {
+            $this->suitableForShort = (int) $this->suitableForShort;
+        }
+        if ($this->potential !== null) {
+            $this->potential = (int) $this->potential;
+        }
+        if ($this->fixability !== null) {
+            $this->fixability = (int) $this->fixability;
+        }
         if (isset($this->tfields) && ($x = json_decode($this->tfields, true))) {
             foreach ($x as $k => $v) {
                 $this->$k = $v;
@@ -217,6 +292,7 @@ class ReviewInfo implements JsonSerializable {
                 $this->$k = $v;
             }
         }
+
         if (!$recomputing_view_scores && $this->reviewViewScore == self::VIEWSCORE_RECOMPUTE) {
             assert($this->reviewViewScore != self::VIEWSCORE_RECOMPUTE);
             $conf->review_form()->compute_view_scores();
@@ -267,7 +343,7 @@ class ReviewInfo implements JsonSerializable {
             $eq = strpos($vals[$i], "=");
             $f = self::field_info(substr($vals[$i], 0, $eq), $prow->conf);
             $fid = $f->id;
-            $rrow->$fid = substr($vals[$i], $eq + 1);
+            $rrow->$fid = (int) substr($vals[$i], $eq + 1);
             $prow->_mark_has_score($fid);
         }
         $rrow->merge(false, $prow, $prow->conf);
@@ -544,18 +620,24 @@ class ReviewInfo implements JsonSerializable {
 
 
     private function _load_data() {
-        if (!property_exists($this, "data")) {
+        if ($this->data === null && $this->reviewEditVersion === null) {
             $this->data = $this->conf->fetch_value("select `data` from PaperReview where paperId=? and reviewId=?", $this->paperId, $this->reviewId);
         }
-        $this->_data = $this->data ? json_decode($this->data) : (object) [];
+        $this->_data = json_decode($this->data ?? "{}");
     }
 
     private function _save_data() {
         $this->data = json_encode_db($this->_data);
-        if ($this->data === "{}") {
-            $this->data = null;
+        $this->conf->qe("update PaperReview set `data`=? where paperId=? and reviewId=?", $this->data === "{}" ? null : $this->data, $this->paperId, $this->reviewId);
+    }
+
+    /** @return ?string */
+    function data_string() {
+        if ($this->_data === null) {
+            $this->_load_data();
         }
-        $this->conf->qe("update PaperReview set `data`=? where paperId=? and reviewId=?", $this->data, $this->paperId, $this->reviewId);
+        $s = json_encode_db($this->_data);
+        return $s === "{}" ? null : $s;
     }
 
     function acceptor() {
@@ -569,6 +651,7 @@ class ReviewInfo implements JsonSerializable {
         }
         return $this->_data->acceptor;
     }
+
     function acceptor_is($text) {
         if ($this->_data === null) {
             $this->_load_data();
@@ -576,6 +659,7 @@ class ReviewInfo implements JsonSerializable {
         return isset($this->_data->acceptor)
             && $this->_data->acceptor->text === $text;
     }
+
     function delete_acceptor() {
         if ($this->_data === null) {
             $this->_load_data();

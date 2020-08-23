@@ -288,7 +288,7 @@ class RequestReview_API {
                 $prow->paperId, $rrow->email, $rrow->contactId,
                 $rrow->requestedBy, $rrow->timeRequested,
                 $user->contactId, Conf::$now, $reason, $rrow->reviewType,
-                $rrow->reviewRound, $rrow->data);
+                $rrow->reviewRound, $rrow->data_string());
             $user->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
                 $prow->paperId, $rrow->reviewId);
             if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
