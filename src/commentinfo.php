@@ -29,13 +29,13 @@ class CommentInfo {
     public $commentOverflow;
 
     /** @var ?string */
-    public $reviewFirstName;
+    public $firstName;
     /** @var ?string */
-    public $reviewLastName;
+    public $lastName;
     /** @var ?string */
-    public $reviewAffiliation;
+    public $affiliation;
     /** @var ?string */
-    public $reviewEmail;
+    public $email;
 
     static private $visibility_map = [
         COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc",
@@ -173,18 +173,6 @@ class CommentInfo {
         }
     }
 
-    private function commenter() {
-        if (isset($this->reviewEmail)) {
-            return (object) [
-                "firstName" => $this->reviewFirstName,
-                "lastName" => $this->reviewLastName,
-                "email" => $this->reviewEmail
-            ];
-        } else {
-            return $this;
-        }
-    }
-
     function unparse_response_text() {
         if ($this->commentType & COMMENTTYPE_RESPONSE) {
             $rname = $this->conf->resp_round_name($this->commentRound);
@@ -260,7 +248,7 @@ class CommentInfo {
 
     function unparse_commenter_html(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
-            $n = Text::nameo_h($this->commenter(), NAME_P|NAME_I);
+            $n = Text::nameo_h($this, NAME_P|NAME_I);
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
         }
@@ -273,7 +261,7 @@ class CommentInfo {
 
     function unparse_commenter_text(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
-            $n = Text::nameo($this->commenter(), NAME_P|NAME_I);
+            $n = Text::nameo($this, NAME_P|NAME_I);
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
         }
@@ -430,9 +418,8 @@ class CommentInfo {
                 $cj->author = $viewer->reviewer_html_for($cuser);
                 $email = $cuser->email;
             } else {
-                $commenter = $this->commenter();
-                $cj->author = Text::nameo($commenter, NAME_P);
-                $email = $commenter->email;
+                $cj->author = Text::nameo($this, NAME_P);
+                $email = $this->email;
             }
             if (!$idable) {
                 $cj->author_hidden = true;
@@ -496,7 +483,7 @@ class CommentInfo {
             $x = "Response";
         }
         if ($contact->can_view_comment_identity($this->prow, $this)) {
-            $x .= " by " . Text::nameo($this->commenter(), NAME_EB);
+            $x .= " by " . Text::nameo($this, NAME_EB);
         } else if (($p = $this->unparse_commenter_pseudonym($contact))
                    && ($p !== "Author" || !($this->commentType & COMMENTTYPE_RESPONSE))) {
             $x .= " by " . $p;

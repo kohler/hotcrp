@@ -93,7 +93,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
         ];
         if ($crow) {
             $x["review"] = $crow->unparse_html_id();
-            $x["email"] = $crow->reviewEmail;
+            $x["email"] = $crow->email;
             if ($crow->commentType & COMMENTTYPE_RESPONSE) {
                 $x["round"] = $Conf->resp_round_text($crow->commentRound);
             }

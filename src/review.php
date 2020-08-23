@@ -864,9 +864,7 @@ class ReviewForm implements JsonSerializable {
         if ($rrow && ($rrow->reviewEditVersion ?? null) && $viewable_identity)
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
         if (!$prow || $viewable_identity) {
-            if ($rrow && isset($rrow->reviewEmail)) {
-                $x .= "==+== Reviewer: " . Text::name($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail, NAME_EB) . "\n";
-            } else if ($rrow && isset($rrow->email)) {
+            if ($rrow && isset($rrow->email)) {
                 $x .= "==+== Reviewer: " . Text::nameo($rrow, NAME_EB) . "\n";
             } else {
                 $x .= "==+== Reviewer: " . Text::nameo($contact, NAME_EB) . "\n";

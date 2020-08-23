@@ -43,10 +43,10 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
                     }
                     $pl->mark_has("need_review");
                     $row->ensure_reviewer_last_login();
-                    if (!$rrow->reviewLastLogin) {
+                    if (!$rrow->lastLogin) {
                         $login = 'never logged in';
                     } else {
-                        $login = 'activity ' . $pl->conf->unparse_time_relative((int) $rrow->reviewLastLogin);
+                        $login = 'activity ' . $pl->conf->unparse_time_relative($rrow->lastLogin);
                     }
                     $d .= ' <span class="hint">(' . $login . ')</span>';
                 } else if (!$rrow->reviewSubmitted

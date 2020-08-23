@@ -57,14 +57,6 @@ class HotCRPMailer extends Mailer {
         }
     }
 
-    static private function make_reviewer_contact($x) {
-        return Author::make_keyed([
-            "email" => $x->reviewEmail,
-            "firstName" => $x->reviewFirstName,
-            "lastName" => $x->reviewLastName
-        ]);
-    }
-
     /** @param ?Contact $recipient */
     function reset($recipient = null, $rest = []) {
         global $Me;
@@ -89,10 +81,10 @@ class HotCRPMailer extends Mailer {
         }
         // Infer reviewer contact from rrow/comment_row
         if (!$this->contacts["reviewer"]) {
-            if ($this->rrow && ($this->rrow->reviewEmail ?? null)) {
-                $this->contacts["reviewer"] = self::make_reviewer_contact($this->rrow);
-            } else if ($this->comment_row && ($this->comment_row->reviewEmail ?? null)) {
-                $this->contacts["reviewer"] = self::make_reviewer_contact($this->comment_row);
+            if ($this->rrow && $this->rrow->email !== null) {
+                $this->contacts["reviewer"] = new Author($this->rrow);
+            } else if ($this->comment_row && $this->comment_row->email !== null) {
+                $this->contacts["reviewer"] = new Author($this->comment_row);
             }
         }
         // Do not put passwords in email that is cc'd elsewhere

@@ -4,15 +4,7 @@
 
 /** @property ?string $data
  *
- * @property ?string $allRatings
- * @property ?string $firstName
- * @property ?string $lastName
- * @property ?string $email
- * @property ?string $reviewFirstName
- * @property ?string $reviewLastName
- * @property ?string $reviewEmail
- * @property ?string $reviewLastLogin
- * @property ?string $contactTags */
+ * @property ?string $allRatings */
 class ReviewInfo implements JsonSerializable {
     /** @var Conf */
     public $conf;
@@ -78,6 +70,20 @@ class ReviewInfo implements JsonSerializable {
     // ... scores ...
     //public $data;
     private $_data;
+
+    // sometimes joined
+    /** @var ?string */
+    public $firstName;
+    /** @var ?string */
+    public $lastName;
+    /** @var ?string */
+    public $affiliation;
+    /** @var ?string */
+    public $email;
+    /** @var ?string */
+    public $contactTags;
+    /** @var ?int */
+    public $lastLogin;
 
     const VIEWSCORE_RECOMPUTE = -100;
 
@@ -370,9 +376,11 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
+    /** @param Contact $c */
     function assign_name($c) {
         $this->firstName = $c->firstName;
         $this->lastName = $c->lastName;
+        $this->affiliation = $c->affiliation;
         $this->email = $c->email;
         $this->contactTags = $c->contactTags;
     }

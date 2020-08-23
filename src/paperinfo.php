@@ -1319,7 +1319,7 @@ class PaperInfo {
 
 
     private function load_topics() {
-        $row_set = $this->_row_set ? : new PaperInfoSet($this);
+        $row_set = $this->_row_set ?? new PaperInfoSet($this);
         foreach ($row_set as $prow) {
             $prow->topicIds = "";
         }
@@ -1443,7 +1443,7 @@ class PaperInfo {
             $this->_conflict_array = [$cflt->contactId => $cflt];
             $this->_conflict_array_email = true;
         } else {
-            $row_set = $this->_row_set ? : new PaperInfoSet($this);
+            $row_set = $this->_row_set ?? new PaperInfoSet($this);
             foreach ($row_set as $prow) {
                 $prow->_conflict_array = [];
                 $prow->_conflict_array_email = $email;
@@ -1551,7 +1551,7 @@ class PaperInfo {
         if ($this->_pref1_cid === null
             && $this->_prefs_array === null
             && $this->allReviewerPreference === null) {
-            $row_set = $this->_row_set ? : new PaperInfoSet($this);
+            $row_set = $this->_row_set ?? new PaperInfoSet($this);
             foreach ($row_set as $prow) {
                 $prow->_pref1_cid = $cid;
                 $prow->_pref1 = null;
@@ -1620,7 +1620,7 @@ class PaperInfo {
             if ($only_me) {
                 $this->_row_set = null;
             }
-            $row_set = $this->_row_set ? : new PaperInfoSet($this);
+            $row_set = $this->_row_set ?? new PaperInfoSet($this);
             foreach ($row_set as $prow) {
                 $prow->_option_values = $prow->_option_data = [];
             }
@@ -1854,7 +1854,7 @@ class PaperInfo {
     /** @return array<int,array<int,int>> */
     private function doclink_array() {
         if ($this->_doclink_array === null) {
-            $row_set = $this->_row_set ? : new PaperInfoSet($this);
+            $row_set = $this->_row_set ?? new PaperInfoSet($this);
             foreach ($row_set as $prow) {
                 $prow->_doclink_array = [];
             }
@@ -2122,7 +2122,7 @@ class PaperInfo {
         $cid = self::contact_to_cid($contact);
         if ($this->_full_review_key === null
             && !isset($this->_reviews_have["full"])) {
-            $row_set = $this->_row_set ? : new PaperInfoSet($this);
+            $row_set = $this->_row_set ?? new PaperInfoSet($this);
             foreach ($row_set as $prow) {
                 $prow->_full_review = [];
                 $prow->_full_review_key = "u$cid";
@@ -2268,7 +2268,7 @@ class PaperInfo {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
             && !isset($this->_reviews_have["names"])) {
-            $this->ensure_reviewer_names_set($this->_row_set ? : new PaperInfoSet($this));
+            $this->ensure_reviewer_names_set($this->_row_set ?? new PaperInfoSet($this));
         }
     }
 
@@ -2276,15 +2276,17 @@ class PaperInfo {
         $users = [];
         foreach ($row_set as $prow) {
             $prow->_reviews_have["lastLogin"] = true;
-            foreach ($prow->reviews_by_id() as $rrow)
+            foreach ($prow->reviews_by_id() as $rrow) {
                 $users[$rrow->contactId] = true;
+            }
         }
         if (!empty($users)) {
             $result = $this->conf->qe("select contactId, lastLogin from ContactInfo where contactId?a", array_keys($users));
-            $users = Dbl::fetch_iimap($result);
+            $lastLogins = Dbl::fetch_iimap($result);
             foreach ($row_set as $prow) {
-                foreach ($prow->reviews_by_id() as $rrow)
-                    $rrow->reviewLastLogin = $users[$rrow->contactId];
+                foreach ($prow->reviews_by_id() as $rrow) {
+                    $rrow->lastLogin = $lastLogins[$rrow->contactId];
+                }
             }
         }
     }
@@ -2293,13 +2295,13 @@ class PaperInfo {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
             && !isset($this->_reviews_have["lastLogin"])) {
-            $this->ensure_reviewer_last_login_set($this->_row_set ? : new PaperInfoSet($this));
+            $this->ensure_reviewer_last_login_set($this->_row_set ?? new PaperInfoSet($this));
         }
     }
 
     private function load_review_fields($fid, $maybe_null = false) {
         $k = $fid . "Signature";
-        $row_set = $this->_row_set ? : new PaperInfoSet($this);
+        $row_set = $this->_row_set ?? new PaperInfoSet($this);
         foreach ($row_set as $prow) {
             $prow->$k = "";
         }
@@ -2472,10 +2474,9 @@ class PaperInfo {
 
 
     static function fetch_comment_query() {
-        return "select PaperComment.*,
-            firstName reviewFirstName, lastName reviewLastName, affiliation reviewAffiliation, email reviewEmail
+        return "select PaperComment.*, firstName, lastName, affiliation, email
             from PaperComment
-            join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)";
+            left join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)";
     }
 
     /** @return array<int,CommentInfo> */
@@ -2492,7 +2493,7 @@ class PaperInfo {
     }
 
     function load_comments() {
-        $row_set = $this->_row_set ? : new PaperInfoSet($this);
+        $row_set = $this->_row_set ?? new PaperInfoSet($this);
         foreach ($row_set as $prow) {
             $prow->_comment_array = [];
         }
