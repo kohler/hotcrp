@@ -2,7 +2,6 @@
 // documentinfo.php -- HotCRP document objects
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-/** @property ?string $paper */
 class DocumentInfo implements JsonSerializable {
     /** @var Conf */
     public $conf;
@@ -17,12 +16,13 @@ class DocumentInfo implements JsonSerializable {
     public $timestamp;
     /** @var string */
     public $mimetype;
-    // $paper - translated to $content on load
+    /** @var ?string */
+    private $paper;    // translated to `content` on load
     public $compression;
     /** @var string|false */
     public $sha1 = ""; // binary hash; empty = unhashed, false = not available
     /** @var ?string|false */
-    private $crc32; // binary hash
+    private $crc32;    // binary hash
     /** @var int */
     public $documentType = 0;
     /** @var ?string */
@@ -106,7 +106,7 @@ class DocumentInfo implements JsonSerializable {
         }
         if (isset($this->paper) && !isset($this->content)) {
             $this->content = $this->paper;
-            unset($this->paper);
+            $this->paper = null;
         }
         if ($this->error_html) {
             $this->error = true;
