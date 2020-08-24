@@ -103,10 +103,12 @@ function change_email_by_capability($Qreq) {
     }
 }
 
-if ($Qreq->changeemail && $Qreq->cancel) {
-    $Conf->self_redirect($Qreq);
-} else if ($Qreq->changeemail && !$Me->is_actas_user()) {
-    change_email_by_capability($Qreq);
+if ($Qreq->changeemail) {
+    if ($Qreq->cancel) {
+        $Conf->self_redirect($Qreq);
+    } else if (!$Me->is_actas_user()) {
+        change_email_by_capability($Qreq);
+    }
 }
 
 if (!$Me->is_signed_in()) {
@@ -189,6 +191,11 @@ if (!$Acct
         Conf::msg_error("You’re logged in as a different user now, so your changes were ignored.");
     }
     unset($Qreq->u, $Qreq->save, $Qreq->savebulk);
+    $Conf->self_redirect($Qreq);
+}
+
+// Redirect if canceled.
+if ($Qreq->cancel) {
     $Conf->self_redirect($Qreq);
 }
 
