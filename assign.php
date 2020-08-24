@@ -227,7 +227,7 @@ if ($t !== "") {
 $requests = [];
 foreach ($paperTable->all_reviews() as $rrow) {
     if ($rrow->reviewType < REVIEW_SECONDARY
-        && $rrow->reviewModified <= 1
+        && $rrow->reviewStatus < ReviewInfo::RS_DRAFTED
         && $Me->can_view_review_identity($prow, $rrow)
         && ($Me->can_administer($prow) || $rrow->requestedBy == $Me->contactId)) {
         $requests[] = [0, max((int) $rrow->timeRequestNotified, (int) $rrow->timeRequested), count($requests), $rrow];
@@ -319,7 +319,7 @@ foreach ($requests as $req) {
     $reason = null;
 
     if ($req[0] === 0) {
-        $rname = "Review " . ($rrow->reviewModified > 0 ? " (accepted)" : " (not started)");
+        $rname = "Review " . ($rrow->reviewStatus > 0 ? " (accepted)" : " (not started)");
         if ($Me->can_view_review($prow, $rrow)) {
             $rname = Ht::link($rname, $prow->reviewurl(["r" => $rrow->reviewId]));
         }
@@ -335,7 +335,7 @@ foreach ($requests as $req) {
             echo " by ", $Me->reviewer_html_for($rrow->requestedBy);
         }
         echo '</li>';
-        if ($rrow->reviewModified == 1) {
+        if ($rrow->reviewStatus === ReviewInfo::RS_ACCEPTED) {
             echo '<li>accepted';
             if ($req[1]) {
                 echo ' ', $Conf->unparse_time_relative($req[1]);
@@ -510,14 +510,14 @@ if ($Me->can_administer($prow)) {
         if ($rrow && $rrow->reviewRound && ($rn = $rrow->round_name())) {
             echo '" data-review-round="', htmlspecialchars($rn);
         }
-        if ($rrow && $rrow->reviewModified > 1) {
+        if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
             echo '" data-review-in-progress="';
         }
         echo '"><div class="pctbname pctbname', $crevtype, ' ui js-assignment-fold">',
             '<a class="qq ui js-assignment-fold" href="">', expander(null, 0),
             $Me->reviewer_html_for($pc), '</a>';
         if ($crevtype != 0) {
-            echo review_type_icon($crevtype, $rrow && !$rrow->reviewSubmitted, "ml-2");
+            echo review_type_icon($crevtype, $rrow && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED, "ml-2");
             if ($rrow && $rrow->reviewRound > 0) {
                 echo ' <span class="revround" title="Review round">',
                     htmlspecialchars($Conf->round_name($rrow->reviewRound)),

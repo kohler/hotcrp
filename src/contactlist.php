@@ -357,18 +357,18 @@ class ContactList {
             $this->_reord_data[$cid][] = [$rrow->paperId, $rrow->reviewId, $rrow->reviewOrdinal];
         }
         if ($review_limit
-            && ($prow->timeSubmitted > 0 || $rrow->reviewSubmitted > 0 || $rrow->timeApprovalRequested < 0)) {
+            && ($prow->timeSubmitted > 0 || $rrow->reviewStatus >= ReviewInfo::RS_ADOPTED)) {
             if ($this->limit === "re"
                 || ($this->limit === "req" && $rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy == $this->user->contactId)
                 || ($this->limit === "ext" && $rrow->reviewType == REVIEW_EXTERNAL)
-                || ($this->limit === "extsub" && $rrow->reviewType == REVIEW_EXTERNAL && ($rrow->reviewSubmitted > 0 || $rrow->timeApprovalRequested < 0))) {
+                || ($this->limit === "extsub" && $rrow->reviewType == REVIEW_EXTERNAL && $rrow->reviewStatus >= ReviewInfo::RS_ADOPTED)) {
                 $this->_limit_cids[$cid] = true;
             }
         }
         if (!isset($this->_rect_data[$cid])) {
             $this->_rect_data[$cid] = [0, 0];
         }
-        if ($rrow->reviewSubmitted > 0 || $rrow->timeApprovalRequested < 0) {
+        if ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED) {
             $this->_rect_data[$cid][0] += 1;
             $this->_rect_data[$cid][1] += 1;
             if ($this->user->can_view_review($prow, $rrow)) {

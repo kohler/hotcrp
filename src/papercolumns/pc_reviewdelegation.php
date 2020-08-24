@@ -36,8 +36,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
                     $d = rtrim("#" . $rrow->unparse_ordinal() . " " . $d);
                 }
                 $d = $ranal->wrap_link($d, "uu nw");
-                if (!$rrow->reviewSubmitted
-                    && $rrow->timeApprovalRequested == 0) {
+                if ($rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
                     if ($rrow->reviewNeedsSubmit >= 0) {
                         $d = '<strong class="overdue">' . $d . '</strong>';
                     }
@@ -49,8 +48,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
                         $login = 'activity ' . $pl->conf->unparse_time_relative($rrow->lastLogin);
                     }
                     $d .= ' <span class="hint">(' . $login . ')</span>';
-                } else if (!$rrow->reviewSubmitted
-                           && $rrow->timeApprovalRequested > 0) {
+                } else if ($rrow->reviewStatus === ReviewInfo::RS_DELIVERED) {
                     $d = '<strong>' . $d . '</strong>';
                 }
                 $rx[] = $t . ', ' . $d;

@@ -84,7 +84,7 @@ if (isset($Qreq->uploadForm)
 // check review submit requirements
 if (isset($Qreq->unsubmitreview)
     && $paperTable->editrrow
-    && ($paperTable->editrrow->reviewSubmitted || $paperTable->editrrow->timeApprovalRequested != 0)
+    && $paperTable->editrrow->reviewStatus >= ReviewInfo::RS_DELIVERED
     && $Me->can_administer($prow)
     && $Qreq->post_ok()) {
     $result = $Me->unsubmit_review_row($paperTable->editrrow);
@@ -96,7 +96,7 @@ if (isset($Qreq->unsubmitreview)
     review_load();
 } else if (isset($Qreq->update)
            && $paperTable->editrrow
-           && $paperTable->editrrow->reviewSubmitted) {
+           && $paperTable->editrrow->reviewStatus >= $Conf->review_status_bound) {
     $Qreq->ready = 1;
 }
 
@@ -293,9 +293,9 @@ if (isset($Qreq->accept)
         || (!$Me->is_my_review($rrow) && !$Me->can_administer($prow))) {
         Conf::msg_error("This review was not assigned to you, so you cannot confirm your intention to write it.");
     } else {
-        if ($rrow->reviewModified <= 0) {
+        if ($rrow->reviewStatus < ReviewInfo::RS_ACCEPTED) {
             Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
-                where paperId=? and reviewId=? and coalesce(reviewModified,0)<=0",
+                where paperId=? and reviewId=? and reviewModified<=0",
                 Conf::$now, $prow->paperId, $rrow->reviewId);
             if ($Me->is_signed_in()) {
                 $rrow->delete_acceptor();

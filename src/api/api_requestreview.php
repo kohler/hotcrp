@@ -268,10 +268,11 @@ class RequestReview_API {
         }
 
         $rrows = array_filter($xrrows, function ($rrow) {
-            return !$rrow->reviewSubmitted && $rrow->reviewType < REVIEW_SECONDARY;
+            return $rrow->reviewType < REVIEW_SECONDARY
+                && $rrow->reviewStatus >= $rrow->conf->review_status_bound;
         });
         if (empty($rrows) && !empty($xrrows)) {
-            if ($xrrows[0]->reviewSubmitted) {
+            if ($xrrows[0]->reviewStatus >= ReviewInfo::RS_ADOPTED) {
                 return self::error_result(403, "r", "This review has already been submitted.");
             } else {
                 return self::error_result(403, "r", "Primary and secondary reviews can’t be declined. Contact the PC chairs directly if you really cannot finish this review.");
@@ -357,7 +358,7 @@ class RequestReview_API {
         Dbl::free($result);
 
         $rrows = array_filter($xrrows, function ($rrow) use ($user, $prow) {
-            return $rrow->reviewModified <= 1
+            return $rrow->reviewStatus < ReviewInfo::RS_DRAFTED
                 && ($user->can_administer($prow)
                     || ($user->contactId && $user->contactId == $rrow->requestedBy));
         });

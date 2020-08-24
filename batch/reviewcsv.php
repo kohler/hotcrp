@@ -82,8 +82,8 @@ foreach ($search->sorted_paper_ids() as $pid) {
         $crow = $xrow instanceof CommentInfo ? $xrow : null;
         $rrow = $xrow instanceof ReviewInfo ? $xrow : null;
         if (($crow && !$all && ($crow->commentType & COMMENTTYPE_DRAFT))
-            || ($rrow && ($rrow->reviewModified <= 1
-                          || (!$all && $rrow->reviewSubmitted <= 0)))) {
+            || ($rrow && ($rrow->reviewStatus < ReviewInfo::RS_DRAFTED
+                          || (!$all && $rrow->reviewStatus < $Conf->review_status_bound)))) {
             continue;
         }
         $x = [

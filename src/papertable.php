@@ -77,8 +77,14 @@ class PaperTable {
             return;
         }
 
-        $this->can_view_reviews = $user->can_view_review($prow, null)
-            || $prow->review_submitted($user);
+        $this->can_view_reviews = $user->can_view_review($prow, null);
+        if (!$this->can_view_reviews && $prow->has_reviewer($user)) {
+            foreach ($prow->reviews_of_user($user) as $rrow) {
+                if ($rrow->reviewStatus >= $prow->conf->review_status_bound) {
+                    $this->can_view_reviews = true;
+                }
+            }
+        }
 
         // enumerate allowed modes
         if ($prow->has_author($user)
@@ -2189,9 +2195,9 @@ class PaperTable {
                 continue;
             }
 
-            $tclass = $editrrow && $rr->reviewId == $editrrow->reviewId ? "reviewers-highlight" : "";
-            $isdelegate = $rr->is_subreview() && $rr->requestedBy == $last_pc_reviewer;
-            if (!$rr->reviewSubmitted && $isdelegate) {
+            $tclass = $editrrow && $rr->reviewId === $editrrow->reviewId ? "reviewers-highlight" : "";
+            $isdelegate = $rr->is_subreview() && $rr->requestedBy === $last_pc_reviewer;
+            if ($rr->reviewStatus < $conf->review_status_bound && $isdelegate) {
                 $tclass .= ($tclass ? " " : "") . "rldraft";
             }
             if ($rr->reviewType >= REVIEW_PC) {
@@ -2203,8 +2209,7 @@ class PaperTable {
             if ($rr->reviewOrdinal && !$isdelegate) {
                 $id .= " #" . $rr->unparse_ordinal();
             }
-            if (!$rr->reviewSubmitted
-                && ($rr->timeApprovalRequested >= 0 || !$rr->is_subreview())) {
+            if ($rr->reviewStatus < ReviewInfo::RS_ADOPTED) {
                 $d = $rr->status_description();
                 if ($d === "draft") {
                     $id = "Draft " . $id;
@@ -2215,17 +2220,18 @@ class PaperTable {
             $rlink = $rr->unparse_ordinal();
 
             $t = '<td class="rl nw">';
-            if ($editrrow && $editrrow->reviewId == $rr->reviewId) {
-                if ($user->contactId == $rr->contactId && !$rr->reviewSubmitted) {
+            if ($editrrow && $editrrow->reviewId === $rr->reviewId) {
+                if ($user->contactId == $rr->contactId
+                    && $rr->reviewStatus < $conf->review_status_bound) {
                     $id = "Your $id";
                 }
                 $t .= '<a href="' . $prow->reviewurl(["r" => $rlink]) . '" class="q"><b>' . $id . '</b></a>';
             } else if (!$canView
-                       || ($rr->reviewModified <= 1 && !$user->can_review($prow, $rr))) {
+                       || ($rr->reviewStatus < ReviewInfo::RS_DRAFTED && !$user->can_review($prow, $rr))) {
                 $t .= $id;
             } else if ($editrrow
                        || !$this->can_view_reviews
-                       || $rr->reviewModified <= 1
+                       || $rr->reviewStatus < ReviewInfo::RS_DRAFTED
                        || (($this->mode === "re" || $this->mode === "assign")
                            && $user->can_review($prow, $rr))) {
                 $t .= '<a href="' . $prow->reviewurl(["r" => $rlink]) . '">' . $id . '</a>';
@@ -2284,13 +2290,14 @@ class PaperTable {
                 if ($rr->reviewType < REVIEW_SECONDARY
                     && !$showtoken
                     && $rr->requestedBy
-                    && $rr->requestedBy != $rr->contactId
+                    && $rr->requestedBy !== $rr->contactId
                     && $user->can_view_review_requester($prow, $rr)) {
                     $t .= '<td class="rl small">requested by ';
-                    if ($rr->requestedBy == $user->contactId)
+                    if ($rr->requestedBy === $user->contactId) {
                         $t .= "you";
-                    else
+                    } else {
                         $t .= $user->reviewer_html_for($rr->requestedBy);
+                    }
                     $t .= '</td>';
                     $want_requested_by = true;
                 } else {
@@ -2302,16 +2309,18 @@ class PaperTable {
             $scores = [];
             if ($want_my_scores && $canView) {
                 $view_score = $user->view_score_bound($prow, $rr);
-                foreach ($conf->review_form()->forder as $fid => $f)
+                foreach ($conf->review_form()->forder as $fid => $f) {
                     if ($f->has_options && $f->view_score > $view_score
                         && (!$f->round_mask || $f->is_round_visible($rr))
                         && isset($rr->$fid) && $rr->$fid) {
-                        if ($score_header[$fid] === "")
+                        if ($score_header[$fid] === "") {
                             $score_header[$fid] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
+                        }
                         $scores[$fid] = '<td class="rlscore need-tooltip" data-rf="' . $f->uid() . '" data-tooltip-info="rf-score">'
                             . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                             . '</td>';
                     }
+                }
             }
 
             // affix
@@ -2567,7 +2576,7 @@ class PaperTable {
         // text format link
         $m = $viewable = [];
         foreach ($this->viewable_rrows as $rr) {
-            if ($rr->reviewModified > 1) {
+            if ($rr->reviewStatus >= ReviewInfo::RS_DRAFTED) {
                 $viewable[] = "reviews";
                 break;
             }
@@ -2604,10 +2613,10 @@ class PaperTable {
         $any_submitted = false;
         if ($reviews) {
             foreach ($this->viewable_rrows as $rrow) {
-                if ($rrow->reviewSubmitted || $rrow->reviewModified > 1) {
+                if ($rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
                     $rcs[] = $rrow;
                 }
-                if ($rrow->reviewSubmitted || $rrow->reviewOrdinal) {
+                if ($rrow->reviewStatus >= $this->conf->review_status_bound) {
                     $any_submitted = true;
                 }
             }
@@ -2622,8 +2631,8 @@ class PaperTable {
         foreach ($rcs as $rc) {
             if (isset($rc->reviewId)) {
                 $rcj = $rf->unparse_review_json($this->user, $this->prow, $rc);
-                if ($any_submitted
-                    && !$rc->reviewSubmitted
+                if (($any_submitted || $rc->reviewStatus === ReviewInfo::RS_ADOPTED)
+                    && $rc->reviewStatus < $this->conf->review_status_bound
                     && !$this->user->is_my_review($rc)) {
                     $rcj->folded = true;
                 }
@@ -2716,12 +2725,12 @@ class PaperTable {
             foreach ($this->all_rrows as $rrow) {
                 if ($this->user->is_my_review($rrow)) {
                     $myrrow = $rrow;
-                } else if ($rrow->reviewSubmitted) {
+                } else if ($rrow->reviewStatus >= $this->conf->review_status_bound) {
                     ++$nother;
                 }
             }
             if ($nother > 0) {
-                if ($myrrow && $myrrow->timeApprovalRequested > 0) {
+                if ($myrrow && $myrrow->reviewStatus === ReviewInfo::RS_DELIVERED) {
                     $msgs[] = $this->conf->_("You’ll be able to see %d other reviews once yours is approved.", $nother);
                 } else {
                     $msgs[] = $this->conf->_("You’ll be able to see %d other reviews once you complete your own.", $nother);
@@ -2743,7 +2752,7 @@ class PaperTable {
                 $override = " As an administrator, you can override this deadline.";
             } else {
                 $override = "";
-                if ($this->editrrow->reviewSubmitted) {
+                if ($this->editrrow->reviewStatus >= $this->conf->review_status_bound) {
                     $opt["edit"] = false;
                 }
             }
@@ -2939,13 +2948,12 @@ class PaperTable {
                 || ($want_rordinal > 0 && $rrow->reviewOrdinal == $want_rordinal)) {
                 $this->rrow = $rrow;
             }
-            if ($rrow->contactId == $this->user->contactId
+            if ($rrow->contactId === $this->user->contactId
                 || (!$myrrow && $this->user->is_my_review($rrow))) {
                 $myrrow = $rrow;
             }
-            if (($rrow->requestedBy == $this->user->contactId || $this->admin)
-                && !$rrow->reviewSubmitted
-                && $rrow->timeApprovalRequested > 0
+            if (($rrow->requestedBy === $this->user->contactId || $this->admin)
+                && $rrow->reviewStatus === ReviewInfo::RS_DELIVERED
                 && !$approvable_rrow) {
                 $approvable_rrow = $rrow;
             }
@@ -2955,7 +2963,7 @@ class PaperTable {
             $this->editrrow = $this->rrow;
         } else if (!$approvable_rrow
                    || ($myrrow
-                       && $myrrow->reviewModified
+                       && $myrrow->reviewStatus !== 0
                        && !$this->prefer_approvable)) {
             $this->editrrow = $myrrow;
         } else {
@@ -2982,7 +2990,7 @@ class PaperTable {
             && $this->rrow
             && !$this->user->can_review($this->prow, $this->rrow, false)
             && ($this->rrow->contactId != $this->user->contactId
-                || $this->rrow->reviewSubmitted)) {
+                || $this->rrow->reviewStatus >= $this->conf->review_status_bound)) {
             $this->mode = "p";
         }
         if ($this->mode === "p"

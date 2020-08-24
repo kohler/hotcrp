@@ -279,7 +279,7 @@ class Autoassigner {
             foreach ($this->pcm as $cid => $p) {
                 if ($prow->has_conflict($cid)
                     || !($rrow = $prow->review_of_user($cid))
-                    || ($scoreinfo !== "xa" && $rrow->reviewSubmitted == 0)
+                    || ($scoreinfo !== "xa" && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)
                     || ($score && !$rrow->$score)) {
                     $scorearr[$prow->paperId][$cid] = -1;
                 } else {

@@ -1030,7 +1030,7 @@ $blind\n";
     private function _echo_accept_decline(PaperInfo $prow, $rrow, Contact $user,
                                           $reviewPostLink) {
         if ($rrow
-            && !$rrow->reviewModified
+            && $rrow->reviewStatus === 0
             && $rrow->reviewType < REVIEW_SECONDARY
             && ($user->is_my_review($rrow) || $user->can_administer($prow))) {
             $buttons = [];
@@ -1053,7 +1053,7 @@ $blind\n";
     private function _echo_review_actions($prow, $rrow, $user, $reviewPostLink) {
         $buttons = [];
 
-        $submitted = $rrow && $rrow->reviewSubmitted;
+        $submitted = $rrow && $rrow->reviewStatus === ReviewInfo::RS_COMPLETED;
         $disabled = !$user->can_clickthrough("review", $prow);
         $my_review = !$rrow || $user->is_my_review($rrow);
         $pc_deadline = $user->act_pc($prow) || $user->allow_administer($prow);
@@ -1067,10 +1067,10 @@ $blind\n";
                 $buttons[] = array(Ht::button("Save changes", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
             }
         } else if (!$submitted && $rrow && $rrow->subject_to_approval()) {
-            if ($rrow->timeApprovalRequested < 0) {
+            if ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED) {
                 $buttons[] = Ht::submit("submitreview", "Update approved review", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
             } else if ($my_review) {
-                if ($rrow->timeApprovalRequested == 0) {
+                if ($rrow->reviewStatus !== ReviewInfo::RS_DELIVERED) {
                     $subtext = "Submit for approval";
                 } else {
                     $subtext = "Resubmit for approval";
@@ -1079,12 +1079,12 @@ $blind\n";
             } else {
                 $buttons[] = Ht::submit("submitreview", "Approve review", ["class" => "btn-highlight btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
             }
-            if ($rrow->timeApprovalRequested == 0) {
+            if ($rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
                 $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
             }
-            if (!$my_review && $rrow->requestedBy == $user->contactId) {
+            if (!$my_review && $rrow->requestedBy === $user->contactId) {
                 $my_rrow = $prow->review_of_user($user);
-                if (!$my_rrow || !$my_rrow->reviewSubmitted) {
+                if (!$my_rrow || $my_rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
                     $buttons[] = Ht::submit("adoptreview", "Adopt as your review", ["class" => "ui js-adopt-review need-clickthrough-enable", "disabled" => $disabled]);
                 }
             }
@@ -1100,7 +1100,7 @@ $blind\n";
 
         if ($rrow && $user->allow_administer($prow)) {
             $buttons[] = "";
-            if ($submitted || $rrow->timeApprovalRequested != 0) {
+            if ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED) {
                 $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
             }
             $buttons[] = array(Ht::button("Delete review", ["class" => "ui js-delete-review"]), "(admin only)");
@@ -1189,7 +1189,9 @@ $blind\n";
                     . '</span>';
             }
         }
-        if ($rrow && $rrow->reviewModified > 1 && $viewer->can_view_review_time($prow, $rrow)) {
+        if ($rrow
+            && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED
+            && $viewer->can_view_review_time($prow, $rrow)) {
             $revtime = $this->conf->unparse_time($rrow->reviewModified);
         }
         if ($revname || $revtime) {
@@ -1242,11 +1244,12 @@ $blind\n";
             $ndelegated = 0;
             $napproval = 0;
             foreach ($prow->reviews_by_id() as $rr) {
-                if ($rr->reviewType == REVIEW_EXTERNAL
-                    && $rr->requestedBy == $rrow->contactId) {
+                if ($rr->reviewType === REVIEW_EXTERNAL
+                    && $rr->requestedBy === $rrow->contactId) {
                     ++$ndelegated;
-                    if ($rr->timeApprovalRequested > 0)
+                    if ($rr->reviewStatus === ReviewInfo::RS_DELIVERED) {
                         ++$napproval;
+                    }
                 }
             }
 
@@ -1283,10 +1286,15 @@ $blind\n";
         // review actions
         if ($viewer->timeReview($prow, $rrow) || $admin) {
             if ($prow->can_author_view_submitted_review()
-                && (!$rrow || $rrow->reviewSubmitted || !$rrow->subject_to_approval() || !$viewer->is_my_review($rrow))) {
+                && (!$rrow
+                    || $rrow->reviewStatus >= $this->conf->review_status_bound
+                    || !$rrow->subject_to_approval()
+                    || !$viewer->is_my_review($rrow))) {
                 echo '<div class="feedback is-warning mb-2">Authors will be notified about submitted reviews.</div>';
             }
-            if ($rrow && $rrow->reviewSubmitted && !$admin) {
+            if ($rrow
+                && $rrow->reviewStatus >= $this->conf->review_status_bound
+                && !$admin) {
                 echo '<div class="feedback is-warning mb-2">Only administrators can remove or unsubmit the review at this point.</div>';
             }
             $this->_echo_review_actions($prow, $rrow, $viewer, $reviewPostLink);
@@ -1319,21 +1327,25 @@ $blind\n";
         if ($rrow->reviewBlind) {
             $rj["blind"] = true;
         }
-        if ($rrow->reviewSubmitted) {
+        if ($rrow->reviewStatus >= $this->conf->review_status_bound) {
             $rj["submitted"] = true;
         } else {
-            if (!$rrow->reviewOrdinal && !$rrow->timeApprovalRequested) {
+            if ($rrow->is_subreview()) {
+                $rj["subreview"] = true;
+            }
+            if (!$rrow->reviewOrdinal && $rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
                 $rj["draft"] = true;
             } else {
                 $rj["ready"] = false;
             }
-            if ($rrow->timeApprovalRequested < 0) {
-                $rj["approved"] = true;
-            } else if ($rrow->timeApprovalRequested > 0) {
-                $rj["needs_approval"] = true;
-            }
-            if ($rrow->is_subreview()) {
-                $rj["subreview"] = true;
+            if ($rrow->subject_to_approval()) {
+                if ($rrow->reviewStatus === ReviewInfo::RS_DELIVERED) {
+                    $rj["needs_approval"] = true;
+                } else if ($rrow->reviewStatus === ReviewInfo::RS_ADOPTED) {
+                    $rj["approved"] = $rj["adopted"] = true;
+                } else if ($rrow->reviewStatus > ReviewInfo::RS_ADOPTED) {
+                    $rj["approved"] = true;
+                }
             }
         }
         if ($editable && $viewer->can_review($prow, $rrow)) {
@@ -1416,7 +1428,7 @@ $blind\n";
             . $a . ' class="ptitle">'
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($prow->title, 80))
             . "</a>";
-        if ($rrow->reviewModified > 1) {
+        if ($rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
             if ($contact->can_view_review_time($prow, $rrow)) {
                 $time = $this->conf->parseableTime($rrow->reviewModified, false);
             } else {
@@ -2017,7 +2029,7 @@ class ReviewValues extends MessageSet {
         $rrow = $this->_mailer_info["rrow"];
         if ($minic->can_view_review($prow, $rrow, $this->_mailer_diff_view_score)
             && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $this->_mailer_info))
-            && ($rrow->reviewSubmitted > 0
+            && ($rrow->reviewStatus >= $prow->conf->review_status_bound
                 || $rrow->contactId == $minic->contactId
                 || $rrow->requestedBy == $minic->contactId
                 || ($minic->watch & Contact::WATCH_REVIEW) != 0)) {

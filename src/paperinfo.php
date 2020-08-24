@@ -1132,12 +1132,6 @@ class PaperInfo {
         return $ci && $ci->review_status > PaperContactInfo::RS_UNSUBMITTED;
     }
 
-    /** @return bool */
-    function review_submitted($contact) {
-        $ci = $this->contact_info($contact);
-        return $ci && $ci->reviewType > 0 && $ci->reviewSubmitted > 0;
-    }
-
     /** @return array<int,Contact> */
     function pc_can_become_reviewer_ignore_conflict() {
         if (!$this->conf->check_track_review_sensitivity()) {
@@ -1977,7 +1971,7 @@ class PaperInfo {
         $srs = $urs = $ers = [];
 
         foreach ($this->reviews_by_id() as $rrow) {
-            if ($rrow->reviewSubmitted) {
+            if ($rrow->reviewStatus >= $this->conf->review_status_bound) {
                 $srs[] = $rrow;
             } else if ($rrow->is_subreview()) {
                 $ers[] = $rrow;
@@ -2007,11 +2001,9 @@ class PaperInfo {
             $p0 = count($srs);
             foreach ($srs as $i => $srow) {
                 if ($urow->requestedBy === $srow->contactId
-                    || ($srow->reviewType < REVIEW_PC
-                        && $urow->requestedBy === $srow->requestedBy
-                        && ($urow->timeApprovalRequested >= 0
-                            || ($srow->timeApprovalRequested < 0
-                                && $urow->timeApprovalRequested < $srow->timeApprovalRequested)))) {
+                    || ($urow->requestedBy === $srow->requestedBy
+                        && $srow->is_subreview()
+                        && $urow->reviewStatus <= $srow->reviewStatus)) {
                     $p0 = $i + 1;
                 }
             }

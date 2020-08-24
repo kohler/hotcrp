@@ -347,12 +347,12 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         foreach ($row->reviews_by_id() as $rrow) {
             if ($user->can_view_review_assignment($row, $rrow)
                 && ($this->round === null || $this->round === $rrow->reviewRound)) {
-                if ($rrow->reviewSubmitted > 0) {
+                if ($rrow->reviewStatus >= $row->conf->review_status_bound) {
                     ++$done;
                     ++$started;
                 } else if (($want_assigned
                             ? $rrow->reviewNeedsSubmit > 0
-                            : $rrow->reviewModified > 0)
+                            : $rrow->reviewStatus > 0)
                            && ($rrow->reviewType != REVIEW_EXTERNAL
                                || $row->conf->ext_subreviews < 2)) {
                     ++$started;
@@ -639,9 +639,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
         } else {
             $ranal = null;
         }
-        if ($ranal
-            && !$ranal->rrow->reviewSubmitted
-            && !$ranal->rrow->timeApprovalRequested) {
+        if ($ranal && $ranal->rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
             $pl->mark_has("need_review");
         }
         $flags = 0;
@@ -665,7 +663,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
             list($ranal, $flags) = $this->analysis($pl, $row);
             if ($ranal && $ranal->rrow->reviewType) {
                 $row->$k = 2 * $ranal->rrow->reviewType;
-                if ($ranal->rrow->reviewSubmitted) {
+                if ($ranal->rrow->reviewStatus >= $row->conf->review_status_bound) {
                     $row->$k += 1;
                 }
             } else {

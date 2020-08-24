@@ -17,12 +17,12 @@ class ReviewTimes {
         }
         // only completed reviews for withdrawn/unsubmitted papers
         if ($prow->timeSubmitted <= 0) {
-            return $rrow->reviewSubmitted > 0;
+            return $rrow->reviewStatus >= $prow->conf->review_status_bound;
         }
         // yes for modified or assigned reviews;
         // no for unmodified self-assigned reviews
         if ($rrow->reviewType > REVIEW_PC
-            || $rrow->reviewModified) {
+            || $rrow->reviewStatus !== 0) {
             return true;
         } else if ($rrow->requestedBy == $rrow->contactId
                    || $rrow->requestedBy == 0) {

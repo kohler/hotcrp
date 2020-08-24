@@ -259,20 +259,21 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
         if ($this->completeness) {
             if ((($this->completeness & self::COMPLETE)
-                 && !$rrow->reviewSubmitted)
+                 && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED)
                 || (($this->completeness & self::INCOMPLETE)
                     && !$rrow->reviewNeedsSubmit)
                 || (($this->completeness & self::INPROGRESS)
-                    && ($rrow->reviewSubmitted || $rrow->reviewModified < 2))
+                    && $rrow->reviewStatus !== ReviewInfo::RS_DRAFTED
+                    && $rrow->reviewStatus !== ReviewInfo::RS_DELIVERED)
                 || (($this->completeness & self::NOTSTARTED)
-                    && $rrow->reviewModified > 1)
+                    && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED)
                 || (($this->completeness & self::PENDINGAPPROVAL)
-                    && ($rrow->reviewSubmitted
-                        || $rrow->timeApprovalRequested <= 0
+                    && ($rrow->reviewStatus !== ReviewInfo::RS_DELIVERED
                         || ($rrow->requestedBy != $user->contactId
                             && !$user->allow_administer($prow))))
                 || (($this->completeness & self::APPROVED)
-                    && $rrow->timeApprovalRequested >= 0)
+                    && $rrow->reviewStatus !== ReviewInfo::RS_ADOPTED
+                    && $rrow->reviewStatus !== ReviewInfo::RS_APPROVED)
                 || (($this->completeness & self::MYREQUEST)
                     && $rrow->requestedBy != $user->contactId)) {
                 return false;
@@ -295,7 +296,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return false;
             }
         } else if ($rrow->reviewType > 0
-                   && $rrow->reviewSubmitted <= 0
+                   && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED
                    && $rrow->reviewNeedsSubmit <= 0
                    && !$this->completeness) {
             // don't count delegated reviews unless contacts or completeness given

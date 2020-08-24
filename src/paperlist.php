@@ -119,10 +119,10 @@ class PaperListReviewAnalysis {
         if (!$this->rrow) {
             return $html;
         }
-        if (!$this->rrow->reviewSubmitted) {
-            $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal()]);
-        } else {
+        if ($this->rrow->reviewStatus >= $this->prow->conf->review_status_bound) {
             $href = $this->prow->hoturl(["anchor" => "r" . $this->rrow->unparse_ordinal()]);
+        } else {
+            $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal()]);
         }
         $t = $klass ? "<a class=\"$klass\"" : "<a";
         return $t . ' href="' . $href . '">' . $html . '</a>';

@@ -3648,7 +3648,7 @@ class Contact {
                 && $this->is_owned_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY)) {
             return true;
-        } else if ($rrow && $rrow->reviewSubmitted <= 0) {
+        } else if ($rrow && $rrow->reviewStatus < $this->conf->review_status_bound) {
             return false;
         }
         $seerev = $this->seerev_setting($prow, $rrow, $rights);
@@ -3683,7 +3683,7 @@ class Contact {
         if ($this->can_view_review($prow, $rrow, $viewscore)) {
             return null;
         }
-        $rrowSubmitted = !$rrow || $rrow->reviewSubmitted > 0;
+        $rrowSubmitted = !$rrow || $rrow->reviewStatus >= $this->conf->review_status_bound;
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if ((!$rights->act_author_view
@@ -5062,7 +5062,7 @@ class Contact {
         $new_requester_cid = $this->contactId;
 
         // can't delete a review that's in progress
-        if ($type <= 0 && $oldtype && $rrow->reviewModified > 1) {
+        if ($type <= 0 && $oldtype && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
             if ($oldtype >= REVIEW_SECONDARY) {
                 $type = REVIEW_PC;
             } else {
@@ -5093,8 +5093,9 @@ class Contact {
             $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, reviewRound=$round, timeRequested=".Conf::$now."$qa, requestedBy=$new_requester_cid";
         } else if ($type && ($oldtype != $type || $rrow->reviewRound != $round)) {
             $q = "update PaperReview set reviewType=$type, reviewRound=$round";
-            if (!$rrow->reviewSubmitted)
+            if ($rrow->reviewStatus < ReviewInfo::RS_ADOPTED) {
                 $q .= ", reviewNeedsSubmit=1";
+            }
             $q .= " where reviewId=$reviewId";
         } else if (!$type && $oldtype) {
             $q = "delete from PaperReview where reviewId=$reviewId";
@@ -5142,7 +5143,7 @@ class Contact {
         } else {
             if ($type == REVIEW_SECONDARY
                 && $oldtype != REVIEW_SECONDARY
-                && !$rrow->reviewSubmitted) {
+                && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
                 $this->update_review_delegation($pid, $reviewer_cid, 0);
             }
         }
