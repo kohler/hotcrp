@@ -1977,10 +1977,12 @@ class PaperInfo {
         $srs = $urs = $ers = [];
 
         foreach ($this->reviews_by_id() as $rrow) {
-            if ($rrow->reviewSubmitted || $rrow->reviewOrdinal) {
+            if ($rrow->reviewSubmitted) {
                 $srs[] = $rrow;
             } else if ($rrow->is_subreview()) {
                 $ers[] = $rrow;
+            } else if ($rrow->reviewOrdinal) {
+                $srs[] = $rrow;
             } else {
                 $urs[] = $rrow;
             }
@@ -2004,9 +2006,9 @@ class PaperInfo {
         foreach ($ers as $urow) {
             $p0 = count($srs);
             foreach ($srs as $i => $srow) {
-                if ($urow->requestedBy == $srow->contactId
+                if ($urow->requestedBy === $srow->contactId
                     || ($srow->reviewType < REVIEW_PC
-                        && $urow->requestedBy == $srow->requestedBy
+                        && $urow->requestedBy === $srow->requestedBy
                         && ($urow->timeApprovalRequested >= 0
                             || ($srow->timeApprovalRequested < 0
                                 && $urow->timeApprovalRequested < $srow->timeApprovalRequested)))) {

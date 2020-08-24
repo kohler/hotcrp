@@ -358,9 +358,8 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return bool */
     function is_subreview() {
-        return $this->reviewType == REVIEW_EXTERNAL
+        return $this->reviewType === REVIEW_EXTERNAL
             && !$this->reviewSubmitted
-            && !$this->reviewOrdinal
             && ($this->timeApprovalRequested < 0 || $this->conf->ext_subreviews);
     }
 

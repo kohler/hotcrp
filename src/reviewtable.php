@@ -48,9 +48,7 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
 
         $tclass = $rrow && $rr->reviewId == $rrow->reviewId ? "reviewers-highlight" : "";
         $isdelegate = $rr->is_subreview() && $rr->requestedBy == $last_pc_reviewer;
-        if (!$rr->reviewSubmitted
-            && !$rr->reviewOrdinal
-            && $isdelegate) {
+        if (!$rr->reviewSubmitted && $isdelegate) {
             $tclass .= ($tclass ? " " : "") . "rldraft";
         }
         if ($rr->reviewType >= REVIEW_PC) {
@@ -59,16 +57,17 @@ function review_table($user, PaperInfo $prow, $rrows, $rrow, $mode) {
 
         // review ID
         $id = $rr->is_subreview() ? "Subreview" : "Review";
-        if ($rr->reviewOrdinal) {
+        if ($rr->reviewOrdinal && !$isdelegate) {
             $id .= " #" . $rr->unparse_ordinal();
         }
         if (!$rr->reviewSubmitted
             && ($rr->timeApprovalRequested >= 0 || !$rr->is_subreview())) {
             $d = $rr->status_description();
-            if ($d === "draft")
+            if ($d === "draft") {
                 $id = "Draft " . $id;
-            else
+            } else {
                 $id .= " (" . $d . ")";
+            }
         }
         $rlink = $rr->unparse_ordinal();
 
