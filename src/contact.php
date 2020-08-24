@@ -3597,16 +3597,17 @@ class Contact {
         $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
             $rs = $this->conf->round_setting("pc_seeallrev", $round);
-            if (!$this->conf->has_tracks())
-                return $rs;
-            if ($this->conf->check_tracks($prow, $this, Track::VIEWREV)) {
-                if (!$this->conf->check_tracks($prow, $this, Track::VIEWALLREV))
-                    $rs = 0;
+            if (!$this->conf->has_tracks()) {
                 return $rs;
             }
-        } else {
-            if ($this->conf->round_setting("extrev_view", $round))
-                return 0;
+            if ($this->conf->check_tracks($prow, $this, Track::VIEWREV)) {
+                if (!$this->conf->check_tracks($prow, $this, Track::VIEWALLREV)) {
+                    $rs = 0;
+                }
+                return $rs;
+            }
+        } else if ($this->conf->round_setting("extrev_view", $round)) {
+            return 0;
         }
         return -1;
     }
@@ -3623,9 +3624,8 @@ class Contact {
                     return $s ? 0 : Conf::PCSEEREV_YES;
                 }
             }
-        } else {
-            if ($this->conf->round_setting("extrev_view", $round) == 2)
-                return 0;
+        } else if ($this->conf->round_setting("extrev_view", $round) == 2) {
+            return 0;
         }
         return -1;
     }
@@ -3665,9 +3665,9 @@ class Contact {
             || ($rights->allow_pc
                 && $viewscore >= VIEWSCORE_PC
                 && $seerev > 0
-                && ($seerev != Conf::PCSEEREV_UNLESSANYINCOMPLETE
+                && ($seerev !== Conf::PCSEEREV_UNLESSANYINCOMPLETE
                     || !$this->has_outstanding_review())
-                && ($seerev != Conf::PCSEEREV_UNLESSINCOMPLETE
+                && ($seerev !== Conf::PCSEEREV_UNLESSINCOMPLETE
                     || $rights->review_status == 0))
             || ($rights->review_status > 0
                 && !$rights->view_conflict_type
@@ -3708,8 +3708,8 @@ class Contact {
             $whyNot["deadline"] = "au_seerev";
         } else if ($rights->view_conflict_type) {
             $whyNot["conflict"] = true;
-        } else if (!$rights->allow_pc
-                   && $prow->review_submitted($this)) {
+        } else if ($rights->reviewType === REVIEW_EXTERNAL
+                   && $this->seerev_setting($prow, $rrow, $rights) < 0) {
             $whyNot["externalReviewer"] = true;
         } else if (!$rrowSubmitted) {
             $whyNot["reviewNotSubmitted"] = true;
