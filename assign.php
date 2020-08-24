@@ -4,7 +4,6 @@
 
 require_once("src/initweb.php");
 require_once("src/papertable.php");
-require_once("src/reviewtable.php");
 if (!$Me->email) {
     $Me->escape();
 }
@@ -216,7 +215,7 @@ $paperTable->paptabBegin();
 
 
 // reviewer information
-$t = review_table($Me, $prow, $paperTable->all_reviews(), null, "assign");
+$t = $paperTable->review_table(null);
 if ($t !== "") {
     echo '<div class="pcard revcard">',
         '<div class="revcard-head"><h2>Reviews</h2></div>',

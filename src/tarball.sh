@@ -327,7 +327,6 @@ src/reviewdiffinfo.php
 src/reviewinfo.php
 src/reviewrefusalinfo.php
 src/reviewrequestinfo.php
-src/reviewtable.php
 src/reviewtimes.php
 src/schema.sql
 src/search/st_admin.php
