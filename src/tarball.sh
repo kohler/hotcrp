@@ -201,6 +201,7 @@ src/capabilityinfo.php
 src/checkformat.php
 src/commentinfo.php
 src/conference.php
+src/confinvariants.php
 src/conflict.php
 src/contact.php
 src/contactlist.php

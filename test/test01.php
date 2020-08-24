@@ -4,7 +4,7 @@
 
 declare(strict_types=1);
 require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
-$Conf->check_invariants();
+ConfInvariants::test_all($Conf);
 
 $Conf->save_setting("sub_open", 1);
 $Conf->save_setting("sub_update", Conf::$now + 10);
@@ -1176,10 +1176,10 @@ assert_search_papers($user_chair, "re:any 19", "19");
 assert_search_papers($user_chair, "re:1 19", "19");
 
 // check rev_tokens setting
-$Conf->check_invariants();
+ConfInvariants::test_all($Conf);
 xassert_assign($user_chair, "paper,action,user\n19,clearreview,anonymous\n");
 assert_search_papers($user_chair, "re:any 19", "");
-$Conf->check_invariants();
+ConfInvariants::test_all($Conf);
 xassert_assign($user_chair, "paper,action,user\n19,review,anonymous\n");
 
 xassert_assign($user_chair, "paper,action,user\n19,review,anonymous\n");
@@ -1283,7 +1283,7 @@ xassert_eqq($paper16->all_tags_text(), " 4~bar#0");
 xassert_eqq($paper16->sorted_searchable_tags($user_marina), "");
 xassert_eqq($paper16->sorted_searchable_tags($user_estrin), " 4~bar#0");
 
-$Conf->check_invariants();
+ConfInvariants::test_all($Conf);
 
 // author view capabilities and multiple blank users
 $blank1 = new Contact(null, $Conf);

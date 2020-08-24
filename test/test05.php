@@ -62,14 +62,14 @@ $ps = new PaperStatus($Conf);
 $paper2a = $ps->paper_json(2);
 $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-hello\\n\",\"type\":\"application/pdf\"}}"));
 xassert_paper_status($ps);
-xassert($Conf->check_document_inactive_invariants());
+xassert(ConfInvariants::test_document_inactive($Conf));
 
 $paper2b = $ps->paper_json(2);
 xassert_eqq($paper2b->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"final\":{\"content\":\"%PDF-goodbye\\n\",\"type\":\"application/pdf\"}}"));
 xassert_paper_status($ps);
-xassert($Conf->check_document_inactive_invariants());
+xassert(ConfInvariants::test_document_inactive($Conf));
 
 $paper2 = $ps->paper_json(2);
 xassert_eqq($paper2->submission->hash, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
@@ -77,7 +77,7 @@ xassert_eqq($paper2->final->hash, "e04c778a0af702582bb0e9345fab6540acb28e45");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-again hello\\n\",\"type\":\"application/pdf\"}}"));
 xassert_paper_status($ps);
-xassert($Conf->check_document_inactive_invariants());
+xassert(ConfInvariants::test_document_inactive($Conf));
 
 $paper2 = $ps->paper_json(2);
 xassert_eqq($paper2->submission->hash, "30240fac8417b80709c72156b7f7f7ad95b34a2b");
@@ -94,7 +94,7 @@ $Conf->invalidate_caches("options");
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"type\":\"application/pdf\"}]}}"));
 xassert_paper_status($ps);
-xassert($Conf->check_document_inactive_invariants());
+xassert(ConfInvariants::test_document_inactive($Conf));
 
 $paper2 = $user_estrin->checked_paper_by_id(2);
 $docs = $paper2->option(2)->documents();
@@ -106,7 +106,7 @@ $d1psid = $docs[1]->paperStorageId;
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"sha1\": \"4c18e2ec1d1e6d9e53f57499a66aeb691d687370\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"sha1\": \"2e866582768e8954f55b974a2ad8503ef90717ab\", \"type\":\"application/pdf\"}]}}"));
 xassert_paper_status($ps);
-xassert($Conf->check_document_inactive_invariants());
+xassert(ConfInvariants::test_document_inactive($Conf));
 
 $paper2 = $user_estrin->checked_paper_by_id(2);
 $docs = $paper2->option(2)->documents();
@@ -132,7 +132,7 @@ xassert_eqq($docs[1]->paperStorageId, $d1psid);
 // new-style JSON representation
 $ps->save_paper_json(json_decode("{\"id\":2,\"attachments\":[{\"content\":\"%PDF-2\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-1\", \"type\":\"application/pdf\"}]}"));
 xassert_paper_status($ps);
-xassert($Conf->check_document_inactive_invariants());
+xassert(ConfInvariants::test_document_inactive($Conf));
 
 $paper2 = $user_estrin->checked_paper_by_id(2);
 $docs = $paper2->option(2)->documents();
@@ -145,7 +145,7 @@ $Conf->save_setting("opt.contentHashMethod", 1, "sha256");
 
 $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content\":\"%PDF-whatever\\n\",\"type\":\"application/pdf\"}}"));
 xassert_paper_status($ps);
-xassert($Conf->check_document_inactive_invariants());
+xassert(ConfInvariants::test_document_inactive($Conf));
 
 $paper3 = $user_estrin->checked_paper_by_id(3);
 xassert_eqq($paper3->sha1, "sha2-" . hex2bin("38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4"));
@@ -685,7 +685,7 @@ xassert_eq($Conf->format_spec(DTYPE_SUBMISSION)->timestamp, $spects);
 $ps = new PaperStatus($Conf, null, ["content_file_prefix" => SiteLoader::$root . "/"]);
 $ps->save_paper_json(json_decode("{\"id\":3,\"submission\":{\"content_file\":\"test/sample50pg.pdf\",\"type\":\"application/pdf\"}}"));
 xassert_paper_status($ps);
-xassert($Conf->check_document_inactive_invariants());
+xassert(ConfInvariants::test_document_inactive($Conf));
 
 $paper3 = $user_estrin->checked_paper_by_id(3);
 $doc = $paper3->document(DTYPE_SUBMISSION);
@@ -748,6 +748,6 @@ xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit");
 xassert(!$cf_nec->need_recheck());
 xassert(!$cf_nec->run_attempted());
 
-$Conf->check_invariants();
+ConfInvariants::test_all($Conf);
 
 xassert_exit();

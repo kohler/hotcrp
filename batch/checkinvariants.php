@@ -8,10 +8,12 @@ if (isset($arg["h"]) || isset($arg["help"])
     exit(0);
 }
 
-$problems = $Conf->check_invariants();
+$ic = new ConfInvariants($Conf);
+$ic->exec_all();
 
-if (isset($problems["autosearch"]) && isset($arg["fix-autosearch"]))
+if (isset($ic->problems["autosearch"]) && isset($arg["fix-autosearch"])) {
     $Conf->update_autosearch_tags();
+}
 
 if ($Conf->sversion == 174 && (isset($arg["json-reviews"]) || isset($arg["fix-json-reviews"]))) {
     $result = $Conf->qe("select * from PaperReview");
