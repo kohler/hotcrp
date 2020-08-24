@@ -867,7 +867,7 @@ class SettingValues extends MessageSet {
         $fname = $field instanceof Si ? $field->name : $field;
         foreach ($this->message_list_at($fname) as $mx) {
             $class = $classes ? "feedback $classes" : "feedback";
-            $t .= '<div class="' . MessageSet::status_class($mx[2], $class, "is-") . '">' . $mx[1] . "</div>";
+            $t .= '<div class="' . MessageSet::status_class($mx->status, $class, "is-") . '">' . $mx->message . "</div>";
         }
         return $t;
     }

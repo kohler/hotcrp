@@ -408,7 +408,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         if ($this->has_problem()) {
             $msgs = [];
             foreach ($this->problem_list() as $mx) {
-                $msgs[] = $mx[2] > MessageSet::WARNING ? "<strong>$mx[1]</strong>" : $mx[1];
+                $msgs[] = $mx->status > MessageSet::WARNING ? "<strong>{$mx->message}</strong>" : $mx->message;
             }
             if ($this->has_error()) {
                 $status = "error";
