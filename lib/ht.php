@@ -632,7 +632,7 @@ class Ht {
     static function render_feedback_at($field) {
         $t = "";
         foreach (self::message_list_at($field) as $mx) {
-            $t .= '<p class="' . MessageSet::status_class($mx[2], "feedback", "is-") . '">' . $mx[1] . '</p>';
+            $t .= '<p class="' . MessageSet::status_class($mx->status, "feedback", "is-") . '">' . $mx->message . '</p>';
         }
         return $t;
     }

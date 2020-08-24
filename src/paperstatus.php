@@ -288,9 +288,9 @@ class PaperStatus extends MessageSet {
     function landmarked_message_texts() {
         $ms = [];
         foreach ($this->message_list() as $mx) {
-            if ($mx[1]) {
-                $o = $mx[0] ? $this->conf->options()->option_by_field_key($mx[0]) : null;
-                $ms[] = ($o ? htmlspecialchars($o->edit_title()) . ": " : "") . $mx[1];
+            if ($mx->message) {
+                $o = $mx->field ? $this->conf->options()->option_by_field_key($mx->field) : null;
+                $ms[] = ($o ? htmlspecialchars($o->edit_title()) . ": " : "") . $mx->message;
             }
         }
         return $ms;
