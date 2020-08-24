@@ -3531,8 +3531,8 @@ class Contact {
                 || ($this->_review_tokens
                     && $rbase->reviewToken !== 0
                     && in_array($rbase->reviewToken, $this->_review_tokens, true))
-                || ($rbase->requestedBy == $this->contactId
-                    && $rbase->reviewType == REVIEW_EXTERNAL
+                || ($rbase->requestedBy === $this->contactId
+                    && $rbase->reviewType === REVIEW_EXTERNAL
                     && $this->conf->ext_subreviews)
                 || ($this->_capabilities !== null
                     && ($this->_capabilities["@ra" . $rbase->paperId] ?? null) == $rbase->contactId));

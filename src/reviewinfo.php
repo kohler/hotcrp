@@ -41,6 +41,8 @@ class ReviewInfo implements JsonSerializable {
     public $reviewNeedsSubmit;
     /** @var int */
     public $reviewViewScore;
+    /** @var int */
+    public $reviewStatus;
 
     // sometimes loaded
     /** @var ?int */
@@ -128,6 +130,14 @@ class ReviewInfo implements JsonSerializable {
     public $ratingSignature;
 
     const VIEWSCORE_RECOMPUTE = -100;
+
+    const RS_EMPTY = 0;
+    const RS_ACCEPTED = 1;
+    const RS_DRAFTED = 2;
+    const RS_DELIVERED = 3;
+    const RS_ADOPTED = 4;
+    const RS_APPROVED = 5;
+    const RS_COMPLETED = 6;
 
     /** @var array<non-empty-string,non-empty-string> */
     static public $text_field_map = [
@@ -223,6 +233,7 @@ class ReviewInfo implements JsonSerializable {
         $this->timeApprovalRequested = (int) $this->timeApprovalRequested;
         $this->reviewNeedsSubmit = (int) $this->reviewNeedsSubmit;
         $this->reviewViewScore = (int) $this->reviewViewScore;
+        $this->reviewStatus = $this->compute_review_status();
 
         if ($this->timeRequested !== null) {
             $this->timeRequested = (int) $this->timeRequested;
@@ -293,7 +304,8 @@ class ReviewInfo implements JsonSerializable {
             }
         }
 
-        if (!$recomputing_view_scores && $this->reviewViewScore == self::VIEWSCORE_RECOMPUTE) {
+        if (!$recomputing_view_scores
+            && $this->reviewViewScore == self::VIEWSCORE_RECOMPUTE) {
             assert($this->reviewViewScore != self::VIEWSCORE_RECOMPUTE);
             $conf->review_form()->compute_view_scores();
         }
@@ -356,6 +368,30 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
+    /** @return int */
+    function compute_review_status() {
+        if ($this->reviewSubmitted) {
+            if ($this->reviewType !== REVIEW_EXTERNAL || $this->requestedBy === 0) {
+                return self::RS_COMPLETED;
+            } else {
+                return self::RS_APPROVED;
+            }
+        } else if ($this->reviewType === REVIEW_EXTERNAL
+                   && $this->timeApprovalRequested !== 0) {
+            if ($this->timeApprovalRequested > 0) {
+                return self::RS_DELIVERED;
+            } else {
+                return self::RS_ADOPTED;
+            }
+        } else if ($this->reviewModified === 0) {
+            return self::RS_EMPTY;
+        } else if ($this->reviewModified === 1) {
+            return self::RS_ACCEPTED;
+        } else {
+            return self::RS_DRAFTED;
+        }
+    }
+
     /** @return bool */
     function is_subreview() {
         return $this->reviewType === REVIEW_EXTERNAL
@@ -387,10 +423,10 @@ class ReviewInfo implements JsonSerializable {
     }
 
     /** @return bool */
-    function needs_approval() {
-        return $this->reviewType == REVIEW_EXTERNAL
-            && !$this->reviewSubmitted
-            && $this->requestedBy
+    function subject_to_approval() {
+        return $this->reviewType === REVIEW_EXTERNAL
+            && $this->reviewStatus < ReviewInfo::RS_COMPLETED
+            && $this->requestedBy !== 0
             && $this->conf->ext_subreviews > 1;
     }
 

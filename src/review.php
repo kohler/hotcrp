@@ -1066,7 +1066,7 @@ $blind\n";
             } else {
                 $buttons[] = array(Ht::button("Save changes", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
             }
-        } else if (!$submitted && $rrow && $rrow->needs_approval()) {
+        } else if (!$submitted && $rrow && $rrow->subject_to_approval()) {
             if ($rrow->timeApprovalRequested < 0) {
                 $buttons[] = Ht::submit("submitreview", "Update approved review", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
             } else if ($my_review) {
@@ -1283,7 +1283,7 @@ $blind\n";
         // review actions
         if ($viewer->timeReview($prow, $rrow) || $admin) {
             if ($prow->can_author_view_submitted_review()
-                && (!$rrow || $rrow->reviewSubmitted || !$rrow->needs_approval() || !$viewer->is_my_review($rrow))) {
+                && (!$rrow || $rrow->reviewSubmitted || !$rrow->subject_to_approval() || !$viewer->is_my_review($rrow))) {
                 echo '<div class="feedback is-warning mb-2">Authors will be notified about submitted reviews.</div>';
             }
             if ($rrow && $rrow->reviewSubmitted && !$admin) {
@@ -1473,7 +1473,9 @@ $blind\n";
 }
 
 class ReviewValues extends MessageSet {
+    /** @var ReviewForm */
     public $rf;
+    /** @var Conf */
     public $conf;
 
     public $text;
@@ -1483,19 +1485,30 @@ class ReviewValues extends MessageSet {
     public $fieldLineno;
     private $garbage_lineno;
 
+    /** @var int */
     public $paperId;
     public $req;
 
     private $finished = 0;
+    /** @var ?list<string> */
     private $submitted;
+    /** @var ?list<string> */
     public $updated; // used in tests
+    /** @var ?list<string> */
     private $approval_requested;
+    /** @var ?list<string> */
     private $approved;
+    /** @var ?list<string> */
     private $saved_draft;
+    /** @var ?list<string> */
     private $author_notified;
+    /** @var ?list<string> */
     public $unchanged;
+    /** @var ?list<string> */
     private $unchanged_draft;
+    /** @var ?int */
     private $single_approval;
+    /** @var ?list<string> */
     private $blank;
 
     private $no_notify = false;
@@ -1561,7 +1574,7 @@ class ReviewValues extends MessageSet {
         $this->fieldLineno = [];
         $this->garbage_lineno = null;
         $this->req = [];
-        $this->paperId = false;
+        $this->paperId = 0;
         if ($override !== null) {
             $this->req["override"] = $override;
         }
@@ -1818,7 +1831,7 @@ class ReviewValues extends MessageSet {
     }
 
     function check_and_save(Contact $user, PaperInfo $prow = null, ReviewInfo $rrow = null) {
-        assert(!$rrow || $rrow->paperId == $prow->paperId);
+        assert(!$rrow || $rrow->paperId === $prow->paperId);
 
         // look up paper
         if (!$prow) {
@@ -1832,7 +1845,7 @@ class ReviewValues extends MessageSet {
                 return false;
             }
         }
-        if ($this->paperId && $prow->paperId != $this->paperId) {
+        if ($this->paperId && $prow->paperId !== $this->paperId) {
             $this->rmsg("paperNumber", "This review form is for paper #{$this->paperId}, not paper #{$prow->paperId}; did you mean to upload it here? I have ignored the form.", MessageSet::ERROR);
             return false;
         }
@@ -2024,25 +2037,23 @@ class ReviewValues extends MessageSet {
         assert($this->paperId == $prow->paperId);
         assert(!$rrow || $rrow->paperId == $prow->paperId);
 
-        $newsubmit = $newapproval = false;
-        $approvalstate = 0;
+        $oldstatus = $newstatus = $rrow ? $rrow->reviewStatus : 0;
         if (($this->req["ready"] ?? null)
-            && (!$rrow || !$rrow->reviewSubmitted)) {
-            if ($rrow && $rrow->needs_approval()) {
-                if ($user->isPC) {
-                    $approvalstate = 3;
-                    if ($this->conf->ext_subreviews < 3
-                        && !($this->req["adoptreview"] ?? null)) {
-                        $newsubmit = true;
-                    }
-                } else {
-                    $approvalstate = $rrow->timeApprovalRequested == 0 ? 2 : 1;
-                }
+            && (!$rrow || $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)) {
+            if (!$rrow
+                || $rrow->reviewType !== REVIEW_EXTERNAL
+                || $rrow->requestedBy === 0) {
+                $newstatus = ReviewInfo::RS_COMPLETED;
+            } else if (!$rrow->subject_to_approval()) {
+                $newstatus = ReviewInfo::RS_APPROVED;
+            } else if (!$user->isPC) {
+                $newstatus = max(ReviewInfo::RS_DELIVERED, $oldstatus);
+            } else if ($this->req["adoptreview"] ?? null) {
+                $newstatus = ReviewInfo::RS_ADOPTED;
             } else {
-                $newsubmit = true;
+                $newstatus = ReviewInfo::RS_APPROVED;
             }
         }
-        $submit = $newsubmit || ($rrow && $rrow->reviewSubmitted);
         $admin = $user->allow_administer($prow);
 
         if (!$user->timeReview($prow, $rrow)
@@ -2132,24 +2143,26 @@ class ReviewValues extends MessageSet {
             $now = $rrow->reviewModified + 1;
         }
 
-        if ($newsubmit) {
-            array_push($qf, "reviewSubmitted=?", "reviewNeedsSubmit=?");
-            array_push($qv, $now, 0);
+        if (($newstatus >= $this->conf->review_status_bound)
+            !== ($oldstatus >= $this->conf->review_status_bound)) {
+            $qf[] = "reviewSubmitted=?";
+            $qv[] = $newstatus >= $this->conf->review_status_bound ? $now : null;
             // $diffinfo->view_score should represent transition to submitted
-            if ($rrow) {
+            if ($rrow && $newstatus >= $this->conf->review_status_bound) {
                 $diffinfo->add_view_score($this->rf->nonempty_view_score($rrow));
             }
-        } else if ($approvalstate === 3 && ($this->req["adoptreview"] ?? null)) {
-            $qf[] = "reviewSubmitted=?";
-            $qv[] = null;
         }
-        if ($approvalstate > 0 && $rrow->timeApprovalRequested >= 0) {
+        if ($newstatus >= ReviewInfo::RS_ADOPTED) {
+            $qf[] = "reviewNeedsSubmit=?";
+            $qv[] = 0;
+        }
+        if (($newstatus === ReviewInfo::RS_DELIVERED && $oldstatus <= $newstatus)
+            || ($newstatus === ReviewInfo::RS_APPROVED && $oldstatus !== $newstatus)) {
             $qf[] = "timeApprovalRequested=?";
-            $qv[] = $approvalstate === 3 ? -$now : $now;
-            if ($approvalstate === 3 && !$newsubmit) {
-                $qf[] = "reviewNeedsSubmit=?";
-                $qv[] = 0;
-            }
+            $qv[] = $now;
+        } else if ($newstatus === ReviewInfo::RS_ADOPTED && $oldstatus !== $newstatus) {
+            $qf[] = "timeApprovalRequested=?";
+            $qv[] = -$now;
         }
 
         // check whether used a review token
@@ -2204,8 +2217,11 @@ class ReviewValues extends MessageSet {
         if ($diffinfo->nonempty()) {
             $qf[] = "reviewModified=?";
             $qv[] = $now;
+            $newstatus = max($newstatus, ReviewInfo::RS_DRAFTED);
         }
         $notification_bound = $now - ReviewForm::NOTIFICATION_DELAY;
+        $newsubmit = $newstatus >= $this->conf->review_status_bound
+            && $oldstatus < $this->conf->review_status_bound;
         if (!$rrow || $diffinfo->nonempty()) {
             $qf[] = "reviewViewScore=?";
             $qv[] = $view_score;
@@ -2221,7 +2237,7 @@ class ReviewValues extends MessageSet {
                 $qv[] = $rrow->reviewModified;
             }
             // do not notify on updates within 3 hours, except fresh submits
-            if ($submit
+            if ($newstatus >= $this->conf->review_status_bound
                 && $diffinfo->view_score > VIEWSCORE_ADMINONLY
                 && !$this->no_notify) {
                 if (!$rrow
@@ -2252,7 +2268,7 @@ class ReviewValues extends MessageSet {
              && $diffinfo->view_score >= VIEWSCORE_AUTHORDEC)
             || ($rrow
                 && !$rrow->reviewOrdinal
-                && ($rrow->reviewSubmitted > 0 || $newsubmit)
+                && ($newsubmit || $rrow->reviewStatus >= $this->conf->review_status_bound)
                 && ($diffinfo->view_score >= VIEWSCORE_AUTHORDEC
                     || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
             $table_suffix = "";
@@ -2315,6 +2331,10 @@ class ReviewValues extends MessageSet {
         $this->req["reviewId"] = $reviewId;
         $prow->invalidate_reviews();
         $new_rrow = $prow->fresh_review_of_id($reviewId);
+        if ($new_rrow->reviewStatus !== $newstatus) {
+            error_log("{$this->conf->dbname}: review #{$prow->paperId}/{$new_rrow->reviewId} saved reviewStatus {$new_rrow->reviewStatus} (expected {$newstatus})");
+        }
+        assert($new_rrow->reviewStatus === $newstatus);
 
         // log updates -- but not if review token is used
         if (!$usedReviewToken
@@ -2339,9 +2359,18 @@ class ReviewValues extends MessageSet {
             if (($wc = $this->rf->full_word_count($new_rrow)) !== null) {
                 $log_fields[] = plural($wc, "word");
             }
+            if ($newstatus < ReviewInfo::RS_DELIVERED) {
+                $statusword = " draft";
+            } else if ($newstatus === ReviewInfo::RS_DELIVERED) {
+                $statusword = " approvable";
+            } else if ($newstatus === ReviewInfo::RS_ADOPTED) {
+                $statusword = " adopted";
+            } else {
+                $statusword = "";
+            }
             $user->log_activity_for($new_rrow->contactId, "Review $reviewId "
                 . join(", ", $log_actions)
-                . ($submit ? "" : " draft")
+                . $statusword
                 . (empty($log_fields) ? "" : ": ")
                 . join(", ", $log_fields), $prow);
         }
@@ -2349,7 +2378,7 @@ class ReviewValues extends MessageSet {
         // if external, forgive the requester from finishing their review
         if ($new_rrow->reviewType < REVIEW_SECONDARY
             && $new_rrow->requestedBy
-            && $submit) {
+            && $newstatus >= $this->conf->review_status_bound) {
             $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId={$new_rrow->requestedBy} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
         }
 
@@ -2368,23 +2397,23 @@ class ReviewValues extends MessageSet {
             "check_function" => "HotCRPMailer::check_can_view_review"
         ];
         $this->_mailer_preps = [];
-        if ($new_rrow->reviewSubmitted
+        if ($newstatus >= $this->conf->review_status_bound
             && ($diffinfo->notify || $diffinfo->notify_author)) {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
             $this->_mailer_info["combination_type"] = 1;
             $this->_mailer_diff_view_score = $diffinfo->view_score;
             $prow->notify_reviews([$this, "review_watch_callback"], $user);
-        } else if (!$new_rrow->reviewSubmitted
-                   && $new_rrow->timeApprovalRequested != 0
-                   && ($diffinfo->fields() || $approvalstate > 1)
-                   && $new_rrow->requestedBy
+        } else if ($newstatus < $this->conf->review_status_bound
+                   && $newstatus >= ReviewInfo::RS_DELIVERED
+                   && ($diffinfo->fields() || $newstatus !== $oldstatus)
                    && !$this->no_notify) {
-            if ($approvalstate === 3) {
+            if ($newstatus >= ReviewInfo::RS_ADOPTED) {
                 $this->_mailer_template = "@reviewapprove";
-            } else if ($approvalstate === 2) {
+            } else if ($newstatus === ReviewInfo::RS_DELIVERED
+                       && $oldstatus < ReviewInfo::RS_DELIVERED) {
                 $this->_mailer_template = "@reviewapprovalrequest";
-            } else if ($new_rrow->requestedBy == $user->contactId) {
+            } else if ($new_rrow->requestedBy === $user->contactId) {
                 $this->_mailer_template = "@reviewpreapprovaledit";
             } else {
                 $this->_mailer_template = "@reviewapprovalupdate";
@@ -2407,15 +2436,15 @@ class ReviewValues extends MessageSet {
         }
         if ($newsubmit) {
             $this->submitted[] = $what;
-        } else if ($new_rrow->timeApprovalRequested > 0
+        } else if ($newstatus === ReviewInfo::RS_DELIVERED
                    && $new_rrow->contactId == $user->contactId) {
             $this->approval_requested[] = $what;
-        } else if (!$submit
-                   && $new_rrow->timeApprovalRequested < 0
+        } else if (($newstatus === ReviewInfo::RS_ADOPTED
+                    || $newstatus === ReviewInfo::RS_APPROVED)
                    && $new_rrow->contactId != $user->contactId) {
             $this->approved[] = $what;
         } else if ($diffinfo->nonempty()) {
-            if ($submit || $new_rrow->timeApprovalRequested < 0) {
+            if ($newstatus >= ReviewInfo::RS_ADOPTED) {
                 $this->updated[] = $what;
             } else {
                 $this->saved_draft[] = $what;
@@ -2423,7 +2452,7 @@ class ReviewValues extends MessageSet {
             }
         } else {
             $this->unchanged[] = $what;
-            if (!$submit && $new_rrow->timeApprovalRequested >= 0) {
+            if ($newstatus < ReviewInfo::RS_ADOPTED) {
                 $this->unchanged_draft[] = $what;
                 $this->single_approval = +$new_rrow->timeApprovalRequested;
             }

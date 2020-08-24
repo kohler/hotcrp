@@ -121,6 +121,8 @@ class Conf {
     /** @var int */
     public $ext_subreviews;
     /** @var int */
+    public $review_status_bound;
+    /** @var int */
     public $any_response_open;
     /** @var bool */
     public $sort_by_last;
@@ -484,6 +486,7 @@ class Conf {
         }
         $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;
         $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;
+        $this->review_status_bound = $this->ext_subreviews < 3 ? ReviewInfo::RS_APPROVED : ReviewInfo::RS_COMPLETED;
         $this->_maybe_autosearch = ($this->settings["tag_vote"] ?? 0) > 0
             || ($this->settings["tag_approval"] ?? 0) > 0
             || ($this->settings["tag_autosearch"] ?? 0) > 0
