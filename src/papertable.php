@@ -2624,7 +2624,6 @@ class PaperTable {
                 $rcj = $rf->unparse_review_json($this->user, $this->prow, $rc);
                 if ($any_submitted
                     && !$rc->reviewSubmitted
-                    && !$rc->reviewOrdinal
                     && !$this->user->is_my_review($rc)) {
                     $rcj->folded = true;
                 }
