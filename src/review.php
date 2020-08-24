@@ -2139,6 +2139,9 @@ class ReviewValues extends MessageSet {
             if ($rrow) {
                 $diffinfo->add_view_score($this->rf->nonempty_view_score($rrow));
             }
+        } else if ($approvalstate === 3 && ($this->req["adoptreview"] ?? null)) {
+            $qf[] = "reviewSubmitted=?";
+            $qv[] = null;
         }
         if ($approvalstate > 0 && $rrow->timeApprovalRequested >= 0) {
             $qf[] = "timeApprovalRequested=?";
