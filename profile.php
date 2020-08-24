@@ -692,8 +692,8 @@ if ($UserStatus->has_messages()) {
     $status = 0;
     $msgs = [];
     foreach ($UserStatus->message_list() as $m) {
-        $status = max($m[2], $status);
-        $msgs[] = $m[1];
+        $status = max($m->status, $status);
+        $msgs[] = $m->message;
     }
     echo '<div class="msgs-wide">', Ht::msg($msgs, $status), "</div>\n";
 }
