@@ -438,7 +438,9 @@ if ($Qreq->cancel && $Qreq->post_ok()) {
 // correct modes
 $paperTable = new PaperTable($prow, $Qreq);
 $paperTable->resolveComments();
-if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
+if ($paperTable->can_view_reviews()
+    || $paperTable->mode === "re"
+    || ($prow && $Me->can_review($prow))) {
     $paperTable->resolveReview(false);
     $paperTable->fixReviewMode();
 }

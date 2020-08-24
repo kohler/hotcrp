@@ -294,9 +294,11 @@ class PaperTable {
     function initialize($editable, $useRequest) {
         $this->editable = $editable;
         $this->useRequest = $useRequest;
-        $this->allFolded = $this->mode === "re" || $this->mode === "assign"
+        $this->allFolded = $this->mode === "re"
+            || $this->mode === "assign"
             || ($this->mode !== "edit"
-                && (!empty($this->all_rrows) || !empty($this->crows)));
+                && $this->can_view_reviews
+                && !empty($this->all_rrows));
     }
 
     function set_edit_status(PaperStatus $status) {
@@ -2140,7 +2142,7 @@ class PaperTable {
         }
     }
 
-    function _review_overview_card($rtable, $editrrow, $ifempty, $msgs) {
+    private function _review_overview_card($rtable, $editrrow, $ifempty, $msgs) {
         require_once("reviewtable.php");
         $t = "";
         if ($rtable) {
@@ -2242,7 +2244,7 @@ class PaperTable {
             || ($this->mode === "assign" && !empty($t))
             || !$prow) {
             /* no link */;
-        } else if ($myrr && $editrrow != $myrr) {
+        } else if ($myrr && $editrrow !== $myrr) {
             $a = '<a href="' . $prow->reviewurl(["r" => $myrr->unparse_ordinal()]) . '" class="xx revlink">';
             if ($this->user->can_review($prow, $myrr)) {
                 $x = $a . Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u></a>";
@@ -2264,7 +2266,7 @@ class PaperTable {
         }
 
         // new comment
-        $nocmt = preg_match('/\A(?:assign|contact|edit|re)\z/', $this->mode);
+        $nocmt = in_array($this->mode, ["assign", "contact", "edit", "re"]);
         if (!$this->allreviewslink
             && !$nocmt
             && $this->user->can_comment($prow, null)) {
