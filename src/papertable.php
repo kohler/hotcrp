@@ -2229,16 +2229,17 @@ class PaperTable {
             } else if (!$canView
                        || ($rr->reviewStatus < ReviewInfo::RS_DRAFTED && !$user->can_review($prow, $rr))) {
                 $t .= $id;
-            } else if ($editrrow
-                       || !$this->can_view_reviews
-                       || $rr->reviewStatus < ReviewInfo::RS_DRAFTED
-                       || (($this->mode === "re" || $this->mode === "assign")
-                           && $user->can_review($prow, $rr))) {
-                $t .= '<a href="' . $prow->reviewurl(["r" => $rlink]) . '">' . $id . '</a>';
-            } else if (Navigation::page() !== "paper") {
-                $t .= '<a href="' . $prow->hoturl(["anchor" => "r$rlink"]) . '">' . $id . '</a>';
             } else {
-                $t .= '<a href="#r' . $rlink . '">' . $id . '</a>';
+                if ((!$this->can_view_reviews
+                     || $rr->reviewStatus < ReviewInfo::RS_ADOPTED)
+                    && $user->can_review($prow, $rr)) {
+                    $link = $prow->reviewurl(["r" => $rlink]);
+                } else if (Navigation::page() !== "paper") {
+                    $link = $prow->hoturl(["anchor" => "r$rlink"]);
+                } else {
+                    $link = "#r$rlink";
+                }
+                $t .= '<a href="' . $link . '">' . $id . '</a>';
                 if ($show_ratings
                     && $user->can_view_review_ratings($prow, $rr)
                     && ($ratings = $rr->ratings())) {
