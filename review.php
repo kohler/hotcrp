@@ -107,11 +107,17 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
     $tf->paperId = $prow->paperId;
     if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow))) {
         $tf->msg_at(null, whyNotText($whyNot), MessageSet::ERROR);
-    } else if ($tf->parse_web($Qreq, $Qreq->override)
-               && $tf->check_and_save($Me, $prow, $paperTable->editrrow)
-               && !$tf->has_problem_at("ready")) {
-        $tf->report();
-        $Conf->self_redirect($Qreq); // normally does not return
+    } else if ($tf->parse_web($Qreq, $Qreq->override)) {
+        if (isset($Qreq->approvesubreview)
+            && $paperTable->editrrow
+            && $Me->can_approve_review($prow, $paperTable->editrrow)) {
+            $tf->set_adopt();
+        }
+        if ($tf->check_and_save($Me, $prow, $paperTable->editrrow)
+            && !$tf->has_problem_at("ready")) {
+            $tf->report();
+            $Conf->self_redirect($Qreq); // normally does not return
+        }
     }
     review_load();
     $tf->report();
@@ -124,7 +130,10 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
 
 
 // adopt review action
-if (isset($Qreq->adoptreview) && $Qreq->post_ok()) {
+if (isset($Qreq->adoptreview)
+    && $Qreq->post_ok()
+    && $paperTable->editrrow
+    && $Me->can_approve_review($prow, $paperTable->editrrow)) {
     $tf = new ReviewValues($rf);
     $tf->paperId = $prow->paperId;
     $my_rrow = $prow->review_of_user($Me);

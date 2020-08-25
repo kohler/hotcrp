@@ -4034,6 +4034,17 @@ class Contact {
     }
 
     /** @return bool */
+    function can_approve_review(PaperInfo $prow, ReviewInfo $rrow) {
+        $rights = $this->rights($prow);
+        return ($prow->timeSubmitted > 0 || $this->override_deadlines($rights))
+            && $rrow->subject_to_approval()
+            && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED
+            && ($rights->can_administer
+                || ($this->isPC && $this->contactId === $rrow->requestedBy))
+            && ($this->conf->time_review(null, true, true) || $this->override_deadlines($rights));
+    }
+
+    /** @return bool */
     function can_create_review_from(PaperInfo $prow, Contact $user) {
         $rights = $this->rights($prow);
         return $rights->can_administer

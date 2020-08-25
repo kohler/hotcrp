@@ -8516,21 +8516,32 @@ handle_ui.on("js-delete-review", function () {
     hc.show();
 });
 
-handle_ui.on("js-adopt-review", function (event) {
+handle_ui.on("js-approve-review", function (event) {
     var self = this, hc = popup_skeleton({anchor: event.sidebarTarget || self});
-    hc.push('<p>Replace your review with the contents of this review?</p>');
-    hc.push_actions([
-        '<button type="button" name="bsubmit" class="btn-primary">Adopt and submit</button>',
-        '<button type="button" name="bdraft">Adopt as draft</button>',
-        '<button type="button" name="cancel">Cancel</button>'
-    ]);
+    hc.push('<div class="btngrid">', '</div>');
+    var subreviewClass = "";
+    if (hasClass(self, "can-adopt")) {
+        hc.push('<button type="button" name="adoptsubmit" class="btn btn-primary big">Adopt and submit</button><p class="pt-2">Submit a copy of this review under your name. You can make changes afterwards.</p>');
+        hc.push('<button type="button" name="adoptdraft" class="btn big">Adopt as draft</button><p>Save a copy of this review as a draft review under your name.</p>');
+    } else if (hasClass(self, "can-adopt-replace")) {
+        hc.push('<button type="button" name="adoptsubmit" class="btn btn-primary big">Adopt and submit</button><p>Replace your draft review with a copy of this review and submit it. You can make changes afterwards.</p>');
+        hc.push('<button type="button" name="adoptdraft" class="btn big">Adopt as draft</button><p>Replace your draft review with a copy of this review.</p>');
+    } else {
+        subreviewClass = " btn-primary";
+    }
+    hc.push('<button type="button" name="approvesubreview" class="btn big' + subreviewClass + '">Approve subreview</button><p>Approve this review as a subreview. It will not be shown to authors and its scores will not be counted in statistics.</p>');
+    if (hasClass(self, "can-approve-submit")) {
+        hc.push('<button type="button" name="submitreview" class="btn big">Submit as full review</button><p>Submit this review as a full review. It will be shown to authors and its scores will be counted in statistics.</p>');
+    }
+    hc.pop();
+    hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
     $d.on("click", "button", function (event) {
-        if (event.target.name !== "cancel") {
+        var b = event.target.name;
+        if (b !== "cancel") {
             var form = self.closest("form");
-            $(form).append('<input type="hidden" name="adoptreview" value="1">');
-            if (event.target.name === "bsubmit")
-                $(form).append('<input type="hidden" name="adoptsubmit" value="1">');
+            $(form).append(hidden_input(b, "1"))
+                .append(hidden_input(b.startsWith("adopt") ? "adoptreview" : "update", "1"));
             addClass(form, "submitting");
             form.submit();
             $d.close();

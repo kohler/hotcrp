@@ -713,7 +713,11 @@ class ReviewForm implements JsonSerializable {
             if ($f->has_options) {
                 echo '" id="', $f->id;
             }
-            echo '"><label class="revfn" for="', $f->id;
+            echo '"><label class="revfn';
+            if ($f->has_options && !$f->allow_empty) {
+                echo ' field-required';
+            }
+            echo '" for="', $f->id;
             if ($f->has_options) {
                 if ($rval || $f->allow_empty) {
                     echo "_", $rval;
@@ -1067,8 +1071,9 @@ $blind\n";
                 $buttons[] = array(Ht::button("Save changes", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
             }
         } else if (!$submitted && $rrow && $rrow->subject_to_approval()) {
-            if ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED) {
-                $buttons[] = Ht::submit("submitreview", "Update approved review", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
+            assert($rrow->reviewStatus <= ReviewInfo::RS_ADOPTED);
+            if ($rrow->reviewStatus === ReviewInfo::RS_ADOPTED) {
+                $buttons[] = Ht::submit("update", "Update approved review", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
             } else if ($my_review) {
                 if ($rrow->reviewStatus !== ReviewInfo::RS_DELIVERED) {
                     $subtext = "Submit for approval";
@@ -1077,16 +1082,26 @@ $blind\n";
                 }
                 $buttons[] = Ht::submit("submitreview", $subtext, ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
             } else {
-                $buttons[] = Ht::submit("submitreview", "Approve review", ["class" => "btn-highlight btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
+                $class = "btn-highlight btn-savereview need-clickthrough-enable ui js-approve-review";
+                $text = "Approve review";
+                if ($rrow->requestedBy === $user->contactId) {
+                    $my_rrow = $prow->review_of_user($user);
+                    if (!$my_rrow || $my_rrow->reviewStatus < ReviewInfo::RS_DRAFTED) {
+                        $class .= " can-adopt";
+                        $text = "Approve/adopt review";
+                    } else if ($my_rrow->reviewStatus === ReviewInfo::RS_DRAFTED) {
+                        $class .= " can-adopt-replace";
+                        $text = "Approve/adopt review";
+                    }
+                }
+                if ($user->allow_administer($prow)
+                    || $this->conf->ext_subreviews !== 3) {
+                    $class .= " can-approve-submit";
+                }
+                $buttons[] = Ht::submit("approvesubreview", $text, ["class" => $class, "disabled" => $disabled]);
             }
             if ($rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
                 $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
-            }
-            if (!$my_review && $rrow->requestedBy === $user->contactId) {
-                $my_rrow = $prow->review_of_user($user);
-                if (!$my_rrow || $my_rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
-                    $buttons[] = Ht::submit("adoptreview", "Adopt as your review", ["class" => "ui js-adopt-review need-clickthrough-enable", "disabled" => $disabled]);
-                }
             }
         } else if (!$submitted) {
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
@@ -1790,7 +1805,8 @@ class ReviewValues extends MessageSet {
         "submitreview" => true, "savedraft" => true, "unsubmitreview" => true,
         "deletereview" => true, "r" => true, "m" => true, "post" => true,
         "forceShow" => true, "update" => true, "has_blind" => true,
-        "adoptreview" => true, "default" => true
+        "adoptreview" => true, "adoptsubmit" => true, "adoptdraft" => true,
+        "approvesubreview" => true, "default" => true
     ];
 
     function parse_web(Qrequest $qreq, $override) {
@@ -1987,7 +2003,7 @@ class ReviewValues extends MessageSet {
         }
         if ($missingfields && $submit && $anynonempty) {
             foreach ($missingfields as $f) {
-                $this->rmsg($f->id, $this->conf->_("You must provide a value for %s in order to submit your review.", $f->name_html), self::WARNING);
+                $this->rmsg($f->id, $this->conf->_("%s: Entry required.", $f->name_html), self::WARNING);
             }
         }
 
@@ -2008,9 +2024,8 @@ class ReviewValues extends MessageSet {
                    && $this->text !== null) {
             $this->rmsg($this->firstLineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
         } else if ($unready) {
-            if ($anydiff) {
-                $this->warning_at("ready", null);
-            }
+            $what = $this->req["adoptreview"] ?? null ? "approved" : "submitted";
+            $this->warning_at("ready", "This review can’t be $what until entries are provided for all required fields.");
             $this->req["ready"] = 0;
         }
 
@@ -2295,7 +2310,9 @@ class ReviewValues extends MessageSet {
             $qv[] = (int) $max_ordinal + 1;
             $newordinal = true;
         }
-        if ($newsubmit || $newordinal) {
+        if ($newsubmit
+            || $newordinal
+            || ($newstatus >= ReviewInfo::RS_ADOPTED && $oldstatus < ReviewInfo::RS_ADOPTED)) {
             $qf[] = "timeDisplayed=?";
             $qv[] = $now;
         }
@@ -2445,10 +2462,11 @@ class ReviewValues extends MessageSet {
         if ($newsubmit) {
             $this->submitted[] = $what;
         } else if ($newstatus === ReviewInfo::RS_DELIVERED
-                   && $new_rrow->contactId == $user->contactId) {
+                   && $new_rrow->contactId === $user->contactId) {
             $this->approval_requested[] = $what;
         } else if ($newstatus === ReviewInfo::RS_ADOPTED
-                   && $new_rrow->contactId != $user->contactId) {
+                   && $oldstatus < $newstatus
+                   && $new_rrow->contactId !== $user->contactId) {
             $this->approved[] = $what;
         } else if ($diffinfo->nonempty()) {
             if ($newstatus >= ReviewInfo::RS_ADOPTED) {

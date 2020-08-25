@@ -2003,7 +2003,9 @@ class PaperInfo {
                 if ($urow->requestedBy === $srow->contactId
                     || ($urow->requestedBy === $srow->requestedBy
                         && $srow->is_subreview()
-                        && $urow->reviewStatus <= $srow->reviewStatus)) {
+                        && ($urow->reviewStatus < ReviewInfo::RS_ADOPTED
+                            || ($srow->reviewStatus >= ReviewInfo::RS_ADOPTED
+                                && $urow->timeDisplayed >= $srow->timeDisplayed)))) {
                     $p0 = $i + 1;
                 }
             }
