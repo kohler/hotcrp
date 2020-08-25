@@ -1000,11 +1000,15 @@ function hoturl_go(page, options) {
     window.location = hoturl(page, options);
 }
 
-function hidden_input(name, value) {
+function hidden_input(name, value, attr) {
     var input = document.createElement("input");
     input.type = "hidden";
     input.name = name;
     input.value = value;
+    if (attr) {
+        for (var k in attr)
+            input.setAttribute(k, attr[k]);
+    }
     return input;
 }
 
@@ -1989,7 +1993,7 @@ function popup_skeleton(options) {
             if (f.getAttribute("method") === "post"
                 && !/post=/.test(f.getAttribute("action"))
                 && !/^(?:[a-z]*:|\/\/)/.test(f.getAttribute("action"))) {
-                $(f).prepend('<input type="hidden" name="post" value="' + escape_entities(siteurl_postvalue) + '">');
+                $(f).prepend(hidden_input("post", siteurl_postvalue));
             }
         }
         for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
@@ -2049,7 +2053,12 @@ function popup_near(elt, anchor) {
 }
 
 function override_deadlines(callback) {
-    var self = this, hc = popup_skeleton({anchor: this});
+    var self = this, hc;
+    if (typeof callback === "object" && "sidebarTarget" in callback) {
+        hc = popup_skeleton({anchor: callback.sidebarTarget});
+    } else {
+        hc = popup_skeleton({anchor: this});
+    }
     hc.push('<p>' + (this.getAttribute("data-override-text") || "Are you sure you want to override the deadline?") + '</p>');
     hc.push_actions([
         '<button type="button" name="bsubmit" class="btn-primary"></button>',
@@ -2066,7 +2075,7 @@ function override_deadlines(callback) {
                 callback();
             } else {
                 var form = self.closest("form");
-                $(form).append('<input type="hidden" name="' + (self.getAttribute("data-override-submit") || "") + '" value="1"><input type="hidden" name="override" value="1">');
+                $(form).append(hidden_input(self.getAttribute("data-override-submit") || "", "1")).append(hidden_input("override", "1"));
                 addClass(form, "submitting");
                 form.submit();
             }
@@ -4609,7 +4618,7 @@ function save_editor(elt, action, really) {
     $f.find("input[name=draft]").remove();
     var $ready = $f.find("input[name=ready]");
     if ($ready.length && !$ready[0].checked) {
-        $f.children("div").append('<input type="hidden" name="draft" value="1">');
+        $f.children("div").append(hidden_input("draft", "1"));
     }
     $c.find("button").prop("disabled", true);
     // work around a Safari bug with FormData
@@ -6392,7 +6401,7 @@ handle_ui.on("js-annotate-order", function () {
     function ondeleteclick() {
         var $div = $(this).closest(".form-g"), annoid = $div.attr("data-anno-id");
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
-        $div.append('<input type="hidden" name="deleted_' + annoid + '" value="1">');
+        $div.append(hidden_input("deleted_" + annoid, "1"));
         $div.find("input[name='heading_" + annoid + "']").prop("disabled", true);
         tooltip.erase.call(this);
         $(this).remove();
@@ -7805,7 +7814,7 @@ handle_ui.on("js-add-attachment", function () {
             + '</div>');
     if (this.id === name)
         this.removeAttribute("id");
-    $(f).append('<input type="hidden" name="has_' + name + '" value="1" class="ignore-diff">');
+    $(f).append(hidden_input("has_" + name, "1", {"class": "ignore-diff"}));
     $na.appendTo($ei).find(".document-uploader")[0].click();
 });
 
@@ -7880,7 +7889,7 @@ handle_ui.on("js-remove-document", function (event) {
         $doc.find(".document-stamps, .document-shortformat").removeClass("hidden");
         $(this).removeClass("undelete").html("Delete");
     } else {
-        $('<input type="hidden" class="document-remover" name="' + $doc.data("documentName") + ':remove" data-default-value="" value="1">').appendTo($doc.find(".document-actions")).trigger("change");
+        $(hidden_input($doc.data("documentName") + ":remove", "1", {"class": "document-remover", "data-default-value": ""})).appendTo($doc.find(".document-actions")).trigger("change");
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
         $doc.find(".document-uploader").trigger("hotcrp-change-document");
@@ -8376,7 +8385,7 @@ return {
             + '<button class="ui btn btn-highlight btn-savepaper">'
             + h.html() + '</button></div>')
             .find(".btn-savepaper").click(function () {
-                $("#form-paper .btn-savepaper").first().click();
+                $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
             });
     },
     prepare: function () {
@@ -8402,7 +8411,7 @@ return {
             + '<button class="ui btn btn-highlight btn-savereview">'
             + h.html() + '</button></div>')
             .find(".btn-savereview").click(function () {
-                $("#form-review .btn-savereview").first().click();
+                $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
             });
     }
 };
@@ -8508,7 +8517,7 @@ handle_ui.on("js-delete-review", function () {
 });
 
 handle_ui.on("js-adopt-review", function (event) {
-    var self = this, hc = popup_skeleton({anchor: this});
+    var self = this, hc = popup_skeleton({anchor: event.sidebarTarget || self});
     hc.push('<p>Replace your review with the contents of this review?</p>');
     hc.push_actions([
         '<button type="button" name="bsubmit" class="btn-primary">Adopt and submit</button>',
@@ -8739,7 +8748,7 @@ handle_ui.on("js-submit-paperlist", function (event) {
         }
     }
     if (!this.elements.p) {
-        $self.append('<input class="is-selector-submit" type="hidden" name="p">');
+        $self.append(hidden_input("p", "", {"class": "is-selector-submit"}));
     }
     this.elements.p.value = chkval.join(" ");
 
