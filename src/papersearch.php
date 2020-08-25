@@ -3223,7 +3223,7 @@ class PaperSearch {
         if ($this->user->isPC
             && $this->conf->ext_subreviews > 1
             && $this->user->is_requester()) {
-            array_push($res, "has:pending-approval");
+            array_push($res, "has:pending-my-approval");
         }
         if ($this->user->is_manager()) {
             array_push($res, "has:proposal");

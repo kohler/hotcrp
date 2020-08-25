@@ -412,12 +412,12 @@ class Home_Partial {
 
         echo '<div class="homegrp">', $this->render_h2_home("Requested Reviews");
         if ($user->has_review_pending_approval()) {
-            echo '<a href="', $conf->hoturl("paper", "m=rea&amp;p=has%3Apending-approval"),
+            echo '<a href="', $conf->hoturl("paper", "m=rea&amp;p=re%3Apending-my-approval"),
                 ($user->has_review_pending_approval(true) ? '" class="attention' : ''),
                 '">Reviews pending approval</a> <span class="barsep">·</span> ';
         }
         if ($user->has_proposal_pending()) {
-            echo '<a href="', $conf->hoturl("assign", "p=has%3Aproposal"),
+            echo '<a href="', $conf->hoturl("assign", "p=re%3Aproposal"),
                 '" class="attention">Review proposals</a> <span class="barsep">·</span> ';
         }
         echo '<a href="', $conf->hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";

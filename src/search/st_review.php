@@ -53,6 +53,10 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         "pending" => self::PENDINGAPPROVAL,
         "pending-approval" => self::PENDINGAPPROVAL,
         "pendingapproval" => self::PENDINGAPPROVAL,
+        "pending-my-approval" => self::PENDINGAPPROVAL | self::MYREQUEST,
+        "pendingmy-approval" => self::PENDINGAPPROVAL | self::MYREQUEST,
+        "pending-myapproval" => self::PENDINGAPPROVAL | self::MYREQUEST,
+        "pendingmyapproval" => self::PENDINGAPPROVAL | self::MYREQUEST,
         "proposal" => self::PROPOSED,
         "proposed" => self::PROPOSED,
         "submitted" => self::SUBMITTED
@@ -274,9 +278,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 || (($this->completeness & self::NOTSTARTED)
                     && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED)
                 || (($this->completeness & self::PENDINGAPPROVAL)
-                    && ($rrow->reviewStatus !== ReviewInfo::RS_DELIVERED
-                        || ($rrow->requestedBy != $user->contactId
-                            && !$user->allow_administer($prow))))
+                    && $rrow->reviewStatus !== ReviewInfo::RS_DELIVERED)
                 || (($this->completeness & self::APPROVED)
                     && $rrow->reviewStatus !== ReviewInfo::RS_ADOPTED)
                 || (($this->completeness & self::MYREQUEST)

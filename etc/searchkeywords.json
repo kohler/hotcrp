@@ -220,15 +220,15 @@
     {   "name": "retoken", "alias": "token"   },
     {   "name": "reviewtoken", "alias": "token"   },
     {
-        "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?|not-?started-?|pending-?|pending-?approval-?|propos(?:al|ed)-?)(|meta-?|pri-?|sec-?|ext-?|primary-?|secondary-?|external-?)(?:re|rev|review)",
+        "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?|not-?started-?|pending-?|pending-?(?:my-?|)approval-?|propos(?:al|ed)-?)(|meta-?|pri-?|sec-?|ext-?|primary-?|secondary-?|external-?)(?:re|rev|review)",
         "expand_callback": "Review_SearchTerm::keyword_factory"
     },
     {
-        "match": "(?:|review-?)(|c|i|p|complete-?|incomplete-?|in-?progress-?|not-?started-?|partial-?|pending-?|pending-?approval-?|propos(?:al|ed)-?)(meta|pri|sec|ext|primary|secondary|external)",
+        "match": "(?:|review-?)(|c|i|p|complete-?|incomplete-?|in-?progress-?|not-?started-?|partial-?|pending-?|pending-?(?:my-?|)approval-?|propos(?:al|ed)-?)(meta|pri|sec|ext|primary|secondary|external)",
         "expand_callback": "Review_SearchTerm::keyword_factory"
     },
     {
-        "match": "(?:|review-?)(complete|incomplete|in-?progress|not-?started|partial|pending|pending-?approval|propos(?:al|ed))()",
+        "match": "(?:|review-?)(complete|incomplete|in-?progress|not-?started|partial|pending|pending-?(?:my-?|)approval|propos(?:al|ed))()",
         "expand_callback": "Review_SearchTerm::keyword_factory"
     },
     {
