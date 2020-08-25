@@ -2939,7 +2939,7 @@ function foldup(event, opts) {
         }
         opts.n = parseInt(m[2]) || 0;
         if (!("f" in opts) && m[3] !== "") {
-            if (this.tagName === "INPUT" && this.type === "checkbox" && m[3] === "u") {
+            if (m[3] === "u" && this.tagName === "INPUT" && this.type === "checkbox") {
                 opts.f = this.checked;
             } else {
                 opts.f = m[3] === "c";
@@ -2958,9 +2958,16 @@ function foldup(event, opts) {
     if (!e) {
         return true;
     }
-    if (opts.n == null && (m = e.className.match(/\bfold(\d*)[oc]\b/))) {
-        opts.n = +m[1];
-        foldname = "fold" + (opts.n || "");
+    if (opts.n == null) {
+        x = classList(e);
+        for (var i = 0; i !== x.length; ++i) {
+            if (x[i].substring(0, 4) === "fold"
+                && (m = x[i].match(/^fold(\d*)[oc]$/))
+                && (opts.n == null || +m[1] < opts.n)) {
+                opts.n = +m[1];
+                foldname = "fold" + (opts.n || "");
+            }
+        }
     }
     if (!("f" in opts)
         && (this.tagName === "INPUT" || this.tagName === "SELECT")) {

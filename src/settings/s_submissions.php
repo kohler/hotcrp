@@ -11,8 +11,9 @@ class Submissions_SettingRenderer {
     static function render_deadlines(SettingValues $sv) {
         echo '<div class="form-g">';
         // maybe sub_reg was overridden
-        if (($sub_reg = $sv->conf->setting("__sub_reg", false)) !== false)
+        if (($sub_reg = $sv->conf->setting("__sub_reg", false)) !== false) {
             $sv->set_oldv("sub_reg", $sub_reg);
+        }
         $sv->echo_entry_group("sub_reg", "Registration deadline", null, "New submissions can be started until this deadline.");
         $sv->echo_entry_group("sub_sub", "Submission deadline", null, "Submissions must be complete by this deadline.");
         $sv->echo_entry_group("sub_grace", "Grace period");

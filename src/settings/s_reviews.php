@@ -180,7 +180,7 @@ class Reviews_SettingRenderer {
         $sv->echo_radio_table("pc_seeblindrev", [0 => "Yes",
                 1 => "Only after completing a review for the same submission"],
             'Can PC members see <strong>reviewer names<span class="fn2"> and comments</span></strong> except for conflicts?',
-            ["after" => $hint, "fold" => 1]);
+            ["after" => $hint]);
 
 
         $hint = "";
@@ -194,12 +194,13 @@ class Reviews_SettingRenderer {
         if ($hint !== "") {
             $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
         }
-        $sv->echo_radio_table("pc_seeallrev", [Conf::PCSEEREV_YES => "Yes",
-                  Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
-                  Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same submission"],
-            'Can PC members see <strong>review contents<span class="fx2"> and comments</span></strong> except for conflicts?',
-            ["after" => $hint, "fold" => Conf::PCSEEREV_IFCOMPLETE]);
+        $sv->echo_radio_table("pc_seeallrev", [
+                Conf::PCSEEREV_YES => "Yes",
+                Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
+                Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
+                Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same submission"
+            ], 'Can PC members see <strong>review contents<span class="fx2"> and comments</span></strong> except for conflicts?',
+            ["after" => $hint]);
 
         echo '<div class="form-nearby form-g">';
         $sv->echo_checkbox("lead_seerev", "Discussion leads can always see submitted reviews and reviewer names");
@@ -223,15 +224,15 @@ class Reviews_SettingRenderer {
             ], 'Can external reviewers see reviews, comments, and eventual decisions for their assigned submissions, once they’ve completed a review?');
     }
     static function render_extrev_editdelegate(SettingValues $sv) {
-        echo '<div id="foldpcrev_editdelegate" class="form-g has-fold fold',
-            $sv->curv("extrev_chairreq") >= 0 ? 'o' : 'c',
+        echo '<div id="foldpcrev_editdelegate" class="form-g has-fold',
+            $sv->curv("extrev_chairreq") >= 0 ? ' foldo' : ' foldc',
             ' fold2o" data-fold-values="0 1 2">';
         $sv->echo_radio_table("extrev_chairreq", [-1 => "No",
                 1 => "Yes, but administrators must approve all requests",
                 2 => "Yes, but administrators must approve external reviewers with potential conflicts",
-                0 => "Yes"],
-                "Can PC reviewers request external reviews?",
-                ["fold" => true]);
+                0 => "Yes"
+            ], "Can PC reviewers request external reviews?",
+            ["item_class" => "uich js-foldup"]);
         echo '<div class="fx">';
         // echo '<p>Secondary PC reviews can be delegated to external reviewers. When the external review is complete, the secondary PC reviewer need not complete a review of their own.</p>', "\n";
         $sv->echo_radio_table("pcrev_editdelegate", [

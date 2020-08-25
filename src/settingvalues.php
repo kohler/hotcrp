@@ -916,18 +916,20 @@ class SettingValues extends MessageSet {
         if (is_string($rest)) {
             $rest = ["after" => $rest];
         }
-        $fold = $rest ? $rest["fold"] ?? false : false;
-        if (is_string($fold) || is_int($fold)) {
-            $fold = explode(" ", $fold);
+
+        $fold_values = [];
+        if (($rest["fold_values"] ?? false) !== false) {
+            $fold_values = $rest["fold_values"];
+            assert(is_array($fold_values));
         }
 
         echo '<div id="', $name, '" class="', $this->control_class($name, "form-g settings-radio");
         if ($rest && isset($rest["group_class"])) {
             echo ' ', $rest["group_class"];
         }
-        if (is_array($fold)) {
-            echo ' has-fold fold', in_array($x, $fold) ? "o" : "c",
-                '" data-fold-values="', join(" ", $fold);
+        if ($fold_values) {
+            echo ' has-fold fold', in_array($x, $fold_values) ? "o" : "c",
+                '" data-fold-values="', join(" ", $fold_values);
         }
         echo '">';
         if ($heading) {
@@ -944,7 +946,7 @@ class SettingValues extends MessageSet {
             if (!isset($item["class"])) {
                 if (isset($rest["item_class"])) {
                     $item["class"] = $rest["item_class"];
-                } else if ($fold !== false) {
+                } else if ($fold_values) {
                     $item["class"] = "uich js-foldup";
                 }
             }
