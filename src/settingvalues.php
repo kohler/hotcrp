@@ -908,14 +908,17 @@ class SettingValues extends MessageSet {
         if (!($js["group_open"] ?? null))
             echo "</div>\n";
     }
-    function echo_radio_table($name, $varr, $heading = null, $rest = null) {
+    /** @param string $name
+     * @param array $varr
+     * @param ?string $heading
+     * @param string|array $rest */
+    function echo_radio_table($name, $varr, $heading = null, $rest = []) {
         $x = $this->curv($name);
         if ($x === null || !isset($varr[$x])) {
             $x = 0;
         }
-        if (is_string($rest)) {
-            $rest = ["after" => $rest];
-        }
+        $rest = is_string($rest) ? ["after" => $rest] : $rest;
+        '@phan-var-force array $rest';
 
         $fold_values = [];
         if (($rest["fold_values"] ?? false) !== false) {
@@ -924,7 +927,7 @@ class SettingValues extends MessageSet {
         }
 
         echo '<div id="', $name, '" class="', $this->control_class($name, "form-g settings-radio");
-        if ($rest && isset($rest["group_class"])) {
+        if (isset($rest["group_class"])) {
             echo ' ', $rest["group_class"];
         }
         if ($fold_values) {
@@ -963,7 +966,7 @@ class SettingValues extends MessageSet {
                 '</span>', $label, $label2, $hint, '</div>';
         }
         $this->echo_feedback_at($name);
-        if ($rest && isset($rest["after"])) {
+        if (isset($rest["after"])) {
             echo $rest["after"];
         }
         echo "</div>\n";
