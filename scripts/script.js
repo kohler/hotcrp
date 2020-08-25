@@ -3021,7 +3021,7 @@ $(document).on("fold", ".js-fold-focus", function (event, opts) {
     opts.nofocus || focus_within(this, ".fn" + (opts.n || "") + " *");
 });
 $(function () {
-    $(".uich.js-foldup").each(function () { foldup.call(this, {nofocus: true}); });
+    $(".uich.js-foldup").each(function () { foldup.call(this, null, {nofocus: true}); });
 });
 
 
@@ -3135,9 +3135,8 @@ function jump_hash(hash, focus) {
         return true;
     }
     // find destination element
-    if (hash
-        && (e = document.getElementById(hash))
-        && (p = e.closest(".papeg, .rveg, .f-i, .form-g, .entryi, .checki"))) {
+    e = hash ? document.getElementById(hash) : null;
+    if (e && (p = e.closest(".papeg, .rveg, .f-i, .form-g, .entryi, .checki"))) {
         var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
         if ((eg.width <= 0 && eg.height <= 0)
             || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {
@@ -3147,6 +3146,8 @@ function jump_hash(hash, focus) {
             focus_at(e);
             return true;
         }
+    } else if (e && hasClass(e, "has-anchor-unfold")) {
+        foldup.call(e, null, {f: false});
     }
     return false;
 }
@@ -4081,7 +4082,7 @@ function add_review(rrow) {
         has_user_rating = false, i, ratekey, selected;
 
     i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
-    hc.push('<article id="r' + rid + '" class="pcard revcard has-fold '
+    hc.push('<article id="r' + rid + '" class="pcard revcard has-anchor-unfold has-fold '
             + (rrow.folded ? "fold20c" : "fold20o")
             + '" data-pid="' + rrow.pid
             + '" data-rid="' + rrow.rid + i + '">', '</article>');
