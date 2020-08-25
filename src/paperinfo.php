@@ -1971,7 +1971,7 @@ class PaperInfo {
         $srs = $urs = $ers = [];
 
         foreach ($this->reviews_by_id() as $rrow) {
-            if ($rrow->reviewStatus >= $this->conf->review_status_bound) {
+            if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
                 $srs[] = $rrow;
             } else if ($rrow->is_subreview()) {
                 $ers[] = $rrow;

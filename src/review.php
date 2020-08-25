@@ -1287,13 +1287,13 @@ $blind\n";
         if ($viewer->timeReview($prow, $rrow) || $admin) {
             if ($prow->can_author_view_submitted_review()
                 && (!$rrow
-                    || $rrow->reviewStatus >= $this->conf->review_status_bound
+                    || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
                     || !$rrow->subject_to_approval()
                     || !$viewer->is_my_review($rrow))) {
                 echo '<div class="feedback is-warning mb-2">Authors will be notified about submitted reviews.</div>';
             }
             if ($rrow
-                && $rrow->reviewStatus >= $this->conf->review_status_bound
+                && $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
                 && !$admin) {
                 echo '<div class="feedback is-warning mb-2">Only administrators can remove or unsubmit the review at this point.</div>';
             }
@@ -1327,7 +1327,7 @@ $blind\n";
         if ($rrow->reviewBlind) {
             $rj["blind"] = true;
         }
-        if ($rrow->reviewStatus >= $this->conf->review_status_bound) {
+        if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
             $rj["submitted"] = true;
         } else {
             if ($rrow->is_subreview()) {
@@ -2029,7 +2029,7 @@ class ReviewValues extends MessageSet {
         $rrow = $this->_mailer_info["rrow"];
         if ($minic->can_view_review($prow, $rrow, $this->_mailer_diff_view_score)
             && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $this->_mailer_info))
-            && ($rrow->reviewStatus >= $prow->conf->review_status_bound
+            && ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
                 || $rrow->contactId == $minic->contactId
                 || $rrow->requestedBy == $minic->contactId
                 || ($minic->watch & Contact::WATCH_REVIEW) != 0)) {
@@ -2053,17 +2053,14 @@ class ReviewValues extends MessageSet {
         if (($this->req["ready"] ?? null)
             && (!$rrow || $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)) {
             if (!$rrow
-                || $rrow->reviewType !== REVIEW_EXTERNAL
-                || $rrow->requestedBy === 0) {
+                || !$rrow->subject_to_approval()) {
                 $newstatus = ReviewInfo::RS_COMPLETED;
-            } else if (!$rrow->subject_to_approval()) {
-                $newstatus = ReviewInfo::RS_APPROVED;
             } else if (!$user->isPC) {
                 $newstatus = max(ReviewInfo::RS_DELIVERED, $oldstatus);
             } else if ($this->req["adoptreview"] ?? null) {
                 $newstatus = ReviewInfo::RS_ADOPTED;
             } else {
-                $newstatus = ReviewInfo::RS_APPROVED;
+                $newstatus = ReviewInfo::RS_COMPLETED;
             }
         }
         $admin = $user->allow_administer($prow);
@@ -2155,12 +2152,12 @@ class ReviewValues extends MessageSet {
             $now = $rrow->reviewModified + 1;
         }
 
-        if (($newstatus >= $this->conf->review_status_bound)
-            !== ($oldstatus >= $this->conf->review_status_bound)) {
+        if (($newstatus >= ReviewInfo::RS_COMPLETED)
+            !== ($oldstatus >= ReviewInfo::RS_COMPLETED)) {
             $qf[] = "reviewSubmitted=?";
-            $qv[] = $newstatus >= $this->conf->review_status_bound ? $now : null;
+            $qv[] = $newstatus >= ReviewInfo::RS_COMPLETED ? $now : null;
             // $diffinfo->view_score should represent transition to submitted
-            if ($rrow && $newstatus >= $this->conf->review_status_bound) {
+            if ($rrow && $newstatus >= ReviewInfo::RS_COMPLETED) {
                 $diffinfo->add_view_score($this->rf->nonempty_view_score($rrow));
             }
         }
@@ -2168,8 +2165,7 @@ class ReviewValues extends MessageSet {
             $qf[] = "reviewNeedsSubmit=?";
             $qv[] = 0;
         }
-        if (($newstatus === ReviewInfo::RS_DELIVERED && $oldstatus <= $newstatus)
-            || ($newstatus === ReviewInfo::RS_APPROVED && $oldstatus !== $newstatus)) {
+        if ($newstatus === ReviewInfo::RS_DELIVERED && $oldstatus <= $newstatus) {
             $qf[] = "timeApprovalRequested=?";
             $qv[] = $now;
         } else if ($newstatus === ReviewInfo::RS_ADOPTED && $oldstatus !== $newstatus) {
@@ -2232,8 +2228,8 @@ class ReviewValues extends MessageSet {
             $newstatus = max($newstatus, ReviewInfo::RS_DRAFTED);
         }
         $notification_bound = $now - ReviewForm::NOTIFICATION_DELAY;
-        $newsubmit = $newstatus >= $this->conf->review_status_bound
-            && $oldstatus < $this->conf->review_status_bound;
+        $newsubmit = $newstatus >= ReviewInfo::RS_COMPLETED
+            && $oldstatus < ReviewInfo::RS_COMPLETED;
         if (!$rrow || $diffinfo->nonempty()) {
             $qf[] = "reviewViewScore=?";
             $qv[] = $view_score;
@@ -2249,7 +2245,7 @@ class ReviewValues extends MessageSet {
                 $qv[] = $rrow->reviewModified;
             }
             // do not notify on updates within 3 hours, except fresh submits
-            if ($newstatus >= $this->conf->review_status_bound
+            if ($newstatus >= ReviewInfo::RS_COMPLETED
                 && $diffinfo->view_score > VIEWSCORE_ADMINONLY
                 && !$this->no_notify) {
                 if (!$rrow
@@ -2280,7 +2276,7 @@ class ReviewValues extends MessageSet {
              && $diffinfo->view_score >= VIEWSCORE_AUTHORDEC)
             || ($rrow
                 && !$rrow->reviewOrdinal
-                && ($newsubmit || $rrow->reviewStatus >= $this->conf->review_status_bound)
+                && ($newsubmit || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED)
                 && ($diffinfo->view_score >= VIEWSCORE_AUTHORDEC
                     || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
             $table_suffix = "";
@@ -2390,7 +2386,7 @@ class ReviewValues extends MessageSet {
         // if external, forgive the requester from finishing their review
         if ($new_rrow->reviewType < REVIEW_SECONDARY
             && $new_rrow->requestedBy
-            && $newstatus >= $this->conf->review_status_bound) {
+            && $newstatus >= ReviewInfo::RS_COMPLETED) {
             $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId={$new_rrow->requestedBy} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
         }
 
@@ -2409,14 +2405,14 @@ class ReviewValues extends MessageSet {
             "check_function" => "HotCRPMailer::check_can_view_review"
         ];
         $this->_mailer_preps = [];
-        if ($newstatus >= $this->conf->review_status_bound
+        if ($newstatus >= ReviewInfo::RS_COMPLETED
             && ($diffinfo->notify || $diffinfo->notify_author)) {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
             $this->_mailer_info["combination_type"] = 1;
             $this->_mailer_diff_view_score = $diffinfo->view_score;
             $prow->notify_reviews([$this, "review_watch_callback"], $user);
-        } else if ($newstatus < $this->conf->review_status_bound
+        } else if ($newstatus < ReviewInfo::RS_COMPLETED
                    && $newstatus >= ReviewInfo::RS_DELIVERED
                    && ($diffinfo->fields() || $newstatus !== $oldstatus)
                    && !$this->no_notify) {
@@ -2451,8 +2447,7 @@ class ReviewValues extends MessageSet {
         } else if ($newstatus === ReviewInfo::RS_DELIVERED
                    && $new_rrow->contactId == $user->contactId) {
             $this->approval_requested[] = $what;
-        } else if (($newstatus === ReviewInfo::RS_ADOPTED
-                    || $newstatus === ReviewInfo::RS_APPROVED)
+        } else if ($newstatus === ReviewInfo::RS_ADOPTED
                    && $new_rrow->contactId != $user->contactId) {
             $this->approved[] = $what;
         } else if ($diffinfo->nonempty()) {

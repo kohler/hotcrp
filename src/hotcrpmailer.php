@@ -142,7 +142,7 @@ class HotCRPMailer extends Mailer {
         $text = "";
         $rf = $this->conf->review_form();
         foreach ($rrows as $rrow) {
-            if (($rrow->reviewStatus >= $this->conf->review_status_bound
+            if (($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
                  || ($rrow == $this->rrow && $this->rrow_unsubmitted))
                 && $this->recipient->can_view_review($this->row, $rrow)) {
                 if ($text !== "") {

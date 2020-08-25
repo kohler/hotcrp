@@ -136,8 +136,7 @@ class ReviewInfo implements JsonSerializable {
     const RS_DRAFTED = 2;
     const RS_DELIVERED = 3;
     const RS_ADOPTED = 4;
-    const RS_APPROVED = 5;
-    const RS_COMPLETED = 6;
+    const RS_COMPLETED = 5;
 
     /** @var array<non-empty-string,non-empty-string> */
     static public $text_field_map = [
@@ -371,11 +370,7 @@ class ReviewInfo implements JsonSerializable {
     /** @return int */
     function compute_review_status() {
         if ($this->reviewSubmitted) {
-            if ($this->reviewType !== REVIEW_EXTERNAL || $this->requestedBy === 0) {
-                return self::RS_COMPLETED;
-            } else {
-                return self::RS_APPROVED;
-            }
+            return self::RS_COMPLETED;
         } else if ($this->reviewType === REVIEW_EXTERNAL
                    && $this->timeApprovalRequested !== 0) {
             if ($this->timeApprovalRequested > 0) {
@@ -395,7 +390,7 @@ class ReviewInfo implements JsonSerializable {
     /** @return bool */
     function is_subreview() {
         return $this->reviewType === REVIEW_EXTERNAL
-            && $this->reviewStatus < $this->conf->review_status_bound;
+            && $this->reviewStatus < ReviewInfo::RS_COMPLETED;
     }
 
     /** @return ?int */
@@ -442,7 +437,7 @@ class ReviewInfo implements JsonSerializable {
             $title = ReviewForm::$revtype_names_full[$this->reviewType];
         }
         $t = '<span class="rto rt' . $this->reviewType;
-        if ($this->reviewStatus < $this->conf->review_status_bound) {
+        if ($this->reviewStatus < ReviewInfo::RS_COMPLETED) {
             if ($this->timeApprovalRequested < 0) {
                 $t .= " rtsubrev";
             } else {
@@ -459,10 +454,9 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return string */
     function status_description() {
-        if ($this->reviewStatus >= $this->conf->review_status_bound) {
+        if ($this->reviewStatus >= ReviewInfo::RS_COMPLETED) {
             return "complete";
-        } else if ($this->reviewStatus === ReviewInfo::RS_ADOPTED
-                   || $this->reviewStatus === ReviewInfo::RS_APPROVED) {
+        } else if ($this->reviewStatus === ReviewInfo::RS_ADOPTED) {
             return "approved";
         } else if ($this->reviewStatus === ReviewInfo::RS_DELIVERED) {
             return "pending approval";

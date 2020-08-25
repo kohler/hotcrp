@@ -269,7 +269,7 @@ class RequestReview_API {
 
         $rrows = array_filter($xrrows, function ($rrow) {
             return $rrow->reviewType < REVIEW_SECONDARY
-                && $rrow->reviewStatus >= $rrow->conf->review_status_bound;
+                && $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
         });
         if (empty($rrows) && !empty($xrrows)) {
             if ($xrrows[0]->reviewStatus >= ReviewInfo::RS_ADOPTED) {

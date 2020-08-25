@@ -96,7 +96,7 @@ if (isset($Qreq->unsubmitreview)
     review_load();
 } else if (isset($Qreq->update)
            && $paperTable->editrrow
-           && $paperTable->editrrow->reviewStatus >= $Conf->review_status_bound) {
+           && $paperTable->editrrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
     $Qreq->ready = 1;
 }
 

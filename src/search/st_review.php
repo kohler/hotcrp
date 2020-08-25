@@ -11,6 +11,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     const PROPOSED = 32;
     const MYREQUEST = 64;
     const APPROVED = 128;
+    const SUBMITTED = 256;
 
     private $review_type = 0;
     private $completeness = 0;
@@ -54,6 +55,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         "pendingapproval" => self::PENDINGAPPROVAL,
         "proposal" => self::PROPOSED,
         "proposed" => self::PROPOSED,
+        "submitted" => self::SUBMITTED
     ];
 
     function __construct($countexpr = null, $contacts = null) {
@@ -183,8 +185,10 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if ($this->test(0))
             return false;
         $where = [];
-        if ($this->completeness & self::COMPLETE) {
+        if ($this->completeness & self::SUBMITTED) {
             $where[] = "reviewSubmitted is not null";
+        } else if ($this->completeness & self::COMPLETE) {
+            $where[] = "reviewSubmitted is not null or timeApprovalRequested<0";
         }
         if ($this->completeness & self::PENDINGAPPROVAL) {
             $where[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
@@ -260,6 +264,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if ($this->completeness) {
             if ((($this->completeness & self::COMPLETE)
                  && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED)
+                || (($this->completeness & self::SUBMITTED)
+                    && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)
                 || (($this->completeness & self::INCOMPLETE)
                     && !$rrow->reviewNeedsSubmit)
                 || (($this->completeness & self::INPROGRESS)
@@ -272,8 +278,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                         || ($rrow->requestedBy != $user->contactId
                             && !$user->allow_administer($prow))))
                 || (($this->completeness & self::APPROVED)
-                    && $rrow->reviewStatus !== ReviewInfo::RS_ADOPTED
-                    && $rrow->reviewStatus !== ReviewInfo::RS_APPROVED)
+                    && $rrow->reviewStatus !== ReviewInfo::RS_ADOPTED)
                 || (($this->completeness & self::MYREQUEST)
                     && $rrow->requestedBy != $user->contactId)) {
                 return false;

@@ -17,7 +17,7 @@ class ReviewTimes {
         }
         // only completed reviews for withdrawn/unsubmitted papers
         if ($prow->timeSubmitted <= 0) {
-            return $rrow->reviewStatus >= $prow->conf->review_status_bound;
+            return $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
         }
         // yes for modified or assigned reviews;
         // no for unmodified self-assigned reviews

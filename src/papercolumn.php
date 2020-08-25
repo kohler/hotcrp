@@ -347,7 +347,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         foreach ($row->reviews_by_id() as $rrow) {
             if ($user->can_view_review_assignment($row, $rrow)
                 && ($this->round === null || $this->round === $rrow->reviewRound)) {
-                if ($rrow->reviewStatus >= $row->conf->review_status_bound) {
+                if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
                     ++$done;
                     ++$started;
                 } else if (($want_assigned
@@ -663,7 +663,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
             list($ranal, $flags) = $this->analysis($pl, $row);
             if ($ranal && $ranal->rrow->reviewType) {
                 $row->$k = 2 * $ranal->rrow->reviewType;
-                if ($ranal->rrow->reviewStatus >= $row->conf->review_status_bound) {
+                if ($ranal->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
                     $row->$k += 1;
                 }
             } else {

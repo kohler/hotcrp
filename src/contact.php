@@ -3648,7 +3648,7 @@ class Contact {
                 && $this->is_owned_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY)) {
             return true;
-        } else if ($rrow && $rrow->reviewStatus < $this->conf->review_status_bound) {
+        } else if ($rrow && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
             return false;
         }
         $seerev = $this->seerev_setting($prow, $rrow, $rights);
@@ -3683,7 +3683,7 @@ class Contact {
         if ($this->can_view_review($prow, $rrow, $viewscore)) {
             return null;
         }
-        $rrowSubmitted = !$rrow || $rrow->reviewStatus >= $this->conf->review_status_bound;
+        $rrowSubmitted = !$rrow || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if ((!$rights->act_author_view

@@ -119,7 +119,7 @@ class PaperListReviewAnalysis {
         if (!$this->rrow) {
             return $html;
         }
-        if ($this->rrow->reviewStatus >= $this->prow->conf->review_status_bound) {
+        if ($this->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
             $href = $this->prow->hoturl(["anchor" => "r" . $this->rrow->unparse_ordinal()]);
         } else {
             $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal()]);

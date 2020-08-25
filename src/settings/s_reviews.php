@@ -225,22 +225,28 @@ class Reviews_SettingRenderer {
     }
     static function render_extrev_editdelegate(SettingValues $sv) {
         echo '<div id="foldpcrev_editdelegate" class="form-g has-fold',
-            $sv->curv("extrev_chairreq") >= 0 ? ' foldo' : ' foldc',
-            ' fold2o" data-fold-values="0 1 2">';
+            $sv->curv("extrev_chairreq") >= 0 ? ' fold1o' : ' fold1c',
+            '" data-fold1-values="0 1 2">';
         $sv->echo_radio_table("extrev_chairreq", [-1 => "No",
                 1 => "Yes, but administrators must approve all requests",
                 2 => "Yes, but administrators must approve external reviewers with potential conflicts",
                 0 => "Yes"
             ], "Can PC reviewers request external reviews?",
             ["item_class" => "uich js-foldup"]);
-        echo '<div class="fx">';
+        echo '<div class="fx1">';
         // echo '<p>Secondary PC reviews can be delegated to external reviewers. When the external review is complete, the secondary PC reviewer need not complete a review of their own.</p>', "\n";
+
+        $label3 = "Yes, and external reviews are visible only to their requesters";
+        if ($sv->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted>0)")) {
+            $label3 = '<label for="pcrev_editdelegate_3">' . $label3 . '</label><div class="settings-ap f-hx fx">Existing ' . Ht::link("submitted external reviews", $sv->conf->hoturl("search", ["q" => "re:ext:submitted"]), ["target" => "_new"]) . ' will remain visible to others.</div>';
+        }
         $sv->echo_radio_table("pcrev_editdelegate", [
                 0 => "No",
                 1 => "Yes",
                 2 => "Yes, and external reviews are hidden until requesters approve them",
-                3 => "Yes, and external reviews are visible only to their requesters"
-            ], "Can PC members edit the external reviews they requested?");
+                3 => $label3
+            ], "Can PC members edit the external reviews they requested?",
+            ["fold_values" => [3]]);
         echo "</div></div>\n";
     }
     static function render_extrev_requestmail(SettingValues $sv) {
