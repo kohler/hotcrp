@@ -71,15 +71,15 @@
         "render_callback": "Decisions_SettingParser::render"
     },
     {
-        "name": "decisions/final-versions-title", "position": 100,
+        "name": "decisions/final-versions", "position": 100,
         "title": "Final versions"
     },
     {
-        "name": "decisions/final-versions", "position": 105,
+        "name": "decisions/final-versions-body", "position": 105,
         "render_callback": "FinalVersions_SettingParser::render"
     },
     {
-        "name": "__crosscheck/final-versions", "position": 810,
+        "name": "__crosscheck/final-versions-body", "position": 810,
         "crosscheck_callback": "FinalVersions_SettingParser::crosscheck"
     },
 

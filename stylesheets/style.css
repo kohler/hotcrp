@@ -253,7 +253,7 @@ a.q, a.u, a.qx {
 	color: black;
 }
 a.qq, a.uu, a.nn, a.mailto, a.btn, a.btn:hover,
-.is-error a, .is-warning a {
+.is-error a, .is-warning a, .is-urgent-note a {
 	color: inherit;
 }
 a.btn {
