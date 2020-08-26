@@ -3146,7 +3146,7 @@ function jump_hash(hash, focus) {
             focus_at(e);
             return true;
         }
-    } else if (e && hasClass(e, "has-anchor-unfold")) {
+    } else if (e && hasClass(e, "need-anchor-unfold")) {
         foldup.call(e, null, {f: false});
     }
     return false;
@@ -4082,7 +4082,7 @@ function add_review(rrow) {
         has_user_rating = false, i, ratekey, selected;
 
     i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
-    hc.push('<article id="r' + rid + '" class="pcard revcard has-anchor-unfold has-fold '
+    hc.push('<article id="r' + rid + '" class="pcard revcard need-anchor-unfold has-fold '
             + (rrow.folded ? "fold20c" : "fold20o")
             + '" data-pid="' + rrow.pid
             + '" data-rid="' + rrow.rid + i + '">', '</article>');
