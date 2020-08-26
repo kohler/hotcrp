@@ -1552,7 +1552,8 @@ td.padls, th.padls, div.padls {
 label.has-error,
 h2.has-error,
 h3.has-error,
-.is-error {
+.is-error,
+.is-urgent-note {
 	color: #ee0000;
 }
 .has-error input[type=text],
@@ -2752,14 +2753,15 @@ a.badge:active {
 .pslitem > .is-error:before, .feedback.is-error:before,
 .pslitem > .is-warning:before, .feedback.is-warning:before,
 .pslitem > .is-success:before, .feedback.is-success:before,
-.pslitem > .is-note:before, .feedback.is-note:before {
+.pslitem > .is-note:before, .feedback.is-note:before,
+.pslitem > .is-urgent-note:before, .feedback.is-urgent-note:before {
 	display: inline-block;
 	vertical-align: -0.1em;
 	padding-right: 0.2em;
 	width: 1.1em;
 	height: 0.9em;
 }
-.error-mark, .warning-mark, .success-mark, .note-mark {
+.error-mark, .warning-mark, .success-mark, .note-mark, .urgent-note-mark {
 	display: inline-block;
 	vertical-align: -0.075em;
 	width: 0.9em;
@@ -2776,6 +2778,9 @@ a.badge:active {
 }
 .feedback.is-note:before, .note-mark {
 	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14.5' fill='none' stroke-width='2.5' stroke='%23337'/%3E%3Cpath d='M7 17.8v-3.6l13.5.3L14 9l3-3 9 10-9 10-3-3 6.5-5.5z' fill='%23337'/%3E%3C/svg%3E");
+}
+.feedback.is-urgent-note:before, .urgent-note-mark {
+	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14.5' fill='none' stroke-width='2.5' stroke='%23e00'/%3E%3Cpath d='M7 17.8v-3.6l13.5.3L14 9l3-3 9 10-9 10-3-3 6.5-5.5z' fill='%23e00'/%3E%3C/svg%3E");
 }
 
 .js-tag-editor {

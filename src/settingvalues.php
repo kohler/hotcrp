@@ -1012,7 +1012,7 @@ class SettingValues extends MessageSet {
             echo '<div class="entry">';
         }
         $this->echo_feedback_at($name);
-        echo $control, get_s($js, "control_after");
+        echo $control, ($js["control_after"] ?? "");
         $thint = $this->type_hint($si->type);
         if ($hint || $thint) {
             echo '<div class="f-h">';

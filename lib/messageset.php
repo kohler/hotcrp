@@ -75,7 +75,8 @@ class MessageSet {
     /** @var int */
     private $problem_status;
 
-    const SUCCESS = -2;
+    const SUCCESS = -3;
+    const URGENT_NOTE = -2;
     const NOTE = -1;
     const INFO = 0;
     const WARNING = 1;
@@ -129,7 +130,7 @@ class MessageSet {
 
     /** @param ?string $field
      * @param string $msg
-     * @param -2|-1|0|1|2|3 $status
+     * @param -3|-2|-1|0|1|2|3 $status
      * @return int|false */
     function message_index($field, $msg, $status) {
         if ($field === null || ($this->errf[$field] ?? -5) >= $status) {
@@ -291,6 +292,8 @@ class MessageSet {
             $sclass = "success";
         } else if ($status === self::NOTE) {
             $sclass = "note";
+        } else if ($status === self::URGENT_NOTE) {
+            $sclass = "urgent-note";
         } else {
             $sclass = "";
         }
