@@ -45,7 +45,7 @@ class TopicScore_PaperColumn extends PaperColumn {
     }
     function statistic_html(PaperList $pl, $stat) {
         $v = $this->statistics->statistic($stat);
-        return is_int($v) ? $v : sprintf("%.2f", $v);
+        return is_int($v) ? (string) $v : sprintf("%.2f", $v);
     }
 
     static function expand($name, Contact $user, $xfj, $m) {
