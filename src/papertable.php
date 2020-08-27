@@ -309,6 +309,7 @@ class PaperTable {
 
     function set_edit_status(PaperStatus $status) {
         $this->edit_status = $status;
+        $this->edit_status->translate_field("authorInformation", "authors");
     }
 
     function set_review_values(ReviewValues $rvalues = null) {
@@ -391,14 +392,6 @@ class PaperTable {
 
     private function problem_status_at($f) {
         if ($this->edit_status) {
-            if (str_starts_with($f, "au")) {
-                if ($f === "authorInformation") {
-                    $f = "authors";
-                } else if (preg_match('/\A.*?(\d+)\z/', $f, $m)
-                           && ($ps = $this->edit_status->problem_status_at("author$m[1]"))) {
-                    return $ps;
-                }
-            }
             return $this->edit_status->problem_status_at($f);
         } else {
             return 0;
@@ -410,8 +403,14 @@ class PaperTable {
     function has_error_class($f) {
         return $this->has_problem_at($f) ? " has-error" : "";
     }
+    /** @param string $f */
     function control_class($f, $rest = "", $prefix = "has-") {
         return MessageSet::status_class($this->problem_status_at($f), $rest, $prefix);
+    }
+    /** @param list<string> $fs */
+    function max_control_class($fs, $rest = "", $prefix = "has-") {
+        $ps = $this->edit_status ? $this->edit_status->max_problem_status_at($fs) : 0;
+        return MessageSet::status_class($ps, $rest, $prefix);
     }
 
     private function echo_editable_papt($what, $heading, $extra, PaperOption $opt) {
@@ -525,10 +524,10 @@ class PaperTable {
         return $table_type === "col" ? nl2br($text) : $text;
     }
 
-    function messages_at($field, $klass = "f-h") {
+    function messages_at($field) {
         $t = "";
         foreach ($this->edit_status ? $this->edit_status->message_list_at($field) : [] as $mx) {
-            $t .= '<p class="' . MessageSet::status_class($mx->status, $klass, "is-") . '">' . $mx->message . '</p>';
+            $t .= '<p class="' . MessageSet::status_class($mx->status, "feedback", "is-") . '">' . $mx->message . '</p>';
         }
         return $t;
     }
@@ -536,7 +535,7 @@ class PaperTable {
     /** @param PaperOption $opt */
     function echo_field_hint($opt) {
         assert(!!$this->edit_status);
-        echo $this->messages_at($opt->formid, "feedback");
+        echo $this->messages_at($opt->formid);
         $fr = new FieldRender(FieldRender::CFHTML);
         $fr->value_format = 5;
         if ($opt->description_format !== null) {
@@ -547,7 +546,7 @@ class PaperTable {
         if (!$fr->is_empty()) {
             echo $fr->value_html("field-d");
         }
-        echo $this->messages_at($opt->formid . ":context", "feedback");
+        echo $this->messages_at($opt->formid . ":context");
     }
 
     /** @param PaperOption $opt */
@@ -1771,7 +1770,7 @@ class PaperTable {
             }
         }
         if ($this->edit_status->has_messages_at(":main")) {
-            echo '<div class="papeg">', $this->messages_at(":main", "feedback"), '</div>';
+            echo '<div class="papeg">', $this->messages_at(":main"), '</div>';
         }
     }
 

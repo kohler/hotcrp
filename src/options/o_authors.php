@@ -32,7 +32,7 @@ class Authors_PaperOption extends PaperOption {
         }
         if ($nreal === 0 && !$ov->prow->allow_absent()) {
             $ov->estop($this->conf->_("Entry required."));
-            $ov->msg_at("author1", false, MessageSet::ERROR);
+            $ov->msg_at("authors:1", false, MessageSet::ERROR);
         }
         $max_authors = $this->conf->opt("maxAuthors");
         if ($max_authors > 0 && $nreal > $max_authors) {
@@ -44,15 +44,15 @@ class Authors_PaperOption extends PaperOption {
             if (strpos($auth->email, "@") === false
                 && strpos($auth->affiliation, "@") !== false) {
                 $msg1 = true;
-                $ov->msg_at("author" . ($n + 1), false, MessageSet::WARNING);
+                $ov->msg_at("authors:" . ($n + 1), false, MessageSet::WARNING);
             } else if ($auth->firstName === "" && $auth->lastName === ""
                        && $auth->email === "" && $auth->affiliation !== "") {
                 $msg2 = true;
-                $ov->msg_at("author" . ($n + 1), false, MessageSet::WARNING);
+                $ov->msg_at("authors:" . ($n + 1), false, MessageSet::WARNING);
             } else if ($auth->email !== "" && !validate_email($auth->email)
                        && !$ov->prow->author_by_email($auth->email)) {
                 $ov->estop(null);
-                $ov->msg_at("author" . ($n + 1), $this->conf->_("“%s” is not a valid email address.", htmlspecialchars($auth->email)), MessageSet::ESTOP);
+                $ov->msg_at("authors:" . ($n + 1), $this->conf->_("“%s” is not a valid email address.", htmlspecialchars($auth->email)), MessageSet::ESTOP);
             }
         }
         if ($msg1) {
@@ -200,7 +200,7 @@ class Authors_PaperOption extends PaperOption {
             $val = $reqau ? $reqau->affiliation : "";
         }
 
-        $js["class"] = $pt->control_class("authors:{$component}_{$n}", "need-autogrow js-autosubmit editable-author-{$component}" . ($ignore_diff ? " ignore-diff" : ""));
+        $js["class"] = $pt->max_control_class(["authors:{$n}", "authors:{$component}_{$n}"], "need-autogrow js-autosubmit editable-author-{$component}" . ($ignore_diff ? " ignore-diff" : ""));
         if ($component === "email" && $pt->user->can_lookup_user()) {
             $js["class"] .= " uii js-email-populate";
         }

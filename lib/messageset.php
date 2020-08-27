@@ -280,6 +280,19 @@ class MessageSet {
         return $this->problem_status_at($field) >= self::ERROR;
     }
 
+    /** @param list<string> $fields
+     * @return int */
+    function max_problem_status_at($fields) {
+        $ps = 0;
+        if ($this->problem_status > $ps) {
+            foreach ($fields as $f) {
+                $f = $this->canonfield[$f] ?? $f;
+                $ps = max($ps, $this->errf[$f] ?? 0);
+            }
+        }
+        return $ps;
+    }
+
     /** @param int $status
      * @param string $rest
      * @return string */
