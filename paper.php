@@ -463,9 +463,9 @@ if ($paperTable->mode == "edit") {
 }
 
 $paperTable->initialize($editable, $editable && $useRequest);
-if ($paperTable->mode === "edit") {
+if ($paperTable->mode === "edit" && !$ps) {
     $nnprow = $paperTable->prow;
-    if (!$ps && !$prow) {
+    if (!$prow) {
         $nnprow->set_allow_absent(true);
     }
     $ps = $ps ?? PaperStatus::make_prow($Me, $nnprow);
@@ -478,8 +478,10 @@ if ($paperTable->mode === "edit") {
         }
     }
     $Me->set_overrides($old_overrides);
-    $paperTable->set_edit_status($ps);
     $nnprow->set_allow_absent(false);
+}
+if ($paperTable->mode === "edit") {
+    $paperTable->set_edit_status($ps);
 }
 
 // produce paper table

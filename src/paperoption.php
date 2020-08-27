@@ -419,7 +419,7 @@ class PaperOptionList implements IteratorAggregate {
             $key = substr($key, 0, $colon);
         }
         foreach ($this->unsorted_field_list() as $f) {
-            if ($f->json_key() === $key)
+            if ($f->field_key() === $key)
                 return $f;
         }
         return null;
