@@ -936,7 +936,11 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = "Paper.timeWithdrawn<=0";
             break;
         case "lead":
-            $ff[] = "Paper.leadContactId=" . $sqi->srch->cid;
+            if ($sqi->srch->cid > 0) {
+                $ff[] = "Paper.leadContactId=" . $sqi->srch->cid;
+            } else {
+                $ff[] = "false";
+            }
             break;
         case "alladmin":
             if ($sqi->user->privChair) {
@@ -946,8 +950,10 @@ class Limit_SearchTerm extends SearchTerm {
         case "admin":
             if ($sqi->user->is_track_manager()) {
                 $ff[] = "(Paper.managerContactId=" . $sqi->srch->cid . " or Paper.managerContactId=0)";
-            } else {
+            } else if ($sqi->srch->cid > 0) {
                 $ff[] = "Paper.managerContactId=" . $sqi->srch->cid;
+            } else {
+                $ff[] = "false";
             }
             break;
         case "req":
@@ -1000,7 +1006,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "unsub":
             return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
         case "lead":
-            return $row->leadContactId == $srch->cid;
+            return $srch->cid > 0 && $row->leadContactId === $srch->cid;
         case "admin":
             return $srch->user->is_primary_administrator($row);
         case "alladmin":
