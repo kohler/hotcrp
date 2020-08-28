@@ -22,233 +22,6 @@
 // The subject list can be “deparenthesized”, allowing parenthesized expressions
 // to be skipped without penalty. See `add_deparenthesized`.
 
-// OLD match priority (higher = more priority):
-// 5. Exact match
-// 4. Exact match with [-_.–—] replaced by spaces
-// 3. Case-insensitive match with [-_.–—] replaced by spaces
-// 2. Case-insensitive word match with [-_.–—] replaced by spaces
-// 1. Case-insensitive CamelCase match with [-_.–—] replaced by spaces
-//
-// If a word match is performed, prefer matches that match more complete words.
-// Words must appear in order, so pattern "hello kitty" does not match "kitty
-// hello".
-
-class AbbreviationMatchTracker {
-    /** @var bool
-     * @readonly */
-    private $isu;
-    /** @var string
-     * @readonly */
-    private $pattern;
-    /** @var string
-     * @readonly */
-    private $dpattern;
-    /** @var string
-     * @readonly */
-    private $upattern;
-    /** @var string
-     * @readonly */
-    private $dupattern;
-    private $imatchre;
-    /** @var bool
-     * @readonly */
-    private $is_camel_word;
-    /** @var 0|1|2
-     * @readonly */
-    private $has_star;
-    private $camelwords;
-    private $mclass = 1;
-    private $matches = [];
-
-    function __construct($pattern, $isu = null) {
-        if ($isu === null) {
-            $isu = !is_usascii($pattern);
-        }
-        $this->isu = $isu;
-        if ($isu) {
-            $this->pattern = UnicodeHelper::normalize($pattern);
-            $this->dpattern = AbbreviationMatcher::dedash($this->pattern);
-            $this->upattern = UnicodeHelper::deaccent($this->pattern);
-            $this->dupattern = AbbreviationMatcher::dedash($this->upattern);
-        } else {
-            $this->pattern = $this->upattern = $pattern;
-            $this->dpattern = $this->dupattern = AbbreviationMatcher::dedash($pattern);
-        }
-        $this->is_camel_word = AbbreviationMatcher::is_camel_word_old($pattern);
-        $starpos = strpos($pattern, "*");
-        if ($starpos === false) {
-            $this->has_star = 0;
-        } else if ($starpos === 0) {
-            $this->has_star = 2;
-        } else {
-            $this->has_star = 1;
-        }
-    }
-    private function wmatch_score($pattern, $subject, $flags) {
-        // assert($pattern whitespace is simplified)
-        $pwords = explode(" ", $pattern);
-        $swords = preg_split('/\s+/', $subject);
-        $pword = "";
-        $pword_pos = -1;
-        $pword_star = false;
-        $ppos = $spos = $demerits = $skipped = 0;
-        while (isset($pwords[$ppos]) && isset($swords[$spos])) {
-            if ($pword_pos !== $ppos) {
-                $pword = '{\A' . preg_quote($pwords[$ppos]) . '([^-\s,.:;\'"\[\]{}()!?&]*).*\z}' . $flags;
-                $pword_pos = $ppos;
-                if ($this->has_star !== 0
-                    && strpos($pwords[$ppos], "*") !== false) {
-                    $pword = str_replace('\\*', '.*', $pword);
-                    $pword_star = true;
-                } else {
-                    $pword_star = false;
-                }
-            }
-            if (preg_match($pword, $swords[$spos], $m)) {
-                ++$ppos;
-                $demerits += $m[1] !== "" || $pword_star;
-            } else if ($this->has_star !== 2) {
-                $skipped = 1;
-            }
-            ++$spos;
-        }
-        // missed words cost 1/64 point, partial words cost 1/64 point
-        if (!isset($pwords[$ppos])) {
-            if ($skipped || ($this->has_star === 0 && $spos < count($swords))) {
-                $demerits += 4;
-            }
-            //error_log("- $subject $this->pattern $demerits $ppos $spos");
-            return 1 - 0.015625 * min($demerits + 1, 63);
-        } else {
-            return 0;
-        }
-    }
-    private function camel_wmatch_score($subject) {
-        assert($this->is_camel_word);
-        if (!$this->camelwords) {
-            $this->camelwords = [];
-            $x = $this->pattern;
-            while (preg_match('/\A[-_.]*([a-z]+|[A-Z][a-z]*|[0-9]+)(.*)\z/', $x, $m)) {
-                $this->camelwords[] = $m[1];
-                $this->camelwords[] = $m[2] !== "" && ctype_alnum(substr($m[2], 0, 1));
-                $x = $m[2];
-            }
-        }
-        $swords = preg_split('/\s+/', $subject);
-        $ppos = $spos = $demerits = $skipped = 0;
-        while (isset($this->camelwords[$ppos]) && isset($swords[$spos])) {
-            $pword = $this->camelwords[$ppos];
-            $sword = $swords[$spos];
-            $ppos1 = $ppos;
-            $sidx = 0;
-            while ($sidx + strlen($pword) <= strlen($sword)
-                   && strcasecmp($pword, substr($sword, $sidx, strlen($pword))) === 0) {
-                $sidx += strlen($pword);
-                $ppos += 2;
-                if (!$this->camelwords[$ppos - 1]) {
-                    break;
-                }
-                $pword = $this->camelwords[$ppos];
-            }
-            if ($sidx !== 0) {
-                $demerits += $sidx < strlen($sword);
-            } else {
-                ++$skipped;
-            }
-            ++$spos;
-        }
-        if (!isset($this->camelwords[$ppos])) {
-            if ($skipped || ($this->has_star === 0 && $spos < count($swords))) {
-                $demerits += 4;
-            }
-            //error_log("+ $subject $this->pattern $demerits $ppos $spos");
-            return 1 - 0.015625 * min($demerits + 1, 63);
-        } else {
-            return 0;
-        }
-    }
-    /** @param string $subject
-     * @param ?bool $sisu
-     * @return int|float */
-    private function mclass($subject, $sisu = null) {
-        if ($sisu === null) {
-            $sisu = !is_usascii($subject);
-        }
-
-        if ($this->isu && $sisu) {
-            if ($this->pattern === $subject) {
-                return 9;
-            } else if ($this->mclass >= 9) {
-                return 0;
-            }
-
-            $dsubject = AbbreviationMatcher::dedash($subject);
-            if ($this->dpattern === $dsubject) {
-                return 8;
-            } else if ($this->mclass >= 7) {
-                return 0;
-            }
-
-            if (!$this->imatchre) {
-                $this->imatchre = '{\A' . preg_quote($this->dpattern) . '\z}iu';
-            }
-            if (preg_match($this->imatchre, $dsubject)) {
-                return 7;
-            } else if (($s = $this->wmatch_score($this->dpattern, $dsubject, "iu"))) {
-                return 6 + $s;
-            }
-        }
-
-        if ($this->mclass >= 6) {
-            return 0;
-        }
-
-        $usubject = $sisu ? UnicodeHelper::deaccent($subject) : $subject;
-        if ($this->upattern === $usubject) {
-            return 5;
-        } else if ($this->mclass >= 5) {
-            return 0;
-        }
-
-        $dusubject = AbbreviationMatcher::dedash($usubject);
-        if ($this->dupattern === $dusubject) {
-            return 4;
-        } else if ($this->mclass >= 4) {
-            return 0;
-        }
-
-        if (strcasecmp($this->dupattern, $dusubject) === 0) {
-            return 3;
-        } else if ($this->mclass >= 3) {
-            return 0;
-        }
-
-        $s1 = $this->wmatch_score($this->dupattern, $dusubject, "i");
-        $s2 = $this->is_camel_word ? $this->camel_wmatch_score($dusubject) : 0;
-        if ($s1 || $s2) {
-            return 1 + max($s1, $s2);
-        } else {
-            return 0;
-        }
-    }
-
-    function check($subject, $data, $sisu = null) {
-        $mclass = $this->mclass($subject, $sisu);
-        //if ($mclass > 0) error_log("$subject : {$this->pattern} : $mclass");
-        if ($mclass > $this->mclass) {
-            $this->mclass = $mclass;
-            $this->matches = [$data];
-        } else if ($mclass == $this->mclass
-                   && $this->matches[count($this->matches) - 1] !== $data) {
-            $this->matches[] = $data;
-        }
-    }
-
-    function matches() {
-        return $this->matches;
-    }
-}
-
 /** @template T */
 class AbbreviationEntry {
     /** @var string
@@ -313,8 +86,6 @@ class AbbreviationMatcher {
     private $nanal = 0;
     /** @var int */
     private $ndeparen = 0;
-    /** @var array<string,list<int>> */
-    private $matches = [];
     /** @var array<int,float> */
     private $prio = [];
 
@@ -333,7 +104,7 @@ class AbbreviationMatcher {
         $i = count($this->data);
         $this->data[] = $e;
         if (!($e->tflags & AbbreviationEntry::TFLAG_KW)) {
-            $this->matches = $this->xmatches = $this->lxmatches = [];
+            $this->xmatches = $this->lxmatches = [];
             if ($isphrase
                 && strpos($e->name, " ") === false
                 && self::is_strict_camel_word($e->name)) {
@@ -346,7 +117,6 @@ class AbbreviationMatcher {
             $e->dedash_name = self::dedash($e->name);
             $lname = strtolower($e->name);
             $this->ltesters[] = " " . $lname;
-            $this->matches[$e->name] = [$i];
             foreach ($this->lxmatches[$lname] ?? [] as $n) {
                 unset($this->xmatches[$n]);
             }
@@ -402,7 +172,7 @@ class AbbreviationMatcher {
         }
         $this->ndeparen = count($this->data);
         if ($this->ndeparen !== $n) {
-            $this->matches = $this->xmatches = $this->lxmatches = [];
+            $this->xmatches = $this->lxmatches = [];
         }
     }
 
@@ -481,51 +251,6 @@ class AbbreviationMatcher {
             }
             ++$this->nanal;
         }
-    }
-
-    private function _find_all($pattern) {
-        if (empty($this->matches)) {
-            $this->_analyze();
-        }
-
-        $spat = $upat = simplify_whitespace($pattern);
-        if (($sisu = !is_usascii($spat))) {
-            $spat = UnicodeHelper::normalize($spat);
-            $upat = UnicodeHelper::deaccent($spat);
-        }
-        $dupat = self::dedash($upat);
-        if (self::is_camel_word_old($upat)) {
-            $re = preg_replace('/([A-Za-z](?=[A-Z0-9 ])|[0-9](?=[A-Za-z ]))/', '$1(?:|.*\b)', $dupat);
-            $re = '{\b' . str_replace(" ", "", $re) . '}i';
-        } else {
-            $re = join('.*\b', preg_split('/[^A-Za-z0-9*]+/', $dupat));
-            $re = '{\b' . str_replace("*", ".*", $re) . '}i';
-        }
-
-        $mclass = 0;
-        $matches = [];
-        foreach ($this->data as $i => $d) {
-            if (strcasecmp($dupat, $d->dedash_name) === 0) {
-                if ($mclass === 0) {
-                    $matches = [];
-                }
-                $mclass = 1;
-                $matches[] = $i;
-            } else if ($mclass === 0 && preg_match($re, $d->dedash_name)) {
-                $matches[] = $i;
-            }
-        }
-
-        if (count($matches) > 1) {
-            $amt = new AbbreviationMatchTracker($spat, $sisu);
-            foreach ($matches as $i) {
-                $d = $this->data[$i];
-                $amt->check($d->name, $i, strlen($d->name) !== strlen($d->dedash_name));
-            }
-            $matches = $amt->matches();
-        }
-
-        $this->matches[$pattern] = $matches;
     }
 
     private function _xfind_all($pattern) {
@@ -712,22 +437,6 @@ class AbbreviationMatcher {
     function find_all($pattern, $tflags = 0) {
         if (!array_key_exists($pattern, $this->xmatches)) {
             $this->_xfind_all($pattern);
-            $this->_find_all($pattern);
-            if ($this->matches[$pattern] !== $this->xmatches[$pattern]
-                && !empty($this->matches[$pattern])) {
-                $r1 = self::compress_entries($this->match_entries($this->matches[$pattern], $tflags));
-                $r2 = self::compress_entries($this->match_entries($this->xmatches[$pattern], $tflags));
-                $same = count($r1) === count($r2);
-                for ($i = 0; $same && $i !== count($r1); ++$i) {
-                    $same = $r1[$i]->value === $r2[$i]->value;
-                }
-                if (!$same) {
-                    error_log(Conf::$main->dbname . ": matching $pattern: old "
-                        . json_encode(array_map(function ($d) { return $d->name; }, $r1))
-                        . " vs. new "
-                        . json_encode(array_map(function ($d) { return $d->name; }, $r2)));
-                }
-            }
         }
         $results = [];
         $prio = $tflags ? ($this->prio[$tflags] ?? false) : false;
