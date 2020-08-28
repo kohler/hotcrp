@@ -413,6 +413,9 @@
     "telekom": {
         "weak": true
     },
+    "tokyo": {
+        "weak": true
+    },
     "univ": {
         "weak": true
     },
@@ -438,7 +441,7 @@
         "weak": true, "alternate": ["university"]
     },
     "university": {
-        "weak": true, "alternate": ["u", "univ"]
+        "weak": true, "alternate": ["u", "univ", "universite"]
     },
     "west": {
         "weak": true
