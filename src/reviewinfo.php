@@ -431,7 +431,7 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return string */
     function type_icon() {
-        if ($this->is_subreview()) {
+        if ($this->subject_to_approval()) {
             $title = "Subreview";
         } else {
             $title = ReviewForm::$revtype_names_full[$this->reviewType];

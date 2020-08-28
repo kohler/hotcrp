@@ -1174,7 +1174,7 @@ $blind\n";
         if ($rrow) {
             echo '<a class="nn" href="',
                 $rrow->conf->hoturl("review", "r=$reviewOrdinal" . $forceShow),
-                '">Edit ', ($rrow->is_subreview() ? "Subreview" : "Review");
+                '">Edit ', ($rrow->subject_to_approval() ? "Subreview" : "Review");
             if ($rrow->reviewOrdinal) {
                 echo "&nbsp;#", $reviewOrdinal;
             }
