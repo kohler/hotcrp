@@ -336,6 +336,9 @@
     "org": {
         "weak": true
     },
+    "paris": {
+        "weak": true
+    },
     "phd": {
         "weak": true
     },
