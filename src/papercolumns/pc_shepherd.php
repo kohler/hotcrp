@@ -16,7 +16,7 @@ class Shepherd_PaperColumn extends PaperColumn {
             && ($pl->conf->has_any_lead_or_shepherd() || $visible);
     }
     static private function cid(PaperList $pl, PaperInfo $row) {
-        if ($row->shepherdContactId && $pl->user->can_view_shepherd($row)) {
+        if ($row->shepherdContactId > 0 && $pl->user->can_view_shepherd($row)) {
             return $row->shepherdContactId;
         } else {
             return 0;

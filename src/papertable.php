@@ -1895,7 +1895,7 @@ class PaperTable {
     // Functions for overall paper table viewing
 
     function _papstrip() {
-        if (($this->prow->managerContactId
+        if (($this->prow->managerContactId > 0
              || ($this->user->privChair && $this->mode === "assign"))
             && $this->user->can_view_manager($this->prow)) {
             $this->papstripManager($this->user->privChair);
@@ -2567,9 +2567,8 @@ class PaperTable {
         if ($this->user->is_admin_force()
             && !$this->user->call_with_overrides(0, "can_view_review", $this->prow, null)) {
             $this->_paptabSepContaining($this->_privilegeMessage());
-        } else if ($this->user->contactId == $this->prow->managerContactId
-                   && !$this->user->privChair
-                   && $this->user->contactId > 0) {
+        } else if ($this->prow->managerContactId === $this->user->contactXid
+                   && !$this->user->privChair) {
             $this->_paptabSepContaining("You are this submission’s administrator.");
         }
 

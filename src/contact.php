@@ -11,7 +11,7 @@ class Contact {
     static public $true_user;
     static public $allow_nonexistent_properties = false;
     /** @var int */
-    static public $next_xid = -1;
+    static public $next_xid = -2;
 
     /** @var Conf */
     public $conf;
@@ -213,6 +213,8 @@ class Contact {
             $this->merge($user);
         } else if ($this->contactId || $this->contactDbId) {
             $this->db_load();
+        } else {
+            $this->contactXid = self::$next_xid--;
         }
     }
 
@@ -234,7 +236,7 @@ class Contact {
         }
         if ((!isset($user["dsn"]) || $user["dsn"] == $this->conf->dsn)
             && isset($user["contactId"])) {
-            $this->contactId = $this->contactXid = (int) $user["contactId"];
+            $this->contactId = (int) $user["contactId"];
         }
         if (isset($user["contactDbId"])) {
             $this->contactDbId = (int) $user["contactDbId"];
@@ -242,6 +244,7 @@ class Contact {
         if (isset($user["cdb_confid"])) {
             $this->cdb_confid = $user["cdb_confid"];
         }
+        $this->contactXid = $this->contactId ? : self::$next_xid--;
 
         // handle slice properties
         if (isset($user["firstName"]) && isset($user["lastName"])) {
@@ -315,10 +318,11 @@ class Contact {
     }
 
     private function db_load() {
-        $this->contactId = $this->contactXid = (int) $this->contactId;
+        $this->contactId = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
         $this->cdb_confid = (int) $this->cdb_confid;
-        assert($this->contactId > 0 || ($this->contactId == 0 && $this->contactDbId > 0));
+        assert($this->contactId > 0 || ($this->contactId === 0 && $this->contactDbId > 0));
+        $this->contactXid = $this->contactId ? : self::$next_xid--;
 
         // handle slice properties
         if ($this->unaccentedName === "") {
@@ -626,7 +630,7 @@ class Contact {
 
         // cannot turn into a manager of conflicted papers
         if ($this->conf->setting("papermanager")) {
-            $result = $this->conf->qe("select paperId from Paper join PaperConflict using (paperId) where managerContactId!=0 and managerContactId!=? and PaperConflict.contactId=? and conflictType>" . CONFLICT_MAXUNCONFLICTED, $this->contactId, $this->contactId);
+            $result = $this->conf->qe("select paperId from Paper join PaperConflict using (paperId) where managerContactId!=0 and managerContactId!=? and PaperConflict.contactId=? and conflictType>" . CONFLICT_MAXUNCONFLICTED, $this->contactXid, $this->contactXid);
             while (($row = $result->fetch_row())) {
                 $u->hidden_papers[(int) $row[0]] = false;
             }
@@ -771,32 +775,40 @@ class Contact {
 
     /** @return ?Contact */
     function contactdb_user($refresh = false) {
-        if ($this->contactDbId && !$this->contactId) {
+        if ($this->contactDbId && $this->contactId <= 0) {
             return $this;
         } else {
-            if ($this->_contactdb_user === false || $refresh) {
-                $this->_contactdb_user = $this->conf->contactdb_user_by_email($this->email);
+            $u = $this->_contactdb_user;
+            if ($u === false || $refresh) {
+                $u = $this->_contactdb_user = $this->conf->contactdb_user_by_email($this->email);
+                if ($u && $this->contactId > 0) {
+                    $u->contactXid = $this->contactId;
+                }
             }
-            return $this->_contactdb_user;
+            return $u;
         }
     }
 
     /** @return ?Contact */
     function ensure_contactdb_user($refresh = false) {
         assert($this->has_email());
-        if ($this->contactDbId && !$this->contactId) {
+        if ($this->contactDbId && $this->contactId <= 0) {
             return $this;
         } else {
-            if ($this->_contactdb_user === false || $refresh) {
-                $this->_contactdb_user = $this->conf->contactdb_user_by_email($this->email);
+            $u = $this->_contactdb_user;
+            if ($u === false || $refresh) {
+                $u = $this->_contactdb_user = $this->conf->contactdb_user_by_email($this->email);
             }
-            if ($this->_contactdb_user === null
+            if ($u === null
                 && $this->conf->contactdb()
                 && $this->has_email()
                 && !self::is_anonymous_email($this->email)) {
-                $this->_contactdb_user = new Contact(["email" => $this->email, "cdb_confid" => -1]);
+                $u = $this->_contactdb_user = new Contact(["email" => $this->email, "cdb_confid" => -1]);
             }
-            return $this->_contactdb_user;
+            if ($u && $this->contactId > 0) {
+                $u->contactXid = $this->contactId;
+            }
+            return $u;
         }
     }
 
@@ -985,7 +997,7 @@ class Contact {
         $n = htmlspecialchars(Text::nameo($user, NAME_P));
         if ($pfx === "r"
             && isset($user->contactTags)
-            && ($this->can_view_user_tags() || $user->contactId == $this->contactId)) {
+            && ($this->can_view_user_tags() || $user->contactXid === $this->contactXid)) {
             $dt = $this->conf->tags();
             if (($viewable = $dt->censor(TagMap::CENSOR_VIEW, $user->contactTags, $this, null))) {
                 if (($colors = $dt->color_classes($viewable))) {
@@ -1223,7 +1235,7 @@ class Contact {
 
     function viewable_tags(Contact $viewer) {
         // see also Contact::calculate_name_for
-        if ($viewer->can_view_user_tags() || $viewer->contactId == $this->contactId) {
+        if ($viewer->can_view_user_tags() || $viewer->contactXid === $this->contactXid) {
             $tags = $this->all_contact_tags();
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, null);
         } else {
@@ -1300,7 +1312,7 @@ class Contact {
 
     /** @param object|array $data */
     function merge_and_save_data($data) {
-        $cdb = $this->contactDbId && !$this->contactId;
+        $cdb = $this->contactDbId && $this->contactId <= 0;
         $key = $cdb ? "contactDbId" : "contactId";
         $cid = $cdb ? $this->contactDbId : $this->contactId;
         $change = array_to_object_recursive($data);
@@ -2340,10 +2352,10 @@ class Contact {
     function is_discussion_lead() {
         $this->check_rights_version();
         if (!isset($this->_is_lead)) {
-            $this->_is_lead = $this->contactId > 0
+            $this->_is_lead = $this->contactXid > 0
                 && $this->isPC
                 && $this->conf->has_any_lead_or_shepherd()
-                && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactId);
+                && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactXid);
         }
         return $this->_is_lead;
     }
@@ -2352,11 +2364,11 @@ class Contact {
     function is_explicit_manager() {
         $this->check_rights_version();
         if (!isset($this->_is_explicit_manager)) {
-            $this->_is_explicit_manager = $this->contactId > 0
+            $this->_is_explicit_manager = $this->contactXid > 0
                 && $this->isPC
                 && ($this->conf->check_any_admin_tracks($this)
                     || ($this->conf->has_any_manager()
-                        && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactId) > 0));
+                        && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactXid) > 0));
         }
         return $this->_is_explicit_manager;
     }
@@ -2530,8 +2542,7 @@ class Contact {
         // check first whether administration is allowed
         if (!isset($ci->allow_administer)) {
             $ci->allow_administer = false;
-            if (($this->contactId > 0
-                 && $prow->managerContactId == $this->contactId)
+            if ($prow->managerContactId === $this->contactXid
                 || ($this->privChair
                     && (!$prow->managerContactId || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
                     && (!($this->dangerous_track_mask() & Track::BITS_VIEWADMIN)
@@ -2564,9 +2575,8 @@ class Contact {
             // check PC tracking
             // (see also can_accept_review_assignment*)
             $tracks = $this->conf->has_tracks();
-            $am_lead = $this->contactId > 0
-                && $this->isPC
-                && $prow->leadContactId === $this->contactId;
+            $am_lead = $this->isPC
+                && $prow->leadContactId === $this->contactXid;
             $isPC = $this->isPC
                 && (!$tracks
                     || $ci->reviewType >= REVIEW_PC
@@ -2718,7 +2728,8 @@ class Contact {
         }
     }
 
-    /** @return bool */
+    /** @param Contact $acct
+     * @return bool */
     function can_change_password($acct) {
         return ($this->privChair && !$this->conf->opt("chairHidePasswords"))
             || ($acct
@@ -2764,7 +2775,7 @@ class Contact {
         if ($rights->primary_administrator === null) {
             $rights->primary_administrator = $rights->allow_administer
                 && ($prow->managerContactId
-                    ? $prow->managerContactId == $this->contactId
+                    ? $prow->managerContactId === $this->contactXid
                     : !$this->privChair
                       || !$this->conf->check_paper_track_sensitivity($prow, Track::ADMIN));
         }
@@ -3302,8 +3313,7 @@ class Contact {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->can_administer
-                || ($this->contactId > 0
-                    && $prow->leadContactId === $this->contactId)
+                || $prow->leadContactId === $this->contactXid
                 || (($rights->allow_pc || $rights->allow_review)
                     && $this->can_view_review_identity($prow, null));
         } else {
@@ -3514,7 +3524,7 @@ class Contact {
     /** @return bool */
     function is_my_review(ReviewInfo $rrow = null) {
         return $rrow
-            && ($rrow->contactId == $this->contactId
+            && ($rrow->contactId === $this->contactXid
                 || ($this->_review_tokens
                     && $rrow->reviewToken !== 0
                     && in_array($rrow->reviewToken, $this->_review_tokens, true))
@@ -3527,7 +3537,7 @@ class Contact {
     function is_owned_review($rbase = null) {
         return $rbase
             && $rbase->contactId > 0
-            && ($rbase->contactId === $this->contactId
+            && ($rbase->contactId === $this->contactXid
                 || ($this->_review_tokens
                     && $rbase->reviewToken !== 0
                     && in_array($rbase->reviewToken, $this->_review_tokens, true))
@@ -3806,9 +3816,8 @@ class Contact {
         $rights = $this->rights($prow);
         return ($rights->allow_administer
                 || (($rights->reviewType >= REVIEW_PC
-                     || ($this->contactId > 0
-                         && $this->isPC
-                         && $prow->leadContactId === $this->contactId))
+                     || ($this->isPC
+                         && $prow->leadContactId === $this->contactXid))
                     && $this->conf->setting("extrev_chairreq", 0) >= 0))
             && (!$check_time
                 || $this->conf->time_review($round, false, true)
@@ -3824,9 +3833,8 @@ class Contact {
         $whyNot = $prow->make_whynot();
         if (!$rights->allow_administer
             && (($rights->reviewType < REVIEW_PC
-                 && ($this->contactId <= 0
-                     || !$this->isPC
-                     || $prow->leadContactId !== $this->contactId))
+                 && (!$this->isPC
+                     || $prow->leadContactId !== $this->contactXid))
                 || $this->conf->setting("extrev_chairreq", 0) < 0)) {
             $whyNot["permission"] = "request_review";
         } else {
@@ -4040,7 +4048,7 @@ class Contact {
             && $rrow->subject_to_approval()
             && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED
             && ($rights->can_administer
-                || ($this->isPC && $this->contactId === $rrow->requestedBy))
+                || ($this->isPC && $rrow->requestedBy === $this->contactXid))
             && ($this->conf->time_review(null, true, true) || $this->override_deadlines($rights));
     }
 
@@ -4146,7 +4154,7 @@ class Contact {
     /** @param ?CommentInfo $crow
      * @return bool */
     function is_my_comment(PaperInfo $prow, $crow) {
-        if ($this->contactId == $crow->contactId
+        if ($crow->contactId === $this->contactXid
             || (!$this->contactId
                 && $this->capability("@ra{$prow->paperId}") == $crow->contactId)) {
             return true;
@@ -4193,7 +4201,7 @@ class Contact {
     function can_finalize_comment(PaperInfo $prow, $crow) {
         return $crow
             && ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) === (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)
-            && ($rrd = get($prow->conf->resp_rounds(), $crow->commentRound))
+            && ($rrd = ($prow->conf->resp_rounds())[$crow->commentRound] ?? null)
             && $rrd->open > 0
             && $rrd->open < Conf::$now
             && $prow->conf->setting("resp_active") > 0;
@@ -4209,7 +4217,8 @@ class Contact {
         }
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
-        if ($crow && $crow->contactId != $this->contactId
+        if ($crow
+            && $crow->contactId !== $this->contactXid
             && !$rights->allow_administer) {
             $whyNot["differentReviewer"] = true;
         } else if (!$rights->allow_pc
@@ -4271,12 +4280,15 @@ class Contact {
             $whyNot["notSubmitted"] = true;
         } else {
             $whyNot["deadline"] = "resp_done";
-            if ($crow->commentRound)
+            if ($crow->commentRound) {
                 $whyNot["deadline"] .= "_" . $crow->commentRound;
-            if ($rights->allow_administer && $rights->conflictType > CONFLICT_MAXUNCONFLICTED)
+            }
+            if ($rights->allow_administer && $rights->conflictType > CONFLICT_MAXUNCONFLICTED) {
                 $whyNot["forceShow"] = true;
-            if ($rights->allow_administer)
+            }
+            if ($rights->allow_administer) {
                 $whyNot["override"] = true;
+            }
         }
         return $whyNot;
     }
@@ -4349,7 +4361,7 @@ class Contact {
         }
         $rights = $this->rights($prow);
         return $this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
-            || ($crow && $crow->contactId == $this->contactId)
+            || ($crow && $crow->contactId === $this->contactXid)
             || (($rights->allow_pc
                  || ($rights->allow_review
                      && $this->conf->setting("extrev_view") >= 2))

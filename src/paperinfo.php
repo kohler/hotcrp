@@ -71,10 +71,9 @@ class PaperContactInfo {
         $ci = new PaperContactInfo;
         $ci->paperId = $prow->paperId;
         $ci->contactId = $user->contactXid;
-        if ($user->contactId > 0
-            && $user->isPC
+        if ($user->isPC
             && isset($prow->leadContactId)
-            && $prow->leadContactId == $user->contactId
+            && $prow->leadContactId == $user->contactXid
             && !$prow->conf->setting("lead_noseerev")) {
             $ci->review_status = PaperContactInfo::RS_PROXIED;
         }
@@ -156,7 +155,7 @@ class PaperContactInfo {
         if ($cid > 0
             && !$rev_tokens
             && (!$Me || ($Me->contactId != $cid
-                         && ($Me->privChair || $Me->contactId == $prow->managerContactId)))
+                         && ($Me->privChair || $Me->contactXid === $prow->managerContactId)))
             && ($pcm = $conf->pc_members())
             && isset($pcm[$cid])) {
             foreach ($pcm as $u) {
@@ -613,7 +612,6 @@ class PaperInfo {
 
     /** @return PaperInfo */
     static function make_new(Contact $user) {
-        assert($user->contactId === $user->contactXid);
         $prow = new PaperInfo(null, null, $user->conf);
         $prow->abstract = $prow->title = $prow->collaborators =
             $prow->authorInformation = $prow->paperTags = $prow->optionIds =
@@ -624,7 +622,7 @@ class PaperInfo {
         $prow->check_rights_version();
         $ci = PaperContactInfo::make_empty($prow, $user);
         $ci->conflictType = CONFLICT_CONTACTAUTHOR;
-        $prow->_contact_info[$ci->contactId] = $ci;
+        $prow->_contact_info[$user->contactXid] = $ci;
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
         return $prow;
     }
@@ -1006,7 +1004,7 @@ class PaperInfo {
 
     /** @return list<Contact> */
     function administrators() {
-        if ($this->managerContactId) {
+        if ($this->managerContactId > 0) {
             $u = $this->conf->cached_user_by_id($this->managerContactId);
             return $u ? [$u] : [];
         }

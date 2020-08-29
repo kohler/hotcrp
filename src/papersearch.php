@@ -936,11 +936,7 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = "Paper.timeWithdrawn<=0";
             break;
         case "lead":
-            if ($sqi->srch->cid > 0) {
-                $ff[] = "Paper.leadContactId=" . $sqi->srch->cid;
-            } else {
-                $ff[] = "false";
-            }
+            $ff[] = "Paper.leadContactId=" . $sqi->srch->cxid;
             break;
         case "alladmin":
             if ($sqi->user->privChair) {
@@ -949,15 +945,13 @@ class Limit_SearchTerm extends SearchTerm {
             /* FALLTHRU */
         case "admin":
             if ($sqi->user->is_track_manager()) {
-                $ff[] = "(Paper.managerContactId=" . $sqi->srch->cid . " or Paper.managerContactId=0)";
-            } else if ($sqi->srch->cid > 0) {
-                $ff[] = "Paper.managerContactId=" . $sqi->srch->cid;
+                $ff[] = "(Paper.managerContactId=" . $sqi->srch->cxid . " or Paper.managerContactId=0)";
             } else {
-                $ff[] = "false";
+                $ff[] = "Paper.managerContactId=" . $sqi->srch->cxid;
             }
             break;
         case "req":
-            $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=" . $sqi->srch->cid . ")";
+            $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=" . $sqi->srch->cxid . ")";
             break;
         default:
             $ff[] = "false";
@@ -1006,7 +1000,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "unsub":
             return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
         case "lead":
-            return $srch->cid > 0 && $row->leadContactId === $srch->cid;
+            return $row->leadContactId === $srch->cxid;
         case "admin":
             return $srch->user->is_primary_administrator($row);
         case "alladmin":
@@ -1014,7 +1008,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "req":
             foreach ($row->reviews_by_id() as $rrow) {
                 if ($rrow->reviewType == REVIEW_EXTERNAL
-                    && $rrow->requestedBy == $srch->cid)
+                    && $rrow->requestedBy == $srch->cxid)
                     return true;
             }
             return false;
@@ -1244,9 +1238,9 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     function promote(PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher(">0");
         if (in_array($srch->limit(), ["r", "rout", "reviewable"], true)) {
-            $rsm->add_contact($srch->cid);
+            $rsm->add_contact($srch->cxid);
         } else if ($srch->limit() === "req") {
-            $rsm->apply_requester($srch->cid);
+            $rsm->apply_requester($srch->cxid);
             $rsm->apply_review_type("external"); // XXX optional PC reviews?
         }
         $this->promote_matcher($rsm);
@@ -1635,8 +1629,12 @@ class PaperSearch {
      * @readonly */
     public $user;
     /** @var int
-     * @readonly */
+     * @readonly
+     * @deprecated */
     public $cid;
+    /** @var int
+     * @readonly */
+    public $cxid;
 
     /** @var Contact|null|false */
     private $_reviewer_user = false;
@@ -1714,7 +1712,9 @@ class PaperSearch {
         // contact facts
         $this->conf = $user->conf;
         $this->user = $user;
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
         $this->cid = $user->contactId;
+        $this->cxid = $user->contactXid;
 
         // query fields
         // NB: If a complex query field, e.g., "re", "tag", or "option", is
@@ -1747,6 +1747,7 @@ class PaperSearch {
                 $reviewer = null;
             }
             if ($reviewer) {
+                assert($reviewer->contactId > 0);
                 $this->_reviewer_user = $reviewer;
             }
         }
@@ -2955,7 +2956,7 @@ class PaperSearch {
     function listid($sort = null) {
         $rest = [];
         if ($this->_reviewer_user
-            && $this->_reviewer_user->contactId !== $this->cid) {
+            && $this->_reviewer_user->contactXid !== $this->cxid) {
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
         }
         if ($sort !== null && $sort !== "") {

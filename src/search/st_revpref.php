@@ -68,7 +68,7 @@ class Revpref_SearchTerm extends SearchTerm {
             $contacts = array_keys($srch->conf->pc_members());
         } else {
             $safe_contacts = 1;
-            $contacts = [$srch->cid];
+            $contacts = [$srch->cxid];
         }
 
         $count = "";
@@ -87,7 +87,7 @@ class Revpref_SearchTerm extends SearchTerm {
 
         if ($count === "") {
             if ($safe_contacts === 0) {
-                $contacts = [$srch->cid];
+                $contacts = [$srch->cxid];
                 $safe_contacts = 1;
             }
             $count = ">0";
@@ -135,7 +135,7 @@ class Revpref_SearchTerm extends SearchTerm {
         $can_view = $srch->user->can_view_preference($row, $this->rpsm->safe_contacts);
         $n = 0;
         foreach ($this->rpsm->contact_set() as $cid) {
-            if (($cid == $srch->cid || $can_view)
+            if (($cid == $srch->cxid || $can_view)
                 && $this->rpsm->test_preference($row->preference($cid)))
                 ++$n;
         }

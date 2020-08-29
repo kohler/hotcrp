@@ -505,7 +505,7 @@ class ContactList {
         if (isset($this->qopt["leads"])) {
             $this->_lead_data = [];
             foreach ($prows as $prow) {
-                if ($prow->leadContactId
+                if ($prow->leadContactId > 0
                     && $this->user->can_view_lead($prow)) {
                     $c = $prow->leadContactId;
                     $this->_lead_data[$c] = ($this->_lead_data[$c] ?? 0) + 1;
@@ -516,7 +516,7 @@ class ContactList {
         if (isset($this->qopt["shepherds"])) {
             $this->_shepherd_data = [];
             foreach ($prows as $prow) {
-                if ($prow->shepherdContactId
+                if ($prow->shepherdContactId > 0
                     && $this->user->can_view_shepherd($prow)) {
                     $c = $prow->shepherdContactId;
                     $this->_shepherd_data[$c] = ($this->_shepherd_data[$c] ?? 0) + 1;

@@ -625,7 +625,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ?? $pl->reviewer_user();
-        $this->not_me = $this->contact->contactId !== $pl->user->contactId;
+        $this->not_me = $this->contact->contactXid !== $pl->user->contactXid;
         return true;
     }
     const F_CONFLICT = 1;
@@ -647,13 +647,11 @@ class ReviewerType_PaperColumn extends PaperColumn {
             && (!$this->not_me || $pl->user->can_view_conflicts($row))) {
             $flags |= self::F_CONFLICT;
         }
-        if ($row->leadContactId === $this->contact->contactId
-            && $row->leadContactId > 0
+        if ($row->leadContactId === $this->contact->contactXid
             && (!$this->not_me || $pl->user->can_view_lead($row))) {
             $flags |= self::F_LEAD;
         }
-        if ($row->shepherdContactId === $this->contact->contactId
-            && $row->shepherdContactId > 0
+        if ($row->shepherdContactId === $this->contact->contactXid
             && (!$this->not_me || $pl->user->can_view_shepherd($row))) {
             $flags |= self::F_SHEPHERD;
         }

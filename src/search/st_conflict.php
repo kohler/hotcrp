@@ -43,7 +43,7 @@ class Conflict_SearchTerm extends SearchTerm {
         $can_view = $srch->user->can_view_conflicts($row);
         $n = 0;
         foreach ($this->csm->contact_set() as $cid) {
-            if (($cid == $srch->cid || $can_view)
+            if (($cid == $srch->cxid || $can_view)
                 && $row->has_conflict($cid))
                 ++$n;
         }

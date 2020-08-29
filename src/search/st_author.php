@@ -52,7 +52,7 @@ class Author_SearchTerm extends SearchTerm {
         $can_view = $srch->user->allow_view_authors($row);
         if ($this->csm->has_contacts()) {
             foreach ($this->csm->contact_set() as $cid) {
-                if (($cid === $srch->cid || $can_view)
+                if (($cid === $srch->cxid || $can_view)
                     && $row->has_author($cid))
                     ++$n;
             }
