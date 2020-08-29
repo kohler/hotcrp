@@ -13,7 +13,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     const APPROVED = 128;
     const SUBMITTED = 256;
 
+    /** @var int */
     private $review_type = 0;
+    /** @var int */
     private $completeness = 0;
     public $view_score;
     public $round;
@@ -27,6 +29,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     private $rfield_scoret;
     private $rfield_scorex;
     private $rfield_text;
+    /** @var ?int */
     private $requester;
     private $ratings;
     private $frozen = false;
@@ -132,6 +135,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $this->round = $rounds;
         }
     }
+    /** @param int $cid */
     function apply_requester($cid) {
         $this->requester = $cid;
     }
@@ -236,7 +240,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if ($this->ratings && $this->ratings->must_exist()) {
             $where[] = "exists (select * from ReviewRating where paperId={$table_name}.paperId and reviewId={$table_name}.reviewId)";
         }
-        if ($this->requester) {
+        if ($this->requester !== null) {
             $where[] = "requestedBy=" . $this->requester;
         }
         if ($this->completeness & self::MYREQUEST) {
@@ -314,7 +318,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             return false;
         }
         if ($this->requester !== null
-            && ($rrow->requestedBy != $this->requester
+            && ($rrow->requestedBy !== $this->requester
                 || !$user->can_view_review_requester($prow, $rrow))) {
             return false;
         }

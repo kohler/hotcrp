@@ -98,10 +98,12 @@ class Revpref_SearchTerm extends SearchTerm {
             $value->is_any = true;
         } else if (preg_match(',\A\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
                    && ($m[2] !== "" || $m[3] !== "")) {
-            if ($m[2] !== "")
+            if ($m[2] !== "") {
                 $value->preference_match = new CountMatcher($m[1] . $m[2]);
-            if ($m[3] !== "")
+            }
+            if ($m[3] !== "") {
                 $value->expertise_match = new CountMatcher(($m[2] === "" ? $m[1] : "") . (121 - ord(strtolower($m[3]))));
+            }
         } else {
             return new False_SearchTerm;
         }
