@@ -111,7 +111,7 @@ if (isset($Qreq->p) && is_array($Qreq->p)
     $Qreq->q = join(" ", $papersel);
     $Qreq->plimit = 1;
 } else if (isset($Qreq->plimit)) {
-    $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q));
+    $search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q]);
     $papersel = $search->paper_ids();
     sort($papersel);
 } else {

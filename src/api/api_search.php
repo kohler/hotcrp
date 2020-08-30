@@ -8,9 +8,13 @@ class Search_API {
         if (empty($topt) || ($qreq->t && !isset($topt[$qreq->t]))) {
             return new JsonResult(403, "Permission error.");
         }
-        $t = $qreq->t ? : key($topt);
 
+        $t = $qreq->t ?? key($topt);
         $q = $qreq->q;
+        if ($qreq->urlbase) {
+            error_log("{$user->conf->dbname}: api/search with urlbase"); // XXX
+        }
+
         if (isset($q)) {
             $q = trim($q);
             if ($q === "(All)")
@@ -21,13 +25,17 @@ class Search_API {
             return new JsonResult(400, "Missing parameter.");
         }
 
-        $search = new PaperSearch($user, ["t" => $t, "q" => $q, "qt" => $qreq->qt, "urlbase" => $qreq->urlbase, "reviewer" => $qreq->reviewer]);
+        $search = new PaperSearch($user, ["t" => $t, "q" => $q, "qt" => $qreq->qt, "reviewer" => $qreq->reviewer]);
         $pl = new PaperList($qreq->report ? : "pl", $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
         $pl->apply_view_session();
         $ih = $pl->ids_and_groups();
-        return ["ok" => true, "ids" => $ih[0], "groups" => $ih[1],
-                "hotlist" => $pl->session_list_object()->info_string()];
+        return [
+            "ok" => true,
+            "ids" => $ih[0],
+            "groups" => $ih[1],
+            "hotlist" => $pl->session_list_object()->info_string()
+        ];
     }
 
     static function fieldhtml(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {

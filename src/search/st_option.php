@@ -38,7 +38,7 @@ class Option_SearchTerm extends SearchTerm {
         foreach ($os as $o) {
             $sts[] = new OptionPresent_SearchTerm($o, count($os) > 1);
         }
-        return count($sts) === 1 ? $sts[0] : SearchTerm::make_op("or", $sts);
+        return SearchTerm::combine("or", $sts);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         // option name and option content
@@ -97,6 +97,6 @@ class Option_SearchTerm extends SearchTerm {
                 $srch->warn("Submission field " . htmlspecialchars($o->search_keyword()) . " (" . $o->title_html() . ") does not understand search “" . htmlspecialchars($ocontent) . "”.");
             }
         }
-        return SearchTerm::make_op("or", $ts);
+        return SearchTerm::combine("or", $ts);
     }
 }

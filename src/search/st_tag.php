@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Tag_SearchTerm extends SearchTerm {
+    /** @var TagSearchMatcher */
     private $tsm;
     private $tag1;
     private $tag1nz;
@@ -121,5 +122,8 @@ class Tag_SearchTerm extends SearchTerm {
             }
         }
         return null;
+    }
+    function debug_json() {
+        return ["type" => $this->type, "tag_regex" => $this->tsm->regex()];
     }
 }

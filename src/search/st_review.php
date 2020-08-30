@@ -585,4 +585,7 @@ class Review_SearchTerm extends SearchTerm {
             return $this->rsm->test_finish($n);
         }
     }
+    function debug_json() {
+        return ["type" => $this->type, "count" => $this->rsm->countexpr()];
+    }
 }

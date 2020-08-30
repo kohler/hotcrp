@@ -270,10 +270,7 @@ if ($reviewer) {
         '">Search for current and potential conflicts</a></div>';
 
     // main assignment form
-    $search = new PaperSearch($Me, [
-        "t" => $Qreq->t, "q" => $Qreq->q, "reviewer" => $reviewer,
-        "pageurl" => $Conf->hoturl_site_relative_raw("manualassign")
-    ]);
+    $search = (new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q, "reviewer" => $reviewer]))->set_urlbase("manualassign");
     if (!empty($hlsearch)) {
         $search->set_field_highlighter_query(join(" OR ", $hlsearch));
     }

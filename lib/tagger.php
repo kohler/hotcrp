@@ -13,30 +13,49 @@ class TagInfo {
     public $conf;
     /** @var false|string */
     public $pattern = false;
+    /** @var bool */
     public $pattern_instance = false;
+    /** @var int */
     public $pattern_version = 0;
+    /** @var bool */
     public $is_private = false;
+    /** @var bool */
     public $chair = false;
+    /** @var bool */
     public $readonly = false;
+    /** @var bool */
     public $hidden = false;
+    /** @var bool */
     public $track = false;
+    /** @var bool */
     public $votish = false;
+    /** @var bool */
     public $approval = false;
+    /** @var false|float */
     public $allotment = false;
+    /** @var bool */
     public $sitewide = false;
+    /** @var bool */
     public $rank = false;
+    /** @var bool */
     public $public_peruser = false;
+    /** @var bool */
     public $automatic = false;
+    /** @var bool */
     public $order_anno = false;
     /** @var ?list<TagAnno> */
     private $_order_anno_list;
     /** @var int */
     private $_order_anno_search = 0;
+    /** @var ?list<string> */
     public $colors;
+    /** @var bool */
     public $basic_color = false;
     public $badges;
     public $emoji;
+    /** @var ?string */
     public $autosearch;
+    /** @var ?string */
     public $autosearch_value;
     /** @param string $tag */
     function __construct($tag, TagMap $tagmap) {
@@ -65,7 +84,7 @@ class TagInfo {
         }
         foreach (["colors", "badges", "emoji"] as $property) {
             if ($t->$property)
-                $this->$property = array_unique(array_merge($this->$property ? : [], $t->$property));
+                $this->$property = array_unique(array_merge($this->$property ?? [], $t->$property));
         }
     }
     function tag_regex() {
@@ -331,7 +350,7 @@ class TagMap implements IteratorAggregate {
     }
 
     /** @param string $ltag
-     * @return bool */
+     * @return string|false */
     function check_emoji_code($ltag) {
         $len = strlen($ltag);
         if ($len >= 3 && $ltag[0] === ":" && $ltag[$len - 1] === ":") {
@@ -683,8 +702,9 @@ class TagMap implements IteratorAggregate {
     function badge_regex() {
         if (!$this->badge_re) {
             $re = "{(?:\\A| )(?:\\d*~|)(";
-            foreach ($this->filter("badges") as $t)
+            foreach ($this->filter("badges") as $t) {
                 $re .= $t->tag_regex() . "|";
+            }
             $this->badge_re = substr($re, 0, -1) . ")(?:#[-\\d.]+)?(?=\\z| )}i";
         }
         return $this->badge_re;
@@ -881,7 +901,7 @@ class TagMap implements IteratorAggregate {
         $vt = $conf->setting_data("tag_vote") ?? "";
         foreach (Tagger::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
-            $t->allotment = ($ti[1] ? : 1);
+            $t->allotment = ($ti[1] ? : 1.0);
             $map->has_allotment = true;
             $t->votish = $map->has_votish = true;
             $t->automatic = $map->has_automatic = true;
@@ -1267,7 +1287,7 @@ class Tagger {
         if ($dt->has_badges
             && preg_match_all($dt->badge_regex(), $tags, $m, PREG_SET_ORDER)) {
             foreach ($m as $mx) {
-                if (($t = $dt->check($mx[1])) && $t->badges) {
+                if (($t = $dt->check($mx[1])) && $t->badges !== null) {
                     $klass = ' class="badge ' . $t->badges[0] . 'badge"';
                     $tag = $this->unparse(trim($mx[0]));
                     if ($type === self::DECOR_PAPER && ($link = $this->link($tag))) {

@@ -119,7 +119,7 @@ if (isset($Qreq->saveassignment)) {
         $SSel = SearchSelection::make($Qreq, $Me);
     }
     if ($SSel->is_empty()) {
-        $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q));
+        $search = new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q]);
         $SSel = new SearchSelection($search->paper_ids());
     }
 }
@@ -540,10 +540,7 @@ else
     echo join("", $tOpt);
 echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);
 if (isset($Qreq->requery) || isset($Qreq->haspap)) {
-    $search = new PaperSearch($Me, [
-        "t" => $Qreq->t, "q" => $Qreq->q,
-        "pageurl" => $Conf->hoturl_site_relative_raw("autoassign")
-    ]);
+    $search = (new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q]))->set_urlbase("autoassign");
     $plist = new PaperList("reviewersSel", $search);
     $plist->set_selection($SSel);
 

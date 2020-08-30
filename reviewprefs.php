@@ -243,10 +243,7 @@ $Conf->infoMsg($Conf->_i("revprefdescription", null, $Conf->has_topics()));
 
 
 // search
-$search = new PaperSearch($Me, [
-    "t" => $Qreq->t, "q" => $Qreq->q, "reviewer" => $reviewer,
-    "pageurl" => $Conf->hoturl_site_relative_raw("reviewprefs")
-]);
+$search = (new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q, "reviewer" => $reviewer]))->set_urlbase("reviewprefs");
 $pl = new PaperList("pf", $search, ["sort" => true], $Qreq);
 $pl->apply_view_report_default();
 $pl->apply_view_session();

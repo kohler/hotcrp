@@ -132,16 +132,20 @@ class SearchTerm {
     function __construct($type) {
         $this->type = $type;
     }
-    /** @return SearchTerm */
-    static function make_op($op, $terms) {
-        $opstr = is_object($op) ? $op->op : $op;
-        if ($opstr === "not") {
+    /** @param string|SearchOperator $op
+     * @param list<SearchTerm> $terms
+     * @return SearchTerm */
+    static function combine($op, $terms) {
+        $name = is_string($op) ? $op : $op->op;
+        if ($name === "not") {
             $qr = new Not_SearchTerm;
-        } else if ($opstr === "and" || $opstr === "space") {
-            $qr = new And_SearchTerm($opstr);
-        } else if ($opstr === "or") {
+        } else if (count($terms) === 1) {
+            return $terms[0];
+        } else if ($name === "and" || $name === "space") {
+            $qr = new And_SearchTerm($name);
+        } else if ($name === "or") {
             $qr = new Or_SearchTerm;
-        } else if ($opstr === "xor") {
+        } else if ($name === "xor") {
             $qr = new Xor_SearchTerm;
         } else {
             $qr = new Then_SearchTerm($op);
@@ -407,11 +411,11 @@ class Op_SearchTerm extends SearchTerm {
         }
     }
     function debug_json() {
-        $a = [$this->type];
+        $a = [];
         foreach ($this->child as $qv) {
             $a[] = $qv->debug_json();
         }
-        return $a;
+        return ["type" => $this->type, "child" => $a];
     }
     function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
         foreach ($this->child as &$qv) {
@@ -489,6 +493,7 @@ class Not_SearchTerm extends Op_SearchTerm {
 }
 
 class And_SearchTerm extends Op_SearchTerm {
+    /** @param string $type */
     function __construct($type) {
         parent::__construct($type);
     }
@@ -1638,10 +1643,16 @@ class PaperSearch {
 
     /** @var Contact|null|false */
     private $_reviewer_user = false;
+    /** @var string */
     private $_named_limit;
     /** @var SearchTerm */
     private $_limit_qe;
+
+    /** @var ?string */
     private $_urlbase;
+    /** @var bool */
+    private $_allow_deleted = false;
+
     public $warnings = array();
     private $_quiet_count = 0;
 
@@ -1653,6 +1664,7 @@ class PaperSearch {
     private $_qt_fields;
     /** @var ?SearchTerm */
     private $_qe;
+    /** @var ?ReviewInfo */
     public $test_review;
 
     public $regex = [];
@@ -1666,7 +1678,6 @@ class PaperSearch {
     public $_query_options = [];
     public $_has_review_adjustment = false;
     private $_ssRecursion = [];
-    private $_allow_deleted = false;
     /** @var ?array<int,int> */
     public $thenmap;
     /** @var ?array<int,TagAnno> */
@@ -1777,31 +1788,37 @@ class PaperSearch {
         } else {
             $limit = "ar";
         }
-
-        // URL base
-        $this->_urlbase = $options["pageurl"] ?? null;
-        if ($this->_urlbase === null) {
-            $this->_urlbase = $this->conf->hoturl_site_relative_raw("search");
-        }
-        $this->_urlbase = hoturl_add_raw($this->_urlbase, "t=" . urlencode($limit));
-        if ($this->_qt !== "n") {
-            $this->_urlbase = hoturl_add_raw($this->_urlbase, "qt=" . urlencode($this->_qt));
-        }
-        if ($this->_reviewer_user
-            && $this->_reviewer_user->contactId !== $user->contactId) {
-            assert(strpos($this->_urlbase, "reviewer=") === false);
-            $this->_urlbase = hoturl_add_raw($this->_urlbase, "reviewer=" . urlencode($this->_reviewer_user->email));
-        }
-        assert(strpos($this->_urlbase, "&amp;") === false);
-
         $this->_named_limit = $limit;
         $lword = new SearchWord($limit);
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
     }
 
+    /** @param bool $x
+     * @return $this */
     function set_allow_deleted($x) {
         assert($this->_qe === null);
         $this->_allow_deleted = $x;
+        return $this;
+    }
+
+    /** @param string $base
+     * @param array $args
+     * @return $this */
+    function set_urlbase($base, $args = []) {
+        assert($this->_urlbase === null);
+        if (!isset($args["t"])) {
+            $args["t"] = $this->_named_limit;
+        }
+        if (!isset($args["qt"]) && $this->_qt !== "n") {
+            $args["qt"] = $this->_qt;
+        }
+        if (!isset($args["reviewer"])
+            && $this->_reviewer_user
+            && $this->_reviewer_user->contactId !== $this->cxid) {
+            $args["reviewer"] = $this->_reviewer_user->email;
+        }
+        $this->_urlbase = $this->conf->hoturl_site_relative_raw($base, $args);
+        return $this;
     }
 
     /** @return string */
@@ -1835,6 +1852,14 @@ class PaperSearch {
         if (!$this->_quiet_count) {
             $this->warnings[] = $text;
         }
+    }
+
+    /** @return string */
+    function urlbase() {
+        if ($this->_urlbase === null) {
+            $this->set_urlbase("search");
+        }
+        return $this->_urlbase;
     }
 
 
@@ -1980,10 +2005,7 @@ class PaperSearch {
                 $qe = null;
             }
             if ($qe && $sword->keyword === "no") {
-                if (is_array($qe)) {
-                    $qe = SearchTerm::make_op("or", $qe);
-                }
-                $qe = $qe->negate();
+                $qe = SearchTerm::combine("or", $qe)->negate();
             }
             if ($qe) {
                 return $qe;
@@ -2122,7 +2144,7 @@ class PaperSearch {
                 $this->_search_keyword($qt, $sword, $kw, false);
             }
         }
-        return SearchTerm::make_op("or", $qt);
+        return SearchTerm::combine("or", $qt);
     }
 
     static function escape_word($str) {
@@ -2181,9 +2203,9 @@ class PaperSearch {
         $x = array_pop($stack);
         if ($curqe) {
             if ($x->leftqe) {
-                $curqe = SearchTerm::make_op($x->op, [$x->leftqe, $curqe]);
+                $curqe = SearchTerm::combine($x->op, [$x->leftqe, $curqe]);
             } else if ($x->op->op !== "+" && $x->op->op !== "(") {
-                $curqe = SearchTerm::make_op($x->op, [$curqe]);
+                $curqe = SearchTerm::combine($x->op, [$curqe]);
             }
             $curqe->apply_strspan($x->strspan);
             return $curqe;
@@ -2913,11 +2935,9 @@ class PaperSearch {
 
     /** @return string */
     function url_site_relative_raw($q = null) {
-        $url = $this->_urlbase;
-        if ($q === null) {
-            $q = $this->q;
-        }
-        if ($q !== "" || substr($this->_urlbase, 0, 6) === "search") {
+        $url = $this->urlbase();
+        $q = $q ?? $this->q;
+        if ($q !== "" || substr($url, 0, 6) === "search") {
             $url .= (strpos($url, "?") === false ? "?" : "&")
                 . "q=" . urlencode($q);
         }
@@ -2994,7 +3014,7 @@ class PaperSearch {
     function create_session_list_object($ids, $listname, $sort = null) {
         $sort = $sort !== null ? $sort : $this->_default_sort;
         $l = new SessionList($this->listid($sort), $ids,
-                             $this->description($listname), $this->_urlbase);
+                             $this->description($listname), $this->urlbase());
         if ($this->field_highlighters()) {
             $l->highlight = $this->_match_preg_query ? : true;
         }

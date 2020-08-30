@@ -5,12 +5,27 @@
 class TagSearchMatcher {
     /** @var Contact */
     public $user;
+    /** @var ?string */
     private $_re;
+    /** @var bool */
     private $_include_twiddles = false;
+    /** @var bool */
     private $_avoid_regex = false;
+    /** Defines the class of match.
+     *
+     * * -2: Matches if no visible tags (is_empty()).
+     * * -1: Matches if any visible tags.
+     * * 0: Matches tags given by patterns (might include `*` or regex).
+     * * 1: Matches two or more literal tags.
+     * * 2: Matches exactly one literal tag.
+     *
+     * @var -2|-1|0|1|2 */
     private $_mtype = 0;
+    /** @var list<string> */
     private $_tagpat = [];
+    /** @var list<string> */
     private $_tagregex = [];
+    /** @var list<CountMatcher> */
     private $_valm = [];
     private $_errors;
 
@@ -28,13 +43,15 @@ class TagSearchMatcher {
         return $this->_errors ?? [];
     }
 
-    function add_check_tag($tag, $allow_multiple) {
+    /** @param string $tag
+     * @param bool $allow_star_any */
+    function add_check_tag($tag, $allow_star_any) {
         $xtag = $tag;
         $twiddle = strpos($xtag, "~");
 
         $checktag = substr($xtag, (int) $twiddle);
         $tagger = new Tagger($this->user);
-        if (!$tagger->check($checktag, Tagger::NOVALUE | ($allow_multiple ? Tagger::ALLOWRESERVED | Tagger::ALLOWSTAR : 0))) {
+        if (!$tagger->check($checktag, Tagger::NOVALUE | ($allow_star_any ? Tagger::ALLOWRESERVED | Tagger::ALLOWSTAR : 0))) {
             $this->_errors[] = $tagger->error_html;
             return false;
         }
@@ -61,7 +78,7 @@ class TagSearchMatcher {
                 $this->_errors[] = "You can’t search other users’ twiddle tags.";
                 return false;
             }
-            if (count($xcids) > 1 && !$allow_multiple) {
+            if (count($xcids) > 1 && !$allow_star_any) {
                 $this->_errors[] = "Wildcard searches like #" . htmlspecialchars($tag) . " aren’t allowed here.";
                 return false;
             }
@@ -80,6 +97,7 @@ class TagSearchMatcher {
         return true;
     }
 
+    /** @param string $tag */
     function add_tag($tag) {
         if ($tag === "any" || $tag === "none") {
             $this->_mtype = $tag === "any" ? -1 : -2;
@@ -92,15 +110,17 @@ class TagSearchMatcher {
                     $this->_tagpat[] = "~~" . $tag;
                 }
             }
-            if (count($this->_tagpat) === 1) {
-                $this->_mtype = strpos($tag, "*") === false ? 2 : 0;
-            } else if ($this->_mtype === 2) {
-                $this->_mtype = 1;
+            if (empty($this->_tagregex)
+                && strpos($tag, "*") === false) {
+                $this->_mtype = count($this->_tagpat) === 1 ? 2 : 1;
+            } else {
+                $this->_mtype = min($this->_mtype, 0);
             }
         }
         $this->_re = null;
     }
 
+    /** @param string $regex */
     function add_tag_regex($regex) {
         assert($regex[0] === " " && $regex[strlen($regex) - 1] === "#");
         if ($this->_mtype >= 0)  {
@@ -115,14 +135,17 @@ class TagSearchMatcher {
     }
 
 
+    /** @return string|false */
     function single_tag() {
         return $this->_mtype === 2 ? $this->_tagpat[0] : false;
     }
 
+    /** @return list<string> */
     function tag_patterns() {
         return empty($this->_tagregex) ? $this->_tagpat : [];
     }
 
+    /** @return string */
     function regex() {
         if ($this->_re === null) {
             $res = $this->_tagregex;

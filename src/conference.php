@@ -1263,6 +1263,7 @@ class Conf {
             return false;
         }
     }
+    /** @return array<string,string> */
     function emoji_code_map() {
         if ($this->_emoji_codes === null) {
             $this->_emoji_codes = json_decode(file_get_contents(SiteLoader::find("scripts/emojicodes.json")));
