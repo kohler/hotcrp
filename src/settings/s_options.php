@@ -5,22 +5,17 @@
 class Options_SettingRenderer {
     private $option_classes = [];
     /** @var ?array<int,int> */
-    private $have_options = null;
-    static private function find_option_req(SettingValues $sv, PaperOption $o, $xpos) {
-        if ($o->id) {
-            for ($i = 1; $sv->has_reqv("optid_$i"); ++$i)
-                if ($sv->reqv("optid_$i") == $o->id)
-                    return $i;
-        }
-        return $xpos;
-    }
+    private $reqv_id_to_pos;
+    /** @var ?array<int,int> */
+    private $have_options;
     function add_option_class($class) {
         $this->option_classes[] = $class;
     }
     static function render_type_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $optvt = $o->type;
-        if ($optvt === "text" && $o->display_space > 3)
+        if ($optvt === "text" && $o->display_space > 3) {
             $optvt .= ":ds_" . $o->display_space;
+        }
 
         $self->add_option_class("fold4" . ($o instanceof SelectorPaperOption ? "o" : "c"));
 
@@ -108,10 +103,10 @@ class Options_SettingRenderer {
             . $sv->render_feedback_at("optdt_$xpos")
             . "</div></div>";
     }
-    private function render_option(SettingValues $sv, PaperOption $o = null, $xpos) {
+    private function render_option(SettingValues $sv, PaperOption $o = null, $ipos, $xpos) {
         if (!$o) {
             $o = PaperOption::make((object) [
-                    "id" => 0,
+                    "id" => -999,
                     "name" => "Field name",
                     "description" => "",
                     "type" => "checkbox",
@@ -121,28 +116,26 @@ class Options_SettingRenderer {
                 ], $sv->conf);
         }
 
-        if ($sv->use_req()) {
-            $oxpos = self::find_option_req($sv, $o, $xpos);
-            if ($sv->has_reqv("optn_$oxpos")) {
-                $id = cvtint($sv->reqv("optid_$oxpos"));
-                $args = [
-                    "id" => $id <= 0 ? 0 : $id,
-                    "name" => $sv->reqv("optn_$oxpos"),
-                    "description" => $sv->reqv("optd_$oxpos"),
-                    "type" => $sv->reqv("optvt_$oxpos", "checkbox"),
-                    "visibility" => $sv->reqv("optp_$oxpos", ""),
-                    "position" => $sv->reqv("optfp_$oxpos", 1),
-                    "display" => $sv->reqv("optdt_$oxpos"),
-                    "required" => $sv->reqv("optreq_$oxpos")
-                ];
-                if ($sv->reqv("optec_$oxpos") === "final")
-                    $args["final"] = true;
-                else if ($sv->reqv("optec_$oxpos") === "search")
-                    $args["exists_if"] = $sv->reqv("optecs_$oxpos");
-                $o = PaperOption::make((object) $args, $sv->conf);
-                if ($o instanceof SelectorPaperOption) {
-                    $o->set_selector_options(explode("\n", rtrim($sv->reqv("optv_$oxpos", ""))));
-                }
+        if ($ipos !== null) {
+            $args = [
+                "id" => $o->id,
+                "name" => $sv->reqv("optn_$ipos"),
+                "description" => $sv->reqv("optd_$ipos"),
+                "type" => $sv->reqv("optvt_$ipos") ?? "checkbox",
+                "visibility" => $sv->reqv("optp_$ipos", ""),
+                "position" => $sv->reqv("optfp_$ipos") ?? 1,
+                "display" => $sv->reqv("optdt_$ipos"),
+                "required" => $sv->reqv("optreq_$ipos"),
+                "json_key" => $o->id > 0 ? null : "__fake__"
+            ];
+            if ($sv->reqv("optec_$ipos") === "final") {
+                $args["final"] = true;
+            } else if ($sv->reqv("optec_$ipos") === "search") {
+                $args["exists_if"] = $sv->reqv("optecs_$ipos");
+            }
+            $o = PaperOption::make((object) $args, $sv->conf);
+            if ($o instanceof SelectorPaperOption) {
+                $o->set_selector_options(explode("\n", rtrim($sv->reqv("optv_$ipos", ""))));
             }
         }
 
@@ -162,7 +155,7 @@ class Options_SettingRenderer {
         echo '<div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "style" => "font-weight:bold", "class" => "need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
             $sv->render_feedback_at("optn_$xpos"),
-            Ht::hidden("optid_$xpos", $o->id ? : "new", ["class" => "settings-opt-id"]),
+            Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-opt-id"]),
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div>';
 
@@ -196,21 +189,38 @@ class Options_SettingRenderer {
     }
 
     static function render(SettingValues $sv) {
+        $self = new Options_SettingRenderer;
         echo "<h3 class=\"form-h\">Submission fields</h3>\n";
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_options", 1), "\n\n";
 
+        $self->reqv_id_to_pos = [];
+        if ($sv->use_req()) {
+            for ($pos = 1; $sv->has_reqv("optid_$pos"); ++$pos) {
+                $id = (int) $sv->reqv("optid_$pos");
+                if ($id > 0 && !isset($self->reqv_id_to_pos[$id])) {
+                    $self->reqv_id_to_pos[$id] = $pos;
+                }
+            }
+        }
+
         echo '<div id="settings_opts" class="c">';
-        $self = new Options_SettingRenderer;
         $pos = 0;
         $all_options = array_merge($sv->conf->options()->nonfixed()); // get our own iterator
         foreach ($all_options as $o) {
-            $self->render_option($sv, $o, ++$pos);
+            $self->render_option($sv, $o, $self->reqv_id_to_pos[$o->id] ?? null, ++$pos);
+        }
+        if ($sv->use_req()) {
+            for ($xpos = 1; $sv->has_reqv("optid_$xpos"); ++$xpos) {
+                if ($sv->reqv("optid_$xpos") === "new") {
+                    $self->render_option($sv, null, $xpos, ++$pos);
+                }
+            }
         }
         echo "</div>\n";
 
         ob_start();
-        $self->render_option($sv, null, 0);
+        $self->render_option($sv, null, null, 0);
         $newopt = ob_get_clean();
 
         echo '<div style="margin-top:2em" id="settings_newopt" data-template="',
@@ -238,13 +248,14 @@ class Options_SettingParser extends SettingParser {
     private $fake_prow;
 
     function option_request_to_json(SettingValues $sv, $xpos) {
-        $name = simplify_whitespace($sv->reqv("optn_$xpos", ""));
-        if ($name === "" || $name === "(Enter new option)" || $name === "Field name")
-            return null;
-        if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name))
+        $name = simplify_whitespace($sv->reqv("optn_$xpos") ?? "");
+        if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name)) {
             $sv->error_at("optn_$xpos", "Option name “" . htmlspecialchars($name) . "” is reserved. Please pick another name.");
+        } else if ($name === "" || $name === "Field name") {
+            $sv->error_at("optn_$xpos", "Option name required.");
+        }
 
-        $id = cvtint($sv->reqv("optid_$xpos", "new"));
+        $id = cvtint($sv->reqv("optid_$xpos") ?? "new");
         $is_new = $id < 0;
         if ($is_new) {
             if (!$this->next_optionid) {
@@ -294,8 +305,9 @@ class Options_SettingParser extends SettingParser {
                     } else {
                         $oarg["exists_if"] = $optecs;
                     }
-                    if (!empty($ps->warnings))
+                    if (!empty($ps->warnings)) {
                         $sv->warning_at("optecs_$xpos", join("<br>", $ps->warnings));
+                    }
                 }
             }
         }
