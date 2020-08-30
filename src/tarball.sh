@@ -84,6 +84,8 @@ batch/checkinvariants.php
 batch/deletepapers.php
 batch/fixdelegation.php
 batch/killinactivedoc.php
+batch/paperjson.php
+batch/reviewcsv.php
 batch/s3test.php
 batch/s3transfer.php
 batch/s3verifyall.php
