@@ -103,16 +103,6 @@ class PaperValue implements JsonSerializable {
         }
         return $this->_data;
     }
-    /** @return list<int>
-     * @deprecated */
-    function value_array() {
-        return $this->value_list();
-    }
-    /** @return list<?string>
-     * @deprecated */
-    function data_array() {
-        return $this->data_list();
-    }
     /** @param int $index
      * @return ?string */
     function data_by_index($index) {

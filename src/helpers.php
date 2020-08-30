@@ -553,19 +553,6 @@ function unparseReviewOrdinal($ord) {
     }
 }
 
-/** @param string $text
- * @param string $filename
- * @deprecated */
-function downloadText($text, $filename, $inline = false) {
-    $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
-    $csvg->set_filename(Conf::$main->download_prefix . $filename . $csvg->extension());
-    $csvg->set_inline($inline);
-    $csvg->download_headers();
-    $csvg->add_string($text);
-    $csvg->download();
-    exit;
-}
-
 /** @param ?int $expertise
  * @return string */
 function unparse_expertise($expertise) {
