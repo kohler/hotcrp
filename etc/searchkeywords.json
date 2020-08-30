@@ -175,25 +175,21 @@
     {   "name": "revorder", "alias": "rorder"   },
     {
         "name": "color",
-        "require": "src/search/st_tag.php",
         "parse_callback": "Color_SearchTerm::parse",
         "has": "color", "deprecated": true
     },
     {
         "name": "style",
-        "require": "src/search/st_tag.php",
         "parse_callback": "Color_SearchTerm::parse",
         "has": "any", "deprecated": true
     },
     {
         "name": "badge",
-        "require": "src/search/st_tag.php",
         "parse_callback": "Color_SearchTerm::parse_badge",
         "has": "any", "deprecated": true
     },
     {
         "name": "emoji",
-        "require": "src/search/st_tag.php",
         "parse_callback": "Color_SearchTerm::parse_emoji",
         "has": "any", "deprecated": true
     },

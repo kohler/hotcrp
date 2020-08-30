@@ -333,6 +333,7 @@ src/schema.sql
 src/search/st_admin.php
 src/search/st_author.php
 src/search/st_authormatch.php
+src/search/st_color.php
 src/search/st_comment.php
 src/search/st_conflict.php
 src/search/st_decision.php
