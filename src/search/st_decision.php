@@ -24,7 +24,4 @@ class Decision_SearchTerm extends SearchTerm {
         return $srch->user->can_view_decision($row)
             && CountMatcher::compare_using($row->outcome, $this->match);
     }
-    function script_expression(PaperInfo $row, PaperSearch $srch) {
-        return $this->exec($row, $srch);
-    }
 }

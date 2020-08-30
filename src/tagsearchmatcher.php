@@ -25,6 +25,8 @@ class TagSearchMatcher {
     private $_tagpat = [];
     /** @var list<string> */
     private $_tagregex = [];
+    /** @var ?string */
+    private $_tag_exclusion_regex;
     /** @var list<CountMatcher> */
     private $_valm = [];
     private $_errors;
@@ -111,6 +113,7 @@ class TagSearchMatcher {
                 }
             }
             if (empty($this->_tagregex)
+                && $this->_tag_exclusion_regex === null
                 && strpos($tag, "*") === false) {
                 $this->_mtype = count($this->_tagpat) === 1 ? 2 : 1;
             } else {
@@ -128,6 +131,13 @@ class TagSearchMatcher {
             $this->_mtype = 0;
             $this->_re = null;
         }
+    }
+
+    /** @param string $regex */
+    function set_tag_exclusion_regex($regex) {
+        $this->_tag_exclusion_regex = $regex;
+        $this->_mtype = min($this->_mtype, 0);
+        $this->_re = null;
     }
 
     function add_value_matcher(CountMatcher $valm) {
@@ -174,7 +184,11 @@ class TagSearchMatcher {
                 // add something that will never match
                 $res[] = '###';
             }
-            $this->_re = '{' . join("|", $res) . '}i';
+            if ($this->_tag_exclusion_regex) {
+                $this->_re = '{(?!' . $this->_tag_exclusion_regex . ')(?:' . join("|", $res) . ')}i';
+            } else {
+                $this->_re = '{' . join("|", $res) . '}i';
+            }
         }
         return $this->_re;
     }
@@ -197,6 +211,20 @@ class TagSearchMatcher {
     /** @return bool */
     function test_empty() {
         return $this->_mtype === -2;
+    }
+
+    /** @return bool */
+    function is_empty_after_exclusion() {
+        if ($this->_tag_exclusion_regex
+            && !empty($this->_tagpat)
+            && empty($this->_tagregex)
+            && $this->_mtype === 0) {
+            $tl = " " . join("# ", $this->_tagpat) . "#";
+            if (strpos($tl, "*") === false) {
+                return !$this->test_ignore_value($tl);
+            }
+        }
+        return false;
     }
 
     /** @param string $taglist

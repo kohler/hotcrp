@@ -263,8 +263,9 @@ class SearchTerm {
         return false;
     }
 
+    /** @return ?bool */
     function script_expression(PaperInfo $row, PaperSearch $srch) {
-        return null;
+        return $this->exec($row, $srch);
     }
 
 
@@ -296,9 +297,6 @@ class False_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return false;
     }
-    function script_expression(PaperInfo $row, PaperSearch $srch) {
-        return false;
-    }
 }
 
 class True_SearchTerm extends SearchTerm {
@@ -318,9 +316,6 @@ class True_SearchTerm extends SearchTerm {
         return "true";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        return true;
-    }
-    function script_expression(PaperInfo $row, PaperSearch $srch) {
         return true;
     }
 }
@@ -644,17 +639,18 @@ class Or_SearchTerm extends Op_SearchTerm {
                 return true;
         return false;
     }
-    static function compile_or_condition($child, PaperInfo $row, PaperSearch $srch) {
+    static function make_script_expression($child, PaperInfo $row, PaperSearch $srch) {
         $ch = [];
         $ok = false;
         foreach ($child as $subt) {
             $x = $subt->script_expression($row, $srch);
-            if ($x === null)
+            if ($x === null) {
                 return null;
-            else if ($x === true)
+            } else if ($x === true) {
                 $ok = true;
-            else if ($x !== false)
+            } else if ($x !== false) {
                 $ch[] = $x;
+            }
         }
         if ($ok || empty($ch)) {
             return $ok;
@@ -665,7 +661,7 @@ class Or_SearchTerm extends Op_SearchTerm {
         }
     }
     function script_expression(PaperInfo $row, PaperSearch $srch) {
-        return self::compile_or_condition($this->child, $row, $srch);
+        return self::make_script_expression($this->child, $row, $srch);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
@@ -809,7 +805,7 @@ class Then_SearchTerm extends Op_SearchTerm {
         return false;
     }
     function script_expression(PaperInfo $row, PaperSearch $srch) {
-        return Or_SearchTerm::compile_or_condition(array_slice($this->child, 0, $this->nthen), $row, $srch);
+        return Or_SearchTerm::make_script_expression(array_slice($this->child, 0, $this->nthen), $row, $srch);
     }
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
@@ -1456,9 +1452,6 @@ class PaperID_SearchTerm extends SearchTerm {
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $this->position($row->paperId) !== false;
     }
-    function script_expression(PaperInfo $row, PaperSearch $srch) {
-        return $this->exec($row, $srch);
-    }
     function default_sort_column($top, PaperSearch $srch) {
         if ($top && !$this->in_order) {
             return new PaperIDOrder_PaperColumn($srch->conf, $this);
@@ -1650,6 +1643,9 @@ class PaperSearch {
 
     /** @var ?string */
     private $_urlbase;
+    /** @var bool
+     * @readonly */
+    public $expand_automatic = false;
     /** @var bool */
     private $_allow_deleted = false;
 
@@ -1818,6 +1814,15 @@ class PaperSearch {
             $args["reviewer"] = $this->_reviewer_user->email;
         }
         $this->_urlbase = $this->conf->hoturl_site_relative_raw($base, $args);
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_expand_automatic($x) {
+        assert($this->_qe === null);
+        $this->expand_automatic = $x;
         return $this;
     }
 

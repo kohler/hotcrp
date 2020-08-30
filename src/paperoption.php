@@ -973,7 +973,7 @@ class PaperOption {
     protected function set_exists_if($x) {
         if ($x !== null && $x !== true) {
             $this->exists_if = $x;
-            $this->_exists_search = new PaperSearch($this->conf->root_user(), $x === false ? "NONE" : $x);
+            $this->_exists_search = (new PaperSearch($this->conf->root_user(), $x === false ? "NONE" : $x))->set_expand_automatic(true);
         } else {
             $this->exists_if = $this->_exists_search = null;
         }

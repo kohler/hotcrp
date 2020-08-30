@@ -47,22 +47,46 @@ class Tag_SearchTerm extends SearchTerm {
         // match tag body
         $value->add_check_tag($tagword, !$sword->kwdef->sorting);
 
-        // report errors, combine
-        $term = new Tag_SearchTerm($value);
-        if (!$negated && ($tagpat = $value->tag_patterns())) {
-            $term->set_float("tags", $tagpat);
-            if ($sword->kwdef->sorting) {
-                $term->set_float("view", ["sort:" . ($revsort ? "-#" : "#") . $tagpat[0]]);
+        // expand automatic tags if requested
+        $allterms = [];
+        if (true
+            && ($dt = $srch->conf->tags())->has_automatic) {
+            $nomatch = [];
+            foreach ($dt->filter("automatic") as $t) {
+                if ($value->test_ignore_value(" {$t->tag}#")
+                    && $t->automatic_formula_expression() === "0") {
+                    $nomatch[] = " " . preg_quote($t->tag) . "#";
+                    if ($value->test_value(0.0)) {
+                        $asrch = new PaperSearch($srch->conf->site_contact(), ["q" => $t->automatic_search(), "t" => "all"]);
+                        $allterms[] = $asrch->term();
+                    }
+                }
+            }
+            if (!empty($nomatch)) {
+                $value->set_tag_exclusion_regex(join("|", $nomatch));
             }
         }
-        if (!$negated && $sword->kwdef->is_hash && $value->single_tag()) {
-            $term->tag1 = $value->single_tag();
-            $term->tag1nz = false;
+
+        // add value term
+        if (!$value->is_empty_after_exclusion()) {
+            $allterms[] = $term = new Tag_SearchTerm($value);
+            if (!$negated && ($tagpat = $value->tag_patterns())) {
+                $term->set_float("tags", $tagpat);
+                if ($sword->kwdef->sorting) {
+                    $term->set_float("view", ["sort:" . ($revsort ? "-#" : "#") . $tagpat[0]]);
+                }
+            }
+            if (!$negated && $sword->kwdef->is_hash && $value->single_tag()) {
+                $term->tag1 = $value->single_tag();
+                $term->tag1nz = false;
+            }
         }
+
+        // return
         foreach ($value->error_texts() as $e) {
             $srch->warn($e);
         }
-        return $term->negate_if($negated);
+        return SearchTerm::combine("or", $allterms)->negate_if($negated);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->tsm->test_empty()) {
@@ -78,39 +102,6 @@ class Tag_SearchTerm extends SearchTerm {
             $this->tag1nz = $row->tag_value($this->tag1) != 0;
         }
         return $ok;
-    }
-    function script_expression(PaperInfo $row, PaperSearch $srch) {
-        $child = [];
-        $tags = $row->searchable_tags($srch->user);
-        // autosearch tags are special, splice in their search defs
-        foreach ($srch->conf->tags()->filter("autosearch") as $dt) {
-            if ($this->tsm->test_ignore_value(" {$dt->tag}#")) {
-                if ($dt->autosearch_value) {
-                    return null;
-                } else if ($this->tsm->test_value(0)) {
-                    $newsrch = new PaperSearch($srch->user, $dt->autosearch);
-                    $newec = $newsrch->term()->script_expression($row, $newsrch);
-                    if ($newec === null) {
-                        return null;
-                    } else if ($newec === true) {
-                        return true;
-                    } else if ($newec !== false) {
-                        $child[] = $newec;
-                    }
-                    $tags = str_replace(" {$dt->tag}#0", "", $tags);
-                }
-            }
-        }
-        // now complete
-        if ($this->tsm->test($tags)) {
-            return true;
-        } else if (empty($child)) {
-            return false;
-        } else if (count($child) === 1) {
-            return $child[0];
-        } else {
-            return (object) ["type" => "or", "child" => $child];
-        }
     }
     function default_sort_column($top, PaperSearch $srch) {
         if ($top && $this->tag1) {
