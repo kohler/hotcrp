@@ -1,6 +1,156 @@
 HotCRP NEWS
 ===========
 
+## Version 3.0b1
+
+* Upgrade notes
+
+    * Mail templates are now defined in JSON, not PHP. See
+      `etc/mailtemplates.json`. Uses of `$Opt["mailtemplate_include"]` should
+      be modified to use JSON and `$Opt["mailTemplates"]`.
+    * Remove `src/messages.csv` in favor of `etc/msgs.json` and IntlMsgSet.
+    * Some old abbreviations for fields (e.g., `OveMer` for “Overall merit”)
+      will no longer work thanks to improvements to the abbreviation
+      subsystem.
+    * Search terms that match more than one submission field will now report a
+      warning, and match nothing, unless they include a `*`.
+    * PHP 7.3 and 7.4 are supported. PHP 5.6 is no longer supported.
+
+* Significant overhaul of HotCRP's internals. [Phan][] type signatures are
+  added to many methods. New classes are added. Built-in submission fields,
+  such as title and author, are expressed through the PaperOption framework,
+  and are theoretically extensible. PaperOption subclasses are in
+  `src/options`; Fexpr subclasses in `src/formulas`. Many pages are rendered
+  through accumulated partials defined in JSON.
+
+* Submissions
+
+    * Support required fields.
+    * Support topic groups, as in `Systems: Networking`.
+    * Withdrawal is prevented if a user has already seen reviews.
+    * Banal improvements and bug fixes. Detect reference pages.
+    * Submission field titles can be configured using `etc/msgs.json`.
+    * Support long abstracts and collaborators.
+    * Support pinned conflicts of many types, including pinned non-conflicts.
+
+* Assignments
+
+    * Add new assignment types such as `follow` and `error`.
+    * Bulk-assignment files can specify tag values using a formula.
+    * New UI for review requests and refusals on paper assignment page.
+    * Better warnings for bulk-assignment problems, such as assigning a
+      conflicted user to review.
+
+* Reviews
+
+    * Add new review approval settings, review approval/adoption UI, and
+      improve display of approvable reviews (which are called “subreviews”).
+    * Support score fields with more than 9 options.
+    * Allow preview of the mail sent to newly requested external reviewers.
+    * Chairs receive mail about newly-proposed external reviewers.
+    * Add capabilities for accepting and declining reviews.
+
+* Comments
+
+    * Support attachments.
+    * Overhaul response editing. Fix bugs around submitting, deleting, then
+      re-entering responses; improve workflow.
+
+* Visual
+
+    * Flexible spacing for many pages.
+    * Better presentation warnings and errors near fields.
+    * Mark required fields.
+    * Home page highlights reviews that are pending approval.
+    * Sticky left-hand in-page navigation on many pages.
+    * Highlight headers when traversing some links.
+    * More use of HTML5 elements like `<nav>`.
+    * Improve change detection on settings.
+    * Profile page has sub-pages.
+
+* Signin and signout
+
+    * Never send plaintext passwords in email, not even initial,
+      randomly-chosen plaintext passwords. Instead send reset links.
+    * $Opt["safePasswords"] is removed. HotCRP refuses to store passwords
+      plaintext. (It has stored passwords encrypted *by default* for years.)
+    * Separate signin, signout, newaccount, forgotpassword, and resetpassword
+      pages.
+    * Address some session fixation vulnerabilities.
+    * Allow a single session to represent multiple signed-in accounts. URL
+      prefixes like `/u/0` and `/u/2` differentiate the accounts.
+
+* Action log
+
+    * Log paper downloads.
+    * Log what changed when papers/reviews/profile are updated.
+    * Log record coalescing never overflows database record size.
+    * Reword many log messages for consistency.
+
+* Search
+
+    * Support `[column decorator]` syntax, as in `sort:[lead last]` (sort by
+      lead last name) or `show:[allpref topics]` (include topic scores in the
+      preference list) or `show:[lead column]` (show the lead as a column, not
+      a row).
+    * Support loading entire fields on demand, rather than requiring fields be
+      partially rendered to Javascript even when not shown.
+    * Generate ZIP files internally, rather than with a PHP ZIP library or an
+      external `zip` binary. Support range requests to ZIP files.
+    * Add XOR operator.
+
+* Mail
+
+    * Use quoted-printable encoding and format=flowed.
+
+* Tags and formulas
+
+    * Formula aggregates can be computed over specific sets of users, as in
+      `sum.pc(...)` or `sum.re(...)`.
+    * In an aggregate, a formula like `#_~foo` returns the tag value of the
+      indexed user’s `#~foo` tag. Use this functionality to compute allotment
+      votes and approval votes.
+    * Formulas support `let VAR = VAL in BODY`.
+    * Support a `#perm:` namespace. Tag a paper `#perm:author-read-view#1` and
+      that paper’s authors can read its reviews, regardless of other settings;
+      tag it `#perm:author-read-review#-1` and authors *cannot* read reviews.
+      Also `#perm:author-write`.
+
+* Formula graphs
+
+    * Add highlighting support (search for a paper and the relevant data
+      points are highlighted).
+    * Add support to reorder the X axis according to a formula.
+    * Improved error messages.
+
+* Rights and information exposure
+
+    * Avoid exposing reviewer names to other reviewers via `Cc:` mail fields.
+    * Avoid exposing information via HTTP status codes.
+    * The user-list page counts leads, shepherds, authorship, and reviews in
+      ways that reliably match visibility policies.
+
+* Tracker and buzzer
+
+    * Support multiple simultaneous trackers.
+    * Support autoplay.
+
+* Conference options
+
+    * Support $Opt["disableNewUsers"].
+    * If you have a large PC, $Opt["largePC"] may improve performance; it
+      causes the JSON describing the PC to be loaded only on demand.
+
+* Batch scripts
+
+    * `batch/assign.php` runs a CSV assignment file.
+    * `batch/paperjson.php` exports JSON for papers.
+    * `batch/reviewcsv.php` exports CSV for reviews.
+    * `batch/search.php` exports CSV for papers.
+
+* Many other bug fixes, tests, and improvements.
+
+
 ## Version 2.102 - 9.Aug.2018
 
 * Support integration with Lutz Prechelt’s [Review Quality Collector][].
@@ -1593,3 +1743,4 @@ HotCRP NEWS
 
 
 [Review Quality Collector]: https://reviewqualitycollector.org
+[Phan]: https://github.com/phan/phan
