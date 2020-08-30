@@ -4,13 +4,10 @@
 
 class BanalSettings {
     static function render($suffix, $sv) {
-        $cfs = new FormatSpec($sv->curv("sub_banal_opt$suffix"),
-                              $sv->curv("sub_banal_data$suffix"));
+        $cfs = new FormatSpec($sv->oldv("sub_banal_opt$suffix"),
+                              $sv->oldv("sub_banal_data$suffix"));
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref"] as $k) {
-            $val = $cfs->unparse_key($k);
-            if ($val === "")
-                $val = ($k === "unlimitedref" ? null : "N/A");
-            $sv->set_oldv("sub_banal_$k$suffix", $val);
+            $sv->set_oldv("sub_banal_$k$suffix", $cfs->unparse_key($k));
         }
 
         $open = $sv->curv("sub_banal$suffix") > 0;
@@ -203,8 +200,9 @@ class BanalSettings {
         $opt_spec = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
         $opt_unparse = $opt_spec->unparse_banal();
         $unparse = $cfs->unparse();
-        if ($unparse === $opt_unparse)
+        if ($unparse === $opt_unparse) {
             $unparse = "";
+        }
         $sv->save("sub_banal_data$suffix", $unparse);
         if ($old_unparse !== $unparse || $sv->oldv("sub_banal$suffix") <= 0) {
             $sv->save("sub_banal$suffix", $unparse !== "" ? Conf::$now : 0);

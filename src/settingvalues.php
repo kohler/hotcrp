@@ -649,7 +649,9 @@ class SettingValues extends MessageSet {
         if ($si && $si->disabled) {
             $x["disabled"] = true;
         }
-        if ($si && $this->use_req() && $this->si_has_interest($si)
+        if ($si
+            && $this->use_req()
+            && $this->si_has_interest($si)
             && !isset($js["data-default-value"])
             && !isset($js["data-default-checked"])) {
             $v = $this->si_oldv($si, null);
@@ -1120,7 +1122,7 @@ class SettingValues extends MessageSet {
     }
 
     private function si_render_value($v, Si $si) {
-        if ($si->type === "cdate") {
+        if ($si->type === "cdate" || $si->type === "checkbox") {
             return $v ? "1" : "";
         } else if ($si->is_date()) {
             return $this->si_render_date_value($v, $si);
