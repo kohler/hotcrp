@@ -263,7 +263,7 @@ class SearchTerm {
         return false;
     }
 
-    /** @return ?bool */
+    /** @return null|bool|array{type:string} */
     function script_expression(PaperInfo $row, PaperSearch $srch) {
         return $this->exec($row, $srch);
     }
@@ -482,7 +482,7 @@ class Not_SearchTerm extends Op_SearchTerm {
         } else if ($x === false || $x === true) {
             return !$x;
         } else {
-            return (object) ["type" => "not", "child" => [$x]];
+            return ["type" => "not", "child" => [$x]];
         }
     }
 }
@@ -571,7 +571,7 @@ class And_SearchTerm extends Op_SearchTerm {
         } else if (count($ch) === 1) {
             return $ch[0];
         } else {
-            return (object) ["type" => "and", "child" => $ch];
+            return ["type" => "and", "child" => $ch];
         }
     }
     function extract_metadata($top, PaperSearch $srch) {
@@ -657,7 +657,7 @@ class Or_SearchTerm extends Op_SearchTerm {
         } else if (count($ch) === 1) {
             return $ch[0];
         } else {
-            return (object) ["type" => "or", "child" => $ch];
+            return ["type" => "or", "child" => $ch];
         }
     }
     function script_expression(PaperInfo $row, PaperSearch $srch) {
@@ -1077,7 +1077,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         if (!$this->trivial || $this->field === "authorInformation") {
             return null;
         } else {
-            return (object) ["type" => $this->field, "match" => $this->trivial];
+            return ["type" => $this->field, "match" => $this->trivial];
         }
     }
     function extract_metadata($top, PaperSearch $srch) {
@@ -1431,23 +1431,32 @@ class PaperID_SearchTerm extends SearchTerm {
     function ranges() {
         return $this->r;
     }
+    /** @return bool */
+    function is_empty() {
+        return empty($this->r);
+    }
+    /** @param string $field
+     * @return string */
+    function sql_predicate($field) {
+        if (empty($this->r)) {
+            return "false";
+        } else if ($this->n <= 8 * count($this->r)
+                   && ($pids = $this->paper_ids()) !== false) {
+            return "$field in (" . join(",", $pids) . ")";
+        } else {
+            $s = [];
+            foreach ($this->r as $r) {
+                $s[] = "({$field}>={$r[0]} and {$field}<{$r[1]})";
+            }
+            return "(" . join(" or ", $s) . ")";
+        }
+    }
 
     function trivial_rights(Contact $user, PaperSearch $srch) {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if (empty($this->r)) {
-            return "false";
-        } else if ($this->n <= 8 * count($this->r)
-                   && ($pids = $this->paper_ids()) !== false) {
-            return "Paper.paperId in (" . join(",", $pids) . ")";
-        } else {
-            $s = [];
-            foreach ($this->r as $r) {
-                $s[] = "(Paper.paperId>={$r[0]} and Paper.paperId<{$r[1]})";
-            }
-            return "(" . join(" or ", $s) . ")";
-        }
+        return $this->sql_predicate("Paper.paperId");
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         return $this->position($row->paperId) !== false;
@@ -1971,28 +1980,6 @@ class PaperSearch {
             }
         }
         return ["outcome", self::decision_matchexpr($conf, $word, $quoted)];
-    }
-
-    static function parse_reconflict($word, SearchWord $sword, PaperSearch $srch) {
-        // `reconf:` keyword, defined in `etc/searchkeywords.json`
-        $args = array();
-        while (preg_match('/\A\s*#?(\d+)(?:-#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
-            $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-            foreach (range($m[1], $m[2]) as $p) {
-                $args[$p] = true;
-            }
-            $word = $m[3];
-        }
-        if ($word !== "" || empty($args)) {
-            $srch->warn("The <code>reconflict</code> keyword expects a list of paper numbers.");
-            return new False_SearchTerm;
-        } else if (!$srch->user->privChair) {
-            return new False_SearchTerm;
-        } else {
-            $result = $srch->conf->qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
-            $contacts = array_map("intval", Dbl::fetch_first_columns($result));
-            return new Conflict_SearchTerm(">0", $contacts, false);
-        }
     }
 
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {

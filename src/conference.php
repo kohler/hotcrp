@@ -3312,7 +3312,7 @@ class Conf {
         return "group_concat(contactId,' ',preference,' ',coalesce(expertise,'.'))";
     }
 
-    /** @param array{paperId?:list<int>} $options
+    /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
      * @return Dbl_Result */
     function paper_result($options, Contact $user = null) {
         // Options:
@@ -3345,11 +3345,8 @@ class Conf {
 
         // paper selection
         $paperset = null;
-        '@phan-var ?list<int> $paperset';
+        '@phan-var null|list<int>|PaperID_SearchTerm $paperset';
         if (isset($options["paperId"])) {
-            if (!is_int_list($options["paperId"])) {
-                throw new Exception("paperId argument should be list<int> in Conf::paper_result");
-            }
             $paperset = $options["paperId"];
         }
         if (isset($options["reviewId"]) || isset($options["commentId"])) {
@@ -3470,7 +3467,11 @@ class Conf {
 
         // conditions
         if ($paperset !== null) {
-            $where[] = "Paper.paperId" . sql_in_int_list($paperset);
+            if (is_array($paperset)) {
+                $where[] = "Paper.paperId" . sql_in_int_list($paperset);
+            } else{
+                $where[] = $paperset->sql_predicate("Paper.paperId");
+            }
         }
         if ($options["finalized"] ?? false) {
             $where[] = "timeSubmitted>0";
@@ -3536,7 +3537,7 @@ class Conf {
         return $this->qe_raw($pq);
     }
 
-    /** @param array{paperId?:list<int>} $options
+    /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
      * @return PaperInfoSet */
     function paper_set($options, Contact $user = null) {
         $rowset = new PaperInfoSet;

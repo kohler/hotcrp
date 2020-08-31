@@ -351,6 +351,7 @@ src/search/st_optionvaluein.php
 src/search/st_paperpc.php
 src/search/st_paperstatus.php
 src/search/st_pdf.php
+src/search/st_reconflict.php
 src/search/st_review.php
 src/search/st_reviewtoken.php
 src/search/st_revpref.php

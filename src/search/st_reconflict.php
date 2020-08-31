@@ -1,0 +1,43 @@
+<?php
+// search/st_reconflict.php -- HotCRP helper class for searching for papers
+// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+
+class Reconflict_SearchTerm extends SearchTerm {
+    static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        $st = new PaperID_SearchTerm;
+        $xword = $word;
+        while (preg_match('/\A\s*#?(\d+)(?:-#?(\d+))?\s*,?\s*(.*)\z/s', $xword, $m)) {
+            if (isset($m[2]) && $m[2]) {
+                $st->add_range((int) $m[1], (int) $m[2]);
+            } else {
+                $st->add_range((int) $m[1], (int) $m[1]);
+            }
+            $xword = $m[3];
+        }
+        if ($xword !== "" || $st->is_empty()) {
+            $srch->warn("reconflict: Expected a list of paper numbers.");
+            return new False_SearchTerm;
+        }
+
+        $old_overrides = $srch->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        $cids = [];
+        foreach ($srch->user->paper_set(["paperId" => $st, "reviewSignatures" => true, "finalized" => $srch->limit_submitted()]) as $prow) {
+            if ($srch->user->can_view_paper($prow)) {
+                foreach ($prow->reviews_by_id() as $rrow) {
+                    if ($rrow->reviewToken === 0
+                        && $srch->user->can_view_review_identity($prow, $rrow)) {
+                        $cids[$rrow->contactId] = true;
+                    }
+                }
+            }
+        }
+        $srch->user->set_overrides($old_overrides);
+
+        if (!empty($cids)) {
+            return new Conflict_SearchTerm(">0", array_keys($cids), false);
+        } else {
+            $srch->warn("reconflict:" . htmlspecialchars($word) . ": No visible reviewers.");
+            return new False_SearchTerm;
+        }
+    }
+}

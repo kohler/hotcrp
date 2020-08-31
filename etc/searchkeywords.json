@@ -53,10 +53,10 @@
     },
     {   "name": "pcconflict", "alias": "pcconf"   },
     {
-        "name": "reconf",
-        "parse_callback": "PaperSearch::parse_reconflict", "deprecated": true
+        "name": "reconflict",
+        "parse_callback": "Reconflict_SearchTerm::parse"
     },
-    {   "name": "reconflict", "alias": "reconf"   },
+    {   "name": "reconf", "alias": "reconflict"   },
     {
         "name": "status",
         "parse_callback": "PaperStatus_SearchTerm::parse"

@@ -50,10 +50,12 @@ class Conflict_SearchTerm extends SearchTerm {
         return $this->csm->test($n);
     }
     function script_expression(PaperInfo $row, PaperSearch $srch) {
-        if (!$this->ispc)
+        if (!$this->ispc) {
             return null;
-        if (!$srch->conf->setting("sub_pcconf"))
+        } else if (!$srch->conf->setting("sub_pcconf")) {
             return $this->exec($row, $srch);
-        return (object) ["type" => "pc_conflict", "cids" => $this->csm->contact_set(), "compar" => $this->csm->compar(), "value" => $this->csm->value()];
+        } else {
+            return ["type" => "pc_conflict", "cids" => $this->csm->contact_set(), "compar" => $this->csm->compar(), "value" => $this->csm->value()];
+        }
     }
 }

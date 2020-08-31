@@ -3,9 +3,11 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Topic_SearchTerm extends SearchTerm {
+    /** @var true|list<int> */
     private $topics;
     private $negated;
 
+    /** @param true|list<int> $topics */
     function __construct($topics, $negated) {
         parent::__construct("topic");
         $this->topics = $topics;
@@ -71,9 +73,9 @@ class Topic_SearchTerm extends SearchTerm {
         return $this->negated ? !$v : $v;
     }
     function script_expression(PaperInfo $row, PaperSearch $srch) {
-        $o = (object) ["type" => "topic", "topics" => $this->topics];
+        $o = ["type" => "topic", "topics" => $this->topics];
         if ($this->negated) {
-            $o = (object) ["type" => "not", "child" => [$o]];
+            $o = ["type" => "not", "child" => [$o]];
         }
         return $o;
     }

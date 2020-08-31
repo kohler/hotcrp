@@ -5016,10 +5016,9 @@ class Contact {
 
     // papers
 
-    /** @param array{paperId?:int|list<int>} $options
+    /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
      * @return PaperInfoSet|Iterable<PaperInfo> */
-    function paper_set($options = []) {
-        assert(func_num_args() <= 1);
+    function paper_set($options) {
         return $this->conf->paper_set($options, $this);
     }
 
