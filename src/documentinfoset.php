@@ -505,6 +505,48 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             return 0;
         }
     }
+    /** @param resource $out
+     * @param int $r0
+     * @param int $r1 */
+    private function _write_range($out, $r0, $r1) {
+        $d0 = 0;
+        while ($d0 !== count($this->docs)
+               && $this->_zipi[$d0]->local_end_offset() <= $r0) {
+            ++$d0;
+        }
+        $pfd0 = $d1 = $d0;
+        while ($d1 !== count($this->docs)
+               && $this->_zipi[$d1]->local_offset < $r1) {
+            ++$d1;
+        }
+        while ($d0 !== $d1) {
+            set_time_limit(120);
+            if ($pfd0 === $d0) {
+                $pfd0 = min($d0 + 12, $d1);
+                DocumentInfo::prefetch_content(array_slice($this->docs, $d0, $pfd0 - $d0));
+            }
+            $zi = $this->_zipi[$d0];
+            $doc = $this->docs[$d0];
+            $p0 = $zi->local_offset;
+            $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->localh);
+            if ($zi->compressed !== null) {
+                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->compressed);
+            } else if (($f = $doc->available_content_file())) {
+                $p0 += self::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
+            } else {
+                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $doc->content());
+            }
+            if ($p0 < min($r1, $zi->local_end_offset())) {
+                throw new Exception("Failure writing {$this->ufn[$d0]}, wrote " . ($p0 - $zi->local_offset) . ", expected " . (min($r1, $zi->local_end_offset()) - $zi->local_offset));
+            }
+            ++$d0;
+        }
+        if ($d0 === count($this->docs)) {
+            foreach ($this->_zipi as $zi) {
+                self::echo_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
+            }
+        }
+    }
     /** @return bool */
     private function _download_directly($opts = []) {
         if (isset($opts["if-none-match"])
@@ -532,7 +574,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 }
             }
             if ($r0 >= $r1) {
-                header("HTTP/1.1 416 Range not Satisfiable");
+                header("HTTP/1.1 416 Range Not Satisfiable");
                 header("Content-Range: bytes */$filesize");
                 return true;
             }
@@ -576,46 +618,8 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
 
         // Print data
-        $d0 = 0;
-        while ($d0 !== count($this->docs)
-               && $this->_zipi[$d0]->local_end_offset() <= $r0) {
-            ++$d0;
-        }
-        $pfd0 = $d1 = $d0;
-        while ($d1 !== count($this->docs)
-               && $this->_zipi[$d1]->local_offset < $r1) {
-            ++$d1;
-        }
         $out = fopen("php://output", "wb");
-
-        while ($d0 !== $d1) {
-            set_time_limit(120);
-            if ($pfd0 === $d0) {
-                $pfd0 = min($d0 + 12, $d1);
-                DocumentInfo::prefetch_content(array_slice($this->docs, $d0, $pfd0 - $d0));
-            }
-            $zi = $this->_zipi[$d0];
-            $doc = $this->docs[$d0];
-            $p0 = $zi->local_offset;
-            $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->localh);
-            if ($zi->compressed !== null) {
-                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->compressed);
-            } else if (($f = $doc->available_content_file())) {
-                $p0 += self::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
-            } else {
-                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $doc->content());
-            }
-            if ($p0 < min($r1, $zi->local_end_offset())) {
-                throw new Exception("Failure writing {$this->ufn[$d0]}, wrote " . ($p0 - $zi->local_offset) . ", expected " . (min($r1, $zi->local_end_offset()) - $zi->local_offset));
-            }
-            ++$d0;
-        }
-        if ($d0 === count($this->docs)) {
-            foreach ($this->_zipi as $zi) {
-                self::echo_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
-            }
-        }
-
+        $this->_write_range($out, $r0, $r1);
         fclose($out);
         return true;
     }

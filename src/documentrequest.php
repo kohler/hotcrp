@@ -287,8 +287,11 @@ class DocumentRequest implements JsonSerializable {
                 if ($r1 === null && $r2 !== 0) {
                     $opts["range"][] = $lastr = [$r1, $r2];
                 } else if ($r2 === null || ($r1 !== null && $r1 <= $r2)) {
-                    if ($lastr !== null && $lastr[0] !== null && $lastr[1] !== null
-                        && $r1 >= $lastr[0] && $r1 - $lastr[1] <= 500) {
+                    if ($lastr !== null
+                        && $lastr[0] !== null
+                        && $lastr[1] !== null
+                        && $r1 >= $lastr[0]
+                        && $r1 - $lastr[1] <= 500) {
                         $nr = count($opts["range"]);
                         $opts["range"][$nr - 1][1] = $lastr[1] = $r2;
                     } else {
