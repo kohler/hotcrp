@@ -12,6 +12,10 @@ body.paper {
 .pcard {
 	margin-left: 22.5%;
 }
+#body-home > #body {
+	margin-left: 24px;
+	margin-right: 24px;
+}
 }
 @media screen and (max-width: 1024px) {
 .paperinfo, .paperinfo-c {
@@ -48,8 +52,19 @@ body.leftmenu > #top {
 body.paper > #top {
 	background: #dce4e8;
 }
-#body, body.paper > #body {
-	margin: 0 12px;
+#body, body.paper > #body, #body-home > #body {
+	margin-left: 12px;
+	margin-right: 12px;
+}
+.home-content {
+	display: flex;
+	flex-direction: column;
+}
+.home-sidebar {
+	float: none;
+	margin-left: 0;
+	width: auto;
+	order: 2;
 }
 .demargin {
 	margin-left: -12px;

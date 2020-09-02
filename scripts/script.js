@@ -2125,8 +2125,10 @@ function display_main(is_initial) {
 
     if (!is_initial
         && Math.abs(browser_now - dl.now) >= 300000
-        && (x = $$("msg-clock-drift")))
+        && (x = $$("msg-clock-drift"))) {
+        removeClass(x, "hidden");
         x.innerHTML = '<div class="msg msg-warning">The HotCRP server’s clock is more than 5 minutes off from your computer’s clock. If your computer’s clock is correct, you should update the server’s clock.</div>';
+    }
 
     // See also the version in `Conf`
     dlname = "";

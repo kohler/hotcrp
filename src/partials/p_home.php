@@ -60,14 +60,16 @@ class Home_Partial {
         $gx->push_render_cleanup("__footer");
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
         if ($user->privChair) {
-            echo '<div id="msg-clock-drift"></div>';
+            echo '<div id="msg-clock-drift" class="homegrp hidden"></div>';
         }
     }
 
-    static function render_sidebar(Contact $user, Qrequest $qreq, $gx) {
-        echo '<div class="homeside">';
+    static function render_content(Contact $user, Qrequest $qreq, $gx) {
+        echo '<div class="home-content"><div class="home-sidebar">';
         $gx->render_group("home/sidebar");
-        echo "</div>\n";
+        echo '</div><div class="home-main">';
+        $gx->render_group("home/main");
+        echo "</div></div>\n";
     }
 
     private function render_h2_home($x) {
@@ -76,7 +78,7 @@ class Home_Partial {
     }
 
     static function render_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
-        echo '<div class="homegrp"><h4>Administration</h4><ul>';
+        echo '<div class="homegrp"><h2 class="home">Administration</h2><ul>';
         $gx->render_group("home/sidebar/admin");
         echo '</ul></div>';
     }
@@ -100,9 +102,9 @@ class Home_Partial {
         ob_start();
         $gx->render_group("home/sidebar/info");
         if (($t = ob_get_clean())) {
-            echo '<div class="homegrp"><h4>',
+            echo '<div class="homegrp"><h2 class="home">',
                 $user->conf->_c("home", "Conference information"),
-                '</h4><ul>', $t, '</ul></div>';
+                '</h2><ul>', $t, '</ul></div>';
         }
     }
     static function render_info_deadline(Contact $user) {

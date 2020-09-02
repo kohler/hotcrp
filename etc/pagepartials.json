@@ -28,9 +28,18 @@
         "render_callback": "*Home_Partial::render_head"
     },
     {
-        "name": "home/sidebar", "position": 1500,
-        "render_callback": "Home_Partial::render_sidebar"
+        "name": "home/message", "position": 1100,
+        "render_callback": "*Home_Partial::render_message"
     },
+    {
+        "name": "home/welcome", "position": 1200, "allow_if": "!pc",
+        "render_callback": "*Home_Partial::render_welcome"
+    },
+    {
+        "name": "home/content", "position": 1500,
+        "render_callback": "Home_Partial::render_content"
+    },
+
     {
         "name": "home/sidebar/admin", "position": 100, "allow_if": "manager",
         "render_callback": "Home_Partial::render_admin_sidebar"
@@ -69,34 +78,26 @@
     },
 
 
+    [   "home/main/signin", 3000, "*Home_Partial::render_signin"   ],
     {
-        "name": "home/message", "position": 1100,
-        "render_callback": "*Home_Partial::render_message"
-    },
-    {
-        "name": "home/welcome", "position": 1200, "allow_if": "!pc",
-        "render_callback": "*Home_Partial::render_welcome"
-    },
-    [   "home/signin", 3000, "*Home_Partial::render_signin"   ],
-    {
-        "name": "home/search", "position": 4000,
+        "name": "home/main/search", "position": 4000,
         "render_callback": "*Home_Partial::render_search"
     },
     {
-        "name": "home/review_requests", "position": 4500, "allow_if": "reviewer",
+        "name": "home/main/review_requests", "position": 4500, "allow_if": "reviewer",
         "render_callback": "*Home_Partial::render_review_requests"
     },
     {
-        "name": "home/reviews", "position": 5000, "allow_if": "reviewer",
+        "name": "home/main/reviews", "position": 5000, "allow_if": "reviewer",
         "render_callback": "*Home_Partial::render_reviews"
     },
     {
-        "name": "home/review_tokens", "position": 10000,
-        "render_callback": "*Home_Partial::render_review_tokens"
+        "name": "home/main/submissions", "position": 7000,
+        "render_callback": "*Home_Partial::render_submissions"
     },
     {
-        "name": "home/submissions", "position": 7000,
-        "render_callback": "*Home_Partial::render_submissions"
+        "name": "home/main/review_tokens", "position": 10000,
+        "render_callback": "*Home_Partial::render_review_tokens"
     },
 
 

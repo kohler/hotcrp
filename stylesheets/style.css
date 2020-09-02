@@ -508,6 +508,11 @@ td.g {
 	position: relative;
 	z-index: 3;
 }
+#body-home > #body {
+	margin-top: 1rem;
+	margin-left: 3%;
+	margin-right: 4%;
+}
 body.paper > #body {
 	margin-left: 0;
 	margin-right: 0;
@@ -873,36 +878,25 @@ h2.home, h4.home {
 	margin-bottom: 0.5rem;
 	font-size: 1.15rem;
 }
-.homeside {
+.homegrp {
+	margin-bottom: 2.5rem;
+}
+.home-sidebar {
 	float: right;
-	clear: right;
 	position: relative;
 	width: 18em;
 	z-index: 1;
-	margin: 0 0 3rem 2rem;
-}
-.homeside > .homegrp:first-child {
-	margin-top: 0;
-}
-.homeside > .homegrp:last-child {
-	margin-bottom: 0;
+	margin-bottom: 0.5rem;
+	margin-left: 2rem;
 }
 .compact-form > div {
 	max-width: 25em;
 	max-width: 25rem;
 }
-.homeside h4 {
-	color: #c72047;
-	margin: 0 0 0.25rem;
-}
-.homeside ul {
+.home-sidebar ul {
 	margin: 0;
 	padding: 0;
 	list-style-type: none;
-}
-.homegrp {
-	margin-top: 1rem;
-	margin-bottom: 2.5rem;
 }
 .homesubgrp {
 	margin-top: 0.75rem;

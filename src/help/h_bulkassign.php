@@ -99,7 +99,7 @@ all,review,all,primary,R1:R2</pre>
 the corresponding review types.</p>";
     }
 
-   static function render_action_tag($hth) {
+    static function render_action_tag($hth) {
         echo "<p>The <code>tag</code> action controls ",
             $hth->help_link("tags", "tags") . ". The <code>tag</code>
 column names the tag to add; it can contain a ",
