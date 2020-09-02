@@ -3920,7 +3920,7 @@ function render_review_body(rrow) {
         }
         if (x != "au") {
             t += '<div class="revvis">(' +
-                (({secret: "secret", admin: "shown only to chairs",
+                (({secret: "secret", admin: "administrators only",
                    pc: "hidden from authors", audec: "hidden from authors until decision"})[x] || x) +
                 ')</div>';
         }

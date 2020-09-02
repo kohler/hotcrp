@@ -4788,6 +4788,7 @@ class Contact {
 
     // deadlines
 
+    /** @param ?list<PaperInfo> $prows */
     function my_deadlines($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
         $dl = (object) ["now" => Conf::$now, "email" => $this->email ? : null];
@@ -4899,6 +4900,9 @@ class Contact {
             } else if ($rb === Conf::BLIND_OPTIONAL) {
                 $dl->rev->blind = "optional";
             }
+            if ($this->conf->can_some_author_view_review()) {
+                $dl->rev->some_author_can_view = true;
+            }
         }
 
         // grace periods: give a minute's notice of an impending grace
@@ -4917,19 +4921,18 @@ class Contact {
 
         // add meeting tracker
         if (($this->isPC || $this->tracker_kiosk_state > 0)
-            && $this->can_view_tracker())
+            && $this->can_view_tracker()) {
             MeetingTracker::my_deadlines($dl, $this);
+        }
 
         // permissions
         if ($prows) {
-            if (is_object($prows))
-                $prows = array($prows);
-            $dl->perm = array();
+            $dl->perm = [];
             foreach ($prows as $prow) {
                 if (!$this->can_view_paper($prow)) {
                     continue;
                 }
-                $perm = $dl->perm[$prow->paperId] = (object) array();
+                $perm = $dl->perm[$prow->paperId] = (object) [];
                 $rights = $this->rights($prow);
                 $admin = $rights->allow_administer;
                 if ($admin) {

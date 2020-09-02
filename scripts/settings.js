@@ -322,10 +322,10 @@ var revfield_template = '<div id="revfield_$" class="settings-revfield f-contain
     <div class="f-i">\
       <label for="authorView_$">Visibility</label>\
       <span class="select"><select name="authorView_$" id="authorView_$" class="reviewfield_authorView">\
-        <option value="au">Shown to authors</option>\
+        <option value="au">Visible to authors</option>\
         <option value="pc">Hidden from authors</option>\
         <option value="audec">Hidden from authors until decision</option>\
-        <option value="admin">Shown only to administrators</option>\
+        <option value="admin">Administrators only</option>\
       </select></span>\
     </div>\
     <div class="f-i reviewrow_options">\
@@ -401,7 +401,7 @@ function field_visibility_text(visibility) {
     if ((visibility || "pc") === "pc")
         return "(hidden from authors)";
     else if (visibility === "admin")
-        return "(shown only to administrators)";
+        return "(administrators only)";
     else if (visibility === "secret")
         return "(secret)";
     else if (visibility === "audec")
@@ -491,6 +491,10 @@ function append_field(fid, pos) {
         }
     } else {
         $f.find(".reviewrow_rounds").remove();
+    }
+
+    if (!hotcrp_status.rev.some_author_can_view) {
+        $f.find(".reviewfield_authorView").find("option[value=au]").text("Eventually visible to authors");
     }
 
     $f.find(".revfield_remove").on("click", remove);

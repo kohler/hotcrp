@@ -4027,7 +4027,7 @@ class Conf {
         // deadlines settings
         $my_deadlines = null;
         if ($Me) {
-            $my_deadlines = $Me->my_deadlines($this->paper);
+            $my_deadlines = $Me->my_deadlines($this->paper ? [$this->paper] : null);
             Ht::stash_script("hotcrp_deadlines.init(" . json_encode_browser($my_deadlines) . ")");
         }
         if ($this->default_format) {
