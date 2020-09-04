@@ -997,7 +997,7 @@ class Contact {
         $n = htmlspecialchars(Text::nameo($user, NAME_P));
         if ($pfx === "r"
             && isset($user->contactTags)
-            && ($this->can_view_user_tags() || $user->contactXid === $this->contactXid)) {
+            && ($this->can_view_user_tags() || $user->contactId === $this->contactXid)) {
             $dt = $this->conf->tags();
             if (($viewable = $dt->censor(TagMap::CENSOR_VIEW, $user->contactTags, $this, null))) {
                 if (($colors = $dt->color_classes($viewable))) {
