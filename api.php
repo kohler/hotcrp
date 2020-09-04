@@ -108,7 +108,7 @@ if ($is_track) {
     json_exit(404, "Unknown request “" . $Qreq->fn . "”");
 }
 
-$j = $Me->my_deadlines($Conf->paper);
+$j = $Me->my_deadlines($Conf->paper ? [$Conf->paper] : []);
 
 if ($Conf->paper && $Me->can_view_tags($Conf->paper)) {
     $pj = (object) ["pid" => $Conf->paper->paperId];
