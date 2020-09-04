@@ -60,7 +60,7 @@ function change_email_by_capability($Qreq) {
         $capdata->delete();
         $Conf->confirmMsg("Your email address has been changed.");
         if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId) {
-            $Me = $Acct->activate($Qreq);
+            Contact::set_guser($Acct->activate($Qreq));
         }
         if (Contact::session_user_index($capcontent->oldemail) >= 0) {
             LoginHelper::change_session_users([

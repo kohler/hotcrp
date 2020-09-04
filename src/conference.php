@@ -256,7 +256,6 @@ class Conf {
 
     /** @var Conf */
     static public $main;
-
     /** @var int */
     static public $now;
 
@@ -3578,11 +3577,10 @@ class Conf {
             }
             if (($whynot = $user->perm_view_paper($prow, false, $qreq->p))) {
                 $qreq->set_annex("paper_whynot", $whynot);
-            } else {
-                $this->paper = $prow;
+                $prow = null;
             }
         }
-        return $this->paper;
+        return ($this->paper = $prow);
     }
 
 
@@ -4027,7 +4025,7 @@ class Conf {
         // deadlines settings
         $my_deadlines = null;
         if ($Me) {
-            $my_deadlines = $Me->my_deadlines($this->paper ? [$this->paper] : null);
+            $my_deadlines = $Me->my_deadlines($this->paper ? [$this->paper] : []);
             Ht::stash_script("hotcrp_deadlines.init(" . json_encode_browser($my_deadlines) . ")");
         }
         if ($this->default_format) {

@@ -323,7 +323,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
     }
 
-    static function make_connection() : Qrequest {
+    static function make_global() : Qrequest {
         $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
         $qreq->set_page_path(Navigation::page(), Navigation::path());
         foreach ($_GET as $k => $v) {

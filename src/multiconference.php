@@ -95,7 +95,7 @@ class Multiconference {
     }
 
     static function fail_message($errors) {
-        global $Me, $Opt;
+        global $Opt;
         $maintenance = $Opt["maintenance"] ?? null;
 
         if ($maintenance) {
@@ -120,7 +120,7 @@ class Multiconference {
             if (!Conf::$main) {
                 Conf::set_main_instance(new Conf($Opt, false));
             }
-            $Me = null;
+            Contact::set_guser(null);
             header("HTTP/1.1 404 Not Found");
             Conf::$main->header("HotCRP Error", "", ["action_bar" => false]);
             foreach ($errors as $i => &$e) {

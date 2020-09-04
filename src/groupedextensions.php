@@ -95,7 +95,7 @@ class GroupedExtensions implements XtContext {
         return $this->root;
     }
 
-    /** @var callable(string,object,?Contact,Conf):(?bool) $checker */
+    /** @param callable(string,object,?Contact,Conf):(?bool) $checker */
     function add_xt_checker($checker) {
         $this->_xt_checkers[] = $checker;
     }

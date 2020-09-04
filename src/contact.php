@@ -8,10 +8,16 @@ class Contact {
     /** @var int */
     static public $rights_version = 1;
     /** @var ?Contact */
+    static public $guser;
+    /** @var bool */
+    static public $no_guser = false;
+    /** @var ?Contact */
     static public $true_user;
+    /** @var bool */
     static public $allow_nonexistent_properties = false;
     /** @var int */
     static public $next_xid = -2;
+    /** @var bool */
 
     /** @var Conf */
     public $conf;
@@ -364,6 +370,12 @@ class Contact {
         $this->_disabled = null;
         $this->_contactdb_user = false;
     }
+
+    static function set_guser(Contact $user = null) {
+        global $Me;
+        Contact::$guser = $Me = $user;
+    }
+
 
     function unslice_using($x) {
         foreach (self::$props as $prop => $shape) {

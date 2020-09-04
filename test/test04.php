@@ -145,7 +145,7 @@ xassert_eqq($te2_cdb->firstName, "");
 xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
 
 // changes by the chair don't affect the cdb
-$Me = user($marina);
+Contact::set_guser(user($marina));
 $te2_cdb = $te2->contactdb_user();
 Dbl::qe($Conf->contactdb(), "update ContactInfo set affiliation='' where email='te2@_.com'");
 $acct = $us->save((object) ["firstName" => "Wacky", "affiliation" => "String"], $te2);

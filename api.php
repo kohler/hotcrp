@@ -33,9 +33,9 @@ if (!isset($_GET["p"])
 }
 
 // trackerstatus is a special case: prevent session creation
-global $Me;
 if ($_GET["fn"] === "trackerstatus") {
-    $Me = false;
+    require_once("src/init.php");
+    Contact::$no_guser = true;
     require_once("src/initweb.php");
     MeetingTracker::trackerstatus_api(new Contact(null, $Conf));
     exit;
@@ -44,81 +44,87 @@ if ($_GET["fn"] === "trackerstatus") {
 // initialization
 require_once("src/initweb.php");
 
-if ($Qreq->base !== null) {
-    $Conf->set_siteurl($Qreq->base);
-}
-if (!$Me->has_account_here()
-    && ($key = $Me->capability("tracker_kiosk"))) {
-    $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
-    if (isset($kiosks->$key) && $kiosks->$key->update_at >= Conf::$now - 172800) {
-        if ($kiosks->$key->update_at < Conf::$now - 3600) {
-            $kiosks->$key->update_at = Conf::$now;
-            $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
-        }
-        $Me->tracker_kiosk_state = $kiosks->$key->show_papers ? 2 : 1;
+function handle_api(Conf $conf, Contact $me, Qrequest $qreq) {
+    if ($qreq->base !== null) {
+        $conf->set_siteurl($qreq->base);
     }
-}
-if ($Qreq->p) {
-    $Conf->set_paper_request($Qreq, $Me);
-}
-
-// requests
-if ($Conf->has_api($Qreq->fn) || $Me->is_disabled()) {
-    $Conf->call_api_exit($Qreq->fn, $Me, $Qreq, $Conf->paper);
-}
-
-if ($Qreq->fn === "events") {
-    if (!$Me->is_reviewer())
-        json_exit(403, ["ok" => false]);
-    $from = $Qreq->from;
-    if (!$from || !ctype_digit($from)) {
-        $from = Conf::$now;
-    }
-    $when = $from;
-    $rf = $Conf->review_form();
-    $events = new PaperEvents($Me);
-    $rows = [];
-    $more = false;
-    foreach ($events->events($when, 11) as $xr) {
-        if (count($rows) == 10) {
-            $more = true;
-        } else {
-            if ($xr->crow) {
-                $rows[] = $xr->crow->unparse_flow_entry($Me);
-            } else {
-                $rows[] = $rf->unparse_flow_entry($xr->prow, $xr->rrow, $Me);
+    if (!$me->has_account_here()
+        && ($key = $me->capability("tracker_kiosk"))) {
+        $kiosks = $conf->setting_json("__tracker_kiosk") ? : (object) array();
+        if (isset($kiosks->$key) && $kiosks->$key->update_at >= Conf::$now - 172800) {
+            if ($kiosks->$key->update_at < Conf::$now - 3600) {
+                $kiosks->$key->update_at = Conf::$now;
+                $conf->save_setting("__tracker_kiosk", 1, $kiosks);
             }
-            $when = $xr->eventTime;
+            $me->tracker_kiosk_state = $kiosks->$key->show_papers ? 2 : 1;
         }
     }
-    json_exit(["ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
-               "rows" => $rows, "more" => $more]);
+    if ($qreq->p) {
+        $conf->set_paper_request($qreq, $me);
+    }
+
+    // requests
+    if ($conf->has_api($qreq->fn) || $me->is_disabled()) {
+        $conf->call_api_exit($qreq->fn, $me, $qreq, $conf->paper);
+    }
+
+    if ($qreq->fn === "events") {
+        if (!$me->is_reviewer()) {
+            json_exit(403, ["ok" => false]);
+        }
+        $from = $qreq->from;
+        if (!$from || !ctype_digit($from)) {
+            $from = Conf::$now;
+        }
+        $when = $from;
+        $rf = $conf->review_form();
+        $events = new PaperEvents($me);
+        $rows = [];
+        $more = false;
+        foreach ($events->events($when, 11) as $xr) {
+            if (count($rows) == 10) {
+                $more = true;
+            } else {
+                if ($xr->crow) {
+                    $rows[] = $xr->crow->unparse_flow_entry($me);
+                } else {
+                    $rows[] = $rf->unparse_flow_entry($xr->prow, $xr->rrow, $me);
+                }
+                $when = $xr->eventTime;
+            }
+        }
+        json_exit(["ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
+                   "rows" => $rows, "more" => $more]);
+    }
+
+    if ($qreq->fn === "searchcompletion") {
+        $s = new PaperSearch($me, "");
+        json_exit(["ok" => true, "searchcompletion" => $s->search_completion()]);
+    }
+
+    // from here on: `status` and `track` requests
+    $is_track = $qreq->fn === "track";
+    if ($is_track) {
+        MeetingTracker::track_api($me, $qreq); // may fall through to act like `status`
+    } else if ($qreq->fn !== "status") {
+        json_exit(404, "Unknown request “" . $qreq->fn . "”");
+    }
+
+    $j = $me->my_deadlines($conf->paper ? [$conf->paper] : []);
+
+    if ($conf->paper && $me->can_view_tags($conf->paper)) {
+        $pj = (object) ["pid" => $conf->paper->paperId];
+        $conf->paper->add_tag_info_json($pj, $me);
+        if (count((array) $pj) > 1) {
+            $j->p = [$conf->paper->paperId => $pj];
+        }
+    }
+
+    if ($is_track && ($new_trackerid = $qreq->annex("new_trackerid"))) {
+        $j->new_trackerid = $new_trackerid;
+    }
+    $j->ok = true;
+    json_exit($j);
 }
 
-if ($Qreq->fn === "searchcompletion") {
-    $s = new PaperSearch($Me, "");
-    json_exit(["ok" => true, "searchcompletion" => $s->search_completion()]);
-}
-
-// from here on: `status` and `track` requests
-$is_track = $Qreq->fn === "track";
-if ($is_track) {
-    MeetingTracker::track_api($Me, $Qreq); // may fall through to act like `status`
-} else if ($Qreq->fn !== "status") {
-    json_exit(404, "Unknown request “" . $Qreq->fn . "”");
-}
-
-$j = $Me->my_deadlines($Conf->paper ? [$Conf->paper] : []);
-
-if ($Conf->paper && $Me->can_view_tags($Conf->paper)) {
-    $pj = (object) ["pid" => $Conf->paper->paperId];
-    $Conf->paper->add_tag_info_json($pj, $Me);
-    if (count((array) $pj) > 1)
-        $j->p = [$Conf->paper->paperId => $pj];
-}
-
-if ($is_track && ($new_trackerid = $Qreq->annex("new_trackerid"))) {
-    $j->new_trackerid = $new_trackerid;
-}
-$j->ok = true;
-json_exit($j);
+handle_api(Conf::$main, Contact::$guser, $Qreq);

@@ -21,7 +21,7 @@ if (Conf::$main->opt("phpSuffix") !== null) {
 }
 
 // Collect $Qreq
-$Qreq = Qrequest::make_connection();
+$Qreq = Qrequest::make_global();
 
 // Check for redirect to https
 if (Conf::$main->opt("redirectToHttps")) {
@@ -35,13 +35,7 @@ header("Cache-Control: max-age=0,must-revalidate,private");
 // Set up Content-Security-Policy if appropriate
 Conf::$main->prepare_content_security_policy();
 
-// Don't set up a session if $Me is false
-if ($Me === false) {
-    return;
-}
-
-
-// Initialize user
+// Initialize user if required
 function initialize_user_redirect($nav, $uindex, $nusers) {
     if ($nav->page === "api") {
         if ($nusers === 0) {
@@ -61,7 +55,7 @@ function initialize_user_redirect($nav, $uindex, $nusers) {
 }
 
 function initialize_user() {
-    global $Me, $Qreq;
+    global $Qreq;
     $conf = Conf::$main;
     $nav = Navigation::get();
 
@@ -123,25 +117,23 @@ function initialize_user() {
     }
 
     // look up and activate user
-    $Me = null;
-    if ($trueemail) {
-        $Me = $conf->user_by_email($trueemail);
+    $guser = $trueemail ? $conf->user_by_email($trueemail) : null;
+    if (!$guser) {
+        $guser = new Contact($trueemail ? (object) ["email" => $trueemail] : null);
     }
-    if (!$Me) {
-        $Me = new Contact($trueemail ? (object) ["email" => $trueemail] : null);
-    }
-    $Me = $Me->activate($Qreq, true);
+    $guser = $guser->activate($Qreq, true);
+    Contact::set_guser($guser);
 
     // author view capability documents should not be indexed
-    if (!$Me->email
-        && $Me->has_author_view_capability()
+    if (!$guser->email
+        && $guser->has_author_view_capability()
         && !$conf->opt("allowIndexPapers")) {
         header("X-Robots-Tag: noindex, noarchive");
     }
 
     // redirect if disabled
-    if ($Me->is_disabled()) {
-        $gj = $conf->page_partials($Me)->get($nav->page);
+    if ($guser->is_disabled()) {
+        $gj = $conf->page_partials($guser)->get($nav->page);
         if (!$gj || !get($gj, "allow_disabled")) {
             Navigation::redirect_site($conf->hoturl_site_relative_raw("index"));
         }
@@ -153,7 +145,7 @@ function initialize_user() {
         unset($_SESSION["login_bounce"]);
     }
 
-    if (!$Me->is_empty()
+    if (!$guser->is_empty()
         && isset($_SESSION["login_bounce"])
         && !isset($_SESSION["testsession"])) {
         $lb = $_SESSION["login_bounce"];
@@ -172,7 +164,7 @@ function initialize_user() {
 
     // set $_SESSION["addrs"]
     if ($_SERVER["REMOTE_ADDR"]
-        && (!$Me->is_empty()
+        && (!$guser->is_empty()
             || isset($_SESSION["addrs"]))
         && (!isset($_SESSION["addrs"])
             || !is_array($_SESSION["addrs"])
@@ -188,4 +180,6 @@ function initialize_user() {
     }
 }
 
-initialize_user();
+if (!Contact::$no_guser) {
+    initialize_user();
+}
