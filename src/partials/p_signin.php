@@ -21,7 +21,9 @@ class Signin_Partial {
         if (isset($_GET["post"])) {
             $msg .= ", post=" . $_GET["post"];
         }
-        error_log($msg);
+        if ($sid !== "" || $action !== "signin") {
+            error_log($msg);
+        }
 
         $user->conf->msg($user->conf->_i("badpost"), 2);
     }
