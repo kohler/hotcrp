@@ -475,8 +475,11 @@ submitted. Add a “<code>No entry</code>” line to make the score optional.</p
         . ", ttemplate:" . json_encode_browser(ReviewField::make_template(false, $sv->conf))
         . "})");
 
-    echo Ht::hidden("has_review_form", 1),
-        "<div id=\"reviewform_container\"></div>",
+    echo Ht::hidden("has_review_form", 1);
+    if (!$sv->conf->can_some_author_view_review()) {
+        echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';
+    }
+    echo "<div id=\"reviewform_container\"></div>",
         "<div id=\"reviewform_removedcontainer\"></div>",
         Ht::button("Add score field", ["class" => "settings-add-review-field score"]),
         "<span class=\"sep\"></span>",

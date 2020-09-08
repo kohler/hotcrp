@@ -355,7 +355,7 @@ var revfield_template = '<div id="revfield_$" class="settings-revfield f-contain
 var revfieldview_template = '<div style="line-height:1.35">\
 <span class="settings-revfn"></span>\
 <span class="settings-revrounds"></span>\
-<span class="settings-revvis"></span>\
+<span class="field-visibility"></span>\
 <div class="settings-revdata"></div>\
 </div>';
 
@@ -414,7 +414,7 @@ function create_field_view(fid, fieldj) {
     var $f = $(revfieldview_template.replace(/\$/g, fid)), $x, i, j, x;
     $f.find(".settings-revfn").text(fieldj.name || "<unnamed>");
 
-    $x = $f.find(".settings-revvis");
+    $x = $f.find(".field-visibility");
     x = field_visibility_text(fieldj.visibility);
     x ? $x.text(x) : $x.remove();
 
@@ -491,10 +491,6 @@ function append_field(fid, pos) {
         }
     } else {
         $f.find(".reviewrow_rounds").remove();
-    }
-
-    if (!hotcrp_status.rev.some_author_can_view) {
-        $f.find(".reviewfield_authorView").find("option[value=au]").text("Eventually visible to authors");
     }
 
     $f.find(".revfield_remove").on("click", remove);
@@ -576,7 +572,7 @@ function add_dialog(fid, focus) {
             hc.push('<div><span class="settings-revfn">' + text_to_html(s.name) + '</span>', '<hr class="c" /></div>');
             var x = field_visibility_text(s.visibility);
             if (x)
-                hc.push('<span class="settings-revvis">' + text_to_html(x) + '</span>');
+                hc.push('<span class="field-visibility">' + text_to_html(x) + '</span>');
             hc.pop();
             hc.push('<div class="settings-revhint">' + text_to_html(s.description || "") + '</div>');
             if (s.options) {

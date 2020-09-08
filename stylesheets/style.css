@@ -1355,7 +1355,7 @@ th.settings-simplehead {
 .settings-revfn {
 	font-weight: bold;
 }
-.settings-revvis, .settings-revrounds, .settings-reveditor {
+.settings-revrounds, .settings-reveditor {
 	display: inline-block;
 	padding-left: 1em;
 }
