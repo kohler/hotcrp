@@ -726,14 +726,18 @@ class ReviewForm implements JsonSerializable {
                 }
             }
             echo '">', $f->name_html, '</label>';
-            if ($f->view_score < VIEWSCORE_REVIEWERONLY) {
-                echo '<div class="revvis">(secret)</div>';
-            } else if ($f->view_score < VIEWSCORE_PC) {
-                echo '<div class="revvis">(shown only to chairs)</div>';
-            } else if ($f->view_score < VIEWSCORE_AUTHORDEC) {
-                echo '<div class="revvis">(hidden from authors)</div>';
-            } else if ($f->view_score < VIEWSCORE_AUTHOR) {
-                echo '<div class="revvis">(hidden from authors until decision)</div>';
+            if ($f->view_score < VIEWSCORE_AUTHOR) {
+                echo '<div class="field-visibility">';
+                if ($f->view_score < VIEWSCORE_REVIEWERONLY) {
+                    echo '(secret)';
+                } else if ($f->view_score < VIEWSCORE_PC) {
+                    echo '(shown only to chairs)';
+                } else if ($f->view_score < VIEWSCORE_AUTHORDEC) {
+                    echo '(hidden from authors)';
+                } else {
+                    echo '(hidden from authors until decision)';
+                }
+                echo '</div>';
             }
             echo '</h3>';
 

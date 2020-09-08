@@ -1264,7 +1264,7 @@ td.rentry {
 div.hint {
 	margin-bottom: 0.5ex;
 }
-.hint, .revvis, .revevis {
+.hint {
 	font-weight: normal;
 	font-style: normal;
 	color: #555555;
@@ -3258,7 +3258,9 @@ a:hover .t-editor,
 .revet > .revfn {
 	color: #683131;
 }
-.revvis {
+.field-visibility {
+	font-weight: normal;
+	font-style: normal;
 	display: inline-block;
 	padding-left: 1em;
 	color: #999999;

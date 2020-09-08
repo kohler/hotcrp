@@ -3919,7 +3919,7 @@ function render_review_body(rrow) {
             x = "au";
         }
         if (x != "au") {
-            t += '<div class="revvis">(' +
+            t += '<div class="field-visibility">(' +
                 (({secret: "secret", admin: "administrators only",
                    pc: "hidden from authors", audec: "hidden from authors until decision"})[x] || x) +
                 ')</div>';

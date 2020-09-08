@@ -442,7 +442,11 @@ class PaperTable {
         if ($opt->required) {
             $klass .= " field-required";
         }
-        echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => $klass]), '</h3>';
+        echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => $klass]);
+        if ($opt->visibility === "admin") {
+            echo '<div class="field-visibility">(hidden from reviewers)</div>';
+        }
+        echo '</h3>';
     }
 
     /** @param array<string,int|string> $extra */
