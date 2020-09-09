@@ -79,12 +79,12 @@ function check_paper1($paper1) {
     xassert(!$user_marina->can_view_tag($paper1, $user_estrin->contactId . "~foo"));
     xassert($user_marina->can_view_tag($paper1, $user_marina->contactId . "~foo"));
 
-    xassert($user_chair->can_update_paper($paper1));
-    xassert($user_estrin->can_update_paper($paper1));
-    xassert(!$user_marina->can_update_paper($paper1));
-    xassert($user_van->can_update_paper($paper1));
-    xassert(!$user_kohler->can_update_paper($paper1));
-    xassert(!$user_nobody->can_update_paper($paper1));
+    xassert($user_chair->can_edit_paper($paper1));
+    xassert($user_estrin->can_edit_paper($paper1));
+    xassert(!$user_marina->can_edit_paper($paper1));
+    xassert($user_van->can_edit_paper($paper1));
+    xassert(!$user_kohler->can_edit_paper($paper1));
+    xassert(!$user_nobody->can_edit_paper($paper1));
 }
 
 $paper1 = $user_chair->checked_paper_by_id(1);
@@ -100,13 +100,13 @@ xassert($user_capability->can_view_paper($paper1));
 xassert(!$user_capability->allow_administer($paper1));
 xassert(!$user_capability->can_administer($paper1));
 xassert(!$user_capability->can_view_tags($paper1));
-xassert(!$user_capability->can_update_paper($paper1));
+xassert(!$user_capability->can_edit_paper($paper1));
 
 // rejected papers cannot be updated
-xassert($user_estrin->can_update_paper($paper1));
+xassert($user_estrin->can_edit_paper($paper1));
 xassert_assign($user_chair, "paper,action,decision\n1,decision,no\n");
 $paper1 = $user_chair->checked_paper_by_id(1);
-xassert(!$user_estrin->can_update_paper($paper1));
+xassert(!$user_estrin->can_edit_paper($paper1));
 
 // clear decision
 xassert_eq($paper1->outcome, -1);
@@ -131,13 +131,13 @@ xassert_eq($Conf->setting("paperacc", 0), 0);
 // change submission date
 $Conf->save_setting("sub_update", Conf::$now - 5);
 $Conf->save_setting("sub_sub", Conf::$now - 5);
-xassert($user_chair->can_update_paper($paper1));
-xassert(!$user_chair->call_with_overrides(Contact::OVERRIDE_CHECK_TIME, "can_update_paper", $paper1));
-xassert(!$user_estrin->can_update_paper($paper1));
-xassert(!$user_marina->can_update_paper($paper1));
-xassert(!$user_van->can_update_paper($paper1));
-xassert(!$user_kohler->can_update_paper($paper1));
-xassert(!$user_nobody->can_update_paper($paper1));
+xassert($user_chair->can_edit_paper($paper1));
+xassert(!$user_chair->call_with_overrides(Contact::OVERRIDE_CHECK_TIME, "can_edit_paper", $paper1));
+xassert(!$user_estrin->can_edit_paper($paper1));
+xassert(!$user_marina->can_edit_paper($paper1));
+xassert(!$user_van->can_edit_paper($paper1));
+xassert(!$user_kohler->can_edit_paper($paper1));
+xassert(!$user_nobody->can_edit_paper($paper1));
 
 // role assignment works
 $paper18 = $user_mgbaker->checked_paper_by_id(18);
@@ -854,7 +854,7 @@ xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@lel
 $user_sclin = $Conf->checked_user_by_email("sclin@leland.stanford.edu");
 $Conf->save_setting("sub_update", Conf::$now + 10);
 $Conf->save_setting("sub_sub", Conf::$now + 10);
-xassert($user_sclin->can_update_paper($paper3));
+xassert($user_sclin->can_edit_paper($paper3));
 xassert_assign($user_sclin, "paper,action,user\n3,conflict,rguerin@ibm.com\n");
 $paper3 = $user_chair->checked_paper_by_id(3);
 xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");

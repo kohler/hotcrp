@@ -2889,10 +2889,18 @@ class Conf {
     function timeStartPaper() {
         return $this->deadlinesBetween("sub_open", "sub_reg", "sub_grace");
     }
-    function timeUpdatePaper($prow = null) {
+    /** @param ?PaperInfo $prow
+     * @return bool */
+    function time_edit_paper($prow = null) {
         return $this->deadlinesBetween("sub_open", "sub_update", "sub_grace")
             && (!$prow || $prow->timeSubmitted <= 0 || $this->setting("sub_freeze") <= 0);
     }
+    /** @deprecated */
+    function timeUpdatePaper($prow = null) {
+        return $this->time_edit_paper($prow);
+    }
+    /** @param ?PaperInfo $prow
+     * @return bool */
     function timeFinalizePaper($prow = null) {
         return $this->deadlinesBetween("sub_open", "sub_sub", "sub_grace")
             && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
@@ -2900,8 +2908,12 @@ class Conf {
     function allow_final_versions() {
         return $this->setting("final_open") > 0;
     }
-    function time_submit_final_version() {
+    function time_edit_final_paper() {
         return $this->deadlinesBetween("final_open", "final_done", "final_grace");
+    }
+    /** @deprecated */
+    function time_submit_final_version() {
+        return $this->time_edit_final_paper();
     }
     function can_some_author_view_review($reviewsOutstanding = false) {
         return $this->any_response_open

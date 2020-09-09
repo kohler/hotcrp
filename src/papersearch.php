@@ -1775,7 +1775,7 @@ class PaperSearch {
             || ($user->isPC && in_array($limit, ["acc", "req", "lead", "reviewable",
                                                  "admin", "alladmin", "undec"], true))) {
             /* ok */
-        } else if ($user->privChair && !$limit && $this->conf->timeUpdatePaper()) {
+        } else if ($user->privChair && !$limit && $this->conf->time_edit_paper()) {
             $limit = "all";
         } else if (($user->privChair && $limit === "act")
                    || ($user->isPC

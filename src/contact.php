@@ -2954,21 +2954,21 @@ class Contact {
     }
 
     /** @return bool */
-    function can_update_paper(PaperInfo $prow) {
+    function can_edit_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
         if (!$rights->allow_author || $prow->timeWithdrawn > 0) {
             return false;
         } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
         } else {
-            return ($prow->outcome >= 0 && $this->conf->timeUpdatePaper($prow))
+            return ($prow->outcome >= 0 && $this->conf->time_edit_paper($prow))
                 || $this->override_deadlines($rights);
         }
     }
 
     /** @return ?PermissionProblem */
-    function perm_update_paper(PaperInfo $prow) {
-        if ($this->can_update_paper($prow)) {
+    function perm_edit_paper(PaperInfo $prow) {
+        if ($this->can_edit_paper($prow)) {
             return null;
         }
         $rights = $this->rights($prow);
@@ -2989,7 +2989,7 @@ class Contact {
             && $this->conf->setting("sub_freeze") > 0) {
             $whyNot["updateSubmitted"] = true;
         }
-        if (!$this->conf->timeUpdatePaper($prow)
+        if (!$this->conf->time_edit_paper($prow)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_update";
         }
@@ -2997,6 +2997,18 @@ class Contact {
             $whyNot["override"] = true;
         }
         return $whyNot;
+    }
+
+    /** @return bool
+     * @deprecated */
+    function can_update_paper(PaperInfo $prow) {
+        return $this->can_edit_paper($prow);
+    }
+
+    /** @return ?PermissionProblem
+     * @deprecated */
+    function perm_update_paper(PaperInfo $prow) {
+        return $this->perm_edit_paper($prow);
     }
 
     /** @return bool */
@@ -3115,7 +3127,7 @@ class Contact {
         if ($prow->timeWithdrawn <= 0) {
             $whyNot["notWithdrawn"] = true;
         }
-        if (!$this->conf->timeUpdatePaper($prow)
+        if (!$this->conf->time_edit_paper($prow)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_update";
         }
@@ -3140,12 +3152,12 @@ class Contact {
             return $v > 0;
         } else {
             return $rights->allow_administer
-                || $this->conf->time_submit_final_version();
+                || $this->conf->time_edit_final_paper();
         }
     }
 
     /** @return bool */
-    function can_submit_final_paper(PaperInfo $prow) {
+    function can_edit_final_paper(PaperInfo $prow) {
         if ($prow->timeWithdrawn > 0
             || $prow->outcome <= 0
             || !$this->conf->allow_final_versions()) {
@@ -3157,14 +3169,14 @@ class Contact {
         } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
         } else {
-            return $this->conf->time_submit_final_version()
+            return $this->conf->time_edit_final_paper()
                 || $this->override_deadlines($rights);
         }
     }
 
     /** @return ?PermissionProblem */
-    function perm_submit_final_paper(PaperInfo $prow) {
-        if ($this->can_submit_final_paper($prow)) {
+    function perm_edit_final_paper(PaperInfo $prow) {
+        if ($this->can_edit_final_paper($prow)) {
             return null;
         }
         $rights = $this->rights($prow);
@@ -3185,7 +3197,7 @@ class Contact {
             $whyNot["rejected"] = true;
         } else if (!$this->conf->allow_final_versions()) {
             $whyNot["deadline"] = "final_open";
-        } else if (!$this->conf->time_submit_final_version()
+        } else if (!$this->conf->time_edit_final_paper()
                    && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "final_done";
         }
@@ -3193,6 +3205,18 @@ class Contact {
             $whyNot["override"] = true;
         }
         return $whyNot;
+    }
+
+    /** @return bool
+     * @deprecated */
+    function can_submit_final_paper(PaperInfo $prow) {
+        return $this->can_edit_final_paper($prow);
+    }
+
+    /** @return ?PermissionProblem
+     * @deprecated */
+    function perm_submit_final_paper(PaperInfo $prow) {
+        return $this->perm_edit_final_paper($prow);
     }
 
     /** @return bool */

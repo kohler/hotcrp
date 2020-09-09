@@ -72,7 +72,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             }
         } else if ($this->xtype === "unsubmit") {
             if ($res["_submitted"] !== 0) {
-                if (($whynot = $state->user->perm_update_paper($prow))) {
+                if (($whynot = $state->user->perm_edit_paper($prow))) {
                     return whyNotText($whynot);
                 }
                 $res["_submitted"] = 0;

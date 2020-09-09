@@ -183,12 +183,12 @@ function update_paper(Qrequest $qreq, $action) {
     if (!$prow) {
         // we know that can_start_paper implies can_finalize_paper
         $whyNot = $Me->perm_start_paper();
-    } else if ($action == "final") {
-        $whyNot = $Me->perm_submit_final_paper($prow);
+    } else if ($action === "final") {
+        $whyNot = $Me->perm_edit_final_paper($prow);
     } else {
-        $whyNot = $Me->perm_update_paper($prow);
+        $whyNot = $Me->perm_edit_paper($prow);
         if ($whyNot
-            && $action == "submit"
+            && $action === "submit"
             && !count(array_diff($ps->diffs, ["contacts", "status"])))
             $whyNot = $Me->perm_finalize_paper($prow);
     }
@@ -378,7 +378,7 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
     // Use the request unless the request failed because updates
     // aren't allowed.
     $useRequest = !$whyNot || !$prow
-        || !($action != "final" && !$Me->can_update_paper($prow)
+        || !($action != "final" && !$Me->can_edit_paper($prow)
              && $Me->can_finalize_paper($prow));
 }
 
@@ -452,8 +452,8 @@ if ($paperTable->mode == "edit") {
         $editable = true;
     } else {
         $old_overrides = $Me->remove_overrides(Contact::OVERRIDE_CHECK_TIME);
-        $editable = $Me->can_update_paper($prow);
-        if ($Me->can_submit_final_paper($prow)) {
+        $editable = $Me->can_edit_paper($prow);
+        if ($Me->can_edit_final_paper($prow)) {
             $editable = "f";
         }
         $Me->set_overrides($old_overrides);

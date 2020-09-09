@@ -612,7 +612,7 @@ class PaperTable {
         // conflicts
         if ($this->user->isPC
             && !$this->prow->has_conflict($this->user)
-            && $this->conf->timeUpdatePaper($this->prow)
+            && $this->conf->time_edit_paper($this->prow)
             && $this->mode !== "assign"
             && $this->mode !== "contact"
             && $this->prow->outcome >= 0) {
@@ -1683,7 +1683,7 @@ class PaperTable {
                 $this->_main_message("This submission has been withdrawn." . $this->_forceShow_message(), 1);
             }
         } else if ($this->prow->timeSubmitted <= 0) {
-            $whyNot = $this->user->perm_update_paper($this->prow);
+            $whyNot = $this->user->perm_edit_paper($this->prow);
             if (!$whyNot) {
                 $t = [];
                 $t[] = $this->conf->_("This submission is not yet ready for review.");
@@ -1705,14 +1705,14 @@ class PaperTable {
             } else {
                 $this->_main_message('This submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), 1);
             }
-        } else if ($this->user->can_update_paper($this->prow)) {
+        } else if ($this->user->can_edit_paper($this->prow)) {
             if ($this->mode === "edit") {
                 $this->_main_message('This submission is ready and will be considered for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), MessageSet::SUCCESS);
             }
         } else if ($this->conf->allow_final_versions()
                    && $this->prow->outcome > 0
                    && $can_view_decision) {
-            if ($this->user->can_submit_final_paper($this->prow)) {
+            if ($this->user->can_edit_final_paper($this->prow)) {
                 if (($t = $this->conf->_i("finalsubmit", null, $this->deadline_setting_is("final_soft")))) {
                     $this->_main_message($t, 0);
                 }
@@ -1741,7 +1741,7 @@ class PaperTable {
         } else {
             $this->_main_message("You aren’t a contact for this submission, but as an administrator you can still make changes.", MessageSet::NOTE);
         }
-        if ($this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_update_paper", $this->prow)
+        if ($this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_edit_paper", $this->prow)
             && ($v = $this->conf->_i("submit"))) {
             $this->_main_message($v, 0);
         }
@@ -1810,9 +1810,9 @@ class PaperTable {
             // check whether we can save
             $old_overrides = $this->user->set_overrides(Contact::OVERRIDE_CHECK_TIME);
             if ($this->canUploadFinal) {
-                $whyNot = $this->user->perm_submit_final_paper($this->prow);
+                $whyNot = $this->user->perm_edit_final_paper($this->prow);
             } else if ($this->prow->paperId) {
-                $whyNot = $this->user->perm_update_paper($this->prow);
+                $whyNot = $this->user->perm_edit_paper($this->prow);
             } else {
                 $whyNot = $this->user->perm_start_paper();
             }

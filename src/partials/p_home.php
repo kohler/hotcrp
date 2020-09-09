@@ -464,7 +464,7 @@ class Home_Partial {
                 } else {
                     $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">submission deadline</a> has passed.';
                 }
-            } else if (!$conf->timeUpdatePaper()) {
+            } else if (!$conf->time_edit_paper()) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">update deadline</a> has passed, but you can still submit.';
                 $time = $conf->unparse_setting_time_span("sub_sub", " to submit papers");
                 if ($time != "N/A") {

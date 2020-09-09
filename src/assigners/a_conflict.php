@@ -29,7 +29,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             return "You can’t administer #{$prow->paperId}.";
         } else if (!$this->iscontact
                    && !$state->user->can_administer($prow)
-                   && ($whyNot = $state->user->perm_update_paper($prow))) {
+                   && ($whyNot = $state->user->perm_edit_paper($prow))) {
             return whyNotText($whyNot);
         } else {
             return true;

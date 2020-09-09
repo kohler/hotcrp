@@ -1099,7 +1099,7 @@ class PaperInfo {
         return $this->timeWithdrawn <= 0
             && $this->outcome > 0
             && $this->can_author_view_decision()
-            && $this->conf->time_submit_final_version();
+            && $this->conf->time_edit_final_paper();
     }
 
 
