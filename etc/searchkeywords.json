@@ -142,10 +142,13 @@
     },
     {   "name": "decision", "alias": "dec"   },
     {
-        "name": "editfinal",
+        "name": "editfinal", "deprecated": true,
         "parse_callback": "EditFinal_SearchTerm::parse", "has": "yes"
     },
-    {   "name": "edit-final", "alias": "editfinal", "deprecated": true  },
+    {
+        "name": "perm",
+        "parse_callback": "Perm_SearchTerm::parse"
+    },
     {
         "name": "tag",
         "parse_callback": "Tag_SearchTerm::parse",
