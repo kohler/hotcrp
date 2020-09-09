@@ -1095,11 +1095,20 @@ class PaperInfo {
     }
 
     /** @return bool */
+    function can_author_edit_paper() {
+        return $this->timeWithdrawn <= 0
+            && $this->outcome >= 0
+            && ($this->conf->time_edit_paper($this)
+                || $this->perm_tag_value("author-write") > 0);
+    }
+
+    /** @return bool */
     function can_author_edit_final_paper() {
         return $this->timeWithdrawn <= 0
             && $this->outcome > 0
             && $this->can_author_view_decision()
-            && $this->conf->time_edit_final_paper();
+            && ($this->conf->time_edit_final_paper()
+                || $this->perm_tag_value("author-write") > 0);
     }
 
 
@@ -1198,6 +1207,18 @@ class PaperInfo {
             return (float) substr($this->paperTags, $pos + strlen($tag) + 2);
         } else {
             return null;
+        }
+    }
+
+    /** @param string $tag
+     * @return float */
+    function perm_tag_value($tag) {
+        if ($this->paperTags !== null
+            && $this->paperTags !== ""
+            && ($pos = stripos($this->paperTags, " perm:$tag#")) !== false) {
+            return (float) substr($this->paperTags, $pos + strlen($tag) + 7);
+        } else {
+            return 0.0;
         }
     }
 

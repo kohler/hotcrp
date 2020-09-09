@@ -612,10 +612,9 @@ class PaperTable {
         // conflicts
         if ($this->user->isPC
             && !$this->prow->has_conflict($this->user)
-            && $this->conf->time_edit_paper($this->prow)
             && $this->mode !== "assign"
             && $this->mode !== "contact"
-            && $this->prow->outcome >= 0) {
+            && $this->prow->can_author_edit_paper()) {
             $fr->value .= Ht::msg('The authors still have <a href="' . $this->conf->hoturl("deadlines") . '">time</a> to make changes.', 1);
         }
 
