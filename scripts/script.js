@@ -3044,7 +3044,7 @@ handle_ui.on("js-aufoldup", function (event) {
 handle_ui.on("js-click-child", function (event) {
     var a = $(this).find("a")[0]
         || $(this).find("input[type=checkbox], input[type=radio]")[0];
-    if (a && event.target !== a) {
+    if (a && event.target !== a && !a.disabled) {
         var newEvent = new MouseEvent("click", {
             button: event.button, buttons: event.buttons,
             ctrlKey: event.ctrlKey, shiftKey: event.shiftKey,
