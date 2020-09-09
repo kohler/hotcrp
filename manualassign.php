@@ -95,7 +95,6 @@ function saveAssignments($qreq, $reviewer) {
         foreach ($assignments as $line) {
             $text .= join(",", $line) . "\n";
         }
-        error_log($text);
         $aset = new AssignmentSet($Me);
         $aset->parse($text);
         $aset->execute(true);
