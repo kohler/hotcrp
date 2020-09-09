@@ -697,6 +697,7 @@ class PaperTable {
                 return;
         }
         $inputid = "opt" . $dtype;
+        $readonly = !$docx->test_editable($this->prow);
 
         $accepts = $docx->mimetypes();
         $field = $docx->field_key();
@@ -754,7 +755,7 @@ class PaperTable {
                 echo $stamps;
             }
             echo '</div><div class="document-actions">';
-            if ($dtype > 0) {
+            if ($dtype > 0 && !$readonly) {
                 echo '<a href="" class="ui js-remove-document document-action">Delete</a>';
             }
             if ($has_cf && $this->cf->allow_recheck()) {
@@ -774,9 +775,10 @@ class PaperTable {
             }
         }
 
-        echo '<div class="document-replacer">',
-            Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => $inputid]),
-            "</div></div></div>\n\n";
+        if (!$readonly) {
+            echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => $inputid]), '</div>';
+        }
+        echo "</div></div>\n\n";
     }
 
     function render_abstract(FieldRender $fr, PaperOption $o) {

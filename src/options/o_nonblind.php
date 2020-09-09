@@ -32,7 +32,11 @@ class Nonblind_PaperOption extends PaperOption {
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         if ($pt->editable !== "f") {
-            $cb = Ht::checkbox("blind", 1, !$reqov->value, ["id" => false, "data-default-checked" => !$ov->value]);
+            $cb = Ht::checkbox("blind", 1, !$reqov->value, [
+                "id" => false,
+                "data-default-checked" => !$ov->value,
+                "disabled" => !$this->test_editable($ov->prow)
+            ]);
             $pt->echo_editable_option_papt($this,
                 '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
                 ["for" => "checkbox", "tclass" => "ui js-click-child", "id" => $this->formid]);

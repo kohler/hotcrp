@@ -207,6 +207,7 @@ class Contacts_PaperOption extends PaperOption {
             }
         }
         usort($contacts, $this->conf->user_comparator());
+        $readonly = !$this->test_editable($ov->prow);
 
         echo '<div class="papeg">',
             '<div class="', $pt->control_class("contacts", "papet"),
@@ -235,7 +236,7 @@ class Contacts_PaperOption extends PaperOption {
                     Ht::checkbox(null, 1, true, ["disabled" => true, "id" => false]);
             } else {
                 echo Ht::checkbox("contacts:active_$cidx", 1, !!$reqau,
-                    ["data-default-checked" => $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR, "id" => false]);
+                    ["data-default-checked" => $au->contactId > 0 && $au->conflictType >= CONFLICT_AUTHOR, "id" => false, "disabled" => $readonly]);
             }
             echo '</span>', Text::nameo_h($au, NAME_E);
             if (($au->conflictType & CONFLICT_AUTHOR) === 0
@@ -249,21 +250,25 @@ class Contacts_PaperOption extends PaperOption {
             echo '</label></div>';
             ++$cidx;
         }
-        echo '</div><div data-row-template="',
-            htmlspecialchars(self::editable_newcontact_row($pt, '$', null, null)),
-            '">';
+        echo '</div>';
 
-        $reqcontacts = array_merge($reqov->anno("users"), $reqov->anno("bad_users") ?? []);
-        usort($reqcontacts, function ($a, $b) { return $a->author_index - $b->author_index; });
-        foreach ($reqcontacts as $reqau) {
-            if (!in_array($reqau, $foundreqau)) {
-                echo self::editable_newcontact_row($pt, $cidx, $reqov, $reqau);
-                ++$cidx;
+        if (!$readonly) {
+            echo '<div data-row-template="',
+                htmlspecialchars(self::editable_newcontact_row($pt, '$', null, null)),
+                '">';
+
+            $reqcontacts = array_merge($reqov->anno("users"), $reqov->anno("bad_users") ?? []);
+            usort($reqcontacts, function ($a, $b) { return $a->author_index - $b->author_index; });
+            foreach ($reqcontacts as $reqau) {
+                if (!in_array($reqau, $foundreqau)) {
+                    echo self::editable_newcontact_row($pt, $cidx, $reqov, $reqau);
+                    ++$cidx;
+                }
             }
+            echo '</div><div class="ug">', Ht::button("Add contact", ["class" => "ui row-order-ui addrow"]), '</div>';
         }
-        echo '</div><div class="ug">',
-            Ht::button("Add contact", ["class" => "ui row-order-ui addrow"]),
-            "</div></div></div>\n\n";
+
+        echo "</div></div>\n\n";
     }
     // XXX no render because paper strip
 }

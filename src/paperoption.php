@@ -1187,6 +1187,7 @@ class PaperOption {
                 "rows" => max($this->display_space, 1),
                 "cols" => 60,
                 "spellcheck" => ($extra["no_spellcheck"] ?? null ? null : "true"),
+                "readonly" => !$this->test_editable($ov->prow),
                 "data-default-value" => $default_value
             ]),
             "</div></div>\n\n";
@@ -1308,7 +1309,9 @@ class CheckboxPaperOption extends PaperOption {
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         $cb = Ht::checkbox($this->formid, 1, !!$reqov->value, [
-            "id" => $this->readable_formid(), "data-default-checked" => !!$ov->value
+            "id" => $this->readable_formid(),
+            "data-default-checked" => !!$ov->value,
+            "disabled" => !$this->test_editable($ov->prow)
         ]);
         $pt->echo_editable_option_papt($this,
             '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
@@ -1425,6 +1428,7 @@ class SelectorPaperOption extends PaperOption {
             ? ["for" => $this->readable_formid()]
             : ["id" => $this->readable_formid(), "for" => false]);
         echo '<div class="papev">';
+        $readonly = !$this->test_editable($ov->prow);
         if ($this->type === "selector") {
             $sel = [];
             if (!$ov->value) {
@@ -1435,12 +1439,14 @@ class SelectorPaperOption extends PaperOption {
             }
             echo Ht::select($this->formid, $sel, $reqov->value,
                 ["id" => $this->readable_formid(),
-                 "data-default-value" => $ov->value ?? 0]);
+                 "data-default-value" => $ov->value ?? 0,
+                 "disabled" => $readonly]);
         } else {
             foreach ($this->selector as $val => $text) {
                 echo '<div class="checki"><label><span class="checkc">',
                     Ht::radio($this->formid, $val + 1, $val + 1 == $reqov->value,
-                        ["data-default-checked" => $val + 1 == $ov->value]),
+                        ["data-default-checked" => $val + 1 == $ov->value,
+                         "disabled" => $readonly]),
                     '</span>', htmlspecialchars($text), '</label></div>';
             }
         }
@@ -1751,7 +1757,8 @@ class NumericPaperOption extends PaperOption {
                 "id" => $this->readable_formid(), "size" => 8,
                 "size" => 8, "inputmode" => "numeric",
                 "class" => "js-autosubmit" . $pt->has_error_class($this->formid),
-                "data-default-value" => $ov->value ?? ""
+                "data-default-value" => $ov->value ?? "",
+                "readonly" => !$this->test_editable($ov->prow)
             ]),
             "</div></div>\n\n";
     }
@@ -1976,6 +1983,7 @@ class AttachmentsPaperOption extends PaperOption {
             echo ' data-document-max-size="', (int) $max_size, '"';
         }
         echo '>';
+        $readonly = !$this->test_editable($ov->prow);
         foreach ($ov->document_set() as $i => $doc) {
             $oname = "{$this->formid}_{$doc->paperStorageId}_{$i}";
             echo '<div class="has-document" data-dtype="', $this->id,
@@ -1985,12 +1993,17 @@ class AttachmentsPaperOption extends PaperOption {
             if (($stamps = PaperTable::pdf_stamps_html($doc))) {
                 echo $stamps;
             }
-            echo '</div><div class="document-actions">',
-                Ht::link("Delete", "", ["class" => "ui js-remove-document document-action"]),
-                '</div></div>';
+            echo '</div>';
+            if (!$readonly) {
+                echo '<div class="document-actions">', Ht::link("Delete", "", ["class" => "ui js-remove-document document-action"]), '</div>';
+            }
+            echo '</div>';
         }
-        echo '</div>', Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]),
-            "</div>\n\n";
+        echo '</div>';
+        if (!$readonly) {
+            echo Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]);
+        }
+        echo "</div>\n\n";
     }
 
     function render(FieldRender $fr, PaperValue $ov) {

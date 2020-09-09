@@ -119,9 +119,10 @@ class Topics_PaperOption extends PaperOption {
         echo '<div class="papev"><ul class="ctable">';
         $ptopics = $pt->prow->topic_map();
         $topics = $this->conf->topic_set();
+        $readonly = !$this->test_editable($ov->prow);
         foreach ($topics->group_list() as $tg) {
             $arg = ["class" => "uic js-range-click topic-entry", "id" => false,
-                    "data-range-type" => "topic"];
+                    "data-range-type" => "topic", "disabled" => $readonly];
             $isgroup = count($tg) > 2;
             if ($isgroup) {
                 echo '<li class="ctelt cteltg"><div class="ctelti">';

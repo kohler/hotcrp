@@ -177,6 +177,7 @@ class PCConflicts_PaperOption extends PaperOption {
 
         $pt->echo_editable_option_papt($this, null, ["id" => $this->formid]);
         echo '<div class="papev"><ul class="pc-ctable">';
+        $readonly = !$this->test_editable($ov->prow);
 
         foreach ($pcm as $id => $p) {
             $pct = $ctmaps[0][$p->contactId] ?? 0;
@@ -205,7 +206,7 @@ class PCConflicts_PaperOption extends PaperOption {
             }
             echo '"><label>';
 
-            $js = ["id" => "pcc$id"];
+            $js = ["id" => "pcc$id", "disabled" => $readonly];
             if (Conflict::is_author($pct)
                 || (!$admin && Conflict::is_pinned($pct))) {
                 if ($selectors) {

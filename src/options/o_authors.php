@@ -185,7 +185,7 @@ class Authors_PaperOption extends PaperOption {
         }
     }
 
-    private function editable_author_component_entry($pt, $n, $component, $au, $reqau, $ignore_diff) {
+    private function editable_author_component_entry($pt, $n, $component, $au, $reqau, $ignore_diff, $readonly) {
         if ($component === "name") {
             $js = ["size" => "35", "placeholder" => "Name", "autocomplete" => "off", "aria-label" => "Author name"];
             $auval = $au ? $au->name(NAME_PARSABLE) : "";
@@ -207,9 +207,12 @@ class Authors_PaperOption extends PaperOption {
         if ($val !== $auval) {
             $js["data-default-value"] = $auval;
         }
+        if ($readonly) {
+            $js["readonly"] = true;
+        }
         return Ht::entry("authors:{$component}_{$n}", $val, $js);
     }
-    private function editable_authors_tr($pt, $n, $au, $reqau, $shownum) {
+    private function editable_authors_tr($pt, $n, $au, $reqau, $shownum, $readonly) {
         // on new paper, default to editing user as first author
         $ignore_diff = false;
         if ($n === 1
@@ -224,16 +227,18 @@ class Authors_PaperOption extends PaperOption {
         if ($shownum) {
             $t .= '<td class="rxcaption">' . $n . '.</td>';
         }
-        return $t . '<td class="lentry">'
-            . $this->editable_author_component_entry($pt, $n, "email", $au, $reqau, $ignore_diff) . ' '
-            . $this->editable_author_component_entry($pt, $n, "name", $au, $reqau, $ignore_diff) . ' '
-            . $this->editable_author_component_entry($pt, $n, "affiliation", $au, $reqau, $ignore_diff) . ' '
-            . '<span class="nb btnbox aumovebox"><button type="button" class="ui qx need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
-            . Icons::ui_triangle(0)
-            . '</button><button type="button" class="ui qx need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
-            . Icons::ui_triangle(2)
-            . '</button><button type="button" class="ui qx need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>'
-            . $pt->messages_at("authors:$n")
+        $t .= '<td class="lentry">'
+            . $this->editable_author_component_entry($pt, $n, "email", $au, $reqau, $ignore_diff, $readonly) . ' '
+            . $this->editable_author_component_entry($pt, $n, "name", $au, $reqau, $ignore_diff, $readonly) . ' '
+            . $this->editable_author_component_entry($pt, $n, "affiliation", $au, $reqau, $ignore_diff,$readonly);
+        if (!$readonly) {
+            $t .= ' <span class="nb btnbox aumovebox"><button type="button" class="ui qx need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
+                . Icons::ui_triangle(0)
+                . '</button><button type="button" class="ui qx need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
+                . Icons::ui_triangle(2)
+                . '</button><button type="button" class="ui qx need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>';
+        }
+        return $t . $pt->messages_at("authors:$n")
             . $pt->messages_at("authors:email_$n")
             . $pt->messages_at("authors:name_$n")
             . $pt->messages_at("authors:affiliation_$n")
@@ -248,6 +253,7 @@ class Authors_PaperOption extends PaperOption {
             $title .= ' <span class="n">(blind until review)</span>';
         }
         $pt->echo_editable_option_papt($this, $title, ["id" => "authors"]);
+        $readonly = !$this->test_editable($ov->prow);
 
         $max_authors = (int) $this->conf->opt("maxAuthors");
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
@@ -255,7 +261,7 @@ class Authors_PaperOption extends PaperOption {
             '<div class="papev"><table class="js-row-order">',
             '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
-            'data-row-template="', htmlspecialchars($this->editable_authors_tr($pt, '$', null, null, $max_authors !== 1)), '">';
+            'data-row-template="', htmlspecialchars($this->editable_authors_tr($pt, '$', null, null, $max_authors !== 1, $readonly)), '">';
 
         $aulist = PaperInfo::parse_author_list($ov->data_by_index(0));
         $reqaulist = PaperInfo::parse_author_list($reqov->data_by_index(0));
@@ -270,7 +276,7 @@ class Authors_PaperOption extends PaperOption {
         }
 
         for ($n = 1; $n <= $nau; ++$n) {
-            echo $this->editable_authors_tr($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $max_authors !== 1);
+            echo $this->editable_authors_tr($pt, $n, $aulist[$n-1] ?? null, $reqaulist[$n-1] ?? null, $max_authors !== 1, $readonly);
         }
         echo "</tbody></table></div></div>\n\n";
     }
