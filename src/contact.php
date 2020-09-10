@@ -1119,7 +1119,7 @@ class Contact {
     /** @return bool */
     static function is_anonymous_email($email) {
         // see also PaperSearch, Mailer
-        return str_starts_with($email, "anonymous")
+        return substr_compare($email, "anonymous", 0, 9, true) === 0
             && (strlen($email) === 9 || ctype_digit(substr($email, 9)));
     }
 

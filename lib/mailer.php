@@ -130,7 +130,7 @@ class MailPreparation {
             $sent = mail($to, $this->subject, $qpe_body, $htext, $extra);
         } else if (!$sent
                    && !$this->conf->opt("sendEmail")
-                   && !preg_match('/\Aanonymous\d*\z/', $to)) {
+                   && !Contact::is_anonymous_email($to)) {
             unset($headers["mime-version"], $headers["content-type"], $headers["content-transfer-encoding"]);
             $text = join("", $headers) . $eol . $this->body;
             if (PHP_SAPI != "cli") {

@@ -519,13 +519,14 @@ class AssignerContacts {
         $c = Contact::fetch($result, $this->conf);
         Dbl::free($result);
         if (!$c && $create) {
-            assert(validate_email($email) || preg_match('/\Aanonymous\d*\z/', $email));
+            $is_anonymous = Contact::is_anonymous_email($email);
+            assert(validate_email($email) || $is_anonymous);
             $cargs = ["contactId" => self::$next_fake_id, "roles" => 0, "email" => $email];
             foreach (["firstName", "lastName", "affiliation"] as $k) {
                 if ($req && $req[$k])
                     $cargs[$k] = $req[$k];
             }
-            if (preg_match('/\Aanonymous\d*\z/', $email)) {
+            if ($is_anonymous) {
                 $cargs["firstName"] = "Jane Q.";
                 $cargs["lastName"] = "Public";
                 $cargs["affiliation"] = "Unaffiliated";
@@ -1415,7 +1416,7 @@ class AssignmentSet {
                 $this->astate->error("User required.");
                 return false;
             }
-        } else if (substr($user, 0, 9) === "anonymous") {
+        } else if (substr_compare($user, "anonymous", 0, 9) === 0) {
             $u = $aparser->expand_anonymous_user($prow, $req, $user, $this->astate);
         } else {
             $u = false;

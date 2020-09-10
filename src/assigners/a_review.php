@@ -79,7 +79,7 @@ class Review_AssignmentParser extends AssignmentParser {
             }
             $user = "anonymous" . $suf;
         }
-        if (preg_match('/\Aanonymous\d*\z/i', $user)
+        if (Contact::is_anonymous_email($user)
             && ($u = $state->user_by_email($user, true, []))) {
             return [$u];
         } else {

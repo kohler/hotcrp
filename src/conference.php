@@ -2373,8 +2373,9 @@ class Conf {
     function contactdb() {
         if ($this->_cdb === false) {
             $this->_cdb = null;
-            if (($dsn = $this->opt("contactdb_dsn")))
+            if (($dsn = $this->opt("contactdb_dsn"))) {
                 list($this->_cdb, $dbname) = Dbl::connect_dsn($dsn);
+            }
         }
         return $this->_cdb;
     }

@@ -927,6 +927,7 @@ class PaperInfo {
         return $nproblems > 0;
     }
 
+    /** @return bool */
     function potential_conflict(Contact $user) {
         return $this->potential_conflict_callback($user, null);
     }
