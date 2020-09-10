@@ -206,6 +206,7 @@ if (isset($Qreq->undeclinereview)
 $paperTable = new PaperTable($prow, $Qreq, "assign");
 $paperTable->initialize(false, false);
 $paperTable->resolveReview(false);
+$allow_view_authors = $Me->allow_view_authors($prow);
 
 assign_show_header();
 
@@ -357,7 +358,7 @@ foreach ($requests as $req) {
             }
             echo '</li>';
         }
-        if ($Me->allow_view_authors($prow)
+        if ($allow_view_authors
             && ($pt = $prow->potential_conflict_html($rrowid, true))) {
             foreach ($pt[1] as $i => $pcx) {
                 echo '<li class="fx">possible conflict: ', $pcx, '</li>';
@@ -472,7 +473,6 @@ if ($Me->can_administer($prow)) {
     echo ' data-review-rounds="', htmlspecialchars(json_encode($rev_rounds)), '"',
         ' data-default-review-round="', htmlspecialchars($Conf->assignment_round_option(false)), '">';
     $tagger = new Tagger($Me);
-    $show_possible_conflicts = $Me->allow_view_authors($prow);
 
     foreach ($Conf->full_pc_members() as $pc) {
         $p = $pcx[$pc->contactId];
@@ -493,7 +493,7 @@ if ($Me->can_administer($prow)) {
             $crevtype = -1;
         }
         $pcconfmatch = null;
-        if ($show_possible_conflicts && $revtype != -2) {
+        if ($allow_view_authors && $revtype != -2) {
             $pcconfmatch = $prow->potential_conflict_html($pc, !Conflict::is_conflicted($ct));
         }
 
@@ -584,6 +584,9 @@ if (($rrow = $prow->review_of_user($Me))
 $email_class = "fullw";
 if ($Me->can_lookup_user()) {
     $email_class .= " uii js-email-populate";
+    if ($allow_view_authors) {
+        $email_class .= " want-potential-conflict";
+    }
 }
 echo '<div class="w-text g">',
     '<div class="', Ht::control_class("email", "f-i"), '">',
@@ -602,6 +605,9 @@ echo '<div class="w-text g">',
     Ht::label("Affiliation", "revreq_affiliation"),
     Ht::entry("affiliation", (string) $Qreq->affiliation, ["id" => "revreq_affiliation", "size" => 52, "class" => "fullw", "autocomplete" => "off"]),
     '</div>';
+if ($allow_view_authors) {
+    echo '<div class="potential-conflict-container hidden f-i"><label>Potential conflict</label><div class="potential-conflict"></div></div>';
+}
 
 // reason area
 $null_mailer = new HotCRPMailer($Conf);

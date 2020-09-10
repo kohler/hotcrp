@@ -382,6 +382,11 @@ class AssignmentState {
     function warning($msg) {
         $this->msg($this->landmark, $msg, 1);
     }
+    /** @param null|false|int|string $landmark
+     * @param string $msg */
+    function warning_at($landmark, $msg) {
+        $this->msg($landmark, $msg, 1);
+    }
     /** @param string $msg
      * @return false */
     function error($msg) {
@@ -443,7 +448,8 @@ class AssignerContacts {
     /** @var ?Contact */
     private $none_user;
     static private $next_fake_id = -10;
-    static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, roles, contactTags";
+    static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, affiliation, collaborators, roles, contactTags";
+    static public $cdb_query = "contactDbId, firstName, lastName, email, affiliation, collaborators, 0 roles, '' contactTags";
     function __construct(Conf $conf, Contact $viewer) {
         global $Me;
         $this->conf = $conf;
@@ -495,7 +501,7 @@ class AssignerContacts {
         $result = $this->conf->qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
         $c = Contact::fetch($result, $this->conf);
         if (!$c) {
-            $c = new Contact(["contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => ""], $this->conf);
+            $c = new Contact(["contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid"], $this->conf);
         }
         Dbl::free($result);
         return $this->store($c);
@@ -521,19 +527,26 @@ class AssignerContacts {
         if (!$c && $create) {
             $is_anonymous = Contact::is_anonymous_email($email);
             assert(validate_email($email) || $is_anonymous);
-            $cargs = ["contactId" => self::$next_fake_id, "roles" => 0, "email" => $email];
-            foreach (["firstName", "lastName", "affiliation"] as $k) {
-                if ($req && $req[$k])
-                    $cargs[$k] = $req[$k];
+            if (($cdb = $this->conf->contactdb()) && validate_email($email)) {
+                $result = Dbl::qe($cdb, "select " . self::$cdb_query . " from ContactInfo where email=?", $lemail);
+                $c = Contact::fetch($result, $this->conf);
+                Dbl::free($result);
             }
-            if ($is_anonymous) {
-                $cargs["firstName"] = "Jane Q.";
-                $cargs["lastName"] = "Public";
-                $cargs["affiliation"] = "Unaffiliated";
-                $cargs["disabled"] = true;
+            if (!$c) {
+                $cargs = ["contactId" => 0, "roles" => 0, "email" => $email];
+                foreach (["firstName", "lastName", "affiliation"] as $k) {
+                    if ($req && $req[$k])
+                        $cargs[$k] = $req[$k];
+                }
+                if ($is_anonymous) {
+                    $cargs["firstName"] = "Jane Q.";
+                    $cargs["lastName"] = "Public";
+                    $cargs["affiliation"] = "Unaffiliated";
+                    $cargs["disabled"] = true;
+                }
+                $c = new Contact($cargs, $this->conf);
             }
-            $c = new Contact($cargs, $this->conf);
-            self::$next_fake_id -= 1;
+            $c->contactXid = $c->contactId = self::$next_fake_id--;
         }
         return $c ? $this->store($c) : null;
     }

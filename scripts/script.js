@@ -3323,16 +3323,16 @@ handle_ui.on("js-email-populate", function () {
         f = this.closest("form"),
         fn = null, ln = null, nn = null, af = null, placeholder = false;
     if (this.name === "email" || this.name === "uemail") {
-        fn = f.firstName;
-        ln = f.lastName;
-        af = f.affiliation;
+        fn = f.elements.firstName;
+        ln = f.elements.lastName;
+        af = f.elements.affiliation;
         placeholder = true;
     } else if (this.name.substring(0, 13) === "authors:email") {
         var idx = this.name.substring(13);
-        nn = f["authors:name" + idx];
-        af = f["authors:affiliation" + idx];
+        nn = f.elements["authors:name" + idx];
+        af = f.elements["authors:affiliation" + idx];
     } else if (this.name.substring(0, 14) === "contacts:email") {
-        nn = f["contacts:name" + this.name.substring(14)];
+        nn = f.elements["contacts:name" + this.name.substring(14)];
     }
     if (!fn && !ln && !nn && !af)
         return;
@@ -3374,6 +3374,11 @@ handle_ui.on("js-email-populate", function () {
         ln && handle(ln, data.lastName || "");
         nn && handle(nn, data.name || "");
         af && handle(af, data.affiliation || "");
+        if (hasClass(self, "want-potential-conflict")) {
+            $(f).find(".potential-conflict").html(data.potential_conflict || "");
+            $(f).find(".potential-conflict-container").toggleClass("hidden", !data.potential_conflict);
+        }
+        console.log(data);
         self.setAttribute("data-populated-email", v);
     }
 
@@ -3386,7 +3391,12 @@ handle_ui.on("js-email-populate", function () {
                && (v < email_info[i] || v > email_info[i + 1].lemail))
             i += 2;
         if (i === email_info.length) {
-            $.ajax(hoturl_post("api/user", {email: v}), {
+            var args = {email: v};
+            if (hasClass(this, "want-potential-conflict")) {
+                args.potential_conflict = 1;
+                args.p = hotcrp_paperid;
+            }
+            $.ajax(hoturl_post("api/user", args), {
                 method: "GET", success: success
             });
         } else if (v === email_info[i + 1].lemail) {
