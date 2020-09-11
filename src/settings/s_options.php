@@ -55,8 +55,7 @@ class Options_SettingRenderer {
             . "</div></div>\n";
     }
     static function render_description_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold3" . ((string) $o->description !== "" || !$o->id ? "o" : "c"));
-        return '<div class="' . $sv->control_class("optd_$xpos", "entryi fx3")
+        return '<div class="' . $sv->control_class("optd_$xpos", "entryi is-option-description" . ($o->id && (string) $o->description === "" ? " hidden" : ""))
             . '">' . $sv->label("optd_$xpos", "Description")
             . '<div class="entry">'
             . Ht::textarea("optd_$xpos", $o->description, ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "w-text settings-opt-description need-autogrow"])
@@ -64,18 +63,16 @@ class Options_SettingRenderer {
             . '</div></div>';
     }
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold10" . ($o->final || !$o->id ? "o" : "c"));
-        return '<div class="' . $sv->control_class("optec_$xpos", "entryi fx10")
+        return '<div class="' . $sv->control_class("optec_$xpos", "entryi is-option-editing" . ($o->id && !$o->final ? " hidden" : ""))
             . '">' . $sv->label("optec_$xpos", "Present on")
             . '<div class="entry">'
             . '<span class="sep">'
-            . Ht::select("optec_$xpos", ["" => "All submissions", "final" => "Final versions only"], $o->final ? "final" : "", ["class" => "uich js-settings-option-condition settings-opt-presence", "id" => "optec_$xpos"])
+            . Ht::select("optec_$xpos", ["" => "All submissions", "final" => "Final versions only"], $o->final ? "final" : "", ["id" => "optec_$xpos"])
             . $sv->render_feedback_at("optec_$xpos")
             . "</span></div></div>";
     }
     static function render_required_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold9" . ($o->required || !$o->id ? "o" : "c"));
-        return '<div class="' . $sv->control_class("optreq_$xpos", "entryi fx9")
+        return '<div class="' . $sv->control_class("optreq_$xpos", "entryi is-option-editing" . ($o->id && !$o->required ? " hidden" : ""))
             . '">' . $sv->label("optreq_$xpos", "Required")
             . '<div class="entry">'
             . Ht::select("optreq_$xpos", ["" => "No", "1" => "Yes"], $o->required ? "1" : "", ["id" => "optreq_$xpos"])
@@ -83,8 +80,7 @@ class Options_SettingRenderer {
             . "</div></div>";
     }
     static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold6" . ($o->visibility !== "rev" || !$o->id ? "o" : "c"));
-        return '<div class="' . $sv->control_class("optp_$xpos", "entryi short fx6")
+        return '<div class="' . $sv->control_class("optp_$xpos", "entryi is-option-visibility" . ($o->id && $o->visibility === "rev" ? " hidden" : "") . " short")
             . '">' . $sv->label("optp_$xpos", "Visible to")
             . '<div class="entry">'
             . Ht::select("optp_$xpos", ["rev" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible", "admin" => "Administrators only"], $o->visibility, ["id" => "optp_$xpos", "class" => "settings-opt-visibility"])
@@ -92,8 +88,7 @@ class Options_SettingRenderer {
             . '</div></div>';
     }
     static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $self->add_option_class("fold7" . ($o->display() !== PaperOption::DISP_PROMINENT || !$o->id ? "o" : "c"));
-        return '<div class="' . $sv->control_class("optdt_$xpos", "entryi short fx7")
+        return '<div class="' . $sv->control_class("optdt_$xpos", "entryi is-option-display" . ($o->id && $o->display() === PaperOption::DISP_PROMINENT ? " hidden" : "") . " short")
             . '">' . $sv->label("optdt_$xpos", "Display")
             . '<div class="entry">'
             . Ht::select("optdt_$xpos", ["prominent" => "Normal",
@@ -173,10 +168,10 @@ class Options_SettingRenderer {
 
         echo '<div class="f-i entryi"><label></label><div class="btnp entry">',
             '<span class="btnbox">',
-            Ht::button(Icons::ui_description(), ["class" => "btn-licon ui js-settings-option-description need-tooltip", "aria-label" => "Description"]),
-            Ht::button(Icons::ui_edit_hide(), ["class" => "btn-licon ui js-settings-option-presence need-tooltip", "aria-label" => "Form properties"]),
-            Ht::button(Icons::ui_visibility_hide(), ["class" => "btn-licon ui js-settings-option-visibility need-tooltip", "aria-label" => "Reviewer visibility"]),
-            Ht::button(Icons::ui_display(), ["class" => "btn-licon ui js-settings-option-display need-tooltip", "aria-label" => "Display type"]),
+            Ht::button(Icons::ui_description(), ["class" => "btn-licon ui js-settings-show-option-property need-tooltip", "aria-label" => "Description", "data-option-property" => "description"]),
+            Ht::button(Icons::ui_edit_hide(), ["class" => "btn-licon ui js-settings-show-option-property need-tooltip", "aria-label" => "Editing", "data-option-property" => "editing"]),
+            Ht::button(Icons::ui_visibility_hide(), ["class" => "btn-licon ui js-settings-show-option-property need-tooltip", "aria-label" => "Reviewer visibility", "data-option-property" => "visibility"]),
+            Ht::button(Icons::ui_display(), ["class" => "btn-licon ui js-settings-show-option-property need-tooltip", "aria-label" => "Display type", "data-option-property" => "display"]),
             '</span>',
             '<span class="btnbox">',
             Ht::button(Icons::ui_movearrow(0), ["class" => "btn-licon ui js-settings-option-move moveup need-tooltip", "aria-label" => "Move up in display order"]),

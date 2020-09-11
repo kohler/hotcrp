@@ -104,7 +104,7 @@ class Multiconference {
             $errors = is_string($errors) ? [$errors] : $errors;
         }
 
-        if (PHP_SAPI == "cli") {
+        if (PHP_SAPI === "cli") {
             fwrite(STDERR, join("\n", $errors) . "\n");
             exit(1);
         } else if (Navigation::page() === "api" || ($_GET["ajax"] ?? null)) {

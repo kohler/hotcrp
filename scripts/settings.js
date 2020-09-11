@@ -28,33 +28,12 @@ handle_ui.on("js-settings-option-type", function (event) {
         $("#optv" + which).focus(); */
 });
 
-handle_ui.on("js-settings-option-description", function () {
-    foldup.call(this, null, {n: 3, f: false});
+handle_ui.on("js-settings-show-option-property", function () {
+    var prop = this.getAttribute("data-option-property"),
+        $j = $(this).closest(".settings-opt").find(".is-option-" + prop);
+    $j.removeClass("hidden");
     if (document.activeElement === this)
-        $(this).closest(".settings-opt").find(".settings-opt-description").focus();
-});
-
-handle_ui.on("js-settings-option-presence", function (event) {
-    foldup.call(this, null, {n: 10, f: false});
-    foldup.call(this, null, {n: 9, f: false});
-    if (document.activeElement === this)
-        $(this).closest(".settings-opt").find(".settings-opt-presence").focus();
-});
-
-handle_ui.on("js-settings-option-condition", function (event) {
-    foldup.call(this, null, {n: 8, f: !/^search/.test(this.value)});
-});
-
-handle_ui.on("js-settings-option-visibility", function (event) {
-    foldup.call(this, null, {n: 6, f: false});
-    if (document.activeElement === this)
-        $(this).closest(".settings-opt").find(".settings-opt-visibility").focus();
-});
-
-handle_ui.on("js-settings-option-display", function (event) {
-    foldup.call(this, null, {n: 7, f: false});
-    if (document.activeElement === this)
-        $(this).closest(".settings-opt").find(".settings-opt-display").focus();
+        $j.find("input, select, textarea").not("[type=hidden], :disabled").first().focus();
 });
 
 handle_ui.on("js-settings-option-move", function (event) {
