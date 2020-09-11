@@ -16,11 +16,14 @@ echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c" />';
 
-echo '<div class="w-text">';
+echo '<div class="w-text mt-5 mb-5">';
 
 if ($Qreq->neg) {
+    echo '<p>This page lists conflicts declared by authors, but not justified by fuzzy matching between authors and PC members’ affiliations and collaborator lists.</p>';
+    echo '<p><a href="', $Conf->hoturl("conflictassign"), '">Check for missing conflicts</a></p>';
 } else {
-    echo '<p>This table lists unconfirmed potential conflicts indicated using reviewer preferences, or detected by fuzzy matching between PC affiliations and collaborator lists and authors. Confirm any true conflicts using the checkboxes.</p>';
+    echo '<p>This page shows potential missing conflicts detected by fuzzy matching between authors and PC members’ affiliations and collaborator lists. Confirm any true conflicts using the checkboxes.</p>';
+    echo '<p><a href="', $Conf->hoturl("conflictassign", "neg=1"), '">Check for inappropriate conflicts</a></p>';
 }
 
 echo "</div>\n";
