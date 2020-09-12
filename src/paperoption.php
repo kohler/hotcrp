@@ -1622,19 +1622,108 @@ class Document_PaperOption extends PaperOption {
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
+            $noPapers = $this->conf->opt("noPapers");
+            if ($noPapers === 1
+                || $noPapers === true
+                || ($this->id === DTYPE_FINAL) !== $pt->user->allow_edit_final_paper($ov->prow)) {
+                return;
+            }
+        }
+
         // XXXX this is super gross
         if ($this->id > 0 && $ov->value) {
             $docid = $ov->value;
-        } else if ($this->id == DTYPE_SUBMISSION
+        } else if ($this->id === DTYPE_SUBMISSION
                    && $ov->prow->paperStorageId > 1) {
             $docid = $ov->prow->paperStorageId;
-        } else if ($this->id == DTYPE_FINAL
+        } else if ($this->id === DTYPE_FINAL
                    && $ov->prow->finalPaperStorageId > 0) {
             $docid = $ov->prow->finalPaperStorageId;
         } else {
             $docid = 0;
         }
-        $pt->echo_editable_document($this, $docid);
+        $doc = null;
+        if ($docid > 1 && $pt->user->can_view_pdf($ov->prow)) {
+            $doc = $ov->prow->document($this->id, $docid, true);
+        }
+
+        $readonly = !$this->test_editable($ov->prow);
+        $max_size = $this->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize") / 1.024;
+
+        // heading
+        $msgs = [];
+        $mimetypes = $this->mimetypes();
+        if ($mimetypes) {
+            $msgs[] = htmlspecialchars(Mimetype::list_description($mimetypes));
+        }
+        if ($max_size > 0) {
+            $msgs[] = "max " . unparse_byte_size($max_size);
+        }
+        $heading = $pt->edit_title_html($this);
+        if (!empty($msgs)) {
+            $heading .= ' <span class="n">(' . join(", ", $msgs) . ')</span>';
+        }
+        $pt->echo_editable_option_papt($this, $heading, ["for" => $doc ? false : "opt{$this->id}", "id" => $this->readable_formid()]);
+
+        echo '<div class="papev has-document" data-dtype="', $this->id,
+            '" data-document-name="', $this->field_key(), '"';
+        if ($doc) {
+            echo ' data-docid="', $doc->paperStorageId, '"';
+        }
+        if ($mimetypes) {
+            echo ' data-document-accept="', htmlspecialchars(join(",", array_map(function ($m) { return $m->mimetype; }, $mimetypes))), '"';
+        }
+        if ($this->max_size !== null) {
+            echo ' data-document-max-size="', (int) $this->max_size, '"';
+        }
+        echo '>';
+
+        // current version, if any
+        $has_cf = false;
+        if ($doc) {
+            if ($doc->mimetype === "application/pdf") {
+                if (!$pt->cf) {
+                    $pt->cf = new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
+                }
+                $spec = $this->conf->format_spec($this->id);
+                $has_cf = $spec && !$spec->is_empty();
+                if ($has_cf) {
+                    $pt->cf->check_document($ov->prow, $doc);
+                }
+            }
+
+            echo '<div class="document-file">',
+                $doc->link_html(htmlspecialchars($doc->filename ?? "")),
+                '</div><div class="document-stamps">';
+            if (($stamps = PaperTable::pdf_stamps_html($doc))) {
+                echo $stamps;
+            }
+            echo '</div><div class="document-actions">';
+            if ($this->id > 0 && !$readonly) {
+                echo '<a href="" class="ui js-remove-document document-action">Delete</a>';
+            }
+            if ($has_cf && $pt->cf->allow_recheck()) {
+                echo '<a href="" class="ui js-check-format document-action">',
+                    ($pt->cf->need_recheck() ? "Check format" : "Recheck format"),
+                    '</a>';
+            } else if ($has_cf && !$pt->cf->has_problem()) {
+                echo '<span class="document-action js-check-format dim">Format OK</span>';
+            }
+            echo '</div>';
+            if ($has_cf) {
+                echo '<div class="document-format">';
+                if ($pt->cf->has_problem() && $pt->cf->check_ok()) {
+                    echo $pt->cf->document_report($ov->prow, $doc);
+                }
+                echo '</div>';
+            }
+        }
+
+        if (!$readonly) {
+            echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => "opt{$this->id}"]), '</div>';
+        }
+        echo "</div></div>\n\n";
     }
 
     function validate_document(DocumentInfo $doc) {

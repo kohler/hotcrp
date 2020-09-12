@@ -43,9 +43,9 @@ class PaperTable {
     /** @var ?ReviewValues */
     private $review_values;
     private $npapstrip = 0;
+    /** @var bool */
     private $allFolded;
     private $matchPreg;
-    private $entryMatches;
     private $canUploadFinal;
     private $foldmap;
     private $foldnumber;
@@ -56,7 +56,7 @@ class PaperTable {
     private $admin;
 
     /** @var ?CheckFormat */
-    private $cf;
+    public $cf;
     private $quit = false;
 
     function __construct(PaperInfo $prow = null, Qrequest $qreq, $mode = null) {
@@ -360,14 +360,14 @@ class PaperTable {
             $this->foldmap[$num] = $this->allFolded || $k === "a";
         }
         if ($this->foldmap[6]) {
-            $abstract = $this->entryData("abstract");
-            if ($this->entryMatches || !$this->abstract_foldable($abstract)) {
+            $abstract = $this->highlight($this->prow->abstract_text(), "abstract", $match);
+            if ($match || !$this->abstract_foldable($abstract)) {
                 $this->foldmap[6] = false;
             }
         }
         if ($this->matchPreg && ($this->foldmap[8] || $this->foldmap[9])) {
-            $this->entryData("authorInformation"); // check entryMatches
-            if ($this->entryMatches) {
+            $this->highlight($this->prow->authorInformation, "authorInformation", $match);
+            if ($match) {
                 $this->foldmap[8] = $this->foldmap[9] = false;
             }
         }
@@ -516,16 +516,14 @@ class PaperTable {
         return $c;
     }
 
-    private function entryData($fieldName, $table_type = false) {
-        $this->entryMatches = 0;
-        $text = $this->prow->$fieldName;
-        if ($this->matchPreg
-            && isset($this->matchPreg[$fieldName])) {
-            $text = Text::highlight($text, $this->matchPreg[$fieldName], $this->entryMatches);
+    function highlight($text, $pregname, &$n = null) {
+        if ($this->matchPreg && isset($this->matchPreg[$pregname])) {
+            $text = Text::highlight($text, $this->matchPreg[$pregname], $n);
         } else {
             $text = htmlspecialchars($text);
+            $n = 0;
         }
-        return $table_type === "col" ? nl2br($text) : $text;
+        return $text;
     }
 
     function messages_at($field) {
@@ -687,105 +685,11 @@ class PaperTable {
         return $t . join(" ", $k) . '">';
     }
 
-    function echo_editable_document(PaperOption $docx, $storageId) {
-        $dtype = $docx->id;
-        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
-            $noPapers = $this->conf->opt("noPapers");
-            if ($noPapers === 1
-                || $noPapers === true
-                || ($dtype == DTYPE_FINAL) !== $this->canUploadFinal)
-                return;
-        }
-        $inputid = "opt" . $dtype;
-        $readonly = !$docx->test_editable($this->prow);
-
-        $accepts = $docx->mimetypes();
-        $field = $docx->field_key();
-        $doc = null;
-        if ($storageId > 1 && $this->user->can_view_pdf($this->prow)) {
-            $doc = $this->prow->document($dtype, $storageId, true);
-        }
-        $max_size = $docx->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize") / 1.024;
-
-        $heading = $this->edit_title_html($docx);
-        $msgs = [];
-        if ($accepts) {
-            $msgs[] = htmlspecialchars(Mimetype::list_description($accepts));
-        }
-        if ($max_size > 0) {
-            $msgs[] = "max " . unparse_byte_size($max_size);
-        }
-        if (!empty($msgs)) {
-            $heading .= ' <span class="n">(' . join(", ", $msgs) . ')</span>';
-        }
-        $this->echo_editable_papt($field, $heading, ["for" => $doc ? false : $inputid, "id" => $docx->readable_formid()], $docx);
-        $this->echo_field_hint($docx);
-        echo Ht::hidden("has_" . $docx->formid, 1),
-            '<div class="papev has-document" data-dtype="', $dtype,
-            '" data-document-name="', $docx->field_key(), '"';
-        if ($doc) {
-            echo ' data-docid="', $doc->paperStorageId, '"';
-        }
-        if ($accepts) {
-            echo ' data-document-accept="', htmlspecialchars(join(",", array_map(function ($m) { return $m->mimetype; }, $accepts))), '"';
-        }
-        if ($docx->max_size !== null) {
-            echo ' data-document-max-size="', (int) $docx->max_size, '"';
-        }
-        echo '>';
-
-        // current version, if any
-        $has_cf = false;
-        if ($doc) {
-            if ($doc->mimetype === "application/pdf") {
-                if (!$this->cf) {
-                    $this->cf = new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
-                }
-                $spec = $this->conf->format_spec($dtype);
-                $has_cf = $spec && !$spec->is_empty();
-                if ($has_cf) {
-                    $this->cf->check_document($this->prow, $doc);
-                }
-            }
-
-            echo '<div class="document-file">',
-                $doc->link_html(htmlspecialchars($doc->filename ? : "")),
-                '</div><div class="document-stamps">';
-            if (($stamps = self::pdf_stamps_html($doc))) {
-                echo $stamps;
-            }
-            echo '</div><div class="document-actions">';
-            if ($dtype > 0 && !$readonly) {
-                echo '<a href="" class="ui js-remove-document document-action">Delete</a>';
-            }
-            if ($has_cf && $this->cf->allow_recheck()) {
-                echo '<a href="" class="ui js-check-format document-action">',
-                    ($this->cf->need_recheck() ? "Check format" : "Recheck format"),
-                    '</a>';
-            } else if ($has_cf && !$this->cf->has_problem()) {
-                echo '<span class="document-action js-check-format dim">Format OK</span>';
-            }
-            echo '</div>';
-            if ($has_cf) {
-                echo '<div class="document-format">';
-                if ($this->cf->has_problem() && $this->cf->check_ok()) {
-                    echo $this->cf->document_report($this->prow, $doc);
-                }
-                echo '</div>';
-            }
-        }
-
-        if (!$readonly) {
-            echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => $inputid]), '</div>';
-        }
-        echo "</div></div>\n\n";
-    }
-
     function render_abstract(FieldRender $fr, PaperOption $o) {
         $fr->title = false;
         $fr->value_format = 5;
 
-        $html = $this->entryData("abstract");
+        $html = $this->highlight($this->prow->abstract_text(), "abstract", $match);
         if (trim($html) === "") {
             if ($this->conf->opt("noAbstract"))
                 return;
@@ -799,8 +703,7 @@ class PaperTable {
         $fr->value = '<div class="paperinfo-abstract"><div class="pg">'
             . $this->papt("abstract", $o->title_html(), $extra)
             . '<div class="pavb abstract';
-        if (!$this->entryMatches
-            && ($format = $this->prow->format_of($html))) {
+        if (!$match && ($format = $this->prow->format_of($html))) {
             $fr->value .= ' need-format" data-format="' . $format . '">' . $html;
         } else {
             $fr->value .= ' format0">' . Ht::format0_html($html);
@@ -819,7 +722,6 @@ class PaperTable {
         } else {
             $highpreg = false;
         }
-        $this->entryMatches = 0;
         $names = [];
 
         if (empty($table)) {
@@ -827,28 +729,25 @@ class PaperTable {
         } else if ($type === "last") {
             foreach ($table as $au) {
                 $n = Text::nameo($au, NAME_P|NAME_I);
-                $names[] = Text::highlight($n, $highpreg, $nm);
-                $this->entryMatches += $nm;
+                $names[] = Text::highlight($n, $highpreg);
             }
             return join(", ", $names);
         } else {
             foreach ($table as $au) {
-                $nm1 = $nm2 = $nm3 = 0;
                 $n = $e = $t = "";
-                $n = trim(Text::highlight("$au->firstName $au->lastName", $highpreg, $nm1));
+                $n = trim(Text::highlight("$au->firstName $au->lastName", $highpreg));
                 if ($au->email !== "") {
-                    $e = Text::highlight($au->email, $highpreg, $nm2);
+                    $e = Text::highlight($au->email, $highpreg);
                     $e = '&lt;<a href="mailto:' . htmlspecialchars($au->email)
                         . '" class="mailto">' . $e . '</a>&gt;';
                 }
                 $t = ($n === "" ? $e : $n);
                 if ($au->affiliation !== "") {
-                    $t .= ' <span class="auaff">(' . Text::highlight($au->affiliation, $highpreg, $nm3) . ')</span>';
+                    $t .= ' <span class="auaff">(' . Text::highlight($au->affiliation, $highpreg) . ')</span>';
                 }
                 if ($n !== "" && $e !== "") {
                     $t .= " " . $e;
                 }
-                $this->entryMatches += $nm1 + $nm2 + $nm3;
                 $t = trim($t);
                 if ($au->email !== ""
                     && $au->contactId
@@ -1276,8 +1175,9 @@ class PaperTable {
         }
         $fold = $this->user->session("foldpscollab", 1) ? 1 : 0;
 
-        $data = $this->entryData("collaborators", "col");
-        if ($this->entryMatches || !$this->allFolded) {
+        $data = $this->highlight($this->prow->collaborators(), "collaborators", $match);
+        $data = nl2br($data);
+        if ($match || !$this->allFolded) {
             $fold = 0;
         }
 
