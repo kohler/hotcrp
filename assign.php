@@ -49,7 +49,13 @@ function pcAssignments($qreq) {
     }
     $round = CsvGenerator::quote(":" . (string) $rname);
 
-    $t = ["paper,action,email,round\n"];
+    $confset = $Conf->conflict_types();
+    $acceptable_review_types = [];
+    foreach ([0, REVIEW_PC, REVIEW_SECONDARY, REVIEW_PRIMARY, REVIEW_META] as $t) {
+        $acceptable_review_types[] = (string) $t;
+    }
+
+    $t = ["paper,action,email,round,conflict\n"];
     foreach ($Conf->pc_members() as $cid => $p) {
         if ($reviewer
             && strcasecmp($p->email, $reviewer) != 0
@@ -58,14 +64,27 @@ function pcAssignments($qreq) {
         }
 
         if (isset($qreq["assrev{$prow->paperId}u{$cid}"])) {
-            $revtype = $qreq["assrev{$prow->paperId}u{$cid}"];
+            $assignment = $qreq["assrev{$prow->paperId}u{$cid}"];
         } else if (isset($qreq["pcs{$cid}"])) {
-            $revtype = $qreq["pcs{$cid}"];
+            $assignment = $qreq["pcs{$cid}"];
         } else {
             continue;
         }
-        $revtype = cvtint($revtype, null);
-        if ($revtype === null) {
+
+        $revtype = $conftype = "";
+        if (in_array($assignment, $acceptable_review_types, true)) {
+            $revtype = ReviewInfo::unparse_assigner_action((int) $assignment);
+            $conftype = "off";
+        } else if ($assignment === "-1") {
+            $revtype = "clearreview";
+            $conftype = "on";
+        } else if (($type = ReviewInfo::parse_type($assignment))) {
+            $revtype = ReviewInfo::unparse_assigner_action($type);
+            $conftype = "off";
+        } else if (($ct = $confset->parse_assignment($assignment, 0)) !== false) {
+            $revtype = "clearreview";
+            $conftype = $assignment;
+        } else {
             continue;
         }
 
@@ -78,23 +97,8 @@ function pcAssignments($qreq) {
         }
 
         $user = CsvGenerator::quote($p->email);
-        if ($revtype >= 0) {
-            $t[] = "{$prow->paperId},clearconflict,$user\n";
-        }
-        if ($revtype <= 0) {
-            $t[] = "{$prow->paperId},clearreview,$user\n";
-        }
-        if ($revtype == REVIEW_META) {
-            $t[] = "{$prow->paperId},metareview,$user,$myround\n";
-        } else if ($revtype == REVIEW_PRIMARY) {
-            $t[] = "{$prow->paperId},primary,$user,$myround\n";
-        } else if ($revtype == REVIEW_SECONDARY) {
-            $t[] = "{$prow->paperId},secondary,$user,$myround\n";
-        } else if ($revtype == REVIEW_PC || $revtype == REVIEW_EXTERNAL) {
-            $t[] = "{$prow->paperId},pcreview,$user,$myround\n";
-        } else if ($revtype < 0) {
-            $t[] = "{$prow->paperId},conflict,$user\n";
-        }
+        $t[] = "{$prow->paperId},conflict,$user,,$conftype\n";
+        $t[] = "{$prow->paperId},{$revtype},$user,$myround\n";
     }
 
     $aset = new AssignmentSet($Me, true);

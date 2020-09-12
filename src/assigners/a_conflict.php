@@ -81,9 +81,15 @@ class Conflict_AssignmentParser extends AssignmentParser {
                 $text = substr($text, $colon + 1);
             }
             $old_ct_na = Conflict::pc_part($old_ct);
-            if ($text === "") {
+            if ($text === "" || $text === "on") {
                 if ($old_ct_na <= CONFLICT_MAXUNCONFLICTED) {
                     $ct = Conflict::set_pinned(Conflict::GENERAL, $admin);
+                } else {
+                    $ct = $old_ct_na;
+                }
+            } else if ($text === "off") {
+                if ($old_ct_na > CONFLICT_MAXUNCONFLICTED) {
+                    $ct = Conflict::set_pinned(0, $admin);
                 } else {
                     $ct = $old_ct_na;
                 }
