@@ -367,9 +367,9 @@ class PaperOptionList implements IteratorAggregate {
     /** @param int $id */
     private function populate_intrinsic($id) {
         if ($id == DTYPE_SUBMISSION) {
-            $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_SUBMISSION_JSON));
+            $this->_imap[$id] = new Document_PaperOption($this->conf, json_decode(self::DTYPE_SUBMISSION_JSON));
         } else if ($id == DTYPE_FINAL) {
-            $this->_imap[$id] = new DocumentPaperOption($this->conf, json_decode(self::DTYPE_FINAL_JSON));
+            $this->_imap[$id] = new Document_PaperOption($this->conf, json_decode(self::DTYPE_FINAL_JSON));
         } else {
             $this->_imap[$id] = null;
             if (($oj = ($this->intrinsic_json_map())[$id] ?? null)
@@ -614,7 +614,7 @@ class PaperOptionList implements IteratorAggregate {
     }
 }
 
-class PaperOption {
+class PaperOption implements JsonSerializable {
     const MINFIXEDID = 1000000;
     const TITLEID = -1000;
     const AUTHORSID = -1001;
@@ -670,7 +670,6 @@ class PaperOption {
     private $display;
     public $display_expand;
     public $display_group;
-    public $display_space;
     private $form_position;
     private $display_position;
     /** @var null|string|false */
@@ -696,16 +695,16 @@ class PaperOption {
     static private $display_rmap = null;
 
     static private $callback_map = [
-        "checkbox" => "+CheckboxPaperOption",
-        "radio" => "+SelectorPaperOption",
-        "selector" => "+SelectorPaperOption",
-        "numeric" => "+NumericPaperOption",
-        "text" => "+TextPaperOption",
-        "pdf" => "+DocumentPaperOption",
-        "slides" => "+DocumentPaperOption",
-        "video" => "+DocumentPaperOption",
-        "document" => "+DocumentPaperOption",
-        "attachments" => "+AttachmentsPaperOption"
+        "checkbox" => "+Checkbox_PaperOption",
+        "radio" => "+Selector_PaperOption",
+        "selector" => "+Selector_PaperOption",
+        "numeric" => "+Numeric_PaperOption",
+        "text" => "+Text_PaperOption",
+        "pdf" => "+Document_PaperOption",
+        "slides" => "+Document_PaperOption",
+        "video" => "+Document_PaperOption",
+        "document" => "+Document_PaperOption",
+        "attachments" => "+Attachments_PaperOption"
     ];
 
     /** @param stdClass $args */
@@ -791,10 +790,6 @@ class PaperOption {
             $this->display_group = "topics";
         }
 
-        if (($x = $args->display_space ?? null)) {
-            $this->display_space = (int) $x;
-        }
-
         $this->list_class = $args->list_class ?? null;
 
         if (property_exists($args, "exists_if")) {
@@ -821,7 +816,7 @@ class PaperOption {
             $callback = self::$callback_map[$args->type ?? ""] ?? null;
         }
         if (!$callback) {
-            $callback = "+UnknownPaperOption";
+            $callback = "+Unknown_PaperOption";
         }
         if ($callback[0] === "+") {
             $class = substr($callback, 1);
@@ -1086,11 +1081,13 @@ class PaperOption {
     }
 
     /** @return object */
-    function unparse() {
-        $j = (object) ["id" => (int) $this->id,
-                       "name" => $this->name,
-                       "type" => $this->type,
-                       "position" => (int) $this->position];
+    function jsonSerialize() {
+        $j = (object) [
+            "id" => (int) $this->id,
+            "name" => $this->name,
+            "type" => $this->type,
+            "position" => (int) $this->position
+        ];
         if ($this->description !== null) {
             $j->description = $this->description;
         }
@@ -1103,9 +1100,6 @@ class PaperOption {
         $j->display = $this->display_name();
         if ($this->visibility !== "rev") {
             $j->visibility = $this->visibility;
-        }
-        if ($this->display_space) {
-            $j->display_space = $this->display_space;
         }
         if ($this->exists_if !== null) {
             $j->exists_if = $this->exists_if;
@@ -1120,6 +1114,11 @@ class PaperOption {
             $j->max_size = $this->max_size;
         }
         return $j;
+    }
+    /** @return object
+     * @deprecated */
+    function unparse() {
+        return $this->jsonSerialize();
     }
 
     function change_type(PaperOption $o, $upgrade, $change_values) {
@@ -1184,7 +1183,7 @@ class PaperOption {
         echo Ht::textarea($this->formid, $reqov->data(), [
                 "id" => $this->readable_formid(),
                 "class" => $pt->control_class($this->formid, "w-text need-autogrow"),
-                "rows" => max($this->display_space, 1),
+                "rows" => max($extra["rows"] ?? 1, 1),
                 "cols" => 60,
                 "spellcheck" => ($extra["no_spellcheck"] ?? null ? null : "true"),
                 "readonly" => !$this->test_editable($ov->prow),
@@ -1283,7 +1282,7 @@ class PaperOption {
     }
 }
 
-class CheckboxPaperOption extends PaperOption {
+class Checkbox_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->list_class = $this->list_class ?? "plc";
@@ -1346,7 +1345,7 @@ class CheckboxPaperOption extends PaperOption {
     }
 }
 
-class SelectorPaperOption extends PaperOption {
+class Selector_PaperOption extends PaperOption {
     private $selector;
     private $_selector_am;
 
@@ -1375,14 +1374,14 @@ class SelectorPaperOption extends PaperOption {
         return $this->_selector_am;
     }
 
-    function unparse() {
-        $j = parent::unparse();
+    function jsonSerialize() {
+        $j = parent::jsonSerialize();
         $j->selector = $this->selector;
         return $j;
     }
 
     function change_type(PaperOption $o, $upgrade, $change_values) {
-        return $o instanceof SelectorPaperOption;
+        return $o instanceof Selector_PaperOption;
     }
 
     function value_compare($av, $bv) {
@@ -1501,7 +1500,7 @@ class SelectorPaperOption extends PaperOption {
     }
 }
 
-class DocumentPaperOption extends PaperOption {
+class Document_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->list_class = $this->list_class ?? "";
@@ -1531,7 +1530,7 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function change_type(PaperOption $o, $upgrade, $change_values) {
-        return $o instanceof DocumentPaperOption;
+        return $o instanceof Document_PaperOption;
     }
 
     function value_force(PaperValue $ov) {
@@ -1710,7 +1709,7 @@ class DocumentPaperOption extends PaperOption {
     }
 }
 
-class NumericPaperOption extends PaperOption {
+class Numeric_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->list_class = $this->list_class ?? "plrd";
@@ -1794,11 +1793,15 @@ class NumericPaperOption extends PaperOption {
     }
 }
 
-class TextPaperOption extends PaperOption {
+class Text_PaperOption extends PaperOption {
+    public $display_space;
+
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        $this->display_space = $args->display_space ?? 0;
         $this->list_class = $this->list_class ?? "pl-prefer-row pl_text";
     }
+
     static function expand($name, Contact $user, $fxt, $m) {
         $xt = clone $fxt;
         unset($xt->match);
@@ -1821,7 +1824,6 @@ class TextPaperOption extends PaperOption {
         }
     }
 
-
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $x = $ov->data();
         return $x !== "" ? $x : null;
@@ -1834,7 +1836,7 @@ class TextPaperOption extends PaperOption {
         return $this->parse_json_string($prow, $j);
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $this->echo_web_edit_text($pt, $ov, $reqov);
+        $this->echo_web_edit_text($pt, $ov, $reqov, ["rows" => $this->display_space]);
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
@@ -1862,9 +1864,17 @@ class TextPaperOption extends PaperOption {
     function present_script_expression() {
         return ["type" => "text_present", "id" => $this->id];
     }
+
+    function jsonSerialize() {
+        $j = parent::jsonSerialize();
+        if ($this->display_space) {
+            $j->display_space = $this->display_space;
+        }
+        return $j;
+    }
 }
 
-class AttachmentsPaperOption extends PaperOption {
+class Attachments_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->list_class = $this->list_class ?? "pl-prefer-row";
@@ -2069,7 +2079,11 @@ class AttachmentsPaperOption extends PaperOption {
     }
 }
 
-class UnknownPaperOption extends PaperOption {
+class_alias("Selector_PaperOption", "SelectorPaperOption");
+class_alias("Document_PaperOption", "DocumentPaperOption");
+class_alias("Attachments_PaperOption", "AttachmentsPaperOption");
+
+class Unknown_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         $args->type = "__unknown" . $args->id . "__";
         $args->form_position = $args->display_position = false;

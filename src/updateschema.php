@@ -362,7 +362,7 @@ function update_schema_missing_sha1($conf) {
 function update_schema_selector_options($conf) {
     $oids = [];
     foreach ($conf->options()->universal() as $opt) {
-        if ($opt instanceof SelectorPaperOption) {
+        if ($opt instanceof Selector_PaperOption) {
             $oids[] = $opt->id;
         }
     }

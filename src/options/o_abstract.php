@@ -40,7 +40,7 @@ class Abstract_PaperOption extends PaperOption {
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         if ((int) $this->conf->opt("noAbstract") !== 1) {
-            $this->echo_web_edit_text($pt, $ov, $reqov);
+            $this->echo_web_edit_text($pt, $ov, $reqov, ["rows" => 5]);
         }
     }
     function render(FieldRender $fr, PaperValue $ov) {

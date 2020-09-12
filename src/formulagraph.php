@@ -858,7 +858,7 @@ class FormulaGraph extends MessageSet {
                 $named_ticks = $this->conf->decision_map();
             } else if ($format === Fexpr::FBOOL) {
                 $named_ticks = ["no", "yes"];
-            } else if ($format instanceof SelectorPaperOption) {
+            } else if ($format instanceof Selector_PaperOption) {
                 $named_ticks = $format->selector_options();
             } else if ($format === Fexpr::FROUND) {
                 $named_ticks = $this->remapped_rounds;
