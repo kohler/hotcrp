@@ -1351,7 +1351,7 @@ class Selector_PaperOption extends PaperOption {
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->selector = $args->selector;
+        $this->selector = $args->selector ?? [];
         $this->list_class = $this->list_class ?? "";
     }
 
