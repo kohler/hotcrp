@@ -269,10 +269,10 @@ class RequestReview_API {
 
         $rrows = array_filter($xrrows, function ($rrow) {
             return $rrow->reviewType < REVIEW_SECONDARY
-                && $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
+                && $rrow->reviewStatus < ReviewInfo::RS_DELIVERED;
         });
         if (empty($rrows) && !empty($xrrows)) {
-            if ($xrrows[0]->reviewStatus >= ReviewInfo::RS_ADOPTED) {
+            if ($xrrows[0]->reviewStatus >= ReviewInfo::RS_DELIVERED) {
                 return self::error_result(403, "r", "This review has already been submitted.");
             } else {
                 return self::error_result(403, "r", "Primary and secondary reviews can’t be declined. Contact the PC chairs directly if you really cannot finish this review.");
