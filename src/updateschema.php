@@ -1764,6 +1764,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql_ok("alter table DeletedContactInfo add `affiliation` varbinary(2048) NOT NULL DEFAULT ''")) {
         $conf->update_schema_version(239);
     }
+    if ($conf->sversion == 239) {
+        Dbl::qx($conf->dblink, "alter table PaperReviewRefused change `reviewType` `refusedReviewType` tinyint(1) NOT NULL DEFAULT '0'");
+        $conf->update_schema_version(240);
+    }
 
     $conf->ql_ok("delete from Settings where name='__schema_lock'");
     Conf::$main = $old_conf_g;
