@@ -283,30 +283,34 @@ function rfc2822_words_quote($words) {
 
 // encoders and decoders
 
-/** @param string $text */
+/** @param string $text
+ * @return string */
 function html_id_encode($text) {
-    $x = preg_split('_([^-a-zA-Z0-9])_', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+    $x = preg_split('/([^-a-zA-Z0-9])/', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
     for ($i = 1; $i < count($x); $i += 2) {
         $x[$i] = "_" . dechex(ord($x[$i]));
     }
     return join("", $x);
 }
 
-/** @param string $text */
+/** @param string $text
+ * @return string */
 function html_id_decode($text) {
-    $x = preg_split(',(_[0-9A-Fa-f][0-9A-Fa-f]),', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+    $x = preg_split('/(_[0-9A-Fa-f][0-9A-Fa-f])/', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
     for ($i = 1; $i < count($x); $i += 2) {
         $x[$i] = chr(hexdec(substr($x[$i], 1)));
     }
     return join("", $x);
 }
 
-/** @param string $text */
+/** @param string $text
+ * @return string */
 function base64url_encode($text) {
     return rtrim(strtr(base64_encode($text), '+/', '-_'), '=');
 }
 
-/** @param string $text */
+/** @param string $text
+ * @return string */
 function base64url_decode($text) {
     return base64_decode(strtr($text, '-_', '+/'));
 }
