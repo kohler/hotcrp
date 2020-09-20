@@ -37,7 +37,7 @@
     {
         "name": "Contacts", "id": -1003,
         "json_key": "contacts",
-        "form_position": 3003, "display_position": false, "visibility": "conflict",
+        "form_position": 3050, "display_position": false, "visibility": "conflict",
         "type": "intrinsic2", "include_empty": true,
         "callback": "+Contacts_PaperOption"
     },

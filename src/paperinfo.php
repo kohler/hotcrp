@@ -791,6 +791,17 @@ class PaperInfo {
         return $au;
     }
 
+    /** @param list<Author> $aulist
+     * @param string $email
+     * @return ?Author */
+    static function search_author_list_by_email($aulist, $email) {
+        foreach ($aulist as $au) {
+            if ($au->email !== "" && strcasecmp($au->email, $email) === 0)
+                return $au;
+        }
+        return null;
+    }
+
     /** @return list<Author> */
     function author_list() {
         if (!isset($this->_author_array)) {
@@ -802,11 +813,7 @@ class PaperInfo {
     /** @param string $email
      * @return ?Author */
     function author_by_email($email) {
-        foreach ($this->author_list() as $a) {
-            if ($a->email !== "" && strcasecmp($a->email, $email) === 0)
-                return $a;
-        }
-        return null;
+        return self::search_author_list_by_email($this->author_list(), $email);
     }
 
     /** @return string */
