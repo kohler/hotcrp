@@ -354,6 +354,9 @@ class Navigation {
         // Might have an HTML-encoded URL; decode at least &amp;.
         $url = str_replace("&amp;", "&", $url);
 
+        if (Conf::$main) {
+            Conf::$main->transfer_messages_to_session();
+        }
         if (preg_match('/\A[a-z]+:\/\//', $url)) {
             header("Location: $url");
         }

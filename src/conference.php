@@ -136,6 +136,8 @@ class Conf {
     /** @var bool */
     public $_header_printed = false;
     public $_session_handler;
+    /** @var ?list<array{string,string}> */
+    private $_save_msgs;
     /** @var ?array<string,array<int,true>> */
     private $_save_logs;
 
@@ -3315,8 +3317,20 @@ class Conf {
         return $this->hoturl(Navigation::page(), $x, $flags);
     }
 
+
+    function transfer_messages_to_session() {
+        if ($this->_save_msgs) {
+            ensure_session();
+            foreach ($this->_save_msgs as $m) {
+                $_SESSION[$this->dsn]["msgs"][] = $m;
+            }
+            $this->_save_msgs = null;
+        }
+    }
+
     /** @param ?string $url */
     function redirect($url = null) {
+        $this->transfer_messages_to_session();
         Navigation::redirect($url);
     }
 
@@ -3674,8 +3688,7 @@ class Conf {
                 fwrite(STDOUT, "$text\n");
             }
         } else if ($conf && !$conf->_header_printed) {
-            ensure_session();
-            $_SESSION[$conf->dsn]["msgs"][] = [$text, $type];
+            $conf->_save_msgs[] = [$text, $type];
         } else if (is_int($type) || $type[0] === "x") {
             echo Ht::msg($text, $type);
         } else {
@@ -4167,11 +4180,17 @@ class Conf {
         if (($x = $this->opt("maintenance"))) {
             echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
         }
-        if ($Me && ($msgs = $Me->session("msgs")) && !empty($msgs)) {
+        if ($Me && ($msgs = $Me->session("msgs"))) {
             $Me->save_session("msgs", null);
             foreach ($msgs as $m) {
                 $this->msg($m[0], $m[1]);
             }
+        }
+        if ($this->_save_msgs) {
+            foreach ($this->_save_msgs as $m) {
+                $this->msg($m[0], $m[1]);
+            }
+            $this->_save_msgs = null;
         }
         if (isset($_COOKIE["hotcrpmessage"])) {
             $message = json_decode(rawurldecode($_COOKIE["hotcrpmessage"]));
