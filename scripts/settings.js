@@ -16,16 +16,6 @@ function next_lexicographic_permutation(i, size) {
 handle_ui.on("js-settings-option-type", function (event) {
     var issel = /^(?:selector|radio)/.test(this.value);
     foldup.call(this, null, {n: 4, f: !issel});
-    // ensure display and visibility are shown
-    var which = this.id.replace(/^.*_/, "_");
-    if ($("#optd" + which).val())
-        foldup.call(this, null, {n: 3, f: false});
-    if ($("#optp" + which).val() !== "rev")
-        foldup.call(this, null, {n: 6, f: false});
-    if ($("#optdt" + which).val() !== "prominent")
-        foldup.call(this, null, {n: 7, f: false});
-    /* if (document.activeElement === this && issel)
-        $("#optv" + which).focus(); */
 });
 
 handle_ui.on("js-settings-show-option-property", function () {

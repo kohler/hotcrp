@@ -3796,10 +3796,10 @@ handle_ui.on("js-leftmenu", function (event) {
     }
     var liststyle = window.getComputedStyle(list);
     if (liststyle.display === "none") {
-        addClass(list, "shown");
+        addClass(nav, "leftmenu-open");
         event.preventDefault();
     } else if (liststyle.display === "block") {
-        removeClass(list, "shown");
+        removeClass(nav, "leftmenu-open");
         event.preventDefault();
     } else if (this.href === "") {
         event.preventDefault();
