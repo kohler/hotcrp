@@ -319,7 +319,7 @@ class AutoassignerInterface {
             ]));
 
         $atype = $assignset->type_description();
-        echo "<h3>Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
+        echo "<h3 class=\"form-h\">Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
         Conf::msg_info("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.) Reviewer preferences, if any, are shown as “P#”.");
         $assignset->report_errors();
         $assignset->echo_unparse_display();
@@ -378,7 +378,7 @@ class AutoassignerInterface {
             echo "</div>\n", Ht::unstash();
         }
         if (!$this->live) {
-            $t = '<h3>Preparing assignment</h3><p><strong>Status:</strong> ' . htmlspecialchars($status);
+            $t = '<h3 class="form-h">Preparing assignment</h3><p><strong>Status:</strong> ' . htmlspecialchars($status);
             echo Ht::script('$$("propass").innerHTML=' . json_encode_browser($t) . ';'), "\n";
             flush();
             while (@ob_end_flush())
@@ -526,7 +526,7 @@ Assignment methods:
 echo Ht::unstash_script("hiliter_children(\"#autoassignform\")");
 
 // paper selection
-echo divClass("pap"), "<h3>Paper selection</h3>";
+echo divClass("pap"), "<h3 class=\"form-h\">Paper selection</h3>";
 if (!isset($Qreq->q)) // XXX redundant
     $Qreq->q = join(" ", $SSel->selection());
 echo Ht::entry("q", $Qreq->q,
@@ -558,7 +558,7 @@ echo "</div>\n";
 
 // action
 echo '<div>';
-echo divClass("ass"), "<h3>Action</h3>", "</div>";
+echo divClass("ass"), "<h3 class=\"form-h\">Action</h3>", "</div>";
 echo '<table>';
 echo_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
 echo "&nbsp; ",
@@ -633,7 +633,7 @@ echo "</table>\n";
 
 
 // PC
-echo "<h3>PC members</h3>\n<table>\n";
+echo "<h3 class=\"form-h\">PC members</h3>\n<table>\n";
 
 echo_radio_row("pctyp", "all", "Use entire PC");
 
@@ -771,14 +771,14 @@ $("#bptable a.js-badpairs-row").on("click", function () {
 
 
 // Load balancing
-echo "<h3>Load balancing</h3>\n<table>\n";
+echo "<h3 class=\"form-h\">Load balancing</h3>\n<table>\n";
 echo_radio_row("balance", "new", "New assignments—spread new assignments equally among selected PC members");
 echo_radio_row("balance", "all", "All assignments—spread assignments so that selected PC members have roughly equal overall load");
 echo "</table>\n";
 
 
 // Method
-echo "<h3>Assignment method</h3>\n<table>\n";
+echo "<h3 class=\"form-h\">Assignment method</h3>\n<table>\n";
 echo_radio_row("method", "mcmf", "Globally optimal assignment");
 echo_radio_row("method", "random", "Random good assignment");
 echo "</table>\n";
