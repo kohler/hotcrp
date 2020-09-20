@@ -85,7 +85,7 @@ $Conf->stash_hotcrp_pc($Me, true);
 echo '<div id="tracker-table" class="demargin" style="margin-top:1em"></div>';
 echo "<audio id=\"tracker-sound\" crossorigin=\"anonymous\" preload=\"auto\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
 
-echo Ht::form(hoturl_post("buzzer"));
+echo Ht::form($Conf->hoturl_post("buzzer"));
 echo '<table style="margin-top:3em"><tr>';
 
 // mute button

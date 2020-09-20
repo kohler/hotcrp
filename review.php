@@ -279,7 +279,7 @@ if ((isset($Qreq->refuse) || isset($Qreq->decline))
             && $decline_email
             && !isset($Qreq->reason)) {
             $Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review. If you’d like, you may enter a brief explanation here.</p>"
-                . Ht::form(hoturl_post("api/declinereview", ["p" => $prow->paperId, "email" => $decline_email, "redirect" => $Conf->hoturl_site_relative_raw("index")]))
+                . Ht::form($Conf->hoturl_post("api/declinereview", ["p" => $prow->paperId, "email" => $decline_email, "redirect" => $Conf->hoturl_site_relative_raw("index")]))
                 . Ht::textarea("reason", $result->content["reason"], ["rows" => 3, "cols" => 40, "spellcheck" => true])
                 . '<hr class="c">'
                 . Ht::submit("Update explanation", ["class" => "btn-primary"])

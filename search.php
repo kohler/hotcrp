@@ -409,16 +409,17 @@ if ($Me->isPC || $Me->privChair) {
             }
             echo '<hr class="g">';
         }
-        echo Ht::form(hoturl_post("search", "savesearch=1"));
+        echo Ht::form($Conf->hoturl_post("search", "savesearch=1"));
         echo_request_as_hidden_inputs(true);
         echo "<table id=\"ssearchnew\" class=\"has-fold foldc\">",
             "<tr><td>", foldupbutton(), "</td>",
             '<td><a class="ui q fn js-foldup" href="">New saved search</a><div class="fx">',
             "Save ";
-        if ($Qreq->q)
+        if ($Qreq->q) {
             echo "search “", htmlspecialchars($Qreq->q), "”";
-        else
+        } else {
             echo "empty search";
+        }
         echo ' as:<br>ss:<input type="text" name="ssname" value="" size="20"> &nbsp;',
             Ht::submit("Save"),
             "</div></td></tr></table>",
@@ -434,7 +435,7 @@ if ($Me->isPC || $Me->privChair) {
 if ($pl->count > 0) {
     echo '<div class="tld is-tla" id="tla-view" style="padding-bottom:1ex">';
 
-    echo Ht::form(hoturl_post("search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
+    echo Ht::form($Conf->hoturl_post("search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
     echo_request_as_hidden_inputs();
 
     echo '<div class="search-ctable">';

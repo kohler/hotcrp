@@ -64,7 +64,7 @@ $Conf->header("Settings", "settings", ["subtitle" => $Sv->group_title($Group), "
 echo Ht::unstash(); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
-echo Ht::form(hoturl_post("settings", "group=$Group"),
+echo Ht::form($Conf->hoturl_post("settings", "group=$Group"),
               ["id" => "settingsform", "class" => "need-unload-protection"]);
 
 echo '<div class="leftmenu-left"><nav class="leftmenu-menu">',

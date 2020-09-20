@@ -33,7 +33,7 @@ function change_email_by_capability($Qreq) {
 
     $newemail = $Acct ? $capcontent->uemail : null;
     if ($Acct && $Conf->user_id_by_email($newemail)) {
-        Conf::msg_error("The email address you requested, " . htmlspecialchars($newemail) . ", is already in use on this site. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+        Conf::msg_error("The email address you requested, " . htmlspecialchars($newemail) . ", is already in use on this site. You may want to <a href=\"" . $Conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         return false;
     }
 
@@ -253,10 +253,10 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             } else {
                 $msg = "Email address “" . htmlspecialchars($cj->email) . "” is already in use.";
                 if ($Me->privChair) {
-                    $msg = str_replace("an account", "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
+                    $msg = str_replace("an account", "<a href=\"" . $Conf->hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
                 }
                 if (!$newProfile) {
-                    $msg .= " You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.";
+                    $msg .= " You may want to <a href=\"" . $Conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.";
                 }
                 return $user_status->error_at("email", $msg);
             }
@@ -377,7 +377,7 @@ function parseBulkFile($text, $filename) {
             $saved_users[strtolower($cj->email)] = $csv->lineno();
         }
         if (($saved_user = save_user($cj, $ustatus, null, true))) {
-            $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
+            $success[] = "<a href=\"" . $Conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
         }
         foreach ($ustatus->problem_texts() as $e) {
             $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> " . $e;
@@ -440,7 +440,7 @@ if (!$Qreq->post_ok()) {
             $Conf->msg($UserStatus->message_texts(), $UserStatus->problem_status());
         }
         if ($newProfile) {
-            $Conf->msg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>. A password has been emailed to that address. You may now create another account.", "xconfirm");
+            $Conf->msg("Created an account for <a href=\"" . $Conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>. A password has been emailed to that address. You may now create another account.", "xconfirm");
         } else {
             $Conf->msg("Profile updated.", "xconfirm");
             if ($Acct->contactId != $Me->contactId) {
@@ -602,7 +602,7 @@ $form_params["t"] = $Qreq->t;
 if (isset($Qreq->ls)) {
     $form_params["ls"] = $Qreq->ls;
 }
-echo Ht::form(hoturl_post("profile", $form_params),
+echo Ht::form($Conf->hoturl_post("profile", $form_params),
               ["id" => "form-profile", "class" => "need-unload-protection"]);
 
 // left menu

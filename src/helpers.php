@@ -20,8 +20,9 @@ function cvtint($value, $default = -1) {
     $v = trim((string) $value);
     if (is_numeric($v)) {
         $ival = intval($v);
-        if ($ival == floatval($v))
+        if ($ival == floatval($v)) {
             return $ival;
+        }
     }
     return $default;
 }
@@ -75,6 +76,7 @@ function hoturl($page, $param = null) {
     return Conf::$main->hoturl($page, $param);
 }
 
+/** @deprecated */
 function hoturl_post($page, $param = null) {
     return Conf::$main->hoturl($page, $param, Conf::HOTURL_POST);
 }

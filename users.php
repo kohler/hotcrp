@@ -377,7 +377,7 @@ $Conf->header($title, "users", ["action_bar" => actionBar("account")]);
 
 
 $pl = new ContactList($Viewer, true, $Qreq);
-$pl_text = $pl->table_html($Qreq->t, hoturl("users", ["t" => $Qreq->t]),
+$pl_text = $pl->table_html($Qreq->t, $Conf->hoturl("users", ["t" => $Qreq->t]),
                      $tOpt[$Qreq->t], 'uldisplay.');
 
 
@@ -387,7 +387,7 @@ if (count($tOpt) > 1) {
     echo '<table id="contactsform">
 <tr><td><div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
-    echo Ht::form(hoturl("users"), ["method" => "get"]);
+    echo Ht::form($Conf->hoturl("users"), ["method" => "get"]);
     if (isset($Qreq->sort)) {
         echo Ht::hidden("sort", $Qreq->sort);
     }
@@ -397,7 +397,7 @@ if (count($tOpt) > 1) {
     echo '</div><div class="tld is-tla" id="tla-view">';
 
     // Display options
-    echo Ht::form(hoturl("users"), ["method" => "get"]);
+    echo Ht::form($Conf->hoturl("users"), ["method" => "get"]);
     foreach (array("t", "sort") as $x) {
         if (isset($Qreq[$x]))
             echo Ht::hidden($x, $Qreq[$x]);
@@ -457,14 +457,14 @@ if (count($tOpt) > 1) {
 
 
 if ($Viewer->privChair && $Qreq->t == "pc") {
-    $Conf->infoMsg('<p><a href="' . hoturl("profile", "u=new&amp;role=pc") . '" class="btn">Create accounts</a></p>Select a PC member’s name to edit their profile or remove them from the PC.');
+    $Conf->infoMsg('<p><a href="' . $Conf->hoturl("profile", "u=new&amp;role=pc") . '" class="btn">Create accounts</a></p>Select a PC member’s name to edit their profile or remove them from the PC.');
 } else if ($Viewer->privChair && $Qreq->t == "all") {
-    $Conf->infoMsg('<p><a href="' . hoturl("profile", "u=new") . '" class="btn">Create accounts</a></p>Select a user to edit their profile.  Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user would see it.');
+    $Conf->infoMsg('<p><a href="' . $Conf->hoturl("profile", "u=new") . '" class="btn">Create accounts</a></p>Select a user to edit their profile.  Select ' . Ht::img("viewas.png", "[Act as]") . ' to view the site as that user would see it.');
 }
 
 
 if ($pl->any->sel) {
-    echo Ht::form(hoturl_post("users", ["t" => $Qreq->t])),
+    echo Ht::form($Conf->hoturl_post("users", ["t" => $Qreq->t])),
         Ht::hidden("defaultact", "", ["id" => "defaultact"]),
         Ht::hidden_default_submit("default", 1);
     if (isset($Qreq->sort)) {

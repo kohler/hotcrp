@@ -144,10 +144,11 @@ if (isset($Qreq->upload)
 
             $atypes = $assignset->assigned_types();
             $apids = $assignset->assigned_pids(true);
-            echo Ht::form(hoturl_post("bulkassign",
-                                      ["saveassignment" => 1,
-                                       "assigntypes" => join(" ", $atypes),
-                                       "assignpids" => join(" ", $apids)])),
+            echo Ht::form($Conf->hoturl_post("bulkassign", [
+                    "saveassignment" => 1,
+                    "assigntypes" => join(" ", $atypes),
+                    "assignpids" => join(" ", $apids)
+                ])),
                 Ht::hidden("default_action", get($defaults, "action", "guess")),
                 Ht::hidden("rev_round", $defaults["round"]),
                 Ht::hidden("file", $text),
@@ -199,7 +200,7 @@ Assignment methods:
 </div></div>';
 
 
-echo Ht::form(hoturl_post("bulkassign", "upload=1"));
+echo Ht::form($Conf->hoturl_post("bulkassign", "upload=1"));
 
 // Upload
 echo '<div class="lg"><div class="f-i" style="margin-top:1em">',
@@ -258,7 +259,7 @@ if (($requestreview_template = $null_mailer->expand_template("requestreview"))) 
 echo '<div class="lg"></div>', Ht::submit("Prepare assignments", ["class" => "btn-primary"]),
     " &nbsp; <span class=\"hint\">You’ll be able to check the assignments before they are saved.</span></div>\n";
 
-echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC review assignments</a></div>';
+echo '<div style="margin-top:1.5em"><a href="', $Conf->hoturl_post("search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC review assignments</a></div>';
 
 echo "</form>
 
