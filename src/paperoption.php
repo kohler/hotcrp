@@ -252,9 +252,7 @@ class PaperOptionList implements IteratorAggregate {
         if (is_string($oj->id) && is_numeric($oj->id)) { // XXX backwards compat
             $oj->id = intval($oj->id);
         }
-        if (is_int($oj->id)
-            && $oj->id > 0
-            && ($oj->id >= PaperOption::MINFIXEDID) === $this->_adding_fixed) {
+        if (is_int($oj->id) && $oj->id > 0) {
             if ($this->conf->xt_allowed($oj)
                 && (!isset($this->_jmap[$oj->id])
                     || Conf::xt_priority_compare($oj, $this->_jmap[$oj->id]) <= 0)) {
@@ -444,13 +442,6 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     /** @return array<int,PaperOption> */
-    function nonfixed() {
-        return array_filter($this->normal(), function ($o) {
-            return $o->id < PaperOption::MINFIXEDID;
-        });
-    }
-
-    /** @return array<int,PaperOption> */
     function nonfinal() {
         if ($this->_olist_nonfinal === null) {
             $this->_olist_nonfinal = [];
@@ -615,7 +606,6 @@ class PaperOptionList implements IteratorAggregate {
 }
 
 class PaperOption implements JsonSerializable {
-    const MINFIXEDID = 1000000;
     const TITLEID = -1000;
     const AUTHORSID = -1001;
     const ANONYMITYID = -1002;
@@ -654,13 +644,16 @@ class PaperOption implements JsonSerializable {
     public $position;
     /** @var bool
      * @readonly */
+    public $nonpaper;
+    /** @var bool
+     * @readonly */
     public $required;
     /** @var bool
      * @readonly */
     public $final;
     /** @var bool
      * @readonly */
-    public $nonpaper;
+    public $configurable;
     /** @var bool
      * @readonly */
     public $include_empty;
@@ -732,9 +725,10 @@ class PaperOption implements JsonSerializable {
 
         $this->description = $args->description ?? null;
         $this->description_format = $args->description_format ?? null;
+        $this->nonpaper = ($args->nonpaper ?? false) === true;
         $this->required = !!($args->required ?? false);
         $this->final = ($args->final ?? false) === true;
-        $this->nonpaper = ($args->nonpaper ?? false) === true;
+        $this->configurable = ($args->configurable ?? null) !== false;
         $this->include_empty = ($args->include_empty ?? false) === true;
 
         $vis = $args->visibility ?? $args->view_type ?? null;
@@ -865,11 +859,6 @@ class PaperOption implements JsonSerializable {
         } else {
             return "field-" . $s;
         }
-    }
-
-    /** @return bool */
-    function fixed() {
-        return $this->id >= self::MINFIXEDID;
     }
 
     /** @return string */
@@ -1093,6 +1082,9 @@ class PaperOption implements JsonSerializable {
         }
         if ($this->description_format !== null) {
             $j->description_format = $this->description_format;
+        }
+        if ($this->configurable !== true) {
+            $j->configurable = $this->configurable;
         }
         if ($this->final) {
             $j->final = true;

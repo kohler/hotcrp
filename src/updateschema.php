@@ -1004,9 +1004,10 @@ function updateSchema($conf) {
         $conf->update_schema_version(94);
     if ($conf->sversion == 94
         && $conf->ql_ok("alter table PaperOption modify `data` varbinary(32768) DEFAULT NULL")) {
-        foreach ($conf->options()->nonfixed() as $xopt)
+        foreach ($conf->options() as $xopt) {
             if ($xopt->type === "text")
                 $conf->ql_ok("delete from PaperOption where optionId={$xopt->id} and data=''");
+        }
         $conf->update_schema_version(95);
     }
     if ($conf->sversion == 95

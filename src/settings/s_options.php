@@ -98,6 +98,14 @@ class Options_SettingRenderer {
             . $sv->render_feedback_at("optdt_$xpos")
             . "</div></div>";
     }
+    static function configurable_options(SettingValues $sv) {
+        $o = [];
+        foreach ($sv->conf->options() as $opt) {
+            if ($opt->configurable)
+                $o[$opt->id] = $opt;
+        }
+        return $o;
+    }
     private function render_option(SettingValues $sv, PaperOption $o = null, $ipos, $xpos) {
         if (!$o) {
             $o = PaperOption::make((object) [
@@ -105,7 +113,7 @@ class Options_SettingRenderer {
                     "name" => "Field name",
                     "description" => "",
                     "type" => "checkbox",
-                    "position" => count($sv->conf->options()->nonfixed()) + 1,
+                    "position" => count(self::configurable_options($sv)) + 1,
                     "display" => "prominent",
                     "json_key" => "__fake__"
                 ], $sv->conf);
@@ -201,7 +209,7 @@ class Options_SettingRenderer {
 
         echo '<div id="settings_opts" class="c">';
         $pos = 0;
-        $all_options = array_merge($sv->conf->options()->nonfixed()); // get our own iterator
+        $all_options = self::configurable_options($sv); // get our own iterator
         foreach ($all_options as $o) {
             $self->render_option($sv, $o, $self->reqv_id_to_pos[$o->id] ?? null, ++$pos);
         }
@@ -229,14 +237,17 @@ class Options_SettingRenderer {
             && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
             $options = (array) json_decode($sv->newv("options"));
             usort($options, function ($a, $b) { return $a->position - $b->position; });
-            foreach ($options as $pos => $o)
-                if (($o->visibility ?? null) === "nonblind")
+            foreach ($options as $pos => $o) {
+                if (($o->visibility ?? null) === "nonblind") {
                     $sv->warning_at("optp_" . ($pos + 1), "The “" . htmlspecialchars($o->name) . "” field is “visible if authors are visible,” but authors are not visible. You may want to change " . $sv->setting_link("Settings &gt; Submissions &gt; Blind submission", "sub_blind") . " to “Blind until review.”");
+                }
+            }
         }
     }
 }
 
 class Options_SettingParser extends SettingParser {
+    private $known_optionids;
     private $next_optionid;
     private $req_optionid;
     private $stashed_options = false;
@@ -254,12 +265,21 @@ class Options_SettingParser extends SettingParser {
         $is_new = $id < 0;
         if ($is_new) {
             if (!$this->next_optionid) {
-                $oid1 = $sv->conf->fetch_ivalue("select coalesce(max(optionId),0) + 1 from PaperOption where optionId<" . PaperOption::MINFIXEDID);
-                $oid2 = $sv->conf->fetch_ivalue("select coalesce(max(documentType),0) + 1 from PaperStorage where documentType>0 and documentType<" . PaperOption::MINFIXEDID);
-                $this->next_optionid = max($oid1, $oid2, $this->req_optionid);
+                $this->known_optionids = [];
+                $result = $sv->conf->qe("select distinct optionId from PaperOption where optionId>0 union select distinct documentType from PaperStorage where documentType>0");
+                while (($row = $result->fetch_row())) {
+                    $this->known_optionids[(int) $row[0]] = true;
+                }
+                $this->next_optionid = 1;
+                foreach ($sv->conf->options()->universal() as $o) {
+                    $this->known_optionids[$o->id] = true;
+                }
             }
-            assert($this->next_optionid > 0 && $this->next_optionid < PaperOption::MINFIXEDID);
-            $id = $this->next_optionid++;
+            while (isset($this->known_optionids[$this->next_optionid])) {
+                ++$this->next_optionid;
+            }
+            $id = $this->next_optionid;
+            ++$this->next_optionid;
         }
         $oarg = ["name" => $name, "id" => $id, "final" => false];
 
@@ -329,7 +349,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     function parse(SettingValues $sv, Si $si) {
-        $new_opts = $sv->conf->options()->nonfixed();
+        $new_opts = Options_SettingRenderer::configurable_options($sv);
 
         // consider option ids
         $optids = array_map(function ($o) { return $o->id; }, $new_opts);
@@ -358,7 +378,7 @@ class Options_SettingParser extends SettingParser {
 
     function unparse_json(SettingValues $sv, Si $si, $j) {
         $oj = [];
-        foreach ($sv->conf->options()->nonfixed() as $o) {
+        foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
             $oj[] = $o->jsonSerialize();
         }
         $j->options = $oj;
@@ -372,7 +392,7 @@ class Options_SettingParser extends SettingParser {
         $sv->save("next_optionid", null);
         if ($sv->update("options", empty($newj) ? null : json_encode_db($newj))) {
             $deleted_ids = array();
-            foreach ($sv->conf->options()->nonfixed() as $o) {
+            foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
                 $newo = $this->stashed_options[$o->id] ?? null;
                 if (!$newo
                     || ($newo->type !== $o->type
