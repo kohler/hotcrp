@@ -100,7 +100,7 @@ function saveAssignments($qreq, $reviewer) {
         $aset->execute(true);
     }
 
-    $Conf->self_redirect($qreq);
+    $Conf->redirect_self($qreq);
 }
 
 

@@ -57,7 +57,7 @@ if ($Qreq->post && $Qreq->post_empty()) {
 
 // cancel action
 if ($Qreq->cancel && $Qreq->post_ok()) {
-    $Conf->self_redirect($Qreq);
+    $Conf->redirect_self($Qreq);
 }
 
 
@@ -92,7 +92,7 @@ if (isset($Qreq->unsubmitreview)
         $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} unsubmitted", $prow);
         $Conf->confirmMsg("Unsubmitted review.");
     }
-    $Conf->self_redirect($Qreq);             // normally does not return
+    $Conf->redirect_self($Qreq);             // normally does not return
     review_load();
 } else if (isset($Qreq->update)
            && $paperTable->editrrow
@@ -116,7 +116,7 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
         if ($tf->check_and_save($Me, $prow, $paperTable->editrrow)
             && !$tf->has_problem_at("ready")) {
             $tf->report();
-            $Conf->self_redirect($Qreq); // normally does not return
+            $Conf->redirect_self($Qreq); // normally does not return
         }
     }
     review_load();
@@ -154,7 +154,7 @@ if (isset($Qreq->adoptreview)
     if (($my_rrow = $prow->fresh_review_of_user($Me))) {
         $Qreq->r = $my_rrow->reviewId;
     }
-    $Conf->self_redirect($Qreq); // normally does not return
+    $Conf->redirect_self($Qreq); // normally does not return
 }
 
 
@@ -185,9 +185,9 @@ if (isset($Qreq->deletereview)
 
             unset($Qreq->r, $Qreq->reviewId);
             $Qreq->paperId = $Qreq->p = $paperTable->editrrow->paperId;
-            go(hoturl("paper", ["p" => $Qreq->paperId]));
+            $Conf->redirect_hoturl("paper", ["p" => $Qreq->paperId]);
         }
-        $Conf->self_redirect($Qreq);         // normally does not return
+        $Conf->redirect_self($Qreq);         // normally does not return
         review_load();
     }
 }
@@ -287,7 +287,7 @@ if ((isset($Qreq->refuse) || isset($Qreq->decline))
         } else {
             $Conf->confirmMsg("Review declined. Thank you for telling us that you cannot complete your review.");
             unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retract);
-            $Conf->self_redirect($Qreq);
+            $Conf->redirect_self($Qreq);
         }
     } else {
         $result->export_errors();
@@ -312,7 +312,7 @@ if (isset($Qreq->accept)
             $Me->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} accepted", $prow);
         }
         $Conf->confirmMsg("Thank you for confirming your intention to finish this review. You can download the paper and review form below.");
-        $Conf->self_redirect($Qreq);
+        $Conf->redirect_self($Qreq);
         review_load();
     }
 }
@@ -331,7 +331,7 @@ if (!$viewAny && !$editAny) {
     if (isset($Qreq->reviewId)) {
         Conf::msg_error("You can’t see the reviews for this paper. "
                         . whyNotText($Me->perm_view_review($prow, null)));
-        go(hoturl("paper", "p=$prow->paperId"));
+        $Conf->redirect_hoturl("paper", "p=$prow->paperId");
     }
 }
 
@@ -339,7 +339,7 @@ if (!$viewAny && !$editAny) {
 // mode
 $paperTable->fixReviewMode();
 if ($paperTable->mode == "edit") {
-    go(hoturl("paper", ["p" => $prow->paperId]));
+    $Conf->redirect_hoturl("paper", ["p" => $prow->paperId]);
 }
 
 

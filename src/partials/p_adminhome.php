@@ -16,7 +16,7 @@ class AdminHome_Partial {
         }
         if (isset($qreq->clearbug) || isset($qreq->clearnewpcrev)) {
             unset($qreq->clearbug, $qreq->clearnewpcrev);
-            $user->conf->self_redirect($qreq);
+            $user->conf->redirect_self($qreq);
         }
     }
     static function render(Contact $user) {

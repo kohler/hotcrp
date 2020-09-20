@@ -31,7 +31,7 @@ if ($Graph && isset($GraphSynonym[$Graph])) {
     $Graph = $GraphSynonym[$Graph];
 }
 if (!$Graph || !isset($Graphs[$Graph])) {
-    $Conf->self_redirect($Qreq, ["g" => key($Graphs)]);
+    $Conf->redirect_self($Qreq, ["g" => key($Graphs)]);
 }
 
 // Header and body

@@ -208,7 +208,8 @@ function expander($open, $foldnum = null) {
 /** @param Contact|Author|ReviewInfo|CommentInfo $userlike
  * @return string */
 function actas_link($userlike) {
-    return '<a href="' . Conf::$main->selfurl(null, ["actas" => $userlike->email])
+    global $Qreq;
+    return '<a href="' . Conf::$main->selfurl($Qreq, ["actas" => $userlike->email])
         . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($userlike, NAME_P)])
         . '</a>';
 }

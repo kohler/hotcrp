@@ -105,7 +105,7 @@ function change_email_by_capability($Qreq) {
 
 if ($Qreq->changeemail) {
     if ($Qreq->cancel) {
-        $Conf->self_redirect($Qreq);
+        $Conf->redirect_self($Qreq);
     } else if (!$Me->is_actas_user()) {
         change_email_by_capability($Qreq);
     }
@@ -171,7 +171,7 @@ if ($Qreq->u === "me" || $Qreq->u === "self") {
                 Conf::msg_error("No user matches “" . htmlspecialchars($Qreq->u) . "”.");
                 unset($Qreq->u);
             }
-            $Conf->self_redirect($Qreq);
+            $Conf->redirect_self($Qreq);
         }
     }
 }
@@ -191,12 +191,12 @@ if (!$Acct
         Conf::msg_error("You’re logged in as a different user now, so your changes were ignored.");
     }
     unset($Qreq->u, $Qreq->save, $Qreq->savebulk);
-    $Conf->self_redirect($Qreq);
+    $Conf->redirect_self($Qreq);
 }
 
 // Redirect if canceled.
 if ($Qreq->cancel) {
-    $Conf->self_redirect($Qreq);
+    $Conf->redirect_self($Qreq);
 }
 
 $need_highlight = false;
@@ -418,7 +418,7 @@ if (!$Qreq->post_ok()) {
         parseBulkFile($text, $Qreq->file_filename("bulk"));
     }
     $Qreq->bulkentry = "";
-    $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
+    $Conf->redirect_self($Qreq, ["anchor" => "bulk"]);
 } else if ($Qreq->savebulk && $newProfile) {
     $success = true;
     if ($Qreq->bulkentry && $Qreq->bulkentry !== "Enter users one per line") {
@@ -427,7 +427,7 @@ if (!$Qreq->post_ok()) {
     if (!$success) {
         $Me->save_session("profile_bulkentry", array(Conf::$now, $Qreq->bulkentry));
     }
-    $Conf->self_redirect($Qreq, ["anchor" => "bulk"]);
+    $Conf->redirect_self($Qreq, ["anchor" => "bulk"]);
 } else if (isset($Qreq->save)) {
     assert($Acct->is_empty() === !!$newProfile);
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
@@ -448,7 +448,7 @@ if (!$Qreq->post_ok()) {
             }
         }
         if (isset($Qreq->redirect)) {
-            go(hoturl("index"));
+            $Conf->redirect();
         } else {
             $xcj = [];
             if ($newProfile) {
@@ -461,13 +461,13 @@ if (!$Qreq->post_ok()) {
                 $xcj["warning_fields"] = $UserStatus->problem_fields();
             }
             $Me->save_session("profile_redirect", $xcj);
-            $Conf->self_redirect($Qreq);
+            $Conf->redirect_self($Qreq);
         }
     }
 } else if (isset($Qreq->merge)
            && !$newProfile
            && $Acct->contactId == $Me->contactId) {
-    go(hoturl("mergeaccounts"));
+    $Conf->redirect_hoturl("mergeaccounts");
 }
 
 if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
@@ -501,7 +501,7 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
             // done
             $Conf->confirmMsg("Permanently deleted account " . htmlspecialchars($Acct->email) . ".");
             $Me->log_activity_for($Acct, "Account deleted " . htmlspecialchars($Acct->email));
-            go(hoturl("users", "t=all"));
+            $Conf->redirect_hoturl("users", "t=all");
         }
     }
 }
@@ -517,7 +517,7 @@ if (!$newProfile
 }
 if ($Qreq->t && $Qreq->t !== $profile_topic && $Qreq->method() === "GET") {
     $Qreq->t = $profile_topic === "main" ? null : $profile_topic;
-    $Conf->self_redirect($Qreq);
+    $Conf->redirect_self($Qreq);
 }
 $UserStatus->set_context(["root" => $profile_topic]);
 
@@ -622,7 +622,7 @@ if ($Me->privChair) {
         if ($active) {
             echo $t[0];
         } else {
-            echo Ht::link($t[0], $Conf->selfurl(null, ["u" => $t[1], "t" => null]));
+            echo Ht::link($t[0], $Conf->selfurl($Qreq, ["u" => $t[1], "t" => null]));
         }
         echo '</li>';
     }
@@ -637,7 +637,7 @@ if (!$newProfile) {
         if ($gj->name === $profile_topic) {
             echo $gj->title;
         } else {
-            echo Ht::link($gj->title, $Conf->selfurl(null, ["t" => $gj->name]));
+            echo Ht::link($gj->title, $Conf->selfurl($Qreq, ["t" => $gj->name]));
         }
         echo '</li>';
         $first = false;

@@ -12,10 +12,11 @@ class Mail_ListAction extends ListAction {
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $r = in_array($qreq->recipients, ["au", "rev"]) ? $qreq->recipients : "all";
-        if ($ssel->equals_search(new PaperSearch($user, $qreq)))
+        if ($ssel->equals_search(new PaperSearch($user, $qreq))) {
             $x = "q=" . urlencode($qreq->q) . "&plimit=1";
-        else
+        } else {
             $x = "p=" . join("+", $ssel->selection());
-        go($user->conf->hoturl("mail", $x . "&t=" . urlencode($qreq->t) . "&to=$r"));
+        }
+        $user->conf->redirect_hoturl("mail", $x . "&t=" . urlencode($qreq->t) . "&to=$r");
     }
 }

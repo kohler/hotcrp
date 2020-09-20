@@ -133,10 +133,11 @@ class Conf {
     /** @var PaperOptionList */
     private $_paper_opts;
 
-    public $headerPrinted = false;
-    private $_save_logs = false;
+    /** @var bool */
+    public $_header_printed = false;
     public $_session_handler;
-    private $_initial_msg_count;
+    /** @var ?array<string,array<int,true>> */
+    private $_save_logs;
 
     /** @var ?Collator */
     private $_collator;
@@ -3086,6 +3087,10 @@ class Conf {
     const HOTURL_SITE_RELATIVE = 8;
     const HOTURL_NO_DEFAULTS = 16;
 
+    /** @param string $page
+     * @param null|string|array $param
+     * @param int $flags
+     * @return string */
     function hoturl($page, $param = null, $flags = 0) {
         global $Me;
         $nav = Navigation::get();
@@ -3233,18 +3238,32 @@ class Conf {
         }
     }
 
+    /** @param string $page
+     * @param null|string|array $param
+     * @param int $flags
+     * @return string */
     function hoturl_absolute($page, $param = null, $flags = 0) {
         return $this->hoturl($page, $param, self::HOTURL_ABSOLUTE | $flags);
     }
 
+    /** @param string $page
+     * @param null|string|array $param
+     * @return string */
     function hoturl_site_relative_raw($page, $param = null) {
         return $this->hoturl($page, $param, self::HOTURL_SITE_RELATIVE | self::HOTURL_RAW);
     }
 
+    /** @param string $page
+     * @param null|string|array $param
+     * @return string */
     function hoturl_post($page, $param = null) {
         return $this->hoturl($page, $param, self::HOTURL_POST);
     }
 
+    /** @param string $page
+     * @param null|string|array $param
+     * @param int $flags
+     * @return string */
     function hoturl_raw($page, $param = null, $flags = 0) {
         return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
     }
@@ -3267,12 +3286,15 @@ class Conf {
         "editcomment" => true
     ];
 
-    function selfurl(Qrequest $qreq = null, $params = [], $flags = 0) {
-        global $Qreq;
-        $qreq = $qreq ? : $Qreq;
+    /** @param Qrequest $qreq
+     * @param ?array $param
+     * @param int $flags
+     * @return string */
+    function selfurl(Qrequest $qreq, $param = null, $flags = 0) {
         if (Navigation::page() === "api") {
             error_log("selfurl for api page: " . debug_string_backtrace());
         }
+        $param = $param ?? [];
 
         $x = [];
         foreach ($qreq as $k => $v) {
@@ -3282,19 +3304,38 @@ class Conf {
             }
             if ($ak
                 && ($ak === $k || !isset($qreq[$ak]))
-                && !array_key_exists($ak, $params)
+                && !array_key_exists($ak, $param)
                 && !is_array($v)) {
                 $x[$ak] = $v;
             }
         }
-        foreach ($params as $k => $v) {
+        foreach ($param as $k => $v) {
             $x[$k] = $v;
         }
         return $this->hoturl(Navigation::page(), $x, $flags);
     }
 
+    /** @param ?string $url */
+    function redirect($url = null) {
+        Navigation::redirect($url);
+    }
+
+    /** @param string $page
+     * @param null|string|array $param */
+    function redirect_hoturl($page, $param = null) {
+        $this->redirect($this->hoturl($page, $param, self::HOTURL_RAW));
+    }
+
+    /** @param Qrequest $qreq
+     * @param ?array $param */
+    function redirect_self(Qrequest $qreq, $param = null) {
+        $this->redirect($this->selfurl($qreq, $param, self::HOTURL_RAW));
+    }
+
+    /** @deprecated */
     function self_redirect(Qrequest $qreq = null, $params = []) {
-        Navigation::redirect($this->selfurl($qreq, $params, self::HOTURL_RAW));
+        global $Qreq;
+        $this->redirect_self($qreq ?? $Qreq, $params);
     }
 
 
@@ -3632,9 +3673,8 @@ class Conf {
                        || !defined("HOTCRP_TESTHARNESS")) {
                 fwrite(STDOUT, "$text\n");
             }
-        } else if ($conf && !$conf->headerPrinted) {
+        } else if ($conf && !$conf->_header_printed) {
             ensure_session();
-            $conf->initial_msg_count();
             $_SESSION[$conf->dsn]["msgs"][] = [$text, $type];
         } else if (is_int($type) || $type[0] === "x") {
             echo Ht::msg($text, $type);
@@ -3704,19 +3744,6 @@ class Conf {
 
     function post_missing_msg() {
         $this->msg("Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.", "merror");
-    }
-
-    /** @return int */
-    function initial_msg_count() {
-        if (!isset($this->_initial_msg_count)
-            && session_id() !== "")  {
-            $this->_initial_msg_count = 0;
-            if (isset($_SESSION[$this->dsn])
-                && isset($_SESSION[$this->dsn]["msgs"])) {
-                $this->_initial_msg_count = count($_SESSION[$this->dsn]["msgs"]);
-            }
-        }
-        return $this->_initial_msg_count;
     }
 
 
@@ -4080,7 +4107,7 @@ class Conf {
                 // Link becomes true user if not currently chair.
                 $actas = Contact::$true_user ? Contact::$true_user->email : $actas;
                 $profile_parts[] = "<a href=\""
-                    . $this->selfurl(null, ["actas" => Contact::$true_user ? null : $actas]) . "\">"
+                    . $this->selfurl($Qreq, ["actas" => Contact::$true_user ? null : $actas]) . "\">"
                     . (Contact::$true_user ? "Admin" : htmlspecialchars($actas))
                     . "&nbsp;" . Ht::img("viewas.png", "Act as " . htmlspecialchars($actas))
                     . "</a>";
@@ -4135,7 +4162,7 @@ class Conf {
 
         echo "  <hr class=\"c\">\n";
 
-        $this->headerPrinted = true;
+        $this->_header_printed = true;
         echo "<div id=\"msgs-initial\">\n";
         if (($x = $this->opt("maintenance"))) {
             echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
@@ -4206,7 +4233,7 @@ class Conf {
     }
 
     function header($title, $id, $extra = []) {
-        if (!$this->headerPrinted) {
+        if (!$this->_header_printed) {
             $this->header_head($title, $extra);
             $this->header_body($title, $id, $extra);
         }
@@ -4342,9 +4369,9 @@ class Conf {
     const action_log_query_action_index = 6;
 
     function save_logs($on) {
-        if ($on && $this->_save_logs === false) {
+        if ($on && $this->_save_logs === null) {
             $this->_save_logs = [];
-        } else if (!$on && $this->_save_logs !== false) {
+        } else if (!$on && $this->_save_logs !== null) {
             $qv = [];
             '@phan-var-force list<list<string>> $qv';
             $last_pids = null;
@@ -4370,7 +4397,7 @@ class Conf {
             if (!empty($qv)) {
                 $this->qe(self::action_log_query, $qv);
             }
-            $this->_save_logs = false;
+            $this->_save_logs = null;
         }
     }
 
@@ -4424,7 +4451,7 @@ class Conf {
         $user = self::log_clean_user($user, $text);
         $dest_user = self::log_clean_user($dest_user, $text);
 
-        if ($this->_save_logs === false) {
+        if ($this->_save_logs === null) {
             $this->qe(self::action_log_query, self::format_log_values($text, $user, $dest_user, $true_user, $pids));
         } else {
             $key = "$user,$dest_user,$true_user|$text";

@@ -35,7 +35,7 @@ function crpmerge($qreq, $MiniMe) {
     if (!$merger->has_error()) {
         $Conf->confirmMsg("Merged account " . htmlspecialchars($merger->oldu->email) . ".");
         $merger->newu->log_activity("Account merged " . $merger->oldu->email);
-        go(hoturl("index"));
+        $Conf->redirect();
     } else {
         $merger->newu->log_activity("Account merged " . $merger->oldu->email . " with errors");
         $MergeError = '<div class="multimessage">'
@@ -64,7 +64,7 @@ if (isset($Qreq->merge) && $Qreq->post_ok()) {
             Ht::error_at("password");
         } else if ($MiniMe->contactId && $MiniMe->contactId == $Me->contactId) {
             $Conf->confirmMsg("Accounts successfully merged.");
-            go(hoturl("index"));
+            $Conf->redirect();
         } else
             crpmerge($Qreq, $MiniMe);
     }

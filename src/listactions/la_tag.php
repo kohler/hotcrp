@@ -113,15 +113,14 @@ class Tag_ListAction extends ListAction {
         }
         $success = $assignset->execute();
 
-        assert(!$user->conf->headerPrinted);
-        if (!$user->conf->headerPrinted && $qreq->ajax) {
+        if ($qreq->ajax) {
             json_exit(["ok" => $success]);
-        } else if (!$user->conf->headerPrinted && $success) {
+        } else if ($success) {
             if (!$errors) {
                 $user->conf->confirmMsg("Tags saved.");
             }
             $args = ["atab" => "tag"] + $qreq->subset_as_array(["tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless"]);
-            $user->conf->self_redirect($qreq, $args);
+            $user->conf->redirect_self($qreq, $args);
         }
     }
 }

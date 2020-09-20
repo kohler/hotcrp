@@ -274,7 +274,7 @@ if ($Viewer->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel
         modify_confirm(UserActions::send_account_info($Viewer, $papersel), "Account information sent.", false);
     }
     unset($Qreq->modifygo, $Qreq->modifytype);
-    $Conf->self_redirect($Qreq);
+    $Conf->redirect_self($Qreq);
 }
 
 function do_tags($qreq) {
@@ -337,7 +337,7 @@ function do_tags($qreq) {
     if (!$us->has_error()) {
         $Conf->confirmMsg("Tags saved.");
         unset($qreq->tagact, $qreq->tag);
-        $Conf->self_redirect($qreq);
+        $Conf->redirect_self($qreq);
     } else {
         Conf::msg_error($us->error_texts());
     }
@@ -363,7 +363,7 @@ if (isset($Qreq->redisplay)) {
         $sv[] = "ulscoresort=" . ListSorter::canonical_short_score_sort($Qreq->scoresort);
     }
     Session_API::setsession($Viewer, join(" ", $sv));
-    $Conf->self_redirect($Qreq);
+    $Conf->redirect_self($Qreq);
 }
 
 if ($Qreq->t === "pc") {

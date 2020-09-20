@@ -32,7 +32,7 @@ if ($Qreq->reviewer
         }
 } else if (!$Qreq->reviewer && !($Me->roles & Contact::ROLE_PC)) {
     foreach ($Conf->pc_members() as $pcm) {
-        $Conf->self_redirect($Qreq, ["reviewer" => $pcm->email]);
+        $Conf->redirect_self($Qreq, ["reviewer" => $pcm->email]);
         // in case redirection fails:
         $reviewer = $pcm;
         break;
@@ -96,7 +96,7 @@ function savePreferences($Qreq, $reset_p) {
         if ($reset_p) {
             unset($Qreq->p, $Qreq->pap);
         }
-        $Conf->self_redirect($Qreq);
+        $Conf->redirect_self($Qreq);
     } else {
         Conf::msg_error(join("<br />", $aset->messages_html()));
     }
@@ -127,15 +127,6 @@ if ($Qreq->fn === "setpref" && $Qreq->post_ok()) {
 
 
 // Parse paper preferences
-function pref_xmsgc($msg) {
-    global $Conf;
-    if (!$Conf->headerPrinted) {
-        $Conf->warnMsg($msg);
-    } else {
-        echo '<div class="msgs-wide">', Ht::msg($msg, 1), '</div>';
-    }
-}
-
 function parseUploadedPreferences($text, $filename, $apply) {
     global $Conf, $Me, $Qreq, $SSel, $reviewer;
 
@@ -169,18 +160,18 @@ function parseUploadedPreferences($text, $filename, $apply) {
     $assignset->parse($csv, $filename);
     if ($assignset->is_empty()) {
         if ($assignset->has_error()) {
-            pref_xmsgc("Preferences unchanged, but you may want to fix these errors and try again:\n" . $assignset->messages_div_html(true));
+            $Conf->warnMsg("Preferences unchanged, but you may want to fix these errors and try again:\n" . $assignset->messages_div_html(true));
         } else {
-            pref_xmsgc("Preferences unchanged.\n" . $assignset->messages_div_html(true));
+            $Conf->warnMsg("Preferences unchanged.\n" . $assignset->messages_div_html(true));
         }
     } else if ($apply) {
         if ($assignset->execute(true)) {
-            $Conf->self_redirect($Qreq);
+            $Conf->redirect_self($Qreq);
         }
     } else {
         $Conf->header("Review preferences", "revpref");
         if ($assignset->has_error()) {
-            pref_xmsgc($assignset->messages_div_html(true));
+            $Conf->warnMsg($assignset->messages_div_html(true));
         }
 
         echo Ht::form(hoturl_post("reviewprefs", prefs_hoturl_args() + ["fn" => "saveuploadpref"]), ["class" => "alert need-unload-protection"]);
@@ -233,7 +224,7 @@ if (isset($Qreq->redisplay)) {
             $pfd .= substr($k, 4) . " ";
     }
     $Me->save_session("pfdisplay", $pfd);
-    $Conf->self_redirect($Qreq);
+    $Conf->redirect_self($Qreq);
 }
 
 

@@ -83,6 +83,7 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
     /** @param int $format
      * @return string */
     function unparse($format = 0) {
+        global $Qreq;
         $paperId = $this->_a["paperId"] ?? -1;
         $reviewId = $this->_a["reviewId"] ?? -1;
         $option = $this->_a["option"] ?? null;
@@ -243,11 +244,15 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
         // finish it off
         if (isset($this->_a["forceShow"]) && $format === 5
             && Navigation::page() !== "api") {
-            $ms[] = $this->conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", $this->conf->selfurl(null, ["forceShow" => 1]));
+            $ms[] = $this->conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", $this->conf->selfurl($Qreq, ["forceShow" => 1]));
         }
         if (!empty($ms) && isset($this->_a["listViewable"]) && $format === 5) {
             $ms[] = $this->conf->_("<a href=\"%s\">List the submissions you can view</a>", $this->conf->hoturl("search", "q="));
         }
         return join(" ", $ms);
+    }
+    /** @return string */
+    function unparse_html() {
+        return $this->unparse(5);
     }
 }

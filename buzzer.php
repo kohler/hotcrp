@@ -40,7 +40,7 @@ function kiosk_manager(Contact $user, Qrequest $qreq) {
         $user = LoginHelper::logout($user, false);
         ensure_session(ENSURE_SESSION_REGENERATE_ID);
         $user->set_capability("tracker_kiosk", $kiosk_keys[$qreq->buzzer_showpapers ? 1 : 0]);
-        $user->conf->self_redirect($qreq);
+        $user->conf->redirect_self($qreq);
     }
     return $kiosk_keys;
 }

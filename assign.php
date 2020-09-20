@@ -25,12 +25,13 @@ function assign_load() {
     $prow = PaperTable::fetch_paper_request($Qreq, $Me);
     if ($prow === null) {
         assign_show_header();
-        $whyNot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
-        Conf::msg_error(whyNotText($whyNot->set("listViewable", true)));
+        $whynot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
+        Conf::msg_error($whynot->set("listViewable", true)->unparse_html());
         $Conf->footer();
         exit;
     } else if (($whynot = $Me->perm_request_review($prow, null, false))) {
-        error_go($prow->hoturl(), whyNotText($whynot));
+        Conf::msg_error($whynot->unparse_html());
+        $Conf->redirect($prow->hoturl());
         exit;
     } else {
         return $prow;
@@ -40,6 +41,7 @@ $prow = assign_load();
 
 
 // change PC assignments
+/** @param Qrequest $qreq */
 function pcAssignments($qreq) {
     global $Conf, $Me, $prow;
 
@@ -109,7 +111,7 @@ function pcAssignments($qreq) {
             json_exit(["ok" => true]);
         } else {
             $Conf->confirmMsg("Assignments saved." . $aset->messages_div_html());
-            $Conf->self_redirect($qreq);
+            $Conf->redirect_self($qreq);
             // NB normally does not return
             assign_load();
         }
@@ -143,7 +145,7 @@ if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
             $Conf->confirmMsg($result->content["message"]);
         }
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override);
-        $Conf->self_redirect($Qreq);
+        $Conf->redirect_self($Qreq);
     } else {
         if (isset($result->content["errf"])
             && isset($result->content["errf"]["override"])) {
@@ -162,7 +164,7 @@ if ((isset($Qreq->deny) || isset($Qreq->denyreview))
     if ($result->content["ok"]) {
         $Conf->confirmMsg("Proposed reviewer denied.");
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->deny, $Qreq->denyreview);
-        $Conf->self_redirect($Qreq);
+        $Conf->redirect_self($Qreq);
     } else {
         $result->export_errors();
         assign_load();
@@ -181,7 +183,7 @@ if (isset($Qreq->retractreview)
             $Conf->confirmMsg("Review request retracted.");
         }
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retractreview);
-        $Conf->self_redirect($Qreq);
+        $Conf->redirect_self($Qreq);
     } else {
         $result->export_errors();
         assign_load();
@@ -197,7 +199,7 @@ if (isset($Qreq->undeclinereview)
         $email = $Qreq->email ? : "You";
         $Conf->confirmMsg("Review refusal retracted. " . htmlspecialchars($email) . " may now be asked again to review this submission.");
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->unrefusereview);
-        $Conf->self_redirect($Qreq);
+        $Conf->redirect_self($Qreq);
     } else {
         $result->export_errors();
         assign_load();

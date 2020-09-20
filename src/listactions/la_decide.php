@@ -20,7 +20,7 @@ class Decide_ListAction extends ListAction {
         }
         $aset->parse("paper,action,decision\n" . join(" ", $ssel->selection()) . ",decision," . CsvGenerator::quote($decision));
         if ($aset->execute()) {
-            $user->conf->self_redirect($qreq, ["atab" => "decide", "decision" => $qreq->decision]);
+            $user->conf->redirect_self($qreq, ["atab" => "decide", "decision" => $qreq->decision]);
         } else {
             Conf::msg_error($aset->messages_div_html());
         }

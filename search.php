@@ -84,7 +84,7 @@ if ($Qreq->redisplay) {
     } else {
         $forceShow = $Qreq->forceShow || $Qreq->showforce ? 1 : null;
     }
-    $Conf->self_redirect($Qreq, ["anchor" => "view", "forceShow" => $forceShow]);
+    $Conf->redirect_self($Qreq, ["anchor" => "view", "forceShow" => $forceShow]);
 }
 
 
@@ -126,10 +126,10 @@ function savesearch() {
 
     if ($Qreq->deletesearch) {
         Dbl::qe_raw("delete from Settings where name='ss:" . sqlq($name) . "'");
-        $Conf->self_redirect($Qreq);
+        $Conf->redirect_self($Qreq);
     } else {
         Dbl::qe_raw("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode_db($arr)) . "') on duplicate key update value=values(value), data=values(data)");
-        $Conf->self_redirect($Qreq, ["q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null]);
+        $Conf->redirect_self($Qreq, ["q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null]);
     }
 }
 

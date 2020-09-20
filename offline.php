@@ -77,7 +77,7 @@ $pastDeadline = !$Conf->time_review(null, $Me->isPC, true);
 
 if (!$Conf->time_review_open() && !$Me->privChair) {
     Conf::msg_error("The site is not open for review.");
-    go(hoturl("index"));
+    $Conf->redirect();
 }
 
 $Conf->header("Offline reviewing", "offline");
@@ -91,8 +91,9 @@ if ($Me->is_reviewer()) {
         PaperTable::echo_review_clickthrough();
         echo '</div>';
     }
-} else
+} else {
     $Conf->infoMsg("You aren’t registered as a reviewer or PC member for this conference, but for your information, you may download the review form anyway.");
+}
 
 
 echo '<table id="offlineform">';

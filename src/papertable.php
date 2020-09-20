@@ -38,6 +38,7 @@ class PaperTable {
     /** @var int */
     public $edit_fields_position;
 
+    /** @var Qrequest */
     private $qreq;
     private $useRequest;
     /** @var ?ReviewValues */
@@ -2058,7 +2059,7 @@ class PaperTable {
         if (!$rr->contactId || $rr->contactId === $this->user->contactId) {
             return "";
         } else {
-            return ' <a href="' . $this->conf->selfurl(null, ["actas" => $rr->email]) . '">'
+            return ' <a href="' . $this->conf->selfurl($this->qreq, ["actas" => $rr->email]) . '">'
                 . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($rr, NAME_P)])
                 . "</a>";
         }
@@ -2436,7 +2437,7 @@ class PaperTable {
 
         // override conflict
         if ($allow_admin && !$admin) {
-            $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl(null, ["forceShow" => 1]) . '" class="xx">'
+            $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="xx">'
                 . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing</span>";
         } else if ($this->user->privChair && !$allow_admin) {
             $x = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
@@ -2768,7 +2769,7 @@ class PaperTable {
         if ($pid !== null) {
             $qreq->paperId = $pid;
             unset($qreq->q, $qreq->p);
-            $user->conf->self_redirect($qreq);
+            $user->conf->redirect_self($qreq);
         } else if ((isset($qreq->paperId) || isset($qreq->q))
                    && !$user->is_empty()) {
             $q = "q=" . urlencode(isset($qreq->paperId) ? $qreq->paperId : $qreq->q);
@@ -2778,7 +2779,7 @@ class PaperTable {
             if ($qreq->page() === "assign") {
                 $q .= "&linkto=" . $qreq->page();
             }
-            go($user->conf->hoturl("search", $q));
+            $user->conf->redirect_hoturl("search", $q);
         }
     }
 

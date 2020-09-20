@@ -178,7 +178,7 @@ if ($Qreq->saveassignment
     $assignset->enable_papers($SSel->selection());
     $assignset->parse($Qreq->assignment);
     $assignset->execute(true);
-    $Conf->self_redirect($Qreq, sanitize_qreq_redirect($Qreq));
+    $Conf->redirect_self($Qreq, sanitize_qreq_redirect($Qreq));
 }
 
 

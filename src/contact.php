@@ -1473,13 +1473,14 @@ class Contact {
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITE_RELATIVE);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, Conf::$now + 120];
             if ($qreq->post_ok()) {
-                error_go(false, "You must sign in to access that page. Your changes were not saved; after signing in, you may submit them again.");
+                $this->conf->errorMsg("You must sign in to access that page. Your changes were not saved; after signing in, you may submit them again.");
             } else {
-                error_go(false, "You must sign in to access that page.");
+                $this->conf->errorMsg("You must sign in to access that page.");
             }
         } else {
-            error_go(false, "You don’t have permission to access that page.");
+            $this->conf->errorMsg("You don’t have permission to access that page.");
         }
+        $this->conf->redirect();
     }
 
 

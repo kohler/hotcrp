@@ -348,6 +348,7 @@ class Navigation {
         return self::$s->make_absolute($url);
     }
 
+    /** @param ?string $url */
     static function redirect($url = null) {
         $url = self::make_absolute($url);
         // Might have an HTML-encoded URL; decode at least &amp;.
@@ -368,10 +369,12 @@ class Navigation {
         exit();
     }
 
+    /** @param string $site_url */
     static function redirect_site($site_url) {
         self::redirect(self::site_absolute() . $site_url);
     }
 
+    /** @param string $base_url */
     static function redirect_base($base_url) {
         self::redirect(self::base_absolute() . $base_url);
     }
