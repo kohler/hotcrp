@@ -1550,6 +1550,7 @@ class ReviewValues extends MessageSet {
     private $_mailer_preps;
 
     function __construct(ReviewForm $rf, $options = []) {
+        parent::__construct();
         $this->rf = $rf;
         $this->conf = $rf->conf;
         foreach (["no_notify"] as $k) {
