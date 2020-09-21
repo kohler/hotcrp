@@ -547,5 +547,6 @@
     {   "name": "allowPaperOption", "group": "none"   },
     {   "name": "pcrev_assigntime", "group": "none"   },
     {   "name": "pcrev_informtime", "group": "none"   },
-    {   "name": "has_colontag", "group": "none"   }
+    {   "name": "has_colontag", "group": "none"   },
+    {   "name": "no_papersub", "group": "none"   }
 ]
