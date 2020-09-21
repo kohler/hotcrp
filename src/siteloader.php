@@ -33,6 +33,7 @@ class SiteLoader {
         "SearchTerm" => "src/papersearch.php",
         "SearchWord" => "src/papersearch.php",
         "SettingParser" => "src/settingvalues.php",
+        "Si" => "src/settingvalues.php",
         "StreamS3Result" => "lib/s3result.php",
         "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",

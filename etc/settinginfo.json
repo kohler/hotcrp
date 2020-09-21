@@ -540,5 +540,12 @@
         "name": "tracks", "group": "tracks",
         "parser_class": "Tracks_SettingParser",
         "type": "string"
-    }
+    },
+    {   "name": "paperacc", "group": "none"   },
+    {   "name": "paperlead", "group": "none"   },
+    {   "name": "tracker", "group": "none"   },
+    {   "name": "allowPaperOption", "group": "none"   },
+    {   "name": "pcrev_assigntime", "group": "none"   },
+    {   "name": "pcrev_informtime", "group": "none"   },
+    {   "name": "has_colontag", "group": "none"   }
 ]
