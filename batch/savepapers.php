@@ -256,9 +256,12 @@ foreach ($jp as &$j) {
     if ($pid && isset($j->reviews) && is_array($j->reviews) && $reviews) {
         $prow = $Conf->paper_by_id($pid, $root_user);
         foreach ($j->reviews as $reviewindex => $reviewj) {
-            if ($tf->parse_json($reviewj)
-                && isset($tf->req["reviewerEmail"])
-                && validate_email($tf->req["reviewerEmail"])) {
+            if (!$tf->parse_json($reviewj)) {
+                $tf->msg_at(null, "review #" . ($reviewindex + 1) . ": invalid review", MessageSet::ERROR);
+            } else if (!isset($tf->req["reviewerEmail"])
+                       || !validate_email($tf->req["reviewerEmail"])) {
+                $tf->msg_at(null, "review #" . ($reviewindex + 1) . ": invalid reviewer email " . htmlspecialchars($tf->req["reviewerEmail"] ?? "<missing>"), MessageSet::ERROR);
+            } else {
                 $tf->req["override"] = true;
                 $tf->paperId = $pid;
                 $user_req = [
@@ -270,13 +273,12 @@ foreach ($jp as &$j) {
                 ];
                 $user = Contact::create($Conf, null, $user_req);
                 $tf->check_and_save($root_user, $prow, null);
-            } else {
-                $tf->msg_at(null, "invalid review @$reviewindex", MessageSet::ERROR);
             }
         }
         foreach ($tf->message_texts() as $te) {
             fwrite(STDERR, $prefix . htmlspecialchars_decode($te) . "\n");
         }
+        $tf->clear_messages();
     }
 
     // clean up memory, hopefully
