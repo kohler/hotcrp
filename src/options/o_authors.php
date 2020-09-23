@@ -223,7 +223,7 @@ class Authors_PaperOption extends PaperOption {
             $ignore_diff = true;
         }
 
-        $t = '<tr>';
+        $t = '<tr class="author-entry">';
         if ($shownum) {
             $t .= '<td class="rxcaption">' . $n . '.</td>';
         }
