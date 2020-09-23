@@ -3367,8 +3367,16 @@ handle_ui.on("js-email-populate", function () {
         function handle(e, v) {
             if (placeholder)
                 e.setAttribute("placeholder", v);
-            else if (e.value === "" || e.value === input_default_value(e))
-                e.value = e.defaultValue = v;
+            else if (e.defaultValue === "") {
+                if (e.value !== "" && e.getAttribute("data-populated-value") !== e.value) {
+                    addClass(e, "stop-populate");
+                    e.removeAttribute("data-populated-value");
+                } else if (e.value === "" || !hasClass(e, "stop-populate")) {
+                    e.value = v;
+                    e.setAttribute("data-populated-value", v);
+                    removeClass(e, "stop-populate");
+                }
+            }
         }
         fn && handle(fn, data.firstName || "");
         ln && handle(ln, data.lastName || "");
@@ -3378,7 +3386,6 @@ handle_ui.on("js-email-populate", function () {
             $(f).find(".potential-conflict").html(data.potential_conflict || "");
             $(f).find(".potential-conflict-container").toggleClass("hidden", !data.potential_conflict);
         }
-        console.log(data);
         self.setAttribute("data-populated-email", v);
     }
 
