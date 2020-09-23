@@ -3521,6 +3521,7 @@ function row_order_change(e, delta, action) {
         --action;
     }
 
+    var changes = [];
     for (var i = 1; i <= trs.length; ++i) {
         var $tr = $(trs[i - 1]),
             td0h = $($tr[0].firstChild).html(),
@@ -3546,13 +3547,11 @@ function row_order_change(e, delta, action) {
                     else
                         this.setAttribute("data-default-value", defaults[this.name]);
                 }
+                changes.push(this);
             }
         });
     }
-
-    var form = $tbody[0].closest("form");
-    if (form && hasClass(form, "want-diff-alert"))
-        form_highlight(form);
+    $(changes).trigger("change");
 }
 
 function row_order_ui(event) {
