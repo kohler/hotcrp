@@ -414,11 +414,12 @@ class PaperTable {
         return MessageSet::status_class($ps, $rest, $prefix);
     }
 
-    private function echo_editable_papt($what, $heading, $extra, PaperOption $opt) {
-        if (!isset($extra["for"])) {
+    /** @param ?string $heading */
+    function echo_editable_option_papt(PaperOption $opt, $heading = null, $rest = []) {
+        if (!isset($rest["for"])) {
             $for = $opt->readable_formid();
         } else {
-            $for = $extra["for"] ?? false;
+            $for = $rest["for"] ?? false;
         }
         echo '<div class="papeg';
         if ($opt->exists_condition()) {
@@ -429,25 +430,27 @@ class PaperTable {
             echo '" data-edit-condition="', htmlspecialchars(json_encode($opt->exists_script_expression($this->prow)));
             Ht::stash_script('$(edit_paper_ui.edit_condition)', 'edit_condition');
         }
-        echo '"><h3 class="', $this->control_class($what, "papet");
+        echo '"><h3 class="', $this->control_class($opt->formid, "papet");
         if ($for === "checkbox") {
             echo " checki";
         }
-        if (($tclass = $extra["tclass"] ?? false)) {
+        if (($tclass = $rest["tclass"] ?? false)) {
             echo " ", ltrim($tclass);
         }
-        if (($id = $extra["id"] ?? false)) {
+        if (($id = $rest["id"] ?? false)) {
             echo '" id="' . $id;
         }
         $klass = "papfn";
         if ($opt->required) {
             $klass .= " field-required";
         }
-        echo '">', Ht::label($heading, $for === "checkbox" ? false : $for, ["class" => $klass]);
+        echo '">', Ht::label($heading ?? $this->edit_title_html($opt), $for === "checkbox" ? false : $for, ["class" => $klass]);
         if ($opt->visibility === "admin") {
             echo '<div class="field-visibility">(hidden from reviewers)</div>';
         }
         echo '</h3>';
+        $this->echo_field_hint($opt);
+        echo Ht::hidden("has_{$opt->formid}", 1);
     }
 
     /** @param array<string,int|string> $extra */
@@ -1188,15 +1191,6 @@ class PaperTable {
                          ["type" => "ps", "fold" => "pscollab", "folded" => $fold]),
             '<div class="psv"><div class="fx">', $data,
             "</div></div></div>\n\n";
-    }
-
-    function echo_editable_option_papt(PaperOption $o, $heading = null, $rest = []) {
-        if (!$heading) {
-            $heading = $this->edit_title_html($o);
-        }
-        $this->echo_editable_papt($o->formid, $heading, $rest, $o);
-        $this->echo_field_hint($o);
-        echo Ht::hidden("has_{$o->formid}", 1);
     }
 
     private function papstripPCConflicts() {

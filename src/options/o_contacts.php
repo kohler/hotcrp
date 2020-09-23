@@ -209,16 +209,8 @@ class Contacts_PaperOption extends PaperOption {
         usort($contacts, $this->conf->user_comparator());
         $readonly = !$this->test_editable($ov->prow);
 
-        echo '<div class="papeg">',
-            '<div class="', $pt->control_class("contacts", "papet"),
-            '" id="contacts"><label class="', $pt->control_class("contacts", "papfn", "is-"), '">',
-            $pt->edit_title_html($this),
-            '</label></div>';
-
-        // Editable version
-        $pt->echo_field_hint($this);
-        echo Ht::hidden("has_contacts", 1),
-            '<div class="papev js-row-order"><div>';
+        $pt->echo_editable_option_papt($this, null, ["id" => "contacts", "for" => false]);
+        echo '<div class="papev js-row-order"><div>';
 
         $cidx = 1;
         $foundreqau = [];
