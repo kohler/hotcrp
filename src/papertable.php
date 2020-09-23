@@ -423,7 +423,7 @@ class PaperTable {
         }
         echo '<div class="papeg';
         if ($opt->exists_condition()) {
-            echo ' has-edit-condition';
+            echo ' want-fieldchange has-edit-condition';
             if (!$opt->test_exists($this->prow)) {
                 echo ' hidden';
             }

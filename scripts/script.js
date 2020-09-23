@@ -8345,14 +8345,12 @@ edit_conditions.pc_conflict = function (ec, form) {
 };
 
 function run_edit_conditions() {
-    $(".has-edit-condition").each(function () {
-        var f = this.closest("form"),
-            ec = JSON.parse(this.getAttribute("data-edit-condition")),
-            off = !evaluate_edit_condition(ec, f),
-            link = add_pslitem(this);
-        toggleClass(this, "hidden", off);
-        link && toggleClass(link, "hidden", off);
-    });
+    var f = this.closest("form"),
+        ec = JSON.parse(this.getAttribute("data-edit-condition")),
+        off = !evaluate_edit_condition(ec, f),
+        link = add_pslitem(this);
+    toggleClass(this, "hidden", off);
+    link && toggleClass(link, "hidden", off);
 }
 
 function add_pslitem_header() {
@@ -8394,10 +8392,15 @@ handle_ui.on("js-submit-paper", function (event) {
     }
 });
 
+function fieldchange(event) {
+    $(event.delegateTarget).find(".want-fieldchange")
+        .trigger({type: "fieldchange", changeTarget: event.target});
+}
+
 return {
     edit_condition: function () {
-        run_edit_conditions();
-        $("#form-paper").on("change click", "input, select, textarea, file", run_edit_conditions);
+        $("#form-paper").on("fieldchange", ".has-edit-condition", run_edit_conditions)
+            .find(".has-edit-condition").each(run_edit_conditions);
     },
     evaluate_edit_condition: function (ec) {
         return evaluate_edit_condition(typeof ec === "string" ? JSON.parse(ec) : ec, $("#form-paper")[0]);
@@ -8414,6 +8417,8 @@ return {
             .find(".btn-savepaper").click(function () {
                 $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
             });
+        $("#form-paper").on("change", "input, select, textarea", fieldchange)
+            .on("click", "input[type=checkbox], input[type=radio]", fieldchange);
     },
     prepare: function () {
         $(".need-tag-index-form").each(function () {
