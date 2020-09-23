@@ -1105,7 +1105,7 @@ handle_ui.trigger = function (className, event) {
             event = $.Event(event); // XXX IE8: `new Event` is not supported
         for (var j = 0; j !== c.length; j += 2) {
             if (!c[j] || c[j] === event.type)
-                c[j].call(this, event);
+                c[j + 1].call(this, event);
         }
     }
 };
