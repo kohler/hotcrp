@@ -200,7 +200,7 @@ class Authors_PaperOption extends PaperOption {
             $val = $reqau ? $reqau->affiliation : "";
         }
 
-        $js["class"] = $pt->max_control_class(["authors:{$n}", "authors:{$component}_{$n}"], "need-autogrow js-autosubmit editable-author-{$component}" . ($ignore_diff ? " ignore-diff" : ""));
+        $js["class"] = $pt->max_control_class(["authors:{$n}", "authors:{$component}_{$n}"], "need-autogrow js-autosubmit editable-author editable-author-{$component}" . ($ignore_diff ? " ignore-diff" : ""));
         if ($component === "email" && $pt->user->can_lookup_user()) {
             $js["class"] .= " uii js-email-populate";
         }
@@ -258,7 +258,7 @@ class Authors_PaperOption extends PaperOption {
         $max_authors = (int) $this->conf->opt("maxAuthors");
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
         echo '<div class="papev"><table class="js-row-order">',
-            '<tbody class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
+            '<tbody id="authors:container" class="need-row-order-autogrow" data-min-rows="', $min_authors, '" ',
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
             'data-row-template="', htmlspecialchars($this->editable_authors_tr($pt, '$', null, null, $max_authors !== 1, $readonly)), '">';
 
