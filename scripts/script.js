@@ -1081,14 +1081,21 @@ function handle_ui(event) {
     for (var i = 0; i < k.length; ++i) {
         var c = callbacks[k[i]];
         if (c) {
-            for (var j = 0; j < c.length; ++j) {
-                c[j].call(this, event);
+            for (var j = 0; j !== c.length; j += 2) {
+                if (!c[j] || c[j] === event.type)
+                    c[j + 1].call(this, event);
             }
         }
     }
 }
 handle_ui.on = function (className, callback) {
+    var dot = className.indexOf("."), type = null;
+    if (dot >= 0) {
+        type = className.substring(0, dot);
+        className = className.substring(dot + 1);
+    }
     callbacks[className] = callbacks[className] || [];
+    callbacks[className].push(type);
     callbacks[className].push(callback);
 };
 handle_ui.trigger = function (className, event) {
@@ -1096,8 +1103,9 @@ handle_ui.trigger = function (className, event) {
     if (c) {
         if (typeof event === "string")
             event = $.Event(event); // XXX IE8: `new Event` is not supported
-        for (var j = 0; j < c.length; ++j) {
-            c[j].call(this, event);
+        for (var j = 0; j !== c.length; j += 2) {
+            if (!c[j] || c[j] === event.type)
+                c[j].call(this, event);
         }
     }
 };
@@ -3317,7 +3325,7 @@ handle_ui.on("js-assignment-autosave", function (event) {
 
 (function () {
 var email_info = [], email_info_at = 0;
-handle_ui.on("js-email-populate", function () {
+handle_ui.on("input.js-email-populate", function (event) {
     var self = this,
         v = self.value.toLowerCase().trim(),
         f = this.closest("form"),
