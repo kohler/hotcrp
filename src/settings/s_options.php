@@ -3,12 +3,14 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Options_SettingRenderer {
+    /** @var list<string> */
     private $option_classes = [];
     /** @var ?array<int,int> */
     private $reqv_id_to_pos;
     /** @var ?array<int,int> */
     private $have_options;
 
+    /** @param string $class */
     function add_option_class($class) {
         $this->option_classes[] = $class;
     }
@@ -39,7 +41,7 @@ class Options_SettingRenderer {
         $t = '<div class="' . $sv->control_class("optvt_$xpos", "entryi")
             . '">' . $sv->label("optvt_$xpos", "Type")
             . '<div class="entry">'
-            . Ht::select("optvt_$xpos", $otypes, $optvt, ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"])
+            . Ht::select("optvt_$xpos", $otypes, $optvt, $sv->sjs("optvt_$xpos", ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"]))
             . $sv->render_feedback_at("optvt_$xpos")
             . "</div></div>\n";
 
@@ -60,7 +62,7 @@ class Options_SettingRenderer {
         return '<div class="' . $sv->control_class("optd_$xpos", "entryi is-option-description" . ($o->id && (string) $o->description === "" ? " hidden" : ""))
             . '">' . $sv->label("optd_$xpos", "Description")
             . '<div class="entry">'
-            . Ht::textarea("optd_$xpos", $o->description, ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "w-text settings-opt-description need-autogrow"])
+            . Ht::textarea("optd_$xpos", $o->description, $sv->sjs("optd_$xpos", ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "w-text settings-opt-description need-autogrow"]))
             . $sv->render_feedback_at("optd_$xpos")
             . '</div></div>';
     }
@@ -69,7 +71,7 @@ class Options_SettingRenderer {
             . '">' . $sv->label("optec_$xpos", "Present on")
             . '<div class="entry">'
             . '<span class="sep">'
-            . Ht::select("optec_$xpos", ["" => "All submissions", "final" => "Final versions only"], $o->final ? "final" : "", ["id" => "optec_$xpos"])
+            . Ht::select("optec_$xpos", ["all" => "All submissions", "final" => "Final versions only"], $o->final ? "final" : "all", $sv->sjs("optec_$xpos", ["id" => "optec_$xpos"]))
             . $sv->render_feedback_at("optec_$xpos")
             . "</span></div></div>";
     }
@@ -77,7 +79,7 @@ class Options_SettingRenderer {
         return '<div class="' . $sv->control_class("optreq_$xpos", "entryi is-option-editing" . ($o->id && !$o->required ? " hidden" : ""))
             . '">' . $sv->label("optreq_$xpos", "Required")
             . '<div class="entry">'
-            . Ht::select("optreq_$xpos", ["" => "No", "1" => "Yes"], $o->required ? "1" : "", ["id" => "optreq_$xpos"])
+            . Ht::select("optreq_$xpos", ["0" => "No", "1" => "Yes"], $o->required ? "1" : "0", $sv->sjs("optreq_$xpos", ["id" => "optreq_$xpos"]))
             . $sv->render_feedback_at("optreq_$xpos")
             . "</div></div>";
     }
@@ -85,7 +87,7 @@ class Options_SettingRenderer {
         return '<div class="' . $sv->control_class("optp_$xpos", "entryi is-option-visibility" . ($o->id && $o->visibility === "rev" ? " hidden" : "") . " short")
             . '">' . $sv->label("optp_$xpos", "Visible to")
             . '<div class="entry">'
-            . Ht::select("optp_$xpos", ["rev" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible", "admin" => "Administrators only"], $o->visibility, ["id" => "optp_$xpos", "class" => "settings-opt-visibility"])
+            . Ht::select("optp_$xpos", ["rev" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible", "admin" => "Administrators only"], $o->visibility, $sv->sjs("optp_$xpos", ["id" => "optp_$xpos", "class" => "settings-opt-visibility"]))
             . $sv->render_feedback_at("optp_$xpos")
             . '</div></div>';
     }
@@ -96,7 +98,8 @@ class Options_SettingRenderer {
             . Ht::select("optdt_$xpos", ["prominent" => "Normal",
                                          "topics" => "Grouped with topics",
                                          "submission" => "Near submission"],
-                         $o->display_name(), ["id" => "optdt_$xpos", "class" => "settings-opt-display"])
+                         $o->display_name(),
+                         $sv->sjs("optdt_$xpos", ["id" => "optdt_$xpos", "class" => "settings-opt-display"]))
             . $sv->render_feedback_at("optdt_$xpos")
             . "</div></div>";
     }
@@ -108,40 +111,57 @@ class Options_SettingRenderer {
         }
         return $o;
     }
-    private function render_option(SettingValues $sv, PaperOption $o = null, $ipos, $xpos) {
-        if (!$o) {
-            $o = PaperOption::make((object) [
-                    "id" => -999,
-                    "name" => "Field name",
-                    "description" => "",
-                    "type" => "checkbox",
-                    "position" => count(self::configurable_options($sv)) + 1,
-                    "display" => "prominent",
-                    "json_key" => "__fake__"
-                ], $sv->conf);
-        }
+
+    static function make_requested_option(SettingValues $sv, PaperOption $io = null, $ipos) {
+        $io = $io ?? PaperOption::make((object) [
+            "id" => -999,
+            "name" => "Field name",
+            "description" => "",
+            "type" => "checkbox",
+            "position" => count(self::configurable_options($sv)) + 1,
+            "display" => "prominent",
+            "json_key" => "__fake__"
+        ], $sv->conf);
 
         if ($ipos !== null) {
+            $optec = $sv->reqv("optec_$ipos");
+            $optecs = $optec === "search" ? $sv->reqv("optecs_$ipos") : null;
+            $optreq = $sv->reqv("optreq_$ipos");
             $args = [
-                "id" => $o->id,
-                "name" => $sv->reqv("optn_$ipos"),
-                "description" => $sv->reqv("optd_$ipos"),
-                "type" => $sv->reqv("optvt_$ipos") ?? "checkbox",
-                "visibility" => $sv->reqv("optp_$ipos", ""),
-                "position" => $sv->reqv("optfp_$ipos") ?? 1,
-                "display" => $sv->reqv("optdt_$ipos"),
-                "required" => $sv->reqv("optreq_$ipos"),
-                "json_key" => $o->id > 0 ? null : "__fake__"
+                "id" => $io->id,
+                "name" => $sv->reqv("optn_$ipos") ?? $io->name,
+                "description" => $sv->reqv("optd_$ipos") ?? $io->description,
+                "type" => $sv->reqv("optvt_$ipos") ?? $io->type,
+                "visibility" => $sv->reqv("optp_$ipos") ?? $io->visibility,
+                "position" => $sv->reqv("optfp_$ipos") ?? $io->position,
+                "display" => $sv->reqv("optdt_$ipos") ?? $io->display_name(),
+                "required" => ($optreq ?? ($io->required ? "1" : "0")) == "1",
+                "final" => $optec === null ? $io->final : $optec === "final",
+                "exists_if" => $optecs ?? $io->exists_condition(),
+                "json_key" => $io->id > 0 ? null : "__fake__"
             ];
-            if ($sv->reqv("optec_$ipos") === "final") {
-                $args["final"] = true;
-            } else if ($sv->reqv("optec_$ipos") === "search") {
-                $args["exists_if"] = $sv->reqv("optecs_$ipos");
+            if ($sv->has_reqv("optv_$ipos")) {
+                $args["selector"] = explode("\n", rtrim($sv->reqv("optv_$ipos")));
+            } else if ($io instanceof Selector_PaperOption) {
+                $args["selector"] = $io->selector_options();
             }
-            $o = PaperOption::make((object) $args, $sv->conf);
-            if ($o instanceof Selector_PaperOption) {
-                $o->set_selector_options(explode("\n", rtrim($sv->reqv("optv_$ipos", ""))));
-            }
+            return PaperOption::make((object) $args, $sv->conf);
+        } else {
+            return $io;
+        }
+    }
+
+    private function render_option(SettingValues $sv, PaperOption $io = null, $ipos, $xpos) {
+        $o = self::make_requested_option($sv, $io, $ipos);
+        if ($io) {
+            $sv->set_oldv("optn_$xpos", $io->name);
+            $sv->set_oldv("optd_$xpos", $io->description);
+            $sv->set_oldv("optvt_$xpos", $io->type);
+            $sv->set_oldv("optp_$xpos", $io->visibility);
+            $sv->set_oldv("optdt_$xpos", $io->display_name());
+            $sv->set_oldv("optreq_$xpos", $io->required ? "1" : "0");
+            $sv->set_oldv("optec_$xpos", $io->exists_condition() ? "search" : ($io->final ? "final" : "all"));
+            $sv->set_oldv("optecs_$xpos", $io->exists_condition());
         }
 
         $this->option_classes = ["settings-opt", "has-fold", "fold2o"];
@@ -233,6 +253,7 @@ class Options_SettingRenderer {
             Ht::button("Add submission field", ["class" => "ui js-settings-option-new"]),
             "</div>\n";
     }
+
     static function crosscheck(SettingValues $sv) {
         if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))
             && $sv->newv("options")
@@ -263,9 +284,8 @@ class Options_SettingParser extends SettingParser {
             $sv->error_at("optn_$xpos", "Option name required.");
         }
 
-        $id = cvtint($sv->reqv("optid_$xpos") ?? "new");
-        $is_new = $id < 0;
-        if ($is_new) {
+        $idname = $sv->reqv("optid_$xpos") ?? "new";
+        if ($idname === "new") {
             if (!$this->next_optionid) {
                 $this->known_optionids = [];
                 $result = $sv->conf->qe("select distinct optionId from PaperOption where optionId>0 union select distinct documentType from PaperStorage where documentType>0");
@@ -282,6 +302,8 @@ class Options_SettingParser extends SettingParser {
             }
             $id = $this->next_optionid;
             ++$this->next_optionid;
+        } else {
+            $id = cvtint($idname);
         }
         $oarg = ["name" => $name, "id" => $id, "final" => false];
 
@@ -342,8 +364,8 @@ class Options_SettingParser extends SettingParser {
             }
         }
 
-        $oarg["visibility"] = $sv->reqv("optp_$xpos", "rev");
-        $oarg["position"] = (int) $sv->reqv("optfp_$xpos", 1);
+        $oarg["visibility"] = $sv->reqv("optp_$xpos") ?? "rev";
+        $oarg["position"] = (int) $sv->reqv("optfp_$xpos") ?? 1;
         $oarg["display"] = $sv->reqv("optdt_$xpos");
         $oarg["required"] = !!$sv->reqv("optreq_$xpos");
 
