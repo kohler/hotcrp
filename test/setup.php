@@ -207,8 +207,8 @@ function setup_initialize_database() {
     foreach ($json->papers as $p) {
         $ps = new PaperStatus($Conf);
         if (!$ps->save_paper_json($p)) {
-            $t = join("", array_map(function ($m) {
-                return "    {$m[0]}: {$m[1]}\n";
+            $t = join("", array_map(function ($mx) {
+                return "    {$mx->field}: {$mx->message}\n";
             }, $ps->message_list()));
             $id = isset($p->_id_) ? "#{$p->_id_} " : "";
             fwrite(STDERR, "* failed to create paper {$id}{$p->title}:\n" . htmlspecialchars_decode($t) . "\n");
@@ -541,7 +541,7 @@ function maybe_user($email) {
 function xassert_paper_status(PaperStatus $ps) {
     xassert(!$ps->has_error());
     foreach ($ps->error_list() as $mx) {
-        error_log("! " . $mx[0] . ($mx[1] ? ": " . $mx[1] : ""));
+        error_log("! " . $mx->field . ($mx->message ? ": " . $mx->message : ""));
     }
 }
 

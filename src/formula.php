@@ -28,6 +28,7 @@ class FormulaCall {
         $this->text = $name;
         $this->kwdef = $kwdef;
     }
+    /** @return MessageItem */
     function lerror($message_html) {
         return $this->formula->lerror($this->pos1, $this->pos2, $message_html);
     }
@@ -132,7 +133,8 @@ class Fexpr implements JsonSerializable {
         foreach ($this->args as $a) {
             if ($a->typecheck($formula)) {
                 if ($ismath && !$a->math_format()) {
-                    $ok = $formula->fexpr_lerror($a, "Unusable in math expressions.");
+                    $formula->fexpr_lerror($a, "Unusable in math expressions.");
+                    $ok = false;
                 }
             } else {
                 $ok = false;
@@ -231,9 +233,11 @@ class Constant_Fexpr extends Fexpr {
         if ($this->_format === self::FREVTYPE
             && is_string($this->x)
             && !$this->_check_revtype()) {
-            return $formula->fexpr_lerror($this, "Unknown review type.");
+            $formula->fexpr_lerror($this, "Unknown review type.");
+            return false;
         } else if ($this->_format === false) {
-            return $formula->fexpr_lerror($this, "Undefined.");
+            $formula->fexpr_lerror($this, "Undefined.");
+            return false;
         } else {
             return true;
         }
@@ -698,10 +702,12 @@ class Aggregate_Fexpr extends Fexpr {
         $ok = $this->typecheck_arguments($formula);
         if (($this->op !== "argmin" && $this->op !== "argmax")
             && !$this->args[0]->math_format()) {
-            $ok = $formula->fexpr_lerror($this->args[0], "Unusable in math expressions.");
+            $formula->fexpr_lerror($this->args[0], "Unusable in math expressions.");
+            $ok = false;
         }
         if (count($this->args) > 1 && !$this->args[1]->math_format()) {
-            $ok = $formula->fexpr_lerror($this->args[1], "Unusable in math expressions.");
+            $formula->fexpr_lerror($this->args[1], "Unusable in math expressions.");
+            $ok = false;
         }
         if ($ok && !$this->index_type) {
             $lt = parent::inferred_index();
@@ -1281,6 +1287,7 @@ class FormulaParse {
     public $index_type;
     public $format = Fexpr::FERROR;
     public $tagrefs;
+    /** @var list<MessageItem> */
     public $lerrors;
 }
 
@@ -1302,7 +1309,7 @@ class Formula implements JsonSerializable {
     private $_depth = 0;
     private $_macro;
     private $_bind;
-    /** @var list<array{int,int,string}> */
+    /** @var list<MessageItem> */
     private $_lerrors;
 
     /** @var ?FormulaParse */
@@ -1404,10 +1411,14 @@ class Formula implements JsonSerializable {
         $this->_parse = null;
     }
 
+    /** @return MessageItem */
     function lerror($pos1, $pos2, $message_html) {
         $len = strlen($this->expression);
-        $this->_lerrors[] = [$len + $pos1, $len + $pos2, $message_html];
-        return false;
+        $mi = new MessageItem(null, $message_html, MessageSet::ERROR);
+        $mi->pos1 = $len + $pos1;
+        $mi->pos2 = $len + $pos2;
+        $this->_lerrors[] = $mi;
+        return $mi;
     }
 
     function fexpr_lerror(Fexpr $expr, $message_html) {
@@ -1493,8 +1504,8 @@ class Formula implements JsonSerializable {
             return "";
         } else {
             $x = [];
-            foreach ($this->_parse->lerrors as $e) {
-                $x[] = Ht::contextual_diagnostic($this->expression, $e[0], $e[1], $e[2]);
+            foreach ($this->_parse->lerrors as $mi) {
+                $x[] = Ht::contextual_diagnostic($this->expression, $mi->pos1, $mi->pos2, $mi->message);
             }
             return "<pre>" . join("", $x) . "</pre>";
         }

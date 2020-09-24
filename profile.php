@@ -228,7 +228,8 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_account_here())
 
 
 /** @param UserStatus $user_status
- * @param ?Contact $Acct */
+ * @param ?Contact $Acct
+ * @return ?Contact */
 function save_user($cj, $user_status, $Acct, $allow_modification) {
     global $Conf, $Me, $newProfile;
     if ($newProfile) {
@@ -240,13 +241,14 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
     UserStatus::normalize_name($cj);
     if ($newProfile && !isset($cj->email)) {
         $user_status->error_at("email", "Email address required.");
-        return false;
+        return null;
     }
 
     // check email
     if (!$Acct || strcasecmp($cj->email, $Acct->email)) {
         if ($Acct && $Acct->data("locked")) {
-            return $user_status->error_at("email", "This account is locked, so you can’t change its email address.");
+            $user_status->error_at("email", "This account is locked, so you can’t change its email address.");
+            return null;
         } else if (($new_acct = $Conf->user_by_email($cj->email))) {
             if ($allow_modification) {
                 $cj->id = $new_acct->contactId;
@@ -258,18 +260,23 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
                 if (!$newProfile) {
                     $msg .= " You may want to <a href=\"" . $Conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.";
                 }
-                return $user_status->error_at("email", $msg);
+                $user_status->error_at("email", $msg);
+                return null;
             }
         } else if ($Conf->external_login()) {
             if ($cj->email === "") {
-                return $user_status->error_at("email", "Not a valid username.");
+                $user_status->error_at("email", "Not a valid username.");
+                return null;
             }
         } else if ($cj->email === "") {
-            return $user_status->error_at("email", "You must supply an email address.");
+            $user_status->error_at("email", "You must supply an email address.");
+            return null;
         } else if (!validate_email($cj->email)) {
-            return $user_status->error_at("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
+            $user_status->error_at("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
+            return null;
         } else if ($Acct && !$Acct->has_account_here()) {
-            return $user_status->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
+            $user_status->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
+            return null;
         }
         if (!$newProfile && (!$Me->privChair || $Acct === $Me)) {
             assert($Acct->contactId > 0);

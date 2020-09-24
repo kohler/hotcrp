@@ -532,28 +532,32 @@ class SettingValues extends MessageSet {
         return $this->has_error();
     }
     /** @param Si|string|null|list<Si|string> $field
-     * @param string|null|false $html */
+     * @param string|null|false $html
+     * @return MessageItem */
     function error_at($field, $html = null) {
         if (is_array($field)) {
             foreach ($field as $f) {
-                $this->error_at($f, $html);
+                $mi = $this->error_at($f, $html);
             }
         } else {
             $fname = $field instanceof Si ? $field->name : $field;
-            parent::error_at($fname, $html);
+            $mi = parent::error_at($fname, $html);
         }
+        return $mi ?? new MessageItem(null, "", MessageSet::ERROR);
     }
     /** @param Si|string|null|list<Si|string> $field
-     * @param string|null|false $html */
+     * @param string|null|false $html
+     * @return MessageItem */
     function warning_at($field, $html = null) {
         if (is_array($field)) {
             foreach ($field as $f) {
-                $this->warning_at($f, $html);
+                $mi = $this->warning_at($f, $html);
             }
         } else {
             $fname = $field instanceof Si ? $field->name : $field;
-            parent::warning_at($fname, $html);
+            $mi = parent::warning_at($fname, $html);
         }
+        return $mi ?? new MessageItem(null, "", MessageSet::WARNING);
     }
     /** @param MessageItem $mx */
     private function report_mx(&$msgs, &$lastmsg, $mx) {

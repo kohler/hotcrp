@@ -2,13 +2,17 @@
 // messageset.php -- HotCRP sets of messages by fields
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class MessageItem implements ArrayAccess, JsonSerializable {
+class MessageItem implements JsonSerializable {
     /** @var ?string */
     public $field;
     /** @var string */
     public $message;
     /** @var int */
     public $status;
+    /** @var ?int */
+    public $pos1;
+    /** @var ?int */
+    public $pos2;
 
     /** @param ?string $field
      * @param string $message
@@ -17,31 +21,6 @@ class MessageItem implements ArrayAccess, JsonSerializable {
         $this->field = $field;
         $this->message = $message;
         $this->status = $status;
-    }
-
-    /** @deprecated */
-    function offsetExists($offset) {
-        error_log((Conf::$main ? Conf::$main->dbname : "<>") . ": MessageItem::offsetExists: " . debug_string_backtrace());
-        return $offset === 0 || $offset === 1 || $offset === 2;
-    }
-    /** @deprecated */
-    function offsetGet($offset) {
-        error_log((Conf::$main ? Conf::$main->dbname : "<>") . ": MessageItem::offsetGet: " . debug_string_backtrace());
-        if ($offset === 0) {
-            return $this->field;
-        } else if ($offset === 1) {
-            return $this->message;
-        } else if ($offset === 2) {
-            return $this->status;
-        }
-    }
-    /** @deprecated */
-    function offsetSet($offset, $value) {
-        throw new Exception;
-    }
-    /** @deprecated */
-    function offsetUnset($offset) {
-        throw new Exception;
     }
 
     function jsonSerialize() {
@@ -144,65 +123,74 @@ class MessageSet {
         return false;
     }
 
-    /** @param false|null|string $field
+    /** @param ?string $field
      * @param false|null|string|list<string> $msg
-     * @param -2|-1|0|1|2|3 $status */
+     * @param -2|-1|0|1|2|3 $status
+     * @return MessageItem */
     function msg_at($field, $msg, $status) {
-        if ($this->ignore_msgs) {
-            return;
-        }
-        if ($field === false || $field === "") {
-            $field = null;
-        }
-        if ($field !== null) {
-            $field = $this->canonfield[$field] ?? $field;
-            if ($status === self::WARNING && ($this->werror[$field] ?? false)) {
-                $status = self::ERROR;
-            } else if ($status === self::ERROR && ($this->allow_error[$field] ?? false)) {
-                $status = self::WARNING;
+        $mi = null;
+        if (!$this->ignore_msgs) {
+            if ($field !== null && $field !== false && $field !== "") {
+                $field = $this->canonfield[$field] ?? $field;
+                if ($status === self::WARNING && ($this->werror[$field] ?? false)) {
+                    $status = self::ERROR;
+                } else if ($status === self::ERROR && ($this->allow_error[$field] ?? false)) {
+                    $status = self::WARNING;
+                }
+                $old_status = $this->errf[$field] ?? -5;
+                $this->errf[$field] = max($this->errf[$field] ?? 0, $status);
+            } else {
+                $field = null;
+                $old_status = $this->problem_status;
             }
-            $this->errf[$field] = max($this->errf[$field] ?? 0, $status);
-        }
-        if (is_string($msg)) {
-            $msg = [$msg];
-        } else if ($msg === null || $msg === false) {
-            $msg = [];
-        }
-        foreach ($msg as $mt) {
-            if ($mt !== ""
-                && (!$this->ignore_duplicates
-                    || ($field && ($this->errf[$field] ?? -5) < $status)
-                    || $this->message_index($field, $mt, $status) === false)) {
-                $this->msgs[] = new MessageItem($field, $mt, $status);
+            if (is_string($msg)) {
+                $msg = [$msg];
+            } else if ($msg === null || $msg === false) {
+                $msg = [];
             }
+            foreach ($msg as $mt) {
+                if ($mt !== ""
+                    && (!$this->ignore_duplicates
+                        || $old_status < $status
+                        || $this->message_index($field, $mt, $status) === false)) {
+                    $this->msgs[] = $mi = new MessageItem($field, $mt, $status);
+                }
+            }
+            $this->problem_status = max($this->problem_status, $status);
         }
-        $this->problem_status = max($this->problem_status, $status);
+        return $mi ?? new MessageItem(null, "", $status);
     }
-    /** @param false|null|string $field
+    /** @param ?string $field
      * @param false|null|string|list<string> $msg
-     * @param 0|1|2|3 $status */
+     * @param 0|1|2|3 $status
+     * @return MessageItem
+     * @deprecated */
     function msg($field, $msg, $status) {
-        $this->msg_at($field, $msg, $status);
+        return $this->msg_at($field, $msg, $status);
     }
-    /** @param false|null|string $field
-     * @param false|null|string $msg */
+    /** @param ?string $field
+     * @param false|null|string $msg
+     * @return MessageItem */
     function estop_at($field, $msg) {
-        $this->msg_at($field, $msg, self::ESTOP);
+        return $this->msg_at($field, $msg, self::ESTOP);
     }
-    /** @param false|null|string $field
-     * @param false|null|string $msg */
+    /** @param ?string $field
+     * @param false|null|string $msg
+     * @return MessageItem */
     function error_at($field, $msg) {
-        $this->msg_at($field, $msg, self::ERROR);
+        return $this->msg_at($field, $msg, self::ERROR);
     }
-    /** @param false|null|string $field
-     * @param false|null|string $msg */
+    /** @param ?string $field
+     * @param false|null|string $msg
+     * @return MessageItem */
     function warning_at($field, $msg) {
-        $this->msg_at($field, $msg, self::WARNING);
+        return $this->msg_at($field, $msg, self::WARNING);
     }
-    /** @param false|null|string $field
-     * @param false|null|string $msg */
+    /** @param ?string $field
+     * @param false|null|string $msg
+     * @return MessageItem */
     function info_at($field, $msg) {
-        $this->msg_at($field, $msg, self::INFO);
+        return $this->msg_at($field, $msg, self::INFO);
     }
 
     /** @return bool */

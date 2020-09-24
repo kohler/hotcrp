@@ -1271,7 +1271,8 @@ class AssignmentSet {
     private function install_csv_header($csv) {
         if (!$csv->header()) {
             if (!($req = $csv->next_list())) {
-                return $this->error_at($csv->lineno(), "empty file");
+                $this->error_at($csv->lineno(), "empty file");
+                return false;
             }
             if (!self::is_csv_header($req)) {
                 $csv->unshift($req);
@@ -1330,9 +1331,11 @@ class AssignmentSet {
         }
 
         if (!$has_action && !($this->astate->defaults["action"] ?? null)) {
-            return $this->error_at($csv->lineno(), "“action” column missing");
+            $this->error_at($csv->lineno(), "“action” column missing");
+            return false;
         } else if (!$csv->has_column("paper")) {
-            return $this->error_at($csv->lineno(), "“paper” column missing");
+            $this->error_at($csv->lineno(), "“paper” column missing");
+            return false;
         } else {
             if (!isset($this->astate->defaults["action"])) {
                 $this->astate->defaults["action"] = "<missing>";

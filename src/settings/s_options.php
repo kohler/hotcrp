@@ -8,9 +8,11 @@ class Options_SettingRenderer {
     private $reqv_id_to_pos;
     /** @var ?array<int,int> */
     private $have_options;
+
     function add_option_class($class) {
         $this->option_classes[] = $class;
     }
+
     static function render_type_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $optvt = $o->type;
         if ($o instanceof Text_PaperOption && $o->display_space > 3) {

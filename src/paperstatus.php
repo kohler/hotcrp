@@ -1077,6 +1077,7 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    /** @return bool */
     function execute_save() {
         $dataOverflow = $this->prow ? $this->prow->dataOverflow : null;
         if (!empty($this->_paper_overflow_upd)) {
@@ -1126,7 +1127,8 @@ class PaperStatus extends MessageSet {
                     $this->conf->qe("unlock tables");
                 }
                 if (Dbl::is_error($result) || !$result->insert_id) {
-                    return $this->error_at(false, $this->_("Could not create paper."));
+                    $this->error_at(null, $this->_("Could not create paper."));
+                    return false;
                 }
                 $this->paperId = (int) $result->insert_id;
                 if (!empty($this->_upload_dids)) {
