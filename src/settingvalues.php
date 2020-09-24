@@ -642,7 +642,10 @@ class SettingValues extends MessageSet {
         }
         return Ht::label($html, $name1, $label_js) . $post;
     }
-    function sjs($name, $js = array()) {
+    /** @param string $name
+     * @param array<string,mixed> $js
+     * @return array<string,mixed> */
+    function sjs($name, $js = []) {
         if ($name instanceof Si) {
             $si = $name;
             $name = $si->name;
@@ -653,15 +656,17 @@ class SettingValues extends MessageSet {
         if ($si && $si->disabled) {
             $x["disabled"] = true;
         }
-        if ($si
-            && $this->use_req()
-            && $this->si_has_interest($si)
+        if ($this->use_req()
             && !isset($js["data-default-value"])
             && !isset($js["data-default-checked"])) {
-            $v = $this->si_oldv($si, null);
-            $x["data-default-value"] = $this->si_render_value($v, $si);
+            if ($si && $this->si_has_interest($si)) {
+                $v = $this->si_oldv($si, null);
+                $x["data-default-value"] = $this->si_render_value($v, $si);
+            } else if (isset($this->explicit_oldv[$name])) {
+                $x["data-default-value"] = $this->explicit_oldv[$name];
+            }
         }
-        foreach ($js ? : [] as $k => $v) {
+        foreach ($js ?? [] as $k => $v) {
             $x[$k] = $v;
         }
         if ($this->has_problem_at($name)) {
