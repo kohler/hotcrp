@@ -320,8 +320,8 @@ class Options_SettingParser extends SettingParser {
                     } else {
                         $oarg["exists_if"] = $optecs;
                     }
-                    if (!empty($ps->warnings)) {
-                        $sv->warning_at("optecs_$xpos", join("<br>", $ps->warnings));
+                    if ($ps->has_problem()) {
+                        $sv->warning_at("optecs_$xpos", join("<br>", $ps->problem_texts()));
                     }
                 }
             }

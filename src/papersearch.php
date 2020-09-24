@@ -1658,7 +1658,8 @@ class PaperSearch {
     /** @var bool */
     private $_allow_deleted = false;
 
-    public $warnings = array();
+    /** @deprecated */
+    public $warnings = [];
     private $_quiet_count = 0;
 
     /** @var string */
@@ -1862,10 +1863,43 @@ class PaperSearch {
         return $this->_reviewer_user ? : $this->user;
     }
 
+    /** @param string $text
+     * @suppress PhanDeprecatedProperty */
     function warn($text) {
         if (!$this->_quiet_count) {
             $this->warnings[] = $text;
         }
+    }
+
+    /** @return bool
+     * @suppress PhanDeprecatedProperty  */
+    function has_messages() {
+        return !empty($this->warnings);
+    }
+    /** @return int
+     * @suppress PhanDeprecatedProperty */
+    function message_count() {
+        return count($this->warnings ?? []);
+    }
+    /** @return bool
+     * @suppress PhanDeprecatedProperty */
+    function has_warning() {
+        return !empty($this->warnings);
+    }
+    /** @return bool
+     * @suppress PhanDeprecatedProperty */
+    function has_problem() {
+        return !empty($this->warnings);
+    }
+    /** @return list<string>
+     * @suppress PhanDeprecatedProperty */
+    function warning_texts() {
+        return $this->warnings;
+    }
+    /** @return list<string>
+     * @suppress PhanDeprecatedProperty */
+    function problem_texts() {
+        return $this->warnings;
     }
 
     /** @return string */

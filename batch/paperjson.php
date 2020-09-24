@@ -26,7 +26,7 @@ if (!isset($searchtypes[$t])) {
 
 $q = join(" ", $arg["_"]);
 $search = new PaperSearch($user, ["q" => $q, "t" => $t]);
-foreach ($search->warnings as $w) {
+foreach ($search->problem_texts() as $w) {
     fwrite(STDERR, "$w\n");
 }
 

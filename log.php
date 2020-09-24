@@ -44,7 +44,7 @@ if ($Qreq->p !== "") {
     $Search = new PaperSearch($Me, ["t" => "all", "q" => $Qreq->p]);
     $Search->set_allow_deleted(true);
     $include_pids = $Search->paper_ids();
-    foreach ($Search->warnings as $w) {
+    foreach ($Search->problem_texts() as $w) {
         Ht::warning_at("p", $w);
     }
     if (!empty($include_pids)) {
@@ -57,8 +57,9 @@ if ($Qreq->p !== "") {
         $wheres[] = "(" . join(" or ", $where) . ")";
         $include_pids = array_flip($include_pids);
     } else {
-        if (empty($Search->warnings))
+        if (!$Search->has_problem()) {
             Ht::warning_at("p", "No papers match that search.");
+        }
         $wheres[] = "false";
     }
 }

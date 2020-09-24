@@ -498,9 +498,9 @@ if ($pl_text) {
         && $Me->is_actas_user()) {
         $pl->message_set()->warning_at(null, $Conf->_("Papers #%s are totally hidden when viewing the site as another user.", numrangejoin(array_keys($Me->hidden_papers)), count($Me->hidden_papers)));
     }
-    if (!empty($Search->warnings) || $pl->message_set()->has_messages()) {
+    if ($Search->has_problem() || $pl->message_set()->has_messages()) {
         echo '<div class="msgs-wide">';
-        $Conf->warnMsg(array_merge($Search->warnings, $pl->message_set()->message_texts()), true);
+        $Conf->warnMsg(array_merge($Search->problem_texts(), $pl->message_set()->message_texts()), true);
         echo '</div>';
     }
 

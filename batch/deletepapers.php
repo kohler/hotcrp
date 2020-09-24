@@ -23,8 +23,9 @@ if (($pids = $search->paper_ids())) {
     $ndeleted = false;
     foreach ($user->paper_set(["paperId" => $pids]) as $prow) {
         $pid = "#{$prow->paperId}";
-        if ($prow->title !== "")
+        if ($prow->title !== "") {
             $pid .= " (" . UnicodeHelper::utf8_abbreviate($prow->title, 40) . ")";
+        }
         if (!$yes) {
             $str = "";
             while (!preg_match('/\A[ynq]/i', $str)) {
@@ -32,10 +33,11 @@ if (($pids = $search->paper_ids())) {
                 $str = fgets(STDIN);
             }
             $str = strtolower($str);
-            if (str_starts_with($str, "q"))
+            if (str_starts_with($str, "q")) {
                 exit(1);
-            else if (str_starts_with($str, "n"))
+            } else if (str_starts_with($str, "n")) {
                 continue;
+            }
         }
         if (!$quiet) {
             fwrite(STDERR, "Deleting $pid\n");
@@ -46,9 +48,10 @@ if (($pids = $search->paper_ids())) {
         $ndeleted = true;
     }
     exit($ndeleted ? 0 : 1);
-} else if ($search->warnings) {
-    foreach ($search->warnings as $text)
+} else if ($search->has_problem()) {
+    foreach ($search->problem_texts() as $text) {
         fwrite(STDERR, htmlspecialchars_decode($text) . "\n");
+    }
     exit(1);
 } else {
     fwrite(STDERR, "No matching papers.\n");

@@ -1389,8 +1389,9 @@ class AssignmentSet {
                 $search = new PaperSearch($this->user, ["q" => $pfield, "t" => $this->search_type, "reviewer" => $this->astate->reviewer]);
                 $this->searches[$pfield] = $search->paper_ids();
                 if ($report_error) {
-                    foreach ($search->warnings as $w)
+                    foreach ($search->problem_texts() as $w) {
                         $this->error_here($w);
+                    }
                 }
             }
             $npids = $this->searches[$pfield];

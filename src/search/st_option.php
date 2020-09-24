@@ -90,10 +90,10 @@ class Option_SearchTerm extends SearchTerm {
 
         $ts = [];
         foreach ($os as $o) {
-            $nwarn = count($srch->warnings);
+            $nwarn = $srch->message_count();
             if (($st = $o->parse_search($sword, $srch))) {
                 $ts[] = $st;
-            } else if ($nwarn === count($srch->warnings)) {
+            } else if ($nwarn === $srch->message_count()) {
                 $srch->warn("Submission field " . htmlspecialchars($o->search_keyword()) . " (" . $o->title_html() . ") does not understand search “" . htmlspecialchars($ocontent) . "”.");
             }
         }

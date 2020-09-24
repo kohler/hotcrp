@@ -39,7 +39,7 @@ foreach ($fields as $f) {
     $paperlist->set_view($f, true);
 }
 list($header, $body) = $paperlist->text_csv();
-foreach ($search->warnings as $w) {
+foreach ($search->problem_texts() as $w) {
     fwrite(STDERR, "$w\n");
 }
 if (!empty($body)) {
