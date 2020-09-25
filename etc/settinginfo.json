@@ -204,7 +204,10 @@
     {
         "name": "options", "group": "subform", "anchorid": false,
         "parser_class": "Options_SettingParser",
-        "type": "string", "extensible": false
+        "type": "string", "extensible": false, "storage": "dat.options"
+    },
+    {
+        "name": "options:version", "internal": true, "storage": "val.options"
     },
     {
         "name": "outcome_map", "group": "decisions",

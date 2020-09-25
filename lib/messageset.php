@@ -106,6 +106,13 @@ class MessageSet {
             unset($this->werror[$field]);
         }
     }
+    /** @param bool $im
+     * @return bool */
+    function set_ignore_messages($im) {
+        $oim = $this->ignore_msgs;
+        $this->ignore_msgs = $im;
+        return $oim;
+    }
 
     /** @param ?string $field
      * @param string $msg

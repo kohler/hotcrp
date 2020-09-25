@@ -236,7 +236,6 @@ class PaperOptionList implements IteratorAggregate {
     /** @var AbbreviationMatcher<PaperOption> */
     private $_nonpaper_am;
     private $_accumulator;
-    private $_adding_fixed;
 
     const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"submission","form_position":1001,"type":"document"}';
     const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_position":1002,"type":"document"}';
@@ -276,11 +275,9 @@ class PaperOptionList implements IteratorAggregate {
         if ($this->_jmap === null) {
             $this->_jmap = [];
             if (($olist = $this->conf->setting_json("options"))) {
-                $this->_adding_fixed = false;
                 expand_json_includes_callback($olist, [$this, "_add_json"]);
             }
             if (($olist = $this->conf->opt("fixedOptions"))) {
-                $this->_adding_fixed = true;
                 expand_json_includes_callback($olist, [$this, "_add_json"]);
             }
             $this->_jmap = array_filter($this->_jmap, "Conf::xt_enabled");

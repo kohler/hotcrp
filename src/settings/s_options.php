@@ -103,6 +103,8 @@ class Options_SettingRenderer {
             . $sv->render_feedback_at("optdt_$xpos")
             . "</div></div>";
     }
+
+    /** @return array<int,PaperOption> */
     static function configurable_options(SettingValues $sv) {
         $o = [];
         foreach ($sv->conf->options() as $opt) {
@@ -111,10 +113,10 @@ class Options_SettingRenderer {
         }
         return $o;
     }
-
-    static function make_requested_option(SettingValues $sv, PaperOption $io = null, $ipos) {
-        $io = $io ?? PaperOption::make((object) [
-            "id" => -999,
+    /** @return PaperOption */
+    static function make_placeholder_option(SettingValues $sv, $id) {
+        return PaperOption::make((object) [
+            "id" => $id,
             "name" => "Field name",
             "description" => "",
             "type" => "checkbox",
@@ -122,37 +124,113 @@ class Options_SettingRenderer {
             "display" => "prominent",
             "json_key" => "__fake__"
         ], $sv->conf);
+    }
+    /** @param string $expr
+     * @param string $field
+     * @param bool $is_error */
+    static function validate_condition(SettingValues $sv, $expr, $field, $is_error) {
+        $ps = new PaperSearch($sv->conf->root_user(), $expr);
+        $fake_prow = new PaperInfo(null, null, $sv->conf);
+        if ($ps->term()->script_expression($fake_prow, $ps) === null) {
+            $method = $is_error ? "error_at" : "warning_at";
+            $sv->$method($field, "Search too complex for field condition. (Not all search keywords are supported for field conditions.)");
+        }
+        if ($ps->has_problem()) {
+            $sv->warning_at($field, join("<br>", $ps->problem_texts()));
+        }
+    }
+    /** @return PaperOption */
+    static function make_requested_option(SettingValues $sv, PaperOption $io = null, $ipos) {
+        $io = $io ?? self::make_placeholder_option($sv, -999);
 
-        if ($ipos !== null) {
-            $optec = $sv->reqv("optec_$ipos");
-            $optecs = $optec === "search" ? $sv->reqv("optecs_$ipos") : null;
-            $optreq = $sv->reqv("optreq_$ipos");
-            $args = [
-                "id" => $io->id,
-                "name" => $sv->reqv("optn_$ipos") ?? $io->name,
-                "description" => $sv->reqv("optd_$ipos") ?? $io->description,
-                "type" => $sv->reqv("optvt_$ipos") ?? $io->type,
-                "visibility" => $sv->reqv("optp_$ipos") ?? $io->visibility,
-                "position" => $sv->reqv("optfp_$ipos") ?? $io->position,
-                "display" => $sv->reqv("optdt_$ipos") ?? $io->display_name(),
-                "required" => ($optreq ?? ($io->required ? "1" : "0")) == "1",
-                "final" => $optec === null ? $io->final : $optec === "final",
-                "exists_if" => $optecs ?? $io->exists_condition(),
-                "json_key" => $io->id > 0 ? null : "__fake__"
-            ];
-            if ($sv->has_reqv("optv_$ipos")) {
-                $args["selector"] = explode("\n", rtrim($sv->reqv("optv_$ipos")));
-            } else if ($io instanceof Selector_PaperOption) {
-                $args["selector"] = $io->selector_options();
-            }
-            return PaperOption::make((object) $args, $sv->conf);
-        } else {
+        if ($ipos === null) {
             return $io;
         }
+
+        $args = $io->jsonSerialize();
+        $args->json_key = $io->id > 0 ? null : "__fake__";
+
+        if ($sv->has_reqv("optn_$ipos")) {
+            $name = simplify_whitespace($sv->reqv("optn_$ipos") ?? "");
+            if ($name === "" || strcasecmp($name, "Field name") === 0) {
+                $sv->error_at("optn_$ipos", "Option name required.");
+            } if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name)) {
+                $sv->error_at("optn_$ipos", "Option name “" . htmlspecialchars($name) . "” is reserved. Please pick another name.");
+            }
+            $args->name = $name;
+        }
+
+        if ($sv->has_reqv("optvt_$ipos")) {
+            $vt = $sv->reqv("optvt_$ipos");
+            if (($pos = strpos($vt, ":")) !== false) {
+                $args->type = substr($vt, 0, $pos);
+                if (preg_match('/:ds_(\d+)/', $vt, $m)) {
+                    $args->display_space = (int) $m[1];
+                }
+            } else {
+                $args->type = $vt;
+            }
+        }
+
+        if ($sv->has_reqv("optd_$ipos")) {
+            $t = CleanHTML::basic_clean($sv->reqv("optd_$ipos"), $htmlerr);
+            if ($t !== false) {
+                $args->description = $t;
+            } else {
+                $sv->error_at("optd_$ipos", $htmlerr);
+                $args->description = $sv->reqv("optd_$ipos");
+            }
+        }
+
+        if ($sv->has_reqv("optp_$ipos")) {
+            $args->visibility = $sv->reqv("optp_$ipos");
+        }
+
+        if ($sv->has_reqv("optfp_$ipos")) {
+            $args->position = (int) $sv->reqv("optfp_$ipos");
+        }
+
+        if ($sv->has_reqv("optdt_$ipos")) {
+            $args->display = $sv->reqv("optdt_$ipos");
+        }
+
+        if ($sv->has_reqv("optreq_$ipos")) {
+            $args->required = $sv->reqv("optreq_$ipos") == "1";
+        }
+
+        if ($sv->has_reqv("optec_$ipos")) {
+            $ec = $sv->reqv("optec_$ipos");
+            $args->final = $ec === "final";
+            $ecs = $ec === "search" ? $sv->reqv("optecs_$ipos") : "";
+            if ($ecs === "" || $ecs === "(All)") {
+                unset($args->exists_if);
+            } else if ($ecs !== null) {
+                self::validate_condition($sv, $ecs, "optecs_$ipos", $ecs !== $args->exists_if);
+                $args->exists_if = $ecs;
+            }
+        }
+
+        if ($sv->has_reqv("optv_$ipos")) {
+            $args->selector = [];
+            foreach (explode("\n", trim(cleannl($sv->reqv("optv_$ipos")))) as $t) {
+                if ($t !== "")
+                    $args->selector[] = $t;
+            }
+            if (empty($args->selector)
+                && ($jtype = $sv->conf->option_type($args->type))
+                && ($jtype->has_selector ?? false)) {
+                $sv->error_at("optv_$ipos", "Enter selectors one per line.");
+            }
+        }
+
+        return PaperOption::make((object) $args, $sv->conf);
     }
 
     private function render_option(SettingValues $sv, PaperOption $io = null, $ipos, $xpos) {
+        $old_ignore = $sv->set_ignore_messages(true);
         $o = self::make_requested_option($sv, $io, $ipos);
+        $sv->set_ignore_messages($old_ignore);
+
         if ($io) {
             $sv->set_oldv("optn_$xpos", $io->name);
             $sv->set_oldv("optd_$xpos", $io->description);
@@ -217,7 +295,9 @@ class Options_SettingRenderer {
         $self = new Options_SettingRenderer;
         echo "<h3 class=\"form-h\">Submission fields</h3>\n";
         echo "<hr class=\"g\">\n",
-            Ht::hidden("has_options", 1), "\n\n";
+            Ht::hidden("has_options", 1),
+            Ht::hidden("options:version", (int) $sv->conf->setting("options")),
+            "\n\n";
 
         $self->reqv_id_to_pos = [];
         if ($sv->use_req()) {
@@ -255,14 +335,23 @@ class Options_SettingRenderer {
     }
 
     static function crosscheck(SettingValues $sv) {
+        if (!$sv->newv("options")) {
+            return;
+        }
+        $options = (array) json_decode($sv->newv("options"));
+        usort($options, function ($a, $b) { return $a->position - $b->position; });
         if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))
-            && $sv->newv("options")
             && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
-            $options = (array) json_decode($sv->newv("options"));
-            usort($options, function ($a, $b) { return $a->position - $b->position; });
             foreach ($options as $pos => $o) {
                 if (($o->visibility ?? null) === "nonblind") {
                     $sv->warning_at("optp_" . ($pos + 1), "The “" . htmlspecialchars($o->name) . "” field is “visible if authors are visible,” but authors are not visible. You may want to change " . $sv->setting_link("Settings &gt; Submissions &gt; Blind submission", "sub_blind") . " to “Blind until review.”");
+                }
+            }
+        }
+        if ($sv->has_interest("options")) {
+            foreach ($options as $pos => $o) {
+                if ($o->exists_if ?? null) {
+                    self::validate_condition($sv, $o->exists_if, "optecs_" . ($pos + 1), false);
                 }
             }
         }
@@ -277,13 +366,6 @@ class Options_SettingParser extends SettingParser {
     private $fake_prow;
 
     function option_request_to_json(SettingValues $sv, $xpos) {
-        $name = simplify_whitespace($sv->reqv("optn_$xpos") ?? "");
-        if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name)) {
-            $sv->error_at("optn_$xpos", "Option name “" . htmlspecialchars($name) . "” is reserved. Please pick another name.");
-        } else if ($name === "" || $name === "Field name") {
-            $sv->error_at("optn_$xpos", "Option name required.");
-        }
-
         $idname = $sv->reqv("optid_$xpos") ?? "new";
         if ($idname === "new") {
             if (!$this->next_optionid) {
@@ -300,79 +382,21 @@ class Options_SettingParser extends SettingParser {
             while (isset($this->known_optionids[$this->next_optionid])) {
                 ++$this->next_optionid;
             }
-            $id = $this->next_optionid;
+            $io = Options_SettingRenderer::make_placeholder_option($sv, $this->next_optionid);
             ++$this->next_optionid;
         } else {
-            $id = cvtint($idname);
-        }
-        $oarg = ["name" => $name, "id" => $id, "final" => false];
-
-        if ($sv->reqv("optd_$xpos") && trim($sv->reqv("optd_$xpos")) != "") {
-            $t = CleanHTML::basic_clean($sv->reqv("optd_$xpos"), $err);
-            if ($t !== false) {
-                $oarg["description"] = $t;
-            } else {
-                $sv->error_at("optd_$xpos", $err);
-            }
+            $io = $sv->conf->option_by_id(cvtint($idname));
         }
 
-        if (($optvt = $sv->reqv("optvt_$xpos"))) {
-            if (($pos = strpos($optvt, ":")) !== false) {
-                $oarg["type"] = substr($optvt, 0, $pos);
-                if (preg_match('/:ds_(\d+)/', $optvt, $m)) {
-                    $oarg["display_space"] = (int) $m[1];
-                }
-            } else {
-                $oarg["type"] = $optvt;
-            }
-        } else {
-            $oarg["type"] = "checkbox";
-        }
-
-        if (($optec = $sv->reqv("optec_$xpos"))) {
-            if ($optec === "final") {
-                $oarg["final"] = true;
-            } else if ($optec === "search") {
-                $optecs = (string) $sv->reqv("optecs_$xpos");
-                if ($optecs !== "" && $optecs !== "(All)") {
-                    $ps = new PaperSearch($sv->conf->root_user(), $optecs);
-                    if (!$this->fake_prow) {
-                        $this->fake_prow = new PaperInfo(null, null, $sv->conf);
-                    }
-                    if ($ps->term()->script_expression($this->fake_prow, $ps) === null) {
-                        $sv->error_at("optecs_$xpos", "Search too complex for field condition. (Not all search keywords are supported for field conditions.)");
-                    } else {
-                        $oarg["exists_if"] = $optecs;
-                    }
-                    if ($ps->has_problem()) {
-                        $sv->warning_at("optecs_$xpos", join("<br>", $ps->problem_texts()));
-                    }
-                }
-            }
-        }
-
-        $jtype = $sv->conf->option_type($oarg["type"]);
-        if ($jtype && ($jtype->has_selector ?? false)) {
-            $oarg["selector"] = array();
-            $seltext = trim(cleannl($sv->reqv("optv_$xpos") ?? ""));
-            if ($seltext != "") {
-                foreach (explode("\n", $seltext) as $t) {
-                    $oarg["selector"][] = $t;
-                }
-            } else {
-                $sv->error_at("optv_$xpos", "Enter selectors one per line.");
-            }
-        }
-
-        $oarg["visibility"] = $sv->reqv("optp_$xpos") ?? "rev";
-        $oarg["position"] = (int) $sv->reqv("optfp_$xpos") ?? 1;
-        $oarg["display"] = $sv->reqv("optdt_$xpos");
-        $oarg["required"] = !!$sv->reqv("optreq_$xpos");
-
-        return PaperOption::make((object) $oarg, $sv->conf);
+        return Options_SettingRenderer::make_requested_option($sv, $io, $xpos);
     }
 
     function parse(SettingValues $sv, Si $si) {
+        if ($sv->has_reqv("options:version")
+            && (int) $sv->reqv("options:version") !== (int) $sv->conf->setting("options")) {
+            $sv->error_at("options", "You modified options settings in another tab. Please reload.");
+        }
+
         $new_opts = Options_SettingRenderer::configurable_options($sv);
 
         // consider option ids
@@ -415,6 +439,7 @@ class Options_SettingParser extends SettingParser {
         }
         $sv->save("next_optionid", null);
         if ($sv->update("options", empty($newj) ? null : json_encode_db($newj))) {
+            $sv->update("options:version", (int) $sv->conf->setting("options") + 1);
             $deleted_ids = array();
             foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
                 $newo = $this->stashed_options[$o->id] ?? null;
