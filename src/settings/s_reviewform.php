@@ -60,7 +60,7 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     private function populate_field($fj, ReviewField $f, SettingValues $sv, $fid) {
-        $sn = simplify_whitespace($sv->reqv("shortName_$fid", ""));
+        $sn = simplify_whitespace($sv->reqv("shortName_$fid") ?? "");
         if ($sn === "<None>" || $sn === "<New field>" || $sn === "Field name" || $sn === "") {
             $sn = "";
         } else {

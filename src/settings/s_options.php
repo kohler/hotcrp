@@ -332,7 +332,7 @@ class Options_SettingParser extends SettingParser {
         $jtype = $sv->conf->option_type($oarg["type"]);
         if ($jtype && ($jtype->has_selector ?? false)) {
             $oarg["selector"] = array();
-            $seltext = trim(cleannl($sv->reqv("optv_$xpos", "")));
+            $seltext = trim(cleannl($sv->reqv("optv_$xpos") ?? ""));
             if ($seltext != "") {
                 foreach (explode("\n", $seltext) as $t) {
                     $oarg["selector"][] = $t;

@@ -527,10 +527,11 @@ assert_search_papers($user_chair, "tex9:tremolo", "1");
 assert_search_papers($user_chair, "tex11:butt", "1");
 
 // simplify review form
-$sv = ["has_review_form" => 1];
-for ($i = 2; $i <= 16; ++$i)
-    $sv[sprintf("order_s%02d", $i)] = $sv[sprintf("order_t%02d", $i)] = -1;
-$sv = SettingValues::make_request($user_chair, $sv);
+$sx = ["has_review_form" => 1];
+for ($i = 2; $i <= 16; ++$i) {
+    $sx[sprintf("order_s%02d", $i)] = $sx[sprintf("order_t%02d", $i)] = -1;
+}
+$sv = SettingValues::make_request($user_chair, $sx);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 

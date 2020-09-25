@@ -6,7 +6,7 @@ class Decisions_SettingParser extends SettingParser {
     static private function render_row(SettingValues $sv, $ndec, $k, $v, $isnew, $count) {
         $vx = $v;
         if ($ndec && $sv->use_req()) {
-            $vx = $sv->reqv("dec_name_$ndec", $v);
+            $vx = $sv->reqv("dec_name_$ndec") ?? $v;
         }
         echo '<tr><td class="lentry nw">',
             Ht::entry("dec_name_$ndec", $vx, ["size" => 35, "placeholder" => "Decision name", "data-default-value" => $v]),

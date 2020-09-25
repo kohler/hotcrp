@@ -94,12 +94,12 @@ class Tracks_SettingRenderer {
         if ($sv->use_req()) {
             $reqtrack = (object) [];
             foreach (Track::$map as $type => $perm) {
-                $tclass = $sv->reqv("{$type}_track$tnum", "");
+                $tclass = $sv->reqv("{$type}_track$tnum") ?? "";
                 if ($tclass === "none") {
                     if (!Track::permission_required($perm))
                         $reqtrack->$type = "+none";
                 } else if ($tclass !== "")
-                    $reqtrack->$type = $tclass . $sv->reqv("{$type}_tag_track$tnum", "");
+                    $reqtrack->$type = $tclass . ($sv->reqv("{$type}_tag_track$tnum") ?? "");
             }
         }
         // Check fold status
@@ -115,7 +115,7 @@ class Tracks_SettingRenderer {
         $trackinfo = self::get_trackinfo($sv, $trackname, $tnum);
         $req_trackname = $trackname;
         if ($sv->use_req())
-            $req_trackname = $sv->reqv("name_track$tnum", "");
+            $req_trackname = $sv->reqv("name_track$tnum") ?? "";
 
         // Print track entry
         echo "<div id=\"trackgroup$tnum\" class=\"mg has-fold fold3",
@@ -171,7 +171,7 @@ class Tracks_SettingRenderer {
         $tnum = 2;
         while ($tnum < count($track_names) + 2
                || ($sv->use_req() && $sv->has_reqv("name_track$tnum"))) {
-            self::do_track($sv, get($track_names, $tnum - 2, ""), $tnum);
+            self::do_track($sv, $track_names[$tnum - 2] ?? "", $tnum);
             ++$tnum;
         }
 
@@ -241,7 +241,7 @@ class Tracks_SettingParser extends SettingParser {
             $t = (object) array();
             foreach (Track::$map as $type => $perm) {
                 $ttype = $sv->reqv("{$type}_track$i");
-                $ttag = trim($sv->reqv("{$type}_tag_track$i", ""));
+                $ttag = trim($sv->reqv("{$type}_tag_track$i") ?? "");
                 if ($ttype === "+" && strcasecmp($ttag, "none") === 0) {
                     $ttype = "none";
                 }
