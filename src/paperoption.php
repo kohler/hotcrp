@@ -925,7 +925,7 @@ class PaperOption implements JsonSerializable {
         if ($this->_json_key === null) {
             $am = $this->abbrev_matcher();
             $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
-            $this->_json_key = $am->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE);
+            $this->_json_key = $am->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE);
             if (!$this->_json_key) {
                 $this->_json_key = $this->formid;
             }
@@ -1452,7 +1452,7 @@ class Selector_PaperOption extends PaperOption {
             return false;
         } else {
             $e = new AbbreviationEntry($this->selector[$idx - 1], $idx);
-            return $this->selector_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE);
+            return $this->selector_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
         }
     }
     function search_examples(Contact $viewer, $context) {

@@ -496,24 +496,42 @@ class AbbreviationMatcher {
         return $n !== 0 && $n === $nok;
     }
 
-    /** @param int $n
-     * @param int|false $sp */
-    static private function camel_contract($s, $n, $sp, $hasnum) {
-        while ($n > 0) {
-            $sp = strpos($s, " ", $sp + 1);
-            --$n;
+    /** @param string $s
+     * @param int $nsp
+     * @param int $class
+     * @return Generator<string> */
+    static private function phrase_subset_generator($s, $nsp, $class) {
+        assert($s[0] === " ");
+        if ($nsp > 3 && ($class & self::KW_FULLPHRASE) === 0) {
+            $s0 = 0;
+            $s1 = strpos($s, " ", $s0 + 1);
+            $s2 = strpos($s, " ", $s1 + 1);
+            $s3 = strpos($s, " ", $s2 + 1);
+            yield substr($s, $s0 + 1, $s3 - $s0 - 1);
+            $s4 = strpos($s, " ", $s3 + 1);
+            while ($s4 !== false) {
+                yield substr($s, $s0 + 1, $s4 - $s0 - 1);
+                $s0 = strpos($s, " ", $s0 + 1);
+                $s4 = strpos($s, " ", $s4 + 1);
+            }
         }
-        $s = substr($s, 1, $sp === false ? strlen($s) - 1 : $sp - 1);
+    }
+
+    /** @param string $s
+     * @param bool $hasnum
+     * @return string */
+    static private function camelize_phrase($s, $hasnum) {
         if ($hasnum) {
-            $s = preg_replace('/(\d) (\d)/', '$1_$2', $s);
+            $s = preg_replace('/(\d)_(\d)/', '$1_$2', $s);
         }
         return str_replace(" ", "", $s);
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
-    private function _finish_abbreviation($cname, AbbreviationEntry $e, $class, $csp) {
-        if ($class === (self::KW_CAMEL | self::KW_ENSURE)
-            && $csp > 1
+    private function _finish_abbreviation($cname, AbbreviationEntry $e, $class) {
+        if (($class & self::KW_FORMAT) === self::KW_CAMEL
+            && ($class & self::KW_ENSURE) !== 0
+            && ($class & self::KWP_MULTIWORD) !== 0
             && !$this->find_entries(strtolower($cname), 0)) {
             $e2 = clone $e;
             $e2->name = strtolower($cname);
@@ -526,7 +544,10 @@ class AbbreviationMatcher {
     const KW_CAMEL = 0;
     const KW_DASH = 1;
     const KW_UNDERSCORE = 2;
+    const KW_FORMAT = 3;
     const KW_ENSURE = 4;
+    const KW_FULLPHRASE = 8;
+    const KWP_MULTIWORD = 32;
     /** @param int $class
      * @param int $tflags
      * @return string|false
@@ -538,64 +559,64 @@ class AbbreviationMatcher {
             && $this->test_all_matches($xname, $e, $tflags)) {
             $name = $xname;
         }
+        // Take portion before dash or colon when that preserves uniqueness
+        if (preg_match('/\A.*?(?=\s+-+\s|\s*–|\s*—|:\s)/', $name, $m)
+            && $this->test_all_matches($m[0], $e, $tflags)) {
+            $name = $m[0];
+        }
         // Translate to xtester
         $name = self::make_xtester($name);
+        $nsp = substr_count($name, " ");
         // Strip stop words when that preserves uniqueness
-        if (substr_count($name, " ") > 2
+        if ($nsp > 2
             && ($sname = self::xtester_remove_stops($name)) !== ""
             && strlen($sname) !== strlen($name)
             && $this->test_all_matches($sname, $e, $tflags)) {
             $name = $sname;
+            $nsp = substr_count($name, " ");
         }
         // Obtain an abbreviation by type
-        if (($class & 3) === self::KW_CAMEL) {
+        if (($class & self::KW_FORMAT) === self::KW_CAMEL) {
             $cname = ucwords($name);
-            $csp = substr_count($cname, " ");
             // check for a CamelWord we should separate
-            if ($csp === 1
+            if ($nsp === 1
                 && self::is_strict_camel_word(substr($name, 1))) {
                 $cname = ucwords(preg_replace('/([a-z\'](?=[A-Z])|[A-Z](?=[A-Z][a-z]))/', '$1 ', $cname));
-                $csp = substr_count($cname, " ");
+                $nsp = substr_count($cname, " ");
             }
-            if ($csp === 1) {
+            if ($nsp === 1) {
                 // only one word
-                $xcname = substr($cname, 1, strlen($cname) < 7 ? 6 : 3);
-                if ($this->test_all_matches($xcname, $e, $tflags)) {
-                    return $this->_finish_abbreviation($xcname, $e, $class, $csp);
+                $s = substr($cname, 1, strlen($cname) < 7 ? 6 : 3);
+                if ($this->test_all_matches($s, $e, $tflags)) {
+                    return $this->_finish_abbreviation($s, $e, $class);
                 }
                 $cname = substr($cname, 1);
             } else {
+                $class |= self::KWP_MULTIWORD;
                 $hasnum = strpbrk($cname, "0123456789") !== false;
                 $cname = preg_replace('/([A-Z][a-z][a-z])[A-Za-z~!?]*/', '$1', $cname);
-                if ($csp > 3) {
-                    // try first three words
-                    $xcname = self::camel_contract($cname, 3, 0, $hasnum);
-                    if ($this->test_all_matches($xcname, $e, $tflags)) {
-                        return $this->_finish_abbreviation($xcname, $e, $class, $csp);
-                    }
-                    // try successive groups of four words
-                    $icname = $cname;
-                    for ($sp = $csp; $sp >= 4; --$sp) {
-                        $spos = strpos($icname, " ", 1);
-                        $xcname = self::camel_contract($icname, 3, $spos, $hasnum);
-                        if ($this->test_all_matches($xcname, $e, $tflags)) {
-                            return $this->_finish_abbreviation($xcname, $e, $class, $csp);
-                        }
-                        $icname = substr($icname, $spos);
+                foreach (self::phrase_subset_generator($cname, $nsp, $class) as $s) {
+                    $s = self::camelize_phrase($s, $hasnum);
+                    if ($this->test_all_matches($s, $e, $tflags)) {
+                        return $this->_finish_abbreviation($s, $e, $class);
                     }
                 }
-                $cname = self::camel_contract($cname, 0, false, $hasnum);
+                $cname = self::camelize_phrase(substr($cname, 1), $hasnum);
             }
-        } else if (($class & 3) === self::KW_UNDERSCORE) {
-            $cname = str_replace(" ", "_", strtolower(substr($name, 1)));
-            $csp = 0;
         } else {
-            $cname = str_replace(" ", "-", strtolower(substr($name, 1)));
-            $csp = 0;
+            $ch = ($class & self::KW_FORMAT) === self::KW_UNDERSCORE ? "_" : "-";
+            $cname = strtolower($name);
+            foreach (self::phrase_subset_generator($cname, $nsp, $class) as $s) {
+                $s = str_replace(" ", $ch, $s);
+                if ($this->test_all_matches($s, $e, $tflags)) {
+                    return $this->_finish_abbreviation($s, $e, $class);
+                }
+            }
+            $cname = str_replace(" ", $ch, substr($cname, 1));
         }
         // Add suffix
         if ($this->test_all_matches($cname, $e, $tflags)) {
-            return $this->_finish_abbreviation($cname, $e, $class, $csp);
+            return $this->_finish_abbreviation($cname, $e, $class);
         } else if (($class & self::KW_ENSURE) !== 0) {
             $cname .= ".";
             $suffix = 1;
