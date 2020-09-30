@@ -419,7 +419,7 @@
     },
     {
         "name": "sub_collab", "group": "subform",
-        "title": "Collect other collaborators",
+        "title": "Collect other conflicts and collaborators",
         "type": "checkbox"
     },
     {
