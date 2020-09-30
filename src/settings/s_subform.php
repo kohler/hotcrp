@@ -257,7 +257,7 @@ class SubForm_SettingRenderer {
             $cflt[] = "“" . $confset->unparse_html_description($ct) . "”";
         }
         $sv->echo_checkbox("sub_pcconfsel", "Collect PC conflict descriptions (" . commajoin($cflt, "or") . ")", ["group_class" => "fx"]);
-        $sv->echo_checkbox("sub_collab", "Collect authors’ other collaborators as text");
+        $sv->echo_checkbox("sub_collab", "Collect authors’ other conflicts and collaborators as text");
         echo "</div>\n";
 
         echo '<div class="form-g">';
