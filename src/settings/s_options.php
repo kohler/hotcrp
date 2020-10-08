@@ -443,12 +443,12 @@ class Options_SettingParser extends SettingParser {
             $deleted_ids = array();
             foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
                 $newo = $this->stashed_options[$o->id] ?? null;
-/*                if (!$newo
+                if (!$newo
                     || ($newo->type !== $o->type
                         && !$newo->change_type($o, true, true)
                         && !$o->change_type($newo, false, true))) {
                     $deleted_ids[] = $o->id;
-                } */
+                }
             }
             if (!empty($deleted_ids)) {
                 $sv->conf->qe("delete from PaperOption where optionId?a", $deleted_ids);
