@@ -2758,6 +2758,7 @@ class Contact {
             $rights = $this->rights($prow);
             return $rights->can_administer;
         } else {
+            error_log(debug_string_backtrace());
             return $this->privChair;
         }
     }
@@ -4452,7 +4453,7 @@ class Contact {
 
     /** @return bool */
     function can_set_some_decision() {
-        return $this->can_administer(null);
+        return $this->is_manager();
     }
 
     /** @return bool */
