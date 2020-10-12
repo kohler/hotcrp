@@ -361,16 +361,17 @@ function pluralx($n, $what) {
 }
 
 function pluralize($what) {
-    if ($what == "this") {
+    if ($what === "this") {
         return "these";
-    } else if ($what == "has") {
+    } else if ($what === "has") {
         return "have";
-    } else if ($what == "is") {
+    } else if ($what === "is") {
         return "are";
-    } else if (str_ends_with($what, ")") && preg_match('/\A(.*?)(\s*\([^)]*\))\z/', $what, $m)) {
+    } else if (str_ends_with($what, ")")
+               && preg_match('/\A(.*?)(\s*\([^)]*\))\z/', $what, $m)) {
         return pluralize($m[1]) . $m[2];
     } else if (preg_match('/\A.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz]y)\z/', $what)) {
-        if (substr($what, -1) == "y") {
+        if (substr($what, -1) === "y") {
             return substr($what, 0, -1) . "ies";
         } else {
             return $what . "es";
@@ -398,14 +399,14 @@ function ordinal($n) {
 function tabLength($text, $all) {
     $len = 0;
     for ($i = 0; $i < strlen($text); ++$i) {
-        if ($text[$i] == ' ') {
-            $len++;
-        } else if ($text[$i] == '\t') {
+        if ($text[$i] === ' ') {
+            ++$len;
+        } else if ($text[$i] === '\t') {
             $len += 8 - ($len % 8);
         } else if (!$all) {
             break;
         } else {
-            $len++;
+            ++$len;
         }
     }
     return $len;

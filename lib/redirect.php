@@ -47,7 +47,7 @@ function set_session_name(Conf $conf) {
         $_COOKIE[$sn] = $_COOKIE[$upgrade_sn];
         hotcrp_setcookie($upgrade_sn, "", [
             "expires" => time() - 3600, "path" => "/",
-            "domain" => $conf->opt("sessionUpgradeDomain", $domain ? : ""),
+            "domain" => $conf->opt("sessionUpgradeDomain") ?? ($domain ? : ""),
             "secure" => !!$secure
         ]);
     }
