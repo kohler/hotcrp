@@ -74,7 +74,7 @@ function set_session_name(Conf $conf) {
         $params["domain"] = $domain;
     }
     $params["httponly"] = true;
-    if (($samesite = $conf->opt("sessionSameSite"))) {
+    if (($samesite = $conf->opt("sessionSameSite") ?? "Lax")) {
         $params["samesite"] = $samesite;
     }
     if (PHP_VERSION_ID >= 70300) {

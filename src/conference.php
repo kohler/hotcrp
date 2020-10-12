@@ -3873,10 +3873,10 @@ class Conf {
     function set_cookie($name, $value, $expires_at) {
         $opt = [
             "expires" => $expires_at, "path" => Navigation::site_path(),
-            "domain" => $this->opt("sessionDomain", ""),
-            "secure" => $this->opt("sessionSecure", false)
+            "domain" => $this->opt("sessionDomain") ?? "",
+            "secure" => $this->opt("sessionSecure") ?? false
         ];
-        if (($samesite = $this->opt("sessionSameSite", "Lax"))) {
+        if (($samesite = $this->opt("sessionSameSite") ?? "Lax")) {
             $opt["samesite"] = $samesite;
         }
         if (!hotcrp_setcookie($name, $value, $opt)) {
@@ -3979,10 +3979,13 @@ class Conf {
             . ";siteurl_suffix=\"" . $nav->php_suffix . "\"");
         $p = "";
         if (($x = $this->opt("sessionDomain"))) {
-            $p .= "; domain=" . $x;
+            $p .= "; Domain=" . $x;
         }
         if ($this->opt("sessionSecure")) {
-            $p .= "; secure";
+            $p .= "; Secure";
+        }
+        if (($samesite = $this->opt("sessionSameSite") ?? "Lax")) {
+            $p .= "; SameSite=" . $samesite;
         }
         Ht::stash_script("siteurl_postvalue=" . json_encode(post_value(true)) . ";siteurl_cookie_params=" . json_encode($p));
         if (self::$hoturl_defaults) {

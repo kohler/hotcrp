@@ -8998,17 +8998,15 @@ function resolve_digest(info) {
         return info;
 }
 function set_cookie(info, pid) {
-    if (info) {
-        if (/"digest":/.test(info))
-            info = resolve_digest(info);
-        if (info.length > 1500)
-            info = make_digest(info, pid);
-        cookie_set_at = now_msec();
-        var p = "; max-age=20", m;
-        if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
-            p += "; path=" + m[1];
-        document.cookie = "hotlist-info-" + now_msec() + "=" + encodeURIComponent(info) + siteurl_cookie_params + p;
-    }
+    if (/"digest":/.test(info))
+        info = resolve_digest(info);
+    if (info.length > 1500)
+        info = make_digest(info, pid);
+    cookie_set_at = now_msec();
+    var p = "; Max-Age=20", m;
+    if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
+        p += "; Path=" + m[1];
+    document.cookie = "hotlist-info-" + cookie_set_at + "=" + encodeURIComponent(info) + siteurl_cookie_params + p;
 }
 function is_listable(sitehref) {
     return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(sitehref);
@@ -9042,8 +9040,10 @@ function handle_list(e, href) {
             && document.getElementById("footer"))
             // Existence of `#footer` checks that the table is fully loaded
             info = set_list_order(info, hl.tBodies[0]);
-        m = /^[^\/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);
-        set_cookie(info, m ? +m[1] : null);
+        if (info) {
+            m = /^[^\/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);
+            set_cookie(info, m ? +m[1] : null);
+        }
     }
 }
 function unload_list() {
