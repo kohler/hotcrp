@@ -3987,7 +3987,7 @@ class Conf {
         if (($samesite = $this->opt("sessionSameSite") ?? "Lax")) {
             $p .= "; SameSite=" . $samesite;
         }
-        Ht::stash_script("siteurl_postvalue=" . json_encode(post_value(true)) . ";siteurl_cookie_params=" . json_encode($p));
+        Ht::stash_script("siteurl_postvalue=" . json_encode_browser(post_value(true)) . ";siteurl_cookie_params=" . json_encode_browser($p));
         if (self::$hoturl_defaults) {
             $urldefaults = [];
             foreach (self::$hoturl_defaults as $k => $v) {
