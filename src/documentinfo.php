@@ -598,8 +598,8 @@ class DocumentInfo implements JsonSerializable {
         fclose($s3l->dstream);
         $unlink = true;
         if ($s3l->status === 200) {
-            if (self::filesize_expected($dspath . "~", $this->size) !== $this->size) {
-                error_log("Disk error: GET $s3l->skey: expected size {$this->size}, got " . filesize($dspath . "~"));
+            if (($sz = self::filesize_expected($dspath . "~", $this->size)) !== $this->size) {
+                error_log("Disk error: GET $s3l->skey: expected size {$this->size}, got " . json_encode($sz));
                 $s3l->status = 500;
             } else if (rename($dspath . "~", $dspath)) {
                 $this->filestore = $dspath;
