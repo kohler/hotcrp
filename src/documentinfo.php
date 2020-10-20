@@ -31,8 +31,11 @@ class DocumentInfo implements JsonSerializable {
     public $infoJson = false;
     /** @var ?int */
     public $size;
+    /** @var ?int */
     public $filterType;
+    /** @var ?int */
     public $originalStorageId;
+    /** @var int */
     public $inactive = 0;
     private $_owner;
 
@@ -48,9 +51,12 @@ class DocumentInfo implements JsonSerializable {
     /** @var ?string */
     private $_member_filename;
     public $sourceHash;
+    /** @var bool */
     public $is_partial = false;
     public $filters_applied;
-    public $error;
+    /** @var bool */
+    public $error = false;
+    /** @var ?string */
     public $error_html;
 
     function __construct($p, Conf $conf, PaperInfo $prow = null) {

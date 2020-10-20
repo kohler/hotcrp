@@ -22,8 +22,8 @@ class PaperStatus extends MessageSet {
     private $disable_users = false;
     /** @var bool */
     private $allow_any_content_file = false;
-    /** @var string|false */
-    private $content_file_prefix = false;
+    /** @var ?string */
+    private $content_file_prefix = null;
     /** @var bool */
     private $add_topics = false;
     /** @var list<callable> */
@@ -104,7 +104,7 @@ class PaperStatus extends MessageSet {
         $this->_on_document_export[] = $cb;
     }
 
-    /** @param callable(object,PaperInfo):(?bool) $cb */
+    /** @param callable(object,PaperInfo,PaperStatus):(?bool) $cb */
     function on_document_import($cb) {
         $this->_on_document_import[] = $cb;
     }
@@ -310,7 +310,7 @@ class PaperStatus extends MessageSet {
                 $pstatus->error_at_option($o, "Bad content_file: only simple filenames allowed.");
                 return false;
             }
-            if ((string) $this->content_file_prefix !== "") {
+            if (($this->content_file_prefix ?? "") !== "") {
                 $docj->content_file = $this->content_file_prefix . $docj->content_file;
             }
         }

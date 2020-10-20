@@ -303,7 +303,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $clear_fields = $clear_options = [];
         $reset_wordcount = $assign_ordinal = $reset_view_score = false;
         foreach ($nform->all_fields() as $nf) {
-            $of = get($oform->fmap, $nf->id);
+            $of = $oform->fmap[$nf->id] ?? null;
             if ($nf->displayed && (!$of || !$of->displayed)) {
                 $clear_fields[] = $nf;
             } else if ($nf->displayed
