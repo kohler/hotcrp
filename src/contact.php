@@ -4622,7 +4622,7 @@ class Contact {
               && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false)))) {
             if ($this->privChair && $tagmap->has_sitewide) {
                 $dt = $tagmap->check($tag);
-                return $dt && $dt->sitewide && !$dt->autosearch;
+                return $dt && $dt->sitewide && !$dt->automatic;
             } else {
                 return false;
             }
@@ -4632,11 +4632,11 @@ class Contact {
         if ($twiddle === 0 && $tag[1] === "~") {
             if (!$rights->can_administer) {
                 return false;
-            } else if (!$tagmap->has_autosearch) {
+            } else if (!$tagmap->has_automatic) {
                 return true;
             } else {
                 $dt = $tagmap->check($tag);
-                return !$dt || !$dt->autosearch;
+                return !$dt || !$dt->automatic;
             }
         }
         if ($twiddle > 0
@@ -4698,7 +4698,7 @@ class Contact {
                 $t = $this->conf->tags()->check($tag);
                 if ($t && $t->votish) {
                     $whyNot["voteTag"] = true;
-                } else if ($t && $t->autosearch) {
+                } else if ($t && $t->automatic) {
                     $whyNot["autosearchTag"] = true;
                 } else {
                     $whyNot["chairTag"] = true;
