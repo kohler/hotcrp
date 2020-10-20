@@ -155,7 +155,7 @@ class Conf {
     /** @var ?TagMap */
     private $_tag_map;
     /** @var bool */
-    private $_maybe_autosearch;
+    private $_maybe_automatic_tags;
     /** @var ?list<string> */
     private $_track_tags;
     /** @var int */
@@ -211,7 +211,7 @@ class Conf {
     /** @var ?IntlMsgSet */
     private $_ims;
     private $_format_info;
-    private $_updating_autosearch_tags = false;
+    private $_updating_automatic_tags = false;
     private $_cdb = false;
 
     /** @var ?XtContext */
@@ -486,7 +486,7 @@ class Conf {
         }
         $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;
         $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;
-        $this->_maybe_autosearch = ($this->settings["tag_vote"] ?? 0) > 0
+        $this->_maybe_automatic_tags = ($this->settings["tag_vote"] ?? 0) > 0
             || ($this->settings["tag_approval"] ?? 0) > 0
             || ($this->settings["tag_autosearch"] ?? 0) > 0
             || !!$this->opt("definedTags");
@@ -2505,8 +2505,8 @@ class Conf {
 
     /** @param null|int|list<int>|PaperInfo $paper
      * @param null|string|list<string> $types */
-    function update_autosearch_tags($paper = null, $types = null) {
-        if (!$this->_maybe_autosearch || $this->_updating_autosearch_tags) {
+    function update_automatic_tags($paper = null, $types = null) {
+        if (!$this->_maybe_automatic_tags || $this->_updating_automatic_tags) {
             return;
         }
         $tagmap = $this->tags();
@@ -2539,23 +2539,23 @@ class Conf {
                 }
             }
         }
-        $this->_update_autosearch_tags_csv($csv);
+        $this->_update_automatic_tags_csv($csv);
     }
 
-    function _update_autosearch_tags_csv($csv) {
+    function _update_automatic_tags_csv($csv) {
         if (count($csv) > 1) {
-            $this->_updating_autosearch_tags = true;
+            $this->_updating_automatic_tags = true;
             $aset = new AssignmentSet($this->root_user(), true);
             $aset->set_search_type("all");
             $aset->parse($csv);
             $aset->execute();
-            $this->_updating_autosearch_tags = false;
+            $this->_updating_automatic_tags = false;
         }
     }
 
     /** @return bool */
-    function is_updating_autosearch_tags() {
-        return $this->_updating_autosearch_tags;
+    function is_updating_automatic_tags() {
+        return $this->_updating_automatic_tags;
     }
 
 
@@ -2605,7 +2605,7 @@ class Conf {
                 Contact::update_rights();
             }
             if (isset($caches["autosearch"])) {
-                $this->update_autosearch_tags();
+                $this->update_automatic_tags();
             }
         }
     }

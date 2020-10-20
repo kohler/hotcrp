@@ -183,9 +183,9 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             }
         }
 
-        // ignore attempts to change vote & autosearch tags
+        // ignore attempts to change vote & automatic tags
         $tagmap = $state->conf->tags();
-        if (!$state->conf->is_updating_autosearch_tags()
+        if (!$state->conf->is_updating_automatic_tags()
             && $xuser === ""
             && $tagmap->is_automatic($xtag)) {
             return true;

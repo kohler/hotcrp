@@ -1875,7 +1875,7 @@ class AssignmentSet {
             call_user_func($cb[0], $this, $cb[1]);
         }
         if (!empty($pids)) {
-            $this->conf->update_autosearch_tags(array_keys($pids), $this->assigned_types());
+            $this->conf->update_automatic_tags(array_keys($pids), $this->assigned_types());
         }
         if (!empty($this->cleanup_notify_tracker)
             && $this->conf->opt("trackerCometSite")) {

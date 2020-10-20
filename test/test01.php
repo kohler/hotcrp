@@ -1259,7 +1259,7 @@ xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
 // more tags
 $Conf->save_setting("tag_vote", 1, "vote#10 crap#3");
 $Conf->save_setting("tag_approval", 1, "app#0");
-$Conf->update_autosearch_tags();
+$Conf->update_automatic_tags();
 xassert_assign($user_chair,
     "paper,tag\n16,+huitema~vote#5 +crowcroft~vote#1 +crowcroft~crap#2 +estrin~app +estrin~crap#1 +estrin~bar");
 $paper16 = $user_chair->checked_paper_by_id(16);

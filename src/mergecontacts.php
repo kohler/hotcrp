@@ -175,8 +175,8 @@ class MergeContacts extends MessageSet {
             }
         }
 
-        // update autosearch tags
-        $this->conf->update_autosearch_tags();
+        // update automatic tags
+        $this->conf->update_automatic_tags();
     }
 
     function run() {

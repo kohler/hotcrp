@@ -2419,8 +2419,8 @@ class ReviewValues extends MessageSet {
             $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId={$new_rrow->requestedBy} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
         }
 
-        // notify autosearch
-        $this->conf->update_autosearch_tags($prow, "review");
+        // notify automatic tags
+        $this->conf->update_automatic_tags($prow, "review");
 
         // potentially email chair, reviewers, and authors
         $reviewer = $user;

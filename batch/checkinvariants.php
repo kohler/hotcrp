@@ -12,7 +12,7 @@ $ic = new ConfInvariants($Conf);
 $ic->exec_all();
 
 if (isset($ic->problems["autosearch"]) && isset($arg["fix-autosearch"])) {
-    $Conf->update_autosearch_tags();
+    $Conf->update_automatic_tags();
 }
 
 if ($Conf->sversion == 174 && (isset($arg["json-reviews"]) || isset($arg["fix-json-reviews"]))) {

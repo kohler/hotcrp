@@ -1153,8 +1153,8 @@ class PaperStatus extends MessageSet {
             $this->conf->update_papersub_setting($this->_paper_submitted ? 1 : -1);
         }
 
-        // update autosearch
-        $this->conf->update_autosearch_tags($this->paperId, "paper");
+        // update automatic tags
+        $this->conf->update_automatic_tags($this->paperId, "paper");
 
         // update document inactivity
         if ($this->_documents_changed

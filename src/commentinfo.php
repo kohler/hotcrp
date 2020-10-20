@@ -754,8 +754,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
         $acting_contact->log_activity_for($this->contactId ? : $contact->contactId, $log, $this->prow->$LinkColumn);
 
-        // update autosearch
-        $this->conf->update_autosearch_tags($this->prow, "comment");
+        // update automatic tags
+        $this->conf->update_automatic_tags($this->prow, "comment");
 
         // ordinal
         if ($text !== false && $this->ordinal_missing($ctype)) {

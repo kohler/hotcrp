@@ -112,7 +112,7 @@ class RequestReview_API {
                 $msg = '<p>Proposed an external review from ' . $xreviewer->name_h(NAME_E) . ". An administrator must approve this proposal for it to take effect.</p>";
             }
             $user->log_activity("Review proposal added for $email", $prow);
-            $prow->conf->update_autosearch_tags($prow, "review");
+            $prow->conf->update_automatic_tags($prow, "review");
             HotCRPMailer::send_administrators("@proposereview", $prow,
                                               ["requester_contact" => $requester,
                                                "reviewer_contact" => $xreviewer,
@@ -214,7 +214,7 @@ class RequestReview_API {
             ]);
 
             $user->log_activity_for($requester, "Review proposal denied for $email", $prow);
-            $prow->conf->update_autosearch_tags($prow, "review");
+            $prow->conf->update_automatic_tags($prow, "review");
             return new JsonResult(["ok" => true, "action" => "deny"]);
         } else {
             Dbl::qx_raw("unlock tables");
@@ -312,7 +312,7 @@ class RequestReview_API {
         if ($had_token) {
             $user->conf->update_rev_tokens_setting(-1);
         }
-        $prow->conf->update_autosearch_tags($prow, "review");
+        $prow->conf->update_automatic_tags($prow, "review");
 
         // send mail to requesters
         // XXX delay this mail by a couple minutes
@@ -393,7 +393,7 @@ class RequestReview_API {
             $user->log_activity("Review proposal retracted for $req->email", $prow);
         }
 
-        $prow->conf->update_autosearch_tags($prow, "review");
+        $prow->conf->update_automatic_tags($prow, "review");
 
         // send mail to reviewer
         $notified = false;
