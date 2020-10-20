@@ -703,11 +703,17 @@ class Xor_SearchTerm extends Op_SearchTerm {
         $top = $sqi->top;
         $sqi->top = false;
         $ff = [];
+        $xor = true;
         foreach ($this->child as $subt) {
             $ff[] = "coalesce(" . $subt->sqlexpr($sqi) . ",0)";
+            $xor = $xor && $subt->trivial_rights($sqi->srch);
         }
         $sqi->top = $top;
-        return empty($ff) ? "false" : "(" . join(" xor ", $ff) . ")";
+        if (empty($ff)) {
+            return "false";
+        } else {
+            return "(" . join($xor ? " xor " : " or ", $ff) . ")";
+        }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {
         $x = false;

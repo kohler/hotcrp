@@ -514,9 +514,9 @@ xassert_assign_fail($user_varghese, "paper,tag\n1,chairtest1#clear\n");
 assert_search_papers($user_varghese, "#chairtest1", "1");
 
 // pattern tag merging
-$Conf->save_setting("tag_approval", 1, "chair*");
+$Conf->save_setting("tag_hidden", 1, "chair*");
 $ct = $Conf->tags()->check("chairtest0");
-xassert($ct && $ct->readonly && $ct->approval);
+xassert($ct && $ct->readonly && $ct->hidden);
 
 // colon tag setting
 xassert(!$Conf->setting("has_colontag"));
@@ -1176,7 +1176,7 @@ assert_search_papers($user_chair, "re:any 19", "19");
 assert_search_papers($user_chair, "re:1 19", "19");
 
 // check rev_tokens setting
-ConfInvariants::test_all($Conf, "test01.php:B ");
+ConfInvariants::test_all($Conf, "test01.php:B: ");
 xassert_assign($user_chair, "paper,action,user\n19,clearreview,anonymous\n");
 assert_search_papers($user_chair, "re:any 19", "");
 ConfInvariants::test_all($Conf, "test01.php:C: ");
