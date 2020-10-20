@@ -2531,8 +2531,9 @@ class Conf {
                 foreach ($rowset as $prow) {
                     $test = $search->test($prow);
                     $value = $prow->tag_value($dt->tag);
-                    if (($test || $value !== null)
-                        && ($fexpr !== "0" || $test !== ($value === 0.0))) {
+                    if ($test
+                        ? $fexpr !== "0" || $value !== 0.0
+                        : $value !== null) {
                         $csv[] = "{$prow->paperId}," . CsvGenerator::quote($dt->tag) . "," . ($test ? CsvGenerator::quote($fexpr) : "clear");
                     }
                 }
