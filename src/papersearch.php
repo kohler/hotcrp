@@ -223,7 +223,7 @@ class SearchTerm {
 
 
     /** @return bool */
-    function trivial_rights(Contact $user, PaperSearch $srch) {
+    function trivial_rights(PaperSearch $srch) {
         return false;
     }
 
@@ -288,7 +288,7 @@ class False_SearchTerm extends SearchTerm {
     function is_false() {
         return true;
     }
-    function trivial_rights(Contact $user, PaperSearch $srch) {
+    function trivial_rights(PaperSearch $srch) {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -309,7 +309,7 @@ class True_SearchTerm extends SearchTerm {
     function is_uninteresting() {
         return count($this->float) === 1 && isset($this->float["view"]);
     }
-    function trivial_rights(Contact $user, PaperSearch $srch) {
+    function trivial_rights(PaperSearch $srch) {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -418,9 +418,9 @@ class Op_SearchTerm extends SearchTerm {
         }
         return $this;
     }
-    function trivial_rights(Contact $user, PaperSearch $srch) {
+    function trivial_rights(PaperSearch $srch) {
         foreach ($this->child as $ch) {
-            if (!$ch->trivial_rights($user, $srch))
+            if (!$ch->trivial_rights($srch))
                 return false;
         }
         return true;
@@ -459,7 +459,7 @@ class Not_SearchTerm extends Op_SearchTerm {
         $sqi->top = false;
         $ff = $this->child[0]->sqlexpr($sqi);
         if ($sqi->negated
-            && !$this->child[0]->trivial_rights($sqi->user, $sqi->srch)) {
+            && !$this->child[0]->trivial_rights($sqi->srch)) {
             $ff = "false";
         }
         $sqi->negated = !$sqi->negated;
@@ -856,11 +856,11 @@ class Limit_SearchTerm extends SearchTerm {
         return new Limit_SearchTerm($srch->conf, $word);
     }
 
-    function trivial_rights(Contact $user, PaperSearch $srch) {
-        if ($user->has_hidden_papers()) {
+    function trivial_rights(PaperSearch $srch) {
+        if ($srch->user->has_hidden_papers()) {
             return false;
         } else if (in_array($this->limit, ["undec", "acc", "viewable"], true)) {
-            return $user->privChair;
+            return $srch->user->privChair;
         } else if (in_array($this->limit, ["reviewable", "admin", "alladmin"], true)) {
             return false;
         } else {
@@ -1049,7 +1049,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         return new TextMatch_SearchTerm($sword->kwdef->name, $word, $sword->quoted);
     }
 
-    function trivial_rights(Contact $user, PaperSearch $srch) {
+    function trivial_rights(PaperSearch $srch) {
         return $this->trivial && !$this->authorish;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -1452,7 +1452,7 @@ class PaperID_SearchTerm extends SearchTerm {
         }
     }
 
-    function trivial_rights(Contact $user, PaperSearch $srch) {
+    function trivial_rights(PaperSearch $srch) {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -2570,8 +2570,8 @@ class PaperSearch {
         }
 
         // add permissions tables if we will filter the results
-        $need_filter = !$qe->trivial_rights($this->user, $this)
-            || !$this->_limit_qe->trivial_rights($this->user, $this)
+        $need_filter = !$qe->trivial_rights($this)
+            || !$this->_limit_qe->trivial_rights($this)
             || $this->conf->has_tracks() /* XXX probably only need check_track_view_sensitivity */
             || $qe->type === "then"
             || $qe->get_float("heading");

@@ -58,7 +58,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
             return null;
         }
     }
-    function trivial_rights(Contact $user, PaperSearch $srch) {
+    function trivial_rights(PaperSearch $srch) {
         return $this->dtype === DTYPE_SUBMISSION && $this->format_problem === null;
     }
     static function add_columns(SearchQueryInfo $sqi) {

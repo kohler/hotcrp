@@ -20,8 +20,8 @@ class Conflict_SearchTerm extends SearchTerm {
             return new Conflict_SearchTerm($m[1], $contacts, $sword->kwdef->pc_only);
         }
     }
-    function trivial_rights(Contact $user, PaperSearch $srch) {
-        return $this->csm->has_sole_contact($user->contactId);
+    function trivial_rights(PaperSearch $srch) {
+        return $this->csm->has_sole_contact($srch->user->contactId);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Conflict_" . count($sqi->tables);

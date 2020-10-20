@@ -32,8 +32,8 @@ class Author_SearchTerm extends SearchTerm {
         }
         return new Author_SearchTerm($count, $cids, $word, $sword->quoted);
     }
-    function trivial_rights(Contact $user, PaperSearch $srch) {
-        return $this->csm->has_sole_contact($user->contactId)
+    function trivial_rights(PaperSearch $srch) {
+        return $this->csm->has_sole_contact($srch->user->contactId)
             && !$this->csm->test(0);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
