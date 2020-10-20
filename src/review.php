@@ -152,6 +152,18 @@ class ReviewField implements JsonSerializable {
         $this->_typical_score = false;
     }
 
+    /** @param string $s
+     * @return string */
+    static function clean_name($s) {
+        while ($s !== ""
+               && $s[strlen($s) - 1] === ")"
+               && ($lparen = strrpos($s, "(")) !== false
+               && preg_match('/\A\((?:(?:hidden|invisible|visible|shown)(?:| (?:from|to|from the|to the) authors?)|pc only|shown only to chairs|secret|private)(?:| until decision)[.?!]?\)\z/', substr($s, $lparen))) {
+            $s = rtrim(substr($s, 0, $lparen));
+        }
+        return $s;
+    }
+
     function unparse_json($for_settings = false) {
         $j = (object) array("name" => $this->name);
         if ($this->description) {
@@ -520,7 +532,6 @@ class ReviewForm implements JsonSerializable {
     public $fmap;      // all fields, whether or not displayed, key id
     /** @var array<string,ReviewField> */
     public $forder;    // displayed fields in display order, key id
-    public $fieldName;
 
     static public $revtype_names = [
         "None", "External", "PC", "Secondary", "Primary", "Meta"
@@ -552,7 +563,7 @@ class ReviewForm implements JsonSerializable {
 
     function __construct($rfj, Conf $conf) {
         $this->conf = $conf;
-        $this->fmap = $this->fieldName = $this->forder = [];
+        $this->fmap = $this->forder = [];
 
         // parse JSON
         if (!$rfj) {
@@ -579,7 +590,6 @@ class ReviewForm implements JsonSerializable {
         $do = 0;
         foreach ($this->fmap as $f) {
             if ($f->displayed) {
-                $this->fieldName[strtolower($f->name)] = $f->id;
                 $f->display_order = ++$do;
                 $this->forder[$f->id] = $f;
             }
@@ -1678,16 +1688,13 @@ class ReviewValues extends MessageSet {
                     while (substr($text, strlen($line), 6) === "==+== ") {
                         $pos = strpos($text, "\n", strlen($line));
                         $xline = ($pos === false ? substr($text, strlen($line)) : substr($text, strlen($line), $pos + 1 - strlen($line)));
-                        if (preg_match('/^==\+==\s+(.*?)\s*$/', $xline, $xmatch))
+                        if (preg_match('/^==\+==\s+(.*?)\s*$/', $xline, $xmatch)) {
                             $match[1] .= " " . $xmatch[1];
+                        }
                         $line .= $xline;
                     }
-                    $field = $this->rf->fieldName[strtolower($match[1])] ?? null;
-                    if (!$field) {
-                        $fname = preg_replace('/\s*\((?:hidden from authors(?: until decision)?|PC only|shown only to chairs|secret)\)\z/i', "", $match[1]);
-                        $field = $this->rf->fieldName[strtolower($fname)] ?? null;
-                    }
-                    if ($field) {
+                    if (($f = $this->conf->find_review_field($match[1]))) {
+                        $field = $f->id;
                         $this->fieldLineno[$field] = $this->lineno;
                         $nfields++;
                     } else {

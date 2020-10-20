@@ -1513,6 +1513,9 @@ class Conf {
     /** @param string $text
      * @return ?ReviewField */
     function find_review_field($text) {
+        if ($text !== "" && $text[strlen($text) - 1] === ")") {
+            $text = ReviewField::clean_name($text);
+        }
         return $this->abbrev_matcher()->find1($text, self::MFLAG_REVIEW);
     }
     /** @param string $fid
