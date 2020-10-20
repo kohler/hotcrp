@@ -60,8 +60,11 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     private function populate_field($fj, ReviewField $f, SettingValues $sv, $fid) {
-        $sn = simplify_whitespace($sv->reqv("shortName_$fid") ?? "");
-        if ($sn === "<None>" || $sn === "<New field>" || $sn === "Field name" || $sn === "") {
+        $sn = $fj->name;
+        if ($sv->has_reqv("shortName_$fid")) {
+            $sn = simplify_whitespace($sv->reqv("shortName_$fid"));
+        }
+        if (in_array($sn, ["<None>", "<New field>", "Field name", ""], true)) {
             $sn = "";
         } else {
             $fj->name = $sn;
@@ -70,7 +73,7 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($sv->has_reqv("order_$fid")) {
             $pos = cvtnum($sv->reqv("order_$fid"));
         } else {
-            $pos = get($fj, "position", -1);
+            $pos = $fj->position ?? -1;
         }
         if ($pos > 0 && $sn == ""
             && $sv->has_reqv("description_$fid")
@@ -152,22 +155,25 @@ class ReviewForm_SettingParser extends SettingParser {
         $max_fields = ["s" => "s00", "t" => "t00"];
         foreach ($sv->conf->review_form()->fmap as $fid => $f) {
             $fs[$f->short_id] = true;
-            if (strcmp($f->short_id, $max_fields[$f->short_id[0]]) > 0)
+            if (strcmp($f->short_id, $max_fields[$f->short_id[0]]) > 0) {
                 $max_fields[$f->short_id[0]] = $f->short_id;
+            }
         }
         for ($i = 1; ; ++$i) {
             $fid = sprintf("s%02d", $i);
-            if ($sv->has_reqv("shortName_$fid") || $sv->has_reqv("order_$fid"))
+            if ($sv->has_reqv("shortName_$fid") || $sv->has_reqv("order_$fid")) {
                 $fs[$fid] = true;
-            else if (strcmp($fid, $max_fields["s"]) > 0)
+            } else if (strcmp($fid, $max_fields["s"]) > 0) {
                 break;
+            }
         }
         for ($i = 1; ; ++$i) {
             $fid = sprintf("t%02d", $i);
-            if ($sv->has_reqv("shortName_$fid") || $sv->has_reqv("order_$fid"))
+            if ($sv->has_reqv("shortName_$fid") || $sv->has_reqv("order_$fid")) {
                 $fs[$fid] = true;
-            else if (strcmp($fid, $max_fields["t"]) > 0)
+            } else if (strcmp($fid, $max_fields["t"]) > 0) {
                 break;
+            }
         }
         return $fs;
     }
@@ -181,26 +187,16 @@ class ReviewForm_SettingParser extends SettingParser {
 
         $rf = $sv->conf->review_form();
         foreach (self::requested_fields($sv) as $fid => $x) {
-            $finfo = ReviewInfo::field_info($fid, $sv->conf);
-            if (!$finfo) {
-                if ($sv->has_reqv("order_$fid") && $sv->reqv("order_$fid") > 0) {
-                    $sv->error_at("shortName_$fid", "Too many review fields. You must delete some other fields before adding this one.");
-                }
-                continue;
-            }
-            if (isset($rf->fmap[$finfo->id])) {
-                $f = $rf->fmap[$finfo->id];
-            } else {
-                $f = new ReviewField($finfo, $sv->conf);
-            }
-            $fj = $f->unparse_json(true);
-            if ($sv->has_reqv("shortName_$fid")) {
+            if (($finfo = ReviewInfo::field_info($fid, $sv->conf))) {
+                $f = $rf->fmap[$finfo->id] ?? new ReviewField($finfo, $sv->conf);
+                $fj = $f->unparse_json(true);
                 $this->populate_field($fj, $f, $sv, $fid);
                 $xf = clone $f;
                 $xf->assign($fj);
-                $fj = $xf->unparse_json(true);
+                $this->nrfj->{$finfo->id} = $xf->unparse_json(true);
+            } else if ($sv->has_reqv("order_$fid") && $sv->reqv("order_$fid") > 0) {
+                $sv->error_at("shortName_$fid", "Too many review fields. You must delete some other fields before adding this one.");
             }
-            $this->nrfj->{$finfo->id} = $fj;
         }
 
         $sv->request_write_lock("PaperReview");

@@ -528,7 +528,7 @@ assert_search_papers($user_chair, "tex11:butt", "1");
 
 // simplify review form
 $sx = ["has_review_form" => 1];
-for ($i = 2; $i <= 16; ++$i) {
+for ($i = 3; $i <= 16; ++$i) {
     $sx[sprintf("order_s%02d", $i)] = $sx[sprintf("order_t%02d", $i)] = -1;
 }
 $sv = SettingValues::make_request($user_chair, $sx);
