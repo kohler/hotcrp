@@ -7,10 +7,8 @@ class ReviewForm_SettingParser extends SettingParser {
     private $byname;
     private $option_error;
 
-    public static $setting_prefixes = ["shortName_", "description_", "order_", "authorView_", "options_", "option_class_prefix_", "round_list_"];
-
     private function check_options(SettingValues $sv, $fid, $fj) {
-        $text = cleannl($sv->reqv("options_$fid"));
+        $text = cleannl($sv->reqv("rf_{$fid}_options"));
         $letters = ($text && ord($text[0]) >= 65 && ord($text[0]) <= 90);
         $expect = ($letters ? "[A-Z]" : "[1-9][0-9]*");
 
@@ -61,8 +59,8 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function populate_field($fj, ReviewField $f, SettingValues $sv, $fid) {
         $sn = $fj->name;
-        if ($sv->has_reqv("shortName_$fid")) {
-            $sn = simplify_whitespace($sv->reqv("shortName_$fid"));
+        if ($sv->has_reqv("rf_{$fid}_name")) {
+            $sn = simplify_whitespace($sv->reqv("rf_{$fid}_name"));
         }
         if (in_array($sn, ["<None>", "<New field>", "Field name", ""], true)) {
             $sn = "";
@@ -70,48 +68,48 @@ class ReviewForm_SettingParser extends SettingParser {
             $fj->name = $sn;
         }
 
-        if ($sv->has_reqv("order_$fid")) {
-            $pos = cvtnum($sv->reqv("order_$fid"));
+        if ($sv->has_reqv("rf_{$fid}_position")) {
+            $pos = cvtnum($sv->reqv("rf_{$fid}_position"));
         } else {
             $pos = $fj->position ?? -1;
         }
         if ($pos > 0 && $sn == ""
-            && $sv->has_reqv("description_$fid")
-            && trim($sv->reqv("description_$fid")) === ""
+            && $sv->has_reqv("rf_{$fid}_description")
+            && trim($sv->reqv("rf_{$fid}_description")) === ""
             && (!$f->has_options
-                || ($sv->has_reqv("options_$fid")
-                    ? trim($sv->reqv("options_$fid")) === ""
+                || ($sv->has_reqv("rf_{$fid}_options")
+                    ? trim($sv->reqv("rf_{$fid}_options")) === ""
                     : empty($fj->options)))) {
             $pos = -1;
         }
         if ($pos > 0) {
             if ($sn === "") {
-                $sv->error_at("shortName_$fid", "Missing review field name.");
+                $sv->error_at("rf_{$fid}_name", "Missing review field name.");
             } else if (isset($this->byname[strtolower($sn)])) {
-                $sv->error_at("shortName_$fid", "Cannot reuse review field name “" . htmlspecialchars($sn) . "”.");
-                $sv->error_at("shortName_" . $this->byname[strtolower($sn)], false);
+                $sv->error_at("rf_{$fid}_name", "Cannot reuse review field name “" . htmlspecialchars($sn) . "”.");
+                $sv->error_at("rf_" . $this->byname[strtolower($sn)] . "_name", false);
             } else if (ReviewField::clean_name($sn) !== $sn
                        && $sn !== $f->name
-                       && !$sv->reqv("name_$fid:force")) {
+                       && !$sv->reqv("rf_{$fid}_forcename")) {
                 $lparen = strrpos($sn, "(");
-                $sv->error_at("shortName_$fid", "Don’t include “" . htmlspecialchars(substr($sn, $lparen)) . "” in the review field name. Visibility descriptions are added automatically.");
+                $sv->error_at("rf_{$fid}_name", "Don’t include “" . htmlspecialchars(substr($sn, $lparen)) . "” in the review field name. Visibility descriptions are added automatically.");
             } else {
                 $this->byname[strtolower($sn)] = $fid;
             }
         }
 
-        if ($sv->has_reqv("authorView_$fid")) {
-            $fj->visibility = $sv->reqv("authorView_$fid");
+        if ($sv->has_reqv("rf_{$fid}_visibility")) {
+            $fj->visibility = $sv->reqv("rf_{$fid}_visibility");
         }
 
-        if ($sv->has_reqv("description_$fid")) {
-            $x = CleanHTML::basic_clean($sv->reqv("description_$fid"), $err);
+        if ($sv->has_reqv("rf_{$fid}_description")) {
+            $x = CleanHTML::basic_clean($sv->reqv("rf_{$fid}_description"), $err);
             if ($x !== false) {
                 $fj->description = trim($x);
                 if ($fj->description === "")
                     unset($fj->description);
             } else if ($pos > 0) {
-                $sv->error_at("description_$fid", htmlspecialchars($sn) . " description: " . $err);
+                $sv->error_at("rf_{$fid}_description", htmlspecialchars($sn) . " description: " . $err);
             }
         }
 
@@ -123,29 +121,29 @@ class ReviewForm_SettingParser extends SettingParser {
 
         if ($f->has_options) {
             $ok = true;
-            if ($sv->has_reqv("options_$fid")) {
+            if ($sv->has_reqv("rf_{$fid}_options")) {
                 $ok = $this->check_options($sv, $fid, $fj);
             }
             if ((!$ok || count($fj->options) < 2) && $pos > 0) {
-                $sv->error_at("options_$fid", htmlspecialchars($sn) . ": Invalid choices.");
+                $sv->error_at("rf_{$fid}_options", htmlspecialchars($sn) . ": Invalid choices.");
                 if ($this->option_error) {
                     $sv->error_at(null, $this->option_error);
                 }
                 $this->option_error = false;
             }
-            if ($sv->has_reqv("option_class_prefix_$fid")) {
+            if ($sv->has_reqv("rf_{$fid}_colors")) {
                 $prefixes = ["sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr"];
-                $pindex = array_search($sv->reqv("option_class_prefix_$fid"), $prefixes) ? : 0;
-                if ($sv->reqv("option_class_prefix_flipped_$fid")) {
+                $pindex = array_search($sv->reqv("rf_{$fid}_colors"), $prefixes) ? : 0;
+                if ($sv->reqv("rf_{$fid}_colorsflipped")) {
                     $pindex ^= 1;
                 }
                 $fj->option_class_prefix = $prefixes[$pindex];
             }
         }
 
-        if ($sv->has_reqv("round_list_$fid")) {
+        if ($sv->has_reqv("rf_{$fid}_rounds")) {
             $fj->round_mask = 0;
-            foreach (explode(" ", trim($sv->reqv("round_list_$fid"))) as $round_name) {
+            foreach (explode(" ", trim($sv->reqv("rf_{$fid}_rounds"))) as $round_name) {
                 if (strcasecmp($round_name, "all") === 0) {
                     $fj->round_mask = 0;
                 } else if ($round_name !== "") {
@@ -166,7 +164,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         for ($i = 1; ; ++$i) {
             $fid = sprintf("s%02d", $i);
-            if ($sv->has_reqv("shortName_$fid") || $sv->has_reqv("order_$fid")) {
+            if ($sv->has_reqv("rf_{$fid}_name") || $sv->has_reqv("rf_{$fid}_position")) {
                 $fs[$fid] = true;
             } else if (strcmp($fid, $max_fields["s"]) > 0) {
                 break;
@@ -174,7 +172,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         for ($i = 1; ; ++$i) {
             $fid = sprintf("t%02d", $i);
-            if ($sv->has_reqv("shortName_$fid") || $sv->has_reqv("order_$fid")) {
+            if ($sv->has_reqv("rf_{$fid}_name") || $sv->has_reqv("rf_{$fid}_position")) {
                 $fs[$fid] = true;
             } else if (strcmp($fid, $max_fields["t"]) > 0) {
                 break;
@@ -199,8 +197,9 @@ class ReviewForm_SettingParser extends SettingParser {
                 $xf = clone $f;
                 $xf->assign($fj);
                 $this->nrfj->{$finfo->id} = $xf->unparse_json(true);
-            } else if ($sv->has_reqv("order_$fid") && $sv->reqv("order_$fid") > 0) {
-                $sv->error_at("shortName_$fid", "Too many review fields. You must delete some other fields before adding this one.");
+            } else if ($sv->has_reqv("rf_{$fid}_position")
+                       && $sv->reqv("rf_{$fid}_position") > 0) {
+                $sv->error_at("rf_{$fid}_name", "Too many review fields. You must delete some other fields before adding this one.");
             }
         }
 
@@ -299,6 +298,13 @@ class ReviewForm_SettingParser extends SettingParser {
         if (!$sv->update("review_form", json_encode_db($this->nrfj))) {
             return;
         }
+        $reqk = [];
+        foreach ($sv->req as $k => $v) {
+            if (str_starts_with($k, "rf_")
+                && ($colon = strpos($k, "_", 3)) !== false)
+                $reqk[substr($k, 0, $colon)][] = $k;
+        }
+
         $oform = $sv->conf->review_form();
         $nform = new ReviewForm($this->nrfj, $sv->conf);
         $clear_fields = $clear_options = [];
@@ -329,8 +335,8 @@ class ReviewForm_SettingParser extends SettingParser {
                 && $nf->view_score >= VIEWSCORE_AUTHORDEC) {
                 $assign_ordinal = true;
             }
-            foreach (self::$setting_prefixes as $fx) {
-                $sv->unset_req($fx . $nf->short_id);
+            foreach ($reqk["rf_" . $nf->short_id] ?? [] as $k) {
+                $sv->unset_req($k);
             }
         }
         $sv->conf->invalidate_caches(["rf" => true]);
@@ -387,104 +393,104 @@ class ReviewForm_SettingParser extends SettingParser {
 }
 
 class ReviewForm_SettingRenderer {
-static function render(SettingValues $sv) {
-    $samples = json_decode(file_get_contents(SiteLoader::find("etc/reviewformlibrary.json")));
+    static function render(SettingValues $sv) {
+        $samples = json_decode(file_get_contents(SiteLoader::find("etc/reviewformlibrary.json")));
 
-    $rf = $sv->conf->review_form();
-    $req = [];
-    if ($sv->use_req()) {
-        foreach (array_keys(ReviewForm_SettingParser::requested_fields($sv)) as $fid) {
-            foreach (ReviewForm_SettingParser::$setting_prefixes as $fx)
-                if ($sv->has_reqv("$fx$fid"))
-                    $req["$fx$fid"] = $sv->reqv("$fx$fid");
-        }
-    }
-
-    Ht::stash_html('<div id="review_form_caption_description" class="hidden">'
-      . '<p>Enter an HTML description for the review form.
-Include any guidance you’d like to provide for reviewers.
-Note that complex HTML will not appear on offline review forms.</p></div>'
-      . '<div id="review_form_caption_options" class="hidden">'
-      . '<p>Enter one option per line, numbered starting from 1 (higher numbers
-are better). For example:</p>
-<pre class="entryexample dark">1. Reject
-2. Weak reject
-3. Weak accept
-4. Accept</pre>
-<p>Or use consecutive capital letters (lower letters are better).</p>
-<p>Normally scores are mandatory: a review with a missing score cannot be
-submitted. Add a “<code>No entry</code>” line to make the score optional.</p></div>');
-
-    $rfj = [];
-    foreach ($rf->fmap as $f) {
-        $rfj[$f->short_id] = $f->unparse_json();
-    }
-
-    // track whether fields have any nonempty values
-    $where = ["false", "false"];
-    foreach ($rf->fmap as $f) {
-        $fj = $rfj[$f->short_id];
-        $fj->internal_id = $f->id;
-        $fj->has_any_nonempty = false;
-        if ($f->json_storage) {
-            if ($f->has_options) {
-                $where[0] = "sfields is not null";
-            } else {
-                $where[1] = "tfields is not null";
-            }
-        } else {
-            if ($f->has_options) {
-                $where[] = "{$f->main_storage}!=0";
-            } else {
-                $where[] = "coalesce({$f->main_storage},'')!=''";
+        $rf = $sv->conf->review_form();
+        $req = [];
+        if ($sv->use_req()) {
+            foreach ($sv->req as $k => $v) {
+                if (str_starts_with($k, "rf_")
+                    && ($colon = strpos($k, "_", 3)) !== false)
+                    $req[$k] = $v;
             }
         }
-    }
 
-    $unknown_nonempty = array_values($rfj);
-    $limit = 0;
-    while (!empty($unknown_nonempty)) {
-        $result = $sv->conf->qe("select * from PaperReview where " . join(" or ", $where) . " limit $limit,100");
-        $expect_limit = $limit + 100;
-        while (($rrow = ReviewInfo::fetch($result, null, $sv->conf))) {
-            for ($i = 0; $i < count($unknown_nonempty); ++$i) {
-                $fj = $unknown_nonempty[$i];
-                $fid = $fj->internal_id;
-                if (isset($rrow->$fid)
-                    && (isset($fj->options) ? (int) $rrow->$fid !== 0 : $rrow->$fid !== "")) {
-                    $fj->has_any_nonempty = true;
-                    array_splice($unknown_nonempty, $i, 1);
+        Ht::stash_html('<div id="review_form_caption_description" class="hidden">'
+          . '<p>Enter an HTML description for the review form.
+    Include any guidance you’d like to provide for reviewers.
+    Note that complex HTML will not appear on offline review forms.</p></div>'
+          . '<div id="review_form_caption_options" class="hidden">'
+          . '<p>Enter one option per line, numbered starting from 1 (higher numbers
+    are better). For example:</p>
+    <pre class="entryexample dark">1. Reject
+    2. Weak reject
+    3. Weak accept
+    4. Accept</pre>
+    <p>Or use consecutive capital letters (lower letters are better).</p>
+    <p>Normally scores are mandatory: a review with a missing score cannot be
+    submitted. Add a “<code>No entry</code>” line to make the score optional.</p></div>');
+
+        $rfj = [];
+        foreach ($rf->fmap as $f) {
+            $rfj[$f->short_id] = $f->unparse_json();
+        }
+
+        // track whether fields have any nonempty values
+        $where = ["false", "false"];
+        foreach ($rf->fmap as $f) {
+            $fj = $rfj[$f->short_id];
+            $fj->internal_id = $f->id;
+            $fj->has_any_nonempty = false;
+            if ($f->json_storage) {
+                if ($f->has_options) {
+                    $where[0] = "sfields is not null";
                 } else {
-                    ++$i;
+                    $where[1] = "tfields is not null";
+                }
+            } else {
+                if ($f->has_options) {
+                    $where[] = "{$f->main_storage}!=0";
+                } else {
+                    $where[] = "coalesce({$f->main_storage},'')!=''";
                 }
             }
-            ++$limit;
         }
-        Dbl::free($result);
-        if ($limit !== $expect_limit) { // ran out of reviews
-            break;
+
+        $unknown_nonempty = array_values($rfj);
+        $limit = 0;
+        while (!empty($unknown_nonempty)) {
+            $result = $sv->conf->qe("select * from PaperReview where " . join(" or ", $where) . " limit $limit,100");
+            $expect_limit = $limit + 100;
+            while (($rrow = ReviewInfo::fetch($result, null, $sv->conf))) {
+                for ($i = 0; $i < count($unknown_nonempty); ++$i) {
+                    $fj = $unknown_nonempty[$i];
+                    $fid = $fj->internal_id;
+                    if (isset($rrow->$fid)
+                        && (isset($fj->options) ? (int) $rrow->$fid !== 0 : $rrow->$fid !== "")) {
+                        $fj->has_any_nonempty = true;
+                        array_splice($unknown_nonempty, $i, 1);
+                    } else {
+                        ++$i;
+                    }
+                }
+                ++$limit;
+            }
+            Dbl::free($result);
+            if ($limit !== $expect_limit) { // ran out of reviews
+                break;
+            }
         }
-    }
 
-    // output settings json
-    Ht::stash_script("review_form_settings({"
-        . "fields:" . json_encode_browser($rfj)
-        . ", samples:" . json_encode_browser($samples)
-        . ", errf:" . json_encode_browser($sv->message_field_map())
-        . ", req:" . json_encode_browser($req)
-        . ", stemplate:" . json_encode_browser(ReviewField::make_template(true, $sv->conf))
-        . ", ttemplate:" . json_encode_browser(ReviewField::make_template(false, $sv->conf))
-        . "})");
+        // output settings json
+        Ht::stash_script("review_form_settings({"
+            . "fields:" . json_encode_browser($rfj)
+            . ", samples:" . json_encode_browser($samples)
+            . ", errf:" . json_encode_browser($sv->message_field_map())
+            . ", req:" . json_encode_browser($req)
+            . ", stemplate:" . json_encode_browser(ReviewField::make_template(true, $sv->conf))
+            . ", ttemplate:" . json_encode_browser(ReviewField::make_template(false, $sv->conf))
+            . "})");
 
-    echo Ht::hidden("has_review_form", 1);
-    if (!$sv->conf->can_some_author_view_review()) {
-        echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';
+        echo Ht::hidden("has_review_form", 1);
+        if (!$sv->conf->can_some_author_view_review()) {
+            echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';
+        }
+        echo "<div id=\"reviewform_container\"></div>",
+            "<div id=\"reviewform_removedcontainer\"></div>",
+            Ht::button("Add score field", ["class" => "settings-add-review-field score"]),
+            "<span class=\"sep\"></span>",
+            Ht::button("Add text field", ["class" => "settings-add-review-field"]);
+        Ht::stash_script('$("button.settings-add-review-field").on("click", function () { review_form_settings.add(hasClass(this,"score")?1:0) })');
     }
-    echo "<div id=\"reviewform_container\"></div>",
-        "<div id=\"reviewform_removedcontainer\"></div>",
-        Ht::button("Add score field", ["class" => "settings-add-review-field score"]),
-        "<span class=\"sep\"></span>",
-        Ht::button("Add text field", ["class" => "settings-add-review-field"]);
-    Ht::stash_script('$("button.settings-add-review-field").on("click", function () { review_form_settings.add(hasClass(this,"score")?1:0) })');
-}
 }
