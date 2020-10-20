@@ -670,6 +670,22 @@ xassert($tf->check_and_save($user_diot));
 $rrow = fetch_review($paper18, $user_diot);
 xassert_eqq($rrow->t04, "That was the stuff I want to add for the authors’ response.\n");
 
+$sv = SettingValues::make_request($user_chair, [
+    "has_review_form" => 1,
+    "shortName_t04" => "Questions for authors’ response (hidden from authors)",
+    "name_t04:force" => 1
+]);
+xassert($sv->execute());
+
+$review18A3 = str_replace("That was the stuff", "Whence the stuff",
+    str_replace("authors' response\n", "authors' response (hidden from authors)\n", $review18A2));
+$tf = ReviewValues::make_text($Conf->review_form(), $review18A3, "review18A3.txt");
+xassert($tf->parse_text(false));
+xassert($tf->check_and_save($user_diot));
+
+$rrow = fetch_review($paper18, $user_diot);
+xassert_eqq($rrow->t04, "Whence the stuff I want to add for the authors’ response.\n");
+
 // check some review visibility policies
 $user_external = Contact::create($Conf, null, ["email" => "external@_.com", "name" => "External Reviewer"]);
 assert(!!$user_external);

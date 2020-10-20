@@ -91,7 +91,8 @@ class ReviewForm_SettingParser extends SettingParser {
                 $sv->error_at("shortName_$fid", "Cannot reuse review field name “" . htmlspecialchars($sn) . "”.");
                 $sv->error_at("shortName_" . $this->byname[strtolower($sn)], false);
             } else if (ReviewField::clean_name($sn) !== $sn
-                       && $sn !== $f->name) {
+                       && $sn !== $f->name
+                       && !$sv->reqv("name_$fid:force")) {
                 $lparen = strrpos($sn, "(");
                 $sv->error_at("shortName_$fid", "Don’t include “" . htmlspecialchars(substr($sn, $lparen)) . "” in the review field name. Visibility descriptions are added automatically.");
             } else {
