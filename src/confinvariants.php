@@ -7,12 +7,15 @@ class ConfInvariants {
     public $conf;
     /** @var array<string,true> */
     public $problems = [];
+    /** @var string */
+    public $prefix;
 
     /** @var ?list<string> */
     static private $invariant_row = null;
 
-    function __construct(Conf $conf) {
+    function __construct(Conf $conf, $prefix = "") {
         $this->conf = $conf;
+        $this->prefix = $prefix;
     }
 
     private function invariantq($q, $args = []) {
@@ -34,7 +37,7 @@ class ConfInvariants {
         foreach (self::$invariant_row ?? [] as $i => $v) {
             $text = str_replace("{{$i}}", $v, $text);
         }
-        trigger_error("{$this->conf->dbname} invariant error: $text");
+        trigger_error("{$this->prefix}{$this->conf->dbname} invariant error: $text");
     }
 
     /** @return bool */
@@ -181,23 +184,7 @@ class ConfInvariants {
         }
 
         // autosearches are correct
-        $dt = $this->conf->tags();
-        if ($dt->has_autosearch) {
-            $autosearch_dts = array_values($dt->filter("autosearch"));
-            $q = join(" THEN ", array_map(function ($t) {
-                return "((" . $t->autosearch . ") XOR #" . $t->tag . ")";
-            }, $autosearch_dts));
-            $search = new PaperSearch($this->conf->root_user(), ["q" => $q, "t" => "all"]);
-            $p = [];
-            foreach ($search->paper_ids() as $pid) {
-                $then = $search->thenmap[$pid] ?? 0;
-                if (!isset($p[$then])) {
-                    $dt = $autosearch_dts[$then];
-                    $this->invariant_error("autosearch", "autosearch #" . $dt->tag . " disagrees with search " . $dt->autosearch . " on #" . $pid);
-                    $p[$then] = true;
-                }
-            }
-        }
+        $this->exec_automatic_tags();
 
         // comments are nonempty
         $any = $this->invariantq("select paperId, commentId from PaperComment where comment is null and commentOverflow is null and not exists (select * from DocumentLink where paperId=PaperComment.paperId and linkId=PaperComment.commentId and linkType>=0 and linkType<1024) limit 1");
@@ -215,6 +202,62 @@ class ConfInvariants {
         $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (reviewSubmitted is not null or reviewOrdinal>0) limit 1");
         if ($any) {
             $this->invariant_error("submitted/ordinal review #{0}/{1} has no timeDisplayed");
+        }
+
+        return $this;
+    }
+
+    /** @return $this */
+    function exec_automatic_tags() {
+        $dt = $this->conf->tags();
+        if (!$dt->has_automatic) {
+            return $this;
+        }
+
+        $user = $this->conf->root_user();
+        $q = $qtags = [];
+        $autotags = $autosearches = $autoformulas = [];
+        foreach ($dt->filter("automatic") as $t) {
+            $srch = $t->automatic_search();
+            $ftext = $t->automatic_formula_expression();
+            if ($srch !== null) {
+                $q[] = "(($srch) XOR #{$t->tag})";
+                $qtags[] = $t;
+            }
+            if ($ftext !== false && $ftext !== "0") {
+                $f = new Formula($ftext);
+                if ($f->check($user)) {
+                    $autotags[] = $t->tag;
+                    $autosearches[] = new PaperSearch($user, ["q" => $srch ?? "ALL", "t" => "all"]);
+                    $autoformulas[] = $f->compile_function();
+                }
+            }
+        }
+
+        if (!empty($q)) {
+            $search = new PaperSearch($user, ["q" => join(" THEN ", $q), "t" => "all"]);
+            foreach ($search->paper_ids() as $pid) {
+                $then = $search->thenmap[$pid] ?? 0;
+                if (($t = $qtags[$then] ?? null)) {
+                    $this->invariant_error("autosearch", "automatic tag #" . $t->tag . " disagrees with search " . $t->automatic_search() . " on #" . $pid);
+                    unset($qtags[$then]);
+                }
+            }
+        }
+
+        if (!empty($autotags)) {
+            $search = $this->conf->paper_set(["q" => "#" . join(" OR #", $autotags), "t" => "all"], $user);
+            foreach ($search as $prow) {
+                foreach ($autotags as $i => $tag) {
+                    if ($tag !== null
+                        && $prow->has_tag($tag)
+                        && $autosearches[$i]->test($prow)
+                        && ($v0 = $prow->tag_value($tag)) != ($v1 = call_user_func($autoformulas[$i], $prow, null, $user))) {
+                        $this->invariant_error("autosearch", "automatic tag #" . $tag . " has bad value " . json_encode($v0) . " (expected " . json_encode($v1) . ") on #" . $prow->paperId);
+                        $autotags[$i] = null;
+                    }
+                }
+            }
         }
 
         return $this;
@@ -283,13 +326,15 @@ class ConfInvariants {
         return $this;
     }
 
-    /** @return bool */
-    static function test_all(Conf $conf) {
-        return (new ConfInvariants($conf))->exec_all()->ok();
+    /** @param string $prefix
+     * @return bool */
+    static function test_all(Conf $conf, $prefix = "") {
+        return (new ConfInvariants($conf, $prefix))->exec_all()->ok();
     }
 
-    /** @return bool */
-    static function test_document_inactive(Conf $conf) {
-        return (new ConfInvariants($conf))->exec_document_inactive()->ok();
+    /** @param string $prefix
+     * @return bool */
+    static function test_document_inactive(Conf $conf, $prefix = "") {
+        return (new ConfInvariants($conf, $prefix))->exec_document_inactive()->ok();
     }
 }

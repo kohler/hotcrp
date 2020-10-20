@@ -4,7 +4,7 @@
 
 declare(strict_types=1);
 require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
-ConfInvariants::test_all($Conf);
+ConfInvariants::test_all($Conf, "test01.php:A: ");
 
 $Conf->save_setting("sub_open", 1);
 $Conf->save_setting("sub_update", Conf::$now + 10);
@@ -1176,10 +1176,10 @@ assert_search_papers($user_chair, "re:any 19", "19");
 assert_search_papers($user_chair, "re:1 19", "19");
 
 // check rev_tokens setting
-ConfInvariants::test_all($Conf);
+ConfInvariants::test_all($Conf, "test01.php:B ");
 xassert_assign($user_chair, "paper,action,user\n19,clearreview,anonymous\n");
 assert_search_papers($user_chair, "re:any 19", "");
-ConfInvariants::test_all($Conf);
+ConfInvariants::test_all($Conf, "test01.php:C: ");
 xassert_assign($user_chair, "paper,action,user\n19,review,anonymous\n");
 
 xassert_assign($user_chair, "paper,action,user\n19,review,anonymous\n");
@@ -1259,6 +1259,7 @@ xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
 // more tags
 $Conf->save_setting("tag_vote", 1, "vote#10 crap#3");
 $Conf->save_setting("tag_approval", 1, "app#0");
+$Conf->update_autosearch_tags();
 xassert_assign($user_chair,
     "paper,tag\n16,+huitema~vote#5 +crowcroft~vote#1 +crowcroft~crap#2 +estrin~app +estrin~crap#1 +estrin~bar");
 $paper16 = $user_chair->checked_paper_by_id(16);
@@ -1283,7 +1284,7 @@ xassert_eqq($paper16->all_tags_text(), " 4~bar#0");
 xassert_eqq($paper16->sorted_searchable_tags($user_marina), "");
 xassert_eqq($paper16->sorted_searchable_tags($user_estrin), " 4~bar#0");
 
-ConfInvariants::test_all($Conf);
+ConfInvariants::test_all($Conf, "test01.php:D: ");
 
 // author view capabilities and multiple blank users
 $blank1 = new Contact(null, $Conf);

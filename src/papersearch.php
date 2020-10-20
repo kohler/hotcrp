@@ -1643,8 +1643,8 @@ class PaperSearch {
      * @readonly */
     public $cxid;
 
-    /** @var Contact|null|false */
-    private $_reviewer_user = false;
+    /** @var ?Contact */
+    private $_reviewer_user;
     /** @var string */
     private $_named_limit;
     /** @var SearchTerm */
@@ -1752,20 +1752,19 @@ class PaperSearch {
 
         // reviewer
         if (($reviewer = $options["reviewer"] ?? null)) {
+            $ruser = null;
             if (is_string($reviewer)) {
-                if (strcasecmp($reviewer, $user->email) == 0) {
-                    $reviewer = $user;
+                if (strcasecmp($reviewer, $user->email) === 0) {
+                    $ruser = $user;
                 } else if ($user->can_view_pc()) {
-                    $reviewer = $this->conf->pc_member_by_email($reviewer);
-                } else {
-                    $reviewer = null;
+                    $ruser = $this->conf->pc_member_by_email($reviewer);
                 }
-            } else if (!is_object($reviewer) || !($reviewer instanceof Contact)) {
-                $reviewer = null;
+            } else if (is_object($reviewer) && ($reviewer instanceof Contact)) {
+                $ruser = $reviewer;
             }
-            if ($reviewer) {
-                assert($reviewer->contactId > 0);
-                $this->_reviewer_user = $reviewer;
+            if ($ruser && $ruser !== $this->user) {
+                assert($ruser->contactId > 0);
+                $this->_reviewer_user = $ruser;
             }
         }
 
@@ -1860,7 +1859,7 @@ class PaperSearch {
 
     /** @return Contact */
     function reviewer_user() {
-        return $this->_reviewer_user ? : $this->user;
+        return $this->_reviewer_user ?? $this->user;
     }
 
     /** @param string $text

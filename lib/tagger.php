@@ -151,17 +151,17 @@ class TagInfo {
     function has_order_anno() {
         return count($this->order_anno_list()) > 1;
     }
-    /** @return string|false */
+    /** @return ?string */
     function automatic_search() {
         if ($this->autosearch) {
             return $this->autosearch;
         } else if ($this->votish) {
             return "#*~" . $this->tag;
         } else {
-            return false;
+            return null;
         }
     }
-    /** @return string|false */
+    /** @return ?string */
     function automatic_formula_expression() {
         if ($this->autosearch) {
             return $this->autosearch_value ?? "0";
@@ -170,7 +170,7 @@ class TagInfo {
         } else if ($this->allotment) {
             return "sum.pc(#_~{$this->tag}) || null";
         } else {
-            return false;
+            return null;
         }
     }
 }
