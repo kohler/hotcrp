@@ -49,7 +49,7 @@ class Tag_SearchTerm extends SearchTerm {
 
         // expand automatic tags if requested
         $allterms = [];
-        if (true
+        if ($srch->expand_automatic
             && ($dt = $srch->conf->tags())->has_automatic) {
             $nomatch = [];
             foreach ($dt->filter("automatic") as $t) {
@@ -57,7 +57,7 @@ class Tag_SearchTerm extends SearchTerm {
                     && $t->automatic_formula_expression() === "0") {
                     $nomatch[] = " " . preg_quote($t->tag) . "#";
                     if ($value->test_value(0.0)) {
-                        $asrch = new PaperSearch($srch->conf->site_contact(), ["q" => $t->automatic_search(), "t" => "all"]);
+                        $asrch = new PaperSearch($srch->conf->root_user(), ["q" => $t->automatic_search(), "t" => "all"]);
                         $allterms[] = $asrch->term();
                     }
                 }

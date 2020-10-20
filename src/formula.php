@@ -2076,7 +2076,8 @@ class Formula implements JsonSerializable {
                                          $sortable) {
         $t = "";
         if ($user) {
-            $t .= "assert(\$contact->contactXid === $user->contactXid);\n  ";
+            $t .= "assert(\$contact->contactXid === {$user->contactXid});\n  ";
+            // $t .= "if (\$contact->contactXid !== {$user->contactXid}) { error_log(debug_string_backtrace()); }\n  ";
         }
         $t .= $state->statement_text();
         if ($expr !== null) {
@@ -2124,7 +2125,7 @@ class Formula implements JsonSerializable {
     static function compile_indexes_function(Contact $user, $index_types) {
         $state = new FormulaCompiler($user);
         $g = $state->loop_variable($index_types);
-        $t = "assert(\$contact->contactXid === $user->contactXid);\n  "
+        $t = "assert(\$contact->contactXid === {$user->contactXid});\n  "
             . join("\n  ", $state->gstmt)
             . "\n  return array_keys($g);\n";
         $args = '$prow, $contact';
