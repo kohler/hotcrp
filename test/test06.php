@@ -643,6 +643,33 @@ xassert_eqq($rrow18d2->t01, $gettysburg2);
 ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch());
 xassert_eqq($rrow18d2->t01, $gettysburg);
 
+// offline review parsing for UTF-8 review questions
+$sv = SettingValues::make_request($user_chair, [
+    "has_review_form" => 1,
+    "shortName_t04" => "Questions for authors’ response",
+    "description_t04" => "Specific questions that could affect your accept/reject decision. Remember that the authors have limited space and must respond to all reviewers.",
+    "authorView_t04" => "au",
+    "order_t04" => 5
+]);
+xassert($sv->execute());
+
+$review18A = file_get_contents(SiteLoader::find("test/review18A.txt"));
+$tf = ReviewValues::make_text($Conf->review_form(), $review18A, "review18A.txt");
+xassert($tf->parse_text(false));
+xassert($tf->check_and_save($user_diot));
+
+$rrow = fetch_review($paper18, $user_diot);
+xassert_eqq($rrow->t04, "This is the stuff I want to add for the authors’ response.\n");
+
+$review18A2 = str_replace("This is the stuff", "That was the stuff",
+    str_replace("authors’ response\n", "authors' response\n", $review18A));
+$tf = ReviewValues::make_text($Conf->review_form(), $review18A2, "review18A2.txt");
+xassert($tf->parse_text(false));
+xassert($tf->check_and_save($user_diot));
+
+$rrow = fetch_review($paper18, $user_diot);
+xassert_eqq($rrow->t04, "That was the stuff I want to add for the authors’ response.\n");
+
 // check some review visibility policies
 $user_external = Contact::create($Conf, null, ["email" => "external@_.com", "name" => "External Reviewer"]);
 assert(!!$user_external);
