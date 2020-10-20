@@ -2758,6 +2758,7 @@ class Contact {
             $rights = $this->rights($prow);
             return $rights->can_administer;
         } else {
+            // XXX deprecated
             error_log(debug_string_backtrace());
             return $this->privChair;
         }
