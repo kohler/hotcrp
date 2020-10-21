@@ -71,7 +71,7 @@ function normalize_svg_path(s) {
             preva = res.length ? res[res.length - 1] : null;
             if (copen) {
                 if (cx != cx0 || cy != cy0)
-                    res.push(["L", cx0, cy0]);
+                    res.push(["L", cx, cy, cx0, cy0]);
                 res.push(["Z"]);
                 copen = false;
             }
@@ -176,8 +176,8 @@ function pathNodeMayBeNearer(pathNode, point, dist) {
     }
     // check bounding rectangle of path
     if ("clientX" in point) {
-        var bounds = pathNode.getBoundingClientRect();
-        var dx = point[0] - point.clientX, dy = point[1] - point.clientY;
+        var bounds = pathNode.getBoundingClientRect(),
+            dx = point[0] - point.clientX, dy = point[1] - point.clientY;
         if (bounds && oob(bounds.left + dx, bounds.top + dy,
                           bounds.right + dx, bounds.bottom + dy))
             return false;
