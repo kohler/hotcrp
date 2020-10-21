@@ -88,12 +88,35 @@ class Tag_SearchTerm extends SearchTerm {
         }
         return SearchTerm::combine("or", $allterms)->negate_if($negated);
     }
+    function is_sqlexpr_precise(PaperSearch $srch) {
+        return $this->tsm->is_sqlexpr_precise() && $srch->user->is_site_contact;
+    }
+    const SQLEXPR_PREFIX = 'exists (select * from PaperTag where paperId=Paper.paperId';
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->tsm->test_empty()) {
             return "true";
         } else {
             $sql = $this->tsm->sqlexpr("PaperTag");
-            return 'exists (select * from PaperTag where paperId=Paper.paperId' . ($sql ? " and $sql" : "") . ')';
+            return self::SQLEXPR_PREFIX . ($sql ? " and $sql" : "") . ')';
+        }
+    }
+    /** @param non-empty-list<string> $ff
+     * @return string */
+    static function combine_sqlexpr($ff) {
+        if (count($ff) === 1) {
+            return $ff[0];
+        } else {
+            $x = [];
+            foreach ($ff as $f) {
+                if ($f === "true" || !str_starts_with($f, self::SQLEXPR_PREFIX)) {
+                    return "true";
+                } else if ($f === self::SQLEXPR_PREFIX . ")") {
+                    return $f;
+                } else {
+                    $x[] = substr($f, strlen(self::SQLEXPR_PREFIX) + 5, -1);
+                }
+            }
+            return self::SQLEXPR_PREFIX . " and (" . join(" or ", $x) . "))";
         }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {

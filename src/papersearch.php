@@ -623,20 +623,32 @@ class Or_SearchTerm extends Op_SearchTerm {
         return $this->_finish_combine($newchild, false);
     }
 
-    function sqlexpr(SearchQueryInfo $sqi) {
+    static function or_sqlexpr($child, SearchQueryInfo $sqi) {
         $top = $sqi->top;
         $sqi->top = false;
         $ff = [];
-        foreach ($this->child as $subt) {
-            $ff[] = $subt->sqlexpr($sqi);
+        $tsf = [];
+        foreach ($child as $subt) {
+            if ($subt instanceof Tag_SearchTerm) {
+                $tsf[] = $subt->sqlexpr($sqi);
+            } else {
+                $ff[] = $subt->sqlexpr($sqi);
+            }
+        }
+        if ($tsf) {
+            $ff[] = Tag_SearchTerm::combine_sqlexpr($tsf);
         }
         $sqi->top = $top;
         return self::orjoin_sqlexpr($ff);
     }
+    function sqlexpr(SearchQueryInfo $sqi) {
+        return self::or_sqlexpr($this->child, $sqi);
+    }
     function exec(PaperInfo $row, PaperSearch $srch) {
-        foreach ($this->child as $subt)
+        foreach ($this->child as $subt) {
             if ($subt->exec($row, $srch))
                 return true;
+        }
         return false;
     }
     static function make_script_expression($child, PaperInfo $row, PaperSearch $srch) {
@@ -700,19 +712,23 @@ class Xor_SearchTerm extends Op_SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        $top = $sqi->top;
-        $sqi->top = false;
-        $ff = [];
         $xor = true;
         foreach ($this->child as $subt) {
-            $ff[] = "coalesce(" . $subt->sqlexpr($sqi) . ",0)";
             $xor = $xor && $subt->is_sqlexpr_precise($sqi->srch);
         }
-        $sqi->top = $top;
-        if (empty($ff)) {
+        if (empty($this->child)) {
             return "false";
+        } else if ($xor) {
+            $top = $sqi->top;
+            $sqi->top = false;
+            $ff = [];
+            foreach ($this->child as $subt) {
+                $ff[] = $subt->sqlexpr($sqi);
+            }
+            $sqi->top = $top;
+            return "(coalesce(" . join(",0) xor coalesce(", $ff) . ",0))";
         } else {
-            return "(" . join($xor ? " xor " : " or ", $ff) . ")";
+            return Or_SearchTerm::or_sqlexpr($this->child, $sqi);
         }
     }
     function exec(PaperInfo $row, PaperSearch $srch) {

@@ -25,6 +25,8 @@ class TagSearchMatcher {
     private $_tagpat = [];
     /** @var list<string> */
     private $_tagregex = [];
+    /** @var list<string> */
+    private $_sql_tagregex = [];
     /** @var ?string */
     private $_tag_exclusion_regex;
     /** @var list<CountMatcher> */
@@ -89,9 +91,12 @@ class TagSearchMatcher {
                     $this->add_tag($xcid . $checktag);
                 }
             } else if ($c === "*") {
-                $this->add_tag_regex(" \\d+" . str_replace("\\*", "\\S*", preg_quote($checktag)) . "#");
+                $ct = str_replace("\\*", "\\S*", preg_quote($checktag));
+                $this->add_tag_regex(" \\d+{$ct}#", "[0-9]+" . str_replace("\\S*", ".*", $ct));
             } else {
-                $this->add_tag_regex(" (?:" . join("|", $xcids) . ")" . str_replace("\\*", "\\S*", preg_quote($checktag)) . "#");
+                $ct = str_replace("\\*", "\\S*", preg_quote($checktag));
+                $cidt = join("|", $xcids);
+                $this->add_tag_regex(" (?:{$cidt}){$ct}#", "({$cidt})" . str_replace("\\S*", ".*", $ct));
             }
         } else {
             $this->add_tag($this->user->contactId . $xtag);
@@ -123,11 +128,13 @@ class TagSearchMatcher {
         $this->_re = null;
     }
 
-    /** @param string $regex */
-    function add_tag_regex($regex) {
+    /** @param string $regex
+     * @param string $sql_regex */
+    private function add_tag_regex($regex, $sql_regex) {
         assert($regex[0] === " " && $regex[strlen($regex) - 1] === "#");
         if ($this->_mtype >= 0)  {
             $this->_tagregex[] = $regex;
+            $this->_sql_tagregex[] = $sql_regex;
             $this->_mtype = 0;
             $this->_re = null;
         }
@@ -194,17 +201,36 @@ class TagSearchMatcher {
     }
 
 
-    /** @return string|false */
-    function sqlexpr($table) {
+    /** @return bool */
+    function is_sqlexpr_precise() {
+        return $this->_mtype > 0;
+    }
+
+    private function sqlexpr_tagpart($table) {
         if ($this->_mtype > 0) {
-            $s = [Dbl::format_query($this->user->conf->dblink,
-                                    "$table.tag?a", $this->_tagpat)];
+            return Dbl::format_query($this->user->conf->dblink, "$table.tag?a", $this->_tagpat);
+        } else if ($this->_mtype === 0) {
+            $res = $this->_sql_tagregex;
+            foreach ($this->_tagpat as $tp) {
+                $res[] = str_replace('\\*', '.*', preg_quote($tp));
+            }
+            return Dbl::format_query($this->user->conf->dblink, "$table.tag regexp ?",
+                    count($res) > 1 ? "^(" . join("|", $res) . ")$" : "^{$res[0]}$");
+        } else {
+            return null;
+        }
+    }
+
+    /** @return ?string */
+    function sqlexpr($table) {
+        if (($setp = $this->sqlexpr_tagpart($table)) !== null) {
+            $s = [$setp];
             foreach ($this->_valm as $valm) {
                 $s[] = "$table.tagIndex" . $valm->countexpr();
             }
             return "(" . join(" and ", $s) . ")";
         } else {
-            return false;
+            return null;
         }
     }
 
