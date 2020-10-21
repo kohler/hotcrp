@@ -209,7 +209,8 @@ class TagSearchMatcher {
     private function sqlexpr_tagpart($table) {
         if ($this->_mtype > 0) {
             return Dbl::format_query($this->user->conf->dblink, "$table.tag?a", $this->_tagpat);
-        } else if ($this->_mtype === 0) {
+        } else if ($this->_mtype === 0
+                   && (!empty($this->_sql_tagregex) || !empty($this->_tagpat))) {
             $res = $this->_sql_tagregex;
             foreach ($this->_tagpat as $tp) {
                 $res[] = str_replace('\\*', '.*', preg_quote($tp));
