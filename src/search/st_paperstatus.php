@@ -25,7 +25,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
             return new PaperStatus_SearchTerm($fval);
         }
     }
-    function trivial_rights(PaperSearch $srch) {
+    function is_sqlexpr_precise(PaperSearch $srch) {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {

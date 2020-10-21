@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CountMatcher {
+    /** @var string */
     private $_countexpr;
     private $allowed = 0;
     private $value = 0;
@@ -13,6 +14,7 @@ class CountMatcher {
                                  "≥" => 6, ">=" => 6, ">" => 4);
     static public $oparray = array(false, "<", "=", "<=", ">", "!=", ">=", false);
 
+    /** @param string $countexpr */
     function __construct($countexpr) {
         if ((string) $countexpr !== "" && !$this->set_countexpr($countexpr)) {
             error_log(caller_landmark() . ": bogus countexpr $countexpr");
@@ -28,19 +30,24 @@ class CountMatcher {
             return false;
         }
     }
+    /** @return bool */
     function ok() {
         return $this->allowed !== 0;
     }
-    /** @param int|float $n */
+    /** @param int|float $n
+     * @return bool */
     function test($n) {
         return self::compare($n, $this->allowed, $this->value);
     }
+    /** @param array<mixed,int|float> $x
+     * @return array<mixed,int|float> */
     function filter($x) {
         return array_filter($x, [$this, "test"]);
     }
     /** @param int|float $x
      * @param int|string $compar
-     * @param int|float $y */
+     * @param int|float $y
+     * @return bool */
     static function compare($x, $compar, $y) {
         if (!is_int($compar)) {
             $compar = self::$opmap[$compar];
@@ -65,6 +72,9 @@ class CountMatcher {
             return $compar_y;
         }
     }
+    /** @param int|float $x
+     * @param list<int|float>|string $compar_y
+     * @return bool */
     static function compare_using($x, $compar_y) {
         if (is_array($compar_y)) {
             return in_array($x, $compar_y);
@@ -82,17 +92,21 @@ class CountMatcher {
             return $cm->filter($x);
         }
     }
+    /** @return string */
     function compar() {
         assert(!!$this->allowed);
         return self::$oparray[$this->allowed];
     }
+    /** @return int|float */
     function value() {
         return $this->value;
     }
+    /** @return string */
     function countexpr() {
         assert(!!$this->allowed);
         return self::$oparray[$this->allowed] . $this->value;
     }
+    /** @return string */
     function simplified_nonnegative_countexpr() {
         if ($this->value === 1.0 && $this->allowed === 6) {
             return ">0";
@@ -104,6 +118,7 @@ class CountMatcher {
         }
 
     }
+    /** @return string */
     function conservative_nonnegative_countexpr() {
         if ($this->allowed & 1) {
             return ">=0";
@@ -111,6 +126,8 @@ class CountMatcher {
             return ($this->allowed & 2 ? ">=" : ">") . $this->value;
         }
     }
+    /** @param string $str
+     * @return string */
     static function negate_countexpr_string($str) {
         $t = new CountMatcher($str);
         if ($t->allowed) {
@@ -119,6 +136,8 @@ class CountMatcher {
             return $str;
         }
     }
+    /** @param string $str
+     * @return string */
     static function flip_countexpr_string($str) {
         $t = new CountMatcher($str);
         if ($t->allowed & 5) {

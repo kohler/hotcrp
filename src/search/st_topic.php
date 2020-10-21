@@ -46,7 +46,7 @@ class Topic_SearchTerm extends SearchTerm {
         }
         return new Topic_SearchTerm($value, $negated);
     }
-    function trivial_rights(PaperSearch $srch) {
+    function is_sqlexpr_precise(PaperSearch $srch) {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
