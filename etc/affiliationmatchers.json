@@ -580,6 +580,9 @@
     "fernuniversitat": {
         "nameish": false
     },
+    "florida": {
+        "sync": "state"
+    },
     "france": {
         "weak": true
     },
@@ -702,6 +705,13 @@
     "london": {
         "weak": true,
         "alternate": [{"word": "ucl", "if": "university college"}]
+    },
+    "louisiana": {
+        "alternate": [{"word": "lsu", "if": "university state"}],
+        "sync": "state"
+    },
+    "lsu": {
+        "alternate": ["louisiana state university"]
     },
     "maryland": {
         "sync": ["loyola"]
