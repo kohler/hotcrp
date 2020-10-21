@@ -33,6 +33,7 @@ class Autoassigner {
     private $review_gadget = self::REVIEW_GADGET_DEFAULT;
     public $costs;
     private $progressf = array();
+    /** @var ?MinCostMaxFlow */
     private $mcmf;
     private $mcmf_round_descriptor; // for use in MCMF progress
     private $mcmf_optimizing_for; // for use in MCMF progress
@@ -470,6 +471,7 @@ class Autoassigner {
         }
     }
 
+    /** @param MinCostMaxFlow $mcmf */
     function mcmf_progress($mcmf, $what, $phaseno = 0, $nphases = 0) {
         if ($what <= MinCostMaxFlow::PMAXFLOW_DONE) {
             $n = min(max($mcmf->current_flow(), 0), $this->ndesired);
@@ -636,12 +638,11 @@ class Autoassigner {
                 }
             }
         }
-        $m->clear(); // break circular refs
-        $this->mcmf = null;
         $this->profile["maxflow"] = $m->maxflow_end_at - $m->maxflow_start_at;
         if ($m->mincost_start_at) {
             $this->profile["mincost"] = $m->mincost_end_at - $m->mincost_start_at;
         }
+        $this->mcmf = null;
         $this->profile["traverse"] = microtime(true) - $time;
         return $nassigned;
     }

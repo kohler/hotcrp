@@ -6,10 +6,12 @@ declare(strict_types=1);
 require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 
 function mcmf_assignment_text($m) {
-    $a = array();
-    foreach ($m->nodes("u") as $u)
-        foreach ($m->reachable($u, "p") as $p)
+    $a = [];
+    foreach ($m->nodes("u") as $u) {
+        foreach ($m->reachable($u, "p") as $p) {
             $a[] = "$u->name $p->name\n";
+        }
+    }
     sort($a);
     return join("", $a);
 }
@@ -18,11 +20,11 @@ function mcmf_assignment_text($m) {
 // (1) one possible result
 
 $m = new MinCostMaxFlow;
-foreach (array("u0", "u1", "u2") as $x) {
+foreach (["u0", "u1", "u2"] as $x) {
     $m->add_node($x, "u");
     $m->add_edge(".source", $x, 1, 0);
 }
-foreach (array("p0", "p1", "p2") as $x) {
+foreach (["p0", "p1", "p2"] as $x) {
     $m->add_node($x, "p");
     $m->add_edge($x, ".sink", 1, 0);
 }
@@ -41,8 +43,9 @@ foreach (range(100, 921384, 1247) as $seed) {
     $m->shuffle();
     $m->run();
     xassert_eqq(mcmf_assignment_text($m), "u0 p1\nu1 p2\nu2 p0\n");
-    if (mcmf_assignment_text($m) !== "u0 p1\nu1 p2\nu2 p0\n")
+    if (mcmf_assignment_text($m) !== "u0 p1\nu1 p2\nu2 p0\n") {
         fwrite(STDERR, "-- bad seed $seed\n");
+    }
 }
 
 fwrite(STDERR, "- Phase 1 complete.\n");
@@ -51,18 +54,20 @@ fwrite(STDERR, "- Phase 1 complete.\n");
 // (2) no preferences => all possible results
 
 $m = new MinCostMaxFlow;
-foreach (array("u0", "u1", "u2") as $x) {
+foreach (["u0", "u1", "u2"] as $x) {
     $m->add_node($x, "u");
     $m->add_edge(".source", $x, 1, 0);
 }
-foreach (array("p0", "p1", "p2") as $x) {
+foreach (["p0", "p1", "p2"] as $x) {
     $m->add_node($x, "p");
     $m->add_edge($x, ".sink", 1, 0);
 }
-foreach (array("u0", "u1", "u2") as $x)
-    foreach (array("p0", "p1", "p2") as $y)
+foreach (["u0", "u1", "u2"] as $x) {
+    foreach (["p0", "p1", "p2"] as $y) {
         $m->add_edge($x, $y, 1, 1);
-$assignments = array();
+    }
+}
+$assignments = [];
 foreach (range(100, 921384, 1247) as $seed) {
     $m->reset();
     srand($seed); // the shuffle() uses this seed
@@ -85,21 +90,23 @@ fwrite(STDERR, "- Phase 2 complete.\n");
 // (3) several possible results
 
 $m = new MinCostMaxFlow;
-foreach (array("u0", "u1", "u2") as $x) {
+foreach (["u0", "u1", "u2"] as $x) {
     $m->add_node($x, "u");
     $m->add_edge(".source", $x, 1, 0);
 }
-foreach (array("p0", "p1", "p2") as $x) {
+foreach (["p0", "p1", "p2"] as $x) {
     $m->add_node($x, "p");
     $m->add_edge($x, ".sink", 1, 0);
 }
-foreach (array("u0", "u1", "u2") as $x)
-    foreach (array("p0", "p1", "p2") as $y) {
+foreach (["u0", "u1", "u2"] as $x) {
+    foreach (["p0", "p1", "p2"] as $y) {
         $c = 1;
-        if (($x === "u0" || $x === "u1") && ($y === "p0" || $y === "p1"))
+        if (($x === "u0" || $x === "u1") && ($y === "p0" || $y === "p1")) {
             $c = 0;
+        }
         $m->add_edge($x, $y, 1, $c);
     }
+}
 $assignments = array();
 foreach (range(100, 921384, 1247) as $seed) {
     $m->reset();
@@ -120,17 +127,19 @@ fwrite(STDERR, "- Phase 3 complete.\n");
 // (4) all zero preferences => all possible results; this uses push-relabel
 
 $m = new MinCostMaxFlow;
-foreach (array("u0", "u1", "u2") as $x) {
+foreach (["u0", "u1", "u2"] as $x) {
     $m->add_node($x, "u");
     $m->add_edge(".source", $x, 1);
 }
-foreach (array("p0", "p1", "p2") as $x) {
+foreach (["p0", "p1", "p2"] as $x) {
     $m->add_node($x, "p");
     $m->add_edge($x, ".sink", 1);
 }
-foreach (array("u0", "u1", "u2") as $x)
-    foreach (array("p0", "p1", "p2") as $y)
+foreach (["u0", "u1", "u2"] as $x) {
+    foreach (["p0", "p1", "p2"] as $y) {
         $m->add_edge($x, $y, 1);
+    }
+}
 $assignments = array();
 foreach (range(100, 921384, 1247) as $seed) {
     $m->reset();

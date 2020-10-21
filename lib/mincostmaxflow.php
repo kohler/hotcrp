@@ -7,13 +7,14 @@ class MinCostMaxFlow_Node {
     public $name;
     /** @var int */
     public $vindex;
+    /** @var ?string */
     public $klass;
     /** @var int|float */
     public $flow = 0;
     /** @var ?MinCostMaxFlow_Node|false */
-    public $link = null;
+    public $link;
     /** @var ?MinCostMaxFlow_Node */
-    public $xlink = null;
+    public $xlink;
     /** @var int */
     public $npos = 0;
     /** @var int|float */
@@ -180,7 +181,7 @@ class MinCostMaxFlow {
     private $mincost;
     /** @var int|float */
     private $maxcost;
-    private $progressf = array();
+    private $progressf = [];
     private $hasrun;
     /** @var bool */
     private $debug;
@@ -838,7 +839,7 @@ class MinCostMaxFlow {
         if ($this->hasrun) {
             foreach ($this->v as $v) {
                 $v->distance = $v->excess = $v->price = 0;
-                $v->e = array();
+                $v->e = [];
             }
             foreach ($this->e as $e) {
                 $e->flow = 0;
@@ -867,7 +868,7 @@ class MinCostMaxFlow {
     }
 
     function debug_info($only_flow = false) {
-        $ex = array();
+        $ex = [];
         $cost = 0;
         foreach ($this->e as $e) {
             if ($e->flow || $e->mincap || !$only_flow) {
@@ -978,7 +979,7 @@ class MinCostMaxFlow {
 
 
     private function dimacs_node(&$vnames, $num, $name = "", $klass = "") {
-        if (!($v = get($vnames, $num))) {
+        if (!($v = $vnames[$num] ?? null)) {
             $v = $vnames[$num] = $this->add_node($name, $klass);
         }
         return $v;
@@ -996,7 +997,7 @@ class MinCostMaxFlow {
             }
             if (preg_match('/\An (\d+) (-?\d+|s|t)\s*\z/', $line, $m)) {
                 $issink = $m[2] === "t" || $m[2] < 0;
-                assert(!get($vnames, $m[1]));
+                assert(!isset($vnames[$m[1]]));
                 $vnames[$m[1]] = $v = $issink ? $this->sink : $this->source;
                 if ($m[2] !== "s" && $m[2] !== "t") {
                     $v->excess = (int) $m[2];

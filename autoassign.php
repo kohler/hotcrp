@@ -206,12 +206,14 @@ class AutoassignerInterface {
         $costs = new AutoassignerCosts;
         if (($x = $conf->opt("autoassignCosts"))
             && ($x = json_decode($x))
-            && is_object($x))
+            && is_object($x)) {
             $costs = $x;
-        foreach (get_object_vars($costs) as $k => $v)
+        }
+        foreach (get_object_vars($costs) as $k => $v) {
             if ($qreq && isset($qreq["{$k}_cost"])
                 && ($v = cvtint($qreq["{$k}_cost"], null)) !== null)
                 $costs->$k = $v;
+        }
         return $costs;
     }
 
@@ -302,12 +304,13 @@ class AutoassignerInterface {
         $atypes = $assignset->assigned_types();
         $apids = $assignset->assigned_pids(true);
         $badpairs_inputs = $badpairs_arg = array();
-        for ($i = 1; isset($this->qreq["bpa$i"]); ++$i)
+        for ($i = 1; isset($this->qreq["bpa$i"]); ++$i) {
             if ($this->qreq["bpa$i"] && $this->qreq["bpb$i"]) {
                 array_push($badpairs_inputs, Ht::hidden("bpa$i", $this->qreq["bpa$i"]),
                            Ht::hidden("bpb$i", $this->qreq["bpb$i"]));
                 $badpairs_arg[] = $this->qreq["bpa$i"] . "-" . $this->qreq["bpb$i"];
             }
+        }
         echo Ht::form($this->conf->hoturl_post("autoassign", [
                 "saveassignment" => 1,
                 "assigntypes" => join(" ", $atypes),
@@ -405,50 +408,56 @@ class AutoassignerInterface {
                 return null;
             }
         }
-        if ($this->qreq->balance === "all")
+        if ($this->qreq->balance === "all") {
             $autoassigner->set_balance(Autoassigner::BALANCE_ALL);
-        foreach ($badpairs as $cid1 => $bp) {
-            foreach ($bp as $cid2 => $x)
-                $autoassigner->avoid_pair_assignment($cid1, $cid2);
         }
-        if ($this->qreq->method === "random")
+        foreach ($badpairs as $cid1 => $bp) {
+            foreach ($bp as $cid2 => $x) {
+                $autoassigner->avoid_pair_assignment($cid1, $cid2);
+            }
+        }
+        if ($this->qreq->method === "random") {
             $autoassigner->set_method(Autoassigner::METHOD_RANDOM);
-        else
+        } else {
             $autoassigner->set_method(Autoassigner::METHOD_MCMF);
-        if ($this->conf->opt("autoassignReviewGadget") === "expertise")
+        }
+        if ($this->conf->opt("autoassignReviewGadget") === "expertise") {
             $autoassigner->set_review_gadget(Autoassigner::REVIEW_GADGET_EXPERTISE);
+        }
         // save costs
         $autoassigner->costs = self::current_costs($this->conf, $this->qreq);
         $costs_json = json_encode($autoassigner->costs);
         if ($costs_json !== $this->conf->opt("autoassignCosts")) {
-            if ($costs_json === json_encode(new AutoassignerCosts))
+            if ($costs_json === json_encode(new AutoassignerCosts)) {
                 $this->conf->save_setting("opt.autoassignCosts", null);
-            else
+            } else {
                 $this->conf->save_setting("opt.autoassignCosts", 1, $costs_json);
+            }
         }
         $autoassigner->add_progressf([$this, "progress"]);
         $this->live = true;
         echo '<div id="propass" class="propass">';
 
         $this->start_at = microtime(true);
-        if ($this->atype === "prefconflict")
+        if ($this->atype === "prefconflict") {
             $autoassigner->run_prefconflict($this->qreq->t);
-        else if ($this->atype === "clear")
+        } else if ($this->atype === "clear") {
             $autoassigner->run_clear($this->reviewtype);
-        else if ($this->atype === "lead" || $this->atype === "shepherd")
+        } else if ($this->atype === "lead" || $this->atype === "shepherd") {
             $autoassigner->run_paperpc($this->atype, $this->qreq["{$this->atype}score"]);
-        else if ($this->atype === "revpc")
+        } else if ($this->atype === "revpc") {
             $autoassigner->run_reviews_per_pc($this->reviewtype, $this->reviewround, $this->reviewcount);
-        else if ($this->atype === "revadd")
+        } else if ($this->atype === "revadd") {
             $autoassigner->run_more_reviews($this->reviewtype, $this->reviewround, $this->reviewcount);
-        else if ($this->atype === "rev")
+        } else if ($this->atype === "rev") {
             $autoassigner->run_ensure_reviews($this->reviewtype, $this->reviewround, $this->reviewcount);
-        else if ($this->atype === "discorder")
+        } else if ($this->atype === "discorder") {
             $autoassigner->run_discussion_order($this->discordertag);
+        }
 
-        if ($this->live)
+        if ($this->live) {
             echo $this->result_html(), "</div>\n";
-        else {
+        } else {
             PaperList::$include_stash = false;
             $result_html = $this->result_html();
             echo Ht::unstash_script('$$("propass").innerHTML=' . json_encode($result_html)), "\n";
@@ -591,10 +600,11 @@ if (count($rev_rounds) > 1 || !get($rev_rounds, "unnamed")) {
         echo ' class="', trim($c), '"';
     echo ' style="font-size:smaller">Review round: ';
     $expected_round = $Qreq->rev_round ? : $Conf->assignment_round_option(false);
-    if (count($rev_rounds) > 1)
+    if (count($rev_rounds) > 1) {
         echo '&nbsp;', Ht::select("rev_round", $rev_rounds, $expected_round);
-    else
+    } else {
         echo $expected_round;
+    }
     echo "</td></tr>\n";
 }
 
@@ -786,11 +796,12 @@ echo "</table>\n";
 if ($Conf->opt("autoassignReviewGadget") === "expertise") {
     echo "<div><strong>Costs:</strong> ";
     $costs = AutoassignerInterface::current_costs($Conf, $Qreq);
-    foreach (get_object_vars($costs) as $k => $v)
+    foreach (get_object_vars($costs) as $k => $v) {
         echo '<span style="display:inline-block;margin-right:2em">',
             Ht::label($k, "{$k}_cost"),
             "&nbsp;", Ht::entry("{$k}_cost", $v, ["size" => 4]),
             '</span>';
+    }
     echo "</div>\n";
 }
 
