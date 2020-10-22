@@ -384,8 +384,9 @@ class AutoassignerInterface {
             $t = '<h3 class="form-h">Preparing assignment</h3><p><strong>Status:</strong> ' . htmlspecialchars($status);
             echo Ht::script('$$("propass").innerHTML=' . json_encode_browser($t) . ';'), "\n";
             flush();
-            while (@ob_end_flush())
-                /* skip */;
+            while (@ob_end_flush()) {
+                /* skip */
+            }
         }
     }
 

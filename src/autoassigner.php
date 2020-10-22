@@ -199,6 +199,7 @@ class Autoassigner {
         while (($row = $result->fetch_row())) {
             $this->eass[(int) $row[1]][(int) $row[0]] = self::ENOASSIGN;
         }
+        Dbl::free($result);
 
         // then load preferences
         $result = $this->conf->paper_result(["paperId" => $this->papersel, "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "reviewSignatures" => true, "tags" => $this->conf->check_track_sensitivity(Track::ASSREV)]);
@@ -225,6 +226,8 @@ class Autoassigner {
             }
         }
         Dbl::free($result);
+        $row = $result = null;
+        gc_collect_cycles();
         $this->make_pref_groups();
 
         // need to populate review assignments for badpairs not in `pcm`
@@ -668,7 +671,9 @@ class Autoassigner {
             }
             ++$mcmf_round;
             $this->mcmf_round_descriptor = ", round $mcmf_round";
+            gc_collect_cycles();
         }
+        gc_collect_cycles();
     }
 
     private function assign_method(&$papers, $action, $round, $nperpc) {
@@ -857,6 +862,7 @@ class Autoassigner {
         for ($roundno = 0; !$roundno || count($result) > 1; ++$roundno) {
             $this->mcmf_round_descriptor = $roundno ? ", round " . ($roundno + 1) : "";
             $result = $this->run_discussion_order_once($cflt, $result);
+            gc_collect_cycles();
             if (!$roundno) {
                 foreach ($result as $i => $pids) {
                     foreach ($pids as $pid) {
