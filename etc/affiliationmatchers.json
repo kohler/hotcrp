@@ -918,10 +918,12 @@
         ]
     },
     "washington": {
-        "weak": true, "nameish": true,
+        "weak": true,
+        "nameish": true,
         "alternate": [
             {"word": "uw", "if": "university"}
-        ]
+        ],
+        "sync": ["george", "lee"]
     },
     "wisconsin": {
         "alternate": [
