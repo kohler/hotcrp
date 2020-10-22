@@ -89,17 +89,6 @@ if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POS
         $Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', ?, ?) on duplicate key update data=values(data), value=values(value)", isset($Qreq->badpairs) ? 1 : 0, join(" ", $x));
     }
 }
-// set $badpairs array
-$badpairs = array();
-if (isset($Qreq->badpairs)) {
-    for ($i = 1; isset($Qreq["bpa$i"]); ++$i) {
-        if ($Qreq["bpa$i"] && $Qreq["bpb$i"]) {
-            if (!isset($badpairs[$Qreq["bpa$i"]]))
-                $badpairs[$Qreq["bpa$i"]] = array();
-            $badpairs[$Qreq["bpa$i"]][$Qreq["bpb$i"]] = 1;
-        }
-    }
-}
 
 // paper selection
 if ((isset($Qreq->prevt) && isset($Qreq->t) && $Qreq->prevt !== $Qreq->t)
@@ -349,7 +338,7 @@ class AutoassignerInterface {
                 ', 75% ', $umap[(int) (count($umap) * 0.75)],
                 ', 90% ', $umap[(int) (count($umap) * 0.9)],
                 ', max ', $umap[count($umap) - 1],
-                '<br/>Time: ', sprintf("%.6f", microtime(true) - $this->start_at);
+                '<br>Time: ', sprintf("%.6f", microtime(true) - $this->start_at);
             foreach ($this->autoassigner->profile as $name => $time) {
                 echo ', ', sprintf("%s %.6f", htmlspecialchars($name), $time);
             }
@@ -391,7 +380,7 @@ class AutoassignerInterface {
     }
 
     function run() {
-        global $SSel, $pcsel, $badpairs;
+        global $SSel, $pcsel;
         assert($this->ok);
         session_write_close(); // this might take a long time
         set_time_limit(240);
@@ -412,9 +401,16 @@ class AutoassignerInterface {
         if ($this->qreq->balance === "all") {
             $autoassigner->set_balance(Autoassigner::BALANCE_ALL);
         }
-        foreach ($badpairs as $cid1 => $bp) {
-            foreach ($bp as $cid2 => $x) {
-                $autoassigner->avoid_pair_assignment($cid1, $cid2);
+        if ($this->qreq->badpairs) {
+            for ($i = 1; isset($this->qreq["bpa$i"]); ++$i) {
+                $bpa = $this->qreq["bpa$i"];
+                $bpb = $this->qreq["bpb$i"];
+                if ($bpa
+                    && ($pca = $this->conf->pc_member_by_email($bpa))
+                    && $bpb
+                    && ($pcb = $this->conf->pc_member_by_email($bpb))) {
+                    $autoassigner->avoid_pair_assignment($pca->contactId, $pcb->contactId);
+                }
             }
         }
         if ($this->qreq->method === "random") {
@@ -481,15 +477,17 @@ echo '<div class="psmode">',
 if (isset($Qreq->assign) && isset($Qreq->a)
     && isset($Qreq->pctyp) && $Qreq->post_ok()) {
     $ai = new AutoassignerInterface($Me, $Qreq);
-    if ($ai->check())
+    if ($ai->check()) {
         $ai->run();
+    }
     ensure_session();
 }
 
 function echo_radio_row($name, $value, $text, $extra = null) {
     global $Qreq;
-    if (($checked = (!isset($Qreq[$name]) || $Qreq[$name] === $value)))
+    if (($checked = (!isset($Qreq[$name]) || $Qreq[$name] === $value))) {
         $Qreq[$name] = $value;
+    }
     $extra = ($extra ? $extra : array());
     $extra["id"] = "${name}_$value";
     $is_open = get($extra, "open");
@@ -497,24 +495,28 @@ function echo_radio_row($name, $value, $text, $extra = null) {
     $k = Ht::control_class("{$name}-{$value}");
     echo '<tr class="js-radio-focus', $k, '"><td class="nw">',
         Ht::radio($name, $value, $checked, $extra), "&nbsp;</td><td>";
-    if ($text !== "")
+    if ($text !== "") {
         echo Ht::label($text, "${name}_$value");
-    if (!$is_open)
+    }
+    if (!$is_open) {
         echo "</td></tr>\n";
+    }
 }
 
 function doSelect($name, $opts, $extra = null) {
     global $Qreq;
-    if (!isset($Qreq[$name]))
+    if (!isset($Qreq[$name])) {
         $Qreq[$name] = key($opts);
+    }
     echo Ht::select($name, $opts, $Qreq[$name], $extra);
 }
 
 function divClass($name, $classes = null) {
-    if (($c = Ht::control_class($name, $classes)))
+    if (($c = Ht::control_class($name, $classes))) {
         return '<div class="' . $c . '">';
-    else
+    } else {
         return '<div>';
+    }
 }
 
 echo Ht::form($Conf->hoturl_post("autoassign", array("profile" => $Qreq->profile, "seed" => $Qreq->seed, "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE)), ["id" => "autoassignform"]),
@@ -597,8 +599,9 @@ echo "&nbsp; review(s) from this paper selection</td></tr>\n";
 $rev_rounds = $Conf->round_selector_options(null);
 if (count($rev_rounds) > 1 || !get($rev_rounds, "unnamed")) {
     echo '<tr><td></td><td';
-    if (($c = Ht::control_class("rev_round")))
+    if (($c = Ht::control_class("rev_round"))) {
         echo ' class="', trim($c), '"';
+    }
     echo ' style="font-size:smaller">Review round: ';
     $expected_round = $Qreq->rev_round ? : $Conf->assignment_round_option(false);
     if (count($rev_rounds) > 1) {
@@ -747,15 +750,17 @@ echo '<div class="g"></div><div class="relative"><table id="bptable"><tbody>', "
 for ($i = 1; $i == 1 || isset($Qreq["bpa$i"]); ++$i) {
     $selector_text = bpSelector($i, "a") . " &nbsp;and&nbsp; " . bpSelector($i, "b");
     echo '    <tr><td class="rentry nw">';
-    if ($i == 1)
+    if ($i == 1) {
         echo Ht::checkbox("badpairs", 1, isset($Qreq["badpairs"]),
                            array("id" => "badpairs")),
             "&nbsp;", Ht::label("Don’t assign", "badpairs"), " &nbsp;";
-    else
+    } else {
         echo "or &nbsp;";
+    }
     echo '</td><td class="lentry">', $selector_text;
-    if ($i == 1)
+    if ($i == 1) {
         echo ' &nbsp;to the same paper &nbsp;(<a class="ui js-badpairs-row more" href="#">More</a> &nbsp;·&nbsp; <a class="ui js-badpairs-row less" href="#">Fewer</a>)';
+    }
     echo "</td></tr>\n";
 }
 echo "</tbody></table></div>\n";

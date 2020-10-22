@@ -231,6 +231,8 @@ class PaperList implements XtContext {
 
     static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P, ScoreInfo::COUNT];
 
+    /** @param array<string,mixed> $args
+     * @param null|array|Qrequest $qreq */
     function __construct(string $report, PaperSearch $search, $args = [], $qreq = null) {
         $this->conf = $search->conf;
         $this->user = $search->user;
