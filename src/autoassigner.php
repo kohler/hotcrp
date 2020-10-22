@@ -49,8 +49,8 @@ class Autoassigner {
     private $badpairs = [];
     /** @var list<int> */
     private $papersel;
-    /** @var ?list<string> */
-    private $ass;
+    /** @var list<string> */
+    private $ass = [];
     /** @var array<int,int> */
     private $load;
     /** @var array<int,array<int,AutoassignerElement>> */
@@ -365,7 +365,7 @@ class Autoassigner {
     }
 
     private function make_assignment($action, $round, $cid, $pid, &$papers) {
-        if (!$this->ass) {
+        if (empty($this->ass)) {
             $this->ass = ["paper,action,email,round"];
         }
         $this->ass[] = "$pid,$action," . $this->pcm[$cid]->email . $round;
@@ -490,6 +490,7 @@ class Autoassigner {
                 }
                 // pick a random paper at current preference level
                 $pididx = mt_rand(0, count($pg->apids) - 1);
+                /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
                 $pid = $pg->apids[$pididx];
                 array_splice($pg->apids, $pididx, 1);
                 // skip if not assignable
@@ -931,12 +932,9 @@ class Autoassigner {
     }
 
 
+    /** @return list<string> */
     function assignments() {
-        if (!empty($this->ass) && count($this->ass) > 1) {
-            return $this->ass;
-        } else {
-            return null;
-        }
+        return count($this->ass) > 1 ? $this->ass : [];
     }
 
     /** @return array<int,int> */
