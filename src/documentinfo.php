@@ -1120,14 +1120,21 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
+    const ANY_MEMBER_FILENAME = 1;
+
     /** @return ?string */
-    function member_filename() {
-        assert(($this->_member_filename ?? "") !== "");
-        return $this->_member_filename;
+    function member_filename($flags = 0) {
+        if (($this->_member_filename ?? "") !== "") {
+            return $this->_member_filename;
+        } else {
+            assert(($flags & self::ANY_MEMBER_FILENAME) !== 0);
+            return $this->filename;
+        }
     }
 
-    /** @return string */
-    function export_filename($filters = null) {
+    /** @param int $flags
+     * @return string */
+    function export_filename($filters = null, $flags = 0) {
         $fn = $this->conf->download_prefix;
         if ($this->documentType == DTYPE_SUBMISSION) {
             $fn .= "paper" . $this->paperId;
@@ -1147,7 +1154,7 @@ class DocumentInfo implements JsonSerializable {
             } else {
                 $cid = "comment-" . $this->_owner->unparse_html_id();
             }
-            return "paper{$this->paperId}/{$cid}/" . $this->member_filename();
+            return "paper{$this->paperId}/{$cid}/" . $this->member_filename($flags);
         } else if ($this->documentType == DTYPE_EXPORT) {
             assert(!!$this->filename);
             return $this->filename;
@@ -1163,7 +1170,7 @@ class DocumentInfo implements JsonSerializable {
             if ($o && $o->has_attachments()) {
                 assert(!$filters);
                 // do not decorate with MIME type suffix
-                return $fn . $oabbr . "/" . $this->member_filename();
+                return "{$fn}{$oabbr}/" . $this->member_filename($flags);
             }
             $fn .= $oabbr;
         }
@@ -1214,10 +1221,11 @@ class DocumentInfo implements JsonSerializable {
             $f = "file=" . rawurlencode($this->export_filename($filters));
         } else {
             $f = "p=$this->paperId";
-            if ($this->documentType == DTYPE_FINAL)
+            if ($this->documentType == DTYPE_FINAL) {
                 $f .= "&amp;final=1";
-            else if ($this->documentType > 0)
+            } else if ($this->documentType > 0) {
                 $f .= "&amp;dt=$this->documentType";
+            }
         }
         return $this->conf->hoturl("doc", $f, $flags);
     }

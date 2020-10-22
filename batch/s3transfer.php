@@ -47,7 +47,7 @@ foreach ($sids as $sid) {
         continue;
     }
     $front = "[" . $Conf->unparse_time_log($doc->timestamp) . "] "
-        . $doc->export_filename() . " ($sid)";
+        . $doc->export_filename(DocumentInfo::ANY_MEMBER_FILENAME) . " ($sid)";
 
     $chash = $doc->content_binary_hash($doc->binary_hash());
     if ($chash !== $doc->binary_hash()) {
