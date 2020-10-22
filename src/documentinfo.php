@@ -281,7 +281,9 @@ class DocumentInfo implements JsonSerializable {
 
     private function find_owner() {
         if ($this->documentType == DTYPE_COMMENT) {
-            if (($cid = $this->prow->link_id_by_document_id($this->paperStorageId, self::LINKTYPE_COMMENT_BEGIN, self::LINKTYPE_COMMENT_END))) {
+            $this->prow = $this->prow ?? $this->conf->paper_by_id($this->paperId);
+            if ($this->prow
+                && ($cid = $this->prow->link_id_by_document_id($this->paperStorageId, self::LINKTYPE_COMMENT_BEGIN, self::LINKTYPE_COMMENT_END))) {
                 $this->_owner = $this->prow->comment_by_id($cid);
             }
         }
