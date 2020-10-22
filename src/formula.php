@@ -439,15 +439,15 @@ class Additive_Fexpr extends Fexpr {
         return $this->typecheck_arguments($formula, true);
     }
     function typecheck_format() {
-        $a0 = $this->args[0];
-        $f0 = $a0->format();
-        $d0 = is_int($f0) && $f0 >= self::FDATE && $f0 <= self::FTIMEDELTA;
-        $a1 = $this->args[1];
-        $f1 = $a1->format();
-        $d1 = is_int($f1) && $f1 >= self::FDATE && $f1 <= self::FTIMEDELTA;
+        $fx0 = $this->args[0]->format();
+        $fx1 = $this->args[1]->format();
+        $f0 = is_int($fx0) ? $fx0 : 0;
+        $f1 = is_int($fx1) ? $fx1 : 0;
+        $d0 = $f0 >= self::FDATE && $f0 <= self::FTIMEDELTA;
+        $d1 = $f1 >= self::FDATE && $f1 <= self::FTIMEDELTA;
         if ((!$d0 && !$d1)
-            || (!$d0 && $f0)
-            || (!$d1 && $f1)) {
+            || (!$d0 && $fx0)
+            || (!$d1 && $fx1)) {
             return null;
         } else if ($this->op === "-"
                    && $d0 && !($f0 & self::FDELTABIT)
