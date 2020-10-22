@@ -819,7 +819,7 @@ class MinCostMaxFlow {
         $this->infeasible = false;
         $this->initialize_edges();
         if (($f = $this->make_debug_file())) {
-            fwrite($f, $this->mincost_dimacs_input());
+            fwrite($f, $this->dimacs_input(self::DIMACS_MINCOST | self::DIMACS_NAMES));
             fwrite($f, "\nc begintime " . microtime(true) . "\n");
         }
         $this->pushrelabel_run();
@@ -897,7 +897,12 @@ class MinCostMaxFlow {
     }
 
 
-    private function dimacs_input($mincost) {
+    const DIMACS_MAXFLOW = 0;
+    const DIMACS_MINCOST = 1;
+    const DIMACS_NAMES = 2;
+
+    private function dimacs_input($flags) {
+        $mincost = ($flags & self::DIMACS_MINCOST) !== 0;
         $x = array("p " . ($mincost ? "min" : "max") . " "
                    . count($this->v) . " " . count($this->e) . "\n");
         foreach ($this->v as $i => $v) {
@@ -913,33 +918,36 @@ class MinCostMaxFlow {
         foreach ($this->v as $v) {
             if ($v !== $this->source && $v !== $this->sink) {
                 $cmt = "c ninfo {$v->vindex} {$v->name}";
-                if ($v->klass !== "")
+                if ($v->klass !== "") {
                     $cmt .= " {$v->klass}";
+                }
                 $x[] = "$cmt\n";
             }
         }
-        if ($mincost) {
-            foreach ($this->e as $e) {
-                $x[] = "a {$e->src->vindex} {$e->dst->vindex} {$e->mincap} {$e->cap} {$e->cost}\n";
-            }
-        } else {
-            foreach ($this->e as $e) {
-                $x[] = "a {$e->src->vindex} {$e->dst->vindex} {$e->cap}\n";
+        $names = ($flags & self::DIMACS_NAMES) !== 0;
+        foreach ($this->e as $e) {
+            $src = $names ? $e->src->name : $e->src->vindex;
+            $dst = $names ? $e->dst->name : $e->dst->vindex;
+            if ($mincost) {
+                $x[] = "a $src $dst {$e->mincap} {$e->cap} {$e->cost}\n";
+            } else {
+                $x[] = "a $src $dst {$e->cap}\n";
             }
         }
         return join("", $x);
     }
 
     function maxflow_dimacs_input() {
-        return $this->dimacs_input(false);
+        return $this->dimacs_input(self::DIMACS_MAXFLOW);
     }
 
     function mincost_dimacs_input() {
-        return $this->dimacs_input(true);
+        return $this->dimacs_input(self::DIMACS_MINCOST);
     }
 
 
-    private function dimacs_output($mincost) {
+    private function dimacs_output($flags) {
+        $mincost = ($flags & self::DIMACS_MINCOST) !== 0;
         $x = array("c p " . ($mincost ? "min" : "max") . " "
                    . count($this->v) . " " . count($this->e) . "\n");
         foreach ($this->v as $i => $v) {
@@ -974,11 +982,11 @@ class MinCostMaxFlow {
     }
 
     function maxflow_dimacs_output() {
-        return $this->dimacs_output(false);
+        return $this->dimacs_output(self::DIMACS_MAXFLOW);
     }
 
     function mincost_dimacs_output() {
-        return $this->dimacs_output(true);
+        return $this->dimacs_output(self::DIMACS_MINCOST);
     }
 
 
