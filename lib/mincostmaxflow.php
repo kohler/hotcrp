@@ -26,8 +26,7 @@ class MinCostMaxFlow_Node {
     /** @var int */
     public $n_outgoing_admissible = 0;
     /** @var list<MinCostMaxFlow_Edge> */
-    public $e = array();
-    public $xe;
+    public $e = [];
     /** @param string $name */
     function __construct($name, $klass) {
         $this->name = $name;
@@ -173,6 +172,8 @@ class MinCostMaxFlow {
     private $sink;
     /** @var list<MinCostMaxFlow_Edge> */
     private $e;
+    /** @var bool */
+    private $has_edges = false;
     /** @var null|int|float */
     private $maxflow;
     /** @var int|float */
@@ -302,7 +303,10 @@ class MinCostMaxFlow {
         if (is_string($v)) {
             $v = $this->vmap[$v];
         }
-        $a = array();
+        if (!$this->has_edges) {
+            $this->initialize_edges();
+        }
+        $a = [];
         $this->add_reachable($v, $klass, $a);
         return $a;
     }
@@ -328,10 +332,13 @@ class MinCostMaxFlow {
         if (is_string($v)) {
             $v = $this->vmap[$v];
         }
+        if (!$this->has_edges) {
+            $this->initialize_edges();
+        }
         foreach ($this->v as $vx) {
             $vx->npos = 0;
         }
-        $a = array();
+        $a = [];
         $this->topological_sort_visit($v, $klass, $a);
         return array_reverse($a);
     }
@@ -340,6 +347,9 @@ class MinCostMaxFlow {
     // internals
 
     private function initialize_edges() {
+        foreach ($this->v as $v) {
+            $v->e = [];
+        }
         // all sources must come before all destinations
         foreach ($this->e as $e) {
             $e->src->e[] = $e;
@@ -347,6 +357,7 @@ class MinCostMaxFlow {
         foreach ($this->e as $e) {
             $e->dst->e[] = $e;
         }
+        $this->has_edges = true;
     }
 
 
@@ -666,10 +677,10 @@ class MinCostMaxFlow {
                         if ($e->is_price_admissible_from($v)) {
                             --$v->n_outgoing_admissible;
                         }
-                        $v->xe[] = $e;
                         $v->e[$i] = $v->e[count($v->e) - 1];
                         array_pop($v->e);
                         $v->npos = 0; // keep npos in bounds
+                        $this->has_edges = false;
                         ++$ndropped;
                     } else {
                         ++$i;
@@ -766,7 +777,6 @@ class MinCostMaxFlow {
 
         foreach ($this->v as $v) {
             $v->n_outgoing_admissible = $v->count_outgoing_price_admissible();
-            $v->xe = array();
         }
 
         $this->debug && $this->cspushrelabel_check();
@@ -777,12 +787,6 @@ class MinCostMaxFlow {
         }
         $this->mincost_end_at = microtime(true);
 
-        foreach ($this->v as $v) {
-            if ($v->xe) {
-                $v->e = array_merge($v->e, $v->xe);
-                $v->xe = null;
-            }
-        }
         foreach ($this->progressf as $progressf) {
             call_user_func($progressf, $this, self::PMINCOST_DONE);
         }
@@ -847,7 +851,7 @@ class MinCostMaxFlow {
             $this->maxflow = null;
             $this->maxflow_start_at = $this->maxflow_end_at = null;
             $this->mincost_start_at = $this->mincost_end_at = null;
-            $this->hasrun = false;
+            $this->hasrun = $this->has_edges = false;
         }
     }
 
@@ -990,7 +994,6 @@ class MinCostMaxFlow {
         $vnames = array();
         $ismax = null;
         $next_cap = $next_cost = null;
-        $has_edges = false;
         foreach (CsvParser::split_lines($str) as $lineno => $line) {
             if ($line[0] !== "f") {
                 $next_cap = $next_cost = null;
@@ -1010,12 +1013,12 @@ class MinCostMaxFlow {
                 $v = $this->dimacs_node($vnames, $m[1]);
                 $v->price = (float) $m[2];
             } else if (preg_match('/\Aa (\d+) (\d+) (\d+)\s*\z/', $line, $m)) {
-                assert(!$has_edges);
+                assert(!$this->has_edges);
                 $this->add_edge($this->dimacs_node($vnames, $m[1]),
                                 $this->dimacs_node($vnames, $m[2]),
                                 (int) $m[3], 0);
             } else if (preg_match('/\Aa (\d+) (\d+) (\d+) (\d+) (-?\d+)\s*\z/', $line, $m)) {
-                assert(!$has_edges);
+                assert(!$this->has_edges);
                 $this->add_edge($this->dimacs_node($vnames, $m[1]),
                                 $this->dimacs_node($vnames, $m[2]),
                                 (int) $m[4], (int) $m[5], (int) $m[3]);
@@ -1023,9 +1026,8 @@ class MinCostMaxFlow {
                 $next_cap = (int) $m[1];
                 $next_cost = (int) $m[2];
             } else if (preg_match('/\Af (\d+) (\d+) (-?\d+)\s*\z/', $line, $m)) {
-                if (!$has_edges) {
+                if (!$this->has_edges) {
                     $this->initialize_edges();
-                    $has_edges = true;
                 }
                 $src = $this->dimacs_node($vnames, $m[1]);
                 $dst = $this->dimacs_node($vnames, $m[2]);
