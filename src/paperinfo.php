@@ -1895,7 +1895,10 @@ class PaperInfo {
         return $this->_doclink_array;
     }
 
-    /** @return DocumentInfoSet */
+    /** @param int $linkid
+     * @param int $min
+     * @param int $max
+     * @return DocumentInfoSet */
     function linked_documents($linkid, $min, $max, $owner = null) {
         $docs = new DocumentInfoSet;
         foreach (($this->doclink_array())[$linkid] ?? [] as $lt => $docid) {
@@ -1906,6 +1909,23 @@ class PaperInfo {
             }
         }
         return $docs;
+    }
+
+    /** @param int $docid
+     * @param int $min
+     * @param int $max
+     * @return ?int */
+    function link_id_by_document_id($docid, $min, $max) {
+        foreach ($this->doclink_array() as $linkid => $links) {
+            foreach ($links as $lt => $did) {
+                if ($lt >= $min
+                    && $lt < $max
+                    && $did === $docid) {
+                    return $linkid;
+                }
+            }
+        }
+        return null;
     }
 
     function invalidate_linked_documents() {
@@ -2568,6 +2588,12 @@ class PaperInfo {
             $this->load_comments();
         }
         return $this->_comment_array;
+    }
+
+    /** @param int $cid
+     * @return ?CommentInfo */
+    function comment_by_id($cid) {
+        return ($this->all_comments())[$cid] ?? null;
     }
 
     /** @return array<int,CommentInfo> */

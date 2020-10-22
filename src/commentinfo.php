@@ -321,7 +321,7 @@ class CommentInfo {
     /** @return DocumentInfoSet */
     function attachments() {
         if ($this->commentType & COMMENTTYPE_HASDOC) {
-            return $this->prow->linked_documents($this->commentId, 0, 1024, $this);
+            return $this->prow->linked_documents($this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END, $this);
         } else {
             return new DocumentInfoSet;
         }
@@ -778,7 +778,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         // document links
         if ($docids !== $old_docids) {
             if ($old_docids) {
-                $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType>=? and linkType<?", $this->prow->paperId, $this->commentId, 0, 1024);
+                $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType>=? and linkType<?", $this->prow->paperId, $this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END);
             }
             if ($docids) {
                 $qv = [];

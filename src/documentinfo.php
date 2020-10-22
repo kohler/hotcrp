@@ -59,6 +59,9 @@ class DocumentInfo implements JsonSerializable {
     /** @var ?string */
     public $error_html;
 
+    const LINKTYPE_COMMENT_BEGIN = 0;
+    const LINKTYPE_COMMENT_END = 1024;
+
     function __construct($p, Conf $conf, PaperInfo $prow = null) {
         $this->merge($p, $conf, $prow);
     }
@@ -274,6 +277,15 @@ class DocumentInfo implements JsonSerializable {
             $d->_member_filename = $fn;
             return $d;
         }
+    }
+
+    private function find_owner() {
+        if ($this->documentType == DTYPE_COMMENT) {
+            if (($cid = $this->prow->link_id_by_document_id($this->paperStorageId, self::LINKTYPE_COMMENT_BEGIN, self::LINKTYPE_COMMENT_END))) {
+                $this->_owner = $this->prow->comment_by_id($cid);
+            }
+        }
+        return !!$this->_owner;
     }
 
     /** @return false */
@@ -1120,17 +1132,20 @@ class DocumentInfo implements JsonSerializable {
         } else if ($this->documentType == DTYPE_FINAL) {
             $fn .= "final" . $this->paperId;
         } else if ($this->documentType == DTYPE_COMMENT) {
-            if (!($this->_owner instanceof CommentInfo)) {
+            if (!$this->_owner) {
+                $this->find_owner();
+            } else if (!($this->_owner instanceof CommentInfo)) {
                 throw new Exception("bad DocumentInfo::export_filename for comment");
             }
             assert(!$filters);
-            $fn .= "paper" . $this->paperId;
-            if ($this->_owner->is_response()) {
-                $fn .= "/" . $this->_owner->unparse_html_id();
+            if (!$this->_owner) {
+                $cid = "commentX";
+            } else if ($this->_owner->is_response()) {
+                $cid = $this->_owner->unparse_html_id();
             } else {
-                $fn .= "/comment-" . $this->_owner->unparse_html_id();
+                $cid = "comment-" . $this->_owner->unparse_html_id();
             }
-            return $fn . "/" . $this->member_filename();
+            return "paper{$this->paperId}/{$cid}/" . $this->member_filename();
         } else if ($this->documentType == DTYPE_EXPORT) {
             assert(!!$this->filename);
             return $this->filename;
