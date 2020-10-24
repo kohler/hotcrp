@@ -170,8 +170,6 @@ class Review_Assigner extends Assigner {
     private $notify = false;
     private $unsubmit = false;
     private $token = false;
-    /** @var ?array<int,array<int,AutoassignerElement>> */
-    static public $ainfo;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
         $this->rtype = $item->post("_rtype");
@@ -203,11 +201,7 @@ class Review_Assigner extends Assigner {
             $t .= ' <span class="revround" title="Review round">'
                 . htmlspecialchars($round) . '</span>';
         }
-        if (self::$ainfo
-            && ($a = self::$ainfo[$this->cid][$this->pid] ?? null)) {
-            $t .= unparse_preference_span([$a->pref, $a->exp, $a->topicscore]);
-        }
-        return $t;
+        return $t . unparse_preference_span($aset->prow($this->pid)->preference($this->cid, true));
     }
     private function icon($before) {
         return review_type_icon($this->item->get($before, "_rtype"),
@@ -238,10 +232,8 @@ class Review_Assigner extends Assigner {
         } else if (($round = $this->item["_round"])) {
             $t .= ' <span class="revround" title="Review round">' . htmlspecialchars($round) . '</span>';
         }
-        if (!$this->item->existed()
-            && self::$ainfo
-            && ($a = self::$ainfo[$this->cid][$this->pid] ?? null)) {
-            $t .= unparse_preference_span([$a->pref, $a->exp, $a->topicscore]);
+        if (!$this->item->existed()) {
+            $t .= unparse_preference_span($aset->prow($this->pid)->preference($this->cid, true));
         }
         return $t;
     }

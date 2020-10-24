@@ -77,7 +77,7 @@ class Autoassigner {
     /** @var list<int> */
     private $papersel;
     /** @var array<int,array<int,AutoassignerElement>> */
-    public $ainfo = [];
+    private $ainfo = [];
     /** @var list<string> */
     private $ass = [];
     /** @var bool */
@@ -90,11 +90,14 @@ class Autoassigner {
     private $review_gadget = self::REVIEW_GADGET_DEFAULT;
     /** @var AutoassignerCosts */
     public $costs;
-    private $progressf = array();
+    private $progressf = [];
     /** @var ?MinCostMaxFlow */
     private $mcmf;
+    /** @var ?string */
     private $mcmf_round_descriptor; // for use in MCMF progress
+    /** @var ?string */
     private $mcmf_optimizing_for; // for use in MCMF progress
+    /** @var ?float */
     private $mcmf_max_cost;
     /** @var ?int */
     private $ndesired;
@@ -123,8 +126,7 @@ class Autoassigner {
         $this->costs = new AutoassignerCosts;
     }
 
-    /** @param list<int> $pcids
-     * @return int */
+    /** @param list<int> $pcids */
     function select_pc($pcids) {
         assert(empty($this->avoid_pairs));
         $this->acs = [];
@@ -133,7 +135,11 @@ class Autoassigner {
                 $this->acs[$cid] = new AutoassignerContact($p);
             }
         }
-        return count($this->acs);
+    }
+
+    /** @return list<int> */
+    function selected_pc_ids() {
+        return array_keys($this->acs);
     }
 
     /** @param int $cid1
@@ -154,10 +160,12 @@ class Autoassigner {
         }
     }
 
+    /** @param int $balance */
     function set_balance($balance) {
         $this->balance = $balance;
     }
 
+    /** @param int $method */
     function set_method($method) {
         $this->method = $method;
     }
@@ -166,6 +174,7 @@ class Autoassigner {
         $this->review_gadget = $review_gadget;
     }
 
+    /** @param callable $progressf */
     function add_progressf($progressf) {
         $this->progressf[] = $progressf;
     }
