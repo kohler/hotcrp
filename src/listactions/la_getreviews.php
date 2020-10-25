@@ -32,7 +32,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             }
             $last_rc = null;
             $time = null;
-            $viewer = $this->author_view ? $prow->author_view_user() : $user;
+            $viewer = $this->author_view && $user->allow_administer($prow) ? $prow->author_view_user() : $user;
             foreach ($prow->viewable_submitted_reviews_and_comments($user) as $rc) {
                 if ($viewer === $user
                     || (isset($rc->reviewId)
