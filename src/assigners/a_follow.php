@@ -60,7 +60,7 @@ class Follow_AssignmentParser extends AssignmentParser {
         return $contact->contactId != 0
             && $contact->can_view_paper($prow)
             && ($contact->contactId == $state->user->contactId
-                || $contact->can_administer($prow));
+                || $state->user->can_administer($prow));
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $fs = $this->follow_state($req, $state);
