@@ -13,9 +13,10 @@ class PaperColumn extends Column {
     /** @var int */
     public $override = 0;
 
-    const PREP_SORT = -1;
-    const PREP_FOLDED = 0; // value matters
-    const PREP_VISIBLE = 1; // value matters
+    const PREP_CHECK = 0;
+    const PREP_SORT = 1;
+    const PREP_VISIBLE = 2;
+    const PREP_TEXT = 4;
 
     /** @param object $cj */
     function __construct(Conf $conf, $cj) {
@@ -57,6 +58,7 @@ class PaperColumn extends Column {
         }
     }
 
+    /** @param int $visible */
     function prepare(PaperList $pl, $visible) {
         return true;
     }
@@ -106,11 +108,11 @@ class PaperColumn extends Column {
         return $a->paperId - $b->paperId;
     }
 
-    /** @param list<PaperColumn> $columns */
-    function analyze(PaperList $pl, $columns) {
+    function analyze(PaperList $pl) {
     }
 
-    /** @return string */
+    /** @param bool $is_text
+     * @return string */
     function header(PaperList $pl, $is_text) {
         if (isset($this->title_html) && !$is_text) {
             return $this->title_html;
@@ -122,16 +124,17 @@ class PaperColumn extends Column {
             return "&lt;" . htmlspecialchars($this->name) . "&gt;";
         }
     }
-    /** @return string|false */
+    /** @return ?string */
     function completion_name() {
         if (!$this->completion) {
-            return false;
+            return null;
         } else if (is_string($this->completion)) {
             return $this->completion;
         } else {
             return $this->name;
         }
     }
+    /** @return string */
     function sort_name() {
         $decor = $this->decorations;
         if (!empty($decor)) {
@@ -295,7 +298,7 @@ class Status_PaperColumn extends PaperColumn {
             }
         }
     }
-    function analyze(PaperList $pl, $columns) {
+    function analyze(PaperList $pl) {
         foreach ($pl->rowset() as $row) {
             if ($row->outcome != 0 || $row->paperStorageId <= 1) {
                 $t = ($pl->user->paper_status_info($row))[1];

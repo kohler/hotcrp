@@ -240,8 +240,8 @@ if ($pl_text) {
 
     // Options
     foreach ($Conf->options() as $ox) {
-        if ($pl->has("opt$ox->id")
-            && $ox->supports_list_display(PaperOption::LIST_DISPLAY_SUGGEST)) {
+        if ($ox->supports_list_display(PaperOption::LIST_DISPLAY_SUGGEST)
+            && $pl->has("opt$ox->id")) {
             $display_options->checkbox_item(10, $ox->search_keyword(), $ox->name);
         }
     }
@@ -366,15 +366,17 @@ echo Ht::form(hoturl("search"), ["method" => "get"]),
 
 echo "</div>";
 
-function echo_request_as_hidden_inputs($specialscore = false) {
+function echo_request_as_hidden_inputs($specialscore) {
     global $pl, $pl_text, $Qreq;
-    foreach (array("q", "qa", "qo", "qx", "qt", "t", "sort") as $x)
+    foreach (array("q", "qa", "qo", "qx", "qt", "t", "sort") as $x) {
         if (isset($Qreq[$x])
             && ($x !== "q" || !isset($Qreq->qa))
             && ($x !== "sort" || !$specialscore || !$pl_text))
             echo Ht::hidden($x, $Qreq[$x]);
-    if ($specialscore && $pl_text)
+    }
+    if ($specialscore && $pl_text) {
         echo Ht::hidden("sort", $pl->sortdef(true));
+    }
 }
 
 // Saved searches
@@ -436,7 +438,7 @@ if ($pl->count > 0) {
     echo '<div class="tld is-tla" id="tla-view" style="padding-bottom:1ex">';
 
     echo Ht::form($Conf->hoturl_post("search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
-    echo_request_as_hidden_inputs();
+    echo_request_as_hidden_inputs(false);
 
     echo '<div class="search-ctable">';
     ksort($display_options->items);
@@ -481,10 +483,12 @@ echo "</div>";
 echo '<div class="tllx"><table><tr>',
   '<td><div class="tll active"><a class="ui tla" href="">Search</a></div></td>
   <td><div class="tll"><a class="ui tla nw" href="#advanced">Advanced search</a></div></td>', "\n";
-if ($ss)
+if ($ss) {
     echo '  <td><div class="tll"><a class="ui tla nw" href="#saved-searches">Saved searches</a></div></td>', "\n";
-if ($pl->count > 0)
+}
+if ($pl->count > 0) {
     echo '  <td><div class="tll"><a class="ui tla nw" href="#view">View options</a></div></td>', "\n";
+}
 echo "</tr></table></div></div>\n\n";
 if ($pl->count == 0) {
     Ht::stash_script("addClass(document.body,\"want-hash-focus\")");

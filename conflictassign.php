@@ -73,7 +73,8 @@ foreach ($Conf->full_pc_members() as $pc) {
         if ($pc->affiliation) {
             $t .= " <span class=\"auaff\">(" . htmlspecialchars($pc->affiliation) . ")</span>";
         }
-        echo $tr->heading_row($t, ["no_titlecol" => true]), $tr->body_rows();
+        echo $tr->heading_row($t, ["no_titlecol" => true]);
+        $tr->echo_tbody_rows();
         $any = true;
     }
 }

@@ -620,8 +620,8 @@ if (isset($Qreq->requery) || isset($Qreq->has_pap)) {
     }
 
     echo '<div class="g"></div>';
-    echo $plist->table_html(["nofooter" => true]),
-        Ht::hidden("prevt", $Qreq->t), Ht::hidden("prevq", $Qreq->q),
+    $plist->echo_table_html(["nofooter" => true]);
+    echo Ht::hidden("prevt", $Qreq->t), Ht::hidden("prevq", $Qreq->q),
         Ht::hidden("has_pap", 1);
 }
 echo "</div>\n";

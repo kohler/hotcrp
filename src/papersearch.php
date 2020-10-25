@@ -3387,7 +3387,7 @@ class PaperSearch {
                     && !str_starts_with($cj->name, "?")
                     && ($c = PaperColumn::make($this->conf, $cj))
                     && ($cat = $c->completion_name())
-                    && $c->prepare($pl, 0)) {
+                    && $c->prepare($pl, PaperColumn::PREP_CHECK)) {
                     $cats[$cat] = true;
                 }
             }

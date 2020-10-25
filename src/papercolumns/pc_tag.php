@@ -42,7 +42,7 @@ class Tag_PaperColumn extends PaperColumn {
             && count($dt->emoji) === 1) {
             $this->emoji = $dt->emoji[0];
         }
-        if ($this->editable && $visible > 0 && $pl->table_id()) {
+        if ($this->editable && ($visible & PaperColumn::PREP_VISIBLE) && $pl->table_id()) {
             $pl->has_editable_tags = true;
             if (strcasecmp($this->etag, $pl->sort_etag()) === 0
                 && $this->is_value) {

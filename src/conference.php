@@ -4281,11 +4281,12 @@ class Conf {
             '<a class="uu" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->opt("noFooterVersion")) {
             if ($Me && $Me->privChair) {
-                echo " v", HOTCRP_VERSION;
+                echo " v", HOTCRP_VERSION, " [";
                 if (($git_data = self::git_status())
                     && $git_data[0] !== $git_data[1]) {
-                    echo " [", substr($git_data[0], 0, 7), "...]";
+                    echo substr($git_data[0], 0, 7), "... ";
                 }
+                echo round(memory_get_peak_usage() / (1 << 20)), "M]";
             } else {
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
             }

@@ -393,19 +393,24 @@ function xassert_match($a, $b) {
 }
 
 /** @param Contact $user
+ * @param string|array $query
+ * @param string $cols
  * @return array<int,object> */
-function search_json($user, $text, $cols = "id") {
-    $pl = new PaperList("empty", new PaperSearch($user, $text));
-    return $pl->text_json($cols);
+function search_json($user, $query, $cols = "id") {
+    $pl = new PaperList("empty", new PaperSearch($user, $query));
+    $pl->parse_view($cols);
+    return $pl->text_json();
 }
 
 /** @param Contact $user
+ * @param string|array $query
  * @param string $col
  * @return string */
-function search_text_col($user, $text, $col = "id") {
-    $pl = new PaperList("empty", new PaperSearch($user, $text));
+function search_text_col($user, $query, $col = "id") {
+    $pl = new PaperList("empty", new PaperSearch($user, $query));
+    $pl->parse_view($col);
     $x = [];
-    foreach ($pl->text_json($col) as $pid => $p) {
+    foreach ($pl->text_json() as $pid => $p) {
         $x[] = $pid . " " . $p->$col . "\n";
     }
     return join("", $x);

@@ -69,7 +69,7 @@ class Formula_PaperColumn extends PaperColumn {
             return $as == $bs ? 0 : ($as < $bs ? -1 : 1);
         }
     }
-    function analyze(PaperList $pl, $fields) {
+    function analyze(PaperList $pl) {
         $formulaf = $this->formula_function;
         $this->results = $this->override_results = [];
         $isreal = $this->formula->result_format_is_real();

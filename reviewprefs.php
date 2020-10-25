@@ -240,9 +240,6 @@ $pl->apply_view_report_default();
 $pl->apply_view_session();
 $pl->apply_view_qreq();
 $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
-$pl_text = $pl->table_html(["fold_session_prefix" => "pfdisplay.",
-                      "footer_extra" => "<div id=\"plactr\">" . Ht::submit("fn", "Save changes", ["data-default-submit-all" => 1, "value" => "saveprefs"]) . "</div>",
-                      "list" => true, "live" => true]);
 
 
 // DISPLAY OPTIONS
@@ -323,8 +320,10 @@ echo Ht::form($Conf->hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1);
 echo "<div class=\"pltable-fullw-container\">\n",
-    '<noscript><div style="text-align:center">', Ht::submit("fn", "Save changes", ["value" => "saveprefs"]), '</div></noscript>',
-    $pl_text,
-    "</div></form>\n";
+    '<noscript><div style="text-align:center">', Ht::submit("fn", "Save changes", ["value" => "saveprefs"]), '</div></noscript>';
+$pl->echo_table_html(["fold_session_prefix" => "pfdisplay.",
+                      "footer_extra" => "<div id=\"plactr\">" . Ht::submit("fn", "Save changes", ["data-default-submit-all" => 1, "value" => "saveprefs"]) . "</div>",
+                      "list" => true, "live" => true]);
+echo "</div></form>\n";
 
 $Conf->footer();

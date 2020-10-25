@@ -5,10 +5,12 @@
 class PaperListTableRender {
     /** @var ?string */
     public $table_start;
+    /** @var ?string */
     public $thead;
     public $tbody_class;
     /** @var list<string> */
     public $rows;
+    /** @var ?string */
     public $tfoot;
     public $table_end;
     public $error;
@@ -44,6 +46,7 @@ class PaperListTableRender {
         $tr->error = $error;
         return $tr;
     }
+    /** @return string */
     function tbody_start() {
         return "  <tbody class=\"{$this->tbody_class}\">\n";
     }
@@ -69,12 +72,16 @@ class PaperListTableRender {
             return $x . $heading . "</td></tr>\n";
         }
     }
+    /** @return string */
     function heading_separator_row() {
         return "  <tr class=\"plheading\"><td class=\"plheading-separator\" colspan=\"{$this->ncol}\"></td></tr>\n";
     }
-    function body_rows() {
-        return join("", $this->rows);
+    function echo_tbody_rows() {
+        foreach ($this->rows as $r) {
+            echo $r;
+        }
     }
+    /** @return string */
     function tbody_end() {
         return "  </tbody>\n";
     }
@@ -85,7 +92,9 @@ class PaperListReviewAnalysis {
     private $prow;
     /** @var ?ReviewInfo */
     public $rrow = null;
+    /** @var string */
     public $round = "";
+    /** @param ?ReviewInfo $rrow */
     function __construct($rrow, PaperInfo $prow) {
         $this->prow = $prow;
         if ($rrow->reviewId) {
@@ -95,6 +104,8 @@ class PaperListReviewAnalysis {
             }
         }
     }
+    /** @param bool $includeLink
+     * @return string */
     function icon_html($includeLink) {
         $t = $this->rrow->type_icon();
         if ($includeLink) {
@@ -105,6 +116,7 @@ class PaperListReviewAnalysis {
         }
         return $t;
     }
+    /** @return string */
     function icon_text() {
         $x = "";
         if ($this->rrow->reviewType) {
@@ -115,17 +127,21 @@ class PaperListReviewAnalysis {
         }
         return $x;
     }
+    /** @param string $html
+     * @param ?string $klass
+     * @return string */
     function wrap_link($html, $klass = null) {
-        if (!$this->rrow) {
+        if ($this->rrow) {
+            if ($this->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
+                $href = $this->prow->hoturl(["anchor" => "r" . $this->rrow->unparse_ordinal()]);
+            } else {
+                $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal()]);
+            }
+            $k = $klass ? " class=\"{$klass}\"" : "";
+            return "<a{$k} href=\"{$href}\">{$html}</a>";
+        } else {
             return $html;
         }
-        if ($this->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-            $href = $this->prow->hoturl(["anchor" => "r" . $this->rrow->unparse_ordinal()]);
-        } else {
-            $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal()]);
-        }
-        $t = $klass ? "<a class=\"$klass\"" : "<a";
-        return $t . ' href="' . $href . '">' . $html . '</a>';
     }
 }
 
@@ -176,17 +192,24 @@ class PaperList implements XtContext {
     const VIEW_SHOW = 32;
     const VIEW_EDIT = 64;
 
+    /** @var ?string */
     private $_table_id;
+    /** @var ?string */
     private $_table_class;
+    /** @var string */
     private $_report_id;
+    /** @var ?string */
     private $_row_id_pattern;
     /** @var ?SearchSelection */
     private $_selection;
-
     /** @var callable(PaperList,PaperInfo):bool */
     private $_row_filter;
+
+    /** @var list<PaperColumn> */
+    private $_vcolumns = [];
     /** @var array<string,list<PaperColumn>> */
     private $_columns_by_name;
+    /** @var array<string,list<string>> */
     private $_column_errors_by_name = [];
     /** @var ?string */
     private $_current_find_column;
@@ -227,6 +250,7 @@ class PaperList implements XtContext {
     /** @var ?MessageSet */
     private $_ms;
 
+    /** @var bool */
     static public $include_stash = true;
 
     static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P, ScoreInfo::COUNT];
@@ -336,7 +360,9 @@ class PaperList implements XtContext {
         return $this->_table_id;
     }
 
-    /** @param ?string $table_id */
+    /** @param ?string $table_id
+     * @param ?string $table_class
+     * @param ?string $row_id_pattern */
     function set_table_id_class($table_id, $table_class, $row_id_pattern = null) {
         $this->_table_id = $table_id;
         $this->_table_class = $table_class;
@@ -354,6 +380,7 @@ class PaperList implements XtContext {
         return $this->_ms;
     }
 
+    /** @param string $name */
     function add_column($name, PaperColumn $col) {
         $this->_columns_by_name[$name][] = $col;
     }
@@ -371,6 +398,7 @@ class PaperList implements XtContext {
         "stats" => "statistics",
         "totals" => "statistics"
     ];
+
     static private $view_fake = [
         "anonau" => 150, "aufull" => 150, "force" => 180,
         "kanban" => -2, "rownum" => -1, "statistics" => -1, "all" => -4, "linkto" => -4
@@ -451,6 +479,9 @@ class PaperList implements XtContext {
         }
     }
 
+    /** @param string $name
+     * @param ?list<string> $decorations
+     * @param int $sort_subset */
     private function _add_sorter($name, $decorations, $sort_subset) {
         assert(!$this->_sortcol_fixed);
         // Do not use ensure_columns_by_name(), because decorations for sorters
@@ -636,6 +667,7 @@ class PaperList implements XtContext {
             return 0;
         }
     }
+
     function _then_sort_compare($a, $b) {
         if (($x = $a->_sort_subset - $b->_sort_subset)) {
             return $x < 0 ? -1 : 1;
@@ -703,6 +735,7 @@ class PaperList implements XtContext {
         }
     }
 
+
     /** @param int $g
      * @param TagInfo $dt
      * @param int $anno_index */
@@ -758,7 +791,8 @@ class PaperList implements XtContext {
         }
     }
 
-    private function _collect_groups(array $srows) {
+    /** @param list<PaperInfo> $srows */
+    private function _collect_groups($srows) {
         $groupmap = $this->search->groupmap ?? [];
         $thenmap = $this->search->thenmap ?? [];
         $rowpos = 0;
@@ -788,7 +822,8 @@ class PaperList implements XtContext {
         }
     }
 
-    /** @return string */
+    /** @param bool $always
+     * @return string */
     function sortdef($always = false) {
         $s0 = ($this->sorters())[0];
         if ($s0->sort_subset === -1
@@ -829,6 +864,8 @@ class PaperList implements XtContext {
         return $this->_has[$key];
     }
 
+    /** @param string $key
+     * @return bool */
     private function _compute_has($key) {
         if ($key === "paper" || $key === "submission" || $key === "final") {
             $opt = $this->conf->options()->find($key);
@@ -911,6 +948,8 @@ class PaperList implements XtContext {
     }
 
 
+    /** @param string $text
+     * @param bool $is_default */
     function column_error($text, $is_default = false) {
         if (($name = $this->_current_find_column)
             && (!$is_default || empty($this->_column_errors_by_name[$name]))) {
@@ -955,6 +994,8 @@ class PaperList implements XtContext {
         return $this->_columns_by_name[$name];
     }
 
+    /** @param string $k
+     * @return list<PaperColumn> */
     private function _expand_view_column($k) {
         if (!isset(self::$view_fake[$k])
             && ($this->_viewf[$k] ?? 0) >= self::VIEW_SHOW) {
@@ -978,45 +1019,49 @@ class PaperList implements XtContext {
     }
 
     /** @return list<PaperColumn> */
-    private function _columns() {
+    function vcolumns() {
+        return $this->_vcolumns;
+    }
+
+    /** @param int $prep */
+    private function _set_vcolumns($prep = 0) {
         $this->need_tag_attr = false;
         $this->table_attr = [];
         assert(empty($this->row_attr));
 
         // extract columns from _viewf
         $old_context = $this->conf->xt_swap_context($this);
-        $fields = $viewf = [];
+        $fs1 = $viewf = [];
         foreach ($this->_viewf as $k => $v) {
             foreach ($this->_expand_view_column($k) as $f) {
                 assert($v >= self::VIEW_SHOW);
-                $fields[$f->name] = $fields[$f->name] ?? $f;
+                $fs1[$f->name] = $fs1[$f->name] ?? $f;
                 $viewf[$f->name] = $this->_viewf[$f->name] ?? $v;
             }
         }
         $this->conf->xt_swap_context($old_context);
 
         // update _viewf, prepare, mark fields editable
-        $fields2 = [];
-        foreach ($fields as $k => $f) {
+        $this->_vcolumns = [];
+        foreach ($fs1 as $k => $f) {
             $this->_viewf[$k] = $viewf[$k];
             if ($viewf[$k] >= self::VIEW_EDIT) {
                 $f->mark_editable();
             }
             $f->is_visible = true;
             $f->has_content = false;
-            if ($f->prepare($this, 1)) {
-                $fields2[] = $f;
+            if ($f->prepare($this, PaperColumn::PREP_VISIBLE | $prep)) {
+                $this->_vcolumns[] = $f;
             }
         }
 
         // sort by position
-        usort($fields2, "Conf::xt_position_compare");
+        usort($this->_vcolumns, "Conf::xt_position_compare");
 
         // analyze rows and return
-        foreach ($fields2 as $f) {
-            $f->analyze($this, $fields2);
+        foreach ($this->_vcolumns as $f) {
+            $f->analyze($this);
         }
-        return $fields2;
     }
 
 
@@ -1210,7 +1255,9 @@ class PaperList implements XtContext {
         }
     }
 
-    private function _row_html($rstate, PaperInfo $row, $fieldDef) {
+    /** @param PaperListTableRender $rstate
+     * @return string */
+    private function _row_html($rstate, PaperInfo $row) {
         // filter
         if ($this->_row_filter
             && !call_user_func($this->_row_filter, $this, $row)) {
@@ -1220,7 +1267,7 @@ class PaperList implements XtContext {
 
         // main columns
         $tm = "";
-        foreach ($fieldDef as $fdef) {
+        foreach ($this->_vcolumns as $fdef) {
             if ($fdef->as_row) {
                 continue;
             }
@@ -1240,7 +1287,7 @@ class PaperList implements XtContext {
 
         // extension columns
         $tt = "";
-        foreach ($fieldDef as $fdef) {
+        foreach ($this->_vcolumns as $fdef) {
             if (!$fdef->as_row) {
                 continue;
             }
@@ -1327,6 +1374,11 @@ class PaperList implements XtContext {
         return $t;
     }
 
+    /** @param int $grouppos
+     * @param PaperListTableRender $rstate
+     * @param list<string> &$body
+     * @param bool $last
+     * @return int */
     private function _groups_for($grouppos, $rstate, &$body, $last) {
         for ($did_groupstart = false;
              $grouppos < count($this->_groups)
@@ -1396,13 +1448,12 @@ class PaperList implements XtContext {
         return '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
     }
 
-    /** @param PaperListTableRender $rstate
-     * @param list<PaperColumn> $fieldDef */
-    private function _analyze_folds($rstate, $fieldDef) {
+    /** @param PaperListTableRender $rstate */
+    private function _analyze_folds($rstate) {
         $classes = &$this->table_attr["class"];
         $jscol = [];
         $has_sel = $has_statistics = false;
-        foreach ($fieldDef as $fdef) {
+        foreach ($this->_vcolumns as $fdef) {
             assert(!!$fdef->is_visible);
             $jscol[] = $j = $fdef->field_json($this);
             if ($fdef->fold) {
@@ -1469,14 +1520,14 @@ class PaperList implements XtContext {
         $this->_has = [];
         $this->count = 0;
         $this->need_render = false;
+        $this->_vcolumns = [];
     }
 
     /** @param PaperListTableRender $rstate
-     * @param list<PaperColumn> $fieldDef
      * @param bool $live
      * @return string */
-    private function _statistics_rows($rstate, $fieldDef, $live) {
-        foreach ($fieldDef as $fdef) {
+    private function _statistics_rows($rstate, $live) {
+        foreach ($this->_vcolumns as $fdef) {
             $live = $live || (!$fdef->as_row && $fdef->has_statistics());
         }
         if (!$live) {
@@ -1494,7 +1545,7 @@ class PaperList implements XtContext {
             }
             $t .= ' class="pl_statrow fx7 fx8" data-statistic="' . ScoreInfo::$stat_keys[$stat] . '">';
             $col = 0;
-            foreach ($fieldDef as $fdef) {
+            foreach ($this->_vcolumns as $fdef) {
                 if ($fdef->as_row) {
                     continue;
                 }
@@ -1675,8 +1726,8 @@ class PaperList implements XtContext {
         }
 
         // get column list
-        $field_list = $this->_columns();
-        if (empty($field_list)) {
+        $this->_set_vcolumns();
+        if (empty($this->_vcolumns)) {
             return PaperListTableRender::make_error("Nothing to show");
         }
 
@@ -1695,13 +1746,11 @@ class PaperList implements XtContext {
         }
 
         // get field array
-        $fieldDef = array();
         $ncol = $titlecol = 0;
         // folds: anonau:2, fullrow:3, aufull:4, force:5, rownum:6, statistics:7,
         // statistics-exist:8, [fields]
         $next_fold = 9;
-        foreach ($field_list as $fdef) {
-            $fieldDef[$fdef->name] = $fdef;
+        foreach ($this->_vcolumns as $fdef) {
             if ($this->view_origin($fdef->name) !== self::VIEWORIGIN_REPORT) {
                 $fdef->fold = $next_fold;
                 ++$next_fold;
@@ -1716,7 +1765,7 @@ class PaperList implements XtContext {
 
         // count non-callout columns
         $skipcallout = 0;
-        foreach ($fieldDef as $fdef) {
+        foreach ($this->_vcolumns as $fdef) {
             if (!$fdef->as_row) {
                 if ($fdef->position === null || $fdef->position >= 100) {
                     break;
@@ -1773,7 +1822,7 @@ class PaperList implements XtContext {
             if ($grouppos >= 0) {
                 $grouppos = $this->_groups_for($grouppos, $rstate, $body, false);
             }
-            $body[] = $this->_row_html($rstate, $row, $fieldDef);
+            $body[] = $this->_row_html($rstate, $row);
             if ($this->need_render && !$need_render) {
                 Ht::stash_script('$(plinfo.render_needed)', 'plist_render_needed');
                 $need_render = true;
@@ -1791,23 +1840,23 @@ class PaperList implements XtContext {
         }
 
         // analyze `has`, including authors
-        foreach ($fieldDef as $fdef) {
+        foreach ($this->_vcolumns as $fdef) {
             $this->mark_has($fdef->name, $fdef->has_content);
         }
 
         // statistics rows
         $tfoot = "";
         if (!$this->_view_kanban) {
-            $tfoot = $this->_statistics_rows($rstate, $fieldDef, $options["live"] ?? false);
+            $tfoot = $this->_statistics_rows($rstate, $options["live"] ?? false);
         }
 
         // analyze folds
-        $this->_analyze_folds($rstate, $fieldDef);
+        $this->_analyze_folds($rstate);
 
         // header cells
         if (!($options["noheader"] ?? false)) {
             $ths = "";
-            foreach ($fieldDef as $fdef) {
+            foreach ($this->_vcolumns as $fdef) {
                 if ($fdef->as_row) {
                     continue;
                 }
@@ -1874,8 +1923,8 @@ class PaperList implements XtContext {
         }
 
         // footer
-        reset($fieldDef);
-        if (current($fieldDef) instanceof Selector_PaperColumn
+        reset($this->_vcolumns);
+        if (current($this->_vcolumns) instanceof Selector_PaperColumn
             && !($options["nofooter"] ?? false)) {
             $tfoot .= $this->_footer($ncol, $options["footer_extra"] ?? "", $this->qreq);
         }
@@ -1896,32 +1945,37 @@ class PaperList implements XtContext {
         return $rstate;
     }
 
-    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,fullheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options
-     * @return string */
-    function table_html($options = []) {
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,fullheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options */
+    function echo_table_html($options = []) {
         $render = $this->table_render($options);
-        if ($render->error) {
-            return $render->error;
+        if (!$render->error) {
+            echo $render->table_start,
+                self::$include_stash ? Ht::unstash() : "",
+                $render->thead ?? "",
+                $render->tbody_start();
+            $render->echo_tbody_rows();
+            echo $render->tbody_end(),
+                $render->tfoot ?? "",
+                "</table>";
         } else {
-            return $render->table_start
-                . (self::$include_stash ? Ht::unstash() : "")
-                . ($render->thead ? : "")
-                . $render->tbody_start()
-                . $render->body_rows()
-                . $render->tbody_end()
-                . ($render->tfoot ? : "")
-                . "</table>";
+            echo $render->error;
         }
     }
 
-    /** @param string $fields
-     * @return array{fields:array<string,object>,data:array<int,array{id:int}>,attr?:array,stat?:array} */
-    function column_json($fields) {
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,fullheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options
+     * @return string */
+    function table_html($options = []) {
+        ob_start();
+        $this->echo_table_html($options);
+        return ob_get_clean();
+    }
+
+    /** @return array{fields:array<string,object>,data:array<int,array{id:int}>,attr?:array,stat?:array} */
+    function table_html_json() {
         // get column list, check sort
         $this->_prepare();
-        $this->parse_view($fields, null);
-        $field_list = $this->_columns();
-        if (empty($field_list)) {
+        $this->_set_vcolumns();
+        if (empty($this->_vcolumns)) {
             return ["fields" => [], "data" => []];
         }
 
@@ -1933,7 +1987,7 @@ class PaperList implements XtContext {
         foreach ($this->rowset() as $row) {
             $this->_row_setup($row);
             $p = ["id" => $row->paperId];
-            foreach ($field_list as $fdef) {
+            foreach ($this->_vcolumns as $fdef) {
                 if (($content = $this->_column_html($fdef, $row)) !== "") {
                     $p[$fdef->name] = $content;
                 }
@@ -1948,13 +2002,13 @@ class PaperList implements XtContext {
         }
 
         // analyze `has`, including authors
-        foreach ($field_list as $fdef) {
+        foreach ($this->_vcolumns as $fdef) {
             $this->mark_has($fdef->name, $fdef->has_content);
         }
 
         // output fields and statistics
         $fields = $stats = [];
-        foreach ($field_list as $fdef) {
+        foreach ($this->_vcolumns as $fdef) {
             $fields[$fdef->name] = $fdef->field_json($this);
             if ($fdef->has_statistics()) {
                 $stat = [];
@@ -1979,19 +2033,17 @@ class PaperList implements XtContext {
         return $result;
     }
 
-    /** @param string $fields
-     * @return array<int,object> */
-    function text_json($fields) {
+    /** @return array<int,object> */
+    function text_json() {
         // get column list, check sort
         $this->_prepare();
-        $this->parse_view($fields, null);
-        $field_list = $this->_columns();
+        $this->_set_vcolumns();
         $data = [];
-        if (!empty($field_list)) {
+        if (!empty($this->_vcolumns)) {
             foreach ($this->rowset() as $row) {
                 $this->_row_setup($row);
                 $p = ["id" => $row->paperId];
-                foreach ($field_list as $fdef) {
+                foreach ($this->_vcolumns as $fdef) {
                     if (!$fdef->content_empty($this, $row)
                         && ($text = $fdef->text($this, $row)) !== "") {
                         $p[$fdef->name] = $text;
@@ -2004,9 +2056,9 @@ class PaperList implements XtContext {
     }
 
     /** @return array<string,string> */
-    private function _row_text_csv_data(PaperInfo $row, $fieldDef) {
+    private function _row_text_csv_data(PaperInfo $row) {
         $csv = [];
-        foreach ($fieldDef as $fdef) {
+        foreach ($this->_vcolumns as $fdef) {
             $empty = $fdef->content_empty($this, $row);
             $c = $empty ? "" : $fdef->text($this, $row);
             if ($c !== "") {
@@ -2031,22 +2083,14 @@ class PaperList implements XtContext {
     function text_csv($options = []) {
         // get column list, check sort
         $this->_prepare();
-        $field_list = $this->_columns(); /* XXX */
-
-        // get field array
-        $fieldDef = [];
-        foreach ($field_list as $fdef) {
-            if ($fdef->header($this, true) != "") {
-                $fieldDef[] = $fdef;
-            }
-        }
+        $this->_set_vcolumns();
 
         // collect row data
         $body = [];
         $grouppos = empty($this->_groups) ? -1 : 0;
         foreach ($this->rowset() as $row) {
             $this->_row_setup($row);
-            $csv = $this->_row_text_csv_data($row, $fieldDef);
+            $csv = $this->_row_text_csv_data($row);
             if ($grouppos >= 0) {
                 $grouppos = $this->_groups_for_csv($grouppos, $csv);
             }
@@ -2055,7 +2099,7 @@ class PaperList implements XtContext {
 
         // header cells
         $header = [];
-        foreach ($fieldDef as $fdef) {
+        foreach ($this->_vcolumns as $fdef) {
             if ($fdef->has_content) {
                 $header[$fdef->name] = $fdef->header($this, true);
             }
