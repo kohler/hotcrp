@@ -76,7 +76,7 @@
         "position": 30050,
         "allow_if": "view_review",
         "callback": "+GetReviews_ListAction",
-        "zip": false, "abstract": true, "author_view": true
+        "zip": false, "abstract": true, "author_view": false
     },
     {
         "name": "get/rev", "get": true,
@@ -84,7 +84,7 @@
         "position": 30100,
         "allow_if": "view_review",
         "callback": "+GetReviews_ListAction",
-        "zip": false, "abstract": false, "author_view": true
+        "zip": false, "abstract": false, "author_view": false
     },
     {
         "name": "get/revz", "get": true,
