@@ -2,6 +2,42 @@
 // a_tag.php -- HotCRP assignment helper classes
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class Tag_Assignable extends Assignable {
+    /** @var string */
+    public $ltag;
+    /** @var string */
+    public $_tag;
+    /** @var ?float */
+    public $_index;
+    /** @var ?bool */
+    public $_override;
+    /** @param ?int $pid
+     * @param string $ltag
+     * @param ?string $tag
+     * @param ?float $index
+     * @param ?bool $override */
+    function __construct($pid, $ltag, $tag = null, $index = null, $override = null) {
+        $this->type = "tag";
+        $this->pid = $pid;
+        $this->ltag = $ltag;
+        $this->_tag = $tag ?? $ltag;
+        $this->_index = $index;
+        $this->_override = $override;
+    }
+    /** @return self */
+    function fresh() {
+        return new Tag_Assignable($this->pid, $this->ltag);
+    }
+    /** @param Assignable $q
+     * @return bool */
+    function match($q) {
+        '@phan-var-force Tag_Assignable $q';
+        return ($q->pid ?? $this->pid) === $this->pid
+            && ($q->ltag ?? $this->ltag) === $this->ltag
+            && ($q->_index ?? $this->_index) === $this->_index;
+    }
+}
+
 class NextTagAssigner {
     private $tag;
     public $pidindex = array();
@@ -11,9 +47,9 @@ class NextTagAssigner {
     function __construct($state, $tag, $index, $isseq) {
         $this->tag = $tag;
         $ltag = strtolower($tag);
-        $res = $state->query(["type" => "tag", "ltag" => $ltag]);
+        $res = $state->query(new Tag_Assignable(null, $ltag));
         foreach ($res as $x) {
-            $this->pidindex[$x["pid"]] = (float) $x["_index"];
+            $this->pidindex[$x->pid] = $x->_index;
         }
         asort($this->pidindex);
         if ($index === null) {
@@ -37,12 +73,9 @@ class NextTagAssigner {
         $ltag = strtolower($this->tag);
         foreach ($this->pidindex as $pid => $index) {
             if ($index >= $this->first_index && $index < $this->next_index) {
-                $x = $state->query_unmodified(["type" => "tag", "pid" => $pid, "ltag" => $ltag]);
+                $x = $state->query_unmodified(new Tag_Assignable($pid, $ltag));
                 if (!empty($x)) {
-                    $item = $state->add(["type" => "tag", "pid" => $pid, "ltag" => $ltag,
-                                         "_tag" => $this->tag,
-                                         "_index" => $this->next_index($this->isseq),
-                                         "_override" => true]);
+                    $item = $state->add(new Tag_Assignable($pid, $ltag, $this->tag, $this->next_index($this->isseq), true));
                 }
             }
         }
@@ -72,7 +105,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
         $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag where paperId?a", $state->paper_ids());
         while (($row = $result->fetch_row())) {
-            $state->load(["type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => (float) $row[2]]);
+            $state->load(new Tag_Assignable(+$row[0], strtolower($row[1]), $row[1], (float) $row[2]));
         }
         Dbl::free($result);
     }
@@ -223,8 +256,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         if ($xnext) {
             $nvalue = $this->apply_next_index($prow->paperId, $xnext, $ntag, $nvalue, $state);
         } else if ($nvalue === null) {
-            if (($x = $state->query(["type" => "tag", "pid" => $prow->paperId, "ltag" => $ltag]))) {
-                $nvalue = $x[0]["_index"];
+            if (($x = $state->query(new Tag_Assignable($prow->paperId, $ltag)))) {
+                $nvalue = $x[0]->_index;
             } else {
                 $nvalue = 0.0;
             }
@@ -246,11 +279,10 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // perform assignment
         if ($nvalue === false) {
-            $state->remove(["type" => "tag", "pid" => $prow->paperId, "ltag" => $ltag]);
+            $state->remove(new Tag_Assignable($prow->paperId, $ltag));
         } else {
             assert(is_float($nvalue));
-            $state->add(["type" => "tag", "pid" => $prow->paperId, "ltag" => $ltag,
-                         "_tag" => $ntag, "_index" => (float) $nvalue]);
+            $state->add(new Tag_Assignable($prow->paperId, $ltag, $ntag, $nvalue));
         }
         return true;
     }
@@ -320,13 +352,13 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
 
         // query
-        $res = $state->query(["type" => "tag", "pid" => $prow->paperId, "ltag" => $search_ltag]);
+        $res = $state->query(new Tag_Assignable($prow->paperId, $search_ltag));
         $tag_re = '{\A' . $xuser . $xtag . '\z}i';
         foreach ($res as $x) {
-            if (preg_match($tag_re, $x["ltag"])
+            if (preg_match($tag_re, $x->ltag)
                 && ($search_ltag
-                    || $state->user->can_change_tag($prow, $x["ltag"], $x["_index"], null))) {
-                $state->remove($x);
+                    || $state->user->can_change_tag($prow, $x->ltag, $x->_index, null))) {
+                $f = $state->remove($x);
             }
         }
         return true;

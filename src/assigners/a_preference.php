@@ -2,6 +2,30 @@
 // a_preference.php -- HotCRP assignment helper classes
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class Preference_Assignable extends Assignable {
+    /** @var int */
+    public $cid;
+    /** @var ?int */
+    public $_pref;
+    /** @var ?int */
+    public $_exp;
+    /** @param int $pid
+     * @param ?int $cid
+     * @param ?int $pref
+     * @param ?int $exp */
+    function __construct($pid, $cid, $pref = null, $exp = null) {
+        $this->type = "pref";
+        $this->pid = $pid;
+        $this->cid = $cid;
+        $this->_pref = $pref;
+        $this->_exp = $exp;
+    }
+    /** @return self */
+    function fresh() {
+        return new Preference_Assignable($this->pid, $this->cid, null, null);
+    }
+}
+
 class Preference_AssignmentParser extends AssignmentParser {
     function __construct() {
         parent::__construct("pref");
@@ -12,7 +36,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         }
         $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference where paperId?a", $state->paper_ids());
         while (($row = $result->fetch_row())) {
-            $state->load(["type" => "pref", "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => self::make_exp($row[3])]);
+            $state->load(new Preference_Assignable(+$row[0], +$row[1], +$row[2], self::make_exp($row[3])));
         }
         Dbl::free($result);
     }
@@ -115,9 +139,9 @@ class Preference_AssignmentParser extends AssignmentParser {
             $ppref[1] = $pexp[1];
         }
 
-        $state->remove(["type" => "pref", "pid" => $prow->paperId, "cid" => $contact->contactId]);
+        $state->remove(new Preference_Assignable($prow->paperId, $contact->contactId));
         if ($ppref[0] || $ppref[1] !== null) {
-            $state->add(array("type" => "pref", "pid" => $prow->paperId, "cid" => $contact->contactId, "_pref" => $ppref[0], "_exp" => self::make_exp($ppref[1])));
+            $state->add(new Preference_Assignable($prow->paperId, $contact->contactId, $ppref[0], self::make_exp($ppref[1])));
         }
         return true;
     }
@@ -143,8 +167,9 @@ class Preference_Assigner extends Assigner {
         return $p[0] || $p[1] !== null ? $p : null;
     }
     function unparse_display(AssignmentSet $aset) {
-        if (!$this->cid)
+        if (!$this->cid) {
             return "remove all preferences";
+        }
         $t = $aset->user->reviewer_html_for($this->contact);
         if (($p = $this->preference_data(true))) {
             $t .= " <del>" . unparse_preference_span($p, true) . "</del>";

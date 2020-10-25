@@ -2,6 +2,26 @@
 // a_follow.php -- HotCRP assignment helper classes
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class Follow_Assignable extends Assignable {
+    /** @var ?int */
+    public $cid;
+    /** @var int */
+    public $_watch;
+    /** @param ?int $pid
+     * @param ?int $cid
+     * @param ?int $watch */
+    function __construct($pid, $cid, $watch = null) {
+        $this->type = "follow";
+        $this->pid = $pid;
+        $this->cid = $cid;
+        $this->_watch = $watch;
+    }
+    /** @return self */
+    function fresh() {
+        return new Follow_Assignable($this->pid, $this->cid);
+    }
+}
+
 class Follow_AssignmentParser extends AssignmentParser {
     private $_default_follow;
     function __construct(Conf $conf, $aj) {
@@ -14,7 +34,7 @@ class Follow_AssignmentParser extends AssignmentParser {
         }
         $result = $state->conf->qe("select paperId, contactId, watch from PaperWatch where watch!=0 and paperId?a", $state->paper_ids());
         while (($row = $result->fetch_row())) {
-            $state->load(["type" => "follow", "pid" => +$row[0], "cid" => +$row[1], "_watch" => +$row[2]]);
+            $state->load(new Follow_Assignable(+$row[0], +$row[1], +$row[2]));
         }
         Dbl::free($result);
     }
@@ -46,8 +66,8 @@ class Follow_AssignmentParser extends AssignmentParser {
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         $fs = $this->follow_state($req, $state);
         if (!$fs[0]) {
-            $m = $state->query(["type" => "follow", "pid" => $prow->paperId]);
-            $cids = array_map(function ($x) { return $x["cid"]; }, $m);
+            $m = $state->query(new Follow_Assignable($prow->paperId, null));
+            $cids = array_map(function ($x) { return $x->cid; }, $m);
             return $state->users_by_id($cids);
         } else {
             return false;
@@ -67,10 +87,10 @@ class Follow_AssignmentParser extends AssignmentParser {
         if ($fs[0] === false) {
             return "Bad follow type.";
         }
-        $res = $state->remove(["type" => "follow", "pid" => $prow->paperId, "cid" => $contact->contactId]);
-        $watch = ($res ? $res[0]["_watch"] & ~(Contact::WATCH_REVIEW | Contact::WATCH_REVIEW_EXPLICIT) : 0) | $fs[0];
+        $res = $state->remove(new Follow_Assignable($prow->paperId, $contact->contactId));
+        $watch = ($res ? $res[0]->_watch & ~(Contact::WATCH_REVIEW | Contact::WATCH_REVIEW_EXPLICIT) : 0) | $fs[0];
         if ($watch !== 0) {
-            $state->add(["type" => "follow", "pid" => $prow->paperId, "cid" => $contact->contactId, "_watch" => $watch]);
+            $state->add(new Follow_Assignable($prow->paperId, $contact->contactId, $watch));
         }
         return true;
     }
@@ -90,6 +110,7 @@ class Follow_Assigner extends Assigner {
     }
     private function text($before) {
         $ctype = $this->item->get($before, "_watch");
+        '@phan-var-force int $ctype';
         if ($ctype & Contact::WATCH_REVIEW_EXPLICIT) {
             return $ctype & Contact::WATCH_REVIEW ? "follows" : "unfollows";
         } else {
@@ -109,6 +130,7 @@ class Follow_Assigner extends Assigner {
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $ctype = $this->item->post("_watch");
+        '@phan-var-force int $ctype';
         if ($ctype & Contact::WATCH_REVIEW_EXPLICIT) {
             $ctype = $ctype & Contact::WATCH_REVIEW ? "yes" : "no";
         } else {

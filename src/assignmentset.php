@@ -2,27 +2,53 @@
 // assignmentset.php -- HotCRP helper classes for assignments
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class Assignable {
+    /** @var string */
+    public $type;
+    /** @var int */
+    public $pid;
+    /** @return self */
+    function fresh() {
+        return new Assignable;
+    }
+    /** @param Assignable $q
+     * @return bool */
+    function match($q) {
+        foreach (get_object_vars($q) as $k => $v) {
+            if ($v !== null && $this->$k !== $v)
+                return false;
+        }
+        return true;
+    }
+}
+
 class AssignmentItem implements ArrayAccess {
-    /** @var false|array */
+    /** @var Assignable */
     public $before;
-    /** @var false|null|array */
+    /** @var ?Assignable */
     public $after;
+    /** @var bool */
+    public $existed;
+    /** @var bool */
+    public $deleted = false;
     /** @var null|int|string */
     public $landmark;
-    /** @param false|array $before */
-    function __construct($before) {
+    /** @param Assignable $before
+     * @param bool $existed */
+    function __construct($before, $existed) {
         $this->before = $before;
+        $this->existed = $existed;
     }
     /** @param string $offset
      * @return bool */
     function offsetExists($offset) {
-        $x = $this->after ? : $this->before;
-        return isset($x[$offset]);
+        $x = $this->after ?? $this->before;
+        return isset($x->$offset);
     }
     /** @param string $offset */
     function offsetGet($offset) {
-        $x = $this->after ? : $this->before;
-        return $x[$offset] ?? null;
+        $x = $this->after ?? $this->before;
+        return $x->$offset ?? null;
     }
     function offsetSet($offset, $value) {
         throw new Exception("invalid AssignmentItem::offsetSet");
@@ -32,39 +58,51 @@ class AssignmentItem implements ArrayAccess {
     }
     /** @return bool */
     function existed() {
-        return !!$this->before;
+        return $this->existed;
     }
     /** @return bool */
     function deleted() {
-        return $this->after === false;
+        return $this->deleted;
     }
     /** @return bool */
     function modified() {
-        return $this->after !== null;
+        return !!$this->after;
     }
     /** @param bool $pre
      * @param string $offset */
     function get($pre, $offset) {
-        if ($pre || $this->after === null) {
-            $x = $this->before;
+        if (!$pre && $this->after) {
+            return $this->after->$offset ?? null;
         } else {
-            $x = $this->after;
+            return $this->before->$offset ?? null;
         }
-        return $x ? $x[$offset] ?? null : null;
     }
     /** @param string $offset */
     function pre($offset) {
-        return $this->before ? $this->before[$offset] ?? null : null;
+        return $this->before->$offset ?? null;
     }
     /** @param string $offset */
     function post($offset) {
         $x = $this->after ?? $this->before;
-        return $x ? $x[$offset] ?? null : null;
+        return $x->$offset ?? null;
     }
     /** @param string $offset
      * @return bool */
     function differs($offset) {
         return $this->pre($offset) !== $this->post($offset);
+    }
+    /** @param null|int|string $landmark
+     * @return Assignable */
+    function delete_at($landmark) {
+        $r = $this->after ?? clone $this->before;
+        if ($this->existed) {
+            $this->after = $this->before->fresh();
+            $this->deleted = true;
+        } else {
+            $this->after = null;
+        }
+        $this->landmark = $landmark;
+        return $r;
     }
     function realize(AssignmentState $astate) {
         return call_user_func($astate->realizer($this->offsetGet("type")), $this, $astate);
@@ -127,6 +165,9 @@ class AssignmentState {
         $this->cmap = new AssignerContacts($this->conf, $this->user);
     }
 
+    /** @param string $type
+     * @param list<string> $keys
+     * @return bool */
     function mark_type($type, $keys, $realizer) {
         if (!isset($this->types[$type])) {
             $this->types[$type] = $keys;
@@ -147,13 +188,17 @@ class AssignmentState {
         }
         return $this->st[$pid];
     }
+    /** @param Assignable $x */
     private function extract_key($x, $pid = null) {
-        $tkeys = $this->types[$x["type"]];
+        $tkeys = $this->types[$x->type];
+        if (!$tkeys) {
+            echo var_export($x, true);
+        }
         assert(!!$tkeys);
-        $t = $x["type"];
+        $t = $x->type;
         foreach ($tkeys as $k) {
-            if (isset($x[$k])) {
-                $t .= "`" . $x[$k];
+            if (isset($x->$k)) {
+                $t .= "`" . $x->$k;
             } else if ($pid !== null && $k === "pid") {
                 $t .= "`" . $pid;
             } else {
@@ -162,30 +207,26 @@ class AssignmentState {
         }
         return $t;
     }
+    /** @param Assignable $x */
     function load($x) {
-        $st = $this->pidstate($x["pid"]);
+        $st = $this->pidstate($x->pid);
         $k = $this->extract_key($x);
         assert($k && !isset($st->items[$k]));
-        $st->items[$k] = new AssignmentItem($x);
+        $st->items[$k] = new AssignmentItem($x, true);
     }
 
-    /** @param array{pid?:int} $q
-     * @return list<int> */
+    /** @return list<int> */
     private function pid_keys($q) {
-        if (isset($q["pid"])) {
-            return array($q["pid"]);
+        '@phan-var-force Assignable $q';
+        if (isset($q->pid)) {
+            return [$q->pid];
         } else {
             return array_keys($this->st);
         }
     }
-    static private function match($x, $q) {
-        foreach ($q as $k => $v) {
-            if ($v !== null && ($x[$k] ?? null) !== $v)
-                return false;
-        }
-        return true;
-    }
+    /** @return list<AssignmentItem> */
     function query_items($q) {
+        '@phan-var-force Assignable $q';
         $res = [];
         foreach ($this->pid_keys($q) as $pid) {
             $st = $this->pidstate($pid);
@@ -193,22 +234,27 @@ class AssignmentState {
             foreach ($k ? [$st->items[$k] ?? null] : $st->items as $item) {
                 if ($item
                     && !$item->deleted()
-                    && self::match($item->after ? : $item->before, $q)) {
+                    && $item->before->type === $q->type
+                    && ($item->after ?? $item->before)->match($q)) {
                     $res[] = $item;
                 }
             }
         }
         return $res;
     }
-    /** @return list<array> */
+    /** @template T
+     * @param T $q
+     * @return list<T> */
     function query($q) {
         $res = [];
         foreach ($this->query_items($q) as $item) {
-            $res[] = $item->after ? : $item->before;
+            $res[] = $item->after ?? $item->before;
         }
         return $res;
     }
-    /** @return list<array> */
+    /** @template T
+     * @param T $q
+     * @return list<T> */
     function query_unmodified($q) {
         $res = [];
         foreach ($this->query_items($q) as $item) {
@@ -217,44 +263,51 @@ class AssignmentState {
         }
         return $res;
     }
+    /** @param Assignable $q
+     * @return array */
     function make_filter($key, $q) {
         $cf = [];
         foreach ($this->query($q) as $m) {
-            $cf[$m[$key]] = true;
+            $cf[$m->$key] = true;
         }
         return $cf;
     }
 
+    /** @template T
+     * @param T $q
+     * @return list<T> */
     function remove($q) {
         $res = [];
         foreach ($this->query_items($q) as $item) {
-            $res[] = $item->after ? : $item->before;
-            $item->after = false;
-            $item->landmark = $this->landmark;
+            $res[] = $item->delete_at($this->landmark);
         }
         return $res;
     }
+    /** @template T
+     * @param T $q
+     * @param callable(T):bool $predicate
+     * @return list<T> */
     function remove_if($q, $predicate) {
         $res = [];
         foreach ($this->query_items($q) as $item) {
             if (!$predicate
-                || call_user_func($predicate, $item->after ? : $item->before)) {
-                $res[] = $item->after ? : $item->before;
-                $item->after = false;
-                $item->landmark = $this->landmark;
+                || call_user_func($predicate, $item->after ?? $item->before)) {
+                $res[] = $item->delete_at($this->landmark);
             }
         }
         return $res;
     }
-    /** @return AssignmentItem */
+    /** @param Assignable $x
+     * @return AssignmentItem */
     function add($x) {
         $k = $this->extract_key($x);
         assert(!!$k);
-        $st = $this->pidstate($x["pid"]);
+        $st = $this->pidstate($x->pid);
         if (!($item = $st->items[$k] ?? null)) {
-            $item = $st->items[$k] = new AssignmentItem(false);
+            $item = $st->items[$k] = new AssignmentItem($x->fresh(), false);
         }
         $item->after = $x;
+        $item->deleted = false;
         $item->landmark = $this->landmark;
         return $item;
     }
@@ -264,9 +317,8 @@ class AssignmentState {
         $diff = [];
         foreach ($this->st as $pid => $st) {
             foreach ($st->items as $item) {
-                if ((!$item->before && $item->after)
-                    || ($item->before && $item->after === false)
-                    || ($item->before && $item->after && !self::match($item->before, $item->after)))
+                if ($item->after
+                    && (!$item->existed() || !$item->after->match($item->before)))
                     $diff[$pid][] = $item;
             }
         }
@@ -1775,7 +1827,7 @@ class AssignmentSet {
         $plist = new PaperList("reviewers", $search);
         $plist->add_column("autoassignment", new AutoassignmentPaperColumn($this));
         $plist->set_table_id_class("foldpl", "pltable-fullw");
-        echo $plist->table_html(["nofooter" => true]);
+        $plist->echo_table_html(["nofooter" => true]);
 
         if (count(array_intersect_key($deltarev->bypc, $this->conf->pc_members()))) {
             $summary = [];

@@ -2,6 +2,30 @@
 // a_status.php -- HotCRP assignment helper classes
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class Status_Assignable extends Assignable {
+    /** @var ?int */
+    public $_submitted;
+    /** @var ?int */
+    public $_withdrawn;
+    /** @var ?string */
+    public $_withdraw_reason;
+    /** @param int $pid
+     * @param ?int $submitted
+     * @param ?int $withdrawn
+     * @param ?string $withdraw_reason */
+    function __construct($pid, $submitted = null, $withdrawn = null, $withdraw_reason = null) {
+        $this->type = "status";
+        $this->pid = $pid;
+        $this->_submitted = $submitted;
+        $this->_withdrawn = $withdrawn;
+        $this->_withdraw_reason = $withdraw_reason;
+    }
+    /** @return self */
+    function fresh() {
+        return new Status_Assignable($this->pid);
+    }
+}
+
 class Withdraw_AssignmentFinisher {
     // When withdrawing a paper, remove voting tags so people don't have
     // phantom votes.
@@ -11,7 +35,7 @@ class Withdraw_AssignmentFinisher {
         $this->pid = $pid;
     }
     function apply_finisher(AssignmentState $state) {
-        $res = $state->query_items(["type" => "status", "pid" => $this->pid]);
+        $res = $state->query_items(new Status_Assignable($this->pid));
         if (!$res
             || $res[0]["_withdrawn"] <= 0
             || $res[0]->pre("_withdrawn") > 0) {
@@ -21,13 +45,11 @@ class Withdraw_AssignmentFinisher {
         foreach ($state->conf->tags()->filter("votish") as $dt) {
             $ltre[] = preg_quote(strtolower($dt->tag));
         }
-        $res = $state->query(["type" => "tag", "pid" => $this->pid]);
+        $res = $state->query(new Tag_Assignable($this->pid, null));
         $tag_re = '{\A(?:\d+~|)(?:' . join("|", $ltre) . ')\z}i';
         foreach ($res as $x) {
-            if (preg_match($tag_re, $x["ltag"])) {
-                $x["_index"] = null;
-                $x["_override"] = true;
-                $state->add($x);
+            if (preg_match($tag_re, $x->ltag)) {
+                $state->add(new Tag_Assignable($this->pid, $x->ltag, null, null, true));
             }
         }
     }
@@ -41,18 +63,17 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->user->can_administer($prow)
-            && !$state->user->act_author($prow))
+            && !$state->user->act_author($prow)) {
             return "You can’t administer #{$prow->paperId}.";
-        else
+        } else {
             return true;
+        }
     }
     static function load_status_state(AssignmentState $state) {
         if ($state->mark_type("status", ["pid"], "Status_Assigner::make")) {
-            foreach ($state->prows() as $prow)
-                $state->load(["type" => "status", "pid" => $prow->paperId,
-                              "_submitted" => (int) $prow->timeSubmitted,
-                              "_withdrawn" => (int) $prow->timeWithdrawn,
-                              "_withdraw_reason" => $prow->withdrawReason]);
+            foreach ($state->prows() as $prow) {
+                $state->load(new Status_Assignable($prow->paperId, (int) $prow->timeSubmitted, (int) $prow->timeWithdrawn, $prow->withdrawReason));
+            }
         }
     }
     function load_state(AssignmentState $state) {
@@ -60,31 +81,31 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         Status_AssignmentParser::load_status_state($state);
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        $m = $state->remove(["type" => "status", "pid" => $prow->paperId]);
+        $m = $state->remove(new Status_Assignable($prow->paperId));
         $res = $m[0];
         $ch = false;
         if ($this->xtype === "submit") {
-            if ($res["_submitted"] === 0) {
+            if ($res->_submitted === 0) {
                 if (($whynot = $state->user->perm_finalize_paper($prow))) {
                     return whyNotText($whynot);
                 }
-                $res["_submitted"] = ($res["_withdrawn"] > 0 ? -Conf::$now : Conf::$now);
+                $res->_submitted = ($res->_withdrawn > 0 ? -Conf::$now : Conf::$now);
             }
         } else if ($this->xtype === "unsubmit") {
-            if ($res["_submitted"] !== 0) {
+            if ($res->_submitted !== 0) {
                 if (($whynot = $state->user->perm_edit_paper($prow))) {
                     return whyNotText($whynot);
                 }
-                $res["_submitted"] = 0;
+                $res->_submitted = 0;
             }
         } else if ($this->xtype === "withdraw") {
-            if ($res["_withdrawn"] === 0) {
-                assert($res["_submitted"] >= 0);
+            if ($res->_withdrawn === 0) {
+                assert($res->_submitted >= 0);
                 if (($whynot = $state->user->perm_withdraw_paper($prow))) {
                     return whyNotText($whynot);
                 }
-                $res["_withdrawn"] = Conf::$now;
-                $res["_submitted"] = -$res["_submitted"];
+                $res->_withdrawn = Conf::$now;
+                $res->_submitted = -$res->_submitted;
                 if ($state->conf->tags()->has_votish) {
                     Tag_AssignmentParser::load_tag_state($state);
                     $state->finishers[] = new Withdraw_AssignmentFinisher($prow->paperId);
@@ -92,21 +113,22 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             }
             $r = $req["withdraw_reason"];
             if ((string) $r !== ""
-                && $state->user->can_withdraw_paper($prow))
-                $res["_withdraw_reason"] = $r;
+                && $state->user->can_withdraw_paper($prow)) {
+                $res->_withdraw_reason = $r;
+            }
         } else if ($this->xtype === "revive") {
-            if ($res["_withdrawn"] !== 0) {
-                assert($res["_submitted"] <= 0);
+            if ($res->_withdrawn !== 0) {
+                assert($res->_submitted <= 0);
                 if (($whynot = $state->user->perm_revive_paper($prow))) {
                     return whyNotText($whynot);
                 }
-                $res["_withdrawn"] = 0;
-                if ($res["_submitted"] === -100) {
-                    $res["_submitted"] = Conf::$now;
+                $res->_withdrawn = 0;
+                if ($res->_submitted === -100) {
+                    $res->_submitted = Conf::$now;
                 } else {
-                    $res["_submitted"] = -$res["_submitted"];
+                    $res->_submitted = -$res->_submitted;
                 }
-                $res["_withdraw_reason"] = null;
+                $res->_withdraw_reason = null;
             }
         }
         $state->add($res);

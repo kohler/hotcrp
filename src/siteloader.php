@@ -44,6 +44,7 @@ class SiteLoader {
 
     static $suffix_map = [
         "_api.php" => ["api_", "api"],
+        "_assignable.php" => ["a_", "assigners"],
         "_assigner.php" => ["a_", "assigners"],
         "_assignmentparser.php" => ["a_", "assigners"],
         "_capability.php" => ["cap_", "capabilities"],

@@ -2,6 +2,25 @@
 // a_lead.php -- HotCRP assignment helper classes
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class Lead_Assignable extends Assignable {
+    /** @var ?int */
+    public $_cid;
+    /** @var ?int */
+    public $_override;
+    /** @param string $type
+     * @param ?int $pid
+     * @param ?int $cid */
+    function __construct($type, $pid, $cid = null) {
+        $this->type = $type;
+        $this->pid = $pid;
+        $this->_cid = $cid;
+    }
+    /** @return self */
+    function fresh() {
+        return new Lead_Assignable($this->type, $this->pid);
+    }
+}
+
 class Lead_AssignmentParser extends AssignmentParser {
     private $key;
     private $remove;
@@ -17,7 +36,7 @@ class Lead_AssignmentParser extends AssignmentParser {
         $k = $this->key . "ContactId";
         foreach ($state->prows() as $prow) {
             if (($cid = +$prow->$k))
-                $state->load(["type" => $this->key, "pid" => $prow->paperId, "_cid" => $cid]);
+                $state->load(new Lead_Assignable($this->key, $prow->paperId, $cid));
         }
         Conflict_AssignmentParser::load_conflict_state($state);
     }
@@ -39,8 +58,8 @@ class Lead_AssignmentParser extends AssignmentParser {
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         if ($this->remove) {
-            $m = $state->query(["type" => $this->key, "pid" => $prow->paperId]);
-            $cids = array_map(function ($x) { return $x["_cid"]; }, $m);
+            $m = $state->query(new Lead_Assignable($this->key, $prow->paperId));
+            $cids = array_map(function ($x) { return $x->_cid; }, $m);
             return $state->users_by_id($cids);
         } else {
             return false;
@@ -67,13 +86,13 @@ class Lead_AssignmentParser extends AssignmentParser {
         if ($this->remove && $contact->contactId) {
             $remcid = $contact->contactId;
         }
-        $state->remove(["type" => $this->key, "pid" => $prow->paperId, "_cid" => $remcid]);
+        $state->remove(new Lead_Assignable($this->key, $prow->paperId, $remcid));
         if (!$this->remove && $contact->contactId) {
-            $it = ["type" => $this->key, "pid" => $prow->paperId, "_cid" => $contact->contactId];
+            $a = new Lead_Assignable($this->key, $prow->paperId, $contact->contactId);
             if (isset($req["override"]) && friendly_boolean($req["override"])) {
-                $it["_override"] = 1;
+                $a->_override = 1;
             }
-            $state->add($it);
+            $state->add($a);
         }
         return true;
     }
@@ -92,29 +111,32 @@ class Lead_Assigner extends Assigner {
         return new Lead_Assigner($item, $state);
     }
     function icon() {
-        if ($this->type === "lead")
+        if ($this->type === "lead") {
             return review_lead_icon();
-        else if ($this->type === "shepherd")
+        } else if ($this->type === "shepherd") {
             return review_shepherd_icon();
-        else
+        } else {
             return "({$this->description})";
+        }
     }
     function unparse_description() {
         return $this->description;
     }
     function unparse_display(AssignmentSet $aset) {
         $t = [];
-        if ($this->item->existed())
+        if ($this->item->existed()) {
             $t[] = '<del>' . $aset->user->reviewer_html_for($this->item->pre("_cid")) . " " . $this->icon() . '</del>';
-        if (!$this->item->deleted())
+        }
+        if (!$this->item->deleted()) {
             $t[] = '<ins>' . $aset->user->reviewer_html_for($this->contact) . " " . $this->icon() . '</ins>';
+        }
         return join(" ", $t);
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $x = ["pid" => $this->pid, "action" => $this->description];
-        if ($this->item->deleted())
+        if ($this->item->deleted()) {
             $x["email"] = "none";
-        else {
+        } else {
             $x["email"] = $this->contact->email;
             $x["name"] = $this->contact->name();
         }
@@ -122,8 +144,9 @@ class Lead_Assigner extends Assigner {
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
         $aset->show_column($this->description);
-        if (!$this->item->deleted())
+        if (!$this->item->deleted()) {
             $aset->show_column("reviewers");
+        }
         $k = $this->type;
         if ($k === "lead" || $k === "shepherd") {
             $deltarev->$k = true;
