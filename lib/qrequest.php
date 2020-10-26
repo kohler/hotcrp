@@ -52,7 +52,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this->____path;
     }
     /** @param int $n
-     * @return false|string */
+     * @return ?string */
     function path_component($n, $decoded = false) {
         if ((string) $this->____path !== "") {
             $p = explode("/", substr($this->____path, 1));
@@ -61,7 +61,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
                 return $decoded ? urldecode($p[$n]) : $p[$n];
             }
         }
-        return false;
+        return null;
     }
     function offsetExists($offset) {
         return property_exists($this, $offset);
