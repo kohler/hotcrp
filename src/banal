@@ -123,12 +123,16 @@ sub pdf2in ($) {
     return $_[0] / 720;
 }
 
+sub in2pdf ($) {
+    return $_[0] * 720;
+}
+
 sub pdf2pt ($) {
     return $_[0] / 10;
 }
 
-sub in2pdf ($) {
-    return $_[0] * 720;
+sub pt2pdf ($) {
+    return $_[0] * 10;
 }
 
 sub rpdf ($) {
@@ -230,15 +234,14 @@ sub bb_merge ($$) {
     $b->{width} = max $a->{width}, $b->{width};
 }
 
-sub calc_page_bodyfontsize ($$$) {
-    my ($page, $alen_bysize, $tlen_bysize) = @_;
+sub bodyfontsize (\%\%) {
+    my ($alen_bysize, $tlen_bysize) = @_;
 
     my ($asize) = %$alen_bysize ? modevalkey($alen_bysize) : 0;
     my ($tsize) = %$tlen_bysize ? modevalkey($tlen_bysize) : 0;
     if ($tsize && (!$asize || $alen_bysize->{$asize} < 0.6 * $tlen_bysize->{$tsize})) {
         $asize = $tsize;
     }
-    $page->{bodyfont_pt} = pdf2pt($asize);
     $asize;
 }
 
@@ -525,9 +528,17 @@ sub calc_page_headings ($$$$) {
             $doc->{headings}->{$1} = 1;
         }
 
+        if (!exists($page->{headings})) {
+            $page->{headings} = [];
+            $page->{heading_texts} = [];
+        }
         $page->{headings} = [] if !exists $page->{headings};
         push @{$page->{headings}}, $content;
-        $page->{heading1} = 1 if $was_near_top;
+        $text->{coll} = $coll;
+        $text->{colr} = $colr;
+        $text->{is_references} = $content =~ /\A(?:References?|Bibliography)\z/i;
+        $page->{heading1} = $text->{heading1} = 1 if $was_near_top;
+        push @{$page->{heading_texts}}, $text;
 
         # skip rest if saw contents
         if (@{$page->{headings}} == 1
@@ -826,10 +837,17 @@ sub report_json ($) {
         } else {
             my($page_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
             push @val, $page_margin if $page_margin ne $doc_margin;
-            my($page_bfs) = sprintf "\"bodyfontsize\": %g", $page->{bodyfont_pt};
-            push @val, $page_bfs if $page_bfs ne $doc_bfs;
-            my($page_l) = sprintf "\"leading\": %g", $page->{lead_pt};
-            push @val, $page_l if $page_l ne $doc_l;
+            if (exists($page->{bodyfont_pt})) {
+                my($page_bfs) = sprintf "\"bodyfontsize\": %g", $page->{bodyfont_pt};
+                push @val, $page_bfs if $page_bfs ne $doc_bfs;
+            }
+            if (exists($page->{reffont_pt}) && $page->{reffont_pt} != $doc->{bodyfont_pt}) {
+                push @val, sprintf "\"reffontsize\": %g", $page->{reffont_pt};
+            }
+            if (exists($page->{lead_pt}) && $page->{lead_pt}) {
+                my($page_l) = sprintf "\"leading\": %g", $page->{lead_pt};
+                push @val, $page_l if $page_l ne $doc_l;
+            }
             my($page_c) = sprintf "\"columns\": %d", $page->{ncols};
             push @val, $page_c if $page_c ne $doc_c &&
                 $page->{type} ne "figure" &&
@@ -1136,13 +1154,49 @@ sub unxml ($) {
     $t;
 }
 
+sub account_text_sizes ($\%\%) {
+    my($text, $alens, $tlens) = @_;
+    my($size, $len) = ($text->{sz}, length($text->{content}) + 1);
+    $alens->{$size} = 0 if !exists $alens->{$size};
+    $alens->{$size} += $len;
+    if (!$text->{num}) {
+        $tlens->{$size} = 0 if !exists $tlens->{$size};
+        $tlens->{$size} += $len;
+    }
+}
+
+sub bodyfontsize_reffontsize (\@$$) {
+    my($texts, $refhead, $unrefhead) = @_;
+    my($rl, $rr, $rt, $ul, $ur, $ut);
+    if ($refhead) {
+        $rl = $refhead->{coll};
+        $rr = $refhead->{colr};
+        $rt = $refhead->{t};
+    }
+    if ($unrefhead) {
+        $ul = $unrefhead->{coll};
+        $ur = $unrefhead->{colr};
+        $ut = $unrefhead->{t};
+    }
+    my (%ref_alens, %unref_alens, %ref_tlens, %unref_tlens);
+    foreach my $text (@$texts)  {
+        my($l, $r, $t, $b) = ($text->{l}, $text->{l} + $text->{w}, $text->{t}, $text->{t} + $text->{h});
+        if (($refhead && ($l < $rl || $r <= $rl || ($l <= $rr && $b <= $rt)))
+            || ($unrefhead && ($l >= $ur || ($r >= $ul && $t >= $ut)))) {
+            account_text_sizes($text, %text_alens, %text_tlens);
+        } else {
+            account_text_sizes($text, %ref_alens, %ref_tlens);
+        }
+    }
+    (bodyfontsize(%text_alens, %text_tlens), bodyfontsize(%ref_alens, %ref_tlens));
+}
+
 sub parse_p2h_text ($$$) {
     my ($doc, $line, $page) = @_;
     my ($pagewidth) = $page->{pagebb}->{width};
     my ($pageheight) = $page->{pagebb}->{height};
 
-    my (@texts);
-    my (%tlen_bysize, %alen_bysize);
+    my (@texts, %alens, %tlens);
     my ($lowest_number) = 0;
 
     while (1) {
@@ -1197,29 +1251,23 @@ sub parse_p2h_text ($$$) {
             $content = unxml($1);
         }
         my ($isnum) = length($content) <= 5 && $content =~ /\A[- ,.:\/0-9]*\z/;
-
-        push @texts, {
+        my ($text) = {
             t => $top, l => $left, w => $right - $left, h => $bottom - $top,
             f => $font, sz => $size, content => $content, num => $isnum
         };
-        # print STDERR $page->{num}, " ", int(pdf2pt($left)), " ", $top, " ", $content, "\n";
 
-        $alen_bysize{$size} = 0 if !exists $alen_bysize{$size};
-        $alen_bysize{$size} += length($content) + 1;
-        if ($isnum) {
-            if ($content =~ /\d/) {
-                $lowest_number = max $lowest_number, $bottom;
-            }
-        } else {
-            $tlen_bysize{$size} = 0 if !exists $tlen_bysize{$size};
-            $tlen_bysize{$size} += length($content) + 1;
+        push @texts, $text;
+        account_text_sizes($text, %alens, %tlens);
+        if ($text->{num} && $content =~ /\d/) {
+            $lowest_number = max $lowest_number, $bottom;
         }
+        # print STDERR $page->{num}, " ", int(pdf2pt($left)), " ", $top, " ", $content, "\n";
 
         $line = <$FILE>;
     }
 
     # compute page body font: the font with the most characters
-    my ($bodyfontsize) = calc_page_bodyfontsize($page, \%alen_bysize, \%tlen_bysize);
+    my ($bodyfontsize) = bodyfontsize(%alens, %tlens);
 
     # compute extent map, using extents larger than the body font
     # plus other extents that aren’t short numbers
@@ -1239,14 +1287,47 @@ sub parse_p2h_text ($$$) {
     calc_page_text_region($page, $xmap, $ymap);
     $page->{lowest_number} = $lowest_number;
 
-    # compute leading using bodyfontsize and column specs
-    calc_page_leading($page, \@texts, $bodyfontsize);
-
-    # compute page character count using content lengths
-    calc_page_nchars($page, \%alen_bysize, $bodyfontsize);
-
     # compute headings
     calc_page_headings($doc, $page, \@texts, $bodyfontsize);
+
+    # recompute font size if headings contained references
+    my ($reffontsize);
+    if (exists($page->{heading_texts})) {
+        my ($was_inref, $inref, $refhead, $unrefhead);
+        $was_inref = $inref = $doc->{in_references};
+        foreach my $text (@{$page->{heading_texts}}) {
+            if ($text->{is_references}) {
+                $inref = 1;
+                $refhead = $text;
+            } elsif ($inref) {
+                $inref = 0;
+                $unrefhead = $text;
+            }
+        }
+        $doc->{in_references} = $inref;
+
+        $was_inref = 1 if $refhead && exists $refhead->{heading1};
+        $was_inref = 0 if $unrefhead && exists $unrefhead->{heading1};
+
+        if (($refhead && !$was_inref) || ($unrefhead && $was_inref)) {
+            ($bodyfontsize, $reffontsize) = bodyfontsize_reffontsize(@texts, $refhead, $unrefhead);
+        } elsif ($was_inref) {
+            $reffontsize = $bodyfontsize;
+            $bodyfontsize = undef;
+        }
+    } elsif ($doc->{in_references}) {
+        $reffontsize = $bodyfontsize;
+        $bodyfontsize = undef;
+    }
+    $page->{bodyfont_pt} = pdf2pt($bodyfontsize) if $bodyfontsize;
+    $page->{reffont_pt} = pdf2pt($reffontsize) if $reffontsize;
+    my($fontsize) = $bodyfontsize ? $bodyfontsize : $reffontsize;
+
+    # compute leading using bodyfontsize and column specs
+    calc_page_leading($page, \@texts, $fontsize);
+
+    # compute page character count using content lengths
+    calc_page_nchars($page, \%alens, $fontsize);
 }
 
 sub parse_p2h_page ($) {
@@ -1337,7 +1418,12 @@ sub merge_page ($$) {
         $doc->{pagebb} = $page->{pagebb};
         $doc->{bodyfont_pt} = $page->{bodyfont_pt};
         $doc->{ncols} = $page->{ncols};
-        return;
+    }
+    if (exists($page->{bodyfont_pt})) {
+        my($bodyfontsize) = pt2pdf($page->{bodyfont_pt});
+        if (!exists($doc->{max_bodyfontsize}) || $doc->{max_bodyfontsize} < $bodyfontsize) {
+            $doc->{max_bodyfontsize} = $bodyfontsize;
+        }
     }
 }
 
@@ -1357,6 +1443,7 @@ sub banal_file ($) {
         app => '',
         fullpath => $file,
         filename => basename($file),
+        in_references => 0
     };
 
     $banal_fullpath = $doc->{fullpath};
