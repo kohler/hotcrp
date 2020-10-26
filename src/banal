@@ -438,15 +438,15 @@ sub calc_page_headings ($$$$) {
     my ($colpos) = $page->{colpos};
     my ($slack) = in2pdf(1/8);
     my ($top) = $page->{textbb}->{top} + 0.075 * $page->{textbb}->{height};
-    my ($topx) = $page->{textbb}->{top} + 0.15 * $page->{textbb}->{height};
     my ($near_top) = 1;
+    my ($in_refs_top) = $doc->{in_references};
     my ($contents) = 0;
 
     TPOS: for (my $tpos = 0; $tpos < @$texts; ) {
         my ($tpos1) = $tpos;
         my ($text) = $texts->[$tpos];
         if ($text->{sz} < $bodyfontsize || $text->{sz} < $slack) {
-            $near_top = 0 if $near_top && !$text->{num} && $text->{t} > $topx;
+            $near_top = $in_refs_top = 0 if $in_refs_top && !$text->{num} && $text->{t} > $top;
             ++$tpos;
             next;
         }
