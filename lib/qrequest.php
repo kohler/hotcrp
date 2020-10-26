@@ -13,10 +13,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $____post_ok = false;
     /** @var bool */
     private $____post_empty = false;
-    /** @var false|string */
-    private $____page = false;
-    /** @var false|string */
-    private $____path = false;
+    /** @var ?string */
+    private $____page;
+    /** @var ?string */
+    private $____path;
     function __construct($method, $data = null) {
         $this->____method = $method;
         if ($data) {
@@ -43,11 +43,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function is_post() {
         return $this->____method === "POST";
     }
-    /** @return false|string */
+    /** @return ?string */
     function page() {
         return $this->____page;
     }
-    /** @return false|string */
+    /** @return ?string */
     function path() {
         return $this->____path;
     }
