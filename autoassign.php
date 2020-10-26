@@ -380,23 +380,33 @@ class AutoassignerInterface {
         echo Ht::hidden("p", join(" ", $this->ssel->selection()));
     }
 
-    private function echo_result_html($assignments, $profile_json) {
+    /** @return Assignment_PaperColumn */
+    private function echo_result_html_1($assignments) {
+        // Divided into separate functions to facilitate garbage collection
         $assignset = new AssignmentSet($this->user, true);
         $assignset->set_search_type($this->qreq->t);
         $assignset->parse(join("\n", $assignments));
 
         $atypes = $assignset->assigned_types();
-        $apids = $assignset->assigned_pids(true);
-        $this->echo_form_start(["saveassignment" => 1, "assigntypes" => join(" ", $atypes), "assignpids" => join(" ", $apids)], []);
+        $apids = $assignset->numjoin_assigned_pids(" ");
+        $this->echo_form_start(["saveassignment" => 1, "assigntypes" => join(" ", $atypes), "assignpids" => $apids], []);
 
         $atype = $assignset->type_description();
         echo "<h3 class=\"form-h\">Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
         Conf::msg_info("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.) Reviewer preferences, if any, are shown as “P#”.");
         $assignset->report_errors();
-        $assignset->echo_unparse_display();
 
+        return $assignset->unparse_paper_column();
+    }
+
+    private function echo_result_html($assignments, $profile_json) {
+        // prepare assignment, print form entry, extract unparsed assignment
+        $pc = $this->echo_result_html_1($assignments);
+        // echo paper list
+        gc_collect_cycles();
+        Assignment_PaperColumn::echo_unparse_display($pc);
+        // complete
         $this->echo_profile_json($profile_json);
-
         echo '<div class="aab aabig btnp">',
             Ht::submit("submit", "Apply changes", ["class" => "btn-primary"]),
             Ht::submit("download", "Download assignment file"),
@@ -799,7 +809,7 @@ foreach ($Conf->pc_members() as $id => $p) {
             "id" => "pcc$id", "data-range-type" => "pcc",
             "class" => "uic js-range-click js-pcsel-tag"
         ]) . '</span>' . $Me->reviewer_html_for($p)
-        . AssignmentSet::review_count_report($nrev, null, $p, "")
+        . $nrev->get($id)->unparse_review_counts($p)
         . "</label></div>";
     $summary[] = $t;
 }

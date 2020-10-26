@@ -143,11 +143,11 @@ if (isset($Qreq->upload)
             $Conf->infoMsg("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.)");
 
             $atypes = $assignset->assigned_types();
-            $apids = $assignset->assigned_pids(true);
+            $apids = $assignset->numjoin_assigned_pids(" ");
             echo Ht::form($Conf->hoturl_post("bulkassign", [
                     "saveassignment" => 1,
                     "assigntypes" => join(" ", $atypes),
-                    "assignpids" => join(" ", $apids)
+                    "assignpids" => $apids
                 ])),
                 Ht::hidden("default_action", get($defaults, "action", "guess")),
                 Ht::hidden("rev_round", $defaults["round"]),

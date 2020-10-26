@@ -646,12 +646,51 @@ class AssignmentCount {
     public $sec = 0;
     public $lead = 0;
     public $shepherd = 0;
+    /** @return AssignmentCount */
     function add(AssignmentCount $ct) {
-        $xct = new AssignmentCount;
-        foreach (["rev", "meta", "pri", "sec", "ass", "lead", "shepherd"] as $k) {
-            $xct->$k = $this->$k + $ct->$k;
-        }
+        $xct = clone $this;
+        $xct->ass += $ct->ass;
+        $xct->rev += $ct->rev;
+        $xct->meta += $ct->meta;
+        $xct->pri += $ct->pri;
+        $xct->sec += $ct->sec;
+        $xct->lead += $ct->lead;
+        $xct->shepherd += $ct->shepherd;
         return $xct;
+    }
+    /** @param int $count
+     * @param string $item
+     * @param bool $plural
+     * @param string $prefix
+     * @param Contact $pc
+     * @return string */
+    static function unparse_count($count, $item, $plural, $prefix, $pc) {
+        $t = $plural ? plural($count, $item) : $count . "&nbsp;" . $item;
+        if ($count === 0) {
+            return $t;
+        } else {
+            $url = $pc->conf->hoturl("search", "q=" . urlencode("$prefix:{$pc->email}"));
+            return "<a class=\"qq\" href=\"{$url}\">{$t}</a>";
+        }
+    }
+    /** @param Contact $pc
+     * @return string */
+    function unparse_review_counts($pc) {
+        $t = self::unparse_count($this->rev, "review", true, "re", $pc);
+        $x = [];
+        if ($this->meta !== 0) {
+            $x[] = self::unparse_count($this->meta, "meta", false, "meta", $pc);
+        }
+        if ($this->pri !== $this->rev && (!$this->meta || $this->meta !== $this->rev)) {
+            $x[] = self::unparse_count($this->pri, "primary", false, "pri", $pc);
+        }
+        if ($this->sec !== 0 && $this->sec !== $this->rev && $this->pri + $this->sec !== $this->rev) {
+            $x[] = self::unparse_count($this->sec, "secondary", false, "sec", $pc);
+        }
+        if (!empty($x)) {
+            $t .= " (" . join(", ", $x) . ")";
+        }
+        return $t;
     }
 }
 
@@ -710,6 +749,28 @@ class AssignmentCountSet {
     }
     function load_shepherd() {
         $this->load_paperpc("shepherd");
+    }
+
+    /** @param Contact $pc
+     * @param string $prefix
+     * @param ?AssignmentCountSet $delta
+     * @return string */
+    function unparse_counts($pc, $prefix = "", $delta = null) {
+        $data = [];
+        $ct = $this->get($pc->contactId);
+        if ($delta) {
+            $ct = $ct->add($delta->get($pc->contactId));
+        }
+        if (!$delta || $delta->rev) {
+            $data[] = $ct->unparse_review_counts($pc);
+        }
+        if ($delta && $delta->lead) {
+            $data[] = AssignmentCount::unparse_count($ct->lead, "lead", true, "lead", $pc);
+        }
+        if ($delta && $delta->shepherd) {
+            $data[] = AssignmentCount::unparse_count($ct->shepherd, "shepherd", true, "shepherd", $pc);
+        }
+        return '<span class="pcrevsum">' . $prefix . join(", ", $data) . "</span>";
     }
 }
 
@@ -1006,13 +1067,19 @@ class AssignmentSet {
     private $assigners = [];
     /** @var array<int,int> */
     private $assigners_pidhead = [];
-    private $enabled_pids = null;
-    private $enabled_actions = null;
+    /** @var ?list<int> */
+    private $enabled_pids;
+    /** @var ?array<string,true> */
+    private $enabled_actions;
     /** @var AssignmentState */
     private $astate;
+    /** @var array<string,list<int>> */
     private $searches = [];
+    /** @var string */
     private $search_type = "s";
-    private $unparse_search = false;
+    /** @var ?string */
+    private $unparse_search;
+    /** @var array<string,bool> */
     private $unparse_columns = [];
     private $assignment_type;
     /** @var array<string,array{callable,mixed}> */
@@ -1726,6 +1793,7 @@ class AssignmentSet {
         $this->user->set_overrides($old_overrides);
     }
 
+    /** @return list<string> */
     function assigned_types() {
         $types = array();
         foreach ($this->assigners as $assigner) {
@@ -1734,29 +1802,35 @@ class AssignmentSet {
         ksort($types);
         return array_keys($types);
     }
-    function assigned_pids($compress = false) {
+
+    /** @return list<int> */
+    function assigned_pids() {
         $pids = array_keys($this->assigners_pidhead);
         sort($pids, SORT_NUMERIC);
-        if ($compress) {
-            $xpids = array();
-            $lpid = $rpid = -1;
-            foreach ($pids as $pid) {
-                if ($lpid >= 0 && $pid != $rpid + 1) {
-                    $xpids[] = $lpid == $rpid ? $lpid : "$lpid-$rpid";
-                }
-                if ($lpid < 0 || $pid != $rpid + 1) {
-                    $lpid = $pid;
-                }
-                $rpid = $pid;
-            }
-            if ($lpid >= 0) {
-                $xpids[] = $lpid == $rpid ? $lpid : "$lpid-$rpid";
-            }
-            $pids = $xpids;
-        }
         return $pids;
     }
 
+    /** @param string $joiner
+     * @return string */
+    function numjoin_assigned_pids($joiner) {
+        $t = [];
+        $l = $r = -1;
+        foreach ($this->assigned_pids() as $pid) {
+            if ($l >= 0 && $pid != $r + 1) {
+                $t[] = $l === $r ? $l : "$l-$r";
+            }
+            if ($l < 0 || $pid !== $r + 1) {
+                $l = $pid;
+            }
+            $r = $pid;
+        }
+        if ($l >= 0) {
+            $t[] = $l === $r ? $l : "$l-$r";
+        }
+        return join($joiner, $t);
+    }
+
+    /** @return string */
     function type_description() {
         if ($this->assignment_type === null) {
             foreach ($this->assigners as $assigner) {
@@ -1772,12 +1846,14 @@ class AssignmentSet {
         return $this->assignment_type;
     }
 
-    function unparse_paper_assignment(PaperInfo $prow) {
+    /** @param int $pid
+     * @return string */
+    function unparse_paper_assignment($pid) {
         $assigners = [];
-        for ($index = $this->assigners_pidhead[$prow->paperId] ?? null;
-             $index !== null;
-             $index = $assigner->next_index) {
-            $assigners[] = $assigner = $this->assigners[$index];
+        $index = $this->assigners_pidhead[$pid] ?? null;
+        while ($index !== null) {
+            $assigners[] = $this->assigners[$index];
+            $index = $this->assigners[$index]->next_index;
         }
         usort($assigners, function ($assigner1, $assigner2) {
             $c1 = $assigner1->contact;
@@ -1806,52 +1882,38 @@ class AssignmentSet {
             return "";
         }
     }
-    function echo_unparse_display() {
-        $deltarev = new AssignmentCountSet($this->conf);
-        foreach ($this->assigners as $assigner) {
-            $assigner->account($this, $deltarev);
+
+    /** @return Assignment_PaperColumn */
+    function unparse_paper_column() {
+        $pc = new Assignment_PaperColumn($this->user, $this->astate->reviewer);
+
+        foreach ($this->assigners_pidhead as $pid => $n) {
+            if (($t = $this->unparse_paper_assignment($pid)) !== "") {
+                $pc->content[$pid] = $t;
+            }
         }
 
-        $query = $this->assigned_pids(true);
+        $pc->change_counts = new AssignmentCountSet($this->conf);
+        foreach ($this->assigners as $assigner) {
+            $assigner->account($this, $pc->change_counts);
+        }
+
+        // Compute query last; unparse/account may show columns
+        $q = $this->numjoin_assigned_pids(" ") ? : "NONE";
         if ($this->unparse_search) {
-            $query_order = "(" . $this->unparse_search . ") THEN HEADING:none " . join(" ", $query);
-        } else {
-            $query_order = empty($query) ? "NONE" : join(" ", $query);
+            $q = "({$this->unparse_search}) THEN HEADING:none $q";
         }
         foreach ($this->unparse_columns as $k => $v) {
             if ($v)
-                $query_order .= " show:$k";
+                $q .= " show:$k";
         }
-        $query_order .= " show:autoassignment";
-        $search = new PaperSearch($this->user, ["q" => $query_order, "t" => "viewable", "reviewer" => $this->astate->reviewer]);
-        $plist = new PaperList("reviewers", $search);
-        $plist->add_column("autoassignment", new AutoassignmentPaperColumn($this));
-        $plist->set_table_id_class("foldpl", "pltable-fullw");
-        $plist->echo_table_html(["nofooter" => true]);
+        $pc->search_query = "$q show:autoassignment";
 
-        if (count(array_intersect_key($deltarev->bypc, $this->conf->pc_members()))) {
-            $summary = [];
-            $tagger = new Tagger($this->user);
-            $nrev = new AssignmentCountSet($this->conf);
-            $deltarev->rev && $nrev->load_rev();
-            $deltarev->lead && $nrev->load_lead();
-            $deltarev->shepherd && $nrev->load_shepherd();
-            foreach ($this->conf->pc_members() as $p) {
-                if ($deltarev->get($p->contactId)->ass) {
-                    $t = '<div class="ctelt"><div class="ctelti">'
-                        . $this->user->reviewer_html_for($p) . ": "
-                        . plural($deltarev->get($p->contactId)->ass, "assignment")
-                        . self::review_count_report($nrev, $deltarev, $p, "After assignment:&nbsp;")
-                        . "<hr class=\"c\" /></div></div>";
-                    $summary[] = $t;
-                }
-            }
-            if (!empty($summary)) {
-                echo "<div class=\"g\"></div>\n",
-                    "<h3>Summary</h3>\n",
-                    '<div class="pc-ctable">', join("", $summary), "</div>\n";
-            }
-        }
+        return $pc;
+    }
+
+    function echo_unparse_display() {
+        Assignment_PaperColumn::echo_unparse_display($this->unparse_paper_column());
     }
 
     /** @return AssignmentCsv */
@@ -1965,49 +2027,6 @@ class AssignmentSet {
         $this->cleanup_notify_tracker[$pid] = true;
     }
 
-    private static function _review_count_link($count, $word, $pl, $prefix, $pc) {
-        $word = $pl ? plural($count, $word) : $count . "&nbsp;" . $word;
-        if ($count == 0) {
-            return $word;
-        } else {
-            return '<a class="qq" href="' . $pc->conf->hoturl("search", "q=" . urlencode("$prefix:$pc->email")) . '">' . $word . "</a>";
-        }
-    }
-
-    private static function _review_count_report_one($ct, $pc) {
-        $t = self::_review_count_link($ct->rev, "review", true, "re", $pc);
-        $x = array();
-        if ($ct->meta != 0) {
-            $x[] = self::_review_count_link($ct->meta, "meta", false, "meta", $pc);
-        }
-        if ($ct->pri != $ct->rev && (!$ct->meta || $ct->meta != $ct->rev)) {
-            $x[] = self::_review_count_link($ct->pri, "primary", false, "pri", $pc);
-        }
-        if ($ct->sec != 0 && $ct->sec != $ct->rev && $ct->pri + $ct->sec != $ct->rev) {
-            $x[] = self::_review_count_link($ct->sec, "secondary", false, "sec", $pc);
-        }
-        if (!empty($x)) {
-            $t .= " (" . join(", ", $x) . ")";
-        }
-        return $t;
-    }
-
-    static function review_count_report($nrev, $deltarev, $pc, $prefix) {
-        $data = [];
-        $ct = $nrev->get($pc->contactId);
-        $deltarev && ($ct = $ct->add($deltarev->get($pc->contactId)));
-        if (!$deltarev || $deltarev->rev) {
-            $data[] = self::_review_count_report_one($ct, $pc);
-        }
-        if ($deltarev && $deltarev->lead) {
-            $data[] = self::_review_count_link($ct->lead, "lead", true, "lead", $pc);
-        }
-        if ($deltarev && $deltarev->shepherd) {
-            $data[] = self::_review_count_link($ct->shepherd, "shepherd", true, "shepherd", $pc);
-        }
-        return '<span class="pcrevsum">' . $prefix . join(", ", $data) . "</span>";
-    }
-
     static function run($contact, $text, $forceShow = null) {
         $aset = new AssignmentSet($contact, $forceShow);
         $aset->parse($text);
@@ -2016,28 +2035,72 @@ class AssignmentSet {
 }
 
 
-class AutoassignmentPaperColumn extends PaperColumn {
-    /** @var AssignmentSet */
-    private $aset;
-    function __construct(AssignmentSet $aset) {
-        parent::__construct($aset->conf, (object) ["name" => "autoassignment", "prefer_row" => true, "className" => "pl_autoassignment"]);
-        $this->aset = $aset;
+class Assignment_PaperColumn extends PaperColumn {
+    /** @var Conf */
+    public $conf;
+    /** @var Contact */
+    public $user;
+    /** @var ?Contact */
+    public $reviewer;
+    /** @var string */
+    public $search_query;
+    /** @var array<int,string> */
+    public $content = [];
+    /** @var ?AssignmentCountSet */
+    public $change_counts;
+    function __construct(Contact $user, Contact $reviewer = null) {
+        parent::__construct($user->conf, (object) ["name" => "autoassignment", "prefer_row" => true, "className" => "pl_autoassignment"]);
+        $this->conf = $user->conf;
+        $this->user = $user;
+        $this->reviewer = $reviewer;
         $this->override = PaperColumn::OVERRIDE_IFEMPTY_LINK;
     }
     function header(PaperList $pl, $is_text) {
         return "Assignment";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->can_administer($row)
-            && !($pl->user->overrides() & Contact::OVERRIDE_CONFLICT);
+        return (!$pl->user->can_administer($row)
+                && !($pl->user->overrides() & Contact::OVERRIDE_CONFLICT))
+            || !isset($this->content[$row->paperId]);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $t = $this->aset->unparse_paper_assignment($row);
+        $t = $this->content[$row->paperId];
         if ($t !== ""
             && ($pl->user->overrides() & Contact::OVERRIDE_CONFLICT)
             && !$pl->user->can_administer($row)) {
             $t = '<em>Hidden for conflict</em>';
         }
         return $t;
+    }
+
+    static function echo_unparse_display(Assignment_PaperColumn $pc) {
+        $search = new PaperSearch($pc->user, ["q" => $pc->search_query, "t" => "viewable", "reviewer" => $pc->reviewer]);
+        $plist = new PaperList("reviewers", $search);
+        $plist->add_column("autoassignment", $pc);
+        $plist->set_table_id_class("foldpl", "pltable-fullw");
+        $plist->echo_table_html(["nofooter" => true]);
+
+        if (count(array_intersect_key($pc->change_counts->bypc, $pc->conf->pc_members()))) {
+            $summary = [];
+            $current_counts = new AssignmentCountSet($pc->conf);
+            $pc->change_counts->rev && $current_counts->load_rev();
+            $pc->change_counts->lead && $current_counts->load_lead();
+            $pc->change_counts->shepherd && $current_counts->load_shepherd();
+            foreach ($pc->conf->pc_members() as $p) {
+                if ($pc->change_counts->get($p->contactId)->ass) {
+                    $t = '<div class="ctelt"><div class="ctelti">'
+                        . $pc->user->reviewer_html_for($p) . ": "
+                        . plural($pc->change_counts->get($p->contactId)->ass, "assignment")
+                        . $current_counts->unparse_counts($p, "After assignment: ", $pc->change_counts)
+                        . "<hr class=\"c\" /></div></div>";
+                    $summary[] = $t;
+                }
+            }
+            if (!empty($summary)) {
+                echo "<div class=\"g\"></div>\n",
+                    "<h3>Summary</h3>\n",
+                    '<div class="pc-ctable">', join("", $summary), "</div>\n";
+            }
+        }
     }
 }

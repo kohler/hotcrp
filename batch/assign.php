@@ -40,7 +40,7 @@ if ($assignset->has_error()) {
 } else {
     $assignset->execute();
     $pids = $assignset->assigned_pids();
-    $pidt = join(", #", $assignset->assigned_pids(true));
+    $pidt = $assignset->numjoin_assigned_pids(", #");
     fwrite(STDERR, "$filename: Assigned "
         . join(", ", $assignset->assigned_types())
         . " to " . pluralx($pids, "paper") . " #" . $pidt . ".\n");
