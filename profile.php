@@ -123,14 +123,14 @@ $UserStatus->set_context(["args" => [$UserStatus]]);
 if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
     $Qreq->u = $Qreq->user ? : $Qreq->contact;
 }
-if (($p = $Qreq->path_component(0)) !== false) {
+if (($p = $Qreq->path_component(0)) !== null) {
     if (in_array($p, ["", "me", "self", "new", "bulk"])
         || strpos($p, "@") !== false
         || !$UserStatus->gxt()->canonical_group($p)) {
         if ($Qreq->u === null) {
             $Qreq->u = urldecode($p);
         }
-        if (($p = $Qreq->path_component(1)) !== false
+        if (($p = $Qreq->path_component(1)) !== null
             && $Qreq->t === null) {
             $Qreq->t = $p;
         }

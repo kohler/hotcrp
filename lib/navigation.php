@@ -6,18 +6,31 @@ class NavigationState {
     // Base URL:    PROTOCOL://HOST[:PORT]/BASEPATH/
     // Site URL:    PROTOCOL://HOST[:PORT]/BASEPATH/[u/NNN/]
     // Current URL: PROTOCOL://HOST[:PORT]/SITEPATH/PAGE/PATH?QUERY
+    /** @var string */
     public $protocol;           // "PROTOCOL://"
+    /** @var string */
     public $host;               // "HOST"
+    /** @var string */
     public $server;             // "PROTOCOL://HOST[:PORT]"
+    /** @var string */
     public $site_path;          // "/SITEPATH/"; always ends in /
+    /** @var string */
     public $site_path_relative; // "/SITEPATH/", "../"+, or ""
+    /** @var string */
     public $base_path;          // "/BASEPATH/"; always ends in /; $site_path prefix
+    /** @var string */
     public $base_path_relative; // "/BASEPATH/", "../"+, or ""
+    /** @var string */
     public $page;               // "PAGE" or "index" (.php suffix stripped)
+    /** @var string */
     public $path;               // "/PATH" or ""
+    /** @var string */
     public $shifted_path;
+    /** @var string */
     public $query;              // "?QUERY" or ""
+    /** @var string */
     public $php_suffix;
+    /** @var string */
     public $request_uri;
 
     // server variables:
@@ -136,20 +149,27 @@ class NavigationState {
         }
     }
 
+    /** @return string */
     function self() {
-        return $this->server . $this->site_path . $this->page . $this->path . $this->query;
+        return "{$this->server}{$this->site_path}{$this->page}{$this->path}{$this->query}";
     }
 
+    /** @param bool $downcase_host
+     * @return string */
     function site_absolute($downcase_host = false) {
         $x = $downcase_host ? strtolower($this->server) : $this->server;
         return $x . $this->site_path;
     }
 
+    /** @param bool $downcase_host
+     * @return string */
     function base_absolute($downcase_host = false) {
         $x = $downcase_host ? strtolower($this->server) : $this->server;
         return $x . $this->base_path;
     }
 
+    /** @param ?string $url
+     * @return string */
     function siteurl($url = null) {
         $x = $this->site_path_relative;
         if (!$url) {
@@ -161,6 +181,8 @@ class NavigationState {
         }
     }
 
+    /** @param ?string $url
+     * @return string */
     function siteurl_path($url = null) {
         $x = $this->site_path;
         if (!$url) {
@@ -172,6 +194,8 @@ class NavigationState {
         }
     }
 
+    /** @param string $url
+     * @return string */
     function set_siteurl($url) {
         if ($url !== "" && $url[strlen($url) - 1] !== "/") {
             $url .= "/";
@@ -179,6 +203,9 @@ class NavigationState {
         return ($this->site_path_relative = $url);
     }
 
+    /** @param int $n
+     * @param bool $decoded
+     * @return ?string */
     function path_component($n, $decoded = false) {
         if ($this->path !== "") {
             $p = explode("/", substr($this->path, 1));
@@ -187,9 +214,11 @@ class NavigationState {
                 return $decoded ? urldecode($p[$n]) : $p[$n];
             }
         }
-        return false;
+        return null;
     }
 
+    /** @param int $n
+     * @return string */
     function path_suffix($n) {
         if ($this->path !== "") {
             $p = 0;
@@ -203,6 +232,8 @@ class NavigationState {
         return "";
     }
 
+    /** @param int $n
+     * @return ?string */
     function shift_path_components($n) {
         $nx = $n;
         $pos = 0;
@@ -216,7 +247,7 @@ class NavigationState {
             }
         }
         if ($n > 0) {
-            return false;
+            return null;
         }
         $this->site_path .= substr($path, 0, $pos);
         if (substr($this->site_path_relative, 0, 3) === "../") {
@@ -238,6 +269,8 @@ class NavigationState {
         return $this->page;
     }
 
+    /** @param null|false|string $url
+     * @return string */
     function make_absolute($url) {
         if ($url === false || $url === null) {
             return $this->server . $this->site_path;
@@ -262,7 +295,10 @@ class NavigationState {
 }
 
 class Navigation {
-    private static $s;
+    /** @var ?NavigationState */
+    static private $s;
+    /** @var ?list<callable> */
+    static public $redirect_callbacks;
 
     static function analyze($index_name = "index") {
         if (PHP_SAPI !== "cli") {
@@ -272,90 +308,122 @@ class Navigation {
         }
     }
 
+    /** @return NavigationState */
     static function get() {
         return self::$s;
     }
 
+    /** @return string */
     static function self() {
         return self::$s->self();
     }
 
+    /** @return string */
     static function host() {
         return self::$s->host;
     }
 
+    /** @param bool $downcase_host
+     * @return string */
     static function site_absolute($downcase_host = false) {
         return self::$s->site_absolute($downcase_host);
     }
 
+    /** @param bool $downcase_host
+     * @return string */
     static function base_absolute($downcase_host = false) {
         return self::$s->base_absolute($downcase_host);
     }
 
+    /** @return string */
     static function site_path() {
         return self::$s->site_path;
     }
 
+    /** @param ?string $url
+     * @return string */
     static function siteurl($url = null) {
         return self::$s->siteurl($url);
     }
 
+    /** @param ?string $url
+     * @return string */
     static function siteurl_path($url = null) {
         return self::$s->siteurl_path($url);
     }
 
+    /** @param string $url
+     * @return string */
     static function set_siteurl($url) {
         return self::$s->set_siteurl($url);
     }
 
+    /** @return string */
     static function page() {
         return self::$s->page;
     }
 
+    /** @return string */
     static function path() {
         return self::$s->path;
     }
 
+    /** @param int $n
+     * @param bool $decoded
+     * @return ?string */
     static function path_component($n, $decoded = false) {
         return self::$s->path_component($n, $decoded);
     }
 
+    /** @param int $n
+     * @return string */
     static function path_suffix($n) {
         return self::$s->path_suffix($n);
     }
 
+    /** @param int $n
+     * @return ?string */
     static function shift_path_components($n) {
         return self::$s->shift_path_components($n);
     }
 
+    /** @return string */
     static function shifted_path() {
         return self::$s->shifted_path;
     }
 
+    /** @param string $page
+     * @return string */
     static function set_page($page) {
         return (self::$s->page = $page);
     }
 
+    /** @param string $path
+     * @return string */
     static function set_path($path) {
         return (self::$s->path = $path);
     }
 
+    /** @return string */
     static function php_suffix() {
         return self::$s->php_suffix;
     }
 
+    /** @param string $url
+     * @return string */
     static function make_absolute($url) {
         return self::$s->make_absolute($url);
     }
 
-    /** @param ?string $url */
+    /** @param ?string $url
+     * @return void */
     static function redirect($url = null) {
         $url = self::make_absolute($url);
         // Might have an HTML-encoded URL; decode at least &amp;.
         $url = str_replace("&amp;", "&", $url);
 
-        if (Conf::$main) {
-            Conf::$main->transfer_messages_to_session();
+        foreach (self::$redirect_callbacks ?? [] as $cb) {
+            call_user_func($cb);
         }
         if (preg_match('/\A[a-z]+:\/\//', $url)) {
             header("Location: $url");
@@ -372,16 +440,20 @@ class Navigation {
         exit();
     }
 
-    /** @param string $site_url */
+    /** @param string $site_url
+     * @return void */
     static function redirect_site($site_url) {
         self::redirect(self::site_absolute() . $site_url);
     }
 
-    /** @param string $base_url */
+    /** @param string $base_url
+     * @return void */
     static function redirect_base($base_url) {
         self::redirect(self::base_absolute() . $base_url);
     }
 
+    /** @param bool $allow_http_if_localhost
+     * @return void */
     static function redirect_http_to_https($allow_http_if_localhost = false) {
         if (self::$s->protocol == "http://"
             && (!$allow_http_if_localhost

@@ -748,6 +748,9 @@ class Conf {
         global $Conf;
         $Conf = Conf::$main = $conf;
         $conf->crosscheck_globals();
+        if (!in_array("Conf::transfer_main_messages_to_session", Navigation::$redirect_callbacks ?? [], true)) {
+            Navigation::$redirect_callbacks[] = "Conf::transfer_main_messages_to_session";
+        }
     }
 
 
@@ -3329,6 +3332,12 @@ class Conf {
                 $_SESSION[$this->dsn]["msgs"][] = $m;
             }
             $this->_save_msgs = null;
+        }
+    }
+
+    static function transfer_main_messages_to_session() {
+        if (self::$main) {
+            self::$main->transfer_messages_to_session();
         }
     }
 
