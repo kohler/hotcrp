@@ -976,7 +976,7 @@ sub parse_p2h_fonts ($$) {
 #       print "p2h_font: $line";
         return $line if ($line =~ /<\/page>/);
 
-        last unless ($line =~ /<fontspec id=\"(\d+)\" size=\"(-?\d+(?:\.\d*)?)\" family=\"([^\"]+)\" color=\"([^\"]+)\"\/>/);
+        last unless ($line =~ /<fontspec id=\"(\d+)\" size=\"(-?\d+(?:\.\d*)?)\" family=\"([^\"]+)\" color=\"([^\"]+)\"/);
 
         $font = { id => $1, size => rpdffont(+$2), family => $3, color => $4 };
         $fontid = "$3//$2//$4";
