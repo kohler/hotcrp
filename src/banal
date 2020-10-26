@@ -438,6 +438,7 @@ sub calc_page_headings ($$$$) {
     my ($colpos) = $page->{colpos};
     my ($slack) = in2pdf(1/8);
     my ($top) = $page->{textbb}->{top} + 0.075 * $page->{textbb}->{height};
+    my ($topx) = $page->{textbb}->{top} + 0.15 * $page->{textbb}->{height};
     my ($near_top) = 1;
     my ($contents) = 0;
 
@@ -445,6 +446,7 @@ sub calc_page_headings ($$$$) {
         my ($tpos1) = $tpos;
         my ($text) = $texts->[$tpos];
         if ($text->{sz} < $bodyfontsize || $text->{sz} < $slack) {
+            $near_top = 0 if $near_top && !$text->{num} && $text->{t} > $topx;
             ++$tpos;
             next;
         }
@@ -453,11 +455,11 @@ sub calc_page_headings ($$$$) {
         my ($tt) = $text->{t};
         my ($th) = $text->{h};
         my ($was_near_top) = $near_top;
-        $near_top = 0 if $near_top && $tt + $th > $top && !$text->{num};
+        $near_top = 0 if $near_top && !$text->{num} && $tt + $th > $top;
 
         # skip unless it looks interesting
         my ($content) = $text->{content};
-        if ($content !~ /\A[\dABCDEFIRVX]/) {
+        if ($content !~ /\A[\dABCDEFGHIRVX]/) {
             ++$tpos;
             next;
         }
@@ -502,7 +504,7 @@ sub calc_page_headings ($$$$) {
 
         # check for expected headings
         $content =~ s/\s+\z//;
-        next if $content !~ /\A(?:(?:X*(?:I?[XV]|V?I+))\.? +[^,;()]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;()]*|[ABCDEF](?:\.\d+)*\.? +[A-Z_][^,;()]*|(?:(?i)Abstract|Acknowledge?ments?|Contents|References?|Bibliography|Introduction|Appendix(?:es)?[^,;()]*))\z/
+        next if $content !~ /\A(?:(?:X*(?:I?[XV]|V?I+))\.? +[^,;()]*|\d\d?\d?(?:\.\d+)*\.? +[A-Za-z_][^,;()]*|[ABCDEFGH](?:\.\d+)*\.? +[A-Z_][^,;()]*|(?:(?i)Abstract|Acknowledge?ments?|Contents|References?|Bibliography|Introduction|Appendix(?:es)?[^,;()]*))\z/
             || $content =~ /[.,:]\z/;
 
         # skip if part of paragraph
