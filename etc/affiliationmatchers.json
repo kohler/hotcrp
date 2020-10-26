@@ -581,7 +581,7 @@
         "nameish": false
     },
     "florida": {
-        "sync": "state"
+        "sync": ["state", "central", "international"]
     },
     "france": {
         "weak": true
@@ -805,9 +805,12 @@
     "suny": {
         "nameish": false
     },
+    "technical": {
+        "weak": true
+    },
     "technische": {
         "weak": true,
-        "alternate": [{"word": "tu", "if": "universitat"}]
+        "alternate": [{"word": "tu", "if": "universitat"}, "technical"]
     },
     "technion": {
         "nameish": false
