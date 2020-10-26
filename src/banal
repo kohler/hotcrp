@@ -970,22 +970,45 @@ sub report_stats ($) {
 
 sub parse_p2h_fonts ($$) {
     my ($line, $page) = @_;
-    my (%fonts, $font, $fontid);
+    my (%fonts, $font, $fontid, $skip, $r, $g, $b, $minc, $maxc);
 
     while (1) {
 #       print "p2h_font: $line";
         return $line if ($line =~ /<\/page>/);
 
-        last unless ($line =~ /<fontspec id=\"(\d+)\" size=\"(-?\d+(?:\.\d*)?)\" family=\"([^\"]+)\" color=\"([^\"]+)\"/);
+        last unless ($line =~ /<fontspec id=\"(\d+)\" size=\"(-?\d+(?:\.\d*)?)\" family=\"([^\"]+)\" color=\"([^\"]+)\"(?: opacity=\"([^\"]+)\"|)/);
+        my ($idnum, $xsize, $family, $color, $opacity) =
+            ($1, $2, $3, $4, defined($5) && $5 ne "" ? +$5 : 1.0);
 
-        $font = { id => $1, size => rpdffont(+$2), family => $3, color => $4 };
-        $fontid = "$3//$2//$4";
+        if ($color eq "#000000" && $opacity >= 1) {
+            $skip = 0;
+        } elsif ($color =~ /\Z\#[0-9a-fA-F]{6}\z/) {
+            $r = hex(substr($color, 1, 2));
+            $g = hex(substr($color, 2, 2));
+            $b = hex(substr($color, 5, 2));
+            if ($opacity >= 0 && $opacity < 1) {
+                $r += (255 - $r) * (1 - $opacity);
+                $g += (255 - $g) * (1 - $opacity);
+                $b += (255 - $b) * (1 - $opacity);
+            }
+            $minc = min $r, $g, $b;
+            $maxc = max $r, $g, $b;
+            $skip = ($minc + $maxc) / 2 >= 191;
+        } else {
+            $skip = $opacity <= 0.25;
+        }
+
+        $font = {
+            id => $idnum, size => rpdffont(+$xsize), family => $family,
+            color => $color, opacity => $opacity, skip => $skip
+        };
+        $fontid = "$family//$xsize//$color//$opacity";
         if (exists $fonts{$fontid}) {
             $font->{id} = $fonts{$fontid};
         } else {
-            $fonts{$fontid} = $1;
+            $fonts{$fontid} = $idnum;
         }
-        $page->{doc}->{fonts}{$1} = $font;
+        $page->{doc}->{fonts}{$idnum} = $font;
 
         $line = <$FILE>;
     }
@@ -1223,12 +1246,8 @@ sub parse_p2h_text ($$$) {
         my ($left) = rpdf($2);
         my ($bottom) = $top + rpdf($4);
         my ($right) = $left + rpdf($3);
-        my ($font) = $5;
-
-        my ($fontspec) = $page->{doc}->{fonts}->{$font};
-        if ($fontspec) {
-            $font = $fontspec->{id};
-        }
+        my ($fontspec) = $page->{doc}->{fonts}->{$5};
+        my ($font) = $fontspec->{id};
         my ($size) = $fontspec->{size};
 
         # embedded newlines will split <text>...</text> across multiple lines
@@ -1244,6 +1263,12 @@ sub parse_p2h_text ($$$) {
         $top = 0 if $top < 0;
         $bottom = $pageheight if $bottom > $pageheight;
         if ($top >= $bottom || $left >= $right) {
+            $line = <$FILE>;
+            next;
+        }
+
+        # skip watermarks and other light text
+        if ($fontspec->{skip}) {
             $line = <$FILE>;
             next;
         }
