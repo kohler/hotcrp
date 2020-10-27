@@ -471,7 +471,7 @@ function append_field(fid, pos) {
 }
 
 function rfs(data) {
-    var i, fid, $j;
+    var i, fid, $j, m;
     original = data.fields;
     samples = data.samples;
     stemplate = data.stemplate;
@@ -496,8 +496,10 @@ function rfs(data) {
 
     // highlight errors, apply request
     for (i in data.req || {}) {
-        if (!$("#" + i).length)
-            rfs.add(false, i.replace(/^.*_/, ""));
+        if (!$("#" + i).length
+            && (m = i.match(/^(?:rf_|)([st]\d+)(?:|_.*)$/))) {
+            add_field(m[1]);
+        }
         $j = $("#" + i);
         if (!text_eq($j.val(), data.req[i])) {
             $j.val(data.req[i]);

@@ -67,6 +67,7 @@ class ReviewForm_SettingParser extends SettingParser {
         } else {
             $fj->name = $sn;
         }
+        $error_sn = $sn ? : "<Unnamed field>";
 
         if ($sv->has_reqv("rf_{$fid}_position")) {
             $pos = cvtnum($sv->reqv("rf_{$fid}_position"));
@@ -109,7 +110,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 if ($fj->description === "")
                     unset($fj->description);
             } else if ($pos > 0) {
-                $sv->error_at("rf_{$fid}_description", htmlspecialchars($sn) . " description: " . $err);
+                $sv->error_at("rf_{$fid}_description", htmlspecialchars($error_sn) . " description: " . $err);
             }
         }
 
@@ -125,7 +126,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 $ok = $this->check_options($sv, $fid, $fj);
             }
             if ((!$ok || count($fj->options) < 2) && $pos > 0) {
-                $sv->error_at("rf_{$fid}_options", htmlspecialchars($sn) . ": Invalid choices.");
+                $sv->error_at("rf_{$fid}_options", htmlspecialchars($error_sn) . ": Invalid choices.");
                 if ($this->option_error) {
                     $sv->error_at(null, $this->option_error);
                 }
