@@ -638,142 +638,6 @@ class AssignerContacts {
     }
 }
 
-class AssignmentCount {
-    public $ass = 0;
-    public $rev = 0;
-    public $meta = 0;
-    public $pri = 0;
-    public $sec = 0;
-    public $lead = 0;
-    public $shepherd = 0;
-    /** @return AssignmentCount */
-    function add(AssignmentCount $ct) {
-        $xct = clone $this;
-        $xct->ass += $ct->ass;
-        $xct->rev += $ct->rev;
-        $xct->meta += $ct->meta;
-        $xct->pri += $ct->pri;
-        $xct->sec += $ct->sec;
-        $xct->lead += $ct->lead;
-        $xct->shepherd += $ct->shepherd;
-        return $xct;
-    }
-    /** @param int $count
-     * @param string $item
-     * @param bool $plural
-     * @param string $prefix
-     * @param Contact $pc
-     * @return string */
-    static function unparse_count($count, $item, $plural, $prefix, $pc) {
-        $t = $plural ? plural($count, $item) : $count . "&nbsp;" . $item;
-        if ($count === 0) {
-            return $t;
-        } else {
-            $url = $pc->conf->hoturl("search", "q=" . urlencode("$prefix:{$pc->email}"));
-            return "<a class=\"qq\" href=\"{$url}\">{$t}</a>";
-        }
-    }
-    /** @param Contact $pc
-     * @return string */
-    function unparse_review_counts($pc) {
-        $t = self::unparse_count($this->rev, "review", true, "re", $pc);
-        $x = [];
-        if ($this->meta !== 0) {
-            $x[] = self::unparse_count($this->meta, "meta", false, "meta", $pc);
-        }
-        if ($this->pri !== $this->rev && (!$this->meta || $this->meta !== $this->rev)) {
-            $x[] = self::unparse_count($this->pri, "primary", false, "pri", $pc);
-        }
-        if ($this->sec !== 0 && $this->sec !== $this->rev && $this->pri + $this->sec !== $this->rev) {
-            $x[] = self::unparse_count($this->sec, "secondary", false, "sec", $pc);
-        }
-        if (!empty($x)) {
-            $t .= " (" . join(", ", $x) . ")";
-        }
-        return $t;
-    }
-}
-
-class AssignmentCountSet {
-    /** @var Conf */
-    public $conf;
-    /** @var array<int,AssignmentCount> */
-    public $bypc = [];
-    public $rev = false;
-    public $lead = false;
-    public $shepherd = false;
-    function __construct(Conf $conf) {
-        $this->conf = $conf;
-    }
-    /** @return AssignmentCount */
-    function get($offset) {
-        return $this->bypc[$offset] ?? new AssignmentCount;
-    }
-    /** @param int $offset
-     * @return AssignmentCount */
-    function ensure($offset) {
-        if (!isset($this->bypc[$offset])) {
-            $this->bypc[$offset] = new AssignmentCount;
-        }
-        return $this->bypc[$offset];
-    }
-    function load_rev() {
-        $result = $this->conf->qe("select u.contactId, group_concat(r.reviewType separator '')
-                from ContactInfo u
-                left join PaperReview r on (r.contactId=u.contactId)
-                left join Paper p on (p.paperId=r.paperId)
-                where p.timeWithdrawn<=0 and p.timeSubmitted>0
-                and u.roles!=0 and (u.roles&" . Contact::ROLE_PC . ")!=0
-                group by u.contactId");
-        while (($row = $result->fetch_row())) {
-            $ct = $this->ensure((int) $row[0]);
-            $ct->rev = strlen($row[1]);
-            $ct->meta = substr_count($row[1], (string) REVIEW_META);
-            $ct->pri = substr_count($row[1], (string) REVIEW_PRIMARY);
-            $ct->sec = substr_count($row[1], (string) REVIEW_SECONDARY);
-        }
-        Dbl::free($result);
-    }
-    private function load_paperpc($type) {
-        $result = $this->conf->qe("select {$type}ContactId, count(paperId)
-                from Paper where timeWithdrawn<=0 and timeSubmitted>0
-                group by {$type}ContactId");
-        while (($row = $result->fetch_row())) {
-            $ct = $this->ensure((int) $row[0]);
-            $ct->$type = (int) $row[1];
-        }
-        Dbl::free($result);
-    }
-    function load_lead() {
-        $this->load_paperpc("lead");
-    }
-    function load_shepherd() {
-        $this->load_paperpc("shepherd");
-    }
-
-    /** @param Contact $pc
-     * @param string $prefix
-     * @param ?AssignmentCountSet $delta
-     * @return string */
-    function unparse_counts_for($pc, $prefix = "", $delta = null) {
-        $data = [];
-        $ct = $this->get($pc->contactId);
-        if ($delta) {
-            $ct = $ct->add($delta->get($pc->contactId));
-        }
-        if (!$delta || $delta->rev) {
-            $data[] = $ct->unparse_review_counts($pc);
-        }
-        if ($delta && $delta->lead) {
-            $data[] = AssignmentCount::unparse_count($ct->lead, "lead", true, "lead", $pc);
-        }
-        if ($delta && $delta->shepherd) {
-            $data[] = AssignmentCount::unparse_count($ct->shepherd, "shepherd", true, "shepherd", $pc);
-        }
-        return '<span class="pcrevsum">' . $prefix . join(", ", $data) . "</span>";
-    }
-}
-
 class AssignmentCsv {
     /** @var array<string,true> */
     private $fields = [];
@@ -1893,7 +1757,7 @@ class AssignmentSet {
             }
         }
 
-        $pc->change_counts = new AssignmentCountSet($this->conf);
+        $pc->change_counts = new AssignmentCountSet($this->user);
         foreach ($this->assigners as $assigner) {
             $assigner->account($this, $pc->change_counts);
         }
@@ -2082,16 +1946,14 @@ class Assignment_PaperColumn extends PaperColumn {
 
         if (count(array_intersect_key($pc->change_counts->bypc, $pc->conf->pc_members()))) {
             $summary = [];
-            $current_counts = new AssignmentCountSet($pc->conf);
-            $pc->change_counts->rev && $current_counts->load_rev();
-            $pc->change_counts->lead && $current_counts->load_lead();
-            $pc->change_counts->shepherd && $current_counts->load_shepherd();
+            $current_counts = AssignmentCountSet::load($pc->user, $pc->change_counts->has)
+                ->add($pc->change_counts);
             foreach ($pc->conf->pc_members() as $p) {
                 if ($pc->change_counts->get($p->contactId)->ass) {
                     $t = '<div class="ctelt"><div class="ctelti">'
                         . $pc->user->reviewer_html_for($p) . ": "
                         . plural($pc->change_counts->get($p->contactId)->ass, "assignment")
-                        . $current_counts->unparse_counts_for($p, "After assignment: ", $pc->change_counts)
+                        . $current_counts->unparse_counts_for($p, "After assignment: ")
                         . "<hr class=\"c\" /></div></div>";
                     $summary[] = $t;
                 }

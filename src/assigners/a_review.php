@@ -286,7 +286,7 @@ class Review_Assigner extends Assigner {
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
         $aset->show_column("reviewers");
         if ($this->cid > 0) {
-            $deltarev->rev = true;
+            $deltarev->has |= AssignmentCountSet::HAS_REVIEW;
             $ct = $deltarev->ensure($this->cid);
             ++$ct->ass;
             $oldtype = $this->item->pre("_rtype") ? : 0;

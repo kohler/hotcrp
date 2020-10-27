@@ -149,7 +149,7 @@ class Lead_Assigner extends Assigner {
         }
         $k = $this->type;
         if ($k === "lead" || $k === "shepherd") {
-            $deltarev->$k = true;
+            $deltarev->has |= $k === "lead" ? AssignmentCountSet::HAS_LEAD : AssignmentCountSet::HAS_SHEPHERD;
             if ($this->item->existed()) {
                 $ct = $deltarev->ensure($this->item->pre("_cid"));
                 ++$ct->ass;

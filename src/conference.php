@@ -3445,11 +3445,9 @@ class Conf {
             if ($this->submission_blindness() === self::BLIND_OPTIONAL) {
                 $cols[] = "Paper.blind";
             }
-            if ($options["title"] ?? false) {
-                $cols[] = "Paper.title";
-            }
-            if ($options["authorInformation"] ?? false) {
-                $cols[] = "Paper.authorInformation";
+            foreach (["title", "authorInformation", "shepherdContactId"] as $k) {
+                if ($options[$k] ?? false)
+                    $cols[] = "Paper.{$k}";
             }
         } else {
             $cols = ["Paper.*"];

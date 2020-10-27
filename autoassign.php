@@ -801,8 +801,7 @@ $(document).on("change", "input.js-pcsel-tag", pcsel_tag);
 $(function(){$("input.js-pcsel-tag").first().trigger("change")})');
 
 $summary = [];
-$nrev = new AssignmentCountSet($Conf);
-$nrev->load_rev();
+$nrev = AssignmentCountSet::load($Me, AssignmentCountSet::HAS_REVIEW);
 foreach ($Conf->pc_members() as $id => $p) {
     $t = '<div class="ctelt"><label class="checki ctelti"><span class="checkc">'
         . Ht::checkbox("pcc$id", 1, isset($pcsel[$id]), [
