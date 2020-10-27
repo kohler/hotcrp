@@ -1581,14 +1581,18 @@ class Document_PaperOption extends PaperOption {
     }
 
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
-        if (($doc = DocumentInfo::make_request($qreq, "opt{$this->id}", $prow->paperId, $this->id, $this->conf))) {
+        $fk = $this->field_key();
+        $fk2 = "opt{$this->id}";
+        if (($doc = DocumentInfo::make_request($qreq, $fk, $prow->paperId, $this->id, $this->conf))
+            || // backward compat
+               ($fk !== $fk2 && ($doc = DocumentInfo::make_request($qreq, $fk2, $prow->paperId, $this->id, $this->conf)))) {
             $ov = PaperValue::make($prow, $this, -1);
             $ov->set_anno("document", $doc);
             if (isset($doc->error_html)) {
                 $ov->error($doc->error_html);
             }
             return $ov;
-        } else if ($qreq["opt{$this->id}:remove"]) {
+        } else if ($qreq["{$fk}:remove"] || ($fk !== $fk2 && $qreq["{$fk2}:remove"])) {
             return PaperValue::make($prow, $this);
         } else {
             return null;
@@ -1639,6 +1643,7 @@ class Document_PaperOption extends PaperOption {
 
         $readonly = !$this->test_editable($ov->prow);
         $max_size = $this->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize") / 1.024;
+        $fk = $this->field_key();
 
         // heading
         $msgs = [];
@@ -1653,10 +1658,10 @@ class Document_PaperOption extends PaperOption {
         if (!empty($msgs)) {
             $heading .= ' <span class="n">(' . join(", ", $msgs) . ')</span>';
         }
-        $pt->echo_editable_option_papt($this, $heading, ["for" => $doc ? false : "opt{$this->id}", "id" => $this->readable_formid()]);
+        $pt->echo_editable_option_papt($this, $heading, ["for" => $doc ? false : "{$fk}:upload", "id" => $this->readable_formid()]);
 
         echo '<div class="papev has-document" data-dtype="', $this->id,
-            '" data-document-name="', $this->field_key(), '"';
+            '" data-document-name="', $fk, '"';
         if ($doc) {
             echo ' data-docid="', $doc->paperStorageId, '"';
         }
@@ -1710,7 +1715,7 @@ class Document_PaperOption extends PaperOption {
         }
 
         if (!$readonly) {
-            echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => "opt{$this->id}"]), '</div>';
+            echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => "{$fk}:upload"]), '</div>';
         }
         echo "</div></div>\n\n";
     }

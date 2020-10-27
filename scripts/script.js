@@ -7856,7 +7856,7 @@ handle_ui.on("js-replace-document", function (event) {
         $u.trigger("hotcrp-change-document");
     } else {
         var docid = +doce.getAttribute("data-dtype"),
-            name = (docid > 0 ? doce.getAttribute("data-document-name") : false) || "opt" + docid,
+            name = doce.getAttribute("data-document-name") || "opt" + docid,
             t = '<div class="document-upload hidden"><input id="' + name + '" type="file" name="' + name + '"';
         if (doce.hasAttribute("data-document-accept"))
             t += ' accept="' + doce.getAttribute("data-document-accept") + '"';
