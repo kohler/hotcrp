@@ -275,7 +275,7 @@ xassert($newpaper->timeWithdrawn <= 0);
 xassert_eqq($newpaper->option(1)->value, 10);
 
 // save a new paper
-$qreq = new Qrequest("POST", ["ready" => 1, "has_opt2" => "1", "has_opt2_new_1" => "1", "title" => "Paper about mantis shrimp", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:aff_1" => "BBC", "abstract" => "They see lots of colors."]);
+$qreq = new Qrequest("POST", ["ready" => 1, "has_opt2" => "1", "has_opt2_new_1" => "1", "title" => "Paper about mantis shrimp", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:aff_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $qreq->set_file("opt2_new_1", ["name" => "attachment1.pdf", "type" => "application/pdf", "content" => "%PDF-whatever\n", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
@@ -283,6 +283,7 @@ xassert($ps->prepare_save_paper_web($qreq, null, "submit"));
 xassert($ps->diffs["title"]);
 xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
+xassert($ps->diffs["submission"]);
 xassert($ps->execute_save());
 xassert_paper_status($ps);
 $npid1 = $ps->paperId;
@@ -301,12 +302,14 @@ xassert($newpaper->timeSubmitted > 0);
 xassert($newpaper->timeWithdrawn <= 0);
 xassert(!$newpaper->option(1));
 xassert(!!$newpaper->option(2));
-xassert(count($newpaper->option(2)->documents()) == 1);
+xassert(count($newpaper->force_option(0)->documents()) === 1);
+xassert_eqq($newpaper->force_option(0)->document(0)->text_hash(), "sha2-d16c7976d9081368c7dca2da3a771065c3222069a1ad80dcd99d972b2efadc8b");
+xassert(count($newpaper->option(2)->documents()) === 1);
 xassert_eqq($newpaper->option(2)->document(0)->text_hash(), "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
 xassert($newpaper->has_author($user_estrin));
 
 // some erroneous saves concerning required fields
-$qreq = new Qrequest("POST", ["ready" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors."]);
+$qreq = new Qrequest("POST", ["ready" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_web($qreq, null, "submit");
@@ -314,7 +317,7 @@ xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
-$qreq = new Qrequest("POST", ["ready" => 1, "title" => "", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors."]);
+$qreq = new Qrequest("POST", ["ready" => 1, "title" => "", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_web($qreq, null, "submit");
@@ -322,7 +325,7 @@ xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
-$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC"]);
+$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_web($qreq, null, "submit");
@@ -333,7 +336,7 @@ xassert_eq($ps->error_texts(), ["Entry required."]);
 $Conf->set_opt("noAbstract", 1);
 $Conf->invalidate_caches();
 
-$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC"]);
+$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_web($qreq, null, "submit");
