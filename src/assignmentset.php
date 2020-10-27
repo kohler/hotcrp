@@ -1946,8 +1946,8 @@ class Assignment_PaperColumn extends PaperColumn {
 
         if (count(array_intersect_key($pc->change_counts->bypc, $pc->conf->pc_members()))) {
             $summary = [];
-            $current_counts = AssignmentCountSet::load($pc->user, $pc->change_counts->has)
-                ->add($pc->change_counts);
+            $current_counts = AssignmentCountSet::load($pc->user, $pc->change_counts->has);
+            $current_counts->add($pc->change_counts);
             foreach ($pc->conf->pc_members() as $p) {
                 if ($pc->change_counts->get($p->contactId)->ass) {
                     $t = '<div class="ctelt"><div class="ctelti">'
