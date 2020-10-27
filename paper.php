@@ -33,6 +33,10 @@ if (!isset($Qreq->p)
         }
     }
 }
+// Editing a new submission as chair should always succeed.
+if ($Qreq->p === "new" && $Me->privChair && !$Conf->timeStartPaper()) {
+    $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
+}
 
 // prepare user
 if ($Me->is_empty()) {
@@ -165,7 +169,8 @@ function update_paper(Qrequest $qreq, $action) {
     global $Me, $prow, $ps;
     $Conf = Conf::$main;
     // XXX lock tables
-    $wasSubmitted = $prow && $prow->timeSubmitted > 0;
+    $is_new = !$prow;
+    $was_submitted = $prow && $prow->timeSubmitted > 0;
 
     $ps = new PaperStatus($Conf, $Me);
     $prepared = $ps->prepare_save_paper_web($qreq, $prow, $action);
@@ -222,7 +227,7 @@ function update_paper(Qrequest $qreq, $action) {
         $submitkey = "timeSubmitted";
         $storekey = "paperStorageId";
     }
-    $newsubmit = $new_prow->timeSubmitted > 0 && !$wasSubmitted;
+    $newsubmit = $new_prow->timeSubmitted > 0 && !$was_submitted;
 
     // confirmation message
     if ($action === "final") {
@@ -351,7 +356,7 @@ function update_paper(Qrequest $qreq, $action) {
     }
 
     $Conf->paper = $prow = $new_prow;
-    return !$ps->has_error();
+    return !$ps->has_error() || ($is_new && $new_prow);
 }
 
 

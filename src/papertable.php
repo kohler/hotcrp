@@ -1898,6 +1898,13 @@ class PaperTable {
     }
 
     private function _echo_editable_form() {
+        $form_url = [
+            "p" => $this->prow->paperId ? : "new", "m" => "edit"
+        ];
+        // This is normally added automatically, but isn't for new papers
+        if ($this->user->is_admin_force()) {
+            $form_url["forceShow"] = 1;
+        }
         $form_js = [
             "id" => "form-paper",
             "class" => "need-unload-protection ui-submit js-submit-paper",
@@ -1912,7 +1919,7 @@ class PaperTable {
         if ($this->useRequest) {
             $form_js["class"] .= " alert";
         }
-        echo Ht::form($this->conf->hoturl_post("paper", "p=" . ($this->prow->paperId ? : "new") . "&amp;m=edit"), $form_js);
+        echo Ht::form($this->conf->hoturl_post("paper", $form_url), $form_js);
         Ht::stash_script('$(edit_paper_ui.load)');
     }
 
