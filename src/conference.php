@@ -204,8 +204,8 @@ class Conf {
     /** @var ?non-empty-string */
     private $_docstore;
     /** @var array<int,Formula> */
-    private $_defined_formulas = null;
-    private $_emoji_codes = null;
+    private $_defined_formulas;
+    private $_emoji_codes;
     /** @var S3Client|null|false */
     private $_s3_client = false;
     /** @var ?IntlMsgSet */

@@ -17,7 +17,6 @@ class Contact {
     static public $allow_nonexistent_properties = false;
     /** @var int */
     static public $next_xid = -2;
-    /** @var bool */
 
     /** @var Conf */
     public $conf;
