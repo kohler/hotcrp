@@ -755,7 +755,7 @@ class AssignmentCountSet {
      * @param string $prefix
      * @param ?AssignmentCountSet $delta
      * @return string */
-    function unparse_counts($pc, $prefix = "", $delta = null) {
+    function unparse_counts_for($pc, $prefix = "", $delta = null) {
         $data = [];
         $ct = $this->get($pc->contactId);
         if ($delta) {
@@ -2091,7 +2091,7 @@ class Assignment_PaperColumn extends PaperColumn {
                     $t = '<div class="ctelt"><div class="ctelti">'
                         . $pc->user->reviewer_html_for($p) . ": "
                         . plural($pc->change_counts->get($p->contactId)->ass, "assignment")
-                        . $current_counts->unparse_counts($p, "After assignment: ", $pc->change_counts)
+                        . $current_counts->unparse_counts_for($p, "After assignment: ", $pc->change_counts)
                         . "<hr class=\"c\" /></div></div>";
                     $summary[] = $t;
                 }

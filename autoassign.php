@@ -809,7 +809,7 @@ foreach ($Conf->pc_members() as $id => $p) {
             "id" => "pcc$id", "data-range-type" => "pcc",
             "class" => "uic js-range-click js-pcsel-tag"
         ]) . '</span>' . $Me->reviewer_html_for($p)
-        . $nrev->get($id)->unparse_review_counts($p)
+        . $nrev->unparse_counts_for($p)
         . "</label></div>";
     $summary[] = $t;
 }
