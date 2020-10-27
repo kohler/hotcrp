@@ -1572,8 +1572,9 @@ class Document_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        if ($this->id <= 0) {
+        if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
             $ps->save_paperf($this->id ? "finalPaperStorageId" : "paperStorageId", $ov->value ?? 0);
+            $ps->mark_diff($this->json_key());
             return true;
         } else {
             return false;
