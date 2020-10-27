@@ -7856,7 +7856,7 @@ handle_ui.on("js-replace-document", function (event) {
         $u.trigger("hotcrp-change-document");
     } else {
         var docid = +doce.getAttribute("data-dtype"),
-            name = "opt" + docid,
+            name = doce.getAttribute("data-document-name") || "opt" + docid,
             t = '<div class="document-upload hidden"><input id="' + name + '" type="file" name="' + name + '"';
         if (doce.hasAttribute("data-document-accept"))
             t += ' accept="' + doce.getAttribute("data-document-accept") + '"';
@@ -7871,7 +7871,7 @@ handle_ui.on("js-replace-document", function (event) {
 
 handle_ui.on("document-uploader", function (event) {
     var doce = this.closest(".has-document"), $doc = $(doce);
-    if (hasClass(doce, "document-new-instance")) {
+    if (hasClass(doce, "document-new-instance") && hasClass(doce, "hidden")) {
         removeClass(doce, "hidden");
         var hea = doce.closest(".has-editable-attachments");
         hea && removeClass(hea, "hidden");
