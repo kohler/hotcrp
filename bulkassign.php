@@ -57,7 +57,7 @@ function keep_browser_alive($assignset, $lineno, $line) {
         } else {
             $text .= " <code>" . htmlspecialchars(join(",", $line->as_array())) . "</code>";
         }
-        echo Ht::unstash_script("\$\$('mailcount').innerHTML=" . json_encode_browser($text) . ";");
+        echo Ht::unstash_script("document.getElementById('mailcount').innerHTML=" . json_encode_browser($text) . ";");
         flush();
         while (@ob_end_flush()) {
         }
@@ -66,8 +66,9 @@ function keep_browser_alive($assignset, $lineno, $line) {
 
 function finish_browser_alive() {
     global $csv_preparing;
-    if ($csv_preparing)
-        echo Ht::unstash_script("fold('mail',null)");
+    if ($csv_preparing) {
+        echo Ht::unstash_script("hotcrp.fold('mail',null)");
+    }
 }
 
 function complete_assignment($qreq, $callback) {
@@ -229,8 +230,8 @@ echo '<div id="foldoptions" class="lg foldc fold2c fold3c"><label>',
     '</label>';
 Ht::stash_script('$(function(){
 $("#tsel").on("change",function(){
-foldup.call(this,null,{f:this.value!=="review"});
-foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),n:2});
+hotcrp.foldup.call(this,null,{f:this.value!=="review"});
+hotcrp.foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.test(this.value),n:2});
 }).trigger("change")})');
 $rev_rounds = $Conf->round_selector_options(null);
 $expected_round = $Qreq->rev_round ? : $Conf->assignment_round_option(false);

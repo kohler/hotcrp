@@ -266,7 +266,7 @@ if ($Me->privChair) {
     }
 
     echo Ht::select("reviewer", $sel, $reviewer->email, ["id" => "htctl-prefs-user"]), '</div>';
-    Ht::stash_script('$("#searchform select[name=reviewer]").on("change", function () { $$("searchform").submit() })');
+    Ht::stash_script('$("#searchform select[name=reviewer]").on("change", function () { $("#searchform")[0].submit() })');
 }
 
 echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="entry">',
@@ -305,7 +305,7 @@ if (!empty($show_data) && $pl->count) {
         '<ul class="entry inline">', join('', $show_data), '</ul></div>';
 }
 echo "</form>";
-Ht::stash_script("$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
+Ht::stash_script("$(\"#showau\").on(\"change\", function () { hotcrp.foldup.call(this, null, {n:10}) })");
 
 
 // main form

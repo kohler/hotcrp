@@ -453,7 +453,7 @@ class AutoassignerInterface {
         }
         if (!$this->live) {
             $t = '<h3 class="form-h">Preparing assignment</h3><p><strong>Status:</strong> ' . htmlspecialchars($status);
-            echo Ht::script('$$("propass").innerHTML=' . json_encode_browser($t) . ';'), "\n";
+            echo Ht::script('document.getElementById("propass").innerHTML=' . json_encode_browser($t) . ';'), "\n";
             flush();
             while (@ob_end_flush()) {
                 /* skip */
@@ -505,7 +505,7 @@ class AutoassignerInterface {
             if ($this->live) {
                 echo $w;
             } else {
-                echo Ht::unstash_script('$$("propass").innerHTML=' . json_encode($w)), "\n";
+                echo Ht::unstash_script('document.getElementById("propass").innerHTML=' . json_encode($w)), "\n";
             }
             return null;
         } else {
@@ -602,7 +602,7 @@ Assignment methods:
   <dt>', review_type_icon(REVIEW_PC), ' Optional</dt><dd>May be declined</dd>
   <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
 </div></div>', "\n";
-echo Ht::unstash_script("hiliter_children(\"#autoassignform\")");
+echo Ht::unstash_script("hotcrp.highlight_form_children(\"#autoassignform\")");
 
 // paper selection
 echo divClass("pap"), "<h3 class=\"form-h\">Paper selection</h3>";
@@ -730,75 +730,7 @@ foreach ($pctyp_sel as $pctyp) {
     $sep = ", ";
 }
 echo ")";
-Ht::stash_script('function make_pcsel_members(tag) {
-    if (tag === "__flip__")
-        return function () { return !this.checked; };
-    else if (tag === "all")
-        return function () { return true; };
-    else if (tag === "none")
-        return function () { return false; };
-    else {
-        tag = " " + tag.toLowerCase() + "#";
-        return function () {
-            var tlist = hotcrp_pc_tags[this.name.substr(3)] || "";
-            return tlist.indexOf(tag) >= 0;
-        };
-    }
-}
-function pcsel_tag(event) {
-    var $g = $(this).closest(".js-radio-focus"), e;
-    if (this.tagName === "A") {
-        $g.find("input[type=radio]").first().click();
-        var tag = this.hash.substring(4),
-            f = make_pcsel_members(tag),
-            full = true;
-        if (tag !== "all" && tag !== "none" && tag !== "__flip__"
-            && !hasClass(this, "font-weight-bold")) {
-            $g.find("input").each(function () {
-                if (this.name.startsWith("pcc") && !this.checked)
-                    return (full = false);
-            });
-        }
-        $g.find("input").each(function () {
-            if (this.name.startsWith("pcc")) {
-                var on = f.call(this);
-                if (full || on)
-                    this.checked = on;
-            }
-        });
-        event.preventDefault();
-    }
-    var tags = [], functions = {}, isall = true;
-    $g.find("a.js-pcsel-tag").each(function () {
-        var tag = this.hash.substring(4);
-        if (tag !== "none") {
-            tags.push(tag);
-            functions[tag] = make_pcsel_members(tag);
-        }
-    });
-    $g.find("input").each(function () {
-        if (this.name.startsWith("pcc") && !this.checked) {
-            isall = false;
-            for (var i = 0; i < tags.length; ) {
-                if (functions[tags[i]].call(this))
-                    tags.splice(i, 1);
-                else
-                    ++i;
-            }
-            return isall || tags.length !== 0;
-        }
-    });
-    $g.find("a.js-pcsel-tag").each(function () {
-        var tag = this.hash.substring(4);
-        if ($.inArray(tag, tags) >= 0 && (tag === "all" || !isall))
-            addClass(this, "font-weight-bold");
-        else
-            removeClass(this, "font-weight-bold");
-    });
-}
-$(document).on("click", "a.js-pcsel-tag", pcsel_tag);
-$(document).on("change", "input.js-pcsel-tag", pcsel_tag);
-$(function(){$("input.js-pcsel-tag").first().trigger("change")})');
+Ht::stash_script('$(function(){$("input.js-pcsel-tag").first().trigger("change")});');
 
 $summary = [];
 $nrev = AssignmentCountSet::load($Me, AssignmentCountSet::HAS_REVIEW);
@@ -820,7 +752,7 @@ echo Ht::hidden("has_pcc", 1),
 function bpSelector($i, $which) {
     global $Qreq;
     return Ht::select("bp$which$i", [], 0,
-        ["class" => "need-pcselector badpairs", "data-pcselector-selected" => $Qreq["bp$which$i"], "data-pcselector-options" => "[\"(PC member)\",\"*\"]", "data-default-value" => $Qreq["bp$which$i"]]);
+        ["class" => "need-pcselector uich badpairs", "data-pcselector-selected" => $Qreq["bp$which$i"], "data-pcselector-options" => "[\"(PC member)\",\"*\"]", "data-default-value" => $Qreq["bp$which$i"]]);
 }
 
 echo '<div class="g"></div><div class="relative"><table id="bptable"><tbody>', "\n";
@@ -842,25 +774,6 @@ for ($i = 1; $i == 1 || isset($Qreq["bpa$i"]); ++$i) {
 }
 echo "</tbody></table></div>\n";
 $Conf->stash_hotcrp_pc($Me);
-echo Ht::unstash_script('$("#bptable").on("change", "select.badpairs", function () {
-    if (this.value !== "none") {
-        var x = $$("badpairs");
-        x.checked || x.click();
-    }
-});
-$("#bptable a.js-badpairs-row").on("click", function () {
-    var tbody = $("#bptable > tbody"), n = tbody.children().length;
-    if (hasClass(this, "more")) {
-        ++n;
-        tbody.append(\'<tr><td class="rentry nw">or &nbsp;</td><td class="lentry"><span class="select"><select name="bpa\' + n + \'" class="badpairs"></select></span> &nbsp;and&nbsp; <span class="select"><select name="bpb\' + n + \'" class="badpairs"></select></span></td></tr>\');
-        var options = tbody.find("select").first().html();
-        tbody.find("select[name=bpa" + n + "], select[name=bpb" + n + "]").html(options).val("none");
-    } else if (n > 1) {
-        --n;
-        tbody.children().last().remove();
-    }
-    return false;
-});');
 
 
 // Load balancing

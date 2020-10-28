@@ -1824,11 +1824,11 @@ class PaperList implements XtContext {
             }
             $body[] = $this->_row_html($rstate, $row);
             if ($this->need_render && !$need_render) {
-                Ht::stash_script('$(plinfo.render_needed)', 'plist_render_needed');
+                Ht::stash_script('$(hotcrp.render_list)', 'plist_render_needed');
                 $need_render = true;
             }
             if ($this->need_render && $this->count % 16 == 15) {
-                $body[count($body) - 1] .= "  " . Ht::script('plinfo.render_needed()') . "\n";
+                $body[count($body) - 1] .= "  " . Ht::script('hotcrp.render_list()') . "\n";
                 $this->need_render = false;
             }
         }

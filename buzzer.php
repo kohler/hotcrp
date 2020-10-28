@@ -131,7 +131,7 @@ if ($Me->is_track_manager()) {
 $buzzer_status["no_discussion"] = $no_discussion . '</div>';
 echo Ht::unstash();
 echo $Conf->make_script_file("scripts/buzzer.js");
-echo Ht::unstash_script('start_buzzer_page(' . json_encode_browser($buzzer_status) . ')');
+echo Ht::unstash_script('hotcrp.start_buzzer_page(' . json_encode_browser($buzzer_status) . ')');
 
 echo "</tr></table></form>\n";
 $Conf->footer();

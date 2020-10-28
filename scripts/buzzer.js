@@ -1,4 +1,4 @@
-var start_buzzer_page = (function ($) {
+hotcrp.start_buzzer_page = (function ($) {
 var info, has_format, muted, show_papers, initial = true, last_html = {};
 
 function render_pc(pc) {

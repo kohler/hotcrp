@@ -1,7 +1,7 @@
 // script.js -- HotCRP JavaScript library
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-var siteurl, siteurl_base_path,
+var siteurl, siteurl_base_path, hotcrp,
     siteurl_postvalue, siteurl_suffix, siteurl_defaults,
     siteurl_absolute_base, siteurl_cookie_params, assetsurl,
     hotcrp_paperid, hotcrp_status, hotcrp_user,
@@ -2855,7 +2855,7 @@ var hotcrp_load = (function ($) {
 
 
 function fold_storage() {
-    if (!this || this === window) {
+    if (!this || this === window || this === hotcrp) {
         $(".need-fold-storage").each(fold_storage);
     } else {
         removeClass(this, "need-fold-storage");
@@ -3460,6 +3460,99 @@ handle_ui.on("js-request-review-preview-email", function (event) {
     });
     event.stopPropagation();
 });
+
+// autoassignment
+(function () {
+function make_pcsel_members(tag) {
+    if (tag === "__flip__")
+        return function () { return !this.checked; };
+    else if (tag === "all")
+        return function () { return true; };
+    else if (tag === "none")
+        return function () { return false; };
+    else {
+        tag = " " + tag.toLowerCase() + "#";
+        return function () {
+            var tlist = hotcrp_pc_tags[this.name.substr(3)] || "";
+            return tlist.indexOf(tag) >= 0;
+        };
+    }
+}
+function pcsel_tag(event) {
+    var $g = $(this).closest(".js-radio-focus"), e;
+    if (this.tagName === "A") {
+        $g.find("input[type=radio]").first().click();
+        var tag = this.hash.substring(4),
+            f = make_pcsel_members(tag),
+            full = true;
+        if (tag !== "all" && tag !== "none" && tag !== "__flip__"
+            && !hasClass(this, "font-weight-bold")) {
+            $g.find("input").each(function () {
+                if (this.name.startsWith("pcc") && !this.checked)
+                    return (full = false);
+            });
+        }
+        $g.find("input").each(function () {
+            if (this.name.startsWith("pcc")) {
+                var on = f.call(this);
+                if (full || on)
+                    this.checked = on;
+            }
+        });
+        event.preventDefault();
+    }
+    var tags = [], functions = {}, isall = true;
+    $g.find("a.js-pcsel-tag").each(function () {
+        var tag = this.hash.substring(4);
+        if (tag !== "none") {
+            tags.push(tag);
+            functions[tag] = make_pcsel_members(tag);
+        }
+    });
+    $g.find("input").each(function () {
+        if (this.name.startsWith("pcc") && !this.checked) {
+            isall = false;
+            for (var i = 0; i < tags.length; ) {
+                if (functions[tags[i]].call(this))
+                    tags.splice(i, 1);
+                else
+                    ++i;
+            }
+            return isall || tags.length !== 0;
+        }
+    });
+    $g.find("a.js-pcsel-tag").each(function () {
+        var tag = this.hash.substring(4);
+        if ($.inArray(tag, tags) >= 0 && (tag === "all" || !isall))
+            addClass(this, "font-weight-bold");
+        else
+            removeClass(this, "font-weight-bold");
+    });
+}
+handle_ui.on("js-pcsel-tag", pcsel_tag);
+
+handle_ui.on("badpairs", function () {
+    if (this.value !== "none") {
+        var x = $$("badpairs");
+        x.checked || x.click();
+    }
+});
+
+handle_ui.on(".js-badpairs-row", function () {
+    var tbody = $("#bptable > tbody"), n = tbody.children().length;
+    if (hasClass(this, "more")) {
+        ++n;
+        tbody.append('<tr><td class="rentry nw">or &nbsp;</td><td class="lentry"><span class="select"><select name="bpa' + n + '" class="badpairs"></select></span> &nbsp;and&nbsp; <span class="select"><select name="bpb' + n + '" class="badpairs"></select></span></td></tr>');
+        var options = tbody.find("select").first().html();
+        tbody.find("select[name=bpa" + n + "], select[name=bpb" + n + "]").html(options).val("none");
+    } else if (n > 1) {
+        --n;
+        tbody.children().last().remove();
+    }
+    return false;
+});
+
+})();
 
 
 // author entry
@@ -9731,3 +9824,33 @@ $.fn.unautogrow = function () {
 })(jQuery);
 
 $(function () { $(".need-autogrow").autogrow(); });
+
+
+var hotcrp = {
+    add_comment: papercomment.add,
+    add_review: review_form.add_review,
+    add_preference_ajax: add_revpref_ajax,
+    check_version: check_version,
+    demand_load: demand_load,
+    edit_comment: papercomment.edit,
+    focus_within: focus_within,
+    fold: fold,
+    fold_storage: fold_storage,
+    foldup: foldup,
+    highlight_form_children: hiliter_children,
+    init_deadlines: hotcrp_deadlines.init,
+    load_editable_paper: edit_paper_ui.load,
+    load_editable_review: edit_paper_ui.load_review,
+    make_pattern_fill: make_pattern_fill,
+    onload: hotcrp_load,
+    paper_edit_conditions: edit_paper_ui.edit_condition,
+    prepare_editable_paper: edit_paper_ui.prepare,
+    profile_ui: profile_ui,
+    render_list: plinfo.render_needed,
+    render_text_page: render_text.on_page,
+    scorechart: scorechart,
+    set_default_format: render_text.set_default_format,
+    set_response_round: papercomment.set_resp_round,
+    set_review_form: review_form.set_form,
+    shortcut: shortcut
+};

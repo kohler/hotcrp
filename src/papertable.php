@@ -210,7 +210,7 @@ class PaperTable {
             "paperId" => $qreq->paperId
         ]);
         if ($format) {
-            echo Ht::unstash_script("render_text.on_page()");
+            echo Ht::unstash_script("hotcrp.render_text_page()");
         }
     }
 
@@ -387,7 +387,7 @@ class PaperTable {
             echo (empty($folders) ? "" : " "),
                 'need-fold-storage" data-fold-storage-prefix="p." data-fold-storage="',
                 htmlspecialchars(json_encode_browser($foldstorage)), '">';
-            Ht::stash_script("fold_storage()");
+            Ht::stash_script("hotcrp.fold_storage()");
         }
     }
 
@@ -428,7 +428,7 @@ class PaperTable {
                 echo ' hidden';
             }
             echo '" data-edit-condition="', htmlspecialchars(json_encode($opt->exists_script_expression($this->prow)));
-            Ht::stash_script('$(edit_paper_ui.edit_condition)', 'edit_condition');
+            Ht::stash_script('$(hotcrp.paper_edit_conditions)', 'edit_condition');
         }
         echo '"><h3 class="', $this->control_class($opt->formid, "papet");
         if ($for === "checkbox") {
@@ -716,7 +716,7 @@ class PaperTable {
         if ($extra) {
             $fr->value .= '<div class="fn6 fx7 longtext-fader"></div>'
                 . '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" role="button" aria-expanded="false" data-fold-target="6">[more]</a></div>'
-                . Ht::unstash_script("render_text.on_page()");
+                . Ht::unstash_script("hotcrp.render_text_page()");
         }
     }
 
@@ -1349,7 +1349,7 @@ class PaperTable {
             echo "</form>";
         }
         if ($unfolded) {
-            echo Ht::unstash_script('fold("tags",0)');
+            echo Ht::unstash_script('hotcrp.fold("tags",0)');
         }
         echo "</div>\n";
     }
@@ -1378,7 +1378,7 @@ class PaperTable {
         echo "<input id=\"revprefform_d\" type=\"text\" name=\"revpref", $this->prow->paperId,
             "\" size=\"4\" value=\"$rp\" class=\"revpref want-focus want-select\">",
             "</form></div></div>\n";
-        Ht::stash_script("add_revpref_ajax(\"#revprefform_d\",true);shortcut(\"revprefform_d\").add()");
+        Ht::stash_script("hotcrp.add_preference_ajax(\"#revprefform_d\",true);hotcrp.shortcut(\"revprefform_d\").add()");
     }
 
     private function papstrip_tag_entry($id) {
@@ -1920,7 +1920,7 @@ class PaperTable {
             $form_js["class"] .= " alert";
         }
         echo Ht::form($this->conf->hoturl_post("paper", $form_url), $form_js);
-        Ht::stash_script('$(edit_paper_ui.load)');
+        Ht::stash_script('$(hotcrp.load_editable_paper)');
     }
 
     private function _echo_editable_body() {
@@ -1967,7 +1967,7 @@ class PaperTable {
             $this->_papstrip();
         }
         if ($this->npapstrip) {
-            Ht::stash_script("edit_paper_ui.prepare()");
+            Ht::stash_script("hotcrp.prepare_editable_paper()");
             echo '</div></div><nav class="pslcard-nav">';
         } else {
             echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav">';
@@ -2045,7 +2045,7 @@ class PaperTable {
                 '</div>';
         }
 
-        Ht::stash_script("shortcut().add()");
+        Ht::stash_script("hotcrp.shortcut().add()");
     }
 
     private function _paptabSepContaining($t) {
@@ -2542,11 +2542,11 @@ class PaperTable {
                     && !$this->user->is_my_review($rc)) {
                     $rcj->folded = true;
                 }
-                $s .= "review_form.add_review(" . json_encode_browser($rcj) . ");\n";
+                $s .= "hotcrp.add_review(" . json_encode_browser($rcj) . ");\n";
             } else {
                 ++$ncmt;
                 $rcj = $rc->unparse_json($this->user);
-                $s .= "papercomment.add(" . json_encode_browser($rcj) . ");\n";
+                $s .= "hotcrp.add_comment(" . json_encode_browser($rcj) . ");\n";
             }
         }
 
@@ -2568,7 +2568,7 @@ class PaperTable {
             }
             foreach ($cs as $c) {
                 ++$ncmt;
-                $s .= "papercomment.add(" . json_encode_browser($c->unparse_json($this->user)) . ");\n";
+                $s .= "hotcrp.add_comment(" . json_encode_browser($c->unparse_json($this->user)) . ");\n";
             }
         }
 
@@ -2834,7 +2834,7 @@ class PaperTable {
             }
         }
         $rf = $this->conf->review_form();
-        Ht::stash_script("review_form.set_form(" . json_encode_browser($rf->unparse_json($round_mask, $min_view_score)) . ")");
+        Ht::stash_script("hotcrp.set_review_form(" . json_encode_browser($rf->unparse_json($round_mask, $min_view_score)) . ")");
 
         $want_rid = $want_rordinal = -1;
         $rtext = (string) $this->qreq->reviewId;

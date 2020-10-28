@@ -149,7 +149,7 @@ class Reviews_SettingRenderer {
                 echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
                     Ht::hidden("deleteround_$i", 1, ["data-default-value" => "1"]);
         }
-        Ht::stash_script('review_round_settings()');
+        Ht::stash_script('hotcrp.settings.review_round()');
 
         $extselector = array_merge(["#same" => "(same as PC)"], $selector);
         echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',

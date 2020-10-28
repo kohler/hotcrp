@@ -18,7 +18,7 @@ function review_header() {
 function review_error($msg) {
     global $Conf;
     review_header();
-    Ht::stash_script("shortcut().add()");
+    Ht::stash_script("hotcrp.shortcut().add()");
     $msg && Conf::msg_error($msg);
     Conf::$main->footer();
     exit;

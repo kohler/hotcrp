@@ -111,7 +111,7 @@ class CommentInfo {
                         $j["done"] = $rrd->done;
                     }
                 }
-                $t[] = "papercomment.set_resp_round(" . json_encode($rrd->name) . "," . json_encode($j) . ")";
+                $t[] = "hotcrp.set_response_round(" . json_encode($rrd->name) . "," . json_encode($j) . ")";
             }
             echo Ht::unstash_script(join(";", $t));
             Icons::stash_licon("ui_tag");

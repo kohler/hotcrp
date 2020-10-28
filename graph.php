@@ -60,7 +60,7 @@ function echo_graph($searchable, $fg, $h2) {
 if ($Graph == "procrastination") {
     echo_graph(false, null, "Procrastination");
     $rt = new ReviewTimes($Me);
-    echo Ht::unstash_script('$(function () { hotcrp_graph("#hotgraph",' . json_encode_browser($rt->json()) . ') })');
+    echo Ht::unstash_script('$(function () { hotcrp.graph("#hotgraph",' . json_encode_browser($rt->json()) . ') })');
 }
 
 
@@ -146,7 +146,7 @@ if ($Graph == "formula") {
         } else if ($fg->type === FormulaGraph::BOXPLOT) {
             $gtype = "boxplot";
         }
-        echo Ht::unstash_script("\$(function () { hotcrp_graph(\"#hotgraph\", " . json_encode_browser($fg->graph_json()) . ") });"), "\n";
+        echo Ht::unstash_script("\$(function () { hotcrp.graph(\"#hotgraph\", " . json_encode_browser($fg->graph_json()) . ") });"), "\n";
     } else {
         echo "<h2>Formulas</h2>\n";
     }

@@ -50,7 +50,7 @@ handle_ui.on("js-settings-option-move", function (event) {
                 $odiv.append('<div class="f-i"><em>This field will be deleted from the submission form.</em></div>');
         }
     }
-    settings_option_move_enable();
+    settings_option_positions();
 });
 
 handle_ui.on("js-settings-option-new", function (event) {
@@ -63,10 +63,10 @@ handle_ui.on("js-settings-option-new", function (event) {
     odiv.find(".need-autogrow").autogrow();
     odiv.find(".need-tooltip").each(tooltip);
     $("#optn_" + next)[0].focus();
-    settings_option_move_enable();
+    settings_option_positions();
 });
 
-function settings_option_move_enable() {
+function settings_option_positions() {
     $(".settings-opt .moveup, .settings-opt .movedown").prop("disabled", false);
     $(".settings-opt:first-child .moveup").prop("disabled", true);
     $(".settings-opt:last-child .movedown").prop("disabled", true);
@@ -612,9 +612,8 @@ function add_dialog(fid, focus) {
     create();
 }
 
-rfs.add = function (has_options, fid) {
-    if (fid)
-        return add_field(fid);
+handle_ui.on("js-settings-add-review-field", function () {
+    var has_options = hasClass(this, "score"), fid;
     // prefer recently removed fields
     var i = 0, x = [];
     for (var $n = $("#reviewform_removedcontainer")[0].firstChild;
@@ -642,7 +641,7 @@ rfs.add = function (has_options, fid) {
     }
     original[fid] = has_options ? stemplate : ttemplate;
     return add_dialog(fid);
-};
+});
 
 return rfs;
 })();
@@ -659,3 +658,10 @@ handle_ui.on("js-settings-resp-round-new", function () {
     j.find(".need-suggest").each(suggest);
     return false;
 });
+
+
+hotcrp.settings = {
+    option_positions: settings_option_positions,
+    review_form: review_form_settings,
+    review_round: review_round_settings
+};

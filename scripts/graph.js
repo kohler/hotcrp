@@ -1,7 +1,7 @@
 // graph.js -- HotCRP JavaScript library for graph drawing
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-var hotcrp_graph = (function ($, d3) {
+hotcrp.graph = (function ($, d3) {
 var BOTTOM_MARGIN = 30;
 var PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,

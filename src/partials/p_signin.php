@@ -113,7 +113,7 @@ class Signin_Partial {
             Ht::form($conf->hoturl("signin"), ["class" => "compact-form ui-submit uin js-signin"]),
             Ht::hidden("post", post_value(true));
         if (!$unfolded) {
-            echo Ht::unstash_script('fold("homeacct",false)');
+            echo Ht::unstash_script('hotcrp.fold("homeacct",false)');
         }
 
         $gx->render_group("signin/form");
@@ -327,7 +327,7 @@ class Signin_Partial {
             Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
             '</div>';
         echo '</form></div>';
-        Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
+        Ht::stash_script("hotcrp.focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
     }
 
 
@@ -367,7 +367,7 @@ class Signin_Partial {
             Ht::hidden("post", post_value());
         $gx->render_group("forgotpassword/form");
         echo '</form></div>';
-        Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
+        Ht::stash_script("hotcrp.focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
     }
     static function render_forgot_form_description(Contact $user, Qrequest $qreq, $gx) {
         echo '<p class="mb-5">Enter your email and we’ll send you a link to reset your password.';
@@ -489,7 +489,7 @@ class Signin_Partial {
             $gx->render_group("forgotpassword/form");
         }
         echo '</form></div>';
-        Ht::stash_script("focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
+        Ht::stash_script("hotcrp.focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
     }
     static function render_reset_form_description() {
         echo '<p class="mb-5">Use this form to set a new password. You may want to use the random password we’ve chosen.</p>';

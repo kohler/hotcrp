@@ -313,7 +313,7 @@ class MailSender {
             echo '<div class="fn2 warning">Scroll down to send the prepared mail once the page finishes loading.</div>',
                 "</div>\n";
         }
-        echo Ht::unstash_script("fold('mail',0,2)");
+        echo Ht::unstash_script("hotcrp.fold('mail',0,2)");
         $this->started = true;
     }
 
@@ -321,7 +321,7 @@ class MailSender {
         if (!$this->started) {
             $this->echo_prologue();
         }
-        $s = "\$\$('mailcount').innerHTML=\"";
+        $s = "document.getElementById('mailcount').innerHTML=\"";
         if ($nrows_done >= $nrows_total) {
             $s .= "100";
         } else {
@@ -330,7 +330,7 @@ class MailSender {
         $s .= "% done.\";";
         $m = plural($this->mcount, "mail") . ", "
             . plural($this->mrecipients, "recipient");
-        $s .= "\$\$('mailinfo').innerHTML=\"<span class='barsep'>·</span>" . $m . "\";";
+        $s .= "document.getElementById('mailinfo').innerHTML=\"<span class='barsep'>·</span>" . $m . "\";";
         if (!$this->sending && $this->groupable) {
             $s .= "\$('.mail_groupable').show();";
         }
@@ -533,7 +533,7 @@ class MailSender {
                 $this->echo_prologue();
                 $nwarnings = $mailer->warning_count();
                 echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"warning\">", join("<br>", $mailer->warning_htmls()), "</div></div>";
-                echo Ht::unstash_script("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
+                echo Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn$nwarnings').innerHTML;");
             }
 
             if ($this->sending && $revinform !== null && $prow) {
@@ -548,7 +548,7 @@ class MailSender {
             if (empty($preperrors)) {
                 Conf::msg_error("No users match “" . $this->recip->unparse() . "” for that search.");
             }
-            echo Ht::unstash_script("addClass(document.getElementById('foldmail'),'hidden');document.getElementById('mailform').action=" . json_encode_browser($this->conf->hoturl("mail", "check=1", Conf::HOTURL_RAW | Conf::HOTURL_POST)));
+            echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('mailform').action=" . json_encode_browser($this->conf->hoturl("mail", "check=1", Conf::HOTURL_RAW | Conf::HOTURL_POST)));
             return false;
         }
 
@@ -561,7 +561,7 @@ class MailSender {
             }
         }
         echo "</form>";
-        echo Ht::unstash_script("fold('mail', null);");
+        echo Ht::unstash_script("hotcrp.fold('mail', null);");
         $this->conf->footer();
         exit;
     }
@@ -693,11 +693,11 @@ echo 'Assignments since:&nbsp; ',
 echo '<div class="fx9 g"></div>';
 
 Ht::stash_script('function mail_recipients_fold(event) {
-    var plimit = $$("plimit");
-    foldup.call(this, null, {f: !!plimit && !plimit.checked, n: 8});
+    var plimit = document.getElementById("plimit");
+    hotcrp.foldup.call(this, null, {f: !!plimit && !plimit.checked, n: 8});
     var sopt = $(this).find("option[value=\'" + this.value + "\']");
-    foldup.call(this, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
-    foldup.call(this, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
+    hotcrp.foldup.call(this, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
+    hotcrp.foldup.call(this, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
 }
 $("#to, #plimit").on("change", mail_recipients_fold);
 $(function () { $("#to").trigger("change"); })');

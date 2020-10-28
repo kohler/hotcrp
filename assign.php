@@ -466,7 +466,7 @@ if ($Me->can_administer($prow)) {
         '<div class="revcard-head"><h2>PC assignments</h2></div>',
         '<div class="revcard-body">',
         Ht::form($Conf->hoturl_post("assign", "p=$prow->paperId"), array("id" => "ass", "class" => "need-unload-protection"));
-    Ht::stash_script('hiliter_children("#ass")');
+    Ht::stash_script('hotcrp.highlight_form_children("#ass")');
 
     if ($Conf->has_topics()) {
         echo "<p>Review preferences display as “P#”, topic scores as “T#”.</p>";

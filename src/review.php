@@ -419,7 +419,7 @@ class ReviewField implements JsonSerializable {
             }
             $retstr .= '<br><span class="sc_sum">' . $avgtext . "</span></div>";
         }
-        Ht::stash_script("$(scorechart)", "scorechart");
+        Ht::stash_script("$(hotcrp.scorechart)", "scorechart");
 
         return $retstr;
     }
@@ -1150,7 +1150,7 @@ $blind\n";
             if ($options["editmessage"] ?? false) {
                 $rj->message_html = $options["editmessage"];
             }
-            echo Ht::unstash_script("review_form.add_review(" . json_encode_browser($rj) . ");\n");
+            echo Ht::unstash_script("hotcrp.add_review(" . json_encode_browser($rj) . ");\n");
             return;
         }
 
@@ -1330,7 +1330,7 @@ $blind\n";
         }
 
         echo "</div></form></div>\n\n";
-        Ht::stash_script('edit_paper_ui.load_review()', "form_revcard");
+        Ht::stash_script('hotcrp.load_editable_review()', "form_revcard");
     }
 
     const RJ_NO_EDITABLE = 2;

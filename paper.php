@@ -65,7 +65,7 @@ function errorMsgExit($msg) {
         json_exit(["ok" => false]);
     } else {
         confHeader();
-        Ht::stash_script("shortcut().add()");
+        Ht::stash_script("hotcrp.shortcut().add()");
         $msg && Conf::msg_error($msg);
         Conf::$main->footer();
         exit;
@@ -541,7 +541,7 @@ if ($paperTable->mode === "edit") {
             $j->blind = !!$Qreq->blind;
             $j->draft = !!$Qreq->draft;
         }
-        Ht::stash_script("papercomment.edit(" . json_encode_browser($j) . ")");
+        Ht::stash_script("hotcrp.edit_comment(" . json_encode_browser($j) . ")");
     }
 }
 

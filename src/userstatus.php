@@ -1365,7 +1365,7 @@ class UserStatus extends MessageSet {
                 Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role", "data-default-checked" => $cpcrole === $k]),
                 '</span>', $v, "</label>\n";
         }
-        Ht::stash_script('$(".js-role").on("change", profile_ui);$(function(){$(".js-role").first().trigger("change")})');
+        Ht::stash_script('$(".js-role").on("change", hotcrp.profile_ui);$(function(){$(".js-role").first().trigger("change")})');
 
         echo "</td><td><span class=\"sep\"></span></td><td>";
         $is_ass = $cis_ass = ($us->user->roles & Contact::ROLE_ADMIN) !== 0;

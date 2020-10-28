@@ -375,7 +375,7 @@ class Home_Partial {
                 foldupbutton(20),
                 "<a href=\"\" class=\"q homeactivity ui js-foldup\" data-fold-target=\"20\">Recent activity<span class=\"fx20\">:</span></a>",
                 "</div>";
-            Ht::stash_script("fold_storage()");
+            Ht::stash_script("hotcrp.fold_storage()");
         }
 
         echo "</div>\n";

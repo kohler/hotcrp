@@ -474,7 +474,7 @@ class ReviewForm_SettingRenderer {
         }
 
         // output settings json
-        Ht::stash_script("review_form_settings({"
+        Ht::stash_script("hotcrp.settings.review_form({"
             . "fields:" . json_encode_browser($rfj)
             . ", samples:" . json_encode_browser($samples)
             . ", errf:" . json_encode_browser($sv->message_field_map())
@@ -489,9 +489,8 @@ class ReviewForm_SettingRenderer {
         }
         echo "<div id=\"reviewform_container\"></div>",
             "<div id=\"reviewform_removedcontainer\"></div>",
-            Ht::button("Add score field", ["class" => "settings-add-review-field score"]),
+            Ht::button("Add score field", ["class" => "ui js-settings-add-review-field score"]),
             "<span class=\"sep\"></span>",
-            Ht::button("Add text field", ["class" => "settings-add-review-field"]);
-        Ht::stash_script('$("button.settings-add-review-field").on("click", function () { review_form_settings.add(hasClass(this,"score")?1:0) })');
+            Ht::button("Add text field", ["class" => "ui js-settings-add-review-field"]);
     }
 }

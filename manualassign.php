@@ -153,7 +153,7 @@ if ($reviewer) {
 // Change PC member
 echo "<table><tr><td><div class=\"assignpc_pcsel\">",
     Ht::form(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
-Ht::stash_script('hiliter_children("#selectreviewerform")');
+Ht::stash_script('hotcrp.highlight_form_children("#selectreviewerform")');
 
 $result = $Conf->qe_raw("select ContactInfo.contactId, count(reviewId)
                 from ContactInfo
@@ -310,8 +310,8 @@ if ($reviewer) {
     echo '<div class="aab aabr aabig"><div class="aabut">',
         Ht::submit("update", "Save assignments", ["class" => "btn-primary"]),
         "</div></div></form>\n";
-    Ht::stash_script('hiliter_children("form.assignpc");$("#assrevimmediate").trigger("change");'
-        . "$(\"#showau\").on(\"change\", function () { foldup.call(this, null, {n:10}) })");
+    Ht::stash_script('hotcrp.highlight_form_children("form.assignpc");$("#assrevimmediate").trigger("change");'
+        . "$(\"#showau\").on(\"change\", function () { hotcrp.foldup.call(this, null, {n:10}) })");
 }
 
 echo '<hr class="c" />';

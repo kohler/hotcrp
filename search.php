@@ -491,7 +491,7 @@ if ($pl->count > 0) {
 }
 echo "</tr></table></div></div>\n\n";
 if ($pl->count == 0) {
-    Ht::stash_script("addClass(document.body,\"want-hash-focus\")");
+    Ht::stash_script("\$(document.body).addClass(\"want-hash-focus\")");
 }
 echo Ht::unstash();
 

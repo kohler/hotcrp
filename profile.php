@@ -97,7 +97,7 @@ function change_email_by_capability($Qreq) {
             Ht::submit("go", "Change email", ["class" => "btn-primary", "value" => 1]),
             Ht::submit("cancel", "Cancel", ["formnovalidate" => true]),
             '</div></form>';
-        Ht::stash_script("focus_within(\$(\"#changeemailform\"));window.scroll(0,0)");
+        Ht::stash_script("hotcrp.focus_within(\$(\"#changeemailform\"));window.scroll(0,0)");
         $Conf->footer();
         exit;
     }
@@ -728,6 +728,6 @@ if ($newProfile !== 2) {
 echo "</main></form>";
 
 if (!$newProfile) {
-    Ht::stash_script('hiliter_children("#form-profile")');
+    Ht::stash_script('hotcrp.highlight_form_children("#form-profile")');
 }
 $Conf->footer();

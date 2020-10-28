@@ -4087,16 +4087,16 @@ class Conf {
         echo "\">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
-        Ht::stash_script("hotcrp_load.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
+        Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
 
         // deadlines settings
         $my_deadlines = null;
         if ($Me) {
             $my_deadlines = $Me->my_deadlines($this->paper ? [$this->paper] : []);
-            Ht::stash_script("hotcrp_deadlines.init(" . json_encode_browser($my_deadlines) . ")");
+            Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
         if ($this->default_format) {
-            Ht::stash_script("render_text.set_default_format(" . $this->default_format . ")");
+            Ht::stash_script("hotcrp.set_default_format(" . $this->default_format . ")");
         }
 
         echo '<div id="top">';
@@ -4260,7 +4260,7 @@ class Conf {
                     $v .= " " . $args[1];
                 }
             }
-            Ht::stash_script("check_version(\"$m\",\"$v\")");
+            Ht::stash_script("hotcrp.check_version(\"$m\",\"$v\")");
             $_SESSION["updatecheck"] = Conf::$now;
         }
     }
@@ -4390,7 +4390,7 @@ class Conf {
     function stash_hotcrp_pc(Contact $viewer, $always = false) {
         if (($always || !$this->opt("largePC"))
             && Ht::mark_stash("hotcrp_pc")) {
-            Ht::stash_script("demand_load.pc(" . json_encode_browser($this->hotcrp_pc_json($viewer)) . ");");
+            Ht::stash_script("hotcrp.demand_load.pc(" . json_encode_browser($this->hotcrp_pc_json($viewer)) . ");");
         }
     }
 

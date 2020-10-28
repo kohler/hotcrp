@@ -679,7 +679,7 @@ class TagMap implements IteratorAggregate {
     static function mark_pattern_fill($classes) {
         $key = is_array($classes) ? join(" ", $classes) : $classes;
         if (!isset(self::$multicolor_map[$key]) && strpos($key, " ") !== false) {
-            Ht::stash_script("make_pattern_fill(" . json_encode_browser($key) . ")");
+            Ht::stash_script("hotcrp.make_pattern_fill(" . json_encode_browser($key) . ")");
             self::$multicolor_map[$key] = true;
         }
     }
