@@ -245,7 +245,7 @@ class SubForm_SettingRenderer {
         }
 
         echo '</div>';
-        Ht::stash_script('function sub_nopapers_change() { var v = $("#sub_nopapers").val(); fold("pdfupload",v==1,2); fold("pdfupload",v!=0,3); } $("#sub_nopapers").on("change", sub_nopapers_change); $(sub_nopapers_change)');
+        Ht::stash_script('function sub_nopapers_change() { var v = $("#sub_nopapers").val(); hotcrp.fold("pdfupload",v==1,2); hotcrp.fold("pdfupload",v!=0,3); } $("#sub_nopapers").on("change", sub_nopapers_change); $(sub_nopapers_change)');
 
         echo "<h3 class=\"form-h\">Conflicts and collaborators</h3>\n",
             '<div id="foldpcconf" class="form-g fold',
