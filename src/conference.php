@@ -3795,7 +3795,7 @@ class Conf {
 
     /** @param non-empty-string $url
      * @return string */
-    function make_css_link($url, $media = null) {
+    function make_css_link($url, $media = null, $integrity = null) {
         if (str_starts_with($url, "<meta") || str_starts_with($url, "<link")) {
             return $url;
         }
@@ -3811,6 +3811,9 @@ class Conf {
         if ($media) {
             $t .= '" media="' . $media;
         }
+        if ($integrity) {
+            $t .= '" crossorigin="anonymous" integrity="' . $integrity;
+        }
         return $t . '">';
     }
 
@@ -3823,8 +3826,9 @@ class Conf {
                 $post = "mtime=$mtime";
             }
             if (($this->opt["strictJavascript"] ?? false) && !$no_strict) {
-                $url = $this->opt["scriptAssetsUrl"] . "cacheable.php?file=" . urlencode($url)
-                    . "&strictjs=1" . ($post ? "&$post" : "");
+                $url = $this->opt["scriptAssetsUrl"] . "cacheable.php/"
+                    . str_replace("%2F", "/", urlencode($url))
+                    . "?strictjs=1" . ($post ? "&$post" : "");
             } else {
                 $url = $this->opt["scriptAssetsUrl"] . $url . ($post ? "?$post" : "");
             }

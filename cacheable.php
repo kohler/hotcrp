@@ -24,6 +24,9 @@ function fail($reason, $file) {
 }
 
 $file = $_GET["file"] ?? null;
+if (!$file && (Navigation::path())[0] === "/") {
+    $file = substr(Navigation::path(), 1);
+}
 if (!$file) {
     fail("400 Bad Request", "File missing");
     exit;
