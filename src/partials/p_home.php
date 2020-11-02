@@ -360,9 +360,10 @@ class Home_Partial {
         if ($user->has_review()) {
             $plist = new PaperList("reviewerHome", new PaperSearch($user, ["q" => "re:me"]));
             $plist->set_table_id_class(null, "pltable-reviewerhome");
-            $ptext = $plist->table_html(["list" => true]);
-            if ($plist->count > 0) {
-                echo "<div class=\"fx\"><hr class=\"g\">", $ptext, "</div>";
+            if (!$plist->is_empty()) {
+                echo '<div class="fx"><hr class="g">';
+                $plist->echo_table_html(["list" => true]);
+                echo '</div>';
             }
         }
 
@@ -449,9 +450,10 @@ class Home_Partial {
         $plist = null;
         if ($user->is_author()) {
             $plist = new PaperList("authorHome", new PaperSearch($user, ["t" => "a"]));
-            $ptext = $plist->table_html(["noheader" => true, "list" => true]);
-            if ($plist->count > 0)
-                echo '<hr class="g">', $ptext;
+            if (!$plist->is_empty()) {
+                echo '<hr class="g">';
+                $plist->echo_table_html(["noheader" => true, "list" => true]);
+            }
         }
 
         $deadlines = array();
@@ -494,7 +496,7 @@ class Home_Partial {
             }
         }
         if (!empty($deadlines)) {
-            if ($plist && $plist->count > 0) {
+            if ($plist && !$plist->is_empty()) {
                 echo '<hr class="g">';
             } else if ($startable || $user->privChair) {
                 echo "<br>";

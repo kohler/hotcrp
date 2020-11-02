@@ -59,7 +59,7 @@ foreach ($Conf->full_pc_members() as $pc) {
     $paperlist->set_row_filter($filter);
     $paperlist->set_table_id_class(null, "pltable-fullw");
     $tr = $paperlist->table_render(["nofooter" => true, "fullheader" => true]);
-    if ($paperlist->count > 0) {
+    if (!$tr->is_empty()) {
         if (!$any) {
             echo Ht::form(hoturl("conflictassign")),
                 $tr->table_start,

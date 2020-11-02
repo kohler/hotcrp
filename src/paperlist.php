@@ -85,6 +85,10 @@ class PaperListTableRender {
     function tbody_end() {
         return "  </tbody>\n";
     }
+    /** @return bool */
+    function is_empty() {
+        return empty($this->rows);
+    }
 }
 
 class PaperListReviewAnalysis {

@@ -595,11 +595,12 @@ if (!$Qreq->loadtmpl
 if (isset($Qreq->monreq)) {
     $plist = new PaperList("reqrevs", new PaperSearch($Me, ["t" => "req", "q" => ""]));
     $plist->set_table_id_class("foldpl", "pltable-fullw");
-    $ptext = $plist->table_html(["list" => true]);
-    if ($plist->count == 0)
+    if ($plist->is_empty()) {
         $Conf->infoMsg('You have not requested any external reviews.  <a href="' . hoturl("index") . '">Return home</a>');
-    else {
-        echo "<h2>Requested reviews</h2>\n\n", $ptext, '<div class="info">';
+    } else {
+        echo "<h2>Requested reviews</h2>\n\n";
+        $plist->echo_table_html(["list" => true]);
+        echo '<div class="info">';
         if ($plist->has("need_review")) {
             echo "Some of your requested external reviewers have not completed their reviews.  To send them an email reminder, check the text below and then select &ldquo;Prepare mail.&rdquo;  You’ll get a chance to review the emails and select specific reviewers to remind.";
         } else {
@@ -661,22 +662,24 @@ echo Ht::entry("q", (string) $Qreq->q,
                array("id" => "q", "placeholder" => "(All)",
                      "class" => "papersearch need-suggest", "size" => 36)),
     " &nbsp;in&nbsp;";
-if (count($tOpt) == 1)
+if (count($tOpt) == 1) {
     echo htmlspecialchars($tOpt[$Qreq->t]);
-else
+} else {
     echo " ", Ht::select("t", $tOpt, $Qreq->t, array("id" => "t"));
+}
 echo " &nbsp;", Ht::submit("psearch", "Search");
 echo "</span>";
 if (isset($Qreq->plimit)
     && !isset($Qreq->monreq)
     && (isset($Qreq->loadtmpl) || isset($Qreq->psearch))) {
     $plist = new PaperList("reviewers", new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q]));
-    $ptext = $plist->table_html(["noheader" => true, "nofooter" => true]);
-    echo "<div class=\"fx8\">";
-    if ($plist->count == 0)
-        echo "No papers match that search.";
-    else
-        echo '<div class="g"></div>', $ptext;
+    echo "<div class=\"fx8";
+    if ($plist->is_empty()) {
+        echo "\">No papers match that search.";
+    } else {
+        echo " g\">";
+        $plist->echo_table_html(["noheader" => true, "nofooter" => true]);
+    }
     echo '</div>', Ht::hidden("prevt", $Qreq->t),
         Ht::hidden("prevq", $Qreq->q);
 }

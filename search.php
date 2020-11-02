@@ -429,12 +429,13 @@ if ($Me->isPC || $Me->privChair) {
 
         echo "</div>";
         $ss = true;
-    } else
+    } else {
         $ss = false;
+    }
 }
 
 // Display options
-if ($pl->count > 0) {
+if (!$pl->is_empty()) {
     echo '<div class="tld is-tla" id="tla-view" style="padding-bottom:1ex">';
 
     echo Ht::form($Conf->hoturl_post("search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
@@ -486,11 +487,11 @@ echo '<div class="tllx"><table><tr>',
 if ($ss) {
     echo '  <td><div class="tll"><a class="ui tla nw" href="#saved-searches">Saved searches</a></div></td>', "\n";
 }
-if ($pl->count > 0) {
+if (!$pl->is_empty()) {
     echo '  <td><div class="tll"><a class="ui tla nw" href="#view">View options</a></div></td>', "\n";
 }
 echo "</tr></table></div></div>\n\n";
-if ($pl->count == 0) {
+if (!$pl->is_empty()) {
     Ht::stash_script("\$(document.body).addClass(\"want-hash-focus\")");
 }
 echo Ht::unstash();
@@ -518,7 +519,7 @@ if ($pl_text) {
     }
 
     echo $pl_text;
-    if ($pl->count == 0 && $Qreq->t != "s") {
+    if ($pl->is_empty() && $Qreq->t != "s") {
         $a = [];
         foreach (["q", "qa", "qo", "qx", "qt", "sort", "showtags"] as $xa) {
             if (isset($Qreq[$xa])
