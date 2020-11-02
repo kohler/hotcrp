@@ -9826,7 +9826,7 @@ $.fn.unautogrow = function () {
 $(function () { $(".need-autogrow").autogrow(); });
 
 
-var hotcrp = {
+window.hotcrp = {
     add_comment: papercomment.add,
     add_review: review_form.add_review,
     add_preference_ajax: add_revpref_ajax,
