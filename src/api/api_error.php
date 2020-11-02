@@ -8,7 +8,8 @@ class Error_API {
         if ($errormsg === ""
             || (isset($_SERVER["HTTP_USER_AGENT"])
                 && preg_match('/MSIE [78]|MetaSr/', $_SERVER["HTTP_USER_AGENT"]))
-            || preg_match('/(?:moz|safari|chrome)-extension/', $errormsg . ($qreq->stack ?? ""))) {
+            || preg_match('/(?:moz|safari|chrome)-extension/', $errormsg . ($qreq->stack ?? ""))
+            || strpos($errormsg, "Uncaught ReferenceError: hotcrp") !== false) {
             return new JsonResult(true);
         }
         $url = $qreq->url ?? "";
