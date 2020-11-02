@@ -23,13 +23,14 @@ if ($Qreq->reviewer
     && $Qreq->reviewer !== $Me->email
     && $Qreq->reviewer !== $Me->contactId) {
     $incorrect_reviewer = true;
-    foreach ($Conf->full_pc_members() as $pcm)
+    foreach ($Conf->full_pc_members() as $pcm) {
         if (strcasecmp($Qreq->reviewer, $pcm->email) == 0
             || $Qreq->reviewer === (string) $pcm->contactId) {
             $reviewer = $pcm;
             $incorrect_reviewer = false;
             $Qreq->reviewer = $pcm->email;
         }
+    }
 } else if (!$Qreq->reviewer && !($Me->roles & Contact::ROLE_PC)) {
     foreach ($Conf->pc_members() as $pcm) {
         $Conf->redirect_self($Qreq, ["reviewer" => $pcm->email]);
@@ -300,7 +301,7 @@ if (($vat = $pl->viewable_author_types()) !== 0) {
 if ($Conf->has_topics()) {
     $show_data[] = show_pref_element($pl, "topics", "Topics");
 }
-if (!empty($show_data) && $pl->count) {
+if (!empty($show_data) && !$pl->is_empty()) {
     echo '<div class="entryi"><label>Show</label>',
         '<ul class="entry inline">', join('', $show_data), '</ul></div>';
 }
