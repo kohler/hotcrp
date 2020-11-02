@@ -255,6 +255,7 @@ class Conf {
 
     /** @var ?PaperInfo */
     public $paper; // current paper row
+    /** @var null|false|SessionList */
     private $_active_list = false;
 
     /** @var Conf */
@@ -5018,8 +5019,9 @@ class Conf {
     }
     function mail_template($name, $default_only = false) {
         $uf = $this->xt_search_name($this->mail_template_map(), $name, null);
-        if (!$uf || !Conf::xt_resolve_require($uf))
+        if (!$uf || !Conf::xt_resolve_require($uf)) {
             return null;
+        }
         if (!$default_only) {
             $se = $this->has_setting("mailsubj_$name");
             $s = $se ? $this->setting_data("mailsubj_$name") : null;
