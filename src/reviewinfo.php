@@ -310,6 +310,17 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
+    function upgrade_sversion() {
+        if ($this->conf->sversion < 175) {
+            foreach (self::$text_field_map as $kmain => $kjson) {
+                if (property_exists($this, $kmain) && !isset($this->$kjson)) {
+                    $this->$kjson = $this->$kmain;
+                    unset($this->$kmain);
+                }
+            }
+        }
+    }
+
     /** @return ?ReviewInfo */
     static function fetch($result, PaperInfo $prow = null, Conf $conf = null,
                           $recomputing_view_scores = false) {

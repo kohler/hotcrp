@@ -155,7 +155,7 @@ function expand_json_includes_callback($includelist, $callback) {
 
 global $Opt;
 if (!$Opt) {
-    $Opt = array();
+    $Opt = [];
 }
 if (!($Opt["loaded"] ?? null)) {
     SiteLoader::read_main_options();

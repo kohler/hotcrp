@@ -138,10 +138,10 @@ function update_schema_create_options($conf) {
         }
 
         $oid = $opj->id;
-        $opsj[(string) $oid] = $opj;
+        $opsj[] = $opj;
     }
 
-    $conf->save_setting("options", 1, (object) $opsj);
+    $conf->save_setting("options", 1, $opsj);
     return true;
 }
 
@@ -260,13 +260,15 @@ function update_schema_mimetype_extensions($conf) {
 }
 
 function update_schema_paper_review_tfields(Conf $conf) {
-    if (!$conf->ql_ok("alter table PaperReview add `tfields` longblob")
-        || !$conf->ql_ok("alter table PaperReview add `sfields` varbinary(2048) DEFAULT NULL")) {
-        return false;
-    }
+    return $conf->ql_ok("alter table PaperReview add `tfields` longblob")
+        && $conf->ql_ok("alter table PaperReview add `sfields` varbinary(2048) DEFAULT NULL");
+}
+
+function update_schema_paper_review_null_main_fields(Conf $conf) {
     $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
     $result = $conf->ql("select * from PaperReview");
     while (($row = ReviewInfo::fetch($result, null, $conf))) {
+        $row->upgrade_sversion();
         $data = $row->unparse_tfields();
         if ($data !== null) {
             $cleanf("update PaperReview set `tfields`=? where paperId=? and reviewId=?", [$data, $row->paperId, $row->reviewId]);
@@ -274,10 +276,7 @@ function update_schema_paper_review_tfields(Conf $conf) {
     }
     Dbl::free($result);
     $cleanf(true);
-    return true;
-}
 
-function update_schema_paper_review_null_main_fields(Conf $conf) {
     $rid = [];
     $result = $conf->ql("select * from PaperReview");
     while (($rrow = ReviewInfo::fetch($result, null, $conf))) {
@@ -493,6 +492,24 @@ function update_schema_add_comment_tag_values($conf, $response_only) {
     return $ok;
 }
 
+function update_schema_options_setting(Conf $conf, $options_data) {
+    $options_array = [];
+    foreach (get_object_vars($options_data) as $k => $v) {
+        if (is_object($v)
+            && isset($v->type)
+            && is_string($v->type)
+            && is_numeric($k)
+            && (!isset($v->id) || $v->id == $k)) {
+            $v->id = (int) $k;
+            $options_array[] = $v;
+        } else {
+            return false;
+        }
+    }
+    $conf->__save_setting("options", 1, $options_array);
+    return true;
+}
+
 /** @param Conf $conf */
 function updateSchema($conf) {
     // avoid error message about timezone, set to $Opt
@@ -508,6 +525,12 @@ function updateSchema($conf) {
     Conf::$main = $conf;
 
     error_log($conf->dbname . ": updating schema from version " . $conf->sversion);
+
+    // change `options` into an array, not an associative array
+    $options_data = $conf->setting_json("options");
+    if (is_object($options_data)) {
+        update_schema_options_setting($conf, $options_data);
+    }
 
     if ($conf->sversion == 6
         && $conf->ql_ok("alter table ReviewRequest add `reason` text"))
@@ -872,124 +895,156 @@ function updateSchema($conf) {
         $conf->save_setting("outcome_map", 1, $ojson);
     }
     if ($conf->sversion == 62
-        && isset($conf->settings["outcome_map"]))
+        && isset($conf->settings["outcome_map"])) {
         $conf->update_schema_version(63);
+    }
     if (!isset($conf->settings["review_form"])
-        && $conf->sversion < 65)
+        && $conf->sversion < 65) {
         update_schema_create_review_form($conf);
+    }
     if ($conf->sversion == 63
-        && isset($conf->settings["review_form"]))
+        && isset($conf->settings["review_form"])) {
         $conf->update_schema_version(64);
+    }
     if ($conf->sversion == 64
         && $conf->ql_ok("drop table if exists `ReviewFormField`")
-        && $conf->ql_ok("drop table if exists `ReviewFormOptions`"))
+        && $conf->ql_ok("drop table if exists `ReviewFormOptions`")) {
         $conf->update_schema_version(65);
+    }
     if (!isset($conf->settings["options"])
-        && $conf->sversion < 67)
+        && $conf->sversion < 67) {
         update_schema_create_options($conf);
+    }
     if ($conf->sversion == 65
-        && isset($conf->settings["options"]))
+        && isset($conf->settings["options"])) {
         $conf->update_schema_version(66);
+    }
     if ($conf->sversion == 66
-        && $conf->ql_ok("drop table if exists `OptionType`"))
+        && $conf->ql_ok("drop table if exists `OptionType`")) {
         $conf->update_schema_version(67);
+    }
     if ($conf->sversion == 67
         && $conf->ql_ok("alter table PaperComment modify `comment` varbinary(32767) DEFAULT NULL")
-        && $conf->ql_ok("alter table PaperComment add `commentTags` varbinary(1024) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperComment add `commentTags` varbinary(1024) DEFAULT NULL")) {
         $conf->update_schema_version(68);
+    }
     if ($conf->sversion == 68
-        && $conf->ql_ok("alter table PaperReviewPreference add `expertise` int(4) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReviewPreference add `expertise` int(4) DEFAULT NULL")) {
         $conf->update_schema_version(69);
+    }
     if ($conf->sversion == 69
-        && $conf->ql_ok("alter table Paper drop column `pcPaper`"))
+        && $conf->ql_ok("alter table Paper drop column `pcPaper`")) {
         $conf->update_schema_version(70);
+    }
     if ($conf->sversion == 70
         && $conf->ql_ok("alter table ContactInfo modify `voicePhoneNumber` varbinary(256) DEFAULT NULL")
         && $conf->ql_ok("alter table ContactInfo modify `faxPhoneNumber` varbinary(256) DEFAULT NULL")
         && $conf->ql_ok("alter table ContactInfo modify `collaborators` varbinary(8192) DEFAULT NULL")
         && $conf->ql_ok("alter table ContactInfo drop column `note`")
-        && $conf->ql_ok("alter table ContactInfo add `data` varbinary(32767) DEFAULT NULL"))
+        && $conf->ql_ok("alter table ContactInfo add `data` varbinary(32767) DEFAULT NULL")) {
         $conf->update_schema_version(71);
+    }
     if ($conf->sversion == 71
         && $conf->ql_ok("alter table Settings modify `name` varbinary(256) DEFAULT NULL")
-        && $conf->ql_ok("update Settings set name=rtrim(name)"))
+        && $conf->ql_ok("update Settings set name=rtrim(name)")) {
         $conf->update_schema_version(72);
+    }
     if ($conf->sversion == 72
         && $conf->ql_ok("update TopicInterest set interest=-2 where interest=0")
         && $conf->ql_ok("update TopicInterest set interest=4 where interest=2")
-        && $conf->ql_ok("delete from TopicInterest where interest=1"))
+        && $conf->ql_ok("delete from TopicInterest where interest=1")) {
         $conf->update_schema_version(73);
+    }
     if ($conf->sversion == 73
         && $conf->ql_ok("alter table PaperStorage add `size` bigint(11) DEFAULT NULL")
-        && $conf->ql_ok("update PaperStorage set `size`=length(paper) where paper is not null"))
+        && $conf->ql_ok("update PaperStorage set `size`=length(paper) where paper is not null")) {
         $conf->update_schema_version(74);
+    }
     if ($conf->sversion == 74
-        && $conf->ql_ok("alter table ContactInfo drop column `visits`"))
+        && $conf->ql_ok("alter table ContactInfo drop column `visits`")) {
         $conf->update_schema_version(75);
+    }
     if ($conf->sversion == 75) {
-        foreach (array("capability_gc", "s3_scope", "s3_signing_key") as $k)
+        foreach (["capability_gc", "s3_scope", "s3_signing_key"] as $k) {
             if ($conf->setting($k)) {
                 $conf->save_setting("__" . $k, $conf->setting($k), $conf->setting_data($k));
                 $conf->save_setting($k, null);
             }
+        }
         $conf->update_schema_version(76);
     }
     if ($conf->sversion == 76
-        && $conf->ql_ok("update PaperReviewPreference set expertise=-expertise"))
+        && $conf->ql_ok("update PaperReviewPreference set expertise=-expertise")) {
         $conf->update_schema_version(77);
+    }
     if ($conf->sversion == 77
-        && $conf->ql_ok("alter table MailLog add `q` varchar(4096)"))
+        && $conf->ql_ok("alter table MailLog add `q` varchar(4096)")) {
         $conf->update_schema_version(78);
+    }
     if ($conf->sversion == 78
-        && $conf->ql_ok("alter table MailLog add `t` varchar(200)"))
+        && $conf->ql_ok("alter table MailLog add `t` varchar(200)")) {
         $conf->update_schema_version(79);
+    }
     if ($conf->sversion == 79
-        && $conf->ql_ok("alter table ContactInfo add `passwordTime` int(11) NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table ContactInfo add `passwordTime` int(11) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(80);
+    }
     if ($conf->sversion == 80
         && $conf->ql_ok("alter table PaperReview modify `reviewRound` int(11) NOT NULL DEFAULT '0'")
-        && $conf->ql_ok("alter table PaperReviewArchive modify `reviewRound` int(11) NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table PaperReviewArchive modify `reviewRound` int(11) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(81);
+    }
     if ($conf->sversion == 81
         && $conf->ql_ok("alter table PaperStorage add `filterType` int(3) DEFAULT NULL")
-        && $conf->ql_ok("alter table PaperStorage add `originalStorageId` int(11) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperStorage add `originalStorageId` int(11) DEFAULT NULL")) {
         $conf->update_schema_version(82);
+    }
     if ($conf->sversion == 82
-        && $conf->ql_ok("update Settings set name='msg.resp_instrux' where name='msg.responseinstructions'"))
+        && $conf->ql_ok("update Settings set name='msg.resp_instrux' where name='msg.responseinstructions'")) {
         $conf->update_schema_version(83);
+    }
     if ($conf->sversion == 83
-        && $conf->ql_ok("alter table PaperComment add `commentRound` int(11) NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table PaperComment add `commentRound` int(11) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(84);
+    }
     if ($conf->sversion == 84
-        && $conf->ql_ok("insert ignore into Settings (name, value) select 'resp_active', value from Settings where name='resp_open'"))
+        && $conf->ql_ok("insert ignore into Settings (name, value) select 'resp_active', value from Settings where name='resp_open'")) {
         $conf->update_schema_version(85);
+    }
     if ($conf->sversion == 85
         && $conf->ql_ok("DROP TABLE IF EXISTS `PCMember`")
         && $conf->ql_ok("DROP TABLE IF EXISTS `ChairAssistant`")
-        && $conf->ql_ok("DROP TABLE IF EXISTS `Chair`"))
+        && $conf->ql_ok("DROP TABLE IF EXISTS `Chair`")) {
         $conf->update_schema_version(86);
+    }
     if ($conf->sversion == 86
-        && update_schema_transfer_address($conf))
+        && update_schema_transfer_address($conf)) {
         $conf->update_schema_version(87);
+    }
     if ($conf->sversion == 87
-        && $conf->ql_ok("DROP TABLE IF EXISTS `ContactAddress`"))
+        && $conf->ql_ok("DROP TABLE IF EXISTS `ContactAddress`")) {
         $conf->update_schema_version(88);
+    }
     if ($conf->sversion == 88
         && $conf->ql_ok("alter table ContactInfo drop key `name`")
         && $conf->ql_ok("alter table ContactInfo drop key `affiliation`")
         && $conf->ql_ok("alter table ContactInfo drop key `email_3`")
         && $conf->ql_ok("alter table ContactInfo drop key `firstName_2`")
-        && $conf->ql_ok("alter table ContactInfo drop key `lastName`"))
+        && $conf->ql_ok("alter table ContactInfo drop key `lastName`")) {
         $conf->update_schema_version(89);
+    }
     if ($conf->sversion == 89
-        && update_schema_unaccented_name($conf))
+        && update_schema_unaccented_name($conf)) {
         $conf->update_schema_version(90);
+    }
     if ($conf->sversion == 90
-        && $conf->ql_ok("alter table PaperReview add `reviewAuthorSeen` int(11) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReview add `reviewAuthorSeen` int(11) DEFAULT NULL")) {
         $conf->update_schema_version(91);
+    }
     if ($conf->sversion == 91
-        && $conf->ql_ok("alter table PaperReviewArchive add `reviewAuthorSeen` int(11) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReviewArchive add `reviewAuthorSeen` int(11) DEFAULT NULL")) {
         $conf->update_schema_version(92);
+    }
     if ($conf->sversion == 92
         && $conf->ql_ok("alter table Paper drop key `titleAbstractText`")
         && $conf->ql_ok("alter table Paper drop key `allText`")
@@ -997,11 +1052,13 @@ function updateSchema($conf) {
         && $conf->ql_ok("alter table Paper modify `authorInformation` varbinary(8192) DEFAULT NULL")
         && $conf->ql_ok("alter table Paper modify `abstract` varbinary(16384) DEFAULT NULL")
         && $conf->ql_ok("alter table Paper modify `collaborators` varbinary(8192) DEFAULT NULL")
-        && $conf->ql_ok("alter table Paper modify `withdrawReason` varbinary(1024) DEFAULT NULL"))
+        && $conf->ql_ok("alter table Paper modify `withdrawReason` varbinary(1024) DEFAULT NULL")) {
         $conf->update_schema_version(93);
+    }
     if ($conf->sversion == 93
-        && $conf->ql_ok("alter table TopicArea modify `topicName` varchar(200) DEFAULT NULL"))
+        && $conf->ql_ok("alter table TopicArea modify `topicName` varchar(200) DEFAULT NULL")) {
         $conf->update_schema_version(94);
+    }
     if ($conf->sversion == 94
         && $conf->ql_ok("alter table PaperOption modify `data` varbinary(32768) DEFAULT NULL")) {
         foreach ($conf->options() as $xopt) {
@@ -1013,11 +1070,13 @@ function updateSchema($conf) {
     if ($conf->sversion == 95
         && $conf->ql_ok("alter table Capability add unique key `salt` (`salt`)")
         && $conf->ql_ok("update Capability join CapabilityMap using (capabilityId) set Capability.salt=CapabilityMap.capabilityValue")
-        && $conf->ql_ok("drop table if exists `CapabilityMap`"))
+        && $conf->ql_ok("drop table if exists `CapabilityMap`")) {
         $conf->update_schema_version(96);
+    }
     if ($conf->sversion == 96
-        && $conf->ql_ok("alter table ContactInfo add `passwordIsCdb` tinyint(1) NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table ContactInfo add `passwordIsCdb` tinyint(1) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(97);
+    }
     if ($conf->sversion == 97
         && $conf->ql_ok("alter table PaperReview add `reviewWordCount` int(11) DEFAULT NULL")
         && $conf->ql_ok("alter table PaperReviewArchive add `reviewWordCount` int(11)  DEFAULT NULL")
@@ -1026,8 +1085,9 @@ function updateSchema($conf) {
         && $conf->ql_ok("alter table PaperReviewArchive drop key `reviewSubmitted`")
         && $conf->ql_ok("alter table PaperReviewArchive drop key `reviewNeedsSubmit`")
         && $conf->ql_ok("alter table PaperReviewArchive drop key `reviewType`")
-        && $conf->ql_ok("alter table PaperReviewArchive drop key `requestedBy`"))
+        && $conf->ql_ok("alter table PaperReviewArchive drop key `requestedBy`")) {
         $conf->update_schema_version(98);
+    }
     if ($conf->sversion == 98) {
         update_schema_review_word_counts($conf);
         $conf->update_schema_version(99);
@@ -1042,8 +1102,9 @@ function updateSchema($conf) {
         && $conf->ql_ok("alter table PaperStorage ENGINE=InnoDB")
         && $conf->ql_ok("alter table PaperTag ENGINE=InnoDB")
         && $conf->ql_ok("alter table PaperTopic ENGINE=InnoDB")
-        && $conf->ql_ok("alter table Settings ENGINE=InnoDB"))
+        && $conf->ql_ok("alter table Settings ENGINE=InnoDB")) {
         $conf->update_schema_version(100);
+    }
     if ($conf->sversion == 100
         && $conf->ql_ok("alter table ActionLog ENGINE=InnoDB")
         && $conf->ql_ok("alter table Capability ENGINE=InnoDB")
@@ -1056,8 +1117,9 @@ function updateSchema($conf) {
         && $conf->ql_ok("alter table ReviewRating ENGINE=InnoDB")
         && $conf->ql_ok("alter table ReviewRequest ENGINE=InnoDB")
         && $conf->ql_ok("alter table TopicArea ENGINE=InnoDB")
-        && $conf->ql_ok("alter table TopicInterest ENGINE=InnoDB"))
+        && $conf->ql_ok("alter table TopicInterest ENGINE=InnoDB")) {
         $conf->update_schema_version(101);
+    }
     if ($conf->sversion == 101
         && $conf->ql_ok("alter table ActionLog modify `ipaddr` varbinary(32) DEFAULT NULL")
         && $conf->ql_ok("alter table MailLog modify `recipients` varbinary(200) NOT NULL")
@@ -1066,8 +1128,9 @@ function updateSchema($conf) {
         && $conf->ql_ok("alter table Paper modify `mimetype` varbinary(80) NOT NULL DEFAULT ''")
         && $conf->ql_ok("alter table PaperStorage modify `mimetype` varbinary(80) NOT NULL DEFAULT ''")
         && $conf->ql_ok("alter table PaperStorage modify `filename` varbinary(255) DEFAULT NULL")
-        && $conf->ql_ok("alter table PaperStorage modify `infoJson` varbinary(8192) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperStorage modify `infoJson` varbinary(8192) DEFAULT NULL")) {
         $conf->update_schema_version(102);
+    }
     if ($conf->sversion == 102
         && $conf->ql_ok("alter table PaperReview modify `paperSummary` mediumblob")
         && $conf->ql_ok("alter table PaperReview modify `commentsToAuthor` mediumblob")
@@ -1084,23 +1147,28 @@ function updateSchema($conf) {
         && $conf->ql_ok("alter table PaperReviewArchive modify `weaknessOfPaper` mediumblob")
         && $conf->ql_ok("alter table PaperReviewArchive modify `strengthOfPaper` mediumblob")
         && $conf->ql_ok("alter table PaperReviewArchive modify `textField7` mediumblob")
-        && $conf->ql_ok("alter table PaperReviewArchive modify `textField8` mediumblob"))
+        && $conf->ql_ok("alter table PaperReviewArchive modify `textField8` mediumblob")) {
         $conf->update_schema_version(103);
+    }
     if ($conf->sversion == 103
         && $conf->ql_ok("alter table Paper modify `title` varbinary(256) DEFAULT NULL")
-        && $conf->ql_ok("alter table Paper drop key `title`"))
+        && $conf->ql_ok("alter table Paper drop key `title`")) {
         $conf->update_schema_version(104);
+    }
     if ($conf->sversion == 104
         && $conf->ql_ok("alter table PaperReview add `reviewFormat` tinyint(1) DEFAULT NULL")
-        && $conf->ql_ok("alter table PaperReviewArchive add `reviewFormat` tinyint(1) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReviewArchive add `reviewFormat` tinyint(1) DEFAULT NULL")) {
         $conf->update_schema_version(105);
+    }
     if ($conf->sversion == 105
-        && $conf->ql_ok("alter table PaperComment add `commentFormat` tinyint(1) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperComment add `commentFormat` tinyint(1) DEFAULT NULL")) {
         $conf->update_schema_version(106);
+    }
     if ($conf->sversion == 106
         && $conf->ql_ok("alter table PaperComment add `authorOrdinal` int(11) NOT NULL default '0'")
-        && $conf->ql_ok("update PaperComment set authorOrdinal=ordinal where commentType>=" . COMMENTTYPE_AUTHOR))
+        && $conf->ql_ok("update PaperComment set authorOrdinal=ordinal where commentType>=" . COMMENTTYPE_AUTHOR)) {
         $conf->update_schema_version(107);
+    }
 
     // repair missing comment ordinals; reset incorrect `ordinal`s for
     // author-visible comments
@@ -1138,16 +1206,19 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     // contact tags format change
     if ($conf->sversion == 108
         && $conf->ql_ok("update ContactInfo set contactTags=substr(replace(contactTags, ' ', '#0 ') from 3)")
-        && $conf->ql_ok("update ContactInfo set contactTags=replace(contactTags, '#0#0 ', '#0 ')"))
+        && $conf->ql_ok("update ContactInfo set contactTags=replace(contactTags, '#0#0 ', '#0 ')")) {
         $conf->update_schema_version(109);
+    }
     if ($conf->sversion == 109
-        && $conf->ql_ok("alter table PaperTag modify `tagIndex` float NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table PaperTag modify `tagIndex` float NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(110);
+    }
     if ($conf->sversion == 110
         && $conf->ql_ok("alter table ContactInfo drop `faxPhoneNumber`")
         && $conf->ql_ok("alter table ContactInfo add `country` varbinary(256) default null")
-        && update_schema_transfer_country($conf))
+        && update_schema_transfer_country($conf)) {
         $conf->update_schema_version(111);
+    }
     if ($conf->sversion == 111) {
         update_schema_review_word_counts($conf);
         $conf->update_schema_version(112);
@@ -1155,21 +1226,26 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 112
         && $conf->ql_ok("alter table ContactInfo add `passwordUseTime` int(11) NOT NULL DEFAULT '0'")
         && $conf->ql_ok("alter table ContactInfo add `updateTime` int(11) NOT NULL DEFAULT '0'")
-        && $conf->ql_ok("update ContactInfo set passwordUseTime=lastLogin where passwordUseTime=0"))
+        && $conf->ql_ok("update ContactInfo set passwordUseTime=lastLogin where passwordUseTime=0")) {
         $conf->update_schema_version(113);
+    }
     if ($conf->sversion == 113
-        && $conf->ql_ok("drop table if exists `PaperReviewArchive`"))
+        && $conf->ql_ok("drop table if exists `PaperReviewArchive`")) {
         $conf->update_schema_version(114);
+    }
     if ($conf->sversion == 114
         && $conf->ql_ok("alter table PaperReview add `timeDisplayed` int(11) NOT NULL DEFAULT '0'")
-        && $conf->ql_ok("alter table PaperComment add `timeDisplayed` int(11) NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table PaperComment add `timeDisplayed` int(11) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(115);
+    }
     if ($conf->sversion == 115
-        && $conf->ql_ok("alter table Formula drop column `authorView`"))
+        && $conf->ql_ok("alter table Formula drop column `authorView`")) {
         $conf->update_schema_version(116);
+    }
     if ($conf->sversion == 116
-        && $conf->ql_ok("alter table PaperComment add `commentOverflow` longblob DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperComment add `commentOverflow` longblob DEFAULT NULL")) {
         $conf->update_schema_version(117);
+    }
     if ($conf->sversion == 117
         && update_schema_drop_keys_if_exist($conf, "PaperTopic", ["paperTopic", "PRIMARY"])
         && $conf->ql_ok("alter table PaperTopic add primary key (`paperId`,`topicId`)")
@@ -1356,18 +1432,21 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql_ok("alter table TopicInterest change `interest` `interest` int(1) NOT NULL")
         && $conf->ql_ok("update TopicInterest set interest=1 where interest=2")
         && $conf->ql_ok("update TopicInterest set interest=2 where interest=4")
-        && $conf->ql_ok("delete from TopicInterest where interest=0"))
+        && $conf->ql_ok("delete from TopicInterest where interest=0")) {
         $conf->update_schema_version(157);
+    }
     if ($conf->sversion == 157
         && $conf->ql_ok("alter table PaperOption drop key `paperOption`")
         && $conf->ql_ok("alter table PaperOption add primary key (`paperId`,`optionId`,`value`)")
         && $conf->ql_ok("alter table PaperOption change `data` `data` varbinary(32767) DEFAULT NULL")
-        && $conf->ql_ok("alter table PaperOption add `dataOverflow` longblob DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperOption add `dataOverflow` longblob DEFAULT NULL")) {
         $conf->update_schema_version(158);
+    }
     if ($conf->sversion == 158
         && $conf->ql_ok("alter table ContactInfo drop key `rolesContactId`")
-        && $conf->ql_ok("alter table ContactInfo add unique key `rolesContactId` (`roles`,`contactId`)"))
+        && $conf->ql_ok("alter table ContactInfo add unique key `rolesContactId` (`roles`,`contactId`)")) {
         $conf->update_schema_version(159);
+    }
     if ($conf->sversion == 159
         && $conf->ql_ok("alter table ActionLog drop key `logId`")
         && $conf->ql_ok("alter table Capability drop key `salt`")
@@ -1376,20 +1455,24 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql_ok("alter table Formula drop key `formulaId`")
         && $conf->ql_ok("alter table Mimetype drop key `mimetypeid`")
         && $conf->ql_ok("alter table Paper drop key `paperId`")
-        && $conf->ql_ok("alter table TopicArea drop key `topicId`"))
+        && $conf->ql_ok("alter table TopicArea drop key `topicId`")) {
         $conf->update_schema_version(160);
+    }
     if ($conf->sversion == 160
         && $conf->ql_ok("alter table Paper change `sha1` `sha1` varbinary(64) NOT NULL DEFAULT ''")
-        && $conf->ql_ok("alter table PaperStorage change `sha1` `sha1` varbinary(64) NOT NULL DEFAULT ''"))
+        && $conf->ql_ok("alter table PaperStorage change `sha1` `sha1` varbinary(64) NOT NULL DEFAULT ''")) {
         $conf->update_schema_version(161);
+    }
     if ($conf->sversion == 161
         && $conf->ql_ok("alter table PaperTag change `tag` `tag` varbinary(80) NOT NULL")
-        && $conf->ql_ok("alter table PaperTagAnno change `tag` `tag` varbinary(80) NOT NULL"))
+        && $conf->ql_ok("alter table PaperTagAnno change `tag` `tag` varbinary(80) NOT NULL")) {
         $conf->update_schema_version(162);
+    }
     if ($conf->sversion == 162
         && $conf->ql_ok("alter table PaperTag change `tag` `tag` varchar(80) NOT NULL")
-        && $conf->ql_ok("alter table PaperTagAnno change `tag` `tag` varchar(80) NOT NULL"))
+        && $conf->ql_ok("alter table PaperTagAnno change `tag` `tag` varchar(80) NOT NULL")) {
         $conf->update_schema_version(163);
+    }
     if ($conf->sversion == 163
         && $conf->ql_ok("alter table Capability change `timeExpires` `timeExpires` bigint(11) NOT NULL")
         && $conf->ql_ok("alter table ContactInfo change `passwordTime` `passwordTime` bigint(11) NOT NULL DEFAULT '0'")
@@ -1420,36 +1503,44 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql_ok("alter table PaperReview change `timeDisplayed` `timeDisplayed` bigint(11) NOT NULL DEFAULT '0'")
         && $conf->ql_ok("alter table PaperReview change `timeApprovalRequested` `timeApprovalRequested` bigint(11) NOT NULL DEFAULT '0'")
         && $conf->ql_ok("alter table PaperStorage change `timestamp` `timestamp` bigint(11) NOT NULL")
-        && $conf->ql_ok("alter table Settings change `value` `value` bigint(11) NOT NULL"))
+        && $conf->ql_ok("alter table Settings change `value` `value` bigint(11) NOT NULL")) {
         $conf->update_schema_version(164);
+    }
     if ($conf->sversion == 164
-        && $conf->ql_ok("alter table Paper change `title` `title` varbinary(512) DEFAULT NULL"))
+        && $conf->ql_ok("alter table Paper change `title` `title` varbinary(512) DEFAULT NULL")) {
         $conf->update_schema_version(165);
+    }
     if ($conf->sversion == 165
         && $conf->ql_ok("alter table TopicArea drop key `topicName`")
-        && $conf->ql_ok("alter table TopicArea change `topicName` `topicName` varbinary(1024) DEFAULT NULL"))
+        && $conf->ql_ok("alter table TopicArea change `topicName` `topicName` varbinary(1024) DEFAULT NULL")) {
         $conf->update_schema_version(166);
+    }
     if ($conf->sversion == 166
-        && $conf->ql_ok("alter table PaperReviewPreference drop key `contactPaper`"))
+        && $conf->ql_ok("alter table PaperReviewPreference drop key `contactPaper`")) {
         $conf->update_schema_version(167);
+    }
     if ($conf->sversion == 167
         && $conf->ql_ok("update PaperReview set reviewOrdinal=0 where reviewOrdinal is null")
-        && $conf->ql_ok("alter table PaperReview change `reviewOrdinal` `reviewOrdinal` int(1) NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table PaperReview change `reviewOrdinal` `reviewOrdinal` int(1) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(168);
+    }
     if ($conf->sversion == 168
         && $conf->ql_ok("update PaperReview set reviewModified=0 where reviewModified is null")
-        && $conf->ql_ok("alter table PaperReview change `reviewModified` `reviewModified` bigint(1) NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table PaperReview change `reviewModified` `reviewModified` bigint(1) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(169);
+    }
     if ($conf->sversion == 169) {
-        if ($conf->fetch_ivalue("select exists (select * from TopicArea)"))
+        if ($conf->fetch_ivalue("select exists (select * from TopicArea)")) {
             $conf->save_setting("has_topics", 1);
+        }
         $conf->update_schema_version(170);
     }
     if ($conf->sversion == 170
         && $conf->ql_ok("alter table ActionLog drop key `contactId`")
         && $conf->ql_ok("alter table ActionLog drop key `paperId`")
-        && $conf->ql_ok("alter table ActionLog add `destContactId` int(11) NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table ActionLog add `destContactId` int(11) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(171);
+    }
     if ($conf->sversion == 171
         && $conf->ql_ok("DROP TABLE IF EXISTS `DeletedContactInfo`")
         && $conf->ql_ok("CREATE TABLE `DeletedContactInfo` (
@@ -1457,21 +1548,26 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
   `firstName` varchar(60) NOT NULL,
   `lastName` varchar(60) NOT NULL,
   `email` varchar(120) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
         $conf->update_schema_version(172);
+    }
     if ($conf->sversion == 172
         && $conf->ql_ok("alter table DeletedContactInfo add `unaccentedName` varchar(120) NOT NULL DEFAULT ''")
-        && $conf->ql_ok("alter table DeletedContactInfo change `unaccentedName` `unaccentedName` varchar(120) NOT NULL"))
+        && $conf->ql_ok("alter table DeletedContactInfo change `unaccentedName` `unaccentedName` varchar(120) NOT NULL")) {
         $conf->update_schema_version(173);
+    }
     if ($conf->sversion == 173
-        && update_schema_paper_review_tfields($conf))
+        && update_schema_paper_review_tfields($conf)) {
         $conf->update_schema_version(174);
+    }
     if ($conf->sversion == 174
-        && update_schema_paper_review_null_main_fields($conf))
+        && update_schema_paper_review_null_main_fields($conf)) {
         $conf->update_schema_version(175);
+    }
     if ($conf->sversion == 175
-        && update_schema_paper_review_drop_main_fields($conf))
+        && update_schema_paper_review_drop_main_fields($conf)) {
         $conf->update_schema_version(176);
+    }
     if ($conf->sversion == 176) {
         if (($x = $conf->setting_data("scoresort_default"))) {
             $conf->save_setting("scoresort_default", null);
@@ -1483,8 +1579,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         set_time_limit(300); // might take a while
         if ((!update_schema_check_column_exists($conf, "PaperStorage", "mimetypeid")
              || $conf->ql_ok("alter table PaperStorage drop `mimetypeid`"))
-            && $conf->ql_ok("drop table if exists `Mimetype`"))
+            && $conf->ql_ok("drop table if exists `Mimetype`")) {
             $conf->update_schema_version(178);
+        }
     }
     if ($conf->sversion == 178
         && $conf->ql_ok("delete from Settings where name='papersub'")) {
@@ -1493,53 +1590,64 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     }
     if ($conf->sversion == 179
         && $conf->ql_ok("alter table ContactInfo change `affiliation` `affiliation` varbinary(2048) NOT NULL DEFAULT ''")
-        && $conf->ql_ok("alter table ContactInfo change `voicePhoneNumber` `voicePhoneNumber` varbinary(256) DEFAULT NULL"))
+        && $conf->ql_ok("alter table ContactInfo change `voicePhoneNumber` `voicePhoneNumber` varbinary(256) DEFAULT NULL")) {
         $conf->update_schema_version(180);
+    }
     if ($conf->sversion == 180
-        && $conf->ql_ok("alter table ActionLog change `ipaddr` `ipaddr` varbinary(39) DEFAULT NULL"))
+        && $conf->ql_ok("alter table ActionLog change `ipaddr` `ipaddr` varbinary(39) DEFAULT NULL")) {
         $conf->update_schema_version(181);
+    }
     if ($conf->sversion == 181
         && $conf->ql_ok("alter table ContactInfo change `firstName` `firstName` varbinary(120) NOT NULL DEFAULT ''")
         && $conf->ql_ok("alter table ContactInfo change `lastName` `lastName` varbinary(120) NOT NULL DEFAULT ''")
         && $conf->ql_ok("alter table ContactInfo change `unaccentedName` `unaccentedName` varbinary(240) NOT NULL DEFAULT ''")
         && $conf->ql_ok("alter table DeletedContactInfo change `firstName` `firstName` varbinary(120) NOT NULL")
         && $conf->ql_ok("alter table DeletedContactInfo change `lastName` `lastName` varbinary(120) NOT NULL")
-        && $conf->ql_ok("alter table DeletedContactInfo change `unaccentedName` `unaccentedName` varbinary(240) NOT NULL"))
+        && $conf->ql_ok("alter table DeletedContactInfo change `unaccentedName` `unaccentedName` varbinary(240) NOT NULL")) {
         $conf->update_schema_version(182);
+    }
     if ($conf->sversion == 182
         && $conf->ql_ok("alter table ContactInfo add `birthday` int(11) DEFAULT NULL")
-        && $conf->ql_ok("alter table ContactInfo add `gender` varbinary(24) DEFAULT NULL"))
+        && $conf->ql_ok("alter table ContactInfo add `gender` varbinary(24) DEFAULT NULL")) {
         $conf->update_schema_version(183);
+    }
     if ($conf->sversion == 183
         // good=1,1; too short=0,4; too vague=-1,8; too narrow=-4,16;
         // not constructive=-2,32; not correct=-3,64
-        && $conf->ql_ok("update ReviewRating set rating=case rating when 0 then 4 when -1 then 8 when -4 then 16 when -2 then 32 when -3 then 64 else if(rating<0,2,1) end"))
+        && $conf->ql_ok("update ReviewRating set rating=case rating when 0 then 4 when -1 then 8 when -4 then 16 when -2 then 32 when -3 then 64 else if(rating<0,2,1) end")) {
         $conf->update_schema_version(184);
+    }
     if ($conf->sversion == 184
-        && $conf->ql_ok("alter table PaperReview drop key `reviewSubmittedContact`"))
+        && $conf->ql_ok("alter table PaperReview drop key `reviewSubmittedContact`")) {
         $conf->update_schema_version(185);
+    }
     if ($conf->sversion == 185
-        && $conf->ql_ok("alter table ContactInfo change `voicePhoneNumber` `phone` varbinary(64) DEFAULT NULL"))
+        && $conf->ql_ok("alter table ContactInfo change `voicePhoneNumber` `phone` varbinary(64) DEFAULT NULL")) {
         $conf->update_schema_version(186);
+    }
     if ($conf->sversion == 186
         && $conf->ql_ok("alter table PaperReviewRefused add primary key (`paperId`,`contactId`)")
         && $conf->ql_ok("alter table PaperReviewRefused drop key `paperId`")
         && $conf->ql_ok("alter table PaperReviewRefused drop key `contactId`")
-        && $conf->ql_ok("alter table PaperReviewRefused drop key `requestedBy`"))
+        && $conf->ql_ok("alter table PaperReviewRefused drop key `requestedBy`")) {
         $conf->update_schema_version(187);
+    }
     if ($conf->sversion == 187
         && $conf->ql_ok("alter table ReviewRequest change `email` `email` varchar(120) NOT NULL")
         && $conf->ql_ok("alter table ReviewRequest add primary key (`paperId`,`email`)")
         && $conf->ql_ok("alter table ReviewRequest drop key `paperEmail`")
         && $conf->ql_ok("alter table ReviewRequest drop key `paperId`")
-        && $conf->ql_ok("alter table ReviewRequest drop key `requestedBy`"))
+        && $conf->ql_ok("alter table ReviewRequest drop key `requestedBy`")) {
         $conf->update_schema_version(188);
+    }
     if ($conf->sversion == 188
-        && update_schema_split_review_request_name($conf))
+        && update_schema_split_review_request_name($conf)) {
         $conf->update_schema_version(189);
+    }
     if ($conf->sversion == 189
-        && $conf->ql_ok("alter table ReviewRequest add `affiliation` varbinary(2048) DEFAULT NULL"))
+        && $conf->ql_ok("alter table ReviewRequest add `affiliation` varbinary(2048) DEFAULT NULL")) {
         $conf->update_schema_version(190);
+    }
     if ($conf->sversion == 190) {
         if ($conf->setting("rev_notifychair") > 0) {
             $conf->ql_ok("update ContactInfo set defaultWatch=defaultWatch|" . Contact::WATCH_REVIEW_ALL . " where roles!=0 and (roles&" . Contact::ROLE_CHAIR . ")!=0");
@@ -1552,13 +1660,15 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->update_schema_version(192);
     }
     if ($conf->sversion == 192
-        && $conf->ql_ok("alter table PaperStorage drop key `byPaper`"))
+        && $conf->ql_ok("alter table PaperStorage drop key `byPaper`")) {
         $conf->update_schema_version(193);
+    }
     if ($conf->sversion == 193
         && $conf->ql_ok("alter table Settings change `name` `name` varbinary(256) NOT NULL")
         && $conf->ql_ok("alter table Settings add primary key (`name`)")
-        && $conf->ql_ok("alter table Settings drop key `name`"))
+        && $conf->ql_ok("alter table Settings drop key `name`")) {
         $conf->update_schema_version(194);
+    }
     if ($conf->sversion == 194
         && $conf->ql_ok("alter table ContactInfo drop key `rolesContactId`")
         && $conf->ql_ok("alter table ContactInfo add key `roles` (`roles`)")
@@ -1566,16 +1676,18 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql_ok("alter table PaperReview drop key `contactPaper`")
         && $conf->ql_ok("alter table PaperReview add key `contactId` (`contactId`)")
         && $conf->ql_ok("alter table PaperReview drop key `reviewNeedsSubmit`")
-        && $conf->ql_ok("alter table PaperReview drop key `paperId`"))
+        && $conf->ql_ok("alter table PaperReview drop key `paperId`")) {
         $conf->update_schema_version(195);
+    }
     if ($conf->sversion == 195) {
         set_time_limit(300);
         if ($conf->ql_ok("alter table PaperStorage add `inactive` tinyint(1) NOT NULL DEFAULT '0'")
             && $conf->ql_ok("update PaperStorage set inactive=1")
             && $conf->ql_ok("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.paperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
             && $conf->ql_ok("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.finalPaperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
-            && $conf->ql_ok("update PaperStorage join PaperOption on (PaperOption.paperId=PaperStorage.paperId and PaperOption.value=PaperStorage.paperStorageId) set PaperStorage.inactive=0"))
+            && $conf->ql_ok("update PaperStorage join PaperOption on (PaperOption.paperId=PaperStorage.paperId and PaperOption.value=PaperStorage.paperStorageId) set PaperStorage.inactive=0")) {
             $conf->update_schema_version(196);
+        }
     }
     if ($conf->sversion == 196
         && $conf->ql_ok("drop table if exists `DocumentLink`")
@@ -1585,58 +1697,71 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
   `linkType` int(11) NOT NULL,
   `documentId` int(11) NOT NULL,
   PRIMARY KEY (`paperId`,`linkId`,`linkType`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
         $conf->update_schema_version(197);
+    }
     if ($conf->sversion == 197
-        && $conf->ql_ok("alter table PaperConflict add key `paperId` (`paperId`)"))
+        && $conf->ql_ok("alter table PaperConflict add key `paperId` (`paperId`)")) {
         $conf->update_schema_version(198);
+    }
     if ($conf->sversion == 198
-        && update_schema_selector_options($conf))
+        && update_schema_selector_options($conf)) {
         $conf->update_schema_version(199);
+    }
     if ($conf->sversion == 199
-        && update_schema_missing_review_ordinals($conf))
+        && update_schema_missing_review_ordinals($conf)) {
         $conf->update_schema_version(200);
+    }
     if ($conf->sversion == 200
         && $conf->ql_ok("alter table ActionLog change `destContactId` `destContactId` int(11) DEFAULT NULL")
         && $conf->ql_ok("update ActionLog set destContactId=null where destContactId=0 or destContactId=contactId")
-        && $conf->ql_ok("alter table ActionLog add `trueContactId` int(11) DEFAULT NULL"))
+        && $conf->ql_ok("alter table ActionLog add `trueContactId` int(11) DEFAULT NULL")) {
         $conf->update_schema_version(201);
+    }
     if ($conf->sversion == 201
         && $conf->ql_ok("alter table PaperReviewRefused add `timeRequested` bigint(11) DEFAULT NULL")
-        && $conf->ql_ok("alter table PaperReviewRefused add `refusedBy` int(11) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReviewRefused add `refusedBy` int(11) DEFAULT NULL")) {
         $conf->update_schema_version(202);
+    }
     if ($conf->sversion == 202
-        && $conf->ql_ok("alter table ReviewRequest add `timeRequested` bigint(11) DEFAULT NULL"))
+        && $conf->ql_ok("alter table ReviewRequest add `timeRequested` bigint(11) DEFAULT NULL")) {
         $conf->update_schema_version(203);
+    }
     if ($conf->sversion == 203
-        && $conf->ql_ok("alter table PaperReviewRefused add `timeRefused` bigint(11) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReviewRefused add `timeRefused` bigint(11) DEFAULT NULL")) {
         $conf->update_schema_version(204);
+    }
     if ($conf->sversion == 204
         && $conf->ql_ok("alter table PaperReviewRefused add `email` varchar(120) DEFAULT NULL")
         && $conf->ql_ok("update PaperReviewRefused join ContactInfo using (contactId) set PaperReviewRefused.email=ContactInfo.email")
         && $conf->ql_ok("delete from PaperReviewRefused where email is null")
         && $conf->ql_ok("alter table PaperReviewRefused change `email` `email` varchar(120) NOT NULL")
         && $conf->ql_ok("alter table PaperReviewRefused drop primary key")
-        && $conf->ql_ok("alter table PaperReviewRefused add primary key (`paperId`,`email`)"))
+        && $conf->ql_ok("alter table PaperReviewRefused add primary key (`paperId`,`email`)")) {
         $conf->update_schema_version(205);
+    }
     if ($conf->sversion == 205
-        && $conf->ql_ok("alter table PaperReviewRefused add `reviewRound` int(1) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReviewRefused add `reviewRound` int(1) DEFAULT NULL")) {
         $conf->update_schema_version(206);
+    }
     if ($conf->sversion == 206
         && $conf->ql_ok("alter table PaperReviewRefused add `firstName` varbinary(120) DEFAULT NULL")
         && $conf->ql_ok("alter table PaperReviewRefused add `lastName` varbinary(120) DEFAULT NULL")
-        && $conf->ql_ok("alter table PaperReviewRefused add `affiliation` varbinary(2048) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReviewRefused add `affiliation` varbinary(2048) DEFAULT NULL")) {
         $conf->update_schema_version(207);
+    }
     if ($conf->sversion == 207
         && $conf->ql_ok("alter table ActionLog add `timestamp` bigint(11) DEFAULT NULL")
-        && $conf->ql_ok("update ActionLog set timestamp=unix_timestamp(time) where timestamp IS NULL"))
+        && $conf->ql_ok("update ActionLog set timestamp=unix_timestamp(time) where timestamp IS NULL")) {
         $conf->update_schema_version(208);
+    }
     if ($conf->sversion == 208
         && $conf->ql_ok("update ActionLog set timestamp=unix_timestamp(time) where timestamp IS NULL")
         && $conf->ql_ok("alter table ActionLog change `timestamp` `timestamp` bigint(11) NOT NULL")
         && $conf->ql_ok("alter table ActionLog drop `time`")
-        && $conf->ql_ok("alter table ActionLog add `data` varbinary(8192) DEFAULT NULL"))
+        && $conf->ql_ok("alter table ActionLog add `data` varbinary(8192) DEFAULT NULL")) {
         $conf->update_schema_version(209);
+    }
     if ($conf->sversion == 209) {
         $conf->ql_ok("update Settings set name=concat('opt.', substr(name, 5)) where name like 'ova.%'");
         $conf->update_schema_version(210);
@@ -1650,20 +1775,25 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->update_schema_version(212);
     }
     if ($conf->sversion == 212
-        && $conf->ql_ok("update PaperConflict set conflictType=(64 + conflictType - 9) where conflictType>=9 and conflictType<64"))
+        && $conf->ql_ok("update PaperConflict set conflictType=(64 + conflictType - 9) where conflictType>=9 and conflictType<64")) {
         $conf->update_schema_version(213);
+    }
     if ($conf->sversion == 213
-        && update_schema_clean_options_json($conf))
+        && update_schema_clean_options_json($conf)) {
         $conf->update_schema_version(214);
+    }
     if ($conf->sversion == 214
-        && $conf->ql_ok("alter table PaperReview add `data` varbinary(8192) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReview add `data` varbinary(8192) DEFAULT NULL")) {
         $conf->update_schema_version(215);
+    }
     if ($conf->sversion == 215
-        && $conf->ql_ok("alter table PaperReviewRefused add `data` varbinary(8192) DEFAULT NULL"))
+        && $conf->ql_ok("alter table PaperReviewRefused add `data` varbinary(8192) DEFAULT NULL")) {
         $conf->update_schema_version(216);
+    }
     if ($conf->sversion == 216
-        && $conf->ql_ok("alter table PaperReviewRefused add `reviewType` tinyint(1) NOT NULL DEFAULT '0'"))
+        && $conf->ql_ok("alter table PaperReviewRefused add `reviewType` tinyint(1) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(217);
+    }
     if ($conf->sversion == 217) {
         if ($conf->setting("extrev_approve")
             && $conf->setting("pcrev_editdelegate")) {
