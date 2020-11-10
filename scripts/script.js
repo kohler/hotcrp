@@ -9261,7 +9261,18 @@ function hotlist_search_params(x, ids) {
     var m;
     if (!x || !x.ids || !(m = x.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/)))
         return false;
-    var q = {q: ids ? decode_session_list_ids(x.ids).join(" ") : urldecode(m[2]), t: m[1] || "s"};
+    var idv;
+    if (ids) {
+        if (x.sorted_ids)
+            idv = "pidcode:" + x.sorted_ids;
+        else if ($.isArray(x.ids))
+            idv = x.ids.join(" ");
+        else
+            idv = "pidcode:" + x.ids;
+    } else {
+        idv = urldecode(m[2]);
+    }
+    var q = {q: idv, t: m[1] || "s"};
     if (m[3]) {
         var args = m[3].split(/[&;]/);
         for (var i = 0; i < args.length; ++i) {

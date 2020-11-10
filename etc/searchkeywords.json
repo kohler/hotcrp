@@ -63,6 +63,10 @@
     },
     {   "name": "is", "alias": "status"   },
     {
+        "name": "pidcode",
+        "parse_callback": "PaperID_SearchTerm::parse_pidcode"
+    },
+    {
         "name": "paper",
         "require": "src/search/st_pdf.php",
         "parse_callback": "PaperPDF_SearchTerm::parse",

@@ -38,11 +38,11 @@ class SessionList {
     }
 
     /** @param string $s
-     * @return list<int>|false */
+     * @return ?list<int> */
     static function decode_ids($s) {
         if (str_starts_with($s, "[")
             && ($a = json_decode($s)) !== null) {
-            return is_int_list($a) ? $a : false;
+            return is_int_list($a) ? $a : null;
         }
 
         $a = [];
@@ -104,8 +104,7 @@ class SessionList {
                 $n = ord($ch) - 72;
                 $skip = 2;
             } else if (strspn($ch, "s[],0123456789'") !== 1) {
-                error_log("bad SessionList decode_ids contains $ch"); // XXX delete this
-                return false;
+                return null;
             }
 
             while ($n > 0 && $include) {
@@ -144,7 +143,7 @@ class SessionList {
         // q<N>: range of <N> sequential present papers
         // r<N>: range of <N> sequential missing papers
         // <N>[-<N>]: include <N>, set direction forwards
-        // z: next range is backwards
+        // z: switch direction
         // A-H: like a-h + i
         // I-P: like a-h + j
         // [s\[\],']: ignored
@@ -224,7 +223,7 @@ class SessionList {
 
             $ids = $j->ids ?? null;
             if (is_string($ids)) {
-                if (($ids = self::decode_ids($ids)) === false)
+                if (($ids = self::decode_ids($ids)) === null)
                     return null;
             } else if ($ids !== null && !is_int_list($ids)) {
                 return null;
@@ -289,6 +288,11 @@ class SessionList {
         $j = [];
         if ($this->ids !== null) {
             $j["ids"] = self::encode_ids($this->ids);
+            if (strlen($j["ids"]) > 160) {
+                $x = $this->ids;
+                sort($x);
+                $j["sorted_ids"] = self::encode_ids($x);
+            }
         }
         foreach (get_object_vars($this) as $k => $v) {
             if ($v != null

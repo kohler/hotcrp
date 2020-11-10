@@ -1490,6 +1490,18 @@ class PaperID_SearchTerm extends SearchTerm {
             return null;
         }
     }
+    static function parse_pidcode($word, SearchWord $sword, PaperSearch $srch) {
+        if (($ids = SessionList::decode_ids($word)) === null) {
+            $srch->warn("Bad <code>pidcode</code>.");
+            return new False_SearchTerm;
+        } else {
+            $pt = new PaperID_SearchTerm;
+            foreach ($ids as $id) {
+                $pt->add_range($id, $id);
+            }
+            return $pt;
+        }
+    }
 }
 
 
