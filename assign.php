@@ -449,17 +449,7 @@ if ($requests) {
 
 // PC assignments
 if ($Me->can_administer($prow)) {
-    $result = $Conf->qe("select ContactInfo.contactId, allReviews
-        from ContactInfo
-        left join (select contactId, group_concat(reviewType separator '') allReviews
-            from PaperReview join Paper using (paperId)
-            where reviewType>=" . REVIEW_PC . " and timeSubmitted>=0
-            group by contactId) A using (contactId)
-        where ContactInfo.roles!=0 and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0");
-    $pcx = [];
-    while (($row = $result->fetch_object())) {
-        $pcx[$row->contactId] = $row;
-    }
+    $acs = AssignmentCountSet::load($Me, AssignmentCountSet::HAS_REVIEW);
 
     // PC conflicts row
     echo '<div class="pcard revcard">',
@@ -481,7 +471,6 @@ if ($Me->can_administer($prow)) {
     $tagger = new Tagger($Me);
 
     foreach ($Conf->full_pc_members() as $pc) {
-        $p = $pcx[$pc->contactId];
         if (!$pc->can_accept_review_assignment_ignore_conflict($prow)) {
             continue;
         }
@@ -540,18 +529,17 @@ if ($Me->can_administer($prow)) {
 
         // then, number of reviews
         echo '<div class="pctbnrev">';
-        $numReviews = strlen($p->allReviews);
-        $numPrimary = substr_count($p->allReviews, (string) REVIEW_PRIMARY);
-        if (!$numReviews) {
+        $ac = $acs->get($pc->contactId);
+        if ($ac->rev === 0) {
             echo "0 reviews";
         } else {
             echo '<a class="q" href="',
-                hoturl("search", "q=re:" . urlencode($pc->email)), '">',
-                plural($numReviews, "review"), "</a>";
-            if ($numPrimary && $numPrimary < $numReviews) {
+                $Conf->hoturl("search", "q=re:" . urlencode($pc->email)), '">',
+                plural($ac->rev, "review"), "</a>";
+            if ($ac->pri && $ac->pri < $ac->rev) {
                 echo '&nbsp; (<a class="q" href="',
-                    hoturl("search", "q=pri:" . urlencode($pc->email)),
-                    "\">$numPrimary primary</a>)";
+                    $Conf->hoturl("search", "q=pri:" . urlencode($pc->email)),
+                    "\">{$ac->pri} primary</a>)";
             }
         }
         echo "</div></div></div>\n"; // .pctbnrev .ctelti .ctelt

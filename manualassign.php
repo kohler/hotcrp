@@ -155,23 +155,14 @@ echo "<table><tr><td><div class=\"assignpc_pcsel\">",
     Ht::form(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
 Ht::stash_script('hotcrp.highlight_form_children("#selectreviewerform")');
 
-$result = $Conf->qe_raw("select ContactInfo.contactId, count(reviewId)
-                from ContactInfo
-                left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
-                where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0
-                group by ContactInfo.contactId");
-$rev_count = [];
-while (($row = $result->fetch_row())) {
-    $rev_count[$row[0]] = $row[1];
-}
-
+$acs = AssignmentCountSet::load($Me, AssignmentCountSet::HAS_REVIEW);
 $rev_opt = array();
 if (!$reviewer) {
     $rev_opt[0] = "(Select a PC member)";
 }
 foreach ($Conf->pc_members() as $pc) {
     $rev_opt[$pc->email] = htmlspecialchars($pc->name(NAME_P|NAME_S)) . " ("
-        . plural(get($rev_count, $pc->contactId, 0), "assignment") . ")";
+        . plural($acs->get($pc->contactId)->rev, "assignment") . ")";
 }
 
 echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
