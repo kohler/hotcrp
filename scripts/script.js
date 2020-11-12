@@ -6300,7 +6300,8 @@ function search_sort_url(self, href) {
     var hrefm = /^([^?#]*(?:search|reviewprefs|manualassign)(?:\.php)?)(\?[^#]*)/.exec(href),
         api = hrefm[2], e;
     if ((e = document.getElementById("showforce"))) {
-        api = api.replace(/&forceShow=[^&#;]*/, "") + "&forceShow=" + (e.checked ? 1 : 0);
+        var v = e.type === "checkbox" ? (e.checked ? 1 : 0) : e.value;
+        api = api.replace(/&forceShow=[^&#;]*/, "") + "&forceShow=" + v;
     }
     if (!/[&?]q=/.test(api)) {
         api += "&q=";

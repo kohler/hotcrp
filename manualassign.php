@@ -291,6 +291,7 @@ if ($reviewer) {
         echo '<div class="entryi"><label>Show</label>',
             '<ul class="entry inline">', join('', $show_data), '</ul></div>';
     }
+    echo Ht::hidden("forceShow", 1, ["id" => "showforce"]); // search API must override conflicts
     echo '<div class="entryi autosave-hidden hidden"><label></label><div class="entry">',
         Ht::submit("update", "Save assignments", ["class" => "btn-primary btn big"]), '</div></div>';
     echo '</div>';
