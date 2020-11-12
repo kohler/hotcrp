@@ -228,7 +228,7 @@ class PaperList implements XtContext {
     public $qopts; // set by PaperColumn::prepare
     /** @var bool */
     public $need_tag_attr;
-    /** @var array */
+    /** @var array<string,string|list<string>> */
     public $table_attr;
     /** @var array */
     public $row_attr;

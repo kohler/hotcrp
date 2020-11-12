@@ -293,6 +293,7 @@ src/options/o_topics.php
 src/paperapi.php
 src/papercolumn.php
 src/papercolumns/pc_administrator.php
+src/papercolumns/pc_assignreview.php
 src/papercolumns/pc_commenters.php
 src/papercolumns/pc_conflict.php
 src/papercolumns/pc_conflictmatch.php

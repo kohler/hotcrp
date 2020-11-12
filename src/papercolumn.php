@@ -748,43 +748,6 @@ class ReviewerType_PaperColumn extends PaperColumn {
     }
 }
 
-class AssignReview_PaperColumn extends ReviewerType_PaperColumn {
-    function __construct(Conf $conf, $cj) {
-        parent::__construct($conf, $cj);
-    }
-    function prepare(PaperList $pl, $visible) {
-        return parent::prepare($pl, $visible) && $pl->user->is_manager();
-    }
-    function header(PaperList $pl, $is_text) {
-        if ($is_text) {
-            return $pl->user->reviewer_text_for($this->contact) . " assignment";
-        } else {
-            return $pl->user->reviewer_html_for($this->contact) . "<br>assignment";
-        }
-    }
-    function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->allow_administer($row);
-    }
-    function content(PaperList $pl, PaperInfo $row) {
-        $ci = $row->contact_info($this->contact);
-        if ($ci->conflictType >= CONFLICT_AUTHOR) {
-            return '<span class="author">Author</span>';
-        }
-        if ($ci->conflictType > CONFLICT_MAXUNCONFLICTED) {
-            $rt = -1;
-        } else {
-            $rt = min(max($ci->reviewType, 0), REVIEW_META);
-        }
-        $pl->need_render = true;
-        $t = '<span class="need-assignment-selector';
-        if (!$this->contact->can_accept_review_assignment_ignore_conflict($row)
-            && $rt <= 0) {
-            $t .= " conflict";
-        }
-        return $t . '" data-assignment="' . $this->contact->contactId . ' ' . $rt . '"></span>';
-    }
-}
-
 class TagList_PaperColumn extends PaperColumn {
     private $editable;
     function __construct(Conf $conf, $cj, $editable = false) {

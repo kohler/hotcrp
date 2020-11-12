@@ -96,17 +96,18 @@ class Preference_PaperColumn extends PaperColumn {
         return 0;
     }
     function analyze(PaperList $pl) {
-        $pfcol = $rtcol = [];
+        $pfcol = $rtuid = [];
         foreach ($pl->vcolumns() as $fdef) {
-            if ($fdef instanceof ReviewerType_PaperColumn) {
-                $rtcol[] = $fdef;
+            if ($fdef instanceof ReviewerType_PaperColumn
+                || $fdef instanceof AssignReview_PaperColumn) {
+                $rtuid[] = $fdef->contact()->contactId;
             } else if ($fdef instanceof Preference_PaperColumn) {
                 $pfcol[] = $fdef;
             }
         }
         $this->show_conflict = count($pfcol) !== 1
-            || count($rtcol) !== 1
-            || $rtcol[0]->contact()->contactId !== $this->contact->contactId;
+            || count($rtuid) !== 1
+            || $rtuid[0] !== $this->contact->contactId;
     }
     function header(PaperList $pl, $is_text) {
         if ($this->contact === $pl->user || $this->as_row) {
