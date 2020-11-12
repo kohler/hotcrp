@@ -12,6 +12,24 @@ function next_lexicographic_permutation(i, size) {
     return i;
 }
 
+handle_ui.on("js-settings-resp-active", function (event) {
+    $(".if-response-active").toggleClass("hidden", !this.checked);
+});
+
+$(function () { $(".js-settings-resp-active").trigger("change"); });
+
+handle_ui.on("js-settings-au-seerev-tag", function (event) {
+    $("#au_seerev_3").click(); // AUSEEREV_TAGS
+});
+
+handle_ui.on("js-settings-sub-nopapers", function (event) {
+    var v = $(this).val();
+    hotcrp.fold("pdfupload", v == 1, 2);
+    hotcrp.fold("pdfupload", v != 0, 3);
+});
+
+$(function () { $(".js-settings-sub-nopapers").trigger("change"); });
+
 
 handle_ui.on("js-settings-option-type", function (event) {
     var issel = /^(?:selector|radio)/.test(this.value);
@@ -67,18 +85,22 @@ handle_ui.on("js-settings-option-new", function (event) {
 });
 
 function settings_option_positions() {
-    $(".settings-opt .moveup, .settings-opt .movedown").prop("disabled", false);
-    $(".settings-opt:first-child .moveup").prop("disabled", true);
-    $(".settings-opt:last-child .movedown").prop("disabled", true);
-    var index = 0;
-    $(".settings-opt-fp").each(function () {
-        if (this.value !== "deleted" && this.name !== "optfp_0") {
-            ++index;
-            if (this.value != index)
-                $(this).val(index).change();
-        }
-    });
+    if ($(".settings-opt").length) {
+        $(".settings-opt .moveup, .settings-opt .movedown").prop("disabled", false);
+        $(".settings-opt:first-child .moveup").prop("disabled", true);
+        $(".settings-opt:last-child .movedown").prop("disabled", true);
+        var index = 0;
+        $(".settings-opt-fp").each(function () {
+            if (this.value !== "deleted" && this.name !== "optfp_0") {
+                ++index;
+                if (this.value != index)
+                    $(this).val(index).change();
+            }
+        });
+    }
 }
+
+$(settings_option_positions);
 
 
 handle_ui.on("js-settings-banal-pagelimit", function (evt) {
@@ -661,7 +683,6 @@ handle_ui.on("js-settings-resp-round-new", function () {
 
 
 hotcrp.settings = {
-    option_positions: settings_option_positions,
     review_form: review_form_settings,
     review_round: review_round_settings
 };

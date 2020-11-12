@@ -2,6 +2,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 hotcrp.graph = (function ($, d3) {
+var handle_ui = hotcrp.handle_ui;
+var hoturl = hotcrp.hoturl;
 var BOTTOM_MARGIN = 30;
 var PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,

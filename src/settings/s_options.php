@@ -262,7 +262,6 @@ class Options_SettingRenderer {
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div>';
 
-        Ht::stash_script('$(hotcrp.settings.option_positions)', 'settings_optvt');
         Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_options" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
 
         echo $t;

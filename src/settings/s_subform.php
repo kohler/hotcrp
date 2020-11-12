@@ -235,7 +235,7 @@ class SubForm_SettingRenderer {
 
         echo '<div class="f-i">',
             $sv->label("sub_nopapers", "PDF requirement", ["class" => "n"]),
-            $sv->render_select("sub_nopapers", [0 => "PDF required to complete submission", 2 => "PDF optional", 1 => "No PDF allowed"]),
+            $sv->render_select("sub_nopapers", [0 => "PDF required to complete submission", 2 => "PDF optional", 1 => "No PDF allowed"], ["class" => "uich js-settings-sub-nopapers"]),
             '<div class="f-h fx3">Registering a submission never requires a PDF.</div></div>';
 
         if (is_executable("src/banal")) {
@@ -245,7 +245,6 @@ class SubForm_SettingRenderer {
         }
 
         echo '</div>';
-        Ht::stash_script('function sub_nopapers_change() { var v = $("#sub_nopapers").val(); hotcrp.fold("pdfupload",v==1,2); hotcrp.fold("pdfupload",v!=0,3); } $("#sub_nopapers").on("change", sub_nopapers_change); $(sub_nopapers_change)');
 
         echo "<h3 class=\"form-h\">Conflicts and collaborators</h3>\n",
             '<div id="foldpcconf" class="form-g fold',

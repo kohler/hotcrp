@@ -34,8 +34,7 @@ class Responses_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
         // Authors' response
         echo '<div class="form-g">';
-        $sv->echo_checkbox("resp_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true]);
-        Ht::stash_script('$(function () { $("#resp_active").on("change", function () { var ch = document.getElementById("resp_active").checked; $(".if-response-active").toggleClass("hidden", !ch); }).trigger("change"); })');
+        $sv->echo_checkbox("resp_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
         echo '<div id="auresparea" class="if-response-active',
             $sv->curv("resp_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_resp_rounds", 1);

@@ -267,7 +267,7 @@ class Conf {
     static public $next_xt_subposition = 0;
     static private $xt_require_resolved = [];
 
-    const BLIND_NEVER = 0;         // these values are used in `msgs.json`
+    const BLIND_NEVER = 0;          // these values are used in `msgs.json`
     const BLIND_OPTIONAL = 1;
     const BLIND_ALWAYS = 2;
     const BLIND_UNTILREVIEW = 3;
@@ -277,7 +277,7 @@ class Conf {
     const SEEDEC_ALL = 2;
     const SEEDEC_NCREV = 3;
 
-    const AUSEEREV_NO = 0;
+    const AUSEEREV_NO = 0;          // these values matter
     const AUSEEREV_UNLESSINCOMPLETE = 1;
     const AUSEEREV_YES = 2;
     const AUSEEREV_TAGS = 3;
@@ -3990,39 +3990,52 @@ class Conf {
 
         // Javascript settings to set before script.js
         $nav = Navigation::get();
+        $siteinfo = [
+            "site_relative" => $nav->site_path_relative,
+            "base" => $nav->base_path,
+            "suffix" => $nav->php_suffix,
+            "assets" => $this->opt["assetsUrl"],
+            "cookie_params" => "",
+            "postvalue" => post_value(true),
+            "user" => []
+        ];
         Ht::stash_script("siteurl=" . json_encode_browser($nav->site_path_relative)
             . ";siteurl_base_path=" . json_encode_browser($nav->base_path)
             . ";siteurl_suffix=\"" . $nav->php_suffix . "\"");
         $p = "";
         if (($x = $this->opt("sessionDomain"))) {
             $p .= "; Domain=" . $x;
+            $siteinfo["cookie_params"] .= "; Domain=$x";
         }
         if ($this->opt("sessionSecure")) {
             $p .= "; Secure";
+            $siteinfo["cookie_params"] .= "; Secure";
         }
         if (($samesite = $this->opt("sessionSameSite") ?? "Lax")) {
             $p .= "; SameSite=" . $samesite;
+            $siteinfo["cookie_params"] .= "; SameSite=$x";
         }
         Ht::stash_script("siteurl_postvalue=" . json_encode_browser(post_value(true)) . ";siteurl_cookie_params=" . json_encode_browser($p));
         if (self::$hoturl_defaults) {
-            $urldefaults = [];
+            $siteinfo["defaults"] = [];
             foreach (self::$hoturl_defaults as $k => $v) {
-                $urldefaults[$k] = urldecode($v);
+                $siteinfo["defaults"][$k] = urldecode($v);
             }
-            Ht::stash_script("siteurl_defaults=" . json_encode_browser($urldefaults) . ";");
+            Ht::stash_script("siteurl_defaults=" . json_encode_browser($siteinfo["defaults"]) . ";");
         }
         Ht::stash_script("assetsurl=" . json_encode_browser($this->opt["assetsUrl"]) . ";");
         $huser = (object) array();
         if ($Me && $Me->email) {
+            $siteinfo["user"]["email"] = $Me->email;
             $huser->email = $Me->email;
         }
         if ($Me && $Me->is_pclike()) {
+            $siteinfo["user"]["is_pclike"] = true;
             $huser->is_pclike = true;
         }
         if ($Me && $Me->has_account_here()) {
             $huser->cid = $Me->contactId;
         }
-        Ht::stash_script("hotcrp_user=" . json_encode_browser($huser) . ";");
 
         $pid = $extra["paperId"] ?? null;
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
@@ -4030,11 +4043,15 @@ class Conf {
             $pid = $this->paper->paperId;
         }
         if ($pid) {
+            $siteinfo["paperid"] = $pid;
             Ht::stash_script("hotcrp_paperid=$pid");
         }
         if ($pid && $Me && $Me->is_admin_force()) {
+            $siteinfo["want_override_conflict"] = true;
             Ht::stash_script("hotcrp_want_override_conflict=true");
         }
+
+        Ht::stash_script("hotcrp_user=" . json_encode_browser($huser) . ";window.siteinfo=" . json_encode_browser($siteinfo));
 
         // script.js
         if (!$this->opt("noDefaultScript")) {

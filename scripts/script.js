@@ -1,11 +1,7 @@
 // script.js -- HotCRP JavaScript library
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-var siteurl, siteurl_base_path, hotcrp,
-    siteurl_postvalue, siteurl_suffix, siteurl_defaults,
-    siteurl_absolute_base, siteurl_cookie_params, assetsurl,
-    hotcrp_paperid, hotcrp_status, hotcrp_user,
-    hotcrp_want_override_conflict;
+var siteinfo, hotcrp, hotcrp_status;
 
 function $$(id) {
     return document.getElementById(id);
@@ -231,8 +227,8 @@ $(document).ajaxError(function (event, jqxhr, settings, httperror) {
     }
     if (!data || !data.user_error) {
         var msg = url_absolute(settings.url) + " API failure: ";
-        if (hotcrp_user && hotcrp_user.email)
-            msg += "user " + hotcrp_user.email + ", ";
+        if (siteinfo.user && siteinfo.user.email)
+            msg += "user " + siteinfo.user.email + ", ";
         msg += jqxhr.status;
         if (httperror)
             msg += ", " + httperror;
@@ -848,13 +844,13 @@ wstorage.json = function (is_session, key) {
     return x ? JSON.parse(x) : false;
 };
 wstorage.site = function (is_session, key, value) {
-    if (siteurl_base_path !== "/")
-        key = siteurl_base_path + key;
+    if (siteinfo.base !== "/")
+        key = siteinfo.base + key;
     return wstorage(is_session, key, value);
 };
 wstorage.site_json = function (is_session, key) {
-    if (siteurl_base_path !== "/")
-        key = siteurl_base_path + key;
+    if (siteinfo.base !== "/")
+        key = siteinfo.base + key;
     return wstorage.json(is_session, key);
 };
 
@@ -891,12 +887,12 @@ function hoturl_clean(x, page_component, allow_fail) {
 
 function hoturl(page, options) {
     var i, m, v, anchor = "", want_forceShow;
-    if (siteurl == null || siteurl_suffix == null) {
-        siteurl = siteurl_suffix = "";
-        log_jserror("missing siteurl");
+    if (siteinfo.site_relative == null || siteinfo.suffix == null) {
+        siteinfo.site_relative = siteinfo.suffix = "";
+        log_jserror("missing siteinfo");
     }
 
-    var x = {t: page + siteurl_suffix};
+    var x = {t: page + siteinfo.suffix};
     if (typeof options === "string") {
         if (options.charAt(0) === "?")
             options = options.substring(1);
@@ -918,7 +914,7 @@ function hoturl(page, options) {
         }
     }
     if (page.substring(0, 3) === "api" && !hoturl_find(x, /^base=/))
-        x.v.push("base=" + encodeURIComponent(siteurl));
+        x.v.push("base=" + encodeURIComponent(siteinfo.site_relative));
 
     if (page === "paper") {
         hoturl_clean(x, /^p=(\d+)$/);
@@ -933,7 +929,7 @@ function hoturl(page, options) {
         hoturl_clean(x, /^t=(\w+)$/);
     } else if (page.substring(0, 3) === "api") {
         if (page.length > 3) {
-            x.t = "api" + siteurl_suffix;
+            x.t = "api" + siteinfo.suffix;
             x.v.push("fn=" + page.substring(4));
         }
         hoturl_clean(x, /^p=(\d+)$/, true);
@@ -943,22 +939,22 @@ function hoturl(page, options) {
         hoturl_clean(x, /^file=([^&]+)$/);
     }
 
-    if (hotcrp_want_override_conflict && want_forceShow
+    if (siteinfo.want_override_conflict && want_forceShow
         && !hoturl_find(x, /^forceShow=/))
         x.v.push("forceShow=1");
 
-    if (siteurl_defaults)
-        x.v.push(serialize_object(siteurl_defaults));
+    if (siteinfo.defaults)
+        x.v.push(serialize_object(siteinfo.defaults));
     if (x.v.length)
         x.t += "?" + x.v.join("&");
-    return siteurl + x.t + anchor;
+    return siteinfo.site_relative + x.t + anchor;
 }
 
 function hoturl_post(page, options) {
     if (typeof options === "string")
-        options += (options ? "&" : "") + "post=" + siteurl_postvalue;
+        options += (options ? "&" : "") + "post=" + siteinfo.postvalue;
     else
-        options = $.extend({post: siteurl_postvalue}, options);
+        options = $.extend({post: siteinfo.postvalue}, options);
     return hoturl(page, options);
 }
 
@@ -991,9 +987,9 @@ function url_absolute(url, loc) {
 }
 
 function hoturl_absolute_base() {
-    if (!siteurl_absolute_base)
-        siteurl_absolute_base = url_absolute(siteurl_base_path);
-    return siteurl_absolute_base;
+    if (!siteinfo.absolute_base)
+        siteinfo.absolute_base = url_absolute(siteinfo.base);
+    return siteinfo.absolute_base;
 }
 
 function hoturl_go(page, options) {
@@ -2001,7 +1997,7 @@ function popup_skeleton(options) {
             if (f.getAttribute("method") === "post"
                 && !/post=/.test(f.getAttribute("action"))
                 && !/^(?:[a-z]*:|\/\/)/.test(f.getAttribute("action"))) {
-                $(f).prepend(hidden_input("post", siteurl_postvalue));
+                $(f).prepend(hidden_input("post", siteinfo.postvalue));
             }
         }
         for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
@@ -2283,7 +2279,7 @@ function tracker_html(tr) {
     if (wstorage.site(true, "hotcrp-tracking-hide-" + tr.trackerid))
         return "";
     t = '<div class="has-tracker tracker-holder tracker-'
-        + (tr.papers && tr.papers[tr.paper_offset].pid == hotcrp_paperid ? "match" : "nomatch")
+        + (tr.papers && tr.papers[tr.paper_offset].pid == siteinfo.paperid ? "match" : "nomatch")
         + (tr.tracker_here ? " tracker-active" : "");
     if (tr.listinfo || tr.listid)
         t += ' has-hotlist" data-hotlist="' + escape_entities(tr.listinfo || tr.listid);
@@ -2296,7 +2292,7 @@ function tracker_html(tr) {
         t += '<div class="' + logo_class + '">' + logo + '</div>';
     var rows = [], i, wwidth = $(window).width();
     if (!tr.papers || !tr.papers[0]) {
-        rows.push('<td><a href=\"' + siteurl + tr.url + '\">Discussion list</a></td>');
+        rows.push('<td><a href=\"' + text_to_html(siteinfo.site_relative + tr.url) + '\">Discussion list</a></td>');
     } else {
         for (i = tr.paper_offset; i < tr.papers.length; ++i)
             rows.push(tracker_paper_columns(tr, i, wwidth));
@@ -2396,8 +2392,8 @@ function tracker_refresh() {
     if (dl.tracker_here) {
         var ts = wstorage.site_json(true, "hotcrp-tracking"),
             req = "track=" + ts[1], reqdata = {};
-        if (hotcrp_paperid)
-            req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
+        if (siteinfo.paperid)
+            req += "%20" + siteinfo.paperid + "&p=" + siteinfo.paperid;
         if (ts[2])
             req += "&tracker_start_at=" + ts[2];
         if (ts[3])
@@ -2417,8 +2413,8 @@ handle_ui.on("js-tracker", function (event) {
     function push_tracker(hc, tr) {
         hc.push('<div class="lg tracker-group" data-index="' + trno + '" data-trackerid="' + tr.trackerid + '">', '</div>');
         hc.push('<input type="hidden" name="tr' + trno + '-id" value="' + escape_entities(tr.trackerid) + '">');
-        if (tr.trackerid === "new" && hotcrp_paperid)
-            hc.push('<input type="hidden" name="tr' + trno + '-p" value="' + hotcrp_paperid + '">');
+        if (tr.trackerid === "new" && siteinfo.paperid)
+            hc.push('<input type="hidden" name="tr' + trno + '-p" value="' + siteinfo.paperid + '">');
         if (tr.listinfo)
             hc.push('<input type="hidden" name="tr' + trno + '-listinfo" value="' + escape_entities(tr.listinfo) + '">');
         hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><div class="entry"><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_entities(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div></div>');
@@ -2478,8 +2474,8 @@ handle_ui.on("js-tracker", function (event) {
             visibility: wstorage.site(false, "hotcrp-tracking-visibility"),
             listinfo: document.body.getAttribute("data-hotlist")
         }, $myg = $(this).closest("div.lg"), hc = new HtmlCollector;
-        if (hotcrp_paperid)
-            tr.papers = [{pid: hotcrp_paperid}];
+        if (siteinfo.paperid)
+            tr.papers = [{pid: siteinfo.paperid}];
         push_tracker(hc, tr);
         focus_within($(hc.render()).insertBefore($myg));
         $myg.remove();
@@ -2588,7 +2584,7 @@ handle_ui.on("js-tracker", function (event) {
         start();
     } else {
         $.post(hoturl_post("api/trackerconfig"),
-               {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": hotcrp_paperid, "tr1-vis": wstorage.site(false, "hotcrp-tracking-visibility")},
+               {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": siteinfo.paperid, "tr1-vis": wstorage.site(false, "hotcrp-tracking-visibility")},
                make_submit_success({}, "new"));
     }
 });
@@ -2751,7 +2747,7 @@ function load(dlx, is_initial) {
         window.hotcrp_status = dl = dlx;
     dl.load = dl.load || now_sec();
     dl.perm = dl.perm || {};
-    dl.myperm = dl.perm[hotcrp_paperid] || {};
+    dl.myperm = dl.perm[siteinfo.paperid] || {};
     dl.rev = dl.rev || {};
     dl.tracker_status = dl.tracker_status || "off";
     if (dl.tracker
@@ -2816,7 +2812,7 @@ function reload() {
     reload_timeout = true;
     var options = hotcrp_deadlines.options || {};
     if (hotcrp_deadlines)
-        options.p = hotcrp_paperid;
+        options.p = siteinfo.paperid;
     options.fn = "status";
     $.ajax(hoturl("api", options), {
         method: "GET", timeout: 30000, success: load_success
@@ -3409,7 +3405,7 @@ handle_ui.on("input.js-email-populate", function (event) {
             var args = {email: v};
             if (hasClass(this, "want-potential-conflict")) {
                 args.potential_conflict = 1;
-                args.p = hotcrp_paperid;
+                args.p = siteinfo.paperid;
             }
             $.ajax(hoturl_post("api/user", args), {
                 method: "GET", success: success
@@ -3427,7 +3423,7 @@ handle_ui.on("input.js-email-populate", function (event) {
 
 handle_ui.on("js-request-review-preview-email", function (event) {
     var f = this.closest("form"),
-        a = {p: hotcrp_paperid, template: "requestreview"},
+        a = {p: siteinfo.paperid, template: "requestreview"},
         self = this;
     function fv(field, defaultv) {
         var x = f[field] && f[field].value.trim();
@@ -4197,7 +4193,7 @@ function revrating_key(event) {
 function add_review(rrow) {
     var hc = new HtmlCollector,
         rid = rrow.ordinal ? rrow.pid + "" + rrow.ordinal : "" + rrow.rid,
-        rlink = "r=" + rid + (hotcrp_want_override_conflict ? "&forceShow=1" : ""),
+        rlink = "r=" + rid + (siteinfo.want_override_conflict ? "&forceShow=1" : ""),
         has_user_rating = false, i, ratekey, selected;
 
     i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
@@ -4313,7 +4309,7 @@ var vismap = {rev: "hidden from authors",
               pc: "hidden from authors and external reviewers",
               admin: "shown only to administrators"};
 var cmts = {}, newcmt, has_unload = false, resp_rounds = {},
-    twiddle_start = hotcrp_user && hotcrp_user.cid ? hotcrp_user.cid + "~" : "###";
+    twiddle_start = siteinfo.user && siteinfo.user.cid ? siteinfo.user.cid + "~" : "###";
 
 function unparse_tag(tag, strip_value) {
     var pos;
@@ -4426,8 +4422,8 @@ function render_editing(hc, cj) {
         msgx.push('You have a review token for this paper, so your comment will be anonymous.');
     } else if (!cj.response
                && cj.author_email
-               && hotcrp_user.email
-               && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase()) {
+               && siteinfo.user.email
+               && cj.author_email.toLowerCase() != siteinfo.user.email.toLowerCase()) {
         if (hotcrp_status.myperm.act_author)
             msg = "You didn’t write this comment, but as a fellow author you can edit it.";
         else
@@ -4634,11 +4630,11 @@ function render_edit_attachment(i, doc) {
 }
 
 function render_attachment_link(hc, doc) {
-    hc.push('<a href="' + text_to_html(siteurl + doc.siteurl) + '" class="q">', '</a>');
+    hc.push('<a href="' + text_to_html(siteinfo.site_relative + doc.siteurl) + '" class="q">', '</a>');
     if (doc.mimetype === "application/pdf") {
-        hc.push('<img src="' + assetsurl + 'images/pdf.png" alt="[PDF]" class="sdlimg">');
+        hc.push('<img src="' + siteinfo.assets + 'images/pdf.png" alt="[PDF]" class="sdlimg">');
     } else {
-        hc.push('<img src="' + assetsurl + 'images/generic.png" alt="[Attachment]" class="sdlimg">');
+        hc.push('<img src="' + siteinfo.assets + 'images/generic.png" alt="[Attachment]" class="sdlimg">');
     }
     hc.push(' ' + text_to_html(doc.unique_filename || doc.filename || "Attachment"));
     if (doc.size != null) {
@@ -4679,7 +4675,7 @@ function make_save_callback($c) {
                 has_unload = false;
                 var form = $c.find("form")[0];
                 form.method = "post";
-                var arg = {editcomment: 1, p: hotcrp_paperid};
+                var arg = {editcomment: 1, p: siteinfo.paperid};
                 if ($c.c.cid)
                     arg.c = $c.c.cid;
                 form.action = hoturl_post("paper", arg);
@@ -4746,14 +4742,14 @@ function save_editor(elt, action, really) {
         if (this.files.length === 0)
             this.disabled = true;
     });
-    var arg = {p: hotcrp_paperid};
+    var arg = {p: siteinfo.paperid};
     if ($c.c.cid) {
         arg.c = $c.c.cid;
     }
     if (really) {
         arg.override = 1;
     }
-    if (hotcrp_want_override_conflict) {
+    if (siteinfo.want_override_conflict) {
         arg.forceShow = 1;
     }
     if (action === "delete") {
@@ -4945,7 +4941,7 @@ function render_cmt_text(format, value, response, textj, chead) {
 
 handle_ui.on("js-submit-comment", function () {
     var $c = $cmt(this);
-    $.ajax(hoturl_post("api/comment", {p: hotcrp_paperid, c: $c.c.cid}), {
+    $.ajax(hoturl_post("api/comment", {p: siteinfo.paperid, c: $c.c.cid}), {
         method: "POST", data: {override: 1, response: $c.c.response, text: $c.c.text},
         success: make_save_callback($c)
     });
@@ -5300,7 +5296,7 @@ demand_load.make = function (executor) {
 };
 
 demand_load.pc = demand_load.make(function (resolve, reject) {
-    $.get(hoturl("api/pc", {p: hotcrp_paperid}), null, function (v) {
+    $.get(hoturl("api/pc", {p: siteinfo.paperid}), null, function (v) {
         var pc = v && v.ok && v.pc;
         (pc ? resolve : reject)(pc);
     });
@@ -5327,7 +5323,7 @@ demand_load.search_completion = demand_load.make(function (resolve, reject) {
 });
 
 demand_load.alltag_info = demand_load.make(function (resolve, reject) {
-    if (hotcrp_user.is_pclike)
+    if (siteinfo.user.is_pclike)
         $.get(hoturl("api/alltags"), null, function (v) {
             resolve(v && v.tags ? v : {tags: []});
         });
@@ -5365,8 +5361,8 @@ demand_load.tags = demand_load.make(function (resolve, reject) {
 })();
 
 demand_load.mentions = demand_load.make(function (resolve, reject) {
-    if (hotcrp_user.is_pclike)
-        $.get(hoturl("api/mentioncompletion", {p: hotcrp_paperid}), null, function (v) {
+    if (siteinfo.user.is_pclike)
+        $.get(hoturl("api/mentioncompletion", {p: siteinfo.paperid}), null, function (v) {
             var tlist = ((v && v.mentioncompletion) || []).map(completion_item);
             tlist.sort(function (a, b) { return strnatcmp(a.s, b.s); });
             resolve(tlist);
@@ -5376,7 +5372,7 @@ demand_load.mentions = demand_load.make(function (resolve, reject) {
 });
 
 demand_load.emoji_codes = demand_load.make(function (resolve, reject) {
-    $.get(assetsurl + "scripts/emojicodes.json", null, function (v) {
+    $.get(siteinfo.assets + "scripts/emojicodes.json", null, function (v) {
         if (!v || !v.emoji)
             v = {emoji: []};
         if (!v.lists)
@@ -5508,7 +5504,7 @@ demand_load.emoji_completion = function (start) {
 
 
 tooltip.add_builder("votereport", function (info) {
-    var pid = $(this).attr("data-pid") || hotcrp_paperid,
+    var pid = $(this).attr("data-pid") || siteinfo.paperid,
         tag = $(this).attr("data-tag");
     if (pid && tag)
         info.content = demand_load.make(function (resolve) {
@@ -5969,8 +5965,8 @@ function comment_completion_q(elt) {
 // review preferences
 function setfollow() {
     var $self = $(this);
-    $.post(hoturl_post("api/follow", {p: $self.attr("data-pid") || hotcrp_paperid}),
-           {following: this.checked, reviewer: $self.data("reviewer") || hotcrp_user.email},
+    $.post(hoturl_post("api/follow", {p: $self.attr("data-pid") || siteinfo.paperid}),
+           {following: this.checked, reviewer: $self.data("reviewer") || siteinfo.user.email},
            function (rv) {
                setajaxcheck($self[0], rv);
                rv.ok && ($self[0].checked = rv.following);
@@ -6041,7 +6037,7 @@ var add_revpref_ajax = (function () {
 window.paperlist_tag_ui = (function () {
 
 function tag_canonicalize(tag) {
-    return tag && /^~[^~]/.test(tag) ? hotcrp_user.cid + tag : tag;
+    return tag && /^~[^~]/.test(tag) ? siteinfo.user.cid + tag : tag;
 }
 
 function tagvalue_parse(s) {
@@ -7030,7 +7026,7 @@ function check_version(url, versionstr) {
     }
     function updatecb(json) {
         if (json && json.updates && window.JSON)
-            jQuery.get(siteurl + "checkupdates.php",
+            jQuery.get(siteinfo.site_relative + "checkupdates.php",
                        {data: JSON.stringify(json)}, updateverifycb);
         else if (json && json.status)
             wstorage.site(false, "hotcrp_version_check", {at: now_msec(), version: versionstr});
@@ -7048,7 +7044,7 @@ function check_version(url, versionstr) {
     });
     handle_ui.on("js-check-version-ignore", function () {
         var id = $(this).data("versionId");
-        $.post(siteurl + "checkupdates.php", {ignore: id, post: siteurl_postvalue});
+        $.post(siteinfo.site_relative + "checkupdates.php", {ignore: id, post: siteinfo.postvalue});
         $("#softwareupdate_" + id).hide();
     });
 }
@@ -7279,7 +7275,7 @@ function make_tagmap() {
         for (i = 0; i !== tl.length; ++i) {
             t = tl[i].toLowerCase();
             if (t.charAt(0) === "~" && t.charAt(1) !== "~")
-                t = hotcrp_user.cid + t;
+                t = siteinfo.user.cid + t;
             p = t.indexOf("*");
             t = t.replace(/([^-A-Za-z_0-9])/g, "\\$1");
             if (p === 0)
@@ -7287,7 +7283,7 @@ function make_tagmap() {
             else if (p > 0)
                 x.push(t.replace('\\*', '.*'));
             else if (t === "any")
-                x.push('(?:' + (hotcrp_user.cid || 0) + '~.*|~~.*|(?!\\d+~).*)');
+                x.push('(?:' + (siteinfo.user.cid || 0) + '~.*|~~.*|(?!\\d+~).*)');
             else
                 x.push(t);
         }
@@ -7298,7 +7294,7 @@ function make_tagmap() {
         for (i = 0; i !== tl.length; ++i) {
             t = tl[i].toLowerCase();
             tagmap[t] = (tagmap[t] || 0) | 2;
-            t = hotcrp_user.cid + "~" + t;
+            t = siteinfo.user.cid + "~" + t;
             tagmap[t] = (tagmap[t] || 0) | 2;
         }
         if ($.isEmptyObject(tagmap))
@@ -7312,7 +7308,7 @@ function compute_row_tagset(tagstr, editable) {
     var t = [], tags = (tagstr || "").split(/ /);
     for (var i = 0; i !== tags.length; ++i) {
         var text = tags[i], twiddle = text.indexOf("~"), hash = text.indexOf("#");
-        if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == hotcrp_user.cid)) {
+        if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == siteinfo.user.cid)) {
             twiddle = Math.max(twiddle, 0);
             var tbase = text.substring(0, hash), tindex = text.substr(hash + 1),
                 tagx = tagmap ? tagmap[tbase.toLowerCase()] || 0 : 0, h, q;
@@ -7360,7 +7356,7 @@ function render_row_tags(div) {
 function make_tag_column_callback(f) {
     var tag = /^(?:#|tag:|tagval:)(\S+)/.exec(f.name)[1];
     if (/^~[^~]/.test(tag))
-        tag = hotcrp_user.cid + tag;
+        tag = siteinfo.user.cid + tag;
     return function (evt, rv) {
         var e = pidfield(rv.pid, f), tags = rv.tags, tagval = null;
         if (!e.length || f.missing)
@@ -7804,8 +7800,8 @@ handle_ui.on("js-signin", function (event) {
     signin && (signin.disabled = true);
     $.get(hoturl("api/session"), function (data) {
         if (data && data.postvalue) {
-            siteurl_postvalue = data.postvalue;
-            form.elements.post && (form.elements.post.value = siteurl_postvalue);
+            siteinfo.postvalue = data.postvalue;
+            form.elements.post && (form.elements.post.value = siteinfo.postvalue);
         }
         form.submit();
     });
@@ -7833,7 +7829,7 @@ handle_ui.on("js-check-format", function () {
     var running = setTimeout(function () {
         $cf.html(render_xmsg(0, "Checking format (this can take a while)..."));
     }, 1000);
-    $.ajax(hoturl_post("api/formatcheck", {p: hotcrp_paperid}), {
+    $.ajax(hoturl_post("api/formatcheck", {p: siteinfo.paperid}), {
         timeout: 20000, data: {
             dt: $d[0].getAttribute("data-dtype"), docid: $d[0].getAttribute("data-docid")
         },
@@ -8053,7 +8049,7 @@ handle_ui.on("js-clickthrough", function (event) {
         $container = $(this).closest(".js-clickthrough-container");
     if (!$container.length)
         $container = $(this).closest(".pcontainer");
-    $.post(hoturl_post("api/clickthrough", {accept: 1, p: hotcrp_paperid}),
+    $.post(hoturl_post("api/clickthrough", {accept: 1, p: siteinfo.paperid}),
         $(this).closest("form").serialize(),
         function (data) {
             if (data && data.ok) {
@@ -8070,8 +8066,8 @@ handle_ui.on("js-clickthrough", function (event) {
 handle_ui.on("js-follow-change", function (event) {
     var self = this;
     $.post(hoturl_post("api/follow",
-        {p: $(self).attr("data-pid") || hotcrp_paperid}),
-        {following: this.checked, reviewer: $(self).data("reviewer") || hotcrp_user.email},
+        {p: $(self).attr("data-pid") || siteinfo.paperid}),
+        {following: this.checked, reviewer: $(self).data("reviewer") || siteinfo.user.email},
         function (rv) {
             setajaxcheck(self, rv);
             rv.ok && (self.checked = rv.following);
@@ -8128,7 +8124,7 @@ function prepare_paper_select() {
         if ((keyed && evt.type !== "blur" && now_msec() <= keyed + 1)
             || ctl.disabled) {
         } else if (saveval !== oldval) {
-            $.post(hoturl_post("api/" + ctl.name, {p: hotcrp_paperid}),
+            $.post(hoturl_post("api/" + ctl.name, {p: siteinfo.paperid}),
                    $(self).find("form").serialize(),
                    make_callback(evt.type !== "blur"));
             ctl.disabled = true;
@@ -8543,9 +8539,9 @@ return {
 })($);
 
 
-if (hotcrp_paperid) {
+if (siteinfo.paperid) {
     $(window).on("hotcrptags", function (event, data) {
-        if (data.pid != hotcrp_paperid)
+        if (data.pid != siteinfo.paperid)
             return;
         data.color_classes && make_pattern_fill(data.color_classes, "", true);
         $(".has-tag-classes").each(function () {
@@ -8558,7 +8554,7 @@ if (hotcrp_paperid) {
             var $j = $(this), res = "",
                 t = $j.data("tagBase") + "#", i;
             if (t.charAt(0) == "~" && t.charAt(1) != "~")
-                t = hotcrp_user.cid + t;
+                t = siteinfo.user.cid + t;
             for (i = 0; i != data.tags.length; ++i)
                 if (data.tags[i].substr(0, t.length) == t)
                     res = data.tags[i].substr(t.length);
@@ -9097,9 +9093,9 @@ function set_cookie(info, pid) {
         info = make_digest(info, pid);
     cookie_set_at = now_msec();
     var p = "; Max-Age=20", m;
-    if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
+    if (siteinfo.site_relative && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
         p += "; Path=" + m[1];
-    document.cookie = "hotlist-info-" + cookie_set_at + "=" + encodeURIComponent(info) + siteurl_cookie_params + p;
+    document.cookie = "hotlist-info-" + cookie_set_at + "=" + encodeURIComponent(info) + siteinfo.cookie_params + p;
 }
 function is_listable(sitehref) {
     return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(sitehref);
@@ -9123,8 +9119,8 @@ function set_list_order(info, tbody) {
 function handle_list(e, href) {
     var hl, sitehref, m;
     if (href
-        && href.substring(0, siteurl.length) === siteurl
-        && is_listable((sitehref = href.substring(siteurl.length)))
+        && href.substring(0, siteinfo.site_relative.length) === siteinfo.site_relative
+        && is_listable((sitehref = href.substring(siteinfo.site_relative.length)))
         && (hl = e.closest(".has-hotlist"))) {
         var info = hl.getAttribute("data-hotlist");
         if (hl.tagName === "TABLE"
@@ -9231,7 +9227,7 @@ $(function () {
     });
     // having resolved digests, insert quicklinks
     if (had_digests
-        && hotcrp_paperid
+        && siteinfo.paperid
         && !$$("quicklink-prev")
         && !$$("quicklink-next")) {
         $(".quicklinks").each(function () {
@@ -9241,7 +9237,7 @@ $(function () {
             if (info
                 && info.ids
                 && (ids = decode_session_list_ids(info.ids))
-                && (pos = $.inArray(hotcrp_paperid, ids)) >= 0) {
+                && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
                 if (pos > 0)
                     $(this).prepend('<a id="quicklink-prev" class="x" href="' + hoturl_html("paper", {p: ids[pos - 1]}) + '">&lt; #' + ids[pos - 1] + '</a> ');
                 if (pos < ids.length - 1)
@@ -9310,12 +9306,12 @@ function populate_pcselector(pcs) {
         if (cid === "" || cid === "*") {
             optids.splice.apply(optids, [i + 1, 0].concat(pcs.__order__));
         } else if (cid === "assignable") {
-            optids.splice.apply(optids, [i + 1, 0].concat(pcs.__assignable__[hotcrp_paperid] || []));
+            optids.splice.apply(optids, [i + 1, 0].concat(pcs.__assignable__[siteinfo.paperid] || []));
         } else if (cid === "selected") {
             if (selected != null)
                 optids.splice.apply(optids, [i + 1, 0, selected]);
         } else if (cid === "extrev") {
-            var extrevs = pcs.__extrev__ ? pcs.__extrev__[hotcrp_paperid] : null;
+            var extrevs = pcs.__extrev__ ? pcs.__extrev__[siteinfo.paperid] : null;
             if (extrevs && extrevs.length) {
                 optids.splice.apply(optids, [i + 1, 0].concat(extrevs));
                 optids.splice(i + 1 + extrevs.length, 0, "endgroup");
@@ -9848,7 +9844,9 @@ window.hotcrp = {
     fold: fold,
     fold_storage: fold_storage,
     foldup: foldup,
+    handle_ui: handle_ui,
     highlight_form_children: hiliter_children,
+    hoturl: hoturl,
     init_deadlines: hotcrp_deadlines.init,
     load_editable_paper: edit_paper_ui.load,
     load_editable_review: edit_paper_ui.load_review,
