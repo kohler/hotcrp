@@ -20,7 +20,9 @@ $ps = new PaperStatus($Conf, $user_estrin);
 
 $paper1a = $ps->paper_json(1);
 xassert_eqq($paper1a->title, "Scalable Timers for Soft State Protocols");
-xassert_eqq($paper1a->pc_conflicts->{"estrin@usc.edu"}, "author");
+$paper1a_pcc = $paper1a->pc_conflicts;
+'@phan-var-force object $paper1a_pcc';
+xassert_eqq($paper1a_pcc->{"estrin@usc.edu"}, "author");
 $paper1 = $Conf->checked_paper_by_id(1);
 xassert_eqq($paper1->conflict_type($user_estrin), CONFLICT_AUTHOR);
 
