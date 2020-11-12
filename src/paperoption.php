@@ -3,11 +3,14 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperValue implements JsonSerializable {
-    /** @var PaperInfo */
+    /** @var PaperInfo
+     * @readonly */
     public $prow;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $id;
-    /** @var PaperOption */
+    /** @var PaperOption
+     * @readonly */
     public $option;
     /** @var ?int */
     public $value;
@@ -2162,10 +2165,6 @@ class Attachments_PaperOption extends PaperOption {
         return ["type" => "document_count", "id" => $this->id];
     }
 }
-
-class_alias("Selector_PaperOption", "SelectorPaperOption");
-class_alias("Document_PaperOption", "DocumentPaperOption");
-class_alias("Attachments_PaperOption", "AttachmentsPaperOption");
 
 class Unknown_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
