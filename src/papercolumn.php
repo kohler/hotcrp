@@ -48,8 +48,6 @@ class PaperColumn extends Column {
     }
 
 
-    function mark_editable() {
-    }
     final function add_user_sort_decoration($decor) {
         if (in_array($decor, ["name", "last", "first", "email", "affiliation"])) {
             return $this->__add_decoration($decor);
@@ -794,8 +792,13 @@ class TagList_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_FORCE;
         $this->editable = $editable;
     }
-    function mark_editable() {
-        $this->editable = true;
+    function add_decoration($decor) {
+        if ($decor === "edit") {
+            $this->editable = true;
+            return $this->__add_decoration($decor);
+        } else {
+            return parent::add_decoration($decor);
+        }
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_tags(null)) {

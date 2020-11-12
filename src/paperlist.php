@@ -194,7 +194,6 @@ class PaperList implements XtContext {
     const VIEWORIGIN_EXPLICIT = 3;
     const VIEW_REPORTSHOW = 16;
     const VIEW_SHOW = 32;
-    const VIEW_EDIT = 64;
 
     /** @var ?string */
     private $_table_id;
@@ -457,8 +456,10 @@ class PaperList implements XtContext {
         if (($flags & self::VIEWORIGIN_MASK) <= $origin) {
             $flags = ($flags & self::VIEW_REPORTSHOW)
                 | $origin
-                | ($v ? self::VIEW_SHOW : 0)
-                | ($v === "edit" ? self::VIEW_EDIT : 0);
+                | ($v ? self::VIEW_SHOW : 0);
+            if ($v === "edit") {
+                $decorations[] = "edit";
+            }
             if (!empty($decorations)) {
                 $this->_view_decorations[$k] = $decorations;
             } else {
@@ -607,9 +608,7 @@ class PaperList implements XtContext {
                     }
                 }
                 $key = "$pos $name";
-                if ($v >= self::VIEW_EDIT) {
-                    $kw = "edit";
-                } else if ($v >= self::VIEW_SHOW) {
+                if ($v >= self::VIEW_SHOW) {
                     $kw = "show";
                 } else {
                     $kw = "hide";
@@ -763,12 +762,14 @@ class PaperList implements XtContext {
             $alt_etag = "~~~";
         }
         $dt = $this->conf->tags()->add(Tagger::base($etag));
-        if (!$dt->has_order_anno()
-            && !(($this->_viewf["#$etag"] ?? 0) & self::VIEW_EDIT)
-            && !(($this->_viewf["#$alt_etag"] ?? 0) & self::VIEW_EDIT)
-            && !(($this->_viewf["tagval:$etag"] ?? 0) & self::VIEW_EDIT)
-            && !(($this->_viewf["tagval:$alt_etag"] ?? 0) & self::VIEW_EDIT)) {
-            return;
+        if (!$dt->has_order_anno()) {
+            $any = false;
+            foreach (["#$etag", "#$alt_etag", "tagval:$etag", "tagval:$alt_etag"] as $x) {
+                $any = $any || in_array("edit", $this->_view_decorations[$x] ?? []);
+            }
+            if (!$any) {
+                return;
+            }
         }
         $srch = $this->search;
         $srch->thenmap = [];
@@ -1049,9 +1050,6 @@ class PaperList implements XtContext {
         $this->_vcolumns = [];
         foreach ($fs1 as $k => $f) {
             $this->_viewf[$k] = $viewf[$k];
-            if ($viewf[$k] >= self::VIEW_EDIT) {
-                $f->mark_editable();
-            }
             $f->is_visible = true;
             $f->has_content = false;
             if ($f->prepare($this, PaperColumn::PREP_VISIBLE | $prep)) {

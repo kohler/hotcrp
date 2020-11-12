@@ -25,9 +25,14 @@ class Tag_PaperColumn extends PaperColumn {
         $this->dtag = $cj->tag;
         $this->is_value = $cj->tagvalue ?? null;
     }
-    function mark_editable() {
-        $this->editable = true;
-        $this->is_value = $this->is_value ?? true;
+    function add_decoration($decor) {
+        if ($decor === "edit") {
+            $this->editable = true;
+            $this->is_value = $this->is_value ?? true;
+            return $this->__add_decoration($decor);
+        } else {
+            return parent::add_decoration($decor);
+        }
     }
     function etag() {
         return $this->etag;

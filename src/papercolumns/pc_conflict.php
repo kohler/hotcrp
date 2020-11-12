@@ -25,6 +25,9 @@ class Conflict_PaperColumn extends PaperColumn {
         if ($decor === "basicheader") {
             $this->basicheader = true;
             return $this->__add_decoration($decor);
+        } else if ($decor === "edit") {
+            $this->mark_editable();
+            return $this->__add_decoration($decor);
         } else {
             return parent::add_decoration($decor);
         }

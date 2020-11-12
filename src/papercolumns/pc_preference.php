@@ -28,6 +28,9 @@ class Preference_PaperColumn extends PaperColumn {
         if ($decor === "topicsort") {
             $this->secondary_sort_topic_score = true;
             return $this->__add_decoration($decor);
+        } else if ($decor === "edit") {
+            $this->mark_editable();
+            return $this->__add_decoration($decor);
         } else {
             return parent::add_decoration($decor);
         }
