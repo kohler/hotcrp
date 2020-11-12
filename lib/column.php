@@ -6,7 +6,8 @@ class Column {
     /** @var string */
     public $name;
     /** @var string
-     * @readonly */
+     * @readonly
+     * @deprecated */
     protected $uid;
     /** @var ?string */
     public $title;

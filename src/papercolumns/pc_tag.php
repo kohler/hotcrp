@@ -3,13 +3,22 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Tag_PaperColumn extends PaperColumn {
+    /** @var ?bool */
     private $is_value;
+    /** @var string */
     private $dtag;
+    /** @var string */
     private $etag;
+    /** @var string */
     private $ctag;
+    /** @var bool */
     private $editable = false;
-    private $emoji = false;
-    private $editsort;
+    /** @var ?string */
+    private $emoji;
+    /** @var bool */
+    private $editsort = false;
+    /** @var array<int,float> */
+    private $sortmap;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
@@ -61,22 +70,23 @@ class Tag_PaperColumn extends PaperColumn {
         return "#$this->dtag";
     }
     function prepare_sort(PaperList $pl, $sortindex) {
-        $k = $this->uid;
+        $this->sortmap = [];
         $unviewable = $empty = TAG_INDEXBOUND * ($this->sort_reverse ? -1 : 1);
         if ($this->editable) {
             $empty = (TAG_INDEXBOUND - 1) * ($this->sort_reverse ? -1 : 1);
         }
         foreach ($pl->rowset() as $row) {
             if (!$pl->user->can_view_tag($row, $this->etag)) {
-                $row->$k = $unviewable;
-            } else if (($row->$k = $row->tag_value($this->etag)) === null) {
-                $row->$k = $empty;
+                $this->sortmap[$row->uid] = $unviewable;
+            } else {
+                $this->sortmap[$row->uid] = $row->tag_value($this->etag) ?? $empty;
             }
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $k = $this->uid;
-        return $a->$k < $b->$k ? -1 : ($a->$k == $b->$k ? 0 : 1);
+        $av = $this->sortmap[$a->uid];
+        $bv = $this->sortmap[$b->uid];
+        return $av < $bv ? -1 : ($av == $bv ? 0 : 1);
     }
     function header(PaperList $pl, $is_text) {
         if (($twiddle = strpos($this->dtag, "~")) > 0) {

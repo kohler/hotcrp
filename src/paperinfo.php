@@ -3,9 +3,11 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperContactInfo {
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $paperId;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $contactId;
     /** @var int */
     public $conflictType = 0;
@@ -67,6 +69,8 @@ class PaperContactInfo {
     /** @var ?string */
     public $searchable_tags;
 
+    /** @param Contact $user
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_empty(PaperInfo $prow, $user) {
         $ci = new PaperContactInfo;
         $ci->paperId = $prow->paperId;
@@ -80,6 +84,8 @@ class PaperContactInfo {
         return $ci;
     }
 
+    /** @param Contact $user
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_my(PaperInfo $prow, $user, $object) {
         $ci = PaperContactInfo::make_empty($prow, $user);
         $ci->conflictType = (int) $object->conflictType;
@@ -356,8 +362,12 @@ class PaperInfo {
     public $conf;
 
     // Always available, even in "minimal" paper skeletons
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $paperId;
+    /** @var int
+     * @readonly */
+    public $uid;           // unique among all PaperInfos
     /** @var int */
     public $timeSubmitted;
     /** @var int */
@@ -535,6 +545,7 @@ class PaperInfo {
     private $_pause_mark_inactive_documents;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
+    static private $next_uid = 0;
 
     /** @param ?array<string,null|string|int> $p
      * @param ?Contact $contact */
@@ -544,7 +555,8 @@ class PaperInfo {
 
     /** @param ?array<string,null|string|int> $p
      * @param ?Contact $contact
-     * @param ?Conf $conf */
+     * @param ?Conf $conf
+     * @suppress PhanAccessReadOnlyProperty */
     private function merge($p, $contact, $conf) {
         assert($contact === null ? $conf !== null : $contact instanceof Contact);
         $this->conf = $contact ? $contact->conf : $conf;
@@ -554,6 +566,7 @@ class PaperInfo {
             }
         }
         $this->paperId = (int) $this->paperId;
+        $this->uid = ++self::$next_uid;
         $this->timeSubmitted = (int) $this->timeSubmitted;
         $this->timeWithdrawn = (int) $this->timeWithdrawn;
         $this->outcome = (int) $this->outcome;

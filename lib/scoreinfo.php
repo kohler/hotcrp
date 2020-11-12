@@ -229,7 +229,9 @@ class ScoreInfo {
         }
     }
 
-    /** @return int */
+    /** @param null|int|float|list<int> $av
+     * @param null|int|float|list<int> $bv
+     * @return int */
     static function compare($av, $bv, $null_direction = 1) {
         if ($av === null || $bv === null) {
             return $av !== null ? -$null_direction : ($bv !== null ? $null_direction : 0);

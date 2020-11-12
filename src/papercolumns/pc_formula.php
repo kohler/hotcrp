@@ -17,6 +17,8 @@ class Formula_PaperColumn extends PaperColumn {
     private $override_results;
     /** @var ?string */
     private $real_format;
+    /** @var array<int,int|float> */
+    private $sortmap;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->formula = $cj->formula;
@@ -53,16 +55,15 @@ class Formula_PaperColumn extends PaperColumn {
         return true;
     }
     function prepare_sort(PaperList $pl, $sortindex) {
+        $this->sortmap = [];
         $formulaf = $this->formula->compile_sortable_function();
-        $k = $this->uid;
         foreach ($pl->rowset() as $row) {
-            $row->$k = $formulaf($row, null, $pl->user);
+            $this->sortmap[$row->uid] = $formulaf($row, null, $pl->user);
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $k = $this->uid;
-        $as = $a->$k;
-        $bs = $b->$k;
+        $as = $this->sortmap[$a->uid];
+        $bs = $this->sortmap[$b->uid];
         if ($as === null || $bs === null) {
             return $as === $bs ? 0 : ($as === null ? 1 : -1);
         } else {

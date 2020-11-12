@@ -5,6 +5,8 @@
 class PageCount_PaperColumn extends PaperColumn {
     /** @var CheckFormat */
     private $cf;
+    /** @var array<int,int> */
+    private $sortmap;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
@@ -32,13 +34,14 @@ class PageCount_PaperColumn extends PaperColumn {
         }
     }
     function prepare_sort(PaperList $pl, $sortindex) {
+        $this->sortmap = [];
         foreach ($pl->rowset() as $row) {
-            $row->{$this->uid} = $this->page_count($pl->user, $row);
+            $this->sortmap[$row->uid] = $this->page_count($pl->user, $row);
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $ac = $a->{$this->uid};
-        $bc = $b->{$this->uid};
+        $ac = $this->sortmap[$a->uid];
+        $bc = $this->sortmap[$b->uid];
         if ($ac === null || $bc === null) {
             return $ac === $bc ? 0 : ($ac === null ? -1 : 1);
         } else {

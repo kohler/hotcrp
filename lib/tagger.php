@@ -1228,6 +1228,9 @@ class Tagger {
         return $tags;
     }
 
+    /** @param string $e
+     * @param float $count
+     * @return string */
     static function unparse_emoji_html($e, $count) {
         $b = '<span class="tagemoji">';
         if ($count == 0 || $count == 1) {
