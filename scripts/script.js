@@ -892,7 +892,7 @@ function hoturl(page, options) {
         log_jserror("missing siteinfo");
     }
 
-    var x = {t: page + siteinfo.suffix};
+    var x = {t: page};
     if (typeof options === "string") {
         if (options.charAt(0) === "?")
             options = options.substring(1);
@@ -929,7 +929,7 @@ function hoturl(page, options) {
         hoturl_clean(x, /^t=(\w+)$/);
     } else if (page.substring(0, 3) === "api") {
         if (page.length > 3) {
-            x.t = "api" + siteinfo.suffix;
+            x.t = "api";
             x.v.push("fn=" + page.substring(4));
         }
         hoturl_clean(x, /^p=(\d+)$/, true);
@@ -939,10 +939,17 @@ function hoturl(page, options) {
         hoturl_clean(x, /^file=([^&]+)$/);
     }
 
+    if (siteinfo.suffix !== "") {
+        if ((i = x.t.indexOf("/")) > 0) {
+            x.t = x.t.substring(0, i).concat(siteinfo.suffix, x.t.substring(i));
+        } else {
+            x.t += siteinfo.suffix;
+        }
+    }
+
     if (siteinfo.want_override_conflict && want_forceShow
         && !hoturl_find(x, /^forceShow=/))
         x.v.push("forceShow=1");
-
     if (siteinfo.defaults)
         x.v.push(serialize_object(siteinfo.defaults));
     if (x.v.length)

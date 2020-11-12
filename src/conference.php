@@ -3105,7 +3105,7 @@ class Conf {
         global $Me;
         $nav = Navigation::get();
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
-        $t = $page . $nav->php_suffix;
+        $t = $page;
         $are = '/\A(|.*?(?:&|&amp;))';
         $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
         // parse options, separate anchor
@@ -3200,6 +3200,14 @@ class Conf {
                        && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
                 $tp = "/" . $m[2];
                 $param = $m[1] . $m[3];
+            } else if ($page === "api"
+                       && preg_match($are . 'fn=(\w+)' . $zre, $param, $m)) {
+                $tp = "/" . $m[2];
+                $param = $m[1] . $m[3];
+                if (preg_match($are . 'p=(\d+)' . $zre, $param, $m)) {
+                    $tp = "/" . $m[2] . $tp;
+                    $param = $m[1] . $m[3];
+                }
             } else if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)) {
                 $tp = "/" . urldecode($m[2]);
                 $param = $m[1] . $m[3];
@@ -3214,6 +3222,13 @@ class Conf {
                 }
             }
             $param = preg_replace('/&(?:amp;)?\z/', "", $param);
+        }
+        if ($nav->php_suffix !== "") {
+            if (($slash = strpos($t, "/")) !== false) {
+                $t = substr($t, 0, $slash) . $nav->php_suffix . substr($t, $slash);
+            } else {
+                $t .= $nav->php_suffix;
+            }
         }
         if ($param !== "" && preg_match('/\A&(?:amp;)?(.*)\z/', $param, $m)) {
             $param = $m[1];
