@@ -271,7 +271,8 @@ class PaperList implements XtContext {
         $this->_reviewer_user = $search->reviewer_user();
         $this->_rowset = $args["rowset"] ?? null;
 
-        $this->sortable = isset($args["sort"]) && $args["sort"];
+        $sortarg = $args["sort"] ?? null;
+        $this->sortable = !!$sortarg;
 
         if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"])) {
             $this->set_view("linkto", true, null, [$qreq->linkto]);
@@ -293,8 +294,8 @@ class PaperList implements XtContext {
         }
 
         if ($this->sortable) {
-            if (is_string($args["sort"])) {
-                $this->parse_view("sort:[" . $args["sort"] . "]", null);
+            if (is_string($sortarg)) {
+                $this->parse_view("sort:[" . $sortarg . "]", null);
             } else if ($qreq->sort) {
                 $this->parse_view("sort:[" . $qreq->sort . "]", null);
             }

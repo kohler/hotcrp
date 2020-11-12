@@ -27,7 +27,9 @@ class Column {
     public $sort_reverse = false;
     /** @var int */
     public $sort_subset = -1;
+    /** @var null|int|float */
     public $position;
+    /** @var ?int */
     public $__subposition;
     /** @var bool */
     public $is_visible = false;
