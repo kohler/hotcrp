@@ -107,8 +107,8 @@ class AssignmentCountSet {
             $result = $this->user->conf->qe("select r.contactId, group_concat(r.reviewType separator '')
                     from PaperReview r
                     join Paper p on (p.paperId=r.paperId)
-                    where p.timeWithdrawn<=0 and p.timeSubmitted>0 and r.reviewType>=" . REVIEW_PC
-                    . " group by r.contactId");
+                    where r.reviewType>=" . REVIEW_PC . " and (r.reviewSubmitted>0 or r.timeApprovalRequested!=0 or p.timeSubmitted>0)
+                    group by r.contactId");
             while (($row = $result->fetch_row())) {
                 $ct = $this->ensure((int) $row[0]);
                 $ct->rev = strlen($row[1]);
@@ -121,7 +121,7 @@ class AssignmentCountSet {
         foreach (["lead", "shepherd"] as $k) {
             if ($this->has & ($k === "lead" ? self::HAS_LEAD : self::HAS_SHEPHERD)) {
                 $result = $this->user->conf->qe("select {$k}ContactId, count(paperId)
-                        from Paper where timeWithdrawn<=0 and timeSubmitted>0
+                        from Paper where timeSubmitted>0
                         group by {$k}ContactId");
                 while (($row = $result->fetch_row())) {
                     $ct = $this->ensure((int) $row[0]);
@@ -151,6 +151,7 @@ class AssignmentCountSet {
                     && $this->user->can_view_review_identity($prow, null)) {
                     foreach ($prow->reviews_by_id() as $rrow) {
                         if ($rrow->reviewType >= REVIEW_PC
+                            && ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED || $prow->timeSubmitted > 0)
                             && $this->user->can_view_review_assignment($prow, $rrow)
                             && $this->user->can_view_review_identity($prow, $rrow)) {
                             $ct = $this->ensure($rrow->contactId);
@@ -165,10 +166,14 @@ class AssignmentCountSet {
                         }
                     }
                 }
-                if (($this->has & self::HAS_LEAD) && $prow->leadContactId) {
+                if (($this->has & self::HAS_LEAD)
+                    && $prow->leadContactId > 0
+                    && $prow->timeSubmitted > 0) {
                     $this->ensure($prow->leadContactId)->lead += 1;
                 }
-                if (($this->has & self::HAS_SHEPHERD) && $prow->shepherdContactId) {
+                if (($this->has & self::HAS_SHEPHERD)
+                    && $prow->shepherdContactId > 0
+                    && $prow->timeSubmitted > 0) {
                     $this->ensure($prow->shepherdContactId)->shepherd += 1;
                 }
             }

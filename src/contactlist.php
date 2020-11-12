@@ -357,7 +357,7 @@ class ContactList {
             $this->_reord_data[$cid][] = [$rrow->paperId, $rrow->reviewId, $rrow->reviewOrdinal];
         }
         if ($review_limit
-            && ($prow->timeSubmitted > 0 || $rrow->reviewStatus >= ReviewInfo::RS_ADOPTED)) {
+            && ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED || $prow->timeSubmitted > 0)) {
             if ($this->limit === "re"
                 || ($this->limit === "req" && $rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy == $this->user->contactId)
                 || ($this->limit === "ext" && $rrow->reviewType == REVIEW_EXTERNAL)
@@ -378,7 +378,7 @@ class ContactList {
                     }
                 }
             }
-        } else if ($rrow->reviewNeedsSubmit) {
+        } else if ($rrow->reviewNeedsSubmit && $prow->timeSubmitted > 0) {
             $this->_rect_data[$cid][0] += 1;
         }
     }
