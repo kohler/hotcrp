@@ -5,10 +5,6 @@
 class Column {
     /** @var string */
     public $name;
-    /** @var string
-     * @readonly
-     * @deprecated */
-    protected $uid;
     /** @var ?string */
     public $title;
     /** @var ?string */
@@ -40,12 +36,9 @@ class Column {
     /** @var ?list<string> */
     protected $decorations;
 
-    static private $next_uid = 0;
-
     /** @param object $arg */
     function __construct($arg) {
         $this->name = $arg->name;
-        $this->uid = "__column" . (++self::$next_uid) . "__";
         if (isset($arg->title)) {
             $this->title = $arg->title;
         }
