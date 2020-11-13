@@ -59,17 +59,23 @@ class SearchOperator {
 
     static private $list = null;
 
-    function __construct($what, $unary, $precedence, $opinfo = null) {
-        $this->op = $what;
+    /** @param string $op
+     * @param bool $unary
+     * @param int $precedence */
+    function __construct($op, $unary, $precedence, $opinfo = null) {
+        $this->op = $op;
         $this->unary = $unary;
         $this->precedence = $precedence;
         $this->opinfo = $opinfo;
     }
+
+    /** @return string */
     function unparse() {
         $x = strtoupper($this->op);
         return $this->opinfo === null ? $x : $x . ":" . $this->opinfo;
     }
 
+    /** @return ?SearchOperator */
     static function get($name) {
         if (!self::$list) {
             self::$list["("] = new SearchOperator("(", true, 0);
@@ -171,14 +177,6 @@ class SearchTerm {
         return $qe;
     }
 
-    /** @return bool */
-    function is_false() {
-        return false;
-    }
-    /** @return bool */
-    function is_true() {
-        return false;
-    }
     /** @return bool */
     function is_uninteresting() {
         return false;
@@ -285,9 +283,6 @@ class False_SearchTerm extends SearchTerm {
     function __construct() {
         parent::__construct("f");
     }
-    function is_false() {
-        return true;
-    }
     function is_sqlexpr_precise(PaperSearch $srch) {
         return true;
     }
@@ -302,9 +297,6 @@ class False_SearchTerm extends SearchTerm {
 class True_SearchTerm extends SearchTerm {
     function __construct() {
         parent::__construct("t");
-    }
-    function is_true() {
-        return true;
     }
     function is_uninteresting() {
         return count($this->float) === 1 && isset($this->float["view"]);
@@ -435,9 +427,9 @@ class Not_SearchTerm extends Op_SearchTerm {
         unset($this->float["tags"]);
         $qv = $this->child ? $this->child[0] : null;
         $qr = null;
-        if (!$qv || $qv->is_false()) {
+        if (!$qv || $qv instanceof False_SearchTerm) {
             $qr = new True_SearchTerm;
-        } else if ($qv->is_true()) {
+        } else if ($qv instanceof True_SearchTerm) {
             $qr = new False_SearchTerm;
         } else if ($qv instanceof Not_SearchTerm) {
             $qr = clone $qv->child[0];
@@ -497,11 +489,11 @@ class And_SearchTerm extends Op_SearchTerm {
         $newchild = [];
         $any = false;
         foreach ($this->_flatten_children() as $qv) {
-            if ($qv->is_false()) {
+            if ($qv instanceof False_SearchTerm) {
                 $qr = new False_SearchTerm;
                 $qr->float = $this->float;
                 return $qr;
-            } else if ($qv->is_true()) {
+            } else if ($qv instanceof True_SearchTerm) {
                 $any = true;
             } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
                 $revadj = $qv->apply($revadj, false);
@@ -601,9 +593,9 @@ class Or_SearchTerm extends Op_SearchTerm {
         $pn = $revadj = null;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
-            if ($qv->is_true()) {
+            if ($qv instanceof True_SearchTerm) {
                 return self::make_float($this->float);
-            } else if ($qv->is_false()) {
+            } else if ($qv instanceof False_SearchTerm) {
                 // skip
             } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
                 $revadj = $qv->apply($revadj, true);
@@ -691,7 +683,7 @@ class Xor_SearchTerm extends Op_SearchTerm {
         $pn = $revadj = null;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
-            if ($qv->is_false()) {
+            if ($qv instanceof False_SearchTerm) {
                 // skip
             } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
                 $revadj = $qv->apply($revadj, true);
@@ -2166,8 +2158,9 @@ class PaperSearch {
             ++$this->_quiet_count;
             $qe = $this->_search_word("hashtag:" . $wordbrk[1], $defkw);
             --$this->_quiet_count;
-            if (!$qe->is_false())
+            if (!($qe instanceof False_SearchTerm)) {
                 return $qe;
+            }
         } else if ($wordbrk[0] !== false) {
             // `keyword:word` or (potentially) `keyword>word`
             if ($wordbrk[1][0] === ":") {
@@ -2178,8 +2171,9 @@ class PaperSearch {
                 ++$this->_quiet_count;
                 $qe = $this->_search_word($wordbrk[0] . ":" . $wordbrk[1], $defkw);
                 --$this->_quiet_count;
-                if (!$qe->is_false())
+                if (!($qe instanceof False_SearchTerm)) {
                     return $qe;
+                }
             }
         }
         if ($keyword && $keyword[0] === '"') {
