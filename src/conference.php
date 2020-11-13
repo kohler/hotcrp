@@ -3004,12 +3004,6 @@ class Conf {
     function subBlindNever() {
         return $this->settings["sub_blind"] === self::BLIND_NEVER;
     }
-    function subBlindOptional() {
-        return $this->settings["sub_blind"] === self::BLIND_OPTIONAL;
-    }
-    function subBlindUntilReview() {
-        return $this->settings["sub_blind"] === self::BLIND_UNTILREVIEW;
-    }
 
     function is_review_blind($rrow) {
         $rb = $this->settings["rev_blind"];
