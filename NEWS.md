@@ -1,7 +1,7 @@
 HotCRP NEWS
 ===========
 
-## Version 3.0b1
+## Version 3.0b1 - 12.Nov.2020
 
 * Upgrade notes
 
@@ -9,14 +9,14 @@ HotCRP NEWS
       `etc/mailtemplates.json`. Uses of `$Opt["mailtemplate_include"]` should
       be modified to use JSON and `$Opt["mailTemplates"]`.
     * Remove `src/messages.csv` in favor of `etc/msgs.json` and IntlMsgSet.
-    * Some old abbreviations for fields (e.g., `OveMer` for “Overall merit”)
-      will no longer work thanks to improvements to the abbreviation
-      subsystem.
+    * Some old abbreviations for fields will no longer work thanks to
+      improvements to the abbreviation subsystem. Most abbreviations, such as
+      `OveMer` for “Overall merit”, should work unchanged.
     * Search terms that match more than one submission field will now report a
       warning, and match nothing, unless they include a `*`.
     * PHP 7.3 and 7.4 are supported. PHP 5.6 is no longer supported.
 
-* Significant overhaul of HotCRP's internals. [Phan][] type signatures are
+* Significant overhaul of HotCRP’s internals. [Phan][] type signatures are
   added to many methods. New classes are added. Built-in submission fields,
   such as title and author, are expressed through the PaperOption framework,
   and are theoretically extensible. PaperOption subclasses are in
@@ -72,7 +72,7 @@ HotCRP NEWS
 
     * Never send plaintext passwords in email, not even initial,
       randomly-chosen plaintext passwords. Instead send reset links.
-    * $Opt["safePasswords"] is removed. HotCRP refuses to store passwords
+    * $Opt["safePasswords"] is removed. HotCRP refuses to store passwords in
       plaintext. (It has stored passwords encrypted *by default* for years.)
     * Separate signin, signout, newaccount, forgotpassword, and resetpassword
       pages.

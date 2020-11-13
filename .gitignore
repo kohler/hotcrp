@@ -5,5 +5,5 @@ devel/d3/d3-hotcrp.min.js
 devel/d3/node_modules
 filestore
 logs
-conf/options.php
+conf/*
 Code/options.inc
