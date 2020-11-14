@@ -1348,6 +1348,7 @@ assert_search_papers($user_chair, "many applications", "8 25");
 assert_search_papers($user_chair, "\"many applications\"", "8");
 assert_search_papers($user_chair, "“many applications”", "8");
 assert_search_papers($user_chair, "“many applications“", "8");
+assert_search_papers($user_chair, "status:mis[take", "");
 
 // users
 xassert(!maybe_user("sclinx@leland.stanford.edu"));
