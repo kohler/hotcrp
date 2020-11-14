@@ -71,7 +71,7 @@ if ($Qreq->u !== "") {
         $flags = ContactSearch::F_TAG | ContactSearch::F_USER | ContactSearch::F_ALLOW_DELETED;
         if (substr($word, 0, 1) === "\"") {
             $flags |= ContactSearch::F_QUOTED;
-            $word = preg_replace(',(?:\A"|"\z),', "", $word);
+            $word = preg_replace('/(?:\A"|"\z)/', "", $word);
         }
         $Search = new ContactSearch($flags, $word, $Me);
         foreach ($Search->user_ids() as $id) {

@@ -2227,26 +2227,14 @@ class PaperSearch {
     }
 
     static private function _shift_word(SearchSplitter $splitter, Conf $conf) {
-        if (($x = $splitter->shift()) === "") {
-            return $x;
+        $parens = false;
+        if (($t = $splitter->shift_keyword()) !== "") {
+            $kwx = $t[0] === '"' ? substr($t, 1, -2) : substr($t, 0, -1);
+            $kwd = $conf->search_keyword($kwx);
+            $parens = $kwd && ($kwd->allow_parens ?? false);
         }
-        // some keywords may be followed by parentheses
-        if (strpos($x, ":")
-            && preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":)(?=[^"]|\z)/', $x, $m)) {
-            if ($m[1][0] === "\"") {
-                $kw = substr($m[1], 1, strlen($m[1]) - 2);
-            } else {
-                $kw = substr($m[1], 0, strlen($m[1]) - 1);
-            }
-            if (($kwdef = $conf->search_keyword($kw))
-                && ($kwdef->allow_parens ?? false)
-                && ($splitter->starts_with("(") || $splitter->starts_with("["))) {
-                $lspan = $splitter->strspan[0];
-                $x .= $splitter->shift_balanced_parens();
-                $splitter->strspan[0] = $lspan;
-            }
-        }
-        return $x;
+        $x = $parens ? $splitter->shift_balanced_parens() : $splitter->shift("()");
+        return $t === "" ? $x : $t . $x;
     }
 
     /** @param ?SearchTerm $curqe
@@ -2279,17 +2267,21 @@ class PaperSearch {
         $splitter = new SearchSplitter($str);
 
         while (!$splitter->is_empty()) {
+            $pos0 = $splitter->pos;
             $op = self::_shift_keyword($splitter, $curqe);
+            $pos1 = $splitter->last_pos;
             if ($curqe && !$op) {
                 $op = SearchOperator::get("SPACE");
             }
             if (!$curqe && $op && $op->op === "highlight") {
                 $curqe = new True_SearchTerm;
-                $curqe->set_float("strspan", [$splitter->strspan[0], $splitter->strspan[0]]);
+                $curqe->set_float("strspan", [$pos0, $pos0]);
             }
 
             if (!$op) {
+                $pos0 = $splitter->pos;
                 $word = self::_shift_word($splitter, $this->conf);
+                $pos1 = $splitter->last_pos;
                 // Bare any-case "all", "any", "none" are treated as keywords.
                 if (!$curqe
                     && (empty($stack) || $stack[count($stack) - 1]->op->precedence <= 2)
@@ -2302,12 +2294,12 @@ class PaperSearch {
                 if ($word[strlen($word) - 1] === ":"
                     && preg_match('/\A(?:[-_.a-zA-Z0-9]+:|"[^"]+":)\z/', $word)
                     && $splitter->starts_with("(")) {
-                    $next_defkw = [substr($word, 0, strlen($word) - 1), $splitter->strspan[0]];
+                    $next_defkw = [substr($word, 0, strlen($word) - 1), $pos0];
                 } else {
                     // The heart of the matter.
                     $curqe = $this->_search_word($word, $defkw);
                     if (!$curqe->is_uninteresting()) {
-                        $curqe->set_float("strspan", $splitter->strspan);
+                        $curqe->set_float("strspan", [$pos0, $pos1]);
                     }
                 }
             } else if ($op->op === ")") {
@@ -2316,14 +2308,14 @@ class PaperSearch {
                     $curqe = self::_pop_expression_stack($curqe, $stack);
                 }
                 if (!empty($stack)) {
-                    $stack[count($stack) - 1]->strspan[1] = $splitter->strspan[1];
+                    $stack[count($stack) - 1]->strspan[1] = $pos1;
                     $curqe = self::_pop_expression_stack($curqe, $stack);
                     --$parens;
                     $defkw = array_pop($defkwstack);
                 }
             } else if ($op->op === "(") {
                 assert(!$curqe);
-                $stkelem = new SearchScope($op, null, $splitter->strspan);
+                $stkelem = new SearchScope($op, null, [$pos0, $pos1]);
                 $defkwstack[] = $defkw;
                 if ($next_defkw) {
                     $defkw = $next_defkw[0];
@@ -2338,7 +2330,7 @@ class PaperSearch {
                        && $stack[count($stack) - 1]->op->precedence > $end_precedence) {
                     $curqe = self::_pop_expression_stack($curqe, $stack);
                 }
-                $stack[] = new SearchScope($op, $curqe, $splitter->strspan);
+                $stack[] = new SearchScope($op, $curqe, [$pos0, $pos1]);
                 $curqe = null;
             }
         }

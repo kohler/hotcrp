@@ -8,14 +8,14 @@ class SearchSplitter {
     /** @var bool */
     private $utf8q;
     /** @var int */
-    public $pos;
-    /** @var array{int, int} */
-    public $strspan;
+    public $pos = 0;
+    /** @var int */
+    public $last_pos = 0;
+
     /** @param string $str */
     function __construct($str) {
         $this->str = $str;
         $this->utf8q = strpos($str, chr(0xE2)) !== false;
-        $this->pos = 0;
         $this->set_span_and_pos("");
     }
     /** @return bool */
@@ -23,21 +23,38 @@ class SearchSplitter {
         return $this->str === "";
     }
     /** @return string */
-    function shift() {
+    function rest() {
+        return $this->str;
+    }
+    /** @return string */
+    function shift_keyword() {
         if ($this->utf8q
-            && preg_match('/\A([-_.a-zA-Z0-9]+:|["“”][^"“”]+["“”]:|)\s*((?:["“”][^"“”]*(?:["“”]|\z)|[^"“”\s()\[\]]*)*)/su', $this->str, $m)) {
-            $result = preg_replace('/[“”]/u', "\"", $m[1] . $m[2]);
-        } else if (!$this->utf8q
-                   && preg_match('/\A([-_.a-zA-Z0-9]+:|"[^"]+":|)\s*((?:"[^"]*(?:"|\z)|[^"\s()\[\]]*)*)/s', $this->str, $m)) {
-            $result = $m[1] . $m[2];
+            ? preg_match('/\A(?:[-_.a-zA-Z0-9]+|["“”][^"“”]+["“”]):/su', $this->str, $m)
+            : preg_match('/\A(?:[-_.a-zA-Z0-9]+|"[^"]+"):/s', $this->str, $m)) {
+            $this->set_span_and_pos($m[0]);
+            return $this->utf8q ? preg_replace('/[“”]/u', '"', $m[0]) : $m[0];
         } else {
-            $this->pos += strlen($this->str);
-            $this->str = "";
-            $this->strspan = [$this->pos, $this->pos];
             return "";
         }
-        $this->set_span_and_pos($m[0]);
-        return $result;
+    }
+    /** @param string $exceptions
+     * @return string */
+    function shift($exceptions = null) {
+        if ($exceptions === null) {
+            $exceptions = '\(\)\[\]';
+        } else if ($exceptions !== "()" && $exceptions !== "") {
+            $exceptions = preg_quote($exceptions);
+        }
+        if ($this->utf8q
+            ? preg_match("/\\A(?:[\"“”][^\"“”]*(?:[\"“”]|\\z)|[^\"“”\\s{$exceptions}]*)*/su", $this->str, $m)
+            : preg_match("/\\A(?:\"[^\"]*(?:\"|\\z)|[^\"\\s{$exceptions}]*)*/s", $this->str, $m)) {
+            $this->set_span_and_pos($m[0]);
+            return $this->utf8q ? preg_replace('/[“”]/u', '"', $m[0]) : $m[0];
+        } else {
+            $this->last_pos = $this->pos = $this->pos + strlen($this->str);
+            $this->str = "";
+            return "";
+        }
     }
     /** @param string $str */
     function shift_past($str) {
@@ -75,7 +92,7 @@ class SearchSplitter {
         return str_starts_with($this->str, $substr);
     }
     private function set_span_and_pos($prefix) {
-        $this->strspan = [$this->pos, $this->pos + strlen($prefix)];
+        $this->last_pos = $this->pos + strlen($prefix);
         $next = substr($this->str, strlen($prefix));
         if ($this->utf8q) {
             $next = preg_replace('/\A\s+/u', "", $next);
