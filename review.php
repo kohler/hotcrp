@@ -16,7 +16,6 @@ function review_header() {
 }
 
 function review_error($msg) {
-    global $Conf;
     review_header();
     Ht::stash_script("hotcrp.shortcut().add()");
     $msg && Conf::msg_error($msg);
@@ -291,8 +290,8 @@ if ((isset($Qreq->refuse) || isset($Qreq->decline))
         }
     } else {
         $result->export_errors();
-        review_load();
     }
+    review_load();
 }
 
 if (isset($Qreq->accept)

@@ -7,7 +7,6 @@ class ReviewAccept_Capability {
         if ($at && $at >= Conf::$now - 2592000) {
             $user->set_capability("@ra$pid", $cid);
             if ($user->is_activated()) {
-                ensure_session();
                 CapabilityInfo::set_default_cap_param($uf->name, !!$cid);
             }
         } else if ($cid && $cid != $user->contactId) {

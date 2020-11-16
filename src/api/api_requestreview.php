@@ -317,15 +317,10 @@ class RequestReview_API {
         // send mail to requesters
         // XXX delay this mail by a couple minutes
         foreach ($rrows as $rrow) {
-            $requser = null;
-            if ($rrow->requestedBy > 0) {
-                $requser = $user->conf->user_by_id($rrow->requestedBy);
-            }
-            if ($requser) {
-                $reqprow = $user->conf->paper_by_id($prow->paperId, $requser);
+            if ($rrow->requestedBy > 0
+                && ($requser = $user->conf->user_by_id($rrow->requestedBy))) {
                 HotCRPMailer::send_to($requser, "@refusereviewrequest", [
-                    "prow" => $reqprow,
-                    "reviewer_contact" => $rrow, "reason" => $reason
+                    "prow" => $prow, "reviewer_contact" => $rrow, "reason" => $reason
                 ]);
             }
             $user->log_activity_for($rrow->contactId, "Review $rrow->reviewId declined", $prow);
