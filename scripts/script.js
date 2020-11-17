@@ -8676,7 +8676,7 @@ handle_ui.on("js-approve-review", function (event) {
     }
     hc.push('<button type="button" name="approvesubreview" class="btn big' + subreviewClass + '">Approve subreview</button><p>Approve this review as a subreview. It will not be shown to authors and its scores will not be counted in statistics.</p>');
     if (hasClass(self, "can-approve-submit")) {
-        hc.push('<button type="button" name="submitreview" class="btn big">Submit as full review</button><p>Submit this review as a full review. It will be shown to authors and its scores will be counted in statistics.</p>');
+        hc.push('<button type="button" name="submitreview" class="btn big">Submit as full review</button><p>Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics.</p>');
     }
     hc.pop();
     hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
