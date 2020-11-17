@@ -619,7 +619,7 @@ function procrastination_filter(revdata) {
         var d = {d: revdata.reviews[cid], className: "gcdf-many"};
         if ((u = revdata.users[cid]) && u.name)
             d.label = u.name;
-        if (cid && cid == hotcrp_user.cid) {
+        if (cid && cid == siteinfo.user.cid) {
             d.className = "gcdf-highlight";
             d.priority = 1;
         } else if (u && u.light)

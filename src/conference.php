@@ -4008,42 +4008,31 @@ class Conf {
             "postvalue" => post_value(true),
             "user" => []
         ];
-        Ht::stash_script("siteurl=" . json_encode_browser($nav->site_path_relative)
-            . ";siteurl_base_path=" . json_encode_browser($nav->base_path)
-            . ";siteurl_suffix=\"" . $nav->php_suffix . "\"");
-        $p = "";
         if (($x = $this->opt("sessionDomain"))) {
-            $p .= "; Domain=" . $x;
             $siteinfo["cookie_params"] .= "; Domain=$x";
         }
         if ($this->opt("sessionSecure")) {
-            $p .= "; Secure";
             $siteinfo["cookie_params"] .= "; Secure";
         }
         if (($samesite = $this->opt("sessionSameSite") ?? "Lax")) {
-            $p .= "; SameSite=" . $samesite;
             $siteinfo["cookie_params"] .= "; SameSite=$x";
         }
-        Ht::stash_script("siteurl_postvalue=" . json_encode_browser(post_value(true)) . ";siteurl_cookie_params=" . json_encode_browser($p));
         if (self::$hoturl_defaults) {
             $siteinfo["defaults"] = [];
             foreach (self::$hoturl_defaults as $k => $v) {
                 $siteinfo["defaults"][$k] = urldecode($v);
             }
-            Ht::stash_script("siteurl_defaults=" . json_encode_browser($siteinfo["defaults"]) . ";");
         }
-        Ht::stash_script("assetsurl=" . json_encode_browser($this->opt["assetsUrl"]) . ";");
-        $huser = (object) array();
-        if ($Me && $Me->email) {
-            $siteinfo["user"]["email"] = $Me->email;
-            $huser->email = $Me->email;
-        }
-        if ($Me && $Me->is_pclike()) {
-            $siteinfo["user"]["is_pclike"] = true;
-            $huser->is_pclike = true;
-        }
-        if ($Me && $Me->has_account_here()) {
-            $huser->cid = $Me->contactId;
+        if ($Me) {
+            if ($Me->email) {
+                $siteinfo["user"]["email"] = $Me->email;
+            }
+            if ($Me->is_pclike()) {
+                $siteinfo["user"]["is_pclike"] = true;
+            }
+            if ($Me->has_account_here()) {
+                $siteinfo["user"]["cid"] = $Me->contactId;
+            }
         }
 
         $pid = $extra["paperId"] ?? null;
@@ -4053,14 +4042,12 @@ class Conf {
         }
         if ($pid) {
             $siteinfo["paperid"] = $pid;
-            Ht::stash_script("hotcrp_paperid=$pid");
         }
         if ($pid && $Me && $Me->is_admin_force()) {
             $siteinfo["want_override_conflict"] = true;
-            Ht::stash_script("hotcrp_want_override_conflict=true");
         }
 
-        Ht::stash_script("hotcrp_user=" . json_encode_browser($huser) . ";window.siteinfo=" . json_encode_browser($siteinfo));
+        Ht::stash_script("window.siteinfo=" . json_encode_browser($siteinfo));
 
         // script.js
         if (!$this->opt("noDefaultScript")) {
