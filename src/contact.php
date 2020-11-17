@@ -140,6 +140,8 @@ class Contact {
     public $tracker_kiosk_state = 0;
     /** @var ?array<string,mixed> */
     private $_capabilities;
+    /** @var ?int */
+    private $_capability_cid;
     /** @var ?list<int> */
     private $_review_tokens;
     const OVERRIDE_CONFLICT = 1;
@@ -1441,6 +1443,20 @@ class Contact {
                     call_user_func($uf->callback, $this, $uf, $isadd, $s);
                 }
             }
+        }
+    }
+
+    /** @return int */
+    function capability_cid() {
+        return $this->_capability_cid ?? 0;
+    }
+
+    /** @param int $cid */
+    function add_capability_cid($cid) {
+        if (($this->_capability_cid ?? $cid) === $cid) {
+            $this->_capability_cid = $cid;
+        } else {
+            $this->_capability_cid = 0;
         }
     }
 
