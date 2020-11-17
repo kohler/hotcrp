@@ -15,6 +15,12 @@ class ReviewRefusalInfo {
     public $affiliation;
     /** @var int */
     public $contactId;
+    /** @var ?int */
+    public $refusedReviewId;
+    /** @var int */
+    public $refusedReviewType;
+    /** @var ?int */
+    public $reviewRound;
     /** @var int */
     public $requestedBy;
     /** @var ?int */
@@ -23,10 +29,6 @@ class ReviewRefusalInfo {
     public $refusedBy;
     /** @var ?int */
     public $timeRefused;
-    /** @var int */
-    public $refusedReviewType;
-    /** @var ?int */
-    public $reviewRound;
     /** @var ?string */
     public $data;
     /** @var ?string */
@@ -40,6 +42,13 @@ class ReviewRefusalInfo {
     private function merge() {
         $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
+        if ($this->refusedReviewId !== null) {
+            $this->refusedReviewId = (int) $this->refusedReviewId;
+        }
+        $this->refusedReviewType = (int) $this->refusedReviewType;
+        if ($this->reviewRound !== null) {
+            $this->reviewRound = (int) $this->reviewRound;
+        }
         $this->requestedBy = (int) $this->requestedBy;
         if ($this->timeRequested !== null) {
             $this->timeRequested = (int) $this->timeRequested;
@@ -49,10 +58,6 @@ class ReviewRefusalInfo {
         }
         if ($this->timeRefused !== null) {
             $this->timeRefused = (int) $this->timeRefused;
-        }
-        $this->refusedReviewType = (int) $this->refusedReviewType;
-        if ($this->reviewRound !== null) {
-            $this->reviewRound = (int) $this->reviewRound;
         }
         $this->reviewType = REVIEW_REFUSAL;
     }
