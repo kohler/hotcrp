@@ -340,12 +340,13 @@ CREATE TABLE `PaperReviewRefused` (
   `lastName` varbinary(120) DEFAULT NULL,
   `affiliation` varbinary(2048) DEFAULT NULL,
   `contactId` int(11) NOT NULL,
+  `refusedReviewId` int(11) DEFAULT NULL,
+  `refusedReviewType` tinyint(1) NOT NULL DEFAULT '0',
+  `reviewRound` int(1) DEFAULT NULL,
   `requestedBy` int(11) NOT NULL,
   `timeRequested` bigint(11) DEFAULT NULL,
   `refusedBy` int(11) DEFAULT NULL,
   `timeRefused` bigint(11) DEFAULT NULL,
-  `refusedReviewType` tinyint(1) NOT NULL DEFAULT '0',
-  `reviewRound` int(1) DEFAULT NULL,
   `data` varbinary(8192) DEFAULT NULL,
   `reason` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`paperId`,`email`)
@@ -515,7 +516,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 240);
+insert into Settings (name, value) values ('allowPaperOption', 241);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

@@ -284,12 +284,12 @@ class RequestReview_API {
 
         $had_token = false;
         foreach ($rrows as $rrow) {
-            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, refusedReviewType=?, reviewRound=?, data=?
+            $user->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, refusedReviewType=?, refusedReviewId=?, reviewRound=?, data=?
                 on duplicate key update reason=coalesce(values(reason),reason)",
                 $prow->paperId, $rrow->email, $rrow->contactId,
                 $rrow->requestedBy, $rrow->timeRequested,
                 $user->contactId, Conf::$now, $reason, $rrow->reviewType,
-                $rrow->reviewRound, $rrow->data_string());
+                $rrow->reviewId, $rrow->reviewRound, $rrow->data_string());
             $user->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
                 $prow->paperId, $rrow->reviewId);
             if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
