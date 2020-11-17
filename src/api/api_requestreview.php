@@ -1,5 +1,5 @@
 <?php
-// api_requestreview.php -- HotCRP user-related API calls
+// api_requestreview.php -- HotCRP review-request API calls
 // Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
 
 class RequestReview_API {
@@ -252,7 +252,7 @@ class RequestReview_API {
 
         $u = $user->conf->cached_user_by_email($email);
         if (!$user->can_administer($prow)
-            && strcasecmp($email, $user->email) !== 0
+            && (!$user->email || strcasecmp($email, $user->email) !== 0)
             && (!$u || $user->capability("@ra{$prow->paperId}") != $u->contactId)) {
             return self::error_result(403, "email", "Permission error.");
         }

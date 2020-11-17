@@ -2227,7 +2227,6 @@ class Contact {
 
     private function load_author_reviewer_status() {
         // Load from database
-        $result = null;
         if ($this->contactId > 0) {
             $qs = ["exists (select * from PaperConflict where contactId=? and conflictType>=" . CONFLICT_AUTHOR . ")",
                    "exists (select * from PaperReview where contactId=?)"];
@@ -2245,14 +2244,16 @@ class Contact {
                 $qs[] = "0";
             }
             $result = $this->conf->qe_apply("select " . join(", ", $qs), $qv);
+            $row = $result->fetch_row();
+            $this->_db_roles = ($row && $row[0] > 0 ? self::ROLE_AUTHOR : 0)
+                | ($row && $row[1] > 0 ? self::ROLE_REVIEWER : 0)
+                | ($row && $row[2] > 0 ? self::ROLE_REQUESTER : 0);
+            $this->_active_roles = $this->_db_roles
+                | ($row && $row[3] > 0 ? self::ROLE_REVIEWER : 0);
+            Dbl::free($result);
+        } else {
+            $this->_db_roles = $this->_active_roles = 0;
         }
-        $row = $result ? $result->fetch_row() : null;
-        $this->_db_roles = ($row && $row[0] > 0 ? self::ROLE_AUTHOR : 0)
-            | ($row && $row[1] > 0 ? self::ROLE_REVIEWER : 0)
-            | ($row && $row[2] > 0 ? self::ROLE_REQUESTER : 0);
-        $this->_active_roles = $this->_db_roles
-            | ($row && $row[3] > 0 ? self::ROLE_REVIEWER : 0);
-        Dbl::free($result);
 
         // Update contact information from capabilities
         if ($this->_capabilities) {

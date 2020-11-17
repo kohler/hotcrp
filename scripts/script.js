@@ -248,32 +248,52 @@ $(document).ajaxComplete(function (event, jqxhr, settings) {
 $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
     if (options.global === false)
         return;
-    var f = options.success;
-    function onerror(jqxhr, status, errormsg) {
-        if (f) {
-            var rjson;
-            if (/application\/json/.test(jqxhr.getResponseHeader("Content-Type") || "")
-                && jqxhr.responseText) {
-                try {
-                    rjson = JSON.parse(jqxhr.responseText);
-                } catch (e) {
+    function onsuccess(data, status, errormsg) {
+        if (typeof data === "object"
+            && data.sessioninfo
+            && siteinfo.user.cid == data.sessioninfo.cid
+            && (siteinfo.user.cid
+                || siteinfo.user.capability_cid == data.sessioninfo.capability_cid)
+            && options.url.startsWith(siteinfo.site_relative)
+            && (siteinfo.site_relative !== "" || !/^[a-z]+:|^\//.test(options.url))) {
+            siteinfo.postvalue = data.sessioninfo.postvalue;
+            $("form").each(function () {
+                var m = /^([^#]*[&?;]post=)([^&?;#]*)/.exec(this.action);
+                if (m) {
+                    this.action = m[1].concat(siteinfo.postvalue, this.action.substring(m[0].length));
                 }
-            }
-            if (!rjson
-                || typeof rjson !== "object"
-                || rjson.ok !== false)
-                rjson = {ok: false};
-            if (!rjson.error)
-                rjson.error = jqxhr_error_message(jqxhr, status, errormsg);
-            f(rjson, jqxhr, status);
+                if (this.elements.post) {
+                    this.elements.post.value = siteinfo.postvalue;
+                }
+            })
         }
     }
-    if (!options.error)
-        options.error = onerror;
-    else if ($.isArray(options.error))
-        options.error.push(onerror);
-    else
-        options.error = [options.error, onerror];
+    function onerror(jqxhr, status, errormsg) {
+        var rjson, i;
+        if (/application\/json/.test(jqxhr.getResponseHeader("Content-Type") || "")
+            && jqxhr.responseText) {
+            try {
+                rjson = JSON.parse(jqxhr.responseText);
+            } catch (e) {
+            }
+        }
+        if (!rjson
+            || typeof rjson !== "object"
+            || rjson.ok !== false)
+            rjson = {ok: false};
+        if (!rjson.error)
+            rjson.error = jqxhr_error_message(jqxhr, status, errormsg);
+        for (i = 0; i !== success.length; ++i)
+            success[i](rjson, jqxhr, status);
+    }
+    var success = options.success, error = options.error;
+    options.success = [onsuccess];
+    if (success)
+        Array.prototype.push.apply(options.success, $.isArray(success) ? success : [success]);
+    options.error = [];
+    if (error)
+        Array.prototype.push.apply(options.error, $.isArray(error) ? error : [error]);
+    options.error.push(onerror);
     if (options.timeout == null)
         options.timeout = 10000;
     if (options.dataType == null)
@@ -7806,13 +7826,7 @@ function transfer_form_values($dst, $src, names) {
 handle_ui.on("js-signin", function (event) {
     var form = this, signin = document.getElementById("signin_signin");
     signin && (signin.disabled = true);
-    $.get(hoturl("api/session"), function (data) {
-        if (data && data.postvalue) {
-            siteinfo.postvalue = data.postvalue;
-            form.elements.post && (form.elements.post.value = siteinfo.postvalue);
-        }
-        form.submit();
-    });
+    $.get(hoturl("api/session"), function () { form.submit() });
 });
 
 handle_ui.on("js-no-signin", function (event) {
