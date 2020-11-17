@@ -232,6 +232,7 @@ class CommentInfo {
         return $result;
     }
 
+    /** @return ?string */
     private function unparse_commenter_pseudonym(Contact $viewer) {
         if ($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)) {
             return "Author";
@@ -242,7 +243,7 @@ class CommentInfo {
                    && $viewer->can_view_review($this->prow, $rrow)) {
             return "Reviewer " . unparseReviewOrdinal($rrow->reviewOrdinal);
         } else {
-            return false;
+            return null;
         }
     }
 
@@ -250,7 +251,7 @@ class CommentInfo {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::nameo_h($this, NAME_P|NAME_I);
         } else {
-            $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
+            $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
         }
         if ($this->commentType & COMMENTTYPE_RESPONSE) {
             $n = "<i>" . $this->unparse_response_text() . "</i>"
@@ -263,7 +264,7 @@ class CommentInfo {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::nameo($this, NAME_P|NAME_I);
         } else {
-            $n = $this->unparse_commenter_pseudonym($viewer) ? : "anonymous";
+            $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
         }
         if ($this->commentType & COMMENTTYPE_RESPONSE) {
             $n = $this->unparse_response_text()

@@ -3,37 +3,42 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Comment_SearchTerm extends SearchTerm {
+    /** @var ContactCountMatcher */
     private $csm;
+    /** @var ?TagSearchMatcher */
     private $tags;
-    private $type_mask = 0;
+    /** @var int */
+    private $type_mask = COMMENTTYPE_DRAFT;
+    /** @var int */
     private $type_value = 0;
+    /** @var bool */
     private $only_author = false;
     private $commentRound;
 
+    /** @param ?TagSearchMatcher $tags */
     function __construct(ContactCountMatcher $csm, $tags, $kwdef) {
         parent::__construct("cmt");
         $this->csm = $csm;
         $this->tags = $tags;
-        if (!get($kwdef, "response")) {
+        if (!$kwdef->response || !$kwdef->comment) {
             $this->type_mask |= COMMENTTYPE_RESPONSE;
+            $this->type_value |= $kwdef->comment ? 0 : COMMENTTYPE_RESPONSE;
         }
-        if (!get($kwdef, "comment")) {
-            $this->type_mask |= COMMENTTYPE_RESPONSE;
-            $this->type_value |= COMMENTTYPE_RESPONSE;
-        }
-        if (get($kwdef, "draft")) {
-            $this->type_mask |= COMMENTTYPE_DRAFT;
+        if ($kwdef->draft) {
             $this->type_value |= COMMENTTYPE_DRAFT;
         }
-        $this->only_author = get($kwdef, "only_author");
-        $this->commentRound = get($kwdef, "round");
+        $this->only_author = $kwdef->only_author;
+        $this->commentRound = $kwdef->round;
     }
     static function comment_factory($keyword, Contact $user, $kwfj, $m) {
         $tword = str_replace("-", "", $m[1]);
         return (object) [
-            "name" => $keyword, "parse_callback" => "Comment_SearchTerm::parse",
-            "response" => $tword === "any", "comment" => true,
-            "round" => null, "draft" => false,
+            "name" => $keyword,
+            "parse_callback" => "Comment_SearchTerm::parse",
+            "response" => $tword === "any",
+            "comment" => true,
+            "round" => null,
+            "draft" => false,
             "only_author" => $tword === "au" || $tword === "author",
             "has" => ">0"
         ];
@@ -51,10 +56,14 @@ class Comment_SearchTerm extends SearchTerm {
             return null;
         }
         return (object) [
-            "name" => $keyword, "parse_callback" => "Comment_SearchTerm::parse",
-            "response" => true, "comment" => false,
-            "round" => $round, "draft" => ($m[1] || $m[3]),
-            "only_author" => false, "has" => ">0"
+            "name" => $keyword,
+            "parse_callback" => "Comment_SearchTerm::parse",
+            "response" => true,
+            "comment" => false,
+            "round" => $round,
+            "draft" => $m[1] || $m[3],
+            "only_author" => false,
+            "has" => ">0"
         ];
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
