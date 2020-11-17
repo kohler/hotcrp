@@ -10,5 +10,9 @@
     {
         "match": "ra([1-9][0-9]*)([a-zA-Z]+)",
         "callback": "ReviewAccept_Capability::apply_review_acceptor"
+    },
+    {
+        "match": "kiosk-([a-zA-Z0-9]+)",
+        "callback": "MeetingTracker::apply_kiosk_capability"
     }
 ]

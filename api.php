@@ -49,7 +49,7 @@ function handle_api(Conf $conf, Contact $me, Qrequest $qreq) {
         $conf->set_siteurl($qreq->base);
     }
     if (!$me->has_account_here()
-        && ($key = $me->capability("tracker_kiosk"))) {
+        && ($key = $me->capability("@kiosk"))) {
         $kiosks = $conf->setting_json("__tracker_kiosk") ? : (object) array();
         if (isset($kiosks->$key) && $kiosks->$key->update_at >= Conf::$now - 172800) {
             if ($kiosks->$key->update_at < Conf::$now - 3600) {

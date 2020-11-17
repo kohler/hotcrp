@@ -39,8 +39,8 @@ function kiosk_manager(Contact $user, Qrequest $qreq) {
     if ($qreq->signout_to_kiosk && $qreq->post_ok()) {
         $user = LoginHelper::logout($user, false);
         ensure_session(ENSURE_SESSION_REGENERATE_ID);
-        $user->set_capability("tracker_kiosk", $kiosk_keys[$qreq->buzzer_showpapers ? 1 : 0]);
-        $user->conf->redirect_self($qreq);
+        $key = $kiosk_keys[$qreq->buzzer_showpapers ? 1 : 0];
+        $user->conf->redirect_self($qreq, ["__PATH__" => $key]);
     }
     return $kiosk_keys;
 }
@@ -48,9 +48,8 @@ if ($Me->is_track_manager()) {
     $kiosk_keys = kiosk_manager($Me, $Qreq);
 }
 
-function kiosk_lookup($key) {
-    global $Conf;
-    $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : []);
+function kiosk_lookup(Conf $conf, $key) {
+    $kiosks = (array) ($conf->setting_json("__tracker_kiosk") ? : []);
     if (isset($kiosks[$key]) && $kiosks[$key]->update_at >= Conf::$now - 604800) {
         return $kiosks[$key];
     } else {
@@ -59,12 +58,12 @@ function kiosk_lookup($key) {
 }
 
 $kiosk = null;
-if (!$Me->has_email()
-    && ($key = $Qreq->path_component(0))
-    && ($kiosk = kiosk_lookup($key))) {
-    $Me->set_capability("tracker_kiosk", $key);
-} else if (($key = $Me->capability("tracker_kiosk"))) {
-    $kiosk = kiosk_lookup($key);
+if (($key = $Qreq->path_component(0))
+    && ($kiosk = kiosk_lookup($Conf, $key))) {
+    $Me->set_capability("@kiosk", $key);
+    CapabilityInfo::set_default_cap_param("kiosk-{$key}", true);
+} else if (($key = $Me->capability("@kiosk"))) {
+    $kiosk = kiosk_lookup($Conf, $key);
 }
 if ($kiosk) {
     $Me->tracker_kiosk_state = $kiosk->show_papers ? 2 : 1;

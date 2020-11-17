@@ -140,8 +140,6 @@ class Contact {
     public $tracker_kiosk_state = 0;
     /** @var ?array<string,mixed> */
     private $_capabilities;
-    /** @var ?int */
-    private $_capability_cid;
     /** @var ?list<int> */
     private $_review_tokens;
     const OVERRIDE_CONFLICT = 1;
@@ -678,11 +676,6 @@ class Contact {
         }
 
         // Add capabilities from session and request
-        $cap = $this->session("cap");
-        if ($cap) {
-            $this->_capabilities = $cap;
-            ++self::$rights_version;
-        }
         if ($qreq && isset($qreq->cap)) {
             $this->apply_capability_text($qreq->cap);
             unset($qreq->cap, $_GET["cap"], $_POST["cap"]);
@@ -1415,14 +1408,6 @@ class Contact {
                     $this->_capabilities = null;
                 }
             }
-            if ($this->_activated && $name[0] !== "@") {
-                $savecap = [];
-                foreach ($this->_capabilities ? : [] as $k => $v) {
-                    if ($k[0] !== "@")
-                        $savecap[$k] = $v;
-                }
-                $this->save_session("cap", empty($savecap) ? null : $savecap);
-            }
             $this->update_my_rights();
             return true;
         } else {
@@ -1434,29 +1419,9 @@ class Contact {
     function apply_capability_text($text) {
         // Add capabilities from arguments
         foreach (preg_split('/\s+/', $text) as $s) {
-            if ($s !== "") {
-                $isadd = $s[0] !== "-";
-                if ($s[0] === "-" || $s[0] === "+") {
-                    $s = substr($s, 1);
-                }
-                if ($s !== "" && ($uf = $this->conf->capability_handler($s))) {
-                    call_user_func($uf->callback, $this, $uf, $isadd, $s);
-                }
+            if ($s !== "" && ($uf = $this->conf->capability_handler($s))) {
+                call_user_func($uf->callback, $this, $uf, $s);
             }
-        }
-    }
-
-    /** @return int */
-    function capability_cid() {
-        return $this->_capability_cid ?? 0;
-    }
-
-    /** @param int $cid */
-    function add_capability_cid($cid) {
-        if (($this->_capability_cid ?? $cid) === $cid) {
-            $this->_capability_cid = $cid;
-        } else {
-            $this->_capability_cid = 0;
         }
     }
 
@@ -3584,7 +3549,7 @@ class Contact {
                     && $rrow->reviewToken !== 0
                     && in_array($rrow->reviewToken, $this->_review_tokens, true))
                 || ($this->_capabilities !== null
-                    && ($this->_capabilities["@ra" . $rrow->paperId] ?? null) == $rrow->contactId));
+                    && ($this->_capabilities["@ra{$rrow->paperId}"] ?? null) == $rrow->contactId));
     }
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
@@ -3600,7 +3565,7 @@ class Contact {
                     && $rbase->reviewType === REVIEW_EXTERNAL
                     && $this->conf->ext_subreviews)
                 || ($this->_capabilities !== null
-                    && ($this->_capabilities["@ra" . $rbase->paperId] ?? null) == $rbase->contactId));
+                    && ($this->_capabilities["@ra{$rbase->paperId}"] ?? null) == $rbase->contactId));
     }
 
     /** @param ?ReviewInfo $rrow

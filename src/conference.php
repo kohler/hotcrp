@@ -4032,8 +4032,6 @@ class Conf {
             }
             if ($Me->has_account_here()) {
                 $siteinfo["user"]["cid"] = $Me->contactId;
-            } else if (($cid = $Me->capability_cid()) > 0) {
-                $siteinfo["user"]["capability_cid"] = $cid;
             }
         }
 

@@ -758,4 +758,11 @@ class MeetingTracker {
             $dl->tracker_site = $tcs;
         }
     }
+
+    static function apply_kiosk_capability(Contact $user, $uf) {
+        $user->set_capability("@kiosk", $uf->match_data[1]);
+        if ($user->is_activated()) {
+            CapabilityInfo::set_default_cap_param($uf->name, true);
+        }
+    }
 }

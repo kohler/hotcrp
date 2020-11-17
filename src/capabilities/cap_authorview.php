@@ -41,13 +41,13 @@ class AuthorView_Capability {
         return $start . $suffix;
     }
 
-    static function apply_old_author_view(Contact $user, $uf, $isadd) {
+    static function apply_old_author_view(Contact $user, $uf) {
         if (($prow = $user->conf->paper_by_id((int) $uf->match_data[1]))
             && ($uf->name === self::make($prow))
             && !$user->conf->opt("disableCapabilities")) {
-            $user->set_capability("@av{$prow->paperId}", $isadd ? true : null);
+            $user->set_capability("@av{$prow->paperId}", true);
             if ($user->is_activated()) {
-                CapabilityInfo::set_default_cap_param($uf->name, $isadd);
+                CapabilityInfo::set_default_cap_param($uf->name, true);
             }
         }
     }

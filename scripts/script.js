@@ -252,8 +252,6 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
         if (typeof data === "object"
             && data.sessioninfo
             && siteinfo.user.cid == data.sessioninfo.cid
-            && (siteinfo.user.cid
-                || siteinfo.user.capability_cid == data.sessioninfo.capability_cid)
             && options.url.startsWith(siteinfo.site_relative)
             && (siteinfo.site_relative !== "" || !/^[a-z]+:|^\//.test(options.url))) {
             siteinfo.postvalue = data.sessioninfo.postvalue;

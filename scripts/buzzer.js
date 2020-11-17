@@ -216,7 +216,7 @@ function do_kiosk() {
             + '</dd></dl>');
     if (show_papers)
         hc.push('<input type="hidden" name="buzzer_showpapers" value="1" />');
-    hc.push_actions(['<button type="submit" name="signout_to_kiosk" value="1">Enter kiosk mode</button>',
+    hc.push_actions(['<button type="submit" name="signout_to_kiosk" value="1" class="btn btn-danger">Enter kiosk mode</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 }

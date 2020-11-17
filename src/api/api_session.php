@@ -8,9 +8,6 @@ class Session_API {
         if ($user->contactId) {
             $si["cid"] = $user->contactId;
         }
-        if (($cid = $user->capability_cid())) {
-            $si["capability_cid"] = $cid;
-        }
         return ["ok" => $ok, "postvalue" => post_value(), "sessioninfo" => $si];
     }
 
