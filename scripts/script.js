@@ -286,10 +286,12 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
         for (i = 0; i !== success.length; ++i)
             success[i](rjson, jqxhr, status);
     }
-    var success = options.success, error = options.error;
+    var success = options.success || [], error = options.error;
+    if (!$.isArray(success))
+        success = [success];
     options.success = [onsuccess];
-    if (success)
-        Array.prototype.push.apply(options.success, $.isArray(success) ? success : [success]);
+    if (success.length)
+        Array.prototype.push.apply(options.success, success);
     options.error = [];
     if (error)
         Array.prototype.push.apply(options.error, $.isArray(error) ? error : [error]);
