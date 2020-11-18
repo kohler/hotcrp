@@ -234,7 +234,7 @@ class LoginHelper {
             }
             $info = self::forgot_password_info($conf, $qreq, true);
             if ($info["ok"] && $info["mailtemplate"] === "@resetpassword") {
-                $info["mailtemplate"] = "@newaccount";
+                $info["mailtemplate"] = "@newaccount.selfregister";
                 if (self::check_setup_phase($user)) {
                     $info["firstuser"] = true;
                 }

@@ -249,7 +249,7 @@ class Signin_Partial {
             } else {
                 $conf->msg("The system cannot send email at this time. You’ll need help from the site administrator to sign in.", 2);
             }
-        } else if ($info["mailtemplate"] === "@newaccount") {
+        } else if (strpos($info["mailtemplate"], "@newaccount") !== false) {
             $conf->msg("Sent mail to " . htmlspecialchars($user->email) . ". When you receive that mail, follow the link to set a password and sign in to the site.", "xconfirm");
         } else {
             $conf->msg("Sent mail to " . htmlspecialchars($user->email) . ". When you receive that mail, follow the link to reset your password.", "xconfirm");
