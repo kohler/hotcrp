@@ -89,7 +89,7 @@ class S3Client {
         }
     }
 
-    /** @param string $method
+    /** @param 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' $method
      * @param string $url
      * @param array<string,string> $hdr
      * @return array{headers:list<string>,signature:string} */
@@ -183,7 +183,7 @@ class S3Client {
     }
 
     /** @param string $skey
-     * @param string $method
+     * @param 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' $method
      * @param array<string,string|array<string,string>> $args
      * @return array{string,list<string>} */
     function signed_headers($skey, $method, $args) {
@@ -208,7 +208,7 @@ class S3Client {
 
     /** @template T
      * @param string $skey
-     * @param string $method
+     * @param 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' $method
      * @param array<string,string|array<string,string>> $args
      * @param callable(S3Result):T $finisher
      * @return S3Result<T> */

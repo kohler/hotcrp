@@ -9,7 +9,7 @@ abstract class S3Result {
     /** @var string
      * @readonly */
     public $skey;
-    /** @var string
+    /** @var 'GET'|'POST'|'HEAD'|'PUT'|'DELETE'
      * @readonly */
     protected $method;
     /** @var string */
@@ -25,7 +25,7 @@ abstract class S3Result {
     private $finisher;
 
     /** @param string $skey
-     * @param string $method
+     * @param 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' $method
      * @param array<string,string> $args
      * @param callable(S3Result):T $finisher */
     function __construct(S3Client $s3, $skey, $method, $args, $finisher) {
@@ -47,7 +47,7 @@ abstract class S3Result {
         $this->response_headers = $this->user_data = [];
     }
 
-    /** @return string */
+    /** @return 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' */
     function method() {
         return $this->method;
     }
@@ -103,7 +103,7 @@ class StreamS3Result extends S3Result {
     private $body;
 
     /** @param string $skey
-     * @param string $method
+     * @param 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' $method
      * @param array<string,string> $args
      * @param callable(S3Result):T $finisher */
     function __construct(S3Client $s3, $skey, $method, $args, $finisher) {

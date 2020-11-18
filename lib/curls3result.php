@@ -25,7 +25,7 @@ class CurlS3Result extends S3Result {
     private $observed_success_timeout;
 
     /** @param string $skey
-     * @param string $method
+     * @param 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' $method
      * @param array<string,string> $args
      * @param callable(S3Result):T $finisher */
     function __construct(S3Client $s3, $skey, $method, $args, $finisher) {
