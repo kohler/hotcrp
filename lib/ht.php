@@ -16,23 +16,27 @@ class Ht {
     const ATTR_BOOL = 2;
     const ATTR_BOOLTEXT = 3;
     const ATTR_NOEMPTY = 4;
-    private static $_attr_type = array("accept-charset" => self::ATTR_SKIP,
-                                       "action" => self::ATTR_SKIP,
-                                       "autofocus" => self::ATTR_BOOL,
-                                       "checked" => self::ATTR_BOOL,
-                                       "class" => self::ATTR_NOEMPTY,
-                                       "data-default-checked" => self::ATTR_BOOLTEXT,
-                                       "disabled" => self::ATTR_BOOL,
-                                       "enctype" => self::ATTR_SKIP,
-                                       "formnovalidate" => self::ATTR_BOOL,
-                                       "method" => self::ATTR_SKIP,
-                                       "multiple" => self::ATTR_BOOL,
-                                       "novalidate" => self::ATTR_BOOL,
-                                       "optionstyles" => self::ATTR_SKIP,
-                                       "readonly" => self::ATTR_BOOL,
-                                       "required" => self::ATTR_BOOL,
-                                       "spellcheck" => self::ATTR_BOOLTEXT,
-                                       "type" => self::ATTR_SKIP);
+    private static $_attr_type = [
+        "accept-charset" => self::ATTR_SKIP,
+        "action" => self::ATTR_SKIP,
+        "async" => self::ATTR_BOOL,
+        "autofocus" => self::ATTR_BOOL,
+        "checked" => self::ATTR_BOOL,
+        "class" => self::ATTR_NOEMPTY,
+        "data-default-checked" => self::ATTR_BOOLTEXT,
+        "defer" => self::ATTR_BOOL,
+        "disabled" => self::ATTR_BOOL,
+        "enctype" => self::ATTR_SKIP,
+        "formnovalidate" => self::ATTR_BOOL,
+        "method" => self::ATTR_SKIP,
+        "multiple" => self::ATTR_BOOL,
+        "novalidate" => self::ATTR_BOOL,
+        "optionstyles" => self::ATTR_SKIP,
+        "readonly" => self::ATTR_BOOL,
+        "required" => self::ATTR_BOOL,
+        "spellcheck" => self::ATTR_BOOLTEXT,
+        "type" => self::ATTR_SKIP
+    ];
 
     /** @param ?array<string,mixed> $js
      * @return string */
