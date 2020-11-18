@@ -101,7 +101,7 @@ if ($prow && $Qreq->m === "api" && isset($Qreq->fn) && $Conf->has_api($Qreq->fn)
 
 
 // cancel action
-if ($Qreq->cancel && $Qreq->is_post()) {
+if ($Qreq->cancel) {
     if ($prow && $prow->timeSubmitted && $Qreq->m === "edit") {
         unset($Qreq->m);
     }
