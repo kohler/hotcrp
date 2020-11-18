@@ -15,7 +15,7 @@ foreach (["emailNote", "reason"] as $x) {
 if (isset($Qreq->p)
     && ctype_digit($Qreq->p)
     && !$Qreq->path()
-    && !$Qreq->post_ok()) {
+    && $Qreq->is_get()) {
     $Conf->redirect_self($Qreq);
 }
 if (!isset($Qreq->p)
@@ -42,7 +42,7 @@ if ($Qreq->p === "new" && $Me->privChair && !$Conf->timeStartPaper()) {
 if ($Me->is_empty()) {
     $Me->escape();
 }
-if ($Qreq->post_ok() && !$Me->has_account_here()) {
+if ($Qreq->valid_token() && !$Me->has_account_here()) {
     if (isset($Qreq->update) && $Me->can_start_paper()) {
         $Me->activate_database_account();
     } else {
@@ -78,6 +78,14 @@ if ($Qreq->post && $Qreq->post_empty()) {
     Conf::$main->post_missing_msg();
 }
 
+// cancel action
+if ($Qreq->cancel) {
+    if ($prow && $prow->timeSubmitted && $Qreq->m === "edit") {
+        unset($Qreq->m);
+    }
+    $Conf->redirect_self($Qreq);
+}
+
 
 // grab paper row
 function loadRows() {
@@ -101,7 +109,7 @@ if ($prow && $Qreq->m === "api" && isset($Qreq->fn) && $Conf->has_api($Qreq->fn)
 
 
 // withdraw and revive actions
-if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
+if (isset($Qreq->withdraw) && $prow && $Qreq->valid_post()) {
     if (!($whyNot = $Me->perm_withdraw_paper($prow))) {
         $reason = (string) $Qreq->reason;
         if ($reason === ""
@@ -142,7 +150,8 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->post_ok()) {
         Conf::msg_error(whyNotText($whyNot) . " The submission has not been withdrawn.");
     }
 }
-if (isset($Qreq->revive) && $prow && $Qreq->post_ok()) {
+
+if (isset($Qreq->revive) && $prow && $Qreq->valid_post()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
         $aset = new AssignmentSet($Me, true);
         $aset->enable_papers($prow);
@@ -360,7 +369,7 @@ function update_paper(Qrequest $qreq, $action) {
 }
 
 
-if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
+if (($Qreq->update || $Qreq->submitfinal) && $Qreq->valid_post()) {
     // choose action
     $action = "update";
     if ($Qreq->submitfinal && $prow) {
@@ -387,7 +396,7 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->post_ok()) {
              && $Me->can_finalize_paper($prow));
 }
 
-if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
+if ($Qreq->updatecontacts && $Qreq->valid_post() && $prow) {
     if ($Me->can_administer($prow) || $Me->act_author_view($prow)) {
         $ps = new PaperStatus($Conf, $Me);
         if ($ps->prepare_save_paper_web($Qreq, $prow, "updatecontacts")) {
@@ -409,13 +418,13 @@ if ($Qreq->updatecontacts && $Qreq->post_ok() && $prow) {
     $useRequest = true;
 }
 
-if ($Qreq->updateoverride && $Qreq->post_ok() && $prow) {
+if ($Qreq->updateoverride && $Qreq->valid_post() && $prow) {
     $Conf->redirect_self($Qreq, ["p" => $prow->paperId, "m" => "edit", "forceShow" => 1]);
 }
 
 
 // delete action
-if ($Qreq->delete && $Qreq->post_ok()) {
+if ($Qreq->delete && $Qreq->valid_post()) {
     if (!$prow) {
         $Conf->confirmMsg("Submission deleted.");
     } else if (!$Me->can_administer($prow)) {
@@ -431,12 +440,6 @@ if ($Qreq->delete && $Qreq->post_ok()) {
         $prow = null;
         errorMsgExit("");
     }
-}
-if ($Qreq->cancel && $Qreq->post_ok()) {
-    if ($prow && $prow->timeSubmitted && $Qreq->m === "edit") {
-        unset($Qreq->m);
-    }
-    $Conf->redirect_self($Qreq);
 }
 
 

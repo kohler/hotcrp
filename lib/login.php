@@ -72,7 +72,7 @@ class LoginHelper {
 
     static function login_info(Conf $conf, Qrequest $qreq) {
         assert(!$conf->external_login());
-        assert($qreq->post_ok());
+        assert($qreq->valid_post());
 
         $user = self::user_lookup($conf, $qreq);
         if (is_array($user)) {
@@ -213,7 +213,7 @@ class LoginHelper {
 
     static function new_account_info(Conf $conf, Qrequest $qreq) {
         assert($conf->allow_user_self_register());
-        assert($qreq->post_ok());
+        assert($qreq->valid_post());
 
         $user = self::user_lookup($conf, $qreq);
         if (is_array($user)) {

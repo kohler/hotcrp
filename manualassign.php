@@ -104,10 +104,12 @@ function saveAssignments($qreq, $reviewer) {
 }
 
 
-if ($Qreq->update && $reviewer && $Qreq->post_ok()) {
-    saveAssignments($Qreq, $reviewer);
-} else if ($Qreq->update) {
-    Conf::msg_error("You need to select a reviewer.");
+if ($Qreq->update && $Qreq->valid_post()) {
+    if ($reviewer) {
+        saveAssignments($Qreq, $reviewer);
+    } else {
+        Conf::msg_error("You need to select a reviewer.");
+    }
 }
 
 

@@ -43,6 +43,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function is_post() {
         return $this->____method === "POST";
     }
+    /** @return bool */
+    function is_head() {
+        return $this->____method === "HEAD";
+    }
     /** @return ?string */
     function page() {
         return $this->____page;
@@ -287,13 +291,30 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function set_annex($name, $x) {
         $this->____x[$name] = $x;
     }
-    function approve_post() {
+    /** @return void */
+    function approve_token() {
         $this->____post_ok = true;
     }
     /** @return bool */
-    function post_ok() {
+    function valid_token() {
         return $this->____post_ok;
     }
+    /** @deprecated
+     * @return bool */
+    function post_ok() {
+        if ($this->____post_ok && $this->____method !== "POST") {
+            error_log("Qrequest::post_ok() on {$this->____method}");
+        }
+        return $this->____post_ok;
+    }
+    /** @return bool */
+    function valid_post() {
+        if ($this->____post_ok && $this->____method !== "POST") {
+            error_log("Qrequest::valid_post() on {$this->____method}");
+        }
+        return $this->____post_ok && $this->____method === "POST";
+    }
+    /** @return void */
     function set_post_empty() {
         $this->____post_empty = true;
     }
@@ -304,12 +325,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
     function xt_allow($e) {
         if ($e === "post") {
-            return $this->method() === "POST" && $this->post_ok();
+            return $this->____method === "POST" && $this->____post_ok;
         } else if ($e === "anypost") {
-            return $this->method() === "POST";
+            return $this->____method === "POST";
         } else if ($e === "getpost") {
-            return ($this->method() === "POST" || $this->method() === "GET")
-                && $this->post_ok();
+            return in_array($this->____method, ["POST", "GET", "HEAD"]) && $this->____post_ok;
         } else if (str_starts_with($e, "req.")) {
             foreach (explode(" ", $e) as $w) {
                 if (str_starts_with($w, "req.")

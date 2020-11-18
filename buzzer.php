@@ -36,7 +36,7 @@ function kiosk_manager(Contact $user, Qrequest $qreq) {
         $user->conf->save_setting("__tracker_kiosk", 1, $kiosks);
     }
     // maybe sign out to kiosk
-    if ($qreq->signout_to_kiosk && $qreq->post_ok()) {
+    if ($qreq->signout_to_kiosk && $qreq->valid_post()) {
         $user = LoginHelper::logout($user, false);
         ensure_session(ENSURE_SESSION_REGENERATE_ID);
         $key = $kiosk_keys[$qreq->buzzer_showpapers ? 1 : 0];

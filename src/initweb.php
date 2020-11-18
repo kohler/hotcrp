@@ -5,37 +5,6 @@
 require_once("init.php");
 global $Conf, $Me, $Qreq;
 
-// Check method: GET/HEAD/POST only, except OPTIONS is allowed for API calls
-if (!($_SERVER["REQUEST_METHOD"] === "GET"
-      || $_SERVER["REQUEST_METHOD"] === "HEAD"
-      || $_SERVER["REQUEST_METHOD"] === "POST"
-      || (Navigation::page() === "api"
-          && $_SERVER["REQUEST_METHOD"] === "OPTIONS"))) {
-    header("HTTP/1.0 405 Method Not Allowed");
-    exit;
-}
-
-// Check for PHP suffix
-if (Conf::$main->opt("phpSuffix") !== null) {
-    Navigation::get()->php_suffix = Conf::$main->opt("phpSuffix");
-}
-
-// Collect $Qreq
-$Qreq = Qrequest::make_global();
-
-// Check for redirect to https
-if (Conf::$main->opt("redirectToHttps")) {
-    Navigation::redirect_http_to_https(Conf::$main->opt("allowLocalHttp"));
-}
-
-// Mark as already expired to discourage caching, but allow the browser
-// to cache for history buttons
-header("Cache-Control: max-age=0,must-revalidate,private");
-
-// Set up Content-Security-Policy if appropriate
-Conf::$main->prepare_content_security_policy();
-
-// Initialize user if required
 function initialize_user_redirect($nav, $uindex, $nusers) {
     if ($nav->page === "api") {
         if ($nusers === 0) {
@@ -54,10 +23,44 @@ function initialize_user_redirect($nav, $uindex, $nusers) {
     }
 }
 
-function initialize_user() {
+function initialize_web() {
     global $Qreq;
     $conf = Conf::$main;
     $nav = Navigation::get();
+
+    // check PHP suffix
+    if (($php_suffix = Conf::$main->opt("phpSuffix")) !== null) {
+        $nav->php_suffix = $php_suffix;
+    }
+
+    // maybe redirect to https
+    if (Conf::$main->opt("redirectToHttps")) {
+        Navigation::redirect_http_to_https(Conf::$main->opt("allowLocalHttp"));
+    }
+
+    // collect $Qreq
+    $Qreq = Qrequest::make_global();
+
+    // check method
+    if ($Qreq->method() !== "GET"
+        && $Qreq->method() !== "POST"
+        && $Qreq->method() !== "HEAD"
+        && ($Qreq->method() !== "OPTIONS" || $nav->page !== "api")) {
+        header("HTTP/1.0 405 Method Not Allowed");
+        exit;
+    }
+
+    // mark as already expired to discourage caching, but allow the browser
+    // to cache for history buttons
+    header("Cache-Control: max-age=0,must-revalidate,private");
+
+    // set up Content-Security-Policy if appropriate
+    Conf::$main->prepare_content_security_policy();
+
+    // skip user initialization if requested
+    if (Contact::$no_guser) {
+        return;
+    }
 
     // set up session
     if (($sh = $conf->opt["sessionHandler"] ?? null)) {
@@ -73,7 +76,7 @@ function initialize_user() {
         $sid = $_COOKIE[$sn];
         $l = strlen($Qreq->post);
         if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
-            $Qreq->approve_post();
+            $Qreq->approve_token();
         } else if ($_SERVER["REQUEST_METHOD"] === "POST") {
             error_log("{$conf->dbname}: bad post={$Qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
         }
@@ -180,6 +183,4 @@ function initialize_user() {
     }
 }
 
-if (!Contact::$no_guser) {
-    initialize_user();
-}
+initialize_web();

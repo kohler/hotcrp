@@ -42,7 +42,7 @@ function change_email_by_capability($Qreq) {
         if ($newcdbu->contactdb_disabled()) { // NB do not use is_disabled()
             Conf::msg_error("changeemail", "That user is globally disabled.");
             return false;
-        } else if ($Qreq->go && $Qreq->post_ok()) {
+        } else if ($Qreq->go && $Qreq->valid_post()) {
             $Qreq->password = trim((string) $Qreq->password);
             $info = $newcdbu->check_password_info($Qreq->password);
             if (!$info["ok"]) {
@@ -55,7 +55,7 @@ function change_email_by_capability($Qreq) {
 
     if ($newemail
         && $Qreq->go
-        && $Qreq->post_ok()) {
+        && $Qreq->valid_post()) {
         $Acct->change_email($newemail);
         $capdata->delete();
         $Conf->confirmMsg("Your email address has been changed.");
@@ -416,7 +416,7 @@ function parseBulkFile($text, $filename) {
     return empty($errors);
 }
 
-if (!$Qreq->post_ok()) {
+if (!$Qreq->valid_post()) {
     // do nothing
 } else if ($Qreq->savebulk && $newProfile && $Qreq->has_file("bulk")) {
     if (($text = $Qreq->file_contents("bulk")) === false) {
@@ -477,7 +477,7 @@ if (!$Qreq->post_ok()) {
     $Conf->redirect_hoturl("mergeaccounts");
 }
 
-if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->post_ok()) {
+if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->valid_post()) {
     if (!$Me->privChair) {
         Conf::msg_error("Only administrators can delete accounts.");
     } else if ($Acct->contactId == $Me->contactId) {

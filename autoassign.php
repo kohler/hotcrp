@@ -13,7 +13,7 @@ if (!$Me->is_manager()) {
 if (!isset($Qreq->q) || trim($Qreq->q) === "(All)") {
     $Qreq->q = "";
 }
-if ($Qreq->post_ok()) {
+if ($Qreq->valid_post()) {
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 }
 
@@ -60,7 +60,7 @@ if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POS
     if ($Conf->setting("autoassign_badpairs")) {
         $Qreq->badpairs = 1;
     }
-} else if ($Me->privChair && isset($Qreq->assign) && $Qreq->post_ok()) {
+} else if ($Me->privChair && isset($Qreq->assign) && $Qreq->valid_post()) {
     $x = array();
     for ($i = 1; isset($Qreq["bpa$i"]); ++$i) {
         if ($Qreq["bpa$i"]
@@ -150,7 +150,7 @@ function sanitize_qreq_redirect($qreq) {
 if ($Qreq->saveassignment
     && $Qreq->submit
     && isset($Qreq->assignment)
-    && $Qreq->post_ok()) {
+    && $Qreq->valid_post()) {
     $assignset = new AssignmentSet($Me, true);
     $assignset->enable_papers($SSel->selection());
     $assignset->parse($Qreq->assignment);
@@ -546,7 +546,7 @@ echo '<div class="psmode">',
     '<div class="papmode"><a href="', $Conf->hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c">';
 
-if (isset($Qreq->a) && isset($Qreq->pctyp) && $Qreq->post_ok()) {
+if (isset($Qreq->a) && isset($Qreq->pctyp) && $Qreq->valid_post()) {
     if (isset($Qreq->assignment) && isset($Qreq->showassignment)) {
         $ai = new AutoassignerInterface($Me, $Qreq, $SSel);
         $ai->echo_result();

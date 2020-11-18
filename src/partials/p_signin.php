@@ -40,7 +40,7 @@ class Signin_Partial {
             Navigation::redirect();
         } else if ($user->conf->opt("httpAuthLogin")) {
             LoginHelper::check_http_auth($user, $qreq);
-        } else if ($qreq->post_ok()) {
+        } else if ($qreq->valid_post()) {
             if (!$user->is_empty() && strcasecmp($qreq->email, $user->email) === 0) {
                 Navigation::redirect();
             } else if (!$qreq->start) {
@@ -202,7 +202,7 @@ class Signin_Partial {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
             Navigation::redirect();
-        } else if ($qreq->post_ok()) {
+        } else if ($qreq->valid_post()) {
             LoginHelper::logout($user, true);
             Navigation::redirect($user->conf->hoturl("index", "signedout=1"));
         } else if (!isset($_SESSION) || $user->is_empty()) {
@@ -285,7 +285,7 @@ class Signin_Partial {
             Navigation::redirect();
         } else if (!$user->conf->allow_user_self_register()) {
             // do nothing
-        } else if ($qreq->post_ok()) {
+        } else if ($qreq->valid_post()) {
             $info = LoginHelper::new_account_info($user->conf, $qreq);
             if ($info["ok"]) {
                 $prep = self::mail_user($user->conf, $info);
@@ -349,7 +349,7 @@ class Signin_Partial {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
             Navigation::redirect();
-        } else if ($qreq->post_ok()) {
+        } else if ($qreq->valid_post()) {
             $info = LoginHelper::forgot_password_info($user->conf, $qreq, false);
             if ($info["ok"]) {
                 self::mail_user($user->conf, $info);
@@ -416,9 +416,9 @@ class Signin_Partial {
         if (preg_match('/\A\/?(U?[12][-\w]+)\/?\z/', $resetcap, $m)) {
             $this->_reset_cap = $m[1];
         } else if (strpos($resetcap, "@") !== false) {
-            if ($qreq->method() === "POST" && $qreq->post_ok()) {
+            if ($qreq->valid_post()) {
                 $nqreq = new Qrequest("POST", ["email" => $resetcap]);
-                $nqreq->approve_post();
+                $nqreq->approve_token();
                 $nqreq->set_annex("redirect", $user->conf->hoturl("resetpassword"));
                 self::forgot_request($user, $nqreq); // may redirect
                 if (Ht::problem_status_at("email")) {
@@ -439,8 +439,7 @@ class Signin_Partial {
 
         // check passwords
         if ($this->_reset_user
-            && $qreq->method() === "POST"
-            && $qreq->post_ok()) {
+            && $qreq->valid_post()) {
             $p1 = (string) $qreq->password;
             $p2 = (string) $qreq->password2;
             if ($p1 === "") {

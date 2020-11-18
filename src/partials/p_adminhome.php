@@ -4,14 +4,15 @@
 
 class AdminHome_Partial {
     static function check_admin(Contact $user, Qrequest $qreq) {
-        assert($user->privChair && $qreq->post_ok());
-        // NB check post_ok(), but do not check method
-        if (isset($qreq->clearbug)) {
+        assert($user->privChair && $qreq->valid_token());
+        if (isset($qreq->clearbug)
+            && !$qreq->is_head()) {
             $user->conf->save_setting("bug_" . $qreq->clearbug, null);
         }
         if (isset($qreq->clearnewpcrev)
             && ctype_digit($qreq->clearnewpcrev)
-            && $user->conf->setting("pcrev_informtime", 0) <= $qreq->clearnewpcrev) {
+            && $user->conf->setting("pcrev_informtime", 0) <= $qreq->clearnewpcrev
+            && !$qreq->is_head()) {
             $user->conf->save_setting("pcrev_informtime", $qreq->clearnewpcrev);
         }
         if (isset($qreq->clearbug) || isset($qreq->clearnewpcrev)) {

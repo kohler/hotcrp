@@ -5,7 +5,10 @@
 require_once("src/initweb.php");
 header("Content-Type: " . ($Qreq->text ? "text/plain" : "application/json"));
 
-if ($Me->privChair && $Qreq->post_ok() && isset($Qreq->ignore)) {
+if ($Me->privChair
+    && $Qreq->valid_token()
+    && !$Qreq->is_head()
+    && isset($Qreq->ignore)) {
     $when = time() + 86400 * 2;
     $Conf->qe("insert into Settings (name, value) values (?, ?) on duplicate key update value=?", "ignoreupdate_" . $Qreq->ignore, $when, $when);
 }

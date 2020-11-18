@@ -7,6 +7,10 @@ if (!$Me->privChair) {
     $Me->escape();
 }
 
+if (isset($Qreq->cancel)) {
+    $Conf->redirect_self($Qreq);
+}
+
 $Sv = SettingValues::make_request($Me, $Qreq);
 $Sv->session_highlight();
 
@@ -42,7 +46,7 @@ function choose_setting_group($qreq, SettingValues $sv) {
 $Group = $Qreq->group = choose_setting_group($Qreq, $Sv);
 $_SESSION["sg"] = $Group;
 
-if (isset($Qreq->update) && $Qreq->post_ok()) {
+if (isset($Qreq->update) && $Qreq->valid_post()) {
     if ($Sv->execute()) {
         $Me->save_session("settings_highlight", $Sv->message_field_map());
         if (!empty($Sv->updated_fields())) {
@@ -53,9 +57,6 @@ if (isset($Qreq->update) && $Qreq->post_ok()) {
         $Sv->report();
         $Conf->redirect_self($Qreq);
     }
-}
-if (isset($Qreq->cancel) && $Qreq->post_ok()) {
-    $Conf->redirect_self($Qreq);
 }
 
 $Sv->crosscheck();
@@ -84,7 +85,7 @@ echo '</ul><div class="leftmenu-if-left if-alert mt-5">',
     '<main class="leftmenu-content main-column">',
     '<h2 class="leftmenu">', $Sv->group_title($Group), '</h2>';
 
-$Sv->report(isset($Qreq->update) && $Qreq->post_ok());
+$Sv->report(isset($Qreq->update) && $Qreq->valid_post());
 $Sv->render_group(strtolower($Group), ["top" => true]);
 
 

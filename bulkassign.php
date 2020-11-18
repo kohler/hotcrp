@@ -12,7 +12,7 @@ $null_mailer = new HotCRPMailer($Conf, null, [
 ]);
 
 $Qreq->rev_round = (string) $Conf->sanitize_round_name($Qreq->rev_round);
-if ($Qreq->post_ok()) {
+if ($Qreq->valid_post()) {
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 }
 
@@ -90,7 +90,7 @@ if (isset($Qreq->saveassignment) && isset($Qreq->cancel)) {
 
 // perform quick assignments all at once
 if (isset($Qreq->saveassignment)
-    && $Qreq->post_ok()
+    && $Qreq->valid_post()
     && isset($Qreq->file)
     && $Qreq->assignment_size_estimate < 1000
     && complete_assignment($Qreq, null)) {
@@ -112,7 +112,7 @@ if (isset($Qreq->bulkentry) && trim($Qreq->bulkentry) === "Enter assignments") {
     unset($Qreq->bulkentry);
 }
 if (isset($Qreq->upload)
-    && $Qreq->post_ok()
+    && $Qreq->valid_post()
     && ($Qreq->bulkentry || $Qreq->has_file("bulk"))) {
     flush();
     while (@ob_end_flush()) {
@@ -175,7 +175,7 @@ if (isset($Qreq->upload)
 }
 
 if (isset($Qreq->saveassignment)
-    && $Qreq->post_ok()
+    && $Qreq->valid_post()
     && isset($Qreq->file)
     && $Qreq->assignment_size_estimate >= 1000) {
     complete_assignment($Qreq, "keep_browser_alive");

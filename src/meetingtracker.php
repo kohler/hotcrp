@@ -271,7 +271,7 @@ class MeetingTracker {
         // or call `json_exit` on error.
 
         // track="IDENTIFIER POSITION" or track="IDENTIFIER stop" or track=stop
-        if (!$user->is_track_manager() || !$qreq->post_ok()) {
+        if (!$user->is_track_manager() || !$qreq->valid_post()) {
             return json_exit(403, "Permission error.");
         }
 
@@ -407,7 +407,7 @@ class MeetingTracker {
     }
 
     static function trackerconfig_api(Contact $user, $qreq) {
-        if (!$user->is_track_manager() || !$qreq->post_ok()) {
+        if (!$user->is_track_manager() || !$qreq->valid_post()) {
             return json_exit(403, "Permission error.");
         }
 

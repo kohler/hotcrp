@@ -582,13 +582,14 @@ if (!$Qreq->loadtmpl
     && !$Qreq->psearch
     && !$Qreq->again
     && !$recip->error
-    && $Qreq->post_ok()) {
-    if ($Qreq->send && $Qreq->mailid)
+    && $Qreq->valid_post()) {
+    if ($Qreq->send && $Qreq->mailid) {
         MailSender::send2($Me, $recip, $Qreq);
-    else if ($Qreq->send)
+    } else if ($Qreq->send) {
         MailSender::send1($Me, $recip, $Qreq);
-    else if ($Qreq->check || $Qreq->group || $Qreq->ungroup)
+    } else if ($Qreq->check || $Qreq->group || $Qreq->ungroup) {
         MailSender::check($Me, $recip, $Qreq);
+    }
 }
 
 

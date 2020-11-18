@@ -133,7 +133,7 @@ function savesearch() {
     }
 }
 
-if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && $Qreq->post_ok()) {
+if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && $Qreq->valid_post()) {
     savesearch();
 }
 

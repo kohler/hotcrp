@@ -265,7 +265,7 @@ function modify_confirm($j, $ok_message, $ok_message_optional) {
     }
 }
 
-if ($Viewer->privChair && $Qreq->modifygo && $Qreq->post_ok() && isset($papersel)) {
+if ($Viewer->privChair && $Qreq->modifygo && $Qreq->valid_post() && isset($papersel)) {
     if ($Qreq->modifytype == "disableaccount") {
         modify_confirm(UserActions::disable($Viewer, $papersel), "Accounts disabled.", true);
     } else if ($Qreq->modifytype == "enableaccount") {
@@ -343,7 +343,7 @@ function do_tags($qreq) {
     }
 }
 
-if ($Viewer->privChair && $Qreq->tagact && $Qreq->post_ok() && isset($papersel)
+if ($Viewer->privChair && $Qreq->tagact && $Qreq->valid_post() && isset($papersel)
     && preg_match('/\A[ads]\z/', (string) $Qreq->tagtype)) {
     do_tags($Qreq);
 }

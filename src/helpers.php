@@ -171,7 +171,7 @@ function json_exit($json, $arg2 = null) {
     if (JsonResultException::$capturing) {
         throw new JsonResultException($json);
     } else {
-        $json->emit($Qreq && $Qreq->post_ok());
+        $json->emit($Qreq && $Qreq->valid_token());
         exit;
     }
 }

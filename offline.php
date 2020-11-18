@@ -3,8 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-if (!$Me->email)
+if (!$Me->email) {
     $Me->escape();
+}
 $rf = $Conf->review_form();
 
 
@@ -26,7 +27,7 @@ if (isset($Qreq->downloadForm)) {
 // upload review form action
 if (isset($Qreq->uploadForm)
     && $Qreq->has_file("uploadedFile")
-    && $Qreq->post_ok()) {
+    && $Qreq->valid_post()) {
     $tf = ReviewValues::make_text($rf, $Qreq->file_contents("uploadedFile"),
                         $Qreq->file_filename("uploadedFile"));
     while ($tf->parse_text($Qreq->override))
@@ -68,7 +69,7 @@ function setTagIndexes(Contact $user, $qreq) {
 }
 if ((isset($Qreq->setvote) || isset($Qreq->setrank))
     && $Me->is_reviewer()
-    && $Qreq->post_ok()) {
+    && $Qreq->valid_post()) {
     setTagIndexes($Me, $Qreq);
 }
 

@@ -124,16 +124,18 @@ function pcAssignments($qreq) {
     }
 }
 
-if (isset($Qreq->update) && $Me->allow_administer($prow) && $Qreq->post_ok()) {
-    pcAssignments($Qreq);
-} else if (isset($Qreq->update) && $Qreq->ajax) {
-    json_exit(["ok" => false, "error" => "Only administrators can assign papers."]);
+if (isset($Qreq->update) && $Qreq->valid_post()) {
+    if ($Me->allow_administer($prow)) {
+        pcAssignments($Qreq);
+    } else if ($Qreq->ajax) {
+        json_exit(["ok" => false, "error" => "Only administrators can assign papers."]);
+    }
 }
 
 
 // add review requests
 if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
-    && $Qreq->post_ok()) {
+    && $Qreq->valid_post()) {
     $result = RequestReview_API::requestreview($Me, $Qreq, $prow);
     $result = JsonResult::make($result);
     if ($result->content["ok"]) {
@@ -158,7 +160,7 @@ if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
 
 // deny review request
 if ((isset($Qreq->deny) || isset($Qreq->denyreview))
-    && $Qreq->post_ok()) {
+    && $Qreq->valid_post()) {
     $result = RequestReview_API::denyreview($Me, $Qreq, $prow);
     $result = JsonResult::make($result);
     if ($result->content["ok"]) {
@@ -173,7 +175,7 @@ if ((isset($Qreq->deny) || isset($Qreq->denyreview))
 
 // retract review request
 if (isset($Qreq->retractreview)
-    && $Qreq->post_ok()) {
+    && $Qreq->valid_post()) {
     $result = RequestReview_API::retractreview($Me, $Qreq, $prow);
     $result = JsonResult::make($result);
     if ($result->content["ok"]) {
@@ -190,9 +192,9 @@ if (isset($Qreq->retractreview)
     }
 }
 
-// retract review request
+// remove declined review
 if (isset($Qreq->undeclinereview)
-    && $Qreq->post_ok()) {
+    && $Qreq->valid_post()) {
     $result = RequestReview_API::undeclinereview($Me, $Qreq, $prow);
     $result = JsonResult::make($result);
     if ($result->content["ok"]) {

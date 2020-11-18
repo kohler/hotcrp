@@ -32,7 +32,7 @@ class ListAction {
     static private function do_call($name, Contact $user, Qrequest $qreq, $selection) {
         if ($qreq->method() !== "GET"
             && $qreq->method() !== "HEAD"
-            && !$qreq->post_ok()) {
+            && !$qreq->valid_token()) {
             return new JsonResult(403, "Missing credentials.");
         }
         $conf = $user->conf;

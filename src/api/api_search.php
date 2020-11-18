@@ -61,7 +61,7 @@ class Search_API {
         foreach ($pl->message_set()->message_texts() as $m) {
             $j["errors"][] = $m;
         }
-        if ($j["ok"] && $qreq->session && $qreq->post_ok()) {
+        if ($j["ok"] && $qreq->session && $qreq->valid_token() && !$qreq->is_head()) {
             Session_API::setsession($user, $qreq->session);
         }
         return $j;

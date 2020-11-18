@@ -30,7 +30,7 @@ function gx_call_requests(Conf $conf, Contact $user, Qrequest $qreq, $group, Gro
             $not_allowed = true;
         }
     }
-    if ($not_allowed && $qreq->method() === "POST" && !$qreq->post_ok()) {
+    if ($not_allowed && $qreq->is_post() && !$qreq->valid_token()) {
         $conf->msg($conf->_i("badpost"), 2);
     }
     foreach ($reqgj as $gj) {

@@ -4761,7 +4761,7 @@ class Conf {
         if ($method !== "GET"
             && $method !== "HEAD"
             && $method !== "OPTIONS"
-            && !$qreq->post_ok()
+            && !$qreq->valid_token()
             && (!$uf || ($uf->post ?? false))
             && (!$uf || !($uf->allow_xss ?? false))) {
             return new JsonResult(403, "Missing credentials.");

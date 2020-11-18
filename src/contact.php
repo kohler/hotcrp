@@ -1452,7 +1452,7 @@ class Contact {
             }
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITE_RELATIVE);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, Conf::$now + 120];
-            if ($qreq->post_ok()) {
+            if ($qreq->valid_token()) {
                 $this->conf->errorMsg("You must sign in to access that page. Your changes were not saved; after signing in, you may submit them again.");
             } else {
                 $this->conf->errorMsg("You must sign in to access that page.");

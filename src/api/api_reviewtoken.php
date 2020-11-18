@@ -6,7 +6,7 @@ class ReviewToken_API {
     static function run(Contact $user, Qrequest $qreq) {
         assert(!$user->is_empty());
         $confirm = null;
-        if ($qreq->is_post() && $qreq->post_ok() && isset($qreq->token)) {
+        if ($qreq->valid_post() && isset($qreq->token)) {
             if (str_starts_with($qreq->token, "[")) {
                 $ttexts = json_decode($qreq->token);
             } else {

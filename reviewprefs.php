@@ -44,6 +44,12 @@ if ($incorrect_reviewer) {
 }
 
 
+// cancel action
+if ($Qreq->cancel) {
+    $Conf->redirect_self($Qreq);
+}
+
+
 // backwards compat
 if ($Qreq->fn
     && strpos($Qreq->fn, "/") === false
@@ -102,7 +108,7 @@ function savePreferences($Qreq, $reset_p) {
         Conf::msg_error(join("<br />", $aset->messages_html()));
     }
 }
-if ($Qreq->fn === "saveprefs" && $Qreq->post_ok()) {
+if ($Qreq->fn === "saveprefs" && $Qreq->valid_post()) {
     savePreferences($Qreq, true);
 }
 
@@ -114,7 +120,7 @@ SearchSelectioN::clear_request($Qreq);
 
 
 // Set multiple paper preferences
-if ($Qreq->fn === "setpref" && $Qreq->post_ok()) {
+if ($Qreq->fn === "setpref" && $Qreq->valid_post()) {
     if (!$SSel->is_empty()) {
         $new_qreq = new Qrequest($Qreq->method());
         foreach ($SSel->selection() as $p) {
@@ -197,13 +203,15 @@ function parseUploadedPreferences($text, $filename, $apply) {
         exit;
     }
 }
-if ($Qreq->fn === "saveuploadpref" && $Qreq->post_ok() && !$Qreq->cancel) {
+if ($Qreq->fn === "saveuploadpref" && $Qreq->valid_post()) {
     parseUploadedPreferences($Qreq->file, $Qreq->filename, true);
-} else if ($Qreq->fn === "uploadpref" && $Qreq->post_ok() && $Qreq->has_file("uploadedFile")) {
-    parseUploadedPreferences($Qreq->file_contents("uploadedFile"),
+} else if ($Qreq->fn === "uploadpref" && $Qreq->valid_post()) {
+    if ($Qreq->has_file("uploadedFile")) {
+        parseUploadedPreferences($Qreq->file_contents("uploadedFile"),
                              $Qreq->file_filename("uploadedFile"), false);
-} else if ($Qreq->fn === "uploadpref") {
-    Conf::msg_error("Select a preferences file to upload.");
+    } else {
+        Conf::msg_error("Select a preferences file to upload.");
+    }
 }
 
 

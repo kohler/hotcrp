@@ -3,8 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-if (!$Me->email)
+if (!$Me->email) {
     $Me->escape();
+}
 $MergeError = "";
 
 function crpmerge($qreq, $MiniMe) {
@@ -45,7 +46,7 @@ function crpmerge($qreq, $MiniMe) {
     }
 }
 
-if (isset($Qreq->merge) && $Qreq->post_ok()) {
+if (isset($Qreq->merge) && $Qreq->valid_post()) {
     if (!$Qreq->email) {
         $MergeError = "Enter an email address to merge.";
         Ht::error_at("email");
