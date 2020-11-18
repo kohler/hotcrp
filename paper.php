@@ -78,14 +78,6 @@ if ($Qreq->post && $Qreq->post_empty()) {
     Conf::$main->post_missing_msg();
 }
 
-// cancel action
-if ($Qreq->cancel) {
-    if ($prow && $prow->timeSubmitted && $Qreq->m === "edit") {
-        unset($Qreq->m);
-    }
-    $Conf->redirect_self($Qreq);
-}
-
 
 // grab paper row
 function loadRows() {
@@ -105,6 +97,15 @@ if (strcasecmp((string) $Qreq->p, "new")
 // paper actions
 if ($prow && $Qreq->m === "api" && isset($Qreq->fn) && $Conf->has_api($Qreq->fn)) {
     $Conf->call_api_exit($Qreq->fn, $Me, $Qreq, $prow);
+}
+
+
+// cancel action
+if ($Qreq->cancel && $Qreq->is_post()) {
+    if ($prow && $prow->timeSubmitted && $Qreq->m === "edit") {
+        unset($Qreq->m);
+    }
+    $Conf->redirect_self($Qreq);
 }
 
 
