@@ -1094,24 +1094,48 @@ function render_feedback(msg, status) {
 // ui
 var handle_ui = (function ($) {
 var callbacks = {};
+function collect_callbacks(cbs, c, etype) {
+    for (var j = 0; j !== c.length; j += 2) {
+        if (!c[j] || c[j] === etype)
+            cbs.push(c[j + 1]);
+    }
+}
+function call_callbacks(cbs, element, event) {
+    for (var i = 1; i < cbs.length; ++i) {
+        var pi = typeof cbs[i] === "function" ? 0 : cbs[i].priority;
+        for (var j = 0; j !== i; ++j) {
+            var pj = typeof cbs[j] === "function" ? 0 : cbs[j].priority;
+            if (pi > pj) {
+                break;
+            }
+        }
+        if (j !== i) {
+            var del = cbs.splice(i, 1);
+            cbs.splice(j, 0, del[0]);
+        }
+    }
+    for (var i = 0; i !== cbs.length && !event.isImmediatePropagationStopped(); ++i) {
+        var f = typeof cbs[i] === "function" ? cbs[i] : cbs[i].callback;
+        f.call(element, event);
+    }
+}
 function handle_ui(event) {
     var e = event.target;
     if ((e && (hasClass(e, "ui") || hasClass(e, "uin")))
         || (this.tagName === "A" && hasClass(this, "ui"))) {
         event.preventDefault();
     }
-    var k = classList(this);
+    var k = classList(this), cbs = null;
     for (var i = 0; i < k.length; ++i) {
         var c = callbacks[k[i]];
         if (c) {
-            for (var j = 0; j !== c.length; j += 2) {
-                if (!c[j] || c[j] === event.type)
-                    c[j + 1].call(this, event);
-            }
+            cbs = cbs || [];
+            collect_callbacks(cbs, c, event.type);
         }
     }
+    cbs && cbs.length && call_callbacks(cbs, this, event);
 }
-handle_ui.on = function (className, callback) {
+handle_ui.on = function (className, callback, priority) {
     var dot = className.indexOf("."), type = null;
     if (dot >= 0) {
         type = className.substring(0, dot);
@@ -1119,17 +1143,16 @@ handle_ui.on = function (className, callback) {
     }
     callbacks[className] = callbacks[className] || [];
     callbacks[className].push(type);
-    callbacks[className].push(callback);
+    callbacks[className].push(priority == null ? callback : {callback: callback, priority: priority});
 };
 handle_ui.trigger = function (className, event) {
     var c = callbacks[className];
     if (c) {
         if (typeof event === "string")
             event = $.Event(event); // XXX IE8: `new Event` is not supported
-        for (var j = 0; j !== c.length; j += 2) {
-            if (!c[j] || c[j] === event.type)
-                c[j + 1].call(this, event);
-        }
+        var cbs = [];
+        collect_callbacks(cbs, c, event.type);
+        cbs.length && call_callbacks(cbs, this, event);
     }
 };
 return handle_ui;
