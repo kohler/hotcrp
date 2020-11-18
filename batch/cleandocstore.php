@@ -158,7 +158,7 @@ class Batch_CleanDocstore {
             if ($ts === false || $fs === false) {
                 fwrite(STDERR, "$usage_directory: cannot evaluate free space\n");
                 return 1;
-            } else if ($fs >= (1 - ($arg["max-usage"] ?? $arg["min-usage"])) * $ts) {
+            } else if ($fs >= $ts * (1 - ($arg["max-usage"] ?? $arg["min-usage"]))) {
                 fwrite(STDOUT, $usage_directory . ": free space above threshold\n");
                 return 0;
             }
