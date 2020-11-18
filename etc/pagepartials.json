@@ -107,10 +107,13 @@
         "allow_request_if": "anypost",
         "request_callback": "*Signin_Partial::create_request"
     },
-    [   "newaccount/head", 1000, "Signin_Partial::render_create_head"   ],
+    [   "newaccount/head", 1000, "Signin_Partial::render_newaccount_head"   ],
     [   "newaccount/message", 2000, "home/message"   ],
     [   "newaccount/welcome", 2500, "home/welcome"   ],
-    [   "newaccount/body", 3000, "Signin_Partial::render_create_body"   ],
+    [   "newaccount/body", 3000, "Signin_Partial::render_newaccount_body"   ],
+    [   "newaccount/form/description", 10, "Signin_Partial::render_newaccount_form_description"   ],
+    [   "newaccount/form/email", 20, "Signin_Partial::render_newaccount_form_email"   ],
+    [   "newaccount/form/actions", 100, "Signin_Partial::render_newaccount_form_actions"   ],
 
 
     {   "name": "signin", "allow_disabled": true   },

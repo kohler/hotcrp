@@ -304,7 +304,7 @@ class Signin_Partial {
             self::bad_post_error($user, $qreq, "newaccount");
         }
     }
-    static function render_create_head(Contact $user, Qrequest $qreq, $gx) {
+    static function render_newaccount_head(Contact $user, Qrequest $qreq, $gx) {
         ensure_session();
         $user->conf->header("New account", "newaccount", ["action_bar" => false]);
         $gx->push_render_cleanup("__footer");
@@ -314,20 +314,28 @@ class Signin_Partial {
             return false;
         }
     }
-    static function render_create_body(Contact $user, Qrequest $qreq, $gx, $gj) {
+    static function render_newaccount_body(Contact $user, Qrequest $qreq, $gx, $gj) {
         echo '<div class="homegrp" id="homeaccount">',
             Ht::form($user->conf->hoturl("newaccount"), ["class" => "compact-form ui-submit uin js-signin"]),
             Ht::hidden("post", post_value());
-        if (($m = self::_create_message($user->conf))) {
+        $gx->render_group("newaccount/form");
+        echo '</form></div>';
+        Ht::stash_script("hotcrp.focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
+    }
+    static function render_newaccount_form_description(Contact $user) {
+        $m = $user->conf->_("Enter your email and we’ll create an account and send you instructions for signing in.");
+        if ($m) {
             echo '<p class="mb-5">', $m, '</p>';
         }
+    }
+    static function render_newaccount_form_email(Contact $user, Qrequest $qreq) {
         self::_render_email_entry($user, $qreq, "email");
+    }
+    static function render_newaccount_form_actions(Contact $user, Qrequest $qreq) {
         echo '<div class="popup-actions">',
             Ht::submit("Create account", ["class" => "btn-success"]),
             Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
             '</div>';
-        echo '</form></div>';
-        Ht::stash_script("hotcrp.focus_within(\$(\"#homeaccount\"));window.scroll(0,0)");
     }
 
 
