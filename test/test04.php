@@ -144,6 +144,14 @@ xassert_eqq($te2_cdb->affiliation, "Brandeis University or something");
 xassert_eqq($te2_cdb->firstName, "");
 xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
 
+// simplify whitespace
+$acct = $us->save((object) ["lastName" => " Thamrongrattanarit  1  \t", "firstName" => "Te  1", "affiliation" => "  Brandeis   Friendiversity"], $te2);
+xassert(!!$acct);
+$te2 = user("te2@_.com");
+xassert_eqq($te2->firstName, "Te 1");
+xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
+xassert_eqq($te2->affiliation, "Brandeis Friendiversity");
+
 // changes by the chair don't affect the cdb
 Contact::set_guser(user($marina));
 $te2_cdb = $te2->contactdb_user();
