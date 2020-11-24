@@ -140,6 +140,12 @@ class ConfInvariants {
             $this->invariant_error("anonymous_user_enabled", "anonymous user is not disabled");
         }
 
+        // whitespace is simplified
+        $any = $this->invariantq("select email from ContactInfo where firstName regexp '^ | $|  |[\\n\\r\\t]' or lastName regexp '^ | $|  |[\\n\\r\\t]' or affiliation regexp '^ | $|  |[\\n\\r\\t]' limit 1");
+        if ($any) {
+            $this->invariant_error("user_whitespace", "user whitespace is not simplified");
+        }
+
         // check tag strings
         $result = $this->conf->qe("select distinct contactTags from ContactInfo where contactTags is not null union select distinct commentTags from PaperComment where commentTags is not null");
         while (($row = $result->fetch_row())) {

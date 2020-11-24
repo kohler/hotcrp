@@ -1903,6 +1903,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         Dbl::qx($conf->dblink, "alter table PaperReviewRefused add `refusedReviewId` int(11) DEFAULT NULL");
         $conf->update_schema_version(241);
     }
+    if ($conf->sversion === 241
+        && $conf->ql_ok("update ContactInfo set firstName=trim(firstName), lastName=trim(lastName), affiliation=trim(affiliation)")) {
+        $conf->update_schema_version(242);
+    }
 
     $conf->ql_ok("delete from Settings where name='__schema_lock'");
     Conf::$main = $old_conf_g;
