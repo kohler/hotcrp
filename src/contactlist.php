@@ -30,6 +30,7 @@ class ContactList {
     public $conf;
     /** @var Contact */
     public $user;
+    /** @var Qrequest */
     public $qreq;
     var $showHeader = true;
     var $sortField = null;
