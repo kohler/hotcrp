@@ -471,7 +471,7 @@ if ($pl->any->sel) {
         echo Ht::hidden("sort", $Qreq->sort);
     }
 }
-echo $pl_text;
+echo Ht::unstash(), $pl_text;
 if ($pl->any->sel) {
     echo "</form>";
 }
