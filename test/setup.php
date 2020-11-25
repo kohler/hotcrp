@@ -266,6 +266,7 @@ function xassert($x, $description = "") {
     return !!$x;
 }
 
+/** @return void */
 function xassert_exit() {
     $ok = Xassert::$nsuccess
         && Xassert::$nsuccess == Xassert::$n
@@ -543,10 +544,11 @@ function maybe_user($email) {
     return Conf::$main->user_by_email($email);
 }
 
-function xassert_paper_status(PaperStatus $ps) {
-    xassert(!$ps->has_error());
-    foreach ($ps->error_list() as $mx) {
-        error_log("! " . $mx->field . ($mx->message ? ": " . $mx->message : ""));
+function xassert_paper_status(PaperStatus $ps, $maxstatus = MessageSet::INFO) {
+    if (!xassert($ps->problem_status() <= $maxstatus)) {
+        foreach ($ps->problem_list() as $mx) {
+            error_log("! " . $mx->field . ($mx->message ? ": " . $mx->message : ""));
+        }
     }
 }
 

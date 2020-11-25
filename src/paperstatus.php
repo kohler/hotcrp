@@ -503,13 +503,13 @@ class PaperStatus extends MessageSet {
         }
         foreach ((array) $ipj as $k => $v) {
             if (!isset($xpj->$k) && !isset($ikeys[$k]) && !isset($xstatus->$k)
-                && !in_array($k, ["pid", "options", "status", "decision"])
+                && !in_array($k, ["pid", "id", "options", "status", "decision"])
                 && $k[0] !== "_" && $k[0] !== "\$") {
                 $matches = $this->conf->options()->find_all($k);
                 if (count($matches) === 1) {
                     $o = current($matches);
                     $xpj->{$o->json_key()} = $v;
-                } else if (count($matches) > 1) {
+                } else {
                     $xpj->_bad_options[] = $k;
                 }
             }

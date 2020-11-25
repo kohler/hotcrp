@@ -363,14 +363,14 @@ xassert_eqq($nprow1->collaborators(), "");
 
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "collaborators" => "  John Fart\rMIT\n\nButt Man (UCLA)"]), $nprow1, "submit");
-xassert_paper_status($ps);
+xassert_paper_status($ps, MessageSet::WARNING);
 xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators(), "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
 
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "collaborators" => "Sal Stolfo, Guofei Gu, Manos Antonakakis, Roberto Perdisci, Weidong Cui, Xiapu Luo, Rocky Chang, Kapil Singh, Helen Wang, Zhichun Li, Junjie Zhang, David Dagon, Nick Feamster, Phil Porras."]), $nprow1, "submit");
-xassert_paper_status($ps);
+xassert_paper_status($ps, MessageSet::WARNING);
 xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators(), "Sal Stolfo
@@ -468,7 +468,7 @@ $ps->save_paper_json((object) [
     "id" => $npid1,
     "topics" => ["fartchitecture"]
 ]);
-xassert_paper_status($ps);
+xassert_paper_status($ps, MessageSet::WARNING);
 xassert($ps->has_problem());
 xassert_eqq($ps->message_texts_at("topics"), ["Unknown topic ignored (fartchitecture)."]);
 $nprow1->invalidate_topics();
@@ -542,7 +542,7 @@ $ps->save_paper_json((object) [
     "id" => $npid1, "pc_conflicts" => [$user_varghese->email, "notpc@no.com"]
 ]);
 xassert($ps->has_problem());
-xassert_paper_status($ps);
+xassert_paper_status($ps, MessageSet::WARNING);
 xassert_array_eqq(array_keys($ps->diffs), [], true);
 $nprow1->invalidate_conflicts();
 xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
