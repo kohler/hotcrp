@@ -3410,6 +3410,7 @@ class Conf {
         //   "finalized"        Only submitted papers
         //   "unsub"            Only unsubmitted papers
         //   "accepted"         Only accepted papers
+        //   "rejected"         Only rejected papers
         //   "active"           Only nonwithdrawn papers
         //   "author"           Only papers authored by $user
         //   "myReviewRequests" Only reviews requested by $user
@@ -3563,11 +3564,15 @@ class Conf {
         }
         if ($options["finalized"] ?? false) {
             $where[] = "timeSubmitted>0";
-        } else if ($options["unsub"] ?? false) {
+        }
+        if ($options["unsub"] ?? false) {
             $where[] = "timeSubmitted<=0";
         }
         if ($options["accepted"] ?? false) {
             $where[] = "outcome>0";
+        }
+        if ($options["rejected"] ?? false) {
+            $where[] = "outcome<0";
         }
         if ($options["undecided"] ?? false) {
             $where[] = "outcome=0";

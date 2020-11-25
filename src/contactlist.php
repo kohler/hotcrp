@@ -21,7 +21,6 @@ class ContactList {
     const FIELD_SHEPHERDS = 14;
     const FIELD_TAGS = 15;
     const FIELD_COLLABORATORS = 16;
-    const FIELD_ACCEPTED_PAPERS = 17;
     const FIELD_SCORE = 50;
 
     public static $folds = array("topics", "aff", "tags", "collab");
@@ -48,8 +47,8 @@ class ContactList {
     private $_rowset;
     /** @var array<int,list<int>> */
     private $_au_data;
-    /** @var array<int,list<int>> */
-    private $_auacc_data;
+    /** @var array<int,bool> */
+    private $_au_unsub;
     /** @var array<int,list<int>> */
     private $_re_data;
     /** @var array<int,list<array{int,int,int,int}>> */
@@ -120,9 +119,8 @@ class ContactList {
             }
             $this->qopt["revratings"] = $this->qopt["reviews"] = true;
         }
-        if ($fieldId == self::FIELD_PAPERS
-            || $fieldId == self::FIELD_ACCEPTED_PAPERS) {
-            $this->qopt["papers"] = true;
+        if ($fieldId == self::FIELD_PAPERS) {
+            $this->qopt["papers"] = $this->limit;
         }
         if ($fieldId == self::FIELD_REVIEW_PAPERS) {
             $this->qopt["repapers"] = $this->qopt["reviews"] = true;
@@ -227,10 +225,6 @@ class ContactList {
         return $this->_sort_paper_list($a, $b, $this->_au_data);
     }
 
-    function _sort_accepted_papers($a, $b) {
-        return $this->_sort_paper_list($a, $b, $this->_auacc_data);
-    }
-
     function _sort_reviewed_papers($a, $b) {
         return $this->_sort_paper_list($a, $b, $this->_re_data);
     }
@@ -273,9 +267,6 @@ class ContactList {
             break;
         case self::FIELD_PAPERS:
             usort($rows, [$this, "_sort_papers"]);
-            break;
-        case self::FIELD_ACCEPTED_PAPERS:
-            usort($rows, [$this, "_sort_accepted_papers"]);
             break;
         case self::FIELD_REVIEW_PAPERS:
             usort($rows, [$this, "_sort_reviewed_papers"]);
@@ -331,9 +322,16 @@ class ContactList {
         case self::FIELD_SELECTOR:
             return "";
         case self::FIELD_PAPERS:
-            return "Submissions";
-        case self::FIELD_ACCEPTED_PAPERS:
-            return "Accepted submissions";
+            if ($this->limit === "auacc") {
+                return "Accepted submissions";
+            } else if ($this->limit === "aurej") {
+                return "Rejected submissions";
+            } else if ($this->limit === "auuns") {
+                return "Incomplete submissions";
+            } else {
+                assert($this->limit === "au" || $this->limit === "all");
+                return "Submissions";
+            }
         case self::FIELD_REVIEW_PAPERS:
             return "Assigned submissions";
         case self::FIELD_TAGS:
@@ -358,7 +356,7 @@ class ContactList {
             $this->_reord_data[$cid][] = [$rrow->paperId, $rrow->reviewId, $rrow->reviewOrdinal];
         }
         if ($review_limit
-            && ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED || $prow->timeSubmitted > 0)) {
+            && ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED || $prow->timeSubmitted > 0 || $review_limit === "all")) {
             if ($this->limit === "re"
                 || ($this->limit === "req" && $rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy == $this->user->contactId)
                 || ($this->limit === "ext" && $rrow->reviewType == REVIEW_EXTERNAL)
@@ -384,8 +382,27 @@ class ContactList {
         }
     }
 
+    private function test_paper_authors(PaperInfo $prow) {
+        if ($this->user->can_view_authors($prow)) {
+            if ($this->limit === "au") {
+                return $prow->timeSubmitted > 0;
+            } else if ($this->limit === "auuns") {
+                return $prow->timeSubmitted <= 0;
+            } else if ($this->limit === "aurej") {
+                return $prow->outcome < 0 && $this->user->can_view_decision($prow);
+            } else if ($this->limit === "auacc") {
+                return $prow->outcome > 0 && $this->user->can_view_decision($prow);
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
     private function collect_paper_data() {
-        $review_limit = in_array($this->limit, ["re", "req", "ext", "extsub"]);
+        $limit = $this->limit;
+        $review_limit = in_array($limit, ["re", "req", "ext", "extsub", "all"]) ? $limit : null;
 
         $args = [];
         if (isset($this->qopt["papers"])) {
@@ -397,13 +414,22 @@ class ContactList {
                 $args["scores"] = $this->qopt["scores"];
             }
         }
-        if ($this->limit === "req") {
+        if ($limit === "req") {
             $args["myReviewRequests"] = true;
+        }
+        if ($limit === "au") {
+            $args["finalized"] = true;
+        } else if ($limit === "aurej") {
+            $args["rejected"] = true;
+        } else if ($limit === "auacc") {
+            $args["accepted"] = true;
+        } else if ($limit === "auuns") {
+            $args["unsub"] = true;
         }
         if (empty($args)
             && !isset($this->qopt["leads"])
             && !isset($this->qopt["shepherds"])
-            && !str_starts_with($this->limit, "au")) {
+            && !str_starts_with($limit, "au")) {
             return;
         }
 
@@ -414,15 +440,10 @@ class ContactList {
             return $this->user->can_view_paper($prow);
         });
 
-        if (str_starts_with($this->limit, "au")) {
+        if (str_starts_with($limit, "au") || $limit === "all") {
             $this->_limit_cids = [];
             foreach ($prows as $prow) {
-                if (($this->limit === "au" && $prow->timeSubmitted <= 0)
-                    || ($this->limit === "aurej" && $prow->outcome >= 0)
-                    || ($this->limit === "auacc" && $prow->outcome <= 0)
-                    || ($this->limit === "auuns" && $prow->timeSubmitted > 0)) {
-                    /* skip */
-                } else {
+                if ($this->test_paper_authors($prow)) {
                     foreach ($prow->contacts() as $cid => $cflt) {
                         $this->_limit_cids[$cid] = true;
                     }
@@ -433,16 +454,14 @@ class ContactList {
         }
 
         if (isset($this->qopt["papers"])) {
-            $this->_au_data = $this->_auacc_data = [];
+            $this->_au_data = [];
+            $this->_au_unsub = [];
             foreach ($prows as $prow) {
-                if ($this->user->can_view_authors($prow)) {
+                if ($this->test_paper_authors($prow)) {
                     foreach ($prow->contacts() as $cflt) {
                         $this->_au_data[$cflt->contactId][] = $prow->paperId;
-                    }
-                    if ($prow->outcome > 0
-                        && $this->user->can_view_decision($prow)) {
-                        foreach ($prow->contacts() as $cflt) {
-                            $this->_auacc_data[$cflt->contactId][] = $prow->paperId;
+                        if ($prow->timeSubmitted <= 0) {
+                            $this->_au_unsub[$cflt->contactId] = true;
                         }
                     }
                 }
@@ -644,26 +663,17 @@ class ContactList {
                 foreach ($pids as $p) {
                     $t[] = '<a href="' . $this->conf->hoturl("paper", "p=$p") . '">' . $p . '</a>';
                 }
-                if ($this->limit === "auuns" || $this->limit === "all") {
-                    $ls = "p/all/";
-                } else {
-                    $ls = "p/s/";
+                $lsx = "au:{$row->email}";
+                if ($this->limit === "auuns") {
+                    $lsx .= " -is:submitted";
+                } else if ($this->limit === "auacc") {
+                    $lsx .= " dec:yes";
+                } else if ($this->limit === "aurej") {
+                    $lsx .= " dec:no";
                 }
+                $lst = $this->_au_unsub[$row->contactId] ?? false ? "all" : "s";
                 return '<div class="has-hotlist" data-hotlist="'
-                    . htmlspecialchars($ls . urlencode("au:" . $row->email))
-                    . '">' . join(", ", $t) . '</div>';
-            } else {
-                return "";
-            }
-        case self::FIELD_ACCEPTED_PAPERS:
-            if (($pids = $this->_auacc_data[$row->contactId] ?? null)) {
-                $t = [];
-                foreach ($pids as $p) {
-                    $t[] = '<a href="' . $this->conf->hoturl("paper", "p=$p") . '">' . $p . '</a>';
-                }
-                return '<div class="has-hotlist" data-hotlist="'
-                    . htmlspecialchars("p/acc/" . urlencode("au:" . $row->email))
-                    . '">' . join(", ", $t) . '</div>';
+                    . htmlspecialchars("p/$lst/" . urlencode($lsx)) . '">' . join(", ", $t) . '</div>';
             } else {
                 return "";
             }
@@ -756,11 +766,10 @@ class ContactList {
           case "au":
           case "aurej":
           case "auuns":
-            return [$listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_COLLABORATORS];
           case "auacc":
-            return [$listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_ACCEPTED_PAPERS, self::FIELD_COLLABORATORS];
+            return [$listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_COLLABORATORS];
           case "all":
-            return ["all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_COLLABORATORS];
+            return ["all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_REVIEWS, self::FIELD_COLLABORATORS];
           default:
             return null;
         }
@@ -819,7 +828,9 @@ class ContactList {
         } else if ($this->limit == "pcadmin" || $this->limit == "pcadminx") {
             $mainwhere[] = "roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0";
         }
-        if ($this->_limit_cids !== null) {
+        if ($this->limit === "all") {
+            $mainwhere[] = "(roles!=0 or lastLogin>0 or contactId" . sql_in_int_list(array_keys($this->_limit_cids)) . ")";
+        } else if ($this->_limit_cids !== null) {
             $mainwhere[] = "contactId" . sql_in_int_list(array_keys($this->_limit_cids));
         }
 
@@ -857,8 +868,8 @@ class ContactList {
         $this->limit = array_shift($baseFieldId);
 
         // get field array
-        $fieldDef = array();
-        $acceptable_fields = array();
+        $fieldDef = [];
+        $acceptable_fields = [];
         $this->any = (object) array("sel" => false);
         $ncol = 0;
         foreach ($baseFieldId as $fid) {
@@ -881,7 +892,8 @@ class ContactList {
         }
 
         // sort rows
-        if (!$this->sortField || !get($acceptable_fields, $this->sortField)) {
+        if (!$this->sortField
+            || !($acceptable_fields[$this->sortField] ?? false)) {
             $this->sortField = self::FIELD_NAME;
         }
         $srows = $this->_sort($rows);
@@ -889,14 +901,17 @@ class ContactList {
         // count non-callout columns
         $firstcallout = $lastcallout = null;
         $n = 0;
-        foreach ($fieldDef as $fieldId => $fdef)
+        foreach ($fieldDef as $fieldId => $fdef) {
             if ($fdef[1] == 1) {
-                if ($firstcallout === null && $fieldId < self::FIELD_SELECTOR)
+                if ($firstcallout === null && $fieldId < self::FIELD_SELECTOR) {
                     $firstcallout = $n;
-                if ($fieldId < self::FIELD_SCORE)
+                }
+                if ($fieldId < self::FIELD_SCORE) {
                     $lastcallout = $n + 1;
+                }
                 ++$n;
             }
+        }
         $firstcallout = $firstcallout ? $firstcallout : 0;
         $lastcallout = ($lastcallout ? $lastcallout : $ncol) - $firstcallout;
 
@@ -904,7 +919,7 @@ class ContactList {
         $this->count = 0;
         $show_colors = $this->user->isPC;
 
-        $anyData = array();
+        $anyData = [];
         $body = '';
         $extrainfo = $hascolors = false;
         $ids = array();
@@ -1085,24 +1100,23 @@ class ContactList {
 
 
 global $contactListFields;
-$contactListFields = array(
-        ContactList::FIELD_SELECTOR => array('sel', 1, 0),
-        ContactList::FIELD_SELECTOR_ON => array('sel', 1, 0),
-        ContactList::FIELD_NAME => array('name', 1, 1),
-        ContactList::FIELD_EMAIL => array('email', 1, 1),
-        ContactList::FIELD_AFFILIATION => array('affiliation', 1, 1),
-        ContactList::FIELD_AFFILIATION_ROW => array('affrow', 4, 0),
-        ContactList::FIELD_LASTVISIT => array('lastvisit', 1, 1),
-        ContactList::FIELD_HIGHTOPICS => array('topics', 3, 0),
-        ContactList::FIELD_LOWTOPICS => array('topics', 3, 0),
-        ContactList::FIELD_REVIEWS => array('revstat', 1, 1),
-        ContactList::FIELD_REVIEW_RATINGS => array('revstat', 1, 1),
-        ContactList::FIELD_PAPERS => array('papers', 1, 1),
-        ContactList::FIELD_ACCEPTED_PAPERS => array('papers', 1, 1),
-        ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1),
-        ContactList::FIELD_SCORE => array('uscores', 1, 1),
-        ContactList::FIELD_LEADS => array('revstat', 1, 1),
-        ContactList::FIELD_SHEPHERDS => array('revstat', 1, 1),
-        ContactList::FIELD_TAGS => array('tags', 5, 0),
-        ContactList::FIELD_COLLABORATORS => array('collab', 6, 0)
-        );
+$contactListFields = [
+    ContactList::FIELD_SELECTOR => array('sel', 1, 0),
+    ContactList::FIELD_SELECTOR_ON => array('sel', 1, 0),
+    ContactList::FIELD_NAME => array('name', 1, 1),
+    ContactList::FIELD_EMAIL => array('email', 1, 1),
+    ContactList::FIELD_AFFILIATION => array('affiliation', 1, 1),
+    ContactList::FIELD_AFFILIATION_ROW => array('affrow', 4, 0),
+    ContactList::FIELD_LASTVISIT => array('lastvisit', 1, 1),
+    ContactList::FIELD_HIGHTOPICS => array('topics', 3, 0),
+    ContactList::FIELD_LOWTOPICS => array('topics', 3, 0),
+    ContactList::FIELD_REVIEWS => array('revstat', 1, 1),
+    ContactList::FIELD_REVIEW_RATINGS => array('revstat', 1, 1),
+    ContactList::FIELD_PAPERS => array('papers', 1, 1),
+    ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1),
+    ContactList::FIELD_SCORE => array('uscores', 1, 1),
+    ContactList::FIELD_LEADS => array('revstat', 1, 1),
+    ContactList::FIELD_SHEPHERDS => array('revstat', 1, 1),
+    ContactList::FIELD_TAGS => array('tags', 5, 0),
+    ContactList::FIELD_COLLABORATORS => array('collab', 6, 0)
+];
