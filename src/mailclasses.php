@@ -138,7 +138,7 @@ class MailRecipients {
         }
 
         if ($contact->privChair) {
-            $this->defsel("all", "All users", self::F_NOPAPERS);
+            $this->defsel("all", "Active users", self::F_NOPAPERS);
         }
 
         if (isset($this->sel[$type])
@@ -284,6 +284,7 @@ class MailRecipients {
         // build query
         if ($this->type == "all") {
             $needpaper = $needconflict = $needreview = false;
+            $where[] = "(ContactInfo.roles!=0 or lastLogin>0 or exists (select * from PaperConflict where contactId=ContactInfo.contactId) or exists (select * from PaperReview where contactId=ContactInfo.contactId))";
         } else if ($this->type == "pc" || substr($this->type, 0, 3) == "pc:") {
             $needpaper = $needconflict = $needreview = false;
             $where[] = "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0";

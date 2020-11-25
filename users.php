@@ -58,7 +58,7 @@ if ($Viewer->privChair
 }
 if ($Viewer->privChair) {
     $tOpt["auuns"] = "Contact authors of non-submitted papers";
-    $tOpt["all"] = "All users";
+    $tOpt["all"] = "Active users";
 }
 if (empty($tOpt)) {
     $Viewer->escape();
