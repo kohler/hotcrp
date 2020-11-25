@@ -6288,10 +6288,8 @@ function sorter_toggle_reverse(sorter, toggle) {
 
 function search_sort_success(tbl, data_href, data) {
     var ids = data.ids;
-    if (!ids && data.hotlist) {
-        var hotlist = JSON.parse(data.hotlist);
-        ids = decode_session_list_ids(hotlist.ids);
-    }
+    if (!ids && data.hotlist)
+        ids = new Hotlist(data.hotlist).ids();
     if (!ids)
         return;
     reorder(tbl, ids, data.groups, true);
@@ -9106,83 +9104,107 @@ function update_digest(info) {
     else
         return false;
 }
-function make_digest(info, pid) {
-    var m = /^(.*)"ids":"([-0-9'a-zA-Z]+)"(.*)/.exec(info), digest;
-    if (m && wstorage() && (digest = update_digest(m[2]))) {
-        info = m[1] + '"digest":"listdigest' + digest + '"';
-        if (pid) {
-            var ids = decode_session_list_ids(m[2]), pos;
-            if (ids && (pos = $.inArray(pid, ids)) >= 0) {
-                info += ',"curid":' + pid
-                    + ',"previd":' + (pos > 0 ? ids[pos - 1] : 'false')
-                    + ',"nextid":' + (pos < ids.length - 1 ? ids[pos + 1] : 'false');
-            }
-        }
-        info += m[3];
+window.Hotlist = function (s) {
+    this.str = s || "";
+    this.obj = null;
+    if (this.str && this.str.charAt(0) === "{") {
+        try {
+            this.obj = JSON.parse(this.str);
+        } catch (e) {}
     }
-    return info;
-}
-function resolve_digest(info) {
+};
+Hotlist.at = function (elt) {
+    return new Hotlist(elt ? elt.getAttribute("data-hotlist") : "");
+};
+Hotlist.prototype.ids = function () {
+    return this.obj && this.obj.ids ? decode_session_list_ids(this.obj.ids) : null;
+};
+Hotlist.prototype.resolve = function () {
     var m, ids;
-    if (info.indexOf('"ids":') < 0
-        && (m = /^(.*)"digest":"listdigest([0-9]+)(".*)$/.exec(info))
-        && (ids = update_digest(+m[2])) !== false)
-        return m[1] + '"ids":"' + ids + m[3];
-    else
-        return info;
-}
+    if (this.obj
+        && !this.obj.ids
+        && this.obj.digest
+        && /^listdigest[0-9]+$/.test(this.obj.digest)
+        && (ids = update_digest(+this.obj.digest.substring(10)))) {
+        delete this.obj.digest;
+        this.obj.ids = ids;
+        this.str = JSON.stringify(this.obj);
+    }
+    return this;
+};
+Hotlist.prototype.cookie_at = function (pid) {
+    this.resolve();
+    var m, digest, ids, pos;
+    if (this.str.length > 1500
+        && this.obj
+        && this.obj.ids
+        && wstorage()
+        && (digest = update_digest(this.obj.ids))) {
+        var x = Object.assign({digest: "listdigest" + digest}, this.obj);
+        delete x.ids;
+        if (pid
+            && (ids = this.ids())
+            && (pos = $.inArray(pid, ids)) >= 0) {
+            x.curid = pid;
+            x.previd = pos > 0 ? ids[pos - 1] : false;
+            x.nextid = pos < ids.length - 1 ? ids[pos + 1] : false;
+        }
+        return JSON.stringify(x);
+    } else {
+        return this.str;
+    }
+};
+Hotlist.prototype.reorder = function (tbody) {
+    if (this.obj) {
+        this.resolve();
+        var p0 = -100, p1 = -100, pid, l = [];
+        for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
+            if (cur.nodeName === "TR" && /^pl(?:\s|\z)/.test(cur.className)
+                && (pid = +cur.getAttribute("data-pid"))) {
+                if (pid != p1 + 1) {
+                    if (p0 > 0)
+                        l.push(p0 == p1 ? p0 : p0 + "-" + p1);
+                    p0 = pid;
+                }
+                p1 = pid;
+            }
+        if (p0 > 0)
+            l.push(p0 == p1 ? p0 : p0 + "-" + p1);
+        this.obj.ids = l.join("'");
+        this.str = JSON.stringify(this.obj);
+    }
+};
 function set_cookie(info, pid) {
-    if (/"digest":/.test(info))
-        info = resolve_digest(info);
-    if (info.length > 1500)
-        info = make_digest(info, pid);
+    var cstr = info.cookie_at(pid);
     cookie_set_at = now_msec();
     var p = "; Max-Age=20", m;
     if (siteinfo.site_relative && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
         p += "; Path=" + m[1];
-    document.cookie = "hotlist-info-" + cookie_set_at + "=" + encodeURIComponent(info) + siteinfo.cookie_params + p;
+    document.cookie = "hotlist-info-".concat(cookie_set_at, "=", encodeURIComponent(cstr), siteinfo.cookie_params, p);
 }
 function is_listable(sitehref) {
     return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(sitehref);
 }
-function set_list_order(info, tbody) {
-    var p0 = -100, p1 = -100, pid, l = [];
-    for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
-        if (cur.nodeName === "TR" && /^pl(?:\s|\z)/.test(cur.className)
-            && (pid = +cur.getAttribute("data-pid"))) {
-            if (pid != p1 + 1) {
-                if (p0 > 0)
-                    l.push(p0 == p1 ? p0 : p0 + "-" + p1);
-                p0 = pid;
-            }
-            p1 = pid;
-        }
-    if (p0 > 0)
-        l.push(p0 == p1 ? p0 : p0 + "-" + p1);
-    return info.replace(/"ids":"[-0-9'a-zA-Z]+"/, '"ids":"' + l.join("'") + '"');
-}
 function handle_list(e, href) {
-    var hl, sitehref, m;
+    var hl, sitehref, info;
     if (href
         && href.substring(0, siteinfo.site_relative.length) === siteinfo.site_relative
         && is_listable((sitehref = href.substring(siteinfo.site_relative.length)))
-        && (hl = e.closest(".has-hotlist"))) {
-        var info = hl.getAttribute("data-hotlist");
+        && (hl = e.closest(".has-hotlist"))
+        && (info = Hotlist.at(hl)).str) {
         if (hl.tagName === "TABLE"
             && hasClass(hl, "pltable")
             && hl.hasAttribute("data-reordered")
             && document.getElementById("footer"))
             // Existence of `#footer` checks that the table is fully loaded
-            info = set_list_order(info, hl.tBodies[0]);
-        if (info) {
-            m = /^[^\/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);
-            set_cookie(info, m ? +m[1] : null);
-        }
+            info.reorder(hl.tBodies[0]);
+        var m = /^[^\/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);
+        set_cookie(info, m ? +m[1] : null);
     }
 }
 function unload_list() {
-    var hl = document.body.getAttribute("data-hotlist");
-    if (hl && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
+    var hl = Hotlist.at(document.body);
+    if (hl.str && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
         set_cookie(hl);
 }
 function row_click(evt) {
@@ -9261,27 +9283,17 @@ $(document).on("click", "tr.pl", row_click);
 $(window).on("beforeunload", unload_list);
 
 $(function () {
-    var had_digests = false;
     // resolve list digests
-    $(".has-hotlist").each(function () {
-        var info = this.getAttribute("data-hotlist");
-        if (info && (info = resolve_digest(info))) {
-            this.setAttribute("data-hotlist", info);
-            had_digests = true;
-        }
-    });
+    if (document.body.hasAttribute("data-hotlist")) {
+        document.body.setAttribute("data-hotlist", Hotlist.at(document.body).resolve().str);
+    }
     // having resolved digests, insert quicklinks
-    if (had_digests
-        && siteinfo.paperid
+    if (siteinfo.paperid
         && !$$("quicklink-prev")
         && !$$("quicklink-next")) {
         $(".quicklinks").each(function () {
-            var $l = $(this).closest(".has-hotlist"),
-                info = JSON.parse($l.attr("data-hotlist") || "null"),
-                ids, pos;
-            if (info
-                && info.ids
-                && (ids = decode_session_list_ids(info.ids))
+            var info = Hotlist.at(this.closest(".has-hotlist")), ids, pos;
+            if ((ids = info.ids())
                 && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
                 if (pos > 0)
                     $(this).prepend('<a id="quicklink-prev" class="x" href="' + hoturl_html("paper", {p: ids[pos - 1]}) + '">&lt; #' + ids[pos - 1] + '</a> ');
@@ -9295,21 +9307,18 @@ $(function () {
 
 
 function hotlist_search_params(x, ids) {
-    if (x instanceof HTMLElement)
-        x = x.getAttribute("data-hotlist");
-    if (x && typeof x === "string")
-        x = JSON.parse(x);
+    x = x instanceof HTMLElement ? Hotlist.at(x) : new Hotlist(x);
     var m;
-    if (!x || !x.ids || !(m = x.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/)))
+    if (!x || !x.obj || !x.obj.ids || !(m = x.obj.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/)))
         return false;
     var idv;
     if (ids) {
-        if (x.sorted_ids)
-            idv = "pidcode:" + x.sorted_ids;
-        else if ($.isArray(x.ids))
-            idv = x.ids.join(" ");
+        if (x.obj.sorted_ids)
+            idv = "pidcode:" + x.obj.sorted_ids;
+        else if ($.isArray(x.obj.ids))
+            idv = x.obj.ids.join(" ");
         else
-            idv = "pidcode:" + x.ids;
+            idv = "pidcode:" + x.obj.ids;
     } else {
         idv = urldecode(m[2]);
     }

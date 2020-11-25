@@ -215,11 +215,10 @@ class SessionList {
         if (($j = json_decode($info))
             && is_object($j)
             && (!isset($j->listid) || is_string($j->listid))) {
-            $listid = $j->listid ?? null;
+            $listid = $j->listid ?? $type;
             if ($listid !== $type && !str_starts_with($listid, "{$type}/")) {
                 return null;
             }
-            '@phan-var-force ?string $listid';
 
             $ids = $j->ids ?? null;
             if (is_string($ids)) {
@@ -234,7 +233,7 @@ class SessionList {
             '@phan-var-force ?string $digest';
 
             if ($ids !== null || $digest !== null) {
-                $list = new SessionList($listid ?? $type, $ids);
+                $list = new SessionList($listid, $ids);
                 foreach (get_object_vars($j) as $k => $v) {
                     if ($k !== "listid" && $k !== "ids")
                         $list->$k = $v;
@@ -286,6 +285,11 @@ class SessionList {
     /** @return string */
     function info_string() {
         $j = [];
+        foreach (get_object_vars($this) as $k => $v) {
+            if ($v != null
+                && !in_array($k, ["ids", "id_position", "curid", "previd", "nextid"], true))
+                $j[$k] = $v;
+        }
         if ($this->ids !== null) {
             $j["ids"] = self::encode_ids($this->ids);
             if (strlen($j["ids"]) > 160) {
@@ -293,11 +297,6 @@ class SessionList {
                 sort($x);
                 $j["sorted_ids"] = self::encode_ids($x);
             }
-        }
-        foreach (get_object_vars($this) as $k => $v) {
-            if ($v != null
-                && !in_array($k, ["ids", "id_position", "curid", "previd", "nextid"], true))
-                $j[$k] = $v;
         }
         return json_encode_browser($j);
     }
