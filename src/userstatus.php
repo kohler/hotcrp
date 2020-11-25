@@ -711,7 +711,9 @@ class UserStatus extends MessageSet {
             if ($user->collaborators() === "") {
                 $us->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
             }
-            if ($user->conf->has_topics() && !$user->topic_interest_map()) {
+            if ($user->conf->has_topics()
+                && !$user->topic_interest_map()
+                && !$user->conf->opt("allowNoTopicInterests")) {
                 $us->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
             }
         }
