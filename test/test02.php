@@ -931,7 +931,6 @@ xassert_eqq($am->find_all("ACMComp"), [2]);
 
 $am->add_phrase("One hundred things", 3);
 $am->add_phrase("One hundred things (Final)", 4);
-$am->add_deparenthesized();
 xassert_eqq($am->find_all("OneHunThi"), [3]);
 xassert_eqq($am->find_all("OneHunThiFin"), [4]);
 xassert_eqq($am->find_all("one-hundr-thi"), [3]);
@@ -1044,6 +1043,7 @@ $am->add_phrase("Butt(s)", 110);
 $am->add_phrase("Wonder(ment)[2](maybe)", 110);
 $am->add_phrase("Wander (ment) [2](maybe)", 110);
 xassert_eqq($am->find_all("Butt(s)"), [110]);
+xassert_eqq($am->find_all("Butts"), [110]);
 
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);

@@ -19,8 +19,7 @@
 // Digit sequences are not prefix-matched, so a pattern like “X1” will not
 // match subject “X 100”.
 //
-// The subject list can be “deparenthesized”, allowing parenthesized expressions
-// to be skipped without penalty. See `add_deparenthesized`.
+// Parenthesized expressions can be skipped without penalty.
 
 /** @template T */
 class AbbreviationEntry {
@@ -43,6 +42,7 @@ class AbbreviationEntry {
     public $loader_args;
 
     const TFLAG_KW = 0x10000000;
+    const TFLAG_DP = 0x20000000;
 
     /** @param string $name
      * @param T $value
@@ -84,8 +84,6 @@ class AbbreviationMatcher {
     private $data = [];
     /** @var int */
     private $nanal = 0;
-    /** @var int */
-    private $ndeparen = 0;
     /** @var array<int,float> */
     private $prio = [];
 
@@ -155,26 +153,6 @@ class AbbreviationMatcher {
         assert(strpos($name, " ") === false);
         return $this->add_entry(AbbreviationEntry::make_lazy($name, $loader, $loader_args, $tflags | AbbreviationEntry::TFLAG_KW), false);
     }
-    function add_deparenthesized() {
-        $this->_analyze();
-        $n = count($this->data);
-        while ($this->ndeparen !== $this->nanal) {
-            $e = $this->data[$this->ndeparen];
-            if (($e->tflags & AbbreviationEntry::TFLAG_KW) === 0
-                && ($s = self::deparenthesize($e->name)) !== ""
-                && !in_array(self::make_xtester(strtolower($s)), $this->ltesters)) {
-                $e = clone $e;
-                /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-                $e->name = $s;
-                $this->data[] = $e;
-            }
-            ++$this->ndeparen;
-        }
-        $this->ndeparen = count($this->data);
-        if ($this->ndeparen !== $n) {
-            $this->xmatches = $this->lxmatches = [];
-        }
-    }
 
     function set_priority(int $tflags, float $prio) {
         $this->prio[$tflags] = $prio;
@@ -232,8 +210,10 @@ class AbbreviationMatcher {
     /** @suppress PhanAccessReadOnlyProperty */
     private function _analyze() {
         assert($this->nanal === count($this->ltesters));
-        while ($this->nanal < count($this->data)) {
-            $d = $this->data[$this->nanal];
+        $n = count($this->data);
+        $n1 = $this->nanal;
+        while ($n1 < $n) {
+            $d = $this->data[$n1];
             $d->dedash_name = self::dedash($d->name);
             $lname = strtolower($d->name);
             if (($d->tflags & AbbreviationEntry::TFLAG_KW) !== 0) {
@@ -241,7 +221,49 @@ class AbbreviationMatcher {
             } else {
                 $this->ltesters[] = self::make_xtester($lname);
             }
-            ++$this->nanal;
+            ++$n1;
+        }
+
+        $n2 = $this->nanal;
+        while ($n2 < $n) {
+            $d = $this->data[$n2];
+            if (($d->tflags & AbbreviationEntry::TFLAG_KW) === 0
+                && (strpos($d->name, "(") !== false || strpos($d->name, "[") !== false)) {
+                $this->_analyze_deparen($d);
+            }
+            ++$n2;
+        }
+
+        $this->nanal = count($this->data);
+    }
+
+    /** @suppress PhanAccessReadOnlyProperty */
+    private function _add_deparen(AbbreviationEntry $d, $name) {
+        $xt = self::make_xtester(strtolower($name));
+        if (!in_array($xt, $this->ltesters)) {
+            $e = clone $d;
+            $e->name = $name;
+            $e->dedash_name = self::dedash($name);
+            $e->tflags |= AbbreviationEntry::TFLAG_DP;
+            $this->data[] = $e;
+            $this->ltesters[] = $xt;
+            $this->xmatches = $this->lxmatches = [];
+        }
+    }
+
+    private function _analyze_deparen(AbbreviationEntry $d) {
+        $nx = preg_replace('/\s*(?:\(.*?\)|\[.*?\])/', "", $d->name);
+        if ($nx !== "" && $nx !== $d->name) {
+            $this->_add_deparen($d, $nx);
+        }
+        // XXX special-case things like "Speaker(s)" (allow `Speakers`)
+        if (strpos($d->name, "(s)") !== false) {
+            $ny = str_replace("(s)", "s", $d->name);
+            $this->_add_deparen($d, $ny);
+            $nz = preg_replace('/\s*(?:\(.*?\)|\[.*?\])/', "", $ny);
+            if ($nz !== "" && $nz !== $ny) {
+                $this->_add_deparen($d, $nz);
+            }
         }
     }
 

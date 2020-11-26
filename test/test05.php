@@ -774,6 +774,13 @@ xassert(!!$paper3->option(3));
 xassert_eqq($paper3->option(3)->value, 1);
 xassert_eqq($paper3->option(3)->data(), "fart fart bark bark");
 
+$ps->save_paper_json(json_decode("{\"id\":3,\"Supervisors\":\"farm farm bark bark\"}"));
+xassert_paper_status($ps);
+$paper3 = $user_estrin->checked_paper_by_id(3);
+xassert(!!$paper3->option(3));
+xassert_eqq($paper3->option(3)->value, 1);
+xassert_eqq($paper3->option(3)->data(), "farm farm bark bark");
+
 ConfInvariants::test_all($Conf);
 
 xassert_exit();
