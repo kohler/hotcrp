@@ -116,7 +116,7 @@ class SearchSplitter {
             // stop when done
             if ($plast === ""
                 && !$quote
-                && ($endf === null ? ctype_space($ch) : call_user_func($endf, $ch))) {
+                && ($endf === null ? ctype_space($ch) : call_user_func($endf, $ch, $pos))) {
                 break;
             }
             // translate “” -> "
