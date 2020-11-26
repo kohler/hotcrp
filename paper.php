@@ -138,8 +138,9 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->valid_post()) {
             $preps = [];
             $prow->notify_reviews(function ($prow, $minic) use ($reason, &$preps) {
                 if (($p = HotCRPMailer::prepare_to($minic, "@withdrawreviewer", ["prow" => $prow, "reason" => $reason]))) {
-                    if (!$minic->can_view_review_identity($prow, null))
+                    if (!$minic->can_view_review_identity($prow, null)) {
                         $p->unique_preparation = true;
+                    }
                     $preps[] = $p;
                 }
             }, $Me);
