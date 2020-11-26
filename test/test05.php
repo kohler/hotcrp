@@ -753,6 +753,27 @@ xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit");
 xassert(!$cf_nec->need_recheck());
 xassert(!$cf_nec->run_attempted());
 
+// option name containing parentheses
+$options = $Conf->setting_json("options");
+xassert(!array_filter((array) $options, function ($o) { return $o->id === 3; }));
+$options[] = (object) ["id" => 3, "name" => "Supervisor(s)", "type" => "text", "position" => 3];
+$Conf->save_setting("options", 1, json_encode($options));
+$Conf->invalidate_caches("options");
+
+$ps->save_paper_json(json_decode("{\"id\":3,\"Supervisor(s)\":\"fart fart barf barf\"}"));
+xassert_paper_status($ps);
+$paper3 = $user_estrin->checked_paper_by_id(3);
+xassert(!!$paper3->option(3));
+xassert_eqq($paper3->option(3)->value, 1);
+xassert_eqq($paper3->option(3)->data(), "fart fart barf barf");
+
+$ps->save_paper_json(json_decode("{\"id\":3,\"Supervisor\":\"fart fart bark bark\"}"));
+xassert_paper_status($ps);
+$paper3 = $user_estrin->checked_paper_by_id(3);
+xassert(!!$paper3->option(3));
+xassert_eqq($paper3->option(3)->value, 1);
+xassert_eqq($paper3->option(3)->data(), "fart fart bark bark");
+
 ConfInvariants::test_all($Conf);
 
 xassert_exit();

@@ -1038,6 +1038,13 @@ $am->add_phrase("No - I'm sorry, but I can't present my proposal.", 1);
 $am->add_keyword("none", 3);
 xassert_eqq($am->find_all("No"), [1]);
 
+$am = new AbbreviationMatcher;
+$am->add_phrase("Shit", 0);
+$am->add_phrase("Butt(s)", 110);
+$am->add_phrase("Wonder(ment)[2](maybe)", 110);
+$am->add_phrase("Wander (ment) [2](maybe)", 110);
+xassert_eqq($am->find_all("Butt(s)"), [110]);
+
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
 xassert_eqq(Filer::docstore_fixed_prefix(""), null);
