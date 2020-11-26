@@ -203,20 +203,12 @@ class AbbreviationMatcher {
     /** @param string $s
      * @return string */
     static function make_xtester($s) {
-        if (strpbrk($s, "\'()[]") !== false) {
-            preg_match_all('/(?:\A_+|)[A-Za-z~?!][A-Za-z~?!\'()\[\]]*|(?:[0-9]|\.[0-9])[0-9.]*/', $s, $m);
-            if (!empty($m[0])) {
-                return preg_replace('/[\'()\[\]]/', "", " " . join(" ", $m[0]));
-            } else {
-                return "";
-            }
+        $s = str_replace("\'", "", $s);
+        preg_match_all('/(?:\A_+|)[A-Za-z~?!][A-Za-z~?!]*|(?:[0-9]|\.[0-9])[0-9.]*/', $s, $m);
+        if (!empty($m[0])) {
+            return " " . join(" ", $m[0]);
         } else {
-            preg_match_all('/(?:\A_+|)[A-Za-z~?!][A-Za-z~?!]*|(?:[0-9]|\.[0-9])[0-9.]*/', $s, $m);
-            if (!empty($m[0])) {
-                return " " . join(" ", $m[0]);
-            } else {
-                return "";
-            }
+            return "";
         }
     }
     /** @param string $s
@@ -267,6 +259,7 @@ class AbbreviationMatcher {
         $re = '';
         $npatternw = 0;
         $iscamel = self::is_camel_word($upat);
+        // These rules create strings that could match an xtester.
         if ($iscamel) {
             preg_match_all('/(?:\A_+|)[A-Za-z~][a-z~?!]+|[A-Z][A-Z]*(?![a-z])|(?:[0-9]|\.[0-9])[0-9.]*/', $upat, $m);
             //error_log($upat . " " . join(",", $m[0]));
