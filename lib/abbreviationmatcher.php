@@ -103,7 +103,7 @@ class AbbreviationMatcher {
     private function add_entry(AbbreviationEntry $e, $isphrase) {
         $i = count($this->data);
         $this->data[] = $e;
-        if (!($e->tflags & AbbreviationEntry::TFLAG_KW)) {
+        if (($e->tflags & AbbreviationEntry::TFLAG_KW) === 0) {
             $this->xmatches = $this->lxmatches = [];
             if ($isphrase
                 && strpos($e->name, " ") === false
@@ -310,8 +310,8 @@ class AbbreviationMatcher {
         $full_match_length = strlen($lpattern) + 1;
 
         $xt = preg_grep($re, $this->ltesters);
+        //error_log("! $re " . json_encode($xt));
         if (count($xt) > 1 && $starpos !== 0) {
-            //error_log("! $re " . json_encode($xt));
             $status = 0;
             $xtx = [];
             if ($iscamel) {
@@ -404,6 +404,8 @@ class AbbreviationMatcher {
         return $r;
     }
 
+    /** @param list<AbbreviationEntry> $r
+     * @return list<AbbreviationEntry> */
     static private function compress_entries($r) {
         $n = count($r);
         for ($i = 1; $i < $n; ) {
@@ -417,6 +419,7 @@ class AbbreviationMatcher {
         return $r;
     }
 
+    /** @return int */
     function nentries() {
         return count($this->data);
     }
@@ -474,6 +477,14 @@ class AbbreviationMatcher {
             return $a;
         } else {
             return [];
+        }
+    }
+
+
+    function print_state() {
+        $this->_analyze();
+        foreach ($this->data as $i => $d) {
+            echo "#$i: {$d->name} dd:{$d->dedash_name} ltester:{$this->ltesters[$i]}\n";
         }
     }
 
