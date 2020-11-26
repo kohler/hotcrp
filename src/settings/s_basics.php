@@ -21,8 +21,8 @@ class Basics_SettingParser extends SettingParser {
         $sv->echo_entry_group("opt.contactEmail", null, null, "The site contact is the contact point for users if something goes wrong. It defaults to the chair.");
     }
     static function render_email(SettingValues $sv) {
+        $sv->echo_entry_group("opt.emailCc", null);
         $sv->echo_entry_group("opt.emailReplyTo", null);
-        $sv->echo_entry_group("opt.emailCc", null, null, 'This applies to email sent to reviewers and email sent using the <a href="' . $sv->conf->hoturl("mail") . '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.');
     }
 
     function validate(SettingValues $sv, Si $si) {

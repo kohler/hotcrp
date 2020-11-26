@@ -53,17 +53,15 @@ if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {
 if (isset($Qreq->cc) && $Me->is_manager()) {
     // XXX should only apply to papers you administer
     $Qreq->cc = simplify_whitespace($Qreq->cc);
-} else if ($Conf->opt("emailCc")) {
-    $Qreq->cc = $Conf->opt("emailCc");
 } else {
-    $Qreq->cc = Text::nameo($Conf->site_contact(), NAME_MAILQUOTE|NAME_E);
+    $Qreq->cc = $Conf->opt("emailCc") ?? "";
 }
 
 if (isset($Qreq->replyto) && $Me->is_manager()) {
     // XXX should only apply to papers you administer
     $Qreq->replyto = simplify_whitespace($Qreq->replyto);
 } else {
-    $Qreq->replyto = $Conf->opt("emailReplyTo", "");
+    $Qreq->replyto = $Conf->opt("emailReplyTo") ?? "";
 }
 
 global $mailer_options;
@@ -421,7 +419,7 @@ class MailSender {
                 $vh = '<div style="max-width:60em"><span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span></div>';
             } else if ($k == "Subject") {
                 $vh = htmlspecialchars(MimeText::decode_header($show_prep->subject));
-            } else if (($line = get($show_prep->headers, $k))) {
+            } else if (($line = $show_prep->headers[$k] ?? null)) {
                 $k = substr($line, 0, strlen($k));
                 $vh = htmlspecialchars(MimeText::decode_header(substr($line, strlen($k) + 2)));
             } else {

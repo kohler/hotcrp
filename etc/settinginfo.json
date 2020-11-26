@@ -189,12 +189,12 @@
     },
     {
         "name": "opt.emailCc", "group": "basics",
-        "title": "Default Cc for reviewer email",
+        "title": "Default Cc for mail tool",
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     {
         "name": "opt.emailReplyTo", "group": "basics",
-        "title": "Reply-To field for email",
+        "title": "Deault Reply-To for mail tool",
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     {

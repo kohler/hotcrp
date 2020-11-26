@@ -57,10 +57,8 @@ $Opt["dbName"] = "FIXME";
 //                   defaults to something like "www-data@yourservername".
 //                   This email address should be connected to a valid mailbox
 //                   or certain spam filters will reject email from HotCRP.
-//   emailCc         Default "Cc:" address for email sent by HotCRP to
-//                   reviewers and via the mail tool. (Does not apply to most
-//                   email automatically sent to submitters.) If not set, the
-//                   default Cc is $Opt["contactEmail"].
+//   emailCc         If set, default "Cc:" address for email sent by HotCRP via
+//                   the mail tool. Does not apply to email sent automatically.
 //   emailReplyTo    If set, default "Reply-To:" address for email sent by
 //                   HotCRP.
 //   sendmailParam   Extra parameters to be passed to your mailer. The default
