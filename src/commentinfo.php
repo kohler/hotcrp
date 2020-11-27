@@ -347,11 +347,12 @@ class CommentInfo {
         return $docs;
     }
 
+    /** @return ?object */
     function unparse_json(Contact $viewer) {
         if ($this->commentId
             ? !$viewer->can_view_comment($this->prow, $this, true)
             : !$viewer->can_comment($this->prow, $this)) {
-            return false;
+            return null;
         }
 
         if ($this->commentId) {
@@ -797,6 +798,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         return true;
     }
 
+    /** @param PaperInfo $prow
+     * @param Contact $minic */
     function watch_callback($prow, $minic) {
         $ctype = $this->commentType;
         if ($minic->can_view_comment($prow, $this)
