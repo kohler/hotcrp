@@ -72,9 +72,9 @@ class ResponseRound {
         return $t === null || $t <= 0 || $t >= Conf::$now;
     }
     function instructions(Conf $conf) {
-        $m = $conf->_i("resp_instrux_$this->number", null, $this->words);
-        if ($m === false) {
-            $m = $conf->_i("resp_instrux", null, $this->words);
+        $m = $conf->_ci("resp_instrux", "resp_instrux_$this->number", null, $this->words);
+        if ($m === "") {
+            $m = $conf->_ci("resp_instrux", "resp_instrux", null, $this->words);
         }
         return $m;
     }

@@ -12,8 +12,11 @@ class IntlMsg {
     public $priority = 0.0;
     /** @var ?int */
     public $format;
-    public $no_conversions;
-    public $template;
+    /** @var bool */
+    public $no_conversions = false;
+    /** @var bool */
+    public $template = false;
+    /** @var ?IntlMsg */
     public $next;
 
     private function resolve_arg(IntlMsgSet $ms, $args, $argname, &$val) {
@@ -272,6 +275,11 @@ class IntlMsgSet {
         return null;
     }
 
+    /** @param ?string $context
+     * @param string $itext
+     * @param list<mixed> $args
+     * @param ?float $priobound
+     * @return ?IntlMsg */
     private function find($context, $itext, $args, $priobound) {
         assert(is_string($args[0]));
         if (++$this->_recursion > 5) {
