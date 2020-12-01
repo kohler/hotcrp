@@ -84,14 +84,18 @@ class MessageSet {
         assert(!!$field);
         return $field ? $this->canonfield[$field] ?? $field : $field;
     }
-    /** @param string $field */
-    function allow_error_at($field, $set = null) {
+    /** @param string $field
+     * @return bool */
+    function allow_error_at($field) {
+        return $this->allow_error && isset($this->allow_error[$this->canonical_field($field)]);
+    }
+    /** @param string $field
+     * @param bool $v */
+    function set_allow_error_at($field, $v) {
         $field = $this->canonical_field($field);
-        if ($set === null) {
-            return $this->allow_error && isset($this->allow_error[$field]);
-        } else if ($set) {
+        if ($v) {
             $this->allow_error[$field] = true;
-        } else if ($this->allow_error) {
+        } else {
             unset($this->allow_error[$field]);
         }
     }

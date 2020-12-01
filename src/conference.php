@@ -49,6 +49,7 @@ class ResponseRound {
     public $words;
     /** @var ?PaperSearch */
     public $search;
+    /** @return bool */
     function relevant(Contact $user, PaperInfo $prow = null) {
         if ($user->allow_administer($prow)
             && ($this->done || $this->search || $this->name !== "1")) {
@@ -61,6 +62,8 @@ class ResponseRound {
                 && (!$this->search || $this->search->filter($prow ? [$prow] : $user->authored_papers()));
         }
     }
+    /** @param bool $with_grace
+     * @return bool */
     function time_allowed($with_grace) {
         if ($this->open === null || $this->open <= 0 || $this->open > Conf::$now) {
             return false;
@@ -71,6 +74,7 @@ class ResponseRound {
         }
         return $t === null || $t <= 0 || $t >= Conf::$now;
     }
+    /** @return string */
     function instructions(Conf $conf) {
         $m = $conf->_ci("resp_instrux", "resp_instrux_$this->number", null, $this->words);
         if ($m === "") {
@@ -97,7 +101,9 @@ class Conf {
     public $settings;
     /** @var array<string,?string> */
     private $settingTexts;
+    /** @var int */
     public $sversion;
+    /** @var ?int */
     private $_pc_seeall_cache = null;
     private $_pc_see_pdf = false;
 

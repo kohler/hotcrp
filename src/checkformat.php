@@ -22,8 +22,11 @@ class CheckFormat extends MessageSet implements FormatChecker {
     /** @var int */
     public $allow_run;
     private $checkers = [];
+    /** @var ?string */
     public $banal_stdout;
+    /** @var ?string */
     public $banal_stderr;
+    /** @var ?int */
     public $banal_status;
     /** @var ?int */
     public $npages;
@@ -31,6 +34,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
     private $body_pages;
     /** @var int */
     public $run_flags = 0;
+    /** @var array<string,mixed> */
     public $metadata_updates = [];
 
     static private $banal_args;
@@ -159,6 +163,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return $bj;
     }
 
+    /** @return int */
     protected function body_error_status($error_pages) {
         if ($this->body_pages >= 0.5 * $this->npages
             && $error_pages >= 0.16 * $this->body_pages) {
@@ -168,6 +173,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
+    /** @return bool */
     static function banal_page_is_body($pg) {
         return ($pg->pagetype ?? "body") === "body"
             && (isset($pg->c)
@@ -175,6 +181,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 : (!isset($pg->d) || $pg->d >= 16000 || !isset($pg->columns) || $pg->columns <= 2));
     }
 
+    /** @return string */
     static function page_message($px) {
         if (empty($px)) {
             return "";

@@ -117,7 +117,9 @@ class AssignmentItemSet {
 class AssignmentState {
     /** @var array<int,AssignmentItemSet> */
     private $st = [];
+    /** @var array<string,list<string>> */
     private $types = [];
+    /** @var array<string,callable(AssignmentItem,AssignmentState):Assigner> */
     private $realizers = [];
     /** @var Conf */
     public $conf;
@@ -167,6 +169,7 @@ class AssignmentState {
 
     /** @param string $type
      * @param list<string> $keys
+     * @param callable(AssignmentItem,AssignmentState):Assigner $realizer
      * @return bool */
     function mark_type($type, $keys, $realizer) {
         if (!isset($this->types[$type])) {
@@ -177,6 +180,8 @@ class AssignmentState {
             return false;
         }
     }
+    /** @param string $type
+     * @return callable(AssignmentItem,AssignmentState):Assigner */
     function realizer($type) {
         return $this->realizers[$type];
     }
@@ -188,23 +193,20 @@ class AssignmentState {
         }
         return $this->st[$pid];
     }
-    /** @param Assignable $x */
+    /** @param Assignable $x
+     * @return ?string */
     private function extract_key($x, $pid = null) {
-        $tkeys = $this->types[$x->type];
-        if (!$tkeys) {
-            echo var_export($x, true);
-        }
-        assert(!!$tkeys);
         $t = $x->type;
-        foreach ($tkeys as $k) {
+        foreach ($this->types[$x->type] as $k) {
             if (isset($x->$k)) {
                 $t .= "`" . $x->$k;
             } else if ($pid !== null && $k === "pid") {
                 $t .= "`" . $pid;
             } else {
-                return false;
+                return null;
             }
         }
+        assert($t !== $x->type);
         return $t;
     }
     /** @param Assignable $x */
@@ -499,6 +501,7 @@ class AssignerContacts {
     private $has_pc = false;
     /** @var ?Contact */
     private $none_user;
+    /** @var int */
     static private $next_fake_id = -10;
     static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, affiliation, collaborators, roles, contactTags";
     static public $cdb_query = "contactDbId, firstName, lastName, email, affiliation, collaborators, 0 roles, '' contactTags";

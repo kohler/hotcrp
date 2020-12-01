@@ -3,12 +3,19 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class AssignmentCount {
+    /** @var int */
     public $ass = 0;
+    /** @var int */
     public $rev = 0;
+    /** @var int */
     public $meta = 0;
+    /** @var int */
     public $pri = 0;
+    /** @var int */
     public $sec = 0;
+    /** @var int */
     public $lead = 0;
+    /** @var int */
     public $shepherd = 0;
 
     function add(AssignmentCount $ct) {

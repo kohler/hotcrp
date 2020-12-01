@@ -227,8 +227,8 @@ foreach ($jp as &$j) {
                                         "disable_users" => $disable_users,
                                         "add_topics" => $add_topics,
                                         "content_file_prefix" => $content_file_prefix]);
-    $ps->allow_error_at("topics", true);
-    $ps->allow_error_at("options", true);
+    $ps->set_allow_error_at("topics", true);
+    $ps->set_allow_error_at("options", true);
     $ps->on_document_import("on_document_import");
     $pid = $ps->save_paper_json($j);
     if ($pid && str_starts_with($pidtext, "new")) {
