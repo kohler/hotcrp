@@ -3930,13 +3930,15 @@ return function (id, name, elt) {
         if (name === false) {
             observer && observer.unobserve($$(id));
             $(pslcard).find("a[href='#" + id + "']").remove();
-        } else {
+        } else if (typeof id === "string") {
             var $psli = $('<li class="pslitem ui js-click-child"><a href="#' + id + '" class="x hover-child">' + name + '</a></li>');
             $psli.appendTo(pslcard);
             elt = elt || $$(id);
             linkmap && linkmap.set(elt, $psli[0]);
             observer && observer.observe(elt);
             return $psli[0];
+        } else {
+            pslcard.appendChild(id);
         }
     }
 };
@@ -8485,22 +8487,36 @@ function run_edit_conditions() {
     link && toggleClass(link, "hidden", off);
 }
 
+function header_text(hdr) {
+    var x = hdr.firstChild;
+    while (x && x.nodeType !== 3) {
+        x = x.nextSibling;
+    }
+    return x ? x.data.trim() : null;
+}
+
 function add_pslitem_header() {
     var l = this.firstChild, id;
     if (l.tagName === "LABEL") {
         id = this.id || l.getAttribute("for") || $(l).find("input").attr("id");
     }
     if (id) {
-        var x = l.firstChild;
-        while (x && x.nodeType !== 3) {
-            x = x.nextSibling;
-        }
-        var e = x ? add_pslitem(id, escape_entities(x.data.trim()), this.parentElement) : null;
+        var xt = header_text(l),
+            e = xt ? add_pslitem(id, escape_entities(xt), this.parentElement) : null;
         if (e) {
             hasClass(this, "has-error") && addClass(e.firstChild, "is-error");
             hasClass(this, "has-warning") && addClass(e.firstChild, "is-warning");
             hasClass(this.parentElement, "hidden") && addClass(e, "hidden");
         }
+    }
+}
+
+function add_pslitem_papeg() {
+    if (hasClass(this, "papeg-separator")) {
+        var $j = $('<li class="pslitem pslitem-separator"></li>');
+        add_pslitem($j[0], true);
+    } else if (hasClass(this.firstChild, "papet")) {
+        add_pslitem_header.call(this.firstChild);
     }
 }
 
@@ -8540,7 +8556,7 @@ return {
     load: function () {
         hiliter_children("#form-paper");
         $("#form-paper input.primary-document").trigger("change");
-        $(".papet").each(add_pslitem_header);
+        $(".papeg").each(add_pslitem_papeg);
         var h = $(".btn-savepaper").first(),
             k = $("#form-paper").hasClass("alert") ? "" : " hidden";
         $(".pslcard-nav").append('<div class="paper-alert mt-5' + k + '">'

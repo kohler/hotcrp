@@ -290,15 +290,18 @@ class PaperOptionList implements IteratorAggregate {
 
     private function add_abbrev_matcher(AbbreviationMatcher $am, $id, $oj) {
         $cb = [$this, "option_by_id"];
-        $am->add_phrase_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
         $am->add_keyword_lazy("opt{$id}", $cb, [$id], Conf::MFLAG_OPTION);
+        if ($oj->name ?? null) {
+            $am->add_phrase_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
+        }
         $oj->search_keyword = $oj->search_keyword ?? $oj->json_key ?? null;
         if ($oj->search_keyword) {
             $am->add_keyword_lazy($oj->search_keyword, $cb, [$id], Conf::MFLAG_OPTION);
         }
         if (($oj->json_key ?? null)
             && $oj->json_key !== $oj->search_keyword
-            && strcasecmp(str_replace("_", " ", $oj->json_key), $oj->name) !== 0) {
+            && (($oj->name ?? null)
+                || strcasecmp(str_replace("_", " ", $oj->json_key), $oj->name) !== 0)) {
             $am->add_keyword_lazy($oj->json_key, $cb, [$id], Conf::MFLAG_OPTION);
         }
     }
@@ -327,7 +330,8 @@ class PaperOptionList implements IteratorAggregate {
         $cb = [$this, "option_by_id"];
         foreach ($this->option_json_map() as $id => $oj) {
             if ((($oj->nonpaper ?? false) === true) === $nonpaper
-                && ($oj->search_keyword ?? null) === null) {
+                && ($oj->search_keyword ?? null) === null
+                && ($oj->name ?? null)) {
                 $e = AbbreviationEntry::make_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
                 $s = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL, Conf::MFLAG_OPTION);
                 $oj->search_keyword = $s;
@@ -622,14 +626,14 @@ class PaperOption implements JsonSerializable {
     /** @var int
      * @readonly */
     public $id;
-    /** @var string
+    /** @var ?string
      * @readonly */
     public $name;
     /** @var string
      * @readonly */
     public $formid;
     private $_readable_formid;
-    /** @var string
+    /** @var ?string
      * @readonly */
     private $title;
     /** @var string
@@ -688,6 +692,7 @@ class PaperOption implements JsonSerializable {
     static private $display_rmap = null;
 
     static private $callback_map = [
+        "separator" => "+Separator_PaperOption",
         "checkbox" => "+Checkbox_PaperOption",
         "radio" => "+Selector_PaperOption",
         "selector" => "+Selector_PaperOption",
@@ -709,10 +714,7 @@ class PaperOption implements JsonSerializable {
         }
         $this->conf = $conf;
         $this->id = (int) $args->id;
-        $this->name = $args->name;
-        if ($this->name === null) {
-            $this->name = "<Unknown-{$this->id}>";
-        }
+        $this->name = $args->name ?? null;
         $this->title = $args->title ?? null;
         if (!$this->title && $this->id > 0) {
             $this->title = $this->name;
@@ -926,12 +928,12 @@ class PaperOption implements JsonSerializable {
     /** @return string */
     function json_key() {
         if ($this->_json_key === null) {
-            $am = $this->abbrev_matcher();
-            $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
-            $this->_json_key = $am->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE);
-            if (!$this->_json_key) {
-                $this->_json_key = $this->formid;
+            if ($this->name !== null) {
+                $am = $this->abbrev_matcher();
+                $e = AbbreviationEntry::make_lazy($this->name, [$this->conf->options(), "option_by_id"], [$this->id], Conf::MFLAG_OPTION);
+                $this->_json_key = $am->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE | AbbreviationMatcher::KW_FULLPHRASE);
             }
+            $this->_json_key = $this->_json_key ?? $this->formid;
         }
         return $this->_json_key;
     }
@@ -959,8 +961,8 @@ class PaperOption implements JsonSerializable {
         return $this->exists_if;
     }
     function exists_script_expression(PaperInfo $prow) {
-        assert($this->_exists_search !== null);
-        return $this->_exists_search->term()->script_expression($prow, $this->_exists_search);
+        $s = $this->_exists_search;
+        return $s ? $s->term()->script_expression($prow, $s) : null;
     }
     protected function set_exists_if($x) {
         if ($x !== null && $x !== true) {
@@ -1071,12 +1073,11 @@ class PaperOption implements JsonSerializable {
 
     /** @return object */
     function jsonSerialize() {
-        $j = (object) [
-            "id" => (int) $this->id,
-            "name" => $this->name,
-            "type" => $this->type,
-            "position" => (int) $this->position
-        ];
+        $j = (object) ["id" => (int) $this->id, "name" => $this->name];
+        if ($this->type !== null) {
+            $j->type = $this->type;
+        }
+        $j->position = (int) $this->position;
         if ($this->description !== null) {
             $j->description = $this->description;
         }
@@ -1271,6 +1272,19 @@ class PaperOption implements JsonSerializable {
     /** @return Fexpr */
     final function present_fexpr() {
         return new OptionPresent_Fexpr($this);
+    }
+}
+
+class Separator_PaperOption extends PaperOption {
+    function __construct(Conf $conf, $args) {
+        parent::__construct($conf, $args);
+    }
+    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+        echo '<div class="papeg papeg-separator">';
+        if (($h = $pt->edit_title_html($this))) {
+            echo '<h3 class="papet papet-separator">', $h, '</h3>';
+        }
+        echo '</div>';
     }
 }
 

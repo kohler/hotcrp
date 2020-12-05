@@ -1,5 +1,9 @@
 [
     {
+        "name": "separator", "title": "Separator", "priority": -1,
+        "display_if": false, "callback": "+Separator_PaperOption"
+    },
+    {
         "name": "checkbox", "title": "Checkbox", "position": 100,
         "callback": "+Checkbox_PaperOption"
     },

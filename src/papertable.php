@@ -34,9 +34,7 @@ class PaperTable {
 
     public $editable;
     /** @var list<PaperOption> */
-    public $edit_fields;
-    /** @var int */
-    public $edit_fields_position;
+    private $edit_fields;
 
     /** @var Qrequest */
     private $qreq;
@@ -422,12 +420,11 @@ class PaperTable {
             $for = $rest["for"] ?? false;
         }
         echo '<div class="papeg';
+        if (!$opt->test_exists($this->prow) || ($rest["hidden"] ?? false)) {
+            echo ' hidden';
+        }
         if ($opt->exists_condition()) {
-            echo ' want-fieldchange has-edit-condition';
-            if (!$opt->test_exists($this->prow)) {
-                echo ' hidden';
-            }
-            echo '" data-edit-condition="', htmlspecialchars(json_encode($opt->exists_script_expression($this->prow)));
+            echo ' want-fieldchange has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode($opt->exists_script_expression($this->prow)));
             Ht::stash_script('$(hotcrp.paper_edit_conditions)', 'edit_condition');
         }
         echo '"><h3 class="', $this->control_class($opt->formid, "papet");
@@ -540,7 +537,6 @@ class PaperTable {
 
     /** @param PaperOption $opt */
     function echo_field_hint($opt) {
-        assert(!!$this->edit_status);
         echo $this->messages_at($opt->formid);
         $fr = new FieldRender(FieldRender::CFHTML);
         $fr->value_format = 5;
@@ -1645,7 +1641,7 @@ class PaperTable {
             && $this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {
             $fields = [];
-            foreach ($this->edit_fields ? : [] as $o) {
+            foreach ($this->edit_fields ?? [] as $o) {
                 if ($this->edit_status->has_problem_at($o->formid))
                     $fields[] = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
             }
@@ -1940,10 +1936,7 @@ class PaperTable {
         $this->_echo_edit_messages(true);
 
         if (!$this->quit) {
-            for ($this->edit_fields_position = 0;
-                 $this->edit_fields_position < count($this->edit_fields);
-                 ++$this->edit_fields_position) {
-                $o = $this->edit_fields[$this->edit_fields_position];
+            foreach ($this->edit_fields as $o) {
                 $ov = $reqov = $this->prow->force_option($o);
                 if ($this->useRequest
                     && $this->qreq["has_{$o->formid}"]

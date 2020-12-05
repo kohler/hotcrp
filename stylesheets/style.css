@@ -1279,10 +1279,10 @@ div.hint {
 
 /* column content */
 .main-column p, .main-column dl {
-	max-width: 800px;
+	max-width: 720px;
 }
 .main-column ul, .main-column ol {
-	max-width: 772px;
+	max-width: 692px;
 	padding-left: 28px;
 }
 
@@ -2745,6 +2745,10 @@ a.badge:active {
 .pslitem-intersecting {
 	font-weight: bold;
 }
+.pslitem-separator {
+	margin-top: 0.5rem;
+	font-style: italic;
+}
 .pslitem > .is-error:before, .feedback.is-error:before,
 .pslitem > .is-warning:before, .feedback.is-warning:before,
 .pslitem > .is-success:before, .feedback.is-success:before,
@@ -3093,7 +3097,12 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 .papet {
 	font-size: inherit;
 	color: #313168;
+	margin-top: 0;
 	margin-bottom: 0.25rem;
+}
+.papet.papet-separator {
+	font-size: larger;
+	margin-top: 1rem;
 }
 .papet .papfn {
 	float: left;
@@ -3321,25 +3330,16 @@ a:hover .t-editor,
 .rvr {
 	grid-column: 3 / 4;
 }
-.papeg, .papegroup {
+.papeg {
 	margin-bottom: 2.5rem;
 }
-.aab + .papeg, .aab + .papegroup {
+.papeg-separator {
+	margin-top: 3rem;
+	border-top: 3px solid #9e9ece;
+	max-width: 720px;
+}
+.aab + .papeg {
 	margin-top: 1rem;
-}
-.papegroup {
-	margin-left: -24px;
-	margin-right: -24px;
-	padding: 1rem 24px;
-	background: #eae8f2;
-	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%),
-		linear-gradient(to top, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%);
-}
-.papegroup > *:first-child {
-	margin-top: 0;
-}
-.papegroup > *:last-child {
-	margin-bottom: 0;
 }
 .settingsgroup {
 	margin: 12px -24px;

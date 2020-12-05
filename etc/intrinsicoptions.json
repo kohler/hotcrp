@@ -2,7 +2,7 @@
     {
         "name": "Title", "id": -1000,
         "json_key": "title",
-        "form_position": 1, "required": true,
+        "form_position": 10, "required": true,
         "type": "intrinsic2", "include_empty": true,
         "callback": "+Title_PaperOption"
     },
