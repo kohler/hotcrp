@@ -330,10 +330,13 @@ class PaperOptionList implements IteratorAggregate {
         $cb = [$this, "option_by_id"];
         foreach ($this->option_json_map() as $id => $oj) {
             if ((($oj->nonpaper ?? false) === true) === $nonpaper
-                && ($oj->search_keyword ?? null) === null
-                && ($oj->name ?? null)) {
-                $e = AbbreviationEntry::make_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
-                $s = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL, Conf::MFLAG_OPTION);
+                && ($oj->search_keyword ?? null) === null) {
+                if ($oj->name ?? null) {
+                    $e = AbbreviationEntry::make_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
+                    $s = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL, Conf::MFLAG_OPTION) ?? false;
+                } else {
+                    $s = false;
+                }
                 $oj->search_keyword = $s;
                 if (($o = $this->_omap[$id] ?? null)) {
                     $o->_search_keyword = $s;

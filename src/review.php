@@ -650,7 +650,7 @@ class ReviewForm implements JsonSerializable {
         foreach ($this->all_fields() as $f) {
             if ($f->_search_keyword === null) {
                 $e = new AbbreviationEntry($f->name, $f, Conf::MFLAG_REVIEW);
-                $f->_search_keyword = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
+                $f->_search_keyword = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL) ?? false;
             }
         }
     }
