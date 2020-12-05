@@ -553,7 +553,10 @@ class AbbreviationMatcher {
         return str_replace(" ", "", $s);
     }
 
-    /** @suppress PhanAccessReadOnlyProperty */
+    /** @param string $cname
+     * @param int $class
+     * @return string
+     * @suppress PhanAccessReadOnlyProperty */
     private function _finish_abbreviation($cname, AbbreviationEntry $e, $class) {
         if (($class & self::KW_FORMAT) === self::KW_CAMEL
             && ($class & self::KW_ENSURE) !== 0
@@ -576,7 +579,7 @@ class AbbreviationMatcher {
     const KWP_MULTIWORD = 32;
     /** @param int $class
      * @param int $tflags
-     * @return string|false
+     * @return ?string
      * @suppress PhanAccessReadOnlyProperty */
     function find_entry_keyword(AbbreviationEntry $e, $class, $tflags = 0) {
         // Strip parenthetical remarks when that preserves uniqueness
@@ -655,13 +658,13 @@ class AbbreviationMatcher {
             $this->add_entry($e2, false);
             return $cname . $suffix;
         } else {
-            return false;
+            return null;
         }
     }
 
     /** @param int $class
      * @param int $tflags
-     * @return string|false */
+     * @return ?string */
     function ensure_entry_keyword(AbbreviationEntry $e, $class, $tflags = 0) {
         return $this->find_entry_keyword($e, $class | self::KW_ENSURE, $tflags);
     }

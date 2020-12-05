@@ -877,11 +877,11 @@ class PaperOption implements JsonSerializable {
     }
     /** @return string */
     function plural_title() {
-        return $this->title ? : $this->conf->_ci("field/plural", $this->formid);
+        return $this->title ?? $this->conf->_ci("field/plural", $this->formid);
     }
     /** @return string */
     function edit_title() {
-        return $this->title ? : $this->conf->_ci("field/edit", $this->formid);
+        return $this->title ?? $this->conf->_ci("field/edit", $this->formid);
     }
 
     /** @return AbbreviationMatcher */
@@ -1448,11 +1448,12 @@ class Selector_PaperOption extends PaperOption {
         $fr->set_text($this->selector[$ov->value - 1] ?? "");
     }
 
+    /** @return ?string */
     function selector_option_search($idx) {
         if ($idx <= 0) {
             return "none";
         } else if ($idx > count($this->selector)) {
-            return false;
+            return null;
         } else {
             $e = new AbbreviationEntry($this->selector[$idx - 1], $idx);
             return $this->selector_abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);

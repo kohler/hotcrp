@@ -327,6 +327,7 @@ function numrangejoin($range) {
             } else if ($first === $last) {
                 $a[] = $first;
             } else {
+                /** @phan-suppress-next-line PhanTypeMismatchArgumentInternalReal */
                 $a[] = $first . "–" . substr($last, $plen);
             }
         }

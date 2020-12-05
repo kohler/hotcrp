@@ -289,6 +289,7 @@ class ReviewField implements JsonSerializable {
         }
         return $this->_search_keyword;
     }
+    /** @return ?string */
     function abbreviation1() {
         $e = new AbbreviationEntry($this->name, $this, Conf::MFLAG_REVIEW);
         return $this->conf->abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE);

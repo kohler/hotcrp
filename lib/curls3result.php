@@ -5,7 +5,7 @@
 /** @template T
  * @inherits S3Result<T> */
 class CurlS3Result extends S3Result {
-    /** @var ?resource */
+    /** @var ?CurlHandle */
     public $curlh;
     /** @var resource */
     public $hstream;

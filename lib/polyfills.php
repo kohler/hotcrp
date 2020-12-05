@@ -2,6 +2,26 @@
 // polyfills.php -- HotCRP GMP shim functions
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+if (!function_exists("str_starts_with")) {
+    /** @param string $haystack
+     * @param string $needle
+     * @return bool */
+    function str_starts_with($haystack, $needle) {
+        $nl = strlen($needle);
+        $hl = strlen($haystack);
+        return $nl === 0 || ($hl >= $nl && substr_compare($haystack, $needle, 0, $nl) === 0);
+    }
+
+    /** @param string $haystack
+     * @param string $needle
+     * @return bool */
+    function str_ends_with($haystack, $needle) {
+        $nl = strlen($needle);
+        $hl = strlen($haystack);
+        return $nl === 0 || ($hl >= $nl && substr_compare($haystack, $needle, -$nl) === 0);
+    }
+}
+
 foreach (["JSON_ERROR_NONE" => 0, "JSON_ERROR_DEPTH" => 1,
           "JSON_ERROR_STATE_MISMATCH" => 2, "JSON_ERROR_CTRL_CHAR" => 3,
           "JSON_ERROR_SYNTAX" => 4, "JSON_ERROR_UTF8" => 5,

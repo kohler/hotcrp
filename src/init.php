@@ -86,6 +86,7 @@ setlocale(LC_CTYPE, "C");
 // Don't want external entities parsed by default
 if (PHP_VERSION_ID < 80000
     && function_exists("libxml_disable_entity_loader")) {
+    /** @phan-suppress-next-line PhanDeprecatedFunctionInternal */
     libxml_disable_entity_loader(true);
 }
 
