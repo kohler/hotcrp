@@ -133,7 +133,8 @@ class Reviews_SettingRenderer {
         $num_printed = 0;
         foreach ($roundorder as $i => $rname) {
             if ($i ? $rname !== ";" : $print_round0) {
-                self::echo_round($sv, $i, $i ? $rname : "", $round_map[$i] ?? 0, count($selector) !== 1);
+                self::echo_round($sv, $i, $i ? $rname : "", $round_map[$i] ?? 0,
+                                 $i !== 0 && count($selector) !== 1);
                 ++$num_printed;
             }
         }
