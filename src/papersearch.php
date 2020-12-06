@@ -2042,14 +2042,18 @@ class PaperSearch {
     }
 
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
-        $lword = strtolower($word);
-        if (($kwdef = $srch->conf->search_keyword($lword, $srch->user))) {
+        $kword = $word;
+        $kwdef = $srch->conf->search_keyword($kword, $srch->user);
+        if (!$kwdef && ($kword = strtolower($word)) !== $word) {
+            $kwdef = $srch->conf->search_keyword($kword, $srch->user);
+        }
+        if ($kwdef) {
             if ($kwdef->parse_has_callback ?? null) {
                 $qe = call_user_func($kwdef->parse_has_callback, $word, $sword, $srch);
             } else if ($kwdef->has ?? null) {
                 $sword2 = new SearchWord($kwdef->has);
                 $sword2->kwexplicit = true;
-                $sword2->keyword = $lword;
+                $sword2->keyword = $kword;
                 $sword2->kwdef = $kwdef;
                 $qe = call_user_func($kwdef->parse_callback, $kwdef->has, $sword2, $srch);
             } else {
