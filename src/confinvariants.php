@@ -257,10 +257,18 @@ class ConfInvariants {
                 foreach ($autotags as $i => $tag) {
                     if ($tag !== null
                         && $prow->has_tag($tag)
-                        && $autosearches[$i]->test($prow)
-                        && ($v0 = $prow->tag_value($tag)) != ($v1 = call_user_func($autoformulas[$i], $prow, null, $user))) {
-                        $this->invariant_error("autosearch", "automatic tag #" . $tag . " has bad value " . json_encode($v0) . " (expected " . json_encode($v1) . ") on #" . $prow->paperId);
-                        $autotags[$i] = null;
+                        && $autosearches[$i]->test($prow)) {
+                        $v0 = $prow->tag_value($tag);
+                        $v1 = call_user_func($autoformulas[$i], $prow, null, $user);
+                        if (is_bool($v1)) {
+                            $v1 = $v1 ? 0.0 : null;
+                        } else if (is_int($v1)) {
+                            $v1 = (float) $v1;
+                        }
+                        if ($v0 !== $v1) {
+                            $this->invariant_error("autosearch", "automatic tag #" . $tag . " has bad value " . json_encode($v0) . " (expected " . json_encode($v1) . ") on #" . $prow->paperId);
+                            $autotags[$i] = null;
+                        }
                     }
                 }
             }
