@@ -1019,10 +1019,6 @@ function hoturl_absolute_base() {
     return siteinfo.absolute_base;
 }
 
-function hoturl_go(page, options) {
-    window.location = hoturl(page, options);
-}
-
 function hidden_input(name, value, attr) {
     var input = document.createElement("input");
     input.type = "hidden";

@@ -148,14 +148,14 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $this->metadata_updates["banal"] = $bj;
                 $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
             } else {
-                $this->msg_fail("Error processing file. The file may not be in PDF format or may be corrupted.");
+                $this->msg_fail(htmlspecialchars($doc->export_filename()) . " cannot be processed. The file may be corrupted or not in PDF format.");
             }
 
             if ($limit > 0) {
                 $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
             }
         } else {
-            $this->msg_fail($doc->error_html ?? "Paper cannot be loaded.");
+            $this->msg_fail(htmlspecialchars($doc->export_filename()) . ": " . ($doc->error_html ?? "File cannot be loaded."));
             $flags &= ~CheckFormat::RUN_ALLOWED;
         }
 
