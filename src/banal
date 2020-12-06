@@ -1528,7 +1528,22 @@ sub banal_open_input ($) {
         print STDERR "$cmd\n" if ($debug_pdftohtml);
 
         my($ignore_output) = `$cmd`;
-        unless (-s $FILE) {
+        # Some bad `pdftohtml`s add an extra `.xml` suffix.
+        if (!-s $FILE && -s "$oname.xml") {
+            my $xfh = undef;
+            if (!open($xfh, "<:raw :bytes", "$oname.xml")) {
+                print STDERR "$oname.xml: Error: Failed to open file.\n";
+                return 0;
+            }
+            my($str);
+            while (read($xfh, $str, 16384)) {
+                print $FILE $str;
+            }
+            close($xfh);
+            unlink("$oname.xml");
+            seek($FILE, 0, 0);
+        }
+        if (!-s $FILE) {
             print STDERR "$fname: Error: Failed to open file.\n";
             return 0;
         }
