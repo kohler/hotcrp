@@ -328,6 +328,7 @@ class Round_SettingParser extends SettingParser {
 
     function parse(SettingValues $sv, Si $si) {
         assert($si->name === "tag_rounds");
+        $this->rev_round_changes = [];
 
         // count number of requested rounds
         $nreqround = 1;
@@ -340,8 +341,11 @@ class Round_SettingParser extends SettingParser {
         $roundnames = array_fill(0, $nreqround, ";");
         $roundlnames = [];
         for ($i = 0; $i < $nreqround; ++$i) {
-            $name = $sv->reqv("roundname_$i");
-            if ($name !== null && !$sv->reqv("deleteround_$i")) {
+            if ($sv->reqv("deleteround_$i")) {
+                if ($i !== 0) {
+                    $this->rev_round_changes[$i] = 0;
+                }
+            } else if (($name = $sv->reqv("roundname_$i")) !== null) {
                 $name = self::clean_round_name($name);
                 $lname = strtolower($name);
                 if (isset($roundlnames[$lname])) {
@@ -358,7 +362,6 @@ class Round_SettingParser extends SettingParser {
         }
 
         // check for round transformations
-        $this->rev_round_changes = [];
         if ($roundnames[0] !== ";" && $roundnames[0] !== "") {
             $j = 1;
             while ($j < count($roundnames) && $roundnames[$j] !== ";") {
