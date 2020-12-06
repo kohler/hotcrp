@@ -389,7 +389,10 @@ class AutoassignerInterface {
         $assignset->parse(join("\n", $assignments));
 
         $atypes = $assignset->assigned_types();
-        $apids = $assignset->numjoin_assigned_pids(" ");
+        $apids = SessionList::encode_ids($assignset->assigned_pids());
+        if (strlen($apids) > 512) {
+            $apids = substr($apids, 0, 509) . "...";
+        }
         $this->echo_form_start(["saveassignment" => 1, "assigntypes" => join(" ", $atypes), "assignpids" => $apids], []);
 
         $atype = $assignset->type_description();
