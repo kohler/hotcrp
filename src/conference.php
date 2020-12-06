@@ -517,7 +517,7 @@ class Conf {
         $this->rounds = [""];
         if (isset($this->settingTexts["tag_rounds"])) {
             foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r) {
-                if ($r != "")
+                if ($r !== "")
                     $this->rounds[] = $r;
             }
         }
@@ -1788,10 +1788,16 @@ class Conf {
      * @return string */
     function round_name($roundno) {
         if ($roundno > 0) {
-            if (($rname = $this->rounds[$roundno] ?? null) && $rname !== ";") {
+            $rname = $this->rounds[$roundno] ?? null;
+            if ($rname === null) {
+                error_log($this->dbname . ": round #$roundno undefined");
+                while (count($this->rounds) <= $roundno) {
+                    $this->rounds[] = null;
+                }
+                $this->rounds[$roundno] = ";";
+            } else if ($rname !== ";") {
                 return $rname;
             }
-            error_log($this->dbname . ": round #$roundno undefined");
         }
         return "";
     }
