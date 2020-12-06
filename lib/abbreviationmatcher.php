@@ -193,15 +193,17 @@ class AbbreviationMatcher {
      * @param bool $case_sensitive
      * @return string */
     static function xtester_remove_stops($s, $case_sensitive = false) {
-        return preg_replace('/ (?:a|an|and|are|at|be|been|can|did|do|for|has|how|if|in|is|isnt|it|new|of|on|or|that|the|their|they|this|to|we|were|what|which|with|you)(?= |\z)/i', "", $s);
+        return preg_replace('/ (?:a|an|and|are|at|be|been|can|did|do|for|has|how|if|in|is|isnt|it|new|of|on|or|s|that|the|their|they|this|to|we|were|what|which|with|you)(?= |\z)/i', "", $s);
     }
     /** @param string $name
      * @return string */
     static private function deparenthesize($name) {
-        if ((strpos($name, "(") !== false || strpos($name, "[") !== false)
-            && ($xname = preg_replace('/(?:\s+|\A)(?:\(.*?\)|\[.*?\])(?=\s|\z)/', "", $name)) !== ""
-            && $xname !== $name) {
-            return $xname;
+        if (strpos($name, "(") !== false || strpos($name, "[") !== false) {
+            $x = preg_replace_callback('/(?:\s+|\A)(?:\(.*?\)|\[.*?\])(?=\s|\z)|[a-z]\(s\)(?=[\s\']|\z)/',
+                function ($m) {
+                    return ctype_alpha($m[0][0]) ? "{$m[0][0]}s" : "";
+                }, $name);
+            return $x !== "" && $x !== $name ? $x : "";
         } else {
             return "";
         }
