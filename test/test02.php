@@ -1045,6 +1045,42 @@ $am->add_phrase("Wander (ment) [2](maybe)", 110);
 xassert_eqq($am->find_all("Butt(s)"), [110]);
 xassert_eqq($am->find_all("Butts"), [110]);
 
+$am = new AbbreviationMatcher;
+$names = ["Public Talk Title (required)",
+          "Short description (required)",
+          "Keyword-Hash Tags",
+          "Speaker Name(s) for Public Posting (required)",
+          "Bio for each presenter (required)",
+          "Speaker(s)' Slack Handle(s)",
+          "Speaker(s)' Twitter handles",
+          "Speaker(s)'s Headshot (required)",
+          "Long Presentation Video",
+          "Slides",
+          "Proposal Type",
+          "Proposal Length",
+          "Long Description for Program Committee",
+          "Session Outline",
+          "Audience Take-Aways",
+          "Other notes for the program committee",
+          "Agenda Items Complete?",
+          "Paper preparation"];
+foreach ($names as $i => $k) {
+    $am->add_phrase($k, $i);
+}
+foreach ($names as $i => $k) {
+    $e = new AbbreviationEntry($k, $i);
+    $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
+}
+xassert_eqq($am->find_all("PubTal"), [0]);
+xassert_eqq($am->find_all("ShoDes"), [1]);
+xassert_eqq($am->find_all("KeyHasTag"), [2]);
+xassert_eqq($am->find_all("SpeNam"), [3]);
+xassert_eqq($am->find_all("BioPre"), [4]);
+xassert_eqq($am->find_all("SpeSlaHan"), [5]);
+xassert_eqq($am->find_all("SpeTwiHan"), [6]);
+xassert_eqq($am->find_all("SpeHea"), [7]);
+xassert_eqq($am->find_all("LonPreVid"), [8]);
+
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
 xassert_eqq(Filer::docstore_fixed_prefix(""), null);
