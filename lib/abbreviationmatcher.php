@@ -242,7 +242,9 @@ class AbbreviationMatcher {
     /** @suppress PhanAccessReadOnlyProperty */
     private function _add_deparen(AbbreviationEntry $d, $name) {
         $xt = self::make_xtester(strtolower($name));
-        if (!in_array($xt, $this->ltesters)) {
+        $i = array_search($xt, $this->ltesters);
+        if ($i === false
+            || ($this->data[$i]->tflags & AbbreviationEntry::TFLAG_DP) !== 0) {
             $e = clone $d;
             $e->name = $name;
             $e->dedash_name = self::dedash($name);
