@@ -1081,6 +1081,22 @@ xassert_eqq($am->find_all("SpeTwiHan"), [6]);
 xassert_eqq($am->find_all("SpeHea"), [7]);
 xassert_eqq($am->find_all("LonPreVid"), [8]);
 
+$am = new AbbreviationMatcher;
+$names = ["Presentation Video (1-2 minutes)",
+          "Presentation Video (15-20 minutes)",
+          "Presentation Slides"];
+foreach ($names as $i => $k) {
+    $am->add_phrase($k, $i);
+}
+foreach ($names as $i => $k) {
+    $e = new AbbreviationEntry($k, $i);
+    $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL);
+}
+xassert_eqq($am->find_all("PreVid1"), [0]);
+xassert_eqq($am->find_all("PreVid15"), [1]);
+xassert_eqq($am->find_all("PreSli"), [2]);
+xassert_eqq($am->find_all("PreVid"), [0, 1]);
+
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
 xassert_eqq(Filer::docstore_fixed_prefix(""), null);
