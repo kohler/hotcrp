@@ -643,14 +643,14 @@ echo '<div>';
 echo divClass("ass"), "<h3 class=\"form-h\">Action</h3>", "</div>";
 echo_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
 echo "&nbsp; ",
-    Ht::entry("revct", get($Qreq, "revct", 1),
+    Ht::entry("revct", $Qreq->revct ?? 1,
               ["size" => 3, "class" => Ht::control_class("revct", "js-autosubmit")]), "&nbsp; ",
     Ht::select("revtype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $Qreq->revtype),
     "&nbsp; review(s)</div>\n";
 
 echo_radio_row("a", "revadd", "Assign", ["open" => true]);
 echo "&nbsp; ",
-    Ht::entry("revaddct", get($Qreq, "revaddct", 1),
+    Ht::entry("revaddct", $Qreq->revaddct ?? 1,
               ["size" => 3, "class" => Ht::control_class("revaddct", "js-autosubmit")]),
     "&nbsp; <i>additional</i>&nbsp; ",
     Ht::select("revaddtype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $Qreq->revaddtype),
@@ -658,7 +658,7 @@ echo "&nbsp; ",
 
 echo_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
 echo "&nbsp; ",
-    Ht::entry("revpcct", get($Qreq, "revpcct", 1),
+    Ht::entry("revpcct", $Qreq->revpcct ?? 1,
               ["size" => 3, "class" => Ht::control_class("revpcct", "js-autosubmit")]),
     "&nbsp; additional&nbsp; ",
     Ht::select("revpctype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $Qreq->revpctype),
@@ -666,7 +666,7 @@ echo "&nbsp; ",
 
 // Review round
 $rev_rounds = $Conf->round_selector_options(null);
-if (count($rev_rounds) > 1 || !get($rev_rounds, "unnamed")) {
+if (count($rev_rounds) > 1 || !($rev_rounds["unnamed"] ?? false)) {
     echo '<div';
     if (($c = Ht::control_class("rev_round"))) {
         echo ' class="', trim($c), '"';
@@ -698,7 +698,7 @@ echo Ht::select("shepherdscore", $scoreselector, $Qreq->shepherdscore), "</div>\
 
 // discussion order
 echo_radio_row("a", "discorder", "Create discussion order in tag #", ["open" => true, "divclass" => "mt-3"]);
-echo Ht::entry("discordertag", get($Qreq, "discordertag", "discuss"),
+echo Ht::entry("discordertag", $Qreq->discordertag ?? "discuss",
                ["size" => 12, "class" => Ht::control_class("discordertag", "js-autosubmit")]),
     ", grouping papers with similar PC conflicts</div>";
 

@@ -254,12 +254,12 @@ if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
 // modifications
 function modify_confirm($j, $ok_message, $ok_message_optional) {
     global $Conf;
-    if (get($j, "ok") && get($j, "warnings")) {
+    if (($j->ok ?? false) && ($j->warnings ?? false)) {
         $Conf->warnMsg("<div>" . join('</div><div style="margin-top:0.5em">', $j->warnings) . "</div>");
     }
-    if (get($j, "ok")
+    if (($j->ok ?? false)
         && $ok_message
-        && (!$ok_message_optional || !get($j, "warnings"))
+        && (!$ok_message_optional || !($j->warnings ?? false))
         && (!isset($j->users) || !empty($j->users))) {
         $Conf->confirmMsg($ok_message);
     }
@@ -408,7 +408,7 @@ if (count($tOpt) > 1) {
     foreach (array("tags" => "Tags",
                    "aff" => "Affiliations", "collab" => "Collaborators",
                    "topics" => "Topics") as $fold => $text) {
-        if (get($pl->have_folds, $fold) !== null) {
+        if (($pl->have_folds[$fold] ?? null) !== null) {
             $k = array_search($fold, ContactList::$folds) + 1;
             echo Ht::checkbox("show$fold", 1, $pl->have_folds[$fold],
                               ["data-fold-target" => "foldul#$k", "class" => "uich js-foldup"]),

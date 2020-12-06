@@ -616,7 +616,7 @@ class MinCostMaxFlow {
         // loop over buckets, pricing one node at a time
         $bi = 0;
         while ($bi < count($b) && $excess > 0) {
-            if (!get($b, $bi)) {
+            if (!($b[$bi] ?? false)) {
                 ++$bi;
                 continue;
             }

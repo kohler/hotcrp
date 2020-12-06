@@ -45,7 +45,7 @@ class Mail_API {
         } else if (isset($qreq->template)) {
             $mt = $user->conf->mail_template($qreq->template);
             if (!$mt
-                || (!$user->privChair && !get($mt, "allow_pc"))) {
+                || (!$user->privChair && !($mt->allow_pc ?? false))) {
                 return new JsonResult(404, "No such template.");
             }
             $j["subject"] = $mailer->expand($mt->subject, "subject");

@@ -66,7 +66,7 @@ class Color_SearchTerm {
                 if (!str_ends_with($xword, ":")) {
                     $xword = "$xword:";
                 }
-                $code = get($srch->conf->emoji_code_map(), $xword, false);
+                $code = ($srch->conf->emoji_code_map())[$xword] ?? false;
                 $codes = [];
                 if ($code !== false) {
                     $codes[] = $code;

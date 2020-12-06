@@ -137,7 +137,7 @@ function initialize_web() {
     // redirect if disabled
     if ($guser->is_disabled()) {
         $gj = $conf->page_partials($guser)->get($nav->page);
-        if (!$gj || !get($gj, "allow_disabled")) {
+        if (!$gj || !($gj->allow_disabled ?? false)) {
             Navigation::redirect_site($conf->hoturl_site_relative_raw("index"));
         }
     }

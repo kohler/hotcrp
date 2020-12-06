@@ -84,7 +84,7 @@ class Reviews_SettingRenderer {
         $sv->set_oldv("rev_roundtag", "#" . $sv->conf->assignment_round(false));
         $round_value = $sv->oldv("rev_roundtag");
         if (preg_match('/\A\#(\d+)\z/', $sv->curv("rev_roundtag"), $m)
-            && get($rounds, intval($m[1]), ";") != ";") {
+            && ($rounds[intval($m[1])] ?? ";") !== ";") {
             $round_value = $m[0];
         }
 
@@ -94,7 +94,7 @@ class Reviews_SettingRenderer {
         }
         $extround_value = $sv->oldv("extrev_roundtag");
         if (preg_match('/\A\#(\d+)\z/', $sv->curv("extrev_roundtag"), $m)
-            && get($rounds, intval($m[1]), ";") != ";") {
+            && ($rounds[intval($m[1])] ?? ";") !== ";") {
             $extround_value = $m[0];
         }
 
@@ -129,11 +129,11 @@ class Reviews_SettingRenderer {
         }
 
         echo '<div id="roundtable">', Ht::hidden("has_tag_rounds", 1);
-        $round_map = Dbl::fetch_map($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
+        $round_map = Dbl::fetch_iimap($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
         $num_printed = 0;
         foreach ($roundorder as $i => $rname) {
             if ($i ? $rname !== ";" : $print_round0) {
-                self::echo_round($sv, $i, $i ? $rname : "", +get($round_map, $i), count($selector) !== 1);
+                self::echo_round($sv, $i, $i ? $rname : "", $round_map[$i] ?? 0, count($selector) !== 1);
                 ++$num_printed;
             }
         }
@@ -407,8 +407,9 @@ class Round_SettingParser extends SettingParser {
     function save(SettingValues $sv, Si $si) {
         if ($this->rev_round_changes) {
             $qx = "case";
-            foreach ($this->rev_round_changes as $old => $new)
+            foreach ($this->rev_round_changes as $old => $new) {
                 $qx .= " when reviewRound=$old then $new";
+            }
             $qx .= " else reviewRound end";
             $sv->conf->qe_raw("update PaperReview set reviewRound=" . $qx);
             $sv->conf->qe_raw("update ReviewRequest set reviewRound=" . $qx);

@@ -338,7 +338,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_BOTH;
-        $this->round = get($cj, "round", null);
+        $this->round = $cj->round ?? null;
     }
     function prepare(PaperList $pl, $visible) {
         if ($pl->user->privChair || $pl->user->is_reviewer() || $pl->conf->can_some_author_view_review()) {

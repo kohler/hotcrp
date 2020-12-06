@@ -277,7 +277,7 @@ class CsvParser implements Iterator {
         if ($this->header && is_array($a)) {
             $b = [];
             foreach ($a as $i => $v) {
-                $offset = get_s($this->header, $i);
+                $offset = $this->header[$i] ?? "";
                 $b[$offset === "" ? $i : $offset] = $v;
             }
             return $b;

@@ -4,7 +4,7 @@
 
 class SearchConfig_API {
     static function viewoptions(Contact $user, Qrequest $qreq) {
-        $report = get($qreq, "report", "pl");
+        $report = $qreq->report ?? "pl";
         if ($report !== "pl" && $report !== "pf") {
             return new JsonResult(400, "Bad request.");
         }

@@ -211,8 +211,9 @@ class Countries {
     static function selector($name, $country, $extra = []) {
         $sel_country = "";
         $opts = ["<option" . ($country ? '' : ' selected') . ' value="">(select one)</option>'];
-        if (($x = get(self::$synonyms, strtolower($country))))
+        if (($x = self::$synonyms[strtolower($country)] ?? null)) {
             $country = $x;
+        }
         foreach (self::$list as $c) {
             if ($country && !strcasecmp($country, $c)) {
                 $sel_country = $c;
@@ -225,10 +226,12 @@ class Countries {
             $opts[] = '<option selected>' . htmlspecialchars($country) . '</option>';
         }
 
-        if (!isset($extra["autocomplete"]))
+        if (!isset($extra["autocomplete"])) {
             $extra["autocomplete"] = "country-name";
-        if (!isset($extra["data-default-value"]))
+        }
+        if (!isset($extra["data-default-value"])) {
             $extra["data-default-value"] = $sel_country;
+        }
         return "<span class=\"select\"><select name=\"${name}\"" . Ht::extra($extra) . ">\n"
             . join("\n", $opts) . "</select></span>";
     }

@@ -32,8 +32,9 @@ function show_help_topics($hth) {
     foreach ($hth->groups() as $ht) {
         if ($ht->name !== "topics" && isset($ht->title)) {
             echo '<dt><strong><a href="', $hth->conf->hoturl("help", "t=$ht->name"), '">', $ht->title, '</a></strong></dt>';
-            if (isset($ht->description))
-                echo '<dd>', get($ht, "description", ""), '</dd>';
+            if (isset($ht->description)) {
+                echo '<dd>', $ht->description ?? "", '</dd>';
+            }
             echo "\n";
         }
     }

@@ -22,7 +22,7 @@ if (isset($arg["type"]) && !isset($arg["t"])) {
 require_once(SiteLoader::find("src/init.php"));
 
 $user = $Conf->root_user();
-$t = get($arg, "t", "s");
+$t = $arg["t"] ?? "s";
 $searchtypes = PaperSearch::search_types($user, $t);
 if (!isset($searchtypes[$t])) {
     fwrite(STDERR, "batch/search.php: No search collection ‘{$t}’.\n");
@@ -32,9 +32,9 @@ if (!isset($searchtypes[$t])) {
 $search = new PaperSearch($user, ["q" => join(" ", $arg["_"]), "t" => $t]);
 $paperlist = new PaperList("empty", $search);
 $paperlist->set_view("pid", true);
-$fields = array_merge(mkarray(get($arg, "f", [])),
-                      mkarray(get($arg, "field", [])),
-                      mkarray(get($arg, "show", [])));
+$fields = array_merge(mkarray($arg["f"] ?? []),
+                      mkarray($arg["field"] ?? []),
+                      mkarray($arg["show"] ?? []));
 foreach ($fields as $f) {
     $paperlist->set_view($f, true);
 }

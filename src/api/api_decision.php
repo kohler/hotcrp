@@ -8,7 +8,7 @@ class Decision_API {
             $aset = new AssignmentSet($user, true);
             $aset->enable_papers($prow);
             if (is_numeric($qreq->decision)) {
-                $qreq->decision = get($user->conf->decision_map(), +$qreq->decision);
+                $qreq->decision = ($user->conf->decision_map())[+$qreq->decision] ?? null;
             }
             $aset->parse("paper,action,decision\n{$prow->paperId},decision," . CsvGenerator::quote($qreq->decision));
             if (!$aset->execute()) {

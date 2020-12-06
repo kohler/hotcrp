@@ -23,7 +23,7 @@ if ($Conf->sversion == 174 && (isset($arg["json-reviews"]) || isset($arg["fix-js
         $need_fix = $unfixable = false;
         foreach (ReviewInfo::$text_field_map as $kin => $kout) {
             $oldv = (string) $rrow->$kin;
-            $newv = $tfields ? get($tfields, $kout, "") : "";
+            $newv = $tfields ? $tfields->$kout ?? "" : "";
             if ($oldv !== $newv) {
                 error_log("{$Conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: {$kin} ["
                     . simplify_whitespace(UnicodeHelper::utf8_abbreviate($oldv === "" ? "EMPTY" : $oldv, 20))
@@ -34,16 +34,18 @@ if ($Conf->sversion == 174 && (isset($arg["json-reviews"]) || isset($arg["fix-js
                 if ($newv === "") {
                     $tfields = $tfields ? : (object) [];
                     $tfields->$kout = $oldv;
-                } else
+                } else {
                     $unfixable = true;
+                }
             }
         }
         if ($need_fix && isset($arg["fix-json-reviews"])) {
             if (!$unfixable) {
                 $q[] = "update PaperReview set tfields=? where paperId=? and reviewId=? and tfields?e";
                 array_push($qv, json_encode_db($tfields), $rrow->paperId, $rrow->reviewId, $rrow->tfields);
-            } else
+            } else {
                 error_log("{$Conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: differences unfixable");
+            }
         }
     }
     Dbl::free($result);

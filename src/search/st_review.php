@@ -386,7 +386,7 @@ class Review_SearchTerm extends SearchTerm {
             "name" => $keyword,
             "parse_callback" => "Review_SearchTerm::parse",
             "retype" => $t,
-            "recompleteness" => get(self::$recompleteness_map, $c, $c),
+            "recompleteness" => self::$recompleteness_map[$c] ?? $c,
             "has" => ">0"
         ];
     }

@@ -92,7 +92,7 @@ if ($Qreq->redisplay) {
 function savesearch() {
     global $Conf, $Me, $Qreq;
 
-    $name = simplify_whitespace(get($Qreq, "ssname", ""));
+    $name = simplify_whitespace($Qreq->ssname ?? "");
     $tagger = new Tagger($Me);
     if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
         if ($name == "") {
@@ -183,17 +183,27 @@ $tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["tabindex" => 1]);
 $display_options_extra = "";
 
 class Search_DisplayOptions {
+    /** @var array<int,string> */
     public $headers = [];
+    /** @var array<int,list<string>> */
     public $items = [];
 
+    /** @param int $column
+     * @param string $header */
     function set_header($column, $header) {
         $this->headers[$column] = $header;
     }
+    /** @param int $column
+     * @param string $item */
     function item($column, $item) {
-        if (!isset($this->headers[$column]))
+        if (!isset($this->headers[$column])) {
             $this->headers[$column] = "";
+        }
         $this->items[$column][] = $item;
     }
+    /** @param int $column
+     * @param string $type
+     * @param string $title */
     function checkbox_item($column, $type, $title, $options = []) {
         global $pl;
         $options["class"] = "uich js-plinfo";
@@ -399,9 +409,9 @@ if ($Me->isPC || $Me->privChair) {
                     }
                 }
                 echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), '</a><div class="fx" style="padding-bottom:0.5ex;font-size:smaller">',
-                    "Definition: “<a href=\"", hoturl("search", "q=" . urlencode(get($sv, "q", "")) . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
+                    "Definition: “<a href=\"", hoturl("search", "q=" . urlencode($sv->q ?? "") . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
                 if ($Me->privChair
-                    || !get($sv, "owner")
+                    || !($sv->owner ?? false)
                     || $sv->owner == $Me->contactId) {
                     echo ' <span class="barsep">·</span> ',
                         "<a href=\"", $Conf->selfurl($Qreq, ["deletesearch" => 1, "ssname" => $sn, "post" => post_value()]), "\">Delete</a>";
@@ -444,12 +454,13 @@ if (!$pl->is_empty()) {
     echo '<div class="search-ctable">';
     ksort($display_options->items);
     foreach ($display_options->items as $column => $items) {
-        if (empty($items))
+        if (empty($items)) {
             continue;
-        $h = get($display_options->headers, $column);
+        }
         echo '<div class="ctelt">';
-        if ((string) $h !== "")
+        if (($h = $display_options->headers[$column] ?? "") !== "") {
             echo '<div class="dispopt-hdr">', $h, '</div>';
+        }
         echo join("", $items), '</div>';
     }
     echo "</div>\n";

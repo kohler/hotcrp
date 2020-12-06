@@ -100,7 +100,7 @@ class Batch_UpdateUTF8Trans {
             if (str_starts_with($textlet, "\xEF\xBB\xBF")) {
                 $textlet = substr($textlet, 3);
             }
-            $filename = get($arg, "o", get($arg, "output"));
+            $filename = $arg["o"] ?? $arg["output"] ?? null;
             if ($filename === "-") {
                 fwrite(STDOUT, $textlet);
             } else {

@@ -2,39 +2,53 @@
 // src/settings/s_tracks.php -- HotCRP settings > tracks page
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class TrackSettingInfo {
+    /** @var array<string,string> */
+    public $cur = [];
+    /** @var array<string,string> */
+    public $req = [];
+    /** @var array<string,true> */
+    public $unfolded = [];
+}
+
 class Tracks_SettingRenderer {
     static public $nperm_rendered_folded;
 
+    /** @param string $perm
+     * @param string $type
+     * @return array{string,string} */
     static function unparse_perm($perm, $type) {
         if ($perm === "none"
             || $perm === "+none"
-            || ($perm === "" && Track::permission_required(Track::$map[$type])))
+            || ($perm === "" && Track::permission_required(Track::$map[$type]))) {
             return ["none", ""];
-        else if ($perm !== ""
-                 && ($perm[0] === "+" || $perm[0] === "-")
-                 && ($perm !== "+pc" || Track::permission_required(Track::$map[$type])))
+        } else if ($perm !== ""
+                   && ($perm[0] === "+" || $perm[0] === "-")
+                   && ($perm !== "+pc" || Track::permission_required(Track::$map[$type]))) {
             return [$perm[0], (string) substr($perm, 1)];
-        else
+        } else {
             return ["", ""];
+        }
     }
 
+    /** @param TrackSettingInfo $trackinfo */
     static function do_track_permission($sv, $type, $question, $tnum, $trackinfo,
                                         $gj = null) {
         $track_ctl = "{$type}_track$tnum";
         $tag_ctl = "{$type}_tag_track$tnum";
-        $reqv = self::unparse_perm(get_s($trackinfo["req"], $type), $type);
-        $curv = self::unparse_perm(get_s($trackinfo["cur"], $type), $type);
+        $reqv = self::unparse_perm($trackinfo->req[$type] ?? "", $type);
+        $curv = self::unparse_perm($trackinfo->cur[$type] ?? "", $type);
         $defclass = Track::permission_required(Track::$map[$type]) ? "none" : "";
         $unfolded = $curv[0] !== $defclass
             || $reqv[0] !== $defclass
-            || (empty($trackinfo["unfolded"]) && $gj && get($gj, "default_unfolded"))
+            || (empty($trackinfo->unfolded) && $gj && ($gj->default_unfolded ?? false))
             || $sv->problem_status_at($track_ctl);
         self::$nperm_rendered_folded += !$unfolded;
 
         $permts = ["" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"];
         if (Track::permission_required(Track::$map[$type])) {
             $permts = ["none" => $permts["none"], "+" => $permts["+"], "-" => $permts["-"]];
-            if ($gj && get($gj, "permission_required") === "show_none")
+            if ($gj && ($gj->permission_required ?? null) === "show_none")
                 $permts["none"] = "None";
         }
 
@@ -43,8 +57,9 @@ class Tracks_SettingRenderer {
             list($question, $hint) = $question;
         }
         $ljs = [];
-        if ($gj && ($lc = get_s($gj, "label_class")))
+        if ($gj && ($lc = $gj->label_class ?? null)) {
             $ljs["class"] = $lc;
+        }
 
         echo '<div class="', $sv->control_class($track_ctl, "entryi wide"),
             ' has-fold fold', ($reqv[0] == "" || $reqv[0] === "none" ? "c" : "o"),
@@ -85,37 +100,39 @@ class Tracks_SettingRenderer {
 
     static private function get_trackinfo(SettingValues $sv, $trackname, $tnum) {
         // Find current track data
-        $curtrack = null;
+        $tinfo = new TrackSettingInfo;
         if ($trackname !== ""
-            && ($tjson = $sv->conf->setting_json("tracks")))
-            $curtrack = get($tjson, $trackname);
+            && ($tjson = $sv->conf->setting_json("tracks"))) {
+            $tinfo->cur = $tinfo->req = (array) ($tjson->$trackname ?? []);
+        }
         // Find request track data
-        $reqtrack = $curtrack;
         if ($sv->use_req()) {
-            $reqtrack = (object) [];
+            $tinfo->req = [];
             foreach (Track::$map as $type => $perm) {
                 $tclass = $sv->reqv("{$type}_track$tnum") ?? "";
                 if ($tclass === "none") {
-                    if (!Track::permission_required($perm))
-                        $reqtrack->$type = "+none";
-                } else if ($tclass !== "")
-                    $reqtrack->$type = $tclass . ($sv->reqv("{$type}_tag_track$tnum") ?? "");
+                    if (!Track::permission_required($perm)) {
+                        $tinfo->req[$type] = "+none";
+                    }
+                } else if ($tclass !== "") {
+                    $tinfo->req[$type] = $tclass . ($sv->reqv("{$type}_tag_track$tnum") ?? "");
+                }
             }
         }
         // Check fold status
-        $unfolded = [];
         foreach (Track::$map as $type => $perm) {
-            if ($tnum === 0 || get_s($reqtrack, $type) !== "")
-                $unfolded[$type] = true;
+            if ($tnum === 0 || ($tinfo->req[$type] ?? "") !== "")
+                $tinfo->unfolded[$type] = true;
         }
-        return ["cur" => $curtrack, "req" => $reqtrack, "unfolded" => $unfolded];
+        return $tinfo;
     }
 
     static private function do_track(SettingValues $sv, $trackname, $tnum) {
         $trackinfo = self::get_trackinfo($sv, $trackname, $tnum);
         $req_trackname = $trackname;
-        if ($sv->use_req())
+        if ($sv->use_req()) {
             $req_trackname = $sv->reqv("name_track$tnum") ?? "";
+        }
 
         // Print track entry
         echo "<div id=\"trackgroup$tnum\" class=\"mg has-fold fold3",

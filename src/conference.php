@@ -4083,9 +4083,13 @@ class Conf {
     /** @return bool */
     function has_interesting_deadline($my_deadlines) {
         if ($my_deadlines->sub->open ?? false) {
-            foreach (["reg", "update", "sub"] as $k) {
-                if (Conf::$now <= get($my_deadlines->sub, $k, 0) || get($my_deadlines->sub, "{$k}_ingrace"))
-                    return true;
+            if (Conf::$now <= ($my_deadlines->sub->reg ?? 0)
+                || Conf::$now <= ($my_deadlines->sub->update ?? 0)
+                || Conf::$now <= ($my_deadlines->sub->sub ?? 0)
+                || ($my_deadlines->sub->reg_ingrace ?? false)
+                || ($my_deadlines->sub->update_ingrace ?? false)
+                || ($my_deadlines->sub->sub_ingrace ?? false)) {
+                return true;
             }
         }
         if (($my_deadlines->is_author ?? false)

@@ -150,7 +150,7 @@ if (isset($Qreq->upload)
                     "assigntypes" => join(" ", $atypes),
                     "assignpids" => $apids
                 ])),
-                Ht::hidden("default_action", get($defaults, "action", "guess")),
+                Ht::hidden("default_action", $defaults["action"] ?? "guess"),
                 Ht::hidden("rev_round", $defaults["round"]),
                 Ht::hidden("file", $text),
                 Ht::hidden("assignment_size_estimate", $csv_lineno),

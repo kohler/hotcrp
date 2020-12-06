@@ -34,7 +34,7 @@ $usage_directory = $m[1];
 $count = isset($arg["count"]) ? intval($arg["count"]) : 10;
 $verbose = isset($arg["verbose"]);
 
-$dmatcher = new DocumentHashMatcher(get($arg, "match"));
+$dmatcher = new DocumentHashMatcher($arg["match"] ?? null);
 $dmatcher->set_extension(".pdf");
 $fparts = new DocumentFileTree($dp, $dmatcher);
 $cf = new CheckFormat($Conf);

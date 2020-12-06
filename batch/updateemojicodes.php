@@ -206,7 +206,7 @@ function list_absent($args) {
             $j = $m[2] === "" ? $i : hexdec(substr($m[2], 2));
             for (; $i <= $j; ++$i) {
                 if ($m[3] === "Emoji") {
-                    $emoji[$i] = get($codes, $i, false);
+                    $emoji[$i] = $codes[$i] ?? false;
                 } else if ($m[3] === "Emoji_Presentation") {
                     $emoji[$i] = true;
                 } else if ($m[3] === "Emoji_Modifier_Base") {

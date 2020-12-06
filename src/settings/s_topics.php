@@ -42,9 +42,9 @@ class Topics_SettingRenderer {
                     Ht::entry("top$tid", $tname, ["size" => 80, "class" => "need-autogrow wide" . ($sv->has_problem_at("top$tid") ? " has-error" : ""), "aria-label" => "Topic name"]),
                     '</td>';
                 if (!empty($interests)) {
-                    $tinterests = get($interests, $tid, array());
-                    echo '<td class="fx plr padls">', (get($tinterests, 0) ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
-                        '<td class="fx plr padls">', (get($tinterests, 1) ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
+                    $tinterests = $interests[$tid] ?? [];
+                    echo '<td class="fx plr padls">', ($tinterests[0] ?? null ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
+                        '<td class="fx plr padls">', ($tinterests[1] ?? null ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
                 }
             }
             echo '</tbody></table>',

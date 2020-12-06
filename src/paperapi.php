@@ -62,7 +62,7 @@ class PaperApi {
                     && (!$prow || $pc->can_view_new_comment_ignore_conflict($prow))) {
                     $primary = true;
                     foreach ($pc->completion_items() as $k => $level) {
-                        if (get($pcmap, $k) === $pc) {
+                        if (($pcmap[$k] ?? null) === $pc) {
                             $skey = $primary ? "s" : "sm1";
                             $result[$k] = [$skey => $k, "d" => $pc->name()];
                             $primary = false;
@@ -76,8 +76,9 @@ class PaperApi {
     }
 
     static function review_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
-        if (!$user->can_view_review($prow, null))
+        if (!$user->can_view_review($prow, null)) {
             return new JsonResult(403, "Permission error.");
+        }
         $need_id = false;
         if (isset($qreq->r)) {
             $rrow = $prow->full_review_of_textual_id($qreq->r);

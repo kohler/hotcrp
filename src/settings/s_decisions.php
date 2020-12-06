@@ -36,7 +36,7 @@ class Decisions_SettingParser extends SettingParser {
         $decs_pcount = array();
         $result = $sv->conf->qe_raw("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
         while (($row = $result->fetch_row())) {
-            $decs_pcount[$row[0]] = $row[1];
+            $decs_pcount[(int) $row[0]] = (int) $row[1];
         }
 
         // real decisions
@@ -47,7 +47,7 @@ class Decisions_SettingParser extends SettingParser {
         foreach ($sv->conf->decision_map() as $k => $v) {
             if ($k) {
                 ++$ndec;
-                self::render_row($sv, $ndec, $k, $v, false, get($decs_pcount, $k));
+                self::render_row($sv, $ndec, $k, $v, false, $decs_pcount[$k] ?? null);
             }
         }
         if ($sv->use_req()) {

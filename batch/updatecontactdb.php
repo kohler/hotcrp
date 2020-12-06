@@ -63,7 +63,7 @@ if ($users) {
                 && preg_match('/\Aanonymous\d*\z/', $u->email))) {
             continue;
         }
-        $cdbu = get($cdb_users, $u->email);
+        $cdbu = $cdb_users[$u->email] ?? null;
         $cdbid = $cdbu ? (int) $cdbu->contactDbId : 0;
         if ($cdbu
             && (int) $cdbu->roles === $cdb_roles
