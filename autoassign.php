@@ -18,7 +18,8 @@ if ($Qreq->valid_post()) {
 }
 
 $tOpt = PaperSearch::manager_search_types($Me);
-if ($Me->privChair && !isset($Qreq->t)
+if ($Me->privChair
+    && !isset($Qreq->t)
     && $Qreq->a === "prefconflict"
     && $Conf->can_pc_see_active_submissions()) {
     $Qreq->t = "all";

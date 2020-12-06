@@ -1868,7 +1868,7 @@ class Conf {
         }
         if ($add && !self::round_name_error($rname)) {
             $rtext = $this->setting_data("tag_rounds") ?? "";
-            $rtext = ($rtext ? "$rtext$rname " : " $rname ");
+            $rtext = $rtext === "" ? $rname : "$rtext $rname";
             $this->__save_setting("tag_rounds", 1, $rtext);
             $this->crosscheck_round_settings();
             return $this->round_number($rname, false);
@@ -1898,14 +1898,14 @@ class Conf {
 
     /** @param string $name
      * @param ?int $round */
-    function round_setting($name, $round, $defval = null) {
+    function round_setting($name, $round) {
         if ($this->_round_settings !== null
             && $round !== null
             && isset($this->_round_settings[$round])
             && isset($this->_round_settings[$round]->$name)) {
             return $this->_round_settings[$round]->$name;
         } else {
-            return $this->settings[$name] ?? $defval;
+            return $this->settings[$name] ?? null;
         }
     }
 

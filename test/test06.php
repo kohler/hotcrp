@@ -751,6 +751,14 @@ function save_round_settings($map) {
 save_round_settings(["R1" => ["extrev_view" => 0]]);
 Contact::update_rights();
 
+// check round_number(..., true) works
+xassert_eqq($Conf->setting_data("tag_rounds"), "R1 R2 R3");
+xassert_eqq($Conf->round_number("R1", false), 1);
+xassert_eqq($Conf->round_number("R1", true), 1);
+xassert_eqq($Conf->round_number("R5", false), false);
+xassert_eqq($Conf->round_number("R5", true), 4);
+xassert_eqq($Conf->setting_data("tag_rounds"), "R1 R2 R3 R5");
+
 xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
 xassert($user_mgbaker->can_view_review($paper17, $rrow17h));
 xassert($user_mgbaker->can_view_review($paper17, $rrow17x));
