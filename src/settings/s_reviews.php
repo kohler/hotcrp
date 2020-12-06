@@ -59,7 +59,7 @@ class Reviews_SettingRenderer {
 
     static function render(SettingValues $sv) {
         echo '<div class="form-g">';
-        $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
+        $sv->echo_checkbox("rev_open", "<b>Enable review editing</b>");
         $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
         echo "</div>\n";
 
@@ -283,7 +283,7 @@ class Reviews_SettingRenderer {
                     && $sv->newv($deadline . $suf) > Conf::$now
                     && $sv->newv("rev_open") <= 0
                     && !$errored) {
-                    $sv->warning_at("rev_open", "A review deadline is set in the future, but the site is not open for reviewing. This is sometimes unintentional.");
+                    $sv->warning_at("rev_open", "A review deadline is set in the future, but reviews cannot be edited now. This is sometimes unintentional.");
                     $errored = true;
                     break;
                 }

@@ -155,7 +155,7 @@ form also can include:</p>
   ".</p></li>\n";
 
         } else if ($gj->itemid === 9) {
-            echo "<li><p><strong>", $hth->setting_link("Open the site for reviewing.", "rev_open"), "</strong></p></li>\n";
+            echo "<li><p><strong>", $hth->setting_link("Enable review editing.", "rev_open"), "</strong></p></li>\n";
         }
     }
 
