@@ -9055,12 +9055,6 @@ function decode_session_list_ids(str) {
             continue;
         }
 
-        while (ch === 122) {
-            sign = -sign;
-            ++i;
-            ch = i < l ? str.charCodeAt(i) : 0;
-        }
-
         var include = true, n = 0, skip = 0;
         if (ch >= 97 && ch <= 104)
             n = ch - 96;
@@ -9078,6 +9072,11 @@ function decode_session_list_ids(str) {
             skip = 1;
         } else if (ch >= 73 && ch <= 80) {
             n = ch - 72;
+            skip = 2;
+        } else if (ch === 122) {
+            sign = -sign;
+        } else if (ch === 90) {
+            sign = -sign;
             skip = 2;
         }
 

@@ -220,6 +220,12 @@ for ($i = 0; $i < 1000; ++$i) {
     xassert_eqq(SessionList::decode_ids(SessionList::encode_ids($ids)), $ids);
 }
 
+xassert_eqq(json_encode(SessionList::decode_ids("1z20zz34")), "[1,20,34]");
+xassert_eqq(json_encode(SessionList::decode_ids("10zjh")), "[10,9,8,7,6,5,4,3,2]");
+xassert_eqq(json_encode(SessionList::decode_ids("10Zh")), "[10,9,8,7,6,5,4,3,2]");
+xassert_eqq(SessionList::encode_ids([10,9,8,7]), "10Zc");
+xassert_eqq(SessionList::encode_ids([10,9,8,7,5,4,1]), "10ZCJa");
+
 // obscure_time tests
 $t = $Conf->parse_time("1 Sep 2010 00:00:01");
 $t0 = $Conf->obscure_time($t);

@@ -78,12 +78,6 @@ class SessionList {
                 continue;
             }
 
-            while ($ch === "z") {
-                $sign = -$sign;
-                ++$i;
-                $ch = $i < $l ? $s[$i] : "s";
-            }
-
             $include = true;
             $n = $skip = 0;
             if ($ch >= "a" && $ch <= "h") {
@@ -103,7 +97,12 @@ class SessionList {
             } else if ($ch >= "I" && $ch <= "P") {
                 $n = ord($ch) - 72;
                 $skip = 2;
-            } else if (strspn($ch, "s[],0123456789'") !== 1) {
+            } else if ($ch === "z") {
+                $sign = -$sign;
+            } else if ($ch === "Z") {
+                $sign = -$sign;
+                $skip = 2;
+            } else if (strspn($ch, "s[],0123456789'#") !== 1) {
                 return null;
             }
 
@@ -144,9 +143,10 @@ class SessionList {
         // r<N>: range of <N> sequential missing papers
         // <N>[-<N>]: include <N>, set direction forwards
         // z: switch direction
+        // Z: like z + j
         // A-H: like a-h + i
         // I-P: like a-h + j
-        // [s\[\],']: ignored
+        // [#s\[\],']: ignored
         $n = count($ids);
         $a = [(string) $ids[0]];
         '@phan-var list<string> $a';
@@ -160,6 +160,9 @@ class SessionList {
                 $a[count($a) - 1] = chr(ord($ch) - 40 + 8 * $delta);
             } else if ($delta > 0 && $delta <= 8) {
                 $a[] = chr(104 + $delta);
+            } else if ($delta === -2) {
+                $sign = -$sign;
+                $a[] = "Z";
             } else if ($delta < 0 && $delta >= -8) {
                 $sign = -$sign;
                 $a[] = "z" . chr(104 - $delta);
