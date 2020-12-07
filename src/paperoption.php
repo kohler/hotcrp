@@ -1121,19 +1121,19 @@ class PaperOption implements JsonSerializable {
         return false;
     }
 
-    /** @return null|false|PaperValue */
+    /** @return ?PaperValue */
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
-        return false;
+        return null;
     }
-    /** @return null|false|PaperValue */
+    /** @return ?PaperValue */
     function parse_json(PaperInfo $prow, $j) {
-        return false;
+        return null;
     }
     const PARSE_STRING_EMPTY = 1;
     const PARSE_STRING_TRIM = 2;
     const PARSE_STRING_SIMPLIFY = 4;
     const PARSE_STRING_CONVERT = 8;
-    /** @return null|PaperValue */
+    /** @return ?PaperValue */
     function parse_json_string(PaperInfo $prow, $j, $flags = 0) {
         if (is_string($j)) {
             if ($flags & self::PARSE_STRING_CONVERT) {
