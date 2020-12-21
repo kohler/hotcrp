@@ -97,9 +97,10 @@ if ($ziparchive) {
     $data_filename = $json_filename = [];
     for ($i = 0; $i < $ziparchive->numFiles; ++$i) {
         $filename = $ziparchive->getNameIndex($i);
-        if (str_starts_with($filename, $dirprefix)) {
+        if (str_starts_with($filename, $dirprefix)
+            && !str_starts_with($filename, "{$dirprefix}.")) {
             $dirname = substr($filename, strlen($dirprefix));
-            if (preg_match(',\A[^/]*(?:\A|[-_])data\.json\z,', $dirname)) {
+            if (preg_match('/\A[^\/]*(?:\A|[-_])data\.json\z/', $dirname)) {
                 $data_filename[] = $filename;
             }
             if (str_ends_with($dirname, ".json")) {
