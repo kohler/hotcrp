@@ -183,6 +183,7 @@ function csv_exit(CsvGenerator $csv) {
 }
 
 function foldupbutton($foldnum = 0, $content = "", $js = null) {
+    $js = $js ?? [];
     if ($foldnum) {
         $js["data-fold-target"] = $foldnum;
     }

@@ -2777,6 +2777,7 @@ class PaperTable {
         }
     }
 
+    /** @return ?PaperInfo */
     static function fetch_paper_request(Qrequest $qreq, Contact $user) {
         self::clean_request($qreq);
         $pid = self::lookup_pid($qreq, $user);
@@ -2880,6 +2881,7 @@ class PaperTable {
         $this->mycrows = $this->prow->viewable_comments($this->user, true);
     }
 
+    /** @return list<ReviewInfo> */
     function all_reviews() {
         return $this->all_rrows;
     }

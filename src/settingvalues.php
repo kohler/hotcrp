@@ -913,9 +913,11 @@ class SettingValues extends MessageSet {
         echo $this->render_feedback_at($field, $classes);
     }
 
+    /** @param ?array<string,mixed> $js
+     * @return array<string,mixed> */
     private function strip_group_js($js) {
         $njs = [];
-        foreach ($js ? : [] as $k => $v) {
+        foreach ($js ?? [] as $k => $v) {
             if (strlen($k) < 10
                 || (!str_starts_with($k, "group_")
                     && !str_starts_with($k, "hint_")
@@ -926,12 +928,19 @@ class SettingValues extends MessageSet {
         }
         return $njs;
     }
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return void */
     function echo_checkbox_only($name, $js = null) {
         $js["id"] = $name;
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
             Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js));
     }
+    /** @param string $name
+     * @param string $text
+     * @param ?array<string,mixed> $js
+     * @return void */
     function echo_checkbox($name, $text, $js = null, $hint = null) {
         echo '<div class="', self::add_class("checki", $js["group_class"] ?? null),
             '"><span class="checkc">';
@@ -941,13 +950,15 @@ class SettingValues extends MessageSet {
         if ($hint) {
             echo '<div class="', self::add_class("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
         }
-        if (!($js["group_open"] ?? null))
+        if (!($js["group_open"] ?? null)) {
             echo "</div>\n";
+        }
     }
     /** @param string $name
      * @param array $varr
      * @param ?string $heading
-     * @param string|array $rest */
+     * @param string|array $rest
+     * @return void */
     function echo_radio_table($name, $varr, $heading = null, $rest = []) {
         $x = $this->curv($name);
         if ($x === null || !isset($varr[$x])) {
@@ -1007,13 +1018,17 @@ class SettingValues extends MessageSet {
         }
         echo "</div>\n";
     }
-    function render_entry($name, $js = []) {
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return string */
+    function render_entry($name, $js = null) {
         $si = $this->si($name);
         $v = $this->si_curv($si);
         $t = "";
         if (!$this->use_req() || !$this->si_has_interest($si)) {
             $v = $this->si_render_value($v, $si);
         }
+        $js = $js ?? [];
         if ($si->size && !isset($js["size"])) {
             $js["size"] = $si->size;
         }
@@ -1028,6 +1043,8 @@ class SettingValues extends MessageSet {
         }
         return Ht::entry($name, $v, $this->sjs($si, $js)) . $t;
     }
+    /** @param string $name
+     * @return void */
     function echo_entry($name) {
         echo $this->render_entry($name);
     }
@@ -1066,11 +1083,17 @@ class SettingValues extends MessageSet {
             echo "</div>\n";
         }
     }
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return void */
     function echo_entry_group($name, $description, $js = null, $hint = null) {
         $this->echo_control_group($name, $description,
             $this->render_entry($name, self::strip_group_js($js)),
             $js, $hint);
     }
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return string */
     function render_select($name, $values, $js = null) {
         $si = $this->si($name);
         $v = $this->si_curv($si);
@@ -1085,7 +1108,10 @@ class SettingValues extends MessageSet {
             $this->render_select($name, $values, self::strip_group_js($js)),
             $js, $hint);
     }
-    function render_textarea($name, $js = []) {
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return string */
+    function render_textarea($name, $js = null) {
         $si = $this->si($name);
         $v = $this->si_curv($si);
         $t = "";
@@ -1093,6 +1119,7 @@ class SettingValues extends MessageSet {
         if ($si->size) {
             $rows = $si->size;
         }
+        $js = $js ?? [];
         if ($si->placeholder !== null) {
             $js["placeholder"] = $si->placeholder;
         }
