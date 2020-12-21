@@ -805,7 +805,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         if ($minic->can_view_comment($prow, $this)
             // Don't send notifications about draft responses to the chair,
             // even though the chair can see draft responses.
-            && (!($ctype & COMMENTTYPE_DRAFT) || $minic->act_author_view($prow))) {
+            && (!($ctype & COMMENTTYPE_DRAFT) || $prow->has_author($minic))) {
             if (($ctype & COMMENTTYPE_RESPONSE) && ($ctype & COMMENTTYPE_DRAFT)) {
                 $tmpl = "@responsedraftnotify";
             } else if ($ctype & COMMENTTYPE_RESPONSE) {

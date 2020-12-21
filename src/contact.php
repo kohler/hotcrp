@@ -2634,7 +2634,8 @@ class Contact {
                 && $ci->review_status == 0) {
                 $ci->view_conflict_type = CONFLICT_AUTHOR;
             }
-            $ci->act_author_view = $ci->view_conflict_type >= CONFLICT_AUTHOR;
+            $ci->act_author_view = $ci->view_conflict_type >= CONFLICT_AUTHOR
+                && !$forceShow;
             $ci->allow_author_view = $ci->act_author_view || $ci->allow_administer;
 
             // check decision visibility
@@ -3682,11 +3683,9 @@ class Contact {
         $rrowSubmitted = !$rrow || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
-        if ((!$rights->act_author_view
-             && !$rights->allow_pc
-             && $rights->review_status == 0)
-            || ($rights->allow_pc
-                && !$this->conf->check_tracks($prow, $this, Track::VIEWREV))) {
+        if ($rights->allow_pc
+            ? !$this->conf->check_tracks($prow, $this, Track::VIEWREV)
+            : !$rights->act_author_view && $rights->review_status == 0) {
             $whyNot["permission"] = "view_review";
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;

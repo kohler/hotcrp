@@ -1845,7 +1845,7 @@ class PaperTable {
         $canEdit = $this->user->allow_edit_paper($this->prow);
         $canReview = $this->user->can_review($this->prow, null);
         $canAssign = $this->admin || $this->user->can_request_review($this->prow, null, true);
-        $canHome = ($canEdit || $canAssign || $this->mode === "contact");
+        $canHome = $canEdit || $canAssign || $this->mode === "contact";
 
         $t = "";
 
