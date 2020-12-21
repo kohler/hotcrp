@@ -43,9 +43,7 @@ class PaperContactInfo {
     /** @var bool */
     public $allow_review;
     /** @var bool */
-    public $act_author;
-    /** @var bool */
-    public $allow_author;
+    public $allow_author_edit;
     /** @var int */
     public $view_conflict_type;
     /** @var bool */

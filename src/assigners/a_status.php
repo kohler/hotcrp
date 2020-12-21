@@ -63,7 +63,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->user->can_administer($prow)
-            && !$state->user->act_author($prow)) {
+            && !$prow->has_author($state->user)) {
             return "You can’t administer #{$prow->paperId}.";
         } else {
             return true;

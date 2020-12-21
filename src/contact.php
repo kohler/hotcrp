@@ -2618,8 +2618,8 @@ class Contact {
                 && ($ci->can_administer || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED);
 
             // check author allowance
-            $ci->act_author = $ci->conflictType >= CONFLICT_AUTHOR;
-            $ci->allow_author = $ci->act_author || $ci->allow_administer;
+            $ci->allow_author_edit = $ci->conflictType >= CONFLICT_AUTHOR
+                || $ci->allow_administer;
 
             // check author view allowance (includes capabilities)
             // If an author-view capability is set, then use it -- unless
@@ -2866,11 +2866,6 @@ class Contact {
     }
 
     /** @return bool */
-    function act_author(PaperInfo $prow) {
-        return $this->rights($prow)->act_author;
-    }
-
-    /** @return bool */
     function act_author_view(PaperInfo $prow) {
         return $this->rights($prow)->act_author_view;
     }
@@ -2945,7 +2940,7 @@ class Contact {
     /** @return bool */
     function can_edit_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if (!$rights->allow_author || $prow->timeWithdrawn > 0) {
+        if (!$rights->allow_author_edit || $prow->timeWithdrawn > 0) {
             return false;
         } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
@@ -2955,35 +2950,45 @@ class Contact {
         }
     }
 
+    /** @return PermissionProblem */
+    private function perm_edit_paper_failure(PaperInfo $prow, PaperContactInfo $rights, $kind = "") {
+        $whyNot = $prow->make_whynot();
+        if (!$rights->allow_author_edit) {
+            if ($rights->allow_author_view) {
+                $whyNot["signin"] = "edit_paper";
+            } else {
+                $whyNot["author"] = true;
+            }
+        }
+        if ($prow->timeWithdrawn > 0
+            && strpos($kind, "w") === false) {
+            $whyNot["withdrawn"] = true;
+        }
+        if ($prow->timeSubmitted > 0
+            && strpos($kind, "f") !== false
+            && $this->conf->setting("sub_freeze") > 0) {
+            $whyNot["updateSubmitted"] = true;
+        }
+        if ($rights->allow_administer) {
+            $whyNot["override"] = true;
+        }
+        return $whyNot;
+    }
+
     /** @return ?PermissionProblem */
     function perm_edit_paper(PaperInfo $prow) {
         if ($this->can_edit_paper($prow)) {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
-        if (!$rights->allow_author && $rights->allow_author_view) {
-            $whyNot["signin"] = "edit_paper";
-        } else if (!$rights->allow_author) {
-            $whyNot["author"] = true;
-        }
-        if ($prow->timeWithdrawn > 0) {
-            $whyNot["withdrawn"] = true;
-        }
+        $whyNot = $this->perm_edit_paper_failure($prow, $rights, "f");
         if ($prow->outcome < 0
             && $rights->can_view_decision) {
             $whyNot["rejected"] = true;
         }
-        if ($prow->timeSubmitted > 0
-            && $this->conf->setting("sub_freeze") > 0) {
-            $whyNot["updateSubmitted"] = true;
-        }
         if (!$this->conf->time_edit_paper($prow)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_update";
-        }
-        if ($rights->allow_administer) {
-            $whyNot["override"] = true;
         }
         return $whyNot;
     }
@@ -3003,7 +3008,7 @@ class Contact {
     /** @return bool */
     function can_finalize_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if (!$rights->allow_author || $prow->timeWithdrawn > 0) {
+        if (!$rights->allow_author_edit || $prow->timeWithdrawn > 0) {
             return false;
         } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
@@ -3019,24 +3024,10 @@ class Contact {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
-        if (!$rights->allow_author && $rights->allow_author_view) {
-            $whyNot["signin"] = "edit_paper";
-        } else if (!$rights->allow_author) {
-            $whyNot["author"] = true;
-        }
-        if ($prow->timeWithdrawn > 0) {
-            $whyNot["withdrawn"] = true;
-        }
-        if ($prow->timeSubmitted > 0) {
-            $whyNot["updateSubmitted"] = true;
-        }
+        $whyNot = $this->perm_edit_paper_failure($prow, $rights, "f");
         if (!$this->conf->timeFinalizePaper($prow)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_sub";
-        }
-        if ($rights->allow_administer) {
-            $whyNot["override"] = true;
         }
         return $whyNot;
     }
@@ -3046,7 +3037,7 @@ class Contact {
         $rights = $this->rights($prow);
         $sub_withdraw = $this->conf->setting("sub_withdraw", 0);
         $override = $this->override_deadlines($rights);
-        return $rights->allow_author
+        return $rights->allow_author_edit
             && ($sub_withdraw !== -1
                 || $prow->timeSubmitted == 0
                 || $override)
@@ -3064,16 +3055,8 @@ class Contact {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
-        if ($prow->timeWithdrawn > 0) {
-            $whyNot["withdrawn"] = true;
-        }
-        if (!$rights->allow_author && $rights->allow_author_view) {
-            $whyNot["signin"] = "edit_paper";
-        } else if (!$rights->allow_author) {
-            $whyNot["permission"] = "withdraw";
-            $whyNot["author"] = true;
-        } else if (!$this->override_deadlines($rights)) {
+        $whyNot = $this->perm_edit_paper_failure($prow, $rights);
+        if ($rights->allow_author_edit && !$this->override_deadlines($rights)) {
             $whyNot["permission"] = "withdraw";
             $sub_withdraw = $this->conf->setting("sub_withdraw", 0);
             if ($sub_withdraw === 0 && $prow->has_author_seen_any_review()) {
@@ -3082,16 +3065,13 @@ class Contact {
                 $whyNot["decided"] = true;
             }
         }
-        if ($rights->allow_administer) {
-            $whyNot["override"] = 1;
-        }
         return $whyNot;
     }
 
     /** @return bool */
     function can_revive_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if (!$rights->allow_author || $prow->timeWithdrawn <= 0) {
+        if (!$rights->allow_author_edit || $prow->timeWithdrawn <= 0) {
             return false;
         } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
@@ -3107,21 +3087,13 @@ class Contact {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
-        if (!$rights->allow_author && $rights->allow_author_view) {
-            $whyNot["signin"] = "edit_paper";
-        } else if (!$rights->allow_author) {
-            $whyNot["author"] = true;
-        }
+        $whyNot = $this->perm_edit_paper_failure($prow, $rights, "w");
         if ($prow->timeWithdrawn <= 0) {
             $whyNot["notWithdrawn"] = true;
         }
         if (!$this->conf->time_edit_paper($prow)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_update";
-        }
-        if ($rights->allow_administer) {
-            $whyNot["override"] = true;
         }
         return $whyNot;
     }
@@ -3135,7 +3107,7 @@ class Contact {
             return false;
         }
         $rights = $this->rights($prow);
-        if (!$rights->allow_author || !$rights->can_view_decision) {
+        if (!$rights->allow_author_edit || !$rights->can_view_decision) {
             return false;
         } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
@@ -3153,7 +3125,7 @@ class Contact {
             return false;
         }
         $rights = $this->rights($prow);
-        if (!$rights->allow_author || !$rights->can_view_decision) {
+        if (!$rights->allow_author_edit || !$rights->can_view_decision) {
             return false;
         } else if (($v = $rights->perm_tag_value("author-write"))) {
             return $v > 0;
@@ -3169,15 +3141,7 @@ class Contact {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
-        if (!$rights->allow_author && $rights->allow_author_view) {
-            $whyNot["signin"] = "edit_paper";
-        } else if (!$rights->allow_author) {
-            $whyNot["author"] = true;
-        }
-        if ($prow->timeWithdrawn > 0) {
-            $whyNot["withdrawn"] = true;
-        }
+        $whyNot = $this->perm_edit_paper_failure($prow, $rights);
         // NB logic order here is important elsewhere
         // Don’t report “rejected” error to admins
         if ($prow->outcome <= 0
@@ -3189,9 +3153,6 @@ class Contact {
         } else if (!$this->conf->time_edit_final_paper()
                    && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "final_done";
-        }
-        if ($rights->allow_administer) {
-            $whyNot["override"] = true;
         }
         return $whyNot;
     }
@@ -3316,7 +3277,7 @@ class Contact {
             return true;
         }
         $rights = $this->rights($prow);
-        return $rights->act_author || $rights->can_administer;
+        return $rights->conflictType >= CONFLICT_AUTHOR || $rights->can_administer;
     }
 
     /** @return bool */
@@ -4201,7 +4162,7 @@ class Contact {
             return $this->can_respond($prow, $crow, $submit);
         }
         $rights = $this->rights($prow);
-        $author = $rights->act_author
+        $author = $rights->conflictType >= CONFLICT_AUTHOR
             && $this->conf->setting("cmt_author") > 0
             && $this->can_view_submitted_review_as_author($prow);
         return ($author
@@ -4248,7 +4209,7 @@ class Contact {
             $whyNot["differentReviewer"] = true;
         } else if (!$rights->allow_pc
                    && !$rights->allow_review
-                   && (!$rights->act_author
+                   && ($rights->conflictType < CONFLICT_AUTHOR
                        || $this->conf->setting("cmt_author", 0) <= 0)) {
             $whyNot["permission"] = "comment";
         } else if ($prow->timeWithdrawn > 0) {
@@ -4280,7 +4241,7 @@ class Contact {
         }
         $rights = $this->rights($prow);
         return ($rights->can_administer
-                || $rights->act_author)
+                || $rights->conflictType >= CONFLICT_AUTHOR)
             && (($rights->allow_administer
                  && (!$submit || $this->override_deadlines($rights)))
                 || $rrd->time_allowed(true)
@@ -4297,7 +4258,7 @@ class Contact {
         $rights = $this->rights($prow);
         $whyNot = $prow->make_whynot();
         if (!$rights->allow_administer
-            && !$rights->act_author) {
+            && $rights->conflictType < CONFLICT_AUTHOR) {
             $whyNot["permission"] = "respond";
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
@@ -4321,7 +4282,7 @@ class Contact {
     /** @return int|false */
     function preferred_resp_round_number(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if ($rights->act_author) {
+        if ($rights->conflictType >= CONFLICT_AUTHOR) {
             foreach ($prow->conf->resp_rounds() as $rrd) {
                 if ($rrd->time_allowed(true))
                     return $rrd->number;
@@ -4963,8 +4924,9 @@ class Contact {
                 if ($admin) {
                     $perm->allow_administer = true;
                 }
-                if ($rights->act_author) {
-                    $perm->act_author = true;
+                if ($rights->conflictType >= CONFLICT_AUTHOR) {
+                    $perm->is_author = true;
+                    $perm->act_author = true; // XXX backward compat
                 }
                 if ($rights->act_author_view) {
                     $perm->act_author_view = true;

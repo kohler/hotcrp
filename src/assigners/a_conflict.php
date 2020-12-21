@@ -45,7 +45,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (!$state->user->can_administer($prow)
             && !$state->user->privChair
-            && !$state->user->act_author($prow)) {
+            && !$prow->has_author($state->user)) {
             return "You can’t administer #{$prow->paperId}.";
         } else if (!$this->iscontact
                    && !$state->user->can_administer($prow)

@@ -4462,7 +4462,7 @@ function render_editing(hc, cj) {
         msgx.push(resp_rounds[cj.response].instrux);
     }
     if (cj.response
-        && !hotcrp_status.myperm.act_author) {
+        && !hotcrp_status.myperm.is_author) {
         msgx.push('You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.');
     } else if (cj.review_token
                && hotcrp_status.myperm.review_tokens
@@ -4472,7 +4472,7 @@ function render_editing(hc, cj) {
                && cj.author_email
                && siteinfo.user.email
                && cj.author_email.toLowerCase() != siteinfo.user.email.toLowerCase()) {
-        if (hotcrp_status.myperm.act_author)
+        if (hotcrp_status.myperm.is_author)
             msg = "You didn’t write this comment, but as a fellow author you can edit it.";
         else
             msg = "You didn’t write this comment, but as an administrator you can edit it.";
@@ -5059,7 +5059,7 @@ function add(cj, editing) {
         j = j.find(".cmtcard-body");
     }
     if (editing == null && cj.response && cj.draft && cj.editable
-        && hotcrp_status.myperm && hotcrp_status.myperm.act_author) {
+        && hotcrp_status.myperm && hotcrp_status.myperm.is_author) {
         editing = true;
     }
     if (!newcmt && cid === "cnew") {
