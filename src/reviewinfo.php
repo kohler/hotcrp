@@ -174,11 +174,11 @@ class ReviewInfo implements JsonSerializable {
     static public $rating_options = [
         1 => "good review", 2 => "needs work",
         4 => "too short", 8 => "too vague", 16 => "too narrow",
-        32 => "not constructive", 64 => "not correct"
+        32 => "disrespectful", 64 => "not correct"
     ];
     static public $rating_bits = [
         1 => "good", 2 => "bad", 4 => "short", 8 => "vague",
-        16 => "narrow", 32 => "not-constructive", 64 => "wrong"
+        16 => "narrow", 32 => "disrespectful", 64 => "wrong"
     ];
 
     static private $type_map = [

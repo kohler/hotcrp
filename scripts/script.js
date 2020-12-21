@@ -4122,7 +4122,7 @@ function unparse_ratings(ratings, user_rating, editable) {
     var ct = ratings_counts(ratings);
 
     var rating_names = ["Good review", "Needs work", "Too short", "Too vague",
-                        "Too narrow", "Not constructive", "Not correct"];
+                        "Too narrow", "Disrespectful", "Not correct"];
     var t = [];
     t.push('<span class="revrating-group flag fn">'
            + (editable ? '<a href="" class="qq ui js-revrating-unfold">' : '<a href="' + hoturl("help", {t: "revrate"}) + '" class="qq">')
