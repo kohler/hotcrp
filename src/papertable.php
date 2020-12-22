@@ -332,7 +332,7 @@ class PaperTable {
 
         // other expansions
         $next_foldnum = 10;
-        foreach ($this->conf->options()->display_fields($this->prow) as $o) {
+        foreach ($this->prow->display_fields() as $o) {
             if ($o->display_position() !== false
                 && $o->display_position() >= 1000
                 && $o->display_position() < 5000
@@ -976,7 +976,7 @@ class PaperTable {
         $renders = [];
         $fr = new FieldRender(FieldRender::CPAGE);
         $fr->table = $this;
-        foreach ($this->conf->options()->display_fields($this->prow) as $o) {
+        foreach ($this->prow->display_fields() as $o) {
             if ($o->display_position() === false
                 || $o->display_position() < 1000
                 || $o->display_position() >= 5000
@@ -1927,7 +1927,7 @@ class PaperTable {
             '</span></h2></div>';
 
         $this->edit_fields = array_values(array_filter(
-            $this->conf->options()->form_fields($this->prow),
+            $this->prow->form_fields(),
             function ($o) {
                 return $this->user->can_edit_option($this->prow, $o);
             }

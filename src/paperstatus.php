@@ -217,7 +217,7 @@ class PaperStatus extends MessageSet {
         $pj = (object) [];
         $pj->pid = (int) $prow->paperId;
 
-        foreach ($this->conf->options()->form_fields($this->prow) as $opt) {
+        foreach ($this->prow->form_fields() as $opt) {
             if (!$user || $user->can_view_option($this->prow, $opt)) {
                 $ov = $prow->force_option($opt);
                 $oj = $opt->value_unparse_json($ov, $this);
@@ -476,7 +476,7 @@ class PaperStatus extends MessageSet {
             }
         }
         $ikeys = [];
-        foreach ($this->conf->options()->form_fields($this->prow) as $o) {
+        foreach ($this->_nnprow->form_fields() as $o) {
             $k = $o->json_key();
             if (($j = $ipj->$k ?? $ioptions->$k ?? null) !== null) {
                 $xpj->$k = $j;
@@ -640,7 +640,7 @@ class PaperStatus extends MessageSet {
         if (!empty($pj->_bad_options)) {
             $this->warning_at("options", $this->_("Unknown options ignored (%2\$s).", count($pj->_bad_options), htmlspecialchars(join("; ", $pj->_bad_options))));
         }
-        foreach ($this->conf->options()->form_fields($this->_nnprow) as $o) {
+        foreach ($this->_nnprow->form_fields() as $o) {
             if (isset($pj->{$o->json_key()})) {
                 $this->_check_one_field($o, $pj->{$o->json_key()});
             }
@@ -649,7 +649,7 @@ class PaperStatus extends MessageSet {
 
     private function _validate_fields() {
         $max_status = 0;
-        foreach ($this->conf->options()->form_fields($this->_nnprow) as $opt) {
+        foreach ($this->_nnprow->form_fields() as $opt) {
             $ov = $this->_nnprow->new_option($opt);
             $errorindex = count($ov->message_list());
             if (!$ov->has_error()) {
@@ -835,7 +835,7 @@ class PaperStatus extends MessageSet {
 
         // Fields
         $nnprow = $prow ?? PaperInfo::make_new($this->user);
-        foreach ($this->conf->options()->form_fields($nnprow) as $o) {
+        foreach ($nnprow->form_fields() as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
                 && (!$o->final || $action === "final")
                 && (!$updatecontacts || $o->id === PaperOption::CONTACTSID)) {
@@ -1054,7 +1054,7 @@ class PaperStatus extends MessageSet {
     private function _postexecute_check_required_options() {
         $prow = null;
         $required_failure = false;
-        foreach ($this->conf->options()->form_fields($this->_nnprow) as $o) {
+        foreach ($this->_nnprow->form_fields() as $o) {
             if (!$o->required) {
                 continue;
             }

@@ -1745,6 +1745,17 @@ class PaperInfo {
         }
     }
 
+    /** @return array<int,PaperOption> */
+    function display_fields() {
+        return $this->conf->options()->display_fields($this);
+    }
+
+    /** @return array<int,PaperOption> */
+    function form_fields() {
+        return $this->conf->options()->form_fields($this);
+    }
+
+    /** @return string */
     static function document_sql() {
         return "paperId, paperStorageId, timestamp, mimetype, sha1, crc32, documentType, filename, infoJson, size, filterType, originalStorageId, inactive";
     }
