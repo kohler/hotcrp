@@ -822,7 +822,8 @@ class PaperStatus extends MessageSet {
 
         // Status
         $updatecontacts = $action === "updatecontacts";
-        if ($action === "submit") {
+        if ($action === "submit"
+            || ($action === "update" && $qreq->submitpaper)) {
             $pj->submitted = true;
             $pj->draft = false;
         } else if ($action === "final") {

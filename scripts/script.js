@@ -7929,12 +7929,17 @@ $(background_format_check);
 
 handle_ui.on("js-check-submittable", function (event) {
     var f = this.closest("form"),
-        readye = f.submitpaper,
-        was = f.getAttribute("data-submitted"), is = true;
-    if (this && this.tagName === "INPUT" && this.type === "file" && this.value)
+        readye = f.elements.submitpaper,
+        was = f.getAttribute("data-submitted"),
+        unfold = this && this.tagName === "INPUT" && this.type === "file" && this.value,
+        is = true;
+    if (unfold)
         fold($(f).find(".ready-container"), false);
-    if (readye && readye.type === "checkbox")
+    if (readye && readye.type === "checkbox") {
         is = readye.checked && $(readye).is(":visible");
+        if (readye.disabled && unfold)
+            readye.disabled = false;
+    }
     var t;
     if (f.hasAttribute("data-contacts-only")) {
         t = "Save contacts";

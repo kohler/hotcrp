@@ -204,7 +204,7 @@ function update_paper(Qrequest $qreq, $action) {
     } else {
         $whyNot = $Me->perm_edit_paper($prow);
         if ($whyNot
-            && $action === "submit"
+            && $action === "update"
             && !count(array_diff($ps->diffs, ["contacts", "status"])))
             $whyNot = $Me->perm_finalize_paper($prow);
     }
@@ -376,11 +376,6 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->valid_post()) {
     $action = "update";
     if ($Qreq->submitfinal && $prow) {
         $action = "final";
-    } else if ($Qreq->submitpaper
-               && (($prow && $prow->size > 0)
-                   || $Qreq->has_file("opt0")
-                   || $Conf->opt("noPapers"))) {
-        $action = "submit";
     }
 
     $whyNot = update_paper($Qreq, $action);
@@ -394,7 +389,7 @@ if (($Qreq->update || $Qreq->submitfinal) && $Qreq->valid_post()) {
     // Use the request unless the request failed because updates
     // aren't allowed.
     $useRequest = !$whyNot || !$prow
-        || !($action != "final" && !$Me->can_edit_paper($prow)
+        || !($action !== "final" && !$Me->can_edit_paper($prow)
              && $Me->can_finalize_paper($prow));
 }
 

@@ -657,11 +657,11 @@ class PaperTable {
         }
 
         $checked = $this->is_ready(true);
+        $ready_open = $this->prow->paperStorageId > 1 || $this->conf->opt("noPapers");
         echo '<div class="ready-container ',
-            ($this->prow->paperStorageId > 1
-             || $this->conf->opt("noPapers") ? "foldo" : "foldc"),
+            $ready_open ? "foldo" : "foldc",
             '"><div class="checki fx"><span class="checkc">',
-            Ht::checkbox("submitpaper", 1, $checked, ["class" => "uich js-check-submittable"]),
+            Ht::checkbox("submitpaper", 1, $checked, ["class" => "uich js-check-submittable", "disabled" => !$ready_open]),
             " </span>";
         if ($this->conf->setting("sub_freeze")) {
             echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>"),

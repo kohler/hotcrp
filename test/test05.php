@@ -182,8 +182,33 @@ xassert($newpaper->timeWithdrawn <= 0);
 xassert_eqq($newpaper->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 
 $ps = new PaperStatus($Conf, $user_estrin);
-xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["ready" => 1]), $newpaper, "submit"));
+xassert($ps->prepare_save_paper_web(new Qrequest("POST", []), $newpaper, "submit"));
 xassert_array_eqq(array_keys($ps->diffs), ["status"], true);
+xassert($ps->execute_save());
+xassert_paper_status($ps);
+
+$newpaper = $user_estrin->checked_paper_by_id($ps->paperId);
+xassert($newpaper);
+xassert_eqq($newpaper->title, "New paper");
+xassert_eqq($newpaper->abstract, "This is an abstract");
+xassert_eqq($newpaper->abstract_text(), "This is an abstract");
+xassert_eqq(count($newpaper->author_list()), 1);
+$aus = $newpaper->author_list();
+xassert_eqq($aus[0]->firstName, "Bobby");
+xassert_eqq($aus[0]->lastName, "Flay");
+xassert_eqq($aus[0]->email, "flay@_.com");
+xassert($newpaper->timeSubmitted > 0);
+xassert($newpaper->timeWithdrawn <= 0);
+xassert_eqq($newpaper->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+
+// test submitting a new paper from scratch
+$ps = new PaperStatus($Conf, $user_estrin);
+xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com"]), null, "update"));
+xassert_paper_status($ps);
+xassert($ps->diffs["title"]);
+xassert($ps->diffs["abstract"]);
+xassert($ps->diffs["authors"]);
+xassert($ps->diffs["contacts"]);
 xassert($ps->execute_save());
 xassert_paper_status($ps);
 
@@ -226,18 +251,18 @@ xassert($newpaperx->timeWithdrawn <= 0);
 xassert_eqq($newpaperx->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 
 $ps = new PaperStatus($Conf, $user_estrin);
-xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["ready" => 0, "opt1" => "10", "has_opt1" => "1"]), $newpaper, "update"));
+xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10", "has_opt1" => "1"]), $newpaper, "update"));
 xassert_array_eqq(array_keys($ps->diffs), ["calories", "status"], true);
 xassert($ps->execute_save());
 xassert_paper_status($ps);
 
 $ps = new PaperStatus($Conf, $user_estrin);
-xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["ready" => 0, "opt1" => "10xxxxx", "has_opt1" => "1"]), $newpaper, "update"));
+xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10xxxxx", "has_opt1" => "1"]), $newpaper, "update"));
 xassert_array_eqq($ps->diffs, [], true);
 xassert($ps->has_error_at("opt1"));
 
 $ps = new PaperStatus($Conf, $user_estrin);
-xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["ready" => 0, "opt1" => "none", "has_opt1" => "1"]), $newpaper, "update"));
+xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "none", "has_opt1" => "1"]), $newpaper, "update"));
 xassert_array_eqq(array_keys($ps->diffs), ["calories"], true);
 xassert_paper_status($ps);
 
@@ -257,7 +282,7 @@ xassert_eqq($newpaper->option(1)->value, 10);
 
 // check old author entry syntax
 $ps = new PaperStatus($Conf, $user_estrin);
-xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["ready" => 0, "has_authors" => "1", "auname1" => "Robert Flay", "auemail1" => "flay@_.com"]), $newpaper, "update"));
+xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["has_authors" => "1", "auname1" => "Robert Flay", "auemail1" => "flay@_.com"]), $newpaper, "update"));
 xassert($ps->diffs["authors"]);
 xassert($ps->execute_save());
 xassert_paper_status($ps);
@@ -277,11 +302,11 @@ xassert($newpaper->timeWithdrawn <= 0);
 xassert_eqq($newpaper->option(1)->value, 10);
 
 // save a new paper
-$qreq = new Qrequest("POST", ["ready" => 1, "has_opt2" => "1", "has_opt2_new_1" => "1", "title" => "Paper about mantis shrimp", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:aff_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
+$qreq = new Qrequest("POST", ["submitpaper" => 1, "has_opt2" => "1", "has_opt2_new_1" => "1", "title" => "Paper about mantis shrimp", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:aff_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $qreq->set_file("opt2_new_1", ["name" => "attachment1.pdf", "type" => "application/pdf", "content" => "%PDF-whatever\n", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
-xassert($ps->prepare_save_paper_web($qreq, null, "submit"));
+xassert($ps->prepare_save_paper_web($qreq, null, "update"));
 xassert($ps->diffs["title"]);
 xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
@@ -311,26 +336,26 @@ xassert_eqq($newpaper->option(2)->document(0)->text_hash(), "sha2-38b74d4ab9d389
 xassert($newpaper->has_author($user_estrin));
 
 // some erroneous saves concerning required fields
-$qreq = new Qrequest("POST", ["ready" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
+$qreq = new Qrequest("POST", ["submitpaper" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
-$ps->prepare_save_paper_web($qreq, null, "submit");
+$ps->prepare_save_paper_web($qreq, null, "update");
 xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
-$qreq = new Qrequest("POST", ["ready" => 1, "title" => "", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
+$qreq = new Qrequest("POST", ["submitpaper" => 1, "title" => "", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
-$ps->prepare_save_paper_web($qreq, null, "submit");
+$ps->prepare_save_paper_web($qreq, null, "update");
 xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
-$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "has_submission" => "1"]);
+$qreq = new Qrequest("POST", ["submitpaper" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
-$ps->prepare_save_paper_web($qreq, null, "submit");
+$ps->prepare_save_paper_web($qreq, null, "update");
 xassert($ps->has_error_at("abstract"));
 xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
@@ -338,10 +363,10 @@ xassert_eq($ps->error_texts(), ["Entry required."]);
 $Conf->set_opt("noAbstract", 1);
 $Conf->invalidate_caches();
 
-$qreq = new Qrequest("POST", ["ready" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "has_submission" => "1"]);
+$qreq = new Qrequest("POST", ["submitpaper" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
 $ps = new PaperStatus($Conf, $user_estrin);
-$ps->prepare_save_paper_web($qreq, null, "submit");
+$ps->prepare_save_paper_web($qreq, null, "update");
 xassert(!$ps->has_error_at("abstract"));
 xassert_eqq(count($ps->error_fields()), 0);
 xassert_eq($ps->error_texts(), []);
@@ -351,7 +376,7 @@ $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->abstract, "They see lots of colors.");
 
 $ps = new PaperStatus($Conf, $user_estrin);
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "abstract" => " They\nsee\r\nlots of\n\n\ncolors. \n\n\n"]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "abstract" => " They\nsee\r\nlots of\n\n\ncolors. \n\n\n"]), $nprow1, "update");
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), ["abstract"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
@@ -362,14 +387,14 @@ $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators(), "");
 
 $ps = new PaperStatus($Conf, $user_estrin);
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "collaborators" => "  John Fart\rMIT\n\nButt Man (UCLA)"]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "collaborators" => "  John Fart\rMIT\n\nButt Man (UCLA)"]), $nprow1, "update");
 xassert_paper_status($ps, MessageSet::WARNING);
 xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators(), "John Fart\nAll (MIT)\n\nButt Man (UCLA)");
 
 $ps = new PaperStatus($Conf, $user_estrin);
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "collaborators" => "Sal Stolfo, Guofei Gu, Manos Antonakakis, Roberto Perdisci, Weidong Cui, Xiapu Luo, Rocky Chang, Kapil Singh, Helen Wang, Zhichun Li, Junjie Zhang, David Dagon, Nick Feamster, Phil Porras."]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "collaborators" => "Sal Stolfo, Guofei Gu, Manos Antonakakis, Roberto Perdisci, Weidong Cui, Xiapu Luo, Rocky Chang, Kapil Singh, Helen Wang, Zhichun Li, Junjie Zhang, David Dagon, Nick Feamster, Phil Porras."]), $nprow1, "update");
 xassert_paper_status($ps, MessageSet::WARNING);
 xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
@@ -395,7 +420,7 @@ for ($i = 0; $i !== 1000; ++$i) {
 }
 $long_collab = join("\n", $long_collab);
 $ps = new PaperStatus($Conf, $user_estrin);
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "collaborators" => $long_collab]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "collaborators" => $long_collab]), $nprow1, "update");
 xassert_paper_status($ps);
 xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
@@ -405,7 +430,7 @@ xassert_eqq($nprow1->collaborators(), $long_collab);
 
 // the collaborators are short again
 $ps = new PaperStatus($Conf, $user_estrin);
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "collaborators" => "One guy (MIT)"]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "collaborators" => "One guy (MIT)"]), $nprow1, "update");
 xassert_paper_status($ps);
 xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
@@ -484,8 +509,8 @@ xassert_array_eqq(array_keys($ps->diffs), ["topics"]);
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), [2, 5]);
 
-$qreq = new Qrequest("POST", ["ready" => 1, "has_topics" => 1, "top1" => 1, "top5" => 1]);
-$ps->save_paper_web($qreq, $nprow1, "submit");
+$qreq = new Qrequest("POST", ["submitpaper" => 1, "has_topics" => 1, "top1" => 1, "top5" => 1]);
+$ps->save_paper_web($qreq, $nprow1, "update");
 xassert(!$ps->has_problem());
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), [1, 5]);
@@ -607,7 +632,7 @@ $ps->save_paper_json((object) [
 xassert($ps->has_problem());
 xassert_eqq($ps->message_texts_at("contacts"), ["Each submission must have at least one contact.", "You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"]);
 
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu"]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu"]), $nprow1, "update");
 xassert($ps->has_problem());
 xassert_eqq($ps->message_texts_at("contacts"), ["Each submission must have at least one contact.", "You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"]);
 
@@ -617,7 +642,7 @@ $ps->save_paper_json((object) [
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), [], true);
 
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "", "contacts:active_2" => 1]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "", "contacts:active_2" => 1]), $nprow1, "update");
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), [], true);
 
@@ -635,7 +660,7 @@ $nprow1->invalidate_conflicts();
 xassert($nprow1->has_author($new_user));
 
 xassert(!$Conf->user_id_by_email("gestrin@gusc.gedu"));
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "festrin@fusc.fedu", "contacts:email_3" => "gestrin@gusc.gedu", "contacts:name_3" => "Geborah Gestrin", "contacts:active_3" => 1]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "festrin@fusc.fedu", "contacts:email_3" => "gestrin@gusc.gedu", "contacts:name_3" => "Geborah Gestrin", "contacts:active_3" => 1]), $nprow1, "update");
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
 $new_user2 = $Conf->user_by_email("gestrin@gusc.gedu");
@@ -646,13 +671,13 @@ $nprow1->invalidate_conflicts();
 xassert(!$nprow1->has_author($new_user));
 xassert($nprow1->has_author($new_user2));
 
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1]), $nprow1, "update");
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), [], true);
 $nprow1->invalidate_conflicts();
 xassert_array_eqq(contact_emails($nprow1), ["estrin@usc.edu", "gestrin@gusc.gedu"], true);
 
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "atten@_.com", "contacts:active_1" => 1]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "atten@_.com", "contacts:active_1" => 1]), $nprow1, "update");
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
 $nprow1->invalidate_conflicts();
@@ -660,7 +685,7 @@ xassert_array_eqq(contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu", "ge
 $user_atten = $Conf->checked_user_by_email("ATTEN@_.coM");
 xassert_eqq($nprow1->conflict_type($user_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
 
-$ps->save_paper_web(new Qrequest("POST", ["ready" => 1, "has_contacts" => 1, "contacts:email_1" => "gestrin@gusc.gedu", "contacts:email_2" => "atten@_.com"]), $nprow1, "submit");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "gestrin@gusc.gedu", "contacts:email_2" => "atten@_.com"]), $nprow1, "update");
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
 $nprow1->invalidate_conflicts();
