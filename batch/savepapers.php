@@ -317,8 +317,6 @@ function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
         }
         $docj->content = $content;
         $docj->content_file = null;
-        // assuming entry won't be needed again, reclaim its memory
-        $ziparchive->unchangeName($name);
     }
 }
 
