@@ -21,6 +21,9 @@ class SearchSelection {
         }
     }
 
+    /** @param Qrequest $qreq
+     * @param ?string $key
+     * @return SearchSelection */
     static function make($qreq, Contact $user = null, $key = null) {
         $ps = null;
         if ($key !== null) {
@@ -95,6 +98,9 @@ class SearchSelection {
         $this->selmap = null;
     }
 
+    /** @param int|PaperInfo $a
+     * @param int|PaperInfo $b
+     * @return int */
     function order_compare($a, $b) {
         if ($a instanceof PaperInfo) {
             $a = $a->paperId;

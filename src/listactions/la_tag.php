@@ -91,8 +91,8 @@ class Tag_ListAction extends ListAction {
             $tagger = new Tagger($user);
             if ($tagger->check($tagreq, Tagger::NOPRIVATE | Tagger::NOVALUE)
                 && $tagger->check($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-                $r = new PaperRank($source_tag, $tagreq, $papers, $qreq->tagcr_gapless,
-                                   "Search", "search");
+                $r = new PaperRank($user->conf, $source_tag, $tagreq, $papers,
+                                   $qreq->tagcr_gapless, "Search", "search");
                 $r->run($qreq->tagcr_method);
                 $assignset->set_overrides(Contact::OVERRIDE_CONFLICT | Contact::OVERRIDE_TAG_CHECKS);
                 $assignset->parse($r->unparse_assignment());

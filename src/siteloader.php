@@ -161,7 +161,7 @@ class SiteLoader {
                 $ignore_not_found = true;
                 $f = substr($f, 1);
             }
-            if (preg_match(',[\[\]\*\?\{\}],', $f)) {
+            if (preg_match('/[\[\]\*\?\{\}]/', $f)) {
                 $ignore_not_found = $globby = true;
             }
             $matches = self::expand_includes_once($f, $includepath, $globby);

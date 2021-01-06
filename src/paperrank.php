@@ -3,32 +3,56 @@
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
 class PaperRank {
+    /** @var Conf */
+    private $conf;
+    /** @var string */
     private $tag;
+    /** @var string */
     private $dest_tag;
+    /** @var bool */
     private $sequential;
+    /** @var list<int> */
     private $papersel;
-    private $userrank;
+    /** @var array<int,list<array{int,int}>> */
+    private $userrank = [];
+    /** @var array<int,int> */
     private $papershuffle;
+    /** @var array<int,array<int,int>> */
     private $pref;
+    /** @var array<int,int> */
     private $anypref;
+    /** @var array<int,int> */
     private $voters;
+    /** @var int */
     private $totalpref;
+    /** @var int */
     private $deletedpref;
-    private $rank;
-    private $currank;
+    /** @var array<int,int> */
+    private $rank = [];
+    /** @var int */
+    private $currank = 0;
 
-    private $info_printed;
+    /** @var bool */
+    private $info_printed = false;
+    /** @var ?string */
     private $header_title;
+    /** @var ?string */
     private $header_id;
+    /** @var int */
     private $starttime;
 
-    function __construct($source_tag, $dest_tag, $papersel, $sequential,
+    /** @param string $source_tag
+     * @param string $dest_tag
+     * @param list<int> $papersel
+     * @param bool $sequential
+     * @param ?string $header_title
+     * @param ?string $header_id */
+    function __construct(Conf $conf, $source_tag, $dest_tag, $papersel, $sequential,
                          $header_title = null, $header_id = null) {
+        $this->conf = $conf;
         $this->dest_tag = $dest_tag;
         $this->sequential = $sequential;
         $this->papersel = $papersel;
-        $this->userrank = array();
-        $this->info_printed = false;
         $this->header_title = $header_title;
         $this->header_id = $header_id;
         $this->starttime = time();
@@ -43,32 +67,35 @@ class PaperRank {
         }
 
         // load current ranks: $userrank maps user => [rank, paper]
-        $result = Conf::$main->qe_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")");
+        $result = $this->conf->qe_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($source_tag) . "' and paperId in (" . join(",", $papersel) . ")");
         $len = strlen($source_tag) + 1;
         while (($row = $result->fetch_row())) {
             $l = (int) substr($row[1], 0, strlen($row[1]) - $len);
-            $this->userrank[$l][] = array((int) $row[2], (int) $row[0]);
+            $this->userrank[$l][] = [(int) $row[2], (int) $row[0]];
         }
+        Dbl::free($result);
 
         // sort $userrank[$user] by descending rank order
         foreach ($this->userrank as $user => &$ranks) {
-            usort($ranks, array($this, "_comparUserrank"));
+            usort($ranks, [$this, "_comparUserrank"]);
         }
-
-        $this->rank = array();
-        $this->currank = 0;
+        unset($ranks);
     }
 
+    /** @param array{int,int} $a
+     * @param array{int,int} $b
+     * @return int */
     function _comparUserrank($a, $b) {
         if ($a[0] != $b[0]) {
-            return ($a[0] < $b[0] ? -1 : 1);
+            return $a[0] < $b[0] ? -1 : 1;
         } else if ($a[1] != $b[1]) {
-            return ($this->papershuffle[$a[1]] < $this->papershuffle[$b[1]] ? -1 : 1);
+            return $this->papershuffle[$a[1]] < $this->papershuffle[$b[1]] ? -1 : 1;
         } else {
             return 0;
         }
     }
 
+    /** @return int */
     private function _nextRank() {
         $this->currank += Tagger::value_increment($this->sequential);
         return $this->currank;
@@ -84,7 +111,7 @@ class PaperRank {
         $pct = round($n / count($this->papersel) * 100);
         if (!$this->info_printed) {
             if ($this->header_title) {
-                Conf::$main->header($this->header_title, $this->header_id);
+                $this->conf->header($this->header_title, $this->header_id);
             }
             echo '<div id="foldrankcalculation" class="foldc"><div class="fn info">Calculating ranks; this can take a while.  <span id="rankpercentage">', $pct, '</span>% of ranks assigned<span id="rankdeletedpref"></span>.</div></div>';
             $this->info_printed = true;
@@ -186,6 +213,7 @@ class PaperRank {
                 }
             }
         }
+        unset($ranks);
 
         // map ranks to ranges
         $paperrange = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
@@ -273,6 +301,7 @@ class PaperRank {
                 }
             }
         }
+        unset($rankedPapers);
 
         // calculate the maximum number of papers outranking any paper
         $maxOutrankCount = 0;
@@ -355,7 +384,7 @@ class PaperRank {
         $this->totalpref = 0;
         $this->deletedpref = 0;
 
-        foreach ($this->userrank as $user => &$ranks) {
+        foreach ($this->userrank as $user => $ranks) {
             for ($i = 0; $i < count($ranks); ++$i) {
                 list($rank, $p1) = $ranks[$i];
                 ++$this->voters[$p1];
@@ -559,7 +588,7 @@ class PaperRank {
             // and try again
             uasort($weakness, array($this, "_comparWeakness"));
             $thisweakness = null;
-            while (1) {
+            while (true) {
                 if ($thisweakness !== null
                     && $this->_comparWeakness($thisweakness, current($weakness)) != 0) {
                     break;
@@ -609,6 +638,9 @@ class PaperRank {
 
     // global rank calculation by CIVS Ranked Pairs
 
+    /** @param array{int,int} $a
+     * @param array{int,int} $b
+     * @return int */
     function _comparStrength($a, $b) {
         if ($a[0] != $b[0]) {
             return ($a[0] > $b[0] ? -1 : 1);
@@ -619,11 +651,13 @@ class PaperRank {
         }
     }
 
-    private function _reachableClosure2(&$reachable, &$papersel, $pairs) {
+    /** @param array<int,array<int,true>> &$reachable
+     * @param list<array{int,int}> $pairs */
+    private function _reachableClosure2(&$reachable, $pairs) {
         while (count($pairs)) {
             list($p1, $p2) = array_pop($pairs);
             $reachable[$p1][$p2] = true;
-            foreach ($papersel as $px) {
+            foreach ($this->papersel as $px) {
                 if (isset($reachable[$px][$p1]) && !isset($reachable[$px][$p2])) {
                     array_push($pairs, array($px, $p2));
                 }
@@ -634,14 +668,19 @@ class PaperRank {
         }
     }
 
+    /** @param array<int,array<int,true>> &$defeat
+     * @param list<array{int,int}> &$adddefeat */
     private function _includePairs(&$defeat, &$reachable, &$adddefeat) {
         foreach ($adddefeat as $x) {
             $defeat[$x[0]][$x[1]] = true;
         }
-        $this->_reachableClosure2($reachable, $this->papersel, $adddefeat);
+        $this->_reachableClosure2($reachable, $adddefeat);
         $adddefeat = array();
     }
 
+    /** @param array{int,int} $a
+     * @param array{int,int} $b
+     * @return int */
     private function _comparPreferenceAgainst($a, $b) {
         if ($a[1] != $b[1]) {
             return $a[1] < $b[1] ? -1 : 1;
@@ -702,7 +741,7 @@ class PaperRank {
 
         // create and sort preference pairs
         $strength = array();
-        foreach ($this->pref as $p1 => &$p1pref) {
+        foreach ($this->pref as $p1 => $p1pref) {
             foreach ($p1pref as $p2 => $pref12) {
                 $pref21 = $this->pref[$p2][$p1];
                 if ($pref12 > $pref21)
@@ -718,9 +757,11 @@ class PaperRank {
             if (count($adddefeat) && $this->_comparStrength($lastvalue, $value)) {
                 $this->_includePairs($defeat, $reachable, $adddefeat);
             }
-            list($p1, $p2) = explode(" ", $k);
+            $sp = strpos($k, " ");
+            $p1 = (int) substr($k, 0, $sp);
+            $p2 = (int) substr($k, $sp + 1);
             if (!isset($reachable[$p2][$p1])) {
-                $adddefeat[] = array($p1, $p2);
+                $adddefeat[] = [$p1, $p2];
             }
             $lastvalue = $value;
         }
@@ -766,6 +807,7 @@ class PaperRank {
 
 
     // save calculated ranks
+    /** @return string */
     function unparse_assignment() {
         $t = CsvGenerator::quote($this->dest_tag);
         $a = ["paper,action,tag,index\nall,cleartag,$t\n"];
