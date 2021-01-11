@@ -3,8 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-if (!$Me->is_manager())
+if (!$Me->is_manager()) {
     $Me->escape();
+}
 $null_mailer = new HotCRPMailer($Conf, null, [
     "requester_contact" => $Me,
     "other_contact" => $Me /* backwards compat */,

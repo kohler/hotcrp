@@ -319,8 +319,9 @@ function parseBulkFile($text, $filename) {
         && !preg_match('/\A[^\r\n]*,[^\r\n]*,/', $text)) {
         $tarr = CsvParser::split_lines($text);
         foreach ($tarr as &$t) {
-            if (($t = trim($t)) && $t[0] !== "#" && $t[0] !== "%")
+            if (($t = trim($t)) && $t[0] !== "#" && $t[0] !== "%") {
                 $t = CsvGenerator::quote($t);
+            }
             $t .= "\n";
         }
         unset($t);
@@ -432,7 +433,7 @@ if (!$Qreq->valid_post()) {
         $success = parseBulkFile($Qreq->bulkentry, "");
     }
     if (!$success) {
-        $Me->save_session("profile_bulkentry", array(Conf::$now, $Qreq->bulkentry));
+        $Me->save_session("profile_bulkentry", [Conf::$now, $Qreq->bulkentry]);
     }
     $Conf->redirect_self($Qreq, ["anchor" => "bulk"]);
 } else if (isset($Qreq->save)) {

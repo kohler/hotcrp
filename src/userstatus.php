@@ -13,11 +13,17 @@ class UserStatus extends MessageSet {
     public $user;
     /** @var ?bool */
     public $self;
+    /** @var ?bool */
     private $no_notify = null;
+    /** @var bool */
     private $no_deprivilege_self = false;
+    /** @var bool */
     private $no_update_profile = false;
+    /** @var bool */
     private $no_create = false;
+    /** @var bool */
     private $no_modify = false;
+    /** @var ?array<string,true> */
     public $unknown_topics = null;
     /** @var bool */
     private $created;
@@ -25,8 +31,11 @@ class UserStatus extends MessageSet {
     public $diffs;
     /** @var ?GroupedExtensions */
     private $_gxt;
+    /** @var ?bool */
     private $_req_security;
+    /** @var ?bool */
     private $_req_need_security;
+    /** @var ?array{string,string} */
     private $_req_passwords;
 
     public static $watch_keywords = [
@@ -74,30 +83,31 @@ class UserStatus extends MessageSet {
     function set_user(Contact $user) {
         $old_user = $this->user;
         $this->user = $user;
-        $this->self = $this->user === $this->viewer
-            && !$this->viewer->is_actas_user();
+        $this->self = $this->user === $this->viewer && !$this->viewer->is_actas_user();
         if ($this->_gxt && $this->user !== $old_user) {
             $this->_gxt->reset_context();
             $this->initialize_gxt();
         }
     }
+
+    /** @return bool */
     function is_new_user() {
         return $this->user && !$this->user->email;
     }
+    /** @return bool */
     function is_viewer_user() {
         return $this->user && $this->user->contactId == $this->viewer->contactId;
     }
+    /** @return ?Contact */
     function global_self() {
         return $this->self ? $this->user->contactdb_user() : null;
     }
-    /** @deprecated */
-    function global_user() { // XXX
-        return $this->global_self();
-    }
+    /** @return ?Contact */
     function actor() {
         return $this->viewer->is_root_user() ? null : $this->viewer;
     }
 
+    /** @return GroupedExtensions */
     function gxt() {
         if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
@@ -111,22 +121,22 @@ class UserStatus extends MessageSet {
         $this->_gxt->set_callable("UserStatus", $this);
     }
 
+    /** @return bool */
     function allow_security() {
         return !$this->conf->external_login()
-            && (!$this->user
-                || $this->self
-                || (!$this->user->is_empty()
+            && ($this->self
+                || ((!$this->user || !$this->user->is_empty())
                     && $this->viewer->privChair
                     && !$this->conf->contactdb()
                     && !$this->conf->opt("chairHidePasswords")));
     }
+
+    /** @return ?bool */
     function xt_allower($e, $xt, Contact $user, Conf $conf) {
         if ($e === "profile_security") {
             return $this->allow_security();
         } else if ($e === "self") {
-            return !$this->user || $this->self;
-        } else if ($e === "global_self") {
-            return !$this->user || ($this->self && $this->global_self());
+            return $this->self;
         } else {
             return null;
         }
@@ -134,12 +144,12 @@ class UserStatus extends MessageSet {
 
     /** @return bool */
     function only_update_empty(Contact $user) {
+        // XXX want way in script to modify all
         return $this->no_update_profile
             || ($user->cdb_confid !== 0
                 && (strcasecmp($user->email, $this->viewer->email) !== 0
                     || $this->viewer->is_actas_user()
                     || $this->viewer->is_root_user()));
-                       // XXX want way in script to modify all
     }
 
     static function user_paper_info(Conf $conf, $cid) {
@@ -357,20 +367,21 @@ class UserStatus extends MessageSet {
         // Errors prevent saving
 
         // Canonicalize keys
-        foreach (array("preferredEmail" => "preferred_email",
-                       "institution" => "affiliation",
-                       "voicePhoneNumber" => "phone",
-                       "addressLine1" => "address",
-                       "zipCode" => "zip", "postal_code" => "zip") as $x => $y) {
+        foreach (["preferredEmail" => "preferred_email",
+                  "institution" => "affiliation",
+                  "voicePhoneNumber" => "phone",
+                  "addressLine1" => "address",
+                  "zipCode" => "zip",
+                  "postal_code" => "zip"] as $x => $y) {
             if (isset($cj->$x) && !isset($cj->$y)) {
                 $cj->$y = $cj->$x;
             }
         }
 
         // Stringiness
-        foreach (array("firstName", "lastName", "email", "preferred_email",
-                       "affiliation", "phone", "new_password",
-                       "city", "state", "zip", "country") as $k) {
+        foreach (["firstName", "lastName", "email", "preferred_email",
+                  "affiliation", "phone", "new_password",
+                  "city", "state", "zip", "country"] as $k) {
             if (isset($cj->$k) && !is_string($cj->$k)) {
                 $this->error_at($k, "Format error [$k]");
                 unset($cj->$k);
@@ -678,7 +689,7 @@ class UserStatus extends MessageSet {
         return $roles;
     }
 
-    function check_invariants($cj) {
+    private function check_invariants($cj) {
         if (isset($cj->bad_follow) && !empty($cj->bad_follow)) {
             $this->warning_at("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
         }
@@ -687,6 +698,7 @@ class UserStatus extends MessageSet {
         }
     }
 
+    /** @return bool */
     static function check_pc_tag($base) {
         return !preg_match('/\A(?:any|all|none|pc|chair|admin|sysadmin)\z/i', $base);
     }
@@ -846,7 +858,8 @@ class UserStatus extends MessageSet {
         foreach ($gx->members("", "save_early_callback") as $gj) {
             $gx->call_callback($gj->save_early_callback, $gj);
         }
-        if (($user->prop_changed() || $this->created) && !$user->save_prop()) {
+        if (($user->prop_changed() || $this->created)
+            && !$user->save_prop()) {
             return false;
         }
 
@@ -1090,6 +1103,7 @@ class UserStatus extends MessageSet {
         }
     }
 
+    /** @return bool */
     function has_req_security() {
         $this->_req_need_security = true;
         return $this->_req_security;
@@ -1291,7 +1305,7 @@ class UserStatus extends MessageSet {
             return;
         }
         echo '<h3 class="form-h">Change password</h3>';
-        $pws = $us->_req_passwords ? : ["", ""];
+        $pws = $us->_req_passwords ?? ["", ""];
         echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
             '<label for="upassword">New password</label>',
             Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]),

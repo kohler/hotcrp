@@ -37,7 +37,9 @@ class PaperStatus extends MessageSet {
     public $diffs;
     /** @var PaperInfo */
     private $_nnprow;
+    /** @var array<string,null|int|string> */
     private $_paper_upd;
+    /** @var array<string,null|int|string> */
     private $_paper_overflow_upd;
     /** @var ?list<int> */
     public $_topic_ins; // set by Topics_PaperOption
@@ -530,19 +532,26 @@ class PaperStatus extends MessageSet {
         return $xpj;
     }
 
+    /** @param string $f
+     * @param null|int|string $v */
     function save_paperf($f, $v) {
         assert(!isset($this->_paper_upd[$f]));
         $this->_paper_upd[$f] = $v;
     }
 
+    /** @param string $f
+     * @param null|int|string $v */
     function update_paperf($f, $v) {
         $this->_paper_upd[$f] = $v;
     }
 
+    /** @param string $f
+     * @param null|int|string $v */
     function update_paperf_overflow($f, $v) {
         $this->_paper_overflow_upd[$f] = $v;
     }
 
+    /** @param string $diff */
     function mark_diff($diff) {
         $this->diffs[$diff] = true;
     }

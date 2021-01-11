@@ -212,11 +212,15 @@ class MinCostMaxFlow {
 
     const DEBUG = 1;
 
+    /** @param int $flags */
     function __construct($flags = 0) {
         $this->clear();
         $this->debug = ($flags & self::DEBUG) !== 0;
     }
 
+    /** @param string $name
+     * @param string $klass
+     * @return MinCostMaxFlow_Node */
     function add_node($name, $klass = "") {
         if ($name === "") {
             $name = ".v" . count($this->v);
@@ -227,6 +231,11 @@ class MinCostMaxFlow {
         return $v;
     }
 
+    /** @param string|MinCostMaxFlow_Node $vs
+     * @param string|MinCostMaxFlow_Node $vd
+     * @param int|float $cap
+     * @param int|float $cost
+     * @param int|float $mincap */
     function add_edge($vs, $vd, $cap, $cost = 0, $mincap = 0) {
         if (is_string($vs)) {
             $vs = $this->vmap[$vs];
@@ -256,6 +265,8 @@ class MinCostMaxFlow {
         return isset($this->vmap[$name]);
     }
 
+    /** @param string $klass
+     * @return list<MinCostMaxFlow_Node> */
     function nodes($klass) {
         $a = array();
         foreach ($this->v as $v) {

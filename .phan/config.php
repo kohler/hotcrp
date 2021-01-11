@@ -45,6 +45,9 @@ $config = [
     // (0 is low severity, 5 is normal severity, 10 is critical)
     "minimum_severity" => 0,
 
+    "enable_internal_return_type_plugins" => true,
+    //"enable_extended_internal_return_type_plugins" => true,
+
     // A list of directories that should be parsed for class and
     // method information. After excluding the directories
     // defined in exclude_analysis_directory_list, the remaining

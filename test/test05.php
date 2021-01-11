@@ -258,7 +258,7 @@ xassert_paper_status($ps);
 
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert(!$ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10xxxxx", "has_opt1" => "1"]), $newpaper, "update"));
-xassert_array_eqq($ps->diffs, [], true);
+xassert_array_eqq(array_keys($ps->diffs), [], true);
 xassert($ps->has_error_at("opt1"));
 
 $ps = new PaperStatus($Conf, $user_estrin);

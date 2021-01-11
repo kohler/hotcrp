@@ -795,6 +795,7 @@ class Assigner {
     public $cid;
     /** @var ?Contact */
     public $contact;
+    /** @var ?int */
     public $next_index;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         $this->item = $item;
@@ -924,9 +925,11 @@ class ReviewAssigner_Data {
 
 
 class AssignmentSet {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly */
     public $user;
     /** @var string */
     public $filename = "";

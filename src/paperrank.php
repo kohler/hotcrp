@@ -13,20 +13,11 @@ class PaperRank {
     private $sequential;
     /** @var list<int> */
     private $papersel;
-    /** @var array<int,list<array{int,int}>> */
-    private $userrank = [];
     /** @var array<int,int> */
     private $papershuffle;
-    /** @var array<int,array<int,int>> */
-    private $pref;
-    /** @var array<int,int> */
-    private $anypref;
-    /** @var array<int,int> */
-    private $voters;
-    /** @var int */
-    private $totalpref;
-    /** @var int */
-    private $deletedpref;
+    /** @var array<int,list<array{int,int}>> */
+    private $userrank = [];
+
     /** @var array<int,int> */
     private $rank = [];
     /** @var int */
@@ -40,6 +31,17 @@ class PaperRank {
     private $header_id;
     /** @var int */
     private $starttime;
+
+    /** @var array<int,array<int,int>> */
+    private $pref;
+    /** @var array<int,int> */
+    private $anypref;
+    /** @var array<int,int> */
+    private $voters;
+    /** @var int */
+    private $totalpref;
+    /** @var int */
+    private $deletedpref;
 
     /** @param string $source_tag
      * @param string $dest_tag
@@ -404,7 +406,9 @@ class PaperRank {
         }
     }
 
-    private function _reachableClosure(&$reachable, &$papersel) {
+    /** @param array<int,array<int,true>> &$reachable
+     * @return array<int,array<int,true>> */
+    private function _reachableClosure(&$reachable) {
         $closure = array();
         // find transitive closure by repeated DFS: O(n^3)
         // destroys $reachable
@@ -417,7 +421,7 @@ class PaperRank {
                     foreach ($reachable[$p2] as $p3 => $x) {
                         if (!isset($reach[$p3])) {
                             $reach[$p3] = true;
-                            array_push($work, $p3);
+                            $work[] = $p3;
                         }
                     }
                 }
@@ -431,7 +435,7 @@ class PaperRank {
         // first initialize with preferences
         //$t0 = microtime(true);
 
-        $defeat = array();
+        $defeat = [];
         for ($i = 0; $i < count($papersel); ++$i) {
             $p1 = $papersel[$i];
             for ($j = $i + 1; $j < count($papersel); ++$j) {
@@ -447,7 +451,7 @@ class PaperRank {
         }
 
         // $defeat maps paper1 => paper2 => true
-        $defeat = $this->_reachableClosure($defeat, $papersel);
+        $defeat = $this->_reachableClosure($defeat);
 
         //echo "<p>Defeat calc ", (microtime(true) - $t0), "</p>"; flush();
         return $defeat;
@@ -458,7 +462,7 @@ class PaperRank {
 
         // find Schwartz set, which contains anyone who suffers no
         // unambiguous defeats
-        $nonschwartz = array();
+        $nonschwartz = [];
         for ($i = 0; $i < count($papersel); ++$i) {
             $p1 = $papersel[$i];
             for ($j = $i + 1; $j < count($papersel); ++$j) {
@@ -473,7 +477,7 @@ class PaperRank {
             }
         }
 
-        $schwartz = array();
+        $schwartz = [];
         foreach ($papersel as $p1) {
             if (!isset($nonschwartz[$p1])) {
                 $schwartz[] = $p1;
@@ -614,7 +618,7 @@ class PaperRank {
 
         // run Schulze
         $defeat = $this->_calculateDefeats($this->papersel);
-        $stack = array(array($this->papersel, $defeat));
+        $stack = [[$this->papersel, $defeat]];
         while (count($stack)) {
             $this->_schulzeStep($stack);
             $this->_info();
@@ -659,23 +663,22 @@ class PaperRank {
             $reachable[$p1][$p2] = true;
             foreach ($this->papersel as $px) {
                 if (isset($reachable[$px][$p1]) && !isset($reachable[$px][$p2])) {
-                    array_push($pairs, array($px, $p2));
+                    $pairs[] = [$px, $p2];
                 }
                 if (isset($reachable[$p2][$px]) && !isset($reachable[$p1][$px])) {
-                    array_push($pairs, array($p1, $px));
+                    $pairs[] = [$p1, $px];
                 }
             }
         }
     }
 
     /** @param array<int,array<int,true>> &$defeat
-     * @param list<array{int,int}> &$adddefeat */
-    private function _includePairs(&$defeat, &$reachable, &$adddefeat) {
-        foreach ($adddefeat as $x) {
+     * @param list<array{int,int}> $pairs */
+    private function _includePairs(&$defeat, &$reachable, $pairs) {
+        foreach ($pairs as $x) {
             $defeat[$x[0]][$x[1]] = true;
         }
-        $this->_reachableClosure2($reachable, $adddefeat);
-        $adddefeat = array();
+        $this->_reachableClosure2($reachable, $pairs);
     }
 
     /** @param array{int,int} $a
@@ -711,9 +714,9 @@ class PaperRank {
                 if (isset($this->pref[$p1][$p2]))
                     $px = max($px, $this->pref[$p1][$p2]);
             }
-            $prefagainst[] = array($p2, $px);
+            $prefagainst[] = [$p2, $px];
         }
-        usort($prefagainst, array($this, "_comparPreferenceAgainst"));
+        usort($prefagainst, [$this, "_comparPreferenceAgainst"]);
 
         // rank the Schwartz set
         $px = -1;
@@ -748,7 +751,7 @@ class PaperRank {
                     $strength["$p1 $p2"] = [$pref12, $pref21];
             }
         }
-        uasort($strength, array($this, "_comparStrength"));
+        uasort($strength, [$this, "_comparStrength"]);
 
         // add them to the graph
         $defeat = $reachable = $adddefeat = [];
@@ -756,6 +759,7 @@ class PaperRank {
         foreach ($strength as $k => $value) {
             if (count($adddefeat) && $this->_comparStrength($lastvalue, $value)) {
                 $this->_includePairs($defeat, $reachable, $adddefeat);
+                $adddefeat = [];
             }
             $sp = strpos($k, " ");
             $p1 = (int) substr($k, 0, $sp);
