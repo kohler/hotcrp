@@ -2994,18 +2994,6 @@ class Contact {
         return $whyNot;
     }
 
-    /** @return bool
-     * @deprecated */
-    function can_update_paper(PaperInfo $prow) {
-        return $this->can_edit_paper($prow);
-    }
-
-    /** @return ?PermissionProblem
-     * @deprecated */
-    function perm_update_paper(PaperInfo $prow) {
-        return $this->perm_edit_paper($prow);
-    }
-
     /** @return bool */
     function can_finalize_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
@@ -3156,18 +3144,6 @@ class Contact {
             $whyNot["deadline"] = "final_done";
         }
         return $whyNot;
-    }
-
-    /** @return bool
-     * @deprecated */
-    function can_submit_final_paper(PaperInfo $prow) {
-        return $this->can_edit_final_paper($prow);
-    }
-
-    /** @return ?PermissionProblem
-     * @deprecated */
-    function perm_submit_final_paper(PaperInfo $prow) {
-        return $this->perm_edit_final_paper($prow);
     }
 
     /** @return bool */

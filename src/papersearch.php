@@ -1684,8 +1684,7 @@ class PaperSearch {
     /** @var bool */
     private $_allow_deleted = false;
 
-    /** @deprecated */
-    public $warnings = [];
+    private $warnings = [];
     private $_quiet_count = 0;
 
     /** @var string */

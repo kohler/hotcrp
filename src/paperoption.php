@@ -1111,11 +1111,6 @@ class PaperOption implements JsonSerializable {
         }
         return $j;
     }
-    /** @return object
-     * @deprecated */
-    function unparse() {
-        return $this->jsonSerialize();
-    }
 
     function change_type(PaperOption $o, $upgrade, $change_values) {
         return false;

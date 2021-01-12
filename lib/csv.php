@@ -330,12 +330,6 @@ class CsvParser implements Iterator {
         return htmlspecialchars($this->landmark());
     }
 
-    /** @deprecated
-     * @return list<string>|false */
-    function next_array() {
-        return $this->next_list();
-    }
-
     /** @return bool */
     private function skip_empty() {
         $nl = count($this->lines);

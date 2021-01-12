@@ -2918,10 +2918,6 @@ class Conf {
         return $this->deadlinesBetween("sub_open", "sub_update", "sub_grace")
             && (!$prow || $prow->timeSubmitted <= 0 || $this->setting("sub_freeze") <= 0);
     }
-    /** @deprecated */
-    function timeUpdatePaper($prow = null) {
-        return $this->time_edit_paper($prow);
-    }
     /** @param ?PaperInfo $prow
      * @return bool */
     function timeFinalizePaper($prow = null) {
@@ -2933,10 +2929,6 @@ class Conf {
     }
     function time_edit_final_paper() {
         return $this->deadlinesBetween("final_open", "final_done", "final_grace");
-    }
-    /** @deprecated */
-    function time_submit_final_version() {
-        return $this->time_edit_final_paper();
     }
     function can_some_author_view_review($reviewsOutstanding = false) {
         return $this->any_response_open
@@ -3378,12 +3370,6 @@ class Conf {
      * @param ?array $param */
     function redirect_self(Qrequest $qreq, $param = null) {
         $this->redirect($this->selfurl($qreq, $param, self::HOTURL_RAW));
-    }
-
-    /** @deprecated */
-    function self_redirect(Qrequest $qreq = null, $params = []) {
-        global $Qreq;
-        $this->redirect_self($qreq ?? $Qreq, $params);
     }
 
 

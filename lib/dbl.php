@@ -815,68 +815,6 @@ class Dbl {
     }
 }
 
-// number of rows returned by a select query, or 'false' if result is an error
-/** @deprecated */
-function edb_nrows($result) {
-    return $result ? $result->num_rows : false;
-}
-
-// next row as an array, or 'false' if no more rows or result is an error
-/** @deprecated */
-function edb_row($result) {
-    return $result ? $result->fetch_row() : false;
-}
-
-// array of all rows as arrays
-/** @deprecated */
-function edb_rows($result) {
-    $x = array();
-    while ($result && ($row = $result->fetch_row())) {
-        $x[] = $row;
-    }
-    Dbl::free($result);
-    return $x;
-}
-
-// array of all first columns as arrays
-/** @deprecated */
-function edb_first_columns($result) {
-    $x = array();
-    while ($result && ($row = $result->fetch_row())) {
-        $x[] = $row[0];
-    }
-    Dbl::free($result);
-    return $x;
-}
-
-// map of all rows
-/** @deprecated */
-function edb_map($result) {
-    $x = array();
-    while ($result && ($row = $result->fetch_row())) {
-        $x[$row[0]] = (count($row) == 2 ? $row[1] : array_slice($row, 1));
-    }
-    Dbl::free($result);
-    return $x;
-}
-
-// next row as an object, or 'false' if no more rows or result is an error
-/** @deprecated */
-function edb_orow($result) {
-    return $result ? $result->fetch_object() : false;
-}
-
-// array of all rows as objects
-/** @deprecated */
-function edb_orows($result) {
-    $x = array();
-    while ($result && ($row = $result->fetch_object())) {
-        $x[] = $row;
-    }
-    Dbl::free($result);
-    return $x;
-}
-
 // quoting for SQL
 function sqlq($value) {
     return Dbl::$default_dblink->escape_string($value);
