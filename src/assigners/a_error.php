@@ -16,6 +16,6 @@ class Error_AssignmentParser extends UserlessAssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $m = $req["message"] ?? ($this->iswarning ? "Warning" : "Error");
-        $state->msg($state->landmark, htmlspecialchars($m), $this->iswarning ? 1 : 2);
+        $state->msg_near($state->landmark, htmlspecialchars($m), $this->iswarning ? 1 : 2);
     }
 }

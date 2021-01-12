@@ -169,7 +169,7 @@ class Conflict_Assigner extends Assigner {
             $uname = $state->user_by_id($cid)->name_h(NAME_E);
             if (isset($item["_override"])
                 && $state->user->can_administer($state->prow($pid))) {
-                $state->warning_at($item->landmark, "Overriding {$uname} conflict with #{$pid}.");
+                $state->warning_near($item->landmark, "Overriding {$uname} conflict with #{$pid}.");
             } else if (($state->flags & AssignmentState::FLAG_CSV_CONTEXT) !== 0
                        && $state->user->allow_administer($state->prow($pid))) {
                 throw new Exception("{$uname} has a conflict with #{$pid}. Set an “override” column to “yes” to assign the " . $item["type"] . " anyway.");
@@ -179,7 +179,7 @@ class Conflict_Assigner extends Assigner {
         } else if ($item->post("_rtype")
                    && ($u = $state->user_by_id($cid))
                    && ($potconf = $state->prow($pid)->potential_conflict_html($u))) {
-            $state->warning_at($item->landmark, $u->name_h(NAME_E) . " has a potential conflict with #{$pid}:<br>" . join("<br>", $potconf[1]));
+            $state->warning_near($item->landmark, $u->name_h(NAME_E) . " has a potential conflict with #{$pid}:<br>" . join("<br>", $potconf[1]));
         }
     }
 

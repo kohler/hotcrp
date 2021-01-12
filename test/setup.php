@@ -145,7 +145,7 @@ function setup_assignments($assignments, Contact $user) {
         $assignments = join("\n", $assignments);
     }
     $assignset = new AssignmentSet($user, true);
-    $assignset->parse($assignments, "", null);
+    $assignset->parse($assignments);
     if (!$assignset->execute()) {
         die_hard("* Failed to run assignments:\n" . join("\n", $assignset->message_texts(true)) . "\n");
     }

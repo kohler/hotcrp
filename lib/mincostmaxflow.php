@@ -252,7 +252,8 @@ class MinCostMaxFlow {
         $this->maxcost = max($this->maxcost, $cost);
     }
 
-    function add_progressf($progressf) {
+    /** @param callable(MinCostMaxFlow,int,...) $progressf */
+    function add_progress_handler($progressf) {
         $this->progressf[] = $progressf;
     }
 

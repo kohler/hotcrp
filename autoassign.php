@@ -482,7 +482,7 @@ class AutoassignerInterface {
         }
 
         // start running
-        $this->autoassigner->add_progressf([$this, "progress"]);
+        $this->autoassigner->add_progress_handler([$this, "progress"]);
         $this->live = true;
         echo '<div id="propass" class="propass">';
 

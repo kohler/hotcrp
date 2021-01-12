@@ -31,13 +31,11 @@ function assignment_defaults($qreq) {
     return $defaults;
 }
 
-$csv_lineno = 0;
 $csv_preparing = false;
 $csv_started = 0;
-function keep_browser_alive($assignset, $lineno, $line) {
-    global $Conf, $csv_lineno, $csv_preparing, $csv_started;
+function keep_browser_alive(AssignmentSet $assignset, CsvRow $line = null) {
+    global $Conf, $csv_preparing, $csv_started;
     $time = microtime(true);
-    $csv_lineno = $lineno;
     if (!$csv_started) {
         $csv_started = $time;
     } else if ($time - $csv_started > 1) {
@@ -47,13 +45,8 @@ function keep_browser_alive($assignset, $lineno, $line) {
                 "</div>";
             $csv_preparing = true;
         }
-        if ($assignset->filename) {
-            $text = '<span class="lineno">'
-                . htmlspecialchars($assignset->filename) . ":$lineno:</span>";
-        } else {
-            $text = "<span class=\"lineno\">line $lineno:</span>";
-        }
-        if ($line === false) {
+        $text = '<span class="lineno">' . htmlspecialchars($assignset->landmark()) . ':</span>';
+        if (!$line) {
             $text .= " processing";
         } else {
             $text .= " <code>" . htmlspecialchars(join(",", $line->as_array())) . "</code>";
@@ -76,9 +69,11 @@ function complete_assignment($qreq, $callback) {
     global $Me;
     $SSel = SearchSelection::make($qreq, $Me);
     $assignset = new AssignmentSet($Me, true);
+    if ($callback) {
+        $assignset->add_progress_handler($callback);
+    }
     $assignset->enable_papers($SSel->selection());
-    $assignset->parse($qreq->file, $qreq->filename,
-                      assignment_defaults($qreq), $callback);
+    $assignset->parse($qreq->file, $qreq->filename, assignment_defaults($qreq));
     return $assignset->execute(true);
 }
 
@@ -131,9 +126,10 @@ if (isset($Qreq->upload)
     } else {
         $assignset = new AssignmentSet($Me, true);
         $assignset->set_flags(AssignmentState::FLAG_CSV_CONTEXT);
+        $assignset->add_progress_handler("keep_browser_alive");
         $defaults = assignment_defaults($Qreq);
         $text = convert_to_utf8($text);
-        $assignset->parse($text, $filename, $defaults, "keep_browser_alive");
+        $assignset->parse($text, $filename, $defaults);
         finish_browser_alive();
         if ($assignset->has_error()) {
             $assignset->report_errors();
@@ -154,7 +150,7 @@ if (isset($Qreq->upload)
                 Ht::hidden("default_action", $defaults["action"] ?? "guess"),
                 Ht::hidden("rev_round", $defaults["round"]),
                 Ht::hidden("file", $text),
-                Ht::hidden("assignment_size_estimate", $csv_lineno),
+                Ht::hidden("assignment_size_estimate", max($assignset->assignment_count(), $assignset->request_count())),
                 Ht::hidden("filename", $filename),
                 Ht::hidden("requestreview_notify", $Qreq->requestreview_notify),
                 Ht::hidden("requestreview_subject", $Qreq->requestreview_subject),

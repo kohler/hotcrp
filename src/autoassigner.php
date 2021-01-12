@@ -175,7 +175,7 @@ class Autoassigner {
     }
 
     /** @param callable $progressf */
-    function add_progressf($progressf) {
+    function add_progress_handler($progressf) {
         $this->progressf[] = $progressf;
     }
 
@@ -589,7 +589,7 @@ class Autoassigner {
 
     private function assign_mcmf_once(&$papers, $action, $round, $nperpc) {
         $m = new MinCostMaxFlow;
-        $m->add_progressf([$this, "mcmf_progress"]);
+        $m->add_progress_handler([$this, "mcmf_progress"]);
         $this->ndesired = $this->assign_desired($papers, $nperpc);
         $this->mcmf_max_cost = null;
         $this->set_progress("Preparing assignment optimizer" . $this->mcmf_round_descriptor);
@@ -866,7 +866,7 @@ class Autoassigner {
     /** @param array<int,list<int>> $cflt */
     private function run_discussion_order_once($cflt, $plist) {
         $m = new MinCostMaxFlow;
-        $m->add_progressf(array($this, "mcmf_progress"));
+        $m->add_progress_handler(array($this, "mcmf_progress"));
         $this->set_progress("Preparing assignment optimizer");
         // paper nodes
         // set p->po edge cost so low that traversing that edge will
