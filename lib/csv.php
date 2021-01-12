@@ -67,6 +67,8 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
 }
 
 class CsvParser implements Iterator {
+    /** @var ?string */
+    private $filename;
     /** @var list<string|list<string>> */
     private $lines;
     /** @var int */
@@ -136,6 +138,11 @@ class CsvParser implements Iterator {
         } else {
             $this->typefn = "parse_guess";
         }
+    }
+
+    /** @param ?string $fn */
+    function set_filename($fn) {
+        $this->filename = $fn;
     }
 
     /** @param string $s */
@@ -299,9 +306,28 @@ class CsvParser implements Iterator {
         return $len;
     }
 
+    /** @return ?string */
+    function filename() {
+        return $this->filename;
+    }
+
     /** @return int */
     function lineno() {
         return $this->lpos;
+    }
+
+    /** @return string */
+    function landmark() {
+        if (($this->filename ?? "") !== "") {
+            return "line {$this->lpos}";
+        } else {
+            return "{$this->filename}:{$this->lpos}";
+        }
+    }
+
+    /** @return string */
+    function landmark_html() {
+        return htmlspecialchars($this->landmark());
     }
 
     /** @deprecated

@@ -23,12 +23,13 @@ class TagRankParser {
         } else {
             $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
             $csv->set_comment_chars("%#");
+            $csv->set_filename($filename);
         }
         $csva = [["paper", "action", "tag", "landmark", "message"]];
 
         if (!$csv->header()) {
             if (!($req = $csv->next_list())) {
-                $csva[] = ["", "error", "", $filename, "Empty file."];
+                $csva[] = ["", "error", "", $csv->filename(), "Empty file."];
                 return $csva;
             }
             if (!preg_grep('/\A(?:paper|pid|tag|index|action)\z/', $req)) {
@@ -53,13 +54,7 @@ class TagRankParser {
                 continue;
             }
 
-            if ($filename === false) {
-                $landmark = "";
-            } else if ($filename === null || $filename === "") {
-                $landmark = "line " . $csv->lineno();
-            } else {
-                $landmark = $filename . ":" . $csv->lineno();
-            }
+            $landmark = $filename !== false ? $csv->landmark() : "";
             $idxs = trim($row["action"]);
             $pid = trim($row["paper"]);
             if ($idxs === "tag") {

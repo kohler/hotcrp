@@ -141,6 +141,7 @@ function parseUploadedPreferences($text, $filename, $apply) {
     $text = preg_replace('/^==-== /m', '#', $text);
     $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
     $csv->set_comment_chars("#");
+    $csv->set_filename($filename);
     $line = $csv->next_list();
 
     // Parse header

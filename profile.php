@@ -329,6 +329,7 @@ function parseBulkFile($text, $filename) {
     }
 
     $csv = new CsvParser($text);
+    $csv->set_filename($filename);
     $csv->set_comment_chars("#%");
     if (($line = $csv->next_list())) {
         if (preg_grep('/\A(?:email|user)\z/i', $line)) {
@@ -358,7 +359,7 @@ function parseBulkFile($text, $filename) {
                 }
             }
             $csv->set_header($hdr);
-            $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> Header missing, assuming “<code>" . join(",", $hdr) . "</code>”";
+            $errors[] = '<span class="lineno">' . $csv->landmark_html() . ":</span> Header missing, assuming “<code>" . join(",", $hdr) . "</code>”";
         }
     }
 
@@ -376,19 +377,19 @@ function parseBulkFile($text, $filename) {
         $ustatus->parse_csv_group("", $cj, $line);
 
         if (isset($cj->email) && isset($saved_users[strtolower($cj->email)])) {
-            $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> Already saved a user with email “" . htmlspecialchars($cj->email) . "”.";
-            $errors[] = '<span class="lineno">' . $filename . $saved_users[strtolower($cj->email)] . ":</span> (That user was saved here.)";
+            $errors[] = '<span class="lineno">' . $csv->landmark_html() . ":</span> Already saved a user with email “" . htmlspecialchars($cj->email) . "”.";
+            $errors[] = '<span class="lineno">' . $saved_users[strtolower($cj->email)] . ":</span> (That user was saved here.)";
             continue;
         }
 
         if (isset($cj->email) && $cj->email !== "") {
-            $saved_users[strtolower($cj->email)] = $csv->lineno();
+            $saved_users[strtolower($cj->email)] = $csv->landmark_html();
         }
         if (($saved_user = save_user($cj, $ustatus, null, true))) {
             $success[] = "<a href=\"" . $Conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
         }
         foreach ($ustatus->problem_texts() as $e) {
-            $errors[] = '<span class="lineno">' . $filename . $csv->lineno() . ":</span> " . $e;
+            $errors[] = '<span class="lineno">' . $csv->landmark_html() . ":</span> " . $e;
         }
     }
 
