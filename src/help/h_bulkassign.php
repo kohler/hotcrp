@@ -185,7 +185,7 @@ a conflict type, such as “advisor” or “institutional”.</p>";
         }
         if (!empty($apx)) {
             echo '<table class="p table-striped"><thead>',
-                '<tr><th class="pll">Action name</th><th class="pll">Parameter columns</th><th class="pll">Description</th></tr></thead>',
+                '<tr><th class="pll"><code>action</code> value</th><th class="pll">Parameter columns</th><th class="pll">Description</th></tr></thead>',
                 '<tbody>', join('', $apx), '</tbody></table>';
         }
         return !empty($apx);
