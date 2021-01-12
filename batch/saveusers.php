@@ -69,7 +69,7 @@ if ($content === false) {
 }
 
 $ustatus = new UserStatus($Conf->root_user());
-$ustatus->no_notify = isset($arg["no-notify"]);
+$ustatus->notify = isset($arg["no-notify"]) ? 0 : 1;
 $ustatus->no_create = isset($arg["modify-only"]);
 $ustatus->no_modify = isset($arg["create-only"]);
 $status = 0;

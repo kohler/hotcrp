@@ -4,7 +4,7 @@
 		"subject": "[%CONFSHORTNAME%] New account",
 		"body": [
 			"Greetings,\n\n",
-			"We received a request to create an account for you at the %CONFNAME% submission site. If you made this request, please use this link to set a password:\n\n",
+			"We received a request to create an account for you on the %CONFNAME% submission site. If you made this request, please use this link to set a password:\n\n",
 			"%RESETPASSWORDLINK%\n\n",
 			"If you did not make this request, it’s safe to ignore this email.\n\n",
 			"The link will work for 3 days. Should it expire, obtain a new link using \"Forgot my password\".\n\n",
@@ -17,11 +17,30 @@
 	},
 
 	{
+		"name": "newaccount.adminregister",
+		"subject": "[%CONFSHORTNAME%] Account activated",
+		"body": [
+			"Greetings,\n\n",
+			"A system administrator has activated an account for you on the %CONFNAME% submission site.\n\n",
+			"        Site: %URL%/\n",
+			"       Email: %EMAIL%\n\n",
+			"%IF(NEEDPASSWORD)%",
+			"You will need a password to sign in. Use this link to set one up:\n\n",
+			"%RESETPASSWORDLINK%\n\n",
+			"Should the link expire, obtain a new link using \"Forgot my password\".\n\n",
+			"%ENDIF%",
+			"If you already have an account under a different email address, you may merge this new account into that one. Go to your profile page and select \"Merge with another account\".\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
 		"name": "newaccount.paper",
 		"subject": "[%CONFSHORTNAME%] Contact for #%NUMBER% %TITLEHINT%",
 		"body": [
 			"Greetings,\n\n",
-			"An account has been created for you at the %CONFNAME% submission site. You are now a contact for submission #%NUMBER%.%IF(ADMINUPDATE)% An administrator performed this update.%ENDIF%\n\n",
+			"An account has been created for you on the %CONFNAME% submission site. You are now a contact for submission #%NUMBER%.%IF(ADMINUPDATE)% An administrator performed this update.%ENDIF%\n\n",
 			"        Site: %URL%/\n",
 			"       Email: %EMAIL%\n",
 			"       Title: %TITLE%\n",
@@ -42,7 +61,7 @@
 		"subject": "[%CONFSHORTNAME%] Welcome to the program committee",
 		"body": [
 			"Greetings,\n\n",
-			"You have been added to the program committee at the %CONFNAME% submission site.\n\n",
+			"You have been added to the program committee on the %CONFNAME% submission site.\n\n",
 			"        Site: %URL%/\n",
 			"       Email: %EMAIL%\n\n",
 			"%IF(NEEDPASSWORD)%",
@@ -107,7 +126,7 @@
 		"subject": "[%CONFSHORTNAME%] Password reset request",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"Your password cannot be reset at the %CONFNAME% submission site because your account there is disabled.\n\n",
+			"Your password on the %CONFNAME% submission site cannot be reset because your account there is disabled.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -131,7 +150,7 @@
 		"subject": "[%CONFSHORTNAME%] Merged account",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"Your account at the %CONFSHORTNAME% submission site has been merged with the account of %OTHERCONTACT%. From now on, you should log in using the %OTHEREMAIL% account.\n\n",
+			"Your account on the %CONFSHORTNAME% submission site has been merged with the account of %OTHERCONTACT%. From now on, you should log in using the %OTHEREMAIL% account.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -142,7 +161,7 @@
 		"name": "registerpaper",
 		"subject": "[%CONFSHORTNAME%] Registered #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Submission #%PAPER% has been registered at the %CONFNAME% site.\n\n",
+			"Submission #%PAPER% has been registered on the %CONFNAME% site.\n\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
@@ -157,7 +176,7 @@
 		"name": "updatepaper",
 		"subject": "[%CONFSHORTNAME%] Updated #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Submission #%PAPER% has been updated at the %CONFNAME% site.\n\n",
+			"Submission #%PAPER% has been updated on the %CONFNAME% site.\n\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
@@ -172,7 +191,7 @@
 		"name": "submitpaper",
 		"subject": "[%CONFSHORTNAME%] Submitted #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Submission #%PAPER% has been submitted for review at the %CONFNAME% site.\n\n",
+			"Submission #%PAPER% has been submitted for review on the %CONFNAME% site.\n\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
@@ -187,7 +206,7 @@
 		"name": "submitfinalpaper",
 		"subject": "[%CONFSHORTNAME%] Updated accepted #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Accepted submission #%PAPER% has been updated at the %CONFNAME% submission site.\n\n",
+			"Accepted submission #%PAPER% has been updated on the %CONFNAME% submission site.\n\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
@@ -417,7 +436,7 @@
 		"subject": "[%CONFSHORTNAME%] Submitted %REVIEWNAME(SUBJECT)% %TITLEHINT%",
 		"body": [
 			"Greetings,\n\n",
-			"%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been submitted. The review is available at the submission site.\n\n",
+			"%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been submitted. The review is available on the submission site.\n\n",
 			"        Site: %URL(paper, p=%NUMBER%)%\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
@@ -434,7 +453,7 @@
 		"subject": "[%CONFSHORTNAME%] Updated %REVIEWNAME(SUBJECT)% %TITLEHINT%",
 		"body": [
 			"Greetings,\n\n",
-			"%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been updated. The review is available at the submission site.\n\n",
+			"%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been updated. The review is available on the submission site.\n\n",
 			"        Site: %URL(paper, p=%NUMBER%)%\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",

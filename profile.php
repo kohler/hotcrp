@@ -227,85 +227,79 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_account_here())
 }
 
 
-/** @param UserStatus $user_status
- * @param ?Contact $Acct
+/** @param UserStatus $ustatus
+ * @param ?Contact $acct
  * @return ?Contact */
-function save_user($cj, $user_status, $Acct, $allow_modification) {
-    global $Conf, $Me, $newProfile;
-    if ($newProfile) {
-        $Acct = null;
-    }
-    assert(!$Acct === !!$newProfile);
-
+function save_user($cj, $ustatus, $acct) {
     // check for missing fields
     UserStatus::normalize_name($cj);
-    if (!$Acct && !isset($cj->email)) {
-        $user_status->error_at("email", "Email address required.");
+    if (!$acct && !isset($cj->email)) {
+        $ustatus->error_at("email", "Email address required.");
         return null;
     }
 
     // check email
-    if (!$Acct || strcasecmp($cj->email, $Acct->email)) {
-        if ($Acct && $Acct->data("locked")) {
-            $user_status->error_at("email", "This account is locked, so you can’t change its email address.");
+    if (!$acct || strcasecmp($cj->email, $acct->email)) {
+        if ($acct && $acct->data("locked")) {
+            $ustatus->error_at("email", "This account is locked, so you can’t change its email address.");
             return null;
-        } else if (($new_acct = $Conf->user_by_email($cj->email))) {
-            if ($allow_modification) {
+        } else if (($new_acct = $ustatus->conf->user_by_email($cj->email))) {
+            if (!$acct) {
                 $cj->id = $new_acct->contactId;
             } else {
                 $msg = "Email address “" . htmlspecialchars($cj->email) . "” is already in use.";
-                if ($Me->privChair) {
-                    $msg = str_replace("an account", "<a href=\"" . $Conf->hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
+                if ($ustatus->viewer->privChair) {
+                    $msg = str_replace("an account", "<a href=\"" . $ustatus->conf->hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
                 }
-                if ($Acct) {
-                    $msg .= " You may want to <a href=\"" . $Conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.";
+                if ($acct) {
+                    $msg .= " You may want to <a href=\"" . $ustatus->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.";
                 }
-                $user_status->error_at("email", $msg);
+                $ustatus->error_at("email", $msg);
                 return null;
             }
-        } else if ($Conf->external_login()) {
+        } else if ($ustatus->conf->external_login()) {
             if ($cj->email === "") {
-                $user_status->error_at("email", "Not a valid username.");
+                $ustatus->error_at("email", "Not a valid username.");
                 return null;
             }
         } else if ($cj->email === "") {
-            $user_status->error_at("email", "You must supply an email address.");
+            $ustatus->error_at("email", "You must supply an email address.");
             return null;
         } else if (!validate_email($cj->email)) {
-            $user_status->error_at("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
+            $ustatus->error_at("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
             return null;
-        } else if ($Acct && !$Acct->has_account_here()) {
-            $user_status->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
+        } else if ($acct && !$acct->has_account_here()) {
+            $ustatus->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
             return null;
         }
-        if ($Acct && (!$Me->privChair || $Acct === $Me)) {
-            assert($Acct->contactId > 0);
-            $old_preferredEmail = $Acct->preferredEmail;
-            $Acct->preferredEmail = $cj->email;
-            $capability = new CapabilityInfo($Conf, false, CapabilityInfo::CHANGEEMAIL);
-            $capability->set_user($Acct)->set_expires_after(259200);
-            $capability->data = json_encode_db(["oldemail" => $Acct->email, "uemail" => $cj->email]);
+        if ($acct && (!$ustatus->viewer->privChair || $acct === $ustatus->viewer)) {
+            assert($acct->contactId > 0);
+            $old_preferredEmail = $acct->preferredEmail;
+            $acct->preferredEmail = $cj->email;
+            $capability = new CapabilityInfo($ustatus->conf, false, CapabilityInfo::CHANGEEMAIL);
+            $capability->set_user($acct)->set_expires_after(259200);
+            $capability->data = json_encode_db(["oldemail" => $acct->email, "uemail" => $cj->email]);
             if (($token = $capability->create())) {
                 $rest = ["capability_token" => $token, "sensitive" => true];
-                $mailer = new HotCRPMailer($Conf, $Acct, $rest);
+                $mailer = new HotCRPMailer($ustatus->conf, $acct, $rest);
                 $prep = $mailer->prepare("@changeemail", $rest);
             } else {
                 $prep = null;
             }
             if ($prep->can_send()) {
                 $prep->send();
-                $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . ". Use the link it contains to confirm your email change request.");
+                $ustatus->conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . ". Use the link it contains to confirm your email change request.");
             } else {
                 Conf::msg_error("Mail cannot be sent to " . htmlspecialchars($cj->email) . " at this time. Your email address was unchanged.");
             }
             // Save changes *except* for new email, by restoring old email.
-            $cj->email = $Acct->email;
-            $Acct->preferredEmail = $old_preferredEmail;
+            $cj->email = $acct->email;
+            $acct->preferredEmail = $old_preferredEmail;
         }
     }
 
     // save account
-    return $user_status->save($cj, $Acct);
+    return $ustatus->save($cj, $acct);
 }
 
 
@@ -363,8 +357,8 @@ function parseBulkFile($text, $filename) {
         }
     }
 
-    $saved_users = [];
     $ustatus = new UserStatus($Me);
+    $ustatus->notify = 2;
     $ustatus->no_deprivilege_self = true;
     $ustatus->no_update_profile = true;
     $ustatus->add_csv_synonyms($csv);
@@ -375,17 +369,7 @@ function parseBulkFile($text, $filename) {
         $ustatus->clear_messages();
         $cj = (object) ["id" => null];
         $ustatus->parse_csv_group("", $cj, $line);
-
-        if (isset($cj->email) && isset($saved_users[strtolower($cj->email)])) {
-            $errors[] = '<span class="lineno">' . $csv->landmark_html() . ":</span> Already saved a user with email “" . htmlspecialchars($cj->email) . "”.";
-            $errors[] = '<span class="lineno">' . $saved_users[strtolower($cj->email)] . ":</span> (That user was saved here.)";
-            continue;
-        }
-
-        if (isset($cj->email) && $cj->email !== "") {
-            $saved_users[strtolower($cj->email)] = $csv->landmark_html();
-        }
-        if (($saved_user = save_user($cj, $ustatus, null, true))) {
+        if (($saved_user = save_user($cj, $ustatus, null))) {
             $success[] = "<a href=\"" . $Conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
         }
         foreach ($ustatus->problem_texts() as $e) {
@@ -442,16 +426,29 @@ if (!$Qreq->valid_post()) {
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->set_user($Acct);
     $UserStatus->set_context(["args" => [$UserStatus, $cj, $Qreq]]);
+    $UserStatus->no_update_profile = !!$newProfile;
     $UserStatus->request_group("");
-    $saved_user = save_user($cj, $UserStatus, $Acct, false);
+    $saved_user = save_user($cj, $UserStatus, $newProfile ? null : $Acct);
     if (!$UserStatus->has_error()) {
         if ($UserStatus->has_messages()) {
             $Conf->msg($UserStatus->message_texts(), $UserStatus->problem_status());
         }
-        if ($newProfile) {
-            $Conf->msg("Created an account for <a href=\"" . $Conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>. A password has been emailed to that address. You may now create another account.", "xconfirm");
+        if ($UserStatus->created || $newProfile) {
+            $purl = $Conf->hoturl("profile", ["u" => $saved_user->email]);
+            if ($UserStatus->created) {
+                $Conf->msg("Created " . Ht::link("an account for " . $saved_user->name_h(NAME_E), $purl) . ($UserStatus->notified ? " and sent confirmation email" : "") . ". You may now create another account.", "xconfirm");
+            } else {
+                if (!empty($UserStatus->diffs) && $UserStatus->notified) {
+                    $changes = " Updated profile (" . commajoin(array_keys($UserStatus->diffs)) . ") and sent confirmation email.";
+                } else if (!empty($UserStatus->diffs)) {
+                    $changes = " Updated profile (" . commajoin(array_keys($UserStatus->diffs)) . ").";
+                } else {
+                    $changes = "";
+                }
+                $Conf->msg(Ht::link($saved_user->name_h(NAME_E), $purl) . " already had " . Ht::link("an account", $purl) . ".{$changes} You may now create another account.", "xconfirm");
+            }
         } else {
-            $Conf->msg("Profile updated.", "xconfirm");
+            $Conf->msg("Updated profile" . ($UserStatus->notified ? " and sent confirmation email" : "") . ".", "xconfirm");
             if ($Acct->contactId != $Me->contactId) {
                 $Qreq->u = $Acct->email;
             }

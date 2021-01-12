@@ -13,8 +13,8 @@ class UserStatus extends MessageSet {
     public $user;
     /** @var ?bool */
     public $self;
-    /** @var bool */
-    public $no_notify = false;
+    /** @var int */
+    public $notify = 1;
     /** @var bool */
     public $no_deprivilege_self = false;
     /** @var bool */
@@ -26,7 +26,9 @@ class UserStatus extends MessageSet {
     /** @var ?array<string,true> */
     public $unknown_topics = null;
     /** @var bool */
-    private $created;
+    public $created;
+    /** @var bool */
+    public $notified;
     /** @var associative-array<string,true> */
     public $diffs = [];
     /** @var ?GroupedExtensions */
@@ -733,6 +735,8 @@ class UserStatus extends MessageSet {
         assert(is_object($cj));
         assert(!$old_user || (!$this->no_create && !$this->no_modify));
         $msgcount = $this->message_count();
+        $this->diffs = [];
+        $this->created = $this->notified = false;
 
         // normalize name, including email
         self::normalize_name($cj);
@@ -836,11 +840,10 @@ class UserStatus extends MessageSet {
         if (!$user) {
             return false;
         }
-        $this->created = !$old_user;
 
-        // prepare contact update
+        // initialize
         assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
-        $this->diffs = [];
+        $this->created = !$old_user;
         $this->set_user($user);
         $cdb_user = $user->ensure_contactdb_user(true);
 
@@ -884,14 +887,19 @@ class UserStatus extends MessageSet {
         }
 
         // Send creation mail
-        if (!$user->activity_at && !$this->no_notify && !$user->is_disabled()) {
+        if (!$user->activity_at && $this->notify > 0 && !$user->is_disabled()) {
             $eff_old_roles = $old_disabled ? 0 : $old_roles;
             if (($roles & Contact::ROLE_PC)
                 && !($eff_old_roles & Contact::ROLE_PC)) {
                 $user->send_mail("@newaccount.pc");
+                $this->notified = true;
             } else if (($roles & Contact::ROLE_ADMIN)
                        && !($eff_old_roles & Contact::ROLE_ADMIN)) {
                 $user->send_mail("@newaccount.admin");
+                $this->notified = true;
+            } else if ($this->notify > 1) {
+                $user->send_mail("@newaccount.adminregister");
+                $this->notified = true;
             }
         }
 

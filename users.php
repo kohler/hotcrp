@@ -327,7 +327,7 @@ function do_tags($qreq) {
     }
     // apply modifications
     $us = new UserStatus($Viewer);
-    $us->no_notify = true;
+    $us->notify = 0;
     foreach ($users as $cid => $cj) {
         $us->save($cj);
     }
