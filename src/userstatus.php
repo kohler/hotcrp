@@ -13,22 +13,22 @@ class UserStatus extends MessageSet {
     public $user;
     /** @var ?bool */
     public $self;
-    /** @var ?bool */
-    private $no_notify = null;
     /** @var bool */
-    private $no_deprivilege_self = false;
+    public $no_notify = false;
     /** @var bool */
-    private $no_update_profile = false;
+    public $no_deprivilege_self = false;
     /** @var bool */
-    private $no_create = false;
+    public $no_update_profile = false;
     /** @var bool */
-    private $no_modify = false;
+    public $no_create = false;
+    /** @var bool */
+    public $no_modify = false;
     /** @var ?array<string,true> */
     public $unknown_topics = null;
     /** @var bool */
     private $created;
-    /** @var ?array<string,true> */
-    public $diffs;
+    /** @var associative-array<string,true> */
+    public $diffs = [];
     /** @var ?GroupedExtensions */
     private $_gxt;
     /** @var ?bool */
@@ -63,15 +63,10 @@ class UserStatus extends MessageSet {
         "high" => 2, "hi" => 2
     ];
 
-    function __construct(Contact $viewer, $options = []) {
+    function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         parent::__construct();
-        foreach (["no_notify", "no_deprivilege_self", "no_update_profile",
-                  "no_create", "no_modify"] as $k) {
-            if (array_key_exists($k, $options))
-                $this->$k = $options[$k];
-        }
         foreach (self::$field_synonym_map as $src => $dst) {
             $this->translate_field($src, $dst);
         }
@@ -830,9 +825,6 @@ class UserStatus extends MessageSet {
 
         // create user
         $this->check_invariants($cj);
-        if (($no_notify = $this->no_notify) === null) {
-            $no_notify = !!$old_cdb_user;
-        }
         $actor = $this->viewer->is_root_user() ? null : $this->viewer;
         if ($old_user) {
             $old_disabled = $user->disabled;

@@ -68,11 +68,10 @@ if ($content === false) {
     exit(1);
 }
 
-$ustatus = new UserStatus($Conf->root_user(), [
-    "no_notify" => isset($arg["no-notify"]),
-    "no_create" => isset($arg["modify-only"]),
-    "no_modify" => isset($arg["create-only"])
-]);
+$ustatus = new UserStatus($Conf->root_user());
+$ustatus->no_notify = isset($arg["no-notify"]);
+$ustatus->no_create = isset($arg["modify-only"]);
+$ustatus->no_modify = isset($arg["create-only"]);
 $status = 0;
 if (isset($arg["u"])) {
     $cj = (object) ["email" => $arg["u"]];
@@ -92,7 +91,7 @@ if (isset($arg["u"])) {
     if ($line && preg_grep('/\Aemail\z/i', $line)) {
         $csv->set_header($line);
     } else {
-        fwrite(STDERR, "$file: 'email' field missing from CSV header\n");
+        fwrite(STDERR, "$file: email field missing from CSV header\n");
         exit(1);
     }
     $ustatus->add_csv_synonyms($csv);

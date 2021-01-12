@@ -239,7 +239,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
 
     // check for missing fields
     UserStatus::normalize_name($cj);
-    if ($newProfile && !isset($cj->email)) {
+    if (!$Acct && !isset($cj->email)) {
         $user_status->error_at("email", "Email address required.");
         return null;
     }
@@ -257,7 +257,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
                 if ($Me->privChair) {
                     $msg = str_replace("an account", "<a href=\"" . $Conf->hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
                 }
-                if (!$newProfile) {
+                if ($Acct) {
                     $msg .= " You may want to <a href=\"" . $Conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.";
                 }
                 $user_status->error_at("email", $msg);
@@ -278,7 +278,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
             $user_status->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
             return null;
         }
-        if (!$newProfile && (!$Me->privChair || $Acct === $Me)) {
+        if ($Acct && (!$Me->privChair || $Acct === $Me)) {
             assert($Acct->contactId > 0);
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
@@ -348,7 +348,7 @@ function parseBulkFile($text, $filename) {
                 } else if (strpos($line[$i], " ") !== false
                            && array_search("name", $hdr) === false) {
                     $hdr[] = "name";
-                } else if (preg_match('{\A(?:pc|chair|sysadmin|admin)\z}i', $line[$i])
+                } else if (preg_match('/\A(?:pc|chair|sysadmin|admin)\z/i', $line[$i])
                            && array_search("roles", $hdr) === false) {
                     $hdr[] = "roles";
                 } else if (array_search("name", $hdr) !== false
@@ -364,9 +364,9 @@ function parseBulkFile($text, $filename) {
     }
 
     $saved_users = [];
-    $ustatus = new UserStatus($Me, [
-        "no_deprivilege_self" => true, "no_update_profile" => true
-    ]);
+    $ustatus = new UserStatus($Me);
+    $ustatus->no_deprivilege_self = true;
+    $ustatus->no_update_profile = true;
     $ustatus->add_csv_synonyms($csv);
 
     while (($line = $csv->next_row()) !== false) {
