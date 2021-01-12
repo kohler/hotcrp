@@ -203,7 +203,7 @@ echo Ht::form($Conf->hoturl_post("bulkassign", "upload=1"));
 // Upload
 echo '<div class="lg"><div class="f-i" style="margin-top:1em">',
     Ht::textarea("bulkentry", (string) $Qreq->bulkentry,
-                 ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments", "class" => "need-autogrow"]),
+                 ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments", "class" => "need-autogrow", "spellcheck" => "false"]),
     '</div>';
 
 echo '<div class="g"><strong>OR</strong> &nbsp;',

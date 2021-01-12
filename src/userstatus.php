@@ -1516,7 +1516,8 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo Ht::textarea("bulkentry", $qreq->bulkentry, [
             "rows" => 1, "cols" => 80,
             "placeholder" => "Enter users one per line",
-            "class" => "want-focus need-autogrow"
+            "class" => "want-focus need-autogrow",
+            "spellcheck" => "false"
         ]);
         echo '<div class="g"><strong>OR</strong>  ',
             '<input type="file" name="bulk" size="30"></div>';
