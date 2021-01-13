@@ -2323,9 +2323,10 @@ class ReviewValues extends MessageSet {
             $qv[] = (int) $max_ordinal + 1;
             $newordinal = true;
         }
-        if ($newsubmit
-            || $newordinal
-            || ($newstatus >= ReviewInfo::RS_ADOPTED && $oldstatus < ReviewInfo::RS_ADOPTED)) {
+        if ($newordinal
+            || (($newsubmit
+                 || ($newstatus >= ReviewInfo::RS_ADOPTED && $oldstatus < ReviewInfo::RS_ADOPTED))
+                && (!$rrow || !$rrow->timeDisplayed))) {
             $qf[] = "timeDisplayed=?";
             $qv[] = $now;
         }
