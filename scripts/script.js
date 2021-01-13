@@ -4979,7 +4979,7 @@ function render_cmt_text(format, value, response, textj, chead) {
         if (wc > wlimit) {
             chead && chead.find(".words").addClass("wordsover");
             wc = count_words_split(value, wlimit);
-            textj.addClass("has-overlong").removeClass(fmt).prepend('<div class="overlong-underlay"><div class="overlong-allowed ' + fmt + '"></div><div class="overlong-mark"></div></div><div class="overlong-content ' + fmt + '"></div>');
+            textj.addClass("has-overlong overlong-collapsed").removeClass(fmt).prepend('<div class="overlong-divider"><div class="overlong-allowed ' + fmt + '"></div><div class="overlong-mark"><div class="overlong-expander"><button class="ui js-overlong-expand" aria-expanded="false">Show full-length response</button></div></div></div><div class="overlong-content ' + fmt + '"></div>');
             textj.find(".overlong-allowed").html(render_text(format, wc[0]).content);
             textj = textj.find(".overlong-content");
         }
@@ -5110,6 +5110,12 @@ return {
     }
 };
 })(jQuery);
+
+handle_ui.on("js-overlong-expand", function () {
+    var e = this.closest(".has-overlong");
+    addClass(e, "overlong-expanded");
+    removeClass(e, "overlong-collapsed");
+});
 
 
 // previewing

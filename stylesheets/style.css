@@ -3539,16 +3539,14 @@ textarea.cmttext {
 }
 .has-overlong {
 	position: relative;
-	margin: 0 -5px -3px;
-	padding: 0 5px 3px;
-	/*background: #f5ecec;
-	background: linear-gradient(to right, #f5ecec, #f5ecec 735px, rgba(245,236,236,0) 735px);*/
+	margin-left: -12px;
 }
 .overlong-content {
 	position: relative;
+	padding-left: 12px;
 	z-index: 1;
 }
-.overlong-underlay {
+.overlong-divider, .overlong-collapsed > .overlong-content {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -3557,15 +3555,40 @@ textarea.cmttext {
 	display: flex;
 	flex-direction: column;
 }
+.overlong-collapsed > .overlong-divider {
+	position: static;
+}
+.overlong-collapsed > .overlong-content {
+	overflow-y: hidden;
+	z-index: 0;
+}
 .overlong-allowed {
 	visibility: hidden;
 	flex-grow: 0;
-	padding: 0 5px;
+	padding-left: 12px;
 }
-.overlong-mark {
+.overlong-expanded > .overlong-divider > .overlong-mark {
 	flex-grow: 1;
-	background: #f5ecec;
-	background: linear-gradient(to bottom, rgba(245,236,236,0), #f4ecec 10px);
+	border-left: 3px dashed red;
+	padding-left: 9px;
+}
+.overlong-collapsed > .overlong-divider > .overlong-mark {
+	flex-grow: 1;
+	padding-left: 12px;
+	background: #fcfcfb;
+	background: linear-gradient(to bottom, rgba(252,252,251,0), rgba(252,252,251,0.8) 20% 85%, rgba(252,252,251,1) 100%);
+	z-index: 2;
+}
+.overlong-expander {
+	padding-top: 12px;
+	text-align: center;
+	max-width: 720px;
+}
+.overlong-expanded > .overlong-divider > .overlong-mark > .overlong-expander {
+	display: none;
+}
+.overlong-expander > button {
+	width: 100%;
 }
 .cmtnumid {
 	display: inline-block;
