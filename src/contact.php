@@ -5161,7 +5161,7 @@ class Contact {
         }
     }
 
-    /** @param ReviewInfo|stdClass $rrow
+    /** @param ReviewInfo $rrow
      * @return Dbl_Result */
     function unsubmit_review_row($rrow, $extra = null) {
         $needsSubmit = 1;
@@ -5174,8 +5174,11 @@ class Contact {
             }
         }
         $result = $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=?, timeApprovalRequested=0 where paperId=? and reviewId=?", $needsSubmit, $rrow->paperId, $rrow->reviewId);
-        if ($result->affected_rows && $rrow->reviewType < REVIEW_SECONDARY) {
-            $this->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
+        if ($result->affected_rows) {
+            if ($rrow->reviewType < REVIEW_SECONDARY) {
+                $this->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
+            }
+            $this->conf->log_for($this, $rrow->contactId, "Unsubmitted " . $this->assign_review_explanation($rrow->reviewType, $rrow->reviewRound), $rrow->paperId);
         }
         if (!$extra || !($extra["no_autosearch"] ?? false)) {
             $this->conf->update_automatic_tags($rrow->paperId, "review");

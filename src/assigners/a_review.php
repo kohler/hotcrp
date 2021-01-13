@@ -13,6 +13,8 @@ class Review_Assignable extends Assignable {
     public $_rsubmitted;
     /** @var ?int */
     public $_rnondraft;
+    /** @var ?int */
+    public $_requested_by;
     /** @var ?string */
     public $_reason;
     /** @var ?int */
@@ -20,22 +22,48 @@ class Review_Assignable extends Assignable {
     /** @param ?int $pid
      * @param ?int $cid
      * @param ?int $rtype
-     * @param ?string $round
-     * @param ?int $rsubmitted
-     * @param ?int $rnondraft */
-    function __construct($pid, $cid, $rtype = null, $round = null,
-                         $rsubmitted = null, $rnondraft = null) {
+     * @param ?string $round */
+    function __construct($pid, $cid, $rtype = null, $round = null) {
         $this->type = "review";
         $this->pid = $pid;
         $this->cid = $cid;
         $this->_rtype = $rtype;
         $this->_round = $round;
-        $this->_rsubmitted = $rsubmitted;
-        $this->_rnondraft = $rnondraft;
     }
     /** @return self */
     function fresh() {
         return new Review_Assignable($this->pid, $this->cid);
+    }
+    /** @param int $x
+     * @return $this */
+    function set_rsubmitted($x) {
+        $this->_rsubmitted = $x;
+        return $this;
+    }
+    /** @param int $x
+     * @return $this */
+    function set_rnondraft($x) {
+        $this->_rnondraft = $x;
+        return $this;
+    }
+    /** @param int $x
+     * @return $this */
+    function set_requested_by($x) {
+        $this->_requested_by = $x;
+        return $this;
+    }
+    /** @param int $reviewId
+     * @return ReviewInfo */
+    function make_reviewinfo(Conf $conf, $reviewId) {
+        $rrow = new ReviewInfo;
+        $rrow->conf = $conf;
+        $rrow->paperId = $this->pid;
+        $rrow->contactId = $this->cid;
+        $rrow->reviewType = $this->_rtype;
+        $rrow->reviewId = $reviewId;
+        $rrow->reviewRound = $this->_round ? (int) $conf->round_number($this->_round, false) : 0;
+        $rrow->requestedBy = $this->_requested_by;
+        return $rrow;
     }
 }
 
@@ -51,12 +79,14 @@ class Review_AssignmentParser extends AssignmentParser {
     }
     static function load_review_state(AssignmentState $state) {
         if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make")) {
-            $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted, timeApprovalRequested from PaperReview where paperId?a", $state->paper_ids());
+            $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted, timeApprovalRequested, requestedBy from PaperReview where paperId?a", $state->paper_ids());
             while (($row = $result->fetch_row())) {
                 $round = $state->conf->round_name((int) $row[3]);
-                $state->load(new Review_Assignable(+$row[0], +$row[1], +$row[2], $round,
-                    $row[4] > 0 ? 1 : 0,
-                    $row[4] > 0 || $row[5] != 0 ? 1 : 0));
+                $ra = new Review_Assignable((int) $row[0], (int) $row[1], (int) $row[2], $round);
+                $ra->set_rsubmitted($row[4] > 0 ? 1 : 0);
+                $ra->set_rnondraft($row[4] > 0 || $row[5] != 0 ? 1 : 0);
+                $ra->set_requested_by((int) $row[6]);
+                $state->load($ra);
             }
             Dbl::free($result);
         }
@@ -171,6 +201,7 @@ class Review_AssignmentParser extends AssignmentParser {
             $rev->_round = $rdata->newround;
             $rev->_rsubmitted = 0;
             $rev->_rnondraft = 0;
+            $rev->_requested_by = $state->user->contactId;
         }
         if (!$rev->_rtype || $rdata->newtype > 0) {
             $rev->_rtype = $rdata->newtype;
@@ -314,7 +345,10 @@ class Review_Assigner extends Assigner {
         }
         $reviewId = $aset->user->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId) {
-            $aset->user->unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId], ["no_autosearch" => true]);
+            assert($this->item->after !== null);
+            /** @phan-suppress-next-line PhanUndeclaredMethod */
+            $rrow = $this->item->after->make_reviewinfo($aset->conf, $reviewId);
+            $aset->user->unsubmit_review_row($rrow, ["no_autosearch" => true]);
         }
         if (($extra["token"] ?? false) && $reviewId) {
             $this->token = $aset->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewId=?", $this->pid, $reviewId);
