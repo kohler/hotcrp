@@ -18,7 +18,9 @@ class UserStatus extends MessageSet {
     /** @var bool */
     public $no_deprivilege_self = false;
     /** @var bool */
-    public $no_update_profile = false;
+    public $no_nonempty_profile = false;
+    /** @var bool */
+    public $no_nonempty_pc = false;
     /** @var bool */
     public $no_create = false;
     /** @var bool */
@@ -142,7 +144,7 @@ class UserStatus extends MessageSet {
     /** @return bool */
     function only_update_empty(Contact $user) {
         // XXX want way in script to modify all
-        return $this->no_update_profile
+        return $this->no_nonempty_profile
             || ($user->cdb_confid !== 0
                 && (strcasecmp($user->email, $this->viewer->email) !== 0
                     || $this->viewer->is_actas_user()
@@ -670,18 +672,19 @@ class UserStatus extends MessageSet {
     /** @param int $roles
      * @param Contact $old_user */
     private function check_role_change($roles, $old_user) {
-        if ((($this->no_deprivilege_self
-              && $this->viewer
-              && $this->viewer->conf === $this->conf
-              && $this->viewer->contactId == $old_user->contactId)
-             || $old_user->data("locked"))
-            && $roles < $old_user->roles) {
-            if ($old_user->data("locked")) {
-                $this->warning_at("roles", "Ignoring request to drop privileges for locked account.");
-            } else {
-                $this->warning_at("roles", "Ignoring request to drop your privileges.");
-            }
+        if ($old_user->data("locked")
+            && $old_user->roles !== $roles) {
+            $this->warning_at("roles", "Ignoring request to change privileges for locked account.");
             $roles = $old_user->roles;
+        } else if ($this->no_deprivilege_self
+                   && $this->viewer
+                   && $this->viewer->conf === $this->conf
+                   && $this->viewer->contactId == $old_user->contactId
+                   && ($old_user->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) !== 0
+                   && ($roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) === 0) {
+            $what = $old_user->roles & Contact::ROLE_CHAIR ? "chair" : "system administration";
+            $this->warning_at("roles", "You can’t drop your own $what privileges. Ask another administrator to do it for you.");
+            $roles |= $old_user->roles & Contact::ROLE_PCLIKE;
         }
         return $roles;
     }
@@ -859,6 +862,9 @@ class UserStatus extends MessageSet {
         }
 
         // Roles
+        if ($this->no_nonempty_pc && ($old_roles & Contact::ROLE_PCLIKE) !== 0) {
+            $roles = ($roles & ~Contact::ROLE_PCLIKE) | ($old_roles & Contact::ROLE_PCLIKE);
+        }
         if ($roles !== $old_roles) {
             $user->save_roles($roles, $actor);
             $this->diffs["roles"] = true;
@@ -920,7 +926,7 @@ class UserStatus extends MessageSet {
 
         // Follow
         if (isset($cj->follow)
-            && (!$us->no_update_profile || $user->defaultWatch == Contact::WATCH_REVIEW)) {
+            && (!$us->no_nonempty_pc || $user->defaultWatch == Contact::WATCH_REVIEW)) {
             $w = 0;
             $wmask = ($cj->follow->partial ?? false ? 0 : 0xFFFFFFFF);
             foreach (self::$watch_keywords as $k => $bit) {
@@ -936,7 +942,9 @@ class UserStatus extends MessageSet {
         }
 
         // Tags
-        if (isset($cj->tags) && $us->viewer->privChair) {
+        if (isset($cj->tags)
+            && $us->viewer->privChair
+            && (!$us->no_nonempty_pc || $user->contactTags === null)) {
             $tags = [];
             foreach ($cj->tags as $t) {
                 list($tag, $value) = Tagger::unpack($t);
@@ -980,32 +988,36 @@ class UserStatus extends MessageSet {
     }
 
     static function save_topics(UserStatus $us, Contact $user, $cj) {
-        if (isset($cj->topics) && $user->conf->has_topics()) {
-            $ti = $us->created ? [] : $user->topic_interest_map();
-            $tv = [];
-            $diff = false;
-            foreach ($cj->topics as $k => $v) {
-                if ($v) {
-                    $tv[] = [$user->contactId, $k, $v];
-                }
-                if ($v !== ($ti[$k] ?? 0)) {
-                    $diff = true;
+        if (!isset($cj->topics) || !$user->conf->has_topics()) {
+            return;
+        }
+        $ti = $us->created ? [] : $user->topic_interest_map();
+        if ($us->no_nonempty_pc && !empty($ti)) {
+            return;
+        }
+        $tv = [];
+        $diff = false;
+        foreach ($cj->topics as $k => $v) {
+            if ($v) {
+                $tv[] = [$user->contactId, $k, $v];
+            }
+            if ($v !== ($ti[$k] ?? 0)) {
+                $diff = true;
+            }
+        }
+        if ($diff || empty($tv)) {
+            if (empty($tv)) {
+                foreach ($cj->topics as $k => $v) {
+                    $tv[] = [$user->contactId, $k, 0];
+                    break;
                 }
             }
-            if ($diff || empty($tv)) {
-                if (empty($tv)) {
-                    foreach ($cj->topics as $k => $v) {
-                        $tv[] = [$user->contactId, $k, 0];
-                        break;
-                    }
-                }
-                $user->conf->qe("delete from TopicInterest where contactId=?", $user->contactId);
-                $user->conf->qe("insert into TopicInterest (contactId,topicId,interest) values ?v", $tv);
-                $user->invalidate_topic_interests();
-            }
-            if ($diff) {
-                $us->diffs["topics"] = true;
-            }
+            $user->conf->qe("delete from TopicInterest where contactId=?", $user->contactId);
+            $user->conf->qe("insert into TopicInterest (contactId,topicId,interest) values ?v", $tv);
+            $user->invalidate_topic_interests();
+        }
+        if ($diff) {
+            $us->diffs["topics"] = true;
         }
     }
 
@@ -1047,9 +1059,12 @@ class UserStatus extends MessageSet {
             if ($qreq->ass) {
                 $cj->roles[] = "sysadmin";
             }
-            if (empty($cj->roles)) {
+            $roles_pc = !empty($cj->roles);
+            if (!$roles_pc) {
                 $cj->roles[] = "none";
             }
+        } else {
+            $roles_pc = ($us->user->roles & Contact::ROLE_PCLIKE) !== 0;
         }
 
         $follow = [];
@@ -1068,16 +1083,16 @@ class UserStatus extends MessageSet {
             && ($us->viewer->privChair || $us->user->is_manager())) {
             $follow["allfinal"] = !!$qreq->watchallfinal;
         }
-        if (!empty($follow)) {
+        if (!empty($follow) && $roles_pc) {
             $follow["partial"] = true;
             $cj->follow = (object) $follow;
         }
 
-        if (isset($qreq->contactTags) && $us->viewer->privChair) {
+        if (isset($qreq->contactTags) && $roles_pc && $us->viewer->privChair) {
             $cj->tags = explode(" ", simplify_whitespace($qreq->contactTags));
         }
 
-        if (isset($qreq->has_ti) && $us->viewer->isPC) {
+        if (isset($qreq->has_ti) && $roles_pc && $us->viewer->isPC) {
             $topics = array();
             foreach ($us->conf->topic_set() as $id => $t) {
                 if (isset($qreq["ti$id"]) && is_numeric($qreq["ti$id"])) {

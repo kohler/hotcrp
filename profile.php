@@ -361,7 +361,7 @@ function parseBulkFile($text, $filename) {
     $ustatus = new UserStatus($Me);
     $ustatus->notify = true; // notify all new users
     $ustatus->no_deprivilege_self = true;
-    $ustatus->no_update_profile = true;
+    $ustatus->no_nonempty_profile = true;
     $ustatus->add_csv_synonyms($csv);
 
     while (($line = $csv->next_row()) !== false) {
@@ -427,7 +427,11 @@ if (!$Qreq->valid_post()) {
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->set_user($Acct);
     $UserStatus->set_context(["args" => [$UserStatus, $cj, $Qreq]]);
-    $UserStatus->no_update_profile = !!$newProfile;
+    $UserStatus->no_deprivilege_self = true;
+    if ($newProfile) {
+        $UserStatus->no_nonempty_profile = true;
+        $UserStatus->no_nonempty_pc = true;
+    }
     $UserStatus->request_group("");
     $saved_user = save_user($cj, $UserStatus, $newProfile ? null : $Acct);
     if (!$UserStatus->has_error()) {
@@ -449,7 +453,13 @@ if (!$Qreq->valid_post()) {
                 $Conf->msg(Ht::link($saved_user->name_h(NAME_E), $purl) . " already had " . Ht::link("an account", $purl) . ".{$changes} You may now create another account.", "xconfirm");
             }
         } else {
-            $Conf->msg("Updated profile" . ($UserStatus->notified ? " and sent confirmation email" : "") . ".", "xconfirm");
+            if (empty($UserStatus->diffs)) {
+                $Conf->msg("No changes.", "xconfirm");
+            } else if ($UserStatus->notified) {
+                $Conf->msg("Updated profile and sent confirmation email.", "xconfirm");
+            } else {
+                $Conf->msg("Updated profile.", "xconfirm");
+            }
             if ($Acct->contactId != $Me->contactId) {
                 $Qreq->u = $Acct->email;
             }
