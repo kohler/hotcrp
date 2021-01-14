@@ -17,7 +17,7 @@
 	},
 
 	{
-		"name": "newaccount.adminregister",
+		"name": "newaccount.other",
 		"subject": "[%CONFSHORTNAME%] Account activated",
 		"body": [
 			"Greetings,\n\n",

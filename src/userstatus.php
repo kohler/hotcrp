@@ -892,15 +892,14 @@ class UserStatus extends MessageSet {
             if (($roles & Contact::ROLE_PC)
                 && !($eff_old_roles & Contact::ROLE_PC)) {
                 $user->send_mail("@newaccount.pc");
-                $this->notified = true;
             } else if (($roles & Contact::ROLE_ADMIN)
                        && !($eff_old_roles & Contact::ROLE_ADMIN)) {
                 $user->send_mail("@newaccount.admin");
-                $this->notified = true;
             } else {
-                $user->send_mail("@newaccount.adminregister");
-                $this->notified = true;
+                $user->send_mail("@newaccount.other");
             }
+            $this->notified = true;
+            $user->mark_activity(); // being created by an admin counts as activity
         }
 
         return $user;
