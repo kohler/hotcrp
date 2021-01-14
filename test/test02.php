@@ -100,7 +100,7 @@ xassert_eqq(DocumentInfo::sanitize_filename(str_repeat("i", 1024) . ".txt"), str
 xassert_eqq(strlen(DocumentInfo::sanitize_filename(str_repeat("i", 1024) . ".txt")), 255);
 xassert_eqq(DocumentInfo::sanitize_filename(str_repeat("i", 1024)), str_repeat("i", 252) . "...");
 
-// Csv::split_lines tests
+// Csv tests
 xassert_array_eqq(CsvParser::split_lines(""),
                   array());
 xassert_array_eqq(CsvParser::split_lines("\r"),
@@ -115,6 +115,71 @@ xassert_array_eqq(CsvParser::split_lines("\r\naaa"),
                   array("\r\n", "aaa"));
 xassert_array_eqq(CsvParser::split_lines("\na\r\nb\rc\n"),
                   array("\n", "a\r\n", "b\r", "c\n"));
+
+$csv = new CsvParser("0,1,2\n3,4,5\n6,7\n8,9,10\n");
+xassert_array_eqq($csv->next_list(), ["0", "1", "2"]);
+xassert_array_eqq($csv->next_list(), ["3", "4", "5"]);
+xassert_array_eqq($csv->next_list(), ["6", "7"]);
+xassert_array_eqq($csv->next_list(), ["8", "9", "10"]);
+xassert_eqq($csv->next_list(), null);
+
+$csv = new CsvParser("0,1,2\n3,4,5\n6,7\n8,9,10\n");
+xassert_array_eqq($csv->next_map(), ["0", "1", "2"]);
+xassert_array_eqq($csv->next_map(), ["3", "4", "5"]);
+xassert_array_eqq($csv->next_map(), ["6", "7"]);
+xassert_array_eqq($csv->next_map(), ["8", "9", "10"]);
+xassert_eqq($csv->next_map(), null);
+
+$csv = new CsvParser("0,1,2\n3,4,5\n6,7\n8,9,10\n");
+$csv->set_header($csv->next_row());
+xassert_array_eqq($csv->next_list(), ["3", "4", "5"]);
+xassert_array_eqq($csv->next_list(), ["6", "7"]);
+xassert_array_eqq($csv->next_list(), ["8", "9", "10"]);
+xassert_eqq($csv->next_list(), null);
+
+$csv = new CsvParser("0,1,2\n3,4,5\n6,7\n8,9,10\n");
+$csv->set_header($csv->next_row());
+xassert_array_eqq($csv->next_map(), ["0" => "3", "1" => "4", "2" => "5"]);
+xassert_array_eqq($csv->next_map(), ["0" => "6", "1" => "7"]);
+xassert_array_eqq($csv->next_map(), ["0" => "8", "1" => "9", "2" => "10"]);
+xassert_eqq($csv->next_map(), null);
+
+$csv = new CsvParser("0,1,2\n3,4,5\n6,7\n8,9,10\n");
+$csv->set_header($csv->next_row());
+xassert_array_eqq(iterator_to_array($csv->next_row()), ["0" => "3", "1" => "4", "2" => "5"]);
+xassert_array_eqq(iterator_to_array($csv->next_row()), ["0" => "6", "1" => "7"]);
+xassert_array_eqq(iterator_to_array($csv->next_row()), ["0" => "8", "1" => "9", "2" => "10"]);
+xassert_eqq($csv->next_row(), null);
+
+$csv = new CsvParser("2,1,0\n3,4,5\n6,7\n8,9,10\n");
+$csv->set_header($csv->next_row());
+$csvr = $csv->next_row();
+xassert(isset($csvr[0]));
+xassert_eqq($csvr[0], "3");
+xassert(isset($csvr["0"]));
+xassert_eqq($csvr["0"], "5");
+xassert(!isset($csvr[3]));
+$csvr[3] = "10";
+xassert_eqq($csvr[3], "10");
+$csvr["xxxx"] = "1010";
+xassert_eqq($csvr["xxxx"], "1010");
+xassert_eqq($csvr["xxxxajajaj"], null);
+
+$csv = new CsvParser("Butts,Butt and Money,Yes\n3,4,5\n6,7\n8,9,10\n");
+$csv->set_header($csv->next_row());
+$csvr = $csv->next_row();
+xassert(isset($csvr[0]));
+xassert_eqq($csvr[0], "3");
+xassert(isset($csvr["butts"]));
+xassert_eqq($csvr["butts"], "3");
+xassert(isset($csvr["Butts"]));
+xassert_eqq($csvr["Butts"], "3");
+xassert(isset($csvr["butt_and_money"]));
+xassert_eqq($csvr["butt_and_money"], "4");
+$csvr = $csv->next_row();
+xassert(!isset($csvr[2]));
+$csvr["Yes"] = "Hi";
+xassert_eqq($csvr[2], "Hi");
 
 // numrangejoin tests
 xassert_eqq(numrangejoin([1, 2, 3, 4, 6, 8]), "1–4, 6, and 8");
@@ -159,10 +224,10 @@ $x = Json::decode_landmarks('{
         "c": "d"
     }
 }', "x.txt");
-xassert_match($x->a[0], ",^x.txt:2(?::|\$),");
-xassert_match($x->a[1], ",^x.txt:2(?::|\$),");
-xassert_match($x->b->c, ",^x.txt:4(?::|\$),");
-xassert_match($x->b->__LANDMARK__, ",^x.txt:3(?::|\$),");
+xassert_match($x->a[0], "/^x.txt:2(?::|\$)/");
+xassert_match($x->a[1], "/^x.txt:2(?::|\$)/");
+xassert_match($x->b->c, "/^x.txt:4(?::|\$)/");
+xassert_match($x->b->__LANDMARK__, "/^x.txt:3(?::|\$)/");
 xassert_eqq(Json::decode("[1-2]"), null);
 xassert_eqq(json_decode("[1-2]"), null);
 xassert_eqq(Json::decode("[1,2,3-4,5,6-10,11]"), null);
