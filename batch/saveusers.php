@@ -1,7 +1,7 @@
 <?php
 require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
-$arg = Getopt::rest($argv, "hn:e:u:r:", ["help", "name:", "no-email", "no-notify", "modify-only", "create-only", "no-modify", "no-create", "expression:", "expr:", "user:", "roles:", "uname:"]);
+$arg = Getopt::rest($argv, "hn:e:u:r:", ["help", "name:", "no-email", "no-notify", "notify", "modify-only", "create-only", "no-modify", "no-create", "expression:", "expr:", "user:", "roles:", "uname:"]);
 foreach (["expr" => "e", "expression" => "e", "no-email" => "no-notify",
           "no-create" => "modify-only", "no-modify" => "create-only",
           "user" => "u", "roles" => "r", "help" => "h"] as $long => $short) {
@@ -69,7 +69,7 @@ if ($content === false) {
 }
 
 $ustatus = new UserStatus($Conf->root_user());
-$ustatus->notify = isset($arg["no-notify"]) ? 0 : 1;
+$ustatus->notify = isset($arg["notify"]) || !isset($arg["no-notify"]);
 $ustatus->no_create = isset($arg["modify-only"]);
 $ustatus->no_modify = isset($arg["create-only"]);
 $status = 0;

@@ -119,6 +119,7 @@ $newProfile = 0;
 $UserStatus = new UserStatus($Me);
 $UserStatus->set_user($Me);
 $UserStatus->set_context(["args" => [$UserStatus]]);
+$UserStatus->notify = true;
 
 if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
     $Qreq->u = $Qreq->user ? : $Qreq->contact;
@@ -151,7 +152,6 @@ if ($Qreq->u === "me" || $Qreq->u === "self") {
     if ($Qreq->u === "new") {
         $Acct = new Contact(null, $Conf);
         $newProfile = 1;
-        $UserStatus->notify = 2; // notify all new users
     } else if ($Qreq->u === "bulk") {
         $Acct = new Contact(null, $Conf);
         $newProfile = 2;
@@ -359,7 +359,7 @@ function parseBulkFile($text, $filename) {
     }
 
     $ustatus = new UserStatus($Me);
-    $ustatus->notify = 2; // notify all new users
+    $ustatus->notify = true; // notify all new users
     $ustatus->no_deprivilege_self = true;
     $ustatus->no_update_profile = true;
     $ustatus->add_csv_synonyms($csv);

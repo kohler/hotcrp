@@ -110,7 +110,6 @@ xassert_eqq($u->firstName, "Te");
 
 // inserting them should succeed and borrow their data
 $us = new UserStatus($Conf->root_user());
-$us->notify = 0;
 $acct = $us->save((object) ["email" => "te@_.com"]);
 xassert(!!$acct);
 $te = user("te@_.com");

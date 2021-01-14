@@ -13,8 +13,8 @@ class UserStatus extends MessageSet {
     public $user;
     /** @var ?bool */
     public $self;
-    /** @var int */
-    public $notify = 1;
+    /** @var bool */
+    public $notify = false;
     /** @var bool */
     public $no_deprivilege_self = false;
     /** @var bool */
@@ -887,7 +887,7 @@ class UserStatus extends MessageSet {
         }
 
         // Send creation mail
-        if (!$user->activity_at && $this->notify > 0 && !$user->is_disabled()) {
+        if (!$user->activity_at && $this->notify && !$user->is_disabled()) {
             $eff_old_roles = $old_disabled ? 0 : $old_roles;
             if (($roles & Contact::ROLE_PC)
                 && !($eff_old_roles & Contact::ROLE_PC)) {
@@ -897,7 +897,7 @@ class UserStatus extends MessageSet {
                        && !($eff_old_roles & Contact::ROLE_ADMIN)) {
                 $user->send_mail("@newaccount.admin");
                 $this->notified = true;
-            } else if ($this->notify > 1) {
+            } else {
                 $user->send_mail("@newaccount.adminregister");
                 $this->notified = true;
             }

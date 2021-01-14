@@ -196,6 +196,7 @@ function setup_initialize_database() {
     $us = new UserStatus($Conf->root_user());
     $ok = true;
     foreach ($json->contacts as $c) {
+        $us->notify = in_array("pc", $c->roles ?? []);
         $user = $us->save($c);
         if ($user) {
             MailChecker::check_db("create-{$c->email}");
