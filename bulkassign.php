@@ -49,7 +49,7 @@ function keep_browser_alive(AssignmentSet $assignset, CsvRow $line = null) {
         if (!$line) {
             $text .= " processing";
         } else {
-            $text .= " <code>" . htmlspecialchars(join(",", $line->as_array())) . "</code>";
+            $text .= " <code>" . htmlspecialchars(join(",", $line->as_list())) . "</code>";
         }
         echo Ht::unstash_script("document.getElementById('mailcount').innerHTML=" . json_encode_browser($text) . ";");
         flush();

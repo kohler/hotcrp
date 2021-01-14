@@ -88,7 +88,7 @@ if (isset($arg["u"])) {
     $csv = new CsvParser(cleannl(convert_to_utf8($content)));
     $csv->set_comment_chars("#%");
     $line = $csv->next_list();
-    if ($line && preg_grep('/\Aemail\z/i', $line)) {
+    if ($line !== null && preg_grep('/\Aemail\z/i', $line)) {
         $csv->set_header($line);
     } else {
         fwrite(STDERR, "$file: email field missing from CSV header\n");

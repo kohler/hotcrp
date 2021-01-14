@@ -1639,7 +1639,7 @@ class AssignmentSet {
 
         // parse file, load papers all at once
         $lines = $pids = [];
-        while (($req = $csv->next_row()) !== false) {
+        while (($req = $csv->next_row())) {
             if (($aparser = $this->collect_parser($req))) {
                 if ($aparser->paper_universe($req, $this->astate) === "none") {
                     $paper = "NONE";

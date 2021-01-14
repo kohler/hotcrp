@@ -1174,6 +1174,7 @@ class UserStatus extends MessageSet {
         ["disabled"]
     ];
 
+    /** @param CsvRow $line */
     static function parse_csv_main(UserStatus $us, $cj, $line, $uf) {
         // set keys
         foreach (self::$csv_keys as $ks) {
@@ -1211,7 +1212,7 @@ class UserStatus extends MessageSet {
         }
     }
 
-    function add_csv_synonyms($csv) {
+    function add_csv_synonyms(CsvParser $csv) {
         foreach (self::$csv_keys as $ks) {
             for ($i = 1; !$csv->has_column($ks[0]) && isset($ks[$i]); ++$i) {
                 $csv->add_synonym($ks[0], $ks[$i]);
@@ -1219,6 +1220,7 @@ class UserStatus extends MessageSet {
         }
     }
 
+    /** @param CsvRow $line */
     function parse_csv_group($g, $cj, $line) {
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
             if (($cb = $gj->parse_csv_callback ?? null)) {

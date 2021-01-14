@@ -49,7 +49,7 @@ class TagRankParser {
         $tagger = new Tagger($this->user);
         $tag = $this->tag;
         $curIndex = 0;
-        while (($row = $csv->next_row()) !== false) {
+        while (($row = $csv->next_row())) {
             if (empty($row) || !isset($row["paper"]) || !isset($row["action"])) {
                 continue;
             }

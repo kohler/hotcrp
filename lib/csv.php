@@ -57,6 +57,11 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         return $this->as_map();
     }
     /** @return list<string> */
+    function as_list() {
+        return $this->a;
+    }
+    /** @return list<string>
+     * @deprecated */
     function as_array() {
         return $this->a;
     }
@@ -76,12 +81,12 @@ class CsvParser implements Iterator {
     /** @var int */
     private $type;
     private $typefn;
-    /** @var false|list<string> */
-    private $header = false;
+    /** @var list<string> */
+    private $header = [];
     /** @var array<string,int> */
     private $hmap = [];
-    /** @var false|string */
-    private $comment_chars = false;
+    /** @var ?string */
+    private $comment_chars;
     private $comment_function;
     /** @var GMP */
     private $used;
@@ -154,7 +159,7 @@ class CsvParser implements Iterator {
         $this->comment_function = $f;
     }
 
-    /** @return false|list<string> */
+    /** @return list<string> */
     function header() {
         return $this->header;
     }
@@ -162,7 +167,7 @@ class CsvParser implements Iterator {
     /** @param list<string>|CsvRow $header */
     function set_header($header) {
         if ($header && $header instanceof CsvRow) {
-            $header = $header->as_array();
+            $header = $header->as_list();
         }
         $this->header = $header;
         $this->_rewind_pos = $this->lpos;
@@ -184,6 +189,7 @@ class CsvParser implements Iterator {
                     && (!ctype_digit($s)
                         || ($s[0] === "0" && $s !== "0")
                         || (int) $s > count($header))) {
+                    $hmap[$s] = $i;
                     if ($has_lchmap) {
                         $lcs = strtolower($s);
                         if (!isset($lchmap[$lcs])) {
@@ -192,7 +198,6 @@ class CsvParser implements Iterator {
                             $has_lchmap = false;
                         }
                     }
-                    $hmap[$s] = $i;
                 }
                 $hmap[$i] = $i;
                 if ($has_lchmap) {
@@ -279,9 +284,10 @@ class CsvParser implements Iterator {
         return $this->nused;
     }
 
-    /** @return array|false */
+    /** @param ?array $a
+     * @return ?array */
     function as_map($a) {
-        if ($this->header && is_array($a)) {
+        if (!empty($this->header) && is_array($a)) {
             $b = [];
             foreach ($a as $i => $v) {
                 $offset = $this->header[$i] ?? "";
@@ -339,7 +345,7 @@ class CsvParser implements Iterator {
                 return true;
             } else if ($line === "" || $line[0] === "\n" || $line[0] === "\r") {
                 // skip
-            } else if ($this->comment_chars !== false
+            } else if ($this->comment_chars !== null
                        && strpos($this->comment_chars, $line[0]) !== false) {
                 if ($this->comment_function) {
                     call_user_func($this->comment_function, $line, $this);
@@ -352,7 +358,7 @@ class CsvParser implements Iterator {
         return false;
     }
 
-    /** @return list<string>|false */
+    /** @return ?list<string> */
     function next_list() {
         if ($this->skip_empty()) {
             $line = $this->lines[$this->lpos];
@@ -361,17 +367,17 @@ class CsvParser implements Iterator {
             $this->nused = max($this->nused, count($a));
             return $a;
         } else {
-            return false;
+            return null;
         }
     }
 
-    /** @return CsvRow|false */
+    /** @return ?CsvRow */
     function next_row() {
         $a = $this->next_list();
-        return $a === false ? false : new CsvRow($this, $a);
+        return $a !== null ? new CsvRow($this, $a) : null;
     }
 
-    /** @return array|false */
+    /** @return ?array */
     function next_map() {
         return $this->as_map($this->next_list());
     }
@@ -544,7 +550,7 @@ class CsvParser implements Iterator {
 
     /** @return bool */
     function valid() {
-        return $this->lpos != count($this->lines);
+        return $this->lpos !== count($this->lines);
     }
 }
 

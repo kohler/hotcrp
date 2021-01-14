@@ -364,7 +364,7 @@ function parseBulkFile($text, $filename) {
     $ustatus->no_nonempty_profile = true;
     $ustatus->add_csv_synonyms($csv);
 
-    while (($line = $csv->next_row()) !== false) {
+    while (($line = $csv->next_row())) {
         $ustatus->set_user(new Contact(null, $Conf));
         $ustatus->set_context(["args" => [$ustatus]]);
         $ustatus->clear_messages();

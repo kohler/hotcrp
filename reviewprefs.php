@@ -145,17 +145,19 @@ function parseUploadedPreferences($text, $filename, $apply) {
     $line = $csv->next_list();
 
     // Parse header
-    if ($line && preg_grep('{\A(?:paper|pid|paper[\s_]*id|id)\z}i', $line)) {
-        $csv->set_header($line);
-    } else {
-        if (count($line) >= 2 && ctype_digit($line[0])) {
-            if (preg_match('/\A\s*\d+\s*[XYZ]?\s*\z/i', $line[1])) {
-                $csv->set_header(["paper", "preference"]);
-            } else {
-                $csv->set_header(["paper", "title", "preference"]);
+    if ($line !== null) {
+        if (preg_grep('/\A(?:paper|pid|paper[\s_]*id|id)\z/i', $line)) {
+            $csv->set_header($line);
+        } else {
+            if (count($line) >= 2 && ctype_digit($line[0])) {
+                if (preg_match('/\A\s*\d+\s*[XYZ]?\s*\z/i', $line[1])) {
+                    $csv->set_header(["paper", "preference"]);
+                } else {
+                    $csv->set_header(["paper", "title", "preference"]);
+                }
             }
+            $csv->unshift($line);
         }
-        $csv->unshift($line);
     }
 
     $assignset = new AssignmentSet($Me, true);
