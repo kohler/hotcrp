@@ -156,8 +156,9 @@ $csv->set_header($csv->next_row());
 $csvr = $csv->next_row();
 xassert(isset($csvr[0]));
 xassert_eqq($csvr[0], "3");
-xassert(isset($csvr["0"]));
-xassert_eqq($csvr["0"], "5");
+$k = "0"; // Work around PHP bug #63217 in PHP 7.2 and before
+xassert(isset($csvr[$k]));
+xassert_eqq($csvr[$k], "5");
 xassert(!isset($csvr[3]));
 $csvr[3] = "10";
 xassert_eqq($csvr[3], "10");
