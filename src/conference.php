@@ -3205,6 +3205,10 @@ class Conf {
                     $tp = "/" . $m[2] . $tp;
                     $param = $m[1] . $m[3];
                 }
+            } else if ($page === "users"
+                       && preg_match($are . 't=(\w+)' . $zre, $param, $m)) {
+                $tp = "/" . $m[2];
+                $param = $m[1] . $m[3];
             } else if (preg_match($are . '__PATH__=([^&]+)' . $zre, $param, $m)) {
                 $tp = "/" . urldecode($m[2]);
                 $param = $m[1] . $m[3];
