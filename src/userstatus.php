@@ -906,27 +906,30 @@ class UserStatus extends MessageSet {
         }
 
         // Clean up
-        if ($this->viewer->contactId == $user->contactId) {
+        $old_activity_at = $user->activity_at;
+        if ($this->viewer->contactId === $user->contactId
+            || !$user->activity_at /* being modified by an admin counts as activity */) {
             $user->mark_activity();
         }
         if (!empty($this->diffs)) {
             $user->conf->log_for($this->viewer, $user, "Account edited: " . join(", ", array_keys($this->diffs)));
         }
 
-        // Send creation mail
-        if (!$user->activity_at && $this->notify && !$user->is_disabled()) {
+        // Notify of new accounts or new PC-ness
+        if ($this->notify && !$user->is_disabled()) {
             $eff_old_roles = $old_disabled ? 0 : $old_roles;
-            if (($roles & Contact::ROLE_PC)
-                && !($eff_old_roles & Contact::ROLE_PC)) {
-                $user->send_mail("@newaccount.pc");
-            } else if (($roles & Contact::ROLE_ADMIN)
-                       && !($eff_old_roles & Contact::ROLE_ADMIN)) {
-                $user->send_mail("@newaccount.admin");
-            } else {
-                $user->send_mail("@newaccount.other");
+            if (!$old_activity_at
+                || (($eff_old_roles & Contact::ROLE_PCLIKE) === 0
+                    && ($roles & Contact::ROLE_PCLIKE) !== 0)) {
+                if ($roles & Contact::ROLE_PC) {
+                    $user->send_mail("@newaccount.pc");
+                } else if ($roles & Contact::ROLE_ADMIN) {
+                    $user->send_mail("@newaccount.admin");
+                } else {
+                    $user->send_mail("@newaccount.other");
+                }
+                $this->notified = true;
             }
-            $this->notified = true;
-            $user->mark_activity(); // being created by an admin counts as activity
         }
 
         return $user;

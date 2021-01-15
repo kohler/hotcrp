@@ -119,7 +119,6 @@ $newProfile = 0;
 $UserStatus = new UserStatus($Me);
 $UserStatus->set_user($Me);
 $UserStatus->set_context(["args" => [$UserStatus]]);
-$UserStatus->notify = true;
 
 if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
     $Qreq->u = $Qreq->user ? : $Qreq->contact;
@@ -308,7 +307,7 @@ function parseBulkFile($text, $filename) {
     global $Conf, $Me;
     $text = cleannl(convert_to_utf8($text));
     $filename = $filename ? htmlspecialchars($filename) . ":" : "line ";
-    $success = $errors = $nochanges = [];
+    $success = $errors = $nochanges = $notified = [];
 
     if (!preg_match('/\A[^\r\n]*(?:,|\A)(?:user|email)(?:[,\r\n]|\z)/', $text)
         && !preg_match('/\A[^\r\n]*,[^\r\n]*,/', $text)) {
@@ -372,7 +371,9 @@ function parseBulkFile($text, $filename) {
         $ustatus->parse_csv_group("", $cj, $line);
         if (($saved_user = save_user($cj, $ustatus, null))) {
             $x = "<a class=\"nb\" href=\"" . $Conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
-            if (empty($ustatus->diffs)) {
+            if ($ustatus->notified) {
+                $notified[] = $x;
+            } else if (empty($ustatus->diffs)) {
                 $nochanges[] = $x;
             } else {
                 $success[] = $x;
@@ -387,22 +388,21 @@ function parseBulkFile($text, $filename) {
         $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin(array_keys($ustatus->unknown_topics))) . ").";
     }
     $msgs = [];
-    if (count($success) === 1) {
-        $msgs[] = "<p class=\"bigod\">Saved account " . $success[0] . ".</p>";
-    } else if (!empty($success)) {
-        $msgs[] = "<p class=\"bigod\">Saved " . plural($success, "account") . ": " . commajoin($success) . ".</p>";
+    if (!empty($notified)) {
+        $msgs[] = "<p class=\"bigod\">Saved " . plural($notified, "account") . " with confirmation email (" . commajoin($notified) . ").</p>";
     }
-    if (count($nochanges) === 1) {
-        $msgs[] = "<p class=\"bigod\">No changes to account " . $nochanges[0] . ".</p>";
-    } else if (!empty($nochanges)) {
-        $msgs[] = "<p class=\"bigod\">No changes to " . plural($nochanges, "account") . ": " . commajoin($nochanges) . ".</p>";
+    if (!empty($success)) {
+        $msgs[] = "<p class=\"bigod\">Saved " . plural($success, "account") . " (" . commajoin($success) . ").</p>";
+    }
+    if (!empty($nochanges)) {
+        $msgs[] = "<p class=\"bigod\">No changes to " . plural($nochanges, "account") . " (" . commajoin($nochanges) . ").</p>";
     }
     if (!empty($errors)) {
         $msgs[] = "<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>";
     }
     if (empty($msgs)) {
         $Conf->warnMsg("No changes.");
-    } else if (!empty($success) && empty($errors)) {
+    } else if ((!empty($success) || !empty($notified)) && empty($errors)) {
         $Conf->confirmMsg(join("", $msgs));
     } else if (empty($errors)) {
         $Conf->warnMsg(join("", $msgs));
@@ -440,6 +440,7 @@ if (!$Qreq->valid_post()) {
     if ($newProfile) {
         $UserStatus->no_nonempty_profile = true;
         $UserStatus->no_nonempty_pc = true;
+        $UserStatus->notify = true;
     }
     $UserStatus->request_group("");
     $saved_user = save_user($cj, $UserStatus, $newProfile ? null : $Acct);
