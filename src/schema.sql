@@ -55,7 +55,6 @@ CREATE TABLE `ContactInfo` (
   `passwordTime` bigint(11) NOT NULL DEFAULT '0',
   `passwordUseTime` bigint(11) NOT NULL DEFAULT '0',
   `collaborators` varbinary(8192) DEFAULT NULL,
-  `creationTime` bigint(11) NOT NULL DEFAULT '0',
   `updateTime` bigint(11) NOT NULL DEFAULT '0',
   `lastLogin` bigint(11) NOT NULL DEFAULT '0',
   `defaultWatch` int(11) NOT NULL DEFAULT '2',
@@ -516,7 +515,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 243);
+insert into Settings (name, value) values ('allowPaperOption', 244);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

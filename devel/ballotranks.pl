@@ -30,7 +30,7 @@ print "delete from PaperReview;\n";
 print "delete from PaperConflict;\n";
 print "delete from PaperTag;\n";
 
-print "insert into ContactInfo (contactId, firstName, lastName, email, password, collaborators, creationTime, roles) values (1, 'Janette', 'Chair', 'chair\@_.com', 'chair', 'None', $now, 7);\n";
+print "insert into ContactInfo (contactId, firstName, lastName, email, password, collaborators, roles) values (1, 'Janette', 'Chair', 'chair\@_.com', 'chair', 'None', 7);\n";
 
 print "insert into Settings (name, value, data) values ('rev_open', $now, null), ('tag_rank', 1, 'r') on duplicate key update value=values(value), data=values(data);\n";
 
@@ -55,7 +55,7 @@ while (<DATA>) {
     chomp $_;
     last if /^RATINGS/;
     $_ = join(" ", split(//)) if !/[\s,]/;
-    print "insert into ContactInfo (contactId, firstName, lastName, email, password, collaborators, creationTime, roles) values ($voternum, 'Jane', 'Voter" . ($voternum - $voterdelta) . "', 'comm" . ($voternum - $voterdelta) . "\@_.com', 'x', 'None', $now, 1) on duplicate key update firstName=firstName;\n";
+    print "insert into ContactInfo (contactId, firstName, lastName, email, password, collaborators, roles) values ($voternum, 'Jane', 'Voter" . ($voternum - $voterdelta) . "', 'comm" . ($voternum - $voterdelta) . "\@_.com', 'x', 'None', 1) on duplicate key update firstName=firstName;\n";
     my($p, $r, $i);
     $i = 0;
     while (/\A(\d+|x)\s*([,=]?)\s*(.*)\z/) {

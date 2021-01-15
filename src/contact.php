@@ -87,7 +87,6 @@ class Contact {
     private $_disabled;
     public $activity_at = false;
     private $lastLogin = 0;
-    public $creationTime = 0;
     private $updateTime = 0;
     private $data;
     /** @var ?object */
@@ -198,7 +197,6 @@ class Contact {
         "passwordTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_PASSWORD,
         "passwordUseTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_PASSWORD,
         "collaborators" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_UPDATE | self::PROP_IMPORT,
-        "creationTime" => self::PROP_LOCAL | self::PROP_INT,
         "updateTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT,
         "lastLogin" => self::PROP_LOCAL | self::PROP_INT,
         "defaultWatch" => self::PROP_LOCAL | self::PROP_INT,

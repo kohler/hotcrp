@@ -1924,6 +1924,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && update_schema_simplify_user_whitespace($conf)) {
         $conf->update_schema_version(243);
     }
+    if ($conf->sversion === 243
+        && $conf->ql_ok("alter table ContactInfo drop column `creationTime`")) {
+        $conf->update_schema_version(244);
+    }
 
     $conf->ql_ok("delete from Settings where name='__schema_lock'");
     Conf::$main = $old_conf_g;
