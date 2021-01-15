@@ -1233,7 +1233,7 @@ class UserStatus extends MessageSet {
 
     function render_field($field, $caption, $entry, $class = "f-i w-text") {
         echo '<div class="', $this->control_class($field, $class), '">',
-            ($field ? Ht::label($caption, $field) : '<div class="f-c">' . $caption . '</div>'),
+            ($field ? Ht::label($caption, $field) : "<div class=\"f-c\">{$caption}</div>"),
             $entry, "</div>";
     }
 

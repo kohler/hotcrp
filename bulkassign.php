@@ -266,7 +266,7 @@ echo "</form>
 
 <p class=\"w-text\">Upload a CSV (comma-separated value file) to prepare an assignment; HotCRP
 will display the consequences of the requested assignment for confirmation and
-approval. The <code>action</code> column determines what kind of assignment is
+approval. The <code>action</code> field determines the assignment to be
 performed. Supported actions include:</p>";
 
 BulkAssign_HelpTopic::echo_actions($Me);
