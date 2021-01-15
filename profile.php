@@ -308,7 +308,7 @@ function parseBulkFile($text, $filename) {
     global $Conf, $Me;
     $text = cleannl(convert_to_utf8($text));
     $filename = $filename ? htmlspecialchars($filename) . ":" : "line ";
-    $success = $errors = array();
+    $success = $errors = $nochanges = [];
 
     if (!preg_match('/\A[^\r\n]*(?:,|\A)(?:user|email)(?:[,\r\n]|\z)/', $text)
         && !preg_match('/\A[^\r\n]*,[^\r\n]*,/', $text)) {
@@ -371,7 +371,12 @@ function parseBulkFile($text, $filename) {
         $cj = (object) ["id" => null];
         $ustatus->parse_csv_group("", $cj, $line);
         if (($saved_user = save_user($cj, $ustatus, null))) {
-            $success[] = "<a href=\"" . $Conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
+            $x = "<a class=\"nb\" href=\"" . $Conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
+            if (empty($ustatus->diffs)) {
+                $nochanges[] = $x;
+            } else {
+                $success[] = $x;
+            }
         }
         foreach ($ustatus->problem_texts() as $e) {
             $errors[] = '<span class="lineno">' . $csv->landmark_html() . ":</span> " . $e;
@@ -381,24 +386,28 @@ function parseBulkFile($text, $filename) {
     if (!empty($ustatus->unknown_topics)) {
         $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin(array_keys($ustatus->unknown_topics))) . ").";
     }
-    $successMsg = "";
-    if (count($success) == 1) {
-        $successMsg = "Saved account " . $success[0] . ".";
-    } else if (count($success)) {
-        $successMsg = "Saved " . plural($success, "account") . ": " . commajoin($success) . ".";
+    $msgs = [];
+    if (count($success) === 1) {
+        $msgs[] = "<p class=\"bigod\">Saved account " . $success[0] . ".</p>";
+    } else if (!empty($success)) {
+        $msgs[] = "<p class=\"bigod\">Saved " . plural($success, "account") . ": " . commajoin($success) . ".</p>";
     }
-    $errorMsg = "";
-    if (count($errors)) {
-        $errorMsg = '<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . "</p></div>";
+    if (count($nochanges) === 1) {
+        $msgs[] = "<p class=\"bigod\">No changes to account " . $nochanges[0] . ".</p>";
+    } else if (!empty($nochanges)) {
+        $msgs[] = "<p class=\"bigod\">No changes to " . plural($nochanges, "account") . ": " . commajoin($nochanges) . ".</p>";
     }
-    if ($successMsg !== "" && $errorMsg !== "") {
-        $Conf->confirmMsg($successMsg . "<br />$errorMsg");
-    } else if ($successMsg !== "") {
-        $Conf->confirmMsg($successMsg);
-    } else if ($errorMsg !== "") {
-        Conf::msg_error($errorMsg);
+    if (!empty($errors)) {
+        $msgs[] = "<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>";
+    }
+    if (empty($msgs)) {
+        $Conf->warnMsg("No changes.");
+    } else if (!empty($success) && empty($errors)) {
+        $Conf->confirmMsg(join("", $msgs));
+    } else if (empty($errors)) {
+        $Conf->warnMsg(join("", $msgs));
     } else {
-        $Conf->warnMsg("Nothing to do.");
+        $Conf->errorMsg(join("", $msgs));
     }
     return empty($errors);
 }
