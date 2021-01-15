@@ -65,5 +65,6 @@
     {   "name": "__bulk/help/f/remove_tags", "position": -80, "description_html": "PC tags to remove"   },
     {   "name": "__bulk/help/f/collaborators", "description_html": "Collaborators"   },
     {   "name": "__bulk/help/f/follow", "description_html": "Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”"   },
-    {   "name": "__bulk/help/f/topics", "field": "topic:<TOPICNAME>", "description_html": "Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)", "allow_if": "conf.has_topics"   }
+    {   "name": "__bulk/help/f/topics", "field": "topic:<TOPICNAME>", "description_html": "Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)", "allow_if": "conf.has_topics", "position": 1   },
+    {   "name": "__bulk/help/f/topic_override", "field": "topic_override", "description_html": "If “<code>no</code>”, then do not overwrite existing topic interests", "allow_if": "conf.has_topics", "position": 1.2   }
 ]

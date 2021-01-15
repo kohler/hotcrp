@@ -561,36 +561,57 @@ class UserStatus extends MessageSet {
         }
 
         // Topics
-        $in_topics = null;
         if (isset($cj->topics)) {
-            $in_topics = $this->make_keyed_object($cj->topics, "topics");
+            $tk = "topics";
         } else if (isset($cj->change_topics)) {
-            $in_topics = $this->make_keyed_object($cj->change_topics, "change_topics");
+            $tk = "change_topics";
+        } else if (isset($cj->default_topics)) {
+            $tk = "default_topics";
+        } else {
+            $tk = null;
         }
-        if ($in_topics !== null) {
-            $topics = !isset($cj->topics) && $old_user ? $old_user->topic_interest_map() : [];
-            $cj->bad_topics = array();
-            foreach ((array) $in_topics as $k => $v) {
-                if ($this->conf->topic_set()->get($k)) {
-                    $k = (int) $k;
-                } else if (($tid = $this->conf->topic_abbrev_matcher()->find1($k))) {
-                    $k = $tid;
-                } else {
-                    $cj->bad_topics[] = $k;
-                    continue;
-                }
-                if (is_bool($v)) {
-                    $v = $v ? 2 : 0;
-                } else if (is_string($v) && isset(self::$topic_interest_name_map[$v])) {
-                    $v = self::$topic_interest_name_map[$v];
-                } else if (is_numeric($v)) {
-                    $v = (int) $v;
-                } else {
-                    $this->error_at("topics", "Format error [topic interest]");
-                    continue;
-                }
-                $topics[$k] = $v;
+        if ($tk !== null
+            && ($in_topics = $this->make_keyed_object($cj->$tk, $tk)) !== null) {
+            $this->normalize_topics($cj, $old_user, $tk, $in_topics);
+        }
+    }
+
+    /** @param ?Contact $old_user
+     * @param string $tk
+     * @param object $in_topics */
+    private function normalize_topics($cj, $old_user, $tk, $in_topics) {
+        unset($cj->topics);
+        $cj->bad_topics = array();
+        if ($tk === "topics") {
+            $topics = [];
+        } else {
+            $topics = $old_user ? $old_user->topic_interest_map() : [];
+            if ($tk === "default_topics" && !empty($topics)) {
+                $tk = "ignore";
             }
+        }
+        foreach ((array) $in_topics as $k => $v) {
+            if ($this->conf->topic_set()->get($k)) {
+                $k = (int) $k;
+            } else if (($tid = $this->conf->topic_abbrev_matcher()->find1($k))) {
+                $k = $tid;
+            } else {
+                $cj->bad_topics[] = $k;
+                continue;
+            }
+            if (is_bool($v)) {
+                $v = $v ? 2 : 0;
+            } else if (is_string($v) && isset(self::$topic_interest_name_map[$v])) {
+                $v = self::$topic_interest_name_map[$v];
+            } else if (is_numeric($v)) {
+                $v = (int) $v;
+            } else {
+                $this->error_at("topics", "Format error [topic interest]");
+                continue;
+            }
+            $topics[$k] = $v;
+        }
+        if ($tk !== "ignore") {
             $cj->topics = (object) $topics;
         }
     }
@@ -1207,7 +1228,11 @@ class UserStatus extends MessageSet {
                 }
             }
             if (!empty($topics)) {
-                $cj->change_topics = (object) $topics;
+                if (strcasecmp(trim($line["topic_override"] ?? ""), "no") === 0) {
+                    $cj->default_topics = (object) $topics;
+                } else {
+                    $cj->change_topics = (object) $topics;
+                }
             }
         }
     }
