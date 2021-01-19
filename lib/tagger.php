@@ -1191,21 +1191,6 @@ class Tagger {
         }
     }
 
-    function view_score($tag) {
-        if ($tag === false) {
-            return VIEWSCORE_EMPTY;
-        } else if (($pos = strpos($tag, "~")) !== false) {
-            if (($pos == 0 && $tag[1] === "~")
-                || substr($tag, 0, $pos) != $this->_contactId) {
-                return VIEWSCORE_ADMINONLY;
-            } else {
-                return VIEWSCORE_REVIEWERONLY;
-            }
-        } else {
-            return VIEWSCORE_PC;
-        }
-    }
-
 
     /** @param list<string>|string $tags
      * @return string */
