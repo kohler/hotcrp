@@ -60,6 +60,8 @@ class ReviewField implements JsonSerializable {
     public $display_space;
     /** @var int */
     public $view_score;
+    /** @var int */
+    public $view_bits;
     /** @var bool */
     public $displayed = false;
     /** @var ?int */
@@ -76,20 +78,32 @@ class ReviewField implements JsonSerializable {
     public $json_storage;
     private $_typical_score = false;
 
-    static private $view_score_map = [
-        "secret" => VIEWSCORE_ADMINONLY, "admin" => VIEWSCORE_REVIEWERONLY,
-        "pc" => VIEWSCORE_PC,
-        "audec" => VIEWSCORE_AUTHORDEC, "authordec" => VIEWSCORE_AUTHORDEC,
-        "au" => VIEWSCORE_AUTHOR, "author" => VIEWSCORE_AUTHOR
-    ];
     // Hard-code the database's `view_score` values as of January 2016
     static private $view_score_upgrade_map = [
         -2 => "secret", -1 => "admin", 0 => "pc", 1 => "au"
+    ];
+    static private $view_score_map = [
+        "secret" => VIEWSCORE_ADMINONLY,
+        "admin" => VIEWSCORE_REVIEWERONLY,
+        "pc" => VIEWSCORE_PC,
+        "audec" => VIEWSCORE_AUTHORDEC,
+        "au" => VIEWSCORE_AUTHOR,
+        "authordec" => VIEWSCORE_AUTHORDEC,
+        "author" => VIEWSCORE_AUTHOR
     ];
     static private $view_score_rmap = [
         VIEWSCORE_ADMINONLY => "secret", VIEWSCORE_REVIEWERONLY => "admin",
         VIEWSCORE_PC => "pc", VIEWSCORE_AUTHORDEC => "audec",
         VIEWSCORE_AUTHOR => "au"
+    ];
+    static private $view_bits_map = [
+        "secret" => VIEWBIT_AD,
+        "admin" => VIEWBIT_AD | VIEWBIT_OW,
+        "pc" => VIEWBIT_AD | VIEWBIT_OW | VIEWBIT_CR | VIEWBIT_PC,
+        "audec" => VIEWBIT_AD | VIEWBIT_OW | VIEWBIT_CR | VIEWBIT_PC | VIEWBIT_AUD,
+        "au" => VIEWBIT_AD | VIEWBIT_OW | VIEWBIT_CR | VIEWBIT_PC | VIEWBIT_AUD | VIEWBIT_AU,
+        "authordec" => VIEWBIT_AD | VIEWBIT_OW | VIEWBIT_CR | VIEWBIT_PC | VIEWBIT_AUD,
+        "author" => VIEWBIT_AD | VIEWBIT_OW | VIEWBIT_CR | VIEWBIT_PC | VIEWBIT_AUD | VIEWBIT_AU
     ];
 
     function __construct(ReviewFieldInfo $finfo, Conf $conf) {
@@ -123,6 +137,10 @@ class ReviewField implements JsonSerializable {
         $this->view_score = VIEWSCORE_PC;
         if (is_string($vis) && isset(self::$view_score_map[$vis])) {
             $this->view_score = self::$view_score_map[$vis];
+        }
+        $this->view_bits = VIEWBIT_AD | VIEWBIT_OW | VIEWBIT_CR | VIEWBIT_PC;
+        if (is_string($vis) && isset(self::$view_bits_map[$vis])) {
+            $this->view_bits = self::$view_bits_map[$vis];
         }
         if ($j->position ?? null) {
             $this->displayed = true;
@@ -241,7 +259,7 @@ class ReviewField implements JsonSerializable {
     function include_word_count() {
         return $this->displayed
             && !$this->has_options
-            && $this->view_score >= VIEWSCORE_AUTHORDEC;
+            && ($this->view_bits & (VIEWBIT_AUD | VIEWBIT_AU)) !== 0;
     }
 
     function typical_score() {
@@ -605,16 +623,16 @@ class ReviewForm implements JsonSerializable {
     }
     /** @return array<string,ReviewField> */
     function user_visible_fields(Contact $user) {
-        $bound = $user->permissive_view_score_bound();
+        $bound = $user->permissive_view_bits();
         return array_filter($this->forder, function ($f) use ($bound) {
-            return $f->view_score > $bound;
+            return ($f->view_bits & $bound) !== 0;
         });
     }
     /** @return array<string,ReviewField> */
     function paper_visible_fields(Contact $user, PaperInfo $prow, ReviewInfo $rrow = null) {
-        $bound = $user->view_score_bound($prow, $rrow);
+        $bound = $user->view_bits($prow, $rrow);
         return array_filter($this->forder, function ($f) use ($bound, $rrow) {
-            return $f->view_score > $bound
+            return ($f->view_bits & $bound) !== 0
                 && (!$f->round_mask || $f->is_round_visible($rrow));
         });
     }
@@ -674,6 +692,7 @@ class ReviewForm implements JsonSerializable {
         }
         return $fmap;
     }
+
     function unparse_json($round_mask, $view_score_bound) {
         $fmap = array();
         foreach ($this->forder as $f) {

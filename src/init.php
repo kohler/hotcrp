@@ -36,6 +36,16 @@ define("VIEWSCORE_AUTHORDEC", 1);
 define("VIEWSCORE_AUTHOR", 2);
 define("VIEWSCORE_EMPTYBOUND", 3);     // bound that can see nothing
 
+define("VIEWBIT_AD", 0x1);    // admin
+define("VIEWBIT_OW", 0x2);    // owner
+define("VIEWBIT_CR", 0x4);    // coreviewer
+define("VIEWBIT_PC", 0x8);    // pc
+define("VIEWBIT_AU", 0x10);   // author
+define("VIEWBIT_AUD", 0x20);  // author who can view decision
+define("VIEWBITS_PC", 0xF);        // AD|OW|CR|PC
+define("VIEWBITS_AU", 0x2F);       // AD|OW|CR|PC|AU
+define("VIEWBITS_AU_AUD", 0x3F);   // AD|OW|CR|PC|AU|AUD
+
 define("NAME_E", 1);   // include email
 define("NAME_B", 2);   // always put email in angle brackets
 define("NAME_EB", 3);  // NAME_E + NAME_B

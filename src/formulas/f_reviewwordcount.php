@@ -13,15 +13,13 @@ class ReviewWordCount_Fexpr extends Fexpr {
         return $user->is_reviewer();
     }
     function compile(FormulaCompiler $state) {
-        if ($state->index_type !== Fexpr::IDX_MY) {
-            $view_score = $state->user->permissive_view_score_bound();
-            if (VIEWSCORE_PC <= $view_score) {
-                return "null";
-            }
+        if ($state->index_type !== Fexpr::IDX_MY
+            && ($state->user->permissive_view_bits() & VIEWBITS_PC) === 0) {
+            return "null";
         }
         $state->_ensure_review_word_counts();
         $rrow = $state->_rrow();
-        $rrow_vsb = $state->_rrow_view_score_bound();
-        return "(" . VIEWSCORE_AUTHORDEC . " > $rrow_vsb ? {$rrow}->reviewWordCount : null)";
+        $rrow_vb = $state->_rrow_view_bits();
+        return "({$rrow_vb} & " . VIEWBITS_AU_AUD . " ? {$rrow}->reviewWordCount : null)";
     }
 }

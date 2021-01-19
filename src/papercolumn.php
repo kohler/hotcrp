@@ -892,8 +892,8 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $this->score = $this->format_field->id;
     }
     function prepare(PaperList $pl, $visible) {
-        $bound = $pl->user->permissive_view_score_bound($pl->search->limit_author());
-        if ($this->format_field->view_score <= $bound) {
+        $bound = $pl->user->permissive_view_bits($pl->search->limit_author());
+        if (($this->format_field->view_bits & $bound) === 0) {
             return false;
         }
         if ($visible) {
@@ -907,11 +907,11 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $fid = $this->format_field->id;
         $row->ensure_review_score($this->format_field);
         $scores = [];
-        $vs = $this->format_field->view_score;
+        $vb = $this->format_field->view_bits;
         foreach ($row->viewable_submitted_reviews_by_user($pl->user) as $rrow) {
             if (isset($rrow->$fid)
                 && $rrow->$fid
-                && ($vs >= VIEWSCORE_PC || $vs > $pl->user->view_score_bound($row, $rrow)))
+                && ($vb & $pl->user->view_bits($row, $rrow)) !== 0)
                 $scores[$rrow->contactId] = $rrow->$fid;
         }
         return $scores;
@@ -929,9 +929,9 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         } else {
             $fs = [$user->conf->find_review_field($name)];
         }
-        $vsbound = $user->permissive_view_score_bound();
+        $vsbound = $user->permissive_view_bits();
         return array_filter($fs, function ($f) use ($vsbound) {
-            return $f && $f->has_options && $f->displayed && $f->view_score > $vsbound;
+            return $f && $f->has_options && $f->displayed && ($f->view_bits & $vsbound) !== 0;
         });
     }
     static function expand($name, Contact $user, $xfj, $m) {
@@ -948,11 +948,11 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         if (!$user->can_view_some_review()) {
             return [];
         }
-        $vsbound = $user->permissive_view_score_bound();
+        $vsbound = $user->permissive_view_bits();
         $cs = array_map(function ($f) {
             return $f->search_keyword();
         }, array_filter($user->conf->all_review_fields(), function ($f) use ($vsbound) {
-            return $f->has_options && $f->displayed && $f->view_score > $vsbound;
+            return $f->has_options && $f->displayed && ($f->view_bits & $vsbound) !== 0;
         }));
         if (!empty($cs)) {
             array_unshift($cs, "scores");

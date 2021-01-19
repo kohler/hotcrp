@@ -135,8 +135,8 @@ class ContactList {
             $this->have_folds["collab"] = true;
         }
         if (($f = $this->conf->review_field($fieldId))) {
-            $revViewScore = $this->user->permissive_view_score_bound();
-            if ($f->view_score <= $revViewScore || !$f->has_options) {
+            $view_bits = $this->user->permissive_view_bits();
+            if (($f->view_bits & $view_bits) === 0 || !$f->has_options) {
                 return false;
             }
             $this->qopt["reviews"] = true;

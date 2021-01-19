@@ -3605,10 +3605,7 @@ class Contact {
      * @param ?int $viewscore
      * @return bool */
     function can_view_review(PaperInfo $prow, $rrow, $viewscore = null) {
-        if (is_int($rrow)) {
-            $viewscore = $rrow;
-            $rrow = null;
-        } else if ($viewscore === null) {
+        if ($viewscore === null) {
             $viewscore = VIEWSCORE_AUTHOR;
         }
         assert(!$rrow || $prow->paperId == $rrow->paperId);
@@ -4434,6 +4431,55 @@ class Contact {
         } else {
             return VIEWSCORE_EMPTYBOUND;
         }
+    }
+
+    /** @return int */
+    function view_bits(PaperInfo $prow, ReviewInfo $rrow = null) {
+        // Deadlines are not considered.
+        // Null $rrow is interpreted as this user's review.
+        $rights = $this->rights($prow);
+        if ($rights->can_administer) {
+            return -1;
+        }
+        $bits = 0;
+        if ($rrow ? $this->is_owned_review($rrow) : $rights->allow_review) {
+            $bits |= VIEWBIT_OW;
+        } else if (!$this->can_view_review($prow, $rrow)) {
+            return 0;
+        }
+        if ($rights->reviewType) {
+            $bits |= VIEWBIT_CR;
+        }
+        if ($rights->allow_pc) {
+            $bits |= VIEWBIT_PC;
+        }
+        if ($rights->act_author_view) {
+            if ($prow->outcome && $rights->can_view_decision) {
+                $bits |= VIEWBIT_AUD;
+            }
+            $bits |= VIEWBIT_AU;
+        }
+        return $bits;
+    }
+
+    /** @param bool $as_author
+     * @return int */
+    function permissive_view_bits($as_author = false) {
+        if (!$as_author && $this->is_manager()) {
+            return -1;
+        }
+        $bits = 0;
+        if (!$as_author && $this->is_reviewer()) {
+            $bits |= VIEWBIT_OW | VIEWBIT_CR | ($this->isPC ? VIEWBIT_PC : 0);
+        }
+        if (($as_author || $this->is_author())
+            && ($this->conf->any_response_open || $this->conf->au_seerev != 0)) {
+            if ($this->can_view_some_decision_as_author()) {
+                $bits |= VIEWBIT_AUD;
+            }
+            $bits |= VIEWBIT_AU;
+        }
+        return $bits;
     }
 
 

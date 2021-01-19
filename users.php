@@ -418,10 +418,10 @@ if (count($tOpt) > 1) {
     echo "</td>";
     if (isset($pl->scoreMax)) {
         echo '<td class="pad">';
-        $revViewScore = $Viewer->permissive_view_score_bound();
+        $rev_view_bits = $Viewer->permissive_view_bits();
         $uldisplay = $Viewer->session("uldisplay", " tags overAllMerit ");
         foreach ($Conf->all_review_fields() as $f)
-            if ($f->view_score > $revViewScore
+            if (($f->view_bits & $rev_view_bits) !== 0
                 && $f->has_options
                 && $f->main_storage) {
                 $checked = strpos($uldisplay, $f->id) !== false;

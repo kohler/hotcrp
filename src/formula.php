@@ -858,17 +858,17 @@ class Score_Fexpr extends Fexpr {
         return $this->field->view_score > $user->permissive_view_score_bound();
     }
     function compile(FormulaCompiler $state) {
-        if ($this->field->view_score <= $state->user->permissive_view_score_bound()) {
+        if (($this->field->view_bits & $state->user->permissive_view_bits()) === 0) {
             return "null";
         }
         $fid = $this->field->id;
         $state->_ensure_rrow_score($fid);
         $rrow = $state->_rrow();
-        $rrow_vsb = $state->_rrow_view_score_bound();
+        $rrow_vsb = $state->_rrow_view_bits();
         if ($this->field->allow_empty) {
-            return "({$this->field->view_score} > $rrow_vsb ? (int) {$rrow}->$fid : null)";
+            return "({$this->field->view_bits} & $rrow_vsb ? (int) {$rrow}->$fid : null)";
         } else {
-            return "({$this->field->view_score} > $rrow_vsb && ({$rrow}->$fid ?? 0) ? (int) {$rrow}->$fid : null)";
+            return "({$this->field->view_bits} & $rrow_vsb && ({$rrow}->$fid ?? 0) ? (int) {$rrow}->$fid : null)";
         }
     }
 }
@@ -977,7 +977,7 @@ class FormulaCompiler {
     public $term_error = false;
 
     const LFLAG_RROW = 1;
-    const LFLAG_RROW_VSB = 2;
+    const LFLAG_RROW_VB = 2;
     const LFLAG_CID = 4;
     const LFLAG_PREFERENCES = 8;
 
@@ -1126,15 +1126,15 @@ class FormulaCompiler {
             return "\$rrow_{$this->_lprefix}";
         }
     }
-    function _rrow_view_score_bound() {
+    function _rrow_view_bits() {
         $rrow = $this->_rrow();
         if ($this->index_type === Fexpr::IDX_NONE) {
-            return $this->define_gvar("rrow_vsb", "({$rrow} ? \$contact->view_score_bound(\$prow, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ")");
+            return $this->define_gvar("rrow_vb", "({$rrow} ? \$contact->view_bits(\$prow, {$rrow}) : 0)");
         } else if ($this->index_type === Fexpr::IDX_MY) {
-            return $this->define_gvar("myrrow_vsb", "({$rrow} ? \$contact->view_score_bound(\$prow, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ")");
+            return $this->define_gvar("myrrow_vb", "({$rrow} ? \$contact->view_bits(\$prow, {$rrow}) : 0)");
         } else {
-            $this->_lflags |= self::LFLAG_RROW_VSB | self::LFLAG_CID;
-            return "\$rrow_vsb_{$this->_lprefix}";
+            $this->_lflags |= self::LFLAG_RROW_VB | self::LFLAG_CID;
+            return "\$rrow_vb_{$this->_lprefix}";
         }
     }
     function _ensure_rrow_score($fid) {
@@ -1234,8 +1234,8 @@ class FormulaCompiler {
         }
 
         if ($this->_lflags) {
-            if ($this->_lflags & self::LFLAG_RROW_VSB) {
-                array_unshift($this->lstmt, "\$rrow_vsb_{$p} = \$rrow_{$p} ? \$contact->view_score_bound(\$prow, \$rrow_{$p}) : " . VIEWSCORE_EMPTYBOUND . ";");
+            if ($this->_lflags & self::LFLAG_RROW_VB) {
+                array_unshift($this->lstmt, "\$rrow_vb_{$p} = \$rrow_{$p} ? \$contact->view_bits(\$prow, \$rrow_{$p}) : 0;");
             }
             if ($this->_lflags & self::LFLAG_RROW) {
                 if ($this->index_type === Fexpr::IDX_REVIEW) {
