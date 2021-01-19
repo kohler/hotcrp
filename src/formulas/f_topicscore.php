@@ -9,7 +9,7 @@ class TopicScore_Fexpr extends Fexpr {
     function inferred_index() {
         return Fexpr::IDX_PC;
     }
-    function visible_by(Contact $user) {
+    function viewable_by(Contact $user) {
         return $user->isPC;
     }
     function compile(FormulaCompiler $state) {

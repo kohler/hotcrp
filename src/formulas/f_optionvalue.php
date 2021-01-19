@@ -9,7 +9,7 @@ class OptionValue_Fexpr extends Fexpr {
         parent::__construct("optionvalue");
         $this->option = $option;
     }
-    function visible_by(Contact $user) {
+    function viewable_by(Contact $user) {
         return $user->can_view_some_option($this->option);
     }
     function compile(FormulaCompiler $state) {

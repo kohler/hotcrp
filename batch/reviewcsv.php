@@ -120,7 +120,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
             } else {
                 $x["format"] = $rrow->reviewFormat;
             }
-            foreach ($rf->paper_visible_fields($user, $prow, $rrow) as $fid => $f) {
+            foreach ($prow->viewable_review_fields($rrow, $user) as $fid => $f) {
                 $fv = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
                 if ($fv === "") {
                     // ignore

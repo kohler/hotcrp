@@ -24,17 +24,14 @@ class GetScores_ListAction extends ListAction {
                     $a["decision"] = $any_decision = $user->conf->decision_name($row->outcome);
                 }
                 foreach ($row->viewable_submitted_reviews_by_display($user) as $rrow) {
-                    $view_bound = $user->view_score_bound($row, $rrow);
                     $this_scores = false;
                     $b = $a;
-                    foreach ($rf->forder as $field => $f)
-                        if ($f->view_score > $view_bound
-                            && $f->has_options
-                            && $f->is_round_visible($rrow)
-                            && ($rrow->$field || $f->allow_empty)) {
+                    foreach ($row->viewable_review_fields($rrow, $user) as $field => $f) {
+                        if ($f->has_options && ($rrow->$field || $f->allow_empty)) {
                             $b[$f->search_keyword()] = $f->unparse_value($rrow->$field);
                             $any_scores[$f->search_keyword()] = $this_scores = true;
                         }
+                    }
                     if ($this_scores) {
                         if ($rrow->reviewOrdinal > 0) {
                             $any_ordinal = true;

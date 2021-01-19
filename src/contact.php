@@ -3243,7 +3243,7 @@ class Contact {
         return $this->privChair
             || $this->is_author()
             || $this->has_review()
-            || ($this->isPC && $this->conf->has_any_pc_visible_pdf());
+            || ($this->isPC && $this->conf->has_any_pc_viewable_pdf());
     }
 
     /** @return bool */
@@ -3559,6 +3559,11 @@ class Contact {
                         && !empty($this->relevant_resp_rounds()))
                     || ($this->conf->has_perm_tags()
                         && $this->some_author_perm_tag_allows("author-read-review"))));
+    }
+
+    /** @return bool */
+    function can_view_some_review_field(ReviewField $f) {
+        return $f->view_score > $this->permissive_view_score_bound();
     }
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
@@ -4379,7 +4384,7 @@ class Contact {
 
     /** @return bool */
     function can_view_formula(Formula $formula) {
-        return $formula->visible_by($this);
+        return $formula->viewable_by($this);
     }
 
     /** @return bool */

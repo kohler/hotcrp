@@ -62,7 +62,7 @@ class Tag_Fexpr extends Fexpr {
             return 0;
         }
     }
-    function visible_by(Contact $user) {
+    function viewable_by(Contact $user) {
         return $user->isPC;
     }
     function compile(FormulaCompiler $state) {

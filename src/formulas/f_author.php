@@ -36,7 +36,7 @@ class Author_Fexpr extends Fexpr {
             return false;
         }
     }
-    function visible_by(Contact $user) {
+    function viewable_by(Contact $user) {
         return $user->can_view_some_authors();
     }
     function compile(FormulaCompiler $state) {

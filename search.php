@@ -285,7 +285,7 @@ if ($pl_text) {
     }
 
     // Scores group
-    foreach ($Conf->review_form()->user_visible_fields($Me) as $f) {
+    foreach ($Conf->review_form()->viewable_fields($Me) as $f) {
         if ($f->has_options)
             $display_options->checkbox_item(30, $f->search_keyword(), $f->name_html);
     }

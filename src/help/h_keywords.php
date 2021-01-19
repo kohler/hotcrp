@@ -189,7 +189,7 @@ class Keywords_HelpTopic {
 
         // find names of review fields to demonstrate syntax
         $farr = [[], []];
-        foreach ($hth->conf->review_form()->user_visible_fields($hth->user) as $f) {
+        foreach ($hth->conf->review_form()->viewable_fields($hth->user) as $f) {
             $farr[$f->has_options ? 0 : 1][] = $f;
         }
         if (!empty($farr[0]) || !empty($farr[1])) {

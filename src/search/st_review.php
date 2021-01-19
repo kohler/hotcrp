@@ -17,7 +17,6 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     private $review_type = 0;
     /** @var int */
     private $completeness = 0;
-    public $view_score;
     public $round;
     public $review_testable = true;
     private $tokens;
@@ -179,8 +178,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 || ($this->review_type !== 0 && $this->review_type !== REVIEW_EXTERNAL)
                 || $this->rfield
                 || $this->wordcountexpr
-                || $this->ratings
-                || $this->view_score !== null) {
+                || $this->ratings) {
                 $this->review_type = -100;
             } else {
                 $this->review_type = REVIEW_REQUEST;
@@ -326,13 +324,12 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             && !$this->ratings->test($user, $prow, $rrow)) {
             return false;
         }
-        if ($this->view_score !== null
-            && $this->view_score <= $user->view_score_bound($prow, $rrow)) {
-            return false;
-        }
         if ($this->rfield) {
+            if ($this->rfield->view_score <= $user->view_score_bound($prow, $rrow)) {
+                return false;
+            }
             $fid = $this->rfield->id;
-            $val = isset($rrow->$fid) ? $rrow->$fid : null;
+            $val = $rrow->$fid ?? null;
             if ($this->rfield->has_options) {
                 if ($this->rfield_scoret >= 8) {
                     if (!$val || $this->rfield_scorex < 0) {
@@ -458,7 +455,6 @@ class Review_SearchTerm extends SearchTerm {
     static function parse_review_field($word, SearchWord $sword, PaperSearch $srch) {
         $f = $sword->kwdef->review_field;
         $rsm = new ReviewSearchMatcher(">0");
-        $rsm->view_score = $f->view_score;
 
         $contactword = "";
         while (preg_match('/\A([^<>].*?|[<>].+?)(:|[=!<>]=?|≠|≤|≥)(.*)\z/s', $word, $m)) {

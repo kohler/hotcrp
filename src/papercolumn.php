@@ -923,7 +923,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         return !$row->may_have_viewable_scores($this->format_field, $pl->user);
     }
 
-    static function user_visible_fields($name, Contact $user) {
+    static function user_viewable_fields($name, Contact $user) {
         if ($name === "scores") {
             $fs = $user->conf->all_review_fields();
         } else {
@@ -942,7 +942,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
             $cj["title"] = $f->search_keyword();
             $cj["title_html"] = $f->web_abbreviation();
             return (object) $cj;
-        }, self::user_visible_fields($name, $user));
+        }, self::user_viewable_fields($name, $user));
     }
     static function completions(Contact $user, $fxt) {
         if (!$user->can_view_some_review()) {

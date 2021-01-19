@@ -604,18 +604,10 @@ class ReviewForm implements JsonSerializable {
         return $this->forder;
     }
     /** @return array<string,ReviewField> */
-    function user_visible_fields(Contact $user) {
+    function viewable_fields(Contact $user) {
         $bound = $user->permissive_view_score_bound();
         return array_filter($this->forder, function ($f) use ($bound) {
             return $f->view_score > $bound;
-        });
-    }
-    /** @return array<string,ReviewField> */
-    function paper_visible_fields(Contact $user, PaperInfo $prow, ReviewInfo $rrow = null) {
-        $bound = $user->view_score_bound($prow, $rrow);
-        return array_filter($this->forder, function ($f) use ($bound, $rrow) {
-            return $f->view_score > $bound
-                && (!$f->round_mask || $f->is_round_visible($rrow));
         });
     }
     /** @return array<string,ReviewField> */
@@ -627,7 +619,7 @@ class ReviewForm implements JsonSerializable {
     /** @return list<ReviewField> */
     function example_fields(Contact $user) {
         $fs = [];
-        foreach ($this->user_visible_fields($user) as $f) {
+        foreach ($this->viewable_fields($user) as $f) {
             if ($f->has_options && $f->search_keyword()) {
                 if ($f->id === "overAllMerit") {
                     array_unshift($fs, $f);
@@ -702,7 +694,7 @@ class ReviewForm implements JsonSerializable {
             $format_description = $fi->description_preview_html();
         }
         echo '<div class="rve">';
-        foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f) {
+        foreach ($prow->viewable_review_fields($rrow, $contact) as $fid => $f) {
             $rval = "";
             if ($rrow) {
                 $rval = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_STRING);
@@ -1021,7 +1013,7 @@ $blind\n";
             $x .= "* Updated: " . $this->conf->unparse_time($time) . "\n";
         }
 
-        foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f) {
+        foreach ($prow->viewable_review_fields($rrow, $contact) as $fid => $f) {
             $fval = "";
             if (isset($rrow->$fid)) {
                 $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
@@ -1422,7 +1414,7 @@ $blind\n";
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        foreach ($this->paper_visible_fields($viewer, $prow, $rrow) as $fid => $f) {
+        foreach ($prow->viewable_review_fields($rrow, $viewer) as $fid => $f) {
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
                 $fval = $rrow->$fid ?? null;
@@ -1474,7 +1466,7 @@ $blind\n";
         } else {
             $xbarsep = "";
         }
-        foreach ($this->paper_visible_fields($contact, $prow, $rrow) as $fid => $f) {
+        foreach ($prow->viewable_review_fields($rrow, $contact) as $fid => $f) {
             if ($f->has_options && !$f->value_empty($rrow->$fid ?? null)) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
                     . $f->unparse_value((int) $rrow->$fid, ReviewField::VALUE_SC);
