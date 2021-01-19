@@ -9,8 +9,8 @@ class ReviewWordCount_Fexpr extends Fexpr {
     function inferred_index() {
         return Fexpr::IDX_PC;
     }
-    function view_score(Contact $user) {
-        return VIEWSCORE_PC;
+    function visible_by(Contact $user) {
+        return $user->is_reviewer();
     }
     function compile(FormulaCompiler $state) {
         if ($state->index_type !== Fexpr::IDX_MY) {

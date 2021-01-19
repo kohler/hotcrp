@@ -6,8 +6,11 @@ class OptionValue_Fexpr extends Fexpr {
     /** @var PaperOption */
     private $option;
     function __construct(PaperOption $option) {
-        parent::__construct("optionpresent");
+        parent::__construct("optionvalue");
         $this->option = $option;
+    }
+    function visible_by(Contact $user) {
+        return $user->can_view_some_option($this->option);
     }
     function compile(FormulaCompiler $state) {
         $id = $this->option->id;

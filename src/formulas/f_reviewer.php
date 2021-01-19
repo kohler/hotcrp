@@ -10,8 +10,8 @@ class Reviewer_Fexpr extends Fexpr {
     function inferred_index() {
         return Fexpr::IDX_REVIEW;
     }
-    function view_score(Contact $user) {
-        return VIEWSCORE_PC;
+    function visible_by(Contact $user) {
+        return $user->can_view_some_review_identity();
     }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["reviewSignatures"] = true;

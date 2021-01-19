@@ -162,12 +162,13 @@ class Fexpr implements JsonSerializable {
         return $lt;
     }
 
-    function view_score(Contact $user) {
-        $score = VIEWSCORE_AUTHOR;
+    /** @return bool */
+    function visible_by(Contact $user) {
         foreach ($this->args as $e) {
-            $score = min($score, $e->view_score($user));
+            if (!$e->visible_by($user))
+                return false;
         }
-        return $score;
+        return true;
     }
 
     static function cast_bool($t) {
@@ -270,6 +271,9 @@ class Constant_Fexpr extends Fexpr {
         }
         $this->_format = $format;
     }
+    function visible_by(Contact $user) {
+        return true;
+    }
     function compile(FormulaCompiler $state) {
         return $this->x;
     }
@@ -317,11 +321,9 @@ class Ternary_Fexpr extends Fexpr {
     function typecheck_format() {
         return self::common_format([$this->args[1], $this->args[2]]);
     }
-    function view_score(Contact $user) {
-        $t = $this->args[0]->view_score($user);
-        $tt = $this->args[1]->view_score($user);
-        $tf = $this->args[2]->view_score($user);
-        return min($t, max($tt, $tf));
+    function visible_by(Contact $user) {
+        return $this->args[2]->visible_by($user)
+            || ($this->args[0]->visible_by($user) && $this->args[1]->visible_by($user));
     }
     function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
@@ -394,8 +396,8 @@ class Or_Fexpr extends Fexpr {
     function typecheck_format() {
         return self::common_format($this->args);
     }
-    function view_score(Contact $user) {
-        return $this->args[0]->view_score($user);
+    function visible_by(Contact $user) {
+        return $this->args[0]->visible_by($user) || $this->args[1]->visible_by($user);
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
@@ -852,8 +854,8 @@ class Score_Fexpr extends Fexpr {
     function inferred_index() {
         return self::IDX_REVIEW;
     }
-    function view_score(Contact $user) {
-        return $this->field->view_score;
+    function visible_by(Contact $user) {
+        return $this->field->view_score > $user->permissive_view_score_bound();
     }
     function compile(FormulaCompiler $state) {
         if ($this->field->view_score <= $state->user->permissive_view_score_bound()) {
@@ -889,6 +891,9 @@ class Let_Fexpr extends Fexpr {
         $ok1 = $this->args[1]->typecheck($formula);
         $this->_format = $ok0 && $ok1 ? $this->args[1]->format() : self::FERROR;
         return $ok0 && $ok1;
+    }
+    function visible_by(Contact $user) {
+        return $this->args[1]->visible_by($user);
     }
     function compile(FormulaCompiler $state) {
         $this->vardef->ltemp = $state->_addltemp($this->args[0]->compile($state));
@@ -2295,12 +2300,9 @@ class Formula implements JsonSerializable {
         }
     }
 
-    function view_score(Contact $user) {
-        if ($this->check($this->user ?? $user)) {
-            return $this->_parse->fexpr->view_score($user);
-        } else {
-            return VIEWSCORE_PC;
-        }
+    function visible_by(Contact $user) {
+        return $this->check($this->user ?? $user)
+            && $this->_parse->fexpr->visible_by($user);
     }
 
     function column_header() {

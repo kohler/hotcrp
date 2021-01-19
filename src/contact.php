@@ -4379,7 +4379,7 @@ class Contact {
 
     /** @return bool */
     function can_view_formula(Formula $formula) {
-        return $formula->view_score($this) > $this->permissive_view_score_bound();
+        return $formula->visible_by($this);
     }
 
     /** @return bool */

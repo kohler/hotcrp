@@ -62,8 +62,8 @@ class Tag_Fexpr extends Fexpr {
             return 0;
         }
     }
-    function view_score(Contact $user) {
-        return VIEWSCORE_PC;
+    function visible_by(Contact $user) {
+        return $user->isPC;
     }
     function compile(FormulaCompiler $state) {
         $tags = $state->_add_tags();

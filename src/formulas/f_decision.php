@@ -6,14 +6,8 @@ class Decision_Fexpr extends Fexpr {
     function __construct() {
         $this->_format = self::FDECISION;
     }
-    function view_score(Contact $user) {
-        if ($user->can_view_some_decision_as_author()) {
-            return VIEWSCORE_AUTHOR;
-        } else if ($user->conf->time_pc_view_decision(false)) {
-            return VIEWSCORE_PC;
-        } else {
-            return VIEWSCORE_ADMINONLY;
-        }
+    function visible_by(Contact $user) {
+        return $user->can_view_some_decision();
     }
     function compile(FormulaCompiler $state) {
         if ($state->check_gvar('$decision')) {

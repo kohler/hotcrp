@@ -10,6 +10,9 @@ class OptionPresent_Fexpr extends Fexpr {
         $this->option = $option;
         $this->_format = self::FBOOL;
     }
+    function visible_by(Contact $user) {
+        return $user->can_view_some_option($this->option);
+    }
     function compile(FormulaCompiler $state) {
         $id = $this->option->id;
         $ovp = "\$optpresent" . ($id < 0 ? "m" . -$id : $id);

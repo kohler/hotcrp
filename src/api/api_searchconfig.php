@@ -148,7 +148,7 @@ class SearchConfig_API {
             $pfx = $f->name ? htmlspecialchars($f->name) . ": " : "";
             if ($f->check($user)) {
                 if ((!$fdef || $fdef->expression !== $f->expression)
-                    && $f->view_score($user) <= $user->permissive_view_score_bound())  {
+                    && !$user->can_view_formula($f))  {
                     $msgset->error_at("formulaexpression_" . $id2idx[$f->formulaId], $pfx . "This expression refers to properties you can’t access.");
                 }
             } else {

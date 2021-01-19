@@ -206,7 +206,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
                 }
                 $this->formulaf = $this->formula->compile_function();
             }
-            if ($this->formula->view_score($state->user) < $state->user->view_score_bound($prow)) {
+            if (!$state->user->can_view_formula($this->formula)) {
                 $state->error("“" . htmlspecialchars($xvalue) . "”: Can’t compute this formula here.");
                 return false;
             }

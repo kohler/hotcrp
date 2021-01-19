@@ -179,14 +179,13 @@ class Formula_PaperColumnFactory {
         return new Formula_PaperColumn($f->conf, (object) $cj);
     }
     static function expand($name, Contact $user, $xfj, $m) {
-        $vsbound = $user->permissive_view_score_bound();
         if ($name === "formulas") {
-            return array_map(function ($f) use ($xfj) {
-                return Formula_PaperColumnFactory::make($f, $xfj);
-            }, array_filter($user->conf->named_formulas(),
-                function ($f) use ($user, $vsbound) {
-                    return $f->view_score($user) > $vsbound;
-                }));
+            $fs = [];
+            foreach ($user->conf->named_formulas() as $id => $f) {
+                if ($user->can_view_formula($f))
+                    $fs[$id] = Formula_PaperColumnFactory::make($f, $xfj);
+            }
+            return $fs;
         }
 
         $ff = null;
@@ -215,7 +214,7 @@ class Formula_PaperColumnFactory {
         }
 
         if ($ff && $ff->check($user)) {
-            if ($ff->view_score($user) > $vsbound) {
+            if ($user->can_view_formula($ff)) {
                 return [Formula_PaperColumnFactory::make($ff, $xfj)];
             }
         } else if ($ff && $want_error) {
@@ -225,9 +224,8 @@ class Formula_PaperColumnFactory {
     }
     static function completions(Contact $user, $fxt) {
         $cs = ["(<formula>)"];
-        $vsbound = $user->permissive_view_score_bound();
         foreach ($user->conf->named_formulas() as $f) {
-            if ($f->view_score($user) > $vsbound) {
+            if ($user->can_view_formula($f)) {
                 $cs[] = preg_match('/\A[-A-Za-z_0-9:]+\z/', $f->name) ? $f->name : "\"{$f->name}\"";
             }
         }
