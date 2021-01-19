@@ -70,7 +70,7 @@ if ($users) {
             && $cdbu->activity_at) {
             /* skip */;
         } else if ($cdbu && $cdbu->password !== null) {
-            $qv[] = [$cdbid, $confid, $cdb_roles, $u->lastLogin];
+            $qv[] = [$cdbid, $confid, $cdb_roles, $u->activity_at];
         } else {
             $cdbid = $u->contactdb_update();
         }
