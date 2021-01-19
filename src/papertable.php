@@ -2252,10 +2252,10 @@ class PaperTable {
             $t .= '<tbody>';
             foreach ($subrev as $r) {
                 $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
-                if (get($r, 2)) {
+                if ($r[2] ?? null) {
                     foreach ($score_header as $fid => $header_needed) {
                         if ($header_needed !== "") {
-                            $x = get($r[2], $fid);
+                            $x = $r[2][$fid] ?? null;
                             $t .= $x ? : "<td class=\"rlscore rs_$fid\"></td>";
                         }
                     }

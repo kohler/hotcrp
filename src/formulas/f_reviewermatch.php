@@ -3,10 +3,15 @@
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
 class ReviewerMatch_Fexpr extends Fexpr {
+    /** @var Contact */
     private $user;
+    /** @var string */
     private $arg;
+    /** @var int */
     private $flags;
+    /** @var bool */
     private $istag;
+    /** @var ContactSearch */
     private $csearch;
     private static $tagmap = array();
     private static $tagmap_conf = null;
@@ -64,8 +69,8 @@ class ReviewerMatch_Fexpr extends Fexpr {
             self::$tagmap = [];
             self::$tagmap_conf = $conf;
         }
-        if (($a = get(self::$tagmap, $tag)) === null) {
-            $a = array();
+        if (($a = self::$tagmap[$tag] ?? null) === null) {
+            $a = [];
             foreach ($conf->pc_members() as $pc) {
                 if (($v = $pc->tag_value($tag)) !== null) {
                     $a[$pc->contactId] = $v ? : true;
@@ -73,6 +78,6 @@ class ReviewerMatch_Fexpr extends Fexpr {
             }
             self::$tagmap[$tag] = $a;
         }
-        return get($a, $cid) ? : false;
+        return $a[$cid] ?? false;
     }
 }

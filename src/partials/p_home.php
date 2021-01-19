@@ -183,16 +183,19 @@ class Home_Partial {
 
         $this->_merit_field = null;
         $all_review_fields = $conf->all_review_fields();
-        $merit_field = get($all_review_fields, "overAllMerit");
-        if ($merit_field && $merit_field->displayed && $merit_field->main_storage)
+        $merit_field = $all_review_fields["overAllMerit"] ?? null;
+        if ($merit_field && $merit_field->displayed && $merit_field->main_storage) {
             $this->_merit_field = $merit_field;
+        }
 
         // Information about my reviews
         $where = array();
-        if ($user->contactId)
+        if ($user->contactId) {
             $where[] = "PaperReview.contactId=" . $user->contactId;
-        if (($tokens = $user->review_tokens()))
+        }
+        if (($tokens = $user->review_tokens())) {
             $where[] = "reviewToken in (" . join(",", $tokens) . ")";
+        }
         $this->_my_rinfo = null;
         if (!empty($where)) {
             $rinfo = (object) ["num_submitted" => 0, "num_needs_submit" => 0, "unsubmitted_rounds" => [], "scores" => []];

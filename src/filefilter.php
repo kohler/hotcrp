@@ -83,7 +83,7 @@ class FileFilterJsonExpander {
                 $ff = call_user_func($fj->callback, $this->conf, $fj);
             }
             if ($ff) {
-                $ff->id = get($fj, "id");
+                $ff->id = $fj->id ?? null;
                 $ff->name = $fj->name;
                 $this->conf->_file_filters[$ff->name] = $ff;
                 return true;

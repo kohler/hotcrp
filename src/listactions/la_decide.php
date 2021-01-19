@@ -16,7 +16,7 @@ class Decide_ListAction extends ListAction {
         $aset = new AssignmentSet($user, true);
         $decision = $qreq->decision;
         if (is_numeric($decision)) {
-            $decision = get($user->conf->decision_map(), +$decision);
+            $decision = ($user->conf->decision_map())[+$decision] ?? null;
         }
         $aset->parse("paper,action,decision\n" . join(" ", $ssel->selection()) . ",decision," . CsvGenerator::quote($decision));
         if ($aset->execute()) {

@@ -1350,7 +1350,9 @@ class Checkbox_PaperOption extends PaperOption {
 }
 
 class Selector_PaperOption extends PaperOption {
+    /** @var list<string> */
     private $selector;
+    /** @var ?AbbreviationMatcher */
     private $_selector_am;
 
     function __construct(Conf $conf, $args) {

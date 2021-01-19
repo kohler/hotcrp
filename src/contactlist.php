@@ -994,7 +994,7 @@ class ContactList {
         $uldisplay = $this->user->session("uldisplay", " tags overAllMerit ");
         $foldclasses = array();
         foreach (self::$folds as $k => $fold) {
-            if (get($this->have_folds, $fold) !== null) {
+            if (($this->have_folds[$fold] ?? null) !== null) {
                 $this->have_folds[$fold] = strpos($uldisplay, " $fold ") !== false;
                 $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
             }

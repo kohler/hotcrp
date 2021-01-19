@@ -283,8 +283,8 @@ function update_schema_paper_review_null_main_fields(Conf $conf) {
         $tfields = $rrow->tfields ? json_decode($rrow->tfields, true) : [];
         $any = false;
         foreach (ReviewInfo::$text_field_map as $kmain => $kjson) {
-            $mainval = (string) get($rrow, $kmain);
-            $jsonval = (string) get($tfields, $kjson);
+            $mainval = (string) ($rrow->$kmain ?? "");
+            $jsonval = (string) ($tfields[$kjson] ?? "");
             if ($mainval !== $jsonval) {
                 error_log("{$conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: {$kmain} ["
                     . simplify_whitespace(UnicodeHelper::utf8_abbreviate($mainval === "" ? "EMPTY" : $mainval, 20))

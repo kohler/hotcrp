@@ -1207,6 +1207,8 @@ class Tagger {
     }
 
 
+    /** @param list<string>|string $tags
+     * @return string */
     function unparse($tags) {
         if ($tags === "" || (is_array($tags) && count($tags) == 0)) {
             return "";
@@ -1221,6 +1223,8 @@ class Tagger {
         return trim($tags);
     }
 
+    /** @param list<string>|string $tags
+     * @return string */
     function unparse_hashed($tags) {
         if (($tags = $this->unparse($tags)) !== "") {
             $tags = str_replace(" ", " #", "#" . $tags);
@@ -1250,6 +1254,9 @@ class Tagger {
 
     const DECOR_PAPER = 0;
     const DECOR_USER = 1;
+    /** @param list<string>|string $tags
+     * @param int $type
+     * @return string */
     function unparse_decoration_html($tags, $type = 0) {
         if (is_array($tags)) {
             $tags = join(" ", $tags);
@@ -1308,6 +1315,8 @@ class Tagger {
         return $x === "" ? "" : '<span class="tagdecoration">' . $x . '</span>';
     }
 
+    /** @param string $tag
+     * @return string|false */
     function link_base($tag) {
         if (ctype_digit($tag[0])) {
             $p = strlen((string) $this->_contactId);
@@ -1319,6 +1328,8 @@ class Tagger {
         return Tagger::base($tag);
     }
 
+    /** @param string $tag
+     * @return string|false */
     function link($tag) {
         if (ctype_digit($tag[0])) {
             $p = strlen((string) $this->_contactId);
@@ -1341,6 +1352,8 @@ class Tagger {
         return $this->conf->hoturl("search", ["q" => $q]);
     }
 
+    /** @param list<string>|string $viewable
+     * @return string */
     function unparse_link($viewable) {
         $tags = $this->unparse($viewable);
         if ($tags === "") {

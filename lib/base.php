@@ -320,7 +320,8 @@ function json_encode_db($x, $flags = 0) {
 
 /** @param object|array|null $var
  * @param string|int $idx
- * @return mixed */
+ * @return mixed
+ * @deprecated */
 function get($var, $idx, $default = null) {
     if (is_array($var)) {
         return array_key_exists($idx, $var) ? $var[$idx] : $default;

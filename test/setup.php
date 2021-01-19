@@ -457,7 +457,7 @@ function paper_tag_normalize($prow) {
     $pcm = $prow->conf->pc_members();
     foreach (explode(" ", $prow->all_tags_text()) as $tag) {
         if (($twiddle = strpos($tag, "~")) > 0
-            && ($c = get($pcm, substr($tag, 0, $twiddle)))) {
+            && ($c = $pcm[(int) substr($tag, 0, $twiddle)] ?? null)) {
             $at = strpos($c->email, "@");
             $tag = ($at ? substr($c->email, 0, $at) : $c->email) . substr($tag, $twiddle);
         }

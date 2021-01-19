@@ -62,7 +62,7 @@ class AuthorMatcher extends Author {
             $directs = $wstrong = $wweak = $alts = [];
             $any_strong_alternate = false;
             foreach ($m[0] as $w) {
-                $aw = get($wordinfo, $w);
+                $aw = $wordinfo[$w] ?? null;
                 if ($aw && isset($aw->stop) && $aw->stop) {
                     continue;
                 }
@@ -102,7 +102,7 @@ class AuthorMatcher extends Author {
                 foreach (explode(" ", $alt) as $altw) {
                     if ($altw !== "") {
                         if (!empty($wstrong)) {
-                            $aw = get($wordinfo, $altw);
+                            $aw = $wordinfo[$altw] ?? null;
                             if (!$aw || !isset($aw->weak) || !$aw->weak) {
                                 $wstrong[] = $altw;
                                 $have_strong = true;
@@ -260,6 +260,7 @@ class AuthorMatcher extends Author {
         return self::highlight_all($au, [$this]);
     }
 
+    /** @return array<string,object> */
     static function wordinfo() {
         // XXX validate input JSON
         if (self::$wordinfo === null) {
@@ -277,7 +278,7 @@ class AuthorMatcher extends Author {
         $result = true;
         $wordinfo = self::wordinfo();
         foreach ($am_words as $w) { // $am_words contains no alternates
-            $aw = get($wordinfo, $w);
+            $aw = $wordinfo[$w] ?? null;
             $weak = $aw && isset($aw->weak) && $aw->weak;
             $saw_w = in_array($w, $m[0]);
             if (!$saw_w && $aw && isset($aw->alternate)) {
@@ -302,7 +303,7 @@ class AuthorMatcher extends Author {
                     // If all are found, exit; check if the found alternate is strong
                     if ($saw_w) {
                         if ($weak && count($altws) == 1) {
-                            $aw2 = get($wordinfo, $alt);
+                            $aw2 = $wordinfo[$alt] ?? null;
                             if (!$aw2 || !isset($aw2->weak) || !$aw2->weak)
                                 $weak = false;
                         }
@@ -375,7 +376,7 @@ class AuthorMatcher extends Author {
         $nc = 0;
         $ninit = 0;
         foreach ($m[0] as $i => $w) {
-            $aw = get($wordinfo, strtolower($w));
+            $aw = $wordinfo[strtolower($w)] ?? null;
             if ($aw) {
                 if (isset($aw->nameish)) {
                     if ($aw->nameish === false) {

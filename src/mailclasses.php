@@ -65,7 +65,7 @@ class MailRecipients {
             foreach ($this->conf->decision_map() as $dnum => $dname) {
                 if ($dnum) {
                     $k = "dec:$dname";
-                    $hide = !get($dec_pcount, $dnum);
+                    $hide = !($dec_pcount[$dnum] ?? null);
                     $this->defsel("dec:$dname", "Contact authors of " . htmlspecialchars($dname) . " papers", $hide ? self::F_HIDE : 0);
                 }
             }

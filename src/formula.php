@@ -2096,6 +2096,8 @@ class Formula implements JsonSerializable {
         return $t;
     }
 
+    /** @param int $sortable
+     * @return callable(PaperInfo,?int,Contact):mixed */
     private function _compile_function($sortable) {
         if ($this->check()) {
             $state = new FormulaCompiler($this->user);
@@ -2110,14 +2112,17 @@ class Formula implements JsonSerializable {
         return eval("return function ($args) {\n  $t};");
     }
 
+    /** @return callable(PaperInfo,?int,Contact):mixed */
     function compile_function() {
         return $this->_compile_function(0);
     }
 
+    /** @return callable(PaperInfo,?int,Contact):mixed */
     function compile_sortable_function() {
         return $this->_compile_function(1);
     }
 
+    /** @return callable(PaperInfo,?int,Contact):mixed */
     function compile_json_function() {
         return $this->_compile_function(2);
     }

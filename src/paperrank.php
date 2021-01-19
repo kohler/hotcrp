@@ -207,10 +207,10 @@ class PaperRank {
         $minuserrank = $maxuserrank = array();
         foreach ($this->userrank as $user => &$ranks) {
             foreach ($ranks as $rr) {
-                if (get($minuserrank, $user, $rr[0] + 1) > $rr[0]) {
+                if (($minuserrank[$user] ?? $rr[0] + 1) > $rr[0]) {
                     $minuserrank[$user] = $rr[0];
                 }
-                if (get($maxuserrank, $user, $rr[0] - 1) < $rr[0]) {
+                if (($maxuserrank[$user] ?? $rr[0] - 1) < $rr[0]) {
                     $maxuserrank[$user] = $rr[0];
                 }
             }

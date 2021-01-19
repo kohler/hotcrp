@@ -285,7 +285,7 @@ class Tracks_SettingParser extends SettingParser {
                     }
                 }
             }
-            if ($ok && (count((array) $t) || get($tracks, "_"))) {
+            if ($ok && (count((array) $t) || ($tracks->_ ?? null))) {
                 $tracks->$trackname = $t;
             }
         }

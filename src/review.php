@@ -53,15 +53,22 @@ class ReviewField implements JsonSerializable {
     public $_search_keyword;
     /** @var bool */
     public $has_options;
-    public $options = [];
+    /** @var array<mixed,string> */
+    public $options;
     /** @var int */
     public $option_letter = 0;
     public $display_space;
+    /** @var int */
     public $view_score;
+    /** @var bool */
     public $displayed = false;
+    /** @var ?int */
     public $display_order;
+    /** @var string */
     public $option_class_prefix = "sv";
+    /** @var int */
     public $round_mask = 0;
+    /** @var bool */
     public $allow_empty = false;
     /** @var ?non-empty-string */
     public $main_storage;
@@ -121,7 +128,8 @@ class ReviewField implements JsonSerializable {
             $this->displayed = true;
             $this->display_order = $j->position;
         } else {
-            $this->displayed = $this->display_order = false;
+            $this->displayed = false;
+            $this->display_order = null;
         }
         $this->round_mask = $j->round_mask ?? 0;
         if ($this->has_options) {
@@ -134,7 +142,7 @@ class ReviewField implements JsonSerializable {
             } else {
                 $this->option_letter = 0;
             }
-            $this->options = array();
+            $this->options = [];
             if ($this->option_letter) {
                 foreach (array_reverse($options, true) as $i => $n) {
                     $this->options[chr($this->option_letter - $i - 1)] = $n;
@@ -177,10 +185,7 @@ class ReviewField implements JsonSerializable {
         }
         $j->visibility = $this->unparse_visibility();
         if ($this->has_options) {
-            $j->options = array();
-            foreach ($this->options as $otext) {
-                $j->options[] = $otext;
-            }
+            $j->options = array_values($this->options ?? []);
             if ($this->option_letter) {
                 $j->options = array_reverse($j->options);
                 $j->option_letter = chr($this->option_letter - count($j->options));
@@ -207,17 +212,9 @@ class ReviewField implements JsonSerializable {
         return $this->unparse_json();
     }
 
-    /** @int $view_score */
-    static function unparse_visibility_value($view_score) {
-        if (isset(self::$view_score_rmap[$view_score])) {
-            return self::$view_score_rmap[$view_score];
-        } else {
-            return $view_score;
-        }
-    }
-
+    /** @return string */
     function unparse_visibility() {
-        return self::unparse_visibility_value($this->view_score);
+        return self::$view_score_rmap[$this->view_score] ?? (string) $this->view_score;
     }
 
     /** @param ?int|string $value
@@ -553,9 +550,9 @@ class ReviewForm implements JsonSerializable {
     static private $review_author_seen = null;
 
     static function fmap_compare($a, $b) {
-        if ($a->displayed != $b->displayed) {
+        if ($a->displayed !== $b->displayed) {
             return $a->displayed ? -1 : 1;
-        } else if ($a->displayed && $a->display_order != $b->display_order) {
+        } else if ($a->displayed && $a->display_order !== $b->display_order) {
             return $a->display_order < $b->display_order ? -1 : 1;
         } else {
             return strcmp($a->id, $b->id);

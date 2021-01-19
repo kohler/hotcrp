@@ -6,7 +6,7 @@ class GetReviewCSV_ListAction extends ListAction {
     private $include_paper;
     private $author_view;
     function __construct($conf, $fj) {
-        $this->author_view = !!get($fj, "author_view");
+        $this->author_view = !!($fj->author_view ?? false);
     }
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_review();
@@ -43,7 +43,7 @@ class GetReviewCSV_ListAction extends ListAction {
                     }
                     foreach ($rf->paper_visible_fields($viewer, $prow, $rrow) as $f) {
                         $fields[$f->id] = true;
-                        $text[$f->name] = $f->unparse_value(get($rrow, $f->id), ReviewField::VALUE_TRIM);
+                        $text[$f->name] = $f->unparse_value($rrow->{$f->id}, ReviewField::VALUE_TRIM);
                     }
                     $items[] = $text;
                     $pids[$prow->paperId] = true;

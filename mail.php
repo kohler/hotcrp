@@ -126,7 +126,7 @@ if (isset($Qreq->loadtmpl)) {
         $template = (array) $Conf->mail_template("generic");
     }
     if (!isset($Qreq->to) || $Qreq->loadtmpl != -1) {
-        $Qreq->to = get($template, "default_recipients", "s");
+        $Qreq->to = $template["default_recipients"] ?? "s";
     }
     if (isset($template["default_search_type"])) {
         $Qreq->t = $template["default_search_type"];
@@ -623,7 +623,7 @@ foreach (array_keys($Conf->mail_template_map()) as $tname) {
     if (($template = $Conf->mail_template($tname))
         && (isset($template->title) && $template->title !== false)
         && (!isset($template->allow_template) || $template->allow_template)
-        && ($Me->privChair || get($template, "allow_pc")))
+        && ($Me->privChair || ($template->allow_pc ?? false)))
         $tmpl[] = $template;
 }
 usort($tmpl, "Conf::xt_position_compare");

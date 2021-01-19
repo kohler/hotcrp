@@ -121,10 +121,15 @@ class FormatSpec {
             return true;
         }
         $pages = $this->quietpages->$k;
-        if (is_object($pages) || is_associative_array($pages)) {
-            return !get($pages, $pageno, false);
+        if (is_object($pages)) {
+            $spageno = (string) $pageno;
+            return $pages->$spageno ?? false;
         } else if (is_array($pages)) {
-            return !in_array($pageno, $pages);
+            if (is_associative_array($pages)) {
+                return $pages[$pageno] ?? false;
+            } else {
+                return !in_array($pageno, $pages);
+            }
         } else if (is_int($pages)) {
             return $pages != $pageno;
         } else {

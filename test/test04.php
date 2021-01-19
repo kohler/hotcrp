@@ -78,7 +78,7 @@ xassert(!user($marina)->check_password("ncurses"));
 save_password($marina, null, true);
 $info = user($marina)->check_password_info("ncurses");
 xassert(!$info["ok"]);
-xassert(get($info, "unset"));
+xassert($info["unset"] ?? null);
 
 // restore to "this is a cdb password"
 user($marina)->change_password("isdevitch");

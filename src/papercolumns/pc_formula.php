@@ -192,7 +192,7 @@ class Formula_PaperColumnFactory {
         $ff = null;
         if (str_starts_with($name, "formula")
             && ctype_digit(substr($name, 7))) {
-            $ff = get($user->conf->named_formulas(), substr($name, 7));
+            $ff = ($user->conf->named_formulas())[(int) substr($name, 7)] ?? null;
         }
 
         $want_error = strpos($name, "(") !== false;

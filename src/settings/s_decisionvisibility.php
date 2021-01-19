@@ -35,6 +35,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
         }
 
         if ($sv->has_interest("au_seerev")
+            && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
             && !array_filter($sv->conf->review_form()->all_fields(), function ($f) {
                 return $f->view_score >= VIEWSCORE_AUTHORDEC;
             })) {
@@ -43,8 +44,8 @@ class DecisionVisibility_SettingParser extends SettingParser {
                 . $sv->setting_link("the review form", "review_form") . ".");
             $sv->warning_at("au_seerev", false);
         } else if ($sv->has_interest("au_seerev")
-                   && $sv->newv("seedec") != Conf::SEEDEC_ALL
                    && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
+                   && $sv->newv("seedec") != Conf::SEEDEC_ALL
                    && !array_filter($sv->conf->review_form()->all_fields(), function ($f) {
                        return $f->view_score >= VIEWSCORE_AUTHOR;
                    })
