@@ -5,8 +5,8 @@
 class OptionPresent_SearchTerm extends Option_SearchTerm {
     private $is_multi;
 
-    function __construct(PaperOption $o, $is_multi = false) {
-        parent::__construct("optionpresent", $o);
+    function __construct(Contact $user, PaperOption $o, $is_multi = false) {
+        parent::__construct($user, $o, "optionpresent");
         $this->is_multi = $is_multi;
     }
     function debug_json() {
@@ -16,13 +16,13 @@ class OptionPresent_SearchTerm extends Option_SearchTerm {
         $sqi->add_options_columns();
         return $this->is_multi ? "true" : parent::sqlexpr($sqi);
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
-        return $srch->user->can_view_option($row, $this->option)
+    function test(PaperInfo $row, $rrow) {
+        return $this->user->can_view_option($row, $this->option)
             && ($ov = $row->option($this->option))
             && $this->option->value_present($ov);
     }
-    function script_expression(PaperInfo $row, PaperSearch $srch) {
-        if ($srch->user->can_view_option($row, $this->option)) {
+    function script_expression(PaperInfo $row) {
+        if ($this->user->can_view_option($row, $this->option)) {
             return $this->option->present_script_expression();
         } else {
             return false;

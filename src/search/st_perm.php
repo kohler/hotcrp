@@ -3,20 +3,23 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Perm_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
     /** @var string */
     private $perm;
     /** @param string $perm */
-    function __construct($perm) {
+    function __construct(Contact $user, $perm) {
         parent::__construct("perm");
+        $this->user = $user;
         $this->perm = $perm;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if (strcasecmp($word, "author-edit") === 0
             || strcasecmp($word, "author-write") === 0) {
-            return new Perm_SearchTerm("author-write");
+            return new Perm_SearchTerm($srch->user, "author-write");
         } else if (strcasecmp($word, "author-edit-final") === 0
                    || strcasecmp($word, "author-write-final") === 0) {
-            return new Perm_SearchTerm("author-write-final");
+            return new Perm_SearchTerm($srch->user, "author-write-final");
         } else {
             $srch->warn("Unknown permission.");
             return new False_SearchTerm;
@@ -29,12 +32,12 @@ class Perm_SearchTerm extends SearchTerm {
             return "(Paper.timeWithdrawn<=0)";
         }
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
+    function test(PaperInfo $row, $rrow) {
         if ($this->perm === "author-write") {
             return $row->can_author_edit_paper();
         } else if ($this->perm === "author-write-final") {
             return $row->can_author_edit_final_paper()
-                && $srch->user->can_view_decision($row);
+                && $this->user->can_view_decision($row);
         } else {
             return false;
         }

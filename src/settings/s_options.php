@@ -131,7 +131,7 @@ class Options_SettingRenderer {
     static function validate_condition(SettingValues $sv, $expr, $field, $is_error) {
         $ps = new PaperSearch($sv->conf->root_user(), $expr);
         $fake_prow = new PaperInfo(null, null, $sv->conf);
-        if ($ps->term()->script_expression($fake_prow, $ps) === null) {
+        if ($ps->term()->script_expression($fake_prow) === null) {
             $method = $is_error ? "error_at" : "warning_at";
             $sv->$method($field, "Search too complex for field condition. (Not all search keywords are supported for field conditions.)");
         }

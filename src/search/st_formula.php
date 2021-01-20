@@ -3,10 +3,14 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Formula_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
+    /** @var Formula */
     private $formula;
     private $function;
     function __construct(Formula $formula) {
         parent::__construct("formula");
+        $this->user = $formula->user;
         $this->formula = $formula;
         $this->function = $formula->compile_function();
     }
@@ -40,8 +44,8 @@ class Formula_SearchTerm extends SearchTerm {
         $this->formula->add_query_options($sqi->query_options);
         return "true";
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
+    function test(PaperInfo $row, $rrow) {
         $formulaf = $this->function;
-        return !!$formulaf($row, null, $srch->user);
+        return !!$formulaf($row, $rrow ? $rrow->contactId : null, $this->user);
     }
 }

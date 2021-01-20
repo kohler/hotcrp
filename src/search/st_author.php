@@ -3,11 +3,16 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Author_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
+    /** @var ContactCountMatcher */
     private $csm;
+    /** @var ?TextPregexes */
     private $regex;
 
-    function __construct($countexpr, $contacts, $match, $quoted) {
+    function __construct(Contact $user, $countexpr, $contacts, $match, $quoted) {
         parent::__construct("au");
+        $this->user = $user;
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
         if (!$contacts && $match) {
             $this->regex = Text::star_text_pregexes($match, $quoted);
@@ -30,10 +35,10 @@ class Author_SearchTerm extends SearchTerm {
                 $cids = $srch->matching_special_uids($word, false, false);
             }
         }
-        return new Author_SearchTerm($count, $cids, $word, $sword->quoted);
+        return new Author_SearchTerm($srch->user, $count, $cids, $word, $sword->quoted);
     }
-    function is_sqlexpr_precise(PaperSearch $srch) {
-        return $this->csm->has_sole_contact($srch->user->contactId)
+    function is_sqlexpr_precise() {
+        return $this->csm->has_sole_contact($this->user->contactId)
             && !$this->csm->test(0);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -47,12 +52,12 @@ class Author_SearchTerm extends SearchTerm {
             return $this->csm->test(0) ? "true" : "Paper.authorInformation!=''";
         }
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
+    function test(PaperInfo $row, $rrow) {
         $n = 0;
-        $can_view = $srch->user->allow_view_authors($row);
+        $can_view = $this->user->allow_view_authors($row);
         if ($this->csm->has_contacts()) {
             foreach ($this->csm->contact_set() as $cid) {
-                if (($cid === $srch->cxid || $can_view)
+                if (($cid === $this->user->contactXid || $can_view)
                     && $row->has_author($cid))
                     ++$n;
             }

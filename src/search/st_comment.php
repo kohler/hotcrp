@@ -3,6 +3,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Comment_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
     /** @var ContactCountMatcher */
     private $csm;
     /** @var ?TagSearchMatcher */
@@ -16,8 +18,9 @@ class Comment_SearchTerm extends SearchTerm {
     private $commentRound;
 
     /** @param ?TagSearchMatcher $tags */
-    function __construct(ContactCountMatcher $csm, $tags, $kwdef) {
+    function __construct(Contact $user, ContactCountMatcher $csm, $tags, $kwdef) {
         parent::__construct("cmt");
+        $this->user = $user;
         $this->csm = $csm;
         $this->tags = $tags;
         if (!$kwdef->response || !$kwdef->comment) {
@@ -83,7 +86,7 @@ class Comment_SearchTerm extends SearchTerm {
             $contacts = $srch->matching_uids($m[0], $sword->quoted, false);
         }
         $csm = new ContactCountMatcher($m[1], $contacts);
-        return new Comment_SearchTerm($csm, $tags, $sword->kwdef);
+        return new Comment_SearchTerm($srch->user, $csm, $tags, $sword->kwdef);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         if (!isset($sqi->columns["commentSkeletonInfo"])) {
@@ -110,14 +113,14 @@ class Comment_SearchTerm extends SearchTerm {
         $sqi->add_table($thistab, ["left join", "(select paperId, count(commentId) count from PaperComment" . ($where ? " where " . join(" and ", $where) : "") . " group by paperId)"]);
         return "coalesce($thistab.count,0)" . $this->csm->conservative_nonnegative_countexpr();
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
+    function test(PaperInfo $row, $rrow) {
         $textless = $this->type_mask === (COMMENTTYPE_DRAFT | COMMENTTYPE_RESPONSE);
         $n = 0;
-        foreach ($row->viewable_comment_skeletons($srch->user, $textless) as $crow) {
+        foreach ($row->viewable_comment_skeletons($this->user, $textless) as $crow) {
             if ($this->csm->test_contact($crow->contactId)
                 && ($crow->commentType & $this->type_mask) == $this->type_value
                 && (!$this->only_author || $crow->commentType >= COMMENTTYPE_AUTHOR)
-                && (!$this->tags || $this->tags->test((string) $crow->viewable_tags($srch->user))))
+                && (!$this->tags || $this->tags->test((string) $crow->viewable_tags($this->user))))
                 ++$n;
         }
         return $this->csm->test($n);

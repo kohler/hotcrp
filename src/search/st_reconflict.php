@@ -2,7 +2,7 @@
 // search/st_reconflict.php -- HotCRP helper class for searching for papers
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class Reconflict_SearchTerm extends SearchTerm {
+abstract class Reconflict_SearchTerm extends SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $st = new PaperID_SearchTerm;
         $xword = $word;
@@ -34,7 +34,7 @@ class Reconflict_SearchTerm extends SearchTerm {
         $srch->user->set_overrides($old_overrides);
 
         if (!empty($cids)) {
-            return new Conflict_SearchTerm(">0", array_keys($cids), false);
+            return new Conflict_SearchTerm($srch->user, ">0", array_keys($cids), false);
         } else {
             $srch->warn("reconflict:" . htmlspecialchars($word) . ": No visible reviewers.");
             return new False_SearchTerm;

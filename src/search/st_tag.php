@@ -3,13 +3,16 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Tag_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
     /** @var TagSearchMatcher */
     private $tsm;
     private $tag1;
     private $tag1nz;
 
-    function __construct(TagSearchMatcher $tsm) {
+    function __construct(Contact $user, TagSearchMatcher $tsm) {
         parent::__construct("tag");
+        $this->user = $user;
         $this->tsm = $tsm;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -69,7 +72,7 @@ class Tag_SearchTerm extends SearchTerm {
 
         // add value term
         if (!$value->is_empty_after_exclusion()) {
-            $allterms[] = $term = new Tag_SearchTerm($value);
+            $allterms[] = $term = new Tag_SearchTerm($srch->user, $value);
             if (!$negated && ($tagpat = $value->tag_patterns())) {
                 $term->set_float("tags", $tagpat);
                 if ($sword->kwdef->sorting) {
@@ -88,8 +91,8 @@ class Tag_SearchTerm extends SearchTerm {
         }
         return SearchTerm::combine("or", $allterms)->negate_if($negated);
     }
-    function is_sqlexpr_precise(PaperSearch $srch) {
-        return $this->tsm->is_sqlexpr_precise() && $srch->user->is_site_contact;
+    function is_sqlexpr_precise() {
+        return $this->tsm->is_sqlexpr_precise() && $this->user->is_site_contact;
     }
     const SQLEXPR_PREFIX = 'exists (select * from PaperTag where paperId=Paper.paperId';
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -119,8 +122,8 @@ class Tag_SearchTerm extends SearchTerm {
             return self::SQLEXPR_PREFIX . " and (" . join(" or ", $x) . "))";
         }
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
-        $ok = $this->tsm->test($row->searchable_tags($srch->user));
+    function test(PaperInfo $row, $rrow) {
+        $ok = $this->tsm->test($row->searchable_tags($this->user));
         if ($ok && $this->tag1 && !$this->tag1nz) {
             $this->tag1nz = $row->tag_value($this->tag1) != 0;
         }

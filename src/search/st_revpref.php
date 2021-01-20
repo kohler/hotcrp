@@ -40,10 +40,14 @@ class RevprefSearchMatcher extends ContactCountMatcher {
 }
 
 class Revpref_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
+    /** @var RevprefSearchMatcher */
     private $rpsm;
 
-    function __construct(RevprefSearchMatcher $rpsm) {
+    function __construct(Contact $user, RevprefSearchMatcher $rpsm) {
         parent::__construct("revpref");
+        $this->user = $user;
         $this->rpsm = $rpsm;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -108,7 +112,7 @@ class Revpref_SearchTerm extends SearchTerm {
             return new False_SearchTerm;
         }
 
-        return (new Revpref_SearchTerm($value))->negate_if(strcasecmp($word, "none") === 0);
+        return (new Revpref_SearchTerm($srch->user, $value))->negate_if(strcasecmp($word, "none") === 0);
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -131,11 +135,11 @@ class Revpref_SearchTerm extends SearchTerm {
         $sqi->add_table($thistab, ["left join", "($q)"]);
         return "coalesce($thistab.count,0)" . $this->rpsm->countexpr();
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
-        $can_view = $srch->user->can_view_preference($row, $this->rpsm->safe_contacts);
+    function test(PaperInfo $row, $rrow) {
+        $can_view = $this->user->can_view_preference($row, $this->rpsm->safe_contacts);
         $n = 0;
         foreach ($this->rpsm->contact_set() as $cid) {
-            if (($cid == $srch->cxid || $can_view)
+            if (($cid == $this->user->contactXid || $can_view)
                 && $this->rpsm->test_preference($row->preference($cid)))
                 ++$n;
         }

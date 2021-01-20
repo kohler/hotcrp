@@ -169,6 +169,10 @@ class PaperList implements XtContext {
     private $_reviewer_user;
     /** @var ?PaperInfoSet */
     private $_rowset;
+    /** @var ?array<int,int> */
+    private $_then_map;
+    /** @var ?array<int,list<string>> */
+    private $_highlight_map;
     /** @var list<TagAnno> */
     private $_groups;
 
@@ -306,6 +310,8 @@ class PaperList implements XtContext {
             for ($i = 0; $i < $qe->nthen; ++$i) {
                 $this->apply_view_search($qe->child[$i], $i);
             }
+            $this->_then_map = $qe->then_map;
+            $this->_highlight_map = $qe->highlight_map;
         }
         $this->apply_view_search($qe, -1);
 
@@ -697,7 +703,7 @@ class PaperList implements XtContext {
                 $this->_sortcol[] = ($this->ensure_columns_by_name("id"))[0];
             }
             $this->_sort_etag = "";
-            if ($this->search->thenmap === null
+            if ($this->_then_map === null
                 && $this->_sortcol[0] instanceof Tag_PaperColumn
                 && !$this->_sortcol[0]->sort_reverse) {
                 $this->_sort_etag = $this->_sortcol[0]->etag();
@@ -719,43 +725,46 @@ class PaperList implements XtContext {
 
         // actually sort
         $overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
-        if (($thenmap = $this->search->thenmap)) {
+        if ($this->_then_map) {
             foreach ($rowset as $row) {
-                $row->_sort_subset = $thenmap[$row->paperId];
+                $row->_sort_subset = $this->_then_map[$row->paperId];
             }
         }
         foreach ($this->sorters() as $i => $s) {
             $s->prepare_sort($this, $i);
         }
-        $rowset->sort_by([$this, $thenmap ? "_then_sort_compare" : "_sort_compare"]);
+        $rowset->sort_by([$this, $this->_then_map ? "_then_sort_compare" : "_sort_compare"]);
         $this->user->set_overrides($overrides);
 
         // clean up, assign groups
         if ($this->_sort_etag !== "") {
-            $this->_set_sort_etag_anno_groups();
+            $groups = $this->_set_sort_etag_anno_groups();
+        } else {
+            $groups = $this->search->paper_groups();
         }
-        if (!empty($this->search->groupmap)) {
-            $this->_collect_groups($rowset->as_list());
+        if (!empty($groups)) {
+            $this->_collect_groups($rowset->as_list(), $groups);
         }
     }
 
 
-    /** @param int $g
+    /** @param list<TagAnno> &$groups
+     * @param int $g
      * @param TagInfo $dt
      * @param int $anno_index */
-    private function _assign_order_anno_group($g, $dt, $anno_index) {
+    private function _assign_order_anno_group(&$groups, $g, $dt, $anno_index) {
         if (($ta = $dt->order_anno_entry($anno_index))) {
-            $this->search->groupmap[$g] = $ta;
-        } else if (!isset($this->search->groupmap[$g])) {
+            $groups[$g] = $ta;
+        } else if (!isset($groups[$g])) {
             $ta = new TagAnno;
             $ta->tag = $dt->tag;
             $ta->heading = "";
-            $this->search->groupmap[$g] = $ta;
+            $groups[$g] = $ta;
         }
     }
 
     private function _set_sort_etag_anno_groups() {
-        assert($this->search->thenmap === null && empty($this->search->groupmap));
+        assert($this->_then_map === null);
         $etag = $this->_sort_etag;
         if (str_starts_with($etag, $this->user->contactId . "~")) {
             $alt_etag = substr($etag, strlen((string) $this->user->contactId));
@@ -769,13 +778,13 @@ class PaperList implements XtContext {
                 $any = $any || in_array("edit", $this->_view_decorations[$x] ?? []);
             }
             if (!$any) {
-                return;
+                return [];
             }
         }
-        $srch = $this->search;
-        $srch->thenmap = [];
-        $this->_assign_order_anno_group(0, $dt, -1);
-        $srch->groupmap[0]->heading = "none";
+        $this->_then_map = [];
+        $groups = [];
+        $this->_assign_order_anno_group($groups, 0, $dt, -1);
+        $groups[0]->heading = "none";
         $cur_then = $aidx = $pidx = 0;
         $plist = $this->_rowset->as_list();
         $alist = $dt->order_anno_list();
@@ -787,30 +796,32 @@ class PaperList implements XtContext {
                 if ($cur_then !== 0 || $pidx !== 0 || $aidx !== 0) {
                     ++$cur_then;
                 }
-                $this->_assign_order_anno_group($cur_then, $dt, $aidx);
+                $this->_assign_order_anno_group($groups, $cur_then, $dt, $aidx);
                 ++$aidx;
             } else {
-                $srch->thenmap[$plist[$pidx]->paperId] = $cur_then;
+                $this->_then_map[$plist[$pidx]->paperId] = $cur_then;
                 ++$pidx;
                 $ptagval = $pidx < count($plist) ? $plist[$pidx]->tag_value($etag) : null;
             }
         }
+        return $groups;
     }
 
-    /** @param list<PaperInfo> $srows */
-    private function _collect_groups($srows) {
-        $groupmap = $this->search->groupmap ?? [];
-        $thenmap = $this->search->thenmap ?? [];
+    /** @param list<PaperInfo> $srows
+     * @param list<TagAnno> $groups */
+    private function _collect_groups($srows, $groups) {
+        $thenmap = $this->_then_map ?? [];
+        $this->_groups = [];
         $rowpos = 0;
         for ($grouppos = 0;
-             $rowpos < count($srows) || $grouppos < count($groupmap);
+             $rowpos < count($srows) || $grouppos < count($groups);
              ++$grouppos) {
             $first_rowpos = $rowpos;
             while ($rowpos < count($srows)
                    && ($thenmap[$srows[$rowpos]->paperId] ?? 0) === $grouppos) {
                 ++$rowpos;
             }
-            $ginfo = $groupmap[$grouppos] ?? null;
+            $ginfo = $groups[$grouppos] ?? null;
             if (($ginfo === null || $ginfo->is_empty())
                 && $first_rowpos === 0) {
                 continue;
@@ -1345,7 +1356,7 @@ class PaperList implements XtContext {
         if (!$cc || !$rstate->hascolors) {
             $trclass[] = "k" . $rstate->colorindex;
         }
-        if (($highlightclass = $this->search->highlightmap[$row->paperId] ?? null)) {
+        if (($highlightclass = $this->_highlight_map[$row->paperId] ?? null)) {
             $trclass[] = $highlightclass[0] . "highlightmark";
         }
         $want_plx = $tt !== "" || $this->table_id();

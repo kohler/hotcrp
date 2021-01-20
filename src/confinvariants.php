@@ -243,7 +243,7 @@ class ConfInvariants {
         if (!empty($q)) {
             $search = new PaperSearch($user, ["q" => join(" THEN ", $q), "t" => "all"]);
             foreach ($search->paper_ids() as $pid) {
-                $then = $search->thenmap[$pid] ?? 0;
+                $then = $search->paper_group_index($pid) ?? 0;
                 if (($t = $qtags[$then] ?? null)) {
                     $this->invariant_error("autosearch", "automatic tag #" . $t->tag . " disagrees with search " . $t->automatic_search() . " on #" . $pid);
                     unset($qtags[$then]);

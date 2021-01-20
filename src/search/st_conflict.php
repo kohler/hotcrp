@@ -3,11 +3,15 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Conflict_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
+    /** @var ContactCountMatcher */
     private $csm;
     private $ispc;
 
-    function __construct($countexpr, $contacts, $ispc) {
+    function __construct(Contact $user, $countexpr, $contacts, $ispc) {
         parent::__construct("conflict");
+        $this->user = $user;
         $this->csm = new ContactCountMatcher($countexpr, $contacts);
         $this->ispc = $ispc;
     }
@@ -17,11 +21,11 @@ class Conflict_SearchTerm extends SearchTerm {
             return $qr;
         else {
             $contacts = $srch->matching_uids($m[0], $sword->quoted, $sword->kwdef->pc_only);
-            return new Conflict_SearchTerm($m[1], $contacts, $sword->kwdef->pc_only);
+            return new Conflict_SearchTerm($srch->user, $m[1], $contacts, $sword->kwdef->pc_only);
         }
     }
-    function is_sqlexpr_precise(PaperSearch $srch) {
-        return $this->csm->has_sole_contact($srch->user->contactId);
+    function is_sqlexpr_precise() {
+        return $this->csm->has_sole_contact($this->user->contactId);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $thistab = "Conflict_" . count($sqi->tables);
@@ -39,21 +43,21 @@ class Conflict_SearchTerm extends SearchTerm {
                 return "$thistab.contactId is not null";
         }
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
-        $can_view = $srch->user->can_view_conflicts($row);
+    function test(PaperInfo $row, $rrow) {
+        $can_view = $this->user->can_view_conflicts($row);
         $n = 0;
         foreach ($this->csm->contact_set() as $cid) {
-            if (($cid == $srch->cxid || $can_view)
+            if (($cid == $this->user->contactXid || $can_view)
                 && $row->has_conflict($cid))
                 ++$n;
         }
         return $this->csm->test($n);
     }
-    function script_expression(PaperInfo $row, PaperSearch $srch) {
+    function script_expression(PaperInfo $row) {
         if (!$this->ispc) {
             return null;
-        } else if (!$srch->conf->setting("sub_pcconf")) {
-            return $this->exec($row, $srch);
+        } else if (!$this->user->conf->setting("sub_pcconf")) {
+            return $this->test($row, null);
         } else {
             return ["type" => "pc_conflict", "cids" => $this->csm->contact_set(), "compar" => $this->csm->compar(), "value" => $this->csm->value()];
         }

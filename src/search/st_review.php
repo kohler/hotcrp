@@ -262,7 +262,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
         $this->rfield_scorex = $this->rfield_scoret === 16 ? 0 : 3;
     }
-    function test_review(Contact $user, PaperInfo $prow, $rrow, PaperSearch $srch) {
+    function test_review(Contact $user, PaperInfo $prow, $rrow) {
         if ($this->review_type
             && $this->review_type !== $rrow->reviewType) {
             return false;
@@ -366,13 +366,17 @@ class ReviewSearchMatcher extends ContactCountMatcher {
 }
 
 class Review_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
+    /** @var ReviewSearchMatcher */
     private $rsm;
     private static $recompleteness_map = [
         "c" => "complete", "i" => "incomplete", "p" => "partial"
     ];
 
-    function __construct(ReviewSearchMatcher $rsm) {
+    function __construct(Contact $user, ReviewSearchMatcher $rsm) {
         parent::__construct("re");
+        $this->user = $user;
         $this->rsm = $rsm;
         $this->rsm->finish();
     }
@@ -436,7 +440,7 @@ class Review_SearchTerm extends SearchTerm {
             if (strcasecmp($contacts, "me") == 0)
                 $rsm->apply_tokens($srch->user->review_tokens());
         }
-        return new Review_SearchTerm($rsm);
+        return new Review_SearchTerm($srch->user, $rsm);
     }
 
     static function review_field_factory($keyword, Contact $user, $kwfj, $m) {
@@ -482,7 +486,7 @@ class Review_SearchTerm extends SearchTerm {
                 $val = Text::star_text_pregexes($word, $sword->quoted);
             }
             $rsm->apply_text_field($f, $val);
-            return new Review_SearchTerm($rsm);
+            return new Review_SearchTerm($srch->user, $rsm);
         }
     }
     private static function impossible_score_match(ReviewField $f) {
@@ -533,7 +537,7 @@ class Review_SearchTerm extends SearchTerm {
         } else {             // XXX
             return new False_SearchTerm;
         }
-        return new Review_SearchTerm($rsm);
+        return new Review_SearchTerm($srch->user, $rsm);
     }
 
 
@@ -567,10 +571,10 @@ class Review_SearchTerm extends SearchTerm {
             }
         }
     }
-    function exec(PaperInfo $prow, PaperSearch $srch) {
+    function test(PaperInfo $prow, $rrow) {
         $this->rsm->prepare_reviews($prow);
-        if ($this->rsm->review_testable && $srch->test_review) {
-            return $this->rsm->test_review($srch->user, $prow, $srch->test_review, $srch);
+        if ($this->rsm->review_testable && $rrow) {
+            return $this->rsm->test_review($this->user, $prow, $rrow);
         } else {
             if ($this->rsm->review_type() === REVIEW_REQUEST) {
                 $rs = $prow->review_requests();
@@ -579,7 +583,7 @@ class Review_SearchTerm extends SearchTerm {
             }
             $n = 0;
             foreach ($rs as $rrow) {
-                $n += $this->rsm->test_review($srch->user, $prow, $rrow, $srch);
+                $n += $this->rsm->test_review($this->user, $prow, $rrow);
             }
             return $this->rsm->test_finish($n);
         }

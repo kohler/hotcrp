@@ -9,8 +9,8 @@ class DocumentCount_SearchTerm extends Option_SearchTerm {
     private $value;
     /** @param string $compar
      * @param int $value */
-    function __construct(PaperOption $o, $compar, $value) {
-        parent::__construct("documentcount", $o);
+    function __construct(Contact $user, PaperOption $o, $compar, $value) {
+        parent::__construct($user, $o, "documentcount");
         $this->compar = CountMatcher::comparator_value($compar);
         $this->value = $value;
     }
@@ -21,8 +21,8 @@ class DocumentCount_SearchTerm extends Option_SearchTerm {
         $sqi->add_options_columns();
         return CountMatcher::compare(0, $this->compar, $this->value) ? "true" : parent::sqlexpr($sqi);
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
-        if ($srch->user->can_view_option($row, $this->option)
+    function test(PaperInfo $row, $rrow) {
+        if ($this->user->can_view_option($row, $this->option)
             && ($ov = $row->option($this->option))) {
             $n = count($this->option->value_dids($ov));
         } else {
@@ -30,8 +30,8 @@ class DocumentCount_SearchTerm extends Option_SearchTerm {
         }
         return CountMatcher::compare($n, $this->compar, $this->value);
     }
-    function script_expression(PaperInfo $row, PaperSearch $srch) {
-        if ($srch->user->can_view_option($row, $this->option)) {
+    function script_expression(PaperInfo $row) {
+        if ($this->user->can_view_option($row, $this->option)) {
             return ["type" => "compar", "child" => [$this->option->present_script_expression(), $this->value], "compar" => CountMatcher::unparse_comparator_value($this->compar)];
         } else {
             return false;

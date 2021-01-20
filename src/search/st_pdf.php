@@ -3,6 +3,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class PaperPDF_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
     /** @var int */
     private $dtype;
     /** @var bool */
@@ -10,20 +12,24 @@ class PaperPDF_SearchTerm extends SearchTerm {
     /** @var ?bool */
     private $format_problem;
     private $format_errf;
+    /** @var PaperSearch */
+    private $srch;
     /** @var ?CheckFormat */
     private $cf;
     private $cf_warn = false;
 
-    function __construct(Conf $conf, $dtype, $present,
+    function __construct(PaperSearch $srch, $dtype, $present,
                          $format_problem = null, $format_errf = null) {
         assert($format_problem === null || $present === true);
         parent::__construct("pdf");
+        $this->user = $srch->user;
         $this->dtype = $dtype;
         $this->present = $present;
         $this->format_problem = $format_problem;
         $this->format_errf = $format_errf;
+        $this->srch = $srch;
         if ($this->format_problem !== null) {
-            $this->cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
+            $this->cf = new CheckFormat($srch->conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
         }
         assert($this->present || $this->format_problem === null);
     }
@@ -35,9 +41,9 @@ class PaperPDF_SearchTerm extends SearchTerm {
         }
         $lword = strtolower($word);
         if ($lword === "any" || $lword === "yes") {
-            return new PaperPDF_SearchTerm($srch->conf, $dtype, true);
+            return new PaperPDF_SearchTerm($srch, $dtype, true);
         } else if ($lword === "none" || $lword === "no") {
-            return new PaperPDF_SearchTerm($srch->conf, $dtype, false);
+            return new PaperPDF_SearchTerm($srch, $dtype, false);
         }
         $cf = new CheckFormat($srch->conf);
         $errf = $cf->spec_error_kinds($dtype === null ? DTYPE_SUBMISSION : $dtype);
@@ -48,17 +54,17 @@ class PaperPDF_SearchTerm extends SearchTerm {
             $srch->warn("“" . htmlspecialchars($sword->keyword . ":" . $word) . "”: Format checking is not enabled.");
             return null;
         } else if ($lword === "good" || $lword === "ok") {
-            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, false);
+            return new PaperPDF_SearchTerm($srch, $dtype, true, false);
         } else if ($lword === "bad" || $lword === "problem") {
-            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, true);
+            return new PaperPDF_SearchTerm($srch, $dtype, true, true);
         } else if (in_array($lword, $errf) || $lword === "error") {
-            return new PaperPDF_SearchTerm($srch->conf, $dtype, true, true, $lword);
+            return new PaperPDF_SearchTerm($srch, $dtype, true, true, $lword);
         } else {
             $srch->warn("“" . htmlspecialchars($word) . "” is not a valid error type for format checking.");
             return null;
         }
     }
-    function is_sqlexpr_precise(PaperSearch $srch) {
+    function is_sqlexpr_precise() {
         return $this->dtype === DTYPE_SUBMISSION && $this->format_problem === null;
     }
     static function add_columns(SearchQueryInfo $sqi) {
@@ -88,21 +94,21 @@ class PaperPDF_SearchTerm extends SearchTerm {
         }
         return "(" . join($this->present ? " or " : " and ", $f) . ")";
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
+    function test(PaperInfo $row, $rrow) {
         $dtype = $this->dtype;
         if ($dtype === null) {
             if ($row->finalPaperStorageId > 1
-                && $srch->user->can_view_decision($row)) {
+                && $this->user->can_view_decision($row)) {
                 $dtype = DTYPE_FINAL;
             } else {
                 $dtype = DTYPE_SUBMISSION;
             }
         } else if ($dtype === DTYPE_FINAL
-                   && !$srch->user->can_view_decision($row)) {
+                   && !$this->user->can_view_decision($row)) {
             return false;
         }
         $sub = $dtype === DTYPE_FINAL ? $row->finalPaperStorageId : $row->paperStorageId;
-        if ($sub > 1 && !$srch->user->can_view_pdf($row)) {
+        if ($sub > 1 && !$this->user->can_view_pdf($row)) {
             $sub = 0;
         }
         if (($sub > 1) !== $this->present) {
@@ -116,7 +122,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
             $this->cf->check_document($row, $doc);
             if ($this->cf->need_recheck()) {
                 if (!$this->cf_warn) {
-                    $srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
+                    $this->srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
                     $this->cf_warn = true;
                 }
                 return true;
@@ -132,21 +138,28 @@ class PaperPDF_SearchTerm extends SearchTerm {
 }
 
 class Pages_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
     /** @var CountMatcher */
     private $cm;
+    /** @var PaperSearch */
+    private $srch;
     /** @var CheckFormat */
     private $cf;
+    /** @var bool */
     private $cf_warn = false;
 
-    function __construct(CountMatcher $cm, Conf $conf) {
+    function __construct(PaperSearch $srch, CountMatcher $cm) {
         parent::__construct("pages");
+        $this->user = $srch->user;
         $this->cm = $cm;
-        $this->cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
+        $this->srch = $srch;
+        $this->cf = new CheckFormat($srch->conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $cm = new CountMatcher($word);
         if ($cm->ok()) {
-            return new Pages_SearchTerm(new CountMatcher($word), $srch->conf);
+            return new Pages_SearchTerm($srch, new CountMatcher($word));
         } else {
             $srch->warn("“{$sword->keyword}:” expects a page number comparison.");
             return null;
@@ -156,9 +169,9 @@ class Pages_SearchTerm extends SearchTerm {
         PaperPDF_SearchTerm::add_columns($sqi);
         return "true";
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
+    function test(PaperInfo $row, $rrow) {
         $dtype = DTYPE_SUBMISSION;
-        if ($srch->user->can_view_decision($row)
+        if ($this->user->can_view_decision($row)
             && $row->outcome > 0
             && $row->finalPaperStorageId > 1) {
             $dtype = DTYPE_FINAL;
@@ -172,7 +185,7 @@ class Pages_SearchTerm extends SearchTerm {
             return $this->cm->test($np);
         } else if ($this->cf->need_recheck()) {
             if (!$this->cf_warn) {
-                $srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
+                $this->srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
                 $this->cf_warn = true;
             }
             return true;

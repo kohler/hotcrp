@@ -16,7 +16,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
             $fval[1][] = -10000000;
         }
         if ($fval[0] === "outcome") {
-            return new Decision_SearchTerm($fval[1]);
+            return new Decision_SearchTerm($srch->user, $fval[1]);
         } else {
             if ($srch->limit_submitted()
                 && ($fval[0] !== "timeSubmitted" || $fval[1] !== ">0")) {
@@ -25,7 +25,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
             return new PaperStatus_SearchTerm($fval);
         }
     }
-    function is_sqlexpr_precise(PaperSearch $srch) {
+    function is_sqlexpr_precise() {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -36,7 +36,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
         }
         return self::andjoin_sqlexpr($q);
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
+    function test(PaperInfo $row, $rrow) {
         for ($i = 0; $i < count($this->match); $i += 2) {
             if (!CountMatcher::compare_using($row->{$this->match[$i]}, $this->match[$i+1]))
                 return false;

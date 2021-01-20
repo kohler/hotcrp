@@ -965,7 +965,7 @@ class PaperOption implements JsonSerializable {
     }
     function exists_script_expression(PaperInfo $prow) {
         $s = $this->_exists_search;
-        return $s ? $s->term()->script_expression($prow, $s) : null;
+        return $s ? $s->term()->script_expression($prow) : null;
     }
     protected function set_exists_if($x) {
         if ($x !== null && $x !== true) {
@@ -1248,7 +1248,7 @@ class PaperOption implements JsonSerializable {
         if (in_array($sword->compar, ["", "=", "!="], true)
             && in_array($lword, ["yes", "no", "y", "n", "true", "false"], true)) {
             $v = $lword[0] === "y" || $lword[0] === "t";
-            return (new OptionPresent_SearchTerm($this))->negate_if($v !== ($sword->compar !== "!="));
+            return (new OptionPresent_SearchTerm($srch->user, $this))->negate_if($v !== ($sword->compar !== "!="));
         } else {
             return null;
         }
@@ -1494,7 +1494,7 @@ class Selector_PaperOption extends PaperOption {
             }
             return null;
         } else if (in_array($sword->compar, ["", "=", "!="], true)) {
-            return (new OptionValueIn_SearchTerm($this, $vs))->negate_if($sword->compar === "!=");
+            return (new OptionValueIn_SearchTerm($srch->user, $this, $vs))->negate_if($sword->compar === "!=");
         } else {
             return null;
         }
@@ -1878,7 +1878,7 @@ class Numeric_PaperOption extends PaperOption {
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         if (preg_match('/\A[-+]?(?:\d+|\d+\.\d*|\.\d+)\z/', $sword->cword)) {
-            return new OptionValue_SearchTerm($this, CountMatcher::comparator_value($sword->compar), (float) $sword->cword);
+            return new OptionValue_SearchTerm($srch->user, $this, CountMatcher::comparator_value($sword->compar), (float) $sword->cword);
         } else {
             return null;
         }
@@ -1958,7 +1958,7 @@ class Text_PaperOption extends PaperOption {
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         if ($sword->compar === "") {
-            return new OptionText_SearchTerm($this, $sword->cword);
+            return new OptionText_SearchTerm($srch->user, $this, $sword->cword);
         } else {
             return null;
         }
@@ -2169,9 +2169,9 @@ class Attachments_PaperOption extends PaperOption {
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         if (preg_match('/\A[-+]?\d+\z/', $sword->cword)) {
-            return new DocumentCount_SearchTerm($this, $sword->compar, (int) $sword->cword);
+            return new DocumentCount_SearchTerm($srch->user, $this, $sword->compar, (int) $sword->cword);
         } else if ($sword->compar === "" || $sword->compar === "!=") {
-            return new DocumentName_SearchTerm($this, $sword->compar !== "!=", $sword->cword);
+            return new DocumentName_SearchTerm($srch->user, $this, $sword->compar !== "!=", $sword->cword);
         } else {
             return null;
         }

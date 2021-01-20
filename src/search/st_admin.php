@@ -3,12 +3,15 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Admin_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    private $user;
     private $match;
     private $flags;
     const ALLOW_NONE = 1;
 
-    function __construct($match, $flags) {
+    function __construct(Contact $user, $match, $flags) {
         parent::__construct("admin");
+        $this->user = $user;
         $this->match = $match;
         $this->flags = $flags;
     }
@@ -25,7 +28,7 @@ class Admin_SearchTerm extends SearchTerm {
                     $flags |= self::ALLOW_NONE;
             }
         }
-        return new Admin_SearchTerm($match, $flags);
+        return new Admin_SearchTerm($srch->user, $match, $flags);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column("managerContactId", "Paper.managerContactId");
@@ -41,8 +44,8 @@ class Admin_SearchTerm extends SearchTerm {
             return "(Paper.managerContactId" . CountMatcher::sqlexpr_using($cs) . ")";
         }
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
-        if (!$srch->user->can_view_manager($row)) {
+    function test(PaperInfo $row, $rrow) {
+        if (!$this->user->can_view_manager($row)) {
             return $this->match === false || ($this->flags & self::ALLOW_NONE);
         } else if (is_bool($this->match)) {
             return $this->match === ($row->managerContactId != 0);

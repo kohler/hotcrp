@@ -2,13 +2,16 @@
 // search/st_option.php -- HotCRP helper class for searching for papers
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class Option_SearchTerm extends SearchTerm {
+abstract class Option_SearchTerm extends SearchTerm {
+    /** @var Contact */
+    protected $user;
     /** @var PaperOption */
     protected $option;
 
     /** @param string $type */
-    function __construct($type, PaperOption $option) {
+    function __construct(Contact $user, PaperOption $option, $type) {
         parent::__construct($type);
+        $this->user = $user;
         $this->option = $option;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -33,10 +36,10 @@ class Option_SearchTerm extends SearchTerm {
         }
     }
     /** @param list<PaperOption> $os */
-    static private function make_present($os) {
+    static private function make_present($os, Contact $user) {
         $sts = [];
         foreach ($os as $o) {
-            $sts[] = new OptionPresent_SearchTerm($o, count($os) > 1);
+            $sts[] = new OptionPresent_SearchTerm($user, $o, count($os) > 1);
         }
         return SearchTerm::combine("or", $sts);
     }
@@ -44,9 +47,9 @@ class Option_SearchTerm extends SearchTerm {
         // option name and option content
         if ($sword->kwdef->name === "option") {
             if (!$sword->quoted && strcasecmp($word, "any") === 0) {
-                return self::make_present($srch->conf->options()->normal());
+                return self::make_present($srch->conf->options()->normal(), $srch->user);
             } else if (!$sword->quoted && strcasecmp($word, "none") === 0) {
-                return self::make_present($srch->conf->options()->normal())->negate();
+                return self::make_present($srch->conf->options()->normal(), $srch->user)->negate();
             } else if (preg_match('/\A(.*?)(?::|(?=[#=!<>]|≠|≤|≥))(.*)\z/', $word, $m)) {
                 $oname = $m[1];
                 $ocontent = $m[2];
@@ -73,9 +76,9 @@ class Option_SearchTerm extends SearchTerm {
 
         // handle any/none
         if (!$sword->quoted && strcasecmp($ocontent, "any") === 0) {
-            return self::make_present($os);
+            return self::make_present($os, $srch->user);
         } else if (!$sword->quoted && strcasecmp($ocontent, "none") === 0) {
-            return self::make_present($os)->negate();
+            return self::make_present($os, $srch->user)->negate();
         }
 
         // handle other searches

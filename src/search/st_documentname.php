@@ -11,16 +11,16 @@ class DocumentName_SearchTerm extends Option_SearchTerm {
     private $pregexes;
     /** @param bool $want
      * @param string $match */
-    function __construct(PaperOption $o, $want, $match) {
-        parent::__construct("documentname", $o);
+    function __construct(Contact $user, PaperOption $o, $want, $match) {
+        parent::__construct($user, $o, "documentname");
         $this->want = $want;
         $this->match = $match;
     }
     function debug_json() {
         return [$this->type, $this->option->search_keyword(), $this->match];
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
-        if ($srch->user->can_view_option($row, $this->option)
+    function test(PaperInfo $row, $rrow) {
+        if ($this->user->can_view_option($row, $this->option)
             && ($ov = $row->option($this->option))) {
             $this->pregexes = $this->pregexes ?? Text::star_text_pregexes($this->match);
             foreach ($ov->document_set() as $d) {

@@ -2395,7 +2395,7 @@ class Contact {
             if ($this->conf->ext_subreviews > 1) {
                 if ($this->is_manager()) {
                     $search = new PaperSearch($this, "re:pending-approval OR (has:proposal admin:me) HIGHLIGHT:pink re:pending-my-approval HIGHLIGHT:green re:pending-approval HIGHLIGHT:yellow (has:proposal admin:me)");
-                    if (($hmap = $search->paper_highlights())) {
+                    if (($hmap = $search->highlights_by_paper_id())) {
                         $colors = array_unique(call_user_func_array("array_merge", array_values($hmap)));
                         foreach (["green", "pink", "yellow"] as $i => $k) {
                             if (in_array($k, $colors))

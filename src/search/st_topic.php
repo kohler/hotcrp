@@ -46,7 +46,7 @@ class Topic_SearchTerm extends SearchTerm {
         }
         return new Topic_SearchTerm($value, $negated);
     }
-    function is_sqlexpr_precise(PaperSearch $srch) {
+    function is_sqlexpr_precise() {
         return true;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -62,7 +62,7 @@ class Topic_SearchTerm extends SearchTerm {
         }
         return $t;
     }
-    function exec(PaperInfo $row, PaperSearch $srch) {
+    function test(PaperInfo $row, $rrow) {
         if ($this->topics === []) {
             return false;
         } else if ($this->topics === true) {
@@ -72,7 +72,7 @@ class Topic_SearchTerm extends SearchTerm {
         }
         return $this->negated ? !$v : $v;
     }
-    function script_expression(PaperInfo $row, PaperSearch $srch) {
+    function script_expression(PaperInfo $row) {
         $o = ["type" => "topic", "topics" => $this->topics];
         if ($this->negated) {
             $o = ["type" => "not", "child" => [$o]];
