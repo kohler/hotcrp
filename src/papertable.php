@@ -162,7 +162,7 @@ class PaperTable {
             $highlight_text = null;
             $title_matches = 0;
             if ($paperTable->matchPreg
-                && ($highlight = $paperTable->matchPreg["title"] ?? null)) {
+                && ($highlight = $paperTable->matchPreg["ti"] ?? null)) {
                 $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
             }
 
@@ -220,7 +220,7 @@ class PaperTable {
         $this->matchPreg = [];
         if (($list = $this->conf->active_list())
             && $list->highlight
-            && preg_match('_\Ap/([^/]*)/([^/]*)(?:/|\z)_', $list->listid, $m)) {
+            && preg_match('/\Ap\/([^\/]*)\/([^\/]*)(?:\/|\z)/', $list->listid, $m)) {
             $hlquery = is_string($list->highlight) ? $list->highlight : urldecode($m[2]);
             $ps = new PaperSearch($this->user, ["t" => $m[1], "q" => $hlquery]);
             foreach ($ps->field_highlighters() as $k => $v) {
@@ -231,6 +231,7 @@ class PaperTable {
             $this->matchPreg = null;
         }
     }
+
     private function find_session_list() {
         $prow = $this->prow;
         if ($prow->paperId <= 0) {
@@ -359,13 +360,13 @@ class PaperTable {
             $this->foldmap[$num] = $this->allFolded || $k === "a";
         }
         if ($this->foldmap[6]) {
-            $abstract = $this->highlight($this->prow->abstract_text(), "abstract", $match);
+            $abstract = $this->highlight($this->prow->abstract_text(), "ab", $match);
             if ($match || !$this->abstract_foldable($abstract)) {
                 $this->foldmap[6] = false;
             }
         }
         if ($this->matchPreg && ($this->foldmap[8] || $this->foldmap[9])) {
-            $this->highlight($this->prow->authorInformation, "authorInformation", $match);
+            $this->highlight($this->prow->authorInformation, "au", $match);
             if ($match) {
                 $this->foldmap[8] = $this->foldmap[9] = false;
             }
@@ -689,7 +690,7 @@ class PaperTable {
         $fr->title = false;
         $fr->value_format = 5;
 
-        $html = $this->highlight($this->prow->abstract_text(), "abstract", $match);
+        $html = $this->highlight($this->prow->abstract_text(), "ab", $match);
         if (trim($html) === "") {
             if ($this->conf->opt("noAbstract"))
                 return;
@@ -717,8 +718,8 @@ class PaperTable {
     }
 
     private function authorData($table, $type, $viewAs = null) {
-        if ($this->matchPreg && isset($this->matchPreg["authorInformation"])) {
-            $highpreg = $this->matchPreg["authorInformation"];
+        if ($this->matchPreg && isset($this->matchPreg["au"])) {
+            $highpreg = $this->matchPreg["au"];
         } else {
             $highpreg = false;
         }
@@ -1175,7 +1176,7 @@ class PaperTable {
         }
         $fold = $this->user->session("foldpscollab", 1) ? 1 : 0;
 
-        $data = $this->highlight($this->prow->collaborators(), "collaborators", $match);
+        $data = $this->highlight($this->prow->collaborators(), "co", $match);
         $data = nl2br($data);
         if ($match || !$this->allFolded) {
             $fold = 0;
