@@ -37,7 +37,7 @@ class Formula_SearchTerm extends SearchTerm {
         return null;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $this->formula->add_query_options($sqi->srch->_query_options);
+        $this->formula->add_query_options($sqi->query_options);
         return "true";
     }
     function exec(PaperInfo $row, PaperSearch $srch) {

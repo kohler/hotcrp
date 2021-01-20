@@ -37,6 +37,7 @@ class SiteLoader {
         "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",
         "TagMap" => "lib/tagger.php",
+        "TextPregexes" => "lib/text.php",
         "Text_PaperOption" => "src/paperoption.php",
         "XlsxGenerator" => "lib/xlsx.php"
     ];

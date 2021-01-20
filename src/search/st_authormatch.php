@@ -59,10 +59,10 @@ class AuthorMatch_SearchTerm extends SearchTerm {
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
         if ($this->type !== "comatch") {
-            $srch->regex["au"][] = $this->matcher->general_pregexes();
+            $srch->add_field_highlighter("au", $this->matcher->general_pregexes());
         }
         if ($this->type !== "aumatch") {
-            $srch->regex["co"][] = $this->matcher->general_pregexes();
+            $srch->add_field_highlighter("co", $this->matcher->general_pregexes());
         }
     }
 }

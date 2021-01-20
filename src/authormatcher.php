@@ -35,7 +35,7 @@ class AuthorMatcher extends Author {
                 }
             }
             if (!empty($rr)) {
-                $this->firstName_matcher = Text::make_pregexes(
+                $this->firstName_matcher = new TextPregexes(
                     '\b(?:' . join("|", $rr) . ')\b',
                     Text::UTF8_INITIAL_NONLETTERDIGIT . '(?:' . join("|", $rr) . ')' . Text::UTF8_FINAL_NONLETTERDIGIT
                 );
@@ -50,7 +50,7 @@ class AuthorMatcher extends Author {
                 $ur[] = '(?=.*' . Text::UTF8_INITIAL_NONLETTERDIGIT . $w . Text::UTF8_FINAL_NONLETTERDIGIT . ')';
             }
             if (!empty($rr)) {
-                $this->lastName_matcher = Text::make_pregexes('\A' . join("", $rr), '\A' . join("", $ur));
+                $this->lastName_matcher = new TextPregexes('\A' . join("", $rr), '\A' . join("", $ur));
                 $this->lastName_matcher->simple = count($m[0]) === 1 && strlen($m[0][0]) === strlen($this->lastName) ? $m[0][0] : false;
             }
         }
@@ -131,7 +131,7 @@ class AuthorMatcher extends Author {
 
         $content = join("|", $any);
         if ($content !== "" && $content !== "none") {
-            $this->general_pregexes_ = Text::make_pregexes(
+            $this->general_pregexes_ = new TextPregexes(
                 '\b(?:' . $content . ')\b',
                 Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
             );
@@ -141,7 +141,7 @@ class AuthorMatcher extends Author {
         if ($highlight_any !== false && $highlight_any !== $any[count($any) - 1]) {
             $any[count($any) - 1] = $highlight_any;
             $content = join("|", $any);
-            $this->highlight_pregexes_ = Text::make_pregexes(
+            $this->highlight_pregexes_ = new TextPregexes(
                 '\b(?:' . $content . ')\b',
                 Text::UTF8_INITIAL_NONLETTER . '(?:' . $content . ')' . Text::UTF8_FINAL_NONLETTER
             );
@@ -239,14 +239,14 @@ class AuthorMatcher extends Author {
         } else {
             $au = $aux;
         }
-        $pregexes = [];
+        $preg = null;
         foreach ($matchers as $matcher) {
-            if (($preg = $matcher->highlight_pregexes())) {
-                $pregexes[] = $preg;
+            if (($preg1 = $matcher->highlight_pregexes())) {
+                $preg = $preg1->merge($preg);
             }
         }
-        if (!empty($pregexes)) {
-            $au = Text::highlight($au, Text::merge_pregexes($pregexes));
+        if ($preg) {
+            $au = Text::highlight($au, $preg);
         }
         if ($aff_suffix !== null && str_ends_with($au, $aff_suffix)) {
             $au = substr($au, 0, -strlen($aff_suffix))

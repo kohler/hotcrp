@@ -282,21 +282,6 @@ class PaperTable {
         }
     }
 
-    private static function _combine_match_preg($m1, $m) {
-        if (is_object($m)) {
-            $m = get_object_vars($m);
-        }
-        if (!is_array($m)) {
-            $m = ["abstract" => $m, "title" => $m,
-                  "authorInformation" => $m, "collaborators" => $m];
-        }
-        foreach ($m as $k => $v) {
-            if (!isset($m1[$k]) || !$m1[$k])
-                $m1[$k] = $v;
-        }
-        return $m1;
-    }
-
     function initialize($editable, $useRequest) {
         $this->editable = $editable;
         $this->useRequest = $useRequest;

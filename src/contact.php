@@ -158,8 +158,8 @@ class Contact {
 
     /** @var ?non-empty-list<AuthorMatcher> */
     private $_aucollab_matchers;
-    /** @var ?TextPregexes|false */
-    private $_aucollab_general_pregexes;
+    /** @var null|TextPregexes|false */
+    private $_aucollab_general_pregexes = false;
     /** @var ?list<PaperInfo> */
     private $_authored_papers;
 
@@ -1624,6 +1624,11 @@ class Contact {
             }
             $this->updateTime = Conf::$now;
         }
+        if ($this->_aucollab_matchers
+            && in_array($prop, ["firstName", "lastName", "email", "affiliation"])) {
+            $this->_aucollab_matchers = null;
+            $this->_aucollab_general_pregexes = false;
+        }
         return true;
     }
 
@@ -1706,6 +1711,8 @@ class Contact {
             $this->$prop = $value;
         }
         $this->_mod_undo = $this->_disabled = $this->_jdata = null;
+        $this->_aucollab_matchers = null;
+        $this->_aucollab_general_pregexes = false;
     }
 
 
@@ -4707,15 +4714,14 @@ class Contact {
         return $this->_aucollab_matchers;
     }
 
-    /** @return TextPregexes|false */
+    /** @return ?TextPregexes */
     function aucollab_general_pregexes() {
-        if ($this->_aucollab_general_pregexes === null) {
-            $l = [];
+        if ($this->_aucollab_general_pregexes === false) {
+            $this->_aucollab_general_pregexes = null;
             foreach ($this->aucollab_matchers() as $matcher) {
                 if (($r = $matcher->general_pregexes()))
-                    $l[] = $r;
+                    $this->_aucollab_general_pregexes = $r->merge($this->_aucollab_general_pregexes);
             }
-            $this->_aucollab_general_pregexes = Text::merge_pregexes($l);
         }
         return $this->_aucollab_general_pregexes;
     }

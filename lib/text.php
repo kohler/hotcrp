@@ -3,10 +3,21 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class TextPregexes {
-    public $value;
+    /** @var ?string */
     public $preg_raw;
+    /** @var string */
     public $preg_utf8;
+    /** @var ?string */
+    public $value;
+    /** @var ?bool */
     public $simple;
+
+    /** @param ?string $raw
+     * @param string $utf8 */
+    function __construct($raw, $utf8) {
+        $this->preg_raw = $raw;
+        $this->preg_utf8 = $utf8;
+    }
 
     /** @param string $text
      * @param string|false $deaccented_text
@@ -18,6 +29,20 @@ class TextPregexes {
             return !!preg_match('{' . $this->preg_utf8 . '}ui', $deaccented_text);
         } else {
             return !!preg_match('{' . $this->preg_raw . '}i', $text);
+        }
+    }
+
+    /** @return TextPregexes */
+    function merge(TextPregexes $r = null) {
+        if ($r) {
+            $t = "{$r->preg_utf8}|{$this->preg_utf8}";
+            if ($this->preg_raw !== null && $r->preg_raw !== null) {
+                return new TextPregexes("{$r->preg_raw}|{$this->preg_raw}", $t);
+            } else {
+                return new TextPregexes(null, $t);
+            }
+        } else {
+            return $this;
         }
     }
 }
@@ -304,7 +329,7 @@ class Text {
         if (is_object($word)) {
             $reg = $word;
         } else {
-            $reg = new TextPregexes;
+            $reg = new TextPregexes(null, "");
             $reg->value = $word;
         }
 
@@ -322,42 +347,6 @@ class Text {
         }
 
         return $reg;
-    }
-
-    /** @param ?string $raw
-     * @param string $utf8
-     * @return TextPregexes */
-    static function make_pregexes($raw, $utf8) {
-        $reg = new TextPregexes;
-        $reg->preg_raw = $raw;
-        $reg->preg_utf8 = $utf8;
-        return $reg;
-    }
-
-    /** @param list<TextPregexes> $regex
-     * @return ?TextPregexes */
-    static function merge_pregexes($regex) {
-        if (empty($regex)) {
-            return null;
-        } else if (count($regex) === 1) {
-            return $regex[0];
-        } else {
-            $a = $b = [];
-            foreach ($regex as $x) {
-                if ($x) {
-                    $a[] = $x->preg_utf8;
-                    if (isset($x->preg_raw)) {
-                        $b[] = $x->preg_raw;
-                    }
-                }
-            }
-            $x = new TextPregexes;
-            $x->preg_utf8 = join("|", $a);
-            if (count($a) === count($b)) {
-                $x->preg_raw = join("|", $b);
-            }
-            return $x;
-        }
     }
 
     /** @param ?TextPregexes $reg */

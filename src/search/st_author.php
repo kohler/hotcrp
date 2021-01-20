@@ -73,7 +73,7 @@ class Author_SearchTerm extends SearchTerm {
     function extract_metadata($top, PaperSearch $srch) {
         parent::extract_metadata($top, $srch);
         if ($this->regex) {
-            $srch->regex["au"][] = $this->regex;
+            $srch->add_field_highlighter("au", $this->regex);
         }
     }
 }

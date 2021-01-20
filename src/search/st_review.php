@@ -488,7 +488,7 @@ class Review_SearchTerm extends SearchTerm {
     private static function impossible_score_match(ReviewField $f) {
         $t = new False_SearchTerm;
         $r = $f->full_score_range();
-        $t->set_float("contradiction_warning", "$f->name_html scores range from $r[0] to $r[1].");
+        $t->set_float("warning", "{$f->name_html} scores range from $r[0] to $r[1].");
         $t->set_float("used_revadj", true);
         return $t;
     }
@@ -515,16 +515,19 @@ class Review_SearchTerm extends SearchTerm {
             if ($f->option_letter && !$srch->conf->opt("smartScoreCompare"))
                 $m[1] = CountMatcher::flip_countexpr_string($m[1]);
             $score = self::parse_score($f, $m[2]);
-            if ($score === false)
+            if ($score === false) {
                 return self::impossible_score_match($f);
+            }
             $rsm->apply_score_field($f, $score, 0, CountMatcher::$opmap[$m[1]]);
         } else if (preg_match('/\A(\d+|[A-Z]|none)\s*(|-|–|—|\.\.\.?|…)\s*(\d+|[A-Z]|none)\s*\z/si', $word, $m)) {
             $score1 = self::parse_score($f, $m[1]);
             $score2 = self::parse_score($f, $m[3]);
-            if ($score1 === false || $score2 === false)
+            if ($score1 === false || $score2 === false) {
                 return self::impossible_score_match($f);
-            if ($score1 > $score2)
+            }
+            if ($score1 > $score2) {
                 list($score1, $score2) = [$score2, $score1];
+            }
             $precise = $m[2] !== ".." && $m[2] !== "..." && $m[2] !== "…";
             $rsm->apply_score_field($f, $score1, $score2, $precise ? 16 : 8);
         } else {             // XXX
