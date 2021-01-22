@@ -37,10 +37,11 @@ class Conflict_SearchTerm extends SearchTerm {
             return "coalesce($thistab.ct,0)$compar";
         } else {
             $sqi->add_table($thistab, ["left join", "PaperConflict", $where]);
-            if ($compar === "=0")
+            if ($compar === "=0") {
                 return "$thistab.contactId is null";
-            else
+            } else {
                 return "$thistab.contactId is not null";
+            }
         }
     }
     function test(PaperInfo $row, $rrow) {

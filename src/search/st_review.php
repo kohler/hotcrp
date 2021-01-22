@@ -187,9 +187,11 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
     }
 
+    /** @return ?string */
     function useful_sqlexpr(Contact $user, $table_name) {
-        if ($this->test(0))
-            return false;
+        if ($this->test(0)) {
+            return null;
+        }
         $where = [];
         if ($this->completeness & self::SUBMITTED) {
             $where[] = "reviewSubmitted is not null";
@@ -207,8 +209,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
         if ($this->has_contacts()) {
             $cm = $this->contact_match_sql("contactId");
-            if ($this->tokens)
+            if ($this->tokens) {
                 $cm = "($cm or reviewToken in (" . join(",", $this->tokens) . "))";
+            }
             $where[] = $cm;
         }
         if ($this->rfield) {
@@ -245,7 +248,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $where[] = "requestedBy=" . $user->contactId;
         }
         if (empty($where)) {
-            return false;
+            return null;
         } else {
             return join(" and ", $where);
         }
@@ -558,12 +561,12 @@ class Review_SearchTerm extends SearchTerm {
         // We'll do the precise query later.
         // ">=0" is a useless constraint in SQL-land.
         $cexpr = $this->rsm->conservative_nonnegative_countexpr();
-        if ($cexpr === ">=0" || $sqi->negated) {
+        if ($cexpr === ">=0") {
             return "true";
         } else if ($this->rsm->review_type() == REVIEW_REQUEST) {
             return "exists (select * from ReviewRequest where paperId=Paper.paperId)";
         } else {
-            $wheres = $this->rsm->useful_sqlexpr($sqi->user, "r") ? : "true";
+            $wheres = $this->rsm->useful_sqlexpr($this->user, "r") ?? "true";
             if ($cexpr === ">0") {
                 return "exists (select * from PaperReview r where paperId=Paper.paperId and $wheres)";
             } else {

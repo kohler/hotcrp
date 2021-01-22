@@ -72,7 +72,7 @@ class Revpref_SearchTerm extends SearchTerm {
             $contacts = array_keys($srch->conf->pc_members());
         } else {
             $safe_contacts = 1;
-            $contacts = [$srch->cxid];
+            $contacts = [$srch->user->contactXid];
         }
 
         $count = "";
@@ -91,7 +91,7 @@ class Revpref_SearchTerm extends SearchTerm {
 
         if ($count === "") {
             if ($safe_contacts === 0) {
-                $contacts = [$srch->cxid];
+                $contacts = [$srch->user->contactXid];
                 $safe_contacts = 1;
             }
             $count = ">0";

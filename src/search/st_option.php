@@ -14,9 +14,10 @@ abstract class Option_SearchTerm extends SearchTerm {
         $this->user = $user;
         $this->option = $option;
     }
+
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_options_columns();
-        if (!$sqi->negated && !$this->option->include_empty) {
+        if (!$this->option->include_empty) {
             return "exists (select * from PaperOption where paperId=Paper.paperId and optionId={$this->option->id})";
         } else {
             return "true";

@@ -466,21 +466,19 @@ class Not_SearchTerm extends Op_SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        $sqi->negated = !$sqi->negated;
-        $top = $sqi->top;
-        $sqi->top = false;
+        ++$sqi->depth;
         $ff = $this->child[0]->sqlexpr($sqi);
-        if ($sqi->negated && !$this->child[0]->is_sqlexpr_precise()) {
-            $ff = "false";
-        }
-        $sqi->negated = !$sqi->negated;
-        $sqi->top = $top;
-        if ($ff === "false") {
-            return "true";
-        } else if ($ff === "true") {
-            return "false";
+        --$sqi->depth;
+        if ($this->child[0]->is_sqlexpr_precise()) {
+            if ($ff === "false") {
+                return "true";
+            } else if ($ff === "true") {
+                return "false";
+            } else {
+                return "not coalesce($ff,0)";
+            }
         } else {
-            return "not coalesce($ff,0)";
+            return "true";
         }
     }
     function test(PaperInfo $row, $rrow) {
@@ -540,7 +538,7 @@ class And_SearchTerm extends Op_SearchTerm {
         }
         foreach ($this->child as &$qv) {
             if (!($qv instanceof ReviewAdjustment_SearchTerm))
-                $qv = $qv->adjust_reviews($myrevadj ? : $revadj, $srch);
+                $qv = $qv->adjust_reviews($myrevadj ?? $revadj, $srch);
         }
         if ($myrevadj && !$myrevadj->used_revadj) {
             $this->child[0] = $myrevadj->promote($srch);
@@ -551,7 +549,7 @@ class And_SearchTerm extends Op_SearchTerm {
         return $this;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        $ff = array();
+        $ff = [];
         foreach ($this->child as $subt) {
             $ff[] = $subt->sqlexpr($sqi);
         }
@@ -635,8 +633,7 @@ class Or_SearchTerm extends Op_SearchTerm {
     }
 
     static function or_sqlexpr($child, SearchQueryInfo $sqi) {
-        $top = $sqi->top;
-        $sqi->top = false;
+        ++$sqi->depth;
         $ff = [];
         $tsf = [];
         foreach ($child as $subt) {
@@ -649,7 +646,7 @@ class Or_SearchTerm extends Op_SearchTerm {
         if ($tsf) {
             $ff[] = Tag_SearchTerm::combine_sqlexpr($tsf);
         }
-        $sqi->top = $top;
+        --$sqi->depth;
         return self::orjoin_sqlexpr($ff);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -730,13 +727,12 @@ class Xor_SearchTerm extends Op_SearchTerm {
         if (empty($this->child)) {
             return "false";
         } else if ($xor) {
-            $top = $sqi->top;
-            $sqi->top = false;
+            ++$sqi->depth;
             $ff = [];
             foreach ($this->child as $subt) {
                 $ff[] = $subt->sqlexpr($sqi);
             }
-            $sqi->top = $top;
+            --$sqi->depth;
             return "(coalesce(" . join(",0) xor coalesce(", $ff) . ",0))";
         } else {
             return Or_SearchTerm::or_sqlexpr($this->child, $sqi);
@@ -834,13 +830,12 @@ class Then_SearchTerm extends Op_SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        $top = $sqi->top;
-        $sqi->top = false;
+        ++$sqi->depth;
         $ff = [];
         foreach ($this->child as $subt) {
             $ff[] = $subt->sqlexpr($sqi);
         }
-        $sqi->top = $top;
+        --$sqi->depth;
         return self::orjoin_sqlexpr(array_slice($ff, 0, $this->nthen), "true");
     }
     function test(PaperInfo $row, $rrow) {
@@ -930,7 +925,9 @@ class Limit_SearchTerm extends SearchTerm {
             return false;
         } else if (in_array($this->limit, ["undec", "acc", "viewable"], true)) {
             return $this->user->privChair;
-        } else if (in_array($this->limit, ["reviewable", "admin", "alladmin"], true)) {
+        } else if ($this->limit === "alladmin") {
+            return $this->user->allow_administer_all();
+        } else if ($this->limit === "reviewable" || $this->limit === "admin") {
             return false;
         } else {
             return true;
@@ -938,6 +935,8 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
+        assert($sqi->depth > 0 || $sqi->srch->user === $this->user);
+
         $ff = ["true"];
         if ($this->lflag === self::LFLAG_SUBMITTED) {
             $ff[] = "Paper.timeSubmitted>0";
@@ -945,14 +944,15 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = "Paper.timeWithdrawn<=0";
         }
 
-        if (in_array($this->limit, ["a", "ar", "alladmin", "admin"], true)) {
-            $sqi->add_conflict_table();
-        }
         if (in_array($this->limit, ["ar", "r", "rout"], true)) {
             $sqi->add_reviewer_columns();
-            $act_reviewer_sql = $sqi->user->act_reviewer_sql("MyReviews");
-            if ($sqi->top && $act_reviewer_sql !== "false") {
-                $sqi->add_table("MyReviews", [$this->limit === "ar" ? "left join" : "join", "PaperReview", $act_reviewer_sql]);
+            if ($sqi->depth === 0) {
+                $act_reviewer_sql = $this->user->act_reviewer_sql("MyReviews");
+                if ($act_reviewer_sql !== "false") {
+                    $sqi->add_table("MyReviews", [$this->limit === "ar" ? "left join" : "join", "PaperReview", $act_reviewer_sql]);
+                }
+            } else {
+                $act_reviewer_sql = $this->user->act_reviewer_sql("PaperReview");
             }
         } else {
             $act_reviewer_sql = "error";
@@ -966,30 +966,30 @@ class Limit_SearchTerm extends SearchTerm {
         case "reviewable":
             break;
         case "a":
-            $ff[] = $sqi->user->act_author_view_sql("PaperConflict");
+            $ff[] = $this->user->act_author_view_sql($sqi->conflict_table($this->user));
             break;
         case "ar":
             if ($act_reviewer_sql === "false") {
                 $r = "false";
-            } else if ($sqi->top) {
+            } else if ($sqi->depth === 0) {
                 $r = "MyReviews.reviewType is not null";
             } else {
                 $r = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql)";
             }
-            $ff[] = "(" . $sqi->user->act_author_view_sql("PaperConflict") . " or (Paper.timeWithdrawn<=0 and $r))";
+            $ff[] = "(" . $this->user->act_author_view_sql($sqi->conflict_table($this->user)) . " or (Paper.timeWithdrawn<=0 and $r))";
             break;
         case "r":
             // if top, the straight join suffices
             if ($act_reviewer_sql === "false") {
                 $ff[] = "false";
-            } else if (!$sqi->top) {
+            } else if ($sqi->depth > 0) {
                 $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql)";
             }
             break;
         case "rout":
             if ($act_reviewer_sql === "false") {
                 $ff[] = "false";
-            } else if ($sqi->top) {
+            } else if ($sqi->depth === 0) {
                 $ff[] = "MyReviews.reviewNeedsSubmit!=0";
             } else {
                 $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql and reviewNeedsSubmit!=0)";
@@ -1006,22 +1006,22 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = "Paper.timeWithdrawn<=0";
             break;
         case "lead":
-            $ff[] = "Paper.leadContactId=" . $sqi->srch->cxid;
+            $ff[] = "Paper.leadContactId={$this->user->contactXid}";
             break;
         case "alladmin":
-            if ($sqi->user->privChair) {
+            if ($this->user->privChair) {
                 break;
             }
             /* FALLTHRU */
         case "admin":
-            if ($sqi->user->is_track_manager()) {
-                $ff[] = "(Paper.managerContactId=" . $sqi->srch->cxid . " or Paper.managerContactId=0)";
+            if ($this->user->is_track_manager()) {
+                $ff[] = "(Paper.managerContactId={$this->user->contactXid} or Paper.managerContactId=0)";
             } else {
-                $ff[] = "Paper.managerContactId=" . $sqi->srch->cxid;
+                $ff[] = "Paper.managerContactId={$this->user->contactXid}";
             }
             break;
         case "req":
-            $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy=" . $sqi->srch->cxid . ")";
+            $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and reviewType=" . REVIEW_EXTERNAL . " and requestedBy={$this->user->contactXid})";
             break;
         default:
             $ff[] = "false";
@@ -1311,9 +1311,9 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     function promote(PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher(">0");
         if (in_array($srch->limit(), ["r", "rout", "reviewable"], true)) {
-            $rsm->add_contact($srch->cxid);
+            $rsm->add_contact($srch->user->contactXid);
         } else if ($srch->limit() === "req") {
-            $rsm->apply_requester($srch->cxid);
+            $rsm->apply_requester($srch->user->contactXid);
             $rsm->apply_review_type("external"); // XXX optional PC reviews?
         }
         $this->promote_matcher($rsm);
@@ -1607,33 +1607,23 @@ class ContactCountMatcher extends CountMatcher {
 }
 
 class SearchQueryInfo {
-    /** @var Conf
-     * @readonly */
-    public $conf;
     /** @var PaperSearch
      * @readonly */
     public $srch;
-    /** @var Contact
-     * @readonly */
-    public $user;
     /** @var array<string,mixed> */
     public $tables = [];
     /** @var array<string,string> */
     public $columns = [];
     /** @var array<string,mixed> */
     public $query_options = [];
-    /** @var bool */
-    public $negated = false;
-    /** @var bool */
-    public $top = true;
+    /** @var int */
+    public $depth = 0;
     private $_has_my_review = false;
     private $_has_review_signatures = false;
     private $_review_scores;
 
     function __construct(PaperSearch $srch) {
-        $this->conf = $srch->conf;
         $this->srch = $srch;
-        $this->user = $srch->user;
     }
     function add_table($table, $joiner = false) {
         // All added tables must match at most one Paper row each,
@@ -1649,14 +1639,16 @@ class SearchQueryInfo {
         assert(!isset($this->columns[$name]) || $this->columns[$name] === $expr);
         $this->columns[$name] = $expr;
     }
-    function add_conflict_table() {
-        if (!isset($this->tables["PaperConflict"])) {
-            $this->add_table("PaperConflict", ["left join", "PaperConflict", "PaperConflict.contactId=" . ($this->user->contactId ? : -100)]);
+    function conflict_table(Contact $user) {
+        if ($user->contactXid > 0) {
+            $t = "PaperConflict{$user->contactXid}";
+            if (!isset($this->tables[$t])) {
+                $this->add_table($t, ["left join", "PaperConflict", "{$t}.contactId={$user->contactXid}"]);
+            }
+            return $t;
+        } else {
+            return null;
         }
-    }
-    function add_conflict_columns() {
-        $this->add_conflict_table();
-        $this->columns["conflictType"] = "PaperConflict.conflictType";
     }
     function add_options_columns() {
         $this->columns["optionIds"] = "coalesce((select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId), '')";
@@ -1664,33 +1656,31 @@ class SearchQueryInfo {
     function add_reviewer_columns() {
         $this->_has_my_review = true;
     }
-    function finish_reviewer_columns() {
-        if ($this->_has_review_signatures) {
-            $this->add_column("reviewSignatures", "coalesce((select " . ReviewInfo::review_signature_sql($this->conf, $this->_review_scores) . " from PaperReview r where r.paperId=Paper.paperId), '')");
-        }
-        if ($this->_has_my_review) {
-            $this->add_conflict_columns();
-            $this->_add_review_permissions();
-        }
-    }
-    private function _add_review_permissions() {
-        if ($this->_has_review_signatures
-            || isset($this->columns["myReviewPermissions"])) {
-            // nada
-        } else if (($act_reviewer_sql = $this->user->act_reviewer_sql("PaperReview")) === "false") {
-            $this->add_column("myReviewPermissions", "''");
-        } else if (isset($this->tables["MyReviews"])) {
-            $this->add_column("myReviewPermissions", "coalesce(" . PaperInfo::my_review_permissions_sql("MyReviews.") . ", '')");
-        } else {
-            $this->add_column("myReviewPermissions", "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and $act_reviewer_sql group by paperId), '')");
-        }
-    }
     function add_review_signature_columns() {
         $this->_has_review_signatures = true;
     }
+    function finish_reviewer_columns() {
+        $user = $this->srch->user;
+        if ($this->_has_my_review) {
+            $ct = $this->conflict_table($user);
+            $this->add_column("conflictType", $ct ? "{$ct}.conflictType" : "null");
+        }
+        if ($this->_has_review_signatures) {
+            $this->add_column("reviewSignatures", "coalesce((select " . ReviewInfo::review_signature_sql($user->conf, $this->_review_scores) . " from PaperReview r where r.paperId=Paper.paperId), '')");
+        } else if ($this->_has_my_review) {
+            $act_reviewer_sql = $user->act_reviewer_sql("PaperReview");
+            if ($act_reviewer_sql === "false") {
+                $this->add_column("myReviewPermissions", "''");
+            } else if (isset($this->tables["MyReviews"])) {
+                $this->add_column("myReviewPermissions", "coalesce(" . PaperInfo::my_review_permissions_sql("MyReviews.") . ", '')");
+            } else {
+                $this->add_column("myReviewPermissions", "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and $act_reviewer_sql group by paperId), '')");
+            }
+        }
+    }
     function add_score_columns($fid) {
         $this->add_review_signature_columns();
-        if (($f = $this->conf->review_field($fid))
+        if (($f = $this->srch->conf->review_field($fid))
             && $f->main_storage
             && (!$this->_review_scores || !in_array($fid, $this->_review_scores))) {
             $this->_review_scores[] = $fid;
@@ -1704,7 +1694,6 @@ class SearchQueryInfo {
     }
     function add_rights_columns() {
         // XXX could avoid the following if user is privChair for everything:
-        $this->add_conflict_columns();
         $this->add_reviewer_columns();
     }
     function add_allConflictType_column() {
@@ -1721,9 +1710,6 @@ class PaperSearch {
     /** @var Contact
      * @readonly */
     public $user;
-    /** @var int
-     * @readonly */
-    public $cxid;
 
     /** @var string
      * @readonly */
@@ -1802,7 +1788,6 @@ class PaperSearch {
         // contact facts
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->cxid = $user->contactXid;
 
         // query fields
         // NB: If a complex query field, e.g., "re", "tag", or "option", is
@@ -1883,7 +1868,7 @@ class PaperSearch {
         }
         if (!isset($args["reviewer"])
             && $this->_reviewer_user
-            && $this->_reviewer_user->contactId !== $this->cxid) {
+            && $this->_reviewer_user->contactId !== $this->user->contactXid) {
             $args["reviewer"] = $this->_reviewer_user->email;
         }
         $this->_urlbase = $this->conf->hoturl_site_relative_raw($base, $args);
@@ -2368,7 +2353,7 @@ class PaperSearch {
                 $defkwstack[] = $defkw;
                 if ($next_defkw) {
                     $defkw = $next_defkw[0];
-                    $stkelem->pos = $next_defkw[1];
+                    $stkelem->pos1 = $next_defkw[1];
                     $next_defkw = null;
                 }
                 $stack[] = $stkelem;
@@ -3068,7 +3053,7 @@ class PaperSearch {
     function listid($sort = null) {
         $rest = [];
         if ($this->_reviewer_user
-            && $this->_reviewer_user->contactXid !== $this->cxid) {
+            && $this->_reviewer_user->contactXid !== $this->user->contactXid) {
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
         }
         if ($sort !== null && $sort !== "") {

@@ -32,7 +32,7 @@ class Admin_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column("managerContactId", "Paper.managerContactId");
-        if ($sqi->conf->check_track_admin_sensitivity()
+        if ($this->user->conf->check_track_admin_sensitivity()
             || ($this->flags & self::ALLOW_NONE)) {
             return "true";
         } else if ($this->match === true) {

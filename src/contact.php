@@ -2714,6 +2714,11 @@ class Contact {
     }
 
     /** @return bool */
+    function allow_administer_all() {
+        return $this->is_site_contact;
+    }
+
+    /** @return bool */
     function allow_administer(PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
@@ -2876,6 +2881,9 @@ class Contact {
         return $this->rights($prow)->act_author_view;
     }
 
+    /** @param ?string $table
+     * @param bool $only_if_complex
+     * @return ?string */
     function act_author_view_sql($table, $only_if_complex = false) {
         // see also _author_perm_tags
         $m = [];
@@ -2885,9 +2893,10 @@ class Contact {
             }
         }
         if (empty($m) && $this->contactId && $only_if_complex) {
-            return false;
+            return null;
         } else {
             if ($this->contactId) {
+                assert($table !== null);
                 $m[] = "$table.conflictType>=" . CONFLICT_AUTHOR;
             }
             if (count($m) > 1) {
