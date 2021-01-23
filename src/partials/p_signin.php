@@ -333,7 +333,7 @@ class Signin_Partial {
     }
     static function render_newaccount_form_actions(Contact $user, Qrequest $qreq) {
         echo '<div class="popup-actions">',
-            Ht::submit("Create account", ["class" => "btn-success"]),
+            Ht::submit("Create account", ["class" => "btn-primary"]),
             Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
             '</div>';
     }

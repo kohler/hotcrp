@@ -315,7 +315,7 @@ class LoginHelper {
             $e = null;
         } else if (isset($info["unset"])) {
             if ($conf->allow_user_self_register()) {
-                $e = "User %2[email]\$H does not have a password yet. Check the email address or create a password <a href=\"%2[newaccount]\$H\">here</a>.";
+                $e = "User %2[email]\$H does not have a password yet. Check the email address or <a href=\"%2[newaccount]\$H\">create that account</a>.";
             } else {
                 $e = "User %2[email]\$H does not have a password. Check the email address.";
             }
