@@ -256,7 +256,7 @@ class LoginHelper {
 
         // ignore reset request from disabled user
         $cdbu = $user->contactdb_user();
-        if ($user->password_unset() && !$create) {
+        if (!$user->has_account_here() && !$cdbu && !$create) {
             return ["ok" => false, "email" => true, "unset" => true];
         } else if (!$user->can_reset_password()) {
             return ["ok" => false, "email" => true, "nologin" => true];
