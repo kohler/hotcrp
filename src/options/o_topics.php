@@ -175,7 +175,7 @@ class Topics_PaperOption extends PaperOption {
                 if ($interests) {
                     $t .= ' topic' . ($interests[$tid] ?? 0);
                 }
-                $tname = $topics->get($tid);
+                $tname = $topics->name($tid);
                 $x = $topics->unparse_name_html($tid);
                 if ($user->isPC) {
                     $x = Ht::link($x, $this->conf->hoturl("search", ["q" => "topic:" . SearchWord::quote($tname)]), ["class" => "qq"]);

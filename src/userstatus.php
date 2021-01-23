@@ -581,7 +581,7 @@ class UserStatus extends MessageSet {
      * @param object $in_topics */
     private function normalize_topics($cj, $old_user, $tk, $in_topics) {
         unset($cj->topics);
-        $cj->bad_topics = array();
+        $cj->bad_topics = [];
         if ($tk === "topics") {
             $topics = [];
         } else {
@@ -591,9 +591,10 @@ class UserStatus extends MessageSet {
             }
         }
         foreach ((array) $in_topics as $k => $v) {
-            if ($this->conf->topic_set()->get($k)) {
+            if ((is_int($k) || ctype_digit($k))
+                && $this->conf->topic_set()->name((int) $k)) {
                 $k = (int) $k;
-            } else if (($tid = $this->conf->topic_abbrev_matcher()->find1($k))) {
+            } else if (($tid = $this->conf->topic_abbrev_matcher()->find1($k, TopicSet::MFLAG_TOPIC))) {
                 $k = $tid;
             } else {
                 $cj->bad_topics[] = $k;
@@ -1222,7 +1223,7 @@ class UserStatus extends MessageSet {
             $topics = [];
             foreach ($line as $k => $v) {
                 if (preg_match('/^topic[:\s]\s*(.*?)\s*$/i', $k, $m)) {
-                    if (($tid = $us->conf->topic_abbrev_matcher()->find1($m[1]))) {
+                    if (($tid = $us->conf->topic_abbrev_matcher()->find1($m[1], TopicSet::MFLAG_TOPIC))) {
                         $v = trim($v);
                         $topics[$tid] = $v === "" ? 0 : $v;
                     } else {

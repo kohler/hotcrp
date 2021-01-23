@@ -1169,6 +1169,31 @@ xassert_eqq($am->find_all("PreVid15"), [1]);
 xassert_eqq($am->find_all("PreSli"), [2]);
 xassert_eqq($am->find_all("PreVid"), [0, 1]);
 
+$am = new AbbreviationMatcher;
+$names = ["Applications of cryptography",
+  "Applications of cryptography: Analysis of deployed cryptography and cryptographic protocols",
+  "Applications of cryptography: Cryptographic implementation analysis",
+  "Applications of cryptography: New cryptographic protocols with real-world applications",
+  "Data-driven security and measurement studies",
+  "Data-driven security and measurement studies: Measurements of fraud, malware, spam",
+  "Data-driven security and measurement studies: Measurements of human behavior and security",
+  "Hardware security",
+  "Hardware security: Embedded systems security",
+  "Hardware security: Methods for detection of malicious or counterfeit hardware",
+  "Hardware security: Secure computer architectures",
+  "Hardware security: Side channels"];
+foreach ($names as $i => $k) {
+    $am->add_phrase($k, $i, 1);
+}
+foreach ([[0, 1, 2, 3], [4, 5, 6], [7, 8, 9, 10, 11]] as $g) {
+    foreach ($g as $i) {
+        $am->add_phrase($names[$g[0]], $i, 2);
+    }
+}
+xassert_eqq($am->find_all("Applications of cryptography"), [0, 1, 2, 3]);
+xassert_eqq($am->find1("Applications of cryptography"), null);
+xassert_eqq($am->find1("Applications of cryptography", 1), 0);
+
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
 xassert_eqq(Filer::docstore_fixed_prefix(""), null);
