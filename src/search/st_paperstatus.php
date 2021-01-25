@@ -20,7 +20,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
         } else {
             if ($srch->limit_submitted()
                 && ($fval[0] !== "timeSubmitted" || $fval[1] !== ">0")) {
-                $srch->warn("“" . htmlspecialchars("{$sword->keyword}:{$sword->qword}") . "” won’t match because this collection that only contains submitted papers.");
+                $srch->warn($sword->source_html() . ": Matches nothing because this search is limited to submitted papers.");
             }
             return new PaperStatus_SearchTerm($fval);
         }

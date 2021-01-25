@@ -4,12 +4,13 @@
 
 class SearchWord {
     /** @var string */
+    public $source;
+    /** @var string */
     public $qword;
     /** @var string */
     public $word;
     /** @var bool */
     public $quoted;
-    public $keyword;
     /** @var ?bool */
     public $kwexplicit;
     public $kwdef;
@@ -17,8 +18,10 @@ class SearchWord {
     public $compar;
     /** @var ?string */
     public $cword;
-    /** @param string $qword */
-    function __construct($qword) {
+    /** @param string $qword
+     * @param string $source */
+    function __construct($qword, $source) {
+        $this->source = $source;
         $this->qword = $this->word = $qword;
         $this->quoted = $qword !== "" && $qword[0] === "\""
             && strpos($qword, "\"", 1) === strlen($qword) - 1;
@@ -45,6 +48,10 @@ class SearchWord {
         } else {
             return $text;
         }
+    }
+    /** @return string */
+    function source_html() {
+        return htmlspecialchars($this->source);
     }
 }
 
@@ -283,12 +290,9 @@ abstract class SearchTerm {
     }
 
 
+    /** @param bool $top
+     * @return void */
     function extract_metadata($top, PaperSearch $srch) {
-        if ($top && ($x = $this->get_float("warning"))) {
-            foreach (is_string($x) ? [$x] : $x as $w) {
-                $srch->warn($w);
-            }
-        }
     }
     /** @param bool $top
      * @return ?PaperColumn */
@@ -873,6 +877,9 @@ class Limit_SearchTerm extends SearchTerm {
     /** @var string
      * @readonly */
     public $limit;
+    /** @var string
+     * @readonly */
+    public $named_limit;
     /** @var int
      * @readonly */
     public $lflag;
@@ -881,43 +888,85 @@ class Limit_SearchTerm extends SearchTerm {
     /** @var Contact */
     private $reviewer;
 
+    static public $reqtype_map = [
+        "a" => ["a", "author"],
+        "acc" => ["acc", "accepted"],
+        "accepted" => ["acc", "accepted"],
+        "act" => ["act", "active"],
+        "active" => ["act", "active"],
+        "admin" => "admin",
+        "administrator" => "admin",
+        "all" => "all",
+        "alladmin" => "alladmin",
+        "ar" => "ar",
+        "author" => ["a", "author"],
+        "editpref" => "reviewable",
+        "lead" => "lead",
+        "manager" => "admin",
+        "none" => "none",
+        "outstandingreviews" => ["rout", "outstandingreviews"],
+        "r" => ["r", "reviews"],
+        "rable" => "reviewable",
+        "req" => "req",
+        "reqrevs" => "req",
+        "reviewable" => "reviewable",
+        "reviews" => ["r", "reviews"],
+        "rout" => ["rout", "outstandingreviews"],
+        "s" => ["s", "submitted"],
+        "submitted" => ["s", "submitted"],
+        "und" => ["undec", "undecided"],
+        "undec" => ["undec", "undecided"],
+        "undecided" => ["undec", "undecided"],
+        "unsub" => ["unsub", "unsubmitted"],
+        "unsubmitted" => ["unsub", "unsubmitted"],
+        "vis" => "viewable",
+        "visible" => "viewable",
+    ];
+
     const LFLAG_ACTIVE = 1;
     const LFLAG_SUBMITTED = 2;
 
     function __construct(Contact $user, Contact $reviewer, $limit) {
         parent::__construct("in");
-        $this->limit = $limit;
-        $this->lflag = 0;
         $this->user = $user;
         $this->reviewer = $reviewer;
-        if (!in_array($limit, ["a", "ar", "viewable", "all"], true)) {
-            if (in_array($limit, ["r", "act", "unsub"], true)
-                || ($reviewer->conf->can_pc_see_active_submissions()
-                    && !in_array($limit, ["s", "acc"], true))) {
-                $this->lflag = self::LFLAG_ACTIVE;
-            } else {
-                $this->lflag = self::LFLAG_SUBMITTED;
-            }
-        }
+        $this->set_limit($limit);
     }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $reviewer = $srch->reviewer_user();
-        $word = PaperSearch::canonical_search_type($word);
-        if ($word === "reviewable") {
-            if ($srch->user->privChair || $srch->user === $reviewer) {
-                if ($reviewer->can_accept_review_assignment_ignore_conflict(null)) {
-                    if ($srch->conf->can_pc_see_active_submissions()) {
-                        $word = "act";
+        return new Limit_SearchTerm($srch->user, $reviewer, $word);
+    }
+
+    /** @param string $limit
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_limit($limit) {
+        $limit = PaperSearch::canonical_limit($limit) ?? "none";
+        // optimize SQL for some limits
+        $this->limit = $this->named_limit = $limit;
+        if ($this->named_limit === "reviewable") {
+            if ($this->user->privChair || $this->user === $this->reviewer) {
+                if ($this->reviewer->can_accept_review_assignment_ignore_conflict(null)) {
+                    if ($this->user->conf->can_pc_see_active_submissions()) {
+                        $this->limit = "act";
                     } else {
-                        $word = "s";
+                        $this->limit = "s";
                     }
-                } else if (!$reviewer->isPC) {
-                    $word = "r";
+                } else if (!$this->reviewer->isPC) {
+                    $this->limit = "r";
                 }
             }
         }
-        return new Limit_SearchTerm($srch->user, $reviewer, $word);
+        // mark flags
+        if (in_array($limit, ["a", "ar", "viewable", "all", "none"], true)) {
+            $this->lflag = 0;
+        } else if (in_array($limit, ["r", "act", "unsub"], true)
+                   || ($this->user->conf->can_pc_see_active_submissions()
+                       && !in_array($limit, ["s", "acc"], true))) {
+            $this->lflag = self::LFLAG_ACTIVE;
+        } else {
+            $this->lflag = self::LFLAG_SUBMITTED;
+        }
     }
 
     function is_sqlexpr_precise() {
@@ -937,7 +986,7 @@ class Limit_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         assert($sqi->depth > 0 || $sqi->srch->user === $this->user);
 
-        $ff = ["true"];
+        $ff = [];
         if ($this->lflag === self::LFLAG_SUBMITTED) {
             $ff[] = "Paper.timeSubmitted>0";
         } else if ($this->lflag === self::LFLAG_ACTIVE) {
@@ -982,7 +1031,9 @@ class Limit_SearchTerm extends SearchTerm {
             // if top, the straight join suffices
             if ($act_reviewer_sql === "false") {
                 $ff[] = "false";
-            } else if ($sqi->depth > 0) {
+            } else if ($sqi->depth === 0) {
+                // the `join` with MyReviews suffices
+            } else {
                 $ff[] = "exists (select * from PaperReview where paperId=Paper.paperId and $act_reviewer_sql)";
             }
             break;
@@ -1028,7 +1079,7 @@ class Limit_SearchTerm extends SearchTerm {
             break;
         }
 
-        return self::andjoin_sqlexpr($ff);
+        return empty($ff) ? "true" : self::andjoin_sqlexpr($ff);
     }
 
     function test(PaperInfo $row, $rrow) {
@@ -1084,6 +1135,12 @@ class Limit_SearchTerm extends SearchTerm {
             return false;
         default:
             return false;
+        }
+    }
+
+    function extract_metadata($top, PaperSearch $srch) {
+        if ($top) {
+            $srch->apply_limit($this);
         }
     }
 }
@@ -1716,9 +1773,6 @@ class PaperSearch {
     public $q;
     /** @var string
      * @readonly */
-    private $_named_limit;
-    /** @var string
-     * @readonly */
     private $_qt;
 
     /** @var bool
@@ -1731,6 +1785,8 @@ class PaperSearch {
     private $_reviewer_user;
     /** @var Limit_SearchTerm */
     private $_limit_qe;
+    /** @var bool */
+    private $_limit_explicit = false;
 
     /** @var ?string */
     private $_urlbase;
@@ -1818,32 +1874,30 @@ class PaperSearch {
         }
 
         // paper selection
-        $limit = self::canonical_search_type($options["t"] ?? "");
-        if (in_array($limit, ["a", "r", "ar", "rout", "viewable"], true)
-            || ($user->privChair && in_array($limit, ["all", "unsub", "alladmin"], true))
-            || ($user->isPC && in_array($limit, ["acc", "req", "lead", "reviewable",
-                                                 "admin", "alladmin", "undec"], true))) {
-            /* ok */
-        } else if ($user->privChair && !$limit && $this->conf->time_edit_paper()) {
-            $limit = "all";
-        } else if (($user->privChair && $limit === "act")
-                   || ($user->isPC
-                       && in_array($limit, ["", "act", "all"], true)
-                       && $this->conf->can_pc_see_active_submissions())) {
-            $limit = "act";
-        } else if ($user->isPC && in_array($limit, ["", "s", "act", "all"], true)) {
-            $limit = "s";
-        } else if ($limit === "reviewable") {
-            $limit = "r";
-        } else if (!$user->is_reviewer()) {
-            $limit = "a";
-        } else if (!$user->is_author()) {
-            $limit = "r";
-        } else {
-            $limit = "ar";
+        $limit = self::canonical_limit($options["t"] ?? "") ?? "";
+        if ($limit === "") {
+            if ($user->privChair && $this->conf->time_edit_paper()) {
+                $limit = "all";
+            } else if ($user->isPC) {
+                $limit = "act";
+            } else if (!$user->is_reviewer()) {
+                $limit = "a";
+            } else if (!$user->is_author()) {
+                $limit = "r";
+            } else {
+                $limit = "ar";
+            }
         }
-        $this->_named_limit = $limit;
-        $lword = new SearchWord($limit);
+        if (($limit === "act" || $limit === "all")
+            && $user->isPC
+            && !$user->is_track_manager()) {
+            if ($this->conf->can_pc_see_active_submissions()) {
+                $limit = "act";
+            } else {
+                $limit = "s";
+            }
+        }
+        $lword = new SearchWord($limit, "in:{$limit}");
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
     }
 
@@ -1861,7 +1915,7 @@ class PaperSearch {
     function set_urlbase($base, $args = []) {
         assert($this->_urlbase === null);
         if (!isset($args["t"])) {
-            $args["t"] = $this->_named_limit;
+            $args["t"] = $this->_limit_qe->named_limit;
         }
         if (!isset($args["qt"]) && $this->_qt !== "n") {
             $args["qt"] = $this->_qt;
@@ -1904,6 +1958,16 @@ class PaperSearch {
     /** @return bool */
     function limit_accepted() {
         return $this->_limit_qe->limit === "acc";
+    }
+    /** @return bool */
+    function limit_explicit() {
+        return $this->_limit_explicit;
+    }
+    function apply_limit(Limit_SearchTerm $limit) {
+        if (!$this->_limit_explicit) {
+            $this->_limit_qe->set_limit($limit->named_limit);
+            $this->_limit_explicit = true;
+        }
     }
 
     /** @return Contact */
@@ -2082,30 +2146,29 @@ class PaperSearch {
             if ($kwdef->parse_has_callback ?? null) {
                 $qe = call_user_func($kwdef->parse_has_callback, $word, $sword, $srch);
             } else if ($kwdef->has ?? null) {
-                $sword2 = new SearchWord($kwdef->has);
+                $sword2 = new SearchWord($kwdef->has, $sword->source);
                 $sword2->kwexplicit = true;
-                $sword2->keyword = $kword;
                 $sword2->kwdef = $kwdef;
                 $qe = call_user_func($kwdef->parse_callback, $kwdef->has, $sword2, $srch);
             } else {
                 $qe = null;
             }
-            if ($qe && $sword->keyword === "no") {
-                $qe = SearchTerm::combine("or", $qe)->negate();
-            }
             if ($qe) {
                 return $qe;
             }
         }
-        $srch->warn("Unknown search “" . $sword->keyword . ":" . htmlspecialchars($word) . "”.");
+        $srch->warn("Unknown search “" . $sword->source_html() . "”.");
         return new False_SearchTerm;
     }
 
     private function _expand_saved_search($word) {
-        $t = $this->conf->setting_data("ss:$word") ?? "";
-        $search = json_decode($t);
-        if ($search && is_object($search) && isset($search->q)) {
-            return $search->q;
+        $sj = $this->conf->setting_json("ss:$word");
+        if ($sj && is_object($sj) && isset($sj->q)) {
+            $q = $sj->q;
+            if (isset($sj->t) && $sj->t !== "" && $sj->t !== "s") {
+                $q = "($q) in:{$sj->t}";
+            }
+            return $q;
         } else {
             return null;
         }
@@ -2136,7 +2199,6 @@ class PaperSearch {
      * @param bool $kwexplicit */
     private function _search_keyword(&$qt, SearchWord $sword, $keyword, $kwexplicit) {
         $word = $sword->word;
-        $sword->keyword = $keyword;
         $sword->kwexplicit = $kwexplicit;
         $sword->kwdef = $this->conf->search_keyword($keyword, $this->user);
         if ($sword->kwdef && ($sword->kwdef->parse_callback ?? null)) {
@@ -2174,7 +2236,8 @@ class PaperSearch {
         }
     }
 
-    private function _search_word($word, $defkw) {
+    private function _search_word($source, $defkw) {
+        $word = $source;
         $wordbrk = self::_search_word_breakdown($word);
         $keyword = $defkw;
 
@@ -2215,7 +2278,7 @@ class PaperSearch {
         }
 
         $qt = [];
-        $sword = new SearchWord($word);
+        $sword = new SearchWord($word, $source);
         if ($keyword) {
             $this->_search_keyword($qt, $sword, $keyword, true);
         } else {
@@ -2480,9 +2543,19 @@ class PaperSearch {
         return $curqe;
     }
 
-    static function canonical_query($qa, $qo, $qx, $qt, Conf $conf) {
+    /** @param ?string $qa
+     * @param ?string $qo
+     * @param ?string $qx
+     * @param ?string $qt
+     * @param ?string $t
+     * @return string */
+    static function canonical_query($qa, $qo, $qx, $qt, Conf $conf, $t = null) {
         $qt = self::_canonical_qt($qt);
         $x = [];
+        if (($t ?? "") !== ""
+            && ($t = self::long_canonical_limit($t)) !== null) {
+            $qa = ($qa ?? "") !== "" ? "({$qa}) in:$t" : "in:$t";
+        }
         if (($qa = self::_canonical_expression($qa, "all", $qt, $conf)) !== "") {
             $x[] = $qa;
         }
@@ -2686,7 +2759,7 @@ class PaperSearch {
             return;
         }
 
-        if ($this->limit() === "x") {
+        if ($this->limit() === "none") {
             $this->_matches = [];
             return true;
         }
@@ -2727,7 +2800,7 @@ class PaperSearch {
         // add deleted papers explicitly listed by number (e.g. action log)
         if ($this->_allow_deleted) {
             $this->_add_deleted_papers($qe);
-        } else if ($this->_named_limit === "s"
+        } else if ($this->_limit_qe->named_limit === "s"
                    && $this->user->privChair
                    && ($ps = $this->_check_missing_papers($qe))
                    && $this->conf->fetch_ivalue("select exists (select * from Paper where paperId?a)", $ps)) {
@@ -3011,6 +3084,17 @@ class PaperSearch {
     }
 
     /** @return string */
+    function default_limited_query() {
+        if ($this->user->isPC
+            && !$this->_limit_explicit
+            && $this->limit() !== ($this->conf->can_pc_see_active_submissions() ? "act" : "s")) {
+            return self::canonical_query($this->q, "", "", $this->_qt, $this->conf, $this->limit());
+        } else {
+            return $this->q;
+        }
+    }
+
+    /** @return string */
     function url_site_relative_raw($q = null) {
         $url = $this->urlbase();
         $q = $q ?? $this->q;
@@ -3030,7 +3114,7 @@ class PaperSearch {
             if ($this->q === "re:me" && ($limit === "s" || $limit === "act")) {
                 $limit = "r";
             }
-            $lx = self::search_type_description($this->conf, $limit);
+            $lx = self::limit_description($this->conf, $limit);
         }
         if ($this->q === ""
             || ($this->q === "re:me" && $this->limit() === "s")
@@ -3059,7 +3143,7 @@ class PaperSearch {
         if ($sort !== null && $sort !== "") {
             $rest[] = "sort=" . urlencode($sort);
         }
-        return "p/" . $this->_named_limit . "/" . urlencode($this->q)
+        return "p/" . $this->_limit_qe->named_limit . "/" . urlencode($this->q)
             . ($rest ? "/" . join("&", $rest) : "");
     }
 
@@ -3142,32 +3226,38 @@ class PaperSearch {
 
 
     /** @return string */
-    static function search_type_description(Conf $conf, $t) {
+    static function limit_description(Conf $conf, $t) {
         return $conf->_c("search_type", self::$search_type_names[$t] ?? "Submitted");
     }
 
-    /** @return string */
-    static function canonical_search_type($reqtype) {
-        if ($reqtype === 0 || $reqtype === "0") {
-            return "";
-        } else if ($reqtype === "manager") {
-            return "admin";
-        } else if ($reqtype === "vis" || $reqtype === "visible") {
-            return "viewable";
-        } else if ($reqtype === "und") {
-            return "undec";
-        } else if ($reqtype === "reqrevs") {
-            return "req";
-        } else if ($reqtype === "rable" || $reqtype === "editpref") {
-            return "reviewable";
+    /** @param ?string $reqtype
+     * @return ?string */
+    static function canonical_limit($reqtype) {
+        if ($reqtype !== null
+            && ($x = Limit_SearchTerm::$reqtype_map[$reqtype] ?? null) !== null) {
+            return is_array($x) ? $x[0] : $x;
         } else {
-            return $reqtype;
+            return null;
+        }
+    }
+
+    /** @param ?string $reqtype
+     * @return ?string */
+    static function long_canonical_limit($reqtype) {
+        if ($reqtype !== null
+            && ($x = Limit_SearchTerm::$reqtype_map[$reqtype] ?? null) !== null) {
+            return is_array($x) ? $x[1] : $x;
+        } else {
+            return null;
         }
     }
 
     /** @param ?string $reqtype
      * @return array<string,string> */
-    static function search_types(Contact $user, $reqtype = null) {
+    static function viewable_limits(Contact $user, $reqtype = null) {
+        if ($reqtype !== null && $reqtype !== "") {
+            $reqtype = self::canonical_limit($reqtype);
+        }
         $ts = [];
         if ($reqtype === "viewable") {
             $ts[] = "viewable";
@@ -3215,11 +3305,11 @@ class PaperSearch {
         if ($user->privChair) {
             $ts[] = "all";
         }
-        return self::expand_search_types($user->conf, $ts);
+        return self::expand_limits($user->conf, $ts);
     }
 
     /** @return array<string,string> */
-    static function manager_search_types(Contact $user) {
+    static function viewable_manager_limits(Contact $user) {
         if ($user->privChair) {
             if ($user->conf->has_any_manager()) {
                 $ts = ["admin", "alladmin", "s"];
@@ -3230,20 +3320,20 @@ class PaperSearch {
         } else {
             $ts = ["admin"];
         }
-        return self::expand_search_types($user->conf, $ts);
+        return self::expand_limits($user->conf, $ts);
     }
 
     /** @param list<string> $ts
      * @return array<string,string> */
-    static private function expand_search_types(Conf $conf, $ts) {
+    static private function expand_limits(Conf $conf, $ts) {
         $topt = [];
         foreach ($ts as $t) {
-            $topt[$t] = self::search_type_description($conf, $t);
+            $topt[$t] = self::limit_description($conf, $t);
         }
         return $topt;
     }
 
-    static function searchTypeSelector($tOpt, $type, $extra = []) {
+    static function limit_selector($tOpt, $type, $extra = []) {
         if (count($tOpt) > 1) {
             $sel_opt = [];
             foreach ($tOpt as $k => $v) {

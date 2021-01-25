@@ -1753,9 +1753,9 @@ class PaperList implements XtContext {
                 if (substr($url, 0, 5) == "search") {
                     $altqh = "<a href=\"" . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $altqh . "</a>";
                 }
-                return PaperListTableRender::make_error("No matching papers. Did you mean “{$altqh}”?");
+                return PaperListTableRender::make_error("No matches. Did you mean “{$altqh}”?");
             } else {
-                return PaperListTableRender::make_error("No matching papers");
+                return PaperListTableRender::make_error("No matches");
             }
         }
 

@@ -35,11 +35,11 @@ try “-term”.  Or select ", $hth->hotlink("Advanced search", "search", "opt=1
 <p>You can search several categories, depending on your role in the
 conference. Options include:</p>
 <ul>
-<li><b>", PaperSearch::search_type_description($hth->conf, "s"), "</b> &mdash; all submissions ready for review.</li>
-<li><b>", PaperSearch::search_type_description($hth->conf, "a"), "</b> &mdash; submissions for which you’re a contact.</li>
-<li><b>", PaperSearch::search_type_description($hth->conf, "r"), "</b> &mdash; submissions you’ve been assigned to review.</li>
-<li><b>", PaperSearch::search_type_description($hth->conf, "rout"), "</b> &mdash; submissions you’ve been assigned to review, but have not reviewed yet.</li>
-<li><b>", PaperSearch::search_type_description($hth->conf, "all"), "</b> &mdash; all submissions, including withdrawn submissions and submissions that were never completed.</li>
+<li><b>", PaperSearch::limit_description($hth->conf, "s"), "</b> &mdash; all submissions ready for review.</li>
+<li><b>", PaperSearch::limit_description($hth->conf, "a"), "</b> &mdash; submissions for which you’re a contact.</li>
+<li><b>", PaperSearch::limit_description($hth->conf, "r"), "</b> &mdash; submissions you’ve been assigned to review.</li>
+<li><b>", PaperSearch::limit_description($hth->conf, "rout"), "</b> &mdash; submissions you’ve been assigned to review, but have not reviewed yet.</li>
+<li><b>", PaperSearch::limit_description($hth->conf, "all"), "</b> &mdash; all submissions, including withdrawn submissions and submissions that were never completed.</li>
 </ul>
 
 <p>Search won’t show you information you aren’t supposed to see.  For example,

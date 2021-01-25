@@ -604,9 +604,10 @@ function searchbar(LogRowGenerator $lrg, $page) {
         $dplaceholder = $Conf->unparse_time((int) $first_timestamp);
     }
 
-    echo Ht::form(hoturl("log"), ["method" => "get", "id" => "searchform"]);
-    if ($Qreq->forceShow)
+    echo Ht::form(hoturl("log"), ["method" => "get", "id" => "searchform", "class" => "clearfix"]);
+    if ($Qreq->forceShow) {
         echo Ht::hidden("forceShow", 1);
+    }
     echo '<div class="d-inline-block" style="padding-right:2rem">',
         '<div class="', Ht::control_class("q", "entryi medium"),
         '"><label for="q">Concerning action(s)</label><div class="entry">',

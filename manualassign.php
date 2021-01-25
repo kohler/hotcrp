@@ -10,7 +10,7 @@ if (!$Me->is_manager()) {
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 
 // request cleaning
-$tOpt = PaperSearch::manager_search_types($Me);
+$tOpt = PaperSearch::viewable_manager_limits($Me);
 if (!$Qreq->t || !isset($tOpt[$Qreq->t])) {
     reset($tOpt);
     $Qreq->t = key($tOpt);

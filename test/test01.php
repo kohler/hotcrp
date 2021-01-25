@@ -1321,6 +1321,10 @@ xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", "", $
             "foo HIGHLIGHT:pink bar");
 xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", "tag", $Conf),
             "#foo HIGHLIGHT:pink #bar");
+xassert_eqq(PaperSearch::canonical_query("foo", "", "", "tag", $Conf, "s"),
+            "#foo in:submitted");
+xassert_eqq(PaperSearch::canonical_query("foo OR abstract:bar", "", "", "tag", $Conf, "s"),
+            "(#foo OR abstract:bar) in:submitted");
 
 // assignment synonyms
 xassert_eqq($paper16->preference($user_varghese), [0, null]);

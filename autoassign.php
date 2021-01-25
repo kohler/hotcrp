@@ -17,7 +17,7 @@ if ($Qreq->valid_post()) {
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 }
 
-$tOpt = PaperSearch::manager_search_types($Me);
+$tOpt = PaperSearch::viewable_manager_limits($Me);
 if ($Me->privChair
     && !isset($Qreq->t)
     && $Qreq->a === "prefconflict"

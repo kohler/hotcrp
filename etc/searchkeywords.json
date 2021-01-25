@@ -63,6 +63,10 @@
     },
     {   "name": "is", "alias": "status"   },
     {
+        "name": "in",
+        "parse_callback": "Limit_SearchTerm::parse"
+    },
+    {
         "name": "pidcode",
         "parse_callback": "PaperID_SearchTerm::parse_pidcode"
     },
@@ -298,10 +302,5 @@
     {
         "name": "has",
         "parse_callback": "PaperSearch::parse_has"
-    },
-    {
-        "name": "no",
-        "parse_callback": "PaperSearch::parse_has",
-        "deprecated": true
     }
 ]

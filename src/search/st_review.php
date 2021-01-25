@@ -478,7 +478,7 @@ class Review_SearchTerm extends SearchTerm {
         }
 
         if ($f->has_options) {
-            return self::parse_score_field($rsm, $word, $f, $srch);
+            return self::parse_score_field($rsm, $word, $sword, $f, $srch);
         } else {
             if ($word === "any" && !$sword->quoted) {
                 $val = true;
@@ -492,10 +492,10 @@ class Review_SearchTerm extends SearchTerm {
             return new Review_SearchTerm($srch->user, $rsm);
         }
     }
-    private static function impossible_score_match(ReviewField $f) {
-        $t = new False_SearchTerm;
+    private static function impossible_score_match(ReviewField $f, SearchWord $sword, PaperSearch $srch) {
         $r = $f->full_score_range();
-        $t->set_float("warning", "{$f->name_html} scores range from $r[0] to $r[1].");
+        $srch->warn($sword->source_html() . ": {$f->name_html} scores range from {$r[0]} to {$r[1]}.");
+        $t = new False_SearchTerm;
         $t->set_float("used_revadj", true);
         return $t;
     }
@@ -512,25 +512,26 @@ class Review_SearchTerm extends SearchTerm {
             return $val >= 0 && $val <= count($f->options) ? $val : false;
         }
     }
-    private static function parse_score_field(ReviewSearchMatcher $rsm, $word, ReviewField $f, PaperSearch $srch) {
+    private static function parse_score_field(ReviewSearchMatcher $rsm, $word, SearchWord $sword, ReviewField $f, PaperSearch $srch) {
         if ($word === "any") {
             $rsm->apply_score_field($f, 0, 0, 4);
         } else if ($word === "none" && $rsm->review_testable) {
             $rsm->apply_countexpr("=0");
             $rsm->apply_score_field($f, 0, 0, 4);
         } else if (preg_match('/\A([=!<>]=?|≠|≤|≥|)\s*([A-Z]|\d+|none)\z/si', $word, $m)) {
-            if ($f->option_letter && !$srch->conf->opt("smartScoreCompare"))
+            if ($f->option_letter && !$srch->conf->opt("smartScoreCompare")) {
                 $m[1] = CountMatcher::flip_countexpr_string($m[1]);
+            }
             $score = self::parse_score($f, $m[2]);
             if ($score === false) {
-                return self::impossible_score_match($f);
+                return self::impossible_score_match($f, $sword, $srch);
             }
             $rsm->apply_score_field($f, $score, 0, CountMatcher::$opmap[$m[1]]);
         } else if (preg_match('/\A(\d+|[A-Z]|none)\s*(|-|–|—|\.\.\.?|…)\s*(\d+|[A-Z]|none)\s*\z/si', $word, $m)) {
             $score1 = self::parse_score($f, $m[1]);
             $score2 = self::parse_score($f, $m[3]);
             if ($score1 === false || $score2 === false) {
-                return self::impossible_score_match($f);
+                return self::impossible_score_match($f, $sword, $srch);
             }
             if ($score1 > $score2) {
                 list($score1, $score2) = [$score2, $score1];

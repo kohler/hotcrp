@@ -160,7 +160,7 @@ class Home_Partial {
             return;
         }
 
-        $tOpt = PaperSearch::search_types($user);
+        $tOpt = PaperSearch::viewable_limits($user);
         echo '<div class="homegrp d-table" id="homelist">',
             $this->render_h2_home('<a class="qq" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
             Ht::form($conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
@@ -170,7 +170,7 @@ class Home_Partial {
                 "placeholder" => "(All)",
                 "aria-labelledby" => "homesearch-label"
             ]), '<div class="form-basic-search-in"> in ',
-            PaperSearch::searchTypeSelector($tOpt, key($tOpt), ["class" => "ml-1"]),
+            PaperSearch::limit_selector($tOpt, key($tOpt), ["class" => "ml-1"]),
             Ht::submit("Search", ["class" => "ml-3"]),
             "</div></form></div>\n";
     }
