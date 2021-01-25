@@ -8739,21 +8739,21 @@ handle_ui.on("js-approve-review", function (event) {
 
 // search/paperlist UI
 handle_ui.on("js-edit-formulas", function () {
-    var self = this, $d, nformulas = 0;
-    function push_formula(hc, f) {
-        ++nformulas;
-        hc.push('<div class="editformulas-formula" data-formula-number="' + nformulas + '">', '</div>');
-        hc.push('<div class="entryi"><label for="htctl_formulaname_' + nformulas + '">Name</label><div class="entry">', '</div></div>');
+    var self = this, $d, count = 0;
+    function push1(hc, f) {
+        ++count;
+        hc.push('<div class="editformulas-formula" data-formula-number="' + count + '">', '</div>');
+        hc.push('<div class="entryi"><label for="htctl_formulaname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
         if (f.editable) {
-            hc.push('<input type="text" id="htctl_formulaname_' + nformulas + '" class="editformulas-name need-autogrow" name="formulaname_' + nformulas + '" size="30" value="' + escape_entities(f.name) + '">');
+            hc.push('<input type="text" id="htctl_formulaname_' + count + '" class="editformulas-name need-autogrow" name="formulaname_' + count + '" size="30" value="' + escape_entities(f.name) + '" placeholder="Formula name">');
             hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete formula">x</a>');
         } else
             hc.push(escape_entities(f.name));
         hc.pop();
-        hc.push('<div class="entryi"><label for="htctl_formulaexpression_' + nformulas + '">Expression</label><div class="entry">', '</div></div>');
+        hc.push('<div class="entryi"><label for="htctl_formulaexpression_' + count + '">Expression</label><div class="entry">', '</div></div>');
         if (f.editable)
-            hc.push('<textarea class="editformulas-expression need-autogrow" id="htctl_formulaexpression_' + nformulas + '" name="formulaexpression_' + nformulas + '" rows="1" cols="60" style="width:99%">' + escape_entities(f.expression) + '</textarea>')
-                .push('<input type="hidden" name="formulaid_' + nformulas + '" value="' + f.id + '">');
+            hc.push('<textarea class="editformulas-expression need-autogrow" id="htctl_formulaexpression_' + count + '" name="formulaexpression_' + count + '" rows="1" cols="64" style="width:99%" placeholder="Formula definition">' + escape_entities(f.expression) + '</textarea>')
+                .push('<input type="hidden" name="formulaid_' + count + '" value="' + f.id + '">');
         else
             hc.push(escape_entities(f.expression));
         hc.pop();
@@ -8765,7 +8765,7 @@ handle_ui.on("js-edit-formulas", function () {
     function click(event) {
         if (this.name === "add") {
             var hc = new HtmlCollector;
-            push_formula(hc, {name: "", expression: "", editable: true, id: "new"});
+            push1(hc, {name: "", expression: "", editable: true, id: "new"});
             var $f = $(hc.render()).appendTo($d.find(".editformulas"));
             $f[0].setAttribute("data-formula-new", "");
             $f.find("textarea").autogrow();
@@ -8801,7 +8801,7 @@ handle_ui.on("js-edit-formulas", function () {
         hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
         hc.push('<div class="editformulas">', '</div>');
         for (i in formulas || [])
-            push_formula(hc, formulas[i]);
+            push1(hc, formulas[i]);
         hc.pop_push('<button type="button" name="add">Add named formula</button>');
         hc.push_actions(['<button type="submit" name="saveformulas" value="1" class="btn-primary">Save</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();

@@ -70,6 +70,8 @@ class SearchConfig_API {
     }
 
     static function save_namedformula(Contact $user, Qrequest $qreq) {
+        // NB permissions handled in loop
+
         // capture current formula set
         $new_formula_by_id = $formula_by_id = $user->conf->named_formulas();
         $max_id = array_reduce($formula_by_id, function ($max, $f) {
@@ -102,10 +104,9 @@ class SearchConfig_API {
             }
             $id2idx[$id] = $fidx;
 
-            if ($fdef
-                && !$user->can_edit_formula($fdef)
-                && ($name !== $fdef->name || $expr !== $fdef->expression || $deleted)) {
-                $msgset->error_at("formula$fidx", "You can’t change formula “" . htmlspecialchars($fdef->name) . "”.");
+            if (!$user->can_edit_formula($fdef)
+                && (!$fdef || $name !== $fdef->name || $expr !== $fdef->expression || $deleted)) {
+                $msgset->error_at("formula$fidx", $fdef ? "{$pfx}You can’t change this named formula." : "You can’t create named formulas.");
                 continue;
             }
 

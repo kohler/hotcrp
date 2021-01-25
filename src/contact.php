@@ -4404,8 +4404,10 @@ class Contact {
     }
 
     /** @return bool */
-    function can_edit_formula(Formula $formula) {
-        return $this->privChair || ($this->isPC && $formula->createdBy > 0);
+    function can_edit_formula(Formula $formula = null) {
+        // XXX one PC member can edit another's formulas?
+        return $this->privChair
+            || ($this->isPC && (!$formula || $formula->createdBy > 0));
     }
 
     // A review field is visible only if its view_score > view_score_bound.
