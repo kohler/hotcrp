@@ -294,9 +294,9 @@ class Status_PaperColumn extends PaperColumn {
         $this->sortmap = [];
         foreach ($pl->rowset() as $row) {
             if ($row->outcome && $pl->user->can_view_decision($row)) {
-                $this->sortmap[$row->uid] = $row->outcome;
+                $this->sortmap[$row->paperXid] = $row->outcome;
             } else {
-                $this->sortmap[$row->uid] = -10000;
+                $this->sortmap[$row->paperXid] = -10000;
             }
         }
     }
@@ -312,7 +312,7 @@ class Status_PaperColumn extends PaperColumn {
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $x = $this->sortmap[$b->uid] - $this->sortmap[$a->uid];
+        $x = $this->sortmap[$b->paperXid] - $this->sortmap[$a->paperXid];
         $x = $x ? : ($a->timeWithdrawn > 0 ? 1 : 0) - ($b->timeWithdrawn > 0 ? 1 : 0);
         $x = $x ? : ($b->timeSubmitted > 0 ? 1 : 0) - ($a->timeSubmitted > 0 ? 1 : 0);
         return $x ? : ($b->paperStorageId > 1 ? 1 : 0) - ($a->paperStorageId > 1 ? 1 : 0);
@@ -372,16 +372,16 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         $this->sortmap = [];
         foreach ($pl->rowset() as $row) {
             if (!$pl->user->can_view_review_assignment($row, null)) {
-                $this->sortmap[$row->uid] = -2147483647.0;
+                $this->sortmap[$row->paperXid] = -2147483647.0;
             } else {
                 list($done, $started) = $this->data($row, $pl->user);
-                $this->sortmap[$row->uid] = $done + $started / 1000.0;
+                $this->sortmap[$row->paperXid] = $done + $started / 1000.0;
             }
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $av = $this->sortmap[$a->uid];
-        $bv = $this->sortmap[$b->uid];
+        $av = $this->sortmap[$a->paperXid];
+        $bv = $this->sortmap[$b->paperXid];
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
     function header(PaperList $pl, $is_text) {
@@ -688,11 +688,11 @@ class ReviewerType_PaperColumn extends PaperColumn {
             if ($flags & self::F_SHEPHERD) {
                 $v += 60;
             }
-            $this->sortmap[$row->uid] = $v;
+            $this->sortmap[$row->paperXid] = $v;
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $this->sortmap[$b->uid] - $this->sortmap[$a->uid];
+        return $this->sortmap[$b->paperXid] - $this->sortmap[$a->paperXid];
     }
     function header(PaperList $pl, $is_text) {
         if (!$this->not_me || $this->basicheader) {
@@ -855,14 +855,17 @@ class ScoreGraph_PaperColumn extends PaperColumn {
                     && !$row->can_view_review_identity_of($cid, $pl->user)) {
                     $cid = 0;
                 }
-                $this->sortmap[$row->uid] = $scoreinfo->sort_data($this->score_sort, $cid);
-                $this->avgmap[$row->uid] = $scoreinfo->mean();
+                $this->sortmap[$row->paperXid] = $scoreinfo->sort_data($this->score_sort, $cid);
+                $this->avgmap[$row->paperXid] = $scoreinfo->mean();
             }
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $x = ScoreInfo::compare($this->sortmap[$b->uid] ?? null, $this->sortmap[$a->uid] ?? null, -1);
-        return $x ? : ScoreInfo::compare($this->avgmap[$b->uid] ?? null, $this->avgmap[$a->uid] ?? null);
+        $x = ScoreInfo::compare($this->sortmap[$b->paperXid] ?? null, $this->sortmap[$a->paperXid] ?? null, -1);
+        if (!$x) {
+            $x = ScoreInfo::compare($this->avgmap[$b->paperXid] ?? null, $this->avgmap[$a->paperXid] ?? null);
+        }
+        return $x;
     }
     function content(PaperList $pl, PaperInfo $row) {
         $values = $this->score_values($pl, $row);

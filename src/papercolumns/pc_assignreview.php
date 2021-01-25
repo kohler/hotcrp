@@ -55,11 +55,11 @@ class AssignReview_PaperColumn extends PaperColumn {
             } else {
                 $v = -200;
             }
-            $this->sortmap[$row->uid] = $v;
+            $this->sortmap[$row->paperXid] = $v;
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $this->sortmap[$b->uid] - $this->sortmap[$a->uid];
+        return $this->sortmap[$b->paperXid] - $this->sortmap[$a->paperXid];
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->allow_administer($row);

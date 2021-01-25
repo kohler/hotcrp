@@ -36,12 +36,12 @@ class PageCount_PaperColumn extends PaperColumn {
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];
         foreach ($pl->rowset() as $row) {
-            $this->sortmap[$row->uid] = $this->page_count($pl->user, $row);
+            $this->sortmap[$row->paperXid] = $this->page_count($pl->user, $row);
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $ac = $this->sortmap[$a->uid];
-        $bc = $this->sortmap[$b->uid];
+        $ac = $this->sortmap[$a->paperXid];
+        $bc = $this->sortmap[$b->paperXid];
         if ($ac === null || $bc === null) {
             return $ac === $bc ? 0 : ($ac === null ? -1 : 1);
         } else {

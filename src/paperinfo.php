@@ -304,7 +304,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->by_pid[$pid] ?? null;
     }
     /** @param callable(PaperInfo):bool $func
-     * @return PaperInfoSet */
+     * @return PaperInfoSet|Iterable<PaperInfo> */
     function filter($func) {
         $next_set = new PaperInfoSet;
         foreach ($this->prows as $prow) {
@@ -364,8 +364,12 @@ class PaperInfo {
      * @readonly */
     public $paperId;
     /** @var int
-     * @readonly */
+     * @readonly
+     * @deprecated */
     public $uid;           // unique among all PaperInfos
+    /** @var int
+     * @readonly */
+    public $paperXid;      // unique among all PaperInfos
     /** @var int */
     public $timeSubmitted;
     /** @var int */
@@ -564,7 +568,8 @@ class PaperInfo {
             }
         }
         $this->paperId = (int) $this->paperId;
-        $this->uid = ++self::$next_uid;
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
+        $this->uid = $this->paperXid = ++self::$next_uid;
         $this->timeSubmitted = (int) $this->timeSubmitted;
         $this->timeWithdrawn = (int) $this->timeWithdrawn;
         $this->outcome = (int) $this->outcome;

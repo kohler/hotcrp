@@ -3632,7 +3632,7 @@ class Conf {
     }
 
     /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
-     * @return PaperInfoSet */
+     * @return PaperInfoSet|Iterable<PaperInfo> */
     function paper_set($options, Contact $user = null) {
         $rowset = new PaperInfoSet;
         $result = $this->paper_result($options, $user);

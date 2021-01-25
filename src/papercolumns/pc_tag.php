@@ -82,15 +82,15 @@ class Tag_PaperColumn extends PaperColumn {
         }
         foreach ($pl->rowset() as $row) {
             if (!$pl->user->can_view_tag($row, $this->etag)) {
-                $this->sortmap[$row->uid] = $unviewable;
+                $this->sortmap[$row->paperXid] = $unviewable;
             } else {
-                $this->sortmap[$row->uid] = $row->tag_value($this->etag) ?? $empty;
+                $this->sortmap[$row->paperXid] = $row->tag_value($this->etag) ?? $empty;
             }
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $av = $this->sortmap[$a->uid];
-        $bv = $this->sortmap[$b->uid];
+        $av = $this->sortmap[$a->paperXid];
+        $bv = $this->sortmap[$b->paperXid];
         return $av < $bv ? -1 : ($av == $bv ? 0 : 1);
     }
     function header(PaperList $pl, $is_text) {

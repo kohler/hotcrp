@@ -58,12 +58,12 @@ class Formula_PaperColumn extends PaperColumn {
         $this->sortmap = [];
         $formulaf = $this->formula->compile_sortable_function();
         foreach ($pl->rowset() as $row) {
-            $this->sortmap[$row->uid] = $formulaf($row, null, $pl->user);
+            $this->sortmap[$row->paperXid] = $formulaf($row, null, $pl->user);
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $as = $this->sortmap[$a->uid];
-        $bs = $this->sortmap[$b->uid];
+        $as = $this->sortmap[$a->paperXid];
+        $bs = $this->sortmap[$b->paperXid];
         if ($as === null || $bs === null) {
             return $as === $bs ? 0 : ($as === null ? 1 : -1);
         } else {
