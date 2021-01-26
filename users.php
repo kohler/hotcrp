@@ -45,7 +45,8 @@ if ($Viewer->privChair
 if ($Viewer->isPC) {
     $tOpt["req"] = "External reviewers you requested";
 }
-if ($Viewer->privChair || ($Viewer->isPC && $Conf->subBlindNever())) {
+if ($Viewer->privChair
+    || ($Viewer->isPC && $Conf->submission_blindness() === Conf::BLIND_NEVER)) {
     $tOpt["au"] = "Contact authors of submitted papers";
 }
 if ($Viewer->privChair
@@ -53,7 +54,9 @@ if ($Viewer->privChair
     $tOpt["auacc"] = "Contact authors of accepted papers";
 }
 if ($Viewer->privChair
-    || ($Viewer->isPC && $Conf->subBlindNever() && $Conf->time_pc_view_decision(true))) {
+    || ($Viewer->isPC
+        && $Conf->submission_blindness() === Conf::BLIND_NEVER
+        && $Conf->time_pc_view_decision(true))) {
     $tOpt["aurej"] = "Contact authors of rejected papers";
 }
 if ($Viewer->privChair) {

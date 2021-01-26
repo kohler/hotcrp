@@ -173,10 +173,6 @@ if (isset($Qreq->q)) {
 }
 
 
-// set up the search form
-$tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["tabindex" => 1]);
-
-
 // SEARCH FORMS
 
 // Prepare more display options
@@ -295,7 +291,7 @@ if ($pl_text) {
             . Ht::select("scoresort", ListSorter::score_sort_selector_options(),
                          ListSorter::canonical_long_score_sort(ListSorter::default_score_sort($Me)),
                          ["id" => "scoresort"])
-            . '<a class="help" href="' . hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
+            . '<a class="help" href="' . $Conf->hoturl("help", "t=scoresort") . '" target="_blank" title="Learn more">?</a></div>';
         $display_options->item(30, $sortitem);
     }
 
@@ -317,59 +313,63 @@ echo '<div id="searchform" class="clearfix">',
     '<div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
 // Basic search
-echo Ht::form(hoturl("search"), ["method" => "get"]),
-    Ht::entry("q", (string) $Qreq->q,
-              ["size" => 40, "style" => "width:30em", "tabindex" => 1,
-               "class" => "papersearch want-focus need-suggest",
-               "placeholder" => "(All)", "aria-label" => "Search"]),
-    " &nbsp;in &nbsp;",
-    PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["tabindex" => 1]),
-    " &nbsp;\n", Ht::submit("Search", ["tabindex" => 1]),
-    "</form>";
+echo Ht::form($Conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
+    Ht::entry("q", (string) $Qreq->q, [
+        "size" => 40, "tabindex" => 1,
+        "class" => "papersearch want-focus need-suggest flex-grow-1",
+        "placeholder" => "(All)", "aria-label" => "Search"
+    ]), '<div class="form-basic-search-in">',
+    " in ", PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["tabindex" => 1, "class" => "ml-1"]),
+    Ht::submit("Search", ["tabindex" => 1, "class" => "ml-3"]), "</div></form>";
 
 echo '</div><div class="tld is-tla" id="tla-advanced">';
 
 // Advanced search
 $qtOpt = array("ti" => "Title",
                "ab" => "Abstract");
-if ($Me->privChair || $Conf->subBlindNever()) {
+if ($Me->privChair
+    || $Conf->submission_blindness() === Conf::BLIND_NEVER) {
     $qtOpt["au"] = "Authors";
     $qtOpt["n"] = "Title, abstract, and authors";
-} else if ($Conf->subBlindAlways() && $Me->is_reviewer() && $Conf->time_reviewer_view_accepted_authors()) {
-    $qtOpt["au"] = "Accepted authors";
-    $qtOpt["n"] = "Title and abstract, and accepted authors";
-} else if (!$Conf->subBlindAlways()) {
+} else if ($Conf->submission_blindness() === Conf::BLIND_ALWAYS) {
+    if ($Me->is_reviewer()
+        && $Conf->time_reviewer_view_accepted_authors()) {
+        $qtOpt["au"] = "Accepted authors";
+        $qtOpt["n"] = "Title, abstract, and accepted authors";
+    } else {
+        $qtOpt["n"] = "Title and abstract";
+    }
+} else {
     $qtOpt["au"] = "Non-blind authors";
-    $qtOpt["n"] = "Title and abstract, and non-blind authors";
-} else
-    $qtOpt["n"] = "Title and abstract";
-if ($Me->privChair)
+    $qtOpt["n"] = "Title, abstract, and non-blind authors";
+}
+if ($Me->privChair) {
     $qtOpt["ac"] = "Authors and collaborators";
+}
 if ($Me->isPC) {
     $qtOpt["re"] = "Reviewers";
     $qtOpt["tag"] = "Tags";
 }
 
-echo Ht::form(hoturl("search"), ["method" => "get"]),
+// Advanced search
+echo Ht::form($Conf->hoturl("search"), ["method" => "get"]),
     '<div class="d-inline-block">',
-    '<div class="entryi medium"><label for="htctl-advanced-q">Search</label><div class="entry">',
-    PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["id" => "htctl-advanced-q"]), '</div></div>',
-    '<div class="entryi medium"><label for="htctl-advanced-qt">Using these fields</label><div class="entry">',
+    '<div class="entryi medium"><label for="htctl-advanced-qt">Search</label><div class="entry">',
     Ht::select("qt", $qtOpt, $Qreq->get("qt", "n"), ["id" => "htctl-advanced-qt"]), '</div></div>',
-    '<hr class="g">',
     '<div class="entryi medium"><label for="htctl-advanced-qa">With <b>all</b> the words</label><div class="entry">',
     Ht::entry("qa", $Qreq->get("qa", $Qreq->get("q", "")), ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest"]), '</div></div>',
     '<div class="entryi medium"><label for="htctl-advanced-qo">With <b>any</b> of the words</label><div class="entry">',
     Ht::entry("qo", $Qreq->get("qo", ""), ["id" => "htctl-advanced-qo", "size" => 60]), '</div></div>',
     '<div class="entryi medium"><label for="htctl-advanced-qx"><b>Without</b> the words</label><div class="entry">',
     Ht::entry("qx", $Qreq->get("qx", ""), ["id" => "htctl-advanced-qx", "size" => 60]), '</div></div>',
-    '<hr class="g">',
+    '<div class="entryi medium"><label for="htctl-advanced-q">In</label><div class="entry">',
+        PaperSearch::searchTypeSelector($tOpt, $Qreq->t, ["id" => "htctl-advanced-q"]), '</div></div>',
     '<div class="entryi medium"><label></label><div class="entry">',
     Ht::submit("Search"),
     '<div class="d-inline-block padlb" style="font-size:69%">',
-    Ht::link("Search help", hoturl("help", "t=search")),
+    Ht::link("Search help", $Conf->hoturl("help", "t=search")),
     ' <span class="barsep">·</span> ',
-    Ht::link("Search keywords", hoturl("help", "t=keywords")),
+    Ht::link("Search keywords", $Conf->hoturl("help", "t=keywords")),
     '</div></div>',
     '</div>',
     '</div></form>';
@@ -408,8 +408,8 @@ if ($Me->isPC || $Me->privChair) {
                         $arest .= "&amp;" . $k . "=" . urlencode($sv->$k);
                     }
                 }
-                echo "<a href=\"", hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), '</a><div class="fx" style="padding-bottom:0.5ex;font-size:smaller">',
-                    "Definition: “<a href=\"", hoturl("search", "q=" . urlencode($sv->q ?? "") . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
+                echo "<a href=\"", $Conf->hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), '</a><div class="fx" style="padding-bottom:0.5ex;font-size:smaller">',
+                    "Definition: “<a href=\"", $Conf->hoturl("search", "q=" . urlencode($sv->q ?? "") . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
                 if ($Me->privChair
                     || !($sv->owner ?? false)
                     || $sv->owner == $Me->contactId) {

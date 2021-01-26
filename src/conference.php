@@ -2998,12 +2998,16 @@ class Conf {
         }
     }
 
+    /** @return int */
     function submission_blindness() {
         return $this->settings["sub_blind"];
     }
+    /** @return bool */
     function subBlindAlways() {
         return $this->settings["sub_blind"] === self::BLIND_ALWAYS;
     }
+    /** @return bool
+     * @deprecated */
     function subBlindNever() {
         return $this->settings["sub_blind"] === self::BLIND_NEVER;
     }

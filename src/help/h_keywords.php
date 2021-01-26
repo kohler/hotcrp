@@ -5,12 +5,12 @@
 class Keywords_HelpTopic {
     static function render(HelpRenderer $hth) {
         // how to report author searches?
-        if ($hth->conf->subBlindNever()) {
+        if ($hth->conf->submission_blindness() === Conf::BLIND_NEVER) {
             $aunote = "";
-        } else if (!$hth->conf->subBlindAlways()) {
-            $aunote = "<br /><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</span>";
+        } else if ($hth->conf->submission_blindness() === Conf::BLIND_ALWAYS) {
+            $aunote = "<br><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
         } else {
-            $aunote = "<br /><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
+            $aunote = "<br><span class=\"hint\">Search uses fields visible to the searcher. For example, PC member searches do not examine anonymous authors.</span>";
         }
 
         // does a reviewer tag exist?

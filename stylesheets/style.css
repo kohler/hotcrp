@@ -415,6 +415,10 @@ label.checki {
 	margin-top: 5em !important;
 	margin-top: 5rem !important;
 }
+.ml-1 {
+	margin-left: 0.25em !important;
+	margin-left: 0.25rem !important;
+}
 .ml-2 {
 	margin-left: 0.5em !important;
 	margin-left: 0.5rem !important;
@@ -459,11 +463,17 @@ label.checki {
 .flex-wrap {
 	flex-wrap: wrap;
 }
+.flex-grow-1 {
+	flex-grow: 1;
+}
 .align-items-stretch {
 	align-items: stretch !important;
 }
 .align-items-center {
 	align-items: center !important;
+}
+.d-table {
+	display: table !important;
 }
 
 
@@ -770,6 +780,19 @@ span.hastitle {
 #searchform {
 	display: table;
 	min-width: 50%;
+}
+.form-basic-search {
+	display: inline-flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+.form-basic-search-in {
+	white-space: nowrap;
+	margin-left: 0.5rem;
+}
+.form-basic-search .papersearch {
+	min-width: 20rem;
 }
 
 
@@ -1656,6 +1679,9 @@ img.check {
 
 .w-text {
 	max-width: 720px;
+}
+.minw-50 {
+	min-width: 50%;
 }
 .w-99, textarea.w-text {
 	width: 99%;

@@ -160,19 +160,19 @@ class Home_Partial {
             return;
         }
 
-        echo '<div class="homegrp" id="homelist">',
-            Ht::form($conf->hoturl("search"), ["method" => "get"]),
-            $this->render_h2_home('<a class="qq" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>');
-
         $tOpt = PaperSearch::search_types($user);
-        echo Ht::entry("q", (string) $qreq->q,
-                       array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
-                             "class" => "papersearch need-suggest", "placeholder" => "(All)",
-                             "aria-labelledby" => "homesearch-label")),
-            " &nbsp;in&nbsp; ",
-            PaperSearch::searchTypeSelector($tOpt, key($tOpt)), "
-        &nbsp; ", Ht::submit("Search"),
-            "</form></div>\n";
+        echo '<div class="homegrp d-table" id="homelist">',
+            $this->render_h2_home('<a class="qq" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
+            Ht::form($conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
+            Ht::entry("q", (string) $qreq->q, [
+                "id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
+                "class" => "papersearch need-suggest flex-grow-1",
+                "placeholder" => "(All)",
+                "aria-labelledby" => "homesearch-label"
+            ]), '<div class="form-basic-search-in"> in ',
+            PaperSearch::searchTypeSelector($tOpt, key($tOpt), ["class" => "ml-1"]),
+            Ht::submit("Search", ["class" => "ml-3"]),
+            "</div></form></div>\n";
     }
 
     function render_reviews(Contact $user, Qrequest $qreq, $gx) {
