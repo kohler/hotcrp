@@ -2022,7 +2022,8 @@ class Conf {
     }
 
 
-    function saved_searches() {
+    /** @return array<string,object> */
+    function named_searches() {
         $ss = [];
         foreach ($this->settingTexts as $k => $v) {
             if (substr($k, 0, 3) === "ss:" && ($v = json_decode($v))) {
@@ -2030,6 +2031,18 @@ class Conf {
             }
         }
         return $ss;
+    }
+
+    function replace_named_searches() {
+        foreach (array_keys($this->named_searches()) as $k) {
+            unset($this->settings[$k], $this->settingTexts[$k]);
+        }
+        $result = $this->qe("select name, value, data from Settings where name LIKE 'ss:%'");
+        while (($row = $result->fetch_row())) {
+            $this->settings[$row[0]] = (int) $row[1];
+            $this->settingTexts[$row[0]] = $row[2];
+        }
+        Dbl::free($result);
     }
 
 

@@ -3381,7 +3381,7 @@ class PaperSearch {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
         if ($this->user->isPC && (!$category || $category === "ss")) {
-            foreach ($this->conf->saved_searches() as $k => $v) {
+            foreach ($this->conf->named_searches() as $k => $v) {
                 $res[] = "ss:" . $k;
             }
         }

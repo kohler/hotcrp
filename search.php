@@ -80,56 +80,6 @@ if ($Qreq->redisplay) {
 }
 
 
-// save formula
-function savesearch() {
-    global $Conf, $Me, $Qreq;
-
-    $name = simplify_whitespace($Qreq->ssname ?? "");
-    $tagger = new Tagger($Me);
-    if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-        if ($name == "") {
-            return Conf::msg_error("Saved search name missing.");
-        } else {
-            return Conf::msg_error("“" . htmlspecialchars($name) . "” contains characters not allowed in saved search names.  Stick to letters, numbers, and simple punctuation.");
-        }
-    }
-
-    // support directly recursive definition (to e.g. change display options)
-    if (($t = $Conf->setting_data("ss:$name")) && ($t = json_decode($t))) {
-        if (isset($Qreq->q) && trim($Qreq->q) == "ss:$name") {
-            $Qreq->q = (isset($t->q) ? $t->q : "");
-        }
-        if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId) {
-            return Conf::msg_error("You don’t have permission to change “ss:" . htmlspecialchars($name) . "”.");
-        }
-    }
-
-    $arr = [];
-    foreach (array("q", "qt", "t", "sort") as $k) {
-        if (isset($Qreq[$k])) {
-            $arr[$k] = $Qreq[$k];
-        }
-    }
-    if ($Me->privChair) {
-        $arr["owner"] = "chair";
-    } else {
-        $arr["owner"] = $Me->contactId;
-    }
-
-    if ($Qreq->deletesearch) {
-        Dbl::qe_raw("delete from Settings where name='ss:" . sqlq($name) . "'");
-        $Conf->redirect_self($Qreq);
-    } else {
-        Dbl::qe_raw("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode_db($arr)) . "') on duplicate key update value=values(value), data=values(data)");
-        $Conf->redirect_self($Qreq, ["q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null]);
-    }
-}
-
-if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && $Qreq->valid_post()) {
-    savesearch();
-}
-
-
 // set display options, including forceShow if chair
 $pldisplay = $Me->session("pldisplay");
 if ($Me->privChair && !isset($Qreq->forceShow)
@@ -395,52 +345,27 @@ function echo_request_as_hidden_inputs($specialscore) {
 // Saved searches
 $ss = array();
 if ($Me->isPC || $Me->privChair) {
-    $ss = $Conf->saved_searches();
-    if (count($ss) > 0 || $pl_text) {
-        echo '<div class="tld is-tla" id="tla-saved-searches" style="padding-bottom:1ex">';
-        ksort($ss);
-        if (count($ss)) {
-            $n = 0;
+    $ss = $Conf->named_searches();
+    if (!empty($ss) || $pl_text) {
+        echo '<div class="tld is-tla" id="tla-saved-searches">';
+        if (!empty($ss)) {
+            echo '<div class="ctable search-ctable column-count-3 mb-1">';
+            ksort($ss, SORT_NATURAL | SORT_FLAG_CASE);
             foreach ($ss as $sn => $sv) {
-                echo "<table id=\"ssearch$n\" class=\"has-fold foldc\"><tr><td>",
-                    foldupbutton(),
-                    "</td><td>";
-                $arest = "";
-                foreach (array("qt", "t", "sort") as $k) {
-                    if (isset($sv->$k)) {
-                        $arest .= "&amp;" . $k . "=" . urlencode($sv->$k);
-                    }
+                $q = $sv->q ?? "";
+                if (isset($sv->t) && $sv->t !== "s") {
+                    $q = "({$q}) in:{$sv->t}";
                 }
-                echo "<a href=\"", $Conf->hoturl("search", "q=ss%3A" . urlencode($sn) . $arest), "\">", htmlspecialchars($sn), '</a><div class="fx" style="padding-bottom:0.5ex;font-size:smaller">',
-                    "Definition: “<a href=\"", $Conf->hoturl("search", "q=" . urlencode($sv->q ?? "") . $arest), "\">", htmlspecialchars($sv->q), "</a>”";
-                if ($Me->privChair
-                    || !($sv->owner ?? false)
-                    || $sv->owner == $Me->contactId) {
-                    echo ' <span class="barsep">·</span> ',
-                        "<a href=\"", $Conf->selfurl($Qreq, ["deletesearch" => 1, "ssname" => $sn, "post" => post_value()]), "\">Delete</a>";
-                }
-                echo "</div></td></tr></table>";
-                ++$n;
+                echo '<div class="ctelt"><a href="',
+                    $Conf->hoturl("search", ["q" => "ss:{$sn}"]),
+                    '">ss:', htmlspecialchars($sn), '</a>',
+                    '<div class="small">Definition: “<a href="',
+                    $Conf->hoturl("search", ["q" => $q]),
+                    '">', htmlspecialchars($q), '</a>”</div></div>';
             }
-            echo '<hr class="g">';
+            echo '</div>';
         }
-        echo Ht::form($Conf->hoturl_post("search", "savesearch=1"));
-        echo_request_as_hidden_inputs(true);
-        echo "<table id=\"ssearchnew\" class=\"has-fold foldc\">",
-            "<tr><td>", foldupbutton(), "</td>",
-            '<td><a class="ui q fn js-foldup" href="">New saved search</a><div class="fx">',
-            "Save ";
-        if ($Qreq->q) {
-            echo "search “", htmlspecialchars($Qreq->q), "”";
-        } else {
-            echo "empty search";
-        }
-        echo ' as:<br>ss:<input type="text" name="ssname" value="" size="20"> &nbsp;',
-            Ht::submit("Save"),
-            "</div></td></tr></table>",
-            "</form>";
-
-        echo "</div>";
+        echo '<p class="mt-1 mb-2 text-right"><button class="small ui js-edit-namedsearches" type="button">Edit saved searches</button></p></div>';
         $ss = true;
     } else {
         $ss = false;
@@ -454,7 +379,7 @@ if (!$pl->is_empty()) {
     echo Ht::form($Conf->hoturl_post("search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
     echo_request_as_hidden_inputs(false);
 
-    echo '<div class="search-ctable">';
+    echo '<div class="ctable search-ctable">';
     ksort($display_options->items);
     foreach ($display_options->items as $column => $items) {
         if (empty($items)) {

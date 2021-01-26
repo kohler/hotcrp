@@ -8752,7 +8752,7 @@ handle_ui.on("js-edit-formulas", function () {
         hc.pop();
         hc.push('<div class="entryi"><label for="htctl_formulaexpression_' + count + '">Expression</label><div class="entry">', '</div></div>');
         if (f.editable)
-            hc.push('<textarea class="editformulas-expression need-autogrow" id="htctl_formulaexpression_' + count + '" name="formulaexpression_' + count + '" rows="1" cols="64" style="width:99%" placeholder="Formula definition">' + escape_entities(f.expression) + '</textarea>')
+            hc.push('<textarea class="editformulas-expression need-autogrow w-99" id="htctl_formulaexpression_' + count + '" name="formulaexpression_' + count + '" rows="1" cols="64" placeholder="Formula definition">' + escape_entities(f.expression) + '</textarea>')
                 .push('<input type="hidden" name="formulaid_' + count + '" value="' + f.id + '">');
         else
             hc.push(escape_entities(f.expression));
@@ -8776,12 +8776,13 @@ handle_ui.on("js-edit-formulas", function () {
     function ondelete() {
         var $x = $(this).closest(".editformulas-formula");
         if ($x[0].hasAttribute("data-formula-new"))
-            $x.remove();
+            $x.addClass("hidden");
         else {
-            $x.find(".editformulas-expression").closest(".f-i").addClass("hidden");
+            $x.find(".editformulas-expression").closest(".entryi").addClass("hidden");
             $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
-            $x.append('<em>(Formula deleted)</em><input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1">');
+            $x.append('<em>(Formula deleted)</em>');
         }
+        $x.append('<input type="hidden" name="formuladeleted_' + $x.data("formulaNumber") + '" value="1">');
     }
     function submit(event) {
         event.preventDefault();
@@ -8860,6 +8861,86 @@ handle_ui.on("js-edit-view-options", function () {
             if (data.ok)
                 create(data.display_default, data.display_current);
         }
+    });
+});
+
+handle_ui.on("js-edit-namedsearches", function () {
+    var self = this, $d, count = 0;
+    function push1(hc, f) {
+        ++count;
+        hc.push('<div class="editsearches-search" data-search-number="' + count + '">', '</div>');
+        hc.push('<div class="entryi"><label for="htctl_searchname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
+        if (f.editable) {
+            hc.push('<input type="text" id="htctl_searchname_' + count + '" class="editsearches-name need-autogrow" name="searchname_' + count + '" size="30" value="' + escape_entities(f.name) + '" placeholder="Search name">');
+            hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete search">x</a>');
+        } else
+            hc.push(escape_entities(f.name));
+        hc.pop();
+        hc.push('<div class="entryi"><label for="htctl_searchquery_' + count + '">Search</label><div class="entry">', '</div></div>');
+        if (f.editable)
+            hc.push('<textarea class="editsearches-query need-autogrow w-99" id="htctl_searchquery_' + count + '" name="searchq_' + count + '" rows="1" cols="64" placeholder="(All)">' + escape_entities(f.q) + '</textarea>');
+        else
+            hc.push(escape_entities(f.q));
+        hc.push('<input type="hidden" name="searchid_' + count + '" value="' + (f.id || f.name) + '">');
+        hc.pop();
+        if (f.error_html) {
+            hc.push('<div class="entryi"><label class="is-error">Error</label><div class="entry">' + f.error_html + '</div></div>');
+        }
+        hc.pop();
+    }
+    function click(event) {
+        if (this.name === "add") {
+            var hc = new HtmlCollector,
+                q = document.getElementById("searchform");
+            push1(hc, {name: "", q: q ? q.getAttribute("data-lquery") : "", editable: true, id: "new"});
+            var $f = $(hc.render()).appendTo($d.find(".editsearches"));
+            $f[0].setAttribute("data-search-new", "");
+            $f.find("textarea").autogrow();
+            focus_at($f.find(".editsearches-name"));
+            $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
+        }
+    }
+    function ondelete() {
+        var $x = $(this).closest(".editsearches-search");
+        if ($x[0].hasAttribute("data-search-new"))
+            $x.addClass("hidden");
+        else {
+            $x.find(".editsearches-query").closest(".entryi").addClass("hidden");
+            $x.find(".editsearches-name").prop("disabled", true).css("text-decoration", "line-through");
+            $x.append('<em>(Search deleted)</em>');
+        }
+        $x.append('<input type="hidden" name="searchdeleted_' + $x.data("searchNumber") + '" value="1">');
+    }
+    function submit(event) {
+        event.preventDefault();
+        $.post(hoturl_post("api/namedsearch"),
+            $d.find("form").serialize(),
+            function (data) {
+                if (data.ok)
+                    location.reload(true);
+                else
+                    $d.show_errors(data);
+            });
+    }
+    function create(searches) {
+        var hc = popup_skeleton(), i;
+        hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
+        hc.push('<h2>Saved searches</h2>');
+        hc.push('<p>Invoke a saved search with “ss:NAME”. Saved searches are shared with the PC.</p>');
+        hc.push('<div class="editsearches">', '</div>');
+        for (i in searches || []) {
+            push1(hc, searches[i]);
+        }
+        hc.pop_push('<button type="button" name="add">Add named search</button>');
+        hc.push_actions(['<button type="submit" name="savesearches" value="1" class="btn-primary">Save</button>', '<button type="button" name="cancel">Cancel</button>']);
+        $d = hc.show();
+        $d.on("click", "button", click);
+        $d.on("click", "a.delete-link", ondelete);
+        $d.on("submit", "form", submit);
+    }
+    $.get(hoturl_post("api/namedsearch"), function (data) {
+        if (data.ok)
+            create(data.searches);
     });
 });
 

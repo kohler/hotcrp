@@ -67,6 +67,14 @@
         "callback": "SearchConfig_API::save_namedformula"
     },
     {
+        "name": "namedsearch", "get": true, "allow_if": "pc",
+        "callback": "SearchConfig_API::namedsearch"
+    },
+    {
+        "name": "namedsearch", "post": true,
+        "callback": "SearchConfig_API::save_namedsearch"
+    },
+    {
         "name": "mentioncompletion", "get": true, "post": true,
         "callback": "PaperApi::mentioncompletion_api"
     },
