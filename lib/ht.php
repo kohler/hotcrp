@@ -16,13 +16,14 @@ class Ht {
     const ATTR_BOOL = 2;
     const ATTR_BOOLTEXT = 3;
     const ATTR_NOEMPTY = 4;
+    const ATTR_SPACESEP = 16;
     private static $_attr_type = [
         "accept-charset" => self::ATTR_SKIP,
         "action" => self::ATTR_SKIP,
         "async" => self::ATTR_BOOL,
         "autofocus" => self::ATTR_BOOL,
         "checked" => self::ATTR_BOOL,
-        "class" => self::ATTR_NOEMPTY,
+        "class" => self::ATTR_NOEMPTY | self::ATTR_SPACESEP,
         "data-default-checked" => self::ATTR_BOOLTEXT,
         "defer" => self::ATTR_BOOL,
         "disabled" => self::ATTR_BOOL,
@@ -44,7 +45,11 @@ class Ht {
         $x = "";
         if ($js) {
             foreach ($js as $k => $v) {
-                $t = self::$_attr_type[$k] ?? null;
+                $tf = self::$_attr_type[$k] ?? 0;
+                $t = $tf & 15;
+                if (is_array($v) && ($tf & self::ATTR_SPACESEP) !== 0) {
+                    $v = join(" ", $v);
+                }
                 if ($v === null
                     || $t === self::ATTR_SKIP
                     || ($v === false && $t !== self::ATTR_BOOLTEXT)
