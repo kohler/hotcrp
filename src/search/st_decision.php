@@ -21,10 +21,15 @@ class Decision_SearchTerm extends SearchTerm {
         return new Decision_SearchTerm($srch->user, $dec);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        return "(Paper.outcome" . CountMatcher::sqlexpr_using($this->match) . ")";
+        $f = ["Paper.outcome" . CountMatcher::sqlexpr_using($this->match)];
+        if (CountMatcher::compare_using(0, $this->match)
+            && !$this->user->allow_administer_all()) {
+            $f[] = "Paper.outcome=0";
+        }
+        return "(" . join(" or ", $f) . ")";
     }
     function test(PaperInfo $row, $rrow) {
-        return $this->user->can_view_decision($row)
-            && CountMatcher::compare_using($row->outcome, $this->match);
+        $d = $this->user->can_view_decision($row) ? $row->outcome : 0;
+        return CountMatcher::compare_using($d, $this->match);
     }
 }

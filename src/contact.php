@@ -2715,7 +2715,8 @@ class Contact {
 
     /** @return bool */
     function allow_administer_all() {
-        return $this->is_site_contact;
+        return $this->is_site_contact
+            || ($this->privChair && !$this->conf->has_any_manager());
     }
 
     /** @return bool */

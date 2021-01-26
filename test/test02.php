@@ -1194,6 +1194,13 @@ xassert_eqq($am->find_all("Applications of cryptography"), [0, 1, 2, 3]);
 xassert_eqq($am->find1("Applications of cryptography"), null);
 xassert_eqq($am->find1("Applications of cryptography", 1), 0);
 
+$dm = $Conf->decision_matcher();
+xassert_eqq($dm->find_all("unknown"), [0]);
+xassert_eqq($dm->find_all("unk"), [0]);
+xassert_eqq($dm->find_all("und"), [0]);
+xassert_eqq($dm->find_all("undecided"), [0]);
+xassert_eqq($dm->find_all("?"), [0]);
+
 // Filer::docstore_fixed_prefix
 xassert_eqq(Filer::docstore_fixed_prefix(null), null);
 xassert_eqq(Filer::docstore_fixed_prefix(""), null);
