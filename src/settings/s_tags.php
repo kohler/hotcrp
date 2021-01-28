@@ -90,9 +90,12 @@ class Tags_SettingRenderer {
 
 
 class Tags_SettingParser extends SettingParser {
+    /** @var SettingValues */
     private $sv;
+    /** @var Tagger */
     private $tagger;
     private $diffs = [];
+    private $cleaned = false;
 
     function __construct(SettingValues $sv) {
         $this->sv = $sv;
@@ -177,15 +180,17 @@ class Tags_SettingParser extends SettingParser {
     }
 
     function save(SettingValues $sv, Si $si) {
-        if (!isset($this->diffs[$si->name])) {
-            return;
-        }
+        if (($si->name === "tag_vote" || $si->name === "tag_approval")
+            && ($this->diffs[$si->name] ?? false)
+            && !$this->cleaned) {
+            $old_votish = preg_split('/\A\s+|\#[\d.]+\s*/', strtolower($sv->oldv("tag_vote") . " " . $sv->oldv("tag_approval")));
+            $new_votish = preg_split('/\A\s+|\#[\d.]+\s*/', strtolower($sv->newv("tag_vote") . " " . $sv->newv("tag_approval")));
+            $new_votish[] = "";
 
-        if ($si->name == "tag_vote" || $si->name === "tag_approval") {
-            // check allotments
+            // remove negative votes
             $pcm = $sv->conf->pc_members();
             $removals = [];
-            foreach (preg_split('/\s+/', $sv->savedv($si->name)) as $t) {
+            foreach ($new_votish as $t) {
                 list($tag, $index) = Tagger::unpack($t);
                 if ($tag !== false) {
                     $removals[] = "right(tag," . (strlen($tag) + 1) . ")='~" . sqlq($tag) . "'";
@@ -197,10 +202,15 @@ class Tags_SettingParser extends SettingParser {
                     $sv->warning_at($si->name, "Removed negative votes.");
                 }
             }
-            $sv->mark_invalidate_caches(["autosearch" => true]);
-        }
 
-        $sv->mark_invalidate_caches(["tags" => true]);
+            // remove no-longer-active voting tags
+            if (($removed_votish = array_diff($old_votish, $new_votish))) {
+                $result = $sv->conf->qe("delete from PaperTag where tag?a", array_values($removed_votish));
+            }
+
+            $sv->mark_invalidate_caches(["autosearch" => true]);
+            $this->cleaned = true;
+        }
     }
 
     static function crosscheck(SettingValues $sv) {
