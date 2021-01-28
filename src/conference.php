@@ -381,7 +381,7 @@ class Conf {
 
         // GC old capabilities
         if (($this->settings["__capability_gc"] ?? 0) < Conf::$now - 86400) {
-            $this->cleanup_capabilities();
+            $this->clean_capabilities();
         }
 
         $this->refresh_settings();
@@ -391,7 +391,7 @@ class Conf {
         }
     }
 
-    private function refresh_settings() {
+    function refresh_settings() {
         // enforce invariants
         $this->settings["pcrev_any"] = $this->settings["pcrev_any"] ?? 0;
         $this->settings["extrev_view"] = $this->settings["extrev_view"] ?? 0;
@@ -453,11 +453,21 @@ class Conf {
         }
 
         // clear caches
-        $this->_decisions = $this->_decision_matcher = null;
-        $this->_decision_status_info = null;
         $this->_pc_seeall_cache = null;
+        $this->_paper_opts->invalidate_options();
+        $this->_decisions = null;
+        $this->_decision_matcher = null;
+        $this->_decision_status_info = null;
+        $this->_review_form = null;
         $this->_defined_rounds = null;
         $this->_resp_rounds = null;
+        $this->_formatspec_cache = [];
+        $this->_abbrev_matcher = null;
+        $this->_tag_map = null;
+        $this->_formula_functions = null;
+        $this->_assignment_parsers = null;
+        $this->_topic_set = null;
+
         // digested settings
         $this->_pc_see_pdf = true;
         if (($this->settings["sub_freeze"] ?? 0) <= 0
@@ -692,9 +702,13 @@ class Conf {
         $this->_site_contact = null;
         $this->_date_format_initialized = false;
         $this->_dtz = null;
+
+        if ($this === Conf::$main) {
+            $this->refresh_globals();
+        }
     }
 
-    private function cleanup_capabilities() {
+    private function clean_capabilities() {
         $ctmap = $this->capability_type_map();
         $ct_cleanups = [];
         foreach ($ctmap as $ctj) {
@@ -761,7 +775,7 @@ class Conf {
     /** @param string $name
      * @param ?int $value
      * @return bool */
-    function __save_setting($name, $value, $data = null) {
+    function save_setting($name, $value, $data = null) {
         $change = false;
         if ($value === null && $data === null) {
             $result = $this->qe("delete from Settings where name=?", $name);
@@ -794,16 +808,21 @@ class Conf {
     }
 
     /** @param string $name
-     * @param ?int $value */
-    function save_setting($name, $value, $data = null) {
-        $change = $this->__save_setting($name, $value, $data);
+     * @param ?int $value
+     * @deprecated */
+    function __save_setting($name, $value, $data = null) {
+        return $this->save_setting($name, $value, $data);
+    }
+
+    /** @param string $name
+     * @param ?int $value
+     * @return bool */
+    function save_refresh_setting($name, $value, $data = null) {
+        $change = $this->save_setting($name, $value, $data);
         if ($change) {
             $this->refresh_settings();
             if (str_starts_with($name, "opt.")) {
                 $this->refresh_options();
-            }
-            if (str_starts_with($name, "tag_") || $name === "tracks") {
-                $this->invalidate_caches(["tags" => true, "tracks" => true]);
             }
         }
         return $change;
@@ -1851,7 +1870,7 @@ class Conf {
         if ($add && !self::round_name_error($rname)) {
             $rtext = $this->setting_data("tag_rounds") ?? "";
             $rtext = $rtext === "" ? $rname : "$rtext $rname";
-            $this->__save_setting("tag_rounds", 1, $rtext);
+            $this->save_setting("tag_rounds", 1, $rtext);
             $this->refresh_round_settings();
             return $this->round_number($rname, false);
         } else {

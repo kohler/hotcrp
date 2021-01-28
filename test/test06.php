@@ -746,7 +746,7 @@ function save_round_settings($map) {
     foreach ($Conf->round_list() as $rname) {
         $settings[] = isset($map[$rname]) ? $map[$rname] : null;
     }
-    $Conf->save_setting("round_settings", 1, json_encode_db($settings));
+    $Conf->save_refresh_setting("round_settings", 1, json_encode_db($settings));
 }
 save_round_settings(["R1" => ["extrev_view" => 0]]);
 Contact::update_rights();
@@ -854,9 +854,9 @@ assert_search_papers($user_chair, "ovemer:2..1", "17 18");
 assert_search_papers($user_chair, "ovemer:3..1", "1 17 18");
 
 // new external reviewer does not get combined email
-$Conf->save_setting("round_settings", null);
-$Conf->save_setting("extrev_view", 1);
-$Conf->save_setting("pcrev_editdelegate", 2);
+$Conf->save_refresh_setting("round_settings", null);
+$Conf->save_refresh_setting("extrev_view", 1);
+$Conf->save_refresh_setting("pcrev_editdelegate", 2);
 Contact::update_rights();
 MailChecker::clear();
 
@@ -893,14 +893,14 @@ assert_search_papers($user_mgbaker, "(internet OR datagram) 13 19", "13 19");
 
 // author review visibility
 xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
-$Conf->save_setting("au_seerev", 2);
+$Conf->save_refresh_setting("au_seerev", 2);
 xassert($user_mjh->can_view_review($paper17, $rrow17m));
 xassert_assign_fail($user_mgbaker, "paper,tag\n17,perm:author-read-review\n");
 xassert_assign_fail($user_mjh, "paper,tag\n17,perm:author-read-review\n");
 xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#-1\n");
 $paper17 = $Conf->checked_paper_by_id(17);
 xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
-$Conf->save_setting("au_seerev", null);
+$Conf->save_refresh_setting("au_seerev", null);
 xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#1\n");
 $paper17 = $Conf->checked_paper_by_id(17);
 xassert($user_mjh->can_view_review($paper17, $rrow17m));

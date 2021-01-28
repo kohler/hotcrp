@@ -58,12 +58,11 @@ class S3Client {
     function scope_and_signing_key($time) {
         if ($this->s3_scope === null
             && $this->setting_cache) {
-            $this->s3_scope = $this->setting_cache->setting_data($this->setting_cache_prefix . "_scope");
-            $this->s3_signing_key = $this->setting_cache->setting_data($this->setting_cache_prefix . "_signing_key");
+            $this->s3_scope = $this->setting_cache->setting_data("{$this->setting_cache_prefix}_scope");
+            $this->s3_signing_key = $this->setting_cache->setting_data("{$this->setting_cache_prefix}_signing_key");
         }
         $s3_scope_date = gmdate("Ymd", $time);
-        $expected_s3_scope = $s3_scope_date . "/" . $this->s3_region
-            . "/s3/aws4_request";
+        $expected_s3_scope = "{$s3_scope_date}/{$this->s3_region}/s3/aws4_request";
         if ($this->s3_scope !== $expected_s3_scope) {
             $this->reset_key = true;
             $this->s3_scope = $expected_s3_scope;
@@ -72,8 +71,8 @@ class S3Client {
             $service_key = hash_hmac("sha256", "s3", $region_key, true);
             $this->s3_signing_key = hash_hmac("sha256", "aws4_request", $service_key, true);
             if ($this->setting_cache) {
-                $this->setting_cache->__save_setting($this->setting_cache_prefix . "_scope", Conf::$now, $this->s3_scope);
-                $this->setting_cache->__save_setting($this->setting_cache_prefix . "_signing_key", Conf::$now, $this->s3_signing_key);
+                $this->setting_cache->save_setting("{$this->setting_cache_prefix}_scope", Conf::$now, $this->s3_scope);
+                $this->setting_cache->save_setting("{$this->setting_cache_prefix}_signing_key", Conf::$now, $this->s3_signing_key);
             }
         }
         return [$this->s3_scope, $this->s3_signing_key];
@@ -149,14 +148,12 @@ class S3Client {
         $chk = $chv = "";
         foreach ($shdr as $k => $v) {
             $k = strtolower($k);
-            $chk .= ";" . $k;
-            $chv .= $k . ":" . $v . "\n";
+            $chk .= ";{$k}";
+            $chv .= "{$k}:{$v}\n";
         }
 
-        $canonical_request = ($method ? : "GET") . "\n"
-            . $resource . "\n"
-            . $query . "\n"
-            . $chv . "\n"
+        $canonical_request = ($method ? : "GET")
+            . "\n{$resource}\n{$query}\n{$chv}\n"
             . substr($chk, 1) . "\n"
             . $chdr["x-amz-content-sha256"];
 
@@ -170,15 +167,14 @@ class S3Client {
 
         $hdrarr = [];
         foreach ($chdr as $k => $v) {
-            $hdrarr[] = $k . ": " . $v;
+            $hdrarr[] = "{$k}: {$v}";
         }
         if (isset($hdr["content_type"])) {
             $hdrarr[] = "Content-Type: " . $hdr["content_type"];
         }
         $hdrarr[] = "Authorization: AWS4-HMAC-SHA256 Credential="
-            . $this->s3_key . "/" . $scope
-            . ",SignedHeaders=" . substr($chk, 1)
-            . ",Signature=" . $signature;
+            . "{$this->s3_key}/{$scope},SignedHeaders=" . substr($chk, 1)
+            . ",Signature={$signature}";
         return ["headers" => $hdrarr, "signature" => $signature];
     }
 
@@ -293,7 +289,7 @@ class S3Client {
      * @param string $dst_skey
      * @return S3Result<bool> */
     function start_copy($src_skey, $dst_skey) {
-        return $this->start($dst_skey, "PUT", ["x-amz-copy-source" => "/" . $this->s3_bucket . "/" . $src_skey]);
+        return $this->start($dst_skey, "PUT", ["x-amz-copy-source" => "/{$this->s3_bucket}/{$src_skey}"]);
     }
 
     /** @param string $skey
@@ -309,7 +305,7 @@ class S3Client {
         $suffix = "?list-type=2&prefix=" . urlencode($prefix);
         foreach (["max-keys", "start-after", "continuation-token"] as $k) {
             if (isset($args[$k]))
-                $suffix .= "&" . $k . "=" . urlencode($args[$k]);
+                $suffix .= "&{$k}=" . urlencode($args[$k]);
         }
         return $this->start($suffix, "GET", [], "S3Client::finish_get");
     }

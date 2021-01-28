@@ -213,8 +213,9 @@ assert_search_papers($user_chair, "5–1,#15—17,#20", "5 4 3 2 1 15 16 17 20")
 assert_search_papers($user_mgbaker, "re:estrin", "4 8");
 
 // make reviewer identity anonymous until review completion
-$Conf->save_setting("rev_open", 1);
-$Conf->save_setting("pc_seeblindrev", 1);
+$Conf->save_refresh_setting("rev_open", 1);
+$Conf->save_refresh_setting("pc_seeblindrev", 1);
+$Conf->refresh_settings();
 assert_search_papers($user_mgbaker, "re:varghese", "");
 
 $revreq = array("overAllMerit" => 5, "reviewerQualification" => 4, "ready" => true);
@@ -234,26 +235,26 @@ xassert($c1ok);
 xassert(!$user_van->can_view_comment($paper1, $comment1));
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
 xassert(!$user_van->can_comment($paper1, null));
-$Conf->save_setting("cmt_author", 1);
+$Conf->save_refresh_setting("cmt_author", 1);
 xassert(!$user_van->can_comment($paper1, null));
-$Conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
+$Conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
 xassert($user_van->can_comment($paper1, null));
-$Conf->save_setting("cmt_author", null);
+$Conf->save_refresh_setting("cmt_author", null);
 xassert(!$user_van->can_comment($paper1, null));
 xassert($user_van->can_view_comment($paper1, $comment1));
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
-$Conf->save_setting("rev_blind", Conf::BLIND_OPTIONAL);
+$Conf->save_refresh_setting("rev_blind", Conf::BLIND_OPTIONAL);
 xassert($user_van->can_view_comment($paper1, $comment1));
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
 $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
 xassert($c1ok);
 xassert($user_van->can_view_comment_identity($paper1, $comment1));
-$Conf->save_setting("rev_blind", null);
+$Conf->save_refresh_setting("rev_blind", null);
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
-$Conf->save_setting("au_seerev", Conf::AUSEEREV_NO);
+$Conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_NO);
 
 // check comment/review visibility when reviews are incomplete
-$Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSINCOMPLETE);
+$Conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSINCOMPLETE);
 Contact::update_rights();
 $review1 = fetch_review($paper1, $user_mgbaker);
 xassert(!$user_wilma->has_review());
@@ -284,7 +285,7 @@ xassert(!$user_varghese->can_view_review($paper1, $review2));
 xassert($user_marina->can_view_review($paper1, $review1));
 xassert($user_marina->can_view_review($paper1, $review2));
 
-$Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSANYINCOMPLETE);
+$Conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSANYINCOMPLETE);
 Contact::update_rights();
 xassert($user_wilma->can_view_review($paper1, $review1));
 xassert($user_wilma->can_view_review($paper1, $review2));
@@ -307,7 +308,7 @@ xassert($user_wilma->can_view_review($paper1, $review2));
 
 // set up some tags and tracks
 AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);
-$Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
+$Conf->save_refresh_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
 $paper13 = $user_jon->checked_paper_by_id(13);
 xassert(!$paper13->has_author($user_jon));
 xassert(!$paper13->has_reviewer($user_jon));
@@ -486,7 +487,7 @@ assert_search_papers($user_varghese, "#chairtest", "1");
 xassert_assign($user_varghese, "paper,tag\n1,chairtest#clear\n");
 assert_search_papers($user_varghese, "#chairtest", "");
 
-$Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest"));
+$Conf->save_refresh_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest"));
 xassert_assign($Admin, "paper,tag\n1,chairtest\n", true);
 assert_search_papers($user_chair, "#chairtest", "1");
 assert_search_papers($user_varghese, "#chairtest", "1");
@@ -499,7 +500,7 @@ assert_search_papers($user_varghese, "#chairtest1", "1");
 xassert_assign($user_varghese, "paper,tag\n1,chairtest1#clear\n");
 assert_search_papers($user_varghese, "#chairtest1", "");
 
-$Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest*"));
+$Conf->save_refresh_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest*"));
 xassert($Conf->tags()->has_pattern);
 $ct = $Conf->tags()->check("chairtest0");
 xassert(!!$ct);
@@ -510,7 +511,7 @@ xassert_assign_fail($user_varghese, "paper,tag\n1,chairtest1#clear\n");
 assert_search_papers($user_varghese, "#chairtest1", "1");
 
 // pattern tag merging
-$Conf->save_setting("tag_hidden", 1, "chair*");
+$Conf->save_refresh_setting("tag_hidden", 1, "chair*");
 $ct = $Conf->tags()->check("chairtest0");
 xassert($ct && $ct->readonly && $ct->hidden);
 
@@ -593,7 +594,7 @@ assert_search_papers($user_chair, "calories:1040", "3 4");
 assert_search_papers($user_chair, "calories≥200", "1 2 3 4");
 
 // option searches with edit condition
-$Conf->save_setting("options", 1, '[{"id":1,"name":"Calories","abbr":"calories","type":"numeric","position":1,"display":"default"},{"id":2,"name":"Fattening","type":"numeric","position":2,"display":"default","exists_if":"calories>200"}]');
+$Conf->save_refresh_setting("options", 1, '[{"id":1,"name":"Calories","abbr":"calories","type":"numeric","position":1,"display":"default"},{"id":2,"name":"Fattening","type":"numeric","position":2,"display":"default","exists_if":"calories>200"}]');
 $Conf->invalidate_caches(["options" => true]);
 $Conf->qe("insert into PaperOption (paperId,optionId,value) values (1,2,1),(2,2,1),(3,2,1),(4,2,1),(5,2,1)");
 assert_search_papers($user_chair, "has:fattening", "1 3 4");
@@ -642,7 +643,7 @@ while ($result && ($row = $result->fetch_row()))
 echo join("", $tags);*/
 
 // check review visibility for “not unless completed on same paper”
-$Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_IFCOMPLETE);
+$Conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_IFCOMPLETE);
 Contact::update_rights();
 $review2a = fetch_review($paper2, $user_jon);
 xassert(!$review2a->reviewSubmitted && !$review2a->reviewAuthorSeen);
@@ -951,9 +952,9 @@ xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu");
 
 // tracks and view-paper permissions
 AssignmentSet::run($user_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
-$Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+red\"}}");
-$Conf->save_setting("pc_seeallrev", 1);
-$Conf->save_setting("pc_seeblindrev", 0);
+$Conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+red\"}}");
+$Conf->save_refresh_setting("pc_seeallrev", 1);
+$Conf->save_refresh_setting("pc_seeblindrev", 0);
 xassert($user_jon->has_tag("red"));
 xassert(!$user_marina->has_tag("red"));
 
@@ -1007,7 +1008,7 @@ xassert_assign($user_chair, "paper,action,user\n13,primary,marina@poema.ru\n");
 xassert_assign($user_chair, "paper,action,user\n14,primary,marina@poema.ru\n");
 xassert_assign($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n");
 
-$Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
+$Conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
 
 xassert(!$user_jon->can_view_paper($paper13));
 xassert(!$user_jon->can_view_pdf($paper13));
@@ -1046,7 +1047,7 @@ xassert_assign_fail($user_chair, "paper,action,user\n14,primary,marina@poema.ru\
 xassert_assign($user_chair, "paper,action,user\n13-14,clearreview,jon@cs.ucl.ac.uk\n13-14,clearreview,marina@poema.ru\n");
 
 // combinations of tracks
-$Conf->save_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"red\":{\"view\":\"+red\"},\"blue\":{\"view\":\"+blue\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
+$Conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\",\"assrev\":\"-red\"},\"red\":{\"view\":\"+red\"},\"blue\":{\"view\":\"+blue\"},\"_\":{\"view\":\"+red\",\"assrev\":\"+red\"}}");
 
 // 1: none; 2: red; 3: green; 4: red green; 5: blue;
 // 6: red blue; 7: green blue; 8: red green blue
@@ -1076,7 +1077,7 @@ for ($pid = 1; $pid <= 8; ++$pid) {
 }
 
 // primary administrators
-$Conf->save_setting("tracks", null);
+$Conf->save_refresh_setting("tracks", null);
 for ($pid = 1; $pid <= 3; ++$pid) {
     $p = $user_chair->checked_paper_by_id($pid);
     xassert($user_chair->allow_administer($p));
@@ -1094,7 +1095,7 @@ for ($pid = 1; $pid <= 3; ++$pid) {
     xassert_eqq($user_chair->is_primary_administrator($p), $pid !== 2);
     xassert_eqq($user_marina->is_primary_administrator($p), $pid === 2);
 }
-$Conf->save_setting("tracks", 1, "{\"green\":{\"admin\":\"+red\"}}");
+$Conf->save_refresh_setting("tracks", 1, "{\"green\":{\"admin\":\"+red\"}}");
 for ($pid = 1; $pid <= 3; ++$pid) {
     $p = $user_chair->checked_paper_by_id($pid);
     xassert($user_chair->allow_administer($p));
@@ -1107,7 +1108,7 @@ for ($pid = 1; $pid <= 3; ++$pid) {
     xassert_eqq($user_marina->is_primary_administrator($p), $pid === 2);
     xassert_eqq($user_estrin->is_primary_administrator($p), $pid === 3);
 }
-$Conf->save_setting("tracks", null);
+$Conf->save_refresh_setting("tracks", null);
 
 // check content upload
 $paper30 = $user_chair->checked_paper_by_id(30);
@@ -1135,7 +1136,7 @@ $user_author2 = $Conf->checked_user_by_email("micke@cdt.luth.se");
 $review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!$user_author2->can_view_review($paper2, $review2b));
 xassert(!$review2b->reviewAuthorSeen);
-$Conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
+$Conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
 xassert($user_author2->can_view_review($paper2, $review2b));
 
 $rjson = $Conf->review_form()->unparse_review_json($user_chair, $paper2, $review2b);
@@ -1149,20 +1150,20 @@ $review2b = fetch_review($paper2, $user_pdruschel);
 xassert(!!$review2b->reviewAuthorSeen);
 
 // check review visibility
-$Conf->save_setting("au_seerev", Conf::AUSEEREV_NO);
+$Conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_NO);
 xassert(!$user_author2->can_view_review($paper2, $review2b));
-$Conf->save_setting("au_seerev", Conf::AUSEEREV_TAGS);
-$Conf->save_setting("tag_au_seerev", 1, "fart");
+$Conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_TAGS);
+$Conf->save_refresh_setting("tag_au_seerev", 1, "fart");
 xassert($user_author2->can_view_review($paper2, $review2b));
-$Conf->save_setting("tag_au_seerev", 1, "faart");
+$Conf->save_refresh_setting("tag_au_seerev", 1, "faart");
 xassert(!$user_author2->can_view_review($paper2, $review2b));
-$Conf->save_setting("resp_active", 1);
-$Conf->save_setting("resp_open", 1);
-$Conf->save_setting("resp_done", Conf::$now + 100);
+$Conf->save_refresh_setting("resp_active", 1);
+$Conf->save_refresh_setting("resp_open", 1);
+$Conf->save_refresh_setting("resp_done", Conf::$now + 100);
 xassert($user_author2->can_view_review($paper2, $review2b));
-$Conf->save_setting("au_seerev", Conf::AUSEEREV_NO);
+$Conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_NO);
 xassert($user_author2->can_view_review($paper2, $review2b));
-$Conf->save_setting("resp_active", null);
+$Conf->save_refresh_setting("resp_active", null);
 xassert(!$user_author2->can_view_review($paper2, $review2b));
 
 // check token assignment
@@ -1253,8 +1254,8 @@ xassert_assign($user_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
 xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
 
 // more tags
-$Conf->save_setting("tag_vote", 1, "vote#10 crap#3");
-$Conf->save_setting("tag_approval", 1, "app#0");
+$Conf->save_refresh_setting("tag_vote", 1, "vote#10 crap#3");
+$Conf->save_refresh_setting("tag_approval", 1, "app#0");
 $Conf->update_automatic_tags();
 xassert_assign($user_chair,
     "paper,tag\n16,+huitema~vote#5 +crowcroft~vote#1 +crowcroft~crap#2 +estrin~app +estrin~crap#1 +estrin~bar");
@@ -1285,7 +1286,7 @@ xassert(SettingValues::make_request($user_chair, [
 $paper16 = $user_chair->checked_paper_by_id(16);
 xassert_eqq($paper16->sorted_viewable_tags($user_marina), " app#2 crap#3 vote#6");
 xassert_eqq($paper16->sorted_searchable_tags($user_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 17~app#0 app#2 crap#3 vote#6");
-$Conf->save_setting("tag_approval", null);
+$Conf->save_refresh_setting("tag_approval", null);
 xassert_assign($user_chair, "paper,action\n16,withdraw\n");
 $paper16 = $user_chair->checked_paper_by_id(16);
 xassert_eqq($paper16->sorted_searchable_tags($user_marina), " app#2");

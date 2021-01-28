@@ -529,8 +529,11 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     function invalidate_options() {
-        $this->_jmap = $this->_ijmap = $this->_olist = $this->_olist_nonfinal = $this->_nonpaper_am = null;
-        $this->_omap = $this->_imap = [];
+        if ($this->_jmap !== null || $this->_ijmap !== null) {
+            $this->_jmap = $this->_ijmap = null;
+            $this->_omap = $this->_imap = [];
+            $this->_olist = $this->_olist_nonfinal = $this->_nonpaper_am = null;
+        }
     }
 
     /** @param int $id */

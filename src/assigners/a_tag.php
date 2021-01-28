@@ -444,14 +444,13 @@ class Tag_Assigner extends Assigner {
         if ($this->index !== null
             && str_ends_with($this->tag, ':')) {
             $aset->cleanup_callback("colontag", function ($aset) {
-                $aset->conf->save_setting("has_colontag", 1);
-                $aset->conf->invalidate_caches(["tags" => true]);
+                $aset->conf->save_refresh_setting("has_colontag", 1);
             });
         }
         $isperm = strncasecmp($this->tag, 'perm:', 5) === 0;
         if ($this->index !== null && $isperm) {
             $aset->cleanup_callback("permtag", function ($aset) {
-                $aset->conf->save_setting("has_permtag", 1);
+                $aset->conf->save_refresh_setting("has_permtag", 1);
             });
         }
         if ($aset->conf->tags()->is_track($this->tag) || $isperm) {

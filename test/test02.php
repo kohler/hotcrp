@@ -1232,19 +1232,19 @@ xassert_eqq($doc->text_hash(), "sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6
 xassert_eqq($doc->content_binary_hash(), "sha2-" . hex2bin("66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18"));
 
 // docstore_path expansion and s3_document
-$Conf->save_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
+$Conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
 $Conf->save_setting("opt.contentHashMethod", 1, "sha1");
 $doc->set_content("Hello\n", "text/plain");
 xassert_eqq(Filer::docstore_path($doc), "/foo/bar/1d2/1d229/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9");
-$Conf->save_setting("opt.docstore", 1, "/foo/bar");
-$Conf->save_setting("opt.docstoreSubdir", 1, true);
+$Conf->save_refresh_setting("opt.docstore", 1, "/foo/bar");
+$Conf->save_refresh_setting("opt.docstoreSubdir", 1, true);
 xassert_eqq(Filer::docstore_path($doc), "/foo/bar/1d/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9.txt");
 xassert_eqq($doc->s3_key(), "doc/1d/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9.txt");
 
 $Conf->save_setting("opt.contentHashMethod", 1, "sha256");
 $doc->set_content("Hello\n", "text/plain");
 xassert_eqq(Filer::docstore_path($doc), "/foo/bar/sha2-66/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
-$Conf->save_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
+$Conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
 xassert_eqq(Filer::docstore_path($doc), "/foo/bar/sha2-66a/sha2-66a04/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18");
 xassert_eqq($doc->s3_key(), "doc/66a/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
 
