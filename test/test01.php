@@ -1269,16 +1269,27 @@ xassert_eqq($paper16->sorted_searchable_tags($user_chair), " 2~vote#5 4~app#0 4~
 xassert(!$user_marina->allow_administer($paper16));
 xassert_eqq($paper16->sorted_viewable_tags($user_marina), " app#1 crap#3 vote#6");
 xassert_eqq($paper16->sorted_searchable_tags($user_marina), " 2~vote#5 4~app#0 4~crap#1 8~crap#2 8~vote#1 app#1 crap#3 vote#6");
-$Conf->save_setting("tag_approval", null);
+xassert(SettingValues::make_request($user_chair, [
+    "has_tag_approval" => 1, "tag_approval" => ""
+])->execute());
 $paper16 = $user_chair->checked_paper_by_id(16);
+xassert_eqq($paper16->sorted_searchable_tags($user_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 app#1 crap#3 vote#6");
 xassert_eqq($paper16->sorted_viewable_tags($user_marina), " app#1 crap#3 vote#6");
 xassert_eqq($paper16->sorted_searchable_tags($user_marina), " 2~vote#5 4~crap#1 8~crap#2 8~vote#1 app#1 crap#3 vote#6");
-$Conf->save_setting("tag_approval", 1, "app#0");
+xassert_assign($user_chair, "paper,tag\n16,+floyd~app#0");
+$paper16 = $user_chair->checked_paper_by_id(16);
+xassert_eqq($paper16->sorted_searchable_tags($user_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 17~app#0 app#1 crap#3 vote#6");
+xassert(SettingValues::make_request($user_chair, [
+    "has_tag_approval" => 1, "tag_approval" => "app"
+])->execute());
+$paper16 = $user_chair->checked_paper_by_id(16);
+xassert_eqq($paper16->sorted_viewable_tags($user_marina), " app#2 crap#3 vote#6");
+xassert_eqq($paper16->sorted_searchable_tags($user_chair), " 2~vote#5 4~app#0 4~bar#0 4~crap#1 8~crap#2 8~vote#1 17~app#0 app#2 crap#3 vote#6");
+$Conf->save_setting("tag_approval", null);
 xassert_assign($user_chair, "paper,action\n16,withdraw\n");
 $paper16 = $user_chair->checked_paper_by_id(16);
-xassert_eqq($paper16->all_tags_text(), " 4~bar#0");
-xassert_eqq($paper16->sorted_searchable_tags($user_marina), "");
-xassert_eqq($paper16->sorted_searchable_tags($user_estrin), " 4~bar#0");
+xassert_eqq($paper16->sorted_searchable_tags($user_marina), " app#2");
+xassert_eqq($paper16->sorted_searchable_tags($user_estrin), " 4~app#0 4~bar#0 app#2");
 
 ConfInvariants::test_all($Conf, "test01.php:D: ");
 
