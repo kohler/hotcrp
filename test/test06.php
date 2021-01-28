@@ -898,14 +898,14 @@ xassert($user_mjh->can_view_review($paper17, $rrow17m));
 xassert_assign_fail($user_mgbaker, "paper,tag\n17,perm:author-read-review\n");
 xassert_assign_fail($user_mjh, "paper,tag\n17,perm:author-read-review\n");
 xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#-1\n");
-$paper17->invalidate_tags();
+$paper17 = $Conf->checked_paper_by_id(17);
 xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
 $Conf->save_setting("au_seerev", null);
 xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#1\n");
-$paper17->invalidate_tags();
+$paper17 = $Conf->checked_paper_by_id(17);
 xassert($user_mjh->can_view_review($paper17, $rrow17m));
 xassert_assign($Admin, "paper,tag\n17,perm:author-read-review#clear\n");
-$paper17->invalidate_tags();
+$paper17 = $Conf->checked_paper_by_id(17);
 xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
 
 // paper options

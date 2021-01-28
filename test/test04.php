@@ -258,15 +258,14 @@ xassert_eqq($user_anne1->tag_value("b"), 3.0);
 xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
 xassert_eqq($user_anne1->data("data_test"), 139);
 xassert_eqq($user_anne1->email, "anne1@_.com");
-$paper1->invalidate_conflicts();
-$paper1->invalidate_tags();
+$paper1 = $Conf->checked_paper_by_id(1);
 xassert($paper1->has_conflict($user_anne1));
 xassert_eqq($paper1->tag_value("{$a2id}~butt"), null);
 xassert_eqq($paper1->tag_value("{$a1id}~butt"), 1.0);
-$paper2->invalidate_tags();
+$paper2 = $Conf->checked_paper_by_id(2);
 xassert_eqq($paper2->tag_value("{$a2id}~butt"), null);
 xassert_eqq($paper2->tag_value("{$a1id}~butt"), 2.0);
-$paper3->invalidate_tags();
+$paper3 = $Conf->checked_paper_by_id(3);
 xassert_eqq($paper3->tag_value("{$a2id}~butt"), null);
 xassert_eqq($paper3->tag_value("{$a1id}~butt"), 4.0);
 

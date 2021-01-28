@@ -1180,10 +1180,6 @@ class PaperInfo {
     }
 
 
-    function invalidate_tags() {
-        $this->paperTags = null;
-    }
-
     function load_tags() {
         $result = $this->conf->qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=? group by paperId", $this->paperId);
         $this->paperTags = "";
@@ -1264,7 +1260,7 @@ class PaperInfo {
         $rights = $user->__rights($this);
         if ($rights->searchable_tags === null) {
             $dt = $this->conf->tags();
-            $rights->searchable_tags = $dt->censor(TagMap::CENSOR_SEARCH, $this->all_tags_text(), $user, $this);
+            $rights->searchable_tags = $dt->censor(TagMap::CENSOR_SEARCH, $this->paperTags, $user, $this);
         }
         return $rights->searchable_tags;
     }
@@ -1284,7 +1280,7 @@ class PaperInfo {
         $rights = $user->__rights($this);
         if ($rights->viewable_tags === null) {
             $dt = $this->conf->tags();
-            $tags = $dt->censor(TagMap::CENSOR_VIEW, $this->all_tags_text(), $user, $this);
+            $tags = $dt->censor(TagMap::CENSOR_VIEW, $this->paperTags, $user, $this);
             $rights->viewable_tags = $dt->sort_string($tags);
         }
         return $rights->viewable_tags;
