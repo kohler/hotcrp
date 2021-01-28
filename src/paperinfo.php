@@ -2159,9 +2159,10 @@ class PaperInfo {
     }
 
     private function ensure_full_review_name() {
+        $names = [];
         foreach ($this->_full_review ?? [] as $rrow) {
             if (($u = $this->conf->cached_user_by_id($rrow->contactId))) {
-                $rrow->assign_name($u);
+                $rrow->assign_name($u, $names);
             }
         }
     }
@@ -2324,9 +2325,10 @@ class PaperInfo {
         }
         foreach ($row_set as $prow) {
             $prow->_reviews_have["names"] = true;
+            $names = [];
             foreach ($prow->reviews_by_id() as $rrow) {
                 if (($u = $this->conf->cached_user_by_id($rrow->contactId))) {
-                    $rrow->assign_name($u);
+                    $rrow->assign_name($u, $names);
                 }
             }
         }

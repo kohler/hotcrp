@@ -2156,7 +2156,7 @@ class PaperTable {
             // reviewer identity
             $showtoken = $rr->reviewToken && $user->can_review($prow, $rr);
             if (!$user->can_view_review_identity($prow, $rr)) {
-                $t .= ($rtype ? '<td class="rl">' . $rtype . '</td>' : '<td></td>');
+                $t .= ($rtype ? "<td class=\"rl\">{$rtype}</td>" : '<td></td>');
             } else {
                 if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
                     $n = $user->reviewer_html_for($rr);

@@ -990,10 +990,11 @@ class Contact {
     private function calculate_name_for($pfx, $user) {
         if ($pfx === "u") {
             return $user;
-        } else if ($pfx === "t") {
-            return Text::nameo($user, NAME_P);
         }
-        $n = htmlspecialchars(Text::nameo($user, NAME_P));
+        $n = Text::nameo($user, NAME_P | ($user->nameAmbiguous ?? false ? NAME_E : 0));
+        if ($pfx !== "n") {
+            $n = htmlspecialchars($n);
+        }
         if ($pfx === "r"
             && isset($user->contactTags)
             && ($this->can_view_user_tags() || $user->contactId === $this->contactXid)) {

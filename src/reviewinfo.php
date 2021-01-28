@@ -122,6 +122,8 @@ class ReviewInfo implements JsonSerializable {
     public $affiliation;
     /** @var ?string */
     public $email;
+    /** @var ?bool */
+    public $nameAmbiguous;
     /** @var ?string */
     public $contactTags;
     /** @var ?int */
@@ -490,13 +492,21 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
-    /** @param Contact $c */
-    function assign_name($c) {
+    /** @param Contact $c
+     * @param list<Contact> &$assigned */
+    function assign_name($c, &$assigned) {
         $this->firstName = $c->firstName;
         $this->lastName = $c->lastName;
         $this->affiliation = $c->affiliation;
         $this->email = $c->email;
         $this->contactTags = $c->contactTags;
+        $this->nameAmbiguous = false;
+        foreach ($assigned as $pc) {
+            if ($pc->firstName === $c->firstName && $pc->lastName === $c->lastName) {
+                $pc->nameAmbiguous = $c->nameAmbiguous = true;
+            }
+        }
+        $assigned[] = $c;
     }
 
     /** @param string $id
