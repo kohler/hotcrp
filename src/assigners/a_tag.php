@@ -445,7 +445,7 @@ class Tag_Assigner extends Assigner {
             && str_ends_with($this->tag, ':')) {
             $aset->cleanup_callback("colontag", function ($aset) {
                 $aset->conf->save_setting("has_colontag", 1);
-                $aset->conf->invalidate_caches("tags");
+                $aset->conf->invalidate_caches(["tags" => true]);
             });
         }
         $isperm = strncasecmp($this->tag, 'perm:', 5) === 0;

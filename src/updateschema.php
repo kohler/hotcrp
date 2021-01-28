@@ -45,7 +45,7 @@ function update_schema_create_review_form($conf) {
         }
     }
 
-    $conf->save_setting("review_form", 1, $rfj);
+    $conf->__save_setting("review_form", 1, $rfj);
     return true;
 }
 
@@ -141,7 +141,7 @@ function update_schema_create_options($conf) {
         $opsj[] = $opj;
     }
 
-    $conf->save_setting("options", 1, $opsj);
+    $conf->__save_setting("options", 1, $opsj);
     return true;
 }
 
@@ -416,9 +416,9 @@ function update_schema_clean_options_json($conf) {
             $ol[] = $vv;
         }
         if (empty($ol)) {
-            $conf->save_setting("options", null);
+            $conf->__save_setting("options", null);
         } else {
-            $conf->save_setting("options", 1, json_encode($ol));
+            $conf->__save_setting("options", 1, json_encode($ol));
         }
     }
     return true;
@@ -889,11 +889,12 @@ function updateSchema($conf) {
         && $conf->ql_ok("drop table if exists ChairTag"))
         $conf->update_schema_version(60);
     if ($conf->sversion === 60) {
-        foreach (["conflictdef", "home"] as $k)
+        foreach (["conflictdef", "home"] as $k) {
             if ($conf->has_setting("{$k}msg")) {
-                $conf->save_setting("msg.$k", 1, $conf->setting_data("{$k}msg"));
-                $conf->save_setting("{$k}msg", null);
+                $conf->__save_setting("msg.$k", 1, $conf->setting_data("{$k}msg"));
+                $conf->__save_setting("{$k}msg", null);
             }
+        }
         $conf->update_schema_version(61);
     }
     if ($conf->sversion === 61
@@ -905,7 +906,7 @@ function updateSchema($conf) {
         while (($row = $result->fetch_object())) {
             $ojson[$row->level] = $row->description;
         }
-        $conf->save_setting("outcome_map", 1, $ojson);
+        $conf->__save_setting("outcome_map", 1, $ojson);
     }
     if ($conf->sversion === 62
         && isset($conf->settings["outcome_map"])) {
@@ -980,8 +981,8 @@ function updateSchema($conf) {
     if ($conf->sversion === 75) {
         foreach (["capability_gc", "s3_scope", "s3_signing_key"] as $k) {
             if ($conf->setting($k)) {
-                $conf->save_setting("__" . $k, $conf->setting($k), $conf->setting_data($k));
-                $conf->save_setting($k, null);
+                $conf->__save_setting("__" . $k, $conf->setting($k), $conf->setting_data($k));
+                $conf->__save_setting($k, null);
             }
         }
         $conf->update_schema_version(76);
@@ -1431,13 +1432,15 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && update_schema_mimetype_extensions($conf))
         $conf->update_schema_version(154);
     if ($conf->sversion === 154) {
-        if ($conf->fetch_value("select tag from PaperTag where tag like ':%:' limit 1"))
-            $conf->save_setting("has_colontag", 1);
+        if ($conf->fetch_value("select tag from PaperTag where tag like ':%:' limit 1")) {
+            $conf->__save_setting("has_colontag", 1);
+        }
         $conf->update_schema_version(155);
     }
     if ($conf->sversion === 155) {
-        if ($conf->fetch_value("select tag from PaperTag where tag like '%:' limit 1"))
-            $conf->save_setting("has_colontag", 1);
+        if ($conf->fetch_value("select tag from PaperTag where tag like '%:' limit 1")) {
+            $conf->__save_setting("has_colontag", 1);
+        }
         $conf->update_schema_version(156);
     }
     if ($conf->sversion === 156
@@ -1544,7 +1547,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     }
     if ($conf->sversion === 169) {
         if ($conf->fetch_ivalue("select exists (select * from TopicArea)")) {
-            $conf->save_setting("has_topics", 1);
+            $conf->__save_setting("has_topics", 1);
         }
         $conf->update_schema_version(170);
     }
@@ -1583,8 +1586,8 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     }
     if ($conf->sversion === 176) {
         if (($x = $conf->setting_data("scoresort_default"))) {
-            $conf->save_setting("scoresort_default", null);
-            $conf->save_setting("opt.defaultScoreSort", 1, $x);
+            $conf->__save_setting("scoresort_default", null);
+            $conf->__save_setting("opt.defaultScoreSort", 1, $x);
         }
         $conf->update_schema_version(177);
     }
@@ -1811,7 +1814,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         if ($conf->setting("extrev_approve")
             && $conf->setting("pcrev_editdelegate")) {
             $conf->ql_ok("delete from Settings where name='extrev_approve'");
-            $conf->save_setting("pcrev_editdelegate", 2);
+            $conf->__save_setting("pcrev_editdelegate", 2);
         }
         $conf->update_schema_version(218);
     }
@@ -1820,7 +1823,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
             $mb1 = str_replace("/review/%NUMBER%?accept=1&%LOGINURLPARTS%", "/review/%NUMBER%?cap=%REVIEWACCEPTOR%&accept=1", $mb);
             $mb1 = str_replace("/review/%NUMBER%?decline=1&%LOGINURLPARTS%", "/review/%NUMBER%?cap=%REVIEWACCEPTOR%&decline=1", $mb1);
             if ($mb1 !== $mb) {
-                $conf->save_setting("mailbody_requestreview", 1, $mb1);
+                $conf->__save_setting("mailbody_requestreview", 1, $mb1);
             }
         }
         $conf->update_schema_version(219);

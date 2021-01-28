@@ -198,7 +198,7 @@ class Conf {
     /** @var ?Contact */
     private $_root_user;
     /** @var ?ReviewForm */
-    private $_review_form_cache;
+    private $_review_form;
     /** @var ?AbbreviationMatcher<PaperOption|ReviewField|Formula> */
     private $_abbrev_matcher;
     /** @var bool */
@@ -304,7 +304,6 @@ class Conf {
         $this->opt = $options;
         $this->opt["dbName"] = $this->dbname;
         $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
-        /** @phan-suppress-next-line PhanDeprecatedProperty */
         $this->_paper_opts = new PaperOptionList($this);
         if ($this->dblink && !Dbl::$default_dblink) {
             Dbl::set_default_dblink($this->dblink);
@@ -314,7 +313,7 @@ class Conf {
             Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|Conf::fetch|call_user_func)/";
             $this->load_settings();
         } else {
-            $this->crosscheck_options();
+            $this->refresh_options();
         }
     }
 
@@ -336,8 +335,8 @@ class Conf {
 
     function load_settings() {
         // load settings from database
-        $this->settings = array();
-        $this->settingTexts = array();
+        $this->settings = [];
+        $this->settingTexts = [];
         foreach ($this->opt_override ?? [] as $k => $v) {
             if ($v === null) {
                 unset($this->opt[$k]);
@@ -373,19 +372,11 @@ class Conf {
             self::msg_error("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
         }
 
-        // invalidate all caches after loading from backup
-        if (isset($this->settings["frombackup"])
-            && $this->invalidate_caches()) {
+        // refresh after loading from backup
+        if (isset($this->settings["frombackup"])) {
+            // in current code, refresh_settings() suffices
             $this->qe_raw("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
             unset($this->settings["frombackup"]);
-        }
-
-        // update options
-        if (isset($this->opt["ldapLogin"]) && !$this->opt["ldapLogin"]) {
-            unset($this->opt["ldapLogin"]);
-        }
-        if (isset($this->opt["httpAuthLogin"]) && !$this->opt["httpAuthLogin"]) {
-            unset($this->opt["httpAuthLogin"]);
         }
 
         // GC old capabilities
@@ -393,26 +384,19 @@ class Conf {
             $this->cleanup_capabilities();
         }
 
-        $this->crosscheck_settings();
-        $this->crosscheck_options();
+        $this->refresh_settings();
+        $this->refresh_options();
         if ($this === Conf::$main) {
-            $this->crosscheck_globals();
+            $this->refresh_globals();
         }
     }
 
-    private function crosscheck_settings() {
+    private function refresh_settings() {
         // enforce invariants
-        foreach (["pcrev_any", "extrev_view"] as $x) {
-            if (!isset($this->settings[$x])) {
-                $this->settings[$x] = 0;
-            }
-        }
-        if (!isset($this->settings["sub_blind"])) {
-            $this->settings["sub_blind"] = self::BLIND_ALWAYS;
-        }
-        if (!isset($this->settings["rev_blind"])) {
-            $this->settings["rev_blind"] = self::BLIND_ALWAYS;
-        }
+        $this->settings["pcrev_any"] = $this->settings["pcrev_any"] ?? 0;
+        $this->settings["extrev_view"] = $this->settings["extrev_view"] ?? 0;
+        $this->settings["sub_blind"] = $this->settings["sub_blind"] ?? self::BLIND_ALWAYS;
+        $this->settings["rev_blind"] = $this->settings["rev_blind"] ?? self::BLIND_ALWAYS;
         if (!isset($this->settings["seedec"])) {
             if ($this->settings["au_seedec"] ?? null) {
                 $this->settings["seedec"] = self::SEEDEC_ALL;
@@ -431,10 +415,10 @@ class Conf {
         }
 
         // rounds
-        $this->crosscheck_round_settings();
+        $this->refresh_round_settings();
 
         // S3 settings
-        foreach (array("s3_bucket", "s3_key", "s3_secret") as $k) {
+        foreach (["s3_bucket", "s3_key", "s3_secret"] as $k) {
             if (!($this->settingTexts[$k] ?? null)
                 && ($x = $this->opt[$k] ?? null)) {
                 $this->settingTexts[$k] = $x;
@@ -462,7 +446,7 @@ class Conf {
         $this->_tracks = $this->_track_tags = null;
         $this->_track_sensitivity = 0;
         if (($j = $this->settingTexts["tracks"] ?? null)) {
-            $this->crosscheck_track_settings($j);
+            $this->refresh_track_settings($j);
         }
         if (($this->settings["has_permtag"] ?? 0) > 0) {
             $this->_has_permtag = true;
@@ -513,7 +497,7 @@ class Conf {
         }
     }
 
-    private function crosscheck_round_settings() {
+    private function refresh_round_settings() {
         $this->rounds = [""];
         if (isset($this->settingTexts["tag_rounds"])) {
             foreach (explode(" ", $this->settingTexts["tag_rounds"]) as $r) {
@@ -553,7 +537,7 @@ class Conf {
         }
     }
 
-    private function crosscheck_track_settings($j) {
+    private function refresh_track_settings($j) {
         if (is_string($j) && !($j = json_decode($j))) {
             return;
         }
@@ -583,7 +567,7 @@ class Conf {
         $this->_tracks["_"] = $default_track;
     }
 
-    function crosscheck_options() {
+    function refresh_options() {
         // set longName, downloadPrefix, etc.
         $confid = $this->opt["confid"];
         if ((!isset($this->opt["longName"]) || $this->opt["longName"] == "")
@@ -605,16 +589,18 @@ class Conf {
         foreach (["sessionName", "downloadPrefix", "conferenceSite",
                   "paperSite", "defaultPaperSite", "contactName",
                   "contactEmail", "docstore"] as $k) {
-            if (isset($this->opt[$k]) && is_string($this->opt[$k])
+            if (isset($this->opt[$k])
+                && is_string($this->opt[$k])
                 && strpos($this->opt[$k], "\$") !== false) {
-                $this->opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $this->opt[$k]);
-                $this->opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $this->short_name, $this->opt[$k]);
+                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $confid, $this->opt[$k]);
+                $this->opt[$k] = preg_replace('/\$\{confshortname\}|\$confshortname\b/', $this->short_name, $this->opt[$k]);
             }
         }
         $this->download_prefix = $this->opt["downloadPrefix"];
 
         foreach (["emailFrom", "emailSender", "emailCc", "emailReplyTo"] as $k) {
-            if (isset($this->opt[$k]) && is_string($this->opt[$k])
+            if (isset($this->opt[$k])
+                && is_string($this->opt[$k])
                 && strpos($this->opt[$k], "\$") !== false) {
                 $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $confid, $this->opt[$k]);
                 if (strpos($this->opt[$k], "confshortname") !== false) {
@@ -638,27 +624,16 @@ class Conf {
             $this->opt["paperSite"] = substr($this->opt["paperSite"], 0, -1);
         }
 
-        // option name updates (backwards compatibility)
-        foreach (["assetsURL" => "assetsUrl",
-                  "jqueryURL" => "jqueryUrl", "jqueryCDN" => "jqueryCdn",
-                  "disableCSV" => "disableCsv"] as $kold => $knew) {
-            if (isset($this->opt[$kold]) && !isset($this->opt[$knew])) {
-                $this->opt[$knew] = $this->opt[$kold];
-            }
+        // assert URLs (general assets, scripts, jQuery)
+        $this->opt["assetsUrl"] = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? (string) Navigation::siteurl();
+        if ($this->opt["assetsUrl"] !== "" && !str_ends_with($this->opt["assetsUrl"], "/")) {
+            $this->opt["assetsUrl"] .= "/";
         }
 
-        // set assetsUrl and scriptAssetsUrl
         if (!isset($this->opt["scriptAssetsUrl"])
             && isset($_SERVER["HTTP_USER_AGENT"])
             && strpos($_SERVER["HTTP_USER_AGENT"], "MSIE") !== false) {
             $this->opt["scriptAssetsUrl"] = Navigation::siteurl();
-        }
-        if (!isset($this->opt["assetsUrl"])) {
-            $this->opt["assetsUrl"] = (string) Navigation::siteurl();
-        }
-        if ($this->opt["assetsUrl"] !== ""
-            && !str_ends_with($this->opt["assetsUrl"], "/")) {
-            $this->opt["assetsUrl"] .= "/";
         }
         if (!isset($this->opt["scriptAssetsUrl"])) {
             $this->opt["scriptAssetsUrl"] = $this->opt["assetsUrl"];
@@ -708,7 +683,7 @@ class Conf {
         // other caches
         $sort_by_last = !!($this->opt["sortByLastName"] ?? false);
         if (!$this->sort_by_last != !$sort_by_last) {
-            $this->invalidate_caches("pc");
+            $this->invalidate_caches(["pc" => true]);
         }
         $this->sort_by_last = $sort_by_last;
 
@@ -738,7 +713,7 @@ class Conf {
         $this->settings["__capability_gc"] = Conf::$now;
     }
 
-    function crosscheck_globals() {
+    function refresh_globals() {
         Ht::$img_base = $this->opt["assetsUrl"] . "images/";
 
         if (isset($this->opt["timezone"])) {
@@ -754,7 +729,7 @@ class Conf {
     static function set_main_instance(Conf $conf) {
         global $Conf;
         $Conf = Conf::$main = $conf;
-        $conf->crosscheck_globals();
+        $conf->refresh_globals();
         if (!in_array("Conf::transfer_main_messages_to_session", Navigation::$redirect_callbacks ?? [], true)) {
             Navigation::$redirect_callbacks[] = "Conf::transfer_main_messages_to_session";
         }
@@ -784,7 +759,8 @@ class Conf {
     }
 
     /** @param string $name
-     * @param ?int $value */
+     * @param ?int $value
+     * @return bool */
     function __save_setting($name, $value, $data = null) {
         $change = false;
         if ($value === null && $data === null) {
@@ -822,9 +798,9 @@ class Conf {
     function save_setting($name, $value, $data = null) {
         $change = $this->__save_setting($name, $value, $data);
         if ($change) {
-            $this->crosscheck_settings();
+            $this->refresh_settings();
             if (str_starts_with($name, "opt.")) {
-                $this->crosscheck_options();
+                $this->refresh_options();
             }
             if (str_starts_with($name, "tag_") || $name === "tracks") {
                 $this->invalidate_caches(["tags" => true, "tracks" => true]);
@@ -1504,10 +1480,10 @@ class Conf {
 
     /** @return ReviewForm */
     function review_form() {
-        if (!$this->_review_form_cache) {
-            $this->_review_form_cache = new ReviewForm($this->review_form_json(), $this);
+        if ($this->_review_form === null) {
+            $this->_review_form = new ReviewForm($this->review_form_json(), $this);
         }
-        return $this->_review_form_cache;
+        return $this->_review_form;
     }
 
     /** @return array<string,ReviewField> */
@@ -1876,7 +1852,7 @@ class Conf {
             $rtext = $this->setting_data("tag_rounds") ?? "";
             $rtext = $rtext === "" ? $rname : "$rtext $rname";
             $this->__save_setting("tag_rounds", 1, $rtext);
-            $this->crosscheck_round_settings();
+            $this->refresh_round_settings();
             return $this->round_number($rname, false);
         } else {
             return false;
@@ -2050,7 +2026,7 @@ class Conf {
 
     /** @return bool */
     function external_login() {
-        return isset($this->opt["ldapLogin"]) || isset($this->opt["httpAuthLogin"]);
+        return ($this->opt["ldapLogin"] ?? false) || ($this->opt["httpAuthLogin"] ?? false);
     }
 
     /** @return bool */
@@ -2587,6 +2563,8 @@ class Conf {
     }
 
 
+    /** @param int $n
+     * @return bool */
     function update_schema_version($n) {
         if (!$n) {
             $n = $this->fetch_ivalue("select value from Settings where name='allowPaperOption'");
@@ -2599,7 +2577,8 @@ class Conf {
         }
     }
 
-    function invalidate_caches($caches = null) {
+    /** @param array<string,true> $caches */
+    function invalidate_caches($caches) {
         if (!self::$no_invalidate_caches) {
             if (is_string($caches)) {
                 $caches = [$caches => true];
@@ -2608,13 +2587,16 @@ class Conf {
                 $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_users_cache = $this->_pc_chairs_cache = null;
                 $this->_user_cache = $this->_user_email_cache = null;
             }
+            // NB All setting-related caches cleared here should also be cleared
+            // in refresh_settings().
             if (!$caches || isset($caches["options"])) {
                 $this->_paper_opts->invalidate_options();
                 $this->_formatspec_cache = [];
                 $this->_abbrev_matcher = null;
             }
             if (!$caches || isset($caches["rf"])) {
-                $this->_review_form_cache = $this->_defined_rounds = null;
+                $this->_review_form = null;
+                $this->_defined_rounds = null;
                 $this->_abbrev_matcher = null;
             }
             if (!$caches || isset($caches["tags"]) || isset($caches["tracks"])) {
@@ -3874,7 +3856,7 @@ class Conf {
 
     private function make_jquery_script_file($jqueryVersion) {
         $integrity = null;
-        if ($this->opt("jqueryCdn")) {
+        if ($this->opt["jqueryCdn"] ?? $this->opt["jqueryCDN"] ?? false) {
             if ($jqueryVersion === "3.5.1") {
                 $integrity = "sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2";
             } else if ($jqueryVersion === "3.4.1") {
@@ -4005,8 +3987,8 @@ class Conf {
 
         // jQuery
         $stash = Ht::unstash();
-        if (isset($this->opt["jqueryUrl"])) {
-            Ht::stash_html($this->make_script_file($this->opt["jqueryUrl"], true) . "\n");
+        if (($jqurl = $this->opt["jqueryUrl"] ?? $this->opt["jqueryURL"] ?? null)) {
+            Ht::stash_html($this->make_script_file($jqurl, true) . "\n");
         } else {
             $jqueryVersion = $this->opt["jqueryVersion"] ?? "3.5.1";
             if ($jqueryVersion[0] === "3") {
@@ -4192,11 +4174,12 @@ class Conf {
             }
 
             // sign in and out
-            if ((!$Me->is_signed_in() && !isset($this->opt["httpAuthLogin"]))
+            if (!$Me->is_signed_in()
+                && !($this->opt["httpAuthLogin"] ?? false)
                 && $id !== "signin") {
                 $profile_parts[] = '<a href="' . $this->hoturl("signin", ["cap" => null]) . '" class="nw">Sign in</a>';
             }
-            if ((!$Me->is_empty() || isset($this->opt["httpAuthLogin"]))
+            if ((!$Me->is_empty() || ($this->opt["httpAuthLogin"] ?? false))
                 && $id !== "signout") {
                 $profile_parts[] = Ht::form($this->hoturl_post("signout", ["cap" => null]), ["class" => "d-inline"])
                     . Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"])

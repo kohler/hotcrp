@@ -601,9 +601,9 @@ class TagMap implements IteratorAggregate {
     function known_styles() {
         return array_keys($this->style_info_lmap);
     }
-    /** @return string|false */
+    /** @return ?string */
     function known_style($tag) {
-        return $this->canonical_style_lmap[strtolower($tag)] ?? false;
+        return $this->canonical_style_lmap[strtolower($tag)] ?? null;
     }
     /** @param string $tag
      * @return bool */
@@ -625,6 +625,7 @@ class TagMap implements IteratorAggregate {
         }
     }
 
+    /** @return string */
     function color_regex() {
         if (!$this->color_re) {
             $re = "{(?:\\A| )(?:\\d*~|~~|)(" . join("|", array_keys($this->style_info_lmap));
@@ -635,6 +636,7 @@ class TagMap implements IteratorAggregate {
         return $this->color_re;
     }
 
+    /** @return ?list<string> */
     function styles($tags, $match = 0, $no_pattern_fill = false) {
         if (is_array($tags)) {
             $tags = join(" ", $tags);
@@ -689,6 +691,7 @@ class TagMap implements IteratorAggregate {
         return $s ? join(" ", $s) : "";
     }
 
+    /** @return list<string> */
     function canonical_colors() {
         $colors = [];
         foreach ($this->canonical_style_lmap as $ltag => $canon_ltag) {
@@ -699,6 +702,7 @@ class TagMap implements IteratorAggregate {
     }
 
 
+    /** @return string */
     function badge_regex() {
         if (!$this->badge_re) {
             $re = "{(?:\\A| )(?:\\d*~|)(";
@@ -710,12 +714,14 @@ class TagMap implements IteratorAggregate {
         return $this->badge_re;
     }
 
+    /** @return list<string> */
     function canonical_badges() {
         return explode("|", $this->basic_badges);
     }
 
+    /** @return string */
     function emoji_regex() {
-        if (!$this->badge_re) {
+        if (!$this->emoji_re) {
             $re = "{(?:\\A| )(?:\\d*~|~~|)(:\\S+:";
             foreach ($this->filter("emoji") as $t) {
                 $re .= "|" . $t->tag_regex();
@@ -726,6 +732,8 @@ class TagMap implements IteratorAggregate {
     }
 
 
+    /** @param ?string $s
+     * @return bool */
     static function is_tag_string($s, $strict = false) {
         return (string) $s === ""
             || preg_match($strict ? '/\A(?: [^#\s]+#-?[\d.]+)+\z/' : '/\A(?: \S+)+\z/', $s);
@@ -791,6 +799,8 @@ class TagMap implements IteratorAggregate {
         return $tags;
     }
 
+    /** @param string $tags
+     * @return string */
     private function strip_nonviewable_chair_conflict($tags, Contact $user) {
         // XXX Should called only if `!can_view_most_tags && can_view_tags`.
         // Prerequisite: self::assert_tag_string($tags, true);

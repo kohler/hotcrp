@@ -827,7 +827,7 @@ class CsvGenerator {
         return $this;
     }
 
-    /** @param list<list<string|int|float>>|list<array<string,int|float|string>> $rows
+    /** @param list<list<string|int|float>>|list<array<string,string|int|float>> $rows
      * @return $this */
     function append($rows) {
         foreach ($rows as $row) {

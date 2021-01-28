@@ -305,7 +305,7 @@ class SearchConfig_API {
             if (!empty($qv)) {
                 $user->conf->qe("insert into Settings (name, value, data) values ?v on duplicate key update value=values(value), data=values(data)", $qv);
             }
-            $user->conf->replace_named_searches(null);
+            $user->conf->replace_named_searches();
             return self::namedsearch($user, $qreq);
         } else {
             return ["ok" => false, "error" => $msgset->error_texts(), "errf" => $msgset->message_field_map()];

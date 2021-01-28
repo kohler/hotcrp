@@ -668,12 +668,6 @@ class Contact {
             }
         }
 
-        // Handle invalidate-caches requests
-        if ($qreq && $qreq->invalidatecaches && $this->privChair) {
-            unset($qreq->invalidatecaches);
-            $this->conf->invalidate_caches();
-        }
-
         // Add capabilities from session and request
         if ($qreq && isset($qreq->cap)) {
             $this->apply_capability_text($qreq->cap);
@@ -1483,7 +1477,7 @@ class Contact {
         $this->contactdb_update();
 
         if ($this->roles & Contact::ROLE_PCLIKE) {
-            $this->conf->invalidate_caches(["pc" => 1]);
+            $this->conf->invalidate_caches(["pc" => true]);
         }
         $this->conf->log_for($this, $this, "Account edited: email ($old_email to $email)");
     }

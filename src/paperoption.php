@@ -392,16 +392,17 @@ class PaperOptionList implements IteratorAggregate {
                 $this->populate_intrinsic($id);
             }
             return $this->_imap[$id];
-        }
-        if (!array_key_exists($id, $this->_omap)) {
-            $this->_omap[$id] = null;
-            if (($oj = ($this->option_json_map())[$id] ?? null)
-                && Conf::xt_enabled($oj)
-                && $this->conf->xt_allowed($oj)) {
-                $this->_omap[$id] = PaperOption::make($oj, $this->conf);
+        } else {
+            if (!array_key_exists($id, $this->_omap)) {
+                $this->_omap[$id] = null;
+                if (($oj = ($this->option_json_map())[$id] ?? null)
+                    && Conf::xt_enabled($oj)
+                    && $this->conf->xt_allowed($oj)) {
+                    $this->_omap[$id] = PaperOption::make($oj, $this->conf);
+                }
             }
+            return $this->_omap[$id];
         }
-        return $this->_omap[$id];
     }
 
     /** @param int $id

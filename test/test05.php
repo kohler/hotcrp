@@ -92,7 +92,7 @@ $options = $Conf->setting_json("options");
 xassert(!array_filter((array) $options, function ($o) { return $o->id === 2; }));
 $options[] = (object) ["id" => 2, "name" => "Attachments", "abbr" => "attachments", "type" => "attachments", "position" => 2];
 $Conf->save_setting("options", 1, json_encode($options));
-$Conf->invalidate_caches("options");
+$Conf->invalidate_caches(["options" => true]);
 
 $ps->save_paper_json(json_decode("{\"id\":2,\"options\":{\"attachments\":[{\"content\":\"%PDF-1\", \"type\":\"application/pdf\"}, {\"content\":\"%PDF-2\", \"type\":\"application/pdf\"}]}}"));
 xassert_paper_status($ps);
@@ -361,7 +361,7 @@ xassert_eqq(count($ps->error_fields()), 1);
 xassert_eq($ps->error_texts(), ["Entry required."]);
 
 $Conf->set_opt("noAbstract", 1);
-$Conf->invalidate_caches();
+$Conf->invalidate_caches(["options" => true]);
 
 $qreq = new Qrequest("POST", ["submitpaper" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
@@ -783,7 +783,7 @@ $options = $Conf->setting_json("options");
 xassert(!array_filter((array) $options, function ($o) { return $o->id === 3; }));
 $options[] = (object) ["id" => 3, "name" => "Supervisor(s)", "type" => "text", "position" => 3];
 $Conf->save_setting("options", 1, json_encode($options));
-$Conf->invalidate_caches("options");
+$Conf->invalidate_caches(["options" => true]);
 
 $ps->save_paper_json(json_decode("{\"id\":3,\"Supervisor(s)\":\"fart fart barf barf\"}"));
 xassert_paper_status($ps);

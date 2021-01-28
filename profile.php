@@ -523,7 +523,7 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->valid_post()) {
             $assigner->execute();
             // clear caches
             if ($Acct->isPC || $Acct->privChair) {
-                $Conf->invalidate_caches(["pc" => 1]);
+                $Conf->invalidate_caches(["pc" => true]);
             }
             // done
             $Conf->confirmMsg("Permanently deleted account " . htmlspecialchars($Acct->email) . ".");
