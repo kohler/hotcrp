@@ -15,8 +15,9 @@ class Responses_SettingParser extends SettingParser {
     static function render_deadline_property(SettingValues $sv, $i) {
         $isuf = $i ? "_$i" : "";
         if ($sv->curv("resp_open$isuf") === 1
-            && ($x = $sv->curv("resp_done$isuf")))
+            && ($x = $sv->curv("resp_done$isuf"))) {
             $sv->conf->settings["resp_open$isuf"] = $x - 7 * 86400;
+        }
         $sv->echo_entry_group("resp_open$isuf", "Start time", ["horizontal" => true]);
         $sv->echo_entry_group("resp_done$isuf", "Hard deadline", ["horizontal" => true]);
         $sv->echo_entry_group("resp_grace$isuf", "Grace period", ["horizontal" => true]);
@@ -83,11 +84,11 @@ class Responses_SettingParser extends SettingParser {
 
         if ($sv->has_reqv("resp_roundname")) {
             $rname = trim($sv->reqv("resp_roundname"));
-            if ($rname === "" || $rname === "none" || $rname === "1")
-                /* do nothing */;
-            else if (($rerror = Conf::resp_round_name_error($rname)))
+            if ($rname === "" || $rname === "none" || $rname === "1") {
+                /* do nothing */
+            } else if (($rerror = Conf::resp_round_name_error($rname))) {
                 $sv->error_at("resp_roundname", $rerror);
-            else {
+            } else {
                 $roundnames[0] = $rname;
                 $roundnames_set[strtolower($rname)] = 0;
             }
@@ -112,25 +113,32 @@ class Responses_SettingParser extends SettingParser {
 
         foreach ($roundnames_set as $i) {
             $isuf = $i ? "_$i" : "";
-            if (($v = $sv->parse_value($sv->si("resp_open$isuf"))) !== null)
+            if (($v = $sv->parse_value($sv->si("resp_open$isuf"))) !== null) {
                 $sv->save("resp_open$isuf", $v <= 0 ? null : $v);
-            if (($v = $sv->parse_value($sv->si("resp_done$isuf"))) !== null)
+            }
+            if (($v = $sv->parse_value($sv->si("resp_done$isuf"))) !== null) {
                 $sv->save("resp_done$isuf", $v <= 0 ? null : $v);
-            if (($v = $sv->parse_value($sv->si("resp_grace$isuf"))) !== null)
+            }
+            if (($v = $sv->parse_value($sv->si("resp_grace$isuf"))) !== null) {
                 $sv->save("resp_grace$isuf", $v <= 0 ? null : $v);
-            if (($v = $sv->parse_value($sv->si("resp_words$isuf"))) !== null)
+            }
+            if (($v = $sv->parse_value($sv->si("resp_words$isuf"))) !== null) {
                 $sv->save("resp_words$isuf", $v < 0 ? null : $v);
-            if (($v = $sv->parse_value($sv->si("resp_search$isuf"))) !== null)
+            }
+            if (($v = $sv->parse_value($sv->si("resp_search$isuf"))) !== null) {
                 $sv->save("resp_search$isuf", $v !== "" ? $v : null);
-            if (($v = $sv->parse_value($sv->si("msg.resp_instrux_$i"))) !== null)
+            }
+            if (($v = $sv->parse_value($sv->si("msg.resp_instrux_$i"))) !== null) {
                 $sv->save("msg.resp_instrux_$i", $v);
+            }
             $sv->check_date_before("resp_open$isuf", "resp_done$isuf", false);
         }
 
-        if (count($roundnames) > 1 || $roundnames[0] !== 1)
+        if (count($roundnames) > 1 || $roundnames[0] !== 1) {
             $sv->save("resp_rounds", join(" ", $roundnames));
-        else
+        } else {
             $sv->save("resp_rounds", null);
+        }
         return false;
     }
 }

@@ -144,13 +144,13 @@ class GroupedExtensions implements XtContext {
         }
         return $gj;
     }
-    /** @return string|false */
+    /** @return ?string */
     function canonical_group($name) {
         if (($gj = $this->get($name))) {
             $pos = strpos($gj->group, "/");
             return $pos === false ? $gj->group : substr($gj->group, 0, $pos);
         } else {
-            return false;
+            return null;
         }
     }
     /** @return list<object> */

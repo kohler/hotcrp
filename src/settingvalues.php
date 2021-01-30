@@ -12,15 +12,25 @@ class Si {
     public $json_name;
     /** @var string */
     public $title;
+    /** @var ?string */
     private $group;
+    /** @var null|int|float */
     public $position;
+    /** @var ?string */
     public $anchorid;
+    /** @var ?string */
     public $type;
-    public $internal;
+    /** @var bool */
+    public $internal = false;
+    /** @var int */
     public $extensible;
+    /** @var ?Si */
+    public $parent;
     /** @var int */
     public $storage_type;
+    /** @var ?string */
     private $storage;
+    /** @var bool */
     public $optional = false;
     public $values;
     public $json_values;
@@ -28,18 +38,24 @@ class Si {
     public $size;
     /** @var ?string */
     public $placeholder;
+    /** @var ?class-string */
     public $parser_class;
+    /** @var ?class-string */
     public $validator_class;
+    /** @var bool */
     public $disabled = false;
     public $invalid_value;
     public $default_value;
+    /** @var ?bool */
     public $autogrow;
     /** @var ?string */
     public $ifnonempty;
     /** @var ?string */
     public $message_context_setting;
+    /** @var ?string */
     public $date_backup;
 
+    /** @var array<string,bool> */
     static public $option_is_value = [];
 
     const SI_NONE = 0;
@@ -49,6 +65,7 @@ class Si {
     const SI_OPT = 8;
     const SI_NEGATE = 16;
 
+    const X_NO = 0;
     const X_SIMPLE = 1;
     const X_WORD = 2;
 
@@ -134,14 +151,13 @@ class Si {
                 trigger_error("setting {$j->name}.default_value format error");
             }
         }
+        $this->extensible = self::X_NO;
         if (isset($j->extensible)) {
             if ($j->extensible === true || $j->extensible === "simple") {
                 $this->extensible = self::X_SIMPLE;
             } else if ($j->extensible === "word") {
                 $this->extensible = self::X_WORD;
-            } else if ($j->extensible === false) {
-                $this->extensible = false;
-            } else {
+            } else if ($j->extensible !== false) {
                 trigger_error("setting {$j->name}.extensible format error");
             }
         }
@@ -189,32 +205,49 @@ class Si {
 
         // defaults for size, placeholder
         if ($this->type && str_ends_with($this->type, "date")) {
-            if ($this->size === null) {
-                $this->size = 32;
-            }
-            if ($this->placeholder === null) {
-                $this->placeholder = "N/A";
-            }
+            $this->size = $this->size ?? 32;
+            $this->placeholder = $this->placeholder ?? "N/A";
         } else if ($this->type === "grace") {
-            if ($this->size === null) {
-                $this->size = 15;
-            }
-            if ($this->placeholder === null) {
-                $this->placeholder = "none";
-            }
+            $this->size = $this->size ?? 15;
+            $this->placeholder = $this->placeholder ?? "none";
         }
     }
 
-    function prefix() {
-        return preg_replace('/_(?:\$|n\d*|m?\d+)\z/', "", $this->name);
+    /** @param string $suffix
+     * @return Si */
+    function extend($suffix) {
+        assert(str_starts_with($suffix, "_"));
+        $si = clone $this;
+        $si->parent = $this;
+        $si->name .= $suffix;
+        if ($this->storage) {
+            $si->storage .= $suffix;
+        }
+        if ($this->extensible === self::X_WORD) {
+            $si->title .= " (" . htmlspecialchars(substr($suffix, 1)) . ")";
+        }
+        if ($this->message_context_setting
+            && str_starts_with($this->message_context_setting, "+")) {
+            $si->message_context_setting .= $suffix;
+        }
+        return $si;
     }
+
+    /** @return string */
+    function prefix() {
+        return ($this->parent ?? $this)->name;
+    }
+
+    /** @return string */
     function suffix() {
-        if (preg_match('/_(\$|n\d*|m?\d+)\z/', $this->name, $m)) {
-            return $m[1];
+        if ($this->parent) {
+            return substr($this->name, strlen($this->parent->name));
         } else {
             return "";
         }
     }
+
+    /** @return ?string */
     function canonical_group(Conf $conf) {
         if (!$this->group) {
             trigger_error("setting {$this->name}.group missing");
@@ -224,13 +257,19 @@ class Si {
         }
         return $conf->_setting_groups->canonical_group($this->group);
     }
+
     /** @return bool */
     function is_interesting(SettingValues $sv) {
         return !$this->group || $sv->group_is_interesting($this->group);
     }
+
+
+    /** @return string */
     function storage() {
         return $this->storage ? : $this->name;
     }
+
+    /** @return bool */
     function active_value() {
         return !$this->internal
             && !$this->disabled
@@ -238,10 +277,12 @@ class Si {
             && $this->type !== "none";
     }
 
+    /** @return bool */
     function is_date() {
         return str_ends_with($this->type, "date");
     }
 
+    /** @return array<string,string> */
     function hoturl_param($conf) {
         $param = ["group" => $this->canonical_group($conf)];
         if ($this->anchorid !== false) {
@@ -249,9 +290,15 @@ class Si {
         }
         return $param;
     }
+
+    /** @param Conf $conf
+     * @return string */
     function hoturl($conf) {
         return $conf->hoturl("settings", $this->hoturl_param($conf));
     }
+
+    /** @param SettingValues $sv
+     * @return string */
     function sv_hoturl($sv) {
         if ($this->is_interesting($sv)) {
             return "#" . urlencode($this->anchorid ? : $this->name);
@@ -326,26 +373,15 @@ class Si {
                    && isset($conf->_setting_info[$m[1]])) {
             $base_si = $conf->_setting_info[$m[1]];
             if (!$base_si->extensible
+                || $base_si->parent
                 || ($base_si->extensible === self::X_SIMPLE
                     && !preg_match('/\A_(?:\$|n\d*|m?\d+)\z/', $m[2]))) {
-                if ($base_si->extensible !== false) {
+                if ($base_si->extensible !== self::X_NO) {
                     error_log("$name: cloning non-extensible setting {$base_si->name}\n" . debug_string_backtrace());
                 }
                 return null;
             }
-            $si = clone $base_si;
-            $si->name = $name;
-            if ($si->storage) {
-                $si->storage .= $m[2];
-            }
-            if ($si->extensible === self::X_WORD) {
-                $si->title .= " (" . htmlspecialchars(substr($m[2], 1)) . ")";
-            }
-            if ($si->message_context_setting
-                && str_starts_with($si->message_context_setting, "+")) {
-                $si->message_context_setting .= $m[2];
-            }
-            $conf->_setting_info[$name] = $si;
+            $si = $conf->_setting_info[$name] = $base_si->extend($m[2]);
             return $si;
         } else {
             return null;
@@ -502,7 +538,7 @@ class SettingValues extends MessageSet {
         return $this->_gxt;
     }
     /** @param string $g
-     * @return string */
+     * @return ?string */
     function canonical_group($g) {
         return $this->gxt()->canonical_group(strtolower($g));
     }
@@ -612,6 +648,7 @@ class SettingValues extends MessageSet {
             }
         }
     }
+    /** @return SettingParser */
     private function si_parser(Si $si) {
         $class = $si->parser_class ? : $si->validator_class;
         if (!isset($this->parsers[$class])) {
@@ -1262,7 +1299,8 @@ class SettingValues extends MessageSet {
         if (($ctxname = $si->message_context_setting)) {
             $ctxarg = $this->curv($ctxname[0] === "+" ? substr($ctxname, 1) : $ctxname);
         }
-        return $this->conf->ims()->default_itext(substr($si->storage(), 4), null, $ctxarg);
+        $t = $this->conf->ims()->default_itext(substr($si->storage(), 4), null, $ctxarg);
+        return $t !== "" || !$si->parent ? $t : $this->si_message_default($si->parent);
     }
 
     function setting_link($html, $si, $js = null) {

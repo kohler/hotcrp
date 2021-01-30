@@ -443,7 +443,7 @@ class ReviewDeadline_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
         assert($sv->has_savedv("tag_rounds"));
 
-        $rref = (int) $si->suffix();
+        $rref = (int) substr($si->suffix(), 1);
         if ($sv->reqv("deleteround_$rref")) {
             // setting already deleted by tag_rounds parsing
             return false;
