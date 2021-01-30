@@ -260,7 +260,7 @@ class SubForm_SettingRenderer {
         echo "</div>\n";
 
         echo '<div class="form-g">';
-        $sv->echo_message_minor("msg.conflictdef", "Definition of conflict of interest");
+        $sv->echo_message_minor("conflict_description", "Definition of conflict of interest");
         echo "</div>\n";
 
         echo '<div class="form-g">', $sv->label("sub_pcconfvis", "When can reviewers see conflict information?"),
