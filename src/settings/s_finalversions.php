@@ -11,7 +11,7 @@ class FinalVersions_SettingParser extends SettingParser {
         $sv->echo_entry_group("final_done", "Hard deadline", ["horizontal" => true]);
         $sv->echo_entry_group("final_grace", "Grace period", ["horizontal" => true]);
         echo '</div><div class="form-g">';
-        $sv->echo_message_minor("msg.finalsubmit", "Instructions");
+        $sv->echo_message_minor("final_edit_message", "Instructions");
         echo '</div>';
         BanalSettings::render("_m1", $sv);
         echo "</div></div></div>\n\n";

@@ -1,22 +1,20 @@
 [
     {
-        "name": "opt.shortName", "group": "basics",
-        "json_name": "conference_abbreviation",
+        "name": "conference_abbreviation", "storage": "opt.shortName", "group": "basics",
         "title": "Conference abbreviation",
         "type": "simplestring", "size": 20, "autogrow": true,
         "require": "src/settings/s_basics.php",
         "validator_class": "Basics_SettingParser"
     },
     {
-        "name": "opt.longName", "group": "basics",
-        "json_name": "conference_name",
-        "title": "Conference name",
-        "type": "simplestring", "size": 70, "placeholder": "(same as abbreviation)",
+        "name": "conference_name", "storage": "opt.longName", "group": "basics",
+        "title": "Conference name", "placeholder": "(same as abbreviation)",
+        "type": "simplestring", "size": 70,
         "validator_class": "Basics_SettingParser"
     },
     {
         "name": "au_seerev", "group": "decisions",
-        "json_name": "review_visibility_author",
+        "json_name": "author_view_review",
         "title": "Authors can see reviews",
         "type": "radio",
         "values": [0, 1, 2, 3], "default_value": 0,
@@ -114,91 +112,87 @@
         "type": "string"
     },
     {
-        "name": "msg.clickthrough_review", "group": "messages",
+        "name": "review_terms", "group": "messages",
         "title": "Clickthrough review terms",
-        "type": "htmlstring", "size": 10,
-        "ifnonempty": "opt.clickthrough_review"
+        "type": "htmlstring", "size": 10, "storage": "msg.clickthrough_review",
+        "ifnonempty": "review_terms_exist"
     },
     {
-        "name": "msg.clickthrough_submit", "group": "messages",
+        "name": "submission_terms", "group": "messages",
         "title": "Clickthrough submission terms",
-        "type": "htmlstring", "size": 10,
-        "ifnonempty": "opt.clickthrough_submit"
+        "type": "htmlstring", "size": 10, "storage": "msg.clickthrough_submit",
+        "ifnonempty": "submission_terms_exist"
     },
     {
-        "name": "msg.conflictdef", "group": "messages",
+        "name": "conflict_description", "group": "messages",
         "title": "Definition of conflict of interest",
-        "type": "htmlstring", "size": 5
+        "type": "htmlstring", "size": 5, "storage": "msg.conflictdef"
     },
     {
-        "name": "msg.finalsubmit", "group": "decisions",
-        "title": "Final paper submission message",
-        "type": "htmlstring"
+        "name": "final_edit_message", "group": "decisions",
+        "title": "Final version edit message",
+        "type": "htmlstring", "storage": "msg.finalsubmit"
     },
     {
-        "name": "msg.home", "group": "messages",
+        "name": "home_message", "group": "messages",
         "title": "Home page message",
-        "type": "htmlstring"
+        "type": "htmlstring", "storage": "msg.home"
     },
     {
-        "name": "msg.resp_instrux", "group": "responses",
+        "name": "resp_instrux", "group": "responses",
         "title": "Authors’ response instructions",
-        "type": "htmlstring", "size": 3,
+        "type": "htmlstring", "size": 3, "storage": "msg.resp_instrux",
         "message_context_setting": "+resp_words",
         "extensible": true
     },
     {
-        "name": "msg.revprefdescription", "group": "messages",
+        "name": "preference_instructions", "group": "messages",
         "title": "Review preference instructions",
-        "type": "htmlstring", "size": 20,
+        "type": "htmlstring", "size": 20, "storage": "msg.revprefdescription",
         "message_context_setting": "has_topics"
     },
     {
-        "name": "msg.submit", "group": "messages",
-        "title": "Paper submission message",
-        "type": "htmlstring", "size": 5
+        "name": "submission_edit_message", "group": "messages",
+        "title": "Submission edit message",
+        "type": "htmlstring", "size": 5, "storage": "msg.submit"
     },
     {
         "name": "next_optionid", "group": "subform",
         "internal": true
     },
     {
-        "name": "opt.clickthrough_review",
+        "name": "review_terms_exist",
         "internal": true, "storage": "ova.clickthrough_review"
     },
     {
-        "name": "opt.clickthrough_submit",
+        "name": "submission_terms_exist",
         "internal": true, "storage": "ova.clickthrough_submit"
     },
     {
-        "name": "opt.conferenceSite", "group": "basics",
-        "title": "Conference URL",
+        "name": "conference_url", "group": "basics",
+        "title": "Conference URL", "storage": "opt.conferenceSite",
         "type": "urlstring", "optional": true, "size": 70, "placeholder": "N/A"
     },
     {
-        "name": "opt.contactEmail", "group": "basics",
-        "title": "Email of site contact",
+        "name": "site_contact_email", "group": "basics",
+        "title": "Email of site contact", "storage": "opt.contactEmail",
         "type": "emailstring", "optional": true, "size": 40, "invalid_value": "you@example.com",
         "validator_class": "Basics_SettingParser"
     },
     {
-        "name": "opt.contactName", "group": "basics",
-        "title": "Name of site contact",
+        "name": "site_contact_name", "group": "basics",
+        "title": "Name of site contact", "storage": "opt.contactName",
         "type": "simplestring", "size": 50, "invalid_value": "Your Name"
     },
     {
-        "name": "opt.emailCc", "group": "basics",
-        "title": "Default Cc for mail tool",
+        "name": "email_default_cc", "group": "basics",
+        "title": "Default Cc for mail tool", "storage": "opt.emailCc",
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     {
-        "name": "opt.emailReplyTo", "group": "basics",
-        "title": "Deault Reply-To for mail tool",
+        "name": "email_default_reply_to", "group": "basics",
+        "title": "Deault Reply-To for mail tool", "storage": "opt.emailReplyTo",
         "type": "emailheader", "size": 80, "placeholder": "(none)"
-    },
-    {
-        "name": "opt.timezone",
-        "internal": true
     },
     {
         "name": "options", "group": "subform", "anchorid": false,
