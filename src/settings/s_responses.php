@@ -70,9 +70,12 @@ class Responses_SettingParser extends SettingParser {
             echo "</div>\n";
         }
 
-        echo '<div class="form-g">',
-            Ht::button("Add response round", ["class" => "ui js-settings-resp-round-new"]),
-            '</div></div></div></div>';
+        if ($sv->editable("resp_roundname")) {
+            echo '<div class="form-g">',
+                Ht::button("Add response round", ["class" => "ui js-settings-resp-round-new"]),
+                '</div>';
+        }
+        echo '</div></div></div>';
     }
 
     function parse(SettingValues $sv, Si $si) {

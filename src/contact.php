@@ -1199,12 +1199,6 @@ class Contact {
         return false;
     }
 
-    /** @param string $perm
-     * @return bool */
-    function has_permission($perm) {
-        return !$perm || $this->has_tag(substr($perm, 1)) === ($perm[0] === "+");
-    }
-
     /** @param string $t
      * @return ?float */
     function tag_value($t) {
@@ -1213,6 +1207,17 @@ class Contact {
         } else if ($this->contactTags
                    && ($p = stripos($this->contactTags, " $t#")) !== false) {
             return (float) substr($this->contactTags, $p + strlen($t) + 2);
+        } else {
+            return null;
+        }
+    }
+
+    /** @param string $perm
+     * @return ?bool */
+    function perm_tag_allows($perm) {
+        if ($this->contactTags
+            && ($pos = stripos($this->contactTags, " perm:$perm#")) !== false) {
+            return $this->contactTags[$pos + strlen($perm) + 7] !== "-";
         } else {
             return null;
         }
@@ -1229,10 +1234,12 @@ class Contact {
         }
     }
 
+    /** @return string */
     function all_contact_tags() {
         return self::roles_all_contact_tags($this->roles, $this->contactTags);
     }
 
+    /** @return string */
     function viewable_tags(Contact $viewer) {
         // see also Contact::calculate_name_for
         if ($viewer->can_view_user_tags() || $viewer->contactXid === $this->contactXid) {
@@ -1243,12 +1250,19 @@ class Contact {
         }
     }
 
+    /** @return string */
     function viewable_color_classes(Contact $viewer) {
         if (($tags = $this->viewable_tags($viewer))) {
             return $this->conf->tags()->color_classes($tags);
         } else {
             return "";
         }
+    }
+
+    /** @param string $perm
+     * @return bool */
+    function has_permission($perm) {
+        return !$perm || $this->has_tag(substr($perm, 1)) === ($perm[0] === "+");
     }
 
 

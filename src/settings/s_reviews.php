@@ -155,10 +155,10 @@ class Reviews_SettingRenderer {
         $extselector = array_merge(["#same" => "(same as PC)"], $selector);
         echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',
             $sv->label("rev_roundtag", "New PC reviews use round&nbsp; "),
-            Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
+            Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag", null, "select")),
             ' <span class="barsep">·</span> ',
             $sv->label("extrev_roundtag", "New external reviews use round&nbsp; "),
-            Ht::select("extrev_roundtag", $extselector, $extround_value, $sv->sjs("extrev_roundtag")),
+            Ht::select("extrev_roundtag", $extselector, $extround_value, $sv->sjs("extrev_roundtag", null, "select")),
             '</div>';
     }
 

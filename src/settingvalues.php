@@ -16,6 +16,8 @@ class Si {
     public $group;
     /** @var ?string */
     public $canonical_page;
+    /** @var ?list<string> */
+    public $tags;
     /** @var null|int|float */
     public $position;
     /** @var null|false|string */
@@ -100,6 +102,7 @@ class Si {
         "position" => "is_number",
         "size" => "is_int",
         "title" => "is_string",
+        "tags" => "is_string_list",
         "type" => "is_string",
         "validator_class" => "is_string",
         "values" => "is_array"
@@ -476,6 +479,10 @@ class SettingValues extends MessageSet {
     public $user;
     /** @var ?string */
     public $canonical_page;
+    /** @var list<string|bool> */
+    private $perm;
+    /** @var bool */
+    private $all_perm;
 
     private $parsers = [];
     /** @var list<Si> */
@@ -509,6 +516,15 @@ class SettingValues extends MessageSet {
         parent::__construct();
         $this->conf = $user->conf;
         $this->user = $user;
+        $this->all_perm = $user->privChair;
+        foreach (Tagger::split_unpack($user->contactTags) as $ti) {
+            if (strcasecmp($ti[0], "perm:write-setting") === 0) {
+                $this->all_perm = $ti[1] >= 0;
+            } else if (stri_starts_with($ti[0], "perm:write-setting:")) {
+                $this->perm[] = substr($ti[0], strlen("perm:write-setting:"));
+                $this->perm[] = $ti[1] >= 0;
+            }
+        }
     }
 
     /** @param Qrequest|array<string,string|int|float> $qreq */
@@ -547,6 +563,15 @@ class SettingValues extends MessageSet {
             $this->msg_at($f, null, $v);
         }
         $this->user->save_session("settings_highlight", null);
+    }
+
+    /** @return bool */
+    function viewable_by_user() {
+        for ($i = 0; $i !== count($this->perm ?? []); $i += 2) {
+            if ($this->perm[$i + 1])
+                return true;
+        }
+        return $this->all_perm;
     }
 
 
@@ -704,9 +729,10 @@ class SettingValues extends MessageSet {
         return Ht::label($html, $name1, $label_js) . $post;
     }
     /** @param Si|string $name
-     * @param array<string,mixed> $js
+     * @param ?array<string,mixed> $js
+     * @param ?string $type
      * @return array<string,mixed> */
-    function sjs($name, $js = []) {
+    function sjs($name, $js = null, $type = null) {
         if ($name instanceof Si) {
             $si = $name;
             $name = $si->name;
@@ -714,8 +740,16 @@ class SettingValues extends MessageSet {
             $si = Si::get($this->conf, $name);
         }
         $x = ["id" => $name];
-        if ($si && $si->disabled) {
-            $x["disabled"] = true;
+        if ($si) {
+            if ($si->disabled) {
+                $x["disabled"] = true;
+            } else if (!$this->si_editable($si)) {
+                if (in_array($type, ["checkbox", "radio", "select"], true)) {
+                    $x["disabled"] = true;
+                } else {
+                    $x["readonly"] = true;
+                }
+            }
         }
         if ($this->use_req()
             && !isset($js["data-default-value"])
@@ -743,6 +777,28 @@ class SettingValues extends MessageSet {
         } else {
             throw new Exception(caller_landmark(2) . ": Unknown setting “{$name}”");
         }
+    }
+
+    /** @param string $name
+     * @return bool */
+    function editable($name) {
+        return $this->si_editable($this->si($name));
+    }
+    /** @return bool */
+    function si_editable(Si $si) {
+        $perm = $this->all_perm;
+        if ($this->perm !== null) {
+            for ($i = 0; $i !== count($this->perm); $i += 2) {
+                if ($si->group === $this->perm[$i]
+                    || ($si->tags !== null && in_array($this->perm[$i], $si->tags, true))) {
+                    return $this->perm[$i + 1];
+                } else if ($si->canonical_page !== $si->group
+                           && $si->canonical_page === $this->perm[$i]) {
+                    $perm = $this->perm[$i + 1];
+                }
+            }
+        }
+        return $perm;
     }
 
     /** @param string $name */
@@ -976,7 +1032,7 @@ class SettingValues extends MessageSet {
         $js["id"] = $name;
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js));
+            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js, "checkbox"));
     }
     /** @param string $name
      * @param string $text
@@ -1050,7 +1106,7 @@ class SettingValues extends MessageSet {
 
             echo '<div class="settings-radioitem checki">',
                 $label1, '<span class="checkc">',
-                Ht::radio($name, $k, $k == $x, $this->sjs($name, $item)),
+                Ht::radio($name, $k, $k == $x, $this->sjs($name, $item, "radio")),
                 '</span>', $label, $label2, $hint, '</div>';
         }
         $this->echo_feedback_at($name);
@@ -1082,7 +1138,7 @@ class SettingValues extends MessageSet {
         if ($si->parser_class) {
             $t = Ht::hidden("has_$name", 1);
         }
-        return Ht::entry($name, $v, $this->sjs($si, $js)) . $t;
+        return Ht::entry($name, $v, $this->sjs($si, $js, "text")) . $t;
     }
     /** @param string $name
      * @return void */
@@ -1142,7 +1198,7 @@ class SettingValues extends MessageSet {
         if ($si->parser_class) {
             $t = Ht::hidden("has_$name", 1);
         }
-        return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($si, $js)) . $t;
+        return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($si, $js, "select")) . $t;
     }
     function echo_select_group($name, $values, $description, $js = null, $hint = null) {
         $this->echo_control_group($name, $description,
@@ -1176,7 +1232,7 @@ class SettingValues extends MessageSet {
         if (!isset($js["cols"])) {
             $js["cols"] = 80;
         }
-        return Ht::textarea($name, $v, $this->sjs($si, $js)) . $t;
+        return Ht::textarea($name, $v, $this->sjs($si, $js, "textarea")) . $t;
     }
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
@@ -1431,7 +1487,8 @@ class SettingValues extends MessageSet {
 
     private function account(Si $si1) {
         foreach ($this->req_sis($si1) as $si) {
-            if (!$si->active_value()) {
+            if (!$si->active_value()
+                || !$this->si_editable($si)) {
                 /* ignore changes to disabled/internal settings */;
             } else if ($si->parser_class) {
                 if ($this->si_parser($si)->parse($this, $si)) {

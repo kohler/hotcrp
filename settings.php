@@ -3,16 +3,15 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-if (!$Me->privChair) {
-    $Me->escape();
-}
-
 if (isset($Qreq->cancel)) {
     $Conf->redirect_self($Qreq);
 }
 
 $Sv = SettingValues::make_request($Me, $Qreq);
 $Sv->session_highlight();
+if (!$Sv->viewable_by_user()) {
+    $Me->escape();
+}
 
 function choose_setting_group($qreq, SettingValues $sv) {
     global $Conf, $Me;

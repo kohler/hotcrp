@@ -8,11 +8,14 @@ class Decisions_SettingParser extends SettingParser {
         if ($ndec && $sv->use_req()) {
             $vx = $sv->reqv("dec_name_$ndec") ?? $v;
         }
+        $editable = $sv->editable("decisions");
         echo '<tr><td class="lentry nw">',
-            Ht::entry("dec_name_$ndec", $vx, ["size" => 35, "placeholder" => "Decision name", "data-default-value" => $v]),
-            '</td><td class="lentry nw">',
-            '<a href="" class="ui js-settings-remove-decision-type btn qx need-tooltip" aria-label="Delete decision" tabindex="-1">✖</a>',
-            '</td><td>';
+            Ht::entry("dec_name_$ndec", $vx, ["size" => 35, "placeholder" => "Decision name", "data-default-value" => $v, "readonly" => !$editable]),
+            '</td>';
+        if ($editable) {
+            echo '<td class="lentry nw"><a href="" class="ui js-settings-remove-decision-type btn qx need-tooltip" aria-label="Delete decision" tabindex="-1">✖</a></td>';
+        }
+        echo '<td>';
         if ($isnew) {
             echo Ht::select("dec_class_$ndec",
                     [1 => "Accept class", -1 => "Reject class"],
@@ -59,9 +62,13 @@ class Decisions_SettingParser extends SettingParser {
             '<tr><td colspan="3" class="hint">Examples: “Accepted as short paper”, “Early reject”</td></tr>',
             '</tbody><tbody id="settings-new-decision-type" class="hidden">';
         self::render_row($sv, 0, 1, "", true, 0);
-        echo '</tbody></table><div class="mg">',
-            Ht::button("Add decision type", ["class" => "ui js-settings-add-decision-type"]),
-            "</div></div>\n";
+        echo '</tbody></table>';
+        if ($sv->editable("decisions")) {
+            echo '<div class="mg">',
+                Ht::button("Add decision type", ["class" => "ui js-settings-add-decision-type"]),
+                '</div>';
+        }
+        echo "</div>\n";
     }
 
     function parse(SettingValues $sv, Si $si) {
