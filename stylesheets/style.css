@@ -1363,8 +1363,11 @@ th.settings-simplehead {
 	margin-bottom: 0;
 }
 .form-g,
-.settings-revfield, .settings-revfieldremoved, .settings-opt {
+.settings-revfield, .settings-revfieldremoved {
 	margin-bottom: 2em;
+}
+.settings-opt {
+	margin-bottom: 3em;
 }
 .form-g-2 {
 	margin-bottom: 1em;
@@ -1398,9 +1401,6 @@ th.settings-simplehead {
 }
 .settings-revdata, .settings-revhint {
 	clear: both;
-}
-.settings-opt + .settings-opt {
-	margin-top: 3em;
 }
 .settings-tracks {
 	margin-bottom: 2em;
