@@ -78,22 +78,22 @@
         "json_values": ["no", "blind", "yes"]
     },
     {
-        "name": "final_done", "group": "decisons",
+        "name": "final_done", "group": "final",
         "title": "Final version upload hard deadline",
         "type": "date"
     },
     {
-        "name": "final_grace", "group": "decisons",
+        "name": "final_grace", "group": "final",
         "title": "Final version upload grace period",
         "type": "grace"
     },
     {
-        "name": "final_open", "group": "decisons",
+        "name": "final_open", "group": "final",
         "title": "Collect final versions setting",
         "type": "checkbox"
     },
     {
-        "name": "final_soft", "group": "decisons",
+        "name": "final_soft", "group": "final",
         "title": "Final version upload deadline",
         "type": "date", "date_backup": "final_done"
     },
@@ -129,7 +129,7 @@
         "type": "htmlstring", "size": 5, "storage": "msg.conflictdef"
     },
     {
-        "name": "final_edit_message", "group": "decisions",
+        "name": "final_edit_message", "group": "final",
         "title": "Final version edit message",
         "type": "htmlstring", "storage": "msg.finalsubmit"
     },
@@ -256,42 +256,42 @@
         "require": "src/settings/s_reviews.php", "position": 1
     },
     {
-        "name": "resp_active", "group": "decisions",
+        "name": "resp_active", "group": "responses",
         "title": "Collect authors’ responses",
         "type": "checkbox"
     },
     {
-        "name": "resp_done", "group": "decisions",
+        "name": "resp_done", "group": "responses",
         "title": "Response hard deadline",
         "type": "date", "extensible": true
     },
     {
-        "name": "resp_grace", "group": "decisions",
+        "name": "resp_grace", "group": "responses",
         "title": "Response grace period",
         "type": "grace", "extensible": true
     },
     {
-        "name": "resp_open", "group": "decisions",
+        "name": "resp_open", "group": "responses",
         "title": "Response start time",
         "type": "date", "extensible": true
     },
     {
-        "name": "resp_rounds", "anchorid": false, "group": "decisions",
+        "name": "resp_rounds", "anchorid": false, "group": "responses",
         "parser_class": "Responses_SettingParser",
         "type": "string"
     },
     {
-        "name": "resp_roundname", "group": "decisions",
+        "name": "resp_roundname", "group": "responses",
         "title": "Response name",
         "type": "tag", "size": 20, "internal": true, "extensible": true
     },
     {
-        "name": "resp_search", "group": "decisions",
+        "name": "resp_search", "group": "responses",
         "title": "Response search",
         "type": "string", "size": 40, "placeholder": "(All)", "extensible": true
     },
     {
-        "name": "resp_words", "group": "decisions",
+        "name": "resp_words", "group": "responses",
         "title": "Response word limit",
         "type": "zint", "size": 5, "placeholder": "none", "default_value": 500,
         "extensible": true
@@ -357,7 +357,7 @@
         "storage": "dat.sub_banal", "extensible": true
     },
     {
-        "name": "sub_banal_opt", "group": "subform",
+        "name": "sub_banal_opt",
         "internal": true, "type": "string",
         "storage": "opt.sub_banal", "extensible": true
     },
@@ -403,6 +403,14 @@
         "type": "checkbox",
         "storage": false, "extensible": true
     },
+    {   "name": "sub_banal_m1", "group": "final", "extensible": "override"   },
+    {   "name": "sub_banal_bodyfontsize_m1", "group": "final", "extensible": "override"   },
+    {   "name": "sub_banal_bodylineheight_m1", "group": "final", "extensible": "override"   },
+    {   "name": "sub_banal_columns_m1", "group": "final", "extensible": "override"   },
+    {   "name": "sub_banal_pagelimit_m1", "group": "final", "extensible": "override"   },
+    {   "name": "sub_banal_papersize_m1", "group": "final", "extensible": "override"   },
+    {   "name": "sub_banal_textblock_m1", "group": "final", "extensible": "override"   },
+    {   "name": "sub_banal_unlimitedref_m1", "group": "final", "extensible": "override"   },
     {
         "name": "sub_blind", "group": "submissions",
         "title": "Submission anonymity",

@@ -25,6 +25,7 @@
         "title": "Decisions"
     },
     {   "name": "dec", "alias": "decisions"   },
+    {   "name": "final", "alias": "decisions"   },
     {
         "name": "decisions/responses", "position": 10,
         "title": "Responses",
@@ -84,10 +85,12 @@
     },
 
     {
-        "name": "msg", "position": 200,
+        "name": "messages", "position": 200,
         "title": "Messages",
         "render_callback": "Messages_SettingRenderer::render"
     },
+    {   "name": "msg", "alias": "messages"   },
+
     {
         "name": "reviewform", "position": 600,
         "title": "Review form",

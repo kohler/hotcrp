@@ -13,12 +13,12 @@ class Si {
     /** @var string */
     public $title;
     /** @var ?string */
-    private $group;
+    public $group;
     /** @var ?string */
     public $canonical_page;
     /** @var null|int|float */
     public $position;
-    /** @var ?string */
+    /** @var null|false|string */
     public $anchorid;
     /** @var ?string */
     public $type;
@@ -100,7 +100,6 @@ class Si {
         "position" => "is_number",
         "size" => "is_int",
         "title" => "is_string",
-        "title" => "is_string",
         "type" => "is_string",
         "validator_class" => "is_string",
         "values" => "is_array"
@@ -172,7 +171,7 @@ class Si {
             $this->type = "special";
         }
 
-        $s = $this->storage ? : $this->name;
+        $s = $this->storage ?? $this->name;
         $dot = strpos($s, ".");
         if ($dot === 3 && substr($s, 0, 3) === "opt") {
             $this->storage_type = self::SI_DATA | self::SI_OPT;
@@ -197,7 +196,7 @@ class Si {
         }
         if ($this->storage_type & self::SI_OPT) {
             $is_value = !!($this->storage_type & self::SI_VALUE);
-            $oname = substr($this->storage ? : $this->name, 4);
+            $oname = substr($this->storage ?? $this->name, 4);
             if (!isset(self::$option_is_value[$oname])) {
                 self::$option_is_value[$oname] = $is_value;
             }
@@ -217,8 +216,9 @@ class Si {
     }
 
     /** @param string $suffix
+     * @param ?object $overrides
      * @return Si */
-    function extend($suffix) {
+    function extend($suffix, $overrides) {
         assert(str_starts_with($suffix, "_"));
         $si = clone $this;
         $si->parent = $this;
@@ -232,6 +232,13 @@ class Si {
         if ($this->message_context_setting
             && str_starts_with($this->message_context_setting, "+")) {
             $si->message_context_setting .= $suffix;
+        }
+        if ($overrides) {
+            foreach (["title", "placeholder", "size", "group", "tags"] as $k) {
+                if (isset($overrides->$k)) {
+                    $si->store($k, $overrides, $k, self::$key_storage[$k]);
+                }
+            }
         }
         return $si;
     }
@@ -250,21 +257,10 @@ class Si {
         }
     }
 
-    /** @return ?string */
-    function canonical_group(Conf $conf) {
-        if (!$this->group) {
-            trigger_error("setting {$this->name}.group missing");
-        }
-        if (!$conf->_setting_groups) {
-            $conf->_setting_groups = new GroupedExtensions($conf->root_user(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
-        }
-        return $conf->_setting_groups->canonical_group($this->group);
-    }
-
 
     /** @return string */
     function storage() {
-        return $this->storage ? : $this->name;
+        return $this->storage ?? $this->name;
     }
 
     /** @return bool */
@@ -275,6 +271,7 @@ class Si {
             && $this->type !== "none";
     }
 
+
     /** @return bool */
     function is_date() {
         return str_ends_with($this->type, "date");
@@ -284,7 +281,7 @@ class Si {
     function hoturl_param($conf) {
         $param = ["group" => $this->canonical_page];
         if ($this->anchorid !== false) {
-            $param["anchor"] = $this->anchorid ? : $this->name;
+            $param["anchor"] = $this->anchorid ?? $this->name;
         }
         return $param;
     }
@@ -331,7 +328,7 @@ class Si {
         $gex = new GroupedExtensions($conf->root_user(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
         $canonpage = ["none" => null];
 
-        $sim = [];
+        $sim = $overrides = [];
         $nall = count($sis);
         for ($i = 0; $i < $nall; ++$i) {
             $j = $sis[$i];
@@ -353,9 +350,22 @@ class Si {
                     }
                     $j->canonical_page = $canonpage[$j->group];
                 }
-                $sim[$j->name] = new Si($j);
+                if (($j->extensible ?? null) !== "override") {
+                    $sim[$j->name] = new Si($j);
+                } else {
+                    $overrides[] = $j;
+                }
             }
         }
+
+        foreach ($overrides as $j) {
+            if (preg_match('/\A(.*)(_[^_\s]+)\z/', $j->name, $m)
+                && ($base = $sim[$m[1]] ?? null)
+                && $base->extensible) {
+                $sim[$j->name] = $base->extend($m[2], $j);
+            }
+        }
+
         uasort($sim, "Conf::xt_position_compare");
         return $sim;
     }
@@ -376,7 +386,7 @@ class Si {
         }
         if (isset($conf->_setting_info[$name])) {
             return $conf->_setting_info[$name];
-        } else if (preg_match('/\A(.*)(_(?:[^_\s]+))\z/', $name, $m)
+        } else if (preg_match('/\A(.*)(_[^_\s]+)\z/', $name, $m)
                    && isset($conf->_setting_info[$m[1]])) {
             $base_si = $conf->_setting_info[$m[1]];
             if (!$base_si->extensible
@@ -388,7 +398,7 @@ class Si {
                 }
                 return null;
             }
-            $si = $conf->_setting_info[$name] = $base_si->extend($m[2]);
+            $si = $conf->_setting_info[$name] = $base_si->extend($m[2], null);
             return $si;
         } else {
             return null;
@@ -500,6 +510,7 @@ class SettingValues extends MessageSet {
         $this->conf = $user->conf;
         $this->user = $user;
     }
+
     /** @param Qrequest|array<string,string|int|float> $qreq */
     static function make_request(Contact $user, $qreq) {
         $sv = new SettingValues($user);
@@ -512,6 +523,7 @@ class SettingValues extends MessageSet {
         }
         return $sv;
     }
+
     /** @param string $k
      * @param string $v */
     function set_req($k, $v) {
@@ -524,10 +536,12 @@ class SettingValues extends MessageSet {
             }
         }
     }
+
     /** @param string $k */
     function unset_req($k) {
         unset($this->req[$k]);
     }
+
     function session_highlight() {
         foreach ($this->user->session("settings_highlight", []) as $f => $v) {
             $this->msg_at($f, null, $v);
@@ -650,7 +664,7 @@ class SettingValues extends MessageSet {
     }
     /** @return SettingParser */
     private function si_parser(Si $si) {
-        $class = $si->parser_class ? : $si->validator_class;
+        $class = $si->parser_class ?? $si->validator_class;
         if (!isset($this->parsers[$class])) {
             $this->parsers[$class] = new $class($this, $si);
         }
@@ -1596,6 +1610,7 @@ class SettingValues extends MessageSet {
             return $v;
         }
     }
+
     function unparse_json() {
         assert(!$this->use_req());
         $j = (object) [];

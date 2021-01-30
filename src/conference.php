@@ -251,8 +251,6 @@ class Conf {
     public $_file_filters; // maintained externally
     /** @var array<string,Si> */
     public $_setting_info = []; // maintained externally
-    /** @var ?GroupedExtensions */
-    public $_setting_groups; // maintained externally
     private $_mail_keyword_map;
     private $_mail_keyword_factories;
     private $_mail_template_map;
