@@ -2249,9 +2249,9 @@ class Contact {
         }
     }
 
-    /** @param string $tag
+    /** @param string $perm
      * @return bool */
-    function some_author_perm_tag_allows($tag) {
+    function some_author_perm_tag_allows($perm) {
         $this->check_rights_version();
         if ($this->_author_perm_tags === null) {
             $this->_author_perm_tags = [];
@@ -2272,7 +2272,7 @@ class Contact {
                 Dbl::free($result);
             }
         }
-        return isset($this->_author_perm_tags[$tag]);
+        return isset($this->_author_perm_tags[$perm]);
     }
 
     /** @return bool */
@@ -2929,8 +2929,7 @@ class Contact {
     /** @return bool */
     function can_start_paper() {
         return $this->email
-            && ($this->conf->timeStartPaper()
-                || $this->override_deadlines(null));
+            && ($this->conf->timeStartPaper() || $this->override_deadlines(null));
     }
 
     /** @return ?PermissionProblem */
@@ -2951,14 +2950,11 @@ class Contact {
     /** @return bool */
     function can_edit_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if (!$rights->allow_author_edit || $prow->timeWithdrawn > 0) {
-            return false;
-        } else if (($v = $rights->perm_tag_value("author-write"))) {
-            return $v > 0;
-        } else {
-            return ($prow->outcome >= 0 && $this->conf->time_edit_paper($prow))
-                || $this->override_deadlines($rights);
-        }
+        return $rights->allow_author_edit
+            && $prow->timeWithdrawn <= 0
+            && (($rights->perm_tag_allows("author-write")
+                 ?? ($prow->outcome >= 0 && $this->conf->time_edit_paper($prow)))
+                || $this->override_deadlines($rights));
     }
 
     /** @return PermissionProblem */
@@ -3007,14 +3003,11 @@ class Contact {
     /** @return bool */
     function can_finalize_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if (!$rights->allow_author_edit || $prow->timeWithdrawn > 0) {
-            return false;
-        } else if (($v = $rights->perm_tag_value("author-write"))) {
-            return $v > 0;
-        } else {
-            return $this->conf->timeFinalizePaper($prow)
-                || $this->override_deadlines($rights);
-        }
+        return $rights->allow_author_edit
+            && $prow->timeWithdrawn <= 0
+            && (($rights->perm_tag_allows("author-write")
+                 ?? $this->conf->timeFinalizePaper($prow))
+                || $this->override_deadlines($rights));
     }
 
     /** @return ?PermissionProblem */
@@ -3070,14 +3063,11 @@ class Contact {
     /** @return bool */
     function can_revive_paper(PaperInfo $prow) {
         $rights = $this->rights($prow);
-        if (!$rights->allow_author_edit || $prow->timeWithdrawn <= 0) {
-            return false;
-        } else if (($v = $rights->perm_tag_value("author-write"))) {
-            return $v > 0;
-        } else {
-            return $this->conf->timeFinalizePaper($prow)
-                || $this->override_deadlines($rights);
-        }
+        return $rights->allow_author_edit
+            && $prow->timeWithdrawn > 0
+            && (($rights->perm_tag_allows("author-write")
+                 ?? $this->conf->timeFinalizePaper($prow))
+                || $this->override_deadlines($rights));
     }
 
     /** @return ?PermissionProblem */
@@ -3106,14 +3096,11 @@ class Contact {
             return false;
         }
         $rights = $this->rights($prow);
-        if (!$rights->allow_author_edit || !$rights->can_view_decision) {
-            return false;
-        } else if (($v = $rights->perm_tag_value("author-write"))) {
-            return $v > 0;
-        } else {
-            return $rights->allow_administer
-                || $this->conf->time_edit_final_paper();
-        }
+        return $rights->allow_author_edit
+            && $rights->can_view_decision
+            && ($rights->allow_administer
+                || ($rights->perm_tag_allows("author-write")
+                    ?? $this->conf->time_edit_final_paper()));
     }
 
     /** @return bool */
@@ -3124,14 +3111,11 @@ class Contact {
             return false;
         }
         $rights = $this->rights($prow);
-        if (!$rights->allow_author_edit || !$rights->can_view_decision) {
-            return false;
-        } else if (($v = $rights->perm_tag_value("author-write"))) {
-            return $v > 0;
-        } else {
-            return $this->conf->time_edit_final_paper()
-                || $this->override_deadlines($rights);
-        }
+        return $rights->allow_author_edit
+            && $rights->can_view_decision
+            && (($rights->perm_tag_allows("author-write")
+                 ?? $this->conf->time_edit_final_paper())
+                || $this->override_deadlines($rights));
     }
 
     /** @return ?PermissionProblem */
@@ -3548,8 +3532,8 @@ class Contact {
     /** @return bool */
     private function can_view_submitted_review_as_author(PaperInfo $prow) {
         if ($this->conf->has_perm_tags()
-            && ($v = $prow->tag_value("perm:author-read-review"))) {
-            return $v > 0;
+            && ($v = $prow->perm_tag_allows("author-read-review")) !== null) {
+            return $v;
         } else {
             return $prow->can_author_respond()
                 || $this->conf->au_seerev == Conf::AUSEEREV_YES

@@ -31,8 +31,8 @@ class Tags_API {
                 && $want_perm) {
                 if (!$prow->conf->is_known_perm_tag($ti[0])) {
                     $rep[] = (object) ["status" => 1, "message" => "#{$ti[0]}: Unknown permission."];
-                } else if ($ti[1] != -1 && $ti[1] != 1) {
-                    $rep[] = (object) ["status" => 1, "message" => "#{$ti[0]}: Permission tags should have value 1 (allow) or -1 (deny)."];
+                } else if ($ti[1] != -1 && $ti[1] != 0) {
+                    $rep[] = (object) ["status" => 1, "message" => "#{$ti[0]}#{$ti[1]}: Permission tags should have value 0 (allow) or -1 (deny)."];
                 }
             }
             if (str_starts_with($ti[0], $mypfx)

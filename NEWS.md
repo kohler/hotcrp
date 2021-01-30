@@ -111,10 +111,10 @@ HotCRP NEWS
       indexed user’s `#~foo` tag. Use this functionality to compute allotment
       votes and approval votes.
     * Formulas support `let VAR = VAL in BODY`.
-    * Support a `#perm:` namespace. Tag a paper `#perm:author-read-view#1` and
-      that paper’s authors can read its reviews, regardless of other settings;
-      tag it `#perm:author-read-review#-1` and authors *cannot* read reviews.
-      Also `#perm:author-write`.
+    * Support a `#perm:` namespace. Tag a paper `#perm:author-read-review#1`
+      and that paper’s authors can read its reviews, regardless of other
+      settings; tag it `#perm:author-read-review#-1` and authors *cannot* read
+      reviews. Also `#perm:author-write`.
 
 * Formula graphs
 

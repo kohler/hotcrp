@@ -205,13 +205,14 @@ class PaperContactInfo {
         return $this->forced_rights_link;
     }
 
-    /** @return float */
-    function perm_tag_value($tag) {
+    /** @param string $perm
+     * @return ?bool */
+    function perm_tag_allows($perm) {
         if ($this->perm_tags !== null
-            && ($pos = stripos($this->perm_tags, " perm:$tag#")) !== false) {
-            return (float) substr($this->perm_tags, $pos + strlen($tag) + 7);
+            && ($pos = stripos($this->perm_tags, " perm:$perm#")) !== false) {
+            return $this->perm_tags[$pos + strlen($perm) + 7] !== "-";
         } else {
-            return 0.0;
+            return null;
         }
     }
 }
@@ -1125,7 +1126,7 @@ class PaperInfo {
         return $this->timeWithdrawn <= 0
             && $this->outcome >= 0
             && ($this->conf->time_edit_paper($this)
-                || $this->perm_tag_value("author-write") > 0);
+                || $this->perm_tag_allows("author-write"));
     }
 
     /** @return bool */
@@ -1134,7 +1135,7 @@ class PaperInfo {
             && $this->outcome > 0
             && $this->can_author_view_decision()
             && ($this->conf->time_edit_final_paper()
-                || $this->perm_tag_value("author-write") > 0);
+                || $this->perm_tag_allows("author-write"));
     }
 
 
@@ -1232,15 +1233,15 @@ class PaperInfo {
         }
     }
 
-    /** @param string $tag
-     * @return float */
-    function perm_tag_value($tag) {
+    /** @param string $perm
+     * @return ?bool */
+    function perm_tag_allows($perm) {
         if ($this->paperTags !== null
             && $this->paperTags !== ""
-            && ($pos = stripos($this->paperTags, " perm:$tag#")) !== false) {
-            return (float) substr($this->paperTags, $pos + strlen($tag) + 7);
+            && ($pos = stripos($this->paperTags, " perm:$perm#")) !== false) {
+            return $this->paperTags[$pos + strlen($perm) + 7] !== "-";
         } else {
-            return 0.0;
+            return null;
         }
     }
 
