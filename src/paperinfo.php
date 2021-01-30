@@ -365,10 +365,6 @@ class PaperInfo {
      * @readonly */
     public $paperId;
     /** @var int
-     * @readonly
-     * @deprecated */
-    public $uid;           // unique among all PaperInfos
-    /** @var int
      * @readonly */
     public $paperXid;      // unique among all PaperInfos
     /** @var int */
@@ -542,6 +538,8 @@ class PaperInfo {
     private $_author_view_user;
     /** @var ?PaperInfoSet */
     public $_row_set;
+    /** @var ?int */
+    public $_sort_subset;
     /** @var ?bool */
     private $_allow_absent;
     /** @var ?int */
@@ -569,8 +567,7 @@ class PaperInfo {
             }
         }
         $this->paperId = (int) $this->paperId;
-        /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $this->uid = $this->paperXid = ++self::$next_uid;
+        $this->paperXid = ++self::$next_uid;
         $this->timeSubmitted = (int) $this->timeSubmitted;
         $this->timeWithdrawn = (int) $this->timeWithdrawn;
         $this->outcome = (int) $this->outcome;

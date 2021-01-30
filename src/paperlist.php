@@ -665,6 +665,9 @@ class PaperList implements XtContext {
         return $this->_rowset;
     }
 
+    /** @param PaperInfo $a
+     * @param PaperInfo $b
+     * @return int */
     function _sort_compare($a, $b) {
         foreach ($this->_sortcol as $s) {
             if (($x = $s->compare($a, $b, $this))) {
@@ -678,6 +681,9 @@ class PaperList implements XtContext {
         }
     }
 
+    /** @param PaperInfo $a
+     * @param PaperInfo $b
+     * @return int */
     function _then_sort_compare($a, $b) {
         if (($x = $a->_sort_subset - $b->_sort_subset)) {
             return $x < 0 ? -1 : 1;
