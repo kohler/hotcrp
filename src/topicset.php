@@ -2,6 +2,46 @@
 // topicset.php -- HotCRP helper class for topics
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
+class TopicGroup {
+    /** @var string */
+    public $name;     // never contains a colon
+    /** @var ?int */
+    public $tid;      // if nonnull, its name equals the group name
+    /** @var ?list<int> */
+    public $members;  // if nonnull, contains all members
+
+    /** @param string $name */
+    function __construct($name) {
+        $this->name = $name;
+    }
+    /** @return bool */
+    function nontrivial() {
+        return $this->members !== null && count($this->members) > 1;
+    }
+    /** @return bool */
+    function improper() {
+        return $this->tid !== null;
+    }
+    /** @return int */
+    function size() {
+        return $this->members !== null ? count($this->members) : 1;
+    }
+    /** @return list<int> */
+    function members() {
+        return $this->members ?? [$this->tid];
+    }
+    /** @return list<int> */
+    function proper_members() {
+        if ($this->members === null) {
+            return [];
+        } else if ($this->tid !== $this->members[0]) {
+            return $this->members;
+        } else {
+            return array_slice($this->members, 1);
+        }
+    }
+}
+
 class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @var Conf */
     public $conf;
@@ -9,7 +49,11 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_topic_map = [];
     /** @var array<int,int> */
     private $_order = [];
-    private $_topic_groups;
+    /** @var list<TopicGroup> */
+    private $_group_list;
+    /** @var array<int,TopicGroup> */
+    private $_group_map;
+    /** @var ?array<int,string> */
     private $_topic_html;
     /** @var ?AbbreviationMatcher<int> */
     private $_topic_abbrev_matcher;
@@ -83,28 +127,33 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->_topic_map[$tid] ?? null;
     }
 
+    /** @return list<TopicGroup> */
     function group_list() {
-        if ($this->_topic_groups === null) {
-            $this->_topic_groups = [];
-            $last_gs = null;
+        if ($this->_group_list === null) {
+            $this->_group_list = $this->_group_map = [];
+            $lastg = null;
             foreach ($this->_topic_map as $tid => $tname) {
                 $colon = (int) strpos($tname, ":");
                 $group = $colon ? substr($tname, 0, $colon) : $tname;
-                if ($last_gs !== null
-                    && strcasecmp($last_gs[0], $group) === 0) {
-                    $last_gs[] = $tid;
-                } else {
-                    if ($last_gs !== null) {
-                        $this->_topic_groups[] = $last_gs;
+                if ($lastg !== null
+                    && strcasecmp($lastg->name, $group) === 0) {
+                    if ($lastg->members === null && $lastg->tid !== null) {
+                        $lastg->members = [$lastg->tid];
                     }
-                    $last_gs = [$group, $tid];
+                    $lastg->members[] = $tid;
+                } else {
+                    $lastg = new TopicGroup($group);
+                    if ($colon === 0) {
+                        $lastg->tid = $tid;
+                    } else {
+                        $lastg->members = [$tid];
+                    }
+                    $this->_group_list[] = $lastg;
                 }
-            }
-            if ($last_gs !== null) {
-                $this->_topic_groups[] = $last_gs;
+                $this->_group_map[$tid] = $lastg;
             }
         }
-        return $this->_topic_groups;
+        return $this->_group_list;
     }
 
     function sort(&$a) {
@@ -128,8 +177,10 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
                 $this->_topic_abbrev_matcher->add_phrase($tname, $tid, self::MFLAG_TOPIC);
             }
             foreach ($this->group_list() as $tg) {
-                for ($i = 1; count($tg) > 2 && $i !== count($tg); ++$i) {
-                    $this->_topic_abbrev_matcher->add_phrase($tg[0], $tg[$i], self::MFLAG_GROUP);
+                if ($tg->size() > 1) {
+                    foreach ($tg->members() as $tid) {
+                        $this->_topic_abbrev_matcher->add_phrase($tg->name, $tid, self::MFLAG_GROUP);
+                    }
                 }
             }
         }
@@ -169,23 +220,40 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     function unparse_name_html($tid) {
         if ($this->_topic_html === null) {
             $this->_topic_html = [];
+            $this->group_list();
         }
         if (!isset($this->_topic_html[$tid])) {
-            $t = "";
             $tname = $this->_topic_map[$tid] ?? "";
-            $colon = (int) strpos($tname, ":");
-            if ($colon > 0) {
-                foreach ($this->group_list() as $tg) {
-                    if (count($tg) > 2 && in_array($tid, $tg, true)) {
-                        $t = '<span class="topicg">' . htmlspecialchars($tg[0]) . ':</span> ';
-                        $tname = ltrim(substr($tname, strlen($tg[0]) + 1));
-                        break;
-                    }
+            $tg = $this->_group_map[$tid];
+            if ($tg->nontrivial()) {
+                if ($tg->tid === $tid) {
+                    $this->_topic_html[$tid] = '<span class="topicg">'
+                        . htmlspecialchars($tg->name) . '</span>';
+                } else {
+                    $this->_topic_html[$tid] = '<span class="topicg">'
+                        . htmlspecialchars($tg->name) . ':</span> '
+                        . htmlspecialchars(ltrim(substr($tname, strlen($tg->name) + 1)));
                 }
+            } else {
+                $this->_topic_html[$tid] = htmlspecialchars($tname);
             }
-            $this->_topic_html[$tid] = $t . htmlspecialchars($tname);
         }
         return $this->_topic_html[$tid];
+    }
+
+    /** @param int $tid
+     * @return string */
+    function unparse_subtopic_name_html($tid) {
+        if ($this->_group_list === null) {
+            $this->group_list();
+        }
+        $tg = $this->_group_map[$tid];
+        if ($tg->tid === $tid) {
+            return $this->unparse_name_html($tid);
+        } else {
+            $tname = $this->_topic_map[$tid] ?? "";
+            return htmlspecialchars(ltrim(substr($tname, strlen($tg->name) + 1)));
+        }
     }
 
     /** @param list<int> $tlist

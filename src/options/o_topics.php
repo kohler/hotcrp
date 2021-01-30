@@ -123,28 +123,23 @@ class Topics_PaperOption extends PaperOption {
         foreach ($topics->group_list() as $tg) {
             $arg = ["class" => "uic js-range-click topic-entry", "id" => false,
                     "data-range-type" => "topic", "disabled" => $readonly];
-            $isgroup = count($tg) > 2;
-            if ($isgroup) {
+            if (($isgroup = $tg->nontrivial())) {
                 echo '<li class="ctelt cteltg"><div class="ctelti">';
-                if (strcasecmp($tg[0], $topics[$tg[1]]) === 0) {
-                    $tid = $tg[1];
-                    $arg["data-default-checked"] = isset($ptopics[$tid]);
-                    $checked = in_array($tid, $reqov->value_list());
+                if ($tg->improper()) {
+                    $arg["data-default-checked"] = isset($ptopics[$tg->tid]);
+                    $checked = in_array($tg->tid, $reqov->value_list());
                     echo '<label class="checki cteltx"><span class="checkc">',
-                        Ht::checkbox("top$tid", 1, $checked, $arg),
-                        '</span>', htmlspecialchars($tg[0]), '</label>';
+                        Ht::checkbox("top{$tg->tid}", 1, $checked, $arg),
+                        '</span>', $topics->unparse_name_html($tg->tid), '</label>';
                 } else {
                     echo '<div class="cteltx"><span class="topicg">',
-                        htmlspecialchars($tg[0]), '</span></div>';
+                        htmlspecialchars($tg->name), '</span></div>';
                 }
                 echo '<div class="checki">';
             }
-            for ($i = 1; $i !== count($tg); ++$i) {
-                $tid = $tg[$i];
+            foreach ($tg->proper_members() as $tid) {
                 if ($isgroup) {
-                    $tname = htmlspecialchars($topics->subtopic_name($tid));
-                    if ($tname === "")
-                        continue;
+                    $tname = $topics->unparse_subtopic_name_html($tid);
                 } else {
                     $tname = $topics->unparse_name_html($tid);
                 }

@@ -1469,13 +1469,12 @@ topics. We use this information to help match papers to reviewers.</p>',
         $tmap = $us->user->topic_interest_map();
         $ts = $us->conf->topic_set();
         foreach ($ts->group_list() as $tg) {
-            for ($i = 1; $i !== count($tg); ++$i) {
-                $tid = $tg[$i];
+            foreach ($tg->members() as $i => $tid) {
                 $tic = "ti_topic";
-                if ($i === 1) {
+                if ($i === 0) {
                     $n = $ts->unparse_name_html($tid);
                 } else {
-                    $n = htmlspecialchars($ts->subtopic_name($tid));
+                    $n = $ts->unparse_subtopic_name_html($tid);
                     $tic .= " ti_subtopic";
                 }
                 echo "      <tr><td class=\"{$tic}\">{$n}</td>";

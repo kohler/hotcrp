@@ -3471,12 +3471,12 @@ class PaperSearch {
         if ($this->conf->has_topics() && (!$category || $category === "topic")) {
             $topics = $this->conf->topic_set();
             foreach ($topics->group_list() as $tg) {
-                if (count($tg) >= 4) {
-                    $res[] = "topic:" . SearchWord::quote($tg[0]);
+                if ($tg->size() >= 3) {
+                    $res[] = "topic:" . SearchWord::quote($tg->name);
                 }
-                for ($i = 1; $i !== count($tg); ++$i) {
-                    if (count($tg) < 3 || $topics[$tg[$i]] !== $tg[0]) {
-                        $res[] = "topic:" . SearchWord::quote($topics[$tg[$i]]);
+                foreach ($tg->members() as $tid) {
+                    if ($tid !== $tg->tid || $tg->size() < 3) {
+                        $res[] = "topic:" . SearchWord::quote($topics[$tid]);
                     }
                 }
             }
