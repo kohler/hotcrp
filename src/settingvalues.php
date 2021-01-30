@@ -34,8 +34,9 @@ class Si {
     public $invalid_value;
     public $default_value;
     public $autogrow;
+    /** @var ?string */
     public $ifnonempty;
-    public $message_default;
+    /** @var ?string */
     public $message_context_setting;
     public $date_backup;
 
@@ -73,7 +74,6 @@ class Si {
         "invalid_value" => "is_string",
         "json_values" => "is_array",
         "message_context_setting" => "is_string",
-        "message_default" => "is_string",
         "optional" => "is_bool",
         "parser_class" => "is_string",
         "placeholder" => "is_string",
@@ -1139,7 +1139,7 @@ class SettingValues extends MessageSet {
     }
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
-        if ($si->message_default) {
+        if (str_starts_with($si->storage(), "msg.")) {
             $si->default_value = $this->si_message_default($si);
         }
         $current = $this->curv($name);
@@ -1160,7 +1160,7 @@ class SettingValues extends MessageSet {
     }
     function echo_message_horizontal($name, $description, $hint = "") {
         $si = $this->si($name);
-        if ($si->message_default) {
+        if (str_starts_with($si->storage(), "msg.")) {
             $si->default_value = $this->si_message_default($si);
         }
         $current = $this->curv($name);
@@ -1255,15 +1255,14 @@ class SettingValues extends MessageSet {
         return $this->null_mailer->expand_template($name, $default);
     }
 
+    /** @param Si $si */
     private function si_message_default($si) {
-        $msgname = $si->message_default;
-        if (str_starts_with($msgname, "msg."))
-            $msgname = substr($msgname, 4);
+        assert(str_starts_with($si->storage(), "msg."));
         $ctxarg = null;
         if (($ctxname = $si->message_context_setting)) {
             $ctxarg = $this->curv($ctxname[0] === "+" ? substr($ctxname, 1) : $ctxname);
         }
-        return $this->conf->ims()->default_itext($msgname, null, $ctxarg);
+        return $this->conf->ims()->default_itext(substr($si->storage(), 4), null, $ctxarg);
     }
 
     function setting_link($html, $si, $js = null) {
@@ -1368,7 +1367,7 @@ class SettingValues extends MessageSet {
             $err = "Should be a URL.";
         } else if ($si->type === "htmlstring") {
             if (($v = CleanHTML::basic_clean($v, $err)) !== false) {
-                if ($si->message_default
+                if (str_starts_with($si->storage(), "msg.")
                     && $v === $this->si_message_default($si))
                     return "";
                 return $v;

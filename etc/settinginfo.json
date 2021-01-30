@@ -117,33 +117,33 @@
         "name": "msg.clickthrough_review", "group": "messages",
         "title": "Clickthrough review terms",
         "type": "htmlstring", "size": 10,
-        "ifnonempty": "opt.clickthrough_review", "message_default": "msg.clickthrough_review"
+        "ifnonempty": "opt.clickthrough_review"
     },
     {
         "name": "msg.clickthrough_submit", "group": "messages",
         "title": "Clickthrough submission terms",
         "type": "htmlstring", "size": 10,
-        "ifnonempty": "opt.clickthrough_submit", "message_default": "msg.clickthrough_submit"
+        "ifnonempty": "opt.clickthrough_submit"
     },
     {
         "name": "msg.conflictdef", "group": "messages",
         "title": "Definition of conflict of interest",
-        "type": "htmlstring", "size": 5, "message_default": "msg.conflictdef"
+        "type": "htmlstring", "size": 5
     },
     {
         "name": "msg.finalsubmit", "group": "decisions",
         "title": "Final paper submission message",
-        "type": "htmlstring", "message_default": "msg.finalsubmit"
+        "type": "htmlstring"
     },
     {
         "name": "msg.home", "group": "messages",
         "title": "Home page message",
-        "type": "htmlstring", "message_default": "msg.home"
+        "type": "htmlstring"
     },
     {
         "name": "msg.resp_instrux", "group": "responses",
         "title": "Authors’ response instructions",
-        "type": "htmlstring", "size": 3, "message_default": "msg.resp_instrux",
+        "type": "htmlstring", "size": 3,
         "message_context_setting": "+resp_words",
         "extensible": true
     },
@@ -151,13 +151,12 @@
         "name": "msg.revprefdescription", "group": "messages",
         "title": "Review preference instructions",
         "type": "htmlstring", "size": 20,
-        "message_default": "msg.revprefdescription",
         "message_context_setting": "has_topics"
     },
     {
         "name": "msg.submit", "group": "messages",
         "title": "Paper submission message",
-        "type": "htmlstring", "size": 5, "message_default": "msg.submit"
+        "type": "htmlstring", "size": 5
     },
     {
         "name": "next_optionid", "group": "subform",
