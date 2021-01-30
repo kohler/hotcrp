@@ -14,6 +14,8 @@ class Si {
     public $title;
     /** @var ?string */
     private $group;
+    /** @var ?string */
+    public $canonical_page;
     /** @var null|int|float */
     public $position;
     /** @var ?string */
@@ -83,6 +85,7 @@ class Si {
 
     static private $key_storage = [
         "autogrow" => "is_bool",
+        "canonical_page" => "is_string",
         "date_backup" => "is_string",
         "disabled" => "is_bool",
         "group" => "is_string",
@@ -258,11 +261,6 @@ class Si {
         return $conf->_setting_groups->canonical_group($this->group);
     }
 
-    /** @return bool */
-    function is_interesting(SettingValues $sv) {
-        return !$this->group || $sv->group_is_interesting($this->group);
-    }
-
 
     /** @return string */
     function storage() {
@@ -284,7 +282,7 @@ class Si {
 
     /** @return array<string,string> */
     function hoturl_param($conf) {
-        $param = ["group" => $this->canonical_group($conf)];
+        $param = ["group" => $this->canonical_page];
         if ($this->anchorid !== false) {
             $param["anchor"] = $this->anchorid ? : $this->name;
         }
@@ -300,7 +298,8 @@ class Si {
     /** @param SettingValues $sv
      * @return string */
     function sv_hoturl($sv) {
-        if ($this->is_interesting($sv)) {
+        if ($this->canonical_page !== null
+            && $this->canonical_page === $sv->canonical_page) {
             return "#" . urlencode($this->anchorid ? : $this->name);
         } else {
             return $this->hoturl($sv->conf);
@@ -329,6 +328,9 @@ class Si {
             return strcmp($a->name, $b->name) ? : Conf::xt_priority_compare($a, $b);
         });
 
+        $gex = new GroupedExtensions($conf->root_user(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
+        $canonpage = ["none" => null];
+
         $sim = [];
         $nall = count($sis);
         for ($i = 0; $i < $nall; ++$i) {
@@ -343,10 +345,15 @@ class Si {
                 object_replace_recursive($j, $overlay);
                 ++$i;
             }
-            if ($conf->xt_allowed($j) && !isset($all[$j->name])) {
+            if ($conf->xt_allowed($j) && !isset($sim[$j->name])) {
                 Conf::xt_resolve_require($j);
-                $class = $j->setting_class ?? "Si";
-                $sim[$j->name] = new $class($j);
+                if (isset($j->group)) {
+                    if (!array_key_exists($j->group, $canonpage)) {
+                        $canonpage[$j->group] = $gex->canonical_group($j->group);
+                    }
+                    $j->canonical_page = $canonpage[$j->group];
+                }
+                $sim[$j->name] = new Si($j);
             }
         }
         uasort($sim, "Conf::xt_position_compare");
@@ -457,8 +464,8 @@ class SettingValues extends MessageSet {
     public $conf;
     /** @var Contact */
     public $user;
-    public $interesting_groups = [];
-    public $all_interesting;
+    /** @var ?string */
+    public $canonical_page;
 
     private $parsers = [];
     /** @var list<Si> */
@@ -559,13 +566,6 @@ class SettingValues extends MessageSet {
     function group_members($g) {
         return $this->gxt()->members(strtolower($g));
     }
-    /** @param string $g */
-    function mark_interesting_group($g) {
-        $this->interesting_groups[$this->canonical_group($g)] = true;
-        foreach ($this->group_members($g) as $gj) {
-            $this->interesting_groups[$gj->name] = true;
-        }
-    }
     function crosscheck() {
         foreach ($this->gxt()->members("__crosscheck", "crosscheck_callback") as $gj) {
             $this->gxt()->call_callback($gj->crosscheck_callback, $gj);
@@ -655,11 +655,6 @@ class SettingValues extends MessageSet {
             $this->parsers[$class] = new $class($this, $si);
         }
         return $this->parsers[$class];
-    }
-    /** @param string $g
-     * @return bool */
-    function group_is_interesting($g) {
-        return $g && isset($this->interesting_groups[$g]);
     }
 
     /** @param ?string $c1
@@ -805,9 +800,7 @@ class SettingValues extends MessageSet {
         return $this->si_curv($this->si($name));
     }
     private function si_curv(Si $si) {
-        if ($this->use_req()
-            && ($this->all_interesting
-                || $si->is_interesting($this))) {
+        if ($this->use_req() && $this->req_has_si($si)) {
             return $this->reqv($si->name);
         } else {
             return $this->si_oldv($si);
@@ -855,13 +848,14 @@ class SettingValues extends MessageSet {
     /** @param string $name
      * @return bool */
     function has_interest($name) {
-        return $this->all_interesting || $this->si_has_interest($this->si($name));
+        return !$this->canonical_page || $this->si_has_interest($this->si($name));
     }
     /** @return bool */
     function si_has_interest(Si $si) {
-        return $this->all_interesting
-            || array_key_exists($si->storage(), $this->savedv)
-            || $si->is_interesting($this);
+        return !$this->canonical_page
+            || !$si->canonical_page
+            || $si->canonical_page === $this->canonical_page
+            || array_key_exists($si->storage(), $this->savedv);
     }
 
     /** @param string $name
