@@ -112,7 +112,7 @@ class Si {
     }
 
     function __construct($j) {
-        if (preg_match('/_(?:\$|n\d*|m?\d+)\z/', $j->name)) {
+        if (preg_match('/\.|_(?:\$|n\d*|m?\d+)\z/', $j->name)) {
             trigger_error("setting {$j->name} name format error");
         }
         $this->name = $this->base_name = $this->json_name = $this->title = $j->name;
@@ -773,19 +773,16 @@ class SettingValues extends MessageSet {
     /** @param string $name
      * @return bool */
     function has_reqv($name) {
-        $xname = str_replace(".", "_", $name);
-        return array_key_exists($xname, $this->req);
+        return array_key_exists($name, $this->req);
     }
     /** @param string $name */
     function reqv($name) {
-        $xname = str_replace(".", "_", $name);
-        return $this->req[$xname] ?? null;
+        return $this->req[$name] ?? null;
     }
     /** @return list<Si> */
     private function req_sis(Si $si) {
         $xsis = [];
-        $xname = str_replace(".", "_", $si->name);
-        foreach ($this->req_has_suffixes[$xname] ?? [] as $suffix) {
+        foreach ($this->req_has_suffixes[$si->name] ?? [] as $suffix) {
             $xsi = $this->si($si->name . $suffix);
             if ($this->req_has_si($xsi)) {
                 $xsis[] = $xsi;
@@ -794,13 +791,12 @@ class SettingValues extends MessageSet {
         return $xsis;
     }
     private function req_has_si(Si $si) {
-        $xname = str_replace(".", "_", $si->name);
         if (!$si->parser_class
             && $si->type !== "cdate"
             && $si->type !== "checkbox") {
-            return array_key_exists($xname, $this->req);
+            return array_key_exists($si->name, $this->req);
         } else {
-            return !!($this->req["has_{$xname}"] ?? null);
+            return !!($this->req["has_{$si->name}"] ?? null);
         }
     }
 
