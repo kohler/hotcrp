@@ -26,6 +26,7 @@ class CommentInfo {
     /** @var int */
     public $commentRound;
     public $commentFormat;
+    /** @var ?string */
     public $commentOverflow;
 
     /** @var ?string */
@@ -41,6 +42,7 @@ class CommentInfo {
         COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc",
         COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au"
     ];
+    /** @var array<string,int> */
     static private $visibility_revmap = [
         "admin" => COMMENTTYPE_ADMINONLY,
         "pc" => COMMENTTYPE_PCONLY, "p" => COMMENTTYPE_PCONLY,
@@ -450,10 +452,10 @@ class CommentInfo {
 
         // text
         if ($viewer->can_view_comment_text($this->prow, $this)) {
-            $cj->text = $this->commentOverflow ? : $this->comment;
+            $cj->text = $this->commentOverflow ?? $this->comment;
         } else {
             $cj->text = false;
-            $cj->word_count = count_words($this->commentOverflow ? : $this->comment);
+            $cj->word_count = count_words($this->commentOverflow ?? $this->comment);
         }
 
         // format
@@ -503,11 +505,7 @@ class CommentInfo {
         if (!($flags & ReviewForm::UNPARSE_NO_TITLE) || $tags) {
             $x .= "\n";
         }
-        if ($this->commentOverflow) {
-            $x .= $this->commentOverflow;
-        } else {
-            $x .= $this->comment;
-        }
+        $x .= $this->commentOverflow ?? $this->comment;
         return rtrim($x) . "\n";
     }
 
@@ -533,7 +531,7 @@ class CommentInfo {
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $contact->reviewer_html_for($this->contactId);
         }
         return $t . "</small><br />"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->commentOverflow ? : $this->comment, 300))
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->commentOverflow ?? $this->comment, 300))
             . "</td></tr>";
     }
 
@@ -580,15 +578,9 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             }
             $response_name = $this->conf->resp_round_name($this->commentRound);
         } else if ($contact->act_author_view($this->prow)) {
-            if ($req_visibility === null) {
-                $req_visibility = COMMENTTYPE_AUTHOR;
-            }
-            $ctype = $req_visibility | COMMENTTYPE_BYAUTHOR;
+            $ctype = ($req_visibility ?? COMMENTTYPE_AUTHOR) | COMMENTTYPE_BYAUTHOR;
         } else {
-            if ($req_visibility === null) {
-                $req_visibility = COMMENTTYPE_REVIEWER;
-            }
-            $ctype = $req_visibility;
+            $ctype = $req_visibility ?? COMMENTTYPE_REVIEWER;
         }
         if ($is_response
             ? $this->prow->blind
@@ -737,7 +729,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             }
             $ch = [];
             if ($this->commentId
-                && $text !== ($this->commentOverflow ? : $this->comment)) {
+                && $text !== ($this->commentOverflow ?? $this->comment)) {
                 $ch[] = "text";
             }
             if ($this->commentId
