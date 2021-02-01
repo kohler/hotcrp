@@ -175,11 +175,11 @@ class Lead_Assigner extends Assigner {
             $aset->user->log_activity("Clear {$this->description}", $this->pid);
         }
         if ($this->type === "lead" || $this->type === "shepherd") {
-            $aset->cleanup_callback("lead", function ($aset, $vals) {
+            $aset->cleanup_callback("lead", function ($vals) use ($aset) {
                 $aset->conf->update_paperlead_setting(min($vals));
             }, $new_cid ? 1 : 0);
         } else if ($this->type === "manager") {
-            $aset->cleanup_callback("manager", function ($aset, $vals) {
+            $aset->cleanup_callback("manager", function ($vals) use ($aset) {
                 $aset->conf->update_papermanager_setting(min($vals));
             }, $new_cid ? 1 : 0);
         }

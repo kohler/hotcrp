@@ -38,15 +38,14 @@ class Basics_SettingParser extends SettingParser {
             }
         } else if ($si->name === "conference_abbreviation"
                    || $si->name === "conference_name") {
-            if ($sv->oldv($si->name) !== $sv->newv($si->name)) {
-                $sv->cleanup_callback("update_shortName", "Basics_SettingParser::update_shortName");
+            if ($sv->oldv($si->name) !== $sv->newv($si->name)
+                && $sv->conf->contactdb()) {
+                $sv->cleanup_callback("update_shortName", function () use ($sv) {
+                    $conf = $sv->conf;
+                    Dbl::ql($conf->contactdb(), "update Conferences set shortName=?, longName=? where dbName=?", $conf->short_name, $conf->long_name, $conf->dbname);
+                });
             }
         }
         return false;
-    }
-    static function update_shortName(SettingValues $sv) {
-        if (($cdb = $sv->conf->contactdb())) {
-            Dbl::ql($cdb, "update Conferences set shortName=?, longName=? where dbName=?", $sv->conf->short_name, $sv->conf->long_name, $sv->conf->dbname);
-        }
     }
 }

@@ -2540,6 +2540,18 @@ class Contact {
 
     // permissions policies
 
+    /** @param Contact $acct
+     * @return bool */
+    function can_change_password($acct) {
+        return ($this->privChair && !$this->conf->opt("chairHidePasswords"))
+            || ($acct
+                && $this->contactId > 0
+                && $this->contactId == $acct->contactId
+                && $this->_activated
+                && !self::$true_user);
+    }
+
+
     /** @return int */
     private function dangerous_track_mask() {
         if ($this->_dangerous_track_mask === null) {
@@ -2746,17 +2758,6 @@ class Contact {
         } else {
             return false;
         }
-    }
-
-    /** @param Contact $acct
-     * @return bool */
-    function can_change_password($acct) {
-        return ($this->privChair && !$this->conf->opt("chairHidePasswords"))
-            || ($acct
-                && $this->contactId > 0
-                && $this->contactId == $acct->contactId
-                && $this->_activated
-                && !self::$true_user);
     }
 
     /** @return bool */

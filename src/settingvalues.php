@@ -44,7 +44,7 @@ class Si {
     public $placeholder;
     /** @var ?class-string */
     public $parser_class;
-    /** @var ?class-string */
+    /** @var class-string */
     public $validator_class;
     /** @var bool */
     public $disabled = false;
@@ -489,6 +489,7 @@ class SettingValues extends MessageSet {
     private $validate_si = [];
     /** @var list<Si> */
     private $saved_si = [];
+    /** @var list<array{?string,callable()}> */
     private $cleanup_callbacks = [];
     public $need_lock = [];
     /** @var array<string,int> */
@@ -981,15 +982,15 @@ class SettingValues extends MessageSet {
         }
     }
     /** @param ?string $name
-     * @param callable $func */
-    function cleanup_callback($name, $func, ...$args) {
+     * @param callable() $func */
+    function cleanup_callback($name, $func) {
         if ($name !== null) {
             foreach ($this->cleanup_callbacks as $cb) {
                 if ($cb[0] === $name)
                     return;
             }
         }
-        $this->cleanup_callbacks[] = [$name, $func, $args];
+        $this->cleanup_callbacks[] = [$name, $func];
     }
 
     /** @param string $field
@@ -1613,7 +1614,7 @@ class SettingValues extends MessageSet {
             $this->conf->load_settings();
             foreach ($this->cleanup_callbacks as $cba) {
                 $cb = $cba[1];
-                $cb($this, ...$cba[2]);
+                $cb();
             }
             if (!empty($this->invalidate_caches)) {
                 $this->conf->invalidate_caches($this->invalidate_caches);

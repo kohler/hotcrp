@@ -565,12 +565,13 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $r0 = 0;
         $r1 = $filesize;
         if (isset($opts["range"]) && count($opts["range"]) === 1) {
-            if ($opts["range"][0][0] === null) {
-                $r0 = max(0, $filesize - $opts["range"][0][1]);
+            list($range0, $range1) = $opts["range"][0];
+            if ($range0 === null) {
+                $r0 = max(0, $filesize - $range1);
             } else {
-                $r0 = min($filesize, $opts["range"][0][0]);
-                if ($opts["range"][0][1] !== null) {
-                    $r1 = min($filesize, $opts["range"][0][1] + 1);
+                $r0 = min($filesize, $range0);
+                if ($range1 !== null) {
+                    $r1 = min($filesize, $range1 + 1);
                 }
             }
             if ($r0 >= $r1) {

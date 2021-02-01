@@ -186,10 +186,10 @@ class Status_Assigner extends Assigner {
             $aset->user->log_activity($submitted > 0 ? "Paper submitted" : "Paper unsubmitted", $this->pid);
         }
         if (($submitted > 0) !== ($old_submitted > 0)) {
-            $aset->cleanup_callback("papersub", function ($aset, $vals) {
+            $aset->cleanup_callback("papersub", function ($vals) use ($aset) {
                 $aset->conf->update_papersub_setting(min($vals));
             }, $submitted > 0 ? 1 : 0);
-            $aset->cleanup_callback("paperacc", function ($aset, $vals) {
+            $aset->cleanup_callback("paperacc", function ($vals) use ($aset) {
                 $aset->conf->update_paperacc_setting(min($vals));
             }, 0);
         }
