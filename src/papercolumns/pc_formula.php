@@ -41,7 +41,11 @@ class Formula_PaperColumn extends PaperColumn {
         }
     }
     function sort_name() {
-        return $this->formula->name ? : $this->formula->expression;
+        if ($this->formula->name) {
+            return $this->formula->name;
+        } else {
+            return "formula:{$this->formula->expression}";
+        }
     }
     function prepare(PaperList $pl, $visible) {
         if (!$this->formula->check($pl->user)
