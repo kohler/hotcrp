@@ -33,7 +33,7 @@ class TopicGroup {
     /** @return list<int> */
     function proper_members() {
         if ($this->members === null) {
-            return [];
+            return [$this->tid];
         } else if ($this->tid !== $this->members[0]) {
             return $this->members;
         } else {
