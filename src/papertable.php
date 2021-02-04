@@ -2799,7 +2799,7 @@ class PaperTable {
 
     function resolveReview($want_review) {
         $this->prow->ensure_full_reviews();
-        $this->all_rrows = $this->prow->reviews_by_display($this->user);
+        $this->all_rrows = $this->prow->reviews_by_display();
 
         $this->viewable_rrows = array();
         $round_mask = 0;

@@ -97,7 +97,7 @@ class PaperApi {
             }
         } else {
             $prow->ensure_full_reviews();
-            $rrows = $prow->viewable_submitted_reviews_by_display($user);
+            $rrows = $prow->reviews_by_display();
         }
         $vrrows = [];
         $rf = $user->conf->review_form();

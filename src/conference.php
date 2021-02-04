@@ -4413,7 +4413,7 @@ class Conf {
             if ($this->setting("extrev_shepherd")) {
                 $this->paper->ensure_reviewer_names();
                 $erlist = [];
-                foreach ($this->paper->reviews_by_display($viewer) as $rrow) {
+                foreach ($this->paper->reviews_by_display() as $rrow) {
                     if ($rrow->reviewType == REVIEW_EXTERNAL
                         && !$rrow->reviewToken
                         && !in_array($rrow->contactId, $erlist)) {

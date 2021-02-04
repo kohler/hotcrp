@@ -2037,7 +2037,7 @@ class PaperInfo {
     }
 
     /** @return list<ReviewInfo> */
-    function reviews_by_display(Contact $user) {
+    function reviews_by_display() {
         $srs = $urs = $ers = [];
 
         foreach ($this->reviews_by_id() as $rrow) {
@@ -2262,7 +2262,7 @@ class PaperInfo {
         if ($cinfo->vsreviews_array === null
             || $cinfo->vsreviews_version !== $this->_review_array_version) {
             $cinfo->vsreviews_array = [];
-            foreach ($this->reviews_by_display($user) as $rrow) {
+            foreach ($this->reviews_by_display() as $rrow) {
                 if ($rrow->reviewSubmitted > 0
                     && $user->can_view_review($this, $rrow)) {
                     $cinfo->vsreviews_array[] = $rrow;
@@ -2746,7 +2746,7 @@ class PaperInfo {
     function viewable_reviews_and_comments(Contact $user) {
         $this->ensure_full_reviews();
         $rrows = [];
-        foreach ($this->reviews_by_display($user) as $rrow) {
+        foreach ($this->reviews_by_display() as $rrow) {
             if ($user->can_view_review($this, $rrow)) {
                 $rrows[] = $rrow;
             }

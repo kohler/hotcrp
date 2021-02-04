@@ -19,7 +19,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
         $rx = [];
         $row->ensure_reviewer_names();
         $old_overrides = $pl->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        foreach ($row->reviews_by_display($pl->user) as $rrow) {
+        foreach ($row->reviews_by_display() as $rrow) {
             if ($rrow->reviewType == REVIEW_EXTERNAL
                 && $rrow->requestedBy == $this->requester->contactId) {
                 if (!$pl->user->can_view_review_assignment($row, $rrow)) {

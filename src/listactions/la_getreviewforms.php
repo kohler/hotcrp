@@ -40,7 +40,7 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
                     $rrows = $prow->full_reviews_of_user($user);
                 } else {
                     $prow->ensure_full_reviews();
-                    $rrows = $prow->reviews_by_display($user);
+                    $rrows = $prow->reviews_by_display();
                 }
                 $time = null;
                 if (empty($rrows)) {

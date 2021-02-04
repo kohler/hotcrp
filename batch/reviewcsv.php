@@ -78,7 +78,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
     $prow = $pset[$pid];
     $prow->ensure_full_reviews();
     $prow->ensure_reviewer_names();
-    foreach ($comments ? $prow->viewable_reviews_and_comments($user) : $prow->reviews_by_display($user) as $xrow) {
+    foreach ($comments ? $prow->viewable_reviews_and_comments($user) : $prow->reviews_by_display() as $xrow) {
         $crow = $xrow instanceof CommentInfo ? $xrow : null;
         $rrow = $xrow instanceof ReviewInfo ? $xrow : null;
         if (($crow && !$all && ($crow->commentType & COMMENTTYPE_DRAFT))

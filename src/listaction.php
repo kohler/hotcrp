@@ -111,7 +111,7 @@ class ListAction {
                             "title" => "You cannot override your conflict with this paper"];
             } else {
                 $any_this_paper = false;
-                foreach ($prow->reviews_by_display($user) as $rrow) {
+                foreach ($prow->reviews_by_display() as $rrow) {
                     $cid = $rrow->contactId;
                     if ($rrow->reviewToken) {
                         if (!array_key_exists($cid, $token_users)) {

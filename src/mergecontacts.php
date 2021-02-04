@@ -61,9 +61,10 @@ class MergeContacts extends MessageSet {
         if (($old_data = $this->oldu->data())) {
             $cj->data = (object) [];
             $new_data = $this->newu->data();
-            foreach ($old_data as $k => $v)
+            foreach ($old_data as $k => $v) {
                 if (!isset($new_data->$k))
                     $cj->data->$k = $v;
+            }
         }
 
         return $cj;
