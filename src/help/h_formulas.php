@@ -102,11 +102,11 @@ scores A, B, and D is A. For instance:</p>
 
         echo $hth->subhead("Aggregate functions");
         echo "<p>Aggregate functions calculate a
-value based on all of a paper’s submitted reviews and/or review preferences.
+value based on all of a paper’s reviews and/or review preferences.
 For instance, “max(OveMer)” would return the maximum Overall merit score
 assigned to a paper.</p>
 
-<p>An aggregate function’s argument is calculated once per visible review
+<p>An aggregate function’s argument is calculated once per viewable review
 or preference.
 For instance, “max(OveMer/RevExp)” calculates the maximum value of
 “OveMer/RevExp” for any review, whereas

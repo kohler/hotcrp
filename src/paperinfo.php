@@ -59,9 +59,9 @@ class PaperContactInfo {
 
     // cached by PaperInfo methods
     /** @var ?list<ReviewInfo> */
-    public $vsreviews_array;
+    public $vreviews_array;
     /** @var ?int */
-    public $vsreviews_version;
+    public $vreviews_version;
     /** @var ?string */
     public $viewable_tags;
     /** @var ?string */
@@ -200,7 +200,7 @@ class PaperContactInfo {
     function get_forced_rights() {
         if (!$this->forced_rights_link) {
             $ci = $this->forced_rights_link = clone $this;
-            $ci->vsreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
+            $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
         }
         return $this->forced_rights_link;
     }
@@ -2119,6 +2119,19 @@ class PaperInfo {
         return $rrows;
     }
 
+    /** @param int|Contact $contact
+     * @return ?ReviewInfo */
+    function viewable_review_of_user($contact, Contact $viewer) {
+        $cid = self::contact_to_cid($contact);
+        foreach ($this->viewable_reviews_by_display($viewer) as $rrow) {
+            if ($rrow->contactId == $cid
+                && $viewer->can_view_review_identity($this, $rrow)) {
+                return $rrow;
+            }
+        }
+        return null;
+    }
+
     /** @param int $ordinal
      * @return ?ReviewInfo */
     function review_of_ordinal($ordinal) {
@@ -2257,39 +2270,29 @@ class PaperInfo {
     }
 
     /** @return list<ReviewInfo> */
-    function viewable_submitted_reviews_by_display(Contact $user) {
-        $cinfo = $user->__rights($this);
-        if ($cinfo->vsreviews_array === null
-            || $cinfo->vsreviews_version !== $this->_review_array_version) {
-            $cinfo->vsreviews_array = [];
+    function viewable_reviews_by_display(Contact $viewer) {
+        $cinfo = $viewer->__rights($this);
+        if ($cinfo->vreviews_array === null
+            || $cinfo->vreviews_version !== $this->_review_array_version) {
+            $cinfo->vreviews_array = [];
             foreach ($this->reviews_by_display() as $rrow) {
-                if ($rrow->reviewSubmitted > 0
-                    && $user->can_view_review($this, $rrow)) {
-                    $cinfo->vsreviews_array[] = $rrow;
+                if ($viewer->can_view_review($this, $rrow)) {
+                    $cinfo->vreviews_array[] = $rrow;
                 }
             }
-            $cinfo->vsreviews_version = $this->_review_array_version;
+            $cinfo->vreviews_version = $this->_review_array_version;
         }
-        return $cinfo->vsreviews_array;
-    }
-
-    /** @return array<int,ReviewInfo> */
-    function viewable_submitted_reviews_by_user(Contact $user) {
-        $rrows = [];
-        foreach ($this->viewable_submitted_reviews_by_display($user) as $rrow) {
-            $rrows[$rrow->contactId] = $rrow;
-        }
-        return $rrows;
+        return $cinfo->vreviews_array;
     }
 
     /** @return bool */
-    function can_view_review_identity_of($cid, Contact $user) {
-        if ($user->can_administer_for_track($this, Track::VIEWREVID)
-            || $cid == $user->contactId) {
+    function can_view_review_identity_of($cid, Contact $viewer) {
+        if ($viewer->can_administer_for_track($this, Track::VIEWREVID)
+            || $cid == $viewer->contactId) {
             return true;
         }
         foreach ($this->reviews_of_user($cid) as $rrow) {
-            if ($user->can_view_review_identity($this, $rrow)) {
+            if ($viewer->can_view_review_identity($this, $rrow)) {
                 return true;
             }
         }
@@ -2298,9 +2301,9 @@ class PaperInfo {
 
     /** @param ReviewField $field
      * @return bool */
-    function may_have_viewable_scores($field, Contact $user) {
-        return $user->can_view_review($this, null, $field->view_score)
-            || $this->review_type($user);
+    function may_have_viewable_scores($field, Contact $viewer) {
+        return $viewer->can_view_review($this, null, $field->view_score)
+            || $this->review_type($viewer);
     }
 
     function ensure_reviews() {
@@ -2737,17 +2740,17 @@ class PaperInfo {
     }
 
     /** @return list<ReviewInfo|CommentInfo> */
-    function viewable_submitted_reviews_and_comments(Contact $user) {
+    function viewable_reviews_and_comments(Contact $user) {
         $this->ensure_full_reviews();
-        return $this->merge_reviews_and_comments($this->viewable_submitted_reviews_by_display($user), $this->viewable_comments($user));
+        return $this->merge_reviews_and_comments($this->viewable_reviews_by_display($user), $this->viewable_comments($user));
     }
 
     /** @return list<ReviewInfo|CommentInfo> */
-    function viewable_reviews_and_comments(Contact $user) {
+    function viewable_submitted_reviews_and_comments(Contact $user) {
         $this->ensure_full_reviews();
         $rrows = [];
-        foreach ($this->reviews_by_display() as $rrow) {
-            if ($user->can_view_review($this, $rrow)) {
+        foreach ($this->viewable_reviews_by_display($user) as $rrow) {
+            if ($rrow->reviewSubmitted) {
                 $rrows[] = $rrow;
             }
         }

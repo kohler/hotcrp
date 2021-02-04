@@ -911,8 +911,9 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $row->ensure_review_score($this->format_field);
         $scores = [];
         $vs = $this->format_field->view_score;
-        foreach ($row->viewable_submitted_reviews_by_user($pl->user) as $rrow) {
-            if (isset($rrow->$fid)
+        foreach ($row->viewable_reviews_by_display($pl->user) as $rrow) {
+            if ($rrow->reviewSubmitted
+                && isset($rrow->$fid)
                 && $rrow->$fid
                 && ($vs >= VIEWSCORE_PC || $vs > $pl->user->view_score_bound($row, $rrow)))
                 $scores[$rrow->contactId] = $rrow->$fid;

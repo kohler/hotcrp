@@ -8,6 +8,7 @@ php:
   - 7.1
   - 7.2
   - 7.3
+  - 7.4
 before_script:
   - lib/createdb.sh -u root -c test/options.php --batch --no-password-file
   - lib/createdb.sh -u root -c test/cdb-options.php --no-dbuser --batch --no-password-file
