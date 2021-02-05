@@ -2737,7 +2737,9 @@ class Contact {
     /** @return bool */
     function allow_administer_all() {
         return $this->is_site_contact
-            || ($this->privChair && !$this->conf->has_any_manager());
+            || ($this->privChair
+                && !$this->conf->has_any_explicit_manager()
+                && !($this->dangerous_track_mask() & Track::BITS_VIEWADMIN));
     }
 
     /** @return bool */
@@ -3159,6 +3161,11 @@ class Contact {
     function has_hidden_papers() {
         return $this->hidden_papers !== null
             || ($this->dangerous_track_mask() & Track::BITS_VIEW);
+    }
+
+    /** @return bool */
+    function can_view_all() {
+        return $this->privChair && !$this->has_hidden_papers();
     }
 
     /** @return bool */

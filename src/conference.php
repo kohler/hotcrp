@@ -3077,6 +3077,10 @@ class Conf {
             || !!($this->settings["papermanager"] ?? false);
     }
 
+    function has_any_explicit_manager() {
+        return !!($this->settings["papermanager"] ?? false);
+    }
+
     function has_any_metareviews() {
         return !!($this->settings["metareviews"] ?? false);
     }

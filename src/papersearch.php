@@ -244,6 +244,13 @@ abstract class SearchTerm {
     }
 
 
+    /** @param array<string,true> &$options
+     * @return bool */
+    function simple_search(&$options) {
+        return false;
+    }
+
+
     /** @return bool */
     function is_sqlexpr_precise() {
         return false;
@@ -322,6 +329,9 @@ class True_SearchTerm extends SearchTerm {
     }
     function is_uninteresting() {
         return count($this->float) === 1 && isset($this->float["view"]);
+    }
+    function simple_search(&$options) {
+        return true;
     }
     function is_sqlexpr_precise() {
         return true;
@@ -934,27 +944,30 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $reviewer = $srch->reviewer_user();
-        return new Limit_SearchTerm($srch->user, $reviewer, $word);
+        return new Limit_SearchTerm($srch->user, $srch->reviewer_user(), $word);
     }
 
     /** @param string $limit
      * @suppress PhanAccessReadOnlyProperty */
     function set_limit($limit) {
         $limit = PaperSearch::canonical_limit($limit) ?? "none";
+        $this->named_limit = $limit;
         // optimize SQL for some limits
-        $this->limit = $this->named_limit = $limit;
-        if ($this->named_limit === "reviewable") {
+        if ($limit === "reviewable") {
             if ($this->user->privChair || $this->user === $this->reviewer) {
                 if ($this->reviewer->can_accept_review_assignment_ignore_conflict(null)) {
                     if ($this->user->conf->can_pc_see_active_submissions()) {
-                        $this->limit = "act";
+                        $limit = "act";
                     } else {
-                        $this->limit = "s";
+                        $limit = "s";
                     }
                 } else if (!$this->reviewer->isPC) {
-                    $this->limit = "r";
+                    $limit = "r";
                 }
+            }
+        } else if ($limit === "viewable") {
+            if ($this->user->can_view_all()) {
+                $limit = "all";
             }
         }
         // mark flags
@@ -966,6 +979,79 @@ class Limit_SearchTerm extends SearchTerm {
             $this->lflag = self::LFLAG_ACTIVE;
         } else {
             $this->lflag = self::LFLAG_SUBMITTED;
+        }
+        $this->limit = $limit;
+    }
+
+    function simple_search(&$options) {
+        $conf = $this->user->conf;
+        if (($conf->has_tracks()
+             && !in_array($this->limit, ["a", "r", "ar"], true)
+             && !$this->user->privChair)
+            || $this->user->has_hidden_papers()) {
+            return false;
+        }
+        switch ($this->limit) {
+        case "all":
+        case "viewable":
+            return $this->user->can_view_all();
+        case "s":
+            $options["finalized"] = true;
+            return $this->user->isPC;
+        case "act":
+            $options["active"] = true;
+            return $this->user->privChair
+                || ($this->user->isPC && $conf->can_pc_see_active_submissions());
+        case "reviewable":
+            if (($this->user !== $this->reviewer && !$this->user->allow_administer_all())
+                || $conf->has_tracks()) {
+                return false;
+            } else if ($this->reviewer->isPC) {
+                if ($conf->can_pc_see_active_submissions()) {
+                    $options["active"] = true;
+                } else {
+                    $options["finalized"] = true;
+                }
+                return true;
+            } else {
+                $options["myReviews"] = true;
+                return true;
+            }
+        case "a":
+            $options["author"] = true;
+            // If complex author SQL, always do search the long way
+            return !$this->user->act_author_view_sql("%", true);
+        case "ar":
+            return false;
+        case "r":
+            $options["myReviews"] = true;
+            return true;
+        case "rout":
+            $options["myOutstandingReviews"] = true;
+            return true;
+        case "acc":
+            $options["accepted"] = $options["finalized"] = true;
+            return $this->user->allow_administer_all()
+                || ($this->user->isPC && $conf->time_pc_view_decision(true));
+        case "undec":
+            $options["undecided"] = $options["finalized"] = true;
+            return $this->user->allow_administer_all()
+                || ($this->user->isPC && $conf->time_pc_view_decision(true));
+        case "unsub":
+            $options["unsub"] = $options["active"] = true;
+            return $this->user->allow_administer_all();
+        case "lead":
+            $options["myLead"] = true;
+            return true;
+        case "alladmin":
+            return $this->user->allow_administer_all();
+        case "admin":
+            return false;
+        case "req":
+            $options["myReviewRequests"] = true;
+            return true;
+        default:
+            return false;
         }
     }
 
@@ -1084,8 +1170,7 @@ class Limit_SearchTerm extends SearchTerm {
 
     function test(PaperInfo $row, $rrow) {
         $user = $this->user;
-        if (!$user->can_view_paper($row)
-            || ($this->lflag === self::LFLAG_SUBMITTED && $row->timeSubmitted <= 0)
+        if (($this->lflag === self::LFLAG_SUBMITTED && $row->timeSubmitted <= 0)
             || ($this->lflag === self::LFLAG_ACTIVE && $row->timeWithdrawn > 0)) {
             return false;
         }
@@ -1886,15 +1971,6 @@ class PaperSearch {
                 $limit = "r";
             } else {
                 $limit = "ar";
-            }
-        }
-        if (($limit === "act" || $limit === "all")
-            && $user->isPC
-            && !$user->is_track_manager()) {
-            if ($this->conf->can_pc_see_active_submissions()) {
-                $limit = "act";
-            } else {
-                $limit = "s";
             }
         }
         $lword = new SearchWord($limit, "in:{$limit}");
@@ -2785,7 +2861,9 @@ class PaperSearch {
         if ($need_filter) {
             $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             foreach ($rowset as $row) {
-                if ($this->_limit_qe->test($row, null) && $qe->test($row, null)) {
+                if ($this->user->can_view_paper($row)
+                    && $this->_limit_qe->test($row, null)
+                    && $qe->test($row, null)) {
                     $this->_matches[] = $row->paperId;
                 }
             }
@@ -2970,7 +3048,9 @@ class PaperSearch {
     function test(PaperInfo $prow) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $qe = $this->term();
-        $x = $this->_limit_qe->test($prow, null) && $qe->test($prow, null);
+        $x = $this->user->can_view_paper($prow)
+            && $this->_limit_qe->test($prow, null)
+            && $qe->test($prow, null);
         $this->user->set_overrides($old_overrides);
         return $x;
     }
@@ -2982,7 +3062,9 @@ class PaperSearch {
         $qe = $this->term();
         $results = [];
         foreach ($prows as $prow) {
-            if ($this->_limit_qe->test($prow, null) && $qe->test($prow, null)) {
+            if ($this->user->can_view_paper($prow)
+                && $this->_limit_qe->test($prow, null)
+                && $qe->test($prow, null)) {
                 $results[] = $prow;
             }
         }
@@ -2994,78 +3076,23 @@ class PaperSearch {
     function test_review(PaperInfo $prow, ReviewInfo $rrow) {
         $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $qe = $this->term();
-        $x = $this->_limit_qe->test($prow, $rrow) && $qe->test($prow, $rrow);
+        $x = $this->user->can_view_paper($prow)
+            && $this->_limit_qe->test($prow, $rrow)
+            && $qe->test($prow, $rrow);
         $this->user->set_overrides($old_overrides);
         return $x;
     }
 
     /** @return array<string,mixed>|false */
     function simple_search_options() {
-        $limit = $xlimit = $this->limit();
-        if ($this->q === "re:me"
-            && in_array($xlimit, ["s", "act", "rout", "reviewable"])) {
-            $xlimit = "r";
-        }
-        if ($this->_matches !== null
-            || ($this->q !== ""
-                && ($this->q !== "re:me" || $xlimit !== "r"))
-            || (!$this->user->privChair
-                && $this->reviewer_user() !== $this->user)
-            || ($this->conf->has_tracks()
-                && !$this->user->privChair
-                && !in_array($xlimit, ["a", "r", "ar"], true))
-            || ($this->conf->has_tracks()
-                && $limit === "reviewable")
-            || $this->user->has_hidden_papers()) {
+        $queryOptions = [];
+        if ($this->_matches === null
+            && $this->_limit_qe->simple_search($queryOptions)
+            && $this->term()->simple_search($queryOptions)) {
+            return $queryOptions;
+        } else {
             return false;
         }
-        if ($limit === "reviewable") {
-            if ($this->reviewer_user()->isPC) {
-                $limit = $this->conf->can_pc_see_active_submissions() ? "act" : "s";
-            } else {
-                $limit = "r";
-            }
-        }
-        $queryOptions = [];
-        if ($limit === "s") {
-            $queryOptions["finalized"] = 1;
-        } else if ($limit === "unsub") {
-            $queryOptions["unsub"] = 1;
-            $queryOptions["active"] = 1;
-        } else if ($limit === "acc") {
-            if ($this->user->privChair || $this->conf->can_all_author_view_decision()) {
-                $queryOptions["accepted"] = 1;
-                $queryOptions["finalized"] = 1;
-            } else {
-                return false;
-            }
-        } else if ($limit === "undec") {
-            $queryOptions["undecided"] = 1;
-            $queryOptions["finalized"] = 1;
-        } else if ($limit === "r") {
-            $queryOptions["myReviews"] = 1;
-        } else if ($limit === "rout") {
-            $queryOptions["myOutstandingReviews"] = 1;
-        } else if ($limit === "a") {
-            // If complex author SQL, always do search the long way
-            if ($this->user->act_author_view_sql("%", true)) {
-                return false;
-            }
-            $queryOptions["author"] = 1;
-        } else if ($limit === "req") {
-            $queryOptions["myReviewRequests"] = 1;
-        } else if ($limit === "act") {
-            $queryOptions["active"] = 1;
-        } else if ($limit === "lead") {
-            $queryOptions["myLead"] = 1;
-        } else if ($limit !== "all"
-                   && ($limit !== "viewable" || !$this->user->privChair)) {
-            return false; /* don't understand limit */
-        }
-        if ($this->q === "re:me" && $limit !== "rout") {
-            $queryOptions["myReviews"] = 1;
-        }
-        return $queryOptions;
     }
 
     /** @return string|false */
