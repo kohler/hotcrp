@@ -1627,7 +1627,7 @@ class PaperID_SearchTerm extends SearchTerm {
             $this->add_drange($r[0], $r[1], $r[3], $r[4]);
         }
     }
-    /** @return list<int>|false */
+    /** @return ?list<int> */
     function paper_ids() {
         if ($this->n <= 1000) {
             $a = [];
@@ -1638,7 +1638,7 @@ class PaperID_SearchTerm extends SearchTerm {
             }
             return $a;
         } else {
-            return false;
+            return null;
         }
     }
     /** @return list<array{int,int,int,bool,bool}> */
@@ -1655,7 +1655,7 @@ class PaperID_SearchTerm extends SearchTerm {
         if (empty($this->r)) {
             return "false";
         } else if ($this->n <= 8 * count($this->r)
-                   && ($pids = $this->paper_ids()) !== false) {
+                   && ($pids = $this->paper_ids()) !== null) {
             return "$field in (" . join(",", $pids) . ")";
         } else {
             $s = [];
@@ -1766,6 +1766,9 @@ class SearchQueryInfo {
 
     function __construct(PaperSearch $srch) {
         $this->srch = $srch;
+        if (!$srch->user->allow_administer_all()) {
+            $this->add_reviewer_columns();
+        }
     }
     function add_table($table, $joiner = false) {
         // All added tables must match at most one Paper row each,
@@ -1833,10 +1836,6 @@ class SearchQueryInfo {
         if (!isset($this->columns["reviewWordCountSignature"])) {
             $this->add_column("reviewWordCountSignature", "coalesce((select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview where PaperReview.paperId=Paper.paperId), '')");
         }
-    }
-    function add_rights_columns() {
-        // XXX could avoid the following if user is privChair for everything:
-        $this->add_reviewer_columns();
     }
     function add_allConflictType_column() {
         if (!isset($this->columns["allConflictType"])) {
@@ -2693,7 +2692,7 @@ class PaperSearch {
             }
         } else if ($qe->type === "pn") {
             assert($qe instanceof PaperID_SearchTerm);
-            foreach ($qe->paper_ids() ? : [] as $p) {
+            foreach ($qe->paper_ids() ?? [] as $p) {
                 if (array_search($p, $this->_matches) === false)
                     $this->_matches[] = (int) $p;
             }
@@ -2764,7 +2763,7 @@ class PaperSearch {
         ]);
         //Conf::msg_debugt($filter);
         if ($filter === "false") {
-            return [Dbl_Result::make_empty(), false];
+            return Dbl_Result::make_empty();
         }
 
         // add permissions tables if we will filter the results
@@ -2774,9 +2773,6 @@ class PaperSearch {
             || $qe->type === "then"
             || $qe->get_float("heading");
 
-        if ($need_filter) {
-            $sqi->add_rights_columns();
-        }
         // XXX some of this should be shared with paperQuery
         if (($need_filter && $this->conf->rights_need_tags())
             || ($sqi->query_options["tags"] ?? false)
@@ -2827,7 +2823,7 @@ class PaperSearch {
         //error_log($q);
 
         // actually perform query
-        return [$this->conf->qe_raw($q), $need_filter];
+        return $this->conf->qe_raw($q);
     }
 
     private function _prepare() {
@@ -2844,7 +2840,7 @@ class PaperSearch {
         //Conf::msg_debugt(json_encode($qe->debug_json()));
 
         // collect papers
-        list($result, $need_filter) = $this->_prepare_result($qe);
+        $result = $this->_prepare_result($qe);
         $rowset = new PaperInfoSet;
         while (($row = PaperInfo::fetch($result, $this->user))) {
             $rowset->add($row);
@@ -2858,19 +2854,15 @@ class PaperSearch {
             $thqe->track = true;
         }
         $this->_matches = [];
-        if ($need_filter) {
-            $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
-            foreach ($rowset as $row) {
-                if ($this->user->can_view_paper($row)
-                    && $this->_limit_qe->test($row, null)
-                    && $qe->test($row, null)) {
-                    $this->_matches[] = $row->paperId;
-                }
+        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        foreach ($rowset as $row) {
+            if ($this->user->can_view_paper($row)
+                && $this->_limit_qe->test($row, null)
+                && $qe->test($row, null)) {
+                $this->_matches[] = $row->paperId;
             }
-            $this->user->set_overrides($old_overrides);
-        } else {
-            $this->_matches = $rowset->paper_ids();
         }
+        $this->user->set_overrides($old_overrides);
         if ($thqe) {
             $thqe->track = false;
         }
