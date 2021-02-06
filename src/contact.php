@@ -4923,7 +4923,6 @@ class Contact {
                 }
                 if ($rights->conflictType >= CONFLICT_AUTHOR) {
                     $perm->is_author = true;
-                    $perm->act_author = true; // XXX backward compat
                 }
                 if ($rights->act_author_view) {
                     $perm->act_author_view = true;

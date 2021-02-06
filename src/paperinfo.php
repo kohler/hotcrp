@@ -887,6 +887,11 @@ class PaperInfo {
         return $this->conflict_type($contact) >= CONFLICT_AUTHOR;
     }
 
+    /** @return bool */
+    function has_author_view(Contact $user) {
+        return $user->view_conflict_type($this) >= CONFLICT_AUTHOR;
+    }
+
     /** @return string */
     function collaborators() {
         if ($this->dataOverflow && isset($this->dataOverflow["collaborators"])) {

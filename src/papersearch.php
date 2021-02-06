@@ -1181,9 +1181,9 @@ class Limit_SearchTerm extends SearchTerm {
         case "act":
             return true;
         case "a":
-            return $user->act_author_view($row);
+            return $row->has_author_view($user);
         case "ar":
-            return $user->act_author_view($row)
+            return $row->has_author_view($user)
                 || ($row->timeWithdrawn <= 0 && $row->has_reviewer($user));
         case "r":
             return $row->has_reviewer($user);
