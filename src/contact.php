@@ -3210,7 +3210,7 @@ class Contact {
                   && $prow->timeSubmitted != 0
                 : $rights->review_status > 0)
             || ($rights->allow_pc_broad
-                && $this->conf->timePCViewPaper($prow, $pdf)
+                && $this->conf->time_pc_view($prow, $pdf)
                 && (!$pdf || $this->conf->check_tracks($prow, $this, Track::VIEWPDF)));
     }
 
@@ -4564,7 +4564,7 @@ class Contact {
         $rights = $this->rights($prow);
         $tagmap = $this->conf->tags();
         if (!($rights->allow_pc
-              && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false)))) {
+              && ($rights->can_administer || $this->conf->time_pc_view($prow, false)))) {
             if ($this->privChair && $tagmap->has_sitewide) {
                 $dt = $tagmap->check($tag);
                 return $dt && $dt->sitewide && !$dt->automatic;
@@ -4624,7 +4624,7 @@ class Contact {
             if ($rights->allow_administer) {
                 $whyNot["forceShow"] = true;
             }
-        } else if (!$this->conf->timePCViewPaper($prow, false)) {
+        } else if (!$this->conf->time_pc_view($prow, false)) {
             if ($prow->timeWithdrawn > 0) {
                 $whyNot["withdrawn"] = true;
             } else {
@@ -4661,7 +4661,7 @@ class Contact {
         } else if ($prow) {
             $rights = $this->rights($prow);
             return ($rights->allow_pc
-                    && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false)))
+                    && ($rights->can_administer || $this->conf->time_pc_view($prow, false)))
                 || ($this->privChair && $this->conf->tags()->has_sitewide);
         } else {
             return $this->isPC;
@@ -4695,7 +4695,7 @@ class Contact {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_pc
-                   && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false));
+                   && ($rights->can_administer || $this->conf->time_pc_view($prow, false));
         } else {
             return $this->isPC;
         }

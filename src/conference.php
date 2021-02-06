@@ -2936,24 +2936,30 @@ class Conf {
         return $this->deadlinesBetween("sub_open", "sub_sub", "sub_grace")
             && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
     }
+    /** @return bool */
     function allow_final_versions() {
         return $this->setting("final_open") > 0;
     }
+    /** @return bool */
     function time_edit_final_paper() {
         return $this->deadlinesBetween("final_open", "final_done", "final_grace");
     }
+    /** @return bool */
     function can_some_author_view_review($reviewsOutstanding = false) {
         return $this->any_response_open
             || ($this->au_seerev > 0
                 && ($this->au_seerev != self::AUSEEREV_UNLESSINCOMPLETE
                     || !$reviewsOutstanding));
     }
+    /** @return bool */
     function can_all_author_view_decision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
+    /** @return bool */
     function can_some_author_view_decision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
+    /** @return bool */
     function time_review_open() {
         $rev_open = $this->settings["rev_open"] ?? 0;
         return 0 < $rev_open && $rev_open <= Conf::$now;
@@ -2979,12 +2985,26 @@ class Conf {
         }
         return false;
     }
+    /** @return bool */
     function time_review($round, $isPC, $hard) {
         return !$this->missed_review_deadline($round, $isPC, $hard);
     }
+    /** @return bool */
     function timePCReviewPreferences() {
         return $this->can_pc_see_active_submissions() || $this->has_any_submitted();
     }
+    /** @param bool $pdf
+     * @return bool */
+    function time_pc_view(PaperInfo $prow, $pdf) {
+        if ($prow->timeWithdrawn > 0) {
+            return false;
+        } else if ($prow->timeSubmitted > 0) {
+            return !$pdf || $this->_pc_see_pdf;
+        } else {
+            return !$pdf && $this->can_pc_see_active_submissions();
+        }
+    }
+    /** @return bool */
     function time_pc_view_decision($conflicted) {
         $s = $this->setting("seedec");
         if ($conflicted) {
@@ -2993,21 +3013,14 @@ class Conf {
             return $s >= self::SEEDEC_REV;
         }
     }
+    /** @return bool */
     function time_reviewer_view_decision() {
         return $this->setting("seedec") >= self::SEEDEC_REV;
     }
+    /** @return bool */
     function time_reviewer_view_accepted_authors() {
         return $this->setting("seedec") == self::SEEDEC_ALL
             && !$this->setting("seedec_hideau");
-    }
-    function timePCViewPaper($prow, $pdf) {
-        if ($prow->timeWithdrawn > 0) {
-            return false;
-        } else if ($prow->timeSubmitted > 0) {
-            return !$pdf || $this->_pc_see_pdf;
-        } else {
-            return !$pdf && $this->can_pc_see_active_submissions();
-        }
     }
 
     /** @return int */
