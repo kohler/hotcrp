@@ -520,8 +520,8 @@ class AssignerContacts {
     private $none_user;
     /** @var int */
     static private $next_fake_id = -10;
-    static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, affiliation, collaborators, roles, contactTags";
-    static public $cdb_query = "contactDbId, firstName, lastName, email, affiliation, collaborators, 0 roles, '' contactTags";
+    static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, affiliation, collaborators, roles, contactTags, primaryContactId";
+    static public $cdb_query = "contactDbId, firstName, lastName, email, affiliation, collaborators, 0 roles, '' contactTags, 0 primaryContactId";
     function __construct(Conf $conf, Contact $viewer) {
         global $Me;
         $this->conf = $conf;

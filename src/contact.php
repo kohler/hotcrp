@@ -67,6 +67,8 @@ class Contact {
     public $orcid;
     /** @var ?string */
     public $phone;
+    /** @var ?int */
+    public $primaryContactId;
 
     public $demoSharing;
     public $demoBirthday;
@@ -200,6 +202,7 @@ class Contact {
         "updateTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT,
         "lastLogin" => self::PROP_LOCAL | self::PROP_INT,
         "defaultWatch" => self::PROP_LOCAL | self::PROP_INT,
+        "primaryContactId" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
         "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
         "disabled" => self::PROP_LOCAL | self::PROP_BOOL | self::PROP_SLICE,
         "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
@@ -337,6 +340,9 @@ class Contact {
         }
         if (isset($this->disabled)) {
             $this->disabled = !!$this->disabled;
+        }
+        if (isset($this->primaryContactId)) {
+            $this->primaryContactId = (int) $this->primaryContactId;
         }
         $this->_slice = isset($this->_slice) && $this->_slice;
 
@@ -1675,6 +1681,8 @@ class Contact {
                 $value = $this->prop1($prop, $shape);
                 if ($value === false || $value === true) {
                     $qv[] = (int) $value;
+                } else if ($value === null && ($shape & self::PROP_NULL) === 0) {
+                    $qv[] = 0;
                 } else {
                     $qv[] = $value;
                 }

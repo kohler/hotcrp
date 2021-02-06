@@ -2794,9 +2794,9 @@ class PaperInfo {
 
     function notify_reviews($callback, $sending_user) {
         $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email,
-                password, roles, contactTags, defaultWatch,
+                password, roles, contactTags, disabled, primaryContactId, defaultWatch,
                 coalesce(" . self::my_review_permissions_sql() . ", '') myReviewPermissions,
-                conflictType, watch, preferredEmail, disabled
+                conflictType, watch, preferredEmail
         from ContactInfo
         left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)
         left join PaperWatch on (PaperWatch.paperId=$this->paperId and PaperWatch.contactId=ContactInfo.contactId)
@@ -2838,9 +2838,9 @@ class PaperInfo {
 
     function notify_final_submit($callback, $sending_user) {
         $result = $this->conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email,
-                password, roles, contactTags, defaultWatch,
+                password, roles, contactTags, disabled, primaryContactId, defaultWatch,
                 coalesce(" . self::my_review_permissions_sql() . ", '') myReviewPermissions,
-                conflictType, watch, preferredEmail, disabled
+                conflictType, watch, preferredEmail
         from ContactInfo
         left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)
         left join PaperWatch on (PaperWatch.paperId=$this->paperId and PaperWatch.contactId=ContactInfo.contactId)

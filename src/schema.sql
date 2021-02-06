@@ -62,6 +62,7 @@ CREATE TABLE `ContactInfo` (
   `disabled` tinyint(1) NOT NULL DEFAULT '0',
   `contactTags` varbinary(4096) DEFAULT NULL,
   `data` varbinary(32767) DEFAULT NULL,
+  `primaryContactId` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`contactId`),
   UNIQUE KEY `email` (`email`),
   KEY `roles` (`roles`)
@@ -515,7 +516,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 244);
+insert into Settings (name, value) values ('allowPaperOption', 245);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

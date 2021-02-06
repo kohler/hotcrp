@@ -5,7 +5,7 @@
 class GetAuthors_ListAction extends ListAction {
     /** @return array<mixed,Contact> */
     static function contact_map(Conf $conf, SearchSelection $ssel) {
-        $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email, country, roles, contactTags from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
+        $result = $conf->qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email, country, roles, contactTags, primaryContactId from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
         $users = [];
         while (($u = Contact::fetch($result, $conf))) {
             $users[strtolower($u->email)] = $users[$u->contactId] = $u;

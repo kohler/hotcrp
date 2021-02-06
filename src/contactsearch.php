@@ -173,9 +173,9 @@ class ContactSearch {
                 $x = sqlq_for_like($e);
                 $where[] = "email like " . Dbl::utf8ci("'" . preg_replace('/[\s*]+/', "%", $x) . "'");
             }
-            $q = "select contactId, firstName, lastName, unaccentedName, email, roles from ContactInfo where " . join(" or ", $where);
+            $q = "select contactId, firstName, lastName, unaccentedName, email, roles, primaryContactId from ContactInfo where " . join(" or ", $where);
             if ($this->type & self::F_ALLOW_DELETED)
-                $q .= " union select contactId, firstName, lastName, unaccentedName, email, 0 roles from DeletedContactInfo where " . join(" or ", $where);
+                $q .= " union select contactId, firstName, lastName, unaccentedName, email, 0 roles, 0 primaryContactId from DeletedContactInfo where " . join(" or ", $where);
             $result = $this->conf->qe_raw($q);
             $cs = [];
             while (($row = Contact::fetch($result, $this->conf))) {

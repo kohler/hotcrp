@@ -134,11 +134,26 @@ class ConfInvariants {
         }
         Dbl::free($result);
 
-        // anonymous users are disabled
-        $any = $this->invariantq("select email from ContactInfo where email regexp '^anonymous[0-9]*\$' and not disabled limit 1");
-        if ($any) {
-            $this->invariant_error("anonymous_user_enabled", "anonymous user is not disabled");
+        // anonymous users are disabled; primaryContactId is not recursive
+        $result = $this->conf->qe("select contactId, email, primaryContactId, disabled from ContactInfo where primaryContactId!=0 or (email>='anonymous' and email<='anonymous:')");
+        $primary = [];
+        while (($row = $result->fetch_object())) {
+            if (str_starts_with($row->email, "anonymous")
+                && Contact::is_anonymous_email($row->email)
+                && !$row->disabled) {
+                $this->invariant_error("anonymous_user_enabled", "anonymous user {$row->email} is not disabled");
+            }
+            if ($row->primaryContactId != 0) {
+                $cid = (int) $row->contactId;
+                $pcid = (int) $row->primaryContactId;
+                $primary[$cid] = ($primary[$cid] ?? 0) | 1;
+                $primary[$pcid] = ($primary[$pcid] ?? 0) | 2;
+                if ($primary[$cid] === 3 || $primary[$pcid] === 3) {
+                    $this->invariant_error("primary_user_loop", "primary user loop involving {$cid}/{$row->email}");
+                }
+            }
         }
+        Dbl::free($result);
 
         // whitespace is simplified
         $any = $this->invariantq("select email from ContactInfo where firstName regexp '^ | $|  |[\\n\\r\\t]' or lastName regexp '^ | $|  |[\\n\\r\\t]' or affiliation regexp '^ | $|  |[\\n\\r\\t]' limit 1");

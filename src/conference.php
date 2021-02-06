@@ -14,9 +14,9 @@ class Track {
     const HIDDENTAG = 8;
     const VIEWALLREV = 9;
 
-    const BITS_VIEW = 0x1;    // 1 << VIEW
-    const BITS_REVIEW = 0x30; // (1 << ASSREV) | (1 << UNASSREV)
-    const BITS_ADMIN = 0x80;  // 1 << ADMIN
+    const BITS_VIEW = 0x1;        // 1 << VIEW
+    const BITS_REVIEW = 0x30;     // (1 << ASSREV) | (1 << UNASSREV)
+    const BITS_ADMIN = 0x80;      // 1 << ADMIN
     const BITS_VIEWADMIN = 0x81;  // (1 << VIEW) | (1 << ADMIN)
 
     /** @readonly */
@@ -94,8 +94,15 @@ interface XtContext {
 }
 
 class Conf {
-    /** @var ?mysqli */
+    /** @var ?mysqli
+     * @readonly */
     public $dblink;
+    /** @var string
+     * @readonly */
+    public $dbname;
+    /** @var string
+     * @readonly */
+    public $dsn;
 
     /** @var array<string,int> */
     public $settings;
@@ -105,10 +112,8 @@ class Conf {
     public $sversion;
     /** @var ?int */
     private $_pc_seeall_cache = null;
+    /** @var bool */
     private $_pc_see_pdf = false;
-
-    public $dbname;
-    public $dsn = null;
 
     /** @var string */
     public $short_name;
@@ -185,7 +190,9 @@ class Conf {
     private $_pc_users_cache;
     /** @var ?array<int,Contact> */
     private $_pc_chairs_cache;
+    /** @var bool */
     private $_pc_members_fully_loaded = false;
+    /** @var bool */
     private $_unslice = false;
     /** @var ?array<int,?Contact> */
     private $_user_cache;
@@ -360,7 +367,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 244) {
+        if ($this->sversion < 245) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2225,7 +2232,7 @@ class Conf {
         if ($this->_pc_members_fully_loaded) {
             return "*";
         } else {
-            return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled, 1 _slice";
+            return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled, primaryContactId, 1 _slice";
         }
     }
 
