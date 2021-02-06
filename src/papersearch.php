@@ -1058,14 +1058,10 @@ class Limit_SearchTerm extends SearchTerm {
     function is_sqlexpr_precise() {
         if ($this->user->has_hidden_papers()) {
             return false;
-        } else if (in_array($this->limit, ["undec", "acc", "viewable"], true)) {
-            return $this->user->privChair;
-        } else if ($this->limit === "alladmin") {
+        } else if (in_array($this->limit, ["undec", "acc", "viewable", "alladmin"], true)) {
             return $this->user->allow_administer_all();
-        } else if ($this->limit === "reviewable" || $this->limit === "admin") {
-            return false;
         } else {
-            return true;
+            return $this->limit !== "reviewable" && $this->limit !== "admin";
         }
     }
 
@@ -1136,7 +1132,9 @@ class Limit_SearchTerm extends SearchTerm {
             $ff[] = "Paper.outcome>0";
             break;
         case "undec":
-            $ff[] = "Paper.outcome=0";
+            if ($this->user->allow_administer_all()) {
+                $ff[] = "Paper.outcome=0";
+            }
             break;
         case "unsub":
             $ff[] = "Paper.timeSubmitted<=0";
@@ -2744,7 +2742,7 @@ class PaperSearch {
         return $this->_qe;
     }
 
-    private function _prepare_result($qe) {
+    private function _prepare_result(SearchTerm $qe) {
         $sqi = new SearchQueryInfo($this);
         $sqi->add_table("Paper");
         $sqi->add_column("paperId", "Paper.paperId");
@@ -2830,14 +2828,14 @@ class PaperSearch {
         if ($this->_matches !== null) {
             return;
         }
-
+        $this->_matches = [];
         if ($this->limit() === "none") {
-            $this->_matches = [];
-            return true;
+            return;
         }
 
         $qe = $this->term();
         //Conf::msg_debugt(json_encode($qe->debug_json()));
+        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
         // collect papers
         $result = $this->_prepare_result($qe);
@@ -2853,8 +2851,6 @@ class PaperSearch {
             $thqe = $qe;
             $thqe->track = true;
         }
-        $this->_matches = [];
-        $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
         foreach ($rowset as $row) {
             if ($this->user->can_view_paper($row)
                 && $this->_limit_qe->test($row, null)
@@ -2862,7 +2858,6 @@ class PaperSearch {
                 $this->_matches[] = $row->paperId;
             }
         }
-        $this->user->set_overrides($old_overrides);
         if ($thqe) {
             $thqe->track = false;
         }
@@ -2876,6 +2871,8 @@ class PaperSearch {
                    && $this->conf->fetch_ivalue("select exists (select * from Paper where paperId?a)", $ps)) {
             $this->warn("Some incomplete or withdrawn submissions also match this search. " . Ht::link("Show all matching submissions", $this->conf->hoturl("search", ["t" => "all", "q" => $this->q])));
         }
+
+        $this->user->set_overrides($old_overrides);
     }
 
     /** @return list<int> */
