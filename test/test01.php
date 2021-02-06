@@ -23,6 +23,7 @@ $user_varghese = $Conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc
 $user_wilma = $Conf->checked_user_by_email("ojuelegba@gmail.com"); // pc
 $user_mjh = $Conf->checked_user_by_email("mjh@isi.edu"); // pc
 $user_pdruschel = $Conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
+$user_randy = $Conf->checked_user_by_email("randy@cs.berkeley.edu"); // author
 $user_nobody = new Contact;
 
 // users are different
@@ -176,6 +177,21 @@ $pl = new PaperList("empty", new PaperSearch($user_shenker, "sort:#me~f edit:tag
 xassert_eqq($pl->sort_etag(), $user_shenker->contactId . "~f");
 $pl = new PaperList("empty", new PaperSearch($user_shenker, "sort:[#me~f reverse] edit:tagval:~f"));
 xassert_eqq($pl->sort_etag(), "");
+
+// limits are obeyed: all searches return subsets of `viewable`
+assert_search_papers($user_chair, ["q" => "", "t" => "s"], "1-30");
+assert_search_papers($user_shenker, ["q" => "", "t" => "s"], "1-30");
+assert_search_papers($user_randy, ["q" => "", "t" => "s"], "6");
+assert_search_papers($user_chair, ["q" => "", "t" => "a"], "");
+assert_search_papers($user_shenker, ["q" => "", "t" => "a"], "20 29 30");
+assert_search_papers($user_randy, ["q" => "", "t" => "a"], "6");
+
+assert_search_ids($user_chair, ["q" => "", "t" => "s"], "1-30");
+assert_search_ids($user_shenker, ["q" => "", "t" => "s"], "1-30");
+assert_search_ids($user_randy, ["q" => "", "t" => "s"], "6");
+assert_search_ids($user_chair, ["q" => "", "t" => "a"], "");
+assert_search_ids($user_shenker, ["q" => "", "t" => "a"], "20 29 30");
+assert_search_ids($user_randy, ["q" => "", "t" => "a"], "6");
 
 // more complex author searches
 assert_search_papers($user_shenker, "au:estrin@usc.edu", "1");

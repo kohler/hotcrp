@@ -394,6 +394,25 @@ function xassert_match($a, $b) {
     return $ok;
 }
 
+function xassert_int_list_eqq($a, $b) {
+    ++Xassert::$n;
+    $x = [];
+    foreach ([$a, $b] as $ids) {
+        $s = is_array($ids) ? join(" ", $ids) : $ids;
+        $x[] = preg_replace_callback('/(\d+)-(\d+)/', function ($m) {
+            return join(" ", range(+$m[1], +$m[2]));
+        }, $s);
+    }
+    $ok = $x[0] === $x[1];
+    if ($ok) {
+        ++Xassert::$nsuccess;
+    } else {
+        trigger_error("Assertion " . $x[0] . " === " . $x[1]
+                      . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    }
+    return $ok;
+}
+
 /** @param Contact $user
  * @param string|array $query
  * @param string $cols
@@ -420,14 +439,14 @@ function search_text_col($user, $query, $col = "id") {
 
 /** @param Contact $user
  * @return bool */
-function assert_search_papers($user, $text, $result) {
-    if (is_array($result)) {
-        $result = join(" ", $result);
-    }
-    $result = preg_replace_callback('/(\d+)-(\d+)/', function ($m) {
-        return join(" ", range(+$m[1], +$m[2]));
-    }, $result);
-    return xassert_eqq(join(" ", array_keys(search_json($user, $text))), $result);
+function assert_search_papers($user, $query, $result) {
+    return xassert_int_list_eqq(array_keys(search_json($user, $query)), $result);
+}
+
+/** @param Contact $user
+ * @return bool */
+function assert_search_ids($user, $query, $result) {
+    return xassert_int_list_eqq((new PaperSearch($user, $query))->paper_ids(), $result);
 }
 
 /** @return bool */
