@@ -1440,15 +1440,19 @@ class UserStatus extends MessageSet {
     }
 
     static function render_collaborators(UserStatus $us, Qrequest $qreq) {
-        if (!$us->user->isPC && !$us->viewer->privChair) {
+        if (!$us->user->isPC
+            && !$qreq->collaborators
+            && !$us->user->collaborators()
+            && !$us->viewer->privChair) {
             return;
         }
-        echo '<div class="form-g w-text fx2"><h3 class="', $us->control_class("collaborators", "form-h"), '">Collaborators and other affiliations</h3>', "\n",
-            "<div>Please list potential conflicts of interest. We use this information when assigning reviews. ",
-            $us->conf->_i("conflictdef"),
-            " <p>Give one conflict per line, using parentheses for affiliations and institutions.<br>
-        Examples: “Ping Yen Zhang (INRIA)”, “All (University College London)”</p></div>
-        <textarea name=\"collaborators\" rows=\"5\" cols=\"80\" class=\"",
+        $cd = $us->conf->_i("conflictdef");
+        echo '<div class="form-g w-text"><h3 class="', $us->control_class("collaborators", "form-h"), '">Collaborators and other affiliations</h3>', "\n",
+            "<p>List potential conflicts of interest one per line, using parentheses for affiliations and institutions. We may use this information when assigning reviews.<br>Examples: “Ping Yen Zhang (INRIA)”, “All (University College London)”</p>";
+        if ($cd !== "") {
+            echo '<p>', $cd, '</p>';
+        }
+        echo '<textarea name="collaborators" rows="5" cols="80" class="',
             $us->control_class("collaborators", "need-autogrow"),
             "\" data-default-value=\"", htmlspecialchars($us->user->collaborators()), "\">",
             htmlspecialchars($qreq->collaborators ?? $us->user->collaborators()),
