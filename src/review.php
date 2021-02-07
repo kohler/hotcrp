@@ -2352,14 +2352,13 @@ class ReviewValues extends MessageSet {
         }
 
         // update caches
-        Contact::update_rights();
+        $prow->update_rights();
 
         // look up review ID
         if (!$reviewId) {
             return false;
         }
         $this->req["reviewId"] = $reviewId;
-        $prow->invalidate_reviews();
         $new_rrow = $prow->fresh_review_of_id($reviewId);
         if ($new_rrow->reviewStatus !== $newstatus) {
             error_log("{$this->conf->dbname}: review #{$prow->paperId}/{$new_rrow->reviewId} saved reviewStatus {$new_rrow->reviewStatus} (expected {$newstatus})");

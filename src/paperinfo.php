@@ -704,6 +704,11 @@ class PaperInfo {
         }
     }
 
+    function update_rights() {
+        $this->_rights_version = -1;
+        Contact::update_rights();
+    }
+
     /** @param int $cid
      * @return PaperContactInfo */
     function _get_contact_info($cid) {
