@@ -171,7 +171,6 @@ class Contact {
     // Per-paper DB information, usually null
     public $conflictType;
     public $myReviewPermissions;
-    public $watch;
 
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;
@@ -4760,11 +4759,11 @@ class Contact {
 
     // following / email notifications
 
-    /** @param int $watch
-     * @return bool */
-    function following_reviews(PaperInfo $prow, $watch) {
-        if ($watch & self::WATCH_REVIEW_EXPLICIT) {
-            return ($watch & self::WATCH_REVIEW) !== 0;
+    /** @return bool */
+    function following_reviews(PaperInfo $prow) {
+        $w = $prow->watch($this);
+        if ($w & self::WATCH_REVIEW_EXPLICIT) {
+            return ($w & self::WATCH_REVIEW) !== 0;
         } else {
             return ($this->defaultWatch & self::WATCH_REVIEW_ALL)
                 || (($this->defaultWatch & self::WATCH_REVIEW_MANAGED)

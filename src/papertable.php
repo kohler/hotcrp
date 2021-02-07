@@ -1468,15 +1468,13 @@ class PaperTable {
                 && !$this->user->is_admin_force())) {
             return;
         }
-        // watch note
-        $watch = $this->conf->fetch_ivalue("select watch from PaperWatch where paperId=? and contactId=?", $this->prow->paperId, $this->user->contactId);
 
         $this->_papstripBegin();
 
         echo '<form class="ui-submit uin">',
             $this->papt("watch",
                 '<label><span class="checkc">'
-                . Ht::checkbox("follow", 1, $this->user->following_reviews($this->prow, $watch), ["class" => "uich js-follow-change"])
+                . Ht::checkbox("follow", 1, $this->user->following_reviews($this->prow), ["class" => "uich js-follow-change"])
                 . '</span>Email notification</label>',
                 ["type" => "ps", "fnclass" => "checki"]),
             '<div class="pshint">Select to receive email on updates to reviews and comments.</div>',

@@ -2041,6 +2041,8 @@ class ReviewValues extends MessageSet {
         }
     }
 
+    /** @param PaperInfo $prow
+     * @param Contact $minic */
     function review_watch_callback($prow, $minic) {
         assert(isset($this->_mailer_info["rrow"]));
         $rrow = $this->_mailer_info["rrow"];
@@ -2049,7 +2051,7 @@ class ReviewValues extends MessageSet {
             && ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
                 || $rrow->contactId == $minic->contactId
                 || $rrow->requestedBy == $minic->contactId
-                || ($minic->watch & Contact::WATCH_REVIEW) != 0)) {
+                || ($prow->watch($minic) & Contact::WATCH_REVIEW) != 0)) {
             // Don't combine preparations unless you can see all submitted
             // reviewer identities
             if (!$this->_mailer_always_combine
