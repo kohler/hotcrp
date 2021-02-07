@@ -432,7 +432,7 @@ function search_text_col($user, $query, $col = "id") {
     $pl->parse_view($col);
     $x = [];
     foreach ($pl->text_json() as $pid => $p) {
-        $x[] = $pid . " " . $p->$col . "\n";
+        $x[] = $pid . " " . $p[$col] . "\n";
     }
     return join("", $x);
 }

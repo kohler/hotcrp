@@ -1055,13 +1055,15 @@ class PaperInfo {
 
         $chairs = true;
         if ($this->conf->check_track_admin_sensitivity()) {
-            foreach ($this->conf->track_tags() as $ttag)
+            foreach ($this->conf->track_tags() as $ttag) {
                 if ($this->conf->track_permission($ttag, Track::ADMIN)
                     && $this->has_tag($ttag)) {
                     $chairs = false;
                     break;
                 }
+            }
         }
+
         $as = $cas = [];
         foreach ($chairs ? $this->conf->pc_chairs() : $this->conf->pc_members() as $u) {
             if ($u->is_primary_administrator($this)) {
@@ -2820,15 +2822,15 @@ class PaperInfo {
         // group authors together, then reviewers
         $aa = $this->has_author($a);
         $ba = $this->has_author($b);
+        if (!$aa && !$ba) {
+            $aa = $this->has_reviewer($a);
+            $ba = $this->has_reviewer($b);
+        }
         if ($aa !== $ba) {
             return $aa ? -1 : 1;
+        } else {
+            return call_user_func($a->conf->user_comparator(), $a, $b);
         }
-        $ar = $this->has_reviewer($a);
-        $br = $this->has_reviewer($b);
-        if ($ar !== $br) {
-            return $ar ? -1 : 1;
-        }
-        return call_user_func($a->conf->user_comparator(), $a, $b);
     }
 
     /** @param callable(PaperInfo,Contact) $callback

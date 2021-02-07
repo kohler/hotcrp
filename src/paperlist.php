@@ -1990,7 +1990,7 @@ class PaperList implements XtContext {
         return ob_get_clean();
     }
 
-    /** @return array{fields:array<string,object>,data:array<int,array{id:int}>,attr?:array,stat?:array} */
+    /** @return array{fields:array<string,array>,data:array<int,array{id:int}>,attr?:array,stat?:array} */
     function table_html_json() {
         // get column list, check sort
         $this->_prepare();
@@ -2053,7 +2053,7 @@ class PaperList implements XtContext {
         return $result;
     }
 
-    /** @return array<int,object> */
+    /** @return array<int,array<string,mixed>> */
     function text_json() {
         // get column list, check sort
         $this->_prepare();
@@ -2069,7 +2069,7 @@ class PaperList implements XtContext {
                         $p[$fdef->name] = $text;
                     }
                 }
-                $data[$row->paperId] = (object) $p;
+                $data[$row->paperId] = $p;
             }
         }
         return $data;

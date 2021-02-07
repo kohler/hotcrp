@@ -496,7 +496,8 @@ class HotCRPMailer extends Mailer {
         return $recipient->can_view_review($prow, $rrow);
     }
 
-    /** @param Contact $recipient */
+    /** @param Contact $recipient
+     * @return ?HotCRPMailPreparation */
     static function prepare_to($recipient, $template, $rest = []) {
         $answer = null;
         if (!$recipient->is_disabled()) {
