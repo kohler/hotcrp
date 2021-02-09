@@ -742,18 +742,6 @@ class PaperInfo {
         return $this->_contact_info[$cid];
     }
 
-    /** @param array<int,PaperContactInfo> $cimap */
-    function replace_contact_info_map($cimap) {
-        $old_cimap = $this->_contact_info;
-        $this->_contact_info = $cimap;
-        $this->_rights_version = Contact::$rights_version;
-        return $old_cimap;
-    }
-
-    function invalidate_contact_info() {
-        $this->replace_contact_info_map([]);
-    }
-
     function load_my_contact_info($contact, $object) {
         $ci = PaperContactInfo::make_my($this, $contact, $object);
         $this->_contact_info[$ci->contactId] = $ci;
@@ -2859,15 +2847,9 @@ class PaperInfo {
         Dbl::free($result);
         usort($watchers, [$this, "notify_user_compare"]);
 
-        // save my current contact info map -- we are replacing it with another
-        // map that lacks review token information and so forth
-        $cimap = $this->replace_contact_info_map([]);
-
         foreach ($watchers as $minic) {
             call_user_func($callback, $this, $minic);
         }
-
-        $this->replace_contact_info_map($cimap);
     }
 
     /** @param callable(PaperInfo,Contact) $callback
@@ -2885,15 +2867,9 @@ class PaperInfo {
         Dbl::free($result);
         usort($watchers, [$this, "notify_user_compare"]);
 
-        // save my current contact info map -- we are replacing it with another
-        // map that lacks review token information and so forth
-        $cimap = $this->replace_contact_info_map([]);
-
         foreach ($watchers as $minic) {
             call_user_func($callback, $this, $minic);
         }
-
-        $this->replace_contact_info_map($cimap);
     }
 
     function delete_from_database(Contact $user = null) {

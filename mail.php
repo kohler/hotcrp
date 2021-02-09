@@ -463,7 +463,11 @@ class MailSender {
         $subject = "[{$this->conf->short_name}] $subject";
         $emailBody = $this->qreq->emailBody;
         $template = ["subject" => $subject, "body" => $emailBody];
-        $rest = array_merge(["no_error_quit" => true], $mailer_options);
+        $rest = $mailer_options;
+        $rest["no_error_quit"] = true;
+        if ($this->recip->is_authors()) {
+            $rest["author_permission"] = true;
+        }
 
         // test whether this mail is paper-sensitive
         $mailer = new HotCRPMailer($this->conf, $this->user, $rest);

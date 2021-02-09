@@ -807,6 +807,19 @@ xassert(!!$paper3->option(3));
 xassert_eqq($paper3->option(3)->value, 1);
 xassert_eqq($paper3->option(3)->data(), "farm farm bark bark");
 
+// mail to authors does not include information that only reviewers can see
+// (this matters when an author is also a reviewer)
+MailChecker::clear();
+save_review(14, $user_estrin, ["overAllMerit" => 5, "revexp" => 1, "papsum" => "Summary 1", "comaut" => "Comments 1", "ready" => false]);
+save_review(14, $user_varghese, ["ovemer" => 5, "revexp" => 2, "papsum" => "Summary V", "comaut" => "Comments V", "compc" => "PC V", "ready" => true]);
+$paper14 = $user_estrin->checked_paper_by_id(14);
+HotCRPMailer::send_contacts("@rejectnotify", $paper14);
+MailChecker::check_db("test05-reject14-1");
+xassert_assign($Conf->root_user(), "action,paper,user\ncontact,14,varghese@ccrc.wustl.edu");
+$paper14 = $user_estrin->checked_paper_by_id(14);
+HotCRPMailer::send_contacts("@rejectnotify", $paper14);
+MailChecker::check_db("test05-reject14-2");
+
 ConfInvariants::test_all($Conf);
 
 xassert_exit();

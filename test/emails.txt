@@ -1569,3 +1569,105 @@ Reviewer expertise
 ------------------
 3. Knowledgeable
 
+******** test05-reject14-1
+To: Henrik Frystyk Nielsen <frystyk@w3.org>, James Gettys <jg@pa.dec.com>, Anselm Baird-Smith <abaird@w3.org>
+Subject: [Testconf I] Rejected submission #14 "Network Performance Effects of
+ HTTP/1.1,..."
+X-Landmark: test/test05.php:821
+
+Dear author(s),
+
+The Test Conference I (Testconf I) program committee is sorry to inform
+you that your submission #14 was rejected, and will not appear in the
+conference.
+
+       Title: Network Performance Effects of HTTP/1.1, CSS1, and PNG
+     Authors: Henrik Frystyk Nielsen (World Wide Web Consortium)
+              James Gettys (Visiting Scientist, World Wide Web
+              Consortium; Digital Equipment Corporation)
+              Anselm Baird-Smith (World Wide Web Consortium)
+              Eric Prud'hommeaux (World Wide Web Consortium)
+              Håkon Wium Lie (World Wide Web Consortium)
+              Chris Lilley (World Wide Web Consortium)
+        Site: http://hotcrp.lcdf.org/test/paper/14?cap={{}}
+
+0 papers were accepted out of 32 submissions.
+
+Visit the submission site for reviews, comments, and related
+information. Reviews and comments are also included below.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #14A
+===========================================================================
+
+Overall merit
+-------------
+5. Strong accept
+
+Reviewer expertise
+------------------
+2. Some familiarity
+
+Paper summary
+-------------
+Summary V
+
+Comments for author
+-------------------
+Comments V
+
+******** test05-reject14-2
+To: Anselm Baird-Smith <abaird@w3.org>, Henrik Frystyk Nielsen <frystyk@w3.org>, James Gettys <jg@pa.dec.com>, George Varghese <varghese@ccrc.wustl.edu>
+Subject: [Testconf I] Rejected submission #14 "Network Performance Effects of
+ HTTP/1.1,..."
+X-Landmark: test/test05.php:821
+
+Dear author(s),
+
+The Test Conference I (Testconf I) program committee is sorry to inform
+you that your submission #14 was rejected, and will not appear in the
+conference.
+
+       Title: Network Performance Effects of HTTP/1.1, CSS1, and PNG
+     Authors: Henrik Frystyk Nielsen (World Wide Web Consortium)
+              James Gettys (Visiting Scientist, World Wide Web
+              Consortium; Digital Equipment Corporation)
+              Anselm Baird-Smith (World Wide Web Consortium)
+              Eric Prud'hommeaux (World Wide Web Consortium)
+              Håkon Wium Lie (World Wide Web Consortium)
+              Chris Lilley (World Wide Web Consortium)
+        Site: http://hotcrp.lcdf.org/test/paper/14?cap={{}}
+
+0 papers were accepted out of 32 submissions.
+
+Visit the submission site for reviews, comments, and related
+information. Reviews and comments are also included below.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+
+Review #14A
+===========================================================================
+
+Overall merit
+-------------
+5. Strong accept
+
+Reviewer expertise
+------------------
+2. Some familiarity
+
+Paper summary
+-------------
+Summary V
+
+Comments for author
+-------------------
+Comments V
+
