@@ -1570,7 +1570,7 @@ Reviewer expertise
 3. Knowledgeable
 
 ******** test05-reject14-1
-To: Henrik Frystyk Nielsen <frystyk@w3.org>, James Gettys <jg@pa.dec.com>, Anselm Baird-Smith <abaird@w3.org>
+To: Anselm Baird-Smith <abaird@w3.org>, Henrik Frystyk Nielsen <frystyk@w3.org>, James Gettys <jg@pa.dec.com>
 Subject: [Testconf I] Rejected submission #14 "Network Performance Effects of
  HTTP/1.1,..."
 X-Landmark: test/test05.php:821
