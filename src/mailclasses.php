@@ -3,8 +3,10 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class MailRecipients {
+    /** @var Conf */
     private $conf;
-    private $contact;
+    /** @var Contact */
+    private $user;
     private $type;
     private $sel = [];
     private $selflags = [];
@@ -26,7 +28,7 @@ class MailRecipients {
 
     function __construct($contact, $type, $papersel, $newrev_since) {
         $this->conf = $contact->conf;
-        $this->contact = $contact;
+        $this->user = $contact;
         assert(!!$contact->isPC);
         $any_pcrev = $any_extrev = 0;
         $any_newpcrev = $any_lead = $any_shepherd = 0;
@@ -115,7 +117,7 @@ class MailRecipients {
             $this->defsel("rev_group_end", null, self::F_GROUP);
         }
 
-        $hide = !$this->contact->is_requester();
+        $hide = !$this->user->is_requester();
         $this->defsel("myextrev", "Your requested reviewers", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
         $this->defsel("uncmyextrev", "Your requested reviewers with incomplete reviews", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
 
@@ -127,7 +129,7 @@ class MailRecipients {
         $this->defsel("pc_group", "Program committee", self::F_GROUP);
         $selcount = count($this->sel);
         $this->defsel("pc", "Program committee", self::F_ANYPC | self::F_NOPAPERS);
-        foreach ($this->conf->viewable_user_tags($this->contact) as $t) {
+        foreach ($this->conf->viewable_user_tags($this->user) as $t) {
             if ($t !== "pc")
                 $this->defsel("pc:$t", "#$t program committee", self::F_ANYPC | self::F_NOPAPERS);
         }
@@ -204,6 +206,7 @@ class MailRecipients {
         return Ht::select("to", $sel, $this->type, ["id" => "to"]);
     }
 
+    /** @return string */
     function unparse() {
         $t = $this->sel[$this->type];
         if ($this->type == "newpcrev" && $this->newrev_since) {
@@ -212,12 +215,20 @@ class MailRecipients {
         return $t;
     }
 
+    /** @return bool */
+    function is_authors() {
+        return in_array($this->type, ["s", "unsub", "au"])
+            || str_starts_with($this->type, "dec:");
+    }
+
+    /** @return bool */
     function need_papers() {
         return $this->type !== "pc"
             && substr($this->type, 0, 3) !== "pc:"
             && $this->type !== "all";
     }
 
+    /** @return int */
     function combination_type($paper_sensitive) {
         if (preg_match('/\A(?:pc|pc:.*|(?:|unc|new)pcrev|lead|shepherd)\z/', $this->type)) {
             return 2;
@@ -265,13 +276,13 @@ class MailRecipients {
         }
 
         // additional manager limit
-        if (!$this->contact->privChair
+        if (!$this->user->privChair
             && !($this->selflags[$this->type] & self::F_ANYPC)) {
-            if ($this->conf->check_any_admin_tracks($this->contact)) {
-                $ps = new PaperSearch($this->contact, ["q" => "", "t" => "admin"]);
+            if ($this->conf->check_any_admin_tracks($this->user)) {
+                $ps = new PaperSearch($this->user, ["q" => "", "t" => "admin"]);
                 $where[] = "Paper.paperId" . sql_in_int_list($ps->paper_ids());
             } else {
-                $where[] = "Paper.managerContactId=" . $this->contact->contactId;
+                $where[] = "Paper.managerContactId=" . $this->user->contactId;
             }
         }
 
@@ -337,7 +348,7 @@ class MailRecipients {
             // Review type
             if ($revmatch[2] == "myext") {
                 $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
-                $where[] = "PaperReview.requestedBy=" . $this->contact->contactId;
+                $where[] = "PaperReview.requestedBy=" . $this->user->contactId;
             } else if ($revmatch[2] == "ext") {
                 $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
             } else if ($revmatch[2] == "pc") {

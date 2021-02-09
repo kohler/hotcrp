@@ -8,6 +8,7 @@ $Conf->save_setting("sub_open", 1);
 $Conf->save_setting("sub_update", Conf::$now + 100);
 $Conf->save_setting("sub_sub", Conf::$now + 100);
 $Conf->save_setting("opt.contentHashMethod", 1, "sha1");
+$Conf->save_setting("rev_open", 1);
 
 // load users
 $user_chair = $Conf->checked_user_by_email("chair@_.com");

@@ -166,11 +166,17 @@ if (isset($papersel)
 
 
 class MailSender {
+    /** @var Conf */
     public $conf;
+    /** @var Contact */
     public $user;
+    /** @var MailRecipients */
     private $recip;
+    /** @var int */
     private $phase;
+    /** @var bool */
     private $sending;
+    /** @var Qrequest */
     private $qreq;
 
     private $started = false;
@@ -184,6 +190,8 @@ class MailSender {
     private $cbcount = 0;
     private $mailid_text = "";
 
+    /** @param MailRecipients $recip
+     * @param int $phase */
     function __construct(Contact $user, $recip, $phase, Qrequest $qreq) {
         $this->conf = $user->conf;
         $this->user = $user;
@@ -195,12 +203,12 @@ class MailSender {
         $this->recipients = (string) $qreq->to;
     }
 
-    static function check($user, $recip, $qreq) {
+    static function check(Contact $user, MailRecipients $recip, Qrequest $qreq) {
         $ms = new MailSender($user, $recip, 0, $qreq);
         $ms->run();
     }
 
-    static function send1($user, $recip, $qreq) {
+    static function send1(Contact $user, MailRecipients $recip, Qrequest $qreq) {
         $ms = new MailSender($user, $recip, 1, $qreq);
         $result = $user->conf->qe("insert into MailLog set
             recipients=?, cc=?, replyto=?, subject=?, emailBody=?, q=?, t=?,
@@ -219,7 +227,7 @@ class MailSender {
         exit;
     }
 
-    static function send2($user, $recip, $qreq) {
+    static function send2(Contact $user, MailRecipients $recip, Qrequest $qreq) {
         $mailid = isset($qreq->mailid) && ctype_digit($qreq->mailid) ? intval($qreq->mailid) : -1;
         $result = $user->conf->qe("update MailLog set status=1 where mailId=? and status=-1", $mailid);
         if (!$result->affected_rows) {

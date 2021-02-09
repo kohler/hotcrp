@@ -46,8 +46,11 @@ class ReviewField implements JsonSerializable {
     public $short_id;
     /** @var Conf */
     public $conf;
+    /** @var string */
     public $name;
+    /** @var string */
     public $name_html;
+    /** @var ?string */
     public $description;
     /** @var ?string */
     public $_search_keyword;
@@ -1509,11 +1512,17 @@ class ReviewValues extends MessageSet {
     /** @var Conf */
     public $conf;
 
+    /** @var ?string */
     public $text;
+    /** @var ?string */
     public $filename;
+    /** @var ?int */
     public $lineno;
-    public $firstLineno;
-    public $fieldLineno;
+    /** @var ?int */
+    private $first_lineno;
+    /** @var ?array<string,int> */
+    private $field_lineno;
+    /** @var ?int */
     private $garbage_lineno;
 
     /** @var int */
@@ -1573,11 +1582,12 @@ class ReviewValues extends MessageSet {
         if ($this->filename) {
             $e .= htmlspecialchars($this->filename);
             if (is_int($field)) {
-                if ($field)
+                if ($field) {
                     $e .= ":" . $field;
+                }
                 $field = null;
-            } else if ($field && isset($this->fieldLineno[$field])) {
-                $e .= ":" . $this->fieldLineno[$field];
+            } else if ($field && isset($this->field_lineno[$field])) {
+                $e .= ":" . $this->field_lineno[$field];
             } else {
                 $e .= ":" . $this->lineno;
             }
@@ -1602,8 +1612,8 @@ class ReviewValues extends MessageSet {
         assert($this->text !== null && $this->finished === 0);
 
         $text = $this->text;
-        $this->firstLineno = $this->lineno + 1;
-        $this->fieldLineno = [];
+        $this->first_lineno = $this->lineno + 1;
+        $this->field_lineno = [];
         $this->garbage_lineno = null;
         $this->req = [];
         $this->paperId = 0;
@@ -1641,11 +1651,11 @@ class ReviewValues extends MessageSet {
                         break;
                     $this->paperId = intval($match[1]);
                     $this->req["blind"] = 1;
-                    $this->firstLineno = $this->fieldLineno["paperNumber"] = $this->lineno;
+                    $this->first_lineno = $this->field_lineno["paperNumber"] = $this->lineno;
                 } else if (preg_match('/^==\+== Reviewer:\s*(.*)$/', $line, $match)
                            && ($user = Text::split_name($match[1], true))
                            && $user[2]) {
-                    $this->fieldLineno["reviewerEmail"] = $this->lineno;
+                    $this->field_lineno["reviewerEmail"] = $this->lineno;
                     $this->req["reviewerFirst"] = $user[0];
                     $this->req["reviewerLast"] = $user[1];
                     $this->req["reviewerEmail"] = $user[2];
@@ -1653,10 +1663,10 @@ class ReviewValues extends MessageSet {
                     if ($nfields > 0)
                         break;
                     $field = "paperNumber";
-                    $this->fieldLineno[$field] = $this->lineno;
+                    $this->field_lineno[$field] = $this->lineno;
                     $mode = 1;
                     $this->req["blind"] = 1;
-                    $this->firstLineno = $this->lineno;
+                    $this->first_lineno = $this->lineno;
                 } else if (preg_match('/^==\+== Submit Review\s*$/i', $line)
                            || preg_match('/^==\+== Review Ready\s*$/i', $line)) {
                     $this->req["ready"] = true;
@@ -1685,7 +1695,7 @@ class ReviewValues extends MessageSet {
                     }
                     if (($f = $this->conf->find_review_field($match[1]))) {
                         $field = $f->id;
-                        $this->fieldLineno[$field] = $this->lineno;
+                        $this->field_lineno[$field] = $this->lineno;
                         $nfields++;
                     } else {
                         $this->check_garbage();
@@ -1712,7 +1722,7 @@ class ReviewValues extends MessageSet {
             $text = (string) substr($text, strlen($line));
         }
 
-        if ($nfields == 0 && $this->firstLineno == 1) {
+        if ($nfields == 0 && $this->first_lineno == 1) {
             $this->rmsg(null, "That didn’t appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", self::ERROR);
         }
 
@@ -2024,7 +2034,7 @@ class ReviewValues extends MessageSet {
                    && $rrow->reviewEditVersion > ($this->req["version"] ?? 0)
                    && $anydiff
                    && $this->text !== null) {
-            $this->rmsg($this->firstLineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
+            $this->rmsg($this->first_lineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
         } else if ($unready) {
             $what = $this->req["adoptreview"] ?? null ? "approved" : "submitted";
             $this->warning_at("ready", "This review can’t be $what until entries are provided for all required fields.");

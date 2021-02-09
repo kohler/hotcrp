@@ -15,10 +15,13 @@ class MailPreparation {
     public $to = [];
     /** @var list<int> */
     public $contactIds = [];
+    /** @var bool */
     private $_valid_recipient = true;
+    /** @var bool */
     public $sensitive = false;
     public $headers = [];
     public $errors = [];
+    /** @var bool */
     public $unique_preparation = false;
     public $reset_capability;
 
@@ -41,7 +44,8 @@ class MailPreparation {
             && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")
                 || !preg_match('/\G(?:_.*|example\.(?:com|net|org))\z/i', $email, $m, 0, $at + 1));
     }
-    /** @param MailPreparation $p */
+    /** @param MailPreparation $p
+     * @return bool */
     function can_merge($p) {
         return $this->subject === $p->subject
             && $this->body === $p->body
@@ -53,6 +57,7 @@ class MailPreparation {
             && empty($this->errors)
             && empty($p->errors);
     }
+    /** @param MailPreparation $p */
     function merge($p) {
         foreach ($p->to as $dest) {
             if (!in_array($dest, $this->to))
@@ -64,11 +69,13 @@ class MailPreparation {
         }
         $this->_valid_recipient = $this->_valid_recipient && $p->_valid_recipient;
     }
+    /** @return bool */
     function can_send_external() {
         return $this->conf->opt("sendEmail")
             && empty($this->errors)
             && $this->_valid_recipient;
     }
+    /** @return bool */
     function can_send() {
         return $this->can_send_external()
             || (empty($this->errors) && !$this->sensitive)

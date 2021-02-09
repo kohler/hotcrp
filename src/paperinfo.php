@@ -2023,12 +2023,6 @@ class PaperInfo {
         }
     }
 
-    function invalidate_reviews() {
-        $this->_review_array = $this->reviewSignatures = null;
-        $this->_reviews_have = [];
-        ++$this->_review_array_version;
-    }
-
     /** @return int|false */
     private function parse_textual_id($textid) {
         if (ctype_digit($textid)) {

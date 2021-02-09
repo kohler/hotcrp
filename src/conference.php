@@ -391,9 +391,6 @@ class Conf {
 
         $this->refresh_settings();
         $this->refresh_options();
-        if ($this === Conf::$main) {
-            $this->refresh_globals();
-        }
     }
 
     function refresh_settings() {

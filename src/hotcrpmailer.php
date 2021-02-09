@@ -3,16 +3,26 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class HotCRPMailPreparation extends MailPreparation {
+    /** @var int */
     public $paperId = -1;
+    /** @var bool */
     public $author_recipient = false;
+    /** @var int */
     public $paper_expansions = 0;
+    /** @var int */
     public $combination_type = 0;
+    /** @var bool */
     public $fake = false;
+    /** @var ?HotCRPMailPreparation */
     public $censored_preparation; // used in mail tool
 
+    /** @param Conf $conf
+     * @param Contact|Author $recipient */
     function __construct($conf, $recipient) {
         parent::__construct($conf, $recipient);
     }
+    /** @param MailPreparation $p
+     * @return bool */
     function can_merge($p) {
         return parent::can_merge($p)
             && $p instanceof HotCRPMailPreparation
@@ -36,14 +46,17 @@ class HotCRPMailer extends Mailer {
     protected $row;
     /** @var ?ReviewInfo */
     protected $rrow;
+    /** @var bool */
     protected $rrow_unsubmitted = false;
     /** @var ?CommentInfo */
     protected $comment_row;
-    protected $newrev_since = false;
+    /** @var ?int */
+    protected $newrev_since;
+    /** @var bool */
     protected $no_send = false;
-    public $combination_type = false;
+    /** @var int */
+    public $combination_type = 0;
 
-    protected $_tagger = null;
     protected $_statistics = null;
     protected $_tagless = array();
 
@@ -66,19 +79,15 @@ class HotCRPMailer extends Mailer {
             assert(!($recipient->overrides() & Contact::OVERRIDE_CONFLICT));
         }
         foreach (["requester", "reviewer", "other"] as $k) {
-            $this->contacts[$k] = $rest[$k . "_contact"] ?? null;
+            $this->contacts[$k] = $rest["{$k}_contact"] ?? null;
         }
         $this->row = $rest["prow"] ?? null;
         assert(!$this->row || $this->row->paperId > 0);
-        foreach (["rrow", "comment_row", "newrev_since"] as $k) {
-            $this->$k = $rest[$k] ?? null;
-        }
-        if ($rest["rrow_unsubmitted"] ?? false) {
-            $this->rrow_unsubmitted = true;
-        }
-        if ($rest["no_send"] ?? false) {
-            $this->no_send = true;
-        }
+        $this->rrow = $rest["rrow"] ?? null;
+        $this->comment_row = $rest["comment_row"] ?? null;
+        $this->newrev_since = $rest["newrev_since"] ?? null;
+        $this->rrow_unsubmitted = !!($rest["rrow_unsubmitted"] ?? false);
+        $this->no_send = !!($rest["no_send"] ?? false);
         // Infer reviewer contact from rrow/comment_row
         if (!$this->contacts["reviewer"]) {
             if ($this->rrow && $this->rrow->email !== null) {
@@ -119,10 +128,7 @@ class HotCRPMailer extends Mailer {
 
     /** @return Tagger */
     private function tagger()  {
-        if (!$this->_tagger) {
-            $this->_tagger = new Tagger($this->recipient);
-        }
-        return $this->_tagger;
+        return new Tagger($this->recipient);
     }
 
     private function get_reviews() {
@@ -550,7 +556,8 @@ class HotCRPMailer extends Mailer {
         Dbl::free($result);
 
         $row->replace_contact_info_map($contact_info_map);
-        if ($Me->allow_administer($row)
+        if ($Me
+            && $Me->allow_administer($row)
             && !$row->has_author($Me)
             && !empty($contacts)) {
             $endmsg = (isset($rest["infoMsg"]) ? ", " . $rest["infoMsg"] : ".");

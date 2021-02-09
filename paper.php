@@ -178,12 +178,12 @@ function final_submit_watch_callback($prow, $minic) {
 
 function update_paper(Qrequest $qreq, $action) {
     global $Me, $prow, $ps;
-    $Conf = Conf::$main;
+    $conf = Conf::$main;
     // XXX lock tables
     $is_new = !$prow;
     $was_submitted = $prow && $prow->timeSubmitted > 0;
 
-    $ps = new PaperStatus($Conf, $Me);
+    $ps = new PaperStatus($conf, $Me);
     $prepared = $ps->prepare_save_paper_web($qreq, $prow, $action);
 
     if (!$prepared) {
@@ -191,7 +191,7 @@ function update_paper(Qrequest $qreq, $action) {
             $ps->error_at(null, "<strong>Your uploaded files were ignored.</strong>");
         }
         $emsg = $ps->landmarked_message_texts();
-        Conf::msg_error(space_join($Conf->_("Your changes were not saved. Please fix these errors and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
+        Conf::msg_error(space_join($conf->_("Your changes were not saved. Please fix these errors and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
         return false;
     }
 
@@ -223,7 +223,7 @@ function update_paper(Qrequest $qreq, $action) {
 
     $new_prow = $Me->conf->paper_by_id($ps->paperId, $Me, ["topics" => true, "options" => true]);
     if (!$new_prow) {
-        $Conf->msg($Conf->_("Your submission was not saved. Please correct these errors and save again.") . $webnotes, "merror");
+        $conf->msg($conf->_("Your submission was not saved. Please correct these errors and save again.") . $webnotes, "merror");
         return false;
     }
     assert($Me->can_view_paper($new_prow));
@@ -288,38 +288,38 @@ function update_paper(Qrequest $qreq, $action) {
     $notes = [];
     if ($action == "final") {
         if ($new_prow->timeFinalSubmitted <= 0) {
-            $notes[] = $Conf->_("The final version has not yet been submitted.");
+            $notes[] = $conf->_("The final version has not yet been submitted.");
         }
-        $deadline = $Conf->unparse_setting_time_span("final_soft");
-        if ($deadline !== "N/A" && $Conf->deadlinesAfter("final_soft")) {
-            $x = $Conf->_("The deadline for submitting final versions was %s.", $deadline);
+        $deadline = $conf->unparse_setting_time_span("final_soft");
+        if ($deadline !== "N/A" && $conf->deadlinesAfter("final_soft")) {
+            $x = $conf->_("The deadline for submitting final versions was %s.", $deadline);
             if ($x != "") {
                 $notes[] = "<strong>$x</strong>";
             }
         } else if ($deadline != "N/A") {
-            $notes[] = $Conf->_("You have until %s to make further changes.", $deadline);
+            $notes[] = $conf->_("You have until %s to make further changes.", $deadline);
         }
     } else {
         if ($new_prow->timeSubmitted > 0) {
-            $notes[] = $Conf->_("You will receive email when reviews are available.");
-        } else if ($new_prow->size == 0 && !$Conf->opt("noPapers")) {
-            $notes[] = $Conf->_("The submission has not yet been uploaded.");
-        } else if ($Conf->setting("sub_freeze") > 0) {
-            $notes[] = $Conf->_("The submission has not yet been completed.");
+            $notes[] = $conf->_("You will receive email when reviews are available.");
+        } else if ($new_prow->size == 0 && !$conf->opt("noPapers")) {
+            $notes[] = $conf->_("The submission has not yet been uploaded.");
+        } else if ($conf->setting("sub_freeze") > 0) {
+            $notes[] = $conf->_("The submission has not yet been completed.");
         } else {
-            $notes[] = $Conf->_("The submission is marked as not ready for review.");
+            $notes[] = $conf->_("The submission is marked as not ready for review.");
         }
-        $deadline = $Conf->unparse_setting_time_span("sub_update");
+        $deadline = $conf->unparse_setting_time_span("sub_update");
         if ($deadline !== "N/A"
-            && ($new_prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0)) {
-            $notes[] = $Conf->_("Further updates are allowed until %s.", $deadline);
+            && ($new_prow->timeSubmitted <= 0 || $conf->setting("sub_freeze") <= 0)) {
+            $notes[] = $conf->_("Further updates are allowed until %s.", $deadline);
         }
-        $deadline = $Conf->unparse_setting_time_span("sub_sub");
+        $deadline = $conf->unparse_setting_time_span("sub_sub");
         if ($deadline != "N/A" && $new_prow->timeSubmitted <= 0) {
-            if ($Conf->setting("sub_freeze") > 0) {
-                $x = $Conf->_("If the submission is not completed by %s, it will not be considered.", $deadline);
+            if ($conf->setting("sub_freeze") > 0) {
+                $x = $conf->_("If the submission is not completed by %s, it will not be considered.", $deadline);
             } else {
-                $x = $Conf->_("If the submission is not ready for review by %s, it will not be considered.", $deadline);
+                $x = $conf->_("If the submission is not ready for review by %s, it will not be considered.", $deadline);
             }
             if ($x != "") {
                 $notes[] = "<strong>$x</strong>";
@@ -330,17 +330,17 @@ function update_paper(Qrequest $qreq, $action) {
 
     // HTML confirmation
     if (empty($ps->diffs)) {
-        $webmsg = $Conf->_("No changes to submission #%d.", $new_prow->paperId);
+        $webmsg = $conf->_("No changes to submission #%d.", $new_prow->paperId);
     } else {
-        $webmsg = $Conf->_("$actiontext submission #%d.", $new_prow->paperId);
+        $webmsg = $conf->_("$actiontext submission #%d.", $new_prow->paperId);
     }
     if ($ps->has_error()) {
-        $webmsg .= " " . $Conf->_("Please correct these issues and save again.");
+        $webmsg .= " " . $conf->_("Please correct these issues and save again.");
     }
     if ($notes || $webnotes) {
         $webmsg .= " " . $notes . $webnotes;
     }
-    $Conf->msg($webmsg, $new_prow->$submitkey > 0 ? "confirm" : "warning");
+    $conf->msg($webmsg, $new_prow->$submitkey > 0 ? "confirm" : "warning");
 
     // mail confirmation to all contact authors if changed
     if (!empty($ps->diffs)) {
@@ -366,7 +366,7 @@ function update_paper(Qrequest $qreq, $action) {
         }
     }
 
-    $Conf->paper = $prow = $new_prow;
+    $conf->paper = $prow = $new_prow;
     return !$ps->has_error() || ($is_new && $new_prow);
 }
 
