@@ -17,8 +17,8 @@
         "json_name": "author_view_review",
         "title": "Authors can see reviews",
         "type": "radio",
-        "values": [0, 1, 2, 3], "default_value": 0,
-        "json_values": ["no", "unless-incomplete", "yes", "by-tag"]
+        "values": [0, 2, 3], "default_value": 0,
+        "json_values": ["no", "yes", "by-tag"]
     },
     {
         "name": "cmt_always", "group": "reviews",

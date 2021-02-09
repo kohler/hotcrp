@@ -289,7 +289,6 @@ class Conf {
     const SEEDEC_NCREV = 3;
 
     const AUSEEREV_NO = 0;          // these values matter
-    const AUSEEREV_UNLESSINCOMPLETE = 1;
     const AUSEEREV_YES = 2;
     const AUSEEREV_TAGS = 3;
 
@@ -367,7 +366,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 245) {
+        if ($this->sversion < 246) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2949,11 +2948,8 @@ class Conf {
         return $this->deadlinesBetween("final_open", "final_done", "final_grace");
     }
     /** @return bool */
-    function can_some_author_view_review($reviewsOutstanding = false) {
-        return $this->any_response_open
-            || ($this->au_seerev > 0
-                && ($this->au_seerev != self::AUSEEREV_UNLESSINCOMPLETE
-                    || !$reviewsOutstanding));
+    function can_some_author_view_review() {
+        return $this->any_response_open || $this->au_seerev > 0;
     }
     /** @return bool */
     function can_all_author_view_decision() {

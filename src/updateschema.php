@@ -1935,6 +1935,13 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql_ok("alter table ContactInfo add `primaryContactId` int(11) NOT NULL DEFAULT '0'")) {
         $conf->update_schema_version(245);
     }
+    if ($conf->settings["au_seerev"] === 1) {
+        $conf->ql_ok("update Settings set value=2 where value=1 and name='au_seerev'");
+    }
+    if ($conf->sversion === 245) {
+        Dbl::qx($conf->dblink, "delete from Settings where name='opt.allow_auseerev_unlessincomplete'");
+        $conf->update_schema_version(246);
+    }
 
     $conf->ql_ok("delete from Settings where name='__schema_lock'");
     Conf::$main = $old_conf_g;

@@ -3566,9 +3566,6 @@ class Contact {
         } else {
             return $prow->can_author_respond()
                 || $this->conf->au_seerev == Conf::AUSEEREV_YES
-                || ($this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
-                    && (!$this->has_review()
-                        || !$this->has_outstanding_review()))
                 || ($this->conf->au_seerev == Conf::AUSEEREV_TAGS
                     && $prow->has_any_tag($this->conf->tag_au_seerev));
         }
@@ -3695,11 +3692,6 @@ class Contact {
             $whyNot["withdrawn"] = true;
         } else if ($prow->timeSubmitted <= 0) {
             $whyNot["notSubmitted"] = true;
-        } else if ($rights->act_author_view
-                   && $this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
-                   && $this->has_outstanding_review()
-                   && $this->has_review()) {
-            $whyNot["reviewsOutstanding"] = true;
         } else if ($rights->act_author_view
                    && !$rrowSubmitted) {
             $whyNot["permission"] = "view_review";

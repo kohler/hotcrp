@@ -181,14 +181,7 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
             }
             $end = $this->conf->setting($end_dname, -1);
             if ($dname == "au_seerev") {
-                if ($this->conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE) {
-                    $ms[] = $this->conf->_("You will get access to the reviews for this submission when you have completed your own reviews.");
-                    if ($format === 5) {
-                        $ms[] = $this->conf->_("<a href=\"%s\">List your incomplete reviews</a>", $this->conf->hoturl("search", "t=rout&amp;q="));
-                    }
-                } else {
-                    $ms[] = $this->conf->_c("etime", "Action not available.", $dname, $paperId);
-                }
+                $ms[] = $this->conf->_c("etime", "Action not available.", $dname, $paperId);
             } else if ($start <= 0 || $start == $end) {
                 $ms[] = $this->conf->_c("etime", "Action not available.", $open_dname, $paperId);
             } else if ($start > 0 && Conf::$now < $start) {

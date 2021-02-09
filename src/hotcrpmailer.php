@@ -163,11 +163,6 @@ class HotCRPMailer extends Mailer {
         }
 
         $this->conf->au_seerev = $au_seerev;
-        if ($text === ""
-            && $au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
-            && !empty($rrows)) {
-            $text = "[Reviews are hidden since you have incomplete reviews of your own.]\n";
-        }
         return $text;
     }
 

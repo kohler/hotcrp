@@ -291,8 +291,6 @@ class MailSender {
                     || strpos($this->qreq->emailBody, "%COMMENTS%"))) {
                 if (!$this->conf->can_some_author_view_review()) {
                     echo '<div class="warning">Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href="', $this->conf->hoturl("settings", "group=dec"), '" class="nw">Change this setting</a>)</div>', "\n";
-                } else if (!$this->conf->can_some_author_view_review(true)) {
-                    echo '<div class="warning">Mails to users who have not completed their own reviews will not include reviews or comments. (<a href="', $this->conf->hoturl("settings", "group=dec"), '" class="nw">Change the setting</a>)</div>', "\n";
                 }
             }
             if (isset($this->qreq->emailBody)
