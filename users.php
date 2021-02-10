@@ -10,11 +10,8 @@ if ($Viewer->contactId && $Viewer->is_disabled()) {
     $Viewer = new Contact(["email" => $Viewer->email], $Conf);
 }
 
-$getaction = "";
-if (isset($Qreq->get)) {
-    $getaction = $Qreq->get;
-} else if (isset($Qreq->getgo) && isset($Qreq->getaction)) {
-    $getaction = $Qreq->getaction;
+if (isset($Qreq->default) && $Qreq->defaultact) {
+    $Qreq->fn = $Qreq->defaultact;
 }
 
 
@@ -96,7 +93,7 @@ if (isset($Qreq->pap) && is_string($Qreq->pap)) {
     $Qreq->pap = preg_split('/\s+/', $Qreq->pap);
 }
 if ((isset($Qreq->pap) && is_array($Qreq->pap))
-    || ($getaction && !isset($Qreq->pap))) {
+    || ($Qreq->fn === "get" && !isset($Qreq->pap))) {
     $allowed_papers = array();
     $pl = new ContactList($Viewer, true);
     // Ensure that we only select contacts we're allowed to see.
@@ -117,7 +114,10 @@ if ((isset($Qreq->pap) && is_array($Qreq->pap))
     }
 }
 
-if ($getaction == "nameemail" && isset($papersel) && $Viewer->isPC) {
+if ($Qreq->fn === "get"
+    && $Qreq->getfn === "nameemail"
+    && isset($papersel)
+    && $Viewer->isPC) {
     $result = $Conf->qe_raw("select * from ContactInfo where " . paperselPredicate($papersel));
     $users = [];
     while (($user = Contact::fetch($result, $Conf))) {
@@ -147,7 +147,10 @@ if ($getaction == "nameemail" && isset($papersel) && $Viewer->isPC) {
     csv_exit($Conf->make_csvg("users")->select($header)->append($texts));
 }
 
-if ($getaction == "pcinfo" && isset($papersel) && $Viewer->privChair) {
+if ($Qreq->fn === "get"
+    && $Qreq->getfn === "pcinfo"
+    && isset($papersel)
+    && $Viewer->privChair) {
     $result = $Conf->qe_raw("select * from ContactInfo where " . paperselPredicate($papersel));
     $users = [];
     while (($user = Contact::fetch($result, $Conf))) {
@@ -268,15 +271,18 @@ function modify_confirm($j, $ok_message, $ok_message_optional) {
     }
 }
 
-if ($Viewer->privChair && $Qreq->modifygo && $Qreq->valid_post() && isset($papersel)) {
-    if ($Qreq->modifytype == "disableaccount") {
+if ($Viewer->privChair
+    && $Qreq->fn === "modify"
+    && $Qreq->valid_post()
+    && isset($papersel)) {
+    if ($Qreq->modifyfn == "disableaccount") {
         modify_confirm(UserActions::disable($Viewer, $papersel), "Accounts disabled.", true);
-    } else if ($Qreq->modifytype == "enableaccount") {
+    } else if ($Qreq->modifyfn == "enableaccount") {
         modify_confirm(UserActions::enable($Viewer, $papersel), "Accounts enabled.", true);
-    } else if ($Qreq->modifytype == "sendaccount") {
+    } else if ($Qreq->modifyfn == "sendaccount") {
         modify_confirm(UserActions::send_account_info($Viewer, $papersel), "Account information sent.", false);
     }
-    unset($Qreq->modifygo, $Qreq->modifytype);
+    unset($Qreq->fn, $Qreq->modifyfn);
     $Conf->redirect_self($Qreq);
 }
 
@@ -284,8 +290,7 @@ function do_tags($qreq) {
     global $Conf, $Viewer, $papersel;
     // check tags
     $tagger = new Tagger($Viewer);
-    $t1 = array();
-    $errors = array();
+    $t1 = $errors = [];
     foreach (preg_split('/[\s,]+/', (string) $qreq->tag) as $t) {
         if ($t === "") {
             /* nada */
@@ -306,7 +311,7 @@ function do_tags($qreq) {
     // modify database
     Conf::$no_invalidate_caches = true;
     $users = array();
-    if ($qreq->tagtype === "s") {
+    if ($qreq->tagfn === "s") {
         // erase existing tags
         $likes = array();
         $removes = array();
@@ -320,7 +325,7 @@ function do_tags($qreq) {
         }
     }
     // account for request
-    $key = $qreq->tagtype === "d" ? "remove_tags" : "add_tags";
+    $key = $qreq->tagfn === "d" ? "remove_tags" : "add_tags";
     foreach ($papersel as $cid) {
         if (!isset($users[(int) $cid])) {
             $users[(int) $cid] = (object) ["id" => (int) $cid, "add_tags" => [], "remove_tags" => []];
@@ -337,15 +342,18 @@ function do_tags($qreq) {
     // report
     if (!$us->has_error()) {
         $Conf->confirmMsg("Tags saved.");
-        unset($qreq->tagact, $qreq->tag);
+        unset($qreq->fn, $qreq->tagfn);
         $Conf->redirect_self($qreq);
     } else {
         Conf::msg_error($us->error_texts());
     }
 }
 
-if ($Viewer->privChair && $Qreq->tagact && $Qreq->valid_post() && isset($papersel)
-    && preg_match('/\A[ads]\z/', (string) $Qreq->tagtype)) {
+if ($Viewer->privChair
+    && $Qreq->fn === "tag"
+    && $Qreq->valid_post()
+    && isset($papersel)
+    && in_array($Qreq->tagfn, ["a", "d", "s"])) {
     do_tags($Qreq);
 }
 

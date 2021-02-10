@@ -154,16 +154,16 @@ class PaperList implements XtContext {
      * @readonly */
     public $conf;
     /** @var Contact
-     * @readonly  */
+     * @readonly */
     public $user;
     /** @var Tagger
-     * @readonly  */
+     * @readonly */
     public $tagger;
     /** @var PaperSearch
-     * @readonly  */
+     * @readonly */
     public $search;
     /** @var Qrequest
-     * @readonly  */
+     * @readonly */
     private $qreq;
     /** @var Contact */
     private $_reviewer_user;

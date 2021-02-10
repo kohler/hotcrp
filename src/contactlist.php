@@ -788,15 +788,15 @@ class ContactList {
             $types["pcinfo"] = "PC info";
         }
         $lllgroups[] = ["", "Download",
-            Ht::select("getaction", $types, null, ["class" => "want-focus"])
-            . "&nbsp; " . Ht::submit("getgo", "Go")];
+            Ht::select("getfn", $types, null, ["class" => "want-focus"])
+            . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get"])];
 
         if ($this->user->privChair) {
             $lllgroups[] = ["", "Tag",
-                Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), $this->qreq->tagtype)
+                Ht::select("tagfn", ["a" => "Add", "d" => "Remove", "s" => "Define"], $this->qreq->tagfn)
                 . ' &nbsp;tag(s) &nbsp;'
-                . Ht::entry("tag", $this->qreq->tag, ["size" => 15, "class" => "want-focus js-autosubmit", "data-autosubmit-type" => "tagact"])
-                . ' &nbsp;' . Ht::submit("tagact", "Go")];
+                . Ht::entry("tag", $this->qreq->tag, ["size" => 15, "class" => "want-focus js-autosubmit", "data-autosubmit-type" => "tag"])
+                . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag"])];
 
             $mods = ["disableaccount" => "Disable", "enableaccount" => "Enable"];
             if ($this->user->can_change_password(null)) {
@@ -804,8 +804,8 @@ class ContactList {
             }
             $mods["sendaccount"] = "Send account information";
             $lllgroups[] = ["", "Modify",
-                Ht::select("modifytype", $mods, null, ["class" => "want-focus"])
-                . "&nbsp; " . Ht::submit("modifygo", "Go")];
+                Ht::select("modifyfn", $mods, null, ["class" => "want-focus"])
+                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "modify"])];
         }
 
         return "  <tfoot class=\"pltable" . ($hascolors ? " pltable-colored" : "")
