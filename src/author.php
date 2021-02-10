@@ -37,14 +37,17 @@ class Author {
             $this->assign_string($x);
         }
     }
-    /** @return Author */
-    static function make_tabbed($s) {
+    /** @param string $s
+     * @param ?int $author_index
+     * @return Author */
+    static function make_tabbed($s, $author_index = null) {
         $au = new Author;
         $w = explode("\t", $s);
         $au->firstName = $w[0] ?? "";
         $au->lastName = $w[1] ?? "";
         $au->email = $w[2] ?? "";
         $au->affiliation = $w[3] ?? "";
+        $au->author_index = $author_index;
         return $au;
     }
     /** @param string $s

@@ -1549,12 +1549,8 @@ class ReviewValues extends MessageSet {
     /** @var ?list<string> */
     private $blank;
 
+    /** @var bool */
     private $no_notify = false;
-    private $_mailer_template;
-    private $_mailer_always_combine;
-    private $_mailer_diff_view_score;
-    private $_mailer_info;
-    private $_mailer_preps;
 
     function __construct(ReviewForm $rf, $options = []) {
         parent::__construct();
@@ -2049,26 +2045,68 @@ class ReviewValues extends MessageSet {
         }
     }
 
-    /** @param PaperInfo $prow
-     * @param Contact $minic */
-    function review_watch_callback($prow, $minic) {
-        assert(isset($this->_mailer_info["rrow"]));
-        $rrow = $this->_mailer_info["rrow"];
-        if ($minic->can_view_review($prow, $rrow, $this->_mailer_diff_view_score)
-            && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $this->_mailer_info))
-            && ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
-                || $rrow->contactId == $minic->contactId
-                || $rrow->requestedBy == $minic->contactId
-                || ($prow->watch($minic) & Contact::WATCH_REVIEW) != 0)) {
-            // Don't combine preparations unless you can see all submitted
-            // reviewer identities
-            if (!$this->_mailer_always_combine
-                && !$prow->has_author($minic)
-                && (!$prow->has_reviewer($minic)
-                    || !$minic->can_view_review_identity($prow, null))) {
-                $p->unique_preparation = true;
+    private function do_notify(PaperInfo $prow, ReviewInfo $rrow,
+                               $newstatus, $oldstatus, ReviewDiffInfo $diffinfo,
+                               Contact $reviewer, Contact $user) {
+        $info = [
+            "prow" => $prow, "rrow" => $rrow,
+            "reviewer_contact" => $reviewer,
+            "check_function" => "HotCRPMailer::check_can_view_review",
+            "combination_type" => 1
+        ];
+        if ($newstatus >= ReviewInfo::RS_COMPLETED
+            && ($diffinfo->notify || $diffinfo->notify_author)) {
+            if ($oldstatus < ReviewInfo::RS_COMPLETED) {
+                $template = "@reviewsubmit";
+            } else {
+                $template = "@reviewupdate";
             }
-            $this->_mailer_preps[] = $p;
+            $always_combine = false;
+            $diff_view_score = $diffinfo->view_score;
+        } else if ($newstatus < ReviewInfo::RS_COMPLETED
+                   && $newstatus >= ReviewInfo::RS_DELIVERED
+                   && ($diffinfo->fields() || $newstatus !== $oldstatus)
+                   && !$this->no_notify) {
+            if ($newstatus >= ReviewInfo::RS_ADOPTED) {
+                $template = "@reviewapprove";
+            } else if ($newstatus === ReviewInfo::RS_DELIVERED
+                       && $oldstatus < ReviewInfo::RS_DELIVERED) {
+                $template = "@reviewapprovalrequest";
+            } else if ($rrow->requestedBy === $user->contactId) {
+                $template = "@reviewpreapprovaledit";
+            } else {
+                $template = "@reviewapprovalupdate";
+            }
+            $always_combine = true;
+            $diff_view_score = null;
+            $info["rrow_unsubmitted"] = true;
+        } else {
+            return;
+        }
+
+        $preps = [];
+        foreach ($prow->review_followers() as $minic) {
+            if ($minic->contactId !== $user->contactId
+                && $minic->can_view_review($prow, $rrow, $diff_view_score)
+                && ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
+                    || $rrow->contactId == $minic->contactId
+                    || $rrow->requestedBy == $minic->contactId
+                    || ($prow->watch($minic) & Contact::WATCH_REVIEW) !== 0)
+                && ($p = HotCRPMailer::prepare_to($minic, $template, $info))) {
+                // Don't combine preparations unless you can see all submitted
+                // reviewer identities
+                if (!$always_combine
+                    && !$prow->has_author($minic)
+                    && (!$prow->has_reviewer($minic)
+                        || !$minic->can_view_review_identity($prow, null))) {
+                    $p->unique_preparation = true;
+                }
+                $preps[] = $p;
+            }
+        }
+
+        if (!empty($preps)) {
+            HotCRPMailer::send_combined_preparations($preps);
         }
     }
 
@@ -2427,44 +2465,7 @@ class ReviewValues extends MessageSet {
         if ($contactId != $user->contactId) {
             $reviewer = $this->conf->cached_user_by_id($contactId);
         }
-
-        $this->_mailer_info = [
-            "prow" => $prow, "rrow" => $new_rrow,
-            "reviewer_contact" => $reviewer,
-            "check_function" => "HotCRPMailer::check_can_view_review"
-        ];
-        $this->_mailer_preps = [];
-        if ($newstatus >= ReviewInfo::RS_COMPLETED
-            && ($diffinfo->notify || $diffinfo->notify_author)) {
-            $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
-            $this->_mailer_always_combine = false;
-            $this->_mailer_info["combination_type"] = 1;
-            $this->_mailer_diff_view_score = $diffinfo->view_score;
-            $prow->notify_reviews([$this, "review_watch_callback"], $user);
-        } else if ($newstatus < ReviewInfo::RS_COMPLETED
-                   && $newstatus >= ReviewInfo::RS_DELIVERED
-                   && ($diffinfo->fields() || $newstatus !== $oldstatus)
-                   && !$this->no_notify) {
-            if ($newstatus >= ReviewInfo::RS_ADOPTED) {
-                $this->_mailer_template = "@reviewapprove";
-            } else if ($newstatus === ReviewInfo::RS_DELIVERED
-                       && $oldstatus < ReviewInfo::RS_DELIVERED) {
-                $this->_mailer_template = "@reviewapprovalrequest";
-            } else if ($new_rrow->requestedBy === $user->contactId) {
-                $this->_mailer_template = "@reviewpreapprovaledit";
-            } else {
-                $this->_mailer_template = "@reviewapprovalupdate";
-            }
-            $this->_mailer_always_combine = true;
-            $this->_mailer_info["combination_type"] = 1;
-            $this->_mailer_diff_view_score = null;
-            $this->_mailer_info["rrow_unsubmitted"] = true;
-            $prow->notify_reviews([$this, "review_watch_callback"], $user);
-        }
-        if (!empty($this->_mailer_preps)) {
-            HotCRPMailer::send_combined_preparations($this->_mailer_preps);
-        }
-        $this->_mailer_info = $this->_mailer_preps = null;
+        $this->do_notify($prow, $new_rrow, $newstatus, $oldstatus, $diffinfo, $reviewer, $user);
 
         // record what happened
         $what = "#$prow->paperId";

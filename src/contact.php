@@ -4767,6 +4767,12 @@ class Contact {
         }
     }
 
+    /** @return bool */
+    function following_final_submit(PaperInfo $prow) {
+        return $this->allow_administer($prow)
+            && ($this->defaultWatch & self::WATCH_FINAL_SUBMIT_ALL) !== 0;
+    }
+
 
     // deadlines
 

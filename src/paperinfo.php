@@ -801,9 +801,12 @@ class PaperInfo {
      * @return list<Author> */
     static function parse_author_list($authorInformation) {
         $au = [];
+        $n = 1;
         foreach (explode("\n", $authorInformation) as $line) {
-            if ($line !== "")
-                $au[] = Author::make_tabbed($line);
+            if ($line !== "") {
+                $au[] = Author::make_tabbed($line, $n);
+                ++$n;
+            }
         }
         return $au;
     }
@@ -2804,7 +2807,15 @@ class PaperInfo {
         // group authors together, then reviewers
         $aa = $this->has_author($a);
         $ba = $this->has_author($b);
-        if (!$aa && !$ba) {
+        if ($aa && $ba) {
+            $aua = $this->author_by_email($a->email);
+            $aia = $aua ? $aua->author_index : PHP_INT_MAX;
+            $aub = $this->author_by_email($b->email);
+            $aib = $aub ? $aub->author_index : PHP_INT_MAX;
+            if ($aia !== $aib) {
+                return $aia < $aib ? -1 : 1;
+            }
+        } else if (!$aa && !$ba) {
             $aa = $this->has_reviewer($a);
             $ba = $this->has_reviewer($b);
         }
@@ -2815,9 +2826,35 @@ class PaperInfo {
         }
     }
 
-    /** @param callable(PaperInfo,Contact) $callback
-     * @param Contact $sending_user */
-    function notify_reviews($callback, $sending_user) {
+    /** @param list<int> $cids
+     * @param string $clause
+     * @param ?string $fn
+     * @return list<Contact> */
+    function generic_followers($cids, $clause, $fn) {
+        $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, preferredEmail, password, roles, contactTags, disabled, primaryContactId, defaultWatch from ContactInfo where (contactId?a or $clause) and not disabled", $cids);
+        $watchers = [];
+        while (($minic = Contact::fetch($result, $this->conf))) {
+            if ($minic->can_view_paper($this)
+                && (!$fn || $minic->$fn($this))) {
+                $watchers[] = $minic;
+            }
+        }
+        Dbl::free($result);
+        usort($watchers, [$this, "notify_user_compare"]);
+        return $watchers;
+    }
+
+    /** @return list<Contact> */
+    function contact_followers() {
+        $cids = [];
+        foreach ($this->contacts() as $cflt) {
+            $cids[] = $cflt->contactId;
+        }
+        return $this->generic_followers($cids, "false", null);
+    }
+
+    /** @return list<Contact> */
+    function review_followers() {
         $cids = [];
         foreach ($this->contacts() as $cflt) {
             $cids[] = $cflt->contactId;
@@ -2832,44 +2869,12 @@ class PaperInfo {
             if (($w & Contact::WATCH_REVIEW) !== 0)
                 $cids[] = $cid;
         }
-
-        $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, preferredEmail, password, roles, contactTags, disabled, primaryContactId, defaultWatch
-            from ContactInfo where (contactId?a or (defaultWatch&?)!=0) and not disabled",
-            $cids, Contact::WATCH_REVIEW_ALL | Contact::WATCH_REVIEW_MANAGED);
-
-        $watchers = [];
-        while (($minic = Contact::fetch($result, $this->conf))) {
-            if ((!$sending_user || $minic->contactId !== $sending_user->contactId)
-                && $minic->following_reviews($this)) {
-                $watchers[] = $minic;
-            }
-        }
-        Dbl::free($result);
-        usort($watchers, [$this, "notify_user_compare"]);
-
-        foreach ($watchers as $minic) {
-            call_user_func($callback, $this, $minic);
-        }
+        return $this->generic_followers($cids, "(defaultWatch&" . (Contact::WATCH_REVIEW_ALL | Contact::WATCH_REVIEW_MANAGED) . ")!=0", "following_reviews");
     }
 
-    /** @param callable(PaperInfo,Contact) $callback
-     * @param Contact $sending_user */
-    function notify_final_submit($callback, $sending_user) {
-        $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, preferredEmail, password, roles, contactTags, disabled, primaryContactId, defaultWatch
-            from ContactInfo where (defaultWatch&" . Contact::WATCH_FINAL_SUBMIT_ALL . ")!=0 and not disabled");
-
-        $watchers = [];
-        while (($minic = Contact::fetch($result, $this->conf))) {
-            if (!$sending_user || $minic->contactId !== $sending_user->contactId) {
-                $watchers[] = $minic;
-            }
-        }
-        Dbl::free($result);
-        usort($watchers, [$this, "notify_user_compare"]);
-
-        foreach ($watchers as $minic) {
-            call_user_func($callback, $this, $minic);
-        }
+    /** @return list<Contact> */
+    function final_submit_followers() {
+        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_FINAL_SUBMIT_ALL . ")!=0", "following_final_submit");
     }
 
     function delete_from_database(Contact $user = null) {

@@ -136,14 +136,15 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->valid_post()) {
         // email reviewers
         if ($prow->reviews_by_id()) {
             $preps = [];
-            $prow->notify_reviews(function ($prow, $minic) use ($reason, &$preps) {
-                if (($p = HotCRPMailer::prepare_to($minic, "@withdrawreviewer", ["prow" => $prow, "reason" => $reason]))) {
+            foreach ($prow->review_followers() as $minic) {
+                if ($minic->contactId !== $Me->contactId
+                    && ($p = HotCRPMailer::prepare_to($minic, "@withdrawreviewer", ["prow" => $prow, "reason" => $reason]))) {
                     if (!$minic->can_view_review_identity($prow, null)) {
                         $p->unique_preparation = true;
                     }
                     $preps[] = $p;
                 }
-            }, $Me);
+            }
             HotCRPMailer::send_combined_preparations($preps);
         }
 
@@ -167,14 +168,6 @@ if (isset($Qreq->revive) && $prow && $Qreq->valid_post()) {
     }
 }
 
-
-// send watch messages
-function final_submit_watch_callback($prow, $minic) {
-    if ($minic->can_view_paper($prow)
-        && $minic->allow_administer($prow)) {
-        HotCRPMailer::send_to($minic, "@finalsubmitnotify", ["prow" => $prow]);
-    }
-}
 
 function update_paper(Qrequest $qreq, $action) {
     global $Me, $prow, $ps;
@@ -362,7 +355,10 @@ function update_paper(Qrequest $qreq, $action) {
 
         // other mail confirmations
         if ($action == "final" && !Dbl::has_error() && !$ps->has_error()) {
-            $new_prow->notify_final_submit("final_submit_watch_callback", $Me);
+            foreach ($prow->final_submit_followers() as $minic) {
+                if ($minic->contactId !== $Me->contactId)
+                    HotCRPMailer::send_to($minic, "@finalsubmitnotify", ["prow" => $prow]);
+            }
         }
     }
 

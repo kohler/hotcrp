@@ -529,27 +529,18 @@ class HotCRPMailer extends Mailer {
     /** @param PaperInfo $row */
     static function send_contacts($template, $row, $rest = []) {
         global $Me;
-
-        $result = $row->conf->qe("select ContactInfo.contactId,
-                firstName, lastName, affiliation, email, preferredEmail, password,
-                disabled, roles, contactTags, primaryContactId
-                from ContactInfo join PaperConflict using (contactId)
-                where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
-                group by ContactInfo.contactId order by email");
-
         $preps = $contacts = [];
         $rest["prow"] = $row;
         $rest["combination_type"] = 1;
         $rest["author_permission"] = true;
-        while (($contact = Contact::fetch($result, $row->conf))) {
-            assert(empty($contact->review_tokens()));
-            if (($p = self::prepare_to($contact, $template, $rest))) {
+        foreach ($row->contact_followers() as $minic) {
+            assert(empty($minic->review_tokens()));
+            if (($p = self::prepare_to($minic, $template, $rest))) {
                 $preps[] = $p;
-                $contacts[] = $contact->name_h(NAME_EB);
+                $contacts[] = $minic->name_h(NAME_EB);
             }
         }
         self::send_combined_preparations($preps);
-        Dbl::free($result);
 
         if ($Me
             && $Me->allow_administer($row)

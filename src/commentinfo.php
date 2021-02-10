@@ -761,7 +761,10 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $comments = $this->prow->fetch_comments("commentId=$cmtid");
             $this->merge(get_object_vars($comments[$cmtid]), $this->prow);
             if ($this->timeNotified == $this->timeModified) {
-                $this->prow->notify_reviews([$this, "watch_callback"], $contact);
+                foreach ($this->prow->review_followers() as $minic) {
+                    if ($minic->contactId !== $contact->contactId)
+                        $this->watch_callback($minic);
+                }
             }
         } else {
             $this->commentId = 0;
@@ -790,14 +793,13 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         return true;
     }
 
-    /** @param PaperInfo $prow
-     * @param Contact $minic */
-    function watch_callback($prow, $minic) {
+    /** @param Contact $minic */
+    function watch_callback($minic) {
         $ctype = $this->commentType;
-        if ($minic->can_view_comment($prow, $this)
+        if ($minic->can_view_comment($this->prow, $this)
             // Don't send notifications about draft responses to the chair,
             // even though the chair can see draft responses.
-            && (!($ctype & COMMENTTYPE_DRAFT) || $prow->has_author($minic))) {
+            && (!($ctype & COMMENTTYPE_DRAFT) || $this->prow->has_author($minic))) {
             if (($ctype & COMMENTTYPE_RESPONSE) && ($ctype & COMMENTTYPE_DRAFT)) {
                 $tmpl = "@responsedraftnotify";
             } else if ($ctype & COMMENTTYPE_RESPONSE) {
@@ -805,7 +807,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             } else {
                 $tmpl = "@commentnotify";
             }
-            HotCRPMailer::send_to($minic, $tmpl, ["prow" => $prow, "comment_row" => $this]);
+            HotCRPMailer::send_to($minic, $tmpl, ["prow" => $this->prow, "comment_row" => $this]);
         }
     }
 }
