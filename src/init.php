@@ -60,7 +60,7 @@ define("COMMENTTYPE_REVIEWER", 0x20000);
 define("COMMENTTYPE_AUTHOR", 0x30000);
 define("COMMENTTYPE_VISIBILITY", 0xFFF0000);
 
-define("TAG_REGEX_NOTWIDDLE", '[a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*');
+define("TAG_REGEX_NOTWIDDLE", '[a-zA-Z@*_:.][-+a-zA-Z0-9?!@*_:.\/]*');
 define("TAG_REGEX", '~?~?' . TAG_REGEX_NOTWIDDLE);
 define("TAG_MAXLEN", 80);
 define("TAG_INDEXBOUND", 2147483646);
