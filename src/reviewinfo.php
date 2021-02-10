@@ -406,6 +406,18 @@ class ReviewInfo implements JsonSerializable {
             && $this->reviewStatus < ReviewInfo::RS_COMPLETED;
     }
 
+    /** @param bool $hard
+     * @return string */
+    function deadline_name($hard = false) {
+        return $this->conf->review_deadline_name($this->reviewRound, $this->reviewType >= REVIEW_PC, $hard);
+    }
+
+    /** @param bool $hard
+     * @return ?int */
+    function deadline($hard = false) {
+        return $this->conf->setting($this->deadline_name($hard));
+    }
+
     /** @return ?int */
     function mtime(Contact $viewer) {
         if (!$this->prow || !$viewer->can_view_review_time($this->prow, $this)) {

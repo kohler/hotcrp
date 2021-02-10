@@ -41,7 +41,7 @@ class ReviewTimes {
 
         $this->dl = [];
         foreach ($this->conf->round_list() as $rn => $r) {
-            $dl = $this->conf->review_deadline($rn, true, false);
+            $dl = $this->conf->review_deadline_name($rn, true, false);
             $this->dl[$rn] = +$this->conf->setting($dl);
         }
 

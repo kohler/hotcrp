@@ -109,7 +109,8 @@ if (($dl->rev ?? false) && ($dl->rev->open ?? false)) {
             $roundname = "";
         }
         foreach (explode(" ", $dltext) as $dldesc) {
-            list($dt, $dv) = array(substr($dldesc, 0, 2), +substr($dldesc, 2));
+            $dt = substr($dldesc, 0, 2);
+            $dv = (int) substr($dldesc, 2);
             if ($dt === "PS") {
                 printDeadline($dv, $Conf->_("%s review deadline", $roundname),
                               $Conf->_("%s reviews are requested by this deadline.", $roundname));

@@ -175,7 +175,7 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
             }
             $start = $open_dname ? $this->conf->setting($open_dname, -1) : 1;
             if ($dname === "extrev_chairreq") {
-                $end_dname = $this->conf->review_deadline($this->_a["reviewRound"] ?? null, false, true);
+                $end_dname = $this->conf->review_deadline_name($this->_a["reviewRound"] ?? null, false, true);
             } else {
                 $end_dname = $dname;
             }

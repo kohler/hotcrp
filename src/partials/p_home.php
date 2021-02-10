@@ -281,16 +281,16 @@ class Home_Partial {
                     $rname .= " ";
                 }
                 if ($conf->time_review($round, $user->isPC, false)) {
-                    $dn = $conf->review_deadline($round, $user->isPC, false);
+                    $dn = $conf->review_deadline_name($round, $user->isPC, false);
                     if ($conf->setting($dn) <= 0) {
-                        $dn = $conf->review_deadline($round, $user->isPC, true);
+                        $dn = $conf->review_deadline_name($round, $user->isPC, true);
                     }
                     $d = $conf->unparse_setting_time_span($dn);
                     if ($d != "N/A") {
                         echo ' <em class="deadline">Please submit your ', $rname, ($this->_my_rinfo->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</em><br>\n";
                     }
                 } else if ($conf->time_review($round, $user->isPC, true)) {
-                    $dn = $conf->review_deadline($round, $user->isPC, false);
+                    $dn = $conf->review_deadline_name($round, $user->isPC, false);
                     $d = $conf->unparse_setting_time_span($dn);
                     echo ' <em class="deadline"><strong class="overdue">', $rname, ($rname ? "reviews" : "Reviews"), ' are overdue.</strong> They were requested by ', $d, ".</em><br>\n";
                 } else {
@@ -298,7 +298,7 @@ class Home_Partial {
                 }
             }
         } else if ($user->isPC && $user->can_review_any()) {
-            $dn = $conf->review_deadline(null, $user->isPC, false);
+            $dn = $conf->review_deadline_name(null, $user->isPC, false);
             $d = $conf->unparse_setting_time_span($dn);
             if ($d != "N/A") {
                 echo " <em class=\"deadline\">The review deadline is $d.</em><br>\n";

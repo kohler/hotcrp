@@ -2964,7 +2964,11 @@ class Conf {
         $rev_open = $this->settings["rev_open"] ?? 0;
         return 0 < $rev_open && $rev_open <= Conf::$now;
     }
-    function review_deadline($round, $isPC, $hard) {
+    /** @param null|int|ReviewInfo $round
+     * @param bool $isPC
+     * @param bool $hard
+     * @return string */
+    function review_deadline_name($round, $isPC, $hard) {
         if ($round === null) {
             $round = $this->assignment_round(!$isPC);
         } else if (is_object($round)) {
@@ -2973,12 +2977,16 @@ class Conf {
         return ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft")
             . ($round ? "_$round" : "");
     }
+    /** @deprecated */
+    function review_deadline($round, $isPC, $hard) {
+        return $this->review_deadline_name($round, $isPC, $hard);
+    }
     function missed_review_deadline($round, $isPC, $hard) {
         $rev_open = $this->settings["rev_open"] ?? 0;
         if (!(0 < $rev_open && $rev_open <= Conf::$now)) {
             return "rev_open";
         }
-        $dn = $this->review_deadline($round, $isPC, $hard);
+        $dn = $this->review_deadline_name($round, $isPC, $hard);
         $dv = $this->settings[$dn] ?? 0;
         if ($dv > 0 && $dv < Conf::$now) {
             return $dn;

@@ -31,7 +31,7 @@ class AllTags_API {
                    && substr($tag, 0, $twiddle) == $user->contactId) {
             return substr($tag, $twiddle);
         } else {
-            return false;
+            return null;
         }
     }
 

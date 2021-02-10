@@ -93,7 +93,7 @@ class AdminHome_Partial {
             $any_rounds_open = false;
             foreach ($conf->defined_round_list() as $i => $rname) {
                 if (!$conf->missed_review_deadline($i, true, false)
-                    && $conf->setting($conf->review_deadline($i, true, false))) {
+                    && $conf->setting($conf->review_deadline_name($i, true, false))) {
                     $m[] = "The deadline for review round " . htmlspecialchars($conf->assignment_round_option(false)) . " has passed. You may want to <a href=\"" . $conf->hoturl("settings", "group=reviews") . "\">change the round for new assignments</a> to " . htmlspecialchars($rname) . ".";
                     break;
                 }

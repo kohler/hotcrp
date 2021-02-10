@@ -1905,8 +1905,9 @@ class ReviewValues extends MessageSet {
         }
         if (!$rrow && $user->review_tokens()) {
             $prow->ensure_full_reviews();
-            if (($xrrows = $prow->reviews_of_user(-1, $user->review_tokens())))
+            if (($xrrows = $prow->reviews_of_user(-1, $user->review_tokens()))) {
                 $rrow = $xrrows[0];
+            }
         }
 
         // maybe create review

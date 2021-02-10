@@ -250,23 +250,50 @@ class HotCRPMailer extends Mailer {
         }
     }
 
+    private function guess_reviewdeadline() {
+        if ($this->row
+            && ($rrows = $this->row->reviews_of_user($this->recipient))) {
+            $rrow0 = $rrow1 = null;
+            foreach ($rrows as $rrow) {
+                if (($dl = $rrow->deadline())) {
+                    if (!$rrow0 || $rrow0->deadline() > $dl) {
+                        $rrow0 = $rrow;
+                    }
+                    if ($rrow->reviewStatus < ReviewInfo::RS_DELIVERED
+                        && (!$rrow1 || $rrow1->deadline() > $dl)) {
+                        $rrow1 = $rrow;
+                    }
+                }
+            }
+            if ($rrow0 || $rrow1) {
+                return ($rrow1 ?? $rrow0)->deadline_name();
+            }
+        }
+        if ($this->recipient->isPC) {
+            $bestdl = $bestdln = null;
+            foreach ($this->conf->defined_round_list() as $i => $round_name) {
+                $dln = "pcrev_soft" . ($i ? "_{$i}" : "");
+                if (($dl = $this->conf->setting($dln))) {
+                    if (!$bestdl
+                        || ($bestdl < Conf::$now
+                            ? $dl < $bestdl || $dl >= Conf::$now
+                            : $dl >= Conf::$now && $dl < $bestdl)) {
+                        $bestdl = $dl;
+                        $bestdln = $dln;
+                    }
+                }
+            }
+            return $bestdln;
+        } else {
+            return null;
+        }
+    }
+
     function kw_deadline($args, $isbool, $uf) {
         if ($uf->is_review && $args) {
             $args .= "rev_soft";
         } else if ($uf->is_review) {
-            if (!$this->row
-                || !($rt = $this->row->review_type($this->recipient))) {
-                $p = $this->conf->setting("pcrev_soft");
-                $e = $this->conf->setting("extrev_soft");
-                if ($p == $e) {
-                    $rt = REVIEW_EXTERNAL;
-                } else if ($isbool && ($p > 0) == ($e > 0)) {
-                    return $p > 0;
-                } else {
-                    return null;
-                }
-            }
-            $args = ($rt >= REVIEW_PC ? "pc" : "ext") . "rev_soft";
+            $args = $this->guess_reviewdeadline();
         }
         if ($args && $isbool) {
             return $this->conf->setting($args) > 0;
