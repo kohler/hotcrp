@@ -304,7 +304,6 @@ function do_tags($qreq) {
     }
 
     // modify database
-    Dbl::qe("lock tables ContactInfo write, ActionLog write");
     Conf::$no_invalidate_caches = true;
     $users = array();
     if ($qreq->tagtype === "s") {
@@ -317,14 +316,14 @@ function do_tags($qreq) {
             $likes[] = "contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like($tag) . "#%'");
         }
         foreach (Dbl::fetch_first_columns(Dbl::qe("select contactId from ContactInfo where " . join(" or ", $likes))) as $cid) {
-            $users[(int) $cid] = (object) array("id" => (int) $cid, "add_tags" => [], "remove_tags" => $removes);
+            $users[(int) $cid] = (object) ["id" => (int) $cid, "add_tags" => [], "remove_tags" => $removes];
         }
     }
     // account for request
     $key = $qreq->tagtype === "d" ? "remove_tags" : "add_tags";
     foreach ($papersel as $cid) {
         if (!isset($users[(int) $cid])) {
-            $users[(int) $cid] = (object) array("id" => (int) $cid, "add_tags" => [], "remove_tags" => []);
+            $users[(int) $cid] = (object) ["id" => (int) $cid, "add_tags" => [], "remove_tags" => []];
         }
         $users[(int) $cid]->$key = array_merge($users[(int) $cid]->$key, $t1);
     }
@@ -333,7 +332,6 @@ function do_tags($qreq) {
     foreach ($users as $cid => $cj) {
         $us->save($cj);
     }
-    Dbl::qe("unlock tables");
     Conf::$no_invalidate_caches = false;
     $Conf->invalidate_caches(["pc" => true]);
     // report
