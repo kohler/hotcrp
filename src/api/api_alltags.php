@@ -18,12 +18,17 @@ class AllTags_API {
         }
     }
 
+    /** @param string $tag
+     * @return ?string */
     static private function strip($tag, Contact $user, PaperInfo $prow = null) {
         $twiddle = strpos($tag, "~");
         if ($twiddle === false
-            || ($twiddle === 0 && $tag[1] === "~" && $user->allow_administer($prow))) {
+            || ($twiddle === 0
+                && $tag[1] === "~"
+                && ($prow ? $user->allow_administer($prow) : $user->privChair))) {
             return $tag;
-        } else if ($twiddle > 0 && substr($tag, 0, $twiddle) == $user->contactId) {
+        } else if ($twiddle > 0
+                   && substr($tag, 0, $twiddle) == $user->contactId) {
             return substr($tag, $twiddle);
         } else {
             return false;
