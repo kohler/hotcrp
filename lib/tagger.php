@@ -263,26 +263,47 @@ class TagAnno implements JsonSerializable {
 class TagMap implements IteratorAggregate {
     /** @var Conf */
     public $conf;
+    /** @var bool */
     public $has_pattern = false;
+    /** @var bool */
     public $has_chair = true;
+    /** @var bool */
     public $has_readonly = true;
+    /** @var bool */
     public $has_track = true;
+    /** @var bool */
     public $has_hidden = false;
+    /** @var bool */
     public $has_public_peruser = false;
+    /** @var bool */
     public $has_votish = false;
+    /** @var bool */
     public $has_approval = false;
+    /** @var bool */
     public $has_allotment = false;
+    /** @var bool */
     public $has_sitewide = false;
+    /** @var bool */
     public $has_rank = false;
+    /** @var bool */
     public $has_colors = false;
+    /** @var bool */
     public $has_badges = false;
+    /** @var bool */
     public $has_emoji = false;
+    /** @var bool */
     public $has_decoration = false;
+    /** @var bool */
     public $has_order_anno = false;
+    /** @var bool */
     public $has_automatic = false;
+    /** @var bool */
     public $has_autosearch = false;
+    /** @var bool */
+    public $has_role_decoration = false;
     /** @var array<string,TagInfo> */
     private $storage = [];
+    /** @var bool */
     private $sorted = false;
     private $pattern_re;
     /** @var list<TagInfo> */
@@ -1021,6 +1042,11 @@ class TagMap implements IteratorAggregate {
         }
         if ($map->has_badges || $map->has_emoji || $conf->setting("has_colontag")) {
             $map->has_decoration = true;
+        }
+        if (($map->has_colors || $map->has_badges || $map->has_emoji)
+            && ($t = $map->check("pc"))
+            && ($t->colors || $t->badges || $t->emoji)) {
+            $map->has_role_decoration = true;
         }
         return $map;
     }

@@ -992,6 +992,7 @@ class Contact {
         return $items;
     }
 
+    /** @param ReviewInfo|Author|Contact $user */
     private function calculate_name_for($pfx, $user) {
         if ($pfx === "u") {
             return $user;
@@ -1000,11 +1001,11 @@ class Contact {
         if ($pfx !== "n") {
             $n = htmlspecialchars($n);
         }
-        if ($pfx === "r"
-            && isset($user->contactTags)
-            && ($this->can_view_user_tags() || $user->contactId === $this->contactXid)) {
+        if ($pfx === "r") {
             $dt = $this->conf->tags();
-            if (($viewable = $dt->censor(TagMap::CENSOR_VIEW, $user->contactTags, $this, null))) {
+            if (($user->contactTags !== null || ($user->roles > 0 && $dt->has_role_decoration))
+                && ($this->can_view_user_tags() || $user->contactId === $this->contactXid)
+                && ($viewable = $dt->censor(TagMap::CENSOR_VIEW, self::all_contact_tags_for($user), $this, null))) {
                 if (($colors = $dt->color_classes($viewable))) {
                     $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
                 }
@@ -1228,20 +1229,18 @@ class Contact {
         }
     }
 
-    /** @param int $roles
-     * @param string $tags
-     * @return string */
-    static function roles_all_contact_tags($roles, $tags) {
-        if ($roles & self::ROLE_PC) {
-            return " pc#0" . $tags;
+    /** @return string */
+    static function all_contact_tags_for($x) {
+        if ($x->roles & self::ROLE_PC) {
+            return " pc#0{$x->contactTags}";
         } else {
-            return $tags;
+            return $x->contactTags;
         }
     }
 
     /** @return string */
     function all_contact_tags() {
-        return self::roles_all_contact_tags($this->roles, $this->contactTags);
+        return self::all_contact_tags_for($this);
     }
 
     /** @return string */
