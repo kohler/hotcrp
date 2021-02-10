@@ -190,7 +190,7 @@ class ContactList {
     function _sortReviewRatings($a, $b) {
         list($ag, $ab) = $this->_rating_data[$a->contactId] ?? [0, 0];
         list($bg, $bb) = $this->_rating_data[$b->contactId] ?? [0, 0];
-        if ($ag - $ab === 0) {
+        if ($ag + $ab === 0) {
             if ($bg + $bb !== 0) {
                 return 1;
             }
@@ -505,9 +505,12 @@ class ContactList {
             $this->_rating_data = [];
             foreach ($prows as $prow) {
                 if ($this->user->can_view_review_ratings($prow)) {
+                    $allow_admin = $this->user->allow_administer($prow);
                     foreach ($prow->reviews_by_id() as $rrow) {
                         if (isset($ratings[$prow->paperId][$rrow->reviewId])
-                            && $this->user->can_view_review_ratings($prow, $rrow)) {
+                            && ($allow_admin
+                                || ($this->user->can_view_review_ratings($prow, $rrow)
+                                    && $this->user->can_view_review_identity($prow, $rrow)))) {
                             $rrow->ratingSignature = $ratings[$prow->paperId][$rrow->reviewId];
                             $cid = $rrow->contactId;
                             $this->_rating_data[$cid] = $this->_rating_data[$cid] ?? [0, 0];

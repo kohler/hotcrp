@@ -2755,6 +2755,7 @@ class Contact {
             $rights = $this->rights($prow);
             return $rights->allow_administer;
         } else {
+            error_log(debug_string_backtrace());
             return $this->privChair;
         }
     }
@@ -2770,15 +2771,8 @@ class Contact {
     }
 
     /** @return bool */
-    function can_administer(PaperInfo $prow = null) {
-        if ($prow) {
-            $rights = $this->rights($prow);
-            return $rights->can_administer;
-        } else {
-            // XXX deprecated
-            error_log(debug_string_backtrace());
-            return $this->privChair;
-        }
+    function can_administer(PaperInfo $prow) {
+        return $this->rights($prow)->can_administer;
     }
 
     /** @param PaperContactInfo $rights
@@ -2789,13 +2783,17 @@ class Contact {
                 || $this->conf->check_tracks($prow, $this, $ttype));
     }
 
+    /** @param PaperContactInfo $rights
+     * @return bool */
+    private function _allow_administer_for_track(PaperInfo $prow, $rights, $ttype) {
+        return $rights->allow_administer
+            && (!($this->dangerous_track_mask() & (1 << $ttype))
+                || $this->conf->check_tracks($prow, $this, $ttype));
+    }
+
     /** @return bool */
-    function can_administer_for_track(PaperInfo $prow = null, $ttype) {
-        if ($prow) {
-            return $this->_can_administer_for_track($prow, $this->rights($prow), $ttype);
-        } else {
-            return $this->privChair;
-        }
+    function can_administer_for_track(PaperInfo $prow, $ttype) {
+        return $this->_can_administer_for_track($prow, $this->rights($prow), $ttype);
     }
 
     /** @return bool */
