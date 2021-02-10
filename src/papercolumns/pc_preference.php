@@ -86,7 +86,7 @@ class Preference_PaperColumn extends PaperColumn {
             }
             return (int) $be <=> (int) $ae;
         } else if ($this->secondary_sort_topic_score) {
-            return $b->topic_interest_store($this->contact) <=> $a->topic_interest_score($this->contact);
+            return $b->topic_interest_score($this->contact) <=> $a->topic_interest_score($this->contact);
         } else {
             return 0;
         }
