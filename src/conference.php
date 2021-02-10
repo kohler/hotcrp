@@ -51,7 +51,7 @@ class ResponseRound {
     public $search;
     /** @return bool */
     function relevant(Contact $user, PaperInfo $prow = null) {
-        if ($user->allow_administer($prow)
+        if (($prow ? $user->allow_administer($prow) : $user->is_manager())
             && ($this->done || $this->search || $this->name !== "1")) {
             return true;
         } else if ($user->isPC) {
