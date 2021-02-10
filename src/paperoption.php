@@ -836,11 +836,7 @@ class PaperOption implements JsonSerializable {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->display_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        if ($ap != $bp) {
-            return $ap < $bp ? -1 : 1;
-        } else {
-            return strcasecmp($a->title, $b->title) ? : $a->id - $b->id;
-        }
+        return $ap <=> $bp ? : strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id;
     }
 
     /** @param PaperOption $a
@@ -850,11 +846,7 @@ class PaperOption implements JsonSerializable {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->form_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        if ($ap != $bp) {
-            return $ap < $bp ? -1 : 1;
-        } else {
-            return strcasecmp($a->title, $b->title) ? : $a->id - $b->id;
-        }
+        return $ap <=> $bp ? : strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id;
     }
 
     static function make_readable_formid($s) {
@@ -1040,7 +1032,7 @@ class PaperOption implements JsonSerializable {
         } else if ($av === null || $bv === null) {
             return $av === null ? -1 : 1;
         } else {
-            return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
+            return $av <=> $bv;
         }
     }
     function value_check(PaperValue $ov, Contact $user) {

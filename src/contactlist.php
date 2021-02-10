@@ -162,29 +162,21 @@ class ContactList {
     }
 
     function _sortLastVisit($a, $b) {
-        if ($a->activity_at != $b->activity_at) {
-            return $a->activity_at < $b->activity_at ? 1 : -1;
-        } else {
-            return $this->_sortBase($a, $b);
-        }
+        return $b->activity_at <=> $a->activity_at ? : $this->_sortBase($a, $b);
     }
 
     function _sortReviews($a, $b) {
         $ac = $this->_rect_data[$a->contactId] ?? [0, 0];
         $bc = $this->_rect_data[$b->contactId] ?? [0, 0];
-        $x = $bc[1] - $ac[1] ? : $bc[0] - $ac[0];
-        return $x ? : $this->_sortBase($a, $b);
+        return $bc[1] <=> $ac[1] ? : $bc[0] <=> $ac[0] ? : $this->_sortBase($a, $b);
     }
 
     function _sortLeads($a, $b) {
-        $cid = $b->contactId;
-        $x = ($this->_lead_data[$b->contactId] ?? 0) - ($this->_lead_data[$a->contactId] ?? 0);
-        return $x ? : $this->_sortBase($a, $b);
+        return ($this->_lead_data[$b->contactId] ?? 0) <=> ($this->_lead_data[$a->contactId] ?? 0) ? : $this->_sortBase($a, $b);
     }
 
     function _sortShepherds($a, $b) {
-        $x = ($this->_shepherd_data[$b->contactId] ?? 0) - ($this->_shepherd_data[$a->contactId] ?? 0);
-        return $x ? : $this->_sortBase($a, $b);
+        return ($this->_shepherd_data[$b->contactId] ?? 0) <=> ($this->_shepherd_data[$a->contactId] ?? 0) ? : $this->_sortBase($a, $b);
     }
 
     function _sortReviewRatings($a, $b) {
@@ -197,9 +189,9 @@ class ContactList {
         } else if ($bg + $bb === 0) {
             return -1;
         } else if ($ag - $ab !== $bg - $bb) {
-            return $ag - $ab > $bg - $bb ? -1 : 1;
+            return $bg - $bb <=> $ag - $ab;
         } else if ($ag + $ab !== $bg + $bb) {
-            return $ag + $ab > $bg + $bb ? -1 : 1;
+            return $bg + $bb <=> $ag + $ab;
         }
         return $this->_sortBase($a, $b);
     }

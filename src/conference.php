@@ -1040,7 +1040,7 @@ class Conf {
             $ap = $xta ? $xta->__subposition ?? 0 : -PHP_INT_MAX;
             $bp = $xtb ? $xtb->__subposition ?? 0 : -PHP_INT_MAX;
         }
-        return $ap < $bp ? 1 : ($ap == $bp ? 0 : -1);
+        return $bp <=> $ap;
     }
     static function xt_position_compare($xta, $xtb) {
         $ap = $xta->position ?? 0;
@@ -1056,7 +1056,7 @@ class Conf {
             $ap = $xta->__subposition ?? 0;
             $bp = $xtb->__subposition ?? 0;
         }
-        return $ap < $bp ? -1 : ($ap == $bp ? 0 : 1);
+        return $ap <=> $bp;
     }
     /** @param array<string|int,list<object>> &$a
      * @param object $xt */

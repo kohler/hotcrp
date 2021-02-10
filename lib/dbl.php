@@ -772,7 +772,7 @@ class Dbl {
     static function shutdown() {
         if (self::$query_log) {
             uasort(self::$query_log, function ($a, $b) {
-                return $b[0] < $a[0] ? -1 : $b[0] > $a[0];
+                return $b[0] <=> $a[0];
             });
             $self = Navigation::self();
             $i = 1;

@@ -45,7 +45,7 @@ class PageCount_PaperColumn extends PaperColumn {
         if ($ac === null || $bc === null) {
             return $ac === $bc ? 0 : ($ac === null ? -1 : 1);
         } else {
-            return $ac == $bc ? 0 : ($ac < $bc ? -1 : 1);
+            return $ac <=> $bc;
         }
     }
     function content_empty(PaperList $pl, PaperInfo $row) {

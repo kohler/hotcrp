@@ -79,21 +79,17 @@ class Preference_PaperColumn extends PaperColumn {
         list($ap, $ae) = $this->sortable_preference($a);
         list($bp, $be) = $this->sortable_preference($b);
         if ($ap !== $bp) {
-            return $ap < $bp ? 1 : -1;
+            return $bp <=> $ap;
         } else if ($ae !== $be) {
             if (($ae === null) !== ($be === null)) {
                 return $ae === null ? 1 : -1;
             }
-            return (int) $ae < (int) $be ? 1 : -1;
+            return (int) $be <=> (int) $ae;
+        } else if ($this->secondary_sort_topic_score) {
+            return $b->topic_interest_store($this->contact) <=> $a->topic_interest_score($this->contact);
+        } else {
+            return 0;
         }
-        if ($this->secondary_sort_topic_score) {
-            $at = $a->topic_interest_score($this->contact);
-            $bt = $b->topic_interest_score($this->contact);
-            if ($at != $bt) {
-                return $at < $bt ? 1 : -1;
-            }
-        }
-        return 0;
     }
     function analyze(PaperList $pl) {
         $pfcol = $rtuid = [];

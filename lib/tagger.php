@@ -109,13 +109,9 @@ class TagInfo {
             Dbl::free($result);
             $this->_order_anno_list[] = TagAnno::make_tag_fencepost($this->tag);
             usort($this->_order_anno_list, function ($a, $b) {
-                if ($a->tagIndex != $b->tagIndex) {
-                    return $a->tagIndex < $b->tagIndex ? -1 : 1;
-                } else if (($x = strcasecmp($a->heading, $b->heading)) != 0) {
-                    return $x;
-                } else {
-                    return $a->annoId < $b->annoId ? -1 : 1;
-                }
+                return $a->tagIndex <=> $b->tagIndex
+                    ? : strcasecmp($a->heading, $b->heading)
+                    ? : $a->annoId <=> $b->annoId;
             });
             $last_la = null;
             foreach ($this->_order_anno_list as $i => $la) {

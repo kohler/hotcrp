@@ -674,19 +674,15 @@ class PaperList implements XtContext {
                 return ($x < 0) === $s->sort_reverse ? 1 : -1;
             }
         }
-        if ($a->paperId != $b->paperId) {
-            return $a->paperId < $b->paperId ? -1 : 1;
-        } else {
-            return 0;
-        }
+        return $a->paperId <=> $b->paperId;
     }
 
     /** @param PaperInfo $a
      * @param PaperInfo $b
      * @return int */
     function _then_sort_compare($a, $b) {
-        if (($x = $a->_sort_subset - $b->_sort_subset)) {
-            return $x < 0 ? -1 : 1;
+        if (($x = $a->_sort_subset <=> $b->_sort_subset)) {
+            return $x;
         }
         foreach ($this->_sortcol as $s) {
             if (($s->sort_subset === -1 || $s->sort_subset === $a->_sort_subset)
@@ -694,11 +690,7 @@ class PaperList implements XtContext {
                 return ($x < 0) === $s->sort_reverse ? 1 : -1;
             }
         }
-        if ($a->paperId != $b->paperId) {
-            return $a->paperId < $b->paperId ? -1 : 1;
-        } else {
-            return 0;
-        }
+        return $a->paperId <=> $b->paperId;
     }
 
     /** @return non-empty-list<PaperColumn> */

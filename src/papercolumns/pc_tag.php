@@ -89,9 +89,7 @@ class Tag_PaperColumn extends PaperColumn {
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $av = $this->sortmap[$a->paperXid];
-        $bv = $this->sortmap[$b->paperXid];
-        return $av < $bv ? -1 : ($av == $bv ? 0 : 1);
+        return $this->sortmap[$a->paperXid] <=> $this->sortmap[$b->paperXid];
     }
     function header(PaperList $pl, $is_text) {
         if (($twiddle = strpos($this->dtag, "~")) > 0) {
