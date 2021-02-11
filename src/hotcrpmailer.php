@@ -269,7 +269,7 @@ class HotCRPMailer extends Mailer {
                 return ($rrow1 ?? $rrow0)->deadline_name();
             }
         }
-        if ($this->recipient->isPC) {
+        if ($this->recipient && $this->recipient->isPC) {
             $bestdl = $bestdln = null;
             foreach ($this->conf->defined_round_list() as $i => $round_name) {
                 $dln = "pcrev_soft" . ($i ? "_{$i}" : "");
