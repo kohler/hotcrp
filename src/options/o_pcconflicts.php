@@ -117,8 +117,11 @@ class PCConflicts_PaperOption extends PaperOption {
         foreach ($ja as $email => $v) {
             if (is_string($email)
                 && (is_bool($v) || is_int($v) || is_string($v))) {
-                $pc = $prow->conf->pc_member_by_email($email);
-                if (!$pc) {
+                $pc = $prow->conf->cached_user_by_email($email);
+                if ($pc && $pc->primaryContactId) {
+                    $pc = $prow->conf->cached_user_by_id($pc->primaryContactId);
+                }
+                if (!$pc || !$pc->isPC) {
                     $pv->msg("“" . htmlspecialchars($email) . "” is not a PC member’s email.", MessageSet::WARNING);
                 }
                 $ct = $confset->parse_json($v);
@@ -126,7 +129,7 @@ class PCConflicts_PaperOption extends PaperOption {
                     $pv->msg("“" . htmlspecialchars($v) . "” does not describe a conflict type.", MessageSet::WARNING);
                     $ct = Conflict::GENERAL;
                 }
-                if ($pc) {
+                if ($pc && $pc->isPC) {
                     $this->update_value_map($vm, $pc->contactId, $ct);
                 }
             } else {

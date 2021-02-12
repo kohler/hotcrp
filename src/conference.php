@@ -2142,9 +2142,7 @@ class Conf {
             return $Me;
         }
         $this->_user_cache = $this->_user_cache ?? $this->pc_users();
-        if (array_key_exists($id, $this->_user_cache)) {
-            return $this->_user_cache[$id];
-        } else {
+        if (!array_key_exists($id, $this->_user_cache)) {
             $this->_user_cache_missing[] = $id;
             $reqids = [];
             foreach ($this->_user_cache_missing as $reqid) {
@@ -2164,8 +2162,8 @@ class Conf {
                 Dbl::free($result);
             }
             $this->_user_cache_missing = null;
-            return $this->_user_cache[$id] ?? null;
         }
+        return $this->_user_cache[$id] ?? null;
     }
 
     /** @param string $email

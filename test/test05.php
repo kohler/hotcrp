@@ -657,6 +657,7 @@ $new_user = $Conf->user_by_email("festrin@fusc.fedu");
 xassert(!!$new_user);
 xassert_eqq($new_user->firstName, "Feborah");
 xassert_eqq($new_user->lastName, "Festrin");
+$festrin_cid = $new_user->contactId;
 $nprow1->invalidate_conflicts();
 xassert($nprow1->has_author($new_user));
 
@@ -666,6 +667,7 @@ xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
 $new_user2 = $Conf->user_by_email("gestrin@gusc.gedu");
 xassert(!!$new_user2);
+$gestrin_cid = $new_user2->contactId;
 xassert_eqq($new_user2->firstName, "Geborah");
 xassert_eqq($new_user2->lastName, "Gestrin");
 $nprow1->invalidate_conflicts();
@@ -692,6 +694,55 @@ xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
 $nprow1->invalidate_conflicts();
 xassert_array_eqq(contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu"], true);
 xassert_eqq($nprow1->conflict_type($user_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+
+// check some primaryContactId functionality
+$Conf->qe("update ContactInfo set primaryContactId=? where email=?", $festrin_cid, "gestrin@gusc.gedu");
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:name_2" => "Geborah Gestrin", "authors:email_2" => "gestrin@gusc.gedu"]), $nprow1, "update");
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), ["authors", "contacts"], true);
+$nprow1 = $Conf->checked_paper_by_id($npid1);
+xassert_array_eqq(contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu", "festrin@fusc.fedu", "gestrin@gusc.gedu"], true);
+xassert_eqq($nprow1->conflict_type($user_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($festrin_cid), CONFLICT_AUTHOR);
+xassert_eqq($nprow1->conflict_type($gestrin_cid), CONFLICT_AUTHOR);
+xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com"]), $nprow1, "update");
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), ["authors", "contacts"], true);
+$nprow1 = $Conf->checked_paper_by_id($npid1);
+xassert_array_eqq(contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu"], true);
+xassert_eqq($nprow1->conflict_type($user_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => "1", "contacts:email_1" => "gestrin@gusc.gedu", "contacts:active_1" => "1"]), $nprow1, "update");
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
+$nprow1->invalidate_conflicts();
+xassert_array_eqq(contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu", "festrin@fusc.fedu"], true);
+xassert_eqq($nprow1->conflict_type($user_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($festrin_cid), CONFLICT_CONTACTAUTHOR);
+
+$ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => "1", "contacts:email_1" => "gestrin@gusc.gedu"]), $nprow1, "update");
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), [], true);
+$nprow1->invalidate_conflicts();
+xassert_array_eqq(contact_emails($nprow1), ["atten@_.com", "estrin@usc.edu", "festrin@fusc.fedu"], true);
+xassert_eqq($nprow1->conflict_type($user_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
+xassert_eqq($nprow1->conflict_type($festrin_cid), CONFLICT_CONTACTAUTHOR);
+
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId]);
+$Conf->qe("update ContactInfo set roles=1 where contactId=?", $festrin_cid);
+$Conf->invalidate_caches(["pc" => true]);
+$ps->save_paper_json((object) [
+    "id" => $npid1, "pc_conflicts" => ["gestrin@gusc.gedu" => true]
+]);
+xassert(!$ps->has_problem());
+xassert_array_eqq(array_keys($ps->diffs), ["pc_conflicts"], true);
+$nprow1->invalidate_conflicts();
+xassert_eqq(pc_conflict_keys($nprow1), [$user_estrin->contactId, $user_varghese->contactId, $festrin_cid]);
 
 // check some content_text_signature functionality
 $doc = new DocumentInfo(["content" => "ABCdefGHIjklMNO"], $Conf);

@@ -749,22 +749,27 @@ class PaperStatus extends MessageSet {
         return $cv ? ($cv[0] & ~$cv[1]) | $cv[2] : 0;
     }
 
-    /** @param Author $au
-     * @param list<string> &$diff_lemail */
-    private function create_user($au, &$diff_lemail) {
+    /** @param ?array<string,int> $lemail_to_cid
+     * @return bool */
+    private function has_conflict_diff($lemail_to_cid = null) {
+        foreach ($this->_conflict_values ?? [] as $lemail => $cv) {
+            if ($cv[0] !== self::new_conflict_value($cv)
+                && ($lemail_to_cid === null || isset($lemail_to_cid[$lemail]))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @param Author $au */
+    private function create_user($au) {
         $j = $au->unparse_nae_json();
         $j->disabled = !!$this->disable_users;
         $conflictType = self::new_conflict_value($this->_conflict_values[strtolower($j->email)] ?? null);
         $flags = $conflictType & CONFLICT_CONTACTAUTHOR ? 0 : Contact::SAVE_IMPORT;
         $u = Contact::create($this->conf, $this->user, $j, $flags);
         if ($u) {
-            if ($u->password_unset()
-                && !$u->activity_at
-                && !$u->isPC
-                && !$u->is_disabled()) {
-                $this->_created_contacts[] = $u;
-            }
-            $diff_lemail[] = strtolower($au->email);
+            $this->_created_contacts[] = $u;
         } else if (!($flags & Contact::SAVE_IMPORT)) {
             if ($au->author_index >= 0) {
                 $key = "contacts:" . $au->author_index;
@@ -777,41 +782,72 @@ class PaperStatus extends MessageSet {
     }
 
     private function _check_contacts_last($pj) {
-        // check for differences, create new contacts
-        $diff_lemail = [];
-        foreach ($this->_conflict_values ?? [] as $lemail => $cv) {
-            if ($cv[0] !== self::new_conflict_value($cv)) {
-                $diff_lemail[] = $lemail;
-            }
-        }
-        if (!$this->has_error_at("contacts")
-            && !$this->has_error_at("authors")) {
+        // create new contacts
+        if (!$this->has_error_at("authors")
+            && !$this->has_error_at("contacts")) {
             foreach ($this->_register_users ?? [] as $au) {
-                $this->create_user($au, $diff_lemail);
+                $this->create_user($au);
             }
         }
 
-        // transform values
-        if (!empty($diff_lemail)
-            && !$this->has_error_at("contacts")
-            && !$this->has_error_at("pc_conflicts")) {
-            $this->_conflict_ins = [];
-            $result = $this->conf->qe("select contactId, email from ContactInfo where email?a", $diff_lemail);
+        // exit if no change
+        if ($this->has_error_at("authors")
+            || $this->has_error_at("contacts")
+            || !$this->has_conflict_diff()) {
+            return;
+        }
+
+        // load email => cid map
+        $lemail_to_cid = $pricid_to_lemail = [];
+        $result = $this->conf->qe("select contactId, email, primaryContactId from ContactInfo where email?a", array_keys($this->_conflict_values));
+        while (($row = $result->fetch_row())) {
+            $lemail_to_cid[strtolower($row[1])] = (int) $row[0];
+            if ($row[2]) {
+                $pricid_to_lemail[(int) $row[2]][] = strtolower($row[1]);
+            }
+        }
+        Dbl::free($result);
+
+        // update for primaryContactId
+        if (!empty($pricid_to_lemail)) {
+            $result = $this->conf->qe("select contactId, email from ContactInfo where contactId?a", array_keys($pricid_to_lemail));
             while (($row = $result->fetch_row())) {
-                /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-                $cv = $this->_conflict_values[strtolower($row[1])];
-                $ncv = self::new_conflict_value($cv);
-                if (($cv[0] ^ $ncv) & CONFLICT_PCMASK) {
-                    $this->diffs["pc_conflicts"] = true;
+                $pcid = (int) $row[0];
+                $plemail = strtolower($row[1]);
+                $lemail_to_cid[$plemail] = $pcid;
+                foreach ($pricid_to_lemail[$pcid] as $lemail) {
+                    $cv = $this->_conflict_values[$lemail];
+                    $npcv = self::new_conflict_value($this->_conflict_values[$plemail] ?? null);
+                    foreach ([CONFLICT_PCMASK, CONFLICT_AUTHOR, CONFLICT_CONTACTAUTHOR] as $ct) {
+                        if (($cv[1] & $ct) !== 0 && ($npcv & $ct) === 0) {
+                            $this->update_conflict_value($plemail, $cv[1] & $ct, $cv[2] & $ct);
+                        }
+                    }
+                    $this->update_conflict_value($lemail, CONFLICT_PCMASK | CONFLICT_CONTACTAUTHOR, 0);
                 }
-                if (($cv[0] >= CONFLICT_AUTHOR) !== ($ncv >= CONFLICT_AUTHOR)) {
-                    $this->diffs["contacts"] = true;
-                }
-                $this->_conflict_ins[] = [(int) $row[0], $cv[1], $cv[2]];
             }
             Dbl::free($result);
         }
 
+        // save diffs if change
+        if ($this->has_conflict_diff($lemail_to_cid)) {
+            $this->_conflict_ins = [];
+            foreach ($this->_conflict_values as $lemail => $cv) {
+                if (($cid = $lemail_to_cid[$lemail] ?? null)) {
+                    $ncv = self::new_conflict_value($cv);
+                    if (($cv[0] ^ $ncv) & CONFLICT_PCMASK) {
+                        $this->diffs["pc_conflicts"] = true;
+                    }
+                    if (($cv[0] >= CONFLICT_AUTHOR) !== ($ncv >= CONFLICT_AUTHOR)) {
+                        $this->diffs["contacts"] = true;
+                    }
+                    $this->_conflict_ins[] = [$cid, $cv[1], $cv[2]];
+                }
+            }
+        }
+    }
+
+    private function _ensure_creator_contact() {
         // if creating a paper, user must always be contact
         if (!$this->_nnprow->paperId
             && $this->user->contactId > 0) {
@@ -933,6 +969,7 @@ class PaperStatus extends MessageSet {
         }
 
         $this->_check_contacts_last($pj);
+        $this->_ensure_creator_contact();
         return true;
     }
 
@@ -1056,7 +1093,12 @@ class PaperStatus extends MessageSet {
                 $rest["adminupdate"] = true;
             }
             foreach ($this->_created_contacts as $u) {
-                $u->send_mail("@newaccount.paper", $rest);
+                if ($u->password_unset()
+                    && !$u->activity_at
+                    && !$u->isPC
+                    && !$u->is_disabled()) {
+                    $u->send_mail("@newaccount.paper", $rest);
+                }
             }
         }
     }
