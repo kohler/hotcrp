@@ -36,8 +36,8 @@ function fix_one_delegation() {
     while (($row = $result->fetch_object())) {
         if ($row->contactId == $req_cid
             && preg_match('/\ALogged proposal for (\S+) to review/', $row->action, $m)
-            && ($xid = $Conf->user_id_by_email($m[1]))) {
-            $proposals[$xid] = true;
+            && ($xuser = $Conf->cached_user_by_email($m[1]))) {
+            $proposals[$xuser->contactId] = true;
         } else if (preg_match('/\AAdded External review by (\S+)/', $row->action, $m)
                    && ($pc = $Conf->pc_member_by_email($m[1]))
                    && $pc->can_administer($prow)) {

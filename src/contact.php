@@ -46,6 +46,8 @@ class Contact {
     public $contactTags;
     /** @var bool|'deleted' */
     public $disabled = false;
+    /** @var ?int */
+    public $primaryContactId;
     /** @var bool */
     public $_slice = false;
 
@@ -59,16 +61,14 @@ class Contact {
     public $sort_position;
 
     /** @var ?string */
-    public $collaborators;
+    private $collaborators;
     public $preferredEmail = "";
     /** @var ?string */
-    public $country;
+    private $country;
     /** @var ?string */
-    public $orcid;
+    private $orcid;
     /** @var ?string */
-    public $phone;
-    /** @var ?int */
-    public $primaryContactId;
+    private $phone;
 
     public $demoSharing;
     public $demoBirthday;
@@ -403,7 +403,7 @@ class Contact {
     function unslice() {
         if ($this->_slice) {
             assert($this->contactId > 0);
-            $need = $this->conf->sliced_users($this);
+            $need = $this->conf->cached_sliced_users($this);
             $result = $this->conf->qe("select * from ContactInfo where contactId?a", array_keys($need));
             while (($m = $result->fetch_object())) {
                 $need[$m->contactId]->unslice_using($m);
@@ -452,6 +452,12 @@ class Contact {
     function country() {
         $this->_slice && $this->unslice();
         return $this->country ?? "";
+    }
+
+    /** @return ?string */
+    function phone() {
+        $this->_slice && $this->unslice();
+        return $this->phone;
     }
 
     /** @return string */

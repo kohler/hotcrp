@@ -11,19 +11,23 @@ $MergeError = "";
 function crpmerge($qreq, $MiniMe) {
     global $Conf, $Me, $MergeError;
 
-    if (!$MiniMe->contactId && !$Me->contactId)
+    if (!$MiniMe->contactId && !$Me->contactId) {
         return ($MergeError = "Neither of those accounts has any data associated with this conference.");
+    }
     // XXX `act as` merging might be useful?
-    if ($Me->is_actas_user())
+    if ($Me->is_actas_user()) {
         return ($MergeError = "You can’t merge accounts when acting as a different user.");
-    if ($MiniMe->data("locked") || $Me->data("locked"))
+    }
+    if ($MiniMe->data("locked") || $Me->data("locked")) {
         return ($MergeError = "Attempt to merge a locked account.");
+    }
 
     // determine old & new users
-    if ($qreq->prefer)
+    if ($qreq->prefer) {
         $merger = new MergeContacts($Me, $MiniMe);
-    else
+    } else {
         $merger = new MergeContacts($MiniMe, $Me);
+    }
 
     // send mail at start of process
     HotCRPMailer::send_to($merger->oldu, "@mergeaccount",
@@ -55,8 +59,9 @@ if (isset($Qreq->merge) && $Qreq->valid_post()) {
         Ht::error_at("password");
     } else {
         $MiniMe = $Conf->user_by_email($Qreq->email);
-        if (!$MiniMe)
+        if (!$MiniMe) {
             $MiniMe = $Conf->contactdb_user_by_email($Qreq->email);
+        }
         if (!$MiniMe) {
             $MergeError = "No account for " . htmlspecialchars($Qreq->email) . " exists.  Did you enter the correct email address?";
             Ht::error_at("email");
@@ -66,17 +71,18 @@ if (isset($Qreq->merge) && $Qreq->valid_post()) {
         } else if ($MiniMe->contactId && $MiniMe->contactId == $Me->contactId) {
             $Conf->confirmMsg("Accounts successfully merged.");
             $Conf->redirect();
-        } else
+        } else {
             crpmerge($Qreq, $MiniMe);
+        }
     }
 }
 
 $Conf->header("Merge accounts", "mergeaccounts");
 
 
-if ($MergeError)
+if ($MergeError) {
     Conf::msg_error($MergeError);
-else
+} else {
     $Conf->infoMsg(
 "You may have multiple accounts registered with the "
 . $Conf->short_name . " conference; perhaps "
@@ -87,6 +93,7 @@ else
 . "of the secondary account. This will merge all the information from "
 . "that account into this one. "
 );
+}
 
 echo Ht::form($Conf->hoturl_post("mergeaccounts"));
 

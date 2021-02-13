@@ -74,22 +74,18 @@ class RequestReview_API {
         }
 
         // check for potential conflict
-        $xreviewer = $reviewer;
-        if (!$xreviewer) {
-            $xreviewer = $user->conf->contactdb_user_by_email($email);
-        }
+        $xreviewer = $reviewer ?? $user->conf->contactdb_user_by_email($email);
         if (!$xreviewer) {
             $xreviewer = new Contact(["firstName" => $name_args->firstName, "lastName" => $name_args->lastName, "email" => $name_args->email, "affiliation" => $name_args->affiliation], $user->conf);
         }
         $potconflict = $prow->potential_conflict_html($xreviewer);
 
         // check requester
-        $requester = null;
-        if ($request
-            && $user->can_administer($prow)) {
-            $requester = $user->conf->cached_user_by_id($request->requestedBy);
+        if ($request && $user->can_administer($prow)) {
+            $requester = $user->conf->cached_user_by_id($request->requestedBy) ?? $user;
+        } else {
+            $requester = $user;
         }
-        $requester = $requester ? : $user;
 
         // check whether to make a proposal
         $extrev_chairreq = $user->conf->setting("extrev_chairreq");

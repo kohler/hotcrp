@@ -175,7 +175,7 @@ if ($Qreq->fn === "get"
             "email" => $user->email,
             "affiliation" => $user->affiliation,
             "country" => $user->country(),
-            "phone" => $user->phone,
+            "phone" => $user->phone(),
             "disabled" => $user->is_disabled() ? "yes" : "",
             "collaborators" => rtrim($user->collaborators())
         ];

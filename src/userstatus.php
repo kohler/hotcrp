@@ -411,7 +411,7 @@ class UserStatus extends MessageSet {
             && $old_user
             && ($cj->email ?? false)
             && strtolower($old_user->email) !== strtolower($cj->email)
-            && $this->conf->user_id_by_email($cj->email)) {
+            && $this->conf->user_by_email($cj->email)) {
             $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . $this->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         }
 

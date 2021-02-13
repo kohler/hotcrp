@@ -32,7 +32,7 @@ function change_email_by_capability($Qreq) {
     }
 
     $newemail = $Acct ? $capcontent->uemail : null;
-    if ($Acct && $Conf->user_id_by_email($newemail)) {
+    if ($Acct && $Conf->user_by_email($newemail)) {
         Conf::msg_error("The email address you requested, " . htmlspecialchars($newemail) . ", is already in use on this site. You may want to <a href=\"" . $Conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         return false;
     }

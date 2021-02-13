@@ -47,7 +47,8 @@ class MergeContacts extends MessageSet {
         $this->q("delete from $table where $idfield=?", $this->oldu->contactId);
     }
     private function replace_contact_string($k) {
-        return (string) $this->oldu->$k !== "" && (string) $this->newu->$k === "";
+        return (string) $this->oldu->prop($k) !== ""
+            && (string) $this->newu->prop($k) === "";
     }
     private function basic_user_json() {
         $cj = (object) ["email" => $this->newu->email];
@@ -55,7 +56,7 @@ class MergeContacts extends MessageSet {
         foreach (["firstName", "lastName", "affiliation", "country",
                   "collaborators", "phone"] as $k) {
             if ($this->replace_contact_string($k))
-                $cj->$k = $this->oldu->$k;
+                $cj->$k = $this->oldu->prop($k);
         }
 
         if (($old_data = $this->oldu->data())) {

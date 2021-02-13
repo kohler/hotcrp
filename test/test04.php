@@ -252,7 +252,7 @@ $user_anne2 = maybe_user("anne2@_.com");
 xassert($user_anne1 && !$user_anne2);
 xassert_eqq($user_anne1->firstName, "Anne");
 xassert_eqq($user_anne1->lastName, "Dudfield");
-xassert_eqq($user_anne1->collaborators, "All (derpo)");
+xassert_eqq($user_anne1->collaborators(), "All (derpo)");
 xassert_eqq($user_anne1->tag_value("a"), 1.0);
 xassert_eqq($user_anne1->tag_value("b"), 3.0);
 xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);

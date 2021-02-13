@@ -36,24 +36,28 @@ class Assign_ListAction extends ListAction {
         }
 
         $mpc = (string) $qreq->markpc;
-        if ($mpc === "" || $mpc === "0" || strcasecmp($mpc, "none") == 0)
+        if ($mpc === "" || $mpc === "0" || strcasecmp($mpc, "none") == 0) {
             $mpc = "none";
-        else if (($pc = $user->conf->user_by_email($mpc)))
+        } else if (($pc = $user->conf->cached_user_by_email($mpc))) {
             $mpc = $pc->email;
-        else
+        } else {
             return "“" . htmlspecialchars($mpc) . "” is not a PC member.";
-        if ($mpc === "none" && $mt !== "lead" && $mt !== "shepherd")
+        }
+        if ($mpc === "none" && $mt !== "lead" && $mt !== "shepherd") {
             return "A PC member is required.";
+        }
         $mpc = CsvGenerator::quote($mpc);
 
         if (!in_array($mt, ["lead", "shepherd", "conflict", "clearconflict",
                             "pcreview", "secondaryreview", "primaryreview",
-                            "clearreview"]))
+                            "clearreview"])) {
             return "Unknown assignment type.";
+        }
 
         $text = "paper,action,user\n";
-        foreach ($ssel->selection() as $pid)
+        foreach ($ssel->selection() as $pid) {
             $text .= "$pid,$mt,$mpc\n";
+        }
         $assignset = new AssignmentSet($user, true);
         $assignset->enable_papers($ssel->selection());
         $assignset->parse($text);

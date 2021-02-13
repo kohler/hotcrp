@@ -647,7 +647,7 @@ $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), [], true);
 
-xassert(!$Conf->user_id_by_email("festrin@fusc.fedu"));
+xassert(!$Conf->user_by_email("festrin@fusc.fedu"));
 $ps->save_paper_json((object) [
     "id" => $npid1, "contacts" => ["estrin@usc.edu", (object) ["email" => "festrin@fusc.fedu", "name" => "Feborah Festrin"]]
 ]);
@@ -661,7 +661,7 @@ $festrin_cid = $new_user->contactId;
 $nprow1->invalidate_conflicts();
 xassert($nprow1->has_author($new_user));
 
-xassert(!$Conf->user_id_by_email("gestrin@gusc.gedu"));
+xassert(!$Conf->user_by_email("gestrin@gusc.gedu"));
 $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu", "contacts:active_1" => 1, "contacts:email_2" => "festrin@fusc.fedu", "contacts:email_3" => "gestrin@gusc.gedu", "contacts:name_3" => "Geborah Gestrin", "contacts:active_3" => 1]), $nprow1, "update");
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), ["contacts"], true);
