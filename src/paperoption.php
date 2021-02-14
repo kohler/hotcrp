@@ -836,7 +836,7 @@ class PaperOption implements JsonSerializable {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->display_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        return $ap <=> $bp ? : strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id;
+        return $ap <=> $bp ? : (strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id);
     }
 
     /** @param PaperOption $a
@@ -846,7 +846,7 @@ class PaperOption implements JsonSerializable {
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $b->form_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        return $ap <=> $bp ? : strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id;
+        return $ap <=> $bp ? : (strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id);
     }
 
     static function make_readable_formid($s) {

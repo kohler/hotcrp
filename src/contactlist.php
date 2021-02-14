@@ -168,7 +168,7 @@ class ContactList {
     function _sortReviews($a, $b) {
         $ac = $this->_rect_data[$a->contactId] ?? [0, 0];
         $bc = $this->_rect_data[$b->contactId] ?? [0, 0];
-        return $bc[1] <=> $ac[1] ? : $bc[0] <=> $ac[0] ? : $this->_sortBase($a, $b);
+        return $bc[1] <=> $ac[1] ? : ($bc[0] <=> $ac[0] ? : $this->_sortBase($a, $b));
     }
 
     function _sortLeads($a, $b) {

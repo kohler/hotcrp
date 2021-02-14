@@ -110,8 +110,8 @@ class TagInfo {
             $this->_order_anno_list[] = TagAnno::make_tag_fencepost($this->tag);
             usort($this->_order_anno_list, function ($a, $b) {
                 return $a->tagIndex <=> $b->tagIndex
-                    ? : strcasecmp($a->heading, $b->heading)
-                    ? : $a->annoId <=> $b->annoId;
+                    ? : (strcasecmp($a->heading, $b->heading)
+                         ? : $a->annoId <=> $b->annoId);
             });
             $last_la = null;
             foreach ($this->_order_anno_list as $i => $la) {
