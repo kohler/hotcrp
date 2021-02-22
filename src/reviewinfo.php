@@ -219,6 +219,30 @@ class ReviewInfo implements JsonSerializable {
         return self::$type_revmap[$type] ?? "clearreview";
     }
 
+
+    /** @return ReviewInfo */
+    static function make_blank(PaperInfo $prow = null, Contact $user) {
+        $rrow = new ReviewInfo;
+        $rrow->conf = $user->conf;
+        $rrow->prow = $prow;
+        $rrow->paperId = $prow ? $prow->paperId : 0;
+        $rrow->reviewId = 0;
+        $rrow->contactId = $user->contactId;
+        $rrow->reviewToken = 0;
+        $rrow->reviewType = $user->isPC ? REVIEW_PC : REVIEW_EXTERNAL;
+        $rrow->reviewRound = $user->conf->assignment_round(!$user->isPC);
+        $rrow->requestedBy = 0;
+        $rrow->reviewBlind = $user->conf->review_blindness() !== Conf::BLIND_NEVER ? 1 : 0;
+        $rrow->reviewModified = 0;
+        $rrow->reviewOrdinal = 0;
+        $rrow->timeDisplayed = 0;
+        $rrow->timeApprovalRequested = 0;
+        $rrow->reviewNeedsSubmit = 0;
+        $rrow->reviewViewScore = -3;
+        $rrow->reviewStatus = self::RS_EMPTY;
+        return $rrow;
+    }
+
     private function merge($recomputing_view_scores, PaperInfo $prow = null,
                            Conf $conf = null) {
         $this->conf = $conf ?? $prow->conf;
@@ -522,6 +546,14 @@ class ReviewInfo implements JsonSerializable {
         } else {
             return ".new";
         }
+    }
+
+    /** @return bool */
+    function has_nonempty_field(ReviewField $f) {
+        return (!$f->round_mask || ($f->round_mask & (1 << $this->reviewRound)) !== 0)
+            && ($x = $this->{$f->id} ?? null) !== null
+            && $x !== ""
+            && (!$f->has_options || (int) $x !== 0);
     }
 
 

@@ -207,7 +207,7 @@ function downloadForm($qreq) {
     }
     $Conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
         ->set_inline(false)
-        ->add_string($rf->textFormHeader(false) . $rf->textForm($prow, $rrow, $Me, $use_request ? $qreq : null))
+        ->add_string($rf->text_form_header(false) . $rf->text_form($prow, $rrow, $Me, $use_request ? $qreq : null))
         ->download();
     exit;
 }

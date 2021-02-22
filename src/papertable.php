@@ -2194,9 +2194,9 @@ class PaperTable {
             if ($want_my_scores && $canView) {
                 $view_score = $user->view_score_bound($prow, $rr);
                 foreach ($conf->review_form()->forder as $fid => $f) {
-                    if ($f->has_options && $f->view_score > $view_score
-                        && (!$f->round_mask || $f->is_round_visible($rr))
-                        && isset($rr->$fid) && $rr->$fid) {
+                    if ($f->has_options
+                        && $f->view_score > $view_score
+                        && $rr->has_nonempty_field($f)) {
                         if ($score_header[$fid] === "") {
                             $score_header[$fid] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
                         }

@@ -7,7 +7,7 @@ class ReviewDiffInfo {
     public $conf;
     /** @var PaperInfo */
     public $prow;
-    /** @var ?ReviewInfo */
+    /** @var ReviewInfo */
     public $rrow;
     private $fields = [];
     private $newv = [];
@@ -17,7 +17,7 @@ class ReviewDiffInfo {
     static private $use_xdiff = null;
     static private $has_xpatch = null;
 
-    function __construct(PaperInfo $prow, ReviewInfo $rrow = null) {
+    function __construct(PaperInfo $prow, ReviewInfo $rrow) {
         $this->conf = $prow->conf;
         $this->prow = $prow;
         $this->rrow = $rrow;
@@ -52,7 +52,7 @@ class ReviewDiffInfo {
         }
     }
     function make_patch($dir = 0) {
-        if (!$this->rrow) {
+        if (!$this->rrow || !$this->rrow->reviewId) {
             return null;
         }
         self::check_xdiff();
