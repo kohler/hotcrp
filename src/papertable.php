@@ -2799,20 +2799,26 @@ class PaperTable {
         $this->prow->ensure_full_reviews();
         $this->all_rrows = $this->prow->reviews_by_display();
 
-        $this->viewable_rrows = array();
-        $round_mask = 0;
-        $min_view_score = VIEWSCORE_EMPTYBOUND;
+        $this->viewable_rrows = [];
+        $rf = $this->conf->review_form();
+        $unresolved_fields = $rf->all_fields();
         foreach ($this->all_rrows as $rrow) {
             if ($this->user->can_view_review($this->prow, $rrow)) {
                 $this->viewable_rrows[] = $rrow;
-                if ($rrow->reviewRound !== null) {
-                    $round_mask |= 1 << (int) $rrow->reviewRound;
+                if (!empty($unresolved_fields)) {
+                    $bound = $this->user->view_score_bound($this->prow, $rrow);
+                    $this_resolved_fields = [];
+                    foreach ($unresolved_fields as $f) {
+                        if ($f->view_score > $bound && $rrow->has_nonempty_field($f))
+                            $this_resolved_fields[] = $f;
+                    }
+                    foreach ($this_resolved_fields as $f) {
+                        unset($unresolved_fields[$f->id]);
+                    }
                 }
-                $min_view_score = min($min_view_score, $this->user->view_score_bound($this->prow, $rrow));
             }
         }
-        $rf = $this->conf->review_form();
-        Ht::stash_script("hotcrp.set_review_form(" . json_encode_browser($rf->unparse_json($round_mask, $min_view_score)) . ")");
+        Ht::stash_script("hotcrp.set_review_form(" . json_encode_browser($rf->unparse_form_json(array_diff_key($rf->all_fields(), $unresolved_fields))) . ")");
 
         $want_rid = $want_rordinal = -1;
         $rtext = (string) $this->qreq->reviewId;

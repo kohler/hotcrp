@@ -9,10 +9,11 @@ class GetJsonRQC_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $results = ["hotcrp_version" => HOTCRP_VERSION];
-        if (($git_data = Conf::git_status()))
+        if (($git_data = Conf::git_status())) {
             $results["hotcrp_commit"] = $git_data[0];
+        }
         $rf = $user->conf->review_form();
-        $results["reviewform"] = $rf->unparse_json(0, VIEWSCORE_REVIEWERONLY);
+        $results["reviewform"] = $rf->unparse_form_json($rf->bound_viewable_fields(VIEWSCORE_REVIEWERONLY));
         $pj = [];
         $ps = new PaperStatus($user->conf, $user, ["hide_docids" => true]);
         foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {

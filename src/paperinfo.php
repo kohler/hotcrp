@@ -2504,17 +2504,6 @@ class PaperInfo {
         return false;
     }
 
-    /** @param ?ReviewInfo $rrow
-     * @return array<string,ReviewField> */
-    function viewable_review_fields($rrow, Contact $user) {
-        $bound = $user->view_score_bound($this, $rrow);
-
-        return array_filter($this->conf->all_review_fields(), function ($f) use ($bound, $rrow) {
-            return $f->view_score > $bound
-                && (!$f->round_mask || $f->is_round_visible($rrow));
-        });
-    }
-
 
     function load_review_requests($always = false) {
         if ($this->_row_set && ($this->_request_array === null || $always)) {

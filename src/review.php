@@ -223,21 +223,10 @@ class ReviewField implements JsonSerializable {
     /** @param ?int|string $value
      * @return bool */
     function value_empty($value) {
+        // see also ReviewInfo::has_nonempty_field
         return $value === null
             || $value === ""
             || ($this->has_options && (int) $value === 0);
-    }
-
-    /** @return bool */
-    function is_round_visible(ReviewInfo $rrow = null) {
-        if (!$this->round_mask) {
-            return true;
-        } else {
-            // NB missing $rrow is only possible for PC reviews
-            $round = $rrow ? $rrow->reviewRound : $this->conf->assignment_round(false);
-            return $round === null
-                || ($this->round_mask & (1 << $round));
-        }
     }
 
     /** @return bool */
@@ -606,18 +595,19 @@ class ReviewForm implements JsonSerializable {
     function all_fields() {
         return $this->forder;
     }
-    /** @return array<string,ReviewField> */
-    function viewable_fields(Contact $user) {
-        $bound = $user->permissive_view_score_bound();
-        return array_filter($this->forder, function ($f) use ($bound) {
-            return $f->view_score > $bound;
-        });
+    /** @param int $bound
+     * @return array<string,ReviewField> */
+    function bound_viewable_fields($bound) {
+        $fs = [];
+        foreach ($this->forder as $fid => $f) {
+            if ($f->view_score > $bound)
+                $fs[$fid] = $f;
+        }
+        return $fs;
     }
     /** @return array<string,ReviewField> */
-    function editable_fields(ReviewInfo $rrow = null) {
-        return array_filter($this->forder, function ($f) use ($rrow) {
-            return !$f->round_mask || $f->is_round_visible($rrow);
-        });
+    function viewable_fields(Contact $user) {
+        return $this->bound_viewable_fields($user->permissive_view_score_bound());
     }
     /** @return list<ReviewField> */
     function example_fields(Contact $user) {
@@ -667,14 +657,13 @@ class ReviewForm implements JsonSerializable {
         }
         return $fmap;
     }
-    function unparse_json($round_mask, $view_score_bound) {
-        $fmap = array();
-        foreach ($this->forder as $f) {
-            if ($f->view_score > $view_score_bound
-                && (!$round_mask || !$f->round_mask
-                    || ($f->round_mask & $round_mask))) {
-                $fmap[$f->uid()] = $f->unparse_json();
-            }
+
+    /** @param array<string,ReviewField> $fields
+     * @return array<string,array> */
+    function unparse_form_json($fields) {
+        $fmap = [];
+        foreach ($fields as $f) {
+            $fmap[$f->uid()] = $f->unparse_json();
         }
         return $fmap;
     }
@@ -695,7 +684,7 @@ class ReviewForm implements JsonSerializable {
             $format_description = $fi->description_preview_html();
         }
         echo '<div class="rve">';
-        foreach ($prow->viewable_review_fields($rrow, $contact) as $fid => $f) {
+        foreach ($rrow->viewable_fields($contact) as $fid => $f) {
             $rval = "";
             if ($rrow) {
                 $rval = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_STRING);
@@ -759,8 +748,8 @@ class ReviewForm implements JsonSerializable {
     /** @return int */
     function nonempty_view_score(ReviewInfo $rrow) {
         $view_score = VIEWSCORE_EMPTY;
-        foreach ($this->editable_fields($rrow) as $fid => $f) {
-            if (!$f->value_empty($rrow->$fid ?? null)) {
+        foreach ($this->forder as $fid => $f) {
+            if ($rrow->has_nonempty_field($f)) {
                 $view_score = max($view_score, $f->view_score);
             }
         }
@@ -770,8 +759,8 @@ class ReviewForm implements JsonSerializable {
     /** @return int */
     function word_count(ReviewInfo $rrow) {
         $wc = 0;
-        foreach ($this->editable_fields($rrow) as $fid => $f) {
-            if ($f->include_word_count() && !$f->value_empty($rrow->$fid ?? null)) {
+        foreach ($this->forder as $fid => $f) {
+            if ($f->include_word_count() && $rrow->has_nonempty_field($f)) {
                 $wc += count_words($rrow->$fid);
             }
         }
@@ -781,8 +770,8 @@ class ReviewForm implements JsonSerializable {
     /** @return ?int */
     function full_word_count(ReviewInfo $rrow) {
         $wc = null;
-        foreach ($this->editable_fields($rrow) as $fid => $f) {
-            if (!$f->has_options) {
+        foreach ($this->forder as $fid => $f) {
+            if (!$f->has_options && $rrow->has_field($f)) {
                 $wc = $wc ?? 0;
                 if (!$f->value_empty($rrow->$fid ?? null)) {
                     $wc += count_words($rrow->$fid);
@@ -913,7 +902,7 @@ $blind\n";
             $i++; // XXX remove $i
             assert($i === $f->display_order);
             if ($f->view_score <= $revViewScore
-                || ($f->round_mask && !$f->is_round_visible($rrow))) {
+                || !$rrow->has_field($f)) {
                 continue;
             }
 
@@ -1007,7 +996,7 @@ $blind\n";
             $x[] = "* Updated: " . $this->conf->unparse_time($time) . "\n";
         }
 
-        foreach ($prow->viewable_review_fields($rrow, $contact) as $fid => $f) {
+        foreach ($rrow->viewable_fields($contact) as $fid => $f) {
             $fval = "";
             if (isset($rrow->$fid)) {
                 $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
@@ -1404,7 +1393,7 @@ $blind\n";
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        foreach ($prow->viewable_review_fields($rrow, $viewer) as $fid => $f) {
+        foreach ($rrow->viewable_fields($viewer) as $fid => $f) {
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
                 $fval = $rrow->$fid ?? null;
@@ -1456,7 +1445,7 @@ $blind\n";
         } else {
             $xbarsep = "";
         }
-        foreach ($prow->viewable_review_fields($rrow, $contact) as $fid => $f) {
+        foreach ($rrow->viewable_fields($contact) as $fid => $f) {
             if ($f->has_options && !$f->value_empty($rrow->$fid ?? null)) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
                     . $f->unparse_value((int) $rrow->$fid, ReviewField::VALUE_SC);
@@ -1970,8 +1959,7 @@ class ReviewValues extends MessageSet {
 
         foreach ($this->rf->forder as $fid => $f) {
             if (!isset($this->req[$fid])
-                && !($submit
-                     && (!$f->round_mask || $f->is_round_visible($rrow)))) {
+                && (!$submit || !$rrow->has_field($f))) {
                 continue;
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
@@ -2144,7 +2132,10 @@ class ReviewValues extends MessageSet {
         $view_score = VIEWSCORE_EMPTY;
         $diffinfo = new ReviewDiffInfo($prow, $rrow);
         $wc = 0;
-        foreach ($this->rf->editable_fields($rrow) as $fid => $f) {
+        foreach ($this->rf->all_fields() as $fid => $f) {
+            if (!$rrow->has_field($f)) {
+                continue;
+            }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if ($fval === false) {
                 $fval = $old_fval;

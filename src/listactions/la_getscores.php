@@ -27,7 +27,7 @@ class GetScores_ListAction extends ListAction {
                     if ($rrow->reviewSubmitted) {
                         $this_scores = false;
                         $b = $a;
-                        foreach ($row->viewable_review_fields($rrow, $user) as $field => $f) {
+                        foreach ($rrow->viewable_fields($user) as $field => $f) {
                             if ($f->has_options && ($rrow->$field || $f->allow_empty)) {
                                 $b[$f->search_keyword()] = $f->unparse_value($rrow->$field);
                                 $any_scores[$f->search_keyword()] = $this_scores = true;
