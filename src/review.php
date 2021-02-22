@@ -1457,23 +1457,31 @@ $blind\n";
     }
 
     function compute_view_scores() {
-        $result = $this->conf->qe("select * from PaperReview where reviewViewScore=" . ReviewInfo::VIEWSCORE_RECOMPUTE);
+        $recompute = $this !== $this->conf->review_form();
+        $prows = $this->conf->paper_set(["where" => "Paper.paperId in (select paperId from PaperReview where reviewViewScore=" . ReviewInfo::VIEWSCORE_RECOMPUTE . ")"]);
+        $prows->ensure_full_reviews();
         $updatef = Dbl::make_multi_qe_stager($this->conf->dblink);
         $pids = $rids = [];
         $last_view_score = ReviewInfo::VIEWSCORE_RECOMPUTE;
-        while (($rrow = ReviewInfo::fetch($result, null, $this->conf, true))) {
-            $view_score = $this->nonempty_view_score($rrow);
-            if ($last_view_score !== $view_score) {
-                if (!empty($rids)) {
-                    $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", [$last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE]);
+        foreach ($prows as $prow) {
+            foreach ($prow->reviews_by_id() as $rrow) {
+                if ($rrow->reviewViewScore_recomputed) {
+                    if ($recompute) {
+                        $rrow->reviewViewScore = $this->nonempty_view_score($rrow);
+                    }
+                    if ($last_view_score !== $rrow->reviewViewScore) {
+                        if (!empty($rids)) {
+                            $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", [$last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE]);
+                        }
+                        $pids = $rids = [];
+                        $last_view_score = $rrow->reviewViewScore;
+                    }
+                    if (empty($pids) || $pids[count($pids) - 1] !== $rrow->paperId) {
+                        $pids[] = $rrow->paperId;
+                    }
+                    $rids[] = $rrow->reviewId;
                 }
-                $pids = $rids = [];
-                $last_view_score = $view_score;
             }
-            if (empty($pids) || $pids[count($pids) - 1] !== $rrow->paperId) {
-                $pids[] = $rrow->paperId;
-            }
-            $rids[] = $rrow->reviewId;
         }
         if (!empty($rids)) {
             $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", [$last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE]);

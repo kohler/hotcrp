@@ -331,7 +331,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     /** @param callable(PaperInfo):bool $func */
     function any($func) {
-        foreach ($this as $prow) {
+        foreach ($this->prows as $prow) {
             if (($x = call_user_func($func, $prow)))
                 return $x;
         }
@@ -353,6 +353,11 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     function offsetUnset($offset) {
         throw new Exception("invalid PaperInfoSet::offsetUnset");
+    }
+    function ensure_full_reviews() {
+        if (!empty($this->prows)) {
+            $this->prows[0]->ensure_full_reviews();
+        }
     }
 }
 

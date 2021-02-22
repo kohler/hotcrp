@@ -983,7 +983,7 @@ class SettingValues extends MessageSet {
     }
     /** @param ?string $name
      * @param callable() $func */
-    function cleanup_callback($name, $func) {
+    function register_cleanup_function($name, $func) {
         if ($name !== null) {
             foreach ($this->cleanup_callbacks as $cb) {
                 if ($cb[0] === $name)
@@ -991,6 +991,12 @@ class SettingValues extends MessageSet {
             }
         }
         $this->cleanup_callbacks[] = [$name, $func];
+    }
+    /** @param ?string $name
+     * @param callable() $func
+     * @deprecated */
+    function cleanup_callback($name, $func) {
+        $this->register_cleanup_function($name, $func);
     }
 
     /** @param string $field

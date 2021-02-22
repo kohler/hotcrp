@@ -295,6 +295,32 @@ class ReviewForm_SettingParser extends SettingParser {
         return array_keys($updates);
     }
 
+    static private function compute_review_ordinals(Conf $conf) {
+        $prows = $conf->paper_set(["where" => "Paper.paperId in (select paperId from PaperReview where reviewOrdinal=0 and reviewSubmitted>0)"]);
+        $prows->ensure_full_reviews();
+        $locked = false;
+        $rf = $conf->review_form();
+        foreach ($prows as $prow) {
+            foreach ($prow->reviews_by_id() as $rrow) {
+                if ($rrow->reviewOrdinal == 0
+                    && $rrow->reviewSubmitted > 0
+                    && $rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC) {
+                    if (!$locked) {
+                        $conf->qe("lock tables PaperReview write");
+                        $locked = true;
+                    }
+                    $max_ordinal = $conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $rrow->paperId);
+                    if ($max_ordinal !== null) {
+                        $conf->qe("update PaperReview set reviewOrdinal=?, timeDisplayed=? where paperId=? and reviewId=?", $max_ordinal + 1, Conf::$now, $rrow->paperId, $rrow->reviewId);
+                    }
+                }
+            }
+        }
+        if ($locked) {
+            $conf->qe("unlock tables");
+        }
+    }
+
     function save(SettingValues $sv, Si $si) {
         if (!$sv->update("review_form", json_encode_db($this->nrfj))) {
             return;
@@ -340,7 +366,6 @@ class ReviewForm_SettingParser extends SettingParser {
                 $sv->unset_req($k);
             }
         }
-        $sv->conf->invalidate_caches(["rf" => true]);
         // reset existing review values
         if (!empty($clear_fields)) {
             $this->clear_existing_fields($clear_fields, $sv->conf);
@@ -355,28 +380,9 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         // assign review ordinals if necessary
         if ($assign_ordinal) {
-            $rrows = [];
-            $result = $sv->conf->qe("select * from PaperReview where reviewOrdinal=0 and reviewSubmitted>0");
-            while (($rrow = ReviewInfo::fetch($result, null, $sv->conf))) {
-                $rrows[] = $rrow;
-            }
-            Dbl::free($result);
-            $locked = false;
-            foreach ($rrows as $rrow) {
-                if ($nform->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC) {
-                    if (!$locked) {
-                        $sv->conf->qe("lock tables PaperReview write");
-                        $locked = true;
-                    }
-                    $max_ordinal = $sv->conf->fetch_ivalue("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=? group by paperId", $rrow->paperId);
-                    if ($max_ordinal !== null) {
-                        $sv->conf->qe("update PaperReview set reviewOrdinal=?, timeDisplayed=? where paperId=? and reviewId=?", $max_ordinal + 1, Conf::$now, $rrow->paperId, $rrow->reviewId);
-                    }
-                }
-            }
-            if ($locked) {
-                $sv->conf->qe("unlock tables");
-            }
+            $sv->register_cleanup_function("compute_review_ordinals", function () use ($sv) {
+                self::compute_review_ordinals($sv->conf);
+            });
         }
         // reset all word counts if author visibility changed
         if ($reset_wordcount) {
@@ -384,11 +390,10 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         // reset all view scores if view scores changed
         if ($reset_view_score) {
-            // XXX should lock out other setting changes
-            $sv->conf->qe("lock tables PaperReview write");
             $sv->conf->qe("update PaperReview set reviewViewScore=" . ReviewInfo::VIEWSCORE_RECOMPUTE);
-            $nform->compute_view_scores();
-            $sv->conf->qe("unlock tables");
+            $sv->register_cleanup_function("compute_review_view_scores", function () use ($sv) {
+                $sv->conf->review_form()->compute_view_scores();
+            });
         }
     }
 }

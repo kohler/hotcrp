@@ -452,7 +452,7 @@ class Options_SettingParser extends SettingParser {
             if (!empty($deleted_ids)) {
                 $sv->conf->qe("delete from PaperOption where optionId?a", $deleted_ids);
             }
-            $sv->mark_invalidate_caches(["options" => true, "autosearch" => true]);
+            $sv->mark_invalidate_caches(["autosearch" => true]);
         }
     }
 }

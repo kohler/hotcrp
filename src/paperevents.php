@@ -9,6 +9,7 @@ class PaperEvent {
     public $rrow;
     /** @var CommentInfo */
     public $crow;
+    /** @var int */
     public $eventTime;
 
     /** @param ?ReviewInfo $rrow
@@ -30,7 +31,9 @@ class PaperEvents {
     private $conf;
     /** @var Contact */
     private $user;
+    /** @var bool */
     private $all_papers = false;
+    /** @var PaperInfoSet */
     private $prows;
 
     private $limit;
@@ -185,9 +188,9 @@ class PaperEvents {
         } else if (!$a->rrow !== !$b->rrow) {
             return $a->rrow ? -1 : 1;
         } else if ($a->rrow) {
-            return $a->rrow->reviewId - $b->rrow->reviewId;
+            return $a->rrow->reviewId <=> $b->rrow->reviewId;
         } else {
-            return $a->crow->commentId - $b->crow->commentId;
+            return $a->crow->commentId <=> $b->crow->commentId;
         }
     }
 

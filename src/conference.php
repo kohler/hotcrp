@@ -953,7 +953,7 @@ class Conf {
     function query_error_handler($dblink, $query) {
         $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
         if (PHP_SAPI == "cli") {
-            fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n");
+            fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n" . debug_string_backtrace());
         } else {
             error_log("$landmark: database error: $dblink->error in $query");
             self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
@@ -3482,6 +3482,7 @@ class Conf {
         //   "options"
         //   "scores" => array(fields to score)
         //   "assignments"
+        //   "where" => $sql    SQL 'where' clause
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
 
         $cxid = $user ? $user->contactXid : -2;
@@ -3668,6 +3669,9 @@ class Conf {
         }
         if ($options["myConflicts"] ?? false) {
             $where[] = $cxid > 0 ? "PaperConflict.conflictType>" . CONFLICT_MAXUNCONFLICTED : "false";
+        }
+        if ($options["where"] ?? false) {
+            $where[] = $options["where"];
         }
 
         $pq = "select " . join(",\n    ", $cols)
