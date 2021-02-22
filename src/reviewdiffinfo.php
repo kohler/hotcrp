@@ -126,10 +126,10 @@ class ReviewDiffInfo {
             if (str_ends_with($n, ":x")
                 && is_string($v)
                 && self::$has_xpatch
-                && ($fi = ReviewInfo::field_info(substr($n, 0, -2), $rrow->conf))
+                && ($fi = ReviewInfo::field_info(substr($n, 0, -2)))
                 && !$fi->has_options) {
                 $rrow->{$fi->id} = xdiff_string_bpatch($rrow->{$fi->id}, $v);
-            } else if (($fi = ReviewInfo::field_info($n, $rrow->conf))) {
+            } else if (($fi = ReviewInfo::field_info($n))) {
                 $rrow->{$fi->id} = (string) $v;
             } else {
                 $ok = false;

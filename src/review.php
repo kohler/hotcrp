@@ -579,7 +579,7 @@ class ReviewForm implements JsonSerializable {
         }
 
         foreach ($rfj as $fid => $j) {
-            if (($finfo = ReviewInfo::field_info($fid, $conf))) {
+            if (($finfo = ReviewInfo::field_info($fid))) {
                 $f = new ReviewField($finfo, $conf);
                 $this->fmap[$f->id] = $f;
                 $f->assign($j);

@@ -2399,7 +2399,7 @@ class PaperInfo {
         $fid = is_object($field) ? $field->id : $field;
         if (!isset($this->_reviews_have[$fid])
             && !isset($this->_reviews_have["full"])) {
-            $rfi = is_object($field) ? $field : ReviewInfo::field_info($fid, $this->conf);
+            $rfi = is_object($field) ? $field : ReviewInfo::field_info($fid);
             if (!$rfi) {
                 $this->_reviews_have[$fid] = false;
             } else if (!$rfi->main_storage) {

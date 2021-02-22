@@ -191,7 +191,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
         $rf = $sv->conf->review_form();
         foreach (self::requested_fields($sv) as $fid => $x) {
-            if (($finfo = ReviewInfo::field_info($fid, $sv->conf))) {
+            if (($finfo = ReviewInfo::field_info($fid))) {
                 $f = $rf->fmap[$finfo->id] ?? new ReviewField($finfo, $sv->conf);
                 $fj = $f->unparse_json(true);
                 $this->populate_field($fj, $f, $sv, $fid);

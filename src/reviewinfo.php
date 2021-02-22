@@ -170,6 +170,8 @@ class ReviewInfo implements JsonSerializable {
         "technicalMerit", "interestToCommunity", "longevity", "grammar",
         "likelyPresentation", "suitableForShort", "potential", "fixability"
     ];
+    /** @var array<string,ReviewFieldInfo> */
+    static private $field_info_map = [];
     const MIN_SFIELD = 12;
 
     const RATING_GOODMASK = 1;
@@ -371,7 +373,7 @@ class ReviewInfo implements JsonSerializable {
         $rrow->reviewViewScore = (int) $vals[14];
         for ($i = 15; isset($vals[$i]); ++$i) {
             $eq = strpos($vals[$i], "=");
-            $f = self::field_info(substr($vals[$i], 0, $eq), $prow->conf);
+            $f = self::field_info(substr($vals[$i], 0, $eq));
             $fid = $f->id;
             $rrow->$fid = (int) substr($vals[$i], $eq + 1);
             $prow->_mark_has_score($fid);
@@ -530,27 +532,26 @@ class ReviewInfo implements JsonSerializable {
 
     /** @param string $id
      * @return ?ReviewFieldInfo */
-    static function field_info($id, Conf $conf) {
-        if (strlen($id) === 3 && ctype_digit(substr($id, 1))) {
-            $n = intval(substr($id, 1), 10);
-            $json_storage = $id;
-            if ($id[0] === "s" && isset(self::$new_score_fields[$n])) {
-                $fid = self::$new_score_fields[$n];
-                return new ReviewFieldInfo($fid, $id, true, $fid, null);
-            } else if ($id[0] === "s" || $id[0] === "t") {
-                return new ReviewFieldInfo($id, $id, $id[0] === "s", null, $id);
-            } else {
-                return null;
+    static function field_info($id) {
+        $m = self::$field_info_map[$id] ?? null;
+        if (!$m && !array_key_exists($id, self::$field_info_map)) {
+            if (strlen($id) === 3 && ctype_digit(substr($id, 1))) {
+                $n = intval(substr($id, 1), 10);
+                $json_storage = $id;
+                if ($id[0] === "s" && isset(self::$new_score_fields[$n])) {
+                    $fid = self::$new_score_fields[$n];
+                    $m = new ReviewFieldInfo($fid, $id, true, $fid, null);
+                } else if ($id[0] === "s" || $id[0] === "t") {
+                    $m = new ReviewFieldInfo($id, $id, $id[0] === "s", null, $id);
+                }
+            } else if (($short_id = self::$text_field_map[$id] ?? null)) {
+                $m = new ReviewFieldInfo($short_id, $short_id, false, null, $short_id);
+            } else if (($short_id = self::$score_field_map[$id] ?? null)) {
+                $m = new ReviewFieldInfo($id, $short_id, true, $id, null);
             }
-        } else if (isset(self::$text_field_map[$id])) {
-            $short_id = self::$text_field_map[$id];
-            return new ReviewFieldInfo($short_id, $short_id, false, null, $short_id);
-        } else if (isset(self::$score_field_map[$id])) {
-            $short_id = self::$score_field_map[$id];
-            return new ReviewFieldInfo($id, $short_id, true, $id, null);
-        } else {
-            return null;
+            self::$field_info_map[$id] = $m;
         }
+        return $m;
     }
 
     /** @return bool */
