@@ -243,7 +243,7 @@ class CommentInfo {
         } else if (($rrow = $this->prow->review_of_user($this->contactId))
                    && $rrow->reviewOrdinal
                    && $viewer->can_view_review($this->prow, $rrow)) {
-            return "Reviewer " . unparseReviewOrdinal($rrow->reviewOrdinal);
+            return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
         } else {
             return null;
         }

@@ -111,7 +111,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
             $x["data"] = $crow->commentOverflow ? : $crow->comment;
             add_row($x);
         } else if ($rrow) {
-            $x["review"] = $rrow->unparse_ordinal();
+            $x["review"] = $rrow->unparse_ordinal_id();
             $x["email"] = $rrow->email;
             $x["round"] = $Conf->round_name($rrow->reviewRound);
             $x["status"] = $rrow->status_description();

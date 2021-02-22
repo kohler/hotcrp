@@ -2024,7 +2024,7 @@ class PaperInfo {
         }
         if ($textid !== ""
             && ctype_upper($textid)
-            && ($n = parseReviewOrdinal($textid)) > 0) {
+            && ($n = parse_latin_ordinal($textid)) > 0) {
             return -$n;
         } else {
             return false;

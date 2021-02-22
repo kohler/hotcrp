@@ -203,7 +203,7 @@ function downloadForm($qreq) {
         && $prow->review_type($Me) > 0;
     $filename = "review-{$prow->paperId}";
     if ($rrow && $rrow->reviewOrdinal) {
-        $filename .= unparseReviewOrdinal($rrow->reviewOrdinal);
+        $filename .= unparse_latin_ordinal($rrow->reviewOrdinal);
     }
     $Conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
         ->set_inline(false)
@@ -247,7 +247,7 @@ function download_one_text_review(ReviewInfo $rrow) {
     global $rf, $Conf, $Me, $prow, $paperTable;
     $filename = "review-{$prow->paperId}";
     if ($rrow->reviewOrdinal) {
-        $filename .= unparseReviewOrdinal($rrow->reviewOrdinal);
+        $filename .= unparse_latin_ordinal($rrow->reviewOrdinal);
     }
     $Conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
         ->add_string($rf->unparse_text($prow, $rrow, $Me))

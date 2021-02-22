@@ -33,7 +33,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
                 $ranal = $pl->make_review_analysis($rrow, $row);
                 $d = $rrow->status_description();
                 if ($rrow->reviewOrdinal) {
-                    $d = rtrim("#" . $rrow->unparse_ordinal() . " " . $d);
+                    $d = rtrim("#" . $rrow->unparse_ordinal_id() . " " . $d);
                 }
                 $d = $ranal->wrap_link($d, "uu nw");
                 if ($rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {

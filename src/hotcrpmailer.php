@@ -421,7 +421,7 @@ class HotCRPMailer extends Mailer {
     function kw_reviewname($args) {
         $s = $args === "SUBJECT";
         if ($this->rrow && $this->rrow->reviewOrdinal) {
-            return ($s ? "review #" : "Review #") . $this->row->paperId . unparseReviewOrdinal($this->rrow->reviewOrdinal);
+            return ($s ? "review #" : "Review #") . $this->row->paperId . unparse_latin_ordinal($this->rrow->reviewOrdinal);
         } else {
             return ($s ? "review" : "A review");
         }

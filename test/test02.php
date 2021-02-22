@@ -328,8 +328,8 @@ xassert_eqq($t, 1527681599);
 foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
           53 => "BA", 54 => "BB", 702 => "ZZ", 703 => "AAA", 704 => "AAB",
           1378 => "AZZ", 1379 => "BAA"] as $n => $t) {
-    xassert_eqq(unparseReviewOrdinal($n), $t);
-    xassert_eqq(parseReviewOrdinal($t), $n);
+    xassert_eqq(unparse_latin_ordinal($n), $t);
+    xassert_eqq(parse_latin_ordinal($t), $n);
 }
 
 // interval tests

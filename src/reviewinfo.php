@@ -200,6 +200,8 @@ class ReviewInfo implements JsonSerializable {
         REVIEW_META => "metareview"
     ];
 
+    /** @param string $str
+     * @return null|int|false */
     static function parse_type($str) {
         $str = strtolower($str);
         if ($str === "review" || $str === "" || $str === "all" || $str === "any") {
@@ -210,6 +212,9 @@ class ReviewInfo implements JsonSerializable {
         }
         return self::$type_map[$str] ?? false;
     }
+
+    /** @param int $type
+     * @return string */
     static function unparse_assigner_action($type) {
         return self::$type_revmap[$type] ?? "clearreview";
     }
@@ -507,8 +512,16 @@ class ReviewInfo implements JsonSerializable {
     }
 
     /** @return string */
-    function unparse_ordinal() {
-        return unparseReviewOrdinal($this);
+    function unparse_ordinal_id() {
+        if ($this->reviewOrdinal) {
+            return $this->paperId . unparse_latin_ordinal($this->reviewOrdinal);
+        } else if ($this->reviewId) {
+            return "{$this->reviewId}";
+        } else if ($this->paperId) {
+            return "{$this->paperId}.new";
+        } else {
+            return ".new";
+        }
     }
 
 

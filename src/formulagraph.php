@@ -442,7 +442,7 @@ class FormulaGraph extends MessageSet {
                 $this->_y_tagvalue_bool = $this->_y_tagvalue_bool && is_bool($y);
                 $id = $prow->paperId;
                 if ($rrow && $rrow->reviewOrdinal) {
-                    $id .= unparseReviewOrdinal($rrow->reviewOrdinal);
+                    $id .= unparse_latin_ordinal($rrow->reviewOrdinal);
                 }
                 if ($ps === self::REVIEWER_COLOR) {
                     $s = $this->reviewer_color[$x] ?? "";
@@ -530,7 +530,7 @@ class FormulaGraph extends MessageSet {
                 if ($rrow
                     && $rrow->reviewOrdinal
                     && !($index_type & Fexpr::IDX_PC)) {
-                    $id .= unparseReviewOrdinal($rrow->reviewOrdinal);
+                    $id .= unparse_latin_ordinal($rrow->reviewOrdinal);
                 }
                 foreach ($queries as $q) {
                     if ($this->fx_type === Fexpr::FTAG) {

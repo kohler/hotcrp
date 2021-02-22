@@ -864,9 +864,9 @@ class ReviewForm implements JsonSerializable {
         if ($prow) {
             $x .= " #" . $prow->paperId;
             if ($req && isset($req["reviewOrdinal"]) && $req["reviewOrdinal"]) {
-                $x .= unparseReviewOrdinal($req["reviewOrdinal"]);
-            } else if ($rrow && isset($rrow->reviewOrdinal) && $rrow->reviewOrdinal) {
-                $x .= unparseReviewOrdinal($rrow->reviewOrdinal);
+                $x .= unparse_latin_ordinal($req["reviewOrdinal"]);
+            } else if ($rrow && $rrow->reviewOrdinal) {
+                $x .= unparse_latin_ordinal($rrow->reviewOrdinal);
             }
         }
         $x .= "\n";
@@ -994,7 +994,7 @@ $blind\n";
         }
         $n .= "Review";
         if ($rrow->reviewOrdinal) {
-            $n .= " #" . $rrow->unparse_ordinal();
+            $n .= " #" . $rrow->unparse_ordinal_id();
         }
         if ($rrow->reviewRound
             && $contact->can_view_review_round($prow, $rrow)) {
@@ -1133,7 +1133,7 @@ $blind\n";
                   $options, ReviewValues $rvalues = null) {
         $editmode = $options["edit"] ?? false;
 
-        $reviewOrdinal = $rrow ? $rrow->unparse_ordinal() : ".";
+        $reviewOrdinal = $rrow ? $rrow->unparse_ordinal_id() : ".";
         self::check_review_author_seen($prow, $rrow, $viewer);
 
         if (!$editmode) {
@@ -1154,7 +1154,7 @@ $blind\n";
         echo '<div class="pcard revcard" id="r', $reviewOrdinal, '" data-pid="',
             $prow->paperId, '" data-rid="', ($rrow ? $rrow->reviewId : "new");
         if ($rrow && $rrow->reviewOrdinal) {
-            echo '" data-review-ordinal="', unparseReviewOrdinal((int) $rrow->reviewOrdinal);
+            echo '" data-review-ordinal="', unparse_latin_ordinal($rrow->reviewOrdinal);
         }
         echo '">',
             Ht::form($reviewPostLink, [
@@ -1336,7 +1336,7 @@ $blind\n";
 
         $rj = ["pid" => $prow->paperId, "rid" => (int) $rrow->reviewId];
         if ($rrow->reviewOrdinal) {
-            $rj["ordinal"] = unparseReviewOrdinal($rrow->reviewOrdinal);
+            $rj["ordinal"] = unparse_latin_ordinal($rrow->reviewOrdinal);
         }
         if ($viewer->can_view_review_round($prow, $rrow)) {
             $rj["rtype"] = (int) $rrow->reviewType;
@@ -1439,7 +1439,7 @@ $blind\n";
     function unparse_flow_entry(PaperInfo $prow, ReviewInfo $rrow, Contact $contact) {
         // See also CommentInfo::unparse_flow_entry
         $barsep = ' <span class="barsep">·</span> ';
-        $a = '<a href="' . $prow->hoturl(["anchor" => "r" . $rrow->unparse_ordinal()]) . '"';
+        $a = '<a href="' . $prow->hoturl(["anchor" => "r" . $rrow->unparse_ordinal_id()]) . '"';
         $t = '<tr class="pl"><td class="pl_eventicon">' . $a . '>'
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_eventid pl_rowclick">'
@@ -1462,7 +1462,7 @@ $blind\n";
         $t .= "</small><br>";
 
         if ($rrow->reviewSubmitted) {
-            $t .= "Review #" . $rrow->unparse_ordinal() . " submitted";
+            $t .= "Review #" . $rrow->unparse_ordinal_id() . " submitted";
             $xbarsep = $barsep;
         } else {
             $xbarsep = "";
@@ -2471,7 +2471,7 @@ class ReviewValues extends MessageSet {
         // record what happened
         $what = "#$prow->paperId";
         if ($new_rrow->reviewOrdinal) {
-            $what .= unparseReviewOrdinal($new_rrow->reviewOrdinal);
+            $what .= unparse_latin_ordinal($new_rrow->reviewOrdinal);
         }
         if ($newsubmit) {
             $this->submitted[] = $what;

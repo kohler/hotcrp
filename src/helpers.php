@@ -516,10 +516,13 @@ function actionBar($mode = null, $qreq = null) {
     return '<table class="vbar"><tr>' . $x . '</tr></table>';
 }
 
-function parseReviewOrdinal($t) {
+/** @param string $t
+ * @return int */
+function parse_latin_ordinal($t) {
     $t = strtoupper($t);
-    if (!ctype_alpha($t))
+    if (!ctype_alpha($t)) {
         return -1;
+    }
     $l = strlen($t) - 1;
     $ord = 0;
     $base = 1;
@@ -534,28 +537,38 @@ function parseReviewOrdinal($t) {
     return $ord;
 }
 
-/** @param null|ReviewInfo|int $ord
+/** @param int $n
  * @return string */
+function unparse_latin_ordinal($n) {
+    assert($n >= 1);
+    if ($n <= 26) {
+        return chr($n + 64);
+    } else {
+        $t = "";
+        while (true) {
+            $t = chr((($n - 1) % 26) + 65) . $t;
+            if ($n <= 26) {
+                return $t;
+            }
+            $n = intval(($n - 1) / 26);
+        }
+    }
+}
+
+/** @param null|ReviewInfo|int $ord
+ * @return string
+ * @deprecated */
 function unparseReviewOrdinal($ord) {
     if (!$ord) {
         return ".";
     } else if (is_object($ord)) {
         if ($ord->reviewOrdinal) {
-            return $ord->paperId . unparseReviewOrdinal($ord->reviewOrdinal);
+            return $ord->paperId . unparse_latin_ordinal($ord->reviewOrdinal);
         } else {
             return (string) $ord->reviewId;
         }
-    } else if ($ord <= 26) {
-        return chr($ord + 64);
     } else {
-        $t = "";
-        while (true) {
-            $t = chr((($ord - 1) % 26) + 65) . $t;
-            if ($ord <= 26) {
-                return $t;
-            }
-            $ord = intval(($ord - 1) / 26);
-        }
+        return unparse_latin_ordinal($ord);
     }
 }
 

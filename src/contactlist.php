@@ -678,7 +678,7 @@ class ContactList {
                 foreach ($reords as $reord) {
                     if ($last !== $reord[0])  {
                         if ($reord[2]) {
-                            $url = $this->conf->hoturl("paper", "p={$reord[0]}#r{$reord[0]}" . unparseReviewOrdinal($reord[2]));
+                            $url = $this->conf->hoturl("paper", "p={$reord[0]}#r{$reord[0]}" . unparse_latin_ordinal($reord[2]));
                         } else {
                             $url = $this->conf->hoturl("review", "p={$reord[0]}&amp;r={$reord[1]}");
                         }

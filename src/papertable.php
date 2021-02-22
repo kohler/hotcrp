@@ -1965,10 +1965,10 @@ class PaperTable {
             echo "new submission";
         } else if ($this->mode !== "re") {
             echo "#{$this->prow->paperId}";
-        } else if (!$this->editrrow || !$this->editrrow->reviewOrdinal) {
-            echo "#{$this->prow->paperId} review";
+        } else if ($this->editrrow && $this->editrrow->reviewOrdinal) {
+            echo "#", $this->editrrow->unparse_ordinal_id();
         } else {
-            echo "#" . unparseReviewOrdinal($this->editrrow);
+            echo "#{$this->prow->paperId} review";
         }
         echo '</a>', $close, '</h4><ul class="pslcard"></ul></nav></div>';
         echo '<div class="pcard papcard"><div class="',
@@ -2090,7 +2090,7 @@ class PaperTable {
             // review ID
             $id = $rr->subject_to_approval() ? "Subreview" : "Review";
             if ($rr->reviewOrdinal && !$isdelegate) {
-                $id .= " #" . $rr->unparse_ordinal();
+                $id .= " #" . $rr->unparse_ordinal_id();
             }
             if ($rr->reviewStatus < ReviewInfo::RS_ADOPTED) {
                 $d = $rr->status_description();
@@ -2100,7 +2100,7 @@ class PaperTable {
                     $id .= " (" . $d . ")";
                 }
             }
-            $rlink = $rr->unparse_ordinal();
+            $rlink = $rr->unparse_ordinal_id();
 
             $t = '<td class="rl nw">';
             if ($editrrow && $editrrow->reviewId === $rr->reviewId) {
@@ -2355,7 +2355,7 @@ class PaperTable {
             || !$prow) {
             /* no link */;
         } else if ($myrr && $editrrow !== $myrr) {
-            $a = '<a href="' . $prow->reviewurl(["r" => $myrr->unparse_ordinal()]) . '" class="xx revlink">';
+            $a = '<a href="' . $prow->reviewurl(["r" => $myrr->unparse_ordinal_id()]) . '" class="xx revlink">';
             if ($this->user->can_review($prow, $myrr)) {
                 $x = $a . Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u></a>";
             } else {
@@ -2822,7 +2822,7 @@ class PaperTable {
             } else if (str_starts_with($rtext, (string) $this->prow->paperId)
                        && ($x = substr($rtext, strlen((string) $this->prow->paperId))) !== ""
                        && ctype_alpha($x)) {
-                $want_rordinal = parseReviewOrdinal(strtoupper($x));
+                $want_rordinal = parse_latin_ordinal(strtoupper($x));
             }
         }
 

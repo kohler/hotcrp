@@ -3069,19 +3069,24 @@ class Conf {
             return $rrow === null || $rrow;
         }
     }
+    /** @return int */
     function review_blindness() {
         return $this->settings["rev_blind"];
     }
+    /** @return bool */
     function can_some_external_reviewer_view_comment() {
-        return $this->settings["extrev_view"] == 2;
+        return $this->settings["extrev_view"] === 2;
     }
 
+    /** @return bool */
     function has_any_submitted() {
         return !($this->settings["no_papersub"] ?? false);
     }
+    /** @return bool */
     function has_any_pc_viewable_pdf() {
         return $this->has_any_submitted() && $this->_pc_see_pdf;
     }
+    /** @return bool */
     function has_any_accepted() {
         return !!($this->settings["paperacc"] ?? false);
     }

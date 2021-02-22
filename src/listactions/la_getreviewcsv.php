@@ -35,7 +35,7 @@ class GetReviewCSV_ListAction extends ListAction {
                     ];
                     if ($rrow->reviewOrdinal > 0) {
                         $has_ordinal = true;
-                        $text["review"] = $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+                        $text["review"] = $rrow->unparse_ordinal_id();
                     }
                     if ($viewer->can_view_review_identity($prow, $rrow)) {
                         $has_id = true;

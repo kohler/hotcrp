@@ -36,7 +36,7 @@ class GetScores_ListAction extends ListAction {
                         if ($this_scores) {
                             if ($rrow->reviewOrdinal > 0) {
                                 $any_ordinal = true;
-                                $b["review"] = $row->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+                                $b["review"] = $rrow->unparse_ordinal_id();
                             }
                             if ($user->can_view_review_identity($row, $rrow)) {
                                 $any_reviewer_identity = true;

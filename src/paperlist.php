@@ -137,9 +137,9 @@ class PaperListReviewAnalysis {
     function wrap_link($html, $klass = null) {
         if ($this->rrow) {
             if ($this->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-                $href = $this->prow->hoturl(["anchor" => "r" . $this->rrow->unparse_ordinal()]);
+                $href = $this->prow->hoturl(["anchor" => "r" . $this->rrow->unparse_ordinal_id()]);
             } else {
-                $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal()]);
+                $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal_id()]);
             }
             $k = $klass ? " class=\"{$klass}\"" : "";
             return "<a{$k} href=\"{$href}\">{$html}</a>";
