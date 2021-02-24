@@ -413,11 +413,11 @@ class ReviewForm_SettingRenderer {
         }
 
         Ht::stash_html('<div id="review_form_caption_description" class="hidden">'
-          . '<p>Enter an HTML description for the review form.
+            . '<p>Enter an HTML description for the review form.
     Include any guidance you’d like to provide for reviewers.
     Note that complex HTML will not appear on offline review forms.</p></div>'
-          . '<div id="review_form_caption_options" class="hidden">'
-          . '<p>Enter one option per line, numbered starting from 1 (higher numbers are better). For example:</p>
+            . '<div id="review_form_caption_options" class="hidden">'
+            . '<p>Enter one option per line, numbered starting from 1 (higher numbers are better). For example:</p>
 <pre class="entryexample">1. Reject
 2. Weak reject
 3. Weak accept

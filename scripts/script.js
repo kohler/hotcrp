@@ -1672,7 +1672,7 @@ return function (content, bubopt) {
             if (typeof epos === "string" || epos.tagName || epos.jquery) {
                 epos = $(epos);
                 if (dirspec == null && epos[0])
-                    dirspec = epos[0].getAttribute("data-tooltip-dir");
+                    dirspec = epos[0].getAttribute("data-tooltip-anchor");
                 epos = epos.geometry(true);
             }
             for (i = 0; i < 4; ++i)
@@ -1688,7 +1688,7 @@ return function (content, bubopt) {
         at: function (x, y, reference) {
             return bubble.near({top: y, left: x}, reference);
         },
-        dir: function (dir) {
+        anchor: function (dir) {
             dirspec = dir;
             return bubble;
         },
@@ -1775,8 +1775,8 @@ function prepare_info(elt, info) {
     }
     if (info.builder && builders[info.builder])
         info = builders[info.builder].call(elt, info) || info;
-    if (info.dir == null || elt.hasAttribute("data-tooltip-dir"))
-        info.dir = elt.getAttribute("data-tooltip-dir") || "v";
+    if (info.anchor == null || elt.hasAttribute("data-tooltip-anchor"))
+        info.anchor = elt.getAttribute("data-tooltip-anchor") || "v";
     if (info.type == null || elt.hasAttribute("data-tooltip-type"))
         info.type = elt.getAttribute("data-tooltip-type");
     if (info.className == null || elt.hasAttribute("data-tooltip-class"))
@@ -1813,7 +1813,7 @@ function show_tooltip(info) {
 
     function show_bub() {
         if (content && !bub) {
-            bub = make_bubble(content, {color: "tooltip " + info.className, dir: info.dir});
+            bub = make_bubble(content, {color: "tooltip " + info.className, anchor: info.anchor});
             near = info.near || info.element;
             bub.near(near).hover(tt.enter, tt.exit);
         } else if (content) {
@@ -4022,7 +4022,7 @@ tooltip.add_builder("rf-score", function (info) {
         && (score = fieldj.score_info.parse($self.find("span.sv").text())))
         info = $.extend({
             content: fieldj.options[score - 1],
-            dir: "l", near: $self.find("span")[0]
+            anchor: "w", near: $self.find("span")[0]
         }, info);
     return info;
 });
@@ -4045,7 +4045,7 @@ tooltip.add_builder("rf-description", function (info) {
                      si < vo.length; ++si)
                     d += "<div class=\"od\"><strong class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</strong>&nbsp;" + escape_entities(fieldj.options[vo[si] - 1]) + "</div>";
             }
-            info = $.extend({content: d, dir: "l"}, info);
+            info = $.extend({content: d, anchor: "w"}, info);
         }
     }
     return info;
@@ -5729,7 +5729,7 @@ function suggest() {
 
         hiding = false;
         if (!hintdiv) {
-            hintdiv = make_bubble({dir: "nw", color: "suggest"});
+            hintdiv = make_bubble({anchor: "nw", color: "suggest"});
             hintdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
                 .on("click", ".suggestion", click)
                 .on("mousemove", ".suggestion", hover);
@@ -6810,7 +6810,7 @@ function tag_dragto(l) {
 
     // create dragger
     if (!dragger) {
-        dragger = make_bubble({color: "edittagbubble dark", dir: "1!*"});
+        dragger = make_bubble({color: "edittagbubble dark", anchor: "e!*"});
         window.disable_tooltip = true;
     }
 
@@ -7220,7 +7220,7 @@ handle_ui.on("js-plinfo-edittags", function () {
         if (!rv.ok || !rv.pid || rv.pid != pid)
             return;
         $(div).html('<em class="plx">Tags:</em> '
-            + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" class="want-focus need-suggest tags" data-tooltip-dir="v"></textarea>'
+            + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" class="want-focus need-suggest tags" data-tooltip-anchor="v"></textarea>'
             + ' &nbsp;<button type="button" name="tagsave ' + rv.pid + '">Save</button>'
             + ' &nbsp;<button type="button" name="tagcancel ' + rv.pid + '">Cancel</button>');
         var $ta = $(div).find("textarea");
@@ -8111,7 +8111,7 @@ handle_ui.on("js-clickthrough", function (event) {
                 $container.find(".js-clickthrough-terms").slideUp();
             } else {
                 make_bubble((data && data.error) || "You can’t continue to review until you accept these terms.", "errorbubble")
-                    .dir("l").near(self);
+                    .anchor("w").near(self);
             }
         });
 });
@@ -8152,7 +8152,7 @@ function prepare_paper_select() {
         if (ok)
             $s.delay(1000).fadeOut();
         if (message)
-            make_bubble(message, "errorbubble").dir("l").near($s[0]);
+            make_bubble(message, "errorbubble").anchor("w").near($s[0]);
     }
     function make_callback(close) {
         return function (data) {
@@ -8357,7 +8357,7 @@ function save_pstagindex(event) {
         if (data.ok)
             $s.delay(1000).fadeOut();
         if (messages !== "") {
-            make_bubble(messages, status > 1 ? "errorbubble" : "warningbubble").dir("l")
+            make_bubble(messages, status > 1 ? "errorbubble" : "warningbubble").anchor("w")
                 .near($(inputs[0]).is(":visible") ? inputs[0] : $f.find(".psfn")[0])
                 .removeOn($f.find("input"), "input")
                 .removeOn(document.body, "fold");

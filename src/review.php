@@ -285,7 +285,7 @@ class ReviewField implements JsonSerializable {
     }
     function web_abbreviation() {
         return '<span class="need-tooltip" data-tooltip="' . $this->name_html
-            . '" data-tooltip-dir="b">' . htmlspecialchars($this->search_keyword()) . "</span>";
+            . '" data-tooltip-anchor="s">' . htmlspecialchars($this->search_keyword()) . "</span>";
     }
     function uid() {
         return $this->search_keyword();

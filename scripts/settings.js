@@ -306,7 +306,7 @@ function remove() {
 
 var revfield_template = '<div id="rf_$" class="settings-revfield f-contain has-fold fold2c errloc_$" data-revfield="$">\
 <a href="" class="q settings-field-folder">\
-<span class="expander"><span class="in0 fx2">▼</span><span class="in1 fn2 need-tooltip" data-tooltip="Edit field" data-tooltip-dir="r">▶</span></span>\
+<span class="expander"><span class="in0 fx2">▼</span><span class="in1 fn2 need-tooltip" data-tooltip="Edit field" data-tooltip-anchor="e">▶</span></span>\
 </a>\
 <div id="rf_$_view" class="settings-revfieldview fn2 ui js-foldup"></div>\
 <div id="rf_$_edit" class="settings-revfieldedit fx2">\
@@ -347,7 +347,7 @@ var revfield_template = '<div id="rf_$" class="settings-revfield f-contain has-f
   </div>\
 </div></div>';
 
-var revfieldview_template = '<div style="line-height:1.35">\
+var revfieldview_template = '<div>\
 <span class="settings-revfn"></span>\
 <span class="settings-revrounds"></span>\
 <span class="field-visibility"></span>\
@@ -356,7 +356,7 @@ var revfieldview_template = '<div style="line-height:1.35">\
 
 tooltip.add_builder("settings-review-form", function (info) {
     return $.extend({
-        dir: "h", content: $(/description$/.test(this.name) ? "#review_form_caption_description" : "#review_form_caption_options").html(), className: "gray"
+        anchor: "w", content: $(/description$/.test(this.name) ? "#review_form_caption_description" : "#review_form_caption_options").html(), className: "gray"
     }, info);
 });
 
@@ -366,7 +366,7 @@ tooltip.add_builder("settings-option", function (info) {
         x = "#option_caption_name";
     else if (/^optecs/.test(this.name))
         x = "#option_caption_condition_search";
-    return $.extend({dir: "h", content: $(x).html(), className: "gray"}, info);
+    return $.extend({anchor: "h", content: $(x).html(), className: "gray"}, info);
 });
 
 function option_value_html(fieldj, value) {

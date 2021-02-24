@@ -1378,7 +1378,7 @@ class PaperTable {
         if (($type === "allotment" || $type === "approval")
             && $this->user->can_view_peruser_tag($this->prow, $tag)) {
             $class .= " need-tooltip";
-            $extradiv = ' data-tooltip-dir="h" data-tooltip-info="votereport" data-tag="' . htmlspecialchars($tag) . '"';
+            $extradiv = ' data-tooltip-anchor="h" data-tooltip-info="votereport" data-tag="' . htmlspecialchars($tag) . '"';
         }
         return '<div class="' . $class . '"' . $extradiv
             . '><a class="qq" href="' . $this->conf->hoturl("search", "q=" . urlencode("show:#$tag sort:" . ($reverse ? "-" : "") . "#$tag")) . '">'
