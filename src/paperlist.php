@@ -137,7 +137,7 @@ class PaperListReviewAnalysis {
     function wrap_link($html, $klass = null) {
         if ($this->rrow) {
             if ($this->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-                $href = $this->prow->hoturl(["anchor" => "r" . $this->rrow->unparse_ordinal_id()]);
+                $href = $this->prow->hoturl(["#" => "r" . $this->rrow->unparse_ordinal_id()]);
             } else {
                 $href = $this->prow->reviewurl(["r" => $this->rrow->unparse_ordinal_id()]);
             }
@@ -1677,7 +1677,7 @@ class PaperList implements XtContext {
                     $lllg = [$lllg];
                 }
                 array_unshift($lllg, $rf->name, $rf->title);
-                $lllg[0] = $this->conf->selfurl($qreq, ["atab" => $lllg[0], "anchor" => "plact"]);
+                $lllg[0] = $this->conf->selfurl($qreq, ["atab" => $lllg[0], "#" => "plact"]);
                 $lllgroups[] = $lllg;
                 if ($qreq->fn == $rf->name || $this->_atab == $rf->name) {
                     $whichlll = count($lllgroups) - 1;
@@ -1688,7 +1688,7 @@ class PaperList implements XtContext {
         $footsel_ncol = $this->_view_kanban ? 0 : 1;
         return self::render_footer_row($footsel_ncol, $ncol - $footsel_ncol,
             "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
-            . $this->conf->selfurl($qreq, ["selectall" => 1, "anchor" => "plact"])
+            . $this->conf->selfurl($qreq, ["selectall" => 1, "#" => "plact"])
             . '">select all ' . $this->count . "</a>), then&nbsp;",
             $lllgroups, $whichlll, $extra);
     }

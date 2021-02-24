@@ -39,7 +39,7 @@
         "type": "checkbox"
     },
     {
-        "name": "decisions", "group": "decisions", "anchorid": "decision-types",
+        "name": "decisions", "group": "decisions", "hashid": "decision-types",
         "parser_class": "Decisions_SettingParser"
     },
     {
@@ -195,7 +195,7 @@
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     {
-        "name": "options", "group": "subform", "anchorid": false,
+        "name": "options", "group": "subform", "hashid": false,
         "parser_class": "Options_SettingParser",
         "type": "string", "extensible": false, "storage": "dat.options"
     },
@@ -276,7 +276,7 @@
         "type": "date", "extensible": true
     },
     {
-        "name": "resp_rounds", "anchorid": false, "group": "responses",
+        "name": "resp_rounds", "hashid": false, "group": "responses",
         "parser_class": "Responses_SettingParser",
         "type": "string"
     },
@@ -323,7 +323,7 @@
         "require": "src/settings/s_reviews.php", "position": 1
     },
     {
-        "name": "review_form", "group": "reviewform", "anchorid": false,
+        "name": "review_form", "group": "reviewform", "hashid": false,
         "parser_class": "ReviewForm_SettingParser",
         "type": "string"
     },
@@ -505,7 +505,7 @@
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     {
-        "name": "tag_color", "group": "tags", "anchorid": "colors-and-styles",
+        "name": "tag_color", "group": "tags", "hashid": "colors-and-styles",
         "title": "Tag colors",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 40, "autogrow": true,
         "extensible": "word"

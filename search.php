@@ -76,7 +76,7 @@ if ($Qreq->redisplay) {
     } else {
         $forceShow = $Qreq->forceShow || $Qreq->showforce ? 1 : null;
     }
-    $Conf->redirect_self($Qreq, ["anchor" => "view", "forceShow" => $forceShow]);
+    $Conf->redirect_self($Qreq, ["#" => "view", "forceShow" => $forceShow]);
 }
 
 

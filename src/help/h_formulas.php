@@ -17,7 +17,7 @@ To search for a formula, use a search term such as “",
 $hth->search_link("formula:var(OveMer)>0.5"), "”
 (select papers with variance in Overall merit greater than 0.5).
 Or save formulas using ",
-$hth->search_link("Search &gt; View options", ["q" => "", "anchor" => "view"]),
+$hth->search_link("Search &gt; View options", ["q" => "", "#" => "view"]),
 " &gt; Edit formulas</a>.</p>
 
 <p>Formulas use a familiar expression language.

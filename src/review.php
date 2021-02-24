@@ -1417,7 +1417,7 @@ $blind\n";
     function unparse_flow_entry(PaperInfo $prow, ReviewInfo $rrow, Contact $contact) {
         // See also CommentInfo::unparse_flow_entry
         $barsep = ' <span class="barsep">·</span> ';
-        $a = '<a href="' . $prow->hoturl(["anchor" => "r" . $rrow->unparse_ordinal_id()]) . '"';
+        $a = '<a href="' . $prow->hoturl(["#" => "r" . $rrow->unparse_ordinal_id()]) . '"';
         $t = '<tr class="pl"><td class="pl_eventicon">' . $a . '>'
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_eventid pl_rowclick">'
@@ -2492,7 +2492,7 @@ class ReviewValues extends MessageSet {
         $pids = array();
         foreach ($info as &$x) {
             if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
-                $x = "<a href=\"" . $this->conf->hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
+                $x = "<a href=\"" . $this->conf->hoturl("paper", ["p" => $m[2], "#" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
                 $pids[] = $m[2];
             }
         }

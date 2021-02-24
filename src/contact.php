@@ -1444,9 +1444,10 @@ class Contact {
     }
 
 
+    /** @param ?Qrequest $qreq */
     function escape($qreq = null) {
         global $Qreq;
-        $qreq = $qreq ? : $Qreq;
+        $qreq = $qreq ?? $Qreq;
 
         if ($qreq->ajax) {
             if ($this->is_empty()) {
@@ -1464,9 +1465,6 @@ class Contact {
             $x = [];
             if (($path = Navigation::path())) {
                 $x["__PATH__"] = preg_replace('/^\/+/', "", $path);
-            }
-            if ($qreq->anchor) {
-                $x["anchor"] = $qreq->anchor;
             }
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITE_RELATIVE);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, Conf::$now + 120];

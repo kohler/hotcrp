@@ -105,7 +105,7 @@ class HelpRenderer extends Ht {
             $html = "Learn more";
         }
         if (is_string($topic) && ($hash = strpos($topic, "#")) !== false) {
-            $topic = ["t" => substr($topic, 0, $hash), "anchor" => substr($topic, $hash + 1)];
+            $topic = ["t" => substr($topic, 0, $hash), "#" => substr($topic, $hash + 1)];
         } else if (is_string($topic)) {
             $topic = ["t" => $topic];
         }

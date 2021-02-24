@@ -223,7 +223,7 @@
     {
         "name": "tracks", "group": "tags", "position": 750,
         "render_callback": "Tracks_SettingRenderer::render",
-        "title": "Tracks", "anchorid": "tracks"
+        "title": "Tracks", "hashid": "tracks"
     },
     {
         "name": "__crosscheck/tracks", "position": 750,

@@ -21,7 +21,7 @@ class Si {
     /** @var null|int|float */
     public $position;
     /** @var null|false|string */
-    public $anchorid;
+    public $hashid;
     /** @var ?string */
     public $type;
     /** @var bool */
@@ -142,11 +142,11 @@ class Si {
                 trigger_error("setting {$j->name}.storage format error");
             }
         }
-        if (isset($j->anchorid)) {
-            if (is_string($j->anchorid) || $j->anchorid === false) {
-                $this->anchorid = $j->anchorid;
+        if (isset($j->hashid)) {
+            if (is_string($j->hashid) || $j->hashid === false) {
+                $this->hashid = $j->hashid;
             } else {
-                trigger_error("setting {$j->name}.anchorid format error");
+                trigger_error("setting {$j->name}.hashid format error");
             }
         }
         if (isset($j->default_value)) {
@@ -283,8 +283,8 @@ class Si {
     /** @return array<string,string> */
     function hoturl_param($conf) {
         $param = ["group" => $this->canonical_page];
-        if ($this->anchorid !== false) {
-            $param["anchor"] = $this->anchorid ?? $this->name;
+        if ($this->hashid !== false) {
+            $param["#"] = $this->hashid ?? $this->name;
         }
         return $param;
     }
@@ -300,7 +300,7 @@ class Si {
     function sv_hoturl($sv) {
         if ($this->canonical_page !== null
             && $this->canonical_page === $sv->canonical_page) {
-            return "#" . urlencode($this->anchorid ? : $this->name);
+            return "#" . urlencode($this->hashid ? : $this->name);
         } else {
             return $this->hoturl($sv->conf);
         }
@@ -597,9 +597,9 @@ class SettingValues extends MessageSet {
     }
     /** @param string $g
      * @return ?string */
-    function group_anchorid($g) {
+    function group_hashid($g) {
         $gj = $this->gxt()->get($g);
-        return $gj && isset($gj->anchorid) ? $gj->anchorid : null;
+        return $gj && isset($gj->hashid) ? $gj->hashid : null;
     }
     /** @param string $g
      * @return list<object> */
@@ -657,7 +657,7 @@ class SettingValues extends MessageSet {
         $loc = null;
         if ($mx->field && ($si = Si::get($this->conf, $mx->field)) && $si->title) {
             $loc = htmlspecialchars($si->title);
-            if ($si->anchorid !== false) {
+            if ($si->hashid !== false) {
                 $loc = Ht::link($loc, $si->sv_hoturl($this));
             }
         }

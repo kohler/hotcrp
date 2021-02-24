@@ -2118,7 +2118,7 @@ class PaperTable {
                     && $user->can_review($prow, $rr)) {
                     $link = $prow->reviewurl(["r" => $rlink]);
                 } else if (Navigation::page() !== "paper") {
-                    $link = $prow->hoturl(["anchor" => "r$rlink"]);
+                    $link = $prow->hoturl(["#" => "r$rlink"]);
                 } else {
                     $link = "#r$rlink";
                 }

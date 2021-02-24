@@ -421,7 +421,7 @@ if (!$Qreq->valid_post()) {
         parseBulkFile($text, $Qreq->file_filename("bulk"));
     }
     $Qreq->bulkentry = "";
-    $Conf->redirect_self($Qreq, ["anchor" => "bulk"]);
+    $Conf->redirect_self($Qreq, ["#" => "bulk"]);
 } else if ($Qreq->savebulk && $newProfile) {
     $success = true;
     if ($Qreq->bulkentry && $Qreq->bulkentry !== "Enter users one per line") {
@@ -430,7 +430,7 @@ if (!$Qreq->valid_post()) {
     if (!$success) {
         $Me->save_session("profile_bulkentry", [Conf::$now, $Qreq->bulkentry]);
     }
-    $Conf->redirect_self($Qreq, ["anchor" => "bulk"]);
+    $Conf->redirect_self($Qreq, ["#" => "bulk"]);
 } else if (isset($Qreq->save)) {
     assert($Acct->is_empty() === !!$newProfile);
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];

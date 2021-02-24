@@ -927,7 +927,7 @@ function hoturl(page, options) {
             v = options[i];
             if (v == null)
                 /* skip */;
-            else if (i === "anchor")
+            else if (i === "anchor" /* XXX deprecated */ || i === "#")
                 anchor = "#" + v;
             else
                 x.v.push(encodeURIComponent(i) + "=" + encodeURIComponent(v));
@@ -1446,7 +1446,7 @@ return function (content, bubopt) {
     else if (typeof bubopt === "string")
         bubopt = {color: bubopt};
 
-    var nearpos = null, dirspec = bubopt.dir, dir = null,
+    var nearpos = null, dirspec = bubopt.anchor, dir = null,
         color = bubopt.color ? " " + bubopt.color : "";
 
     var bubdiv = $('<div class="bubble' + color + '" style="margin:0"><div class="bubtail bubtail0' + color + '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1' + color + '" style="width:0;height:0"></div></div>')[0];
@@ -1987,8 +1987,9 @@ return function () {
 function popup_skeleton(options) {
     var hc = new HtmlCollector, $d = null;
     options = options || {};
+    var near = options.near || options.anchor;
     hc.push('<div class="modal" role="dialog"><div class="modal-dialog'
-        + (!options.anchor || options.anchor === window ? " modal-dialog-centered" : "")
+        + (!near || near === window ? " modal-dialog-centered" : "")
         + (options.style ? '" style="' + escape_entities(options.style) : '')
         + '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8"'
         + (options.form_class ? ' class="' + options.form_class + '"' : '')
@@ -2058,7 +2059,7 @@ function popup_skeleton(options) {
             show();
         }
         if (visible !== false) {
-            popup_near($d, options.anchor || window);
+            popup_near($d, near || window);
             $d.find(".need-autogrow").autogrow();
             $d.find(".need-suggest").each(suggest);
             $d.find(".need-tooltip").each(tooltip);
@@ -2068,7 +2069,7 @@ function popup_skeleton(options) {
     return hc;
 }
 
-function popup_near(elt, anchor) {
+function popup_near(elt, near) {
     tooltip.erase();
     if (elt.jquery)
         elt = elt[0];
@@ -2078,7 +2079,7 @@ function popup_near(elt, anchor) {
     addClass(bgelt, "show");
     addClass(document.body, "modal-open");
     if (!hasClass(elt, "modal-dialog-centered")) {
-        var anchorPos = $(anchor).geometry(),
+        var anchorPos = $(near).geometry(),
             wg = $(window).geometry(),
             po = $(bgelt).offset(),
             y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
@@ -2105,9 +2106,9 @@ function popup_near(elt, anchor) {
 function override_deadlines(callback) {
     var self = this, hc;
     if (typeof callback === "object" && "sidebarTarget" in callback) {
-        hc = popup_skeleton({anchor: callback.sidebarTarget});
+        hc = popup_skeleton({near: callback.sidebarTarget});
     } else {
-        hc = popup_skeleton({anchor: this});
+        hc = popup_skeleton({near: this});
     }
     hc.push('<p>' + (this.getAttribute("data-override-text") || "Are you sure you want to override the deadline?") + '</p>');
     hc.push_actions([
@@ -8068,7 +8069,7 @@ handle_ui.on("js-remove-document", function (event) {
 
 handle_ui.on("js-withdraw", function (event) {
     var f = this.closest("form"),
-        hc = popup_skeleton({anchor: this, action: f});
+        hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Are you sure you want to withdraw this submission from consideration and/or publication?');
     if (!this.hasAttribute("data-revivable"))
         hc.push(' Only administrators can undo this step.');
@@ -8087,7 +8088,7 @@ handle_ui.on("js-withdraw", function (event) {
 
 handle_ui.on("js-delete-paper", function (event) {
     var f = this.closest("form"),
-        hc = popup_skeleton({anchor: this, action: f});
+        hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="delete" value="1" class="btn-danger">Delete</button>',
         '<button type="button" name="cancel">Cancel</button>']);
@@ -8641,7 +8642,7 @@ if (siteinfo.paperid) {
 
 // profile UI
 handle_ui.on("js-cannot-delete-user", function (event) {
-    var hc = popup_skeleton({anchor: this});
+    var hc = popup_skeleton({near: this});
     hc.push('<p><strong>This user cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the user, first remove these papers from the database or give the papers more contacts.</p>');
     hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
     hc.show();
@@ -8649,7 +8650,7 @@ handle_ui.on("js-cannot-delete-user", function (event) {
 
 handle_ui.on("js-delete-user", function (event) {
     var f = this.closest("form"),
-        hc = popup_skeleton({anchor: this, action: f}), x;
+        hc = popup_skeleton({near: this, action: f}), x;
     hc.push('<p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>');
     if ((x = this.getAttribute("data-delete-info")))
         hc.push(x);
@@ -8675,7 +8676,7 @@ return function (event) {
 // review UI
 handle_ui.on("js-decline-review", function () {
     var f = this.closest("form"),
-        hc = popup_skeleton({anchor: this, action: f});
+        hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
     hc.push('<textarea name="reason" rows="3" cols="60" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
     hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn-danger">Decline review</button>',
@@ -8685,7 +8686,7 @@ handle_ui.on("js-decline-review", function () {
 
 handle_ui.on("js-deny-review-request", function () {
     var f = this.closest("form"),
-        hc = popup_skeleton({anchor: this, action: f});
+        hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Select “Deny request” to deny this review request.</p>');
     hc.push('<textarea name="reason" rows="3" cols="60" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
     hc.push_actions(['<button type="submit" name="denyreview" value="1" class="btn-danger">Deny request</button>',
@@ -8696,7 +8697,7 @@ handle_ui.on("js-deny-review-request", function () {
 
 handle_ui.on("js-delete-review", function () {
     var f = this.closest("form"),
-        hc = popup_skeleton({anchor: this, action: f});
+        hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="deletereview" value="1" class="btn-danger">Delete review</button>',
         '<button type="button" name="cancel">Cancel</button>']);
@@ -8704,7 +8705,7 @@ handle_ui.on("js-delete-review", function () {
 });
 
 handle_ui.on("js-approve-review", function (event) {
-    var self = this, hc = popup_skeleton({anchor: event.sidebarTarget || self});
+    var self = this, hc = popup_skeleton({near: event.sidebarTarget || self});
     hc.push('<div class="btngrid">', '</div>');
     var subreviewClass = "";
     if (hasClass(self, "can-adopt")) {

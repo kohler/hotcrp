@@ -3169,7 +3169,7 @@ class Conf {
             foreach ($param as $k => $v) {
                 if ($v === null || $v === false) {
                     // skip
-                } else if ($k === "anchor") {
+                } else if ($k === "anchor" /* XXX deprecated */ || $k === "#") {
                     $anchor = "#" . urlencode($v);
                 } else {
                     $x .= ($x === "" ? "" : $amp) . $k . "=" . urlencode($v);

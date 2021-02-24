@@ -50,11 +50,11 @@ class GroupedExtensions implements XtContext {
                 $fj->group = $fj->name;
             }
         }
-        if (!isset($fj->anchorid)
+        if (!isset($fj->hashid)
             && !str_starts_with($fj->name, "__")
             && ($pos = strpos($fj->name, "/")) !== false) {
             $x = substr($fj->name, $pos + 1);
-            $fj->anchorid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9_:.]+/', "-", strtolower($x));
+            $fj->hashid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9_:.]+/', "-", strtolower($x));
         }
         $this->_jall[$fj->name][] = $fj;
         if ($fj->group === $fj->name) {
@@ -279,8 +279,8 @@ class GroupedExtensions implements XtContext {
             if ($this->_render_state[3]) {
                 echo ' class="', $this->_render_state[3], '"';
             }
-            if (isset($gj->anchorid)) {
-                echo ' id="', htmlspecialchars($gj->anchorid), '"';
+            if (isset($gj->hashid)) {
+                echo ' id="', htmlspecialchars($gj->hashid), '"';
             }
             echo '>', $gj->title, '</', $this->_render_state[2], ">\n";
             $this->_render_state[1] = $gj->title;
