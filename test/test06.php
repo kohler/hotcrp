@@ -175,7 +175,7 @@ xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 $tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/^4/m', 'No entry', $review1A), "review1A-6.txt");
 xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_mgbaker));
-xassert_eqq(join(" ", $tf->updated), "#1A");
+xassert_eqq(join(" ", $tf->updated ?? []), "#1A");
 xassert(!$tf->has_problem_at("overAllMerit"));
 //error_log(var_export($tf->message_list(), true));
 

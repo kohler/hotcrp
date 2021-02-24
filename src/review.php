@@ -72,7 +72,7 @@ class ReviewField implements JsonSerializable {
     /** @var int */
     public $round_mask = 0;
     /** @var bool */
-    public $allow_empty = false;
+    public $required = false;
     /** @var ?non-empty-string */
     public $main_storage;
     /** @var ?non-empty-string */
@@ -158,7 +158,15 @@ class ReviewField implements JsonSerializable {
             if (($p = $j->option_class_prefix ?? null)) {
                 $this->option_class_prefix = $p;
             }
-            $this->allow_empty = !!($j->allow_empty ?? false);
+            if (isset($j->required)) {
+                $this->required = !!$j->required;
+            } else if (isset($j->allow_empty)) {
+                $this->required = !$j->allow_empty;
+            } else {
+                $this->required = true;
+            }
+        } else {
+            $this->required = false;
         }
         $this->_typical_score = false;
     }
@@ -196,9 +204,9 @@ class ReviewField implements JsonSerializable {
             if ($this->option_class_prefix !== "sv") {
                 $j->option_class_prefix = $this->option_class_prefix;
             }
-            if ($this->allow_empty) {
-                $j->allow_empty = true;
-            }
+            $j->required = $this->required;
+        } else if ($this->required) {
+            $j->required = true;
         }
         if ($this->round_mask && $for_settings) {
             $j->round_mask = $this->round_mask;
@@ -500,7 +508,7 @@ class ReviewField implements JsonSerializable {
             foreach ($this->options as $num => $text) {
                 $this->echo_option($num, $fv, $reqv);
             }
-            if ($this->allow_empty) {
+            if (!$this->required) {
                 $this->echo_option(0, $fv, $reqv);
             }
         } else {
@@ -704,12 +712,12 @@ class ReviewForm implements JsonSerializable {
                 echo '" id="', $f->id;
             }
             echo '"><label class="revfn';
-            if ($f->has_options && !$f->allow_empty) {
+            if ($f->required) {
                 echo ' field-required';
             }
             echo '" for="', $f->id;
             if ($f->has_options) {
-                if ($rval || $f->allow_empty) {
+                if ($rval || !$f->required) {
                     echo "_", $rval;
                 } else {
                     echo "_", key($f->options);
@@ -943,14 +951,14 @@ $blind\n";
                     /** @phan-suppress-next-line PhanParamSuspiciousOrder */
                     $x .= prefix_word_wrap($y, $value, str_pad("==-==", strlen($y)));
                 }
-                if ($f->allow_empty) {
+                if (!$f->required) {
                     $x .= "==-==    No entry\n==-== Enter your choice:\n";
                 } else if ($f->option_letter) {
                     $x .= "==-== Enter the letter of your choice:\n";
                 } else {
                     $x .= "==-== Enter the number of your choice:\n";
                 }
-                if ($fval === "" && $f->allow_empty) {
+                if ($fval === "" && !$f->required) {
                     $fval = "No entry";
                 } else if ($fval === "") {
                     $fval = "(Your choice here)";
@@ -1986,9 +1994,7 @@ class ReviewValues extends MessageSet {
                         && isset($this->req[$f->id])
                         && $f->parse_is_explicit_empty($this->req[$f->id]))) {
                     $anynonempty = true;
-                } else if ($f->has_options
-                           && !$f->allow_empty
-                           && $f->view_score >= VIEWSCORE_PC) {
+                } else if ($f->required && $f->view_score >= VIEWSCORE_PC) {
                     $missingfields[] = $f;
                     $unready = $unready || $submit;
                 }
@@ -2149,7 +2155,7 @@ class ReviewValues extends MessageSet {
                 $fval = $old_fval;
             }
             if ($f->has_options) {
-                if ($fval === 0 && $rrow->reviewId && !$f->allow_empty) {
+                if ($fval === 0 && $rrow->reviewId && $f->required) {
                     $fval = $old_fval;
                 }
                 $fval_diffs = $fval !== $old_fval;

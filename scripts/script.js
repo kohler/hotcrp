@@ -4058,7 +4058,7 @@ function score_header_tooltips($j) {
 
 function render_review_body(rrow) {
     var view_order = $.grep(form_order, function (f) {
-        if (f.options && f.allow_empty)
+        if (f.options && !f.required)
             return f.uid in rrow;
         else
             return !!rrow[f.uid];
@@ -4097,7 +4097,7 @@ function render_review_body(rrow) {
                 f.score_info.unparse_revnum(x) + ' </span><span class="revscoredesc">' +
                 escape_entities(f.options[x - 1]) + '</span></p>';
         } else {
-            t += '<p class="revv revnoscore">' + (f.allow_empty ? "No entry" : "Unknown") + '</p>';
+            t += '<p class="revv revnoscore">' + (f.required ? "Unknown" : "No entry") + '</p>';
         }
 
         t += '</div>';

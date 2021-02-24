@@ -870,10 +870,10 @@ class Score_Fexpr extends Fexpr {
         $state->_ensure_rrow_score($fid);
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound(true);
-        if ($this->field->allow_empty) {
-            return "({$this->field->view_score} > $rrow_vsb ? (int) {$rrow}->$fid : null)";
-        } else {
+        if ($this->field->required) {
             return "({$this->field->view_score} > $rrow_vsb && ({$rrow}->$fid ?? 0) ? (int) {$rrow}->$fid : null)";
+        } else {
+            return "({$this->field->view_score} > $rrow_vsb ? (int) {$rrow}->$fid : null)";
         }
     }
 }

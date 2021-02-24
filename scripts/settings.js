@@ -250,8 +250,6 @@ function options_to_text(fieldj) {
         t.push(unparse_option(fieldj, i + 1) + ". " + fieldj.options[i]);
     if (fieldj.option_letter)
         t.reverse();
-    if (fieldj.allow_empty)
-        t.push("No entry");
     if (t.length)
         t.push(""); // get a trailing newline
     return t.join("\n");
@@ -286,6 +284,7 @@ function fill_field(fid, fieldj, order) {
     fill_field1("#rf_" + fid + "_description", fieldj.description || "", order);
     fill_field1("#rf_" + fid + "_visibility", fieldj.visibility || "pc", order);
     fill_field1("#rf_" + fid + "_options", options_to_text(fieldj), order);
+    fill_field1("#rf_" + fid + "_required", fieldj.required ? "1" : "0", order);
     fill_field1("#rf_" + fid + "_colorsflipped", fieldj.option_letter ? "1" : "", order);
     fill_field1("#rf_" + fid + "_colors", option_class_prefix(fieldj), order);
     fill_field1("#rf_" + fid + "_rounds", (fieldj.round_list || ["all"]).join(" "), order);
@@ -330,7 +329,7 @@ function option_value_html(fieldj, value) {
     var t, n;
     if (!value || value < 0)
         return ["", "No entry"];
-    t = '<span class="rev_num sv';
+    t = '<strong class="rev_num sv';
     if (value <= fieldj.options.length) {
         if (fieldj.options.length > 1)
             n = Math.floor((value - 1) * 8 / (fieldj.options.length - 1) + 1.5);
@@ -338,7 +337,7 @@ function option_value_html(fieldj, value) {
             n = 1;
         t += " " + (fieldj.option_class_prefix || "sv") + n;
     }
-    return [t + '">' + unparse_option(fieldj, value) + '.</span>',
+    return [t + '">' + unparse_option(fieldj, value) + '.</strong>',
             escape_entities(fieldj.options[value - 1] || "Unknown")];
 }
 
@@ -461,16 +460,18 @@ function rfs(data) {
     ttemplate = data.ttemplate;
 
     fieldorder = [];
-    for (fid in original)
+    for (fid in original) {
         if (original[fid].position)
             fieldorder.push(fid);
+    }
     fieldorder.sort(function (a, b) {
         return original[a].position - original[b].position;
     });
 
     // construct form
-    for (i = 0; i != fieldorder.length; ++i)
+    for (i = 0; i != fieldorder.length; ++i) {
         append_field(fieldorder[i], i + 1);
+    }
     $("#reviewform_container").on("click", "a.settings-field-folder", view_unfold);
     $("#reviewform_container").on("unfold", ".settings-revfield", function (evt, opts) {
         $(this).find("textarea").css("height", "auto").autogrow();
@@ -492,7 +493,7 @@ function rfs(data) {
     for (i in data.errf || {}) {
         $j = $("#" + i).closest(".f-i");
         if (!$j.length)
-            $j = $(".errloc_" + i);
+            $j = $("#rf_" + i);
         $j.addClass("has-error");
         foldup.call($j[0], null, {n: 2, f: false});
     }
@@ -541,7 +542,7 @@ function add_dialog(fid, focus) {
                     hc.push('<tr><td class="nw">' + ov[0] + ' </td>' +
                             '<td>' + ov[1] + '</td></tr>');
                 }
-                if (s.allow_empty)
+                if (!s.required)
                     hc.push('<tr><td colspan="2">No entry</td></tr>');
                 hc.pop();
             }

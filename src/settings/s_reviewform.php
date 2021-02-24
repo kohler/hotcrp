@@ -14,7 +14,10 @@ class ReviewForm_SettingParser extends SettingParser {
 
         $opts = array();
         $lowonum = 10000;
-        $allow_empty = false;
+        $required = true;
+        if ($sv->reqv("has_rf_{$fid}_required")) {
+            $required = !!$sv->reqv("rf_{$fid}_required");
+        }
 
         foreach (explode("\n", $text) as $line) {
             $line = trim($line);
@@ -25,7 +28,7 @@ class ReviewForm_SettingParser extends SettingParser {
                     $lowonum = min($lowonum, $onum);
                     $opts[$onum] = $m[2];
                 } else if (preg_match('/^(?:0\.\s*)?No entry$/i', $line)) {
-                    $allow_empty = true;
+                    $required = false;
                 } else {
                     return false;
                 }
@@ -45,14 +48,14 @@ class ReviewForm_SettingParser extends SettingParser {
             $seqopts[] = $opts[$onum];
         }
 
-        unset($fj->option_letter, $fj->allow_empty);
+        unset($fj->option_letter, $fj->allow_empty, $fj->required);
         if ($letters) {
             $seqopts = array_reverse($seqopts, true);
             $fj->option_letter = chr($lowonum);
         }
         $fj->options = array_values($seqopts);
-        if ($allow_empty) {
-            $fj->allow_empty = true;
+        if (!$required) {
+            $fj->required = $required;
         }
         return true;
     }
@@ -432,6 +435,19 @@ class ReviewForm_SettingRenderer {
             . '</div></div>';
     }
 
+    static function render_required_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
+        if (!$f->has_options) {
+            return "";
+        }
+        $self->mark_visible_property("options", true);
+        return '<div class="' . $sv->control_class("rf_{$xpos}_required", "entryi is-rf-options")
+            . '">' . $sv->label("rf_{$xpos}_required", "Required")
+            . '<div class="entry">'
+            . Ht::select("rf_{$xpos}_required", ["0" => "No", "1" => "Yes"], $f->required ? "1" : "0", ["id" => "rf_{$xpos}_required"])
+            . Ht::hidden("has_rf_{$xpos}_required", "1")
+            . '</div></div>';
+    }
+
     static function render_colors_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
         if (!$f->has_options) {
             return "";
@@ -488,9 +504,7 @@ class ReviewForm_SettingRenderer {
 2. Weak reject
 3. Weak accept
 4. Accept</pre>
-<p>Or use consecutive capital letters (lower letters are better).</p>
-<p>Normally scores are mandatory: a review with a missing score cannot be
-submitted. Add a “<code>No entry</code>” line to make the score optional.</p></div>');
+<p>Or use consecutive capital letters (lower letters are better).</p></div>');
 
         $rfj = [];
         foreach ($rf->fmap as $f) {
@@ -559,7 +573,7 @@ submitted. Add a “<code>No entry</code>” line to make the score optional.</p
         }
         $renderer = new ReviewForm_SettingRenderer;
         echo '<template id="rf_template" class="hidden">';
-        echo '<div id="rf_$" class="settings-revfield f-contain has-fold fold2c errloc_$" data-revfield="$">',
+        echo '<div id="rf_$" class="settings-revfield f-contain has-fold fold2c" data-revfield="$">',
             '<a href="" class="q settings-field-folder">',
             expander(null, 2, "Edit field"),
             '</a>',
@@ -571,6 +585,7 @@ submitted. Add a “<code>No entry</code>” line to make the score optional.</p
         $rfield = ReviewField::make_template(true, $sv->conf);
         echo ReviewForm_SettingRenderer::render_description_property($sv, $rfield, '$', $renderer, null);
         echo ReviewForm_SettingRenderer::render_options_property($sv, $rfield, '$', $renderer, null);
+        echo ReviewForm_SettingRenderer::render_required_property($sv, $rfield, '$', $renderer, null);
         echo ReviewForm_SettingRenderer::render_presence_property($sv, $rfield, '$', $renderer, null);
         echo ReviewForm_SettingRenderer::render_required_property($sv, $rfield, '$', $renderer, null);
         echo ReviewForm_SettingRenderer::render_visibility_property($sv, $rfield, '$', $renderer, null);

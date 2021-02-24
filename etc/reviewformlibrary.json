@@ -10,6 +10,7 @@
             "Top 10% but not top 5% of submitted papers",
             "Top 5% of submitted papers!"
         ],
+        "required": true,
         "visibility": "au"
     },
     {
@@ -23,6 +24,7 @@
             "Accept",
             "Strong accept"
         ],
+        "required": true,
         "visibility": "au"
     },
     {
@@ -35,6 +37,7 @@
             "OK paper, but I will not champion it",
             "Good paper, I will champion it"
         ],
+        "required": true,
         "option_letter": "A",
         "visibility": "au"
     },
@@ -47,6 +50,7 @@
             "Medium",
             "High"
         ],
+        "required": true,
         "visibility": "au"
     },
     {
@@ -60,6 +64,7 @@
              "I know a lot about this area",
              "This is my area"
         ],
+        "required": true,
         "visibility": "au"
     },
     {
@@ -71,6 +76,7 @@
             "I am knowledgeable in this area, but not an expert",
             "I am an expert in this area"
         ],
+        "required": true,
         "option_letter": "X",
         "visibility": "au"
     },
@@ -84,6 +90,7 @@
              "New contribution",
              "Surprisingly new contribution"
         ],
+        "required": true,
         "visibility": "au"
     },
     {
@@ -97,6 +104,7 @@
              "Well-written",
              "Outstanding"
         ],
+        "required": true,
         "visibility": "au"
     },
     {
@@ -110,6 +118,7 @@
              "Good",
              "Excellent"
         ],
+        "required": true,
         "visibility": "au"
     },
 
