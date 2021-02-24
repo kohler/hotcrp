@@ -403,20 +403,20 @@ class ReviewForm_SettingParser extends SettingParser {
 
 class ReviewForm_SettingRenderer {
     /** @var ?array<string,bool> */
-    private $field_properties = [];
+    private $properties = [];
 
     /** @param string $property
      * @param bool $visible */
     function mark_visible_property($property, $visible) {
-        if (!$visible || !isset($this->field_properties[$property])) {
-            $this->field_properties[$property] = $visible;
+        if (!$visible || !isset($this->properties[$property])) {
+            $this->properties[$property] = $visible;
         }
     }
 
     static function render_description_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
         $open = !$f->id || $f->description || true;
         $self->mark_visible_property("description", $open);
-        return '<div class="' . $sv->control_class("rf_{$xpos}_description", "entryi is-rf-description" . ($open ? "" : " hidden"))
+        return '<div class="' . $sv->control_class("rf_{$xpos}_description", "entryi is-property-description" . ($open ? "" : " hidden"))
             . '">' . $sv->label("rf_{$xpos}_description", "Description")
             . '<div class="entry">'
             . Ht::textarea("rf_{$xpos}_description", $f->description ?? "", ["id" => "rf_{$xpos}_description", "rows" => 2, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"])
@@ -428,7 +428,7 @@ class ReviewForm_SettingRenderer {
             return "";
         }
         $self->mark_visible_property("options", true);
-        return '<div class="' . $sv->control_class("rf_{$xpos}_options", "entryi is-rf-options")
+        return '<div class="' . $sv->control_class("rf_{$xpos}_options", "entryi is-property-options")
             . '">' . $sv->label("rf_{$xpos}_options", "Choices")
             . '<div class="entry">'
             . Ht::textarea("rf_{$xpos}_options", "" /* XXX */, ["id" => "rf_{$xpos}_options", "rows" => 6, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"])
@@ -440,7 +440,7 @@ class ReviewForm_SettingRenderer {
             return "";
         }
         $self->mark_visible_property("options", true);
-        return '<div class="' . $sv->control_class("rf_{$xpos}_required", "entryi is-rf-options")
+        return '<div class="' . $sv->control_class("rf_{$xpos}_required", "entryi is-property-options")
             . '">' . $sv->label("rf_{$xpos}_required", "Required")
             . '<div class="entry">'
             . Ht::select("rf_{$xpos}_required", ["0" => "No", "1" => "Yes"], $f->required ? "1" : "0", ["id" => "rf_{$xpos}_required"])
@@ -452,7 +452,7 @@ class ReviewForm_SettingRenderer {
         if (!$f->has_options) {
             return "";
         }
-        return '<div class="' . $sv->control_class("rf_{$xpos}_colors", "entryi is-rf-options")
+        return '<div class="' . $sv->control_class("rf_{$xpos}_colors", "entryi is-property-options")
             . '">' . $sv->label("rf_{$xpos}_colors", "Colors")
             . '<div class="entry">'
             . Ht::select("rf_{$xpos}_colors", [], "", ["id" => "rf_{$xpos}_colors"])
@@ -461,7 +461,7 @@ class ReviewForm_SettingRenderer {
     }
 
     static function render_visibility_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
-        return '<div class="' . $sv->control_class("rf_{$xpos}_visibility", "entryi is-rf-visibility")
+        return '<div class="' . $sv->control_class("rf_{$xpos}_visibility", "entryi is-property-visibility")
             . '">' . $sv->label("rf_{$xpos}_visibility", "Visibility")
             . '<div class="entry">'
             . Ht::select("rf_{$xpos}_visibility", [
@@ -474,11 +474,16 @@ class ReviewForm_SettingRenderer {
     }
 
     static function render_presence_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
-        return '<div class="' . $sv->control_class("rf_{$xpos}_rounds", "entryi is-rf-editing")
+        return '<div class="' . $sv->control_class("rf_{$xpos}_rounds", "entryi is-property-editing")
             . '">' . $sv->label("rf_{$xpos}_rounds", "Present on")
             . '<div class="entry">'
             . Ht::select("rf_{$xpos}_rounds", [], "", ["id" => "rf_{$xpos}_rounds"])
             . '</div></div>';
+    }
+
+    private function echo_property_button($property, $icon, $label) {
+        $all_open = false;
+        echo Ht::button($icon, ["class" => "btn-licon ui js-settings-show-property need-tooltip" . ($all_open ? " btn-disabled" : ""), "aria-label" => $label, "data-property" => $property]);
     }
 
     static function render(SettingValues $sv) {
@@ -573,7 +578,7 @@ class ReviewForm_SettingRenderer {
         }
         $renderer = new ReviewForm_SettingRenderer;
         echo '<template id="rf_template" class="hidden">';
-        echo '<div id="rf_$" class="settings-revfield f-contain has-fold fold2c" data-revfield="$">',
+        echo '<div id="rf_$" class="settings-rf f-contain has-fold fold2c" data-revfield="$">',
             '<a href="" class="q settings-field-folder">',
             expander(null, 2, "Edit field"),
             '</a>',
@@ -591,7 +596,10 @@ class ReviewForm_SettingRenderer {
         echo ReviewForm_SettingRenderer::render_visibility_property($sv, $rfield, '$', $renderer, null);
         echo ReviewForm_SettingRenderer::render_colors_property($sv, $rfield, '$', $renderer, null);
 
-        echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
+        echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">';
+        $renderer->echo_property_button("description", Icons::ui_description(), "Description");
+        $renderer->echo_property_button("editing", Icons::ui_edit_hide(), "Edit requirements");
+        echo '</span><span class="btnbox">',
             Ht::button(Icons::ui_movearrow(0), ["id" => "rf_\$_moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_movearrow(2), ["id" => "rf_\$_movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',

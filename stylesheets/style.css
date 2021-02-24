@@ -1366,7 +1366,7 @@ th.settings-simplehead {
 	margin-bottom: 0;
 }
 .form-g,
-.settings-revfield, .settings-rf-deleted {
+.settings-rf, .settings-rf-deleted {
 	margin-bottom: 2em;
 }
 .settings-opt {
@@ -1381,7 +1381,7 @@ th.settings-simplehead {
 .form-g + .form-nearby {
 	margin-top: -1em;
 }
-.settings-revfield, .settings-opt {
+.settings-rf, .settings-opt {
 	margin-left: 1.2em;
 }
 .settings-field-folder {

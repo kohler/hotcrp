@@ -36,9 +36,9 @@ handle_ui.on("js-settings-option-type", function (event) {
     foldup.call(this, null, {n: 4, f: !issel});
 });
 
-handle_ui.on("js-settings-show-option-property", function () {
-    var prop = this.getAttribute("data-option-property"),
-        $j = $(this).closest(".settings-opt").find(".is-option-" + prop);
+handle_ui.on("js-settings-show-property", function () {
+    var prop = this.getAttribute("data-property"),
+        $j = $(this).closest(".settings-opt, .settings-rf").find(".is-property-" + prop);
     $j.removeClass("hidden");
     if (document.activeElement === this || document.activeElement === document.body) {
         var $jx = $j.find("input, select, textarea").not("[type=hidden], :disabled");
@@ -277,10 +277,17 @@ function fill_field1(sel, value, order) {
     order && $j.attr("data-default-value", value);
 }
 
-function fill_field(fid, fieldj, order) {
+function fill_property($f, property, present) {
+    if (!present) {
+        $f.find(".is-property-" + property).addClass("hidden");
+    } else {
+        $f.find(".js-settings-show-property[data-property=\"".concat(property, "\"]")).addClass("btn-disabled");
+    }
+}
+
+function fill_field($f, fid, fieldj, order) {
     fieldj = fieldj || original[fid] || {};
     fill_field1("#rf_" + fid + "_name", fieldj.name || "", order);
-    order && fill_field1("#rf_" + fid + "_position", fieldj.position || 0, order);
     fill_field1("#rf_" + fid + "_description", fieldj.description || "", order);
     fill_field1("#rf_" + fid + "_visibility", fieldj.visibility || "pc", order);
     fill_field1("#rf_" + fid + "_options", options_to_text(fieldj), order);
@@ -291,11 +298,16 @@ function fill_field(fid, fieldj, order) {
     $("#rf_" + fid + " textarea").trigger("change");
     $("#rf_" + fid + "_view").html("").append(create_field_view(fieldj));
     $("#rf_" + fid + "_delete").attr("aria-label", fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
+    if (order) {
+        fill_field1("#rf_" + fid + "_position", fieldj.position || 0, order);
+        fill_property($f, "description", !!fieldj.description);
+        fill_property($f, "editing", !!fieldj.round_list);
+    }
     return false;
 }
 
 function remove() {
-    var $f = $(this).closest(".settings-revfield"),
+    var $f = $(this).closest(".settings-rf"),
         fid = $f.attr("data-revfield");
     $f.find(".rf-position").val(0);
     $f.detach().hide().appendTo("#reviewform_removedcontainer");
@@ -335,7 +347,7 @@ function option_value_html(fieldj, value) {
 }
 
 function view_unfold(event) {
-    var $f = $(event.target).closest(".settings-revfield");
+    var $f = $(event.target).closest(".settings-rf");
     if ($f.hasClass("fold2c") || !form_differs($f))
         foldup.call(event.target, event, {n: 2});
     return false;
@@ -388,7 +400,7 @@ function create_field_view(fieldj) {
 
 function move_field(event) {
     var isup = $(this).hasClass("moveup"),
-        $f = $(this).closest(".settings-revfield").detach(),
+        $f = $(this).closest(".settings-rf").detach(),
         fid = $f.attr("data-revfield"),
         pos = $f.find(".rf-position").val() | 0,
         $c = $("#reviewform_container")[0], $n, i;
@@ -417,7 +429,7 @@ function append_field(fid, pos) {
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
     } else
-        $f.find(".is-rf-options").remove();
+        $f.find(".is-property-options").remove();
 
     var rnames = [];
     for (i in hotcrp_status.revs || {})
@@ -446,7 +458,7 @@ function append_field(fid, pos) {
     $f.find(".js-settings-rf-move").on("click", move_field);
     $f.appendTo("#reviewform_container");
 
-    fill_field(fid, original[fid], true);
+    fill_field($f, fid, original[fid], true);
     $f.find(".need-tooltip").each(tooltip);
 }
 
@@ -471,7 +483,7 @@ function rfs(data) {
         append_field(fieldorder[i], i + 1);
     }
     $("#reviewform_container").on("click", "a.settings-field-folder", view_unfold);
-    $("#reviewform_container").on("unfold", ".settings-revfield", function (evt, opts) {
+    $("#reviewform_container").on("unfold", ".settings-rf", function (evt, opts) {
         $(this).find("textarea").css("height", "auto").autogrow();
         $(this).find("input[type=text]").autogrow();
     });
@@ -526,7 +538,7 @@ function add_dialog(fid, focus) {
     }
     function submit(event) {
         add_field(fid);
-        template && fill_field(fid, samples[template - 1], false);
+        template && fill_field($("#rf_" + fid), fid, samples[template - 1], false);
         $("#rf_" + fid + "_name")[0].focus();
         $d.close();
         event.preventDefault();
