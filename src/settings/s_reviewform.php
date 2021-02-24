@@ -417,15 +417,14 @@ class ReviewForm_SettingRenderer {
     Include any guidance you’d like to provide for reviewers.
     Note that complex HTML will not appear on offline review forms.</p></div>'
           . '<div id="review_form_caption_options" class="hidden">'
-          . '<p>Enter one option per line, numbered starting from 1 (higher numbers
-    are better). For example:</p>
-    <pre class="entryexample dark">1. Reject
-    2. Weak reject
-    3. Weak accept
-    4. Accept</pre>
-    <p>Or use consecutive capital letters (lower letters are better).</p>
-    <p>Normally scores are mandatory: a review with a missing score cannot be
-    submitted. Add a “<code>No entry</code>” line to make the score optional.</p></div>');
+          . '<p>Enter one option per line, numbered starting from 1 (higher numbers are better). For example:</p>
+<pre class="entryexample">1. Reject
+2. Weak reject
+3. Weak accept
+4. Accept</pre>
+<p>Or use consecutive capital letters (lower letters are better).</p>
+<p>Normally scores are mandatory: a review with a missing score cannot be
+submitted. Add a “<code>No entry</code>” line to make the score optional.</p></div>');
 
         $rfj = [];
         foreach ($rf->fmap as $f) {

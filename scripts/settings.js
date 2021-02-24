@@ -1,5 +1,5 @@
 // settings.js -- HotCRP JavaScript library for settings
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 function next_lexicographic_permutation(i, size) {
     var y = (i & -i) || 1, c = i + y, highbit = 1 << size;
@@ -40,8 +40,12 @@ handle_ui.on("js-settings-show-option-property", function () {
     var prop = this.getAttribute("data-option-property"),
         $j = $(this).closest(".settings-opt").find(".is-option-" + prop);
     $j.removeClass("hidden");
-    if (document.activeElement === this)
-        $j.find("input, select, textarea").not("[type=hidden], :disabled").first().focus();
+    if (document.activeElement === this || document.activeElement === document.body) {
+        var $jx = $j.find("input, select, textarea").not("[type=hidden], :disabled");
+        $jx.length && focus_at($jx[0]);
+    }
+    addClass(this, "btn-disabled");
+    tooltip.erase.call(this);
 });
 
 handle_ui.on("js-settings-option-move", function (event) {
@@ -352,7 +356,7 @@ var revfieldview_template = '<div style="line-height:1.35">\
 
 tooltip.add_builder("settings-review-form", function (info) {
     return $.extend({
-        dir: "h", content: $(/^description/.test(this.name) ? "#review_form_caption_description" : "#review_form_caption_options").html()
+        dir: "h", content: $(/description$/.test(this.name) ? "#review_form_caption_description" : "#review_form_caption_options").html(), className: "gray"
     }, info);
 });
 
