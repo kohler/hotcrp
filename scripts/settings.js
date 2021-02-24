@@ -267,10 +267,10 @@ function option_class_prefix(fieldj) {
 function fill_order() {
     var i, c = $("#reviewform_container")[0], n;
     for (i = 1, n = c.firstChild; n; ++i, n = n.nextSibling)
-        $(n).find(".rf_position").val(i);
+        $(n).find(".rf-position").val(i);
     c = $("#reviewform_removedcontainer")[0];
     for (n = c.firstChild; n; n = n.nextSibling)
-        $(n).find(".rf_position").val(0);
+        $(n).find(".rf-position").val(0);
     form_highlight("#settingsform");
 }
 
@@ -291,61 +291,18 @@ function fill_field(fid, fieldj, order) {
     fill_field1("#rf_" + fid + "_rounds", (fieldj.round_list || ["all"]).join(" "), order);
     $("#rf_" + fid + " textarea").trigger("change");
     $("#rf_" + fid + "_view").html("").append(create_field_view(fid, fieldj));
-    $("#remove_" + fid).html(fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
+    $("#rf_" + fid + "_delete").attr("aria-label", fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
     return false;
 }
 
 function remove() {
     var $f = $(this).closest(".settings-revfield"),
         fid = $f.attr("data-revfield");
-    $f.find(".rf_position").val(0);
+    $f.find(".rf-position").val(0);
     $f.detach().hide().appendTo("#reviewform_removedcontainer");
-    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-revfieldremoved"><span class="settings-revfn" style="text-decoration:line-through">' + escape_entities($f.find("#rf_" + fid + "_name").val()) + '</span>&nbsp; (field removed)</div>');
+    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-rf-deleted"><span class="settings-revfn" style="text-decoration:line-through">' + escape_entities($f.find("#rf_" + fid + "_name").val()) + '</span>&nbsp; (field removed)</div>');
     fill_order();
 }
-
-var revfield_template = '<div id="rf_$" class="settings-revfield f-contain has-fold fold2c errloc_$" data-revfield="$">\
-<a href="" class="q settings-field-folder">\
-<span class="expander"><span class="in0 fx2">▼</span><span class="in1 fn2 need-tooltip" data-tooltip="Edit field" data-tooltip-anchor="e">▶</span></span>\
-</a>\
-<div id="rf_$_view" class="settings-revfieldview fn2 ui js-foldup"></div>\
-<div id="rf_$_edit" class="settings-revfieldedit fx2">\
-  <div class="f-i">\
-    <input name="rf_$_name" id="rf_$_name" type="text" size="50" style="font-weight:bold" placeholder="Field name" />\
-  </div>\
-  <div class="f-horizontal">\
-    <div class="f-i">\
-      <label for="rf_$_visibility">Visibility</label>\
-      <span class="select"><select name="rf_$_visibility" id="rf_$_visibility" class="rf_visibility">\
-        <option value="au">Visible to authors</option>\
-        <option value="pc">Hidden from authors</option>\
-        <option value="audec">Hidden from authors until decision</option>\
-        <option value="admin">Administrators only</option>\
-      </select></span>\
-    </div>\
-    <div class="f-i reviewrow_options">\
-      <label for="rf_$_colors">Colors</label>\
-      <span class="select"><select name="rf_$_colors" id="rf_$_colors" class="rf_colors"></select></span>\
-<input type="hidden" name="rf_$_colorsflipped" id="rf_$_colorsflipped" value="" />\
-    </div>\
-    <div class="f-i reviewrow_rounds">\
-      <label for="rf_$_rounds">Rounds</label>\
-      <span class="select"><select name="rf_$_rounds" id="rf_$_rounds" class="rf_rounds"></select></span>\
-    </div>\
-  </div>\
-  <div class="f-i">\
-    <label for="rf_$_description">Description</label>\
-    <textarea name="rf_$_description" id="rf_$_description" class="w-text need-tooltip" rows="2" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea></div>\
-  <div class="f-i reviewrow_options">\
-    <label for="rf_$_options">Choices</label>\
-    <textarea name="rf_$_options" id="rf_$_options" class="w-text need-tooltip" rows="6" data-tooltip-info="settings-review-form" data-tooltip-type="focus"></textarea></div>\
-  <div class="f-i">\
-    <button id="rf_$_moveup" class="btn-sm rf_moveup" type="button">Move up</button><span class="sep"></span>\
-<button id="rf_$_movedown" class="btn-sm rf_movedown" type="button">Move down</button><span class="sep"></span>\
-<button id="rf_$_remove" class="btn-sm rf_remove" type="button">Delete from form</button><span class="sep"></span>\
-<input type="hidden" name="rf_$_position" id="rf_$_position" class="rf_position" value="0" />\
-  </div>\
-</div></div>';
 
 var revfieldview_template = '<div>\
 <span class="settings-revfn"></span>\
@@ -433,10 +390,10 @@ function create_field_view(fid, fieldj) {
 }
 
 function move_field(event) {
-    var isup = $(this).hasClass("rf_moveup"),
+    var isup = $(this).hasClass("moveup"),
         $f = $(this).closest(".settings-revfield").detach(),
         fid = $f.attr("data-revfield"),
-        pos = $f.find(".rf_position").val() | 0,
+        pos = $f.find(".rf-position").val() | 0,
         $c = $("#reviewform_container")[0], $n, i;
     for (i = 1, $n = $c.firstChild;
          $n && i < (isup ? pos - 1 : pos + 1);
@@ -447,7 +404,7 @@ function move_field(event) {
 }
 
 function append_field(fid, pos) {
-    var $f = $("#rf_" + fid), i, $j;
+    var $f = $("#rf_" + fid), i, $j, $tmpl = $("#rf_template");
     $("#revfieldremoved_" + fid).remove();
 
     if ($f.length) {
@@ -456,21 +413,21 @@ function append_field(fid, pos) {
         return;
     }
 
-    $f = $(revfield_template.replace(/\$/g, fid));
+    $f = $($tmpl.html().replace(/\$/g, fid));
 
     if (fid.charAt(0) === "s") {
-        $j = $f.find(".rf_colors");
+        $j = $f.find("select[name$=\"colors\"]");
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
     } else
-        $f.find(".reviewrow_options").remove();
+        $f.find(".is-rf-options").remove();
 
     var rnames = [];
     for (i in hotcrp_status.revs || {})
         rnames.push(i);
     if (rnames.length > 1) {
         var v, j, text;
-        $j = $f.find(".rf_rounds");
+        $j = $f.find("select[name$=\"rounds\"]");
         for (i = 0; i < (1 << rnames.length) - 1;
              i = next_lexicographic_permutation(i, rnames.length)) {
             text = [];
@@ -488,8 +445,8 @@ function append_field(fid, pos) {
         $f.find(".reviewrow_rounds").remove();
     }
 
-    $f.find(".rf_remove").on("click", remove);
-    $f.find(".rf_moveup, .rf_movedown").on("click", move_field);
+    $f.find(".js-settings-rf-delete").on("click", remove);
+    $f.find(".js-settings-rf-move").on("click", move_field);
     $f.appendTo("#reviewform_container");
 
     fill_field(fid, original[fid], true);

@@ -1363,7 +1363,7 @@ th.settings-simplehead {
 	margin-bottom: 0;
 }
 .form-g,
-.settings-revfield, .settings-revfieldremoved {
+.settings-revfield, .settings-rf-deleted {
 	margin-bottom: 2em;
 }
 .settings-opt {
@@ -1386,7 +1386,7 @@ th.settings-simplehead {
 	margin-left: -1.2em;
 	margin-top: 0.05em;
 }
-.settings-revfieldedit {
+.settings-rf-edit {
 	margin-top: -0.15em;
 }
 .fold2o > .settings-field-folder {
@@ -1694,10 +1694,13 @@ img.check {
 .w-text {
 	max-width: 720px;
 }
+.w-entry-text {
+	max-width: 560px;
+}
 .minw-50 {
 	min-width: 50%;
 }
-.w-99, textarea.w-text {
+.w-99, textarea.w-text, textarea.w-entry-text {
 	width: 99%;
 }
 textarea[name=comment] {

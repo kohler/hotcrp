@@ -193,8 +193,9 @@ function foldupbutton($foldnum = 0, $content = "", $js = null) {
 
 /** @param ?bool $open
  * @param ?int $foldnum
+ * @param ?string $open_tooltip
  * @return string */
-function expander($open, $foldnum = null) {
+function expander($open, $foldnum = null, $open_tooltip = null) {
     $f = $foldnum !== null;
     $foldnum = ($foldnum !== 0 ? $foldnum : "");
     $t = '<span class="expander">';
@@ -202,7 +203,11 @@ function expander($open, $foldnum = null) {
         $t .= '<span class="in0' . ($f ? " fx$foldnum" : "") . '">' . Icons::ui_triangle(2) . '</span>';
     }
     if ($open !== false) {
-        $t .= '<span class="in1' . ($f ? " fn$foldnum" : "") . '">' . Icons::ui_triangle(1) . '</span>';
+        $t .= '<span class="in1' . ($f ? " fn$foldnum" : "");
+        if ($open_tooltip) {
+            $t .= ' need-tooltip" data-tooltip="' . htmlspecialchars($open_tooltip) . '" data-tooltip-anchor="e';
+        }
+        $t .= '">' . Icons::ui_triangle(1) . '</span>';
     }
     return $t . '</span>';
 }

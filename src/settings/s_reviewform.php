@@ -399,6 +399,72 @@ class ReviewForm_SettingParser extends SettingParser {
 }
 
 class ReviewForm_SettingRenderer {
+    /** @var ?array<string,bool> */
+    private $field_properties = [];
+
+    /** @param string $property
+     * @param bool $visible */
+    function mark_visible_property($property, $visible) {
+        if (!$visible || !isset($this->field_properties[$property])) {
+            $this->field_properties[$property] = $visible;
+        }
+    }
+
+    static function render_description_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
+        $open = !$f->id || $f->description || true;
+        $self->mark_visible_property("description", $open);
+        return '<div class="' . $sv->control_class("rf_{$xpos}_description", "entryi is-rf-description" . ($open ? "" : " hidden"))
+            . '">' . $sv->label("rf_{$xpos}_description", "Description")
+            . '<div class="entry">'
+            . Ht::textarea("rf_{$xpos}_description", $f->description ?? "", ["id" => "rf_{$xpos}_description", "rows" => 2, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"])
+            . '</div></div>';
+    }
+
+    static function render_options_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
+        if (!$f->has_options) {
+            return "";
+        }
+        $self->mark_visible_property("options", true);
+        return '<div class="' . $sv->control_class("rf_{$xpos}_options", "entryi is-rf-options")
+            . '">' . $sv->label("rf_{$xpos}_options", "Choices")
+            . '<div class="entry">'
+            . Ht::textarea("rf_{$xpos}_options", "" /* XXX */, ["id" => "rf_{$xpos}_options", "rows" => 6, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"])
+            . '</div></div>';
+    }
+
+    static function render_colors_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
+        if (!$f->has_options) {
+            return "";
+        }
+        return '<div class="' . $sv->control_class("rf_{$xpos}_colors", "entryi is-rf-options")
+            . '">' . $sv->label("rf_{$xpos}_colors", "Colors")
+            . '<div class="entry">'
+            . Ht::select("rf_{$xpos}_colors", [], "", ["id" => "rf_{$xpos}_colors"])
+            . Ht::hidden("rf_{$xpos}_colorsflipped", "", ["id" => "rf_{$xpos}_colorsflipped"])
+            . '</div></div>';
+    }
+
+    static function render_visibility_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
+        return '<div class="' . $sv->control_class("rf_{$xpos}_visibility", "entryi is-rf-visibility")
+            . '">' . $sv->label("rf_{$xpos}_visibility", "Visibility")
+            . '<div class="entry">'
+            . Ht::select("rf_{$xpos}_visibility", [
+                "au" => "Visible to authors",
+                "pc" => "Hidden from authors",
+                "audec" => "Hidden from authors until decision",
+                "admin" => "Administrators only"
+            ], $f->unparse_visibility(), ["id" => "rf_{$xpos}_visibility"])
+            . '</div></div>';
+    }
+
+    static function render_presence_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
+        return '<div class="' . $sv->control_class("rf_{$xpos}_rounds", "entryi is-rf-editing")
+            . '">' . $sv->label("rf_{$xpos}_rounds", "Present on")
+            . '<div class="entry">'
+            . Ht::select("rf_{$xpos}_rounds", [], "", ["id" => "rf_{$xpos}_rounds"])
+            . '</div></div>';
+    }
+
     static function render(SettingValues $sv) {
         $samples = json_decode(file_get_contents(SiteLoader::find("etc/reviewformlibrary.json")));
 
@@ -491,6 +557,34 @@ submitted. Add a “<code>No entry</code>” line to make the score optional.</p
         if (!$sv->conf->can_some_author_view_review()) {
             echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';
         }
+        $renderer = new ReviewForm_SettingRenderer;
+        echo '<template id="rf_template" class="hidden">';
+        echo '<div id="rf_$" class="settings-revfield f-contain has-fold fold2c errloc_$" data-revfield="$">',
+            '<a href="" class="q settings-field-folder">',
+            expander(null, 2, "Edit field"),
+            '</a>',
+            '<div id="rf_$_view" class="settings-rf-view fn2 ui js-foldup"></div>',
+            '<div id="rf_$_edit" class="settings-rf-edit fx2">',
+            '<div class="f-i">',
+            '<input name="rf_$_name" id="rf_$_name" type="text" size="50" style="font-weight:bold" placeholder="Field name">',
+            '</div>';
+        $rfield = ReviewField::make_template(true, $sv->conf);
+        echo ReviewForm_SettingRenderer::render_description_property($sv, $rfield, '$', $renderer, null);
+        echo ReviewForm_SettingRenderer::render_options_property($sv, $rfield, '$', $renderer, null);
+        echo ReviewForm_SettingRenderer::render_presence_property($sv, $rfield, '$', $renderer, null);
+        echo ReviewForm_SettingRenderer::render_required_property($sv, $rfield, '$', $renderer, null);
+        echo ReviewForm_SettingRenderer::render_visibility_property($sv, $rfield, '$', $renderer, null);
+        echo ReviewForm_SettingRenderer::render_colors_property($sv, $rfield, '$', $renderer, null);
+
+        echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
+            Ht::button(Icons::ui_movearrow(0), ["id" => "rf_\$_moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
+            Ht::button(Icons::ui_movearrow(2), ["id" => "rf_\$_movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
+            '</span>',
+            Ht::button(Icons::ui_trash(), ["id" => "rf_\$_delete", "class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
+            Ht::hidden("rf_\$_position", "0", ["id" => "rf_\$_position", "class" => "rf-position"]),
+            "</div></div>";
+
+        echo '</template>';
         echo "<div id=\"reviewform_container\"></div>",
             "<div id=\"reviewform_removedcontainer\"></div>",
             Ht::button("Add score field", ["class" => "ui js-settings-add-review-field score"]),
