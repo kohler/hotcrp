@@ -1,6 +1,6 @@
 <?php
 // api_alltags.php -- HotCRP tag completion API call
-// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2021 Eddie Kohler; see LICENSE.
 
 class AllTags_API {
     static function run(Contact $user) {

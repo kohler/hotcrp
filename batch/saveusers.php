@@ -1,4 +1,7 @@
 <?php
+// saveusers.php -- HotCRP maintenance script
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+
 require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
 $arg = Getopt::rest($argv, "hn:e:u:r:", ["help", "name:", "no-email", "no-notify", "notify", "modify-only", "create-only", "no-modify", "no-create", "expression:", "expr:", "user:", "roles:", "uname:"]);

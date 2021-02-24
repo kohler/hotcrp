@@ -1,4 +1,7 @@
 <?php
+// updatecontactdb.php -- HotCRP maintenance script
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+
 require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
 $arg = Getopt::rest($argv, "hn:pu", ["help", "name:", "papers", "users", "collaborators"]);

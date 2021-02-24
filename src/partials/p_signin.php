@@ -1,6 +1,6 @@
 <?php
 // src/partials/p_signin.php -- HotCRP password reset partials
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class Signin_Partial {
     public $_reset_cap;

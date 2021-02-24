@@ -1,4 +1,7 @@
 <?php
+// reviewcsv.php -- HotCRP review export script
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+
 require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
 $arg = Getopt::rest($argv, "hn:t:xwacN", ["help", "name:", "type:", "narrow", "wide", "all", "no-header", "comments", "sitename"]);

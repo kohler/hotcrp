@@ -1,6 +1,6 @@
 <?php
 // confinvariants.php -- HotCRP invariant checker
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class ConfInvariants {
     /** @var Conf */

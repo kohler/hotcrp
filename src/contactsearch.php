@@ -1,6 +1,6 @@
 <?php
-// papersearch.php -- HotCRP helper class for searching for users
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// contactsearch.php -- HotCRP helper class for searching for users
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class ContactSearch {
     const F_QUOTED = 1;

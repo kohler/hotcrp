@@ -1,6 +1,6 @@
 <?php
 // src/groupedextensions.php -- HotCRP extensible groups
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class GroupedExtensions implements XtContext {
     private $_jall = [];

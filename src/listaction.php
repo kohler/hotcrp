@@ -1,6 +1,6 @@
 <?php
 // listaction.php -- HotCRP helper class for paper search actions
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class ListAction {
     public $subname;

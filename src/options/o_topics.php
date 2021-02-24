@@ -1,6 +1,6 @@
 <?php
 // o_topics.php -- HotCRP helper class for topics intrinsic
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class Topics_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {

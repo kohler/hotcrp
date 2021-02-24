@@ -1,6 +1,6 @@
 <?php
 // csv.php -- HotCRP CSV parsing functions
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 if (!function_exists("gmp_init")) {
     require_once(SiteLoader::find("lib/polyfills.php"));

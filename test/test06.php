@@ -1,6 +1,6 @@
 <?php
 // test06.php -- HotCRP review and some setting tests
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 /** @phan-file-suppress PhanUndeclaredProperty */
 
 declare(strict_types=1);

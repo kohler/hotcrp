@@ -1,6 +1,6 @@
 <?php
 // api/api_tags.php -- HotCRP tags API call
-// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2021 Eddie Kohler; see LICENSE.
 
 class Tags_API {
     /** @param ?PaperInfo $prow */

@@ -1,6 +1,6 @@
 <?php
 // assign.php -- HotCRP per-paper assignment/conflict management page
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
 require_once("src/papertable.php");

@@ -1,6 +1,6 @@
 <?php
 // api_requestreview.php -- HotCRP review-request API calls
-// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2021 Eddie Kohler; see LICENSE.
 
 class RequestReview_API {
     /** @param Contact $user

@@ -1,6 +1,6 @@
 <?php
 // formulas/f_pdfsize.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2021 Eddie Kohler; see LICENSE.
 
 class PdfSize_Fexpr extends Fexpr {
     function viewable_by(Contact $user) {

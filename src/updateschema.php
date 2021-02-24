@@ -1,6 +1,6 @@
 <?php
 // updateschema.php -- HotCRP function for updating old schemata
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 function update_schema_create_review_form($conf) {
     $result = $conf->ql("select * from ReviewFormField where fieldName!='outcome'");

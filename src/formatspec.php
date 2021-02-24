@@ -1,6 +1,6 @@
 <?php
 // formatspec.php -- spec for HotCRP PDF analysis
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class FormatSpec {
     /** @var list<array{float,float}> */

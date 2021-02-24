@@ -1,6 +1,6 @@
 <?php
 // pc_reviewerlist.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class ReviewerList_PaperColumn extends PaperColumn {
     private $pref = false;

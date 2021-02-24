@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_finalversions.php -- HotCRP settings > final versions page
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class FinalVersions_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {

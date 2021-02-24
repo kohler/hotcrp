@@ -1,4 +1,7 @@
 <?php
+// search.php -- HotCRP batch search script
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+
 require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
 $arg = Getopt::rest($argv, "hn:t:f:N", ["help", "name:", "type:", "field:", "show:", "header", "no-header", "sitename"]);

@@ -1,6 +1,6 @@
 <?php
 // pc_formula.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class Formula_PaperColumn extends PaperColumn {
     /** @var Formula */

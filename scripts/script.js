@@ -1,5 +1,5 @@
 // script.js -- HotCRP JavaScript library
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 var siteinfo, hotcrp, hotcrp_status;
 

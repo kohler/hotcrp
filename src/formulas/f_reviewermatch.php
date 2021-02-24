@@ -1,6 +1,6 @@
 <?php
 // formulas/f_reviewermatch.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2021 Eddie Kohler; see LICENSE.
 
 class ReviewerMatch_Fexpr extends Fexpr {
     /** @var Contact */

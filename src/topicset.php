@@ -1,6 +1,6 @@
 <?php
 // topicset.php -- HotCRP helper class for topics
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class TopicGroup {
     /** @var string */
