@@ -289,7 +289,7 @@ function fill_field(fid, fieldj, order) {
     fill_field1("#rf_" + fid + "_colors", option_class_prefix(fieldj), order);
     fill_field1("#rf_" + fid + "_rounds", (fieldj.round_list || ["all"]).join(" "), order);
     $("#rf_" + fid + " textarea").trigger("change");
-    $("#rf_" + fid + "_view").html("").append(create_field_view(fid, fieldj));
+    $("#rf_" + fid + "_view").html("").append(create_field_view(fieldj));
     $("#rf_" + fid + "_delete").attr("aria-label", fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
     return false;
 }
@@ -302,13 +302,6 @@ function remove() {
     $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-rf-deleted"><span class="settings-revfn" style="text-decoration:line-through">' + escape_entities($f.find("#rf_" + fid + "_name").val()) + '</span>&nbsp; (field removed)</div>');
     fill_order();
 }
-
-var revfieldview_template = '<div>\
-<span class="settings-revfn"></span>\
-<span class="settings-revrounds"></span>\
-<span class="field-visibility"></span>\
-<div class="settings-revdata"></div>\
-</div>';
 
 tooltip.add_builder("settings-review-form", function (info) {
     return $.extend({
@@ -361,31 +354,36 @@ function field_visibility_text(visibility) {
         return "";
 }
 
-function create_field_view(fid, fieldj) {
-    var $f = $(revfieldview_template.replace(/\$/g, fid)), $x, i, j, x;
-    $f.find(".settings-revfn").text(fieldj.name || "<unnamed>");
+function create_field_view(fieldj) {
+    var hc = new HtmlCollector;
+    hc.push('<div>', '</div>');
 
-    $x = $f.find(".field-visibility");
-    x = field_visibility_text(fieldj.visibility);
-    x ? $x.text(x) : $x.remove();
+    hc.push('<h3 class="revet">', '</h3>');
+    hc.push('<label class="revfn'.concat(fieldj.required ? " field-required" : "", '">', escape_entities(fieldj.name || "<unnamed>"), '</label>'));
+    var t = field_visibility_text(fieldj.visibility), i;
+    if (t)
+        hc.push('<div class="field-visibility">'.concat(t, '</div>'));
+    hc.pop();
 
-    x = "";
-    if ((fieldj.round_list || []).length == 1)
-        x = "(" + fieldj.round_list[0] + " only)";
-    else if ((fieldj.round_list || []).length > 1)
-        x = "(" + commajoin(fieldj.round_list) + ")";
-    $x = $f.find(".settings-revrounds");
-    x ? $x.text(x) : $x.remove();
+    if ((fieldj.round_list || []).length >= 1)
+        hc.push('<p class="feedback is-warning">Present only on ' + commajoin(fieldj.round_list) + ' reviews</p>');
 
+    if (fieldj.description)
+        hc.push('<div class="field-d">'.concat(fieldj.description, '</div>'));
+
+    hc.push('<div class="revev">', '</div>');
     if (fieldj.options) {
-        x = [option_value_html(fieldj, 1).join(" "),
-             option_value_html(fieldj, fieldj.options.length).join(" ")];
-        fieldj.option_letter && x.reverse();
+        for (i = 0; i !== fieldj.options.length; ++i) {
+            var n = fieldj.option_letter ? fieldj.options.length - i : i + 1;
+            hc.push('<label class="checki"><span class="checkc"><input type="radio" disabled></span>'.concat(option_value_html(fieldj, n).join(" "), '</label>'));
+        }
+        if (!fieldj.required) {
+            hc.push('<label class="checki g"><span class="checkc"><input type="radio" disabled></span>No entry</label>');
+        }
     } else
-        x = ["Text field"];
-    $f.find(".settings-revdata").html(x.join(" … "));
+        hc.push('<textarea class="w-text" rows="2" disabled>(Text field)</textarea>');
 
-    return $f;
+    return $(hc.render());
 }
 
 function move_field(event) {
@@ -515,39 +513,16 @@ function add_dialog(fid, focus) {
     var $d, template = 0, has_options = fid.charAt(0) === "s";
     function render_template() {
         var $dtn = $d.find(".newreviewfield-template-name"),
-            $dt = $d.find(".newreviewfield-template"),
-            hc = new HtmlCollector;
+            $dt = $d.find(".newreviewfield-template");
         if (!template || !samples[template - 1] || !samples[template - 1].options != !has_options) {
             template = 0;
             $dtn.text("(Blank)");
+            $dt.html("");
         } else {
             var s = samples[template - 1];
-            $d.find(".newreviewfield-template-name").text(s.selector);
-            var hc = new HtmlCollector;
-            hc.push('<div><span class="settings-revfn">' + text_to_html(s.name) + '</span>', '<hr class="c" /></div>');
-            var x = field_visibility_text(s.visibility);
-            if (x)
-                hc.push('<span class="field-visibility">' + text_to_html(x) + '</span>');
-            hc.pop();
-            hc.push('<div class="settings-revhint">' + text_to_html(s.description || "") + '</div>');
-            if (s.options) {
-                x = [];
-                for (var i = 1; i <= s.options.length; ++i)
-                    x.push(i);
-                if (s.option_letter)
-                    x.reverse();
-                hc.push('<table class="settings-revoptions"><tbody>', '</tbody></table>');
-                for (var i = 0; i < x.length; ++i) {
-                    var ov = option_value_html(s, x[i]);
-                    hc.push('<tr><td class="nw">' + ov[0] + ' </td>' +
-                            '<td>' + ov[1] + '</td></tr>');
-                }
-                if (!s.required)
-                    hc.push('<tr><td colspan="2">No entry</td></tr>');
-                hc.pop();
-            }
+            $dtn.text(s.selector);
+            $dt.html(create_field_view(s));
         }
-        $dt.html(hc.render());
     }
     function submit(event) {
         add_field(fid);
