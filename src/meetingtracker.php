@@ -1,6 +1,6 @@
 <?php
 // meetingtracker.php -- HotCRP meeting tracker support
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class MeetingTracker {
     static function lookup(Conf $conf) {
@@ -75,9 +75,12 @@ class MeetingTracker {
 
         // first drop notification json in trackerCometUpdateDirectory
         if ($comet_dir) {
-            $j = ["ok" => true, "conference" => $url,
-                  "tracker_status" => self::tracker_status($tracker),
-                  "tracker_status_at" => $tracker->position_at];
+            $j = [
+                "ok" => true,
+                "conference" => $url,
+                "tracker_status" => self::tracker_status($tracker),
+                "tracker_status_at" => $tracker->position_at
+            ];
             if ($pids) {
                 $j["pulse"] = true;
             }
@@ -120,11 +123,10 @@ class MeetingTracker {
             $comet_url .= "/";
         }
 
-        $context = stream_context_create(array("http" =>
-                                               array("method" => "GET",
-                                                     "ignore_errors" => true,
-                                                     "content" => "",
-                                                     "timeout" => 1.0)));
+        $context = stream_context_create(["http" => [
+            "method" => "GET", "ignore_errors" => true,
+            "content" => "", "timeout" => 1.0
+        ]]);
         $comet_url .= "update?conference=" . urlencode($url)
             . "&tracker_status=" . urlencode(self::tracker_status($tracker))
             . "&tracker_status_at=" . $tracker->position_at;
@@ -668,7 +670,7 @@ class MeetingTracker {
 
         foreach ($tis as $ti_index => $ti) {
             $papers = [];
-            foreach (isset($ti->papers) ? $ti->papers : [] as $pid) {
+            foreach ($ti->papers ?? [] as $pid) {
                 $prow = $prows->get($pid);
                 $papers[] = $p = (object) [];
                 if (($track_manager
