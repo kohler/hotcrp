@@ -1217,6 +1217,9 @@ button.btn-link:hover {
 	fill: currentColor;
 	vertical-align: -0.0625em;
 }
+.licon-raised {
+	fill: currentColor;
+}
 button > .licon, .btn > .licon {
 	vertical-align: -0.15em;
 }

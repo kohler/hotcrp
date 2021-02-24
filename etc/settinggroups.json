@@ -97,6 +97,7 @@
         "render_callback": "ReviewForm_SettingRenderer::render"
     },
     {   "name": "rfo", "alias": "reviewform"   },
+
     {
         "name": "reviews", "position": 500,
         "title": "Reviews"
