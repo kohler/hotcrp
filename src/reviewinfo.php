@@ -551,13 +551,8 @@ class ReviewInfo implements JsonSerializable {
 
 
     /** @return bool */
-    function has_field(ReviewField $f) {
-        return !$f->round_mask || ($f->round_mask & (1 << $this->reviewRound)) !== 0;
-    }
-
-    /** @return bool */
     function has_nonempty_field(ReviewField $f) {
-        return (!$f->round_mask || ($f->round_mask & (1 << $this->reviewRound)) !== 0)
+        return $f->test_exists($this)
             && ($x = $this->{$f->id} ?? null) !== null
             && $x !== ""
             && (!$f->has_options || (int) $x !== 0);
@@ -569,7 +564,7 @@ class ReviewInfo implements JsonSerializable {
         $fs = [];
         foreach ($this->conf->all_review_fields() as $fid => $f) {
             if ($f->view_score > $bound
-                && $this->has_field($f))
+                && $f->test_exists($this))
                 $fs[$fid] = $f;
         }
         return $fs;

@@ -71,6 +71,12 @@ class ReviewField implements JsonSerializable {
     public $option_class_prefix = "sv";
     /** @var int */
     public $round_mask = 0;
+    /** @var ?string */
+    public $exists_if;
+    /** @var ?SearchTerm */
+    private $_exists_search;
+    /** @var bool */
+    private $_need_exists_search;
     /** @var bool */
     public $required = false;
     /** @var ?non-empty-string */
@@ -135,6 +141,11 @@ class ReviewField implements JsonSerializable {
             $this->display_order = null;
         }
         $this->round_mask = $j->round_mask ?? 0;
+        if ($this->exists_if !== ($j->exists_if ?? null)) {
+            $this->exists_if = $j->exists_if;
+            $this->_exists_search = null;
+            $this->_need_exists_search = ($this->exists_if ?? "") !== "";
+        }
         if ($this->has_options) {
             $options = $j->options ?? [];
             $ol = $j->option_letter ?? 0;
@@ -226,6 +237,18 @@ class ReviewField implements JsonSerializable {
     /** @return string */
     function unparse_visibility() {
         return self::$view_score_rmap[$this->view_score] ?? (string) $this->view_score;
+    }
+
+
+    /** @return bool */
+    function test_exists(ReviewInfo $rrow) {
+        if ($this->_need_exists_search) {
+            $search = new PaperSearch($this->conf->root_user(), $this->exists_if);
+            $this->_exists_search = $search->term();
+            $this->_need_exists_search = false;
+        }
+        return (!$this->round_mask || ($this->round_mask & (1 << $rrow->reviewRound)) !== 0)
+            && (!$this->_exists_search || $this->_exists_search->test($rrow->prow, $rrow));
     }
 
     /** @param ?int|string $value
@@ -779,7 +802,7 @@ class ReviewForm implements JsonSerializable {
     function full_word_count(ReviewInfo $rrow) {
         $wc = null;
         foreach ($this->forder as $fid => $f) {
-            if (!$f->has_options && $rrow->has_field($f)) {
+            if (!$f->has_options && $f->test_exists($rrow)) {
                 $wc = $wc ?? 0;
                 if (!$f->value_empty($rrow->$fid ?? null)) {
                     $wc += count_words($rrow->$fid);
@@ -910,7 +933,7 @@ $blind\n";
             $i++; // XXX remove $i
             assert($i === $f->display_order);
             if ($f->view_score <= $revViewScore
-                || !$rrow->has_field($f)) {
+                || !$f->test_exists($rrow)) {
                 continue;
             }
 
@@ -1975,7 +1998,7 @@ class ReviewValues extends MessageSet {
 
         foreach ($this->rf->forder as $fid => $f) {
             if (!isset($this->req[$fid])
-                && (!$submit || !$rrow->has_field($f))) {
+                && (!$submit || !$f->test_exists($rrow))) {
                 continue;
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
@@ -2147,7 +2170,7 @@ class ReviewValues extends MessageSet {
         $diffinfo = new ReviewDiffInfo($prow, $rrow);
         $wc = 0;
         foreach ($this->rf->all_fields() as $fid => $f) {
-            if (!$rrow->has_field($f)) {
+            if (!$f->test_exists($rrow)) {
                 continue;
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
