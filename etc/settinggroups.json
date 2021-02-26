@@ -97,6 +97,35 @@
         "render_callback": "ReviewForm_SettingRenderer::render"
     },
     {   "name": "rfo", "alias": "reviewform"   },
+    {
+        "name": "reviewfield/properties/description", "position": 20,
+        "render_review_property_callback": "ReviewForm_SettingRenderer::render_description_property",
+        "parse_review_property_callback": "ReviewForm_SettingParser::parse_description_property"
+    },
+    {
+        "name": "reviewfield/properties/options", "position": 50,
+        "render_review_property_callback": "ReviewForm_SettingRenderer::render_options_property",
+        "parse_review_property_callback": "ReviewForm_SettingParser::parse_options_property"
+    },
+    {
+        "name": "reviewfield/properties/presence", "position": 100,
+        "render_review_property_callback": "ReviewForm_SettingRenderer::render_presence_property",
+        "parse_review_property_callback": "ReviewForm_SettingParser::parse_presence_property"
+    },
+    {
+        "name": "reviewfield/properties/required", "position": 101,
+        "render_review_property_callback": "ReviewForm_SettingRenderer::render_required_property"
+    },
+    {
+        "name": "reviewfield/properties/visibility", "position": 110,
+        "render_review_property_callback": "ReviewForm_SettingRenderer::render_visibility_property",
+        "parse_review_property_callback": "ReviewForm_SettingParser::parse_visibility_property"
+    },
+    {
+        "name": "reviewfield/properties/display", "position": 120,
+        "render_review_property_callback": "ReviewForm_SettingRenderer::render_display_property",
+        "parse_review_property_callback": "ReviewForm_SettingParser::parse_display_property"
+    },
 
     {
         "name": "reviews", "position": 500,

@@ -107,7 +107,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    static function parse_colors_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
+    static function parse_display_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
         if (!$self->field->has_options || !$sv->has_reqv("rf_{$xpos}_colors")) {
             return;
         }
@@ -190,11 +190,12 @@ class ReviewForm_SettingParser extends SettingParser {
             unset($fj->position);
         }
 
-        ReviewForm_SettingParser::parse_description_property($sv, $fj, $xpos, $this, null);
-        ReviewForm_SettingParser::parse_options_property($sv, $fj, $xpos, $this, null);
-        ReviewForm_SettingParser::parse_presence_property($sv, $fj, $xpos, $this, null);
-        ReviewForm_SettingParser::parse_visibility_property($sv, $fj, $xpos, $this, null);
-        ReviewForm_SettingParser::parse_colors_property($sv, $fj, $xpos, $this, null);
+        foreach ($sv->group_members("reviewfield/properties") as $gj) {
+            if (isset($gj->parse_review_property_callback)) {
+                Conf::xt_resolve_require($gj);
+                call_user_func($gj->parse_review_property_callback, $sv, $fj, $xpos, $this, $gj);
+            }
+        }
 
         return $fj;
     }
@@ -486,7 +487,7 @@ class ReviewForm_SettingRenderer {
             . '</div></div>';
     }
 
-    static function render_colors_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
+    static function render_display_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
         if (!$f->has_options) {
             return "";
         }
@@ -626,12 +627,12 @@ class ReviewForm_SettingRenderer {
             '<input name="rf_$_name" id="rf_$_name" type="text" size="50" style="font-weight:bold" placeholder="Field name">',
             '</div>';
         $rfield = ReviewField::make_template(true, $sv->conf);
-        echo ReviewForm_SettingRenderer::render_description_property($sv, $rfield, '$', $renderer, null);
-        echo ReviewForm_SettingRenderer::render_options_property($sv, $rfield, '$', $renderer, null);
-        echo ReviewForm_SettingRenderer::render_presence_property($sv, $rfield, '$', $renderer, null);
-        echo ReviewForm_SettingRenderer::render_required_property($sv, $rfield, '$', $renderer, null);
-        echo ReviewForm_SettingRenderer::render_visibility_property($sv, $rfield, '$', $renderer, null);
-        echo ReviewForm_SettingRenderer::render_colors_property($sv, $rfield, '$', $renderer, null);
+        foreach ($sv->group_members("reviewfield/properties") as $gj) {
+            if (isset($gj->render_review_property_callback)) {
+                Conf::xt_resolve_require($gj);
+                echo call_user_func($gj->render_review_property_callback, $sv, $rfield, '$', $renderer, $gj);
+            }
+        }
 
         echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">';
         $renderer->echo_property_button("description", Icons::ui_description(), "Description");
