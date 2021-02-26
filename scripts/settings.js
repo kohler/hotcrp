@@ -40,12 +40,12 @@ handle_ui.on("js-settings-show-property", function () {
     var prop = this.getAttribute("data-property"),
         $j = $(this).closest(".settings-opt, .settings-rf").find(".is-property-" + prop);
     $j.removeClass("hidden");
-    if (document.activeElement === this || document.activeElement === document.body) {
-        var $jx = $j.find("input, select, textarea").not("[type=hidden], :disabled");
-        $jx.length && focus_at($jx[0]);
-    }
     addClass(this, "btn-disabled");
     tooltip.erase.call(this);
+    if (document.activeElement === this || document.activeElement === document.body) {
+        var $jx = $j.find("input, select, textarea").not("[type=hidden], :disabled");
+        $jx.length && setTimeout(function () { focus_at($jx[0]); }, 0);
+    }
 });
 
 handle_ui.on("js-settings-option-move", function (event) {

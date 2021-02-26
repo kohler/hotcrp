@@ -590,7 +590,6 @@ class ReviewForm_SettingRenderer {
         $rfield = ReviewField::make_template(true, $sv->conf);
         echo ReviewForm_SettingRenderer::render_description_property($sv, $rfield, '$', $renderer, null);
         echo ReviewForm_SettingRenderer::render_options_property($sv, $rfield, '$', $renderer, null);
-        echo ReviewForm_SettingRenderer::render_required_property($sv, $rfield, '$', $renderer, null);
         echo ReviewForm_SettingRenderer::render_presence_property($sv, $rfield, '$', $renderer, null);
         echo ReviewForm_SettingRenderer::render_required_property($sv, $rfield, '$', $renderer, null);
         echo ReviewForm_SettingRenderer::render_visibility_property($sv, $rfield, '$', $renderer, null);
