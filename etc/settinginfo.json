@@ -191,7 +191,7 @@
     },
     {
         "name": "email_default_reply_to", "group": "basics",
-        "title": "Deault Reply-To for mail tool", "storage": "opt.emailReplyTo",
+        "title": "Default Reply-To for mail tool", "storage": "opt.emailReplyTo",
         "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     {
