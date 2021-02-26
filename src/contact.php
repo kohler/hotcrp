@@ -4179,17 +4179,6 @@ class Contact {
     }
 
     /** @param ?CommentInfo $crow
-     * @return bool */
-    function can_finalize_comment(PaperInfo $prow, $crow) {
-        return $crow
-            && ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) === (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)
-            && ($rrd = ($prow->conf->resp_rounds())[$crow->commentRound] ?? null)
-            && $rrd->open > 0
-            && $rrd->open < Conf::$now
-            && $prow->conf->setting("resp_active") > 0;
-    }
-
-    /** @param ?CommentInfo $crow
      * @return ?PermissionProblem */
     function perm_comment(PaperInfo $prow, $crow, $submit = false) {
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE)) {
@@ -4240,8 +4229,7 @@ class Contact {
                 || $rights->conflictType >= CONFLICT_AUTHOR)
             && (($rights->allow_administer
                  && (!$submit || $this->override_deadlines($rights)))
-                || $rrd->time_allowed(true)
-                || ($submit === 2 && $this->can_finalize_comment($prow, $crow)))
+                || $rrd->time_allowed(true))
             && (!$rrd->search
                 || $rrd->search->test($prow));
     }
@@ -4273,6 +4261,11 @@ class Contact {
             }
         }
         return $whyNot;
+    }
+
+    /** @return bool */
+    function can_finalize_comment(PaperInfo $prow, CommentInfo $crow) {
+        return $this->can_comment($prow, $crow, true);
     }
 
     /** @return int|false */

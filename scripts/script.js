@@ -4912,11 +4912,7 @@ function render_cmt($c, cj, editing, msg) {
     }
     hc.pop();
     if (cj.response && cj.draft && cj.text) {
-        hc.push('<p class="feedback is-warning">Reviewers can’t see this draft response', '.</p>');
-        if (cj.submittable) {
-            hc.push(' unless you <a href="" class="ui js-submit-comment">submit it</a>.');
-        }
-        hc.pop();
+        hc.push('<p class="feedback is-warning">Reviewers can’t see this draft response.</p>');
     }
     if (editing) {
         render_editing(hc, cj);

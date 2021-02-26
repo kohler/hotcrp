@@ -67,12 +67,11 @@ class ResponseRound {
     function time_allowed($with_grace) {
         if ($this->open === null || $this->open <= 0 || $this->open > Conf::$now) {
             return false;
+        } else if ($this->done === null || $this->done <= 0) {
+            return true;
+        } else {
+            return $this->done + ($with_grace ? $this->grace : 0) >= Conf::$now;
         }
-        $t = $this->done;
-        if ($t !== null && $t > 0 && $with_grace) {
-            $t += $this->grace;
-        }
-        return $t === null || $t <= 0 || $t >= Conf::$now;
     }
     /** @return string */
     function instructions(Conf $conf) {

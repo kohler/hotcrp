@@ -398,8 +398,6 @@ class CommentInfo {
         // otherwise, viewable comment
         if ($viewer->can_comment($this->prow, $this)) {
             $cj->editable = true;
-        } else if ($viewer->can_finalize_comment($this->prow, $this)) {
-            $cj->submittable = true;
         }
 
         // tags
@@ -594,11 +592,13 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
 
         // tags
+        $expected_tags = $this->commentTags;
         if ($is_response) {
             $ctags = " response#0";
             if ($response_name != "1") {
                 $ctags .= " {$response_name}response#0";
             }
+            $expected_tags = $ctags;
         } else if (($req->tags ?? null)
                    && preg_match_all('/\S+/', (string) $req->tags, $m)
                    && !$contact->act_author_view($this->prow)) {
@@ -736,7 +736,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 && ($ctype | COMMENTTYPE_DRAFT) !== ($this->commentType | COMMENTTYPE_DRAFT)) {
                 $ch[] = "visibility";
             }
-            if ($ctags !== $this->commentTags) {
+            if ($ctags !== $expected_tags) {
                 $ch[] = "tags";
             }
             if ($docids !== $old_docids) {
