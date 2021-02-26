@@ -5,18 +5,39 @@
 class ReviewForm_SettingParser extends SettingParser {
     private $nrfj;
     private $byname;
-    private $option_error;
+    private $_option_error_printed = false;
+    /** @var ReviewField */
+    public $field;
+    /** @var int */
+    public $nproperties;
 
-    private function check_options(SettingValues $sv, $fid, $fj) {
-        $text = cleannl($sv->reqv("rf_{$fid}_options"));
+    static function parse_description_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
+        if (!$sv->has_reqv("rf_{$xpos}_description")) {
+            return;
+        }
+        $x = CleanHTML::basic_clean($sv->reqv("rf_{$xpos}_description"), $err);
+        if ($x !== false) {
+            if ($x !== "") {
+                $fj->description = trim($x);
+                ++$self->nproperties;
+            } else {
+                unset($fj->description);
+            }
+        } else if (isset($fj->position)) {
+            $sv->error_at("rf_{$xpos}_description", htmlspecialchars($error_sn) . " description: " . $err);
+        }
+    }
+
+    function parse_options_value(SettingValues $sv, $fj, $xpos) {
+        $text = cleannl($sv->reqv("rf_{$xpos}_options"));
         $letters = ($text && ord($text[0]) >= 65 && ord($text[0]) <= 90);
         $expect = ($letters ? "[A-Z]" : "[1-9][0-9]*");
 
         $opts = array();
         $lowonum = 10000;
         $required = true;
-        if ($sv->reqv("has_rf_{$fid}_required")) {
-            $required = !!$sv->reqv("rf_{$fid}_required");
+        if ($sv->reqv("has_rf_{$xpos}_required")) {
+            $required = !!$sv->reqv("rf_{$xpos}_required");
         }
 
         foreach (explode("\n", $text) as $line) {
@@ -60,10 +81,72 @@ class ReviewForm_SettingParser extends SettingParser {
         return true;
     }
 
-    private function populate_field($fj, ReviewField $f, SettingValues $sv, $fid) {
+    function mark_options_error(SettingValues $sv) {
+        if (!$this->_option_error_printed) {
+            $sv->error_at(null, "Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
+2. Medium quality
+3. High quality</pre>");
+            $this->_option_error_printed = true;
+        }
+    }
+
+    static function parse_options_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
+        if (!$self->field->has_options) {
+            return;
+        }
+        $ok = true;
+        if ($sv->has_reqv("rf_{$xpos}_options")) {
+            $ok = $self->parse_options_value($sv, $fj, $xpos);
+            if (trim($sv->reqv("rf_{$xpos}_options")) !== "") {
+                ++$self->nproperties;
+            }
+        }
+        if ((!$ok || count($fj->options) < 2) && isset($fj->position)) {
+            $sv->error_at("rf_{$xpos}_options", htmlspecialchars($error_sn) . ": Invalid choices.");
+            $self->mark_options_error($sv);
+        }
+    }
+
+    static function parse_colors_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
+        if (!$self->field->has_options || !$sv->has_reqv("rf_{$xpos}_colors")) {
+            return;
+        }
+        $prefixes = ["sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr"];
+        $pindex = array_search($sv->reqv("rf_{$xpos}_colors"), $prefixes) ? : 0;
+        if ($sv->reqv("rf_{$xpos}_colorsflipped")) {
+            $pindex ^= 1;
+        }
+        $fj->option_class_prefix = $prefixes[$pindex];
+    }
+
+    static function parse_visibility_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
+        if ($sv->has_reqv("rf_{$xpos}_visibility")) {
+            $fj->visibility = $sv->reqv("rf_{$xpos}_visibility");
+        }
+    }
+
+    static function parse_presence_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
+        if ($sv->has_reqv("rf_{$xpos}_rounds")) {
+            $fj->round_mask = 0;
+            foreach (explode(" ", trim($sv->reqv("rf_{$xpos}_rounds"))) as $round_name) {
+                if (strcasecmp($round_name, "all") === 0) {
+                    $fj->round_mask = 0;
+                } else if ($round_name !== "") {
+                    $fj->round_mask |= 1 << (int) $sv->conf->round_number($round_name, false);
+                }
+            }
+        }
+    }
+
+    private function populate_field(SettingValues $sv, ReviewField $f, $xpos) {
+        $fj = $f->unparse_json(true);
+        $this->field = $f;
+        $this->nproperties = 0;
+
+        // field name
         $sn = $fj->name;
-        if ($sv->has_reqv("rf_{$fid}_name")) {
-            $sn = simplify_whitespace($sv->reqv("rf_{$fid}_name"));
+        if ($sv->has_reqv("rf_{$xpos}_name")) {
+            $sn = simplify_whitespace($sv->reqv("rf_{$xpos}_name"));
         }
         if (in_array($sn, ["<None>", "<New field>", "Field name", ""], true)) {
             $sn = "";
@@ -72,89 +155,48 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         $error_sn = $sn ? : "<Unnamed field>";
 
-        if ($sv->has_reqv("rf_{$fid}_position")) {
-            $pos = cvtnum($sv->reqv("rf_{$fid}_position"));
+        // field position
+        if ($sv->has_reqv("rf_{$xpos}_position")) {
+            $pos = cvtnum($sv->reqv("rf_{$xpos}_position"));
         } else {
             $pos = $fj->position ?? -1;
         }
-        if ($pos > 0 && $sn == ""
-            && $sv->has_reqv("rf_{$fid}_description")
-            && trim($sv->reqv("rf_{$fid}_description")) === ""
+        if ($pos > 0
+            && $sn == ""
+            && $sv->has_reqv("rf_{$xpos}_description")
+            && trim($sv->reqv("rf_{$xpos}_description")) === ""
             && (!$f->has_options
-                || ($sv->has_reqv("rf_{$fid}_options")
-                    ? trim($sv->reqv("rf_{$fid}_options")) === ""
+                || ($sv->has_reqv("rf_{$xpos}_options")
+                    ? trim($sv->reqv("rf_{$xpos}_options")) === ""
                     : empty($fj->options)))) {
             $pos = -1;
         }
         if ($pos > 0) {
             if ($sn === "") {
-                $sv->error_at("rf_{$fid}_name", "Missing review field name.");
+                $sv->error_at("rf_{$xpos}_name", "Missing review field name.");
             } else if (isset($this->byname[strtolower($sn)])) {
-                $sv->error_at("rf_{$fid}_name", "Cannot reuse review field name “" . htmlspecialchars($sn) . "”.");
+                $sv->error_at("rf_{$xpos}_name", "Cannot reuse review field name “" . htmlspecialchars($sn) . "”.");
                 $sv->error_at("rf_" . $this->byname[strtolower($sn)] . "_name", false);
             } else if (ReviewField::clean_name($sn) !== $sn
                        && $sn !== $f->name
-                       && !$sv->reqv("rf_{$fid}_forcename")) {
+                       && !$sv->reqv("rf_{$xpos}_forcename")) {
                 $lparen = strrpos($sn, "(");
-                $sv->error_at("rf_{$fid}_name", "Don’t include “" . htmlspecialchars(substr($sn, $lparen)) . "” in the review field name. Visibility descriptions are added automatically.");
+                $sv->error_at("rf_{$xpos}_name", "Don’t include “" . htmlspecialchars(substr($sn, $lparen)) . "” in the review field name. Visibility descriptions are added automatically.");
             } else {
-                $this->byname[strtolower($sn)] = $fid;
+                $this->byname[strtolower($sn)] = $xpos;
             }
-        }
-
-        if ($sv->has_reqv("rf_{$fid}_visibility")) {
-            $fj->visibility = $sv->reqv("rf_{$fid}_visibility");
-        }
-
-        if ($sv->has_reqv("rf_{$fid}_description")) {
-            $x = CleanHTML::basic_clean($sv->reqv("rf_{$fid}_description"), $err);
-            if ($x !== false) {
-                $fj->description = trim($x);
-                if ($fj->description === "")
-                    unset($fj->description);
-            } else if ($pos > 0) {
-                $sv->error_at("rf_{$fid}_description", htmlspecialchars($error_sn) . " description: " . $err);
-            }
-        }
-
-        if ($pos > 0) {
             $fj->position = $pos;
         } else {
             unset($fj->position);
         }
 
-        if ($f->has_options) {
-            $ok = true;
-            if ($sv->has_reqv("rf_{$fid}_options")) {
-                $ok = $this->check_options($sv, $fid, $fj);
-            }
-            if ((!$ok || count($fj->options) < 2) && $pos > 0) {
-                $sv->error_at("rf_{$fid}_options", htmlspecialchars($error_sn) . ": Invalid choices.");
-                if ($this->option_error) {
-                    $sv->error_at(null, $this->option_error);
-                }
-                $this->option_error = false;
-            }
-            if ($sv->has_reqv("rf_{$fid}_colors")) {
-                $prefixes = ["sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr"];
-                $pindex = array_search($sv->reqv("rf_{$fid}_colors"), $prefixes) ? : 0;
-                if ($sv->reqv("rf_{$fid}_colorsflipped")) {
-                    $pindex ^= 1;
-                }
-                $fj->option_class_prefix = $prefixes[$pindex];
-            }
-        }
+        ReviewForm_SettingParser::parse_description_property($sv, $fj, $xpos, $this, null);
+        ReviewForm_SettingParser::parse_options_property($sv, $fj, $xpos, $this, null);
+        ReviewForm_SettingParser::parse_presence_property($sv, $fj, $xpos, $this, null);
+        ReviewForm_SettingParser::parse_visibility_property($sv, $fj, $xpos, $this, null);
+        ReviewForm_SettingParser::parse_colors_property($sv, $fj, $xpos, $this, null);
 
-        if ($sv->has_reqv("rf_{$fid}_rounds")) {
-            $fj->round_mask = 0;
-            foreach (explode(" ", trim($sv->reqv("rf_{$fid}_rounds"))) as $round_name) {
-                if (strcasecmp($round_name, "all") === 0) {
-                    $fj->round_mask = 0;
-                } else if ($round_name !== "") {
-                    $fj->round_mask |= 1 << (int) $sv->conf->round_number($round_name, false);
-                }
-            }
-        }
+        return $fj;
     }
 
     static function requested_fields(SettingValues $sv) {
@@ -188,16 +230,12 @@ class ReviewForm_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
         $this->nrfj = (object) array();
         $this->byname = [];
-        $this->option_error = "Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
-2. Medium quality
-3. High quality</pre>";
 
         $rf = $sv->conf->review_form();
         foreach (self::requested_fields($sv) as $fid => $x) {
             if (($finfo = ReviewInfo::field_info($fid))) {
                 $f = $rf->fmap[$finfo->id] ?? new ReviewField($finfo, $sv->conf);
-                $fj = $f->unparse_json(true);
-                $this->populate_field($fj, $f, $sv, $fid);
+                $fj = $this->populate_field($sv, $f, $fid);
                 $xf = clone $f;
                 $xf->assign($fj);
                 $this->nrfj->{$finfo->id} = $xf->unparse_json(true);
