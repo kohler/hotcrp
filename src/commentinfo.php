@@ -723,7 +723,14 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         if ($text === false) {
             $log .= " deleted";
         } else {
-            $log .= $this->commentId ? " edited" : " added";
+            if (($ctype & COMMENTTYPE_DRAFT) === 0
+                && (!$this->commentId || ($this->commentType & COMMENTTYPE_DRAFT) !== 0)) {
+                $log .= " submitted";
+            } else if ($this->commentId) {
+                $log .= " edited";
+            } else {
+                $log .= " started";
+            }
             if ($ctype & COMMENTTYPE_DRAFT) {
                 $log .= " draft";
             }
