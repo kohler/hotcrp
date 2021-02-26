@@ -121,8 +121,92 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
+    /** @param string $expr
+     * @param bool $is_error */
+    static function validate_condition(SettingValues $sv, $expr, $xpos, $is_error) {
+        $ps = new PaperSearch($sv->conf->root_user(), $expr);
+        $ok = $ps->term()->visit(function ($e, $xs) {
+            if ($e->type === "t") {
+                return true;
+            } else if ($e->type === "f") {
+                return [];
+            } else if ($e instanceof Review_SearchTerm) {
+                $rsm = $e->review_matcher();
+                $sens = $rsm->sensitivity();
+                if ($sens === ReviewSearchMatcher::HAS_ROUND) {
+                    return $rsm->test(1) ? $rsm->round_list : null;
+                } else if ($sens === 0) {
+                    return $rsm->test(1) ? true : [];
+                } else if (!($sens & ~(ReviewSearchMatcher::HAS_ROUND | ReviewSearchMatcher::HAS_RTYPE))) {
+                    return null;
+                } else {
+                    return false;
+                }
+            } else if ($xs === null || in_array(false, $xs, true)) {
+                return false;
+            } else if (in_array(null, $xs, true)) {
+                return null;
+            } else if ($e->type === "and") {
+                $res = true;
+                foreach ($xs as $x) {
+                    if ($x !== true) {
+                        $res = $res === true ? $x : array_intersect($res, $x);
+                    }
+                }
+                return $res === true ? $res : array_values($res);
+            } else if ($e->type === "or") {
+                $res = [];
+                foreach ($xs as $x) {
+                    $res = $res === true || $x === true ? true : array_merge($res, $x);
+                }
+                return $res === true ? $res : array_values(array_unique($res));
+            } else if ($e->type === "xor" || $e->type === "not") {
+                return null;
+            } else {
+                return false;
+            }
+        });
+        if ($ps->has_problem()) {
+            $sv->warning_at("rf_{$xpos}_ecs", join("<br>", $ps->problem_texts()));
+            $sv->warning_at("rf_{$xpos}_ec");
+        }
+        if ($ok === false) {
+            $method = $is_error ? "error_at" : "warning_at";
+            $sv->$method("rf_{$xpos}_ecs", "That search is not supported here. (Not all search keywords are supported for review field conditions.)");
+            $sv->$method("rf_{$xpos}_ec");
+            return 0;
+        } else if ($ok === true) {
+            return 0;
+        } else if ($ok === null || $ok === []) {
+            return $ps->term();
+        } else {
+            $n = 0;
+            foreach ($ok as $i) {
+                $n |= 1 << $i;
+            }
+            return $n;
+        }
+    }
+
     static function parse_presence_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
-        if ($sv->has_reqv("rf_{$xpos}_rounds")) {
+        if ($sv->has_reqv("rf_{$xpos}_ec")) {
+            $ec = $sv->reqv("rf_{$xpos}_ec");
+            $ecs = $sv->reqv("rf_{$xpos}_ecs");
+            $fj->round_mask = 0;
+            unset($fj->exists_if);
+            if (str_starts_with($ec, "round:")) {
+                if (($round = $sv->conf->round_number(substr($ec, 6), false)) !== false) {
+                    $fj->round_mask = 1 << $round;
+                }
+            } else if ($ec === "custom" && $ecs !== "") {
+                $answer = self::validate_condition($sv, $ecs, $xpos, true);
+                if (is_int($answer)) {
+                    $fj->round_mask = $answer;
+                } else if ($answer !== false) {
+                    $fj->exists_if = $ecs;
+                }
+            }
+        } else if ($sv->has_reqv("rf_{$xpos}_rounds")) {
             $fj->round_mask = 0;
             foreach (explode(" ", trim($sv->reqv("rf_{$xpos}_rounds"))) as $round_name) {
                 if (strcasecmp($round_name, "all") === 0) {
@@ -509,6 +593,29 @@ class ReviewForm_SettingRenderer {
     }
 
     static function render_presence_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
+        $ecsel = ["all" => "All reviews"];
+        foreach ($sv->conf->defined_round_list() as $i => $rname) {
+            $rname = $i ? $rname : "unnamed";
+            $ecsel["round:{$rname}"] = "{$rname} review round";
+        }
+        $ecsel["custom"] = "Custom…";
+        if ($f->exists_if) {
+            $ecs = $f->exists_if;
+        } else if ($f->round_mask) {
+            $ecs = $f->unparse_round_mask();
+        } else {
+            $ecs = "";
+        }
+        $ecv = isset($ecsel[$ecs]) ? $ecs : ($ecs ? "custom" : "all");
+        return '<div class="' . $sv->control_class("rf_{$xpos}_ec", "entryi is-property-editing has-fold fold" . ($ecs === "custom" ? "o" : "c"))
+            . '" data-fold-values="custom">' . $sv->label("rf_{$xpos}_ec", "Present on")
+            . '<div class="entry">'
+            . Ht::select("rf_{$xpos}_ec", $ecsel, $ecv, ["id" => "rf_{$xpos}_ec", "class" => "uich js-foldup"])
+            . ' &nbsp;'
+            . Ht::entry("rf_{$xpos}_ecs", $ecs,
+                        $sv->sjs("rf_{$xpos}_ecs", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus", "size" => 30]))
+            . '</div></div>';
+
         return '<div class="' . $sv->control_class("rf_{$xpos}_rounds", "entryi is-property-editing")
             . '">' . $sv->label("rf_{$xpos}_rounds", "Present on")
             . '<div class="entry">'
@@ -544,7 +651,9 @@ class ReviewForm_SettingRenderer {
 2. Weak reject
 3. Weak accept
 4. Accept</pre>
-<p>Or use consecutive capital letters (lower letters are better).</p></div>');
+<p>Or use consecutive capital letters (lower letters are better).</p></div>'
+            . '<div id="settings-review-form-caption-ecs" class="hidden">'
+            . '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl></div>');
 
         $rfj = [];
         foreach ($rf->fmap as $f) {

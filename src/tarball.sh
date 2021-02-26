@@ -204,6 +204,7 @@ src/conference.php
 src/confinvariants.php
 src/conflict.php
 src/contact.php
+src/contactcountmatcher.php
 src/contactlist.php
 src/contactsearch.php
 src/distoptions.php

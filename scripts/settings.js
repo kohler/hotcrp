@@ -284,7 +284,7 @@ function fold_property(fid, property, $j, hideval) {
 
 function fold_properties(fid) {
     fold_property(fid, "description", $("#rf_" + fid + "_description"), [""]);
-    fold_property(fid, "editing", $("#rf_" + fid + "_rounds"), ["all"]);
+    fold_property(fid, "editing", $("#rf_" + fid + "_ec"), ["all"]);
 }
 
 function fill_field_control(sel, value, order) {
@@ -301,6 +301,21 @@ function fill_field($f, fid, fieldj, order) {
     fill_field_control("#rf_" + fid + "_required", fieldj.required ? "1" : "0", order);
     fill_field_control("#rf_" + fid + "_colorsflipped", fieldj.option_letter ? "1" : "", order);
     fill_field_control("#rf_" + fid + "_colors", option_class_prefix(fieldj), order);
+    var ec, ecs = fieldj.exists_if != null
+        ? fieldj.exists_if
+        : (fieldj.round_list
+           ? (fieldj.round_list.length ? "round:" + fieldj.round_list.join(" OR round:") : "NONE")
+           : "");
+    if (ecs === "" || ecs.toLowerCase() === "all") {
+        ec = "all";
+    } else if (/^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(ecs)
+               && $("#rf_" + fid + "_ec > option[value=\"" + ecs + "\"]").length) {
+        ec = ecs;
+    } else {
+        ec = "custom";
+    }
+    fill_field_control("#rf_" + fid + "_ec", ec, order);
+    fill_field_control("#rf_" + fid + "_ecs", ecs, order);
     fill_field_control("#rf_" + fid + "_rounds", (fieldj.round_list || ["all"]).join(" "), order);
     $("#rf_" + fid + " textarea").trigger("change");
     $("#rf_" + fid + "_view").html("").append(create_field_view(fieldj));
@@ -382,8 +397,11 @@ function create_field_view(fieldj) {
         hc.push('<div class="field-visibility">'.concat(t, '</div>'));
     hc.pop();
 
-    if ((fieldj.round_list || []).length >= 1)
-        hc.push('<p class="feedback is-warning">Present only on ' + commajoin(fieldj.round_list) + ' reviews</p>');
+    if (fieldj.exists_if && /^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(fieldj.exists_if)) {
+        hc.push('<p class="feedback is-warning">Present on ' + fieldj.exists_if.substring(6) + ' reviews</p>');
+    } else if (fieldj.exists_if) {
+        hc.push('<p class="feedback is-warning">Present on reviews matching “' + escape_entities(fieldj.exists_if) + '”</p>');
+    }
 
     if (fieldj.description)
         hc.push('<div class="field-d">'.concat(fieldj.description, '</div>'));

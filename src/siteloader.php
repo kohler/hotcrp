@@ -9,7 +9,6 @@ class SiteLoader {
         "AutoassignerCosts" => "src/autoassigner.php",
         "BanalSettings" => "src/settings/s_subform.php",
         "Collator" => "lib/collatorshim.php",
-        "ContactCountMatcher" => "src/papersearch.php",
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
         "Fexpr" => "src/formula.php",

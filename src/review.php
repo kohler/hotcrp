@@ -142,7 +142,7 @@ class ReviewField implements JsonSerializable {
         }
         $this->round_mask = $j->round_mask ?? 0;
         if ($this->exists_if !== ($j->exists_if ?? null)) {
-            $this->exists_if = $j->exists_if;
+            $this->exists_if = $j->exists_if ?? null;
             $this->_exists_search = null;
             $this->_need_exists_search = ($this->exists_if ?? "") !== "";
         }
@@ -194,6 +194,16 @@ class ReviewField implements JsonSerializable {
         return $s;
     }
 
+    /** @return string */
+    function unparse_round_mask() {
+        $rs = [];
+        foreach ($this->conf->round_list() as $i => $rname) {
+            if ($this->round_mask & (1 << $i))
+                $rs[] = $i ? "round:{$rname}" : "round:unnamed";
+        }
+        return join(" OR ", $rs);
+    }
+
     function unparse_json($for_settings = false) {
         $j = (object) array("name" => $this->name);
         if ($this->description) {
@@ -219,14 +229,12 @@ class ReviewField implements JsonSerializable {
         } else if ($this->required) {
             $j->required = true;
         }
-        if ($this->round_mask && $for_settings) {
+        if ($this->exists_if) {
+            $j->exists_if = $this->exists_if;
+        } else if ($this->round_mask && $for_settings) {
             $j->round_mask = $this->round_mask;
         } else if ($this->round_mask) {
-            $j->round_list = array();
-            foreach ($this->conf->round_list() as $i => $round_name) {
-                if ($this->round_mask & (1 << $i))
-                    $j->round_list[] = $i ? $round_name : "unnamed";
-            }
+            $j->exists_if = $this->unparse_round_mask();
         }
         return $j;
     }
