@@ -595,7 +595,7 @@ function graph_cdf(selector, args) {
                 hubble.html(label);
             } else
                 hubble.text(u.label);
-            hubble.dir(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "r" : "b")
+            hubble.anchor(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "e" : "s")
                 .at(p[0] + args.left, p[1], this);
         } else if (hubble) {
             hubble = hubble.remove() && null;
@@ -946,7 +946,7 @@ function graph_scatter(selector, args) {
         if (p) {
             hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             hubble.html(make_tooltip(p[2][0], p[2]))
-                .dir("b")
+                .anchor("s")
                 .near(hovers.node());
         } else if (hubble)
             hubble = hubble.remove() && null;
@@ -1123,7 +1123,7 @@ function graph_bars(selector, args) {
         }
         if (p) {
             hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-            hubble.html(make_tooltip(p)).dir("h").near(hovers.node());
+            hubble.html(make_tooltip(p)).anchor("h").near(hovers.node());
         }
     }
 
@@ -1349,7 +1349,7 @@ function graph_boxplot(selector, args) {
             hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             if (!p.th)
                 p.th = make_tooltip(p, p.p, p.d, p.c);
-            hubble.html(p.th).dir("h").near(hovers.filter(".box").node());
+            hubble.html(p.th).anchor("h").near(hovers.filter(".box").node());
         }
     }
 
@@ -1366,7 +1366,7 @@ function graph_boxplot(selector, args) {
             hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             if (!p.th)
                 p.th = make_tooltip(p[2][0], p[2].map(proj2), p[2].map(proj1), p[3]);
-            hubble.html(p.th).dir("h").near(hovers.filter(".outlier").node());
+            hubble.html(p.th).anchor("h").near(hovers.filter(".outlier").node());
         }
     }
 
