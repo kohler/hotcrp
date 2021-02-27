@@ -3009,12 +3009,8 @@ function foldup(event, opts) {
         }
     }
     var foldname = "fold" + (opts.n || "");
-    while (e
-           && (!e.id || e.id.substr(0, 4) != "fold")
-           && !hasClass(e, "has-fold")
-           && (opts.n == null
-               || (!hasClass(e, foldname + "c")
-                   && !hasClass(e, foldname + "o")))) {
+    while (e && ((!hasClass(e, "has-fold") && (!e.id || !e.id.startsWith("fold")))
+                 || (opts.n != null && !hasClass(e, foldname + "c") && !hasClass(e, foldname + "o")))) {
         e = e.parentNode;
     }
     if (!e) {
