@@ -174,12 +174,12 @@ abstract class SearchTerm {
         foreach (is_array($terms) ? $terms : [$terms] as $qt) {
             $qr->append($qt);
         }
-        return $qr->finish();
+        return $qr->_finish();
     }
     /** @return SearchTerm */
     function negate() {
         $qr = new Not_SearchTerm;
-        return $qr->append($this)->finish();
+        return $qr->append($this)->_finish();
     }
     /** @param bool $negate
      * @return SearchTerm */
@@ -390,12 +390,11 @@ abstract class Op_SearchTerm extends SearchTerm {
         }
         return $this;
     }
-    protected function finish() {
-        assert(false);
-    }
+    abstract protected function _finish();
+    /** @return list<SearchTerm> */
     protected function _flatten_children() {
-        $qvs = array();
-        foreach ($this->child ? : array() as $qv) {
+        $qvs = [];
+        foreach ($this->child as $qv) {
             if ($qv->type === $this->type) {
                 assert($qv instanceof Op_SearchTerm);
                 $qvs = array_merge($qvs, $qv->child);
@@ -457,7 +456,7 @@ class Not_SearchTerm extends Op_SearchTerm {
     function __construct() {
         parent::__construct("not");
     }
-    protected function finish() {
+    protected function _finish() {
         unset($this->float["tags"]);
         $qv = $this->child ? $this->child[0] : null;
         $qr = null;
@@ -515,7 +514,7 @@ class And_SearchTerm extends Op_SearchTerm {
     function __construct($type) {
         parent::__construct($type);
     }
-    protected function finish() {
+    protected function _finish() {
         $pn = $revadj = null;
         $newchild = [];
         $any = false;
@@ -620,7 +619,7 @@ class Or_SearchTerm extends Op_SearchTerm {
     function __construct() {
         parent::__construct("or");
     }
-    protected function finish() {
+    protected function _finish() {
         $pn = $revadj = null;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
@@ -709,7 +708,7 @@ class Xor_SearchTerm extends Op_SearchTerm {
     function __construct() {
         parent::__construct("xor");
     }
-    protected function finish() {
+    protected function _finish() {
         $pn = $revadj = null;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
@@ -805,7 +804,7 @@ class Then_SearchTerm extends Op_SearchTerm {
             $this->set_float("opinfo", $op->opinfo);
         }
     }
-    protected function finish() {
+    protected function _finish() {
         $opinfo = strtolower($this->get_float("opinfo") ?? "");
         $newvalues = $newhvalues = $newhinfo = [];
 
@@ -1385,7 +1384,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     static function parse_rate($word, SearchWord $sword, PaperSearch $srch) {
         if (!$srch->user->can_view_some_review_ratings()) {
             if ($srch->user->isPC && $srch->conf->setting("rev_ratings") == REV_RATINGS_NONE) {
-                $srch->warn("Review ratings are disabled.");
+                $srch->warning("Review ratings are disabled.");
             }
             return new False_SearchTerm;
         }
@@ -1405,7 +1404,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
             $rate = self::parse_rate_name($m[1]);
         }
         if ($rate === null) {
-            $srch->warn("Bad review rating query “" . htmlspecialchars($word) . "”.");
+            $srch->warning("Bad review rating query “" . htmlspecialchars($word) . "”.");
             return new False_SearchTerm;
         } else {
             $qv = new ReviewAdjustment_SearchTerm($srch->user);
@@ -1682,7 +1681,7 @@ class PaperID_SearchTerm extends SearchTerm {
     }
     static function parse_pidcode($word, SearchWord $sword, PaperSearch $srch) {
         if (($ids = SessionList::decode_ids($word)) === null) {
-            $srch->warn("Bad <code>pidcode</code>.");
+            $srch->warning("Bad <code>pidcode</code>.");
             return new False_SearchTerm;
         } else {
             $pt = new PaperID_SearchTerm;
@@ -2049,8 +2048,14 @@ class PaperSearch {
     }
 
     /** @param string $text */
-    function warn($text) {
+    function warning($text) {
         $this->_warnings[] = $text;
+    }
+
+    /** @param string $text
+     * @deprecated */
+    function warn($text) {
+        return $this->warning($text);
     }
 
     private function _clear_warnings_after($nw) {
@@ -2145,7 +2150,7 @@ class PaperSearch {
             | (!$quoted && $this->user->isPC ? ContactSearch::F_TAG : 0);
         $cs = $this->_find_contact_search($type, $word);
         if ($cs->warn_html) {
-            $this->warn($cs->warn_html);
+            $this->warning($cs->warn_html);
         }
         return $cs;
     }
@@ -2230,7 +2235,7 @@ class PaperSearch {
                 return $qe;
             }
         }
-        $srch->warn("Unknown search “" . $sword->source_html() . "”.");
+        $srch->warning("Unknown search “" . $sword->source_html() . "”.");
         return new False_SearchTerm;
     }
 
@@ -2254,15 +2259,15 @@ class PaperSearch {
         $qe = null;
         ++self::$ss_recursion;
         if (!$srch->conf->setting_data("ss:$word")) {
-            $srch->warn("Saved search “" . htmlspecialchars($word) . "” undefined.");
+            $srch->warning("Saved search “" . htmlspecialchars($word) . "” undefined.");
         } else if (self::$ss_recursion > 10) {
-            $srch->warn("Saved search “" . htmlspecialchars($word) . "” appears to be defined in terms of itself.");
+            $srch->warning("Saved search “" . htmlspecialchars($word) . "” appears to be defined in terms of itself.");
         } else if (($nextq = $srch->_expand_saved_search($word))) {
             if (($qe = $srch->_search_expression($nextq))) {
                 $qe->set_strspan_owner($nextq);
             }
         } else {
-            $srch->warn("Saved search “" . htmlspecialchars($word) . "” is defined incorrectly.");
+            $srch->warning("Saved search “" . htmlspecialchars($word) . "” is defined incorrectly.");
         }
         --self::$ss_recursion;
         return $qe ?? new False_SearchTerm;
@@ -2282,7 +2287,7 @@ class PaperSearch {
                 $qt = array_merge($qt, $qx);
             }
         } else {
-            $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
+            $this->warning("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
         }
     }
 
@@ -2869,7 +2874,7 @@ class PaperSearch {
                    && $this->user->privChair
                    && ($ps = $this->_check_missing_papers($qe))
                    && $this->conf->fetch_ivalue("select exists (select * from Paper where paperId?a)", $ps)) {
-            $this->warn("Some incomplete or withdrawn submissions also match this search. " . Ht::link("Show all matching submissions", $this->conf->hoturl("search", ["t" => "all", "q" => $this->q])));
+            $this->warning("Some incomplete or withdrawn submissions also match this search. " . Ht::link("Show all matching submissions", $this->conf->hoturl("search", ["t" => "all", "q" => $this->q])));
         }
 
         $this->user->set_overrides($old_overrides);

@@ -68,9 +68,9 @@ abstract class Option_SearchTerm extends SearchTerm {
         if (empty($os)) {
             if (($os2 = $srch->conf->abbrev_matcher()->find_all($oname, Conf::MFLAG_OPTION))) {
                 $ts = array_map(function ($o) { return "“" . htmlspecialchars($o->search_keyword()) . "”"; }, $os2);
-                $srch->warn("“" . htmlspecialchars($oname) . "” matches more than one submission field. Try " . commajoin($ts, " or ") . ", or use “" . htmlspecialchars($oname) . "*” if you mean to match them all.");
+                $srch->warning("“" . htmlspecialchars($oname) . "” matches more than one submission field. Try " . commajoin($ts, " or ") . ", or use “" . htmlspecialchars($oname) . "*” if you mean to match them all.");
             } else {
-                $srch->warn("“" . htmlspecialchars($oname) . "” matches no submission fields.");
+                $srch->warning("“" . htmlspecialchars($oname) . "” matches no submission fields.");
             }
             return new False_SearchTerm;
         }
@@ -98,7 +98,7 @@ abstract class Option_SearchTerm extends SearchTerm {
             if (($st = $o->parse_search($sword, $srch))) {
                 $ts[] = $st;
             } else if ($nwarn === $srch->message_count()) {
-                $srch->warn("Submission field " . htmlspecialchars($o->search_keyword()) . " (" . $o->title_html() . ") does not understand search “" . htmlspecialchars($ocontent) . "”.");
+                $srch->warning("Submission field " . htmlspecialchars($o->search_keyword()) . " (" . $o->title_html() . ") does not understand search “" . htmlspecialchars($ocontent) . "”.");
             }
         }
         return SearchTerm::combine("or", $ts);

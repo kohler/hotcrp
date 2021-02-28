@@ -15,7 +15,7 @@ class Decision_SearchTerm extends SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $dec = PaperSearch::decision_matchexpr($srch->conf, $word, $sword->quoted);
         if (is_array($dec) && empty($dec)) {
-            $srch->warn("“" . htmlspecialchars($word) . "” doesn’t match a decision.");
+            $srch->warning("“" . htmlspecialchars($word) . "” doesn’t match a decision.");
             $dec[] = -10000000;
         }
         return new Decision_SearchTerm($srch->user, $dec);

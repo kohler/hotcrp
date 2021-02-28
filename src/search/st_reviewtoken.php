@@ -22,7 +22,7 @@ class ReviewToken_SearchTerm extends SearchTerm {
         } else if (($token = decode_token($word, "V"))) {
             return new ReviewToken_SearchTerm($srch->user, $token, null);
         } else {
-            $srch->warn("“" . htmlspecialchars($word) . "” is not a valid review token.");
+            $srch->warning("“" . htmlspecialchars($word) . "” is not a valid review token.");
             return new False_SearchTerm;
         }
     }

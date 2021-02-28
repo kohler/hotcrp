@@ -1480,12 +1480,12 @@ class Selector_PaperOption extends PaperOption {
         if (empty($vs)) {
             $pfx = htmlspecialchars($this->search_keyword()) . " (" . $this->title_html() . ")";
             if ($sword->cword === "") {
-                $srch->warn("$pfx search: Selector missing.");
+                $srch->warning("$pfx search: Selector missing.");
             } else if (($vs2 = $this->selector_abbrev_matcher()->find_all($sword->cword))) {
                 $ts = array_map(function ($x) { return "“" . htmlspecialchars($this->selector[$x - 1]) . "”"; }, $vs2);
-                $srch->warn("$pfx search: “" . htmlspecialchars($sword->cword) . "” matches more than one choice. Try " . commajoin($ts, " or ") . ", or use “" . htmlspecialchars($sword->cword) . "*” to match them all.");
+                $srch->warning("$pfx search: “" . htmlspecialchars($sword->cword) . "” matches more than one choice. Try " . commajoin($ts, " or ") . ", or use “" . htmlspecialchars($sword->cword) . "*” to match them all.");
             } else {
-                $srch->warn("$pfx search: No choice matches “" . htmlspecialchars($sword->cword) . "”.");
+                $srch->warning("$pfx search: No choice matches “" . htmlspecialchars($sword->cword) . "”.");
             }
             return null;
         } else if (in_array($sword->compar, ["", "=", "!="], true)) {

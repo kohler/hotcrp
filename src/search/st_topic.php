@@ -23,7 +23,7 @@ class Topic_SearchTerm extends SearchTerm {
             $value = true;
             $negated = true;
         } else if ($word === "") {
-            $srch->warn("Topic missing.");
+            $srch->warning("Topic missing.");
             return new False_SearchTerm;
         } else {
             $tam = $srch->conf->topic_abbrev_matcher();
@@ -41,7 +41,7 @@ class Topic_SearchTerm extends SearchTerm {
                 $value = $tam->find_all($word);
             }
             if (empty($value)) {
-                $srch->warn("“" . htmlspecialchars($word) . "” does not match any defined paper topic.");
+                $srch->warning("“" . htmlspecialchars($word) . "” does not match any defined paper topic.");
             }
         }
         return new Topic_SearchTerm($value, $negated);

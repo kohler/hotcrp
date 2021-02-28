@@ -51,7 +51,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
             $errf = $cf->spec_error_kinds(DTYPE_FINAL);
         }
         if (empty($errf)) {
-            $srch->warn($sword->source_html() . ": Format checking is not enabled.");
+            $srch->warning($sword->source_html() . ": Format checking is not enabled.");
             return null;
         } else if ($lword === "good" || $lword === "ok") {
             return new PaperPDF_SearchTerm($srch, $dtype, true, false);
@@ -60,7 +60,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         } else if (in_array($lword, $errf) || $lword === "error") {
             return new PaperPDF_SearchTerm($srch, $dtype, true, true, $lword);
         } else {
-            $srch->warn($sword->source_html() . ": “" . htmlspecialchars($word) . "” is not a valid error type for format checking.");
+            $srch->warning($sword->source_html() . ": “" . htmlspecialchars($word) . "” is not a valid error type for format checking.");
             return null;
         }
     }
@@ -122,7 +122,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
             $this->cf->check_document($row, $doc);
             if ($this->cf->need_recheck()) {
                 if (!$this->cf_warn) {
-                    $this->srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
+                    $this->srch->warning("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
                     $this->cf_warn = true;
                 }
                 return true;
@@ -161,7 +161,7 @@ class Pages_SearchTerm extends SearchTerm {
         if ($cm->ok()) {
             return new Pages_SearchTerm($srch, new CountMatcher($word));
         } else {
-            $srch->warn($sword->source_html() . ": Expects a page number comparison.");
+            $srch->warning($sword->source_html() . ": Expects a page number comparison.");
             return null;
         }
     }
@@ -185,7 +185,7 @@ class Pages_SearchTerm extends SearchTerm {
             return $this->cm->test($np);
         } else if ($this->cf->need_recheck()) {
             if (!$this->cf_warn) {
-                $this->srch->warn("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
+                $this->srch->warning("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
                 $this->cf_warn = true;
             }
             return true;

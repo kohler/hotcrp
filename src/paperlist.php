@@ -508,7 +508,7 @@ class PaperList implements XtContext {
                 $col->sort_subset = $sort_subset;
                 $this->_sortcol[] = $col;
             } else {
-                $this->search->warn("“" . htmlspecialchars($name) . "” cannot be sorted.");
+                $this->search->warning("“" . htmlspecialchars($name) . "” cannot be sorted.");
             }
         } else if (empty($fs)) {
             if ($this->user->can_view_tags(null)
@@ -516,12 +516,12 @@ class PaperList implements XtContext {
                 && ($tag = $tagger->check($name))
                 && ($ps = new PaperSearch($this->user, ["q" => "#$tag", "t" => "vis"]))
                 && $ps->paper_ids()) {
-                $this->search->warn("“" . htmlspecialchars($name) . "” cannot be sorted. Did you mean “sort:#" . htmlspecialchars($name) . "”?");
+                $this->search->warning("“" . htmlspecialchars($name) . "” cannot be sorted. Did you mean “sort:#" . htmlspecialchars($name) . "”?");
             } else {
-                $this->search->warn("“" . htmlspecialchars($name) . "” cannot be sorted.");
+                $this->search->warning("“" . htmlspecialchars($name) . "” cannot be sorted.");
             }
         } else {
-            $this->search->warn("Sort “" . htmlspecialchars($name) . "” matches more than one field, ignoring.");
+            $this->search->warning("Sort “" . htmlspecialchars($name) . "” matches more than one field, ignoring.");
         }
     }
 

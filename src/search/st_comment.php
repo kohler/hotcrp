@@ -80,7 +80,7 @@ class Comment_SearchTerm extends SearchTerm {
             $tags = new TagSearchMatcher($srch->user);
             $tags->add_check_tag(substr($m[0], 1), true);
             foreach ($tags->error_texts() as $e) {
-                $srch->warn($e);
+                $srch->warning($e);
             }
         } else if ($m[0] !== "") {
             $contacts = $srch->matching_uids($m[0], $sword->quoted, false);

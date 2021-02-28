@@ -87,7 +87,7 @@ class Tag_SearchTerm extends SearchTerm {
 
         // return
         foreach ($value->error_texts() as $e) {
-            $srch->warn($e);
+            $srch->warning($e);
         }
         return SearchTerm::combine("or", $allterms)->negate_if($negated);
     }
