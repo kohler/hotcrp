@@ -316,8 +316,9 @@ function remove() {
 }
 
 tooltip.add_builder("settings-review-form", function (info) {
+    var p = this.name.lastIndexOf("_");
     return $.extend({
-        anchor: "w", content: $(/description$/.test(this.name) ? "#review_form_caption_description" : "#review_form_caption_options").html(), className: "gray"
+        anchor: "w", content: $("#settings-review-form-caption-" + this.name.substring(p + 1)).html(), className: "gray"
     }, info);
 });
 
@@ -501,10 +502,10 @@ function rfs(data) {
         }
     }
     for (i in data.errf || {}) {
-        $j = $("#" + i).closest(".f-i");
+        $j = $("#" + i).closest(".entryi");
         if (!$j.length)
             $j = $("#rf_" + i);
-        $j.addClass("has-error");
+        $j.removeClass("hidden").addClass("has-error");
         foldup.call($j[0], null, {n: 2, f: false});
     }
     form_highlight("#settingsform");

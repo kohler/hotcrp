@@ -8,8 +8,8 @@ class ReviewForm_SettingParser extends SettingParser {
     private $_option_error_printed = false;
     /** @var ReviewField */
     public $field;
-    /** @var int */
-    public $nproperties;
+    /** @var string */
+    public $source_html;
 
     static function parse_description_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
         if (!$sv->has_reqv("rf_{$xpos}_description")) {
@@ -19,12 +19,11 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($x !== false) {
             if ($x !== "") {
                 $fj->description = trim($x);
-                ++$self->nproperties;
             } else {
                 unset($fj->description);
             }
         } else if (isset($fj->position)) {
-            $sv->error_at("rf_{$xpos}_description", htmlspecialchars($error_sn) . " description: " . $err);
+            $sv->error_at("rf_{$xpos}_description", "{$self->source_html} description: " . $err);
         }
     }
 
@@ -97,12 +96,9 @@ class ReviewForm_SettingParser extends SettingParser {
         $ok = true;
         if ($sv->has_reqv("rf_{$xpos}_options")) {
             $ok = $self->parse_options_value($sv, $fj, $xpos);
-            if (trim($sv->reqv("rf_{$xpos}_options")) !== "") {
-                ++$self->nproperties;
-            }
         }
         if ((!$ok || count($fj->options) < 2) && isset($fj->position)) {
-            $sv->error_at("rf_{$xpos}_options", htmlspecialchars($error_sn) . ": Invalid choices.");
+            $sv->error_at("rf_{$xpos}_options", "{$self->source_html}: Invalid choices.");
             $self->mark_options_error($sv);
         }
     }
@@ -141,7 +137,6 @@ class ReviewForm_SettingParser extends SettingParser {
     private function populate_field(SettingValues $sv, ReviewField $f, $xpos) {
         $fj = $f->unparse_json(true);
         $this->field = $f;
-        $this->nproperties = 0;
 
         // field name
         $sn = $fj->name;
@@ -153,25 +148,36 @@ class ReviewForm_SettingParser extends SettingParser {
         } else {
             $fj->name = $sn;
         }
-        $error_sn = $sn ? : "<Unnamed field>";
+        $this->source_html = htmlspecialchars($sn ? : "<Unnamed field>");
 
-        // field position
+        // initial field position
         if ($sv->has_reqv("rf_{$xpos}_position")) {
             $pos = cvtnum($sv->reqv("rf_{$xpos}_position"));
         } else {
             $pos = $fj->position ?? -1;
         }
-        if ($pos > 0
-            && $sn == ""
-            && $sv->has_reqv("rf_{$xpos}_description")
-            && trim($sv->reqv("rf_{$xpos}_description")) === ""
-            && (!$f->has_options
-                || ($sv->has_reqv("rf_{$xpos}_options")
-                    ? trim($sv->reqv("rf_{$xpos}_options")) === ""
-                    : empty($fj->options)))) {
-            $pos = -1;
-        }
         if ($pos > 0) {
+            $fj->position = $pos;
+        } else {
+            unset($fj->position);
+        }
+
+        // contents
+        foreach ($sv->group_members("reviewfield/properties") as $gj) {
+            if (isset($gj->parse_review_property_callback)) {
+                Conf::xt_resolve_require($gj);
+                call_user_func($gj->parse_review_property_callback, $sv, $fj, $xpos, $this, $gj);
+            }
+        }
+
+        if (isset($fj->position)
+            && $sn === ""
+            && !isset($fj->description)
+            && (!$f->has_options || empty($fj->options))) {
+            unset($fj->position);
+        }
+
+        if (isset($fj->position)) {
             if ($sn === "") {
                 $sv->error_at("rf_{$xpos}_name", "Missing review field name.");
             } else if (isset($this->byname[strtolower($sn)])) {
@@ -184,16 +190,6 @@ class ReviewForm_SettingParser extends SettingParser {
                 $sv->error_at("rf_{$xpos}_name", "Don’t include “" . htmlspecialchars(substr($sn, $lparen)) . "” in the review field name. Visibility descriptions are added automatically.");
             } else {
                 $this->byname[strtolower($sn)] = $xpos;
-            }
-            $fj->position = $pos;
-        } else {
-            unset($fj->position);
-        }
-
-        foreach ($sv->group_members("reviewfield/properties") as $gj) {
-            if (isset($gj->parse_review_property_callback)) {
-                Conf::xt_resolve_require($gj);
-                call_user_func($gj->parse_review_property_callback, $sv, $fj, $xpos, $this, $gj);
             }
         }
 
@@ -538,11 +534,11 @@ class ReviewForm_SettingRenderer {
             }
         }
 
-        Ht::stash_html('<div id="review_form_caption_description" class="hidden">'
+        Ht::stash_html('<div id="settings-review-form-caption-description" class="hidden">'
             . '<p>Enter an HTML description for the review form.
     Include any guidance you’d like to provide for reviewers.
     Note that complex HTML will not appear on offline review forms.</p></div>'
-            . '<div id="review_form_caption_options" class="hidden">'
+            . '<div id="settings-review-form-caption-options" class="hidden">'
             . '<p>Enter one option per line, numbered starting from 1 (higher numbers are better). For example:</p>
 <pre class="entryexample">1. Reject
 2. Weak reject
