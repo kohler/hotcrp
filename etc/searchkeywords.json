@@ -227,15 +227,15 @@
     {   "name": "retoken", "alias": "token"   },
     {   "name": "reviewtoken", "alias": "token"   },
     {
-        "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?|not-?started-?|pending-?|pending-?(?:my-?|)approval-?|propos(?:al|ed)-?)(|meta-?|pri-?|sec-?|ext-?|primary-?|secondary-?|external-?)(?:re|rev|review)",
+        "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?|not-?started-?|pending-?|pending-?(?:my-?|)approval-?)(|meta-?|pri-?|sec-?|ext-?|primary-?|secondary-?|external-?)(?:re|rev|review)",
         "expand_callback": "Review_SearchTerm::keyword_factory"
     },
     {
-        "match": "(?:|review-?)(|c|i|p|complete-?|incomplete-?|in-?progress-?|not-?started-?|partial-?|pending-?|pending-?(?:my-?|)approval-?|propos(?:al|ed)-?)(meta|pri|sec|ext|primary|secondary|external)",
+        "match": "(?:|review-?)(|c|i|p|complete-?|incomplete-?|in-?progress-?|not-?started-?|partial-?|pending-?|pending-?(?:my-?|)approval-?)(meta|pri|sec|ext|primary|secondary|external)",
         "expand_callback": "Review_SearchTerm::keyword_factory"
     },
     {
-        "match": "(?:|review-?)(complete|incomplete|in-?progress|not-?started|partial|pending|pending-?(?:my-?|)approval|propos(?:al|ed))()",
+        "match": "(?:|review-?)(complete|incomplete|in-?progress|not-?started|partial|pending|pending-?(?:my-?|)approval)()",
         "expand_callback": "Review_SearchTerm::keyword_factory"
     },
     {
@@ -250,6 +250,17 @@
         "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
         "expand_callback": "Review_SearchTerm::review_field_factory"
     },
+    {
+        "name": "proposal",
+        "parse_callback": "Proposal_SearchTerm::parse", "has": "any"
+    },
+    {   "name": "proposed", "alias": "proposal"   },
+    {   "name": "review-proposal", "alias": "proposal"   },
+    {   "name": "reviewproposal", "alias": "proposal"   },
+    {   "name": "reproposal", "alias": "proposal"   },
+    {   "name": "proposed-review", "alias": "proposal"   },
+    {   "name": "proposedreview", "alias": "proposal"   },
+    {   "name": "proposedre", "alias": "proposal"   },
     {
         "name": "option",
         "parse_callback": "Option_SearchTerm::parse", "has": "any"

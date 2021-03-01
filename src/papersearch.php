@@ -1448,7 +1448,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         return $changed;
     }
     function promote(PaperSearch $srch) {
-        $rsm = new ReviewSearchMatcher(">0");
+        $rsm = new ReviewSearchMatcher;
         if (in_array($srch->limit(), ["r", "rout", "reviewable"], true)) {
             $rsm->add_contact($srch->user->contactXid);
         } else if ($srch->limit() === "req") {
