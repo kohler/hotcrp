@@ -469,7 +469,8 @@ if ($pl_text) {
             }
         }
         reset($tOpt);
-        if (key($tOpt) != $Search->limit() && $Search->limit() !== "all") {
+        if (key($tOpt) != $Search->limit()
+            && !in_array($Search->limit(), ["all", "viewable", "act"], true)) {
             echo " (<a href=\"", $Conf->hoturl("search", join("&amp;", $a)), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
         }
     }
