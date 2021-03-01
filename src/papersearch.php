@@ -1373,7 +1373,7 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
             $x = simplify_whitespace($word);
             $rounds = array_keys(Text::simple_search($x, $srch->conf->round_list()));
             if (empty($rounds)) {
-                $srch->warn("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
+                $srch->warning("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
                 return new False_SearchTerm;
             }
         }
