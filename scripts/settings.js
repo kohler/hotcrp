@@ -246,7 +246,7 @@ function options_to_text(fieldj) {
     var i, t = [];
     if (!fieldj.options)
         return "";
-    for (i = 0; i != fieldj.options.length; ++i)
+    for (i = 0; i !== fieldj.options.length; ++i)
         t.push(unparse_option(fieldj, i + 1) + ". " + fieldj.options[i]);
     if (fieldj.option_letter)
         t.reverse();
@@ -272,37 +272,41 @@ function fill_order() {
     form_highlight("#settingsform");
 }
 
-function fill_field1(sel, value, order) {
+function fold_property(fid, property, $j, hideval) {
+    var $f = $("#rf_" + fid), hidden = true;
+    for (var i = 0; i !== $j.length; ++i) {
+        hidden = hidden && !input_differs($j[i]) && $($j[i]).val() == hideval[i];
+    }
+    $f.find(".is-property-" + property).toggleClass("hidden", hidden);
+    $f.find(".js-settings-show-property[data-property=\"".concat(property, "\"]")).toggleClass("btn-disabled", !hidden);
+    console.log("fold_" + fid + " " + (hidden?"Y":"N") + " " + $($j[0]).val());
+}
+
+function fold_properties(fid) {
+    fold_property(fid, "description", $("#rf_" + fid + "_description"), [""]);
+    fold_property(fid, "editing", $("#rf_" + fid + "_rounds"), ["all"]);
+}
+
+function fill_field_control(sel, value, order) {
     var $j = $(sel).val(value);
     order && $j.attr("data-default-value", value);
 }
 
-function fill_property($f, property, present) {
-    if (!present) {
-        $f.find(".is-property-" + property).addClass("hidden");
-    } else {
-        $f.find(".js-settings-show-property[data-property=\"".concat(property, "\"]")).addClass("btn-disabled");
-    }
-}
-
 function fill_field($f, fid, fieldj, order) {
     fieldj = fieldj || original[fid] || {};
-    fill_field1("#rf_" + fid + "_name", fieldj.name || "", order);
-    fill_field1("#rf_" + fid + "_description", fieldj.description || "", order);
-    fill_field1("#rf_" + fid + "_visibility", fieldj.visibility || "pc", order);
-    fill_field1("#rf_" + fid + "_options", options_to_text(fieldj), order);
-    fill_field1("#rf_" + fid + "_required", fieldj.required ? "1" : "0", order);
-    fill_field1("#rf_" + fid + "_colorsflipped", fieldj.option_letter ? "1" : "", order);
-    fill_field1("#rf_" + fid + "_colors", option_class_prefix(fieldj), order);
-    fill_field1("#rf_" + fid + "_rounds", (fieldj.round_list || ["all"]).join(" "), order);
+    fill_field_control("#rf_" + fid + "_name", fieldj.name || "", order);
+    fill_field_control("#rf_" + fid + "_description", fieldj.description || "", order);
+    fill_field_control("#rf_" + fid + "_visibility", fieldj.visibility || "pc", order);
+    fill_field_control("#rf_" + fid + "_options", options_to_text(fieldj), order);
+    fill_field_control("#rf_" + fid + "_required", fieldj.required ? "1" : "0", order);
+    fill_field_control("#rf_" + fid + "_colorsflipped", fieldj.option_letter ? "1" : "", order);
+    fill_field_control("#rf_" + fid + "_colors", option_class_prefix(fieldj), order);
+    fill_field_control("#rf_" + fid + "_rounds", (fieldj.round_list || ["all"]).join(" "), order);
     $("#rf_" + fid + " textarea").trigger("change");
     $("#rf_" + fid + "_view").html("").append(create_field_view(fieldj));
     $("#rf_" + fid + "_delete").attr("aria-label", fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
-    if (order) {
-        fill_field1("#rf_" + fid + "_position", fieldj.position || 0, order);
-        fill_property($f, "description", !!fieldj.description);
-        fill_property($f, "editing", !!fieldj.round_list);
-    }
+    order && fill_field_control("#rf_" + fid + "_position", fieldj.position || 0, order);
+    fold_properties(fid);
     return false;
 }
 
@@ -463,6 +467,17 @@ function append_field(fid, pos) {
     $f.find(".need-tooltip").each(tooltip);
 }
 
+function add_field(fid) {
+    fieldorder.push(fid);
+    original[fid] = original[fid] || {};
+    original[fid].position = fieldorder.length;
+    append_field(fid, fieldorder.length);
+    foldup.call($("#rf_" + fid)[0], null, {n: 2, f: false});
+    $("#rf_" + fid + "_position").attr("data-default-value", "0");
+    form_highlight("#settingsform");
+    return true;
+}
+
 function rfs(data) {
     var i, fid, $j, m;
     original = data.fields;
@@ -491,14 +506,18 @@ function rfs(data) {
 
     // highlight errors, apply request
     for (i in data.req || {}) {
-        if (!$("#" + i).length
-            && (m = i.match(/^(?:rf_|)([st]\d+)(?:|_.*)$/))) {
-            add_field(m[1]);
-        }
-        $j = $("#" + i);
-        if (!text_eq($j.val(), data.req[i])) {
-            $j.val(data.req[i]);
-            foldup.call($j[0], null, {n: 2, f: false});
+        m = i.match(/^rf_([st]\d+)(?:|_)/);
+        if (m) {
+            $j = $("#" + i);
+            if (!$j[0]) {
+                add_field(m[1]);
+                $j = $("#" + i);
+            }
+            if ($j[0] && !text_eq($j.val(), data.req[i])) {
+                $j.val(data.req[i]);
+                foldup.call($j[0], null, {n: 2, f: false});
+                fold_properties(m[1]);
+            }
         }
     }
     for (i in data.errf || {}) {
@@ -510,17 +529,6 @@ function rfs(data) {
     }
     form_highlight("#settingsform");
 };
-
-function add_field(fid) {
-    fieldorder.push(fid);
-    original[fid] = original[fid] || {};
-    original[fid].position = fieldorder.length;
-    append_field(fid, fieldorder.length);
-    foldup.call($("#rf_" + fid)[0], null, {n: 2, f: false});
-    $("#rf_" + fid + "_position").attr("data-default-value", "0");
-    form_highlight("#settingsform");
-    return true;
-}
 
 function add_dialog(fid, focus) {
     var $d, template = 0, has_options = fid.charAt(0) === "s";

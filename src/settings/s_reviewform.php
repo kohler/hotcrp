@@ -539,7 +539,7 @@ class ReviewForm_SettingRenderer {
     Include any guidance you’d like to provide for reviewers.
     Note that complex HTML will not appear on offline review forms.</p></div>'
             . '<div id="settings-review-form-caption-options" class="hidden">'
-            . '<p>Enter one option per line, numbered starting from 1 (higher numbers are better). For example:</p>
+            . '<p>Enter one choice per line, numbered starting from 1 (higher numbers are better). For example:</p>
 <pre class="entryexample">1. Reject
 2. Weak reject
 3. Weak accept
