@@ -164,10 +164,10 @@ class Tags_API {
     static function votereport_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
-            json_exit(["ok" => false, "error" => $tagger->error_html]);
+            return ["ok" => false, "error" => $tagger->error_html];
         }
         if (!$user->can_view_peruser_tag($prow, $tag)) {
-            json_exit(["ok" => false, "error" => "Permission error."]);
+            return ["ok" => false, "error" => "Permission error."];
         }
         $votemap = [];
         preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\S+)/i', $prow->all_tags_text(), $m);
@@ -187,9 +187,9 @@ class Tags_API {
             }
         }
         if (empty($result)) {
-            json_exit(["ok" => true, "result" => ""]);
+            return ["ok" => true, "result" => ""];
         } else {
-            json_exit(["ok" => true, "result" => '<span class="nw">' . join(',</span> <span class="nw">', $result) . '</span>']);
+            return ["ok" => true, "result" => '<span class="nw">' . join(',</span> <span class="nw">', $result) . '</span>'];
         }
     }
 }

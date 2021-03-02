@@ -21,14 +21,14 @@ class TagAnno_API {
     static function set(Contact $user, Qrequest $qreq) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
-            json_exit(["ok" => false, "error" => $tagger->error_html]);
+            return ["ok" => false, "error" => $tagger->error_html];
         }
         if (!$user->can_change_tag_anno($tag)) {
-            json_exit(["ok" => false, "error" => "Permission error."]);
+            return ["ok" => false, "error" => "Permission error."];
         }
         $reqanno = json_decode($qreq->anno ?? "");
         if (!is_object($reqanno) && !is_array($reqanno)) {
-            json_exit(["ok" => false, "error" => "Bad request."]);
+            return ["ok" => false, "error" => "Bad request."];
         }
         $q = $qv = $errors = $errf = $inserts = [];
         $next_annoid = $user->conf->fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
@@ -37,7 +37,7 @@ class TagAnno_API {
             if (!is_object($anno)
                 || !isset($anno->annoid)
                 || (!is_int($anno->annoid) && !preg_match('/^n/', $anno->annoid))) {
-                json_exit(["ok" => false, "error" => "Bad request."]);
+                return ["ok" => false, "error" => "Bad request."];
             }
             if (isset($anno->deleted) && $anno->deleted) {
                 if (is_int($anno->annoid)) {
@@ -74,7 +74,7 @@ class TagAnno_API {
         }
         // return error if any
         if (!empty($errors)) {
-            json_exit(["ok" => false, "error" => join("<br>", $errors), "errf" => $errf]);
+            return ["ok" => false, "error" => join("<br>", $errors), "errf" => $errf];
         }
         // apply changes
         if (!empty($q)) {

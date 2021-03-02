@@ -16,7 +16,7 @@ if ($Me->contactId && $Me->is_disabled()) {
 $Conf->header("Deadlines", "deadlines");
 
 if ($Viewer->privChair) {
-    echo "<p>As PC chair, you can <a href='", hoturl("settings"), "'>change the deadlines</a>.</p>\n";
+    echo "<p>As PC chair, you can <a href=\"", $Conf->hoturl("settings"), "\">change the deadlines</a>.</p>\n";
 }
 
 echo "<dl>\n";

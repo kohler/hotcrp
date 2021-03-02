@@ -112,13 +112,15 @@ class JsonResult {
             $this->content = $values;
         }
     }
+    /** @return JsonResult */
     static function make($jr, $arg2 = null) {
-        if (is_int($jr)) {
-            $jr = new JsonResult($jr, $arg2);
-        } else if (!($jr instanceof JsonResult)) {
-            $jr = new JsonResult($jr);
+        if ($jr instanceof JsonResult) {
+            return $jr;
+        } else if (is_int($jr)) {
+            return new JsonResult($jr, $arg2);
+        } else {
+            return new JsonResult($jr);
         }
-        return $jr;
     }
     function export_errors() {
         if (isset($this->content["error"])) {
@@ -130,6 +132,7 @@ class JsonResult {
             }
         }
     }
+    /** @param bool $validated */
     function emit($validated) {
         if ($this->status) {
             if (!isset($this->content["ok"])) {
@@ -157,8 +160,8 @@ class JsonResult {
 class JsonResultException extends Exception {
     /** @var JsonResult */
     public $result;
-    /** @var bool */
-    static public $capturing = false;
+    /** @var int */
+    static public $capturing = 0;
     /** @param JsonResult $j */
     function __construct($j) {
         $this->result = $j;
@@ -168,7 +171,7 @@ class JsonResultException extends Exception {
 function json_exit($json, $arg2 = null) {
     global $Qreq;
     $json = JsonResult::make($json, $arg2);
-    if (JsonResultException::$capturing) {
+    if (JsonResultException::$capturing > 0) {
         throw new JsonResultException($json);
     } else {
         $json->emit($Qreq && $Qreq->valid_token());

@@ -519,23 +519,14 @@ function xassert_assign_fail($who, $what, $override = false) {
 
 /** @param Contact $user
  * @param ?PaperInfo $prow
- * @return object */
+ * @return array */
 function call_api($fn, $user, $qreq, $prow) {
     if (!($qreq instanceof Qrequest)) {
         $qreq = new Qrequest("POST", $qreq);
+        $qreq->approve_token();
     }
-    $uf = $user->conf->api($fn);
-    xassert($uf);
-    Conf::xt_resolve_require($uf);
-    JsonResultException::$capturing = true;
-    $result = null;
-    try {
-        $result = (object) call_user_func($uf->callback, $user, $qreq, $prow, $uf);
-    } catch (JsonResultException $jre) {
-        $result = (object) $jre->result;
-    }
-    JsonResultException::$capturing = false;
-    return $result;
+    $jr = $user->conf->call_api($fn, $user, $qreq, $prow);
+    return $jr->content;
 }
 
 /** @param int|PaperInfo $prow

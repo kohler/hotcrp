@@ -4827,7 +4827,8 @@ class Conf {
         $this->_xt_allow_callback = null;
         return self::xt_enabled($uf) ? $uf : null;
     }
-    private function call_api($fn, $uf, Contact $user, Qrequest $qreq, $prow) {
+    /** @return JsonResult */
+    private function call_api_on($uf, $fn, Contact $user, Qrequest $qreq, $prow) {
         $method = $qreq->method();
         if ($method !== "GET"
             && $method !== "HEAD"
@@ -4852,8 +4853,15 @@ class Conf {
         } else if (!is_string($uf->callback)) {
             return new JsonResult(404, "Function not found.");
         } else {
-            self::xt_resolve_require($uf);
-            return call_user_func($uf->callback, $user, $qreq, $prow, $uf);
+            ++JsonResultException::$capturing;
+            try {
+                self::xt_resolve_require($uf);
+                $j = call_user_func($uf->callback, $user, $qreq, $prow, $uf);
+            } catch (JsonResultException $ex) {
+                $j = $ex->result;
+            }
+            --JsonResultException::$capturing;
+            return JsonResult::make($j);
         }
     }
     static function paper_error_json_result($whynot) {
@@ -4870,25 +4878,18 @@ class Conf {
         }
         return new JsonResult($status, $result);
     }
+    function call_api($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+        // XXX precondition: $user->can_view_paper($prow) || !$prow
+        $uf = $this->api($fn, $user, $qreq->method());
+        return $this->call_api_on($uf, $fn, $user, $qreq, $prow);
+    }
     function call_api_exit($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow
         $uf = $this->api($fn, $user, $qreq->method());
         if ($uf && $qreq->redirect && ($uf->redirect ?? false)
             && preg_match('/\A(?![a-z]+:|\/)./', $qreq->redirect)) {
-            try {
-                JsonResultException::$capturing = true;
-                $j = $this->call_api($fn, $uf, $user, $qreq, $prow);
-            } catch (JsonResultException $ex) {
-                $j = $ex->result;
-            }
-            if ($j instanceof JsonResult) {
-                $a = $j->content;
-            } else if (is_object($j)) {
-                $a = get_object_vars($j);
-            } else {
-                assert(is_associative_array($j));
-                $a = $j;
-            }
+            $j = $this->call_api_on($uf, $fn, $user, $qreq, $prow);
+            $a = $j->content;
             if (($x = $a["error"] ?? null)) { // XXX many instances of `error` are html
                 Conf::msg_error(htmlspecialchars($x));
             } else if (($x = $a["error_html"] ?? null)) {
@@ -4898,7 +4899,7 @@ class Conf {
             }
             Navigation::redirect_site($qreq->redirect);
         } else {
-            json_exit($this->call_api($fn, $uf, $user, $qreq, $prow));
+            json_exit($this->call_api_on($uf, $fn, $user, $qreq, $prow));
         }
     }
 
