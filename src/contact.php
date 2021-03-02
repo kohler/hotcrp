@@ -2415,10 +2415,14 @@ class Contact {
                 if ($this->is_manager()) {
                     $search = new PaperSearch($this, "re:pending-approval OR (has:proposal admin:me) HIGHLIGHT:pink re:pending-my-approval HIGHLIGHT:green re:pending-approval HIGHLIGHT:yellow (has:proposal admin:me)");
                     if (($hmap = $search->highlights_by_paper_id())) {
-                        $colors = array_unique(call_user_func_array("array_merge", array_values($hmap)));
-                        foreach (["green", "pink", "yellow"] as $i => $k) {
-                            if (in_array($k, $colors))
-                                $this->_has_approvable |= 1 << $i;
+                        $colors = call_user_func_array("array_merge", array_values($hmap));
+                        if (in_array("pink", $colors)) {
+                            $this->_has_approvable |= 3;
+                        } else if (in_array("green", $colors)) {
+                            $this->_has_approvable |= 1;
+                        }
+                        if (in_array("yellow", $colors)) {
+                            $this->_has_approvable |= 4;
                         }
                     }
                 } else if ($this->is_requester()
@@ -3633,13 +3637,8 @@ class Contact {
      * @param ?int $viewscore
      * @return bool */
     function can_view_review(PaperInfo $prow, $rrow, $viewscore = null) {
-        if (is_int($rrow)) {
-            $viewscore = $rrow;
-            $rrow = null;
-        } else if ($viewscore === null) {
-            $viewscore = VIEWSCORE_AUTHOR;
-        }
         assert(!$rrow || $prow->paperId == $rrow->paperId);
+        $viewscore = $viewscore ?? VIEWSCORE_AUTHOR;
         $rights = $this->rights($prow);
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREV)
             || $rights->reviewType == REVIEW_META
@@ -3767,11 +3766,18 @@ class Contact {
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
      * @return bool */
-    function can_view_review_round(PaperInfo $prow, $rbase = null) {
+    function can_view_review_meta(PaperInfo $prow, $rbase = null) {
         $rights = $this->rights($prow);
         return $rights->can_administer
             || $rights->allow_pc
             || $rights->allow_review;
+    }
+
+    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
+     * @return bool
+     * @deprecated */
+    function can_view_review_round(PaperInfo $prow, $rbase = null) {
+        return $this->can_view_review_meta($prow, $rbase);
     }
 
     /** @return bool */

@@ -1010,7 +1010,7 @@ $blind\n";
             $n .= " #" . $rrow->unparse_ordinal_id();
         }
         if ($rrow->reviewRound
-            && $contact->can_view_review_round($prow, $rrow)) {
+            && $contact->can_view_review_meta($prow, $rrow)) {
             $n .= " [" . $prow->conf->round_name($rrow->reviewRound) . "]";
         }
         $x = [$n . "\n" . str_repeat("=", 75) . "\n"];
@@ -1215,7 +1215,7 @@ $blind\n";
                 $revname = '<span title="' . $rrow->email . '">' . $revname . '</span>';
             }
         }
-        if ($viewer->can_view_review_round($prow, $rrow)) {
+        if ($viewer->can_view_review_meta($prow, $rrow)) {
             $revname .= ($revname ? " " : "") . $rrow->type_icon();
             if ($rrow->reviewRound > 0) {
                 $revname .= ' <span class="revround" title="Review round">'
@@ -1347,7 +1347,7 @@ $blind\n";
         if ($rrow->reviewOrdinal) {
             $rj["ordinal"] = unparse_latin_ordinal($rrow->reviewOrdinal);
         }
-        if ($viewer->can_view_review_round($prow, $rrow)) {
+        if ($viewer->can_view_review_meta($prow, $rrow)) {
             $rj["rtype"] = (int) $rrow->reviewType;
             if (($round = $this->conf->round_name($rrow->reviewRound))) {
                 $rj["round"] = $round;

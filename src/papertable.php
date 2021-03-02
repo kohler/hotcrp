@@ -2141,10 +2141,9 @@ class PaperTable {
 
             // primary/secondary glyph
             $rtype = "";
-            if (($cflttype <= 0 || $admin) && $rr->reviewType > 0) {
+            if ($rr->reviewType > 0 && $user->can_view_review_meta($prow, $rr)) {
                 $rtype = $rr->type_icon();
-                if ($rr->reviewRound > 0
-                    && $user->can_view_review_round($prow, $rr)) {
+                if ($rr->reviewRound > 0) {
                     $rtype .= '&nbsp;<span class="revround" title="Review round">'
                         . htmlspecialchars($conf->round_name($rr->reviewRound))
                         . "</span>";

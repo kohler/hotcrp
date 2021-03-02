@@ -312,7 +312,7 @@ foreach ($requests as $req) {
     if ($req[0] <= 1) {
         $namex .= ' ' . review_type_icon($rrowid->isPC ? REVIEW_PC : REVIEW_EXTERNAL, true);
     }
-    if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow)) {
+    if ($rrow->reviewRound > 0 && $Me->can_view_review_meta($prow, $rrow)) {
         $namex .= '&nbsp;<span class="revround" title="Review round">'
             . htmlspecialchars($Conf->round_name($rrow->reviewRound))
             . "</span>";

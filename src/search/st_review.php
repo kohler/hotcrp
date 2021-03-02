@@ -331,10 +331,12 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                         $this->rfield_scorex = -1;
                         return false;
                     } else {
-                        if ($val == $this->rfield_score1)
+                        if ($val == $this->rfield_score1) {
                             $this->rfield_scorex |= 1;
-                        if ($val == $this->rfield_score2)
+                        }
+                        if ($val == $this->rfield_score2) {
                             $this->rfield_scorex |= 2;
+                        }
                         return true;
                     }
                 } else if ($val) {
