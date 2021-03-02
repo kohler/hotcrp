@@ -1363,7 +1363,7 @@ class UserStatus extends MessageSet {
 
     static function render_country(UserStatus $us, Qrequest $qreq) {
         $t = Countries::selector("country", $qreq->country ?? $us->user->country(), ["id" => "country", "data-default-value" => $us->user->country(), "autocomplete" => $us->autocomplete("country")]) . $us->global_profile_difference("country");
-        $us->render_field("country", "Country", $t);
+        $us->render_field("country", "Country/region", $t);
     }
 
     static function render_follow(UserStatus $us, Qrequest $qreq) {
