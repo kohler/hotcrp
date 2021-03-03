@@ -1761,8 +1761,8 @@ class Formula implements JsonSerializable {
         if ($rsm->review_type()) {
             $es[] = new Equality_Fexpr("==", new RevType_Fexpr, new Constant_Fexpr($rsm->review_type(), Fexpr::FREVTYPE));
         }
-        if ($rsm->round) {
-            $es[] = new In_Fexpr(new ReviewRound_Fexpr, $rsm->round);
+        if ($rsm->round_list !== null) {
+            $es[] = new In_Fexpr(new ReviewRound_Fexpr, $rsm->round_list);
         }
 
         $e1 = empty($es) ? null : $es[0];
