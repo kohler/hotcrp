@@ -144,24 +144,26 @@ class ReviewForm_SettingParser extends SettingParser {
                 }
             } else if ($xs === null || in_array(false, $xs, true)) {
                 return false;
-            } else if (in_array(null, $xs, true)) {
+            } else if ($e->type === "xor" || $e->type === "not" || in_array(null, $xs, true)) {
                 return null;
-            } else if ($e->type === "and") {
-                $res = true;
+            } else if ($e->type === "and" || $e->type === "or") {
+                $res = [];
+                $first = true;
                 foreach ($xs as $x) {
-                    if ($x !== true) {
-                        $res = $res === true ? $x : array_intersect($res, $x);
+                    if (is_array($x)) {
+                        if ($first) {
+                            $res = $x;
+                        } else if ($e->type === "and") {
+                            $res = array_intersect($res, $x);
+                        } else {
+                            $res = array_merge($res, $x);
+                        }
+                        $first = false;
+                    } else if ($x === true && $e->type === "or") {
+                        return true;
                     }
                 }
-                return $res === true ? $res : array_values($res);
-            } else if ($e->type === "or") {
-                $res = [];
-                foreach ($xs as $x) {
-                    $res = $res === true || $x === true ? true : array_merge($res, $x);
-                }
-                return $res === true ? $res : array_values(array_unique($res));
-            } else if ($e->type === "xor" || $e->type === "not") {
-                return null;
+                return $first ? true : array_values(array_unique($res));
             } else {
                 return false;
             }
