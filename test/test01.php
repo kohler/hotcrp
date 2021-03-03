@@ -544,7 +544,7 @@ assert_search_papers($user_chair, "re:huitema", "8 10 13");
 assert_search_papers($user_chair, "re:huitema round:R1", "13");
 assert_search_papers($user_chair, "round:R1", "12 13 17");
 assert_search_papers($user_chair, "round:R1 re:any", "12 13 17");
-assert_search_papers($user_chair, "round:R1 re:>=0", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+assert_search_papers($user_chair, "round:R1:>=0", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
 xassert_assign($Admin, "action,paper,user,round\nclearreview,all,huitema,R1\n", true);
 assert_search_papers($user_chair, "re:huitema", "8 10");
@@ -553,28 +553,28 @@ xassert_assign($Admin, "action,paper,user,round\nprimary,13,huitema,R1\n", true)
 assert_search_papers($user_chair, "round:R1 re:huitema", "13");
 
 xassert_assign($Admin, "action,paper,user,round\nprimary,13,huitema,R2\n", true);
-assert_search_papers($user_chair, "round:R1 re:huitema", "");
-assert_search_papers($user_chair, "round:R2 re:huitema", "13");
+assert_search_papers($user_chair, "round:R1:huitema", "");
+assert_search_papers($user_chair, "round:R2:huitema", "13");
 
 xassert_assign($Admin, "action,paper,user,round\nprimary,13,huitema,:R1\n", true);
-assert_search_papers($user_chair, "round:R1 re:huitema", "");
-assert_search_papers($user_chair, "round:R2 re:huitema", "13");
-assert_search_papers($user_chair, "round:unnamed re:huitema", "8 10");
+assert_search_papers($user_chair, "round:R1:huitema", "");
+assert_search_papers($user_chair, "round:R2:huitema", "13");
+assert_search_papers($user_chair, "round:unnamed:huitema", "8 10");
 
 xassert_assign($Admin, "action,paper,user,round\nprimary,13,huitema,unnamed\n", true);
-assert_search_papers($user_chair, "round:R1 re:huitema", "");
-assert_search_papers($user_chair, "round:R2 re:huitema", "");
-assert_search_papers($user_chair, "round:unnamed re:huitema", "8 10 13");
+assert_search_papers($user_chair, "round:R1:huitema", "");
+assert_search_papers($user_chair, "round:R2:huitema", "");
+assert_search_papers($user_chair, "round:unnamed:huitema", "8 10 13");
 
 xassert_assign($Admin, "action,paper,user,round\nprimary,13,huitema,:R1\n", true);
-assert_search_papers($user_chair, "round:R1 re:huitema", "");
-assert_search_papers($user_chair, "round:R2 re:huitema", "");
-assert_search_papers($user_chair, "round:unnamed re:huitema", "8 10 13");
+assert_search_papers($user_chair, "round:R1:huitema", "");
+assert_search_papers($user_chair, "round:R2:huitema", "");
+assert_search_papers($user_chair, "round:unnamed:huitema", "8 10 13");
 
 xassert_assign($Admin, "action,paper,user,round\nprimary,13,huitema,R1\n", true);
-assert_search_papers($user_chair, "round:R1 re:huitema", "13");
-assert_search_papers($user_chair, "round:R2 re:huitema", "");
-assert_search_papers($user_chair, "round:unnamed re:huitema", "8 10");
+assert_search_papers($user_chair, "round:R1:huitema", "13");
+assert_search_papers($user_chair, "round:R2:huitema", "");
+assert_search_papers($user_chair, "round:unnamed:huitema", "8 10");
 
 // search combinations
 assert_search_papers($user_chair, "re:huitema", "8 10 13");

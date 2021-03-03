@@ -16,12 +16,13 @@ class Conflict_SearchTerm extends SearchTerm {
         $this->ispc = $ispc;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $m = PaperSearch::unpack_comparison($word, $sword->quoted);
-        if (($qr = PaperSearch::check_tautology($m[1])))
+        $a = CountMatcher::unpack_search_comparison($sword->qword);
+        $compar = CountMatcher::unparse_comparison($a[1], $a[2]);
+        if (($qr = PaperSearch::check_tautology($compar))) {
             return $qr;
-        else {
-            $contacts = $srch->matching_uids($m[0], $sword->quoted, $sword->kwdef->pc_only);
-            return new Conflict_SearchTerm($srch->user, $m[1], $contacts, $sword->kwdef->pc_only);
+        } else {
+            $contacts = $srch->matching_uids($a[0], $sword->quoted, $sword->kwdef->pc_only);
+            return new Conflict_SearchTerm($srch->user, $compar, $contacts, $sword->kwdef->pc_only);
         }
     }
     function is_sqlexpr_precise() {
@@ -31,7 +32,7 @@ class Conflict_SearchTerm extends SearchTerm {
         $thistab = "Conflict_" . count($sqi->tables);
         $where = $this->csm->contact_match_sql("$thistab.contactId");
 
-        $compar = $this->csm->simplified_nonnegative_countexpr();
+        $compar = $this->csm->simplified_nonnegative_comparison();
         if ($compar !== ">0" && $compar !== "=0") {
             $sqi->add_table($thistab, ["left join", "(select paperId, count(*) ct from PaperConflict $thistab where $where group by paperId)"]);
             return "coalesce($thistab.ct,0)$compar";
@@ -60,7 +61,7 @@ class Conflict_SearchTerm extends SearchTerm {
         } else if (!$this->user->conf->setting("sub_pcconf")) {
             return $this->test($row, null);
         } else {
-            return ["type" => "pc_conflict", "cids" => $this->csm->contact_set(), "compar" => $this->csm->compar(), "value" => $this->csm->value()];
+            return ["type" => "pc_conflict", "cids" => $this->csm->contact_set(), "compar" => $this->csm->relation(), "value" => $this->csm->value()];
         }
     }
 }

@@ -11,11 +11,11 @@ class DocumentCount_SearchTerm extends Option_SearchTerm {
      * @param int $value */
     function __construct(Contact $user, PaperOption $o, $compar, $value) {
         parent::__construct($user, $o, "documentcount");
-        $this->compar = CountMatcher::comparator_value($compar);
+        $this->compar = CountMatcher::parse_relation($compar);
         $this->value = $value;
     }
     function debug_json() {
-        return [$this->type, $this->option->search_keyword(), CountMatcher::unparse_comparator_value($this->compar), $this->value];
+        return [$this->type, $this->option->search_keyword(), CountMatcher::unparse_relation($this->compar), $this->value];
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_options_columns();
@@ -32,7 +32,7 @@ class DocumentCount_SearchTerm extends Option_SearchTerm {
     }
     function script_expression(PaperInfo $row) {
         if ($this->user->can_view_option($row, $this->option)) {
-            return ["type" => "compar", "child" => [$this->option->present_script_expression(), $this->value], "compar" => CountMatcher::unparse_comparator_value($this->compar)];
+            return ["type" => "compar", "child" => [$this->option->present_script_expression(), $this->value], "compar" => CountMatcher::unparse_relation($this->compar)];
         } else {
             return false;
         }

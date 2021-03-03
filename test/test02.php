@@ -369,6 +369,22 @@ xassert_eqq(SearchSplitter::span_balanced_parens("abc(def g)h)i jk"), 11);
 xassert_eqq(SearchSplitter::span_balanced_parens("abc(def [g)h)i jk"), 12);
 xassert_eqq(SearchSplitter::span_balanced_parens("abc(def sajf"), 12);
 
+// comparison tests
+xassert_eqq(CountMatcher::unpack_comparison("x:2"), ["x", 2, 2.0]);
+xassert_eqq(CountMatcher::unpack_comparison("x:2."), ["x", 2, 2.0]);
+xassert_eqq(CountMatcher::unpack_comparison("x:=2"), ["x", 2, 2.0]);
+xassert_eqq(CountMatcher::unpack_comparison("x: = 2"), ["x", 2, 2.0]);
+xassert_eqq(CountMatcher::unpack_comparison("x:== 2"), ["x", 2, 2.0]);
+xassert_eqq(CountMatcher::unpack_comparison("x:!= 2"), ["x", 5, 2.0]);
+xassert_eqq(CountMatcher::unpack_comparison("x ≠ 2"), ["x", 5, 2.0]);
+xassert_eqq(CountMatcher::unpack_comparison("x:≥ 200"), ["x", 6, 200.0]);
+xassert_eqq(CountMatcher::unpack_comparison("x≥ 200"), ["x", 6, 200.0]);
+xassert_eqq(CountMatcher::unpack_comparison("x 200"), null);
+
+// Review search terms
+xassert_eqq(Review_SearchTerm::split("butt>2:foo:3"), ["butt", ">2", "foo", "3"]);
+xassert_eqq(Review_SearchTerm::split("butt>2:foo:3>=2"), ["butt", ">2", "foo", "3", ">=2"]);
+
 // simplify_whitespace
 xassert_eqq(simplify_whitespace("abc def GEH îjk"), "abc def GEH îjk");
 xassert_eqq(simplify_whitespace("\x7Fabc\x7Fdef       GEH îjk"), "abc def GEH îjk");

@@ -125,8 +125,10 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("re:secondary", "at least one secondary reviewer");
         echo $hth->search_trow("re:external", "at least one external reviewer");
         echo $hth->search_trow("re:primary:fdabek:complete", "“fdabek” has completed a primary review");
-        if ($roundname)
-            echo $hth->search_trow("re:$roundname", "review in round “" . htmlspecialchars($roundname) . "”");
+        if ($roundname) {
+            echo $hth->search_trow("round:$roundname", "review in round “" . htmlspecialchars($roundname) . "”");
+            echo $hth->search_trow("round:{$roundname}:jinyang", "review in round “" . htmlspecialchars($roundname) . "” by reviewer “jinyang”");
+        }
         echo $hth->search_trow("re:auwords<100", "has a review with less than 100 words in author-visible fields");
         if ($hth->conf->setting("rev_tokens")) {
             echo $hth->search_trow("retoken:J88ADNAB", "has a review with token J88ADNAB");

@@ -70,22 +70,23 @@ class Comment_SearchTerm extends SearchTerm {
         ];
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        $m = PaperSearch::unpack_comparison($word, $sword->quoted);
-        if (($qr = PaperSearch::check_tautology($m[1]))) {
+        $a = CountMatcher::unpack_search_comparison($sword->qword);
+        $compar = CountMatcher::unparse_comparison($a[1], $a[2]);
+        if (($qr = PaperSearch::check_tautology($compar))) {
             return $qr;
         }
         $tags = $contacts = null;
-        if (str_starts_with($m[0], "#")
-            && !$srch->conf->pc_tag_exists(substr($m[0], 1))) {
+        if (str_starts_with($a[0], "#")
+            && !$srch->conf->pc_tag_exists(substr($a[0], 1))) {
             $tags = new TagSearchMatcher($srch->user);
-            $tags->add_check_tag(substr($m[0], 1), true);
+            $tags->add_check_tag(substr($a[0], 1), true);
             foreach ($tags->error_texts() as $e) {
                 $srch->warning($e);
             }
-        } else if ($m[0] !== "") {
-            $contacts = $srch->matching_uids($m[0], $sword->quoted, false);
+        } else if ($a[0] !== "") {
+            $contacts = $srch->matching_uids($a[0], $sword->quoted, false);
         }
-        $csm = new ContactCountMatcher($m[1], $contacts);
+        $csm = new ContactCountMatcher($compar, $contacts);
         return new Comment_SearchTerm($srch->user, $csm, $tags, $sword->kwdef);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -111,7 +112,7 @@ class Comment_SearchTerm extends SearchTerm {
         }
         $thistab = "Comments_" . count($sqi->tables);
         $sqi->add_table($thistab, ["left join", "(select paperId, count(commentId) count from PaperComment" . ($where ? " where " . join(" and ", $where) : "") . " group by paperId)"]);
-        return "coalesce($thistab.count,0)" . $this->csm->conservative_nonnegative_countexpr();
+        return "coalesce($thistab.count,0)" . $this->csm->conservative_nonnegative_comparison();
     }
     function test(PaperInfo $row, $rrow) {
         $textless = $this->type_mask === (COMMENTTYPE_DRAFT | COMMENTTYPE_RESPONSE);

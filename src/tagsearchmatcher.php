@@ -227,7 +227,7 @@ class TagSearchMatcher {
         if (($setp = $this->sqlexpr_tagpart($table)) !== null) {
             $s = [$setp];
             foreach ($this->_valm as $valm) {
-                $s[] = "$table.tagIndex" . $valm->countexpr();
+                $s[] = "$table.tagIndex" . $valm->comparison();
             }
             return "(" . join(" and ", $s) . ")";
         } else {

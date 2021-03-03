@@ -1873,7 +1873,7 @@ class Numeric_PaperOption extends PaperOption {
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         if (preg_match('/\A[-+]?(?:\d+|\d+\.\d*|\.\d+)\z/', $sword->cword)) {
-            return new OptionValue_SearchTerm($srch->user, $this, CountMatcher::comparator_value($sword->compar), (float) $sword->cword);
+            return new OptionValue_SearchTerm($srch->user, $this, CountMatcher::parse_relation($sword->compar), (float) $sword->cword);
         } else {
             return null;
         }

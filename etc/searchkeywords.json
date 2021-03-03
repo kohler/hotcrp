@@ -117,7 +117,7 @@
     {   "name": "reprefexpertise", "alias": "pref"   },
     {
         "name": "round",
-        "parse_callback": "ReviewAdjustment_SearchTerm::parse_round"
+        "parse_callback": "Review_SearchTerm::parse_round"
     },
     {
         "name": "rate",

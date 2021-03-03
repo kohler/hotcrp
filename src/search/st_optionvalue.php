@@ -7,11 +7,11 @@ class OptionValue_SearchTerm extends Option_SearchTerm {
     private $compar;
     /** @var int */
     private $value;
-    /** @param int $compar
+    /** @param int $relation
      * @param int|float $value */
-    function __construct(Contact $user, PaperOption $o, $compar, $value) {
+    function __construct(Contact $user, PaperOption $o, $relation, $value) {
         parent::__construct($user, $o, "optionvalue");
-        $this->compar = $compar;
+        $this->compar = $relation;
         $this->value = $value;
     }
     function debug_json() {
@@ -26,7 +26,7 @@ class OptionValue_SearchTerm extends Option_SearchTerm {
     function script_expression(PaperInfo $row) {
         if ($this->user->can_view_option($row, $this->option)) {
             if (($se = $this->option->value_script_expression())) {
-                return ["type" => "compar", "child" => [$se, $this->value], "compar" => CountMatcher::unparse_comparator_value($this->compar)];
+                return ["type" => "compar", "child" => [$se, $this->value], "compar" => CountMatcher::unparse_relation($this->compar)];
             } else {
                 return null;
             }

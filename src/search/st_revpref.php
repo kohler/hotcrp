@@ -3,11 +3,14 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class RevprefSearchMatcher extends ContactCountMatcher {
-    public $preference_match = null;
-    public $expertise_match = null;
+    /** @var ?CountMatcher */
+    public $preference_match;
+    /** @var ?CountMatcher */
+    public $expertise_match;
     public $safe_contacts;
     public $is_any = false;
 
+    /** @param string $countexpr */
     function __construct($countexpr, $contacts, $safe_contacts) {
         parent::__construct($countexpr, $contacts);
         $this->safe_contacts = $safe_contacts;
@@ -18,10 +21,10 @@ class RevprefSearchMatcher extends ContactCountMatcher {
         } else {
             $where = [];
             if ($this->preference_match) {
-                $where[] = "preference" . $this->preference_match->countexpr();
+                $where[] = "preference" . $this->preference_match->comparison();
             }
             if ($this->expertise_match) {
-                $where[] = "expertise" . $this->expertise_match->countexpr();
+                $where[] = "expertise" . $this->expertise_match->comparison();
             }
             return join(" and ", $where);
         }
@@ -133,7 +136,7 @@ class Revpref_SearchTerm extends SearchTerm {
         $q .= " group by paperId";
         $thistab = "Revpref_" . count($sqi->tables);
         $sqi->add_table($thistab, ["left join", "($q)"]);
-        return "coalesce($thistab.count,0)" . $this->rpsm->countexpr();
+        return "coalesce($thistab.count,0)" . $this->rpsm->comparison();
     }
     function test(PaperInfo $row, $rrow) {
         $can_view = $this->user->can_view_preference($row, $this->rpsm->safe_contacts);

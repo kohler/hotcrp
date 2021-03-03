@@ -1353,7 +1353,6 @@ class ReviewRating_SearchAdjustment {
 class ReviewAdjustment_SearchTerm extends SearchTerm {
     /** @var Contact */
     private $user;
-    private $round;
     private $ratings;
     public $negated = false;
     public $used_revadj = false;
@@ -1361,25 +1360,6 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     function __construct(Contact $user) {
         parent::__construct("revadj");
         $this->user = $user;
-    }
-    static function parse_round($word, SearchWord $sword, PaperSearch $srch) {
-        if (!$srch->user->isPC) {
-            $rounds = null;
-        } else if (strcasecmp($word, "none") == 0 || strcasecmp($word, "unnamed") == 0) {
-            $rounds = [0];
-        } else if (strcasecmp($word, "any") == 0) {
-            $rounds = range(1, count($srch->conf->round_list()) - 1);
-        } else {
-            $x = simplify_whitespace($word);
-            $rounds = array_keys(Text::simple_search($x, $srch->conf->round_list()));
-            if (empty($rounds)) {
-                $srch->warning("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
-                return new False_SearchTerm;
-            }
-        }
-        $qv = new ReviewAdjustment_SearchTerm($srch->user);
-        $qv->round = $rounds;
-        return $qv;
     }
     static function parse_rate($word, SearchWord $sword, PaperSearch $srch) {
         if (!$srch->user->can_view_some_review_ratings()) {
@@ -1437,10 +1417,6 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
 
     function merge(ReviewAdjustment_SearchTerm $x = null) {
         $changed = false;
-        if ($x && $this->round === null && $x->round !== null) {
-            $this->round = $x->round;
-            $changed = true;
-        }
         if ($x && $this->ratings === null && $x->ratings !== null) {
             $this->ratings = $x->ratings;
             $changed = true;
@@ -1460,9 +1436,6 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
         return $term->negate_if($this->negated);
     }
     function promote_matcher(ReviewSearchMatcher $rsm) {
-        if ($this->round !== null) {
-            $rsm->adjust_round_list($this->round);
-        }
         if ($this->ratings !== null) {
             $rsm->adjust_ratings($this->ratings);
         }
@@ -1477,9 +1450,6 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
     }
     function apply_negation() {
         if ($this->negated) {
-            if ($this->round !== null) {
-                $this->round = array_diff(array_keys($this->user->conf->round_list()), $this->round);
-            }
             if ($this->ratings !== null) {
                 $this->ratings = new ReviewRating_SearchAdjustment("not", [$this->ratings]);
             }
@@ -1496,20 +1466,12 @@ class ReviewAdjustment_SearchTerm extends SearchTerm {
             $this->apply_negation();
         }
         if ($is_or || $revadj->negated) {
-            if ($this->round !== null) {
-                $revadj->round = array_unique(array_merge($revadj->round, $this->round));
-            }
             if ($this->ratings !== null && $revadj->ratings !== null) {
                 $revadj->ratings = new ReviewRating_SearchAdjustment("or", [$this->ratings, $revadj->ratings]);
             } else if ($this->ratings !== null) {
                 $revadj->ratings = $this->ratings;
             }
         } else {
-            if ($revadj->round !== null && $this->round !== null) {
-                $revadj->round = array_intersect($revadj->round, $this->round);
-            } else if ($this->round !== null) {
-                $revadj->round = $this->round;
-            }
             if ($this->ratings !== null && $revadj->ratings !== null) {
                 $revadj->ratings = new ReviewRating_SearchAdjustment("and", [$this->ratings, $revadj->ratings]);
             } else {
@@ -2106,24 +2068,8 @@ class PaperSearch {
     // including "and", "or", and "not" expressions (which point at other
     // expressions).
 
-    static function unpack_comparison($text, $quoted) {
-        $text = trim($text);
-        $compar = null;
-        if (preg_match('/\A(.*?)([=!<>]=?|≠|≤|≥)\s*(\d+)\z/s', $text, $m)) {
-            $text = $m[1];
-            $compar = $m[2] . $m[3];
-        }
-        if (($text === "any" || $text === "" || $text === "yes") && !$quoted) {
-            return ["", $compar ? : ">0"];
-        } else if (($text === "none" || $text === "no") && !$quoted) {
-            return ["", "=0"];
-        } else if (!$compar && ctype_digit($text)) {
-            return ["", "=" . $text];
-        } else {
-            return [$text, $compar ? : ">0"];
-        }
-    }
-
+    /** @param string $compar
+     * @return ?SearchTerm */
     static function check_tautology($compar) {
         if ($compar === "<0") {
             return new False_SearchTerm;
@@ -2145,7 +2091,11 @@ class PaperSearch {
     }
     /** @return ContactSearch */
     private function _contact_search($type, $word, $quoted, $pc_only) {
-        $type = $type | ($pc_only ? ContactSearch::F_PC : 0)
+        if ($quoted === null
+            && ($quoted = strlen($word) > 2 && str_starts_with($word, "\"") && str_ends_with($word, "\""))) {
+            $word = substr($word, 1, strlen($word) - 2);
+        }
+        $type |= ($pc_only ? ContactSearch::F_PC : 0)
             | ($quoted ? ContactSearch::F_QUOTED : 0)
             | (!$quoted && $this->user->isPC ? ContactSearch::F_TAG : 0);
         $cs = $this->_find_contact_search($type, $word);
@@ -2155,7 +2105,7 @@ class PaperSearch {
         return $cs;
     }
     /** @param string $word
-     * @param bool $quoted
+     * @param ?bool $quoted
      * @param bool $pc_only
      * @return list<int> */
     function matching_uids($word, $quoted, $pc_only) {

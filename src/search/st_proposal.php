@@ -18,16 +18,14 @@ class ReviewRequestSearchMatcher extends ContactCountMatcher {
         $this->round[] = $round;
         return true;
     }
-    function apply_countexpr($word, $default_op = "=") {
-        if (!preg_match('/\A(?:(?:[=!<>]=?|≠|≤|≥|)\d+|any|none|yes|no)\z/', $word)) {
+    function apply_comparison($word) {
+        $a = CountMatcher::unpack_search_comparison($word);
+        if ($a[0] === "") {
+            $this->set_relation_value($a[1], $a[2]);
+            return true;
+        } else {
             return false;
         }
-        if (ctype_digit($word)) {
-            $word = $default_op . $word;
-        }
-        $count = PaperSearch::unpack_comparison($word, false);
-        $this->set_countexpr($count[1]);
-        return true;
     }
     /** @param int $cid */
     function apply_requester($cid) {
@@ -72,11 +70,11 @@ class Proposal_SearchTerm extends SearchTerm {
         $tailre = '(?:\z|:|(?=[=!<>]=?|≠|≤|≥))(.*)\z/s';
         while ($qword !== "") {
             if (preg_match('/\A:?((?:[=!<>]=?|≠|≤|≥|)\d+)' . $tailre, $qword, $m)
-                && $rqsm->apply_countexpr($m[1])) {
+                && $rqsm->apply_comparison($m[1])) {
                 $qword = $m[2];
             } else if (preg_match('/\A(.+?)' . $tailre, $qword, $m)
                        && ($rqsm->apply_round($m[1], $srch->conf)
-                           || $rqsm->apply_countexpr($m[1]))) {
+                           || $rqsm->apply_comparison($m[1]))) {
                 $qword = $m[2];
             } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $qword, $m)) {
                 if (($quoted = $m[1][0] === "\""))
@@ -84,12 +82,12 @@ class Proposal_SearchTerm extends SearchTerm {
                 $contacts = $m[1];
                 $qword = $m[2];
             } else {
-                $rqsm->set_countexpr("<0");
+                $rqsm->set_comparison("<0");
                 break;
             }
         }
 
-        if (($qr = PaperSearch::check_tautology($rqsm->countexpr()))) {
+        if (($qr = PaperSearch::check_tautology($rqsm->comparison()))) {
             $qr->set_float("used_revadj", true);
             return $qr;
         }
@@ -105,7 +103,7 @@ class Proposal_SearchTerm extends SearchTerm {
         // constraints to >= constraints, and ignore <=/</!= constraints).
         // We'll do the precise query later.
         // ">=0" is a useless constraint in SQL-land.
-        if ($this->rqsm->conservative_nonnegative_countexpr() === ">=0") {
+        if ($this->rqsm->conservative_nonnegative_comparison() === ">=0") {
             return "true";
         } else {
             return "exists (select * from ReviewRequest where paperId=Paper.paperId)";
@@ -119,6 +117,6 @@ class Proposal_SearchTerm extends SearchTerm {
         return $this->rqsm->test($n);
     }
     function debug_json() {
-        return ["type" => $this->type, "count" => $this->rqsm->countexpr()];
+        return ["type" => $this->type, "count" => $this->rqsm->comparison()];
     }
 }

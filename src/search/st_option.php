@@ -88,7 +88,7 @@ abstract class Option_SearchTerm extends SearchTerm {
             $sword->cword = $ocontent;
         } else {
             preg_match('/\A(?:[=!<>]=?|≠|≤|≥)?/', $ocontent, $m);
-            $sword->compar = $m[0] === "" ? "" : CountMatcher::canonical_comparator($m[0]);
+            $sword->compar = $m[0] === "" ? "" : CountMatcher::canonical_relation($m[0]);
             $sword->cword = ltrim(substr($ocontent, strlen($m[0])));
         }
 

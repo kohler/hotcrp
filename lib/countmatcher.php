@@ -3,28 +3,108 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class CountMatcher {
-    /** @var string */
-    private $_countexpr;
-    private $allowed = 0;
-    private $value = 0;
+    /** @var int */
+    private $op = 0;
+    /** @var float */
+    private $value = 0.0;
 
-    static public $opmap = array("" => 2, "#" => 2, "=" => 2, "==" => 2,
-                                 "!" => 5, "!=" => 5, "≠" => 5,
-                                 "<" => 1, "<=" => 3, "≤" => 3,
-                                 "≥" => 6, ">=" => 6, ">" => 4);
-    static public $oparray = array(false, "<", "=", "<=", ">", "!=", ">=", false);
+    static public $opmap = ["" => 2, "#" => 2, "=" => 2, "==" => 2,
+                            "!" => 5, "!=" => 5, "≠" => 5,
+                            "<" => 1, "<=" => 3, "≤" => 3,
+                            "≥" => 6, ">=" => 6, ">" => 4];
+    static public $oparray = [null, "<", "=", "<=", ">", "!=", ">=", null];
 
-    /** @param string $countexpr */
-    function __construct($countexpr) {
-        if ((string) $countexpr !== "" && !$this->set_countexpr($countexpr)) {
-            error_log(caller_landmark() . ": bogus countexpr $countexpr");
+    /** @param string $s
+     * @return ?array{string,int,float} */
+    static function unpack_comparison($s) {
+        if (preg_match('/(?::\s*|(?=[=!<>\xE2]))(|[=!<>]=?|≤|≥|≠)\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*\z/', $s, $m)) {
+            $p = rtrim(substr($s, 0, -strlen($m[0])));
+            return [$p, self::$opmap[$m[1]], (float) $m[2]];
+        } else {
+            return null;
         }
     }
-    function set_countexpr($countexpr) {
-        if (preg_match('/\A(|[=!<>]=?|≠|≤|≥)\s*([-+]?(?:\.\d+|\d+\.?\d*))\z/', $countexpr, $m)) {
-            $this->_countexpr = $countexpr;
-            $this->allowed = self::$opmap[$m[1]];
-            $this->value = (float) $m[2];
+    /** @param string $s
+     * @return ?array{string,int,int} */
+    static function unpack_int_comparison($s) {
+        if (preg_match('/(?::\s*|(?=[=!<>\xE2]))(|[=!<>]=?|≤|≥|≠)\s*([-+]?\d+)\s*\z/', $s, $m)) {
+            $p = rtrim(substr($s, 0, -strlen($m[0])));
+            return [$p, self::$opmap[$m[1]], (int) $m[2]];
+        } else {
+            return null;
+        }
+    }
+    /** @param string $s
+     * @return array{string,int,int} */
+    static function unpack_search_comparison($s) {
+        if ($s === "" || $s === "any" || $s === "yes") {
+            return ["", 4, 0];
+        } else if ($s === "none" || $s === "no") {
+            return ["", 2, 0];
+        } else if (preg_match('/(?::\s*|(?=[=!<>\xE2]))(|[=!<>]=?|≤|≥|≠)\s*([-+]?\d+)\s*\z/', $s, $m)) {
+            $p = rtrim(substr($s, 0, -strlen($m[0])));
+            $a = self::$opmap[$m[1]];
+            $v = (int) $m[2];
+        } else if (preg_match('/:\s*(any|none)\s*\z/', $s, $m)) {
+            $p = rtrim(substr($s, 0, -strlen($m[0])));
+            $a = $m[1] === "any" ? 4 : 2;
+            $v = 0;
+        } else if (ctype_digit($s)) {
+            return ["", 4, (int) $s];
+        } else {
+            $p = $s;
+            $a = 4;
+            $v = 0;
+        }
+        if ($p !== "" && $p[0] === "\"" && $p[strlen($p) - 1] === "\"") {
+            $p = substr($p, 1, strlen($p) - 2);
+        } else if ($p === "any") {
+            $p = "";
+        }
+        return [$p, $a, $v];
+    }
+    /** @param string $s
+     * @return ?array{int,float} */
+    static function parse_comparison($s) {
+        if (preg_match('/\A(|[=!<>]=?|≠|≤|≥)\s*([-+]?(?:\d+\.?\d*|\.\d+))\z/', $s, $m)) {
+            return [self::$opmap[$m[1]], (float) $m[2]];
+        } else {
+            return null;
+        }
+    }
+    /** @param int $relation
+     * @param int|float $value
+     * @return string */
+    static function unparse_comparison($relation, $value) {
+        return self::$oparray[$relation] . $value;
+    }
+
+    /** @param string $s */
+    function __construct($s) {
+        if ((string) $s !== "" && !$this->set_comparison($s)) {
+            error_log(caller_landmark() . ": bogus countexpr $s");
+        }
+    }
+    /** @param int $relation
+     * @param int|float $value
+     * @return CountMatcher */
+    static function make($relation, $value) {
+        $cm = new CountMatcher("");
+        $cm->op = $relation;
+        $cm->value = $value;
+        return $cm;
+    }
+    /** @param int $relation
+     * @param float $value */
+    function set_relation_value($relation, $value) {
+        $this->op = $relation;
+        $this->value = $value;
+    }
+    /** @param string $s */
+    function set_comparison($s) {
+        if (($a = self::parse_comparison($s))) {
+            $this->op = $a[0];
+            $this->value = $a[1];
             return true;
         } else {
             return false;
@@ -32,12 +112,12 @@ class CountMatcher {
     }
     /** @return bool */
     function ok() {
-        return $this->allowed !== 0;
+        return $this->op !== 0;
     }
     /** @param int|float $n
      * @return bool */
     function test($n) {
-        return self::compare($n, $this->allowed, $this->value);
+        return self::compare($n, $this->op, $this->value);
     }
     /** @param array<mixed,int|float> $x
      * @return array<mixed,int|float> */
@@ -93,82 +173,74 @@ class CountMatcher {
         }
     }
     /** @return string */
-    function compar() {
-        assert(!!$this->allowed);
-        return self::$oparray[$this->allowed];
+    function relation() {
+        assert(!!$this->op);
+        return self::$oparray[$this->op];
     }
     /** @return int|float */
     function value() {
         return $this->value;
     }
     /** @return string */
-    function countexpr() {
-        assert(!!$this->allowed);
-        return self::$oparray[$this->allowed] . $this->value;
+    function comparison() {
+        assert(!!$this->op);
+        return self::$oparray[$this->op] . $this->value;
     }
     /** @return string */
-    function simplified_nonnegative_countexpr() {
-        if ($this->value === 1.0 && $this->allowed === 6) {
+    function simplified_nonnegative_comparison() {
+        if ($this->value === 1.0 && $this->op === 6) {
             return ">0";
-        } else if (($this->value === 1.0 && $this->allowed === 1)
-                   || ($this->value === 0.0 && $this->allowed === 3)) {
+        } else if (($this->value === 1.0 && $this->op === 1)
+                   || ($this->value === 0.0 && $this->op === 3)) {
             return "=0";
         } else {
-            return $this->countexpr();
+            return $this->comparison();
         }
-
     }
     /** @return string */
-    function conservative_nonnegative_countexpr() {
-        if ($this->allowed & 1) {
+    function conservative_nonnegative_comparison() {
+        if ($this->op & 1) {
             return ">=0";
         } else {
-            return ($this->allowed & 2 ? ">=" : ">") . $this->value;
+            return ($this->op & 2 ? ">=" : ">") . $this->value;
         }
     }
     /** @param string $str
      * @return string */
-    static function negate_countexpr_string($str) {
+    static function flip_comparator($str) {
         $t = new CountMatcher($str);
-        if ($t->allowed) {
-            return self::$oparray[$t->allowed ^ 7] . $t->value;
-        } else {
-            return $str;
-        }
-    }
-    /** @param string $str
-     * @return string */
-    static function flip_countexpr_string($str) {
-        $t = new CountMatcher($str);
-        if ($t->allowed & 5) {
-            return self::$oparray[$t->allowed ^ 5] . $t->value;
+        if ($t->op & 5) {
+            return self::$oparray[$t->op ^ 5] . $t->value;
         } else {
             return $str;
         }
     }
     /** @param string $str
      * @return ?int */
-    static function comparator_value($str) {
+    static function parse_relation($str) {
         return self::$opmap[$str] ?? null;
     }
-    /** @param int $compar
+    /** @param int $relation
      * @return ?string */
-    static function unparse_comparator_value($compar) {
-        return self::$oparray[$compar] ?? null;
+    static function unparse_relation($relation) {
+        return self::$oparray[$relation] ?? null;
     }
     /** @param string $str
      * @return ?string */
-    static function canonical_comparator($str) {
+    static function canonical_relation($str) {
         if (($x = self::$opmap[trim($str)])) {
             return self::$oparray[$x];
         } else {
             return null;
         }
     }
-    /** @param string $countexpr
+    /** @param string $comparison
      * @return ?string */
-    static function canonicalize($countexpr) {
-        $x = new CountMatcher($countexpr);
-        return $x->allowed ? $x->countexpr() : null;
+    static function canonicalize($comparison) {
+        if (($a = self::parse_comparison($comparison))) {
+            return self::$oparray[$a[0]] . $a[1];
+        } else {
+            return null;
+        }
     }
 }

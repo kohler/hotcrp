@@ -210,7 +210,7 @@ class ReviewInfo implements JsonSerializable {
             return null;
         }
         if (str_ends_with($str, "review")) {
-            $str = substr($str, 0, -6);
+            $str = substr($str, 0, $str[strlen($str) - 7] === "-" ? -7 : -6);
         }
         return self::$type_map[$str] ?? false;
     }
