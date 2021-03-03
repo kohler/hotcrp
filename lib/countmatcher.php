@@ -56,8 +56,8 @@ class CountMatcher {
             $a = 4;
             $v = 0;
         }
-        if ($p !== "" && $p[0] === "\"" && $p[strlen($p) - 1] === "\"") {
-            $p = substr($p, 1, strlen($p) - 2);
+        if ($p !== "" && $p[0] === "\"") {
+            $p = SearchWord::unquote($p);
         } else if ($p === "any") {
             $p = "";
         }

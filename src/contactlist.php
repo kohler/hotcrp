@@ -641,11 +641,11 @@ class ContactList {
                 $a = $b = [];
                 if ($c[0]) {
                     $a[] = "{$c[0]} positive";
-                    $b[] = "<a href=\"" . $this->conf->hoturl("search", "q=re:" . urlencode($row->email) . "+rate:good") . "\">+{$c[0]}</a>";
+                    $b[] = "<a href=\"" . $this->conf->hoturl("search", "q=rate:good:" . urlencode($row->email)) . "\">+{$c[0]}</a>";
                 }
                 if ($c[1]) {
                     $a[] = "{$c[1]} negative";
-                    $b[] = "<a href=\"" . $this->conf->hoturl("search", "q=re:" . urlencode($row->email) . "+rate:bad") . "\">&minus;{$c[1]}</a>";
+                    $b[] = "<a href=\"" . $this->conf->hoturl("search", "q=rate:bad:" . urlencode($row->email)) . "\">&minus;{$c[1]}</a>";
                 }
                 return '<span class="hastitle" title="' . join(", ", $a) . '">' . join(" ", $b) . '</span>';
             } else {

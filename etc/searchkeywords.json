@@ -121,7 +121,8 @@
     },
     {
         "name": "rate",
-        "parse_callback": "ReviewAdjustment_SearchTerm::parse_rate", "has": "any"
+        "parse_callback": "Review_SearchTerm::parse_rate",
+        "has": "any"
     },
     {   "name": "rating", "alias": "rate", "deprecated": true   },
     {

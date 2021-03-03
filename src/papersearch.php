@@ -22,18 +22,15 @@ class SearchWord {
      * @param string $source */
     function __construct($qword, $source) {
         $this->source = $source;
-        $this->qword = $this->word = $qword;
-        $this->quoted = $qword !== "" && $qword[0] === "\""
-            && strpos($qword, "\"", 1) === strlen($qword) - 1;
-        if ($this->quoted) {
-            $this->word = substr($qword, 1, -1);
-        }
+        $this->qword = $qword;
+        $this->word = self::unquote($qword);
+        $this->quoted = strlen($qword) !== strlen($this->word);
     }
     /** @param string $text
      * @return string */
     static function quote($text) {
         if ($text === ""
-            || !preg_match('{\A[-A-Za-z0-9_.@/]+\z}', $text)) {
+            || !preg_match('/\A[-A-Za-z0-9_.@\/]+\z/', $text)) {
             $text = "\"" . str_replace("\"", "\\\"", $text) . "\"";
         }
         return $text;
@@ -233,15 +230,6 @@ abstract class SearchTerm {
 
     function debug_json() {
         return $this->type;
-    }
-
-
-    // apply rounds to reviewer searches
-    function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
-        if ($this->get_float("used_revadj") && $revadj) {
-            $revadj->used_revadj = true;
-        }
-        return $this;
     }
 
 
@@ -445,12 +433,6 @@ abstract class Op_SearchTerm extends SearchTerm {
         }
         return ["type" => $this->type, "child" => $a];
     }
-    function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
-        foreach ($this->child as &$qv) {
-            $qv = $qv->adjust_reviews($revadj, $srch);
-        }
-        return $this;
-    }
     function is_sqlexpr_precise() {
         foreach ($this->child as $ch) {
             if (!$ch->is_sqlexpr_precise())
@@ -481,9 +463,6 @@ class Not_SearchTerm extends Op_SearchTerm {
             $qr = new False_SearchTerm;
         } else if ($qv instanceof Not_SearchTerm) {
             $qr = clone $qv->child[0];
-        } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
-            $qr = clone $qv;
-            $qr->negated = !$qr->negated;
         }
         if ($qr) {
             $qr->float = $this->float;
@@ -540,8 +519,6 @@ class And_SearchTerm extends Op_SearchTerm {
                 return $qr;
             } else if ($qv instanceof True_SearchTerm) {
                 $any = true;
-            } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
-                $revadj = $qv->apply($revadj, false);
             } else if ($qv->type === "pn" && $this->type === "space") {
                 if (!$pn) {
                     $newchild[] = $pn = $qv;
@@ -558,24 +535,6 @@ class And_SearchTerm extends Op_SearchTerm {
         return $this->_finish_combine($newchild, $any);
     }
 
-    function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
-        $myrevadj = $used_revadj = null;
-        if ($this->child[0] instanceof ReviewAdjustment_SearchTerm) {
-            $myrevadj = $this->child[0];
-            $used_revadj = $myrevadj->merge($revadj);
-        }
-        foreach ($this->child as &$qv) {
-            if (!($qv instanceof ReviewAdjustment_SearchTerm))
-                $qv = $qv->adjust_reviews($myrevadj ?? $revadj, $srch);
-        }
-        if ($myrevadj && !$myrevadj->used_revadj) {
-            $this->child[0] = $myrevadj->promote($srch);
-            if ($used_revadj) {
-                $revadj->used_revadj = true;
-            }
-        }
-        return $this;
-    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $ff = [];
         foreach ($this->child as $subt) {
@@ -642,8 +601,6 @@ class Or_SearchTerm extends Op_SearchTerm {
                 return self::make_float($this->float);
             } else if ($qv instanceof False_SearchTerm) {
                 // skip
-            } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
-                $revadj = $qv->apply($revadj, true);
             } else if ($qv->type === "pn") {
                 if (!$pn) {
                     $newchild[] = $pn = $qv;
@@ -729,8 +686,6 @@ class Xor_SearchTerm extends Op_SearchTerm {
         foreach ($this->_flatten_children() as $qv) {
             if ($qv instanceof False_SearchTerm) {
                 // skip
-            } else if ($qv instanceof ReviewAdjustment_SearchTerm) {
-                $revadj = $qv->apply($revadj, true);
             } else if ($qv->type === "pn") {
                 if (!$pn) {
                     $newchild[] = $pn = $qv;
@@ -1315,195 +1270,6 @@ class TextMatch_SearchTerm extends SearchTerm {
     }
 }
 
-class ReviewRating_SearchAdjustment {
-    /** @var int|string */
-    private $type;
-    /** @var list<ReviewRating_SearchAdjustment> */
-    private $child;
-    /** @var ?CountMatcher */
-    private $matcher;
-
-    function __construct($type, $child = []) {
-        $this->type = $type;
-        $this->child = $child;
-    }
-    static function make_atom($type, CountMatcher $matcher) {
-        $self = new ReviewRating_SearchAdjustment($type);
-        $self->matcher = $matcher;
-        return $self;
-    }
-    function must_exist() {
-        if ($this->type === "and") {
-            return $this->child[0]->must_exist() || $this->child[1]->must_exist();
-        } else if ($this->type === "or") {
-            return $this->child[0]->must_exist() && $this->child[1]->must_exist();
-        } else if ($this->type === "not") {
-            return false;
-        } else {
-            return !$this->matcher->test(0);
-        }
-    }
-    private function _test($ratings) {
-        if ($this->type === "and") {
-            return $this->child[0]->_test($ratings) && $this->child[1]->_test($ratings);
-        } else if ($this->type === "or") {
-            return $this->child[0]->_test($ratings) || $this->child[1]->_test($ratings);
-        } else if ($this->type === "not") {
-            return !$this->child[0]->_test($ratings);
-        } else {
-            $n = count(array_filter($ratings, function ($r) { return ($r & $this->type) !== 0; }));
-            return $this->matcher->test($n);
-        }
-    }
-    function test(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
-        if ($user->can_view_review_ratings($prow, $rrow, $user->privChair)) {
-            $ratings = $rrow->ratings();
-        } else {
-            $ratings = [];
-        }
-        return $this->_test($ratings);
-    }
-}
-
-class ReviewAdjustment_SearchTerm extends SearchTerm {
-    /** @var Contact */
-    private $user;
-    private $ratings;
-    public $negated = false;
-    public $used_revadj = false;
-
-    function __construct(Contact $user) {
-        parent::__construct("revadj");
-        $this->user = $user;
-    }
-    static function parse_rate($word, SearchWord $sword, PaperSearch $srch) {
-        if (!$srch->user->can_view_some_review_ratings()) {
-            if ($srch->user->isPC && $srch->conf->setting("rev_ratings") == REV_RATINGS_NONE) {
-                $srch->warning("Review ratings are disabled.");
-            }
-            return new False_SearchTerm;
-        }
-        $rate = null;
-        $compar = "=0";
-        if (strcasecmp($word, "none") == 0) {
-            $rate = "any";
-        } else if (preg_match('/\A(.+?)\s*(:?|[=!<>]=?|≠|≤|≥)\s*(\d*)\z/', $word, $m)
-                   && ($m[3] !== "" || $m[2] === "")) {
-            if ($m[3] === "") {
-                $compar = ">0";
-            } else if ($m[2] === "" || $m[2] === ":") {
-                $compar = ($m[3] == 0 ? "=0" : ">=" . $m[3]);
-            } else {
-                $compar = $m[2] . $m[3];
-            }
-            $rate = self::parse_rate_name($m[1]);
-        }
-        if ($rate === null) {
-            $srch->warning("Bad review rating query “" . htmlspecialchars($word) . "”.");
-            return new False_SearchTerm;
-        } else {
-            $qv = new ReviewAdjustment_SearchTerm($srch->user);
-            $qv->ratings = ReviewRating_SearchAdjustment::make_atom($rate, new CountMatcher($compar));
-            return $qv;
-        }
-    }
-    static private function parse_rate_name($s) {
-        if (strcasecmp($s, "any") == 0) {
-            return ReviewInfo::RATING_GOODMASK | ReviewInfo::RATING_BADMASK;
-        } else if ($s === "+" || strcasecmp($s, "good") == 0 || strcasecmp($s, "yes") == 0) {
-            return ReviewInfo::RATING_GOODMASK;
-        } else if ($s === "-" || strcasecmp($s, "bad") == 0 || strcasecmp($s, "no") == 0
-                   || $s === "\xE2\x88\x92" /* unicode MINUS */) {
-            return ReviewInfo::RATING_BADMASK;
-        }
-        foreach (ReviewInfo::$rating_bits as $bit => $name) {
-            if (strcasecmp($s, $name) === 0)
-                return $bit;
-        }
-        $x = Text::simple_search($s, ReviewInfo::$rating_options);
-        unset($x[0]); // can't search for “average”
-        if (count($x) == 1) {
-            reset($x);
-            return key($x);
-        } else {
-            return null;
-        }
-    }
-
-    function merge(ReviewAdjustment_SearchTerm $x = null) {
-        $changed = false;
-        if ($x && $this->ratings === null && $x->ratings !== null) {
-            $this->ratings = $x->ratings;
-            $changed = true;
-        }
-        return $changed;
-    }
-    function promote(PaperSearch $srch) {
-        $rsm = new ReviewSearchMatcher;
-        if (in_array($srch->limit(), ["r", "rout", "reviewable"], true)) {
-            $rsm->add_contact($srch->user->contactXid);
-        } else if ($srch->limit() === "req") {
-            $rsm->apply_requester($srch->user->contactXid);
-            $rsm->apply_review_type("external"); // XXX optional PC reviews?
-        }
-        $this->promote_matcher($rsm);
-        $term = new Review_SearchTerm($srch->user, $rsm);
-        return $term->negate_if($this->negated);
-    }
-    function promote_matcher(ReviewSearchMatcher $rsm) {
-        if ($this->ratings !== null) {
-            $rsm->adjust_ratings($this->ratings);
-        }
-        $this->used_revadj = true;
-    }
-    function adjust_reviews(ReviewAdjustment_SearchTerm $revadj = null, PaperSearch $srch) {
-        if ($revadj || $this->get_float("used_revadj")) {
-            return $this;
-        } else {
-            return $this->promote($srch);
-        }
-    }
-    function apply_negation() {
-        if ($this->negated) {
-            if ($this->ratings !== null) {
-                $this->ratings = new ReviewRating_SearchAdjustment("not", [$this->ratings]);
-            }
-            $this->negated = false;
-        }
-    }
-    function apply(ReviewAdjustment_SearchTerm $revadj = null, $is_or = false) {
-        // XXX this is probably not right in fully general cases
-        if (!$revadj) {
-            return $this;
-        }
-        if ($revadj->negated !== $this->negated || ($revadj->negated && $is_or)) {
-            $revadj->apply_negation();
-            $this->apply_negation();
-        }
-        if ($is_or || $revadj->negated) {
-            if ($this->ratings !== null && $revadj->ratings !== null) {
-                $revadj->ratings = new ReviewRating_SearchAdjustment("or", [$this->ratings, $revadj->ratings]);
-            } else if ($this->ratings !== null) {
-                $revadj->ratings = $this->ratings;
-            }
-        } else {
-            if ($this->ratings !== null && $revadj->ratings !== null) {
-                $revadj->ratings = new ReviewRating_SearchAdjustment("and", [$this->ratings, $revadj->ratings]);
-            } else {
-                $revadj->ratings = $this->ratings;
-            }
-        }
-        return $revadj;
-    }
-
-    function sqlexpr(SearchQueryInfo $sqi) {
-        return "true";
-    }
-    function test(PaperInfo $prow, $rrow) {
-        return true;
-    }
-}
-
 class Show_SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         return SearchTerm::make_float(["view" => [$sword->kwdef->name . ":" . $sword->qword]]);
@@ -2055,9 +1821,10 @@ class PaperSearch {
     }
     /** @return ContactSearch */
     private function _contact_search($type, $word, $quoted, $pc_only) {
-        if ($quoted === null
-            && ($quoted = strlen($word) > 2 && str_starts_with($word, "\"") && str_ends_with($word, "\""))) {
-            $word = substr($word, 1, strlen($word) - 2);
+        $xword = $word;
+        if ($quoted === null) {
+            $word = SearchWord::unquote($word);
+            $quoted = strlen($word) !== strlen($xword);
         }
         $type |= ($pc_only ? ContactSearch::F_PC : 0)
             | ($quoted ? ContactSearch::F_QUOTED : 0)
@@ -2646,9 +2413,7 @@ class PaperSearch {
             if ($this->q === "re:me") {
                 $this->_qe = new Limit_SearchTerm($this->user, $this->user, "r");
             } else if (($qe = $this->_search_expression($this->q))) {
-                // parse and clean the query
-                // apply review rounds (top down, needs separate step)
-                $this->_qe = $qe->adjust_reviews(null, $this);
+                $this->_qe = $qe;
             } else {
                 $this->_qe = new True_SearchTerm;
             }
@@ -3394,7 +3159,7 @@ class PaperSearch {
         }
         if ($this->user->is_reviewer() && $this->conf->has_rounds()
             && (!$category || $category === "round")) {
-            $res[] = array("pri" => -1, "nosort" => true, "i" => ["round:any", "round:none"]);
+            $res[] = ["pri" => -1, "nosort" => true, "i" => ["round:any", "round:none"]];
             $rlist = array();
             foreach ($this->conf->round_list() as $rnum => $round) {
                 if ($rnum && $round !== ";") {
@@ -3417,7 +3182,7 @@ class PaperSearch {
             }
         }
         if ((!$category || $category === "style") && $this->user->can_view_tags()) {
-            $res[] = array("pri" => -1, "nosort" => true, "i" => array("style:any", "style:none", "color:any", "color:none"));
+            $res[] = ["pri" => -1, "nosort" => true, "i" => ["style:any", "style:none", "color:any", "color:none"]];
             foreach ($this->conf->tags()->canonical_colors() as $t) {
                 $res[] = "style:$t";
                 if ($this->conf->tags()->is_known_style($t, TagMap::STYLE_BG)) {

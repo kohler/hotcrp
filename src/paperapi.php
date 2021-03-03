@@ -126,12 +126,12 @@ class PaperApi {
         $editable = $user->can_rate_review($prow, $rrow);
         if ($qreq->method() !== "GET") {
             if (!isset($qreq->user_rating)
-                || ($rating = ReviewInfo::parse_rating($qreq->user_rating)) === false) {
+                || ($rating = ReviewInfo::parse_rating($qreq->user_rating)) === null) {
                 return new JsonResult(400, "Bad request.");
             } else if (!$editable) {
                 return new JsonResult(403, "Permission error.");
             }
-            if ($rating === null) {
+            if ($rating === 0) {
                 $user->conf->qe("delete from ReviewRating where paperId=? and reviewId=? and contactId=?", $prow->paperId, $rrow->reviewId, $user->contactId);
             } else {
                 $user->conf->qe("insert into ReviewRating set paperId=?, reviewId=?, contactId=?, rating=? on duplicate key update rating=values(rating)", $prow->paperId, $rrow->reviewId, $user->contactId, $rating);

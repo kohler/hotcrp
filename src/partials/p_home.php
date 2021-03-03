@@ -350,10 +350,10 @@ class Home_Partial {
 
             $a = [];
             if ($row[0]) {
-                $a[] = Ht::link(plural($row[0], "positive rating"), $conf->hoturl("search", "q=re:me+rate:good"));
+                $a[] = Ht::link(plural($row[0], "positive rating"), $conf->hoturl("search", "q=rate:good:me"));
             }
             if ($row[1]) {
-                $a[] = Ht::link(plural($row[1], "negative rating"), $conf->hoturl("search", "q=re:me+rate:bad"));
+                $a[] = Ht::link(plural($row[1], "negative rating"), $conf->hoturl("search", "q=rate:bad:me"));
             }
             if (!empty($a)) {
                 echo '<div class="hint g">Your reviews have received ', commajoin($a), '.</div>';

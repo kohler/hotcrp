@@ -178,15 +178,36 @@ class ReviewInfo implements JsonSerializable {
 
     const RATING_GOODMASK = 1;
     const RATING_BADMASK = 126;
+    const RATING_ANYMASK = 127;
     // See also script.js:unparse_ratings
+    /** @var array<int,string>
+     * @readonly */
     static public $rating_options = [
         1 => "good review", 2 => "needs work",
         4 => "too short", 8 => "too vague", 16 => "too narrow",
         32 => "disrespectful", 64 => "not correct"
     ];
+    /** @var array<int,string>
+     * @readonly */
     static public $rating_bits = [
-        1 => "good", 2 => "bad", 4 => "short", 8 => "vague",
+        1 => "good", 2 => "needswork", 4 => "short", 8 => "vague",
         16 => "narrow", 32 => "disrespectful", 64 => "wrong"
+    ];
+    /** @var list<string>
+     * @readonly */
+    static public $rating_match_strings = [
+        "good", "good-review", "goodreview",
+        "needs-work", "needswork", "needs", "work",
+        "too-short", "tooshort", "short",
+        "too-vague", "toovague", "vague",
+        "too-narrow", "toonarrow", "narrow",
+        "disrespectful", "respect", "bias", "biased",
+        "not-correct", "incorrect", "notcorrect", "wrong"
+    ];
+    /** @var list<int>
+     * @readonly */
+    static public $rating_match_bits = [
+        1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 8, 8, 8, 16, 16, 16, 32, 32, 32, 32, 64, 64, 64, 64
     ];
 
     static private $type_map = [
@@ -714,6 +735,8 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
+    /** @param int $rating
+     * @return string */
     static function unparse_rating($rating) {
         if (isset(self::$rating_bits[$rating])) {
             return self::$rating_bits[$rating];
@@ -721,25 +744,56 @@ class ReviewInfo implements JsonSerializable {
             return "none";
         } else {
             $a = [];
-            foreach (self::$rating_bits as $k => $v)
+            foreach (self::$rating_bits as $k => $v) {
                 if ($rating & $k)
                     $a[] = $v;
+            }
             return join(" ", $a);
         }
     }
 
+    /** @param string $s
+     * @return ?int */
     static function parse_rating($s) {
         if (ctype_digit($s)) {
             $n = intval($s);
-            if ($n >= 0 && $n < 127)
-                return $n ? : null;
+            return $n >= 0 && $n <= 127 ? $n : null;
+        } else {
+            $n = 0;
+            foreach (preg_split('/\s+/', $s) as $word) {
+                if (($k = array_search($word, ReviewInfo::$rating_bits)) !== false) {
+                    $n |= $k;
+                } else if ($word !== "" && $word !== "none") {
+                    return null;
+                }
+            }
+            return $n;
         }
+    }
+
+    /** @param string $s
+     * @return ?int */
+    static function parse_rating_search($s) {
+        assert(count(self::$rating_match_bits) === count(self::$rating_match_strings));
         $n = 0;
-        foreach (preg_split('/\s+/', $s) as $word) {
-            if (($k = array_search($word, ReviewInfo::$rating_bits)) !== false) {
-                $n |= $k;
-            } else if ($word !== "" && $word !== "none") {
-                return false;
+        foreach (preg_split('/\s+/', SearchWord::unquote(strtolower($s))) as $w) {
+            if ($w === "none") {
+                return 0;
+            } else if ($w === "any") {
+                $n |= ReviewInfo::RATING_ANYMASK;
+            } else if ($w === "good" || $w === "+") {
+                $n |= ReviewInfo::RATING_GOODMASK;
+            } else if ($w === "bad" || $w === "-" || $w === "\xE2\x88\x92" /* MINUS */) {
+                $n |= ReviewInfo::RATING_BADMASK;
+            } else if ($w !== "") {
+                $re = '/\A' . str_replace('\*', '.*', preg_quote(str_replace("_", "-", $w))) . '\z/';
+                $matches = preg_grep($re, self::$rating_match_strings);
+                if (empty($matches) && strpos($w, "*") === false) {
+                    return null;
+                }
+                foreach ($matches as $i => $m) {
+                    $n |= self::$rating_match_bits[$i];
+                }
             }
         }
         return $n;

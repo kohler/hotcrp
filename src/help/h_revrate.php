@@ -34,9 +34,9 @@ their reviews.</p>
   never shows review ratings to authors.</p>
 
 <p>To find which of your reviews might need work, simply ",
-$hth->search_link("search for “rate:bad”", "rate:bad"), ".
+$hth->search_link("search for “rate:bad:me”", "rate:bad:me"), ".
 To find all reviews with positive ratings, ",
-$hth->search_link("search for “re:any&nbsp;rate:good”", "re:any rate:good"), ".
+$hth->search_link("search for “rate:good”", "rate:good"), ".
 You may also search for reviews with specific ratings; for instance, ",
 $hth->search_link("search for “rate:short”", "rate:short"), ".</p>";
 
