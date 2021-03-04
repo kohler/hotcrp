@@ -4203,11 +4203,11 @@ handle_ui.on("js-revrating", function () {
                 $rr.find(".revrating-choice").each(function () {
                     var bit = this.getAttribute("data-revrating-bit");
                     if (ct[bit]) {
-                        this.lastChild.innerText = " " + ct[bit];
+                        this.lastChild.textContent = " " + ct[bit];
                         removeClass(this, "fx");
                         removeClass(this, "revrating-unused");
                     } else {
-                        this.lastChild.innerText = "";
+                        this.lastChild.textContent = "";
                         bit >= 2 && addClass(this, "fx");
                         addClass(this, "revrating-unused");
                     }
