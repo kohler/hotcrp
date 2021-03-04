@@ -134,7 +134,7 @@ class Keywords_HelpTopic {
             echo $hth->search_trow("retoken:J88ADNAB", "has a review with token J88ADNAB");
         }
         if ($hth->conf->setting("rev_ratings") != REV_RATINGS_NONE) {
-            echo $hth->search_trow("rate:good", "has a positively-rated review (“rate:bad” and “rate:bias” also work)");
+            echo $hth->search_trow("rate:good", "has a positively-rated review (“rate:bad”, “rate:biased”, etc. also work)");
             echo $hth->search_trow("rate:good:me", "has a positively-rated review by you");
         }
 
