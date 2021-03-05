@@ -125,65 +125,42 @@ class ReviewForm_SettingParser extends SettingParser {
      * @param bool $is_error */
     static function validate_condition(SettingValues $sv, $expr, $xpos, $is_error) {
         $ps = new PaperSearch($sv->conf->root_user(), $expr);
-        $ok = $ps->term()->visit(function ($e, $xs) {
-            if ($e->type === "t") {
-                return true;
-            } else if ($e->type === "f") {
-                return [];
-            } else if ($e instanceof Review_SearchTerm) {
-                $rsm = $e->review_matcher();
-                $sens = $rsm->sensitivity();
-                if ($sens === ReviewSearchMatcher::HAS_ROUND) {
-                    return $rsm->test(1) ? $rsm->round_list : null;
-                } else if ($sens === 0) {
-                    return $rsm->test(1) ? true : [];
-                } else if (!($sens & ~(ReviewSearchMatcher::HAS_ROUND | ReviewSearchMatcher::HAS_RTYPE))) {
-                    return null;
-                } else {
-                    return false;
-                }
-            } else if ($xs === null || in_array(false, $xs, true)) {
-                return false;
-            } else if ($e->type === "xor" || $e->type === "not" || in_array(null, $xs, true)) {
-                return null;
-            } else if ($e->type === "and" || $e->type === "or") {
-                $res = [];
-                $first = true;
-                foreach ($xs as $x) {
-                    if (is_array($x)) {
-                        if ($first) {
-                            $res = $x;
-                        } else if ($e->type === "and") {
-                            $res = array_intersect($res, $x);
-                        } else {
-                            $res = array_merge($res, $x);
-                        }
-                        $first = false;
-                    } else if ($x === true && $e->type === "or") {
-                        return true;
-                    }
-                }
-                return $first ? true : array_values(array_unique($res));
-            } else {
-                return false;
-            }
-        });
         if ($ps->has_problem()) {
             $sv->warning_at("rf_{$xpos}_ecs", join("<br>", $ps->problem_texts()));
             $sv->warning_at("rf_{$xpos}_ec");
         }
-        if ($ok === false) {
+        $ok = true;
+        $round_list = [];
+        foreach ($ps->term()->preorder() as $e) {
+            if ($e instanceof Review_SearchTerm) {
+                $rsm = $e->review_matcher();
+                if ($rsm->sensitivity() === ReviewSearchMatcher::HAS_ROUND
+                    && $round_list !== null
+                    && $rsm->test(1)) {
+                    $round_list = array_merge($round_list, $rsm->round_list);
+                } else if ($rsm->sensitivity() & ~(ReviewSearchMatcher::HAS_ROUND | ReviewSearchMatcher::HAS_RTYPE)) {
+                    $ok = false;
+                } else {
+                    $round_list = null;
+                }
+            } else if (!in_array($e->type, ["xor", "not", "and", "or"])) {
+                $ok = false;
+            } else if ($e->type !== "or") {
+                $round_list = null;
+            }
+        }
+        if (!$ok) {
             $method = $is_error ? "error_at" : "warning_at";
             $sv->$method("rf_{$xpos}_ecs", "That search is not supported here. (Not all search keywords are supported for review field conditions.)");
             $sv->$method("rf_{$xpos}_ec");
             return 0;
-        } else if ($ok === true) {
+        } else if ($ps->term() instanceof True_SearchTerm) {
             return 0;
-        } else if ($ok === null || $ok === []) {
+        } else if ($round_list === null) {
             return $ps->term();
         } else {
             $n = 0;
-            foreach ($ok as $i) {
+            foreach ($round_list as $i) {
                 $n |= 1 << $i;
             }
             return $n;

@@ -286,6 +286,11 @@ abstract class SearchTerm {
         return $visitor($this, null);
     }
 
+    /** @return Generator<SearchTerm> */
+    function preorder() {
+        yield $this;
+    }
+
 
     /** @return null|bool|array{type:string} */
     function script_expression(PaperInfo $row) {
@@ -446,6 +451,14 @@ abstract class Op_SearchTerm extends SearchTerm {
             $x[] = $ch->visit($visitor);
         }
         return $visitor($this, $x);
+    }
+    function preorder() {
+        yield $this;
+        foreach ($this->child as $ch) {
+            foreach ($ch->preorder() as $chx) {
+                yield $chx;
+            }
+        }
     }
 }
 
