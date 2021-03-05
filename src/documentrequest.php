@@ -280,7 +280,7 @@ class DocumentRequest implements JsonSerializable {
                         && $lastr[0] !== null
                         && $lastr[1] !== null
                         && $r1 >= $lastr[0]
-                        && $r1 - $lastr[1] <= 500) {
+                        && $r1 - $lastr[1] <= 100) {
                         $nr = count($opts["range"]);
                         $opts["range"][$nr - 1][1] = $lastr[1] = $r2;
                     } else {
