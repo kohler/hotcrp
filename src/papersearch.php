@@ -675,22 +675,18 @@ class Xor_SearchTerm extends Op_SearchTerm {
         parent::__construct("xor");
     }
     protected function _finish() {
-        $pn = null;
+        $negate = false;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
             if ($qv instanceof False_SearchTerm) {
                 // skip
-            } else if ($qv->type === "pn") {
-                if (!$pn) {
-                    $newchild[] = $pn = $qv;
-                } else {
-                    $pn->merge($qv);
-                }
+            } else if ($qv instanceof True_SearchTerm) {
+                $negate = !$negate;
             } else {
                 $newchild[] = $qv;
             }
         }
-        return $this->_finish_combine($newchild, false);
+        return $this->_finish_combine($newchild, false)->negate_if($negate);
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
