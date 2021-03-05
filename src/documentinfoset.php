@@ -430,7 +430,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 $sz += fwrite($out, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
                 $filesize = $doc->size();
-                $sz += self::readfile_subrange($out, 0, $filesize, 0, $f, $filesize);
+                $sz += Filer::readfile_subrange($out, 0, $filesize, 0, $f, $filesize);
             } else {
                 $sz += fwrite($out, $doc->content());
             }
@@ -464,48 +464,6 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         ], $this->conf);
     }
     /** @param resource $out
-     * @param int $r0 - start of desired range
-     * @param int $r1 - end of desired range
-     * @param int $p0 - start of object
-     * @param string $s - object
-     * @return int */
-    static function echo_subrange($out, $r0, $r1, $p0, $s) {
-        $sz = strlen($s);
-        $p1 = $p0 + $sz;
-        if ($p1 <= $r0 || $r1 <= $p0 || $p0 === $p1) {
-            return $sz;
-        } else if ($r0 <= $p0 && $p1 <= $r1) {
-            return fwrite($out, $s);
-        } else {
-            $off = max(0, $r0 - $p0);
-            $len = min($sz, $r1 - $p0) - $off;
-            return $off + fwrite($out, substr($s, $off, $len));
-        }
-    }
-    /** @param resource $out
-     * @param int $r0 - start of desired range
-     * @param int $r1 - end of desired range
-     * @param int $p0 - start of object
-     * @param string $fn - object
-     * @param int $sz - length of object
-     * @return int */
-    private static function readfile_subrange($out, $r0, $r1, $p0, $fn, $sz) {
-        $p1 = $p0 + $sz; // - end of object
-        if ($p1 <= $r0 || $r1 <= $p0 || $p0 === $p1) {
-            return $sz;
-        } else if ($r0 <= $p0 && $p1 <= $r1 && $sz < 20000000) {
-            return readfile($fn);
-        } else if (($f = fopen($fn, "rb"))) {
-            $off = max(0, $r0 - $p0);
-            $len = min($sz, $r1 - $p0) - $off;
-            $off += stream_copy_to_stream($f, $out, $len, $off);
-            fclose($f);
-            return $off;
-        } else {
-            return 0;
-        }
-    }
-    /** @param resource $out
      * @param int $r0
      * @param int $r1 */
     private function _write_range($out, $r0, $r1) {
@@ -528,13 +486,13 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $zi = $this->_zipi[$d0];
             $doc = $this->docs[$d0];
             $p0 = $zi->local_offset;
-            $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->localh);
+            $p0 += Filer::echo_subrange($out, $r0, $r1, $p0, $zi->localh);
             if ($zi->compressed !== null) {
-                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $zi->compressed);
+                $p0 += Filer::echo_subrange($out, $r0, $r1, $p0, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
-                $p0 += self::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
+                $p0 += Filer::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
             } else {
-                $p0 += self::echo_subrange($out, $r0, $r1, $p0, $doc->content());
+                $p0 += Filer::echo_subrange($out, $r0, $r1, $p0, $doc->content());
             }
             if ($p0 < min($r1, $zi->local_end_offset())) {
                 throw new Exception("Failure writing {$this->ufn[$d0]}, wrote " . ($p0 - $zi->local_offset) . ", expected " . (min($r1, $zi->local_end_offset()) - $zi->local_offset));
@@ -543,84 +501,49 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         if ($d0 === count($this->docs)) {
             foreach ($this->_zipi as $zi) {
-                self::echo_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
+                Filer::echo_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
             }
         }
     }
     /** @return bool */
     private function _download_directly($opts = []) {
+        $opts["etag"] = "\"" . $this->content_signature() . "\"";
         if (isset($opts["if-none-match"])
-            && $opts["if-none-match"] === "\"" . $this->content_signature() . "\"") {
+            && $opts["if-none-match"] === $opts["etag"]) {
             header("HTTP/1.1 304 Not Modified");
             return true;
-        }
-        if (isset($opts["if-range"])
-            && $opts["if-range"] !== "\"" . $this->content_signature() . "\"") {
-            unset($opts["range"]);
         }
 
         $this->_hotzip_make();
         $filesize = $this->_hotzip_filesize();
 
-        $r0 = 0;
-        $r1 = $filesize;
-        if (isset($opts["range"]) && count($opts["range"]) === 1) {
-            list($range0, $range1) = $opts["range"][0];
-            if ($range0 === null) {
-                $r0 = max(0, $filesize - $range1);
-            } else {
-                $r0 = min($filesize, $range0);
-                if ($range1 !== null) {
-                    $r1 = min($filesize, $range1 + 1);
-                }
-            }
-            if ($r0 >= $r1) {
-                header("HTTP/1.1 416 Range Not Satisfiable");
-                header("Content-Range: bytes */$filesize");
-                return true;
-            }
+        if (!Filer::check_download_opts($filesize, $opts)) {
+            return true;
         }
 
         // Print headers
         if (zlib_get_coding_type() !== false) {
             ini_set("zlib.output_compression", "0");
         }
-        header("Content-Type: " . Mimetype::type_with_charset($this->_mimetype));
-        header("Content-Length: " . ($r1 - $r0));
-        if ($r0 !== 0 || $r1 !== $filesize) {
-            header("HTTP/1.1 206 Partial Content");
-            header("Content-Range: bytes {$r0}-" . ($r1 - 1) . "/$filesize");
-        } else {
+        $mimetype = Mimetype::type_with_charset($this->_mimetype);
+        if (!isset($opts["range"])) {
             if (isset($opts["attachment"])) {
                 $attachment = $opts["attachment"];
             } else {
                 $attachment = !Mimetype::disposition_inline($this->_mimetype);
             }
             header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($this->_filename));
-            header("Accept-Ranges: bytes");
             // reduce likelihood of XSS attacks in IE
             header("X-Content-Type-Options: nosniff");
-            header("ETag: \"" . $this->content_signature() . "\"");
         }
         if ($opts["cacheable"] ?? false) {
             header("Cache-Control: max-age=315576000, private");
             header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
         }
-        if ($r1 - $r0 > 2000000) {
-            header("X-Accel-Buffering: no");
-        }
-        if ($opts["head"] ?? false) {
-            header("HTTP/1.1 204 No Content");
-            return true;
-        }
-        flush();
-        while (@ob_end_flush()) {
-            // do nothing
-        }
-
-        // Print data
         $out = fopen("php://output", "wb");
-        $this->_write_range($out, $r0, $r1);
+        foreach (Filer::download_ranges($filesize, $mimetype, $opts) as $r) {
+            $this->_write_range($out, $r[0], $r[1]);
+        }
         fclose($out);
         return true;
     }

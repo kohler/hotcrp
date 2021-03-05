@@ -1410,12 +1410,13 @@ class DocumentInfo implements JsonSerializable {
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
         if ($this->has_hash()) {
-            header("ETag: \"" . $this->text_hash() . "\"");
+            $opts["etag"] = "\"" . $this->text_hash() . "\"";
         }
 
         // Download or redirect
         if ($s3_accel) {
             header("Content-Type: $mimetype");
+            header("ETag: " . $opts["etag"]);
             $this->conf->s3_docstore()->get_accel_redirect($this->s3_key(), $s3_accel);
         } else if (($path = $this->available_content_file())) {
             Filer::download_file($path, $mimetype, $opts);

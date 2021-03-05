@@ -102,47 +102,185 @@ class Filer {
     static public $tempcounter = 0;
     static public $no_touch;
 
-    // download
-    /** @param string $filename
-     * @param ?string $mimetype
-     * @param array $opts */
-    static function download_file($filename, $mimetype, $opts = []) {
-        // if docstoreAccelRedirect, output X-Accel-Redirect header
-        // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
-        // using SameSite cookies!
-        header("Content-Type: $mimetype");
-        if (($dar = Conf::$main->opt("docstoreAccelRedirect"))
-            && ($dsp = self::docstore_fixed_prefix(Conf::$main->docstore()))
-            && !($opts["no_accel"] ?? false)) {
-            assert(str_ends_with($dsp, "/"));
-            if (str_starts_with($filename, $dsp)
-                && strlen($filename) > strlen($dsp)
-                && $filename[strlen($dsp)] !== "/") {
-                header("X-Accel-Redirect: $dar" . substr($filename, strlen($dsp)));
-                return;
-            }
+    // range handling
+    /** @param resource $out
+     * @param int $r0 - start of desired range
+     * @param int $r1 - end of desired range
+     * @param int $p0 - start of object
+     * @param string $s - object
+     * @return int */
+    static function echo_subrange($out, $r0, $r1, $p0, $s) {
+        $sz = strlen($s);
+        $p1 = $p0 + $sz;
+        if ($p1 <= $r0 || $r1 <= $p0 || $p0 === $p1) {
+            return $sz;
+        } else if ($r0 <= $p0 && $p1 <= $r1) {
+            return fwrite($out, $s);
+        } else {
+            $off = max(0, $r0 - $p0);
+            $len = min($sz, $r1 - $p0) - $off;
+            return $off + fwrite($out, substr($s, $off, $len));
         }
-        // write length header, flush output buffers
+    }
+
+    /** @param resource $out
+     * @param int $r0 - start of desired range
+     * @param int $r1 - end of desired range
+     * @param int $p0 - start of object
+     * @param string $fn - object
+     * @param int $sz - length of object
+     * @return int */
+    static function readfile_subrange($out, $r0, $r1, $p0, $fn, $sz) {
+        $p1 = $p0 + $sz; // - end of object
+        if ($p1 <= $r0 || $r1 <= $p0 || $p0 === $p1) {
+            return $sz;
+        } else if ($r0 <= $p0 && $p1 <= $r1 && $sz < 20000000) {
+            return readfile($fn);
+        } else if (($f = fopen($fn, "rb"))) {
+            $off = max(0, $r0 - $p0);
+            $len = min($sz, $r1 - $p0) - $off;
+            $off += stream_copy_to_stream($f, $out, $len, $off);
+            fclose($f);
+            return $off;
+        } else {
+            return 0;
+        }
+    }
+
+    /** @param int $filesize
+     * @param ?string $etag
+     * @param array &$opts
+     * @return bool */
+    static function check_download_opts($filesize, &$opts) {
+        if (isset($opts["if-range"])
+            && ($opts["etag"] === null || $opts["if-range"] !== $opts["etag"])) {
+            unset($opts["range"]);
+        }
+        if (isset($opts["range"])) {
+            $rs = [];
+            foreach ($opts["range"] as $r) {
+                list($range0, $range1) = $r;
+                if ($range0 === null) {
+                    $r0 = max(0, $filesize - $range1);
+                } else {
+                    $r0 = min($filesize, $range0);
+                    if ($range1 !== null) {
+                        $r1 = min($filesize, $range1 + 1);
+                    }
+                }
+                if ($r0 >= $r1) {
+                    header("HTTP/1.1 416 Range Not Satisfiable");
+                    header("Content-Range: bytes */$filesize");
+                    return false;
+                } else {
+                    $rs[] = [$r0, $r1];
+                }
+            }
+            $opts["range"] = $rs;
+        }
+        return true;
+    }
+
+    static function download_ranges($filesize, $mimetype, $opts) {
+        if (isset($opts["etag"])) {
+            header("ETag: " . $opts["etag"]);
+        }
+        $range = $opts["range"] ?? null;
+        $rangeheader = [];
+        if ($opts["head"] ?? false) {
+            header("HTTP/1.1 204 No Content");
+            header("Content-Type: $mimetype");
+            header("Content-Length: $filesize");
+            header("Accept-Ranges: bytes");
+            return;
+        } else if (!isset($range)) {
+            $outsize = $filesize;
+            header("Content-Type: $mimetype");
+            header("Accept-Ranges: bytes");
+        } else if (count($range) === 1) {
+            $outsize = $range[0][1] - $range[0][0];
+            header("HTTP/1.1 206 Partial Content");
+            header("Content-Type: $mimetype");
+            header("Content-Range: bytes {$range[0][0]}-" . ($range[0][1] - 1) . "/$filesize");
+        } else {
+            $boundary = "HotCRP-" . base64_encode(random_bytes(18));
+            $outsize = 0;
+            foreach ($range as $r) {
+                $rangeheader[] = "--$boundary\r\nContent-Type: $mimetype\r\nContent-Range: bytes {$r[0]}-" . ($r[1] - 1) . "/$filesize\r\n\r\n";
+                $outsize += $r[1] - $r[0];
+            }
+            $rangeheader[] = "--$boundary--\r\n";
+            header("HTTP/1.1 206 Partial Content");
+            header("Content-Type: multipart/byteranges; boundary=$boundary");
+            $outsize += strlen(join("", $rangeheader));
+        }
         if (zlib_get_coding_type() === false) {
-            header("Content-Length: " . filesize($filename));
+            header("Content-Length: $outsize");
+        }
+        if ($outsize > 2000000) {
+            header("X-Accel-Buffering: no");
         }
         flush();
         while (@ob_end_flush()) {
             // do nothing
         }
-        // read file directly to output
-        readfile($filename);
+        if (!isset($range)) {
+            yield [0, $filesize];
+        } else if (count($range) === 1) {
+            yield [$range[0][0], $range[0][1]];
+        } else {
+            for ($i = 0; $i !== count($range); ++$i) {
+                echo $rangeheader[$i];
+                yield [$range[$i][0], $range[$i][1]];
+            }
+            echo $rangeheader[count($range)];
+        }
+    }
+
+    // download
+    /** @param string $filename
+     * @param string $mimetype
+     * @param array $opts */
+    static function download_file($filename, $mimetype, $opts = []) {
+        // if docstoreAccelRedirect, output X-Accel-Redirect header
+        // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
+        // using SameSite cookies!
+        $filesize = filesize($filename);
+        if (self::check_download_opts($filesize, $opts)) {
+            if (($dar = Conf::$main->opt("docstoreAccelRedirect"))
+                && ($dsp = self::docstore_fixed_prefix(Conf::$main->docstore()))
+                && !($opts["no_accel"] ?? false)
+                && !($opts["head"] ?? false)) {
+                assert(str_ends_with($dsp, "/"));
+                if (str_starts_with($filename, $dsp)
+                    && strlen($filename) > strlen($dsp)
+                    && $filename[strlen($dsp)] !== "/") {
+                    if (isset($opts["etag"])) {
+                        header("ETag: " . $opts["etag"]);
+                    }
+                    header("Content-Type: $mimetype");
+                    header("X-Accel-Redirect: $dar" . substr($filename, strlen($dsp)));
+                    return;
+                }
+            }
+            // write length header, flush output buffers
+            $out = fopen("php://output", "wb");
+            foreach (self::download_ranges($filesize, $mimetype, $opts) as $r) {
+                Filer::readfile_subrange($out, $r[0], $r[1], 0, $filename, $filesize);
+            }
+        }
     }
 
     /** @param string $s
      * @param string $mimetype
      * @param array $opts */
     static function download_string($s, $mimetype, $opts = []) {
-        header("Content-Type: $mimetype");
-        if (zlib_get_coding_type() === false) {
-            header("Content-Length: " . strlen($s));
+        if (self::check_download_opts(strlen($s), $opts)) {
+            $out = fopen("php://output", "wb");
+            foreach (self::download_ranges(strlen($s), $mimetype, $opts) as $r) {
+                Filer::echo_subrange($out, $r[0], $r[1], 0, $s);
+            }
         }
-        echo $s;
     }
 
     // hash helpers
