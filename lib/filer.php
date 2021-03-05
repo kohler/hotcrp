@@ -148,7 +148,6 @@ class Filer {
     }
 
     /** @param int $filesize
-     * @param ?string $etag
      * @param array &$opts
      * @return bool */
     static function check_download_opts($filesize, &$opts) {
@@ -182,6 +181,9 @@ class Filer {
         return true;
     }
 
+    /** @param int $filesize
+     * @param string $mimetype
+     * @param array $opts */
     static function download_ranges($filesize, $mimetype, $opts) {
         if (isset($opts["etag"])) {
             header("ETag: " . $opts["etag"]);
@@ -238,7 +240,6 @@ class Filer {
         }
     }
 
-    // download
     /** @param string $filename
      * @param string $mimetype
      * @param array $opts */
