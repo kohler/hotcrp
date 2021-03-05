@@ -159,13 +159,13 @@ class Filer {
         if (isset($opts["range"])) {
             $rs = [];
             foreach ($opts["range"] as $r) {
-                list($range0, $range1) = $r;
-                if ($range0 === null) {
-                    $r0 = max(0, $filesize - $range1);
+                list($r0, $r1) = $r;
+                if ($r0 === null) {
+                    $r0 = max(0, $filesize - $r1);
                 } else {
-                    $r0 = min($filesize, $range0);
-                    if ($range1 !== null) {
-                        $r1 = min($filesize, $range1 + 1);
+                    $r0 = min($filesize, $r1);
+                    if ($r1 !== null) {
+                        $r1 = min($filesize, $r1 + 1);
                     }
                 }
                 if ($r0 >= $r1) {
