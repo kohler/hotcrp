@@ -110,6 +110,7 @@ class Filer {
         // if docstoreAccelRedirect, output X-Accel-Redirect header
         // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
         // using SameSite cookies!
+        header("Content-Type: $mimetype");
         if (($dar = Conf::$main->opt("docstoreAccelRedirect"))
             && ($dsp = self::docstore_fixed_prefix(Conf::$main->docstore()))
             && !($opts["no_accel"] ?? false)) {
@@ -131,6 +132,17 @@ class Filer {
         }
         // read file directly to output
         readfile($filename);
+    }
+
+    /** @param string $s
+     * @param string $mimetype
+     * @param array $opts */
+    static function download_string($s, $mimetype, $opts = []) {
+        header("Content-Type: $mimetype");
+        if (zlib_get_coding_type() === false) {
+            header("Content-Length: " . strlen($s));
+        }
+        echo $s;
     }
 
     // hash helpers

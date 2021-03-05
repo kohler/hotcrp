@@ -763,7 +763,24 @@ class CsvGenerator {
             }
         }
         if ($this->stream !== false) {
-            $this->stream_length += $this->flush($this->stream);
+            $n = 0;
+            if ($this->headerline !== "") {
+                $n += fwrite($this->stream, $this->headerline);
+                $this->flags |= self::FLAG_FLUSHED;
+            }
+            if (!empty($this->lines)) {
+                if ($this->lines_length <= 10000000) {
+                    $n += fwrite($this->stream, join("", $this->lines));
+                } else {
+                    foreach ($this->lines as $line) {
+                        $n += fwrite($this->stream, $line);
+                    }
+                }
+            }
+            $this->headerline = "";
+            $this->lines = [];
+            $this->lines_length = 0;
+            $this->stream_length += $n;
         }
     }
 
@@ -852,17 +869,18 @@ class CsvGenerator {
     }
 
 
-    function download_headers() {
-        assert(($this->flags & self::FLAG_HTTP_HEADERS) === 0);
+    function mimetype_with_charset() {
         if ($this->is_csv()) {
-            header("Content-Type: text/csv; charset=utf-8; header=" . ($this->flags & self::FLAG_HEADERS ? "present" : "absent"));
+            return "text/csv; charset=utf-8; header=" . ($this->flags & self::FLAG_HEADERS ? "present" : "absent");
         } else {
-            header("Content-Type: text/plain; charset=utf-8");
+            return "text/plain; charset=utf-8";
         }
-        $inline = $this->inline;
-        if ($inline === null) {
-            $inline = Mimetype::disposition_inline($this->is_csv() ? "text/csv" : "text/plain");
-        }
+    }
+
+    function export_headers() {
+        assert(($this->flags & self::FLAG_HTTP_HEADERS) === 0);
+        $this->flags |= self::FLAG_HTTP_HEADERS;
+        $inline = $this->inline ?? Mimetype::disposition_inline($this->is_csv() ? "text/csv" : "text/plain");
         $filename = $this->filename;
         if (!$filename) {
             $filename = "data" . $this->extension();
@@ -870,47 +888,17 @@ class CsvGenerator {
         header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=" . mime_quote_string($filename));
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
-        $this->flags |= self::FLAG_HTTP_HEADERS;
-    }
-
-    /** @return int */
-    function flush($stream = null) {
-        $n = 0;
-        if ($stream === null) {
-            $stream = fopen("php://output", "wb");
-        }
-        if ($this->headerline !== "") {
-            $n += fwrite($stream, $this->headerline);
-            $this->flags |= self::FLAG_FLUSHED;
-        }
-        if (!empty($this->lines)) {
-            if ($this->lines_length <= 10000000) {
-                $n += fwrite($stream, join("", $this->lines));
-            } else {
-                foreach ($this->lines as $line) {
-                    $n += fwrite($stream, $line);
-                }
-            }
-        }
-        $this->headerline = "";
-        $this->lines = [];
-        $this->lines_length = 0;
-        return $n;
     }
 
     function download() {
         if (($this->flags & self::FLAG_HTTP_HEADERS) === 0) {
-            $this->download_headers();
+            $this->export_headers();
         }
         if ($this->stream) {
-            $this->flush($this->stream);
-            Filer::download_file($this->stream_filename, $this->is_csv() ? "text/csv" : "text/plain");
+            $this->_flush_stream();
+            Filer::download_file($this->stream_filename, $this->mimetype_with_charset());
         } else {
-            if (!($this->flags & self::FLAG_FLUSHED)
-                && zlib_get_coding_type() === false) {
-                header("Content-Length: " . $this->lines_length);
-            }
-            $this->flush();
+            Filer::download_string($this->unparse(), $this->mimetype_with_charset());
         }
     }
 }

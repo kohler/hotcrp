@@ -180,7 +180,6 @@ function json_exit($json, $arg2 = null) {
 }
 
 function csv_exit(CsvGenerator $csv) {
-    $csv->download_headers();
     $csv->download();
     exit;
 }

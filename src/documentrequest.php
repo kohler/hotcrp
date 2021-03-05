@@ -255,22 +255,9 @@ class DocumentRequest implements JsonSerializable {
     /** @param array $opts
      * @return array */
     static function add_connection_options($opts = []) {
-        $ifnonematch = $range = $ifrange = null;
-        if (function_exists("getallheaders")) {
-            foreach (getallheaders() as $k => $v) {
-                if (strcasecmp($k, "If-None-Match") === 0) {
-                    $ifnonematch = $v;
-                } else if (strcasecmp($k, "Range") === 0) {
-                    $range = $v;
-                } else if (strcasecmp($k, "If-Range") === 0) {
-                    $ifrange = $v;
-                }
-            }
-        } else {
-            $ifnonematch = $_SERVER["HTTP_IF_NONE_MATCH"] ?? null;
-            $range = $_SERVER["HTTP_RANGE"] ?? null;
-            $ifrange = $_SERVER["HTTP_IF_RANGE"] ?? null;
-        }
+        $ifnonematch = $_SERVER["HTTP_IF_NONE_MATCH"] ?? null;
+        $range = $_SERVER["HTTP_RANGE"] ?? null;
+        $ifrange = $_SERVER["HTTP_IF_RANGE"] ?? null;
         if ($ifnonematch !== null && !array_key_exists("if-none-match", $opts)) {
             $opts["if-none-match"] = $ifnonematch;
         }
