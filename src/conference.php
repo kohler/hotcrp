@@ -4810,7 +4810,9 @@ class Conf {
             $k = strtolower($method);
             $methodx = $fj->$k ?? null;
             return $methodx
-                || ($method === "POST" && $methodx === null && ($fj->get ?? false));
+                || (($method === "POST" || $method === "HEAD")
+                    && $methodx === null
+                    && ($fj->get ?? false));
         }
     }
     function make_check_api_json($method) {
