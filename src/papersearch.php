@@ -509,7 +509,7 @@ class And_SearchTerm extends Op_SearchTerm {
         parent::__construct($type);
     }
     protected function _finish() {
-        $pn = $revadj = null;
+        $pn = null;
         $newchild = [];
         $any = false;
         foreach ($this->_flatten_children() as $qv) {
@@ -528,9 +528,6 @@ class And_SearchTerm extends Op_SearchTerm {
             } else {
                 $newchild[] = $qv;
             }
-        }
-        if ($revadj) { // must come first
-            array_unshift($newchild, $revadj);
         }
         return $this->_finish_combine($newchild, $any);
     }
@@ -594,7 +591,7 @@ class Or_SearchTerm extends Op_SearchTerm {
         parent::__construct("or");
     }
     protected function _finish() {
-        $pn = $revadj = null;
+        $pn = null;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
             if ($qv instanceof True_SearchTerm) {
@@ -610,9 +607,6 @@ class Or_SearchTerm extends Op_SearchTerm {
             } else {
                 $newchild[] = $qv;
             }
-        }
-        if ($revadj) {
-            array_unshift($newchild, $revadj);
         }
         return $this->_finish_combine($newchild, false);
     }
@@ -681,7 +675,7 @@ class Xor_SearchTerm extends Op_SearchTerm {
         parent::__construct("xor");
     }
     protected function _finish() {
-        $pn = $revadj = null;
+        $pn = null;
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
             if ($qv instanceof False_SearchTerm) {
@@ -695,9 +689,6 @@ class Xor_SearchTerm extends Op_SearchTerm {
             } else {
                 $newchild[] = $qv;
             }
-        }
-        if ($revadj) {
-            array_unshift($newchild, $revadj);
         }
         return $this->_finish_combine($newchild, false);
     }

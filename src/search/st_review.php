@@ -558,7 +558,6 @@ class Review_SearchTerm extends SearchTerm {
             }
         }
         if (($qr = PaperSearch::check_tautology($rsm->comparison()))) {
-            $qr->set_float("used_revadj", true);
             return $qr;
         }
         if ($contacts !== null && $contacts !== "") {
@@ -666,9 +665,7 @@ class Review_SearchTerm extends SearchTerm {
     private static function impossible_score_match(ReviewField $f, SearchWord $sword, PaperSearch $srch) {
         $r = $f->full_score_range();
         $srch->warning($sword->source_html() . ": {$f->name_html} scores range from {$r[0]} to {$r[1]}.");
-        $t = new False_SearchTerm;
-        $t->set_float("used_revadj", true);
-        return $t;
+        return new False_SearchTerm;
     }
     private static function parse_score(ReviewField $f, $str) {
         if (strcasecmp($str, "none") === 0) {

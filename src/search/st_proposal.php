@@ -88,7 +88,6 @@ class Proposal_SearchTerm extends SearchTerm {
         }
 
         if (($qr = PaperSearch::check_tautology($rqsm->comparison()))) {
-            $qr->set_float("used_revadj", true);
             return $qr;
         }
 
