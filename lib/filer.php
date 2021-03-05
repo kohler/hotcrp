@@ -161,14 +161,14 @@ class Filer {
             foreach ($opts["range"] as $r) {
                 list($r0, $r1) = $r;
                 if ($r0 === null) {
-                    $r0 = max(0, $filesize - $r1);
+                    $r0 = $filesize - $r1;
+                    $r1 = $filesize;
+                } else if ($r1 === null) {
+                    $r1 = $filesize;
                 } else {
-                    $r0 = min($filesize, $r1);
-                    if ($r1 !== null) {
-                        $r1 = min($filesize, $r1 + 1);
-                    }
+                    ++$r1;
                 }
-                if ($r0 >= $r1) {
+                if ($r0 < 0 || $r0 > $filesize || $r1 > $filesize || $r0 >= $r1) {
                     header("HTTP/1.1 416 Range Not Satisfiable");
                     header("Content-Range: bytes */$filesize");
                     return false;
