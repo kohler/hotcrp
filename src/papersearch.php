@@ -1922,13 +1922,13 @@ class PaperSearch {
             $kwdef = $srch->conf->search_keyword($kword, $srch->user);
         }
         if ($kwdef) {
-            if ($kwdef->parse_has_callback ?? null) {
-                $qe = call_user_func($kwdef->parse_has_callback, $word, $sword, $srch);
+            if ($kwdef->parse_has_function ?? null) {
+                $qe = call_user_func($kwdef->parse_has_function, $word, $sword, $srch);
             } else if ($kwdef->has ?? null) {
                 $sword2 = new SearchWord($kwdef->has, $sword->source);
                 $sword2->kwexplicit = true;
                 $sword2->kwdef = $kwdef;
-                $qe = call_user_func($kwdef->parse_callback, $kwdef->has, $sword2, $srch);
+                $qe = call_user_func($kwdef->parse_function, $kwdef->has, $sword2, $srch);
             } else {
                 $qe = null;
             }
@@ -1980,8 +1980,8 @@ class PaperSearch {
         $word = $sword->word;
         $sword->kwexplicit = $kwexplicit;
         $sword->kwdef = $this->conf->search_keyword($keyword, $this->user);
-        if ($sword->kwdef && ($sword->kwdef->parse_callback ?? null)) {
-            $qx = call_user_func($sword->kwdef->parse_callback, $word, $sword, $this);
+        if ($sword->kwdef && ($sword->kwdef->parse_function ?? null)) {
+            $qx = call_user_func($sword->kwdef->parse_function, $word, $sword, $this);
             if ($qx && !is_array($qx)) {
                 $qt[] = $qx;
             } else if ($qx) {
@@ -3229,9 +3229,9 @@ class PaperSearch {
                     || !Conf::xt_enabled($fxj)) {
                     continue;
                 }
-                if (isset($fxj->completion_callback)) {
+                if (isset($fxj->completion_function)) {
                     Conf::xt_resolve_require($fxj);
-                    foreach (call_user_func($fxj->completion_callback, $this->user, $fxj) as $c)
+                    foreach (call_user_func($fxj->completion_function, $this->user, $fxj) as $c)
                         $cats[$c] = true;
                 } else if (isset($fxj->completion) && is_string($fxj->completion)) {
                     $cats[$fxj->completion] = true;

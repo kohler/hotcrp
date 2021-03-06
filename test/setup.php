@@ -138,7 +138,7 @@ class MailChecker {
     }
 }
 MailChecker::add_messagedb(file_get_contents(SiteLoader::find("test/emails.txt")));
-$Conf->add_hook((object) ["event" => "send_mail", "callback" => "MailChecker::send_hook", "priority" => 1000]);
+$Conf->add_hook((object) ["event" => "send_mail", "function" => "MailChecker::send_hook", "priority" => 1000]);
 
 function setup_assignments($assignments, Contact $user) {
     if (is_array($assignments)) {

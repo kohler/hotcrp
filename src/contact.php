@@ -1438,7 +1438,7 @@ class Contact {
         // Add capabilities from arguments
         foreach (preg_split('/\s+/', $text) as $s) {
             if ($s !== "" && ($uf = $this->conf->capability_handler($s))) {
-                call_user_func($uf->callback, $this, $uf, $s);
+                call_user_func($uf->function, $this, $uf, $s);
             }
         }
     }

@@ -4,62 +4,62 @@
         "json_key": "title",
         "form_position": 10, "required": true,
         "type": "intrinsic2", "include_empty": true,
-        "callback": "+Title_PaperOption"
+        "function": "+Title_PaperOption"
     },
     {
         "name": "Submission version", "id": -1008, "final": true,
         "search_keyword": false, "json_key": false,
         "form_position": false, "display_position": 1999,
         "type": "intrinsic2", "include_empty": true,
-        "callback": "+SubmissionVersion_PaperOption"
+        "function": "+SubmissionVersion_PaperOption"
     },
     {
         "name": "Abstract", "id": -1004,
         "json_key": "abstract",
         "form_position": 2001, "display_expand": true,
         "type": "intrinsic2", "include_empty": true,
-        "callback": "+Abstract_PaperOption"
+        "function": "+Abstract_PaperOption"
     },
     {
         "name": "Authors", "id": -1001,
         "json_key": "authors",
         "form_position": 3001, "required": true, "visibility": "nonblind",
         "type": "intrinsic2", "include_empty": true,
-        "callback": "+Authors_PaperOption"
+        "function": "+Authors_PaperOption"
     },
     {
         "name": "Submission anonymity", "id": -1002,
         "json_key": "nonblind",
         "form_position": 3002, "display_position": false,
         "type": "intrinsic2", "include_empty": true,
-        "callback": "+Nonblind_PaperOption"
+        "function": "+Nonblind_PaperOption"
     },
     {
         "name": "Contacts", "id": -1003,
         "json_key": "contacts",
         "form_position": 3050, "display_position": false, "visibility": "conflict",
         "type": "intrinsic2", "include_empty": true,
-        "callback": "+Contacts_PaperOption"
+        "function": "+Contacts_PaperOption"
     },
     {
         "name": "Topics", "id": -1005,
         "json_key": "topics",
         "form_position": 3501, "display_group": "topics",
         "type": "intrinsic2", "include_empty": true,
-        "callback": "+Topics_PaperOption"
+        "function": "+Topics_PaperOption"
     },
     {
         "name": "PC conflicts", "id": -1006,
         "json_key": "pc_conflicts",
         "form_position": 5001, "display_position": false, "visibility": "nonblind",
         "type": "intrinsic2", "include_empty": true,
-        "callback": "+PCConflicts_PaperOption"
+        "function": "+PCConflicts_PaperOption"
     },
     {
         "name": "Collaborators", "id": -1007,
         "json_key": "collaborators",
         "form_position": 5002, "visibility": "nonblind",
         "type": "intrinsic2", "include_empty": true,
-        "callback": "+Collaborators_PaperOption"
+        "function": "+Collaborators_PaperOption"
     }
 ]

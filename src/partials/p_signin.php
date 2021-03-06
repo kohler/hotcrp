@@ -35,7 +35,7 @@ class Signin_Partial {
         if ($qreq->cancel) {
             $info = ["ok" => false];
             foreach ($gx->members("signin/request") as $gj) {
-                $info = call_user_func($gj->signin_callback, $user, $qreq, $info, $gj);
+                $info = call_user_func($gj->signin_function, $user, $qreq, $info, $gj);
             }
             Navigation::redirect();
         } else if ($user->conf->opt("httpAuthLogin")) {
@@ -46,7 +46,7 @@ class Signin_Partial {
             } else if (!$qreq->start) {
                 $info = ["ok" => true];
                 foreach ($gx->members("signin/request") as $gj) {
-                    $info = call_user_func($gj->signin_callback, $user, $qreq, $info, $gj);
+                    $info = call_user_func($gj->signin_function, $user, $qreq, $info, $gj);
                 }
                 if ($info["ok"] || isset($info["redirect"])) {
                     Navigation::redirect($info["redirect"] ?? "");

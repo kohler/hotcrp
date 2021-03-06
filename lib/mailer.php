@@ -456,10 +456,10 @@ class Mailer {
 
             if (!$ok) {
                 $x = null;
-            } else if ($uf->callback[0] === "*") {
-                $x = call_user_func([$this, substr($uf->callback, 1)], $args, $isbool, $uf);
+            } else if ($uf->function[0] === "*") {
+                $x = call_user_func([$this, substr($uf->function, 1)], $args, $isbool, $uf);
             } else {
-                $x = call_user_func($uf->callback, $args, $isbool, $this, $uf);
+                $x = call_user_func($uf->function, $args, $isbool, $this, $uf);
             }
 
             if ($x !== null) {

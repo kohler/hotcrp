@@ -63,9 +63,9 @@ class Responses_SettingParser extends SettingParser {
                 echo ' hidden';
             echo '">';
             foreach ($sv->group_members("responses/properties") as $gj)
-                if (isset($gj->render_response_property_callback)) {
+                if (isset($gj->render_response_property_function)) {
                     Conf::xt_resolve_require($gj);
-                    call_user_func($gj->render_response_property_callback, $sv, $i, $gj);
+                    call_user_func($gj->render_response_property_function, $sv, $i, $gj);
                 }
             echo "</div>\n";
         }

@@ -1669,10 +1669,10 @@ class PaperList implements XtContext {
         $lllgroups = [];
         $whichlll = -1;
         foreach ($gex->members("") as $rf) {
-            if (isset($rf->render_callback)
+            if (isset($rf->render_function)
                 && !str_starts_with($rf->name, "__")
                 && Conf::xt_resolve_require($rf)
-                && ($lllg = call_user_func($rf->render_callback, $this, $qreq, $gex, $rf))) {
+                && ($lllg = call_user_func($rf->render_function, $this, $qreq, $gex, $rf))) {
                 if (is_string($lllg)) {
                     $lllg = [$lllg];
                 }

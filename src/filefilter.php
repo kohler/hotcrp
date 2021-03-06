@@ -73,14 +73,14 @@ class FileFilterJsonExpander {
             && (!isset($fj->id) || is_int($fj->id))
             && isset($fj->name) && is_string($fj->name) && $fj->name !== ""
             && ctype_alnum($fj->name) && !ctype_digit($fj->name)
-            && isset($fj->callback) && is_string($fj->callback)) {
+            && isset($fj->function) && is_string($fj->function)) {
             $ff = null;
-            if ($fj->callback[0] === "+") {
-                $class = substr($fj->callback, 1);
+            if ($fj->function[0] === "+") {
+                $class = substr($fj->function, 1);
                 /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
                 $ff = new $class($this->conf, $fj);
             } else {
-                $ff = call_user_func($fj->callback, $this->conf, $fj);
+                $ff = call_user_func($fj->function, $this->conf, $fj);
             }
             if ($ff) {
                 $ff->id = $fj->id ?? null;

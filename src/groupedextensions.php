@@ -31,7 +31,7 @@ class GroupedExtensions implements XtContext {
                 "__subposition" => ++Conf::$next_xt_subposition
             ];
             if (strpos($fja[2], "::")) {
-                $fj->render_callback = $fja[2];
+                $fj->render_function = $fja[2];
             } else {
                 $fj->alias = $fja[2];
             }
@@ -209,13 +209,17 @@ class GroupedExtensions implements XtContext {
         assert(!isset($this->_callables[$name]));
         $this->_callables[$name] = $callable;
     }
-    function call_callback($cb, $gj) {
+    function call_function($cb, $gj) {
         Conf::xt_resolve_require($gj);
         if (is_string($cb) && $cb[0] === "*") {
             $colons = strpos($cb, ":");
             $cb = [$this->callable(substr($cb, 1, $colons - 1)), substr($cb, $colons + 2)];
         }
         return $cb(...$this->_render_state[0], ...[$gj]);
+    }
+    /** @deprecated */
+    function call_callback($cb, $gj) {
+        return $this->call_function($cb, $gj);
     }
 
     function set_context($options) {
@@ -261,7 +265,7 @@ class GroupedExtensions implements XtContext {
             if (is_string($cleaner) && ($gj = $this->get($cleaner))) {
                 $this->render($gj);
             } else if (is_callable($cleaner)) {
-                $this->call_callback($cleaner, null);
+                $this->call_function($cleaner, null);
             }
         }
         $this->_render_state = array_pop($this->_render_stack);
@@ -285,8 +289,10 @@ class GroupedExtensions implements XtContext {
             echo '>', $gj->title, '</', $this->_render_state[2], ">\n";
             $this->_render_state[1] = $gj->title;
         }
-        if (isset($gj->render_callback)) {
-            return $this->call_callback($gj->render_callback, $gj);
+        if (isset($gj->render_function)) {
+            return $this->call_function($gj->render_function, $gj);
+        } else if (isset($gj->render_callback)) { /* XXX */
+            return $this->call_function($gj->render_callback, $gj);
         } else if (isset($gj->render_html)) {
             echo $gj->render_html;
             return null;

@@ -713,13 +713,13 @@ class Conf {
         $ctmap = $this->capability_type_map();
         $ct_cleanups = [];
         foreach ($ctmap as $ctj) {
-            if ($ctj->cleanup_callback ?? null)
+            if ($ctj->cleanup_function ?? null)
                 $ct_cleanups[] = $ctj->type;
         }
         if (!empty($ct_cleanups)) {
             $result = $this->ql("select * from Capability where timeExpires>0 and timeExpires<? and capabilityType?a", Conf::$now, $ct_cleanups);
             while (($cap = CapabilityInfo::fetch($result, $this, false))) {
-                call_user_func($ctmap[$cap->capabilityType]->cleanup_callback, $cap);
+                call_user_func($ctmap[$cap->capabilityType]->cleanup_function, $cap);
             }
             Dbl::free($result);
         }
@@ -1070,7 +1070,7 @@ class Conf {
         foreach (get_object_vars($xt2) as $k => $v) {
             if (!property_exists($xt1, $k)
                 && $k !== "match"
-                && $k !== "expand_callback")
+                && $k !== "expand_function")
                 $xt1->$k = $v;
         }
     }
@@ -1237,8 +1237,8 @@ class Conf {
             if (!$user) {
                 $user = $this->root_user();
             }
-            if (isset($fxt->expand_callback)) {
-                $r = call_user_func($fxt->expand_callback, $name, $user, $fxt, $m);
+            if (isset($fxt->expand_function)) {
+                $r = call_user_func($fxt->expand_function, $name, $user, $fxt, $m);
             } else {
                 $r = (object) ["name" => $name, "match_data" => $m];
             }
@@ -4704,7 +4704,7 @@ class Conf {
     function _add_search_keyword_json($kwj) {
         if (isset($kwj->name) && is_string($kwj->name)) {
             return self::xt_add($this->_search_keyword_base, $kwj->name, $kwj);
-        } else if (is_string($kwj->match) && is_string($kwj->expand_callback)) {
+        } else if (is_string($kwj->match) && is_string($kwj->expand_function)) {
             $this->_search_keyword_factories[] = $kwj;
             return true;
         } else {
@@ -4852,13 +4852,13 @@ class Conf {
             }
         } else if (!$prow && ($uf->paper ?? false)) {
             return self::paper_error_json_result($qreq->annex("paper_whynot"));
-        } else if (!is_string($uf->callback)) {
+        } else if (!is_string($uf->function)) {
             return new JsonResult(404, "Function not found.");
         } else {
             ++JsonResultException::$capturing;
             try {
                 self::xt_resolve_require($uf);
-                $j = call_user_func($uf->callback, $user, $qreq, $prow, $uf);
+                $j = call_user_func($uf->function, $user, $qreq, $prow, $uf);
             } catch (JsonResultException $ex) {
                 $j = $ex->result;
             }
@@ -4915,8 +4915,8 @@ class Conf {
         }
         if (isset($fj->match)
             && is_string($fj->match)
-            && isset($fj->expand_callback)
-            && is_string($fj->expand_callback)) {
+            && isset($fj->expand_function)
+            && is_string($fj->expand_function)) {
             $this->_paper_column_factories[] = $fj;
             $ok = true;
         }
@@ -4964,10 +4964,10 @@ class Conf {
     // option types
 
     function _add_option_type_json($fj) {
-        $cb = isset($fj->callback) && is_string($fj->callback);
+        $cb = isset($fj->function) && is_string($fj->function);
         if (isset($fj->name) && is_string($fj->name) && $cb) {
             return self::xt_add($this->_option_type_map, $fj->name, $fj);
-        } else if (is_string($fj->match) && (isset($fj->expand_callback) ? is_string($fj->expand_callback) : $cb)) {
+        } else if (is_string($fj->match) && (isset($fj->expand_function) ? is_string($fj->expand_function) : $cb)) {
             $this->_option_type_factories[] = $fj;
             return true;
         } else {
@@ -5005,7 +5005,7 @@ class Conf {
     function _add_capability_json($fj) {
         $ok = false;
         if (isset($fj->match) && is_string($fj->match)
-            && isset($fj->callback) && is_string($fj->callback)) {
+            && isset($fj->function) && is_string($fj->function)) {
             $this->_capability_factories[] = $fj;
             $ok = true;
         }
@@ -5132,7 +5132,7 @@ class Conf {
     // hooks
 
     function _add_hook_json($fj) {
-        if (isset($fj->callback) && is_string($fj->callback)) {
+        if (isset($fj->function) && is_string($fj->function)) {
             if (isset($fj->event) && is_string($fj->event)) {
                 return self::xt_add($this->_hook_map, $fj->event, $fj);
             } else if (isset($fj->match) && is_string($fj->match)) {
@@ -5142,13 +5142,13 @@ class Conf {
         }
         return false;
     }
-    function add_hook($name, $callback = null, $priority = null) {
+    function add_hook($name, $function = null, $priority = null) {
         if ($this->_hook_map === null) {
             $this->hook_map();
         }
-        $fj = is_object($name) ? $name : $callback;
+        $fj = is_object($name) ? $name : $function;
         if (is_string($fj)) {
-            $fj = (object) ["callback" => $fj];
+            $fj = (object) ["function" => $fj];
         }
         if (is_string($name)) {
             $fj->event = $name;
@@ -5206,7 +5206,7 @@ class Conf {
                         $fj->conf = $this;
                         $fj->user = $user;
                         $args[0] = $fj;
-                        $x = call_user_func_array($fj->callback, $args);
+                        $x = call_user_func_array($fj->function, $args);
                         unset($fj->conf, $fj->user);
                         if ($x === false) {
                             return false;

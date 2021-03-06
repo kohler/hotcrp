@@ -18,7 +18,7 @@ class GetDocument_ListAction extends ListAction {
             "title" => "Documents/" . $opt->plural_title(),
             "position" => $opt->display_position(),
             "display_if" => "listhas:" . $opt->field_key(),
-            "callback" => "+GetDocument_ListAction"
+            "function" => "+GetDocument_ListAction"
         ];
     }
     static function expand2(GroupedExtensions $gex) {

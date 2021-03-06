@@ -5,7 +5,7 @@
 require_once("src/initweb.php");
 
 $help_topics = new GroupedExtensions($Me, [
-    '{"name":"topics","title":"Help topics","position":-1000000,"priority":1000000,"render_callback":"show_help_topics"}',
+    '{"name":"topics","title":"Help topics","position":-1000000,"priority":1000000,"render_function":"show_help_topics"}',
     "etc/helptopics.json"
 ], $Conf->opt("helpTopics"));
 

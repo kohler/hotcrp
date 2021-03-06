@@ -1,52 +1,52 @@
 [
     {
         "name": "separator", "title": "Separator", "priority": -1,
-        "display_if": false, "callback": "+Separator_PaperOption"
+        "display_if": false, "function": "+Separator_PaperOption"
     },
     {
         "name": "checkbox", "title": "Checkbox", "position": 100,
-        "callback": "+Checkbox_PaperOption"
+        "function": "+Checkbox_PaperOption"
     },
     {
         "name": "selector", "title": "Selector", "position": 200,
-        "has_selector": true, "callback": "+Selector_PaperOption"
+        "has_selector": true, "function": "+Selector_PaperOption"
     },
     {
         "name": "radio", "title": "Radio buttons", "position": 300,
-        "has_selector": true, "callback": "+Selector_PaperOption"
+        "has_selector": true, "function": "+Selector_PaperOption"
     },
     {
         "name": "numeric", "title": "Numeric", "position": 400,
-        "callback": "+Numeric_PaperOption"
+        "function": "+Numeric_PaperOption"
     },
     {
         "name": "text", "title": "Text", "position": 500,
-        "callback": "+Text_PaperOption"
+        "function": "+Text_PaperOption"
     },
     {
         "name": "text:ds_5", "title": "Multiline text", "position": 550,
-        "callback": "+Text_PaperOption"
+        "function": "+Text_PaperOption"
     },
     {
         "match": "text:ds_(\\d+)",
         "title": "Multiline text", "position": 550,
-        "callback": "+Text_PaperOption", "priority": -1,
-        "expand_callback": "Text_PaperOption::expand"
+        "function": "+Text_PaperOption", "priority": -1,
+        "expand_function": "Text_PaperOption::expand"
     },
     {
         "name": "pdf", "title": "PDF", "position": 600,
-        "callback": "+Document_PaperOption"
+        "function": "+Document_PaperOption"
     },
     {
         "name": "slides", "title": "Slides", "position": 610,
-        "callback": "+Document_PaperOption"
+        "function": "+Document_PaperOption"
     },
     {
         "name": "document", "title": "File upload", "position": 699,
-        "callback": "+Document_PaperOption"
+        "function": "+Document_PaperOption"
     },
     {
         "name": "attachments", "title": "Attachments", "position": 700,
-        "callback": "+Attachments_PaperOption"
+        "function": "+Attachments_PaperOption"
     }
 ]

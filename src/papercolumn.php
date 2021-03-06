@@ -26,12 +26,13 @@ class PaperColumn extends Column {
     /** @param list<string> $decorations
      * @return PaperColumn */
     static function make(Conf $conf, $cj, $decorations = []) {
-        if ($cj->callback[0] === "+") {
-            $class = substr($cj->callback, 1);
+        $fn = $cj->function ?? $cj->callback; /* XXX */
+        if ($fn[0] === "+") {
+            $class = substr($fn, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
             $pc = new $class($conf, $cj);
         } else {
-            $pc = call_user_func($cj->callback, $conf, $cj);
+            $pc = call_user_func($fn, $conf, $cj);
         }
         foreach ($decorations as $decor) {
             $pc->add_decoration($decor);

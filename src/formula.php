@@ -1625,12 +1625,12 @@ class Formula implements JsonSerializable {
         $ff->pos1 = $pos1 = -strlen($t);
         $t = substr($t, strlen($name));
 
-        if ($kwdef->parse_modifier_callback ?? false) {
+        if ($kwdef->parse_modifier_function ?? false) {
             $xt = $name === "#" ? "#" . $t : $t;
             while (preg_match('/\A([.#:](?:"[^"]*(?:"|\z)|[-a-zA-Z0-9_.@!*?~:\/#]+))(.*)/s', $xt, $m)
                    && ($args !== false || !preg_match('/\A\s*\(/s', $m[2]))) {
                 $ff->pos2 = -strlen($m[2]);
-                if (call_user_func($kwdef->parse_modifier_callback, $ff, $m[1], $m[2], $this)) {
+                if (call_user_func($kwdef->parse_modifier_function, $ff, $m[1], $m[2], $this)) {
                     $t = $xt = $m[2];
                 } else {
                     break;
@@ -1654,14 +1654,14 @@ class Formula implements JsonSerializable {
         }
         $ff->pos2 = -strlen($t);
 
-        if (isset($kwdef->callback)) {
-            if ($kwdef->callback[0] === "+") {
-                $class = substr($kwdef->callback, 1);
+        if (isset($kwdef->function)) {
+            if ($kwdef->function[0] === "+") {
+                $class = substr($kwdef->function, 1);
                 /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
                 $e = new $class($ff, $this);
             } else {
                 $before = count($this->_lerrors);
-                $e = call_user_func($kwdef->callback, $ff, $this);
+                $e = call_user_func($kwdef->function, $ff, $this);
                 if (!$e && count($this->_lerrors) === $before) {
                     $this->lerror($ff->pos1, $ff->pos2, "Parse error.");
                 }
@@ -1993,7 +1993,7 @@ class Formula implements JsonSerializable {
                    && preg_match('/\A([A-Za-z][A-Za-z0-9_.@:]*)/is', $t, $m)) {
             $e = $this->_parse_function($t, $m[1], (object) [
                 "name" => $m[1], "args" => true, "optional" => true,
-                "callback" => "Constant_Fexpr::make_error_call"
+                "function" => "Constant_Fexpr::make_error_call"
             ]);
         }
 

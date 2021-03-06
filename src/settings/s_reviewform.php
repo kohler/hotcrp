@@ -186,6 +186,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 }
             }
         } else if ($sv->has_reqv("rf_{$xpos}_rounds")) {
+            // XXX backward compat
             $fj->round_mask = 0;
             foreach (explode(" ", trim($sv->reqv("rf_{$xpos}_rounds"))) as $round_name) {
                 if (strcasecmp($round_name, "all") === 0) {
@@ -227,9 +228,9 @@ class ReviewForm_SettingParser extends SettingParser {
 
         // contents
         foreach ($sv->group_members("reviewfield/properties") as $gj) {
-            if (isset($gj->parse_review_property_callback)) {
+            if (isset($gj->parse_review_property_function)) {
                 Conf::xt_resolve_require($gj);
-                call_user_func($gj->parse_review_property_callback, $sv, $fj, $xpos, $this, $gj);
+                call_user_func($gj->parse_review_property_function, $sv, $fj, $xpos, $this, $gj);
             }
         }
 
@@ -712,9 +713,9 @@ class ReviewForm_SettingRenderer {
             '</div>';
         $rfield = ReviewField::make_template(true, $sv->conf);
         foreach ($sv->group_members("reviewfield/properties") as $gj) {
-            if (isset($gj->render_review_property_callback)) {
+            if (isset($gj->render_review_property_function)) {
                 Conf::xt_resolve_require($gj);
-                echo call_user_func($gj->render_review_property_callback, $sv, $rfield, '$', $renderer, $gj);
+                echo call_user_func($gj->render_review_property_function, $sv, $rfield, '$', $renderer, $gj);
             }
         }
 

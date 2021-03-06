@@ -288,8 +288,8 @@ class UserStatus extends MessageSet {
             }
             $gx = $this->gxt();
             $gx->set_context(["args" => [$this, $cj, $args]]);
-            foreach ($gx->members("", "unparse_json_callback") as $gj) {
-                $gx->call_callback($gj->unparse_json_callback, $gj);
+            foreach ($gx->members("", "unparse_json_function") as $gj) {
+                $gx->call_function($gj->unparse_json_function, $gj);
             }
             return $cj;
         } else {
@@ -875,8 +875,8 @@ class UserStatus extends MessageSet {
         // Early properties
         $gx = $this->gxt();
         $gx->set_context(["args" => [$this, $user, $cj]]);
-        foreach ($gx->members("", "save_early_callback") as $gj) {
-            $gx->call_callback($gj->save_early_callback, $gj);
+        foreach ($gx->members("", "save_early_function") as $gj) {
+            $gx->call_function($gj->save_early_function, $gj);
         }
         if (($user->prop_changed() || $this->created)
             && !$user->save_prop()) {
@@ -902,8 +902,8 @@ class UserStatus extends MessageSet {
         }
 
         // Main properties
-        foreach ($gx->members("", "save_callback") as $gj) {
-            $gx->call_callback($gj->save_callback, $gj);
+        foreach ($gx->members("", "save_function") as $gj) {
+            $gx->call_function($gj->save_function, $gj);
         }
 
         // Clean up
@@ -1252,7 +1252,7 @@ class UserStatus extends MessageSet {
     /** @param CsvRow $line */
     function parse_csv_group($g, $cj, $line) {
         foreach ($this->gxt()->members(strtolower($g)) as $gj) {
-            if (($cb = $gj->parse_csv_callback ?? null)) {
+            if (($cb = $gj->parse_csv_function ?? null)) {
                 Conf::xt_resolve_require($gj);
                 $cb($this, $cj, $line, $gj);
             }
@@ -1645,9 +1645,9 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
     function request_group($name) {
         $gx = $this->gxt();
-        foreach ($gx->members($name, "request_callback") as $gj) {
+        foreach ($gx->members($name, "request_function") as $gj) {
             if ($gx->allowed($gj->allow_request_if ?? null, $gj)) {
-                $gx->call_callback($gj->request_callback, $gj);
+                $gx->call_function($gj->request_function, $gj);
             }
         }
     }

@@ -274,9 +274,9 @@ class Options_SettingRenderer {
 
         $t = "";
         foreach ($sv->group_members("options/properties") as $gj) {
-            if (isset($gj->render_option_property_callback)) {
+            if (isset($gj->render_option_property_function)) {
                 Conf::xt_resolve_require($gj);
-                $t .= call_user_func($gj->render_option_property_callback, $sv, $o, $xpos, $this, $gj);
+                $t .= call_user_func($gj->render_option_property_function, $sv, $o, $xpos, $this, $gj);
             }
         }
 

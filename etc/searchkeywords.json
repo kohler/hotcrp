@@ -1,93 +1,93 @@
 [
     {
         "name": "ti",
-        "parse_callback": "TextMatch_SearchTerm::parse", "has": "any"
+        "parse_function": "TextMatch_SearchTerm::parse", "has": "any"
     },
     {   "name": "title", "alias": "ti"   },
     {
         "name": "ab",
-        "parse_callback": "TextMatch_SearchTerm::parse", "has": "any"
+        "parse_function": "TextMatch_SearchTerm::parse", "has": "any"
     },
     {   "name": "abstract", "alias": "ab"   },
     {
         "name": "au",
-        "parse_callback": "Author_SearchTerm::parse"
+        "parse_function": "Author_SearchTerm::parse"
     },
     {   "name": "auth", "alias": "au", "deprecated": true   },
     {   "name": "author", "alias": "au"   },
     {
         "name": "co",
-        "parse_callback": "TextMatch_SearchTerm::parse", "has": "any"
+        "parse_function": "TextMatch_SearchTerm::parse", "has": "any"
     },
     {   "name": "collab", "alias": "co"   },
     {   "name": "collaborator", "alias": "co", "deprecated": true   },
     {   "name": "collaborators", "alias": "co"   },
     {
         "name": "aumatch",
-        "parse_callback": "AuthorMatch_SearchTerm::parse"
+        "parse_function": "AuthorMatch_SearchTerm::parse"
     },
     {   "name": "authmatch", "alias": "aumatch", "deprecated": true   },
     {   "name": "authormatch", "alias": "aumatch"   },
     {
         "name": "comatch",
-        "parse_callback": "AuthorMatch_SearchTerm::parse"
+        "parse_function": "AuthorMatch_SearchTerm::parse"
     },
     {   "name": "collabmatch", "alias": "comatch"   },
     {   "name": "collaboratormatch", "alias": "comatch", "deprecated": true   },
     {   "name": "collaboratorsmatch", "alias": "comatch"   },
     {
         "name": "acmatch",
-        "parse_callback": "AuthorMatch_SearchTerm::parse"
+        "parse_function": "AuthorMatch_SearchTerm::parse"
     },
     {   "name": "ac", "alias": "acmatch"   },
     {
         "name": "conf",
-        "parse_callback": "Conflict_SearchTerm::parse",
+        "parse_function": "Conflict_SearchTerm::parse",
         "pc_only": false, "has": "pc"
     },
     {   "name": "conflict", "alias": "conf"   },
     {
         "name": "pcconf",
-        "parse_callback": "Conflict_SearchTerm::parse",
+        "parse_function": "Conflict_SearchTerm::parse",
         "pc_only": true, "has": "any"
     },
     {   "name": "pcconflict", "alias": "pcconf"   },
     {
         "name": "reconflict",
-        "parse_callback": "Reconflict_SearchTerm::parse"
+        "parse_function": "Reconflict_SearchTerm::parse"
     },
     {   "name": "reconf", "alias": "reconflict"   },
     {
         "name": "status",
-        "parse_callback": "PaperStatus_SearchTerm::parse"
+        "parse_function": "PaperStatus_SearchTerm::parse"
     },
     {   "name": "is", "alias": "status"   },
     {
         "name": "in",
-        "parse_callback": "Limit_SearchTerm::parse"
+        "parse_function": "Limit_SearchTerm::parse"
     },
     {
         "name": "pidcode",
-        "parse_callback": "PaperID_SearchTerm::parse_pidcode"
+        "parse_function": "PaperID_SearchTerm::parse_pidcode"
     },
     {
         "name": "paper",
         "require": "src/search/st_pdf.php",
-        "parse_callback": "PaperPDF_SearchTerm::parse",
+        "parse_function": "PaperPDF_SearchTerm::parse",
         "final": null, "has": "any"
     },
     {   "name": "pdf", "alias": "paper"   },
     {
         "name": "submission",
         "require": "src/search/st_pdf.php",
-        "parse_callback": "PaperPDF_SearchTerm::parse",
+        "parse_function": "PaperPDF_SearchTerm::parse",
         "final": false, "has": "any"
     },
     {   "name": "sub", "alias": "submission"   },
     {
         "name": "final",
         "require": "src/search/st_pdf.php",
-        "parse_callback": "PaperPDF_SearchTerm::parse",
+        "parse_function": "PaperPDF_SearchTerm::parse",
         "final": true, "has": "any"
     },
     {   "name": "finalversion", "alias": "final"   },
@@ -97,13 +97,13 @@
     {
         "name": "pagecount",
         "require": "src/search/st_pdf.php",
-        "parse_callback": "Pages_SearchTerm::parse"
+        "parse_function": "Pages_SearchTerm::parse"
     },
     {   "name": "pages", "alias": "pagecount"   },
     {
         "name": "pref",
         "require": "src/search/st_revpref.php",
-        "parse_callback": "Revpref_SearchTerm::parse",
+        "parse_function": "Revpref_SearchTerm::parse",
         "has": "any"
     },
     {   "name": "revpref", "alias": "pref"   },
@@ -117,143 +117,143 @@
     {   "name": "reprefexpertise", "alias": "pref"   },
     {
         "name": "round",
-        "parse_callback": "Review_SearchTerm::parse_round"
+        "parse_function": "Review_SearchTerm::parse_round"
     },
     {
         "name": "rate",
-        "parse_callback": "Review_SearchTerm::parse_rate",
+        "parse_function": "Review_SearchTerm::parse_rate",
         "has": "any"
     },
     {   "name": "rating", "alias": "rate", "deprecated": true   },
     {
         "name": "topic",
-        "parse_callback": "Topic_SearchTerm::parse", "has": "any"
+        "parse_function": "Topic_SearchTerm::parse", "has": "any"
     },
     {   "name": "topics", "alias": "topic"   },
     {
         "name": "lead",
-        "parse_callback": "PaperPC_SearchTerm::parse", "pcfield": "lead", "has": "any"
+        "parse_function": "PaperPC_SearchTerm::parse", "pcfield": "lead", "has": "any"
     },
     {
         "name": "shepherd",
-        "parse_callback": "PaperPC_SearchTerm::parse", "pcfield": "shepherd", "has": "any"
+        "parse_function": "PaperPC_SearchTerm::parse", "pcfield": "shepherd", "has": "any"
     },
     {   "name": "shep", "alias": "shepherd"   },
     {
         "name": "admin",
-        "parse_callback": "Admin_SearchTerm::parse", "has": "any"
+        "parse_function": "Admin_SearchTerm::parse", "has": "any"
     },
     {   "name": "manager", "alias": "admin"   },
     {   "name": "administrator", "alias": "admin"   },
     {
         "name": "dec",
-        "parse_callback": "Decision_SearchTerm::parse", "has": "any"
+        "parse_function": "Decision_SearchTerm::parse", "has": "any"
     },
     {   "name": "decision", "alias": "dec"   },
     {
         "name": "editfinal", "deprecated": true,
-        "parse_callback": "EditFinal_SearchTerm::parse", "has": "yes"
+        "parse_function": "EditFinal_SearchTerm::parse", "has": "yes"
     },
     {
         "name": "perm",
-        "parse_callback": "Perm_SearchTerm::parse"
+        "parse_function": "Perm_SearchTerm::parse"
     },
     {
         "name": "tag",
-        "parse_callback": "Tag_SearchTerm::parse",
+        "parse_function": "Tag_SearchTerm::parse",
         "negated": false, "sorting": false, "is_hash": false, "has": "any"
     },
     {
         "name": "hashtag",
-        "parse_callback": "Tag_SearchTerm::parse",
+        "parse_function": "Tag_SearchTerm::parse",
         "negated": false, "sorting": false, "is_hash": true, "has": "any"
     },
     {
         "name": "notag",
-        "parse_callback": "Tag_SearchTerm::parse",
+        "parse_function": "Tag_SearchTerm::parse",
         "negated": true, "sorting": false, "is_hash": false, "has": "any",
         "deprecated": true
     },
     {
         "name": "order",
-        "parse_callback": "Tag_SearchTerm::parse",
+        "parse_function": "Tag_SearchTerm::parse",
         "negated": false, "sorting": true, "is_hash": false, "revsort": false
     },
     {
         "name": "rorder",
-        "parse_callback": "Tag_SearchTerm::parse",
+        "parse_function": "Tag_SearchTerm::parse",
         "negated": false, "sorting": true, "is_hash": false, "revsort": true
     },
     {   "name": "revorder", "alias": "rorder"   },
     {
         "name": "color",
-        "parse_callback": "Color_SearchTerm::parse",
+        "parse_function": "Color_SearchTerm::parse",
         "has": "color", "deprecated": true
     },
     {
         "name": "style",
-        "parse_callback": "Color_SearchTerm::parse",
+        "parse_function": "Color_SearchTerm::parse",
         "has": "any", "deprecated": true
     },
     {
         "name": "badge",
-        "parse_callback": "Color_SearchTerm::parse_badge",
+        "parse_function": "Color_SearchTerm::parse_badge",
         "has": "any", "deprecated": true
     },
     {
         "name": "emoji",
-        "parse_callback": "Color_SearchTerm::parse_emoji",
+        "parse_function": "Color_SearchTerm::parse_emoji",
         "has": "any", "deprecated": true
     },
     {
         "name": "formula",
-        "parse_callback": "Formula_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Formula_SearchTerm::parse", "allow_parens": true
     },
     {   "name": "f", "alias": "formula"   },
     {
         "name": "graph",
-        "parse_callback": "Formula_SearchTerm::parse_graph", "allow_parens": true
+        "parse_function": "Formula_SearchTerm::parse_graph", "allow_parens": true
     },
     {   "name": "g", "alias": "graph"   },
     {
         "name": "r",
-        "parse_callback": "Review_SearchTerm::parse",
+        "parse_function": "Review_SearchTerm::parse",
         "retype": null, "recompleteness": null, "has": ">0"
     },
     {
         "name": "token",
-        "parse_callback": "ReviewToken_SearchTerm::parse", "has": "any"
+        "parse_function": "ReviewToken_SearchTerm::parse", "has": "any"
     },
     {   "name": "rtoken", "alias": "token"   },
     {   "name": "retoken", "alias": "token"   },
     {   "name": "reviewtoken", "alias": "token"   },
     {
         "match": "(|c|i|p|complete-?|incomplete-?|partial-?|in-?progress-?|not-?started-?|pending-?|pending-?(?:my-?|)approval-?)(|meta-?|pri-?|sec-?|ext-?|primary-?|secondary-?|external-?)(?:re|rev|review)",
-        "expand_callback": "Review_SearchTerm::keyword_factory"
+        "expand_function": "Review_SearchTerm::keyword_factory"
     },
     {
         "match": "(?:|review-?)(|c|i|p|complete-?|incomplete-?|in-?progress-?|not-?started-?|partial-?|pending-?|pending-?(?:my-?|)approval-?)(meta|pri|sec|ext|primary|secondary|external)",
-        "expand_callback": "Review_SearchTerm::keyword_factory"
+        "expand_function": "Review_SearchTerm::keyword_factory"
     },
     {
         "match": "(?:|review-?)(complete|incomplete|in-?progress|not-?started|partial|pending|pending-?(?:my-?|)approval)()",
-        "expand_callback": "Review_SearchTerm::keyword_factory"
+        "expand_function": "Review_SearchTerm::keyword_factory"
     },
     {
         "match": "(|au-?|author-?|any-?)(?:cmt|comment)",
-        "expand_callback": "Comment_SearchTerm::comment_factory"
+        "expand_function": "Comment_SearchTerm::comment_factory"
     },
     {
         "match": "(|draft-?)(\\w*)resp(?:onse)(|-?draft)",
-        "expand_callback": "Comment_SearchTerm::response_factory"
+        "expand_function": "Comment_SearchTerm::response_factory"
     },
     {
         "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
-        "expand_callback": "Review_SearchTerm::review_field_factory"
+        "expand_function": "Review_SearchTerm::review_field_factory"
     },
     {
         "name": "proposal",
-        "parse_callback": "Proposal_SearchTerm::parse", "has": "any"
+        "parse_function": "Proposal_SearchTerm::parse", "has": "any"
     },
     {   "name": "proposed", "alias": "proposal"   },
     {   "name": "review-proposal", "alias": "proposal"   },
@@ -264,55 +264,55 @@
     {   "name": "proposedre", "alias": "proposal"   },
     {
         "name": "option",
-        "parse_callback": "Option_SearchTerm::parse", "has": "any"
+        "parse_function": "Option_SearchTerm::parse", "has": "any"
     },
     {   "name": "opt", "alias": "option"   },
     {
         "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
-        "expand_callback": "Option_SearchTerm::parse_factory"
+        "expand_function": "Option_SearchTerm::parse_factory"
     },
     {
         "name": "show",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "as",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "hide",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "edit",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "showsort",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },
     {   "name": "sortshow", "alias": "showsort"   },
     {
         "name": "editsort",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },
     {   "name": "sortedit", "alias": "editsort"   },
     {
         "name": "sort",
-        "parse_callback": "Show_SearchTerm::parse", "allow_parens": true
+        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
         "name": "HEADING",
-        "parse_callback": "Show_SearchTerm::parse_heading"
+        "parse_function": "Show_SearchTerm::parse_heading"
     },
     {   "name": "heading", "alias": "HEADING"   },
     {
         "name": "ss",
-        "parse_callback": "PaperSearch::parse_saved_search"
+        "parse_function": "PaperSearch::parse_saved_search"
     },
     {   "name": "search", "alias": "ss"   },
     {
         "name": "has",
-        "parse_callback": "PaperSearch::parse_has"
+        "parse_function": "PaperSearch::parse_has"
     }
 ]

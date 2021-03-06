@@ -164,7 +164,7 @@ class Tag_PaperColumn extends PaperColumn {
             $fj["title"] = $dt->unparse($t, 0, $user, TagMap::UNPARSE_HASH | TagMap::UNPARSE_TEXT);
             $fj["title_html"] = $dt->unparse($t, 0, $user, TagMap::UNPARSE_HASH);
             $fj["sort"] = $fj["sort"] ?? true;
-            $fj["callback"] = $fj["callback"] ?? "+Tag_PaperColumn";
+            $fj["function"] = $fj["function"] ?? "+Tag_PaperColumn";
             $rs[] = (object) $fj;
         }
         foreach ($tsm->error_texts() as $e) {

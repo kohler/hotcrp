@@ -134,7 +134,7 @@ class Tag_SearchTerm extends SearchTerm {
             $dt = $srch->conf->tags()->check(Tagger::base($this->tag1));
             if (($dt && $dt->order_anno) || $this->tag1nz) {
                 $xjs = Tag_PaperColumn::expand("#{$this->tag1}", $srch->user, (object) [], ["#{$this->tag1}", "#", $this->tag1]);
-                assert(count($xjs) === 1 && $xjs[0]->callback === "+Tag_PaperColumn");
+                assert(count($xjs) === 1 && $xjs[0]->function === "+Tag_PaperColumn");
                 return PaperColumn::make($srch->conf, $xjs[0], $dt && $dt->votish ? ["reverse"] : []);
             }
         }

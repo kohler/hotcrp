@@ -152,9 +152,9 @@ class Tracks_SettingRenderer {
 
         self::$nperm_rendered_folded = 0;
         foreach ($sv->group_members("tracks/permissions") as $gj) {
-            if (isset($gj->render_track_permission_callback)) {
+            if (isset($gj->render_track_permission_function)) {
                 Conf::xt_resolve_require($gj);
-                call_user_func($gj->render_track_permission_callback, $sv, $tnum, $trackinfo, $gj);
+                call_user_func($gj->render_track_permission_function, $sv, $tnum, $trackinfo, $gj);
             }
         }
 

@@ -482,7 +482,7 @@ class Review_SearchTerm extends SearchTerm {
         $t = str_replace("-", "", $m[2]);
         return (object) [
             "name" => $keyword,
-            "parse_callback" => "Review_SearchTerm::parse",
+            "parse_function" => "Review_SearchTerm::parse",
             "retype" => $t,
             "recompleteness" => self::$recompleteness_map[$c] ?? $c,
             "has" => ">0"
@@ -621,7 +621,7 @@ class Review_SearchTerm extends SearchTerm {
         if (count($f) == 1 && $f[0] instanceof ReviewField) {
             return (object) [
                 "name" => $keyword,
-                "parse_callback" => "Review_SearchTerm::parse_review_field",
+                "parse_function" => "Review_SearchTerm::parse_review_field",
                 "review_field" => $f[0],
                 "has" => "any"
             ];

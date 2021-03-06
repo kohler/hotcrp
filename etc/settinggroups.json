@@ -6,17 +6,17 @@
     {   "name": "info", "alias": "basics"   },
     {
         "name": "basics/names", "position": 10,
-        "render_callback": "Basics_SettingParser::render_names",
+        "render_function": "Basics_SettingParser::render_names",
         "title": "Conference information"
     },
     {
         "name": "basics/site-contact", "position": 20,
-        "render_callback": "Basics_SettingParser::render_site_contact",
+        "render_function": "Basics_SettingParser::render_site_contact",
         "title": "Site contact"
     },
     {
         "name": "basics/email", "position": 30,
-        "render_callback": "Basics_SettingParser::render_email",
+        "render_function": "Basics_SettingParser::render_email",
         "title": "Email configuration"
     },
 
@@ -29,47 +29,47 @@
     {
         "name": "decisions/responses", "position": 10,
         "title": "Responses",
-        "render_callback": "Responses_SettingParser::render"
+        "render_function": "Responses_SettingParser::render"
     },
     {   "name": "responses", "alias": "decisions/responses"   },
     {
         "name": "responses/properties/name", "position": 10,
-        "render_response_property_callback": "Responses_SettingParser::render_name_property"
+        "render_response_property_function": "Responses_SettingParser::render_name_property"
     },
     {
         "name": "responses/properties/deadline", "position": 20,
-        "render_response_property_callback": "Responses_SettingParser::render_deadline_property"
+        "render_response_property_function": "Responses_SettingParser::render_deadline_property"
     },
     {
         "name": "responses/properties/word-limit", "position": 30,
-        "render_response_property_callback": "Responses_SettingParser::render_wordlimit_property"
+        "render_response_property_function": "Responses_SettingParser::render_wordlimit_property"
     },
     {
         "name": "responses/properties/instructions", "position": 40,
-        "render_response_property_callback": "Responses_SettingParser::render_instructions_property"
+        "render_response_property_function": "Responses_SettingParser::render_instructions_property"
     },
     {
         "name": "decisions/review-visibility", "position": 20,
         "title": "Review visibility",
-        "render_callback": "ReviewVisibility_SettingParser::render"
+        "render_function": "ReviewVisibility_SettingParser::render"
     },
     {
         "name": "__crosscheck/review-visibility", "position": 800,
-        "crosscheck_callback": "ReviewVisibility_SettingParser::crosscheck"
+        "crosscheck_function": "ReviewVisibility_SettingParser::crosscheck"
     },
     {
         "name": "decisions/decision-visibility", "position": 25,
         "title": "Decision visibility",
-        "render_callback": "DecisionVisibility_SettingParser::render"
+        "render_function": "DecisionVisibility_SettingParser::render"
     },
     {
         "name": "__crosscheck/decision-visibility", "position": 805,
-        "crosscheck_callback": "DecisionVisibility_SettingParser::crosscheck"
+        "crosscheck_function": "DecisionVisibility_SettingParser::crosscheck"
     },
     {
         "name": "decisions/decision-types", "position": 30,
         "title": "Decision types",
-        "render_callback": "Decisions_SettingParser::render"
+        "render_function": "Decisions_SettingParser::render"
     },
     {
         "name": "decisions/final-versions", "position": 100,
@@ -77,54 +77,54 @@
     },
     {
         "name": "decisions/final-versions-body", "position": 105,
-        "render_callback": "FinalVersions_SettingParser::render"
+        "render_function": "FinalVersions_SettingParser::render"
     },
     {
         "name": "__crosscheck/final-versions-body", "position": 810,
-        "crosscheck_callback": "FinalVersions_SettingParser::crosscheck"
+        "crosscheck_function": "FinalVersions_SettingParser::crosscheck"
     },
 
     {
         "name": "messages", "position": 200,
         "title": "Messages",
-        "render_callback": "Messages_SettingRenderer::render"
+        "render_function": "Messages_SettingRenderer::render"
     },
     {   "name": "msg", "alias": "messages"   },
 
     {
         "name": "reviewform", "position": 600,
         "title": "Review form",
-        "render_callback": "ReviewForm_SettingRenderer::render"
+        "render_function": "ReviewForm_SettingRenderer::render"
     },
     {   "name": "rfo", "alias": "reviewform"   },
     {
         "name": "reviewfield/properties/description", "position": 20,
-        "render_review_property_callback": "ReviewForm_SettingRenderer::render_description_property",
-        "parse_review_property_callback": "ReviewForm_SettingParser::parse_description_property"
+        "render_review_property_function": "ReviewForm_SettingRenderer::render_description_property",
+        "parse_review_property_function": "ReviewForm_SettingParser::parse_description_property"
     },
     {
         "name": "reviewfield/properties/options", "position": 50,
-        "render_review_property_callback": "ReviewForm_SettingRenderer::render_options_property",
-        "parse_review_property_callback": "ReviewForm_SettingParser::parse_options_property"
+        "render_review_property_function": "ReviewForm_SettingRenderer::render_options_property",
+        "parse_review_property_function": "ReviewForm_SettingParser::parse_options_property"
     },
     {
         "name": "reviewfield/properties/presence", "position": 100,
-        "render_review_property_callback": "ReviewForm_SettingRenderer::render_presence_property",
-        "parse_review_property_callback": "ReviewForm_SettingParser::parse_presence_property"
+        "render_review_property_function": "ReviewForm_SettingRenderer::render_presence_property",
+        "parse_review_property_function": "ReviewForm_SettingParser::parse_presence_property"
     },
     {
         "name": "reviewfield/properties/required", "position": 101,
-        "render_review_property_callback": "ReviewForm_SettingRenderer::render_required_property"
+        "render_review_property_function": "ReviewForm_SettingRenderer::render_required_property"
     },
     {
         "name": "reviewfield/properties/visibility", "position": 110,
-        "render_review_property_callback": "ReviewForm_SettingRenderer::render_visibility_property",
-        "parse_review_property_callback": "ReviewForm_SettingParser::parse_visibility_property"
+        "render_review_property_function": "ReviewForm_SettingRenderer::render_visibility_property",
+        "parse_review_property_function": "ReviewForm_SettingParser::parse_visibility_property"
     },
     {
         "name": "reviewfield/properties/display", "position": 120,
-        "render_review_property_callback": "ReviewForm_SettingRenderer::render_display_property",
-        "parse_review_property_callback": "ReviewForm_SettingParser::parse_display_property"
+        "render_review_property_function": "ReviewForm_SettingRenderer::render_display_property",
+        "parse_review_property_function": "ReviewForm_SettingParser::parse_display_property"
     },
 
     {
@@ -135,21 +135,21 @@
     {   "name": "review", "alias": "reviews"   },
     {
         "name": "__crosscheck/reviews", "position": 500,
-        "crosscheck_callback": "Reviews_SettingRenderer::crosscheck"
+        "crosscheck_function": "Reviews_SettingRenderer::crosscheck"
     },
     {
         "name": "reviews/deadlines", "position": 10,
-        "render_callback": "Reviews_SettingRenderer::render"
+        "render_function": "Reviews_SettingRenderer::render"
     },
     {
         "name": "reviews/pc-reviews", "position": 20,
         "title": "PC reviews",
-        "render_callback": "Reviews_SettingRenderer::render_pc"
+        "render_function": "Reviews_SettingRenderer::render_pc"
     },
     {
         "name": "reviews/external", "position": 30,
         "title": "External reviews",
-        "render_callback": "Reviews_SettingRenderer::render_external"
+        "render_function": "Reviews_SettingRenderer::render_external"
     },
     [   "reviews/external/editdelegate", 10, "Reviews_SettingRenderer::render_extrev_editdelegate"   ],
     [   "reviews/external/requestmail", 15, "Reviews_SettingRenderer::render_extrev_requestmail"   ],
@@ -157,7 +157,7 @@
     {
         "name": "reviews/ratings", "position": 40,
         "title": "Review ratings",
-        "render_callback": "Reviews_SettingRenderer::render_ratings"
+        "render_function": "Reviews_SettingRenderer::render_ratings"
     },
     {
         "name": "submissions", "position": 300,
@@ -166,79 +166,79 @@
     {   "name": "sub", "alias": "submissions"   },
     {
         "name": "__crosscheck/submissions", "position": 300,
-        "crosscheck_callback": "Submissions_SettingRenderer::crosscheck"
+        "crosscheck_function": "Submissions_SettingRenderer::crosscheck"
     },
     {
         "name": "submissions/open", "position": 10,
-        "render_callback": "Submissions_SettingRenderer::render_open"
+        "render_function": "Submissions_SettingRenderer::render_open"
     },
     {
         "name": "submissions/deadlines", "position": 20,
-        "render_callback": "Submissions_SettingRenderer::render_deadlines"
+        "render_function": "Submissions_SettingRenderer::render_deadlines"
     },
     {
         "name": "submissions/updates", "position": 30,
-        "render_callback": "Submissions_SettingRenderer::render_updates"
+        "render_function": "Submissions_SettingRenderer::render_updates"
     },
     {
         "name": "submissions/blind", "position": 40,
-        "render_callback": "Submissions_SettingRenderer::render_blind",
+        "render_function": "Submissions_SettingRenderer::render_blind",
         "title": "Reviewer visibility"
     },
     {
         "name": "submissions/pcseeall", "position": 50,
-        "render_callback": "Submissions_SettingRenderer::render_pcseeall"
+        "render_function": "Submissions_SettingRenderer::render_pcseeall"
     },
     {
         "name": "subform", "position": 400,
         "title": "Submission form",
-        "render_callback": "SubForm_SettingRenderer::render"
+        "render_function": "SubForm_SettingRenderer::render"
     },
     {
         "name": "options", "group": "subform", "position": 440,
-        "render_callback": "Options_SettingRenderer::render"
+        "render_function": "Options_SettingRenderer::render"
     },
     {   "name": "opt", "alias": "options"   },
     {
         "name": "__crosscheck/options", "position": 400,
-        "crosscheck_callback": "Options_SettingRenderer::crosscheck"
+        "crosscheck_function": "Options_SettingRenderer::crosscheck"
     },
     {
         "name": "options/properties/type", "position": 10,
-        "render_option_property_callback": "Options_SettingRenderer::render_type_property"
+        "render_option_property_function": "Options_SettingRenderer::render_type_property"
     },
     {
         "name": "options/properties/description", "position": 20,
-        "render_option_property_callback": "Options_SettingRenderer::render_description_property"
+        "render_option_property_function": "Options_SettingRenderer::render_description_property"
     },
     {
         "name": "options/properties/presence", "position": 30,
-        "render_option_property_callback": "Options_SettingRenderer::render_presence_property"
+        "render_option_property_function": "Options_SettingRenderer::render_presence_property"
     },
     {
         "name": "options/properties/required", "position": 31,
-        "render_option_property_callback": "Options_SettingRenderer::render_required_property"
+        "render_option_property_function": "Options_SettingRenderer::render_required_property"
     },
     {
         "name": "options/properties/visibility", "position": 40,
-        "render_option_property_callback": "Options_SettingRenderer::render_visibility_property"
+        "render_option_property_function": "Options_SettingRenderer::render_visibility_property"
     },
     {
         "name": "options/properties/display", "position": 50,
-        "render_option_property_callback": "Options_SettingRenderer::render_display_property"
+        "render_option_property_function": "Options_SettingRenderer::render_display_property"
     },
     {
         "name": "topics", "group": "subform", "position": 480,
-        "render_callback": "Topics_SettingRenderer::render"
+        "render_function": "Topics_SettingRenderer::render"
     },
     {
         "name": "tags", "position": 700,
         "title": "Tags &amp; tracks",
-        "render_callback": "Tags_SettingRenderer::render"
+        "render_function": "Tags_SettingRenderer::render"
     },
     {
         "name": "__crosscheck/tags", "position": 700,
-        "crosscheck_callback": "Tags_SettingParser::crosscheck"
+        "crosscheck_function": "Tags_SettingParser::crosscheck"
     },
     [   "tags/main/chair", 10, "Tags_SettingRenderer::render_tag_chair"   ],
     [   "tags/main/sitewide", 20, "Tags_SettingRenderer::render_tag_sitewide"   ],
@@ -248,29 +248,29 @@
     [   "tags/visibility/seeall", 10, "Tags_SettingRenderer::render_tag_seeall"   ],
     {
         "name": "tagstyles", "group": "tags", "position": 720,
-        "render_callback": "Tags_SettingRenderer::render_styles"
+        "render_function": "Tags_SettingRenderer::render_styles"
     },
     {
         "name": "tracks", "group": "tags", "position": 750,
-        "render_callback": "Tracks_SettingRenderer::render",
+        "render_function": "Tracks_SettingRenderer::render",
         "title": "Tracks", "hashid": "tracks"
     },
     {
         "name": "__crosscheck/tracks", "position": 750,
-        "crosscheck_callback": "Tracks_SettingRenderer::crosscheck"
+        "crosscheck_function": "Tracks_SettingRenderer::crosscheck"
     },
     {
         "name": "tracks/permissions/view", "position": 10,
-        "render_track_permission_callback": "Tracks_SettingRenderer::render_view_permission",
+        "render_track_permission_function": "Tracks_SettingRenderer::render_view_permission",
         "default_unfolded": true
     },
     {
         "name": "tracks/permissions/viewrev", "position": 30,
-        "render_track_permission_callback": "Tracks_SettingRenderer::render_viewrev_permission"
+        "render_track_permission_function": "Tracks_SettingRenderer::render_viewrev_permission"
     },
     {
         "name": "users", "position": 100,
         "title": "Accounts",
-        "render_callback": "Users_SettingRenderer::render"
+        "render_function": "Users_SettingRenderer::render"
     }
 ]

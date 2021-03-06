@@ -1,6 +1,6 @@
 [
     {
-        "name": "__footer", "render_callback": "*Conf::footer"
+        "name": "__footer", "render_function": "*Conf::footer"
     },
 
 
@@ -10,63 +10,63 @@
     {   "name": "home", "allow_disabled": true   },
     {
         "name": "home/disabled", "position": 10,
-        "request_callback": "Home_Partial::disabled_request"
+        "request_function": "Home_Partial::disabled_request"
     },
     {
         "name": "home/profile_redirect", "position": 100,
-        "request_callback": "Home_Partial::profile_redirect_request"
+        "request_function": "Home_Partial::profile_redirect_request"
     },
     {
         "name": "home/admin", "position": 900, "allow_if": "chair",
         "allow_request_if": ["getpost", "req.clearbug req.clearnewpcrev"],
-        "request_callback": "AdminHome_Partial::check_admin",
-        "render_callback": "AdminHome_Partial::render"
+        "request_function": "AdminHome_Partial::check_admin",
+        "render_function": "AdminHome_Partial::render"
     },
 
     {
         "name": "home/head", "position": 1000,
-        "render_callback": "*Home_Partial::render_head"
+        "render_function": "*Home_Partial::render_head"
     },
     {
         "name": "home/message", "position": 1100,
-        "render_callback": "*Home_Partial::render_message"
+        "render_function": "*Home_Partial::render_message"
     },
     {
         "name": "home/welcome", "position": 1200, "allow_if": "!pc",
-        "render_callback": "*Home_Partial::render_welcome"
+        "render_function": "*Home_Partial::render_welcome"
     },
     {
         "name": "home/content", "position": 1500,
-        "render_callback": "Home_Partial::render_content"
+        "render_function": "Home_Partial::render_content"
     },
 
     {
         "name": "home/sidebar/admin", "position": 100, "allow_if": "manager",
-        "render_callback": "Home_Partial::render_admin_sidebar"
+        "render_function": "Home_Partial::render_admin_sidebar"
     },
     {
         "name": "home/sidebar/admin/settings", "position": 10, "allow_if": "chair",
-        "render_callback": "Home_Partial::render_admin_settings"
+        "render_function": "Home_Partial::render_admin_settings"
     },
     {
         "name": "home/sidebar/admin/users", "position": 20, "allow_if": "manager",
-        "render_callback": "Home_Partial::render_admin_users"
+        "render_function": "Home_Partial::render_admin_users"
     },
     {
         "name": "home/sidebar/admin/assignments", "position": 30, "allow_if": "manager",
-        "render_callback": "Home_Partial::render_admin_assignments"
+        "render_function": "Home_Partial::render_admin_assignments"
     },
     {
         "name": "home/sidebar/admin/mail", "position": 40, "allow_if": "manager",
-        "render_callback": "Home_Partial::render_admin_mail"
+        "render_function": "Home_Partial::render_admin_mail"
     },
     {
         "name": "home/sidebar/admin/log", "position": 50, "allow_if": "manager",
-        "render_callback": "Home_Partial::render_admin_log"
+        "render_function": "Home_Partial::render_admin_log"
     },
     {
         "name": "home/sidebar/info", "position": 200,
-        "render_callback": "Home_Partial::render_info_sidebar"
+        "render_function": "Home_Partial::render_info_sidebar"
     },
     [   "home/sidebar/info/deadline", 10, "Home_Partial::render_info_deadline"   ],
     [   "home/sidebar/info/pc", 20, "Home_Partial::render_info_pc"   ],
@@ -74,30 +74,30 @@
     {
         "name": "home/sidebar/info/accepted", "position": 40,
         "allow_if": "conf.can_all_author_view_decision",
-        "render_callback": "Home_Partial::render_info_accepted"
+        "render_function": "Home_Partial::render_info_accepted"
     },
 
 
     [   "home/main/signin", 3000, "*Home_Partial::render_signin"   ],
     {
         "name": "home/main/search", "position": 4000,
-        "render_callback": "*Home_Partial::render_search"
+        "render_function": "*Home_Partial::render_search"
     },
     {
         "name": "home/main/review_requests", "position": 4500, "allow_if": "reviewer",
-        "render_callback": "*Home_Partial::render_review_requests"
+        "render_function": "*Home_Partial::render_review_requests"
     },
     {
         "name": "home/main/reviews", "position": 5000, "allow_if": "reviewer",
-        "render_callback": "*Home_Partial::render_reviews"
+        "render_function": "*Home_Partial::render_reviews"
     },
     {
         "name": "home/main/submissions", "position": 7000,
-        "render_callback": "*Home_Partial::render_submissions"
+        "render_function": "*Home_Partial::render_submissions"
     },
     {
         "name": "home/main/review_tokens", "position": 10000,
-        "render_callback": "*Home_Partial::render_review_tokens"
+        "render_function": "*Home_Partial::render_review_tokens"
     },
 
 
@@ -105,7 +105,7 @@
     {
         "name": "newaccount/request", "position": 100,
         "allow_request_if": "anypost",
-        "request_callback": "*Signin_Partial::create_request"
+        "request_function": "*Signin_Partial::create_request"
     },
     [   "newaccount/head", 1000, "Signin_Partial::render_newaccount_head"   ],
     [   "newaccount/message", 2000, "home/message"   ],
@@ -120,15 +120,15 @@
     {
         "name": "signin/request", "position": 100,
         "allow_request_if": "anypost",
-        "request_callback": "Signin_Partial::signin_request"
+        "request_function": "Signin_Partial::signin_request"
     },
     {
         "name": "signin/request/basic", "position": 100,
-        "signin_callback": "Signin_Partial::signin_request_basic"
+        "signin_function": "Signin_Partial::signin_request_basic"
     },
     {
         "name": "signin/request/success", "position": 100000,
-        "signin_callback": "Signin_Partial::signin_request_success"
+        "signin_function": "Signin_Partial::signin_request_success"
     },
     [   "signin/head", 1000, "Signin_Partial::render_signin_head"   ],
     [   "signin/message", 2000, "home/message"   ],
@@ -145,7 +145,7 @@
     {
         "name": "signout/request", "position": 100,
         "allow_request_if": "anypost",
-        "request_callback": "Signin_Partial::signout_request"
+        "request_function": "Signin_Partial::signout_request"
     },
     [   "signout/head", 1000, "Signin_Partial::render_signout_head"   ],
     [   "signout/body", 3000, "Signin_Partial::render_signout_body"   ],
@@ -155,7 +155,7 @@
     {
         "name": "forgotpassword/request", "position": 100,
         "allow_request_if": "anypost",
-        "request_callback": "Signin_Partial::forgot_request"
+        "request_function": "Signin_Partial::forgot_request"
     },
     [   "forgotpassword/head", 1000, "Signin_Partial::render_forgot_head"   ],
     [   "forgotpassword/body", 3000, "Signin_Partial::render_forgot_body"   ],
@@ -164,7 +164,7 @@
     [   "forgotpassword/form/actions", 100, "*Signin_Partial::render_forgot_form_actions"   ],
     {
         "name": "forgotpassword/externallogin", "position": false,
-        "render_callback": "Signin_Partial::forgot_externallogin_message"
+        "render_function": "Signin_Partial::forgot_externallogin_message"
     },
 
 
@@ -172,7 +172,7 @@
     {
         "name": "resetpassword/request", "position": 100,
         "allow_any_request": true,
-        "request_callback": "*Signin_Partial::reset_request"
+        "request_function": "*Signin_Partial::reset_request"
     },
     [   "resetpassword/head", 1000, "Signin_Partial::render_reset_head"   ],
     [   "resetpassword/message", 2000, "home/message"   ],

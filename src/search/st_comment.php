@@ -37,7 +37,7 @@ class Comment_SearchTerm extends SearchTerm {
         $tword = str_replace("-", "", $m[1]);
         return (object) [
             "name" => $keyword,
-            "parse_callback" => "Comment_SearchTerm::parse",
+            "parse_function" => "Comment_SearchTerm::parse",
             "response" => $tword === "any",
             "comment" => true,
             "round" => null,
@@ -60,7 +60,7 @@ class Comment_SearchTerm extends SearchTerm {
         }
         return (object) [
             "name" => $keyword,
-            "parse_callback" => "Comment_SearchTerm::parse",
+            "parse_function" => "Comment_SearchTerm::parse",
             "response" => true,
             "comment" => false,
             "round" => $round,

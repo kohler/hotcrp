@@ -23,7 +23,7 @@ function gx_call_requests(Conf $conf, Contact $user, Qrequest $qreq, $group, Gro
     $gx->add_xt_checker([$qreq, "xt_allow"]);
     $reqgj = [];
     $not_allowed = false;
-    foreach ($gx->members($group, "request_callback") as $gj) {
+    foreach ($gx->members($group, "request_function") as $gj) {
         if ($gx->allowed($gj->allow_request_if ?? null, $gj)) {
             $reqgj[] = $gj;
         } else {
@@ -34,7 +34,7 @@ function gx_call_requests(Conf $conf, Contact $user, Qrequest $qreq, $group, Gro
         $conf->msg($conf->_i("badpost"), 2);
     }
     foreach ($reqgj as $gj) {
-        if ($gx->call_callback($gj->request_callback, $gj) === false) {
+        if ($gx->call_function($gj->request_function, $gj) === false) {
             break;
         }
     }

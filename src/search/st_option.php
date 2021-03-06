@@ -29,7 +29,7 @@ abstract class Option_SearchTerm extends SearchTerm {
         if (count($f) === 1 && $f[0] instanceof PaperOption) {
             return (object) [
                 "name" => $keyword,
-                "parse_callback" => "Option_SearchTerm::parse",
+                "parse_function" => "Option_SearchTerm::parse",
                 "has" => "any"
             ];
         } else {

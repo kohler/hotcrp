@@ -813,19 +813,19 @@ class PaperOption implements JsonSerializable {
     static function make($args, Conf $conf) {
         assert(is_object($args));
         Conf::xt_resolve_require($args);
-        $callback = $args->callback ?? null;
-        if (!$callback) {
-            $callback = self::$callback_map[$args->type ?? ""] ?? null;
+        $fn = $args->function ?? $args->callback ?? null; /* XXX */
+        if (!$fn) {
+            $fn = self::$callback_map[$args->type ?? ""] ?? null;
         }
-        if (!$callback) {
-            $callback = "+Unknown_PaperOption";
+        if (!$fn) {
+            $fn = "+Unknown_PaperOption";
         }
-        if ($callback[0] === "+") {
-            $class = substr($callback, 1);
+        if ($fn[0] === "+") {
+            $class = substr($fn, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
             return new $class($conf, $args);
         } else {
-            return call_user_func($callback, $conf, $args);
+            return call_user_func($fn, $conf, $args);
         }
     }
 

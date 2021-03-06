@@ -607,8 +607,8 @@ class SettingValues extends MessageSet {
         return $this->gxt()->members(strtolower($g));
     }
     function crosscheck() {
-        foreach ($this->gxt()->members("__crosscheck", "crosscheck_callback") as $gj) {
-            $this->gxt()->call_callback($gj->crosscheck_callback, $gj);
+        foreach ($this->gxt()->members("__crosscheck", "crosscheck_function") as $gj) {
+            $this->gxt()->call_function($gj->crosscheck_function, $gj);
         }
     }
     function render_group($g, $options = null) {

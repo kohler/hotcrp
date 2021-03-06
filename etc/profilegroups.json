@@ -1,48 +1,48 @@
 [
     {   "name": "main", "title": "Profile", "position": 100,
-        "unparse_json_callback": "UserStatus::unparse_json_main",
-        "request_callback": "UserStatus::request_main",
-        "parse_csv_callback": "UserStatus::parse_csv_main",
-        "save_early_callback": "UserStatus::save_main"
+        "unparse_json_function": "UserStatus::unparse_json_main",
+        "request_function": "UserStatus::request_main",
+        "parse_csv_function": "UserStatus::parse_csv_main",
+        "save_early_function": "UserStatus::save_main"
     },
     {
         "name": "__crosscheck/main", "position": 100,
-        "crosscheck_callback": "UserStatus::crosscheck_main"
+        "crosscheck_function": "UserStatus::crosscheck_main"
     },
     {
         "name": "main/main", "position": 1000,
-        "render_callback": "UserStatus::render_main"
+        "render_function": "UserStatus::render_main"
     },
     {
         "name": "main/country", "position": 3000,
-        "render_callback": "UserStatus::render_country"
+        "render_function": "UserStatus::render_country"
     },
     {
         "name": "main/roles", "position": 5000,
-        "render_callback": "UserStatus::render_roles"
+        "render_function": "UserStatus::render_roles"
     },
     {
         "name": "main/collaborators", "position": 6000,
-        "render_callback": "UserStatus::render_collaborators"
+        "render_function": "UserStatus::render_collaborators"
     },
     {
         "name": "main/topics", "position": 7000, "allow_if": ["pc", "conf.has_topics"],
-        "render_callback": "UserStatus::render_topics"
+        "render_function": "UserStatus::render_topics"
     },
     [   "main/tags", 8000, "UserStatus::render_tags"   ],
     [   "main/actions", 1000000, "UserStatus::render_actions"   ],
     {   "name": "topics", "position": 400,
-        "save_callback": "UserStatus::save_topics"   },
+        "save_function": "UserStatus::save_topics"   },
 
 
     {   "name": "security", "title": "Security", "position": 200,
         "allow_if": "profile_security",
-        "request_callback": "UserStatus::request_security",
-        "save_callback": "UserStatus::save_security"   },
+        "request_function": "UserStatus::request_security",
+        "save_function": "UserStatus::save_security"   },
     [   "security/currentpassword", 10, "UserStatus::render_current_password"   ],
     {   "name": "security/newpassword", "position": 100,
-        "render_callback": "UserStatus::render_new_password",
-        "request_callback": "UserStatus::request_new_password"   },
+        "render_function": "UserStatus::render_new_password",
+        "request_function": "UserStatus::request_new_password"   },
     [   "security/actions", 1000000, "UserStatus::render_actions"   ],
 
 
