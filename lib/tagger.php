@@ -646,12 +646,20 @@ class TagMap implements IteratorAggregate {
     }
 
     /** @return string */
-    function color_regex() {
+    private function color_regex() {
         if (!$this->color_re) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . join("|", array_keys($this->style_info_lmap));
-            foreach ($this->filter("colors") as $t)
-                $re .= "|" . $t->tag_regex();
-            $this->color_re = $re . ")(?=\\z|[# ])}i";
+            $re = "{(?:\\A| )(?:(?:\\d*~|~~|)(" . join("|", array_keys($this->style_info_lmap));
+            $any = false;
+            foreach ($this->filter("colors") as $t) {
+                if (!$any) {
+                    $re .= ")|(";
+                    $any = true;
+                } else {
+                    $re .= "|";
+                }
+                $re .= $t->tag_regex();
+            }
+            $this->color_re = $re . "))(?=\\z|[# ])}i";
         }
         return $this->color_re;
     }
@@ -663,13 +671,13 @@ class TagMap implements IteratorAggregate {
         }
         if (!$tags
             || $tags === " "
-            || !preg_match_all($this->color_regex(), $tags, $m)) {
+            || !preg_match_all($this->color_regex(), $tags, $ms, PREG_SET_ORDER)) {
             return null;
         }
         $classes = [];
         $info = 0;
-        foreach ($m[1] as $tag) {
-            $ltag = strtolower($tag);
+        foreach ($ms as $m) {
+            $ltag = strtolower($m[1] ? : $m[2]);
             $t = $this->check($ltag);
             $ks = $t ? $t->colors : [$ltag];
             foreach ($ks as $k) {

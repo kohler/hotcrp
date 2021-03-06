@@ -161,7 +161,7 @@ class Tags_SettingParser extends SettingParser {
             $ts = array();
             foreach ($sv->conf->tags()->canonical_colors() as $k) {
                 if ($sv->has_reqv("tag_color_$k")) {
-                    foreach ($this->my_parse_list($sv->si("tag_color_$k"), Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t) {
+                    foreach ($this->my_parse_list($sv->si("tag_color_$k"), Tagger::NOPRIVATE | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t) {
                         $ts[] = $t . "=" . $k;
                     }
                 }
