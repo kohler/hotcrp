@@ -133,7 +133,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $round_list = [];
         if (isset($gj->validate_condition_term_function)) {
             $fn = $gj->validate_condition_term_function;
-            $ok = $fn($ps->term(), $round_list);
+            $ok = $fn($ps, $round_list);
         } else {
             foreach ($ps->term()->preorder() as $e) {
                 if ($e instanceof Review_SearchTerm) {
