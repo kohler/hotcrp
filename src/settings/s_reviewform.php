@@ -123,7 +123,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     /** @param string $expr
      * @param bool $is_error */
-    static function validate_condition(SettingValues $sv, $expr, $xpos, $is_error) {
+    static function validate_condition(SettingValues $sv, $expr, $xpos, $is_error, $gj) {
         $ps = new PaperSearch($sv->conf->root_user(), $expr);
         if ($ps->has_problem()) {
             $sv->warning_at("rf_{$xpos}_ecs", join("<br>", $ps->problem_texts()));
@@ -131,22 +131,27 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         $ok = true;
         $round_list = [];
-        foreach ($ps->term()->preorder() as $e) {
-            if ($e instanceof Review_SearchTerm) {
-                $rsm = $e->review_matcher();
-                if ($rsm->sensitivity() === ReviewSearchMatcher::HAS_ROUND
-                    && $round_list !== null
-                    && $rsm->test(1)) {
-                    $round_list = array_merge($round_list, $rsm->round_list);
-                } else if ($rsm->sensitivity() & ~(ReviewSearchMatcher::HAS_ROUND | ReviewSearchMatcher::HAS_RTYPE)) {
+        if (isset($gj->validate_condition_term_function)) {
+            $fn = $gj->validate_condition_term_function;
+            $ok = $fn($ps->term(), $round_list);
+        } else {
+            foreach ($ps->term()->preorder() as $e) {
+                if ($e instanceof Review_SearchTerm) {
+                    $rsm = $e->review_matcher();
+                    if ($rsm->sensitivity() === ReviewSearchMatcher::HAS_ROUND
+                        && $round_list !== null
+                        && $rsm->test(1)) {
+                        $round_list = array_merge($round_list, $rsm->round_list);
+                    } else if ($rsm->sensitivity() & ~(ReviewSearchMatcher::HAS_ROUND | ReviewSearchMatcher::HAS_RTYPE)) {
+                        $ok = false;
+                    } else {
+                        $round_list = null;
+                    }
+                } else if (!in_array($e->type, ["xor", "not", "and", "or"])) {
                     $ok = false;
-                } else {
+                } else if ($e->type !== "or") {
                     $round_list = null;
                 }
-            } else if (!in_array($e->type, ["xor", "not", "and", "or"])) {
-                $ok = false;
-            } else if ($e->type !== "or") {
-                $round_list = null;
             }
         }
         if (!$ok) {
@@ -167,7 +172,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    static function parse_presence_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
+    static function parse_presence_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self, $gj) {
         if ($sv->has_reqv("rf_{$xpos}_ec")) {
             $ec = $sv->reqv("rf_{$xpos}_ec");
             $ecs = $sv->reqv("rf_{$xpos}_ecs");
@@ -178,7 +183,7 @@ class ReviewForm_SettingParser extends SettingParser {
                     $fj->round_mask = 1 << $round;
                 }
             } else if ($ec === "custom" && $ecs !== "") {
-                $answer = self::validate_condition($sv, $ecs, $xpos, true);
+                $answer = self::validate_condition($sv, $ecs, $xpos, true, $gj);
                 if (is_int($answer)) {
                     $fj->round_mask = $answer;
                 } else if ($answer !== false) {
@@ -587,6 +592,9 @@ class ReviewForm_SettingRenderer {
             $ecs = "";
         }
         $ecv = isset($ecsel[$ecs]) ? $ecs : ($ecs ? "custom" : "all");
+        Ht::stash_html('<div id="settings-review-form-caption-ecs" class="hidden">'
+            . ($gj->caption_html ?? '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>')
+            . '</div>', "settings-review-form-caption-ecs");
         return '<div class="' . $sv->control_class("rf_{$xpos}_ec", "entryi is-property-editing has-fold fold" . ($ecs === "custom" ? "o" : "c"))
             . '" data-fold-values="custom">' . $sv->label("rf_{$xpos}_ec", "Present on")
             . '<div class="entry">'
@@ -631,9 +639,7 @@ class ReviewForm_SettingRenderer {
 2. Weak reject
 3. Weak accept
 4. Accept</pre>
-<p>Or use consecutive capital letters (lower letters are better).</p></div>'
-            . '<div id="settings-review-form-caption-ecs" class="hidden">'
-            . '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl></div>');
+<p>Or use consecutive capital letters (lower letters are better).</p></div>');
 
         $rfj = [];
         foreach ($rf->fmap as $f) {
@@ -686,16 +692,6 @@ class ReviewForm_SettingRenderer {
             }
         }
 
-        // output settings json
-        Ht::stash_script("hotcrp.settings.review_form({"
-            . "fields:" . json_encode_browser($rfj)
-            . ", samples:" . json_encode_browser($samples)
-            . ", errf:" . json_encode_browser($sv->message_field_map())
-            . ", req:" . json_encode_browser($req)
-            . ", stemplate:" . json_encode_browser(ReviewField::make_template(true, $sv->conf))
-            . ", ttemplate:" . json_encode_browser(ReviewField::make_template(false, $sv->conf))
-            . "})");
-
         echo Ht::hidden("has_review_form", 1);
         if (!$sv->conf->can_some_author_view_review()) {
             echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';
@@ -729,12 +725,21 @@ class ReviewForm_SettingRenderer {
             Ht::button(Icons::ui_trash(), ["id" => "rf_\$_delete", "class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
             Ht::hidden("rf_\$_position", "0", ["id" => "rf_\$_position", "class" => "rf-position"]),
             "</div></div>";
-
         echo '</template>';
+
         echo "<div id=\"reviewform_container\"></div>",
             "<div id=\"reviewform_removedcontainer\"></div>",
             Ht::button("Add score field", ["class" => "ui js-settings-add-review-field score"]),
             "<span class=\"sep\"></span>",
             Ht::button("Add text field", ["class" => "ui js-settings-add-review-field"]);
+
+        Ht::stash_script("hotcrp.settings.review_form({"
+            . "fields:" . json_encode_browser($rfj)
+            . ", samples:" . json_encode_browser($samples)
+            . ", errf:" . json_encode_browser($sv->message_field_map())
+            . ", req:" . json_encode_browser($req)
+            . ", stemplate:" . json_encode_browser(ReviewField::make_template(true, $sv->conf))
+            . ", ttemplate:" . json_encode_browser(ReviewField::make_template(false, $sv->conf))
+            . "})");
     }
 }
