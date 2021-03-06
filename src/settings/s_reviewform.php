@@ -121,6 +121,30 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
+    /** @param ?list<int> &$round_list
+     * @return bool */
+    static function validate_condition_term(PaperSearch $ps, &$round_list) {
+        foreach ($ps->term()->preorder() as $e) {
+            if ($e instanceof Review_SearchTerm) {
+                $rsm = $e->review_matcher();
+                if ($rsm->sensitivity() === ReviewSearchMatcher::HAS_ROUND
+                    && $round_list !== null
+                    && $rsm->test(1)) {
+                    $round_list = array_merge($round_list, $rsm->round_list);
+                } else if ($rsm->sensitivity() & ~(ReviewSearchMatcher::HAS_ROUND | ReviewSearchMatcher::HAS_RTYPE)) {
+                    return false;
+                } else {
+                    $round_list = null;
+                }
+            } else if (!in_array($e->type, ["xor", "not", "and", "or"])) {
+                return false;
+            } else if ($e->type !== "or") {
+                $round_list = null;
+            }
+        }
+        return true;
+    }
+
     /** @param string $expr
      * @param bool $is_error */
     static function validate_condition(SettingValues $sv, $expr, $xpos, $is_error, $gj) {
@@ -129,32 +153,9 @@ class ReviewForm_SettingParser extends SettingParser {
             $sv->warning_at("rf_{$xpos}_ecs", join("<br>", $ps->problem_texts()));
             $sv->warning_at("rf_{$xpos}_ec");
         }
-        $ok = true;
         $round_list = [];
-        if (isset($gj->validate_condition_term_function)) {
-            $fn = $gj->validate_condition_term_function;
-            $ok = $fn($ps, $round_list);
-        } else {
-            foreach ($ps->term()->preorder() as $e) {
-                if ($e instanceof Review_SearchTerm) {
-                    $rsm = $e->review_matcher();
-                    if ($rsm->sensitivity() === ReviewSearchMatcher::HAS_ROUND
-                        && $round_list !== null
-                        && $rsm->test(1)) {
-                        $round_list = array_merge($round_list, $rsm->round_list);
-                    } else if ($rsm->sensitivity() & ~(ReviewSearchMatcher::HAS_ROUND | ReviewSearchMatcher::HAS_RTYPE)) {
-                        $ok = false;
-                    } else {
-                        $round_list = null;
-                    }
-                } else if (!in_array($e->type, ["xor", "not", "and", "or"])) {
-                    $ok = false;
-                } else if ($e->type !== "or") {
-                    $round_list = null;
-                }
-            }
-        }
-        if (!$ok) {
+        $fn = $gj->validate_condition_term_function ?? "ReviewForm_SettingParser::validate_condition_term";
+        if (!$fn($ps, $round_list)) {
             $method = $is_error ? "error_at" : "warning_at";
             $sv->$method("rf_{$xpos}_ecs", "That search is not supported here. (Not all search keywords are supported for review field conditions.)");
             $sv->$method("rf_{$xpos}_ec");
@@ -602,12 +603,6 @@ class ReviewForm_SettingRenderer {
             . ' &nbsp;'
             . Ht::entry("rf_{$xpos}_ecs", $ecs,
                         $sv->sjs("rf_{$xpos}_ecs", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus", "size" => 30]))
-            . '</div></div>';
-
-        return '<div class="' . $sv->control_class("rf_{$xpos}_rounds", "entryi is-property-editing")
-            . '">' . $sv->label("rf_{$xpos}_rounds", "Present on")
-            . '<div class="entry">'
-            . Ht::select("rf_{$xpos}_rounds", [], "", ["id" => "rf_{$xpos}_rounds"])
             . '</div></div>';
     }
 
