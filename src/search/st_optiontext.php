@@ -25,4 +25,7 @@ class OptionText_SearchTerm extends Option_SearchTerm {
             return false;
         }
     }
+    function about_reviews() {
+        return self::ABOUT_NO;
+    }
 }

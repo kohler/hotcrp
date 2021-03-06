@@ -55,4 +55,7 @@ class ReviewToken_SearchTerm extends SearchTerm {
             return $nt !== 0;
         }
     }
+    function about_reviews() {
+        return self::ABOUT_MANY;
+    }
 }

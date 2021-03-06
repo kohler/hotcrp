@@ -32,4 +32,7 @@ class Decision_SearchTerm extends SearchTerm {
         $d = $this->user->can_view_decision($row) ? $row->outcome : 0;
         return CountMatcher::compare_using($d, $this->match);
     }
+    function about_reviews() {
+        return self::ABOUT_NO;
+    }
 }

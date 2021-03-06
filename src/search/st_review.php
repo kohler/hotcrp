@@ -750,4 +750,7 @@ class Review_SearchTerm extends SearchTerm {
     function debug_json() {
         return ["type" => $this->type, "count" => $this->rsm->comparison()];
     }
+    function about_reviews() {
+        return $this->rsm->can_test_review() ? self::ABOUT_SELF : self::ABOUT_MANY;
+    }
 }

@@ -300,12 +300,22 @@ abstract class SearchTerm {
 
     /** @param bool $top
      * @return void */
-    function extract_metadata($top, PaperSearch $srch) {
+    function configure_search($top, PaperSearch $srch) {
     }
+
     /** @param bool $top
      * @return ?PaperColumn */
     function default_sort_column($top, PaperSearch $srch) {
         return null;
+    }
+
+    const ABOUT_NO = 0;
+    const ABOUT_MAYBE = 1;
+    const ABOUT_SELF = 2;
+    const ABOUT_MANY = 3;
+    /** @return 0|1|2|3 */
+    function about_reviews() {
+        return self::ABOUT_MAYBE;
     }
 }
 
@@ -321,6 +331,9 @@ class False_SearchTerm extends SearchTerm {
     }
     function test(PaperInfo $row, $rrow) {
         return false;
+    }
+    function about_reviews() {
+        return self::ABOUT_NO;
     }
 }
 
@@ -342,6 +355,9 @@ class True_SearchTerm extends SearchTerm {
     }
     function test(PaperInfo $row, $rrow) {
         return true;
+    }
+    function about_reviews() {
+        return self::ABOUT_NO;
     }
 }
 
@@ -460,6 +476,19 @@ abstract class Op_SearchTerm extends SearchTerm {
             }
         }
     }
+    function configure_search($top, PaperSearch $srch) {
+        $top = $top && $this instanceof And_SearchTerm;
+        foreach ($this->child as $qv) {
+            $qv->configure_search($top, $srch);
+        }
+    }
+    function about_reviews() {
+        $x = 0;
+        foreach ($this->child as $qv) {
+            $x = max($x, $qv->about_reviews());
+        }
+        return $x;
+    }
 }
 
 class Not_SearchTerm extends Op_SearchTerm {
@@ -504,6 +533,7 @@ class Not_SearchTerm extends Op_SearchTerm {
     function test(PaperInfo $row, $rrow) {
         return !$this->child[0]->test($row, $rrow);
     }
+
     function script_expression(PaperInfo $row) {
         $x = $this->child[0]->script_expression($row);
         if ($x === null) {
@@ -513,6 +543,8 @@ class Not_SearchTerm extends Op_SearchTerm {
         } else {
             return ["type" => "not", "child" => [$x]];
         }
+    }
+    function configure_search($top, PaperSearch $srch) {
     }
 }
 
@@ -578,12 +610,6 @@ class And_SearchTerm extends Op_SearchTerm {
             return $ch[0];
         } else {
             return ["type" => "and", "child" => $ch];
-        }
-    }
-    function extract_metadata($top, PaperSearch $srch) {
-        parent::extract_metadata($top, $srch);
-        foreach ($this->child as $qv) {
-            $qv->extract_metadata($top, $srch);
         }
     }
     function default_sort_column($top, PaperSearch $srch) {
@@ -675,12 +701,6 @@ class Or_SearchTerm extends Op_SearchTerm {
     function script_expression(PaperInfo $row) {
         return self::make_script_expression($this->child, $row);
     }
-    function extract_metadata($top, PaperSearch $srch) {
-        parent::extract_metadata($top, $srch);
-        foreach ($this->child as $qv) {
-            $qv->extract_metadata(false, $srch);
-        }
-    }
 }
 
 class Xor_SearchTerm extends Op_SearchTerm {
@@ -728,12 +748,6 @@ class Xor_SearchTerm extends Op_SearchTerm {
                 $x = !$x;
         }
         return $x;
-    }
-    function extract_metadata($top, PaperSearch $srch) {
-        parent::extract_metadata($top, $srch);
-        foreach ($this->child as $qv) {
-            $qv->extract_metadata(false, $srch);
-        }
     }
 }
 
@@ -843,12 +857,6 @@ class Then_SearchTerm extends Op_SearchTerm {
     }
     function script_expression(PaperInfo $row) {
         return Or_SearchTerm::make_script_expression(array_slice($this->child, 0, $this->nthen), $row);
-    }
-    function extract_metadata($top, PaperSearch $srch) {
-        parent::extract_metadata($top, $srch);
-        foreach ($this->child as $qv) {
-            $qv->extract_metadata(false, $srch);
-        }
     }
 }
 
@@ -1190,9 +1198,16 @@ class Limit_SearchTerm extends SearchTerm {
         }
     }
 
-    function extract_metadata($top, PaperSearch $srch) {
+    function configure_search($top, PaperSearch $srch) {
         if ($top) {
             $srch->apply_limit($this);
+        }
+    }
+    function about_reviews() {
+        if (in_array($this->limit, ["viewable", "reviewable", "ar", "r", "rout", "req"])) {
+            return self::ABOUT_MANY;
+        } else {
+            return self::ABOUT_NO;
         }
     }
 }
@@ -1262,11 +1277,13 @@ class TextMatch_SearchTerm extends SearchTerm {
             return ["type" => $this->field, "match" => $this->trivial];
         }
     }
-    function extract_metadata($top, PaperSearch $srch) {
-        parent::extract_metadata($top, $srch);
+    function configure_search($top, PaperSearch $srch) {
         if ($this->regex) {
             $srch->add_field_highlighter($this->type, $this->regex);
         }
+    }
+    function about_reviews() {
+        return self::ABOUT_NO;
     }
 }
 
@@ -1421,6 +1438,9 @@ class PaperID_SearchTerm extends SearchTerm {
         } else {
             return null;
         }
+    }
+    function about_reviews() {
+        return self::ABOUT_NO;
     }
     static function parse_pidcode($word, SearchWord $sword, PaperSearch $srch) {
         if (($ids = SessionList::decode_ids($word)) === null) {
@@ -2419,9 +2439,8 @@ class PaperSearch {
             }
             //Conf::msg_debugt(json_encode($this->_qe->debug_json()));
 
-            // extract regular expressions and set _reviewer if the query is
-            // about exactly one reviewer, and warn about contradictions
-            $this->_qe->extract_metadata(true, $this);
+            // extract regular expressions
+            $this->_qe->configure_search(true, $this);
         }
         return $this->_qe;
     }

@@ -148,4 +148,7 @@ class Revpref_SearchTerm extends SearchTerm {
         }
         return $this->rpsm->test($n);
     }
+    function about_reviews() {
+        return self::ABOUT_NO;
+    }
 }

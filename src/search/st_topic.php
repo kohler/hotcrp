@@ -79,4 +79,7 @@ class Topic_SearchTerm extends SearchTerm {
         }
         return $o;
     }
+    function about_reviews() {
+        return self::ABOUT_NO;
+    }
 }

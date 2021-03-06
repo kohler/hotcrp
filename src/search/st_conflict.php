@@ -64,4 +64,7 @@ class Conflict_SearchTerm extends SearchTerm {
             return ["type" => "pc_conflict", "cids" => $this->csm->contact_set(), "compar" => $this->csm->relation(), "value" => $this->csm->value()];
         }
     }
+    function about_reviews() {
+        return self::ABOUT_NO;
+    }
 }

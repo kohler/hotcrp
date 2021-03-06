@@ -75,10 +75,12 @@ class Author_SearchTerm extends SearchTerm {
         }
         return $this->csm->test($n);
     }
-    function extract_metadata($top, PaperSearch $srch) {
-        parent::extract_metadata($top, $srch);
+    function configure_search($top, PaperSearch $srch) {
         if ($this->regex) {
             $srch->add_field_highlighter("au", $this->regex);
         }
+    }
+    function about_reviews() {
+        return self::ABOUT_NO;
     }
 }
