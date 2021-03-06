@@ -100,7 +100,7 @@ class Tag_ListAction extends ListAction {
                     $qreq->q = "order:$tagreq";
                 }
             } else {
-                $assignset->error($tagger->error_html);
+                $assignset->error($tagger->error_html());
             }
         }
         if (($errors = $assignset->messages_div_html())) {

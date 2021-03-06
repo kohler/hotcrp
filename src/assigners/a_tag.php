@@ -155,7 +155,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $xvalue = trim((string) $req["tag_value"]);
         if (!preg_match('/\A([-+]?#?)(|~~|[^-~+#]*~)([a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*)(\z|#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*)\z/', $tag, $m)
             || ($m[4] !== "" && $m[4] !== "#")) {
-            $state->error("“" . htmlspecialchars($tag) . "”: Invalid tag.");
+            $state->error("Invalid tag “" . htmlspecialchars($tag) . "”.");
             return false;
         } else if ($xvalue !== "" && $m[5] !== "") {
             $state->error("“" . htmlspecialchars($tag) . "”: You have a <code>tag value</code> column, so the tag value specified here is ignored.");
@@ -164,7 +164,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $state->warning("“" . htmlspecialchars($tag) . "”: Tag values ignored when removing a tag.");
         } else if (($this->remove && str_starts_with($m[1], "+"))
                    || ($this->remove === false && str_starts_with($m[1], "-"))) {
-            $state->error("“" . htmlspecialchars($tag) . "” is incompatible with this action.");
+            $state->error("Tag “" . htmlspecialchars($tag) . "” is incompatible with this action.");
             return false;
         }
 
@@ -238,7 +238,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
 
         // otherwise handle adds
         if (strpos($xtag, "*") !== false) {
-            $state->error("“" . htmlspecialchars($tag) . "”: Wildcards aren’t allowed here.");
+            $state->error("Invalid tag “" . htmlspecialchars($tag) . "” (stars aren’t allowed here).");
             return false;
         }
         if ($xuser !== ""
@@ -256,8 +256,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $xuser = $twiddlecids[0] . "~";
         }
         $tagger = new Tagger($state->user);
-        if (!$tagger->check($xtag, Tagger::CHECKVERBOSE)) {
-            $state->error($tagger->error_html);
+        if (!$tagger->check($xtag)) {
+            $state->error($tagger->error_html(true));
             return false;
         }
 

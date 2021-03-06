@@ -105,14 +105,14 @@ class Tags_SettingParser extends SettingParser {
                                $checkf, $min_idx) {
         $ts = array();
         foreach (preg_split('/\s+/', $sv->reqv($si->name)) as $t) {
-            if ($t !== "" && ($tx = $tagger->check($t, $checkf | Tagger::CHECKVERBOSE))) {
+            if ($t !== "" && ($tx = $tagger->check($t, $checkf))) {
                 list($tag, $idx) = Tagger::unpack($tx);
                 if ($min_idx) {
                     $tx = $tag . "#" . max($min_idx, (float) $idx);
                 }
                 $ts[$tag] = $tx;
             } else if ($t !== "") {
-                $sv->error_at($si, $tagger->error_html);
+                $sv->error_at($si, $tagger->error_html(true));
             }
         }
         return array_values($ts);

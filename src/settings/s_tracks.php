@@ -255,10 +255,11 @@ class Tracks_SettingParser extends SettingParser {
             }
             $trackname = $tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE);
             if (!$trackname || ($trackname === "_" && $i !== 1)) {
-                if ($trackname !== "_")
-                    $sv->error_at("name_track$i", $tagger->error_html);
-                else
+                if ($trackname !== "_") {
+                    $sv->error_at("name_track$i", $tagger->error_html());
+                } else {
                     $sv->error_at("name_track$i", "Track name “_” is reserved.");
+                }
                 $sv->error_at("tracks");
                 $ok = false;
             }
@@ -277,7 +278,7 @@ class Tracks_SettingParser extends SettingParser {
                     } else if (($ttag = $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))) {
                         $t->$type = $ttype . $ttag;
                     } else {
-                        $sv->error_at("{$type}_track$i", "Track permission tag: " . $tagger->error_html);
+                        $sv->error_at("{$type}_track$i", "Track permission tag: " . $tagger->error_html());
                         $sv->error_at("{$type}_tag_track$i");
                         $sv->error_at("tracks");
                     }

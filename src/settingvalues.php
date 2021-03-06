@@ -1447,7 +1447,7 @@ class SettingValues extends MessageSet {
             if ($v) {
                 return $v;
             }
-            $err = $tagger->error_html;
+            $err = $tagger->error_html();
         } else if ($si->type === "emailheader") {
             $mt = new MimeText;
             $v = $mt->encode_email_header("", $v);

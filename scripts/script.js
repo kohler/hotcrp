@@ -3773,18 +3773,33 @@ function setajaxcheck(elt, rv) {
             }
     }
     make_outline_flasher(elt);
-    if (!rv || (!rv.ok && !rv.error))
-        rv = {error: "Error"};
-    if (rv.ok && !rv.warning)
+    var t = "", i, status = 0;
+    if (rv && rv.message_list) {
+        for (var i = 0; i !== rv.message_list.length; ++i) {
+            t += render_feedback(rv.message_list[i].message, rv.message_list[i].status);
+            status = Math.max(status, rv.message_list[i].status);
+        }
+    }
+    if (t === "") {
+        if (rv && rv.error) {
+            t = rv.error;
+            status = 2;
+        } else if (rv && rv.warning) {
+            t = rv.warning;
+            status = rv.ok ? 1 : 2;
+        } else if (!rv || !rv.ok) {
+            t = "Error";
+            status = 2;
+        }
+    }
+    if (status === 0)
         make_outline_flasher(elt, "0, 200, 0");
-    else if (rv.ok)
+    else if (status === 1)
         make_outline_flasher(elt, "133, 92, 4");
     else
         elt.style.outline = "5px solid red";
-    if (rv.error)
-        make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change click hide");
-    else if (rv.warning)
-        make_bubble(rv.warning, "warningbubble").near(elt).removeOn(elt, "input change click hide focus blur");
+    if (t)
+        make_bubble(t, status === 2 ? "errorbubble" : "warningbubble").near(elt).removeOn(elt, "input change click hide" + (status === 2 ? "" : " focus blur"));
 }
 
 function link_urls(t) {
@@ -6646,8 +6661,9 @@ function make_tag_save_callback(elt) {
 
 function set_tags_callback(evt, data) {
     var si = analyze_rows(data.pid);
-    if (highlight_entries && rowanal[si].entry)
+    if (highlight_entries && rowanal[si].entry) {
         setajaxcheck(rowanal[si].entry, {ok: true});
+    }
     row_move(si);
 }
 
@@ -8275,8 +8291,9 @@ function save_pstags(evt) {
         success: function (data) {
             $f.find("input").prop("disabled", false);
             if (data.ok) {
-                if (!data.message_list || !data.message_list.length)
+                if (!data.message_list || !data.message_list.length) {
                     foldup.call($f[0], null, {f: true});
+                }
                 $(window).trigger("hotcrptags", [data]);
                 removeClass(f.elements.tags, "has-error");
                 removeClass(f.elements.save, "btn-highlight");

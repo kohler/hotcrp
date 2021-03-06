@@ -259,7 +259,7 @@ class AutoassignerInterface {
             if (($tag = $tagger->check($tag, Tagger::NOVALUE))) {
                 $this->discordertag = $tag;
             } else {
-                $this->errors["discordertag"] = $tagger->error_html;
+                $this->errors["discordertag"] = $tagger->error_html();
             }
         }
 

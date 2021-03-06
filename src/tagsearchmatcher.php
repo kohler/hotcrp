@@ -56,7 +56,7 @@ class TagSearchMatcher {
         $checktag = substr($xtag, (int) $twiddle);
         $tagger = new Tagger($this->user);
         if (!$tagger->check($checktag, Tagger::NOVALUE | ($allow_star_any ? Tagger::ALLOWRESERVED | Tagger::ALLOWSTAR : 0))) {
-            $this->_errors[] = $tagger->error_html;
+            $this->_errors[] = $tagger->error_html();
             return false;
         }
 

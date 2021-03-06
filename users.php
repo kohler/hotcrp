@@ -295,7 +295,7 @@ function do_tags($qreq) {
         if ($t === "") {
             /* nada */
         } else if (!($t = $tagger->check($t, Tagger::NOPRIVATE))) {
-            $errors[] = $tagger->error_html;
+            $errors[] = $tagger->error_html();
         } else if (Tagger::base($t) === "pc") {
             $errors[] = "The “pc” user tag is set automatically for all PC members.";
         } else {
