@@ -3,9 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-require_once("src/papersearch.php");
-if (!$Me->is_manager())
+if (!$Me->is_manager()) {
     $Me->escape();
+}
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 
 $Conf->header("Assignments", "assignpc", ["subtitle" => "Conflicts"]);

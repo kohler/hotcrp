@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-require_once("src/papersearch.php");
 if (!$Me->privChair && !$Me->isPC) {
     $Me->escape();
 }
@@ -282,8 +281,10 @@ if ($Me->privChair) {
 }
 
 echo '<div class="entryi"><label for="htctl-prefs-q">Search</label><div class="entry">',
-    Ht::entry("q", $Qreq->q, ["id" => "htctl-prefs-q", "size" => 32]),
-    '  ', Ht::submit("redisplay", "Redisplay"), '</div></div>';
+    Ht::entry("q", $Qreq->q, [
+        "id" => "htctl-prefs-q", "size" => 32, "placeholder" => "(All)",
+        "class" => "papersearch want-focus need-suggest", "spellcheck" => false
+    ]), '  ', Ht::submit("redisplay", "Redisplay"), '</div></div>';
 
 function show_pref_element($pl, $name, $text, $extra = []) {
     return '<li class="' . rtrim("checki " . ($extra["item_class"] ?? ""))

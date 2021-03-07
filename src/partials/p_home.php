@@ -167,7 +167,7 @@ class Home_Partial {
             Ht::entry("q", (string) $qreq->q, [
                 "id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
                 "class" => "papersearch need-suggest flex-grow-1",
-                "placeholder" => "(All)",
+                "placeholder" => "(All)", "spellcheck" => false,
                 "aria-labelledby" => "homesearch-label"
             ]), '<div class="form-basic-search-in"> in ',
             PaperSearch::limit_selector($tOpt, key($tOpt), ["class" => "ml-1"]),

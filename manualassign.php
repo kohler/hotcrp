@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-require_once("src/papersearch.php");
 if (!$Me->is_manager()) {
     $Me->escape();
 }
@@ -173,10 +172,11 @@ echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
 
 // Paper selection
 echo "<tr><td>Paper selection: &nbsp;</td><td>",
-    Ht::entry("q", $Qreq->q,
-              ["id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
-               "title" => "Paper numbers or search terms"]),
-    " &nbsp;in &nbsp;";
+    Ht::entry("q", $Qreq->q, [
+        "id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
+        "class" => "papersearch want-focus need-suggest", "aria-label" => "Search",
+        "spellcheck" => false
+    ]), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1) {
     echo Ht::select("t", $tOpt, $Qreq->t);
 } else {

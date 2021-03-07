@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-require_once("src/papersearch.php");
 
 $Graph = $Qreq->g;
 if (!$Graph
@@ -43,7 +42,7 @@ echo $Conf->make_script_file("scripts/graph.js");
 function echo_graph($searchable, $fg, $h2) {
     echo '<div class="has-hotgraph" style="max-width:960px;margin-bottom:4em">';
     if ($searchable) {
-        echo Ht::entry("q", "", ["placeholder" => "Find on graph", "class" => "uii js-hotgraph-highlight papersearch float-right need-autogrow need-suggest"]);
+        echo Ht::entry("q", "", ["placeholder" => "Find on graph", "class" => "uii js-hotgraph-highlight papersearch float-right need-autogrow need-suggest", "spellcheck" => false]);
     }
     if ($h2) {
         echo "<h2>", $h2, "</h2>\n";
@@ -70,7 +69,7 @@ function formulas_qrow($i, $q, $s, $status) {
         $q = "";
     }
     $klass = MessageSet::status_class($status, "papersearch");
-    $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i"));
+    $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i", "spellcheck" => false]);
     $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("default" => "default", "plain" => "plain", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
     $t .= ' <span class="nb btnbox aumovebox" style="margin-left:1em"><a href="#" class="ui btn qx row-order-ui moveup" tabindex="-1">'
         . Icons::ui_triangle(0)

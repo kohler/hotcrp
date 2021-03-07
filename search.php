@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-require_once("src/papersearch.php");
 if ($Me->is_empty()) {
     $Me->escape();
 }
@@ -308,11 +307,11 @@ echo Ht::form($Conf->hoturl("search"), ["method" => "get"]),
     '<div class="entryi medium"><label for="htctl-advanced-qt">Search</label><div class="entry">',
     Ht::select("qt", $qtOpt, $Qreq->get("qt", "n"), ["id" => "htctl-advanced-qt"]), '</div></div>',
     '<div class="entryi medium"><label for="htctl-advanced-qa">With <b>all</b> the words</label><div class="entry">',
-    Ht::entry("qa", $Qreq->get("qa", $Qreq->get("q", "")), ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest"]), '</div></div>',
+    Ht::entry("qa", $Qreq->get("qa", $Qreq->get("q", "")), ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest", "spellcheck" => false]), '</div></div>',
     '<div class="entryi medium"><label for="htctl-advanced-qo">With <b>any</b> of the words</label><div class="entry">',
-    Ht::entry("qo", $Qreq->get("qo", ""), ["id" => "htctl-advanced-qo", "size" => 60]), '</div></div>',
+    Ht::entry("qo", $Qreq->get("qo", ""), ["id" => "htctl-advanced-qo", "size" => 60, "spellcheck" => false]), '</div></div>',
     '<div class="entryi medium"><label for="htctl-advanced-qx"><b>Without</b> the words</label><div class="entry">',
-    Ht::entry("qx", $Qreq->get("qx", ""), ["id" => "htctl-advanced-qx", "size" => 60]), '</div></div>';
+    Ht::entry("qx", $Qreq->get("qx", ""), ["id" => "htctl-advanced-qx", "size" => 60, "spellcheck" => false]), '</div></div>';
 if (!$Search->limit_explicit()) {
     echo '<div class="entryi medium"><label for="htctl-advanced-q">In</label><div class="entry">',
         PaperSearch::limit_selector($tOpt, $Search->limit(), ["id" => "htctl-advanced-q"]), '</div></div>';

@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-require_once("src/papersearch.php");
 require_once("src/mailclasses.php");
 if (!$Me->is_manager() && !$Me->isPC) {
     $Me->escape();
@@ -667,10 +666,10 @@ if ($Me->privChair)
 else
     echo '<td class="nw">Papers: &nbsp;</td><td>',
         Ht::hidden("plimit", 1), '<span>';
-echo Ht::entry("q", (string) $Qreq->q,
-               array("id" => "q", "placeholder" => "(All)",
-                     "class" => "papersearch need-suggest", "size" => 36)),
-    " &nbsp;in&nbsp;";
+echo Ht::entry("q", (string) $Qreq->q, [
+        "id" => "q", "placeholder" => "(All)", "spellcheck" => false,
+        "class" => "papersearch need-suggest", "size" => 36
+    ]), " &nbsp;in&nbsp;";
 if (count($tOpt) == 1) {
     echo htmlspecialchars($tOpt[$Qreq->t]);
 } else {

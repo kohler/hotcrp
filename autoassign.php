@@ -613,11 +613,12 @@ echo divClass("pap"), "<h3 class=\"form-h\">Paper selection</h3>";
 if (!isset($Qreq->q)) { // XXX redundant
     $Qreq->q = join(" ", $SSel->selection());
 }
-echo Ht::entry("q", $Qreq->q,
-               array("id" => "autoassignq", "placeholder" => "(All)",
-                     "size" => 40, "title" => "Enter paper numbers or search terms",
-                     "class" => Ht::control_class("q", "papersearch js-autosubmit need-suggest"),
-                     "data-autosubmit-type" => "requery")), " &nbsp;in &nbsp;";
+echo Ht::entry("q", $Qreq->q, [
+        "id" => "autoassignq", "placeholder" => "(All)",
+        "size" => 40, "aria-label" => "Search",
+        "class" => Ht::control_class("q", "papersearch js-autosubmit need-suggest"),
+        "data-autosubmit-type" => "requery", "spellcheck" => false
+    ]), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1) {
     echo Ht::select("t", $tOpt, $Qreq->t);
 } else {

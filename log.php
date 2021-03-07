@@ -616,7 +616,7 @@ function searchbar(LogRowGenerator $lrg, $page) {
         '</div></div><div class="', Ht::control_class("p", "entryi medium"),
         '"><label for="p">Concerning paper(s)</label><div class="entry">',
         Ht::render_feedback_at("p"),
-        Ht::entry("p", $Qreq->p, ["id" => "p", "class" => "need-suggest papersearch", "autocomplete" => "off", "size" => 40]),
+        Ht::entry("p", $Qreq->p, ["id" => "p", "class" => "need-suggest papersearch", "autocomplete" => "off", "size" => 40, "spellcheck" => false]),
         '</div></div><div class="', Ht::control_class("u", "entryi medium"),
         '"><label for="u">Concerning user(s)</label><div class="entry">',
         Ht::render_feedback_at("u"),

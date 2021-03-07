@@ -602,7 +602,7 @@ class ReviewForm_SettingRenderer {
             . Ht::select("rf_{$xpos}_ec", $ecsel, $ecv, ["id" => "rf_{$xpos}_ec", "class" => "uich js-foldup"])
             . ' &nbsp;'
             . Ht::entry("rf_{$xpos}_ecs", $ecs,
-                        $sv->sjs("rf_{$xpos}_ecs", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus", "size" => 30]))
+                        $sv->sjs("rf_{$xpos}_ecs", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus", "size" => 30, "spellcheck" => false]))
             . '</div></div>';
     }
 
