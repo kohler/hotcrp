@@ -106,6 +106,7 @@ class SiteLoader {
     }
 
     // Set up conference options
+    /** @return list<string> */
     static private function expand_includes_once($file, $includepath, $globby) {
         foreach ($file[0] === "/" ? [""] : $includepath as $idir) {
             $try = $idir . $file;
@@ -118,35 +119,39 @@ class SiteLoader {
         return [];
     }
 
-    /** @param string|list<string> $files */
-    static function expand_includes($files, $expansions = array()) {
+    /** @param string|list<string> $files
+     * @return list<string> */
+    static function expand_includes($files, $expansions = []) {
         global $Opt;
         if (!is_array($files)) {
-            $files = array($files);
+            $files = [$files];
         }
         $confname = $Opt["confid"] ?? $Opt["dbName"] ?? null;
         $expansions["confid"] = $expansions["confname"] = $confname;
         $expansions["siteclass"] = $Opt["siteclass"] ?? null;
+        $root = self::$root;
 
         if (isset($expansions["autoload"]) && strpos($files[0], "/") === false) {
-            $includepath = [self::$root . "/src/", self::$root . "/lib/"];
+            $includepath = ["{$root}/src/", "{$root}/lib/"];
         } else {
-            $includepath = [self::$root . "/"];
+            $includepath = ["{$root}/"];
         }
-        if (isset($Opt["includepath"]) && is_array($Opt["includepath"])) {
-            foreach ($Opt["includepath"] as $i) {
+
+        $oincludepath = $Opt["includePath"] ?? $Opt["includepath"] ?? null;
+        if (is_array($oincludepath)) {
+            foreach ($oincludepath as $i) {
                 if ($i)
                     $includepath[] = str_ends_with($i, "/") ? $i : $i . "/";
             }
         }
 
-        $results = array();
+        $results = [];
         foreach ($files as $f) {
             if (strpos((string) $f, '$') !== false) {
                 foreach ($expansions as $k => $v) {
                     if ($v !== false && $v !== null) {
-                        $f = preg_replace(',\$\{' . $k . '\}|\$' . $k . '\b,', $v, $f);
-                    } else if (preg_match(',\$\{' . $k . '\}|\$' . $k . '\b,', $f)) {
+                        $f = preg_replace("/\\\$\\{{$k}\\}|\\\${$k}\\b/", $v, $f);
+                    } else if (preg_match("/\\\$\\{{$k}\\}|\\\${$k}\\b/", $f)) {
                         $f = "";
                         break;
                     }
@@ -167,9 +172,9 @@ class SiteLoader {
             $matches = self::expand_includes_once($f, $includepath, $globby);
             if (empty($matches)
                 && isset($expansions["autoload"])
-                && ($underscore = strpos($f, "_"))
+                && ($underscore = strrpos($f, "_"))
                 && ($f2 = SiteLoader::$suffix_map[substr($f, $underscore)] ?? null)) {
-                $xincludepath = array_merge($f2[1] ? [self::$root."/src/{$f2[1]}/"] : [], $includepath);
+                $xincludepath = array_merge($f2[1] ? ["{$root}/src/{$f2[1]}/"] : [], $includepath);
                 $matches = self::expand_includes_once($f2[0] . substr($f, 0, $underscore) . ".php", $xincludepath, $globby);
             }
             $results = array_merge($results, $matches);

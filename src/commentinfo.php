@@ -86,6 +86,8 @@ class CommentInfo {
         return $cinfo;
     }
 
+    /** @param int $round
+     * @return CommentInfo */
     static function make_response_template($round, PaperInfo $prow) {
         return new CommentInfo(["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $round], $prow);
     }
@@ -96,6 +98,7 @@ class CommentInfo {
     }
 
 
+    /** @param ?PaperInfo $prow */
     static function echo_script($prow) {
         global $Me;
         if (Ht::mark_stash("papercomment")) {
@@ -175,6 +178,7 @@ class CommentInfo {
         }
     }
 
+    /** @return ?string */
     function unparse_response_text() {
         if ($this->commentType & COMMENTTYPE_RESPONSE) {
             $rname = $this->conf->resp_round_name($this->commentRound);
@@ -249,6 +253,7 @@ class CommentInfo {
         }
     }
 
+    /** @return string */
     function unparse_commenter_html(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::nameo_h($this, NAME_P|NAME_I);
@@ -262,6 +267,7 @@ class CommentInfo {
         return $n;
     }
 
+    /** @return string */
     function unparse_commenter_text(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
             $n = Text::nameo($this, NAME_P|NAME_I);
@@ -507,6 +513,7 @@ class CommentInfo {
         return rtrim($x) . "\n";
     }
 
+    /** @return string */
     function unparse_flow_entry(Contact $contact) {
         // See also ReviewForm::reviewFlowEntry
         $a = '<a href="' . $this->conf->hoturl("paper", "p=$this->paperId#" . $this->unparse_html_id()) . '"';
@@ -545,6 +552,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $this->conf->qe($q);
     }
 
+    /** @return bool */
     function save($req, Contact $acting_contact) {
         if (is_array($req)) {
             $req = (object) $req;
