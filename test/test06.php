@@ -880,11 +880,15 @@ assert_search_papers($user_chair, "has:proposal", "");
 assert_search_papers($user_lixia, "has:proposal", "");
 assert_search_papers($user_mgbaker, "has:proposal", "");
 assert_search_papers($user_mjh, "has:proposal", "");
+assert_search_papers($user_chair, "re:proposal", "");
+assert_search_papers($user_lixia, "re:proposal", "");
+assert_search_papers($user_mgbaker, "re:proposal", "");
+assert_search_papers($user_mjh, "re:proposal", "");
 
 $Conf->save_refresh_setting("extrev_chairreq", 1);
 Contact::update_rights();
 
-$xqreq = new Qrequest("POST", ["email" => "external3@_.com", "name" => "Amy March", "affiliation" => "Trancendent"]);
+$xqreq = new Qrequest("POST", ["email" => "external3@_.com", "name" => "Amy March", "affiliation" => "Transcendent"]);
 $result = RequestReview_API::requestreview($user_lixia, $xqreq, $paper17);
 $result = JsonResult::make($result);
 MailChecker::check_db("test06-external3-request17");
@@ -893,6 +897,10 @@ assert_search_papers($user_chair, "has:proposal", "17");
 assert_search_papers($user_lixia, "has:proposal", "17");
 assert_search_papers($user_mgbaker, "has:proposal", "17");
 assert_search_papers($user_mjh, "has:proposal", "");
+assert_search_papers($user_chair, "re:proposal", "17");
+assert_search_papers($user_lixia, "re:proposal", "17");
+assert_search_papers($user_mgbaker, "re:proposal", "17");
+assert_search_papers($user_mjh, "re:proposal", "");
 
 assert_search_papers($user_chair, "has:proposal admin:me", "17");
 assert_search_papers($user_lixia, "has:proposal admin:me", "");

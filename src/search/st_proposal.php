@@ -61,6 +61,7 @@ class Proposal_SearchTerm extends SearchTerm {
         $this->rqsm = $rqsm;
         $this->rqsm->finish();
     }
+
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $rqsm = new ReviewRequestSearchMatcher;
 
@@ -77,8 +78,9 @@ class Proposal_SearchTerm extends SearchTerm {
                            || $rqsm->apply_comparison($m[1]))) {
                 $qword = $m[2];
             } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $qword, $m)) {
-                if (($quoted = $m[1][0] === "\""))
+                if (($quoted = $m[1][0] === "\"")) {
                     $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
+                }
                 $contacts = $m[1];
                 $qword = $m[2];
             } else {

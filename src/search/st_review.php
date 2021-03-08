@@ -485,6 +485,7 @@ class Review_SearchTerm extends SearchTerm {
             "parse_function" => "Review_SearchTerm::parse",
             "retype" => $t,
             "recompleteness" => self::$recompleteness_map[$c] ?? $c,
+            "reblank" => $c === "" && $t === "",
             "has" => ">0"
         ];
     }
@@ -512,6 +513,7 @@ class Review_SearchTerm extends SearchTerm {
         }
         return $cs;
     }
+
     /** @param list<string> &$components
      * @param int &$pos
      * @return ?array{int,float} */
@@ -570,6 +572,12 @@ class Review_SearchTerm extends SearchTerm {
     }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
+        if ($sword->kwdef->reblank
+            && str_starts_with($sword->qword, "proposal")
+            && (strlen($sword->qword) === 8 || $sword->qword[8] === ":")) {
+            $sword->qword = strlen($sword->qword) === 8 ? "any" : ltrim(substr($sword->qword, 9));
+            return Proposal_SearchTerm::parse(SearchWord::unquote($sword->qword), $sword, $srch);
+        }
         $rsm = new ReviewSearchMatcher;
         if ($sword->kwdef->retype) {
             $rsm->apply_review_type($sword->kwdef->retype);
