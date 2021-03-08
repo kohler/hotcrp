@@ -4,7 +4,7 @@
 
 require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
-$arg = Getopt::rest($argv, "hn:t:xwacN", ["help", "name:", "type:", "narrow", "wide", "all", "no-header", "comments", "sitename"]);
+$arg = Getopt::rest($argv, "hn:t:xwacN", ["help", "name:", "type:", "narrow", "wide", "all", "no-header", "comments", "sitename", "no-text", "no-score"]);
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/reviewcsv.php [-n CONFID] [-t COLLECTION] [-acx] [QUERY...]
 Output a CSV file containing all reviews for the papers matching QUERY.
@@ -15,6 +15,8 @@ Options include:
   -a, --all              Include all reviews, not just submitted reviews.
   -c, --comments         Include comments.
   -N, --sitename         Include site name and class in CSV.
+  --no-text              Omit text fields.
+  --no-score             Omit score fields.
   --no-header            Omit CSV header.
   QUERY...               A search term.\n");
     exit(0);
@@ -27,6 +29,12 @@ if ($comments && !$narrow) {
     exit(1);
 } else if ($narrow && (isset($arg["w"]) || isset($arg["wide"]))) {
     fwrite(STDERR, "batch/reviewcsv.php: ‘--wide’ and ‘--narrow’ contradict.\n");
+    exit(1);
+}
+$no_text = isset($arg["no-text"]);
+$no_score = isset($arg["no-score"]);
+if ($comments && $no_text) {
+    fwrite(STDERR, "batch/reviewcsv.php: ‘-c’ and ‘--no-text’ contradict.\n");
     exit(1);
 }
 
@@ -50,7 +58,7 @@ $header = [];
 if (isset($arg["N"]) || isset($arg["sitename"])) {
     array_push($header, "sitename", "siteclass");
 }
-array_push($header, "pid", "review", "email", "round");
+array_push($header, "pid", "review", "email", "round", "submitted_at");
 if ($all || $comments) {
     $header[] = "status";
 }
@@ -108,6 +116,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
             } else {
                 $rs .= "comment";
             }
+            $x["submitted_at"] = $crow->timeDisplayed ? : ($crow->timeNotified ? : $crow->timeModified);
             $x["status"] = $rs;
             $x["field"] = "comment";
             $x["format"] = $crow->commentFormat;
@@ -117,6 +126,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
             $x["review"] = $rrow->unparse_ordinal_id();
             $x["email"] = $rrow->email;
             $x["round"] = $Conf->round_name($rrow->reviewRound);
+            $x["submitted_at"] = $rrow->reviewSubmitted;
             $x["status"] = $rrow->status_description();
             if ($rrow->reviewFormat === null) {
                 $x["format"] = $Conf->default_format;
@@ -124,6 +134,9 @@ foreach ($search->sorted_paper_ids() as $pid) {
                 $x["format"] = $rrow->reviewFormat;
             }
             foreach ($rrow->viewable_fields($user) as $fid => $f) {
+                if ($f->has_options ? $no_score : $no_text) {
+                    continue;
+                }
                 $fv = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
                 if ($fv === "") {
                     // ignore
