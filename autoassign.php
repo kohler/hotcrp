@@ -741,7 +741,7 @@ $summary = [];
 $nrev = AssignmentCountSet::load($Me, AssignmentCountSet::HAS_REVIEW);
 foreach ($Conf->pc_members() as $id => $p) {
     $t = '<div class="ctelt"><label class="checki ctelti"><span class="checkc">'
-        . Ht::checkbox("pcc$id", 1, isset($pcsel[$id]), [
+        . Ht::checkbox("pcc$id", 1, isset($Qreq["pcc$id"]), [
             "id" => "pcc$id", "data-range-type" => "pcc",
             "class" => "uic js-range-click js-pcsel-tag"
         ]) . '</span>' . $Me->reviewer_html_for($p)
