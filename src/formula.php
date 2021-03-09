@@ -1284,6 +1284,7 @@ class FormulaCompiler {
         return $t_result;
     }
 
+    /** @return string */
     function _compile_my(Fexpr $e) {
         $p = $this->_push();
         $this->index_type = Fexpr::IDX_MY;
@@ -1294,6 +1295,7 @@ class FormulaCompiler {
         return $t;
     }
 
+    /** @return string */
     function statement_text() {
         return join("\n  ", $this->g0stmt)
             . (empty($this->g0stmt) || empty($this->gstmt) ? "" : "\n  ")
@@ -1716,7 +1718,7 @@ class Formula implements JsonSerializable {
 
     private function _reviewer_base($t) {
         $t = strtolower($t);
-        if (preg_match('/\A(?:(?:re|rev|review)(?:|type)|rtype)\z/i', $t)) {
+        if (preg_match('/\A(?:r|re|rev|review)type\z/i', $t)) {
             return new Revtype_Fexpr;
         } else if (preg_match('/\A(?:|r|re|rev|review)round\z/i', $t)) {
             return new ReviewRound_Fexpr;
