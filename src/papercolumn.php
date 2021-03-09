@@ -803,7 +803,7 @@ class TagList_PaperColumn extends PaperColumn {
     }
 }
 
-class ScoreGraph_PaperColumn extends PaperColumn {
+abstract class ScoreGraph_PaperColumn extends PaperColumn {
     /** @var Contact */
     protected $contact;
     protected $not_me;
@@ -842,9 +842,7 @@ class ScoreGraph_PaperColumn extends PaperColumn {
         }
     }
     /** @return array<int,int> */
-    function score_values(PaperList $pl, PaperInfo $row) {
-        throw new Exception("score_values not defined");
-    }
+    abstract function score_values(PaperList $pl, PaperInfo $row);
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = $this->avgmap = [];
         foreach ($pl->rowset() as $row) {

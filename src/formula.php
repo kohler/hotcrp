@@ -1025,8 +1025,8 @@ class FormulaCompiler {
         }
     }
     function define_gvar($name, $expr) {
-        if (preg_match(',\A\$?(.*[^A-Ya-z0-9_].*)\z,', $name, $m)) {
-            $name = '$' . preg_replace_callback(',[^A-Ya-z0-9_],', function ($m) { return "Z" . dechex(ord($m[0])); }, $m[1]);
+        if (preg_match('/\A\$?(\d.*|.*[^A-Ya-z0-9_].*)\z/', $name, $m)) {
+            $name = '$' . preg_replace_callback('/\A\d|[^A-Ya-z0-9_]/', function ($m) { return "Z" . dechex(ord($m[0])); }, $m[1]);
         } else {
             $name = $name[0] === "$" ? $name : '$' . $name;
         }
