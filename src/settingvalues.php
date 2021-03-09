@@ -11,7 +11,9 @@ class Si {
     /** @var string */
     public $json_name;
     /** @var string */
-    public $title;
+    private $title;
+    /** @var ?string */
+    public $title_pattern;
     /** @var ?string */
     public $group;
     /** @var ?string */
@@ -102,6 +104,7 @@ class Si {
         "position" => "is_number",
         "size" => "is_int",
         "title" => "is_string",
+        "title_pattern" => "is_string",
         "tags" => "is_string_list",
         "type" => "is_string",
         "validator_class" => "is_string",
@@ -229,12 +232,12 @@ class Si {
         if ($this->storage) {
             $si->storage .= $suffix;
         }
-        if ($this->extensible === self::X_WORD) {
-            $si->title .= " (" . htmlspecialchars(substr($suffix, 1)) . ")";
-        }
         if ($this->message_context_setting
             && str_starts_with($this->message_context_setting, "+")) {
             $si->message_context_setting .= $suffix;
+        }
+        if ($this->hashid) {
+            $si->hashid = null;
         }
         if ($overrides) {
             foreach (["title", "placeholder", "size", "group", "tags"] as $k) {
@@ -257,6 +260,47 @@ class Si {
             return substr($this->name, strlen($this->parent->name));
         } else {
             return "";
+        }
+    }
+
+    /** @return ?string */
+    function title(SettingValues $sv = null) {
+        if ($this->title_pattern) {
+            $ok = true;
+            $title = preg_replace_callback('/\$\{.*?\}/', function ($m) use ($sv, &$ok) {
+                $x = substr($m[0], 2, strlen($m[0]) - 3);
+                $t = null;
+                if ($x === "suffix" && $this->parent) {
+                    $t = substr($this->suffix(), 1);
+                } else if ($x === "capsuffix" && $this->parent) {
+                    $t = ucwords(substr($this->suffix(), 1));
+                } else if (str_starts_with($x, "req.") && $sv) {
+                    if (str_ends_with($x, "_\$") && ($suffix = $this->suffix())) {
+                        $t = $sv->reqv(substr($x, 4, strlen($x) - 6) . $suffix);
+                    } else {
+                        $t = $sv->reqv(substr($x, 4));
+                    }
+                }
+                if ($t !== null && $t !== "") {
+                    return $t;
+                } else {
+                    $ok = false;
+                    return "";
+                }
+            }, $this->title_pattern);
+            if ($ok) {
+                return $title;
+            }
+        }
+        return $this->title;
+    }
+
+    /** @return ?string */
+    function title_html(SettingValues $sv = null) {
+        if (($t = $this->title($sv))) {
+            return htmlspecialchars($t);
+        } else {
+            return null;
         }
     }
 
@@ -655,8 +699,9 @@ class SettingValues extends MessageSet {
             $t = "Warning: " . $t;
         }
         $loc = null;
-        if ($mx->field && ($si = Si::get($this->conf, $mx->field)) && $si->title) {
-            $loc = htmlspecialchars($si->title);
+        if ($mx->field
+            && ($si = Si::get($this->conf, $mx->field))
+            && ($loc = $si->title_html($this))) {
             if ($si->hashid !== false) {
                 $loc = Ht::link($loc, $si->sv_hoturl($this));
             }
@@ -1160,7 +1205,7 @@ class SettingValues extends MessageSet {
         }
         $klass = $horizontal ? "entryi" : "f-i";
         if ($description === null) {
-            $description = $si->title;
+            $description = $si->title_html($this);
         }
 
         echo '<div class="', $this->control_class($name, $klass), '">',
@@ -1253,6 +1298,7 @@ class SettingValues extends MessageSet {
             '<div class="f-c', $xclass, ' ui js-foldup">',
             $this->label($name, $description),
             ' <span class="n fx">(HTML allowed)</span></div>',
+            $this->render_feedback_at($name),
             $this->render_textarea($name, ["class" => "fx"]),
             $hint, "</div>\n";
     }
@@ -1332,7 +1378,7 @@ class SettingValues extends MessageSet {
                     $this->save($name0, $d1);
             } else if ($d0 > $d1) {
                 $si1 = $this->si($name1);
-                $this->error_at($this->si($name0), "Must come before " . $this->setting_link($si1->title, $si1) . ".");
+                $this->error_at($this->si($name0), "Must come before " . $this->setting_link($si1->title_html($this), $si1) . ".");
                 $this->error_at($si1);
                 return false;
             }

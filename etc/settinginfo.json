@@ -328,6 +328,45 @@
         "type": "string"
     },
     {
+        "name": "rf_name", "group": "reviewform", "internal": true,
+        "extensible": "word", "title": "Field name"
+    },
+    {
+        "name": "rf_description", "group": "reviewform", "internal": true,
+        "extensible": "word",
+        "title": "Field description", "title_pattern": "${req.rf_name_$} description"
+    },
+    {
+        "name": "rf_options", "group": "reviewform", "internal": true,
+        "extensible": "word",
+        "title": "Field choices", "title_pattern": "${req.rf_name_$} choices"
+    },
+    {
+        "name": "rf_colors", "group": "reviewform", "internal": true,
+        "extensible": "word",
+        "title": "Field colors", "title_pattern": "${req.rf_name_$} colors"
+    },
+    {
+        "name": "rf_required", "group": "reviewform", "internal": true,
+        "extensible": "word",
+        "title": "Field requirement", "title_pattern": "${req.rf_name_$} requirement"
+    },
+    {
+        "name": "rf_visibility", "group": "reviewform", "internal": true,
+        "extensible": "word",
+        "title": "Field visibility", "title_pattern": "${req.rf_name_$} visibility"
+    },
+    {
+        "name": "rf_ec", "group": "reviewform", "internal": true,
+        "extensible": "word",
+        "title": "Field presence", "title_pattern": "${req.rf_name_$} presence"
+    },
+    {
+        "name": "rf_ecs", "group": "reviewform", "internal": true,
+        "extensible": "word",
+        "title": "Field presence condition", "title_pattern": "${req.rf_name_$} presence condition"
+    },
+    {
         "name": "roundname", "group": "reviews",
         "title": "Review round name",
         "type": "string", "size": 12, "internal": true, "placeholder": "unnamed",
@@ -506,7 +545,7 @@
     },
     {
         "name": "tag_color", "group": "tags", "hashid": "colors-and-styles",
-        "title": "Tag colors",
+        "title": "Tag colors", "title_pattern": "${capsuffix} tag colors",
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 40, "autogrow": true,
         "extensible": "word"
     },

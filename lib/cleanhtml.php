@@ -57,7 +57,7 @@ class CleanHTML {
                 $tag = strtolower($m[1]);
                 if (!isset($this->goodtags[$tag])) {
                     if (!($this->flags & self::BADTAGS_IGNORE))
-                        return self::_cleanHTMLError($err, "some <code>&lt;$tag&gt;</code> tag");
+                        return self::_cleanHTMLError($err, "an unacceptable <code>&lt;$tag&gt;</code> tag");
                     $x .= "&lt;";
                     $t = substr($t, 1);
                     continue;
@@ -111,7 +111,7 @@ class CleanHTML {
                 $tag = strtolower($m[1]);
                 if (!isset($this->goodtags[$tag])) {
                     if (!($this->flags & self::BADTAGS_IGNORE)) {
-                        return self::_cleanHTMLError($err, "some <code>&lt;/$tag&gt;</code> tag");
+                        return self::_cleanHTMLError($err, "an unacceptable <code>&lt;/$tag&gt;</code> tag");
                     }
                     $x .= "&lt;";
                     $t = substr($t, 1);

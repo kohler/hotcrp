@@ -279,12 +279,11 @@ function fold_property(fid, property, $j, hideval) {
     }
     $f.find(".is-property-" + property).toggleClass("hidden", hidden);
     $f.find(".js-settings-show-property[data-property=\"".concat(property, "\"]")).toggleClass("btn-disabled", !hidden);
-    console.log("fold_" + fid + " " + (hidden?"Y":"N") + " " + $($j[0]).val());
 }
 
 function fold_properties(fid) {
-    fold_property(fid, "description", $("#rf_" + fid + "_description"), [""]);
-    fold_property(fid, "editing", $("#rf_" + fid + "_ec"), ["all"]);
+    fold_property(fid, "description", $("#rf_description_" + fid), [""]);
+    fold_property(fid, "editing", $("#rf_ec_" + fid), ["all"]);
 }
 
 function fill_field_control(sel, value, order) {
@@ -294,33 +293,28 @@ function fill_field_control(sel, value, order) {
 
 function fill_field($f, fid, fieldj, order) {
     fieldj = fieldj || original[fid] || {};
-    fill_field_control("#rf_" + fid + "_name", fieldj.name || "", order);
-    fill_field_control("#rf_" + fid + "_description", fieldj.description || "", order);
-    fill_field_control("#rf_" + fid + "_visibility", fieldj.visibility || "pc", order);
-    fill_field_control("#rf_" + fid + "_options", options_to_text(fieldj), order);
-    fill_field_control("#rf_" + fid + "_required", fieldj.required ? "1" : "0", order);
-    fill_field_control("#rf_" + fid + "_colorsflipped", fieldj.option_letter ? "1" : "", order);
-    fill_field_control("#rf_" + fid + "_colors", option_class_prefix(fieldj), order);
-    var ec, ecs = fieldj.exists_if != null
-        ? fieldj.exists_if
-        : (fieldj.round_list
-           ? (fieldj.round_list.length ? "round:" + fieldj.round_list.join(" OR round:") : "NONE")
-           : "");
+    fill_field_control("#rf_name_" + fid, fieldj.name || "", order);
+    fill_field_control("#rf_description_" + fid, fieldj.description || "", order);
+    fill_field_control("#rf_visibility_" + fid, fieldj.visibility || "pc", order);
+    fill_field_control("#rf_options_" + fid, options_to_text(fieldj), order);
+    fill_field_control("#rf_required_" + fid, fieldj.required ? "1" : "0", order);
+    fill_field_control("#rf_colorsflipped_" + fid, fieldj.option_letter ? "1" : "", order);
+    fill_field_control("#rf_colors_" + fid, option_class_prefix(fieldj), order);
+    var ec, ecs = fieldj.exists_if != null ? fieldj.exists_if : "";
     if (ecs === "" || ecs.toLowerCase() === "all") {
         ec = "all";
     } else if (/^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(ecs)
-               && $("#rf_" + fid + "_ec > option[value=\"" + ecs + "\"]").length) {
+               && $("#rf_ec_" + fid + " > option[value=\"" + ecs + "\"]").length) {
         ec = ecs;
     } else {
         ec = "custom";
     }
-    fill_field_control("#rf_" + fid + "_ec", ec, order);
-    fill_field_control("#rf_" + fid + "_ecs", ecs, order);
-    fill_field_control("#rf_" + fid + "_rounds", (fieldj.round_list || ["all"]).join(" "), order);
+    fill_field_control("#rf_ec_" + fid, ec, order);
+    fill_field_control("#rf_ecs_" + fid, ecs, order);
     $("#rf_" + fid + " textarea").trigger("change");
     $("#rf_" + fid + "_view").html("").append(create_field_view(fieldj));
     $("#rf_" + fid + "_delete").attr("aria-label", fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
-    order && fill_field_control("#rf_" + fid + "_position", fieldj.position || 0, order);
+    order && fill_field_control("#rf_position_" + fid, fieldj.position || 0, order);
     fold_properties(fid);
     return false;
 }
@@ -330,14 +324,14 @@ function remove() {
         fid = $f.attr("data-revfield");
     $f.find(".rf-position").val(0);
     $f.detach().hide().appendTo("#reviewform_removedcontainer");
-    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-rf-deleted"><span class="settings-revfn" style="text-decoration:line-through">' + escape_entities($f.find("#rf_" + fid + "_name").val()) + '</span>&nbsp; (field removed)</div>');
+    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-rf-deleted"><span class="settings-revfn" style="text-decoration:line-through">' + escape_entities($f.find("#rf_name_" + fid).val()) + '</span>&nbsp; (field removed)</div>');
     fill_order();
 }
 
 tooltip.add_builder("settings-review-form", function (info) {
-    var p = this.name.lastIndexOf("_");
+    var m = this.name.match(/^rf_(.*)_[a-z]\d+$/);
     return $.extend({
-        anchor: "w", content: $("#settings-review-form-caption-" + this.name.substring(p + 1)).html(), className: "gray"
+        anchor: "w", content: $("#settings-review-form-caption-" + m[1]).html(), className: "gray"
     }, info);
 });
 
@@ -448,7 +442,7 @@ function append_field(fid, pos) {
     $f = $($tmpl.html().replace(/\$/g, fid));
 
     if (fid.charAt(0) === "s") {
-        $j = $f.find("select[name$=\"colors\"]");
+        $j = $f.find("select[name^=\"rf_colors_\"]");
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
     } else
@@ -491,13 +485,13 @@ function add_field(fid) {
     original[fid].position = fieldorder.length;
     append_field(fid, fieldorder.length);
     foldup.call($("#rf_" + fid)[0], null, {n: 2, f: false});
-    $("#rf_" + fid + "_position").attr("data-default-value", "0");
+    $("#rf_position_" + fid).attr("data-default-value", "0");
     form_highlight("#settingsform");
     return true;
 }
 
 function rfs(data) {
-    var i, fid, $j, m;
+    var i, fid, $j, m, elt, entryi;
     original = data.fields;
     samples = data.samples;
     stemplate = data.stemplate;
@@ -524,7 +518,7 @@ function rfs(data) {
 
     // highlight errors, apply request
     for (i in data.req || {}) {
-        m = i.match(/^rf_([st]\d+)(?:|_)/);
+        m = i.match(/^rf_(?:[a-z]*_|)([st]\d+)$/);
         if (m) {
             $j = $("#" + i);
             if (!$j[0]) {
@@ -539,11 +533,20 @@ function rfs(data) {
         }
     }
     for (i in data.errf || {}) {
-        $j = $("#" + i).closest(".entryi");
-        if (!$j.length)
-            $j = $("#rf_" + i);
-        $j.removeClass("hidden").addClass("has-error");
-        foldup.call($j[0], null, {n: 2, f: false});
+        elt = document.getElementById(i);
+        entryi = elt.closest(".entryi") || elt;
+        removeClass(entryi, "hidden");
+        addClass(entryi, "has-error");
+        foldup.call(entryi, null, {n: 2, f: false});
+    }
+    for (i in data.message_list || []) {
+        m = data.message_list[i];
+        if (m.field
+            && m.message
+            && (elt = document.getElementById(m.field))
+            && (entryi = elt.closest(".entry"))) {
+            $(render_feedback(m.message, m.status)).prependTo(entryi);
+        }
     }
     form_highlight("#settingsform");
 };
@@ -566,7 +569,7 @@ function add_dialog(fid, focus) {
     function submit(event) {
         add_field(fid);
         template && fill_field($("#rf_" + fid), fid, samples[template - 1], false);
-        $("#rf_" + fid + "_name")[0].focus();
+        $("#rf_name_" + fid)[0].focus();
         $d.close();
         event.preventDefault();
     }
