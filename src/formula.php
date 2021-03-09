@@ -1138,7 +1138,7 @@ class FormulaCompiler {
     function _rrow_view_score_bound($submitted = false) {
         $rrow = $this->_rrow();
         $sfx = $submitted ? "s" : "";
-        $clause = $submitted ? " && {$rrow}->reviewStatus" : "";
+        $clause = $submitted ? " && {$rrow}->reviewSubmitted" : "";
         if ($this->index_type === Fexpr::IDX_NONE) {
             return $this->define_gvar("rrow_vsb{$sfx}", "({$rrow}{$clause} ? \$contact->view_score_bound(\$prow, {$rrow}) : " . VIEWSCORE_EMPTYBOUND . ")");
         } else if ($this->index_type === Fexpr::IDX_MY) {
