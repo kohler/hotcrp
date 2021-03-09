@@ -185,8 +185,8 @@ class FormulaGraph extends MessageSet {
     private $papermap = [];
     /** @var array<int,Contact> */
     private $reviewers = [];
-    /** @var bool */
-    private $reviewer_color = false;
+    /** @var ?array<int,string> */
+    private $reviewer_color;
     private $remapped_rounds = [];
     /** @var array<string,int> */
     private $tags = [];
@@ -510,7 +510,7 @@ class FormulaGraph extends MessageSet {
     }
 
     private function _prepare_reviewer_color(Contact $user) {
-        $this->reviewer_color = array();
+        $this->reviewer_color = [];
         foreach ($this->conf->pc_members() as $p) {
             $this->reviewer_color[$p->contactId] = $this->conf->tags()->color_classes($p->viewable_tags($user), true);
         }
