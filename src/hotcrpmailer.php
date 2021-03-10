@@ -60,7 +60,6 @@ class HotCRPMailer extends Mailer {
     public $combination_type = 0;
 
     protected $_statistics = null;
-    protected $_tagless = array();
 
 
     /** @param ?Contact $recipient */
@@ -104,8 +103,7 @@ class HotCRPMailer extends Mailer {
             }
         }
         // Do not put passwords in email that is cc'd elsewhere
-        if ((!$Me || !$Me->privChair || $this->conf->opt("chairHidePasswords"))
-            && (($rest["cc"] ?? null) || ($rest["bcc"] ?? null))
+        if ((($rest["cc"] ?? null) || ($rest["bcc"] ?? null))
             && (!$this->censor || $this->censor === self::CENSOR_DISPLAY)) {
             $this->censor = self::CENSOR_ALL;
         }
@@ -400,7 +398,7 @@ class HotCRPMailer extends Mailer {
         } else if ($value !== null) {
             return (string) $value;
         } else {
-            $this->_tagless[$this->row->paperId] = true;
+            $this->warning_at($uf->input_string ?? null, "Paper #{$this->row->paperId} has no #{$tag} tag.");
             return "(none)";
         }
     }
@@ -477,33 +475,14 @@ class HotCRPMailer extends Mailer {
     }
 
 
-    protected function unexpanded_warning_html() {
-        $h = parent::unexpanded_warning_html();
-        foreach ($this->_unexpanded as $t => $x) {
-            if (preg_match('/\A%(?:NUMBER|TITLE|PAPER|AUTHOR|REVIEW|COMMENT)/', $t))
-                $h .= " Paper-specific keywords like <code>" . htmlspecialchars($t) . "</code> weren’t recognized because this set of recipients is not linked to a paper collection.";
+    function unexpanded_warning_at($text) {
+        if (preg_match('/\A%(?:NUMBER|TITLE|PAPER|AUTHOR|REVIEW|COMMENT)/', $text)) {
+            $this->warning_at($text, "Reference not expanded because this mail isn’t linked to submissions or reviews.");
+        } else if (preg_match('/\A%AUTHORVIEWCAPABILITY/', $text)) {
+            $this->warning_at($text, "Reference not expanded because this mail isn’t meant for submission authors.");
+        } else {
+            parent::unexpanded_warning_at($text);
         }
-        if (isset($this->_unexpanded["%AUTHORVIEWCAPABILITY%"])) {
-            $h .= " Author view capabilities weren’t recognized because this mail isn’t meant for paper authors.";
-        }
-        return $h;
-    }
-
-    function warning_count() {
-        return count($this->_unexpanded) + count($this->_tagless);
-    }
-
-    function warning_htmls() {
-        $e = array();
-        if (count($this->_unexpanded)) {
-            $e[] = $this->unexpanded_warning_html();
-        }
-        if (count($this->_tagless)) {
-            $a = array_keys($this->_tagless);
-            sort($a, SORT_NUMERIC);
-            $e[] = pluralx(count($this->_tagless), "Paper") . " " . commajoin($a) . " did not have some requested tag values.";
-        }
-        return $e;
     }
 
     /** @return HotCRPMailPreparation */

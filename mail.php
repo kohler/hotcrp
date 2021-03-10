@@ -533,14 +533,23 @@ class MailSender {
                 }
             }
 
-            if ($nwarnings !== $mailer->warning_count() || $nrows_done % 5 == 0) {
+            if ($nwarnings !== $mailer->message_count() || $nrows_done % 5 == 0) {
                 $this->echo_mailinfo($nrows_done, $nrows_total);
             }
-            if ($nwarnings !== $mailer->warning_count()) {
+            if ($nwarnings !== $mailer->message_count()) {
                 $this->echo_prologue();
-                $nwarnings = $mailer->warning_count();
-                echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"warning\">", join("<br>", $mailer->warning_htmls()), "</div></div>";
-                echo Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn$nwarnings').innerHTML;");
+                $nwarnings = $mailer->message_count();
+                echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"warning\">";
+                foreach ($mailer->message_list() as $mx) {
+                    echo "<div class=\"mmm\">";
+                    if ($mx->field && str_starts_with($mx->field, "%")) {
+                        echo "<code>", htmlspecialchars($mx->field), "</code>: ";
+                    } else if ($mx->field) {
+                        echo htmlspecialchars($mx->field), ": ";
+                    }
+                    echo $mx->message, "</div>";
+                }
+                echo "</div></div>", Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn$nwarnings').innerHTML;");
             }
 
             if ($this->sending && $revinform !== null && $prow) {
