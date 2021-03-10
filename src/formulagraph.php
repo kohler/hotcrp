@@ -150,7 +150,6 @@ class FormulaGraph extends MessageSet {
     const CDF = 2;
     const BARCHART = 4;
     const BOXPLOT = 8;
-
     const FBARCHART = 132; // 128 | BARCHART
     const RAWCDF = 130;    // 128 | CDF
 
@@ -166,6 +165,7 @@ class FormulaGraph extends MessageSet {
     public $fx;
     /** @var list<Formula> */
     private $fxs;
+    /** @var string */
     private $fx_expression;
     /** @var Formula */
     public $fy;
@@ -307,6 +307,7 @@ class FormulaGraph extends MessageSet {
         }
     }
 
+    /** @return array{list<string>,list<string>} */
     static function parse_queries(Qrequest $qreq) {
         $queries = $styles = [];
         for ($i = 1; isset($qreq["q$i"]); ++$i) {
@@ -377,14 +378,17 @@ class FormulaGraph extends MessageSet {
         }
     }
 
+    /** @return string */
     function fx_expression() {
         return $this->fx_expression;
     }
 
+    /** @return int */
     function fx_format() {
         return $this->fx_type;
     }
 
+    /** @return bool */
     function fx_combinable() {
         return !$this->fx_type;
     }
@@ -531,6 +535,7 @@ class FormulaGraph extends MessageSet {
         return $this->_qstyles[$qnum];
     }
 
+    /** @return list<int> */
     private function _account_tags(PaperInfo $prow) {
         assert($this->fx_type === Fexpr::FTAG);
         $tags = Tagger::split_unpack($prow->viewable_tags($this->user));

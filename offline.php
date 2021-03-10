@@ -19,7 +19,7 @@ if (isset($Qreq->downloadForm)) {
     $Conf->make_csvg("review", CsvGenerator::TYPE_STRING)
         ->set_inline(false)
         ->add_string($rf->text_form_header(false) . $rf->text_form(null, null, $Me, null) . "\n")
-        ->download();
+        ->emit();
     exit;
 }
 

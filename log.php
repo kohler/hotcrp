@@ -559,7 +559,8 @@ if ($Qreq->download) {
             ]);
         }
     }
-    csv_exit($csvg);
+    $csvg->emit();
+    exit;
 }
 
 if ($first_timestamp) {

@@ -584,6 +584,7 @@ class CsvGenerator {
     private $headerline = "";
     /** @var list<string> */
     private $lines = [];
+    /** @var int */
     private $lines_length = 0;
     private $stream;
     private $stream_filename;
@@ -591,8 +592,11 @@ class CsvGenerator {
     private $stream_length = 0;
     private $selection;
     private $selection_is_names = false;
+    /** @var string */
     private $lf = "\n";
+    /** @var string */
     private $comment = "# ";
+    /** @var ?bool */
     private $inline;
     private $filename;
 
@@ -890,7 +894,7 @@ class CsvGenerator {
         header("X-Content-Type-Options: nosniff");
     }
 
-    function download() {
+    function emit() {
         if (($this->flags & self::FLAG_HTTP_HEADERS) === 0) {
             $this->export_headers();
         }
@@ -900,5 +904,10 @@ class CsvGenerator {
         } else {
             Filer::download_string($this->unparse(), $this->mimetype_with_charset());
         }
+    }
+
+    /** @deprecated */
+    function download() {
+        $this->emit();
     }
 }

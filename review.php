@@ -208,7 +208,7 @@ function downloadForm($qreq) {
     $Conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
         ->set_inline(false)
         ->add_string($rf->text_form_header(false) . $rf->text_form($prow, $rrow, $Me, $use_request ? $qreq : null))
-        ->download();
+        ->emit();
     exit;
 }
 
@@ -239,7 +239,7 @@ function download_all_text_reviews() {
             . str_repeat("=", 75) . "\n"
             . prefix_word_wrap("", "Paper #{$prow->paperId} {$prow->title}", 0, 75)
             . "\n\n" . $text)
-        ->download();
+        ->emit();
     exit;
 }
 
@@ -251,7 +251,7 @@ function download_one_text_review(ReviewInfo $rrow) {
     }
     $Conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
         ->add_string($rf->unparse_text($prow, $rrow, $Me))
-        ->download();
+        ->emit();
     exit;
 }
 

@@ -87,7 +87,8 @@ class ListAction {
                 json_exit($res);
             }
         } else if ($res instanceof CsvGenerator) {
-            csv_exit($res);
+            $res->emit();
+            exit;
         }
     }
 

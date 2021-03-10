@@ -144,7 +144,8 @@ if ($Qreq->fn === "get"
     if ($has_country) {
         $header[] = "country";
     }
-    csv_exit($Conf->make_csvg("users")->select($header)->append($texts));
+    $Conf->make_csvg("users")->select($header)->append($texts)->emit();
+    exit;
 }
 
 if ($Qreq->fn === "get"
@@ -253,7 +254,8 @@ if ($Qreq->fn === "get"
             $selection[] = "topic$t";
         }
     }
-    csv_exit($Conf->make_csvg("pcinfo")->select($selection, $header)->append($people));
+    $Conf->make_csvg("pcinfo")->select($selection, $header)->append($people)->emit();
+    exit;
 }
 
 

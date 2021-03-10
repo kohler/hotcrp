@@ -131,7 +131,8 @@ if (isset($Qreq->saveassignment)
     $assignset->parse($Qreq->assignment);
     $csvg = $Conf->make_csvg("assignments");
     $assignset->make_acsv()->unparse_into($csvg);
-    csv_exit($csvg->sort(SORT_NATURAL));
+    $csvg->sort(SORT_NATURAL)->emit();
+    exit;
 }
 
 // execute assignment

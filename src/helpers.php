@@ -179,8 +179,9 @@ function json_exit($json, $arg2 = null) {
     }
 }
 
+/** @deprecated */
 function csv_exit(CsvGenerator $csv) {
-    $csv->download();
+    $csv->emit();
     exit;
 }
 
