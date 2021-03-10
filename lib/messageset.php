@@ -113,7 +113,7 @@ class MessageSet {
      * @return $this */
     function set_werror_at($field, $v) {
         $field = $this->canonical_field($field);
-        if ($set) {
+        if ($v) {
             $this->werror[$field] = true;
         } else if ($this->werror) {
             unset($this->werror[$field]);
