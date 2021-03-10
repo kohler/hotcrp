@@ -218,7 +218,7 @@ class MailSender {
         $ms->echo_request_form(true);
         echo Ht::hidden("mailid", $result->insert_id),
             Ht::hidden("send", 1),
-            Ht::submit("Send mail"),
+            Ht::submit("Send mail", ["class" => "btn-highlight"]),
             "</form>",
             Ht::unstash_script('$("#mailform").submit()'),
             '<div class="warning">About to send mail.</div>';
@@ -238,7 +238,7 @@ class MailSender {
 
     private function echo_actions($extra_class = "") {
         echo '<div class="aa', $extra_class, '">',
-            Ht::submit("send", "Send", array("style" => "margin-right:4em")),
+            Ht::submit("send", "Send", ["class" => "btn-highlight mr-3"]),
             ' &nbsp; ';
         $class = $this->groupable ? "" : " hidden";
         if (!$this->qreq->group && $this->qreq->ungroup) {
@@ -760,14 +760,14 @@ if ($Me->privChair) {
 
 
 echo '<div class="aa c">',
-    Ht::submit("Prepare mail"), ' &nbsp; <span class="hint">You’ll be able to review the mails before they are sent.</span>
+    Ht::submit("Prepare mail", ["class" => "btn-primary"]), ' &nbsp; <span class="hint">You’ll be able to review the mails before they are sent.</span>
 </div>
 
 
 <div id="mailref">Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
 <hr class="g">
 <div class="ctable no-hmargin">
-<dl class="ctelt" style="margin-bottom:1.5em">
+<dl class="ctelt">
 <dt><code>%URL%</code></dt>
     <dd>Site URL.</dd>
 <dt><code>%NUMSUBMITTED%</code></dt>
@@ -782,7 +782,7 @@ echo '<div class="aa c">',
     <dd>Email address of recipient.</dd>
 <dt><code>%REVIEWDEADLINE%</code></dt>
     <dd>Reviewing deadline appropriate for recipient.</dd>
-</dl><dl class="ctelt" style="margin-bottom:1.5em">
+</dl><dl class="ctelt">
 <dt><code>%NUMBER%</code></dt>
     <dd>Paper number relevant for mail.</dd>
 <dt><code>%TITLE%</code></dt>
@@ -791,14 +791,14 @@ echo '<div class="aa c">',
     <dd>First couple words of paper title (useful for mail subject).</dd>
 <dt><code>%OPT(AUTHORS)%</code></dt>
     <dd>Paper authors (if recipient is allowed to see the authors).</dd>
-</dl><dl class="ctelt" style="margin-bottom:1.5em">
+</dl><dl class="ctelt">
 <dt><code>%REVIEWS%</code></dt>
     <dd>Pretty-printed paper reviews.</dd>
 <dt><code>%COMMENTS%</code></dt>
     <dd>Pretty-printed paper comments, if any.</dd>
 <dt><code>%COMMENTS(<i>tag</i>)%</code></dt>
     <dd>Comments tagged #<code><i>tag</i></code>, if any.</dd>
-</dl><dl class="ctelt" style="margin-bottom:1.5em">
+</dl><dl class="ctelt">
 <dt><code>%IF(SHEPHERD)%...%ENDIF%</code></dt>
     <dd>Include text if a shepherd is assigned.</dd>
 <dt><code>%SHEPHERD%</code></dt>
@@ -807,7 +807,7 @@ echo '<div class="aa c">',
     <dd>Shepherd name, if any.</dd>
 <dt><code>%SHEPHERDEMAIL%</code></dt>
     <dd>Shepherd email, if any.</dd>
-</dl><dl class="ctelt" style="margin-bottom:1.5em">
+</dl><dl class="ctelt">
 <dt><code>%IF(#<i>tag</i>)%...%ENDIF%</code></dt>
     <dd>Include text if paper has tag <code><i>tag</i></code>.</dd>
 <dt><code>%TAGVALUE(<i>tag</i>)%</code></dt>

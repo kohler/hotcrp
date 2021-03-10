@@ -1905,7 +1905,8 @@ pre.email {
 	padding-bottom: 12px;
 }
 dl.ctelt {
-	padding-bottom: initial;
+	padding-bottom: 16px;
+	margin-bottom: 0;
 }
 .ctelti {
 	padding: 0 6px;
