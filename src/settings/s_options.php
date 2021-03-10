@@ -253,9 +253,9 @@ class Options_SettingRenderer {
     }
 
     private function render_option(SettingValues $sv, PaperOption $io = null, $ipos, $xpos) {
-        $old_ignore = $sv->set_ignore_messages(true);
+        $old_ignore = $sv->swap_ignore_messages(true);
         $o = self::make_requested_option($sv, $io, $ipos);
-        $sv->set_ignore_messages($old_ignore);
+        $sv->swap_ignore_messages($old_ignore);
 
         if ($io) {
             $sv->set_oldv("optn_$xpos", $io->name);

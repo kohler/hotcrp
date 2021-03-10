@@ -74,9 +74,11 @@ class MessageSet {
     }
 
     /** @param string $src
-     * @param string $dst */
+     * @param string $dst
+     * @return $this */
     function translate_field($src, $dst) {
         $this->canonfield[$src] = $this->canonical_field($dst);
+        return $this;
     }
     /** @param string $field
      * @return string */
@@ -90,7 +92,8 @@ class MessageSet {
         return $this->allow_error && isset($this->allow_error[$this->canonical_field($field)]);
     }
     /** @param string $field
-     * @param bool $v */
+     * @param bool $v
+     * @return $this */
     function set_allow_error_at($field, $v) {
         $field = $this->canonical_field($field);
         if ($v) {
@@ -98,24 +101,37 @@ class MessageSet {
         } else {
             unset($this->allow_error[$field]);
         }
+        return $this;
     }
-    /** @param string $field */
-    function werror_at($field, $set = null) {
+    /** @param string $field
+     * @return bool */
+    function werror_at($field) {
+        return $this->werror && isset($this->werror[$this->canonical_field($field)]);
+    }
+    /** @param string $field
+     * @param bool $v
+     * @return $this */
+    function set_werror_at($field, $v) {
         $field = $this->canonical_field($field);
-        if ($set === null) {
-            return $this->werror && isset($this->werror[$field]);
-        } else if ($set) {
+        if ($set) {
             $this->werror[$field] = true;
         } else if ($this->werror) {
             unset($this->werror[$field]);
         }
+        return $this;
     }
     /** @param bool $im
      * @return bool */
-    function set_ignore_messages($im) {
+    function swap_ignore_messages($im) {
         $oim = $this->ignore_msgs;
         $this->ignore_msgs = $im;
         return $oim;
+    }
+    /** @param bool $v
+     * @return $this */
+    function set_ignore_duplicates($v) {
+        $this->ignore_duplicates = $v;
+        return $this;
     }
 
     /** @param ?string $field
