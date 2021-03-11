@@ -8652,7 +8652,7 @@ if (siteinfo.paperid) {
 // profile UI
 handle_ui.on("js-cannot-delete-user", function (event) {
     var hc = popup_skeleton({near: this});
-    hc.push('<p><strong>This user cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the user, first remove these papers from the database or give the papers more contacts.</p>');
+    hc.push('<p><strong>This user cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the user, first remove those submissions from the database or give them more contacts.</p>');
     hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });

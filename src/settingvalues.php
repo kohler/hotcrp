@@ -555,7 +555,9 @@ class SettingValues extends MessageSet {
     private $null_mailer;
 
     /** @var ?GroupedExtensions */
-    private $_gxt = null;
+    private $_gxt;
+    /** @var bool */
+    private $_in_subhead = false;
 
     function __construct(Contact $user) {
         parent::__construct();
@@ -657,6 +659,23 @@ class SettingValues extends MessageSet {
     }
     function render_group($g, $options = null) {
         $this->gxt()->render_group($g, $options);
+    }
+    /** @param string $html
+     * @param array $opts */
+    function echo_subhead($html, $opts = null) {
+        $this->echo_close_subhead();
+        echo '<div class="form-hg"><h3 class="form-h';
+        if ($opts["id"] ?? null) {
+            echo '" id="', htmlspecialchars($opts["id"]);
+        }
+        echo '">', $html, '</h3>';
+        $this->_in_subhead = true;
+    }
+    function echo_close_subhead() {
+        if ($this->_in_subhead) {
+            echo "</div>\n\n";
+            $this->_in_subhead = false;
+        }
     }
 
 

@@ -1365,17 +1365,19 @@ th.settings-simplehead {
 	margin-top: 0;
 	margin-bottom: 0;
 }
-.form-g,
 .settings-rf, .settings-rf-deleted {
 	margin-bottom: 2em;
 }
-.settings-opt {
+.form-hg, .settings-opt {
 	margin-bottom: 3em;
 }
-.form-g-2 {
+.form-g, .form-g-5 {
+	margin-bottom: 2.25em;
+}
+.form-g-3 {
 	margin-bottom: 1em;
 }
-.form-g-1 {
+.form-g-2 {
 	margin-bottom: 0.5em;
 }
 .form-g + .form-nearby {

@@ -44,7 +44,7 @@ class Tags_SettingRenderer {
     static function render(SettingValues $sv) {
         // Tags
         $tagmap = $sv->conf->tags();
-        echo "<h3 class=\"form-h\">Tags</h3>\n";
+        $sv->echo_subhead("Tags");
 
         echo '<div class="form-g">';
         $sv->render_group("tags/main");
@@ -55,7 +55,7 @@ class Tags_SettingRenderer {
         echo "</div>\n";
     }
     static function render_tag_seeall(SettingValues $sv) {
-        echo '<div class="form-g-1">';
+        echo '<div class="form-g-2">';
         $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
         echo '</div>';
     }
@@ -80,8 +80,8 @@ class Tags_SettingRenderer {
                 . "</td><td class=\"remargin-right\"></td></tr>";
         }
 
+        $sv->echo_subhead("Colors and styles", ["id" => "colors-and-styles"]);
         echo Ht::hidden("has_tag_color", 1),
-            '<h3 class="form-h" id="colors-and-styles">Colors and styles</h3>',
             "<p>Submissions tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
             '<table class="demargin"><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr>',
             join("", $tag_colors_rows), "</table>\n";

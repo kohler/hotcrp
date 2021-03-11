@@ -113,12 +113,12 @@ if ($Qreq->update && $Qreq->valid_post()) {
 
 
 $Conf->header("Assignments", "assignpc", ["subtitle" => "Manual"]);
-echo '<div class="psmode">',
+echo '<div class="mb-5 clearfix">',
     '<div class="papmode"><a href="', $Conf->hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode active"><a href="', $Conf->hoturl("manualassign"), '">Manual</a></div>',
     '<div class="papmode"><a href="', $Conf->hoturl("conflictassign"), '">Conflicts</a></div>',
     '<div class="papmode"><a href="', $Conf->hoturl("bulkassign"), '">Bulk update</a></div>',
-    '</div><hr class="c">';
+    '</div>';
 
 
 // Help list

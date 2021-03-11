@@ -317,7 +317,7 @@ class Options_SettingRenderer {
 
     static function render(SettingValues $sv) {
         $self = new Options_SettingRenderer;
-        echo "<h3 class=\"form-h\">Submission fields</h3>\n";
+        $sv->echo_subhead("Submission fields");
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_options", 1),
             Ht::hidden("options:version", (int) $sv->conf->setting("options")),

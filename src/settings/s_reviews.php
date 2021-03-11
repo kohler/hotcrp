@@ -70,7 +70,7 @@ class Reviews_SettingRenderer {
 
 
         // Deadlines
-        echo "<h3 id=\"rounds\" class=\"form-h\">Deadlines &amp; rounds</h3>\n";
+        $sv->echo_subhead("Deadlines &amp; rounds", ["id" => "rounds"]);
         echo '<p>Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
         echo '<p class="f-h">', ($sv->type_hint("date") ? : ""), '</p>';
 
