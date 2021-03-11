@@ -511,66 +511,66 @@ class ReviewForm_SettingRenderer {
     static function render_description_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
         $open = !$f->id || $f->description || true;
         $self->mark_visible_property("description", $open);
-        return '<div class="' . $sv->control_class("rf_description_{$xpos}", "entryi is-property-description" . ($open ? "" : " hidden"))
-            . '">' . $sv->label("rf_description_{$xpos}", "Description")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("rf_description_{$xpos}")
-            . Ht::textarea("rf_description_{$xpos}", $f->description ?? "", ["id" => "rf_description_{$xpos}", "rows" => 2, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"])
-            . '</div></div>';
+        echo '<div class="', $sv->control_class("rf_description_{$xpos}", "entryi is-property-description" . ($open ? "" : " hidden")),
+            '">', $sv->label("rf_description_{$xpos}", "Description"),
+            '<div class="entry">',
+            $sv->feedback_at("rf_description_{$xpos}"),
+            Ht::textarea("rf_description_{$xpos}", $f->description ?? "", ["id" => "rf_description_{$xpos}", "rows" => 2, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"]),
+            '</div></div>';
     }
 
     static function render_options_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
         if (!$f->has_options) {
-            return "";
+            return;
         }
         $self->mark_visible_property("options", true);
-        return '<div class="' . $sv->control_class("rf_options_{$xpos}", "entryi is-property-options")
-            . '">' . $sv->label("rf_options_{$xpos}", "Choices")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("rf_options_{$xpos}")
-            . Ht::textarea("rf_options_{$xpos}", "" /* XXX */, ["id" => "rf_options_{$xpos}", "rows" => 6, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"])
-            . '</div></div>';
+        echo '<div class="', $sv->control_class("rf_options_{$xpos}", "entryi is-property-options"),
+            '">', $sv->label("rf_options_{$xpos}", "Choices"),
+            '<div class="entry">',
+            $sv->feedback_at("rf_options_{$xpos}"),
+            Ht::textarea("rf_options_{$xpos}", "" /* XXX */, ["id" => "rf_options_{$xpos}", "rows" => 6, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"]),
+            '</div></div>';
     }
 
     static function render_required_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
         if (!$f->has_options) {
-            return "";
+            return;
         }
         $self->mark_visible_property("options", true);
-        return '<div class="' . $sv->control_class("rf_required_{$xpos}", "entryi is-property-options")
-            . '">' . $sv->label("rf_required_{$xpos}", "Required")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("rf_required_{$xpos}")
-            . Ht::select("rf_required_{$xpos}", ["0" => "No", "1" => "Yes"], $f->required ? "1" : "0", ["id" => "rf_required_{$xpos}"])
-            . Ht::hidden("has_rf_required_{$xpos}", "1")
-            . '</div></div>';
+        echo '<div class="', $sv->control_class("rf_required_{$xpos}", "entryi is-property-options"),
+            '">', $sv->label("rf_required_{$xpos}", "Required"),
+            '<div class="entry">',
+            $sv->feedback_at("rf_required_{$xpos}"),
+            Ht::select("rf_required_{$xpos}", ["0" => "No", "1" => "Yes"], $f->required ? "1" : "0", ["id" => "rf_required_{$xpos}"]),
+            Ht::hidden("has_rf_required_{$xpos}", "1"),
+            '</div></div>';
     }
 
     static function render_display_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
         if (!$f->has_options) {
-            return "";
+            return;
         }
-        return '<div class="' . $sv->control_class("rf_colors_{$xpos}", "entryi is-property-options")
-            . '">' . $sv->label("rf_colors_{$xpos}", "Colors")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("rf_colors_{$xpos}")
-            . Ht::select("rf_colors_{$xpos}", [], "", ["id" => "rf_colors_{$xpos}"])
-            . Ht::hidden("rf_colorsflipped_{$xpos}", "", ["id" => "rf_colorsflipped_{$xpos}"])
-            . '</div></div>';
+        echo '<div class="', $sv->control_class("rf_colors_{$xpos}", "entryi is-property-options"),
+            '">', $sv->label("rf_colors_{$xpos}", "Colors"),
+            '<div class="entry">',
+            $sv->feedback_at("rf_colors_{$xpos}"),
+            Ht::select("rf_colors_{$xpos}", [], "", ["id" => "rf_colors_{$xpos}"]),
+            Ht::hidden("rf_colorsflipped_{$xpos}", "", ["id" => "rf_colorsflipped_{$xpos}"]),
+            '</div></div>';
     }
 
     static function render_visibility_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
-        return '<div class="' . $sv->control_class("rf_visibility_{$xpos}", "entryi is-property-visibility")
-            . '">' . $sv->label("rf_visibility_{$xpos}", "Visibility")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("rf_visibility_{$xpos}")
-            . Ht::select("rf_visibility_{$xpos}", [
+        echo '<div class="', $sv->control_class("rf_visibility_{$xpos}", "entryi is-property-visibility"),
+            '">', $sv->label("rf_visibility_{$xpos}", "Visibility"),
+            '<div class="entry">',
+            $sv->feedback_at("rf_visibility_{$xpos}"),
+            Ht::select("rf_visibility_{$xpos}", [
                 "au" => "Visible to authors",
                 "pc" => "Hidden from authors",
                 "audec" => "Hidden from authors until decision",
                 "admin" => "Administrators only"
-            ], $f->unparse_visibility(), ["id" => "rf_visibility_{$xpos}"])
-            . '</div></div>';
+            ], $f->unparse_visibility(), ["id" => "rf_visibility_{$xpos}"]),
+            '</div></div>';
     }
 
     static function render_presence_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
@@ -591,16 +591,16 @@ class ReviewForm_SettingRenderer {
         Ht::stash_html('<div id="settings-review-form-caption-ecs" class="hidden">'
             . ($gj->caption_html ?? '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>')
             . '</div>', "settings-review-form-caption-ecs");
-        return '<div class="' . $sv->control_class("rf_ec_{$xpos}", "entryi is-property-editing has-fold fold" . ($ecs === "custom" ? "o" : "c"))
-            . '" data-fold-values="custom">' . $sv->label("rf_ec_{$xpos}", "Present on")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("rf_ec_{$xpos}")
-            . $sv->render_feedback_at("rf_ecs_{$xpos}")
-            . Ht::select("rf_ec_{$xpos}", $ecsel, $ecv, ["id" => "rf_ec_{$xpos}", "class" => "uich js-foldup"])
-            . ' &nbsp;'
-            . Ht::entry("rf_ecs_{$xpos}", $ecs,
-                        $sv->sjs("rf_ecs_{$xpos}", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus", "size" => 30, "spellcheck" => false]))
-            . '</div></div>';
+        echo '<div class="', $sv->control_class("rf_ec_{$xpos}", "entryi is-property-editing has-fold fold" . ($ecs === "custom" ? "o" : "c")),
+            '" data-fold-values="custom">', $sv->label("rf_ec_{$xpos}", "Present on"),
+            '<div class="entry">',
+            $sv->feedback_at("rf_ec_{$xpos}"),
+            $sv->feedback_at("rf_ecs_{$xpos}"),
+            Ht::select("rf_ec_{$xpos}", $ecsel, $ecv, ["id" => "rf_ec_{$xpos}", "class" => "uich js-foldup"]),
+            ' &nbsp;',
+            Ht::entry("rf_ecs_{$xpos}", $ecs,
+                      $sv->sjs("rf_ecs_{$xpos}", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus", "size" => 30, "spellcheck" => false])),
+            '</div></div>';
     }
 
     private function echo_property_button($property, $icon, $label) {
@@ -703,7 +703,10 @@ class ReviewForm_SettingRenderer {
         foreach ($sv->group_members("reviewfield/properties") as $gj) {
             if (isset($gj->render_review_property_function)) {
                 Conf::xt_resolve_require($gj);
-                echo call_user_func($gj->render_review_property_function, $sv, $rfield, '$', $renderer, $gj);
+                $t = call_user_func($gj->render_review_property_function, $sv, $rfield, '$', $renderer, $gj);
+                if (is_string($t)) { // XXX backwards compat
+                    echo $t;
+                }
             }
         }
 

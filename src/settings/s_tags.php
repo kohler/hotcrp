@@ -75,8 +75,8 @@ class Tags_SettingRenderer {
             $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
                 . "<td class=\"pad taghl align-middle\">$k</td>"
                 . "<td class=\"lentry\">"
-                  . $sv->render_feedback_at("tag_color_$k", "mb-0")
-                  . $sv->render_entry("tag_color_$k", ["class" => "need-suggest tags"])
+                  . $sv->feedback_at("tag_color_$k", "mb-0")
+                  . $sv->entry("tag_color_$k", ["class" => "need-suggest tags"])
                 . "</td><td class=\"remargin-right\"></td></tr>";
         }
 

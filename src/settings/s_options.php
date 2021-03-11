@@ -48,12 +48,12 @@ class Options_SettingRenderer {
                 $otypes[$uf->name] = $uf->title ?? $uf->name;
         }
 
-        $t = '<div class="' . $sv->control_class("optvt_$xpos", "entryi")
-            . '">' . $sv->label("optvt_$xpos", "Type")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("optvt_$xpos")
-            . Ht::select("optvt_$xpos", $otypes, $optvt, $sv->sjs("optvt_$xpos", ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"]))
-            . "</div></div>\n";
+        echo '<div class="', $sv->control_class("optvt_$xpos", "entryi"),
+            '">', $sv->label("optvt_$xpos", "Type"),
+            '<div class="entry">',
+            $sv->feedback_at("optvt_$xpos"),
+            Ht::select("optvt_$xpos", $otypes, $optvt, $sv->sjs("optvt_$xpos", ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"])),
+            "</div></div>\n";
 
         $rows = 3;
         $value = "";
@@ -61,66 +61,66 @@ class Options_SettingRenderer {
             $value = join("\n", $o->selector_options()) . "\n";
             $rows = max(count($o->selector_options()), 3);
         }
-        return $t . '<div class="' . $sv->control_class("optv_$xpos", "entryi fx4")
-            . '">' . $sv->label("optv_$xpos", "Choices")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("optv_$xpos")
-            . Ht::textarea("optv_$xpos", $value, $sv->sjs("optv_$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "w-entry-text need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"]))
-            . "</div></div>\n";
+        echo '<div class="', $sv->control_class("optv_$xpos", "entryi fx4"),
+            '">', $sv->label("optv_$xpos", "Choices"),
+            '<div class="entry">',
+            $sv->feedback_at("optv_$xpos"),
+            Ht::textarea("optv_$xpos", $value, $sv->sjs("optv_$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "w-entry-text need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"])),
+            "</div></div>\n";
     }
     static function render_description_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $open = !$o->id || (string) $o->description !== "";
         $self->mark_visible_property("description", $open);
-        return '<div class="' . $sv->control_class("optd_$xpos", "entryi is-property-description" . ($open ? "" : " hidden"))
-            . '">' . $sv->label("optd_$xpos", "Description")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("optd_$xpos")
-            . Ht::textarea("optd_$xpos", $o->description, $sv->sjs("optd_$xpos", ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "w-entry-text settings-opt-description need-autogrow"]))
-            . '</div></div>';
+        echo '<div class="', $sv->control_class("optd_$xpos", "entryi is-property-description" . ($open ? "" : " hidden")),
+            '">', $sv->label("optd_$xpos", "Description"),
+            '<div class="entry">',
+            $sv->feedback_at("optd_$xpos"),
+            Ht::textarea("optd_$xpos", $o->description, $sv->sjs("optd_$xpos", ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "w-entry-text settings-opt-description need-autogrow"])),
+            '</div></div>';
     }
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $open = !$o->id || $o->final;
         $self->mark_visible_property("editing", $open);
-        return '<div class="' . $sv->control_class("optec_$xpos", "entryi is-property-editing" . ($open ? "" : " hidden"))
-            . '">' . $sv->label("optec_$xpos", "Present on")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("optec_$xpos")
-            . Ht::select("optec_$xpos", ["all" => "All submissions", "final" => "Final versions only"], $o->final ? "final" : "all", $sv->sjs("optec_$xpos", ["id" => "optec_$xpos"]))
-            . "</div></div>";
+        echo '<div class="', $sv->control_class("optec_$xpos", "entryi is-property-editing" . ($open ? "" : " hidden")),
+            '">', $sv->label("optec_$xpos", "Present on"),
+            '<div class="entry">',
+            $sv->feedback_at("optec_$xpos"),
+            Ht::select("optec_$xpos", ["all" => "All submissions", "final" => "Final versions only"], $o->final ? "final" : "all", $sv->sjs("optec_$xpos", ["id" => "optec_$xpos"])),
+            "</div></div>";
     }
     static function render_required_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $open = !$o->id || $o->required;
         $self->mark_visible_property("editing", $open);
-        return '<div class="' . $sv->control_class("optreq_$xpos", "entryi is-property-editing" . ($open ? "" : " hidden"))
-            . '">' . $sv->label("optreq_$xpos", "Required")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("optreq_$xpos")
-            . Ht::select("optreq_$xpos", ["0" => "No", "1" => "Yes"], $o->required ? "1" : "0", $sv->sjs("optreq_$xpos", ["id" => "optreq_$xpos"]))
-            . "</div></div>";
+        echo '<div class="', $sv->control_class("optreq_$xpos", "entryi is-property-editing" . ($open ? "" : " hidden")),
+            '">', $sv->label("optreq_$xpos", "Required"),
+            '<div class="entry">',
+            $sv->feedback_at("optreq_$xpos"),
+            Ht::select("optreq_$xpos", ["0" => "No", "1" => "Yes"], $o->required ? "1" : "0", $sv->sjs("optreq_$xpos", ["id" => "optreq_$xpos"])),
+            "</div></div>";
     }
     static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $open = !$o->id || $o->visibility !== "rev";
         $self->mark_visible_property("visibility", $open);
-        return '<div class="' . $sv->control_class("optp_$xpos", "entryi is-property-visibility" . ($open ? "" : " hidden") . " short")
-            . '">' . $sv->label("optp_$xpos", "Visible to")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("optp_$xpos")
-            . Ht::select("optp_$xpos", ["rev" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible", "admin" => "Administrators only"], $o->visibility, $sv->sjs("optp_$xpos", ["id" => "optp_$xpos", "class" => "settings-opt-visibility"]))
-            . '</div></div>';
+        echo '<div class="', $sv->control_class("optp_$xpos", "entryi is-property-visibility" . ($open ? "" : " hidden") . " short"),
+            '">', $sv->label("optp_$xpos", "Visible to"),
+            '<div class="entry">',
+            $sv->feedback_at("optp_$xpos"),
+            Ht::select("optp_$xpos", ["rev" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible", "admin" => "Administrators only"], $o->visibility, $sv->sjs("optp_$xpos", ["id" => "optp_$xpos", "class" => "settings-opt-visibility"])),
+            '</div></div>';
     }
     static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $open = !$o->id || $o->display() !== PaperOption::DISP_PROMINENT;
         $self->mark_visible_property("display", $open);
-        return '<div class="' . $sv->control_class("optdt_$xpos", "entryi is-property-display" . ($open ? "" : " hidden") . " short")
-            . '">' . $sv->label("optdt_$xpos", "Display")
-            . '<div class="entry">'
-            . $sv->render_feedback_at("optdt_$xpos")
-            . Ht::select("optdt_$xpos", ["prominent" => "Normal",
-                                         "topics" => "Grouped with topics",
-                                         "submission" => "Near submission"],
-                         $o->display_name(),
-                         $sv->sjs("optdt_$xpos", ["id" => "optdt_$xpos", "class" => "settings-opt-display"]))
-            . "</div></div>";
+        echo '<div class="', $sv->control_class("optdt_$xpos", "entryi is-property-display" . ($open ? "" : " hidden") . " short"),
+            '">', $sv->label("optdt_$xpos", "Display"),
+            '<div class="entry">',
+            $sv->feedback_at("optdt_$xpos"),
+            Ht::select("optdt_$xpos", ["prominent" => "Normal",
+                                       "topics" => "Grouped with topics",
+                                       "submission" => "Near submission"],
+                       $o->display_name(),
+                       $sv->sjs("optdt_$xpos", ["id" => "optdt_$xpos", "class" => "settings-opt-display"])),
+            "</div></div>";
     }
 
     /** @return array<int,PaperOption> */
@@ -271,19 +271,11 @@ class Options_SettingRenderer {
         $this->option_classes = ["settings-opt", "has-fold", "fold2o"];
         $this->properties = [];
 
-        $t = "";
-        foreach ($sv->group_members("options/properties") as $gj) {
-            if (isset($gj->render_option_property_function)) {
-                Conf::xt_resolve_require($gj);
-                $t .= call_user_func($gj->render_option_property_function, $sv, $o, $xpos, $this, $gj);
-            }
-        }
-
         echo '<div class="', join(" ", $this->option_classes),
             '"><a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
 
         echo '<div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
-            $sv->render_feedback_at("optn_$xpos"),
+            $sv->feedback_at("optn_$xpos"),
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "style" => "font-weight:bold", "class" => "need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
             Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-opt-id"]),
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
@@ -291,7 +283,15 @@ class Options_SettingRenderer {
 
         Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_options" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
 
-        echo $t;
+        foreach ($sv->group_members("options/properties") as $gj) {
+            if (isset($gj->unparse_option_property_function)) {
+                Conf::xt_resolve_require($gj);
+                $t = call_user_func($gj->render_option_property_function, $sv, $o, $xpos, $this, $gj);
+                if (is_string($t)) { // XXX backward compat
+                    echo $t;
+                }
+            }
+        }
 
         if ($o->id && $this->have_options === null) {
             $this->have_options = [];

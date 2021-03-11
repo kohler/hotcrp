@@ -631,9 +631,9 @@ class Ht {
 
 
     /** @param string $field */
-    static function control_class($field, $rest = "") {
+    static function control_class($field, $rest = "", $prefix = "has-") {
         if (self::$_msgset) {
-            return self::$_msgset->control_class($field, $rest);
+            return self::$_msgset->control_class($field, $rest, $prefix);
         } else {
             return $rest;
         }
@@ -659,11 +659,15 @@ class Ht {
     }
     /** @param string $field
      * @return string */
-    static function render_feedback_at($field) {
+    static function feedback_at($field) {
         $t = "";
         foreach (self::message_list_at($field) as $mx) {
             $t .= '<p class="' . MessageSet::status_class($mx->status, "feedback", "is-") . '">' . $mx->message . '</p>';
         }
         return $t;
+    }
+    /** @deprecated */
+    static function render_feedback_at($field) {
+        return self::feedback_at($field);
     }
 }

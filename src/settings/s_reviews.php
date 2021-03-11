@@ -18,7 +18,7 @@ class Reviews_SettingRenderer {
 
         echo '<div class="mg js-settings-review-round" data-review-round-number="', $rnum, '"><div>',
             $sv->label($rname, "Round"), ' &nbsp;',
-            $sv->render_entry($rname);
+            $sv->entry($rname);
         echo '<div class="d-inline-block" style="min-width:7em;margin-left:2em">';
         if ($rnum !== '$' && $review_count) {
             echo '<a href="', $sv->conf->hoturl("search", "q=" . urlencode("round:" . ($rnum ? $sv->conf->round_name($rnum) : "none"))), '">(', plural($review_count, "review"), ')</a>';
@@ -261,7 +261,7 @@ class Reviews_SettingRenderer {
             '<a class="ui qq js-foldup" href="">', expander(null, 0),
             '<label for="mailbody_requestreview">Mail template for external review requests</label></a>',
             '<span class="fx"> (<a href="', $sv->conf->hoturl("mail"), '">keywords</a> allowed; set to empty for default)</span></div>',
-            $sv->render_textarea("mailbody_requestreview", ["class" => "text-monospace fx", "cols" => 80, "rows" => 20]);
+            $sv->textarea("mailbody_requestreview", ["class" => "text-monospace fx", "cols" => 80, "rows" => 20]);
         $sv->echo_feedback_at("mailbody_requestreview");
         echo "</div></div>\n";
     }

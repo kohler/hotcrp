@@ -230,12 +230,12 @@ class SubForm_SettingRenderer {
         echo '<div id="foldpdfupload" class="fold2o fold3o">';
         echo '<div class="f-i">',
             $sv->label("sub_noabstract", "Abstract requirement", ["class" => "n"]),
-            $sv->render_select("sub_noabstract", [0 => "Abstract required to register submission", 2 => "Abstract optional", 1 => "No abstract"]),
+            $sv->select("sub_noabstract", [0 => "Abstract required to register submission", 2 => "Abstract optional", 1 => "No abstract"]),
             '</div>';
 
         echo '<div class="f-i">',
             $sv->label("sub_nopapers", "PDF requirement", ["class" => "n"]),
-            $sv->render_select("sub_nopapers", [0 => "PDF required to complete submission", 2 => "PDF optional", 1 => "No PDF allowed"], ["class" => "uich js-settings-sub-nopapers"]),
+            $sv->select("sub_nopapers", [0 => "PDF required to complete submission", 2 => "PDF optional", 1 => "No PDF allowed"], ["class" => "uich js-settings-sub-nopapers"]),
             '<div class="f-h fx3">Registering a submission never requires a PDF.</div></div>';
 
         if (is_executable("src/banal")) {
@@ -265,7 +265,7 @@ class SubForm_SettingRenderer {
 
         echo '<div class="form-g">', $sv->label("sub_pcconfvis", "When can reviewers see conflict information?"),
             '&nbsp; ',
-            $sv->render_select("sub_pcconfvis", [1 => "Never", 0 => "When authors or tracker are visible", 2 => "Always"]),
+            $sv->select("sub_pcconfvis", [1 => "Never", 0 => "When authors or tracker are visible", 2 => "Always"]),
             '</div>';
     }
 }

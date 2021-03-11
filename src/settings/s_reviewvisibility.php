@@ -8,8 +8,8 @@ class ReviewVisibility_SettingParser extends SettingParser {
                  Conf::AUSEEREV_YES => "Yes"];
         $opts[Conf::AUSEEREV_TAGS] = '<div class="d-inline-flex flex-wrap">'
             . "<label for=\"au_seerev_" . Conf::AUSEEREV_TAGS . "\" class=\"mr-2\">Yes, for submissions with any of these tags:</label>"
-            . "<div>" . $sv->render_feedback_at("tag_au_seerev")
-            . $sv->render_entry("tag_au_seerev", ["class" => "uii js-settings-au-seerev-tag"])
+            . "<div>" . $sv->feedback_at("tag_au_seerev")
+            . $sv->entry("tag_au_seerev", ["class" => "uii js-settings-au-seerev-tag"])
             . "</div></div>";
 
         $hint = '<div class="f-hx if-response-active';

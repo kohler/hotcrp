@@ -821,7 +821,7 @@ class SettingValues extends MessageSet {
             && !isset($js["data-default-checked"])) {
             if ($si && $this->si_has_interest($si)) {
                 $v = $this->si_oldv($si);
-                $x["data-default-value"] = $this->si_render_value($v, $si);
+                $x["data-default-value"] = $this->si_unparse_value($v, $si);
             } else if (isset($this->explicit_oldv[$name])) {
                 $x["data-default-value"] = $this->explicit_oldv[$name];
             }
@@ -1066,7 +1066,7 @@ class SettingValues extends MessageSet {
     /** @param string $field
      * @param ?string $classes
      * @return string */
-    function render_feedback_at($field, $classes = null) {
+    function feedback_at($field, $classes = null) {
         $t = "";
         $fname = $field instanceof Si ? $field->name : $field;
         foreach ($this->message_list_at($fname) as $mx) {
@@ -1075,10 +1075,14 @@ class SettingValues extends MessageSet {
         }
         return $t;
     }
+    /** @deprecated */
+    function render_feedback_at($field, $classes = null) {
+        return $this->feedback_at($field, $classes);
+    }
     /** @param string $field
      * @param ?string $classes */
     function echo_feedback_at($field, $classes = null) {
-        echo $this->render_feedback_at($field, $classes);
+        echo $this->feedback_at($field, $classes);
     }
 
     /** @param ?array<string,mixed> $js
@@ -1189,12 +1193,12 @@ class SettingValues extends MessageSet {
     /** @param string $name
      * @param ?array<string,mixed> $js
      * @return string */
-    function render_entry($name, $js = null) {
+    function entry($name, $js = null) {
         $si = $this->si($name);
         $v = $this->si_curv($si);
         $t = "";
         if (!$this->use_req() || !$this->si_has_interest($si)) {
-            $v = $this->si_render_value($v, $si);
+            $v = $this->si_unparse_value($v, $si);
         }
         $js = $js ?? [];
         if ($si->size && !isset($js["size"])) {
@@ -1211,10 +1215,14 @@ class SettingValues extends MessageSet {
         }
         return Ht::entry($name, $v, $this->sjs($si, $js, "text")) . $t;
     }
+    /** @deprecated */
+    function render_entry($name, $js = null) {
+        return $this->entry($name, $js);
+    }
     /** @param string $name
      * @return void */
     function echo_entry($name) {
-        echo $this->render_entry($name);
+        echo $this->entry($name);
     }
     function echo_control_group($name, $description, $control,
                                 $js = null, $hint = null) {
@@ -1256,13 +1264,13 @@ class SettingValues extends MessageSet {
      * @return void */
     function echo_entry_group($name, $description, $js = null, $hint = null) {
         $this->echo_control_group($name, $description,
-            $this->render_entry($name, self::strip_group_js($js)),
+            $this->entry($name, self::strip_group_js($js)),
             $js, $hint);
     }
     /** @param string $name
      * @param ?array<string,mixed> $js
      * @return string */
-    function render_select($name, $values, $js = null) {
+    function select($name, $values, $js = null) {
         $si = $this->si($name);
         $v = $this->si_curv($si);
         $t = "";
@@ -1271,15 +1279,19 @@ class SettingValues extends MessageSet {
         }
         return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($si, $js, "select")) . $t;
     }
+    /** @deprecated */
+    function render_select($name, $values, $js = null) {
+        return $this->select($name, $values, $js);
+    }
     function echo_select_group($name, $values, $description, $js = null, $hint = null) {
         $this->echo_control_group($name, $description,
-            $this->render_select($name, $values, self::strip_group_js($js)),
+            $this->select($name, $values, self::strip_group_js($js)),
             $js, $hint);
     }
     /** @param string $name
      * @param ?array<string,mixed> $js
      * @return string */
-    function render_textarea($name, $js = null) {
+    function textarea($name, $js = null) {
         $si = $this->si($name);
         $v = $this->si_curv($si);
         $t = "";
@@ -1305,6 +1317,10 @@ class SettingValues extends MessageSet {
         }
         return Ht::textarea($name, $v, $this->sjs($si, $js, "textarea")) . $t;
     }
+    /** @deprecated */
+    function render_textarea($name, $js = null) {
+        return $this->textarea($name, $js);
+    }
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
         if (str_starts_with($si->storage(), "msg.")) {
@@ -1317,8 +1333,8 @@ class SettingValues extends MessageSet {
             '<div class="f-c', $xclass, ' ui js-foldup">',
             $this->label($name, $description),
             ' <span class="n fx">(HTML allowed)</span></div>',
-            $this->render_feedback_at($name),
-            $this->render_textarea($name, ["class" => "fx"]),
+            $this->feedback_at($name),
+            $this->textarea($name, ["class" => "fx"]),
             $hint, "</div>\n";
     }
     function echo_message($name, $description, $hint = "") {
@@ -1347,22 +1363,22 @@ class SettingValues extends MessageSet {
             $close = "</div>";
         }
         echo '<div class="f-c n">(HTML allowed)</div>',
-            $this->render_textarea($name),
+            $this->textarea($name),
             $hint, $close, "</div></div>";
     }
 
-    private function si_render_value($v, Si $si) {
+    private function si_unparse_value($v, Si $si) {
         if ($si->type === "cdate" || $si->type === "checkbox") {
             return $v ? "1" : "";
         } else if ($si->is_date()) {
-            return $this->si_render_date_value($v, $si);
+            return $this->si_unparse_date_value($v, $si);
         } else if ($si->type === "grace") {
-            return $this->si_render_grace_value($v, $si);
+            return $this->si_unparse_grace_value($v, $si);
         } else {
             return $v;
         }
     }
-    private function si_render_date_value($v, Si $si) {
+    private function si_unparse_date_value($v, Si $si) {
         if ($si->date_backup
             && $this->curv($si->date_backup) == $v) {
             return "";
@@ -1378,7 +1394,7 @@ class SettingValues extends MessageSet {
             return $this->conf->parseableTime($v, true);
         }
     }
-    private function si_render_grace_value($v, Si $si) {
+    private function si_unparse_grace_value($v, Si $si) {
         if ($v === null || $v <= 0 || !is_numeric($v)) {
             return "none";
         } else if ($v % 3600 == 0) {
@@ -1711,7 +1727,7 @@ class SettingValues extends MessageSet {
             }
         } else if ($si->type === "grace") {
             if ($v > 0) {
-                return $this->si_render_grace_value($v, $si);
+                return $this->si_unparse_grace_value($v, $si);
             } else {
                 return false;
             }
