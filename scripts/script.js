@@ -225,7 +225,7 @@ $(document).ajaxError(function (event, jqxhr, settings, httperror) {
         } catch (e) {
         }
     }
-    if (!data || !data.user_error) {
+    if ((!data || !data.user_error) && jqxhr.status != 502) {
         var msg = url_absolute(settings.url) + " API failure: ";
         if (siteinfo.user && siteinfo.user.email)
             msg += "user " + siteinfo.user.email + ", ";
