@@ -142,6 +142,8 @@ class GroupedExtensions implements XtContext {
         $this->conf->xt_context = $old_context;
     }
 
+    /** @param string $name
+     * @return ?object */
     function get_raw($name) {
         if (!array_key_exists($name, $this->_raw)) {
             $old_context = $this->conf->xt_swap_context($this);
@@ -155,6 +157,8 @@ class GroupedExtensions implements XtContext {
         }
         return $this->_raw[$name];
     }
+    /** @param string $name
+     * @return ?object */
     function get($name) {
         $gj = $this->get_raw($name);
         for ($nalias = 0; $gj && isset($gj->alias) && $nalias < 5; ++$nalias) {
@@ -162,7 +166,8 @@ class GroupedExtensions implements XtContext {
         }
         return $gj;
     }
-    /** @return ?string */
+    /** @param string $name
+     * @return ?string */
     function canonical_group($name) {
         if (($gj = $this->get($name))) {
             $pos = strpos($gj->group, "/");
@@ -171,8 +176,10 @@ class GroupedExtensions implements XtContext {
             return null;
         }
     }
-    /** @return list<object> */
-    function members($name, $require_key = false) {
+    /** @param string $name
+     * @param ?string $require_key
+     * @return list<object> */
+    function members($name, $require_key = null) {
         if (($gj = $this->get($name))) {
             $name = $gj->name;
         }
@@ -182,9 +189,9 @@ class GroupedExtensions implements XtContext {
             if (($gj = $this->get_raw($subname))
                 && $gj->group === ($name === "" ? $gj->name : $name)
                 && $gj->name !== $name
-                && (!$require_key || isset($gj->$require_key))
                 && (!isset($gj->alias) || isset($gj->position))
-                && (!isset($gj->position) || $gj->position !== false)) {
+                && (!isset($gj->position) || $gj->position !== false)
+                && (!$require_key || isset($gj->alias) || isset($gj->$require_key))) {
                 $r[] = $gj;
                 $alias = $alias || isset($gj->alias);
             }
@@ -193,7 +200,11 @@ class GroupedExtensions implements XtContext {
         if ($alias && !empty($r)) {
             $rr = [];
             foreach ($r as $gj) {
-                $rr[] = isset($gj->alias) ? $this->get($gj->alias) : $gj;
+                if (!isset($gj->alias)
+                    || (($gj = $this->get($gj->alias))
+                        && (!$require_key || isset($gj->$require_key)))) {
+                    $rr[] = $gj;
+                }
             }
             return $rr;
         } else {
@@ -365,6 +376,7 @@ class GroupedExtensions implements XtContext {
         }
     }
 
+    /** @param string|object $gj */
     function render($gj) {
         if (is_string($gj) && !($gj = $this->get($gj))) {
             return null;
