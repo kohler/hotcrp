@@ -110,14 +110,18 @@ class UserStatus extends MessageSet {
     function gxt() {
         if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
+            $this->_gxt->set_title_class("form-h")->set_section_class("form-section");
             $this->_gxt->add_xt_checker([$this, "xt_allower"]);
             $this->initialize_gxt();
         }
         return $this->_gxt;
     }
     private function initialize_gxt() {
-        $this->_gxt->set_context(["hclass" => "form-h"]);
         $this->_gxt->set_callable("UserStatus", $this);
+    }
+    /** @param list<mixed> $args */
+    function set_context_args($args) {
+        $this->gxt()->set_context_args($args);
     }
 
     /** @return bool */
@@ -287,7 +291,7 @@ class UserStatus extends MessageSet {
                 $cj->id = $this->user->contactId;
             }
             $gx = $this->gxt();
-            $gx->set_context(["args" => [$this, $cj, $args]]);
+            $gx->set_context_args([$this, $cj, $args]);
             foreach ($gx->members("", "unparse_json_function") as $gj) {
                 $gx->call_function($gj->unparse_json_function, $gj);
             }
@@ -874,7 +878,7 @@ class UserStatus extends MessageSet {
 
         // Early properties
         $gx = $this->gxt();
-        $gx->set_context(["args" => [$this, $user, $cj]]);
+        $gx->set_context_args([$this, $user, $cj]);
         foreach ($gx->members("", "save_early_function") as $gj) {
             $gx->call_function($gj->save_early_function, $gj);
         }
@@ -1346,19 +1350,18 @@ class UserStatus extends MessageSet {
     }
 
     static function render_new_password(UserStatus $us, Qrequest $qreq) {
-        if (!$us->viewer->can_change_password($us->user)) {
-            return;
+        if ($us->viewer->can_change_password($us->user)) {
+            $us->render_section("Change password");
+            $pws = $us->_req_passwords ?? ["", ""];
+            echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
+                '<label for="upassword">New password</label>',
+                Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]),
+                '</div>',
+                '<div class="', $us->control_class("password", "f-i w-text"), '">',
+                '<label for="upassword2">Repeat new password</label>',
+                Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]),
+                '</div>';
         }
-        echo '<h3 class="form-h">Change password</h3>';
-        $pws = $us->_req_passwords ?? ["", ""];
-        echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
-            '<label for="upassword">New password</label>',
-            Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]),
-            '</div>',
-            '<div class="', $us->control_class("password", "f-i w-text"), '">',
-            '<label for="upassword2">Repeat new password</label>',
-            Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]),
-            '</div>';
     }
 
     static function render_country(UserStatus $us, Qrequest $qreq) {
@@ -1367,7 +1370,7 @@ class UserStatus extends MessageSet {
     }
 
     static function render_follow(UserStatus $us, Qrequest $qreq) {
-        echo '<h3 class="form-h">Email notification</h3>';
+        $us->render_section("Email notification");
         $reqwatch = $iwatch = $us->user->defaultWatch;
         foreach (self::$watch_keywords as $kw => $bit) {
             if ($qreq["has_watch$kw"] || $qreq["watch$kw"]) {
@@ -1408,8 +1411,8 @@ class UserStatus extends MessageSet {
         if (!$us->viewer->privChair) {
             return;
         }
-        echo '<h3 class="form-h">Roles</h3>', "\n",
-            "<table class=\"w-text\"><tr><td class=\"nw\">\n";
+        $us->render_section("Roles", "roles");
+        echo "<table class=\"w-text\"><tr><td class=\"nw\">\n";
         if (($us->user->roles & Contact::ROLE_CHAIR) !== 0) {
             $pcrole = $cpcrole = "chair";
         } else if (($us->user->roles & Contact::ROLE_PC) !== 0) {
@@ -1447,22 +1450,29 @@ class UserStatus extends MessageSet {
             return;
         }
         $cd = $us->conf->_i("conflictdef");
-        echo '<div class="form-g w-text"><h3 class="', $us->control_class("collaborators", "form-h"), '">Collaborators and other affiliations</h3>', "\n",
+        $us->gxt()->render_open_section("w-text");
+        echo '<h3 class="', $us->control_class("collaborators", "form-h"), '">Collaborators and other affiliations</h3>', "\n",
             "<p>List potential conflicts of interest one per line, using parentheses for affiliations and institutions. We may use this information when assigning reviews.<br>Examples: “Ping Yen Zhang (INRIA)”, “All (University College London)”</p>";
-        if ($cd !== "") {
+        if ($cd !== "" && preg_match('/<(?:p|div)[ >]/', $cd)) {
+            echo $cd;
+        } else {
             echo '<p>', $cd, '</p>';
         }
         echo '<textarea name="collaborators" rows="5" cols="80" class="',
             $us->control_class("collaborators", "need-autogrow"),
             "\" data-default-value=\"", htmlspecialchars($us->user->collaborators()), "\">",
             htmlspecialchars($qreq->collaborators ?? $us->user->collaborators()),
-            "</textarea></div>\n";
+            "</textarea>\n";
     }
 
     static function render_topics(UserStatus $us, Qrequest $qreq) {
-        echo '<div id="topicinterest" class="form-g w-text fx1">',
-            '<h3 class="form-h">Topic interests</h3>', "\n",
-            '<p>Please indicate your interest in reviewing papers on these conference
+        if (!$us->user->isPC
+            && !$us->viewer->privChair) {
+            return;
+        }
+        $us->gxt()->render_open_section("w-text fx1", "topicinterest");
+        $us->gxt()->render_title("Topic interests");
+        echo '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
             '  <table class="table-striped"><thead>
@@ -1492,17 +1502,19 @@ topics. We use this information to help match papers to reviewers.</p>',
                 echo "</tr>\n";
             }
         }
-        echo "    </tbody></table></div>\n";
+        echo "    </tbody></table>\n";
     }
 
     static function render_tags(UserStatus $us, Qrequest $qreq) {
         $user = $us->user;
         $tagger = new Tagger($us->viewer);
         $itags = $tagger->unparse($user->viewable_tags($us->viewer));
-        if (!$us->viewer->privChair && $itags === "") {
+        if (!$us->viewer->privChair
+            && (!$us->user->isPC || $itags === "")) {
             return;
         }
-        echo "<div class=\"form-g w-text fx2\"><h3 class=\"form-h\">Tags</h3>\n";
+        $us->gxt()->render_open_section("w-text fx2");
+        $us->gxt()->render_title("Tags");
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("contactTags", "f-i"), '">',
                 Ht::entry("contactTags", $qreq->contactTags ?? $itags, ["size" => 60, "data-default-value" => $itags]),
@@ -1511,7 +1523,6 @@ topics. We use this information to help match papers to reviewers.</p>',
         } else {
             echo $itags, "<p class=\"f-h\">Tags represent PC subgroups and are set by administrators.</p>\n";
         }
-        echo "</div>\n";
     }
 
     static function render_actions(UserStatus $us, Qrequest $qreq) {
@@ -1555,6 +1566,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
         }
 
+        $us->gxt()->render_close_section();
         echo Ht::actions($buttons, ["class" => "aab aabig mt-7"]);
     }
 
@@ -1620,27 +1632,12 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 
 
-    function set_context($options) {
-        $this->gxt()->set_context($options);
+    function render_group($g) {
+        $this->gxt()->render_group($g);
     }
 
-    function render_group($g) {
-        $gx = $this->gxt();
-        $gx->start_render();
-        $ok = null;
-        foreach ($gx->members(strtolower($g)) as $gj) {
-            if (array_search("pc", Conf::xt_allow_list($gj)) === false) {
-                $ok = $gx->render($gj);
-            } else if ($this->user->isPC || $this->viewer->privChair) {
-                echo '<div class="fx1">';
-                $ok = $gx->render($gj);
-                echo '</div>';
-            }
-            if ($ok === false) {
-                break;
-            }
-        }
-        $gx->end_render();
+    function render_section($title, $id = null) {
+        $this->gxt()->render_section($title, $id);
     }
 
     function request_group($name) {

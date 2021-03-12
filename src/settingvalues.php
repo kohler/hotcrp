@@ -556,8 +556,6 @@ class SettingValues extends MessageSet {
 
     /** @var ?GroupedExtensions */
     private $_gxt;
-    /** @var bool */
-    private $_in_subhead = false;
 
     function __construct(Contact $user) {
         parent::__construct();
@@ -626,7 +624,8 @@ class SettingValues extends MessageSet {
     private function gxt() {
         if ($this->_gxt === null) {
             $this->_gxt = new GroupedExtensions($this->user, ["etc/settinggroups.json"], $this->conf->opt("settingGroups"));
-            $this->_gxt->set_context(["hclass" => "form-h", "args" => [$this]]);
+            $this->_gxt->set_title_class("form-h")->set_section_class("form-section")
+                ->set_context_args([$this]);
         }
         return $this->_gxt;
     }
@@ -657,25 +656,20 @@ class SettingValues extends MessageSet {
             $this->gxt()->call_function($gj->crosscheck_function, $gj);
         }
     }
-    function render_group($g, $options = null) {
-        $this->gxt()->render_group($g, $options);
+    /** @param string $g
+     * @param bool $top */
+    function render_group($g, $top = false) {
+        $this->gxt()->render_group($g, $top);
     }
-    /** @param string $html
-     * @param array $opts */
-    function echo_subhead($html, $opts = null) {
-        $this->echo_close_subhead();
-        echo '<div class="form-hg"><h3 class="form-h';
-        if ($opts["id"] ?? null) {
-            echo '" id="', htmlspecialchars($opts["id"]);
-        }
-        echo '">', $html, '</h3>';
-        $this->_in_subhead = true;
+    /** @param ?string $classes
+     * @param ?string $id */
+    function render_open_section($classes = null, $id = null) {
+        $this->gxt()->render_open_section($classes, $id);
     }
-    function echo_close_subhead() {
-        if ($this->_in_subhead) {
-            echo "</div>\n\n";
-            $this->_in_subhead = false;
-        }
+    /** @param string $title
+     * @param ?string $id */
+    function render_section($title, $id = null) {
+        $this->gxt()->render_section($title, $id);
     }
 
 

@@ -225,7 +225,7 @@ class BanalSettings {
 
 class SubForm_SettingRenderer {
     static function render(SettingValues $sv) {
-        $sv->echo_subhead("Abstract and PDF");
+        $sv->render_section("Abstract and PDF");
 
         echo '<div id="foldpdfupload" class="fold2o fold3o">';
         echo '<div class="f-i">',
@@ -246,7 +246,7 @@ class SubForm_SettingRenderer {
 
         echo '</div>';
 
-        $sv->echo_subhead("Conflicts and collaborators");
+        $sv->render_section("Conflicts and collaborators");
         echo '<div id="foldpcconf" class="form-g fold',
             ($sv->curv("sub_pcconf") ? "o" : "c"), "\">\n";
         $sv->echo_checkbox("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "uich js-foldup"]);

@@ -85,8 +85,7 @@ echo '</ul><div class="leftmenu-if-left if-alert mt-5">',
     '<h2 class="leftmenu">', $Sv->group_title($Group), '</h2>';
 
 $Sv->report(isset($Qreq->update) && $Qreq->valid_post());
-$Sv->render_group(strtolower($Group), ["top" => true]);
-$Sv->echo_close_subhead();
+$Sv->render_group(strtolower($Group), true);
 
 
 echo '<div class="aab aabig mt-7">',

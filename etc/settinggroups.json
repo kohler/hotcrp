@@ -1,7 +1,6 @@
 [
     {
-        "name": "basics", "position": 0,
-        "title": "Basics"
+        "name": "basics", "position": 0, "title": "Basics"
     },
     {   "name": "info", "alias": "basics"   },
     {
@@ -21,8 +20,7 @@
     },
 
     {
-        "name": "decisions", "position": 800,
-        "title": "Decisions"
+        "name": "decisions", "position": 800, "title": "Decisions"
     },
     {   "name": "dec", "alias": "decisions"   },
     {   "name": "final", "alias": "decisions"   },
@@ -85,15 +83,20 @@
     },
 
     {
-        "name": "messages", "position": 200,
-        "title": "Messages",
-        "render_function": "Messages_SettingRenderer::render"
+        "name": "messages", "position": 200, "title": "Messages"
     },
     {   "name": "msg", "alias": "messages"   },
+    {
+        "name": "messages/submissions", "position": 100,
+        "render_function": "Messages_SettingRenderer::render_submissions"
+    },
+    {
+        "name": "messages/reviews", "position": 200,
+        "render_function": "Messages_SettingRenderer::render_reviews"
+    },
 
     {
-        "name": "reviewform", "position": 600,
-        "title": "Review form",
+        "name": "reviewform", "position": 600, "title": "Review form",
         "render_function": "ReviewForm_SettingRenderer::render"
     },
     {   "name": "rfo", "alias": "reviewform"   },
@@ -128,8 +131,7 @@
     },
 
     {
-        "name": "reviews", "position": 500,
-        "title": "Reviews"
+        "name": "reviews", "position": 500, "title": "Reviews"
     },
     {   "name": "rev", "alias": "reviews"   },
     {   "name": "review", "alias": "reviews"   },
@@ -160,8 +162,7 @@
         "render_function": "Reviews_SettingRenderer::render_ratings"
     },
     {
-        "name": "submissions", "position": 300,
-        "title": "Submissions"
+        "name": "submissions", "position": 300, "title": "Submissions"
     },
     {   "name": "sub", "alias": "submissions"   },
     {
@@ -190,8 +191,7 @@
         "render_function": "Submissions_SettingRenderer::render_pcseeall"
     },
     {
-        "name": "subform", "position": 400,
-        "title": "Submission form",
+        "name": "subform", "position": 400, "title": "Submission form",
         "render_function": "SubForm_SettingRenderer::render"
     },
     {

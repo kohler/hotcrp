@@ -44,7 +44,7 @@ class Tags_SettingRenderer {
     static function render(SettingValues $sv) {
         // Tags
         $tagmap = $sv->conf->tags();
-        $sv->echo_subhead("Tags");
+        $sv->render_section("Tags");
 
         echo '<div class="form-g">';
         $sv->render_group("tags/main");
@@ -80,7 +80,7 @@ class Tags_SettingRenderer {
                 . "</td><td class=\"remargin-right\"></td></tr>";
         }
 
-        $sv->echo_subhead("Colors and styles", ["id" => "colors-and-styles"]);
+        $sv->render_section("Colors and styles", "colors-and-styles");
         echo Ht::hidden("has_tag_color", 1),
             "<p>Submissions tagged with a style name, or with an associated tag, appear in that style in lists. This also applies to PC tags.</p>",
             '<table class="demargin"><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr>',

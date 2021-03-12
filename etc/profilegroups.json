@@ -26,7 +26,7 @@
         "render_function": "UserStatus::render_collaborators"
     },
     {
-        "name": "main/topics", "position": 7000, "allow_if": ["pc", "conf.has_topics"],
+        "name": "main/topics", "position": 7000, "allow_if": "conf.has_topics",
         "render_function": "UserStatus::render_topics"
     },
     [   "main/tags", 8000, "UserStatus::render_tags"   ],

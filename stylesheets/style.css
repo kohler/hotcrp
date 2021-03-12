@@ -1331,11 +1331,11 @@ div.hint {
 h3.form-h, h3.helppage, h4.helppage {
 	color: #4b4f6d;
 }
-h3.form-h {
-	margin: 3em 0 1em;
+.form-h {
+	margin: 0 0 1em;
 }
-h2.leftmenu + h3.form-h {
-	margin-top: 0;
+.form-section {
+	margin-bottom: 3em;
 }
 h3.helppage {
 	margin: 2em 0 1em;
@@ -1343,7 +1343,7 @@ h3.helppage {
 h3.helppage + p {
 	margin-top: 0.5em;
 }
-div.aab + h3.settings, div.aab + h3.form-h {
+div.aab + h3.settings, div.aab + .form-h, div.aab + .form-section {
 	margin-top: 0.5em;
 }
 h4.helppage {
@@ -1368,7 +1368,7 @@ th.settings-simplehead {
 .settings-rf, .settings-rf-deleted {
 	margin-bottom: 2em;
 }
-.form-hg, .settings-opt {
+.settings-opt {
 	margin-bottom: 3em;
 }
 .form-g, .form-g-5 {

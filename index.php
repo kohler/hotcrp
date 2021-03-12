@@ -57,8 +57,8 @@ if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "style
     } else if (isset($pagej->render_php)) {
         include($pagej->render_php);
     } else {
-        $gx->set_context(["root" => $pagej->group, "args" => [$Me, $Qreq, $gx]]);
+        $gx->set_root($pagej->group)->set_context_args([$Me, $Qreq, $gx]);
         gx_call_requests($Conf, $Me, $Qreq, $pagej->group, $gx);
-        $gx->render_group($pagej->group, ["top" => true]);
+        $gx->render_group($pagej->group, true);
     }
 }

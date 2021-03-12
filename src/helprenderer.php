@@ -18,7 +18,7 @@ class HelpRenderer extends Ht {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_help_topics = $help_topics;
-        $this->_help_topics->set_context(["hclass" => "helppage", "args" => [$this]]);
+        $this->_help_topics->set_title_class("helppage")->set_context_args([$this]);
     }
     function subhead($title, $id = null) {
         if (!$id && $title) {
@@ -181,8 +181,10 @@ class HelpRenderer extends Ht {
             }, $vt)) . ")";
         }
     }
+    /** @param string $topic
+     * @param bool $top */
     function render_group($topic, $top = false) {
-        $this->_help_topics->render_group($topic, ["top" => $top]);
+        $this->_help_topics->render_group($topic, $top);
     }
     function groups() {
         return $this->_help_topics->groups();

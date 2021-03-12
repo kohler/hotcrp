@@ -118,7 +118,7 @@ if (!$Me->is_signed_in()) {
 $newProfile = 0;
 $UserStatus = new UserStatus($Me);
 $UserStatus->set_user($Me);
-$UserStatus->set_context(["args" => [$UserStatus]]);
+$UserStatus->set_context_args([$UserStatus]);
 
 if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
     $Qreq->u = $Qreq->user ? : $Qreq->contact;
@@ -365,7 +365,7 @@ function parseBulkFile($text, $filename) {
 
     while (($line = $csv->next_row())) {
         $ustatus->set_user(new Contact(null, $Conf));
-        $ustatus->set_context(["args" => [$ustatus]]);
+        $ustatus->set_context_args([$ustatus]);
         $ustatus->clear_messages();
         $cj = (object) ["id" => null];
         $ustatus->parse_csv_group("", $cj, $line);
@@ -435,7 +435,7 @@ if (!$Qreq->valid_post()) {
     assert($Acct->is_empty() === !!$newProfile);
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->set_user($Acct);
-    $UserStatus->set_context(["args" => [$UserStatus, $cj, $Qreq]]);
+    $UserStatus->set_context_args([$UserStatus, $cj, $Qreq]);
     $UserStatus->no_deprivilege_self = true;
     if ($newProfile) {
         $UserStatus->no_nonempty_profile = true;
@@ -535,7 +535,7 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->valid_post()) {
 
 // canonicalize topic
 $UserStatus->set_user($Acct);
-$UserStatus->set_context(["args" => [$UserStatus]]);
+$UserStatus->set_context_args([$UserStatus]);
 if (!$newProfile
     && ($g = $UserStatus->gxt()->canonical_group($Qreq->t ? : "main"))) {
     $profile_topic = $g;
@@ -546,7 +546,7 @@ if ($Qreq->t && $Qreq->t !== $profile_topic && $Qreq->method() === "GET") {
     $Qreq->t = $profile_topic === "main" ? null : $profile_topic;
     $Conf->redirect_self($Qreq);
 }
-$UserStatus->set_context(["root" => $profile_topic]);
+$UserStatus->gxt()->set_root($profile_topic);
 
 // set session list
 if (!$newProfile
@@ -588,7 +588,7 @@ if (!$useRequest
 
 // set warnings about user json
 if (!$newProfile && !$useRequest) {
-    $UserStatus->gxt()->set_context(["args" => [$UserStatus, $Acct]]);
+    $UserStatus->gxt()->set_context_args([$UserStatus, $Acct]);
     foreach ($UserStatus->gxt()->members("__crosscheck", "crosscheck_function") as $gj) {
         $UserStatus->gxt()->call_function($gj->crosscheck_function, $gj);
     }
@@ -732,7 +732,7 @@ if ($UserStatus->has_messages()) {
     echo '<div class="msgs-wide">', Ht::msg($msgs, $status), "</div>\n";
 }
 
-$UserStatus->set_context(["args" => [$UserStatus, $Qreq]]);
+$UserStatus->set_context_args([$UserStatus, $Qreq]);
 $UserStatus->render_group($newProfile === 2 ? "__bulk" : $profile_topic);
 
 if ($newProfile !== 2) {

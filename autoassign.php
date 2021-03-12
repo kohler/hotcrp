@@ -602,8 +602,8 @@ Assignment methods:
 echo Ht::unstash_script("hotcrp.highlight_form_children(\"#autoassignform\")");
 
 // paper selection
-echo '<div class="form-hg">',
-    '<h3 class="', Ht::control_class("pap", "form-h", "is-"), 'Paper selection</h3>';
+echo '<div class="form-section">',
+    '<h3 class="', Ht::control_class("pap", "form-h", "is-"), '">Paper selection</h3>';
 if (!isset($Qreq->q)) { // XXX redundant
     $Qreq->q = join(" ", $SSel->selection());
 }
@@ -637,7 +637,7 @@ echo "</div>\n";
 
 
 // action
-echo '<div class="form-hg">',
+echo '<div class="form-section">',
     '<h3 class="', Ht::control_class("ass", "form-h", "is-"), "\">Action</h3>\n";
 
 echo '<div class="form-g">';
@@ -706,11 +706,11 @@ echo Ht::entry("discordertag", $Qreq->discordertag ?? "discuss",
                ["size" => 12, "class" => Ht::control_class("discordertag", "js-autosubmit")]),
     ", grouping papers with similar PC conflicts</div></div>";
 
-echo "</div>\n\n"; // .form-hg
+echo "</div>\n\n"; // .form-section
 
 
 // PC
-echo '<div class="form-hg"><h3 class="form-h">PC members</h3>';
+echo '<div class="form-section"><h3 class="form-h">PC members</h3>';
 
 echo '<div class="js-radio-focus checki"><label>',
     '<span class="checkc">', Ht::radio("pctyp", "all", $Qreq->pctyp === "all"), '</span>',
@@ -784,14 +784,14 @@ $Conf->stash_hotcrp_pc($Me);
 
 
 // Load balancing
-echo '<div class="form-hg"><h3 class="form-h">Load balancing</h3>';
+echo '<div class="form-section"><h3 class="form-h">Load balancing</h3>';
 echo_radio_row("balance", "new", "New assignments—spread new assignments equally among selected PC members");
 echo_radio_row("balance", "all", "All assignments—spread assignments so that selected PC members have roughly equal overall load");
 echo '</div>';
 
 
 // Method
-echo '<div class="form-hg"><h3 class="form-h">Assignment method</h3>';
+echo '<div class="form-section"><h3 class="form-h">Assignment method</h3>';
 echo_radio_row("method", "mcmf", "Globally optimal assignment");
 echo_radio_row("method", "random", "Random good assignment");
 

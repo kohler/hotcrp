@@ -2,6 +2,13 @@
 // src/groupedextensions.php -- HotCRP extensible groups
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
+class GroupedExtensionsContext {
+    /** @var ?list<mixed> */
+    public $args;
+    /** @var ?list<callable> */
+    public $cleanup;
+}
+
 class GroupedExtensions implements XtContext {
     private $_jall = [];
     private $_potential_members = [];
@@ -12,9 +19,18 @@ class GroupedExtensions implements XtContext {
     public $root;
     private $_raw = [];
     private $_callables;
-    /** @var array{?list<mixed>,?string,?string,?string} */
-    private $_render_state;
-    private $_render_stack;
+    /** @var string|false */
+    private $_section_class = "";
+    /** @var string|false */
+    private $_title_class = "";
+    /** @var bool */
+    private $_in_section = false;
+    /** @var ?string */
+    private $_section_closer;
+    /** @var GroupedExtensionsContext */
+    private $_ctx;
+    /** @var list<GroupedExtensionsContext> */
+    private $_ctxstack;
     private $_annexes = [];
     /** @var list<callable(string,object,?Contact,Conf):(?bool)> */
     private $_xt_checkers = [];
@@ -77,14 +93,16 @@ class GroupedExtensions implements XtContext {
             if ($arg)
                 expand_json_includes_callback($arg, [$this, "add"]);
         }
+        $this->_ctx = new GroupedExtensionsContext;
         $this->reset_context();
     }
     function reset_context() {
-        assert(empty($this->_render_stack));
+        assert(empty($this->_ctxstack) && empty($this->_ctx->cleanup));
         $this->root = null;
         $this->_raw = [];
         $this->_callables = ["Conf" => $this->conf];
-        $this->_render_state = [null, null, "h3", null];
+        $this->_in_section = false;
+        $this->_section_closer = null;
     }
     /** @return Contact */
     function viewer() {
@@ -198,16 +216,19 @@ class GroupedExtensions implements XtContext {
         }
     }
     function callable($name) {
-        if (!isset($this->_callables[$name])
-            && ($args = $this->_render_state[0]) !== null) {
+        if (!isset($this->_callables[$name]) && $this->_ctx->args !== null) {
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
-            $this->_callables[$name] = new $name(...$args);
+            $this->_callables[$name] = new $name(...$this->_ctx->args);
         }
         return $this->_callables[$name] ?? null;
     }
+    /** @param string $name
+     * @param callable|mixed $callable
+     * @return $this */
     function set_callable($name, $callable) {
         assert(!isset($this->_callables[$name]));
         $this->_callables[$name] = $callable;
+        return $this;
     }
     function call_function($cb, $gj) {
         Conf::xt_resolve_require($gj);
@@ -215,13 +236,38 @@ class GroupedExtensions implements XtContext {
             $colons = strpos($cb, ":");
             $cb = [$this->callable(substr($cb, 1, $colons - 1)), substr($cb, $colons + 2)];
         }
-        return $cb(...$this->_render_state[0], ...[$gj]);
+        return $cb(...$this->_ctx->args, ...[$gj]);
     }
     /** @deprecated */
     function call_callback($cb, $gj) {
         return $this->call_function($cb, $gj);
     }
 
+    /** @param ?string $root
+     * @return $this */
+    function set_root($root) {
+        $this->root = $root;
+        return $this;
+    }
+    /** @param string|false $s
+     * @return $this */
+    function set_section_class($s) {
+        $this->_section_class = $s;
+        return $this;
+    }
+    /** @param string|false $s
+     * @return $this */
+    function set_title_class($s) {
+        $this->_title_class = $s;
+        return $this;
+    }
+    /** @param list<mixed> $args
+     * @return $this */
+    function set_context_args($args) {
+        $this->_ctx->args = $args;
+        return $this;
+    }
+    /** @deprecated */
     function set_context($options) {
         if (isset($options["root"]))  {
             assert(is_string($options["root"]));
@@ -229,65 +275,105 @@ class GroupedExtensions implements XtContext {
         }
         if (isset($options["args"])) {
             assert(is_array($options["args"]));
-            $this->_render_state[0] = $options["args"];
-        }
-        if (isset($options["htag"])) {
-            assert(is_string($options["htag"]));
-            $this->_render_state[2] = $options["htag"];
+            $this->_ctx->args = $options["args"];
         }
         if (isset($options["hclass"])) {
             assert(is_string($options["hclass"]));
-            $this->_render_state[3] = $options["hclass"];
+            $this->_title_class = $options["hclass"];
         }
     }
+    /** @return list<mixed> */
     function args() {
-        return $this->_render_state[0];
+        return $this->_ctx->args;
     }
     function arg($i) {
-        return $this->_render_state[0][$i] ?? null;
+        return $this->_ctx->args[$i] ?? null;
     }
 
-    function start_render($options = null) {
-        $this->_render_stack[] = $this->_render_state;
-        $this->_render_state = array_slice($this->_render_state, 0, 4);
-        if (!empty($options)) {
-            $this->set_context($options);
-        }
+    function start_render() {
+        $this->_ctxstack[] = $this->_ctx;
+        $this->_ctx = clone $this->_ctx;
+        $this->_ctx->cleanup = null;
     }
     function push_render_cleanup($cleaner) {
-        assert(!empty($this->_render_stack));
-        $this->_render_state[] = $cleaner;
+        assert(!empty($this->_ctxstack));
+        $this->_ctx->cleanup[] = $cleaner;
     }
     function end_render() {
-        assert(!empty($this->_render_stack));
-        for ($i = count($this->_render_state) - 1; $i > 3; --$i) {
-            $cleaner = $this->_render_state[$i];
+        assert(!empty($this->_ctxstack));
+        $cleanup = $this->_ctx->cleanup ?? [];
+        for ($i = count($cleanup) - 1; $i >= 0; --$i) {
+            $cleaner = $cleanup[$i];
             if (is_string($cleaner) && ($gj = $this->get($cleaner))) {
                 $this->render($gj);
             } else if (is_callable($cleaner)) {
                 $this->call_function($cleaner, null);
             }
         }
-        $this->_render_state = array_pop($this->_render_stack);
+        $this->_ctx = array_pop($this->_ctxstack);
     }
-    function render($gj) {
-        if (is_string($gj)) {
-            if (!($gj = $this->get($gj))) {
-                return null;
+
+    /** @param ?string $classes
+     * @param ?string $id */
+    function render_open_section($classes = null, $id = null) {
+        $this->render_close_section();
+        if ($this->_section_class !== false
+            && ($this->_section_class !== "" || ($classes ?? "") !== "")) {
+            $klasses = trim("{$this->_section_class} " . ($classes ?? ""));
+            if ($klasses !== "" || ($id ?? "") !== "") {
+                echo '<div';
+                if ($klasses !== "") {
+                    echo " class=\"{$klasses}\"";
+                }
+                if (($id ?? "") !== "") {
+                    echo " id=\"", htmlspecialchars($id), "\"";
+                }
+                echo '>';
+                $this->_section_closer = "</div>";
             }
+            $this->_in_section = true;
         }
-        if (isset($gj->title)
-            && $gj->title !== $this->_render_state[1]
+    }
+    function push_close_section($html) {
+        $this->_section_closer = $html . ($this->_section_closer ?? "");
+    }
+    function render_close_section() {
+        if ($this->_in_section) {
+            echo $this->_section_closer ?? "";
+            $this->_section_closer = null;
+            $this->_in_section = false;
+        }
+    }
+    /** @param string $title
+     * @param ?string $hashid */
+    function render_title($title, $hashid = null) {
+        echo '<h3';
+        if ($this->_title_class) {
+            echo ' class="', $this->_title_class, '"';
+        }
+        if ($hashid) {
+            echo ' id="', htmlspecialchars($hashid), '"';
+        }
+        echo '>', $title, "</h3>\n";
+    }
+    /** @param string $title
+     * @param ?string $hashid */
+    function render_section($title, $hashid = null) {
+        $this->render_open_section();
+        if ($this->_title_class !== false && ($title !== "" && $title !== false)) {
+            $this->render_title($title, $hashid);
+        }
+    }
+
+    function render($gj) {
+        if (is_string($gj) && !($gj = $this->get($gj))) {
+            return null;
+        }
+        if (($gj->section ?? null) !== false
+            && $this->_section_class !== false
+            && (isset($gj->title) || !$this->_in_section)
             && $gj->group !== $gj->name) {
-            echo '<', $this->_render_state[2];
-            if ($this->_render_state[3]) {
-                echo ' class="', $this->_render_state[3], '"';
-            }
-            if (isset($gj->hashid)) {
-                echo ' id="', htmlspecialchars($gj->hashid), '"';
-            }
-            echo '>', $gj->title, '</', $this->_render_state[2], ">\n";
-            $this->_render_state[1] = $gj->title;
+            $this->render_section($gj->title ?? "", $gj->hashid ?? null);
         }
         if (isset($gj->render_function)) {
             return $this->call_function($gj->render_function, $gj);
@@ -300,13 +386,13 @@ class GroupedExtensions implements XtContext {
             return null;
         }
     }
-    function render_group($name, $options = null) {
-        $this->start_render($options);
+    /** @param string $name
+     * @param bool $top */
+    function render_group($name, $top = false) {
+        $this->start_render();
         $result = null;
-        if (!empty($options) && isset($options["top"]) && $options["top"]) {
-            if (($gj = $this->get($name))) {
-                $result = $this->render($gj);
-            }
+        if ($top && ($gj = $this->get($name))) {
+            $result = $this->render($gj);
         }
         foreach ($this->members($name) as $gj) {
             if ($result !== false) {
@@ -314,6 +400,7 @@ class GroupedExtensions implements XtContext {
             }
         }
         $this->end_render();
+        $top && $this->render_close_section();
         return $result;
     }
 
