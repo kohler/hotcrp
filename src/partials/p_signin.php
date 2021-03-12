@@ -134,7 +134,7 @@ class Signin_Partial {
                 $usuf = count($su) > 1 ? "u/{$i}/" : "";
                 $links[] = '<a href="' . htmlspecialchars($nav->base_path_relative . $usuf) . '">' . htmlspecialchars($email) . '</a>';
             }
-            echo '<p class="is-warning"><span class="warning-mark"></span> ', $user->conf->_("You are already signed in as %s. Use this form to add another account.", commajoin($links)), '</p>';
+            echo '<p class="is-warning"><span class="warning-mark"></span> ', $user->conf->_("You are already signed in as %s. Use this form to add another account to this browser session.", commajoin($links)), '</p>';
         }
         echo '<p class="mb-5">',
             $user->conf->_("Sign in to submit or review papers."), '</p>';
