@@ -4583,20 +4583,21 @@ function render_editing(hc, cj) {
     hc.pop();
 
     // actions: [btnbox], [wordcount] || cancel, save/submit
-    hc.push('<div class="w-text aabig aab aabr">', '</div>');
+    hc.push('<div class="w-text aabig aab mt-3">', '</div>');
     bnote = edit_allowed(cj) ? "" : '<div class="hint">(admin only)</div>';
     if (btnbox.length)
-        hc.push('<div class="aabut aabl"><div class="btnbox">' + btnbox.join("") + '</div></div>');
+        hc.push('<div class="aabut"><div class="btnbox">' + btnbox.join("") + '</div></div>');
     if (cj.response && resp_rounds[cj.response].words > 0)
-        hc.push('<div class="aabut aabl"><div class="words"></div></div>');
+        hc.push('<div class="aabut"><div class="words"></div></div>');
+    hc.push('<div class="aabr">', '</div>');
+    hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
     if (cj.response) {
         // XXX allow_administer
         hc.push('<div class="aabut"><button type="button" name="bsubmit" class="btn-primary">Submit</button>' + bnote + "</div>");
     } else {
         hc.push('<div class="aabut"><button type="button" name="bsubmit" class="btn-primary">Save</button>' + bnote + "</div>");
     }
-    hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
-    hc.pop();
+    hc.pop_n(2);
 }
 
 function visibility_change() {

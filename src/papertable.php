@@ -1316,9 +1316,9 @@ class PaperTable {
                 $is_sitewide ? "sitewide-editable-tags" : "editable-tags",
                 '" spellcheck="false">', $tagger->unparse($editable), '</textarea>',
                 '<div class="aab aabr aab-compact"><div class="aabut">',
-                Ht::submit("save", "Save", ["class" => "btn-primary"]),
-                '</div><div class="aabut">',
                 Ht::submit("cancel", "Cancel"),
+                '</div><div class="aabut">',
+                Ht::submit("save", "Save", ["class" => "btn-primary"]),
                 "</div></div>",
                 '<span class="hint"><a href="', $this->conf->hoturl("help", "t=tags"), '">Learn more</a> <span class="barsep">·</span> <strong>Tip:</strong> Twiddle tags like “~tag” are visible only to you.</span>',
                 "</div>";

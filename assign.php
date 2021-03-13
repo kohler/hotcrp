@@ -542,7 +542,7 @@ if ($Me->can_administer($prow)) {
     }
 
     echo "</div>\n",
-        '<div class="aab aabr aabig">',
+        '<div class="aab aabig">',
         '<div class="aabut">', Ht::submit("update", "Save assignments", ["class" => "btn-primary"]), '</div>',
         '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
         '<div id="assresult" class="aabut"></div>',
@@ -616,7 +616,7 @@ if ($Me->can_administer($prow)) {
         ' </span>Override deadlines and declined requests</label>';
 }
 
-echo '<div class="aab aabr">',
+echo '<div class="aab">',
     '<div class="aabut aabutsp">', Ht::submit("requestreview", "Request review", ["class" => "btn-primary"]), '</div>',
     '<div class="aabut"><a class="ui x js-request-review-preview-email" href="">Preview request email</a></div>',
     "</div>\n\n";

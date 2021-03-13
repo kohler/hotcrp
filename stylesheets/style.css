@@ -399,6 +399,9 @@ label.checki {
 	margin-bottom: 2.25em !important;
 	margin-bottom: 2.25rem !important;
 }
+.mt-0 {
+	margin-top: 0 !important;
+}
 .mt-2 {
 	margin-top: 0.5em !important;
 	margin-top: 0.5rem !important;
@@ -1145,6 +1148,14 @@ button.btn-link:hover {
 }
 .aab {
 	margin: 2em 0 0.7em;
+	display: flex;
+	justify-content: flex-start;
+	flex-wrap: wrap;
+}
+.aabr {
+	flex-grow: 1;
+	display: flex;
+	justify-content: flex-end;
 }
 .aab-compact {
 	margin-top: 0;
@@ -1156,7 +1167,6 @@ button.btn-link:hover {
 	margin-bottom: 0;
 }
 .aabut {
-	float: left;
 	margin-right: 1em;
 	text-align: center;
 	line-height: 2;
@@ -1165,14 +1175,8 @@ button.btn-link:hover {
 	margin-top: -0.25em;
 }
 .aabr > .aabut {
-	float: right;
 	margin-right: 0;
 	margin-left: 1em;
-}
-.aabr > .aabut.aabl {
-	float: left;
-	margin-left: 0;
-	margin-right: 1em;
 }
 .aabut.aabutsp {
 	margin-right: 2.5em;

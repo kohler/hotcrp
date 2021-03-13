@@ -45,9 +45,9 @@ case insensitive, so “#TAG” and “#tAg” are considered identical.</p>";
     '<div class="fn">', $hth->search_link(null, "#earlyaccept", ["class" => "nn pw"]), '</div>',
     '<div class="fx"><textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest tags">earlyaccept</textarea>',
     '<div class="aab aabr aab-compact"><div class="aabut">',
-    Ht::button("Save", ["class" => "btn-primary ui js-foldup"]),
-    '</div><div class="aabut">',
     Ht::button("Cancel", ["class" => "ui js-foldup"]),
+    '</div><div class="aabut">',
+    Ht::button("Save", ["class" => "btn-primary ui js-foldup"]),
     '</div></div></div>',
     "</div></div></div></div><hr class=\"c\">
 
