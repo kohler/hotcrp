@@ -573,6 +573,7 @@ body.paper > #body {
 	border-top-left-radius: 4px;
 	border-top: 1px solid #f33360;
 	border-left: 1px solid #f33360;
+	z-index: 3;
 }
 
 
@@ -1093,8 +1094,7 @@ button:hover, button:focus, button:active, button:focus-within,
 .alert .btn-default,
 .alert .btn-primary,
 .alert .btn-alertable,
-.btn-highlight,
-.btn-danger {
+.btn-highlight {
 	border: 1px solid #cc0000;
 	background: #ff0000;
 	background-image: linear-gradient(#ff4040, #ff0000);
@@ -1103,10 +1103,18 @@ button:hover, button:focus, button:active, button:focus-within,
 .alert .btn-default:hover, .alert .btn-default:active,
 .alert .btn-primary:hover, .alert .btn-primary:active,
 .alert .btn-alertable:hover, .alert .btn-alertable:active,
-.btn-danger:hover, .btn-danger:active,
 .btn-highlight:hover, .btn-highlight:active {
 	border: 1px solid #b00000;
 	background-image: linear-gradient(#ee0000, #cc0000);
+}
+.btn-danger {
+	color: #cc0000;
+}
+.btn-danger:hover, .btn-danger:active {
+	border: 1px solid #b00000;
+	background: #ff0000;
+	background-image: linear-gradient(#ee0000, #cc0000);
+	color: white;
 }
 button:disabled, button:disabled:hover,
 .btn:disabled, .btn:disabled:hover,

@@ -390,7 +390,7 @@ class Signin_Partial {
     }
     function render_forgot_form_actions() {
         echo '<div class="popup-actions">',
-            Ht::submit("Reset password", ["class" => $this->_reset_user ? "btn-danger" : "btn-primary"]),
+            Ht::submit("Reset password", ["class" => $this->_reset_user ? "btn-success" : "btn-primary"]),
             Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
             '</div>';
     }
