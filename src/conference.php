@@ -3935,7 +3935,7 @@ class Conf {
         return $this->make_script_file($jquery, true, $integrity);
     }
 
-    function prepare_content_security_policy() {
+    function prepare_security_headers() {
         if (($csp = $this->opt("contentSecurityPolicy"))) {
             if (is_string($csp)) {
                 $csp = [$csp];
@@ -3958,6 +3958,9 @@ class Conf {
             header("Content-Security-Policy"
                    . ($report_only ? "-Report-Only: " : ": ")
                    . join(" ", $csp));
+        }
+        if (($cip = $this->opt("crossOriginIsolation")) !== false) {
+            header("Cross-Origin-Opener-Policy: same-origin");
         }
     }
 

@@ -55,7 +55,7 @@ function initialize_web() {
     header("Cache-Control: max-age=0,must-revalidate,private");
 
     // set up Content-Security-Policy if appropriate
-    Conf::$main->prepare_content_security_policy();
+    Conf::$main->prepare_security_headers();
 
     // skip user initialization if requested
     if (Contact::$no_guser) {
