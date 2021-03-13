@@ -30,6 +30,7 @@
         "render_function": "UserStatus::render_topics"
     },
     [   "main/tags", 8000, "UserStatus::render_tags"   ],
+    [   "main/mainactions", 100000, "UserStatus::render_main_actions"   ],
     [   "main/actions", 1000000, "UserStatus::render_actions"   ],
     {   "name": "topics", "position": 400,
         "save_function": "UserStatus::save_topics"   },

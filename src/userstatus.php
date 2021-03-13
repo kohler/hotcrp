@@ -950,7 +950,9 @@ class UserStatus extends MessageSet {
 
         // Disabled
         if (isset($cj->disabled)) {
-            $user->set_prop("disabled", $cj->disabled);
+            if ($user->set_prop("disabled", $cj->disabled)) {
+                $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
+            }
         }
 
         // Follow
@@ -1522,6 +1524,24 @@ topics. We use this information to help match papers to reviewers.</p>',
   <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p>\n";
         } else {
             echo $itags, "<p class=\"f-h\">Tags represent PC subgroups and are set by administrators.</p>\n";
+        }
+    }
+
+    static function render_main_actions(UserStatus $us, Qrequest $qreq) {
+        if ($us->viewer->privChair
+            && !$us->is_new_user()) {
+            $us->gxt()->render_open_section();
+            echo '<div class="form-outline-section">';
+            $us->gxt()->push_close_section('</div>');
+            $us->gxt()->render_title("User administration");
+            echo '<div class="btngrid">';
+            if (!$us->is_viewer_user()) {
+                echo Ht::button($us->user->disabled ? "Enable account" : "Disable account", [
+                    "class" => "ui js-disable-user " . ($us->user->disabled ? "btn-success" : "btn-danger")
+                ]), '<p class="pt-1">Disabled accounts cannot sign in or view the site.</p>';
+            }
+            echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo", "disabled" => $us->user->disabled]);
+            echo '</div>';
         }
     }
 

@@ -8670,6 +8670,39 @@ handle_ui.on("js-delete-user", function (event) {
     $d.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
+handle_ui.on("js-disable-user", function (event) {
+    var disabled = hasClass(this, "btn-success"), self = this;
+    self.disabled = true;
+    $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.closest("form").getAttribute("data-user")}),
+        disabled ? {enable: 1} : {disable: 1},
+        function (data) {
+            setajaxcheck(self, data);
+            self.disabled = false;
+            if (data.ok) {
+                if (data.disabled) {
+                    self.textContent = "Enable account";
+                    removeClass(self, "btn-danger");
+                    addClass(self, "btn-success");
+                } else {
+                    self.textContent = "Disable account";
+                    removeClass(self, "btn-success");
+                    addClass(self, "btn-danger");
+                }
+                $(self.closest("form")).find(".js-send-user-accountinfo").prop("disabled", data.disabled);
+            }
+        });
+});
+
+handle_ui.on("js-send-user-accountinfo", function (event) {
+    var self = this;
+    self.disabled = true;
+    $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.closest("form").getAttribute("data-user")}),
+        {sendinfo: 1},
+        function (data) {
+            setajaxcheck(self, data);
+        });
+});
+
 var profile_ui = (function ($) {
 return function (event) {
     if (hasClass(this, "js-role")) {
@@ -8719,7 +8752,7 @@ handle_ui.on("js-approve-review", function (event) {
     hc.push('<div class="btngrid">', '</div>');
     var subreviewClass = "";
     if (hasClass(self, "can-adopt")) {
-        hc.push('<button type="button" name="adoptsubmit" class="btn btn-primary big">Adopt and submit</button><p class="pt-2">Submit a copy of this review under your name. You can make changes afterwards.</p>');
+        hc.push('<button type="button" name="adoptsubmit" class="btn btn-primary big">Adopt and submit</button><p>Submit a copy of this review under your name. You can make changes afterwards.</p>');
         hc.push('<button type="button" name="adoptdraft" class="btn big">Adopt as draft</button><p>Save a copy of this review as a draft review under your name.</p>');
     } else if (hasClass(self, "can-adopt-replace")) {
         hc.push('<button type="button" name="adoptsubmit" class="btn btn-primary big">Adopt and submit</button><p>Replace your draft review with a copy of this review and submit it. You can make changes afterwards.</p>');

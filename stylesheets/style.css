@@ -448,6 +448,14 @@ label.checki {
 .mb-0-last-child > *:last-child {
 	margin-bottom: 0 !important;
 }
+.pt-1 {
+	padding-top: 0.25em !important;
+	padding-top: 0.25rem !important;
+}
+.pt-2 {
+	padding-top: 0.5em !important;
+	padding-top: 0.5rem !important;
+}
 
 .text-right {
 	text-align: right;
@@ -1348,6 +1356,12 @@ h3.form-h, h3.helppage, h4.helppage {
 }
 .form-section {
 	margin-bottom: 3em;
+}
+.form-outline-section {
+	margin: 0 -16px;
+	border: 1px solid silver;
+	border-radius: 5px;
+	padding: 8px 15px 12px;
 }
 h3.helppage {
 	margin: 2em 0 1em;

@@ -629,8 +629,11 @@ $form_params["t"] = $Qreq->t;
 if (isset($Qreq->ls)) {
     $form_params["ls"] = $Qreq->ls;
 }
-echo Ht::form($Conf->hoturl_post("profile", $form_params),
-              ["id" => "form-profile", "class" => "need-unload-protection"]);
+echo Ht::form($Conf->hoturl_post("profile", $form_params), [
+    "id" => "form-profile",
+    "class" => "need-unload-protection",
+    "data-user" => $newProfile ? null : $Acct->email
+]);
 
 // left menu
 echo '<div class="leftmenu-left"><nav class="leftmenu-menu">',
@@ -714,10 +717,13 @@ if ($newProfile === 2) {
     if ($newProfile) {
         echo 'New account';
     } else {
-        if ($Me->contactId != $Acct->contactId) {
+        if ($Me->contactId !== $Acct->contactId) {
             echo $Me->reviewer_html_for($Acct), ' ';
         }
         echo htmlspecialchars($UserStatus->gxt()->get($profile_topic)->title);
+        if ($Acct->is_disabled()) {
+            echo ' <span class="n dim">(disabled)</span>';
+        }
     }
     echo '</h2>';
 }

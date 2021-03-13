@@ -18,7 +18,7 @@ class User_API {
         $users = [];
         if ($user->privChair || $user->can_view_pc()) {
             $roles = $user->is_manager() ? "" : " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
-            $result = $user->conf->qe("select contactId, email, firstName, lastName, affiliation, collaborators from ContactInfo where email>=? and email<? and not disabled$roles order by email asc", $email, $email . "~");
+            $result = $user->conf->qe("select contactId, email, firstName, lastName, affiliation, collaborators from ContactInfo where email>=? and email<? and not disabled$roles order by email asc limit 2", $email, $email . "~");
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;
             }
@@ -33,7 +33,7 @@ class User_API {
                 $db = $user->conf->dblink;
                 $idk = "contactId";
             }
-            $result = Dbl::qe($db, "select $idk, email, firstName, lastName, affiliation, collaborators from ContactInfo where email>=? and email<? and not disabled order by email asc", $email, $email . "~");
+            $result = Dbl::qe($db, "select $idk, email, firstName, lastName, affiliation, collaborators from ContactInfo where email>=? and email<? and not disabled order by email asc limit 2", $email, $email . "~");
             $users = [];
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;
@@ -87,6 +87,53 @@ class User_API {
             return new JsonResult(400, "Parameter error.");
         } else {
             return ["ok" => false];
+        }
+    }
+
+    static function account_disable(Contact $user, Contact $viewer, $disabled) {
+        if (!$viewer->privChair) {
+            return new JsonResult(403, "Permission error.");
+        } else if ($viewer->contactId === $user->contactId) {
+            return new JsonResult(400, ["ok" => false, "error" => "You cannot disable your own account."]);
+        } else {
+            $ustatus = new UserStatus($viewer);
+            $ustatus->set_user($user);
+            if ($ustatus->save((object) ["disabled" => $disabled], $user)) {
+                return new JsonResult(["ok" => true, "u" => $user->email, "disabled" => $user->disabled]);
+            } else {
+                return new JsonResult(400, ["ok" => false, "u" => $user->email]);
+            }
+        }
+    }
+
+    static function account_sendinfo(Contact $user, Contact $viewer) {
+        if (!$viewer->privChair) {
+            return new JsonResult(403, "Permission error.");
+        } else if (!$user->is_disabled()) {
+            $user->send_mail("@accountinfo");
+            return new JsonResult(["ok" => true, "u" => $user->email]);
+        } else {
+            return new JsonResult(["ok" => false, "u" => $user->email, "error" => "User disabled.", "user_error" => true]);
+        }
+    }
+
+    static function account(Contact $viewer, Qrequest $qreq) {
+        if (!isset($qreq->u) || $qreq->u === "me" || strcasecmp($qreq->u, $viewer->email) === 0) {
+            $user = $viewer;
+        } else if ($viewer->isPC) {
+            $user = $viewer->conf->user_by_email($qreq->u);
+        } else {
+            return new JsonResult(403, "Permission error.");
+        }
+        if (!$user) {
+            return new JsonResult(404, ["ok" => false, "error" => "No such user."]);
+        }
+        if ($qreq->valid_post() && ($qreq->disable || $qreq->enable)) {
+            return self::account_disable($user, $viewer, !!$qreq->disable);
+        } else if ($qreq->valid_post() && $qreq->sendinfo) {
+            return self::account_sendinfo($user, $viewer);
+        } else {
+            return new JsonResult(200, ["ok" => true]);
         }
     }
 }

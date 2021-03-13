@@ -1,5 +1,8 @@
 [
     {
+        "name": "account", "get": true, "post": true, "function": "User_API::account"
+    },
+    {
         "name": "administrator", "paper": true, "get": true, "post": true,
         "function": "PaperPC_API::manager_api"
     },
