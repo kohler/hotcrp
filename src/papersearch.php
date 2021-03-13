@@ -1215,9 +1215,13 @@ class Limit_SearchTerm extends SearchTerm {
 class TextMatch_SearchTerm extends SearchTerm {
     /** @var Contact */
     private $user;
+    /** @var string */
     private $field;
+    /** @var bool */
     private $authorish;
+    /** @var ?bool */
     private $trivial = null;
+    /** @var ?TextPregexes */
     public $regex;
     static public $map = [ // NB see field_highlighters()
         "ti" => "title", "ab" => "abstract",
@@ -2938,8 +2942,9 @@ class PaperSearch {
 
     /** @param string $field */
     function add_field_highlighter($field, TextPregexes $regex) {
-        if (!$this->_match_preg_query) {
-            $this->_match_preg[$field] = $regex->merge($this->_match_preg[$field] ?? null);
+        if (!$this->_match_preg_query && !$regex->is_empty()) {
+            $this->_match_preg[$field] = $this->_match_preg[$field] ?? TextPregexes::make_empty();
+            $this->_match_preg[$field]->add_matches($regex);
         }
     }
 

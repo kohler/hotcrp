@@ -150,12 +150,12 @@ class AuthorMatcher extends Author {
         }
     }
 
-    /** @return ?TextPregexes */
+    /** @return TextPregexes */
     function general_pregexes() {
         if ($this->general_pregexes_ === false) {
             $this->prepare();
         }
-        return $this->general_pregexes_;
+        return $this->general_pregexes_ ?? TextPregexes::make_empty();
     }
 
     /** @return ?TextPregexes */
@@ -242,7 +242,8 @@ class AuthorMatcher extends Author {
         $preg = null;
         foreach ($matchers as $matcher) {
             if (($preg1 = $matcher->highlight_pregexes())) {
-                $preg = $preg1->merge($preg);
+                $preg = $preg ?? TextPregexes::make_empty();
+                $preg->add_matches($preg1);
             }
         }
         if ($preg) {

@@ -160,8 +160,8 @@ class Contact {
 
     /** @var ?non-empty-list<AuthorMatcher> */
     private $_aucollab_matchers;
-    /** @var null|TextPregexes|false */
-    private $_aucollab_general_pregexes = false;
+    /** @var ?TextPregexes */
+    private $_aucollab_general_pregexes;
     /** @var ?list<PaperInfo> */
     private $_authored_papers;
 
@@ -1643,8 +1643,7 @@ class Contact {
         }
         if ($this->_aucollab_matchers
             && in_array($prop, ["firstName", "lastName", "email", "affiliation"])) {
-            $this->_aucollab_matchers = null;
-            $this->_aucollab_general_pregexes = false;
+            $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
         }
         return true;
     }
@@ -1730,8 +1729,7 @@ class Contact {
             $this->$prop = $value;
         }
         $this->_mod_undo = $this->_disabled = $this->_jdata = null;
-        $this->_aucollab_matchers = null;
-        $this->_aucollab_general_pregexes = false;
+        $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
     }
 
 
@@ -4726,13 +4724,12 @@ class Contact {
         return $this->_aucollab_matchers;
     }
 
-    /** @return ?TextPregexes */
+    /** @return TextPregexes */
     function aucollab_general_pregexes() {
-        if ($this->_aucollab_general_pregexes === false) {
-            $this->_aucollab_general_pregexes = null;
+        if ($this->_aucollab_general_pregexes === null) {
+            $this->_aucollab_general_pregexes = TextPregexes::make_empty();
             foreach ($this->aucollab_matchers() as $matcher) {
-                if (($r = $matcher->general_pregexes()))
-                    $this->_aucollab_general_pregexes = $r->merge($this->_aucollab_general_pregexes);
+                $this->_aucollab_general_pregexes->add_matches($matcher->general_pregexes());
             }
         }
         return $this->_aucollab_general_pregexes;
@@ -4741,11 +4738,6 @@ class Contact {
     /** @return AuthorMatcher */
     function full_matcher() {
         return ($this->aucollab_matchers())[0];
-    }
-
-    /** @return ?TextPregexes */
-    function au_general_pregexes() {
-        return $this->full_matcher()->general_pregexes();
     }
 
 

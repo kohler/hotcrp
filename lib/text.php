@@ -19,6 +19,16 @@ class TextPregexes {
         $this->preg_utf8 = $utf8;
     }
 
+    /** @return TextPregexes */
+    static function make_empty() {
+        return new TextPregexes('(?!)', '(?!)');
+    }
+
+    /** @return bool */
+    function is_empty() {
+        return $this->preg_utf8 === '(?!)';
+    }
+
     /** @param string $text
      * @param string|false $deaccented_text
      * @return bool */
@@ -32,17 +42,34 @@ class TextPregexes {
         }
     }
 
-    /** @return TextPregexes */
+    function add_matches(TextPregexes $r) {
+        if ($this->is_empty()) {
+            $this->preg_utf8 = $r->preg_utf8;
+            $this->preg_raw = $r->preg_raw;
+        } else if (!$r->is_empty()) {
+            $this->preg_utf8 .= "|{$r->preg_utf8}";
+            if ($r->preg_raw === null) {
+                $this->preg_raw = null;
+            } else if ($this->preg_raw !== null) {
+                $this->preg_raw .= "|{$r->preg_raw}";
+            }
+        }
+    }
+
+    /** @return TextPregexes
+     * @deprecated */
     function merge(TextPregexes $r = null) {
-        if ($r) {
+        if (!$r || $r->is_empty()) {
+            return $this;
+        } else if ($this->is_empty()) {
+            return $r;
+        } else {
             $t = "{$r->preg_utf8}|{$this->preg_utf8}";
             if ($this->preg_raw !== null && $r->preg_raw !== null) {
                 return new TextPregexes("{$r->preg_raw}|{$this->preg_raw}", $t);
             } else {
                 return new TextPregexes(null, $t);
             }
-        } else {
-            return $this;
         }
     }
 }

@@ -3,7 +3,9 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class ConflictMatch_PaperColumn extends PaperColumn {
+    /** @var Contact */
     private $contact;
+    /** @var bool */
     private $show_user;
     private $_potconf;
     public $nonempty;
@@ -14,7 +16,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         }
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $this->contact ? : $pl->reviewer_user();
+        $this->contact = $this->contact ?? $pl->reviewer_user();
         $general_pregexes = $this->contact->aucollab_general_pregexes();
         return $pl->user->is_manager() && !empty($general_pregexes);
     }
