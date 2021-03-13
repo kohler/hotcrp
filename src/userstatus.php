@@ -856,7 +856,7 @@ class UserStatus extends MessageSet {
         }
         // At this point, we will save a user.
 
-        // create user
+        // ensure/create user
         $this->check_invariants($cj);
         $actor = $this->viewer->is_root_user() ? null : $this->viewer;
         if ($old_user) {
@@ -901,7 +901,7 @@ class UserStatus extends MessageSet {
             $cdb_user->save_prop();
             $user->contactdb_user(true);
         }
-        if ($roles !== $old_roles) {
+        if ($roles !== $old_roles || $user->disabled !== $old_disabled) {
             $user->contactdb_update();
         }
 
