@@ -868,7 +868,7 @@ class ReviewForm implements JsonSerializable {
      * @return string */
     function text_form_header($plural) {
         $x = "==+== " . $this->conf->short_name . " Review Form" . ($plural ? "s" : "") . "\n";
-        $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
+        $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" OR \"==*==\".
 ==-== For further guidance, or to upload this file when you are done, go to:
 ==-== " . $this->conf->hoturl_absolute("offline", null, Conf::HOTURL_RAW) . "\n\n";
         return $x;
@@ -957,8 +957,8 @@ $blind\n";
                 $fval = "";
             }
 
-            $y = "==+== " . chr(64 + $i) . ". ";
-            $x .= "\n" . prefix_word_wrap($y, $f->name, "==+==    ");
+            $y = "==*== ";
+            $x .= "\n" . prefix_word_wrap($y, $f->name, "==*==    ");
             if ($f->description) {
                 $d = cleannl($f->description);
                 if (strpbrk($d, "&<") !== false) {
@@ -997,7 +997,7 @@ $blind\n";
             } else if ($format_description !== "") {
                 $x .= prefix_word_wrap("==-== ", $format_description, "==-== ");
             }
-            $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
+            $x .= "\n" . preg_replace("/^(?===[-+*]==)/m", "\\", $fval) . "\n";
         }
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
     }
@@ -1642,7 +1642,7 @@ class ReviewValues extends MessageSet {
 
         $mode = 0;
         $nfields = 0;
-        $field = 0;
+        $field = null;
         $anyDirectives = 0;
 
         while ($text !== "") {
@@ -1650,35 +1650,36 @@ class ReviewValues extends MessageSet {
             $line = ($pos === false ? $text : substr($text, 0, $pos + 1));
             ++$this->lineno;
 
-            if (substr($line, 0, 6) == "==+== ") {
+            $linestart = substr($line, 0, 6);
+            if ($linestart === "==+== " || $linestart === "==*== ") {
                 // make sure we record that we saw the last field
-                if ($mode && $field != null && !isset($this->req[$field])) {
+                if ($mode && $field !== null && !isset($this->req[$field])) {
                     $this->req[$field] = "";
                 }
 
                 $anyDirectives++;
-                if (preg_match('{\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z}', $line, $m)
+                if (preg_match('/\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z/', $line, $m)
                     && $m[1] != $this->conf->short_name) {
                     $this->check_garbage();
                     $this->rmsg("confid", "Ignoring review form, which appears to be for a different conference.<br>(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", self::ERROR);
                     return false;
-                } else if (preg_match('/^==\+== Begin Review/i', $line)) {
+                } else if (preg_match('/\A==\+== Begin Review/i', $line)) {
                     if ($nfields > 0)
                         break;
-                } else if (preg_match('/^==\+== Paper #?(\d+)/i', $line, $match)) {
+                } else if (preg_match('/\A==\+== Paper #?(\d+)/i', $line, $match)) {
                     if ($nfields > 0)
                         break;
                     $this->paperId = intval($match[1]);
                     $this->req["blind"] = 1;
                     $this->first_lineno = $this->field_lineno["paperNumber"] = $this->lineno;
-                } else if (preg_match('/^==\+== Reviewer:\s*(.*)$/', $line, $match)
+                } else if (preg_match('/\A==\+== Reviewer:\s*(.*?)\s*\z/', $line, $match)
                            && ($user = Text::split_name($match[1], true))
                            && $user[2]) {
                     $this->field_lineno["reviewerEmail"] = $this->lineno;
                     $this->req["reviewerFirst"] = $user[0];
                     $this->req["reviewerLast"] = $user[1];
                     $this->req["reviewerEmail"] = $user[2];
-                } else if (preg_match('/^==\+== Paper (Number|\#)\s*$/i', $line)) {
+                } else if (preg_match('/\A==\+== Paper (Number|\#)\s*\z/i', $line)) {
                     if ($nfields > 0)
                         break;
                     $field = "paperNumber";
@@ -1686,28 +1687,28 @@ class ReviewValues extends MessageSet {
                     $mode = 1;
                     $this->req["blind"] = 1;
                     $this->first_lineno = $this->lineno;
-                } else if (preg_match('/^==\+== Submit Review\s*$/i', $line)
-                           || preg_match('/^==\+== Review Ready\s*$/i', $line)) {
+                } else if (preg_match('/\A==\+== Submit Review\s*\z/i', $line)
+                           || preg_match('/\A==\+== Review Ready\s*\z/i', $line)) {
                     $this->req["ready"] = true;
-                } else if (preg_match('/^==\+== Open Review\s*$/i', $line)) {
+                } else if (preg_match('/\A==\+== Open Review\s*\z/i', $line)) {
                     $this->req["blind"] = 0;
-                } else if (preg_match('/^==\+== Version\s*(\d+)$/i', $line, $match)) {
+                } else if (preg_match('/\A==\+== Version\s*(\d+)\s*\z/i', $line, $match)) {
                     if (($this->req["version"] ?? 0) < intval($match[1]))
                         $this->req["version"] = intval($match[1]);
-                } else if (preg_match('/^==\+== Review Readiness\s*/i', $line)) {
+                } else if (preg_match('/\A==\+== Review Readiness\s*/i', $line)) {
                     $field = "readiness";
                     $mode = 1;
-                } else if (preg_match('/^==\+== Review Anonymity\s*/i', $line)) {
+                } else if (preg_match('/\A==\+== Review Anonymity\s*/i', $line)) {
                     $field = "anonymity";
                     $mode = 1;
-                } else if (preg_match('/^==\+== Review Format\s*/i', $line)) {
+                } else if (preg_match('/\A==\+== Review Format\s*/i', $line)) {
                     $field = "reviewFormat";
                     $mode = 1;
-                } else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
-                    while (substr($text, strlen($line), 6) === "==+== ") {
+                } else if (preg_match('/\A(?:==\+== [A-Z]\.|==\*== )\s*(.*?)\s*\z/', $line, $match)) {
+                    while (substr($text, strlen($line), 6) === $linestart) {
                         $pos = strpos($text, "\n", strlen($line));
                         $xline = ($pos === false ? substr($text, strlen($line)) : substr($text, strlen($line), $pos + 1 - strlen($line)));
-                        if (preg_match('/^==\+==\s+(.*?)\s*$/', $xline, $xmatch)) {
+                        if (preg_match('/\A==[+*]==\s+(.*?)\s*\z/', $xline, $xmatch)) {
                             $match[1] .= " " . $xmatch[1];
                         }
                         $line .= $xline;
@@ -1728,11 +1729,14 @@ class ReviewValues extends MessageSet {
             } else if ($mode < 2 && (substr($line, 0, 5) == "==-==" || ltrim($line) == "")) {
                 /* ignore line */
             } else {
-                if ($mode == 0) {
+                if ($mode === 0) {
                     $this->garbage_lineno = $this->lineno;
                     $field = null;
                 }
-                if ($field != null) {
+                if (str_starts_with($line, "\\==") && preg_match('/\A\\\\==[-+*]==/', $line)) {
+                    $line = substr($line, 1);
+                }
+                if ($field !== null) {
                     $this->req[$field] = ($this->req[$field] ?? "") . $line;
                 }
                 $mode = 2;
@@ -2052,7 +2056,7 @@ class ReviewValues extends MessageSet {
                    && $rrow->reviewEditVersion > ($this->req["version"] ?? 0)
                    && $anydiff
                    && $this->text !== null) {
-            $this->rmsg($this->first_lineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code>==+==&nbsp;Version&nbsp;" . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
+            $this->rmsg($this->first_lineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code class=\"nw\">==+== Version " . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
         } else if ($unready) {
             $what = $this->req["adoptreview"] ?? null ? "approved" : "submitted";
             $this->warning_at("ready", "This review can’t be $what until entries are provided for all required fields.");

@@ -686,6 +686,15 @@ xassert($tf->check_and_save($user_diot));
 $rrow = fetch_review($paper18, $user_diot);
 xassert_eqq($rrow->t04, "Whence the stuff I want to add for the authors’ response.\n");
 
+$review18A4 = file_get_contents(SiteLoader::find("test/review18A-4.txt"));
+$tf = ReviewValues::make_text($Conf->review_form(), $review18A4, "review18A-4.txt");
+xassert($tf->parse_text(false));
+xassert($tf->check_and_save($user_diot));
+
+$rrow = fetch_review($paper18, $user_diot);
+xassert(str_ends_with($rrow->t01, "\n==+== Want to make sure this works\n"));
+xassert_eqq($rrow->t04, "Whitherto the stuff I want to add for the authors’ response.\n");
+
 // check some review visibility policies
 $user_external = Contact::create($Conf, null, ["email" => "external@_.com", "name" => "External Reviewer"]);
 assert(!!$user_external);
