@@ -575,6 +575,7 @@ class FormulaGraph extends MessageSet {
                 $ordercf = function ($x) { return $x[0]; };
             }
         }
+        $this->_scatter_data = [];
 
         foreach ($rowset as $prow) {
             $ps = $this->_paper_style($prow);
