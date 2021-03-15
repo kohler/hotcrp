@@ -284,7 +284,7 @@ class Options_SettingRenderer {
         Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_options" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
 
         foreach ($sv->group_members("options/properties") as $gj) {
-            if (isset($gj->unparse_option_property_function)) {
+            if (isset($gj->render_option_property_function)) {
                 Conf::xt_resolve_require($gj);
                 $t = call_user_func($gj->render_option_property_function, $sv, $o, $xpos, $this, $gj);
                 if (is_string($t)) { // XXX backward compat
