@@ -3,10 +3,13 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class FieldRender {
+    /** @var ?Contact */
+    public $user;
     /** @var ?PaperTable */
     public $table;
     /** @var int */
     public $context;
+    /** @var null|false|string */
     public $title;
     /** @var ?string */
     public $value;
@@ -26,8 +29,9 @@ class FieldRender {
     const CPAGE = 3;
 
     /** @param int $context */
-    function __construct($context) {
+    function __construct($context, Contact $user = null) {
         $this->context = $context;
+        $this->user = $user;
     }
     /** @param ?int $context */
     function clear($context = null) {

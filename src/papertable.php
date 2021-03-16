@@ -27,7 +27,9 @@ class PaperTable {
     public $mode;
     /** @var string */
     private $first_mode;
+    /** @var bool */
     private $prefer_approvable = false;
+    /** @var bool */
     private $allreviewslink;
     /** @var ?PaperStatus */
     private $edit_status;
@@ -960,7 +962,7 @@ class PaperTable {
             htmlspecialchars($status_info[1]), "</span></p>";
 
         $renders = [];
-        $fr = new FieldRender(FieldRender::CPAGE);
+        $fr = new FieldRender(FieldRender::CPAGE, $this->user);
         $fr->table = $this;
         foreach ($this->prow->display_fields() as $o) {
             if ($o->display_position() === false

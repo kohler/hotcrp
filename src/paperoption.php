@@ -2146,8 +2146,9 @@ class Attachments_PaperOption extends PaperOption {
             if ($fr->for_page() && $this->display_position() < 2000) {
                 $fr->title = false;
                 $v = '<div class="pgsm';
-                if ($fr->table && $fr->table->user->view_option_state($ov->prow, $this) === 1)
+                if ($fr->table && $fr->user->view_option_state($ov->prow, $this) === 1) {
                     $v .= ' fx8';
+                }
                 $fr->value = $v . '">' . $fr->value . '</div>';
             }
         } else if ($fr->verbose()) {

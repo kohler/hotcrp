@@ -15,7 +15,7 @@ class Option_PaperColumn extends PaperColumn {
             return false;
         }
         $pl->qopts["options"] = true;
-        $this->fr = new FieldRender(0);
+        $this->fr = new FieldRender(0, $pl->user);
         $this->className = preg_replace('/(?: +|\A)(?:pl-no-suggest|pl-prefer-row' . ($this->as_row ? '|plrd|plr|plc' : '') . ')(?= |\z)/', '', $this->className);
         return true;
     }

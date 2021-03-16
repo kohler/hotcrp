@@ -160,8 +160,8 @@ class Topics_PaperOption extends PaperOption {
     function render(FieldRender $fr, PaperValue $ov) {
         $vs = $ov->value_list();
         if (!empty($vs)) {
-            $user = $fr->table->user;
-            $interests = $user->topic_interest_map();
+            $user = $fr->user;
+            $interests = $user ? $user->topic_interest_map() : [];
             $lenclass = count($vs) < 4 ? "long" : "short";
             $topics = $this->conf->topic_set();
             $ts = [];
@@ -172,7 +172,7 @@ class Topics_PaperOption extends PaperOption {
                 }
                 $tname = $topics->name($tid);
                 $x = $topics->unparse_name_html($tid);
-                if ($user->isPC) {
+                if ($user && $user->isPC) {
                     $x = Ht::link($x, $this->conf->hoturl("search", ["q" => "topic:" . SearchWord::quote($tname)]), ["class" => "qq"]);
                 }
                 $ts[] = $t . '">' . $x . '</li>';

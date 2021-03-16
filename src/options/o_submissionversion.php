@@ -17,7 +17,7 @@ class SubmissionVersion_PaperOption extends PaperOption {
     }
     function render(FieldRender $fr, PaperValue $ov) {
         assert($fr->table !== null);
-        if ($fr->table->user->can_view_pdf($ov->prow) && $ov->value > 1) {
+        if ($fr->user->can_view_pdf($ov->prow) && $ov->value > 1) {
             $fr->title = false;
             $dname = $this->conf->_c("field", "Submission version");
             $fr->set_html('<p class="pgsm"><small>' . $ov->prow->document(DTYPE_SUBMISSION)->link_html(htmlspecialchars($dname), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small></p>");
