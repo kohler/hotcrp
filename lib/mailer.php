@@ -549,7 +549,7 @@ class Mailer {
         return $text . $rest;
     }
 
-    private function _lineexpand($line, $info, $indent) {
+    private function _lineexpand($info, $line, $indent) {
         $text = "";
         while (preg_match('/^(.*?)(%#?[-a-zA-Z0-9!@_:.\/]+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
             $text .= $m[1] . $this->expandvar($m[2], false);
@@ -624,12 +624,12 @@ class Mailer {
                                 $text .= $line . "\n";
                             }
                         } else {
-                            $text .= $this->_lineexpand($m[2], $m[1], $tl);
+                            $text .= $this->_lineexpand($m[1], $m[2], $tl);
                         }
                         continue;
                     }
                 }
-                $text .= $this->_lineexpand($line, "", 0);
+                $text .= $this->_lineexpand("", $line, 0);
             }
         }
 

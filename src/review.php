@@ -959,13 +959,6 @@ $blind\n";
 
             $y = "==*== ";
             $x .= "\n" . prefix_word_wrap($y, $f->name, "==*==    ");
-            if ($f->description) {
-                $d = cleannl($f->description);
-                if (strpbrk($d, "&<") !== false) {
-                    $d = Text::html_to_text($d);
-                }
-                $x .= prefix_word_wrap("==-==    ", trim($d), "==-==    ");
-            }
             if ($f->view_score < VIEWSCORE_REVIEWERONLY) {
                 $x .= "==-== (secret field)\n";
             } else if ($f->view_score < VIEWSCORE_PC) {
@@ -974,6 +967,13 @@ $blind\n";
                 $x .= "==-== (hidden from authors)\n";
             } else if ($f->view_score < VIEWSCORE_AUTHOR) {
                 $x .= "==-== (hidden from authors until decision)\n";
+            }
+            if ($f->description) {
+                $d = cleannl($f->description);
+                if (strpbrk($d, "&<") !== false) {
+                    $d = Text::html_to_text($d);
+                }
+                $x .= prefix_word_wrap("==-==    ", trim($d), "==-==    ");
             }
             if ($f->has_options) {
                 $x .= "==-== Choices:\n";

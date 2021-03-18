@@ -181,6 +181,7 @@ function simplify_whitespace($str) {
  * @param bool $flowed
  * @return string */
 function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = false) {
+    assert($prefix !== false); // XXX backward compat
     if (is_int($indent)) {
         $indentlen = $indent;
         $indent = str_repeat(" ", $indent);
@@ -189,27 +190,17 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = f
     }
     $width = $width ?? 75;
 
-    $out = "";
-    if ($prefix !== false) {
-        while ($text !== "" && ctype_space($text[0])) {
-            $out .= $text[0];
-            $text = substr($text, 1);
+    $prefixlen = strlen($prefix);
+    $out = $prefixlen > $indentlen ? "$prefix\n" : $prefix;
+    $wx = $width - min($prefixlen, $indentlen);
+
+    while (($line = UnicodeHelper::utf8_line_break($text, $wx, $flowed)) !== false) {
+        if (strlen($out) === $prefixlen) {
+            $out .= $line . "\n";
+            $wx = $width - $indentlen;
+        } else {
+            $out .= $indent . preg_replace('/\A\pZ+/u', '', $line) . "\n";
         }
-    } else if (($line = UnicodeHelper::utf8_line_break($text, $width, $flowed)) !== false) {
-        $out .= $line . "\n";
-    }
-
-    while (($line = UnicodeHelper::utf8_line_break($text, $width - $indentlen, $flowed)) !== false) {
-        $out .= $indent . preg_replace('/\A\pZ+/u', '', $line) . "\n";
-    }
-
-    if ($prefix === false) {
-        /* skip */;
-    } else if (strlen($prefix) <= $indentlen) {
-        $prefix = str_pad($prefix, $indentlen, " ", STR_PAD_LEFT);
-        $out = $prefix . substr($out, $indentlen);
-    } else {
-        $out = $prefix . "\n" . $out;
     }
 
     if (!str_ends_with($out, "\n")) {
