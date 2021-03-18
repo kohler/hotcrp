@@ -874,17 +874,18 @@ class ReviewForm implements JsonSerializable {
         return $x;
     }
 
-    function text_form(PaperInfo $prow = null, ReviewInfo $rrow_in = null, Contact $contact, $req = null) {
+    function text_form(PaperInfo $prow_in = null, ReviewInfo $rrow_in = null, Contact $contact, $req = null) {
+        $prow = $prow_in ?? PaperInfo::make_new($contact);
         $rrow = $rrow_in ?? ReviewInfo::make_blank($prow, $contact);
-        $revViewScore = $prow ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
+        $revViewScore = $prow->paperId > 0 ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
         self::check_review_author_seen($prow, $rrow, $contact);
-        $viewable_identity = !$prow || $contact->can_view_review_identity($prow, $rrow);
+        $viewable_identity = $contact->can_view_review_identity($prow, $rrow);
 
         $x = "==+== =====================================================================\n";
         //$x .= "$prow->paperId:$revViewScore:$rrow->contactId;;$prow->conflictType;;$prow->reviewType\n";
 
         $x .= "==+== Begin Review";
-        if ($prow) {
+        if ($prow->paperId > 0) {
             $x .= " #" . $prow->paperId;
             if ($req && isset($req["reviewOrdinal"]) && $req["reviewOrdinal"]) {
                 $x .= unparse_latin_ordinal($req["reviewOrdinal"]);
@@ -896,7 +897,7 @@ class ReviewForm implements JsonSerializable {
         if ($rrow->reviewEditVersion && $viewable_identity) {
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
         }
-        if (!$prow || $viewable_identity) {
+        if ($viewable_identity) {
             if ($rrow->email) {
                 $x .= "==+== Reviewer: " . Text::nameo($rrow, NAME_EB) . "\n";
             } else {
@@ -908,7 +909,7 @@ class ReviewForm implements JsonSerializable {
             $x .= "==-== Updated " . $this->conf->unparse_time($time) . "\n";
         }
 
-        if ($prow) {
+        if ($prow->paperId > 0) {
             $x .= "\n==+== Paper #$prow->paperId\n"
                 . prefix_word_wrap("==-== Title: ", $prow->title, "==-==        ")
                 . "\n";
@@ -941,7 +942,7 @@ $blind\n";
             $i++; // XXX remove $i
             assert($i === $f->display_order);
             if ($f->view_score <= $revViewScore
-                || !$f->test_exists($rrow)) {
+                || ($prow->paperId > 0 && !$f->test_exists($rrow))) {
                 continue;
             }
 
@@ -967,6 +968,14 @@ $blind\n";
                 $x .= "==-== (hidden from authors)\n";
             } else if ($f->view_score < VIEWSCORE_AUTHOR) {
                 $x .= "==-== (hidden from authors until decision)\n";
+            }
+            if ($prow->paperId <= 0 && ($f->exists_if || $f->round_mask)) {
+                $explanation = $f->exists_if ?? $f->unparse_round_mask();
+                if (preg_match('/\Around:[a-zA-Z][-_a-zA-Z0-9]*\z/', $explanation)) {
+                    $x .= "==-== (present on " . substr($explanation, 6) . " reviews)\n";
+                } else {
+                    $x .= "==-== (present on reviews matching `{$explanation}`)\n";
+                }
             }
             if ($f->description) {
                 $d = cleannl($f->description);
