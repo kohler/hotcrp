@@ -1553,20 +1553,22 @@ class Conf {
         return $this->_track_tags ?? [];
     }
 
-    /** @return ?string */
-    function permissive_track_tag_for(Contact $user, $perm) {
-        foreach ($this->_tracks ? : [] as $t => $tr) {
-            if ($user->has_permission($tr[$perm])) {
+    /** @param int $ttype
+     * @return ?string */
+    function permissive_track_tag_for(Contact $user, $ttype) {
+        foreach ($this->_tracks ?? [] as $t => $tr) {
+            if ($user->has_permission($tr[$ttype])) {
                 return $t;
             }
         }
         return null;
     }
 
-    /** @return bool */
+    /** @param int $ttype
+     * @return bool */
     function check_tracks(PaperInfo $prow, Contact $user, $ttype) {
         $unmatched = true;
-        if ($this->_tracks) {
+        if ($this->_tracks !== null) {
             foreach ($this->_tracks as $t => $tr) {
                 if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
                     $unmatched = false;
@@ -1579,7 +1581,8 @@ class Conf {
         return $unmatched;
     }
 
-    /** @return bool */
+    /** @param int $ttype
+     * @return bool */
     function check_required_tracks(PaperInfo $prow, Contact $user, $ttype) {
         if ($this->_track_sensitivity & (1 << $ttype)) {
             $unmatched = true;
@@ -1606,7 +1609,8 @@ class Conf {
             || $user->has_permission($this->_tracks["_"][$ttype]);
     }
 
-    /** @return bool */
+    /** @param int $ttype
+     * @return bool */
     function check_any_tracks(Contact $user, $ttype) {
         if ($this->_tracks) {
             foreach ($this->_tracks as $t => $tr) {

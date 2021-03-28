@@ -1605,6 +1605,9 @@ class ReviewValues extends MessageSet {
         return $rv;
     }
 
+    /** @param int|string $field
+     * @param string $msg
+     * @param int $status */
     function rmsg($field, $msg, $status) {
         $e = "";
         if ($this->filename) {

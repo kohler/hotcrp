@@ -46,12 +46,17 @@ class Options_SettingRenderer {
             Ht::select("optvt_$xpos", $otypes, $optvt, $sv->sjs("optvt_$xpos", ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"])),
             "</div></div>\n";
 
-        $rows = 3;
-        $value = "";
-        $k = $o instanceof Selector_PaperOption ? "" : " hidden";
-        if ($k === "" && count($o->selector_options())) {
-            $value = join("\n", $o->selector_options()) . "\n";
-            $rows = max(count($o->selector_options()), 3);
+        if ($o instanceof Selector_PaperOption) {
+            $k = "";
+            if (($options = $o->selector_options())) {
+                $options[] = "";
+            }
+            $rows = max(count($options), 3);
+            $value = join("\n", $options);
+        } else {
+            $k = " hidden";
+            $rows = 3;
+            $value = "";
         }
         echo '<div class="', $sv->control_class("optv_$xpos", "entryi has-optvt-condition$k"),
             '" data-optvt-condition="selector radio">', $sv->label("optv_$xpos", "Choices"),
