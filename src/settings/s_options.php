@@ -3,10 +3,12 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class Options_SettingRenderer {
-    /** @var ?array<string,bool> */
+    /** @var array<int,bool> */
+    private $rendered_options = [];
+    /** @var int */
+    private $max_xpos = 0;
+    /** @var array<string,bool> */
     private $properties = [];
-    /** @var ?array<int,int> */
-    private $reqv_id_to_pos;
     /** @var ?array<int,int> */
     private $have_options;
 
@@ -136,7 +138,7 @@ class Options_SettingRenderer {
             "name" => "Field name",
             "description" => "",
             "type" => "checkbox",
-            "position" => count(self::configurable_options($sv)) + 1,
+            "position" => 1000,
             "display" => "prominent",
             "json_key" => "__fake__"
         ], $sv->conf);
@@ -158,8 +160,7 @@ class Options_SettingRenderer {
     /** @return PaperOption */
     static function make_requested_option(SettingValues $sv, PaperOption $io = null, $ipos) {
         $io = $io ?? self::make_placeholder_option($sv, -999);
-
-        if ($ipos === null) {
+        if ($ipos === null || $ipos === 0) {
             return $io;
         }
 
@@ -235,7 +236,7 @@ class Options_SettingRenderer {
             if (empty($args->selector)
                 && ($jtype = $sv->conf->option_type($args->type))
                 && ($jtype->has_selector ?? false)) {
-                $sv->error_at("optv_$ipos", "Enter selectors one per line.");
+                $sv->error_at("optv_$ipos", "Choices missing: enter one choice per line.");
             }
         }
 
@@ -249,7 +250,14 @@ class Options_SettingRenderer {
         }
     }
 
-    private function render_option(SettingValues $sv, PaperOption $io = null, $ipos, $xpos) {
+    private function render_option(SettingValues $sv, PaperOption $io = null, $ipos) {
+        if ($io && isset($this->rendered_options[$io->id])) {
+            return;
+        }
+        $xpos = $ipos ?? $this->max_xpos + 1;
+        $this->max_xpos = max($this->max_xpos, $xpos);
+        $this->rendered_options[$io ? $io->id : "new_$xpos"] = true;
+
         $old_ignore = $sv->swap_ignore_messages(true);
         $o = self::make_requested_option($sv, $io, $ipos);
         $sv->swap_ignore_messages($old_ignore);
@@ -272,8 +280,8 @@ class Options_SettingRenderer {
         echo '<div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
             $sv->feedback_at("optn_$xpos"),
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "style" => "font-weight:bold", "class" => "need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
-            Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-opt-id"]),
-            Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
+            Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-opt-id", "data-default-value" => $o->id > 0 ? $o->id : ""]),
+            Ht::hidden("optfp_$xpos", count($this->rendered_options), ["class" => "settings-opt-fp", "data-default-value" => count($this->rendered_options)]),
             '</div>';
 
         Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_choices" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
@@ -318,33 +326,33 @@ class Options_SettingRenderer {
             Ht::hidden("options:version", (int) $sv->conf->setting("options")),
             "\n\n";
 
-        $self->reqv_id_to_pos = [];
+        echo '<div id="settings_opts" class="c">';
+        $iposl = [];
         if ($sv->use_req()) {
-            for ($pos = 1; $sv->has_reqv("optid_$pos"); ++$pos) {
-                $id = (int) $sv->reqv("optid_$pos");
-                if ($id > 0 && !isset($self->reqv_id_to_pos[$id])) {
-                    $self->reqv_id_to_pos[$id] = $pos;
-                }
+            for ($ipos = 1; $sv->has_reqv("optid_$ipos"); ++$ipos) {
+                $iposl[] = $ipos;
+            }
+            usort($iposl, function ($a, $b) use ($sv) {
+                return (int) $sv->reqv("optfp_$a") <=> (int) $sv->reqv("optfp_$b") ? : $a <=> $b;
+            });
+        }
+        $self->rendered_options = [];
+        $self->max_xpos = 0;
+        foreach ($iposl as $ipos) {
+            $id = $sv->reqv("optid_$ipos");
+            $o = $id === "new" ? null : $sv->conf->option_by_id((int) $id);
+            if ($id === "new" || $o) {
+                $self->render_option($sv, $o, $ipos);
             }
         }
-
-        echo '<div id="settings_opts" class="c">';
-        $pos = 0;
         $all_options = self::configurable_options($sv); // get our own iterator
         foreach ($all_options as $o) {
-            $self->render_option($sv, $o, $self->reqv_id_to_pos[$o->id] ?? null, ++$pos);
-        }
-        if ($sv->use_req()) {
-            for ($xpos = 1; $sv->has_reqv("optid_$xpos"); ++$xpos) {
-                if ($sv->reqv("optid_$xpos") === "new") {
-                    $self->render_option($sv, null, $xpos, ++$pos);
-                }
-            }
+            $self->render_option($sv, $o, null);
         }
         echo "</div>\n";
 
         ob_start();
-        $self->render_option($sv, null, null, 0);
+        $self->render_option($sv, null, 0);
         $newopt = ob_get_clean();
 
         echo '<div style="margin-top:2em" id="settings_newopt" data-template="',
@@ -358,7 +366,7 @@ class Options_SettingRenderer {
             return;
         }
         $options = (array) json_decode($sv->newv("options"));
-        usort($options, function ($a, $b) { return $a->position - $b->position; });
+        usort($options, function ($a, $b) { return $a->position <=> $b->position; });
         if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))
             && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
             foreach ($options as $pos => $o) {
@@ -406,7 +414,6 @@ class Options_SettingParser extends SettingParser {
         } else {
             $io = $sv->conf->option_by_id(cvtint($idname));
         }
-
         return Options_SettingRenderer::make_requested_option($sv, $io, $xpos);
     }
 
