@@ -2044,6 +2044,7 @@ class ReviewValues extends MessageSet {
                 }
             }
         }
+
         if ($missingfields && $submit && $anynonempty) {
             foreach ($missingfields as $f) {
                 $this->rmsg($f->id, $this->conf->_("%s: Entry required.", $f->name_html), self::WARNING);
@@ -2067,8 +2068,10 @@ class ReviewValues extends MessageSet {
                    && $this->text !== null) {
             $this->rmsg($this->first_lineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code class=\"nw\">==+== Version " . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
         } else if ($unready) {
-            $what = $this->req["adoptreview"] ?? null ? "approved" : "submitted";
-            $this->warning_at("ready", "This review can’t be $what until entries are provided for all required fields.");
+            if ($submit && $anynonempty) {
+                $what = $this->req["adoptreview"] ?? null ? "approved" : "submitted";
+                $this->rmsg("ready", $this->conf->_("This review can’t be $what until entries are provided for all required fields."), self::WARNING);
+            }
             $this->req["ready"] = 0;
         }
 
