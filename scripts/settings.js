@@ -32,8 +32,10 @@ $(function () { $(".js-settings-sub-nopapers").trigger("change"); });
 
 
 handle_ui.on("js-settings-option-type", function (event) {
-    var issel = /^(?:selector|radio)/.test(this.value);
-    foldup.call(this, null, {n: 4, f: !issel});
+    var v = this.value;
+    $(this).closest(".settings-opt").find(".has-optvt-condition").each(function () {
+        toggleClass(this, "hidden", this.getAttribute("data-optvt-condition").split(" ").indexOf(v) < 0);
+    });
 });
 
 handle_ui.on("js-settings-show-property", function () {
@@ -84,6 +86,7 @@ handle_ui.on("js-settings-option-new", function (event) {
     var odiv = $(h).appendTo("#settings_opts");
     odiv.find(".need-autogrow").autogrow();
     odiv.find(".need-tooltip").each(tooltip);
+    odiv.find(".js-settings-option-type").change();
     $("#optn_" + next)[0].focus();
     settings_option_positions();
 });
@@ -336,7 +339,7 @@ tooltip.add_builder("settings-review-form", function (info) {
 });
 
 tooltip.add_builder("settings-option", function (info) {
-    var x = "#option_caption_options";
+    var x = "#option_caption_choices";
     if (/^optn/.test(this.name))
         x = "#option_caption_name";
     else if (/^optecs/.test(this.name))

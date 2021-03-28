@@ -3,19 +3,12 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class Options_SettingRenderer {
-    /** @var list<string> */
-    private $option_classes = [];
     /** @var ?array<string,bool> */
     private $properties = [];
     /** @var ?array<int,int> */
     private $reqv_id_to_pos;
     /** @var ?array<int,int> */
     private $have_options;
-
-    /** @param string $class */
-    function add_option_class($class) {
-        $this->option_classes[] = $class;
-    }
 
     /** @param string $property
      * @param bool $visible */
@@ -30,8 +23,6 @@ class Options_SettingRenderer {
         if ($o instanceof Text_PaperOption && $o->display_space > 3) {
             $optvt .= ":ds_" . $o->display_space;
         }
-
-        $self->add_option_class("fold4" . ($o instanceof Selector_PaperOption ? "o" : "c"));
 
         $jtypes = $sv->conf->option_type_map();
         if (!isset($jtypes[$optvt])
@@ -57,12 +48,13 @@ class Options_SettingRenderer {
 
         $rows = 3;
         $value = "";
-        if ($o instanceof Selector_PaperOption && count($o->selector_options())) {
+        $k = $o instanceof Selector_PaperOption ? "" : " hidden";
+        if ($k === "" && count($o->selector_options())) {
             $value = join("\n", $o->selector_options()) . "\n";
             $rows = max(count($o->selector_options()), 3);
         }
-        echo '<div class="', $sv->control_class("optv_$xpos", "entryi fx4"),
-            '">', $sv->label("optv_$xpos", "Choices"),
+        echo '<div class="', $sv->control_class("optv_$xpos", "entryi has-optvt-condition$k"),
+            '" data-optvt-condition="selector radio">', $sv->label("optv_$xpos", "Choices"),
             '<div class="entry">',
             $sv->feedback_at("optv_$xpos"),
             Ht::textarea("optv_$xpos", $value, $sv->sjs("optv_$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "w-entry-text need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"])),
@@ -268,11 +260,9 @@ class Options_SettingRenderer {
             $sv->set_oldv("optecs_$xpos", $io->exists_condition());
         }
 
-        $this->option_classes = ["settings-opt", "has-fold", "fold2o"];
         $this->properties = [];
 
-        echo '<div class="', join(" ", $this->option_classes),
-            '"><a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
+        echo '<div class="settings-opt has-fold fold2o"><a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
 
         echo '<div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
             $sv->feedback_at("optn_$xpos"),
@@ -281,7 +271,7 @@ class Options_SettingRenderer {
             Ht::hidden("optfp_$xpos", $xpos, ["class" => "settings-opt-fp", "data-default-value" => $xpos]),
             '</div>';
 
-        Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_options" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
+        Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_choices" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
 
         foreach ($sv->group_members("options/properties") as $gj) {
             if (isset($gj->render_option_property_function)) {
