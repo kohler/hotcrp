@@ -543,7 +543,7 @@ class ReviewField implements JsonSerializable {
                 $this->echo_option(0, $fv, $reqv);
             }
         } else {
-            $opt = ["class" => "w-text need-autogrow", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
+            $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
             if ($fv !== $reqv) {
                 $opt["data-default-value"] = (string) $reqv;
             }
