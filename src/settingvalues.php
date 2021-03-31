@@ -1456,10 +1456,11 @@ class SettingValues extends MessageSet {
     function parse_value(Si $si) {
         $v = $this->reqv($si->name);
         if ($v === null) {
-            if (in_array($si->type, ["cdate", "checkbox"]))
+            if (in_array($si->type, ["cdate", "checkbox"])) {
                 return 0;
-            else
+            } else {
                 return null;
+            }
         }
 
         $v = trim($v);
@@ -1470,11 +1471,14 @@ class SettingValues extends MessageSet {
 
         if ($si->type === "checkbox") {
             return $v != "" ? 1 : 0;
-        } else if ($si->type === "cdate" && $v == "1") {
-            return 1;
-        } else if ($si->type === "date"
-                   || $si->type === "cdate"
-                   || $si->type === "ndate") {
+        } else if ($si->type === "cdate") {
+            if ($v != "") {
+                $v = $this->si_oldv($si);
+                return $v > 0 ? $v : Conf::$now;
+            } else {
+                return 0;
+            }
+        } else if ($si->type === "date" || $si->type === "ndate") {
             if ((string) $v === ""
                 || $v === "0"
                 || !strcasecmp($v, "N/A")
@@ -1707,13 +1711,9 @@ class SettingValues extends MessageSet {
 
     function unparse_json_value(Si $si) {
         $v = $this->si_oldv($si);
-        if ($si->type === "checkbox") {
+        if ($si->type === "checkbox" || $si->type === "cdate") {
             return !!$v;
-        } else if ($si->type === "cdate" && $v == 1) {
-            return true;
-        } else if ($si->type === "date"
-                   || $si->type === "cdate"
-                   || $si->type === "ndate") {
+        } else if ($si->type === "date" || $si->type === "ndate") {
             if ($v > 0) {
                 return $this->conf->parseableTime($v, true);
             } else {
