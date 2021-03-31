@@ -9,6 +9,7 @@ ConfInvariants::test_all($Conf, "test01.php:A: ");
 $Conf->save_setting("sub_open", 1);
 $Conf->save_setting("sub_update", Conf::$now + 10);
 $Conf->save_setting("sub_sub", Conf::$now + 10);
+$Conf->refresh_settings();
 
 // load users
 $user_chair = $Conf->checked_user_by_email("chair@_.com");
@@ -131,7 +132,7 @@ xassert_eq($Conf->setting("paperacc", 0), 0);
 
 // change submission date
 $Conf->save_setting("sub_update", Conf::$now - 5);
-$Conf->save_setting("sub_sub", Conf::$now - 5);
+$Conf->save_refresh_setting("sub_sub", Conf::$now - 5);
 xassert($user_chair->can_edit_paper($paper1));
 xassert(!$user_chair->call_with_overrides(Contact::OVERRIDE_CHECK_TIME, "can_edit_paper", $paper1));
 xassert(!$user_estrin->can_edit_paper($paper1));
@@ -866,7 +867,7 @@ xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu sclin@lel
 
 $user_sclin = $Conf->checked_user_by_email("sclin@leland.stanford.edu");
 $Conf->save_setting("sub_update", Conf::$now + 10);
-$Conf->save_setting("sub_sub", Conf::$now + 10);
+$Conf->save_refresh_setting("sub_sub", Conf::$now + 10);
 xassert($user_sclin->can_edit_paper($paper3));
 xassert_assign($user_sclin, "paper,action,user\n3,conflict,rguerin@ibm.com\n");
 $paper3 = $user_chair->checked_paper_by_id(3);
@@ -919,7 +920,7 @@ $paper3->load_conflicts(false);
 xassert_eqq($paper3->conflict_type($user_rguerin), 4);
 
 $Conf->save_setting("sub_update", Conf::$now - 5);
-$Conf->save_setting("sub_sub", Conf::$now - 5);
+$Conf->save_refresh_setting("sub_sub", Conf::$now - 5);
 xassert_assign_fail($user_sclin, "paper,action,user\n3,clearconflict,rguerin@ibm.com\n");
 $paper3 = $user_chair->checked_paper_by_id(3);
 xassert_eqq(sorted_conflicts($paper3, false), "mgbaker@cs.stanford.edu rguerin@ibm.com sclin@leland.stanford.edu");
@@ -1239,7 +1240,7 @@ xassert($paper16->timeSubmitted < 0);
 xassert($paper16->timeWithdrawn > 0);
 xassert_eqq($paper16->withdrawReason, "Sucky");
 xassert_assign_fail($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
-$Conf->save_setting("sub_sub", Conf::$now + 5);
+$Conf->save_refresh_setting("sub_sub", Conf::$now + 5);
 xassert_assign($user_mogul, "paper,action,reason\n16,revive,Sucky\n");
 $paper16 = $user_mogul->checked_paper_by_id(16);
 xassert($paper16->timeSubmitted > 0);
