@@ -90,7 +90,7 @@ class PaperTable {
         // enumerate allowed modes
         if ($prow->has_author($user)
             && !$user->can_view_review($prow, null)
-            && $this->conf->timeFinalizePaper($prow)) {
+            && $this->conf->time_finalize_paper($prow)) {
             $this->first_mode = "edit";
         } else if ($user->can_review($prow, null)
                    && $qreq->page() === "review") {
@@ -1671,7 +1671,7 @@ class PaperTable {
 
         // Withdrawn papers can be revived
         if ($this->prow->timeWithdrawn > 0) {
-            $revivable = $this->conf->timeFinalizePaper($this->prow);
+            $revivable = $this->conf->time_finalize_paper($this->prow);
             if ($revivable) {
                 return [Ht::submit("revive", "Revive submission", ["class" => "btn-primary"])];
             } else if ($this->admin) {
@@ -1728,7 +1728,7 @@ class PaperTable {
                 $args["data-withdrawable"] = "true";
             }
             if (($this->admin && !$this->prow->has_author($this->user))
-                || $this->conf->timeFinalizePaper($this->prow)) {
+                || $this->conf->time_finalize_paper($this->prow)) {
                 $args["data-revivable"] = "true";
             }
             $b = Ht::button("Withdraw", $args);
@@ -2896,7 +2896,8 @@ class PaperTable {
             && empty($this->mycrows)
             && $this->prow->has_author($this->user)
             && !$this->allow_admin
-            && ($this->conf->timeFinalizePaper($this->prow) || $this->prow->timeSubmitted <= 0)) {
+            && ($this->conf->time_finalize_paper($this->prow)
+                || $this->prow->timeSubmitted <= 0)) {
             $this->mode = "edit";
         }
     }

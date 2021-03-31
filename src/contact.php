@@ -3033,7 +3033,7 @@ class Contact {
         return $rights->allow_author_edit
             && $prow->timeWithdrawn <= 0
             && (($rights->perm_tag_allows("author-write")
-                 ?? $this->conf->timeFinalizePaper($prow))
+                 ?? $this->conf->time_finalize_paper($prow))
                 || $this->override_deadlines($rights));
     }
 
@@ -3044,7 +3044,7 @@ class Contact {
         }
         $rights = $this->rights($prow);
         $whyNot = $this->perm_edit_paper_failure($prow, $rights, "f");
-        if (!$this->conf->timeFinalizePaper($prow)
+        if (!$this->conf->time_finalize_paper($prow)
             && !$this->override_deadlines($rights)) {
             $whyNot["deadline"] = "sub_sub";
         }
@@ -3093,7 +3093,7 @@ class Contact {
         return $rights->allow_author_edit
             && $prow->timeWithdrawn > 0
             && (($rights->perm_tag_allows("author-write")
-                 ?? $this->conf->timeFinalizePaper($prow))
+                 ?? $this->conf->time_finalize_paper($prow))
                 || $this->override_deadlines($rights));
     }
 

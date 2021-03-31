@@ -461,7 +461,7 @@ class Home_Partial {
 
         $deadlines = array();
         if ($plist && $plist->has("need_submit")) {
-            if (!$conf->timeFinalizePaper()) {
+            if (!$conf->time_finalize_paper(null)) {
                 // Be careful not to refer to a future deadline; perhaps an admin
                 // just turned off submissions.
                 if ($conf->deadlinesBetween("", "sub_sub", "sub_grace")) {
@@ -469,7 +469,7 @@ class Home_Partial {
                 } else {
                     $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">submission deadline</a> has passed.';
                 }
-            } else if (!$conf->time_edit_paper()) {
+            } else if (!$conf->time_edit_paper(null)) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">update deadline</a> has passed, but you can still submit.';
                 $time = $conf->unparse_setting_time_span("sub_sub", " to submit papers");
                 if ($time != "N/A") {
