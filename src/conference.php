@@ -3099,6 +3099,7 @@ class Conf {
         return !!($this->settings["paperacc"] ?? false);
     }
 
+    /** @return array{int,int} */
     function count_submitted_accepted() {
         $dlt = max($this->setting("sub_sub"), $this->setting("sub_close"));
         $result = $this->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
@@ -3113,23 +3114,28 @@ class Conf {
         return [$n, $nyes];
     }
 
+    /** @return bool */
     function has_any_lead_or_shepherd() {
         return !!($this->settings["paperlead"] ?? false);
     }
 
+    /** @return bool */
     function has_any_manager() {
         return ($this->_track_sensitivity & Track::BITS_ADMIN)
             || !!($this->settings["papermanager"] ?? false);
     }
 
+    /** @return bool */
     function has_any_explicit_manager() {
         return !!($this->settings["papermanager"] ?? false);
     }
 
+    /** @return bool */
     function has_any_metareviews() {
         return !!($this->settings["metareviews"] ?? false);
     }
 
+    /** @return bool */
     function can_pc_see_active_submissions() {
         if ($this->_pc_seeall_cache === null) {
             $this->_pc_seeall_cache = $this->settings["pc_seeall"] ?? 0;
