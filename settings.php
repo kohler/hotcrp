@@ -27,7 +27,7 @@ function choose_setting_group($qreq, SettingValues $sv) {
     if (!$want_group || !$sv->group_title($want_group)) {
         if ($sv->conf->can_some_author_view_review()) {
             $want_group = $sv->canonical_group("decisions");
-        } else if ($sv->conf->deadlinesAfter("sub_sub") || $sv->conf->time_review_open()) {
+        } else if ($sv->conf->time_after_setting("sub_sub") || $sv->conf->time_review_open()) {
             $want_group = $sv->canonical_group("reviews");
         } else {
             $want_group = $sv->canonical_group("sub");

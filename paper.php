@@ -284,7 +284,7 @@ function update_paper(Qrequest $qreq, $action) {
             $notes[] = $conf->_("The final version has not yet been submitted.");
         }
         $deadline = $conf->unparse_setting_time_span("final_soft");
-        if ($deadline !== "N/A" && $conf->deadlinesAfter("final_soft")) {
+        if ($deadline !== "N/A" && $conf->time_after_setting("final_soft")) {
             $x = $conf->_("The deadline for submitting final versions was %s.", $deadline);
             if ($x != "") {
                 $notes[] = "<strong>$x</strong>";

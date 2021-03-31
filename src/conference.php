@@ -2920,6 +2920,15 @@ class Conf {
     }
 
     /** @param string $lo
+     * @param ?int $time
+     * @return bool */
+    function time_after_setting($lo, $time = null) {
+        $time = $time ?? Conf::$now;
+        $t0 = $this->settings[$lo] ?? null;
+        return $t0 !== null && $t0 > 0 && $time >= $t0;
+    }
+
+    /** @param string $lo
      * @param string $hi
      * @param ?string $grace
      * @param ?int $time
@@ -2941,13 +2950,9 @@ class Conf {
         }
     }
 
+    /** @deprecated */
     function deadlinesAfter($name, $grace = null) {
-        $t = $this->settings[$name] ?? null;
-        if ($t !== null && $t > 0 && $grace
-            && ($g = $this->settings[$grace] ?? null)) {
-            $t += $g;
-        }
-        return $t !== null && $t > 0 && $t <= Conf::$now;
+        return $this->time_after_setting($name);
     }
     /** @deprecated */
     function deadlinesBetween($name1, $name2, $grace = null) {

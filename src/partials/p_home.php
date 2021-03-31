@@ -325,7 +325,7 @@ class Home_Partial {
             echo $sep, '<a href="', $conf->hoturl("search", "q=lead%3Ame"), '" class="nw">Your discussion leads</a>';
             $sep = $xsep;
         }
-        if ($conf->deadlinesAfter("rev_open") || $user->privChair) {
+        if ($conf->time_after_setting("rev_open") || $user->privChair) {
             echo $sep, '<a href="', $conf->hoturl("offline"), '">Offline reviewing</a>';
             $sep = $xsep;
         }
@@ -483,7 +483,7 @@ class Home_Partial {
             }
         }
         if (!$startable && !count($deadlines)) {
-            if ($conf->deadlinesAfter("sub_open")) {
+            if ($conf->time_after_setting("sub_open")) {
                 $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.';
             } else {
                 $deadlines[] = "The site is not open for submissions at the moment.";
@@ -492,7 +492,7 @@ class Home_Partial {
         // NB only has("accepted") if author can see an accepted paper
         if ($plist && $plist->has("accepted")) {
             $time = $conf->unparse_setting_time_span("final_soft");
-            if ($conf->deadlinesAfter("final_soft") && $plist->has("need_final")) {
+            if ($conf->time_after_setting("final_soft") && $plist->has("need_final")) {
                 $deadlines[] = "<strong class=\"overdue\">Final versions are overdue.</strong> They were requested by $time.";
             } else if ($time != "N/A") {
                 $deadlines[] = "Submit final versions of your accepted papers by $time.";
