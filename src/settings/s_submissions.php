@@ -30,11 +30,10 @@ class Submissions_SettingRenderer {
             '<strong>Blind submission:</strong> Are author names hidden from reviewers?');
     }
     static function render_pcseeall(SettingValues $sv) {
-        echo '<div class="form-g foldo" id="foldpc_seeall">';
-        $sv->echo_checkbox("pc_seeall", "PC can view incomplete submissions before submission deadline", ["class" => "uich js-foldup"], "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions.");
-        echo '<div class="fx">';
+        echo '<div class="form-g">';
+        $sv->echo_checkbox("pc_seeall", "PC can view incomplete submissions before submission deadline", null, "Check this box to collect review preferences before the submission deadline. After the submission deadline, PC members can only see completed submissions.");
         $sv->echo_checkbox("pc_seeallpdf", "PC can view submitted PDFs before submission deadline");
-        echo "</div></div>\n";
+        echo "</div>\n";
     }
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sub_open")

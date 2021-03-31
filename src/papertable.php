@@ -1575,7 +1575,7 @@ class PaperTable {
                        && $this->user->can_finalize_paper($this->prow)) {
                 $this->_main_message('This submission is not ready for review. Although you cannot make any further changes, the current version can be still be submitted for review.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
             } else if (isset($whyNot["deadline"])) {
-                if ($this->conf->deadlinesBetween("", "sub_sub", "sub_grace")) {
+                if ($this->conf->time_between_settings("", "sub_sub", "sub_grace") > 0) {
                     $this->_main_message('The site is not open for updates at the moment.' . $this->_deadline_override_message(), 1);
                 } else {
                     $this->_main_message('The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and this submission will not be reviewed.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);

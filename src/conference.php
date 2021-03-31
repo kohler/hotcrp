@@ -109,10 +109,8 @@ class Conf {
     private $settingTexts;
     /** @var int */
     public $sversion;
-    /** @var ?int */
-    private $_pc_seeall_cache = null;
-    /** @var bool */
-    private $_pc_see_pdf = false;
+    /** @var int */
+    private $_pc_see_cache;
 
     /** @var string */
     public $short_name;
@@ -325,11 +323,16 @@ class Conf {
     static function set_current_time($t) {
         global $Now;
         $Now = Conf::$now = $t;
+        if (Conf::$main) {
+            Conf::$main->refresh_time_settings();
+        }
     }
 
     /** @param int $advance_past */
     static function advance_current_time($advance_past) {
-        self::set_current_time(max(Conf::$now, $advance_past + 1));
+        if ($advance_past + 1 > Conf::$now) {
+            self::set_current_time($advance_past + 1);
+        }
     }
 
 
@@ -454,7 +457,6 @@ class Conf {
         }
 
         // clear caches
-        $this->_pc_seeall_cache = null;
         $this->_paper_opts->invalidate_options();
         $this->_decisions = null;
         $this->_decision_matcher = null;
@@ -470,17 +472,6 @@ class Conf {
         $this->_topic_set = null;
 
         // digested settings
-        $this->_pc_see_pdf = true;
-        if (($this->settings["sub_freeze"] ?? 0) <= 0
-            && ($so = $this->settings["sub_open"] ?? 0) > 0
-            && $so < Conf::$now
-            && ($ss = $this->settings["sub_sub"] ?? 0) > 0
-            && $ss > Conf::$now
-            && (($this->settings["pc_seeallpdf"] ?? 0) <= 0
-                || !$this->can_pc_see_active_submissions())) {
-            $this->_pc_see_pdf = false;
-        }
-
         $this->au_seerev = $this->settings["au_seerev"] ?? 0;
         $this->tag_au_seerev = null;
         if ($this->au_seerev == self::AUSEEREV_TAGS) {
@@ -492,6 +483,18 @@ class Conf {
             || ($this->settings["tag_approval"] ?? 0) > 0
             || ($this->settings["tag_autosearch"] ?? 0) > 0
             || !!$this->opt("definedTags");
+        $this->refresh_time_settings();
+    }
+
+    private function refresh_time_settings() {
+        $tf = $this->time_between_settings("sub_open", "sub_sub", "sub_grace");
+        $this->_pc_see_cache = (($this->settings["sub_freeze"] ?? 0) > 0 ? 1 : 0)
+            | ($tf === 1 ? 2 : 0)
+            | ($tf > 0 ? 4 : 0)
+            | (($this->settings["pc_seeallpdf"] ?? 0) > 0 ? 16 : 0);
+        if (($this->settings["pc_seeall"] ?? 0) > 0 && ($this->_pc_see_cache & 2) !== 0) {
+            $this->_pc_see_cache |= 8;
+        }
 
         $this->any_response_open = 0;
         if (($this->settings["resp_active"] ?? 0) > 0) {
@@ -2916,6 +2919,28 @@ class Conf {
         }
     }
 
+    /** @param string $lo
+     * @param string $hi
+     * @param ?string $grace
+     * @param ?int $time
+     * @return 0|1|2 */
+    function time_between_settings($lo, $hi, $grace = null, $time = null) {
+        // see also ResponseRound::time_allowed
+        $time = $time ?? Conf::$now;
+        $t0 = $this->settings[$lo] ?? null;
+        if (($t0 === null || $t0 <= 0 || $time < $t0) && $lo !== "") {
+            return 0;
+        }
+        $t1 = $this->settings[$hi] ?? null;
+        if ($t1 === null || $t1 <= 0 || $time <= $t1) {
+            return 1;
+        } else if ($grace && $time <= $t1 + ($this->settings[$grace] ?? 0)) {
+            return 2;
+        } else {
+            return 0;
+        }
+    }
+
     function deadlinesAfter($name, $grace = null) {
         $t = $this->settings[$name] ?? null;
         if ($t !== null && $t > 0 && $grace
@@ -2924,34 +2949,26 @@ class Conf {
         }
         return $t !== null && $t > 0 && $t <= Conf::$now;
     }
+    /** @deprecated */
     function deadlinesBetween($name1, $name2, $grace = null) {
-        // see also ResponseRound::time_allowed
-        $t = $this->settings[$name1] ?? null;
-        if (($t === null || $t <= 0 || $t > Conf::$now) && $name1) {
-            return false;
-        }
-        $t = $this->settings[$name2] ?? null;
-        if ($t !== null && $t > 0 && $grace
-            && ($g = $this->settings[$grace] ?? null)) {
-            $t += $g;
-        }
-        return $t === null || $t <= 0 || $t >= Conf::$now;
+        return $this->time_between_settings($name1, $name2, $grace) > 0;
     }
 
+    /** @return bool */
     function timeStartPaper() {
-        return $this->deadlinesBetween("sub_open", "sub_reg", "sub_grace");
+        return $this->time_between_settings("sub_open", "sub_reg", "sub_grace") > 0;
     }
     /** @param ?PaperInfo $prow
      * @return bool */
     function time_edit_paper($prow = null) {
-        return $this->deadlinesBetween("sub_open", "sub_update", "sub_grace")
-            && (!$prow || $prow->timeSubmitted <= 0 || $this->setting("sub_freeze") <= 0);
+        return $this->time_between_settings("sub_open", "sub_update", "sub_grace") > 0
+            && (!$prow || $prow->timeSubmitted <= 0 || ($this->_pc_see_cache & 1) === 0);
     }
     /** @param ?PaperInfo $prow
      * @return bool */
     function time_finalize_paper($prow = null) {
-        return $this->deadlinesBetween("sub_open", "sub_sub", "sub_grace")
-            && (!$prow || $prow->timeSubmitted <= 0 || $this->setting("sub_freeze") <= 0);
+        return ($this->_pc_see_cache & 4) !== 0
+            && (!$prow || $prow->timeSubmitted <= 0 || ($this->_pc_see_cache & 1) === 0);
     }
     /** @deprecated */
     function timeFinalizePaper($prow = null) {
@@ -2963,7 +2980,7 @@ class Conf {
     }
     /** @return bool */
     function time_edit_final_paper() {
-        return $this->deadlinesBetween("final_open", "final_done", "final_grace");
+        return $this->time_between_settings("final_open", "final_done", "final_grace") > 0;
     }
     /** @return bool */
     function can_some_author_view_review() {
@@ -3022,12 +3039,17 @@ class Conf {
     /** @param bool $pdf
      * @return bool */
     function time_pc_view(PaperInfo $prow, $pdf) {
-        if ($prow->timeWithdrawn > 0) {
-            return false;
-        } else if ($prow->timeSubmitted > 0) {
-            return !$pdf || $this->_pc_see_pdf;
+        if ($prow->timeSubmitted > 0) {
+            return !$pdf
+                || ($this->_pc_see_cache & 18) !== 2
+                   // 16 = all submitted PDFs viewable, 2 = some submissions open
+                || $prow->timeSubmitted < ($this->settings["sub_open"] ?? 0);
+        } else if ($prow->timeWithdrawn <= 0) {
+            return !$pdf
+                && ($this->_pc_see_cache & 8) !== 0
+                && $this->time_finalize_paper($prow);
         } else {
-            return !$pdf && $this->can_pc_see_active_submissions();
+            return false;
         }
     }
     /** @return bool */
@@ -3137,13 +3159,7 @@ class Conf {
 
     /** @return bool */
     function can_pc_see_active_submissions() {
-        if ($this->_pc_seeall_cache === null) {
-            $this->_pc_seeall_cache = $this->settings["pc_seeall"] ?? 0;
-            if ($this->_pc_seeall_cache > 0 && !$this->time_finalize_paper(null)) {
-                $this->_pc_seeall_cache = 0;
-            }
-        }
-        return $this->_pc_seeall_cache > 0;
+        return ($this->_pc_see_cache & 8) !== 0;
     }
 
 

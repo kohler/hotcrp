@@ -464,7 +464,7 @@ class Home_Partial {
             if (!$conf->time_finalize_paper(null)) {
                 // Be careful not to refer to a future deadline; perhaps an admin
                 // just turned off submissions.
-                if ($conf->deadlinesBetween("", "sub_sub", "sub_grace")) {
+                if ($conf->time_between_settings("", "sub_sub", "sub_grace") > 0) {
                     $deadlines[] = "The site is not open for submissions at the moment.";
                 } else {
                     $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">submission deadline</a> has passed.';
