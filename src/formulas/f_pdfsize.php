@@ -3,9 +3,6 @@
 // Copyright (c) 2009-2021 Eddie Kohler; see LICENSE.
 
 class PdfSize_Fexpr extends Fexpr {
-    function viewable_by(Contact $user) {
-        return $user->can_view_some_pdf();
-    }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["pdfSize"] = true;
         $prow = $state->_prow();

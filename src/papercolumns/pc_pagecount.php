@@ -11,9 +11,6 @@ class PageCount_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
         $this->cf = new CheckFormat($conf, CheckFormat::RUN_IF_NECESSARY_TIMEOUT);
     }
-    function prepare(PaperList $pl, $visible) {
-        return $pl->user->can_view_some_pdf();
-    }
     /** @return 0|-1 */
     private function dtype(Contact $user, PaperInfo $row) {
         if ($row->finalPaperStorageId > 0

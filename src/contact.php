@@ -3266,12 +3266,10 @@ class Contact {
         return $this->perm_view_paper($prow, true);
     }
 
-    /** @return bool */
+    /** @return bool
+     * @deprecated */
     function can_view_some_pdf() {
-        return $this->privChair
-            || $this->is_author()
-            || $this->has_review()
-            || ($this->isPC && $this->conf->has_any_pc_viewable_pdf());
+        return true;
     }
 
     /** @return bool */
@@ -3499,8 +3497,7 @@ class Contact {
 
     /** @return bool */
     function can_view_some_option(PaperOption $opt) {
-        if (($opt->has_document() && !$this->can_view_some_pdf())
-            || ($opt->final && !$this->can_view_some_decision())) {
+        if ($opt->final && !$this->can_view_some_decision()) {
             return false;
         }
         $oview = $opt->visibility;

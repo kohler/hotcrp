@@ -3089,9 +3089,10 @@ class Conf {
     function has_any_submitted() {
         return !($this->settings["no_papersub"] ?? false);
     }
-    /** @return bool */
+    /** @return bool
+     * @deprecated */
     function has_any_pc_viewable_pdf() {
-        return $this->has_any_submitted() && $this->_pc_see_pdf;
+        return $this->has_any_submitted();
     }
     /** @return bool */
     function has_any_accepted() {
