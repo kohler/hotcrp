@@ -1220,7 +1220,7 @@ class TextMatch_SearchTerm extends SearchTerm {
     /** @var bool */
     private $authorish;
     /** @var ?bool */
-    private $trivial = null;
+    private $trivial;
     /** @var ?TextPregexes */
     public $regex;
     static public $map = [ // NB see field_highlighters()

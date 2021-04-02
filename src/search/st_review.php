@@ -571,6 +571,7 @@ class Review_SearchTerm extends SearchTerm {
         return new Review_SearchTerm($srch->user, $rsm);
     }
 
+    /** @return SearchTerm */
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         if ($sword->kwdef->reblank
             && str_starts_with($sword->qword, "proposal")
@@ -593,6 +594,7 @@ class Review_SearchTerm extends SearchTerm {
         }
     }
 
+    /** @return SearchTerm */
     static function parse_round($word, SearchWord $sword, PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher;
         $components = self::split($sword->qword);
@@ -610,6 +612,7 @@ class Review_SearchTerm extends SearchTerm {
         }
     }
 
+    /** @return SearchTerm */
     static function parse_rate($word, SearchWord $sword, PaperSearch $srch) {
         $rsm = new ReviewSearchMatcher;
         $components = self::split($sword->qword);
@@ -637,6 +640,7 @@ class Review_SearchTerm extends SearchTerm {
             return null;
         }
     }
+    /** @return SearchTerm */
     static function parse_review_field($word, SearchWord $sword, PaperSearch $srch) {
         $f = $sword->kwdef->review_field;
         $rsm = new ReviewSearchMatcher;
@@ -675,6 +679,7 @@ class Review_SearchTerm extends SearchTerm {
         $srch->warning($sword->source_html() . ": {$f->name_html} scores range from {$r[0]} to {$r[1]}.");
         return new False_SearchTerm;
     }
+    /** @return int|false */
     private static function parse_score(ReviewField $f, $str) {
         if (strcasecmp($str, "none") === 0) {
             return 0;
@@ -688,6 +693,7 @@ class Review_SearchTerm extends SearchTerm {
             return $val >= 0 && $val <= count($f->options) ? $val : false;
         }
     }
+    /** @return SearchTerm */
     private static function parse_score_field(ReviewSearchMatcher $rsm, $word, SearchWord $sword, ReviewField $f, PaperSearch $srch) {
         if ($word === "any") {
             $rsm->apply_score_field($f, 0, 0, 4);

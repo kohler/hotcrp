@@ -3,10 +3,14 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class HashAnalysis {
+    /** @var string */
     private $prefix;
+    /** @var ?string */
     private $hash;
+    /** @var ?bool */
     private $binary;
 
+    /** @param string $hash */
     function __construct($hash) {
         $len = strlen($hash);
         if ($len === 37
@@ -50,14 +54,18 @@ class HashAnalysis {
             $this->hash = substr($hash, 5);
             $this->binary = false;
         } else {
-            if ($hash === "")
+            if ($hash === "") {
                 $this->prefix = "";
-            else if ($hash === "sha256")
+            } else if ($hash === "sha256") {
                 $this->prefix = "sha2-";
-            else
+            } else {
                 $this->prefix = "xxx-";
+            }
         }
     }
+
+    /** @param ?string $algo
+     * @return HashAnalysis */
     static function make_known_algorithm($algo) {
         $ha = new HashAnalysis("");
         if ($algo === "sha1") {
@@ -68,12 +76,15 @@ class HashAnalysis {
         return $ha;
     }
 
+    /** @return bool */
     function ok() {
         return $this->hash !== null;
     }
+    /** @return bool */
     function known_algorithm() {
         return $this->prefix !== "xxx-";
     }
+    /** @return string */
     function algorithm() {
         if ($this->prefix === "sha2-") {
             return "sha256";
@@ -83,15 +94,19 @@ class HashAnalysis {
             return "xxx";
         }
     }
+    /** @return string */
     function prefix() {
         return $this->prefix;
     }
+    /** @return string */
     function text() {
         return $this->prefix . ($this->binary ? bin2hex($this->hash) : strtolower($this->hash));
     }
+    /** @return string */
     function binary() {
         return $this->prefix . ($this->binary ? $this->hash : hex2bin($this->hash));
     }
+    /** @return string */
     function text_data() {
         return $this->binary ? bin2hex($this->hash) : strtolower($this->hash);
     }
