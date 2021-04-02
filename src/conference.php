@@ -3662,6 +3662,9 @@ class Conf {
         if ($options["unsub"] ?? false) {
             $where[] = "timeSubmitted<=0";
         }
+        if ($options["active"] ?? false) {
+            $where[] = "timeWithdrawn<=0";
+        }
         if ($options["accepted"] ?? false) {
             $where[] = "outcome>0";
         }
@@ -3670,13 +3673,6 @@ class Conf {
         }
         if ($options["undecided"] ?? false) {
             $where[] = "outcome=0";
-        }
-        if ($options["active"]
-            ?? $options["myReviews"]
-            ?? $options["myOutstandingReviews"]
-            ?? $options["myReviewRequests"]
-            ?? false) {
-            $where[] = "timeWithdrawn<=0";
         }
         if ($options["myLead"] ?? false) {
             $where[] = "leadContactId=$cxid";

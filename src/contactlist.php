@@ -406,9 +406,8 @@ class ContactList {
             }
         }
         if ($limit === "req") {
-            $args["myReviewRequests"] = true;
-        }
-        if ($limit === "au") {
+            $args["myReviewRequests"] = $args["finalized"] = true;
+        } else if ($limit === "au") {
             $args["finalized"] = true;
         } else if ($limit === "aurej") {
             $args["rejected"] = true;

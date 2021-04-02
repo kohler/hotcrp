@@ -912,12 +912,16 @@ class Limit_SearchTerm extends SearchTerm {
 
     const LFLAG_ACTIVE = 1;
     const LFLAG_SUBMITTED = 2;
+    const LFLAG_IMPLICIT = 4;
 
-    function __construct(Contact $user, Contact $reviewer, $limit) {
+    function __construct(Contact $user, Contact $reviewer, $limit, $implicit = false) {
         parent::__construct("in");
         $this->user = $user;
         $this->reviewer = $reviewer;
         $this->set_limit($limit);
+        if ($implicit) {
+            $this->lflag |= self::LFLAG_IMPLICIT;
+        }
     }
 
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -947,17 +951,28 @@ class Limit_SearchTerm extends SearchTerm {
                 $limit = "all";
             }
         }
+        $this->limit = $limit;
         // mark flags
         if (in_array($limit, ["a", "ar", "viewable", "all", "none"], true)) {
             $this->lflag = 0;
-        } else if (in_array($limit, ["r", "act", "unsub"], true)
+        } else if (in_array($limit, ["r", "rout", "req"], true)) {
+            $this->lflag = $this->reviewer_lflag();
+        } else if (in_array($limit, ["act", "unsub"], true)
                    || ($this->user->conf->can_pc_see_active_submissions()
                        && !in_array($limit, ["s", "acc"], true))) {
             $this->lflag = self::LFLAG_ACTIVE;
         } else {
             $this->lflag = self::LFLAG_SUBMITTED;
         }
-        $this->limit = $limit;
+    }
+
+    /** @return int */
+    function reviewer_lflag() {
+        if ($this->user->isPC && $this->user->conf->can_pc_see_active_submissions()) {
+            return self::LFLAG_ACTIVE;
+        } else {
+            return self::LFLAG_SUBMITTED;
+        }
     }
 
     function simple_search(&$options) {
@@ -968,32 +983,32 @@ class Limit_SearchTerm extends SearchTerm {
             || $this->user->has_hidden_papers()) {
             return false;
         }
+        if ($this->lflag & self::LFLAG_SUBMITTED) {
+            $options["finalized"] = true;
+        } else if ($this->lflag & self::LFLAG_ACTIVE) {
+            $options["active"] = true;
+        }
         switch ($this->limit) {
         case "all":
         case "viewable":
             return $this->user->can_view_all();
         case "s":
-            $options["finalized"] = true;
+            assert(!!($options["finalized"] ?? false));
             return $this->user->isPC;
         case "act":
-            $options["active"] = true;
+            assert(!!($options["active"] ?? false));
             return $this->user->privChair
                 || ($this->user->isPC && $conf->can_pc_see_active_submissions());
         case "reviewable":
+            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             if (($this->user !== $this->reviewer && !$this->user->allow_administer_all())
                 || $conf->has_tracks()) {
                 return false;
-            } else if ($this->reviewer->isPC) {
-                if ($conf->can_pc_see_active_submissions()) {
-                    $options["active"] = true;
-                } else {
-                    $options["finalized"] = true;
-                }
-                return true;
-            } else {
-                $options["myReviews"] = true;
-                return true;
             }
+            if (!$this->reviewer->isPC) {
+                $options["myReviews"] = true;
+            }
+            return true;
         case "a":
             $options["author"] = true;
             // If complex author SQL, always do search the long way
@@ -1001,21 +1016,26 @@ class Limit_SearchTerm extends SearchTerm {
         case "ar":
             return false;
         case "r":
+            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             $options["myReviews"] = true;
             return true;
         case "rout":
+            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             $options["myOutstandingReviews"] = true;
             return true;
         case "acc":
-            $options["accepted"] = $options["finalized"] = true;
+            assert($options["finalized"] ?? false);
+            $options["accepted"] = true;
             return $this->user->allow_administer_all()
                 || ($this->user->isPC && $conf->time_pc_view_decision(true));
         case "undec":
-            $options["undecided"] = $options["finalized"] = true;
+            assert($options["finalized"] ?? false);
+            $options["undecided"] = true;
             return $this->user->allow_administer_all()
                 || ($this->user->isPC && $conf->time_pc_view_decision(true));
         case "unsub":
-            $options["unsub"] = $options["active"] = true;
+            assert($options["active"] ?? false);
+            $options["unsub"] = true;
             return $this->user->allow_administer_all();
         case "lead":
             $options["myLead"] = true;
@@ -1025,6 +1045,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "admin":
             return false;
         case "req":
+            assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             $options["myReviewRequests"] = true;
             return true;
         default:
@@ -1046,9 +1067,9 @@ class Limit_SearchTerm extends SearchTerm {
         assert($sqi->depth > 0 || $sqi->srch->user === $this->user);
 
         $ff = [];
-        if ($this->lflag === self::LFLAG_SUBMITTED) {
+        if (($this->lflag & self::LFLAG_SUBMITTED) !== 0) {
             $ff[] = "Paper.timeSubmitted>0";
-        } else if ($this->lflag === self::LFLAG_ACTIVE) {
+        } else if (($this->lflag & self::LFLAG_ACTIVE) !== 0) {
             $ff[] = "Paper.timeWithdrawn<=0";
         }
 
@@ -1145,8 +1166,8 @@ class Limit_SearchTerm extends SearchTerm {
 
     function test(PaperInfo $row, $rrow) {
         $user = $this->user;
-        if (($this->lflag === self::LFLAG_SUBMITTED && $row->timeSubmitted <= 0)
-            || ($this->lflag === self::LFLAG_ACTIVE && $row->timeWithdrawn > 0)) {
+        if ((($this->lflag & self::LFLAG_SUBMITTED) !== 0 && $row->timeSubmitted <= 0)
+            || (($this->lflag === self::LFLAG_ACTIVE) !== 0 && $row->timeWithdrawn > 0)) {
             return false;
         }
         switch ($this->limit) {
@@ -1199,7 +1220,7 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     function configure_search($top, PaperSearch $srch) {
-        if ($top) {
+        if ($top && ($this->lflag & self::LFLAG_IMPLICIT) === 0) {
             $srch->apply_limit($this);
         }
     }
@@ -1732,14 +1753,14 @@ class PaperSearch {
     }
     /** @return bool */
     function limit_submitted() {
-        return $this->_limit_qe->lflag === Limit_SearchTerm::LFLAG_SUBMITTED;
+        return ($this->_limit_qe->lflag & self::LFLAG_SUBMITTED) !== 0;
     }
     /** @return bool */
     function limit_author() {
         return $this->_limit_qe->limit === "a";
     }
     /** @return bool */
-    function limit_expect_nonsubmitted() {
+    function show_submitted_status() {
         return in_array($this->_limit_qe->limit, ["a", "act", "all"])
             && $this->q !== "re:me";
     }
@@ -2434,8 +2455,9 @@ class PaperSearch {
     /** @return SearchTerm */
     function term() {
         if ($this->_qe === null) {
-            if ($this->q === "re:me") {
-                $this->_qe = new Limit_SearchTerm($this->user, $this->user, "r");
+            if ($this->q === "re:me"
+                && $this->_limit_qe->limit === $this->_limit_qe->reviewer_lflag()) {
+                $this->_qe = new Limit_SearchTerm($this->user, $this->user, "r", true);
             } else if (($qe = $this->_search_expression($this->q))) {
                 $this->_qe = $qe;
             } else {
@@ -2471,15 +2493,10 @@ class PaperSearch {
             return Dbl_Result::make_empty();
         }
 
-        // add permissions tables if we will filter the results
-        $need_filter = !$qe->is_sqlexpr_precise()
-            || !$this->_limit_qe->is_sqlexpr_precise()
-            || $this->conf->has_tracks() /* XXX probably only need check_track_view_sensitivity */
-            || $qe->type === "then"
-            || $qe->get_float("heading");
-
+        // add permissions tables and columns
         // XXX some of this should be shared with paperQuery
-        if (($need_filter && $this->conf->rights_need_tags())
+        if ($this->conf->rights_need_tags()
+            || $this->conf->has_tracks() /* XXX probably only need check_track_view_sensitivity */
             || ($sqi->query_options["tags"] ?? false)
             || ($this->user->privChair
                 && $this->conf->has_any_manager()
@@ -2834,7 +2851,7 @@ class PaperSearch {
             $lx = $this->conf->_($listname);
         } else {
             $limit = $this->limit();
-            if ($this->q === "re:me" && ($limit === "s" || $limit === "act")) {
+            if ($this->q === "re:me" && in_array($limit, ["r", "s", "act"], true)) {
                 $limit = "r";
             }
             $lx = self::limit_description($this->conf, $limit);

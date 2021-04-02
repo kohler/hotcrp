@@ -280,7 +280,7 @@ class Title_PaperColumn extends PaperColumn {
 
 class Status_PaperColumn extends PaperColumn {
     /** @var bool */
-    private $include_submitted;
+    private $show_submitted;
     /** @var array<int,float> */
     private $sortmap;
     function __construct(Conf $conf, $cj) {
@@ -288,7 +288,7 @@ class Status_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_BOTH;
     }
     function prepare(PaperList $pl, $visible) {
-        $this->include_submitted = $pl->search->limit_expect_nonsubmitted();
+        $this->show_submitted = $pl->search->show_submitted_status();
         return true;
     }
     function prepare_sort(PaperList $pl, $sortindex) {
@@ -320,7 +320,7 @@ class Status_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $status_info = $pl->user->paper_status_info($row);
-        if ($this->include_submitted || $status_info[0] !== "pstat_sub") {
+        if ($this->show_submitted || $status_info[0] !== "pstat_sub") {
             return "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span>";
         } else {
             return "";
