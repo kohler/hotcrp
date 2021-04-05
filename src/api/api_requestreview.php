@@ -14,7 +14,7 @@ class RequestReview_API {
         }
 
         if (($whyNot = $user->perm_request_review($prow, $round, true))) {
-            return new JsonResult(403, ["ok" => false, "error" => whyNotText($whyNot)]);
+            return new JsonResult(403, ["ok" => false, "error" => $whyNot->unparse_html()]);
         }
         if (!isset($qreq->email)) {
             return new JsonResult(400, "Bad request.");

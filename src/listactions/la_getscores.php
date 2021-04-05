@@ -14,9 +14,9 @@ class GetScores_ListAction extends ListAction {
         $any_decision = $any_reviewer_identity = $any_ordinal = false;
         foreach ($ssel->paper_set($user) as $row) {
             if (($whyNot = $user->perm_view_paper($row))) {
-                $errors[] = "#$row->paperId: " . whyNotText($whyNot);
+                $errors[] = "#$row->paperId: " . $whyNot->unparse_html();
             } else if (($whyNot = $user->perm_view_review($row, null))) {
-                $errors[] = "#$row->paperId: " . whyNotText($whyNot);
+                $errors[] = "#$row->paperId: " . $whyNot->unparse_html();
             } else {
                 $row->ensure_full_reviews();
                 $a = ["paper" => $row->paperId, "title" => $row->title];

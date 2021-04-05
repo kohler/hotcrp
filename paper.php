@@ -84,7 +84,7 @@ function loadRows() {
     global $prow, $Me, $Qreq;
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
         $whyNot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
-        errorMsgExit(whyNotText($whyNot->set("listViewable", true)));
+        errorMsgExit($whyNot->set("listViewable", true)->unparse_html());
     }
 }
 $prow = $ps = null;
@@ -150,7 +150,7 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->valid_post()) {
 
         $Conf->redirect_self($Qreq);
     } else {
-        Conf::msg_error(whyNotText($whyNot) . " The submission has not been withdrawn.");
+        Conf::msg_error($whyNot->unparse_html() . " The submission has not been withdrawn.");
     }
 }
 
@@ -164,7 +164,7 @@ if (isset($Qreq->revive) && $prow && $Qreq->valid_post()) {
         loadRows();
         $Conf->redirect_self($Qreq);
     } else {
-        Conf::msg_error(whyNotText($whyNot));
+        Conf::msg_error($whyNot->unparse_html());
     }
 }
 
@@ -202,7 +202,7 @@ function update_paper(Qrequest $qreq, $action) {
             $whyNot = $Me->perm_finalize_paper($prow);
     }
     if ($whyNot) {
-        Conf::msg_error(whyNotText($whyNot));
+        Conf::msg_error($whyNot->unparse_html());
         return $whyNot;
     }
 
@@ -404,7 +404,7 @@ if ($Qreq->updatecontacts && $Qreq->valid_post() && $prow) {
             Conf::msg_error("<ul><li>" . join("</li><li>", $ps->message_texts()) . "</li></ul>");
         }
     } else {
-        Conf::msg_error(whyNotText($prow->make_whynot(["permission" => "edit_contacts"])));
+        Conf::msg_error($prow->make_whynot(["permission" => "edit_contacts"])->unparse_html());
     }
 
     // use request?

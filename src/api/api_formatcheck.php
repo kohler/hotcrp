@@ -10,7 +10,7 @@ class FormatCheck_API {
             return new JsonResult(404, "No such document");
         }
         if (($whynot = $docreq->perm_view_document($user))) {
-            return new JsonResult(isset($whynot["permission"]) ? 403 : 404, whyNotText($whynot));
+            return new JsonResult(isset($whynot["permission"]) ? 403 : 404, $whynot->unparse_html());
         }
         $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;
         $cf = new CheckFormat($user->conf, $runflag);

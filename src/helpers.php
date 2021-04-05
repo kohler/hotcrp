@@ -462,7 +462,8 @@ function unparse_byte_size_binary($n) {
     }
 }
 
-/** @param PermissionProblem $whyNot */
+/** @param PermissionProblem $whyNot
+ * @deprecated */
 function whyNotText($whyNot, $text_only = false) {
     return $whyNot->unparse($text_only ? 0 : 5);
 }

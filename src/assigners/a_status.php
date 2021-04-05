@@ -87,14 +87,14 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         if ($this->xtype === "submit") {
             if ($res->_submitted === 0) {
                 if (($whynot = $state->user->perm_finalize_paper($prow))) {
-                    return whyNotText($whynot);
+                    return $whynot->unparse_html();
                 }
                 $res->_submitted = ($res->_withdrawn > 0 ? -Conf::$now : Conf::$now);
             }
         } else if ($this->xtype === "unsubmit") {
             if ($res->_submitted !== 0) {
                 if (($whynot = $state->user->perm_edit_paper($prow))) {
-                    return whyNotText($whynot);
+                    return $whynot->unparse_html();
                 }
                 $res->_submitted = 0;
             }
@@ -102,7 +102,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             if ($res->_withdrawn === 0) {
                 assert($res->_submitted >= 0);
                 if (($whynot = $state->user->perm_withdraw_paper($prow))) {
-                    return whyNotText($whynot);
+                    return $whynot->unparse_html();
                 }
                 $res->_withdrawn = Conf::$now;
                 $res->_submitted = -$res->_submitted;
@@ -120,7 +120,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             if ($res->_withdrawn !== 0) {
                 assert($res->_submitted <= 0);
                 if (($whynot = $state->user->perm_revive_paper($prow))) {
-                    return whyNotText($whynot);
+                    return $whynot->unparse_html();
                 }
                 $res->_withdrawn = 0;
                 if ($res->_submitted === -100) {

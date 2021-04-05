@@ -22,7 +22,7 @@ class GetReviewCSV_ListAction extends ListAction {
         $has_id = $has_ordinal = false;
         foreach ($ssel->paper_set($user) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
-                $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
+                $errors["#$prow->paperId: " . $whyNot->unparse_text()] = true;
                 continue;
             }
             $viewer = $this->author_view ? $prow->author_view_user() : $user;

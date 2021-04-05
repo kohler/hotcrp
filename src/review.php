@@ -1099,7 +1099,7 @@ $blind\n";
         $pc_deadline = $user->act_pc($prow) || $user->allow_administer($prow);
         if (!$this->conf->time_review($rrow, $pc_deadline, true)) {
             $whyNot = new PermissionProblem($this->conf, ["deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard")]);
-            $override_text = whyNotText($whyNot) . " Are you sure you want to override the deadline?";
+            $override_text = $whyNot->unparse_html() . " Are you sure you want to override the deadline?";
             if (!$submitted) {
                 $buttons[] = array(Ht::button("Submit review", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
                 $buttons[] = array(Ht::button("Save draft", ["class" => "btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
@@ -1916,7 +1916,7 @@ class ReviewValues extends MessageSet {
             }
             $prow = $user->paper_by_id($this->paperId);
             if (($whynot = $user->perm_view_paper($prow, false, $this->paperId))) {
-                $this->rmsg("paperNumber", whyNotText($whynot), self::ERROR);
+                $this->rmsg("paperNumber", $whynot->unparse_html(), self::ERROR);
                 return false;
             }
         }
@@ -1956,7 +1956,7 @@ class ReviewValues extends MessageSet {
         if (!$rrow && $user !== $reviewer) {
             if (($whyNot = $user->perm_create_review_from($prow, $reviewer))) {
                 $this->reviewer_error(null);
-                $this->reviewer_error(whyNotText($whyNot));
+                $this->reviewer_error($whyNot->unparse_html());
                 return false;
             }
             $extra = [];
@@ -1975,7 +1975,7 @@ class ReviewValues extends MessageSet {
         $whyNot = $user->perm_submit_review($prow, $rrow);
         if ($whyNot) {
             if ($user === $reviewer || $user->can_view_review_identity($prow, $rrow)) {
-                $this->rmsg(null, whyNotText($whyNot), self::ERROR);
+                $this->rmsg(null, $whyNot->unparse_html(), self::ERROR);
             } else {
                 $this->reviewer_error(null);
             }

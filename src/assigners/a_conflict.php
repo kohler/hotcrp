@@ -50,7 +50,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
         } else if (!$this->iscontact
                    && !$state->user->can_administer($prow)
                    && ($whyNot = $state->user->perm_edit_paper($prow))) {
-            return whyNotText($whyNot);
+            return $whyNot->unparse_html();
         } else {
             return true;
         }

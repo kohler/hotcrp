@@ -114,7 +114,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (($whyNot = $state->user->perm_change_some_tag($prow))) {
-            return whyNotText($whyNot);
+            return $whyNot->unparse_html();
         } else {
             return true;
         }
@@ -395,7 +395,7 @@ class Tag_Assigner extends Assigner {
                 if ($whyNot["otherTwiddleTag"] ?? null) {
                     return null;
                 }
-                throw new Exception(whyNotText($whyNot));
+                throw new Exception($whyNot->unparse_html());
             }
         }
         return new Tag_Assigner($item, $state);

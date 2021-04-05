@@ -32,7 +32,7 @@ function review_load() {
     global $Conf, $Me, $Qreq, $prow, $paperTable;
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
         $whyNot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
-        review_error(whyNotText($whyNot->set("listViewable", true)));
+        review_error($whyNot->set("listViewable", true)->unparse_html());
     }
     $paperTable = new PaperTable($prow, $Qreq);
     $paperTable->resolveReview(true);
@@ -108,7 +108,7 @@ if (isset($Qreq->update) && $Qreq->valid_post()) {
     $tf = new ReviewValues($rf);
     $tf->paperId = $prow->paperId;
     if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow))) {
-        $tf->msg_at(null, whyNotText($whyNot), MessageSet::ERROR);
+        $tf->msg_at(null, $whyNot->unparse_html(), MessageSet::ERROR);
     } else if ($tf->parse_web($Qreq, $Qreq->override)) {
         if (isset($Qreq->approvesubreview)
             && $paperTable->editrrow
@@ -140,7 +140,7 @@ if (isset($Qreq->adoptreview)
     $tf->paperId = $prow->paperId;
     $my_rrow = $prow->review_of_user($Me);
     if (($whyNot = $Me->perm_submit_review($prow, $my_rrow))) {
-        $tf->msg_at(null, whyNotText($whyNot), MessageSet::ERROR);
+        $tf->msg_at(null, $whyNot->unparse_html(), MessageSet::ERROR);
     } else if ($tf->parse_web($Qreq, $Qreq->override)) {
         $tf->set_ready($Qreq->adoptsubmit);
         if ($tf->check_and_save($Me, $prow, $my_rrow)
@@ -232,7 +232,7 @@ function download_all_text_reviews() {
     }
     if ($text === "") {
         $whyNot = $Me->perm_view_review($prow, null) ? : $prow->make_whynot();
-        return Conf::msg_error(whyNotText($whyNot));
+        return Conf::msg_error($whyNot->unparse_html());
     }
     $Conf->make_csvg("reviews-{$prow->paperId}", CsvGenerator::TYPE_STRING)
         ->add_string($Conf->short_name . " Paper #{$prow->paperId} Reviews and Comments\n"
@@ -330,11 +330,11 @@ $editAny = $Me->can_review($prow, null);
 // can we see any reviews?
 if (!$viewAny && !$editAny) {
     if (($whyNotPaper = $Me->perm_view_paper($prow))) {
-        review_error(whyNotText($whyNotPaper->set("listViewable", true)));
+        review_error($whyNotPaper->set("listViewable", true)->unparse_html());
     }
     if (isset($Qreq->reviewId)) {
         Conf::msg_error("You can’t see the reviews for this paper. "
-                        . whyNotText($Me->perm_view_review($prow, null)));
+                        . $Me->perm_view_review($prow, null)->unparse_html());
         $Conf->redirect_hoturl("paper", "p=$prow->paperId");
     }
 }

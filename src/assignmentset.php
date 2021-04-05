@@ -1539,7 +1539,7 @@ class AssignmentSet {
             foreach ($pids as $p) {
                 $prow = $this->astate->prow($p);
                 if (!$prow) {
-                    $this->error(whyNotText($this->user->no_paper_whynot($p)));
+                    $this->error($this->user->no_paper_whynot($p)->unparse_html());
                 } else {
                     $ret = $this->apply_paper($prow, $contacts, $aparser, $req);
                     if ($ret === 1) {
@@ -1562,7 +1562,7 @@ class AssignmentSet {
         $err = $aparser->allow_paper($prow, $this->astate);
         if ($err !== true) {
             if ($err === false) {
-                $err = whyNotText($prow->make_whynot(["administer" => true]));
+                $err = $prow->make_whynot(["administer" => true])->unparse_html();
             }
             if (is_string($err)) {
                 $this->astate->paper_error($err);

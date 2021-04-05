@@ -66,7 +66,7 @@ class GetAbstracts_ListAction extends ListAction {
         $lastpid = null;
         foreach ($ssel->paper_set($user, ["topics" => 1]) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
-                Conf::msg_error(whyNotText($whyNot));
+                Conf::msg_error($whyNot->unparse_html());
             } else {
                 $texts[] = $this->render($prow, $user);
                 $lastpid = $prow->paperId;

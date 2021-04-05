@@ -111,8 +111,7 @@ class Comment_API {
         // check permission, other errors
         $whyNot = $user->perm_comment($prow, $xcrow, true);
         if ($whyNot && ($changed || !$user->can_finalize_comment($prow, $xcrow))) {
-            return [null, 403, whyNotText($whyNot)];
-            // null, new JsonResult(403, ["ok" => false, "msg" => whyNotText($whyNot)]);
+            return [null, 403, $whyNot->unparse_html()];
         }
 
         // save

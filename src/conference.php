@@ -4905,7 +4905,7 @@ class Conf {
         $result = ["ok" => false];
         if ($whynot) {
             $status = isset($whynot["noPaper"]) ? 404 : 403;
-            $result["error"] = whyNotText($whynot, true);
+            $result["error"] = $whynot->unparse_text();
             if (isset($whynot["signin"])) {
                 $result["loggedout"] = true;
             }

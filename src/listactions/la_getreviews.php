@@ -23,7 +23,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
         $errors = $texts = $pids = [];
         foreach ($ssel->paper_set($user) as $prow) {
             if (($whyNot = $user->perm_view_paper($prow))) {
-                $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
+                $errors["#$prow->paperId: " . $whyNot->unparse_text()] = true;
                 continue;
             }
             $rctext = "";
@@ -57,7 +57,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                 $texts[] = [$prow->paperId, $rctext, $time];
                 $pids[$prow->paperId] = true;
             } else if (($whyNot = $user->perm_view_review($prow, null))) {
-                $errors["#$prow->paperId: " . whyNotText($whyNot, true)] = true;
+                $errors["#$prow->paperId: " . $whyNot->unparse_text()] = true;
             }
         }
         if (!$this->iszip) {

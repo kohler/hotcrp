@@ -245,6 +245,10 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
         return join(" ", $ms);
     }
     /** @return string */
+    function unparse_text() {
+        return $this->unparse(0);
+    }
+    /** @return string */
     function unparse_html() {
         return $this->unparse(5);
     }
