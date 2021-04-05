@@ -1694,6 +1694,8 @@ class PaperSearch {
         // paper selection
         $limit = self::canonical_limit($options["t"] ?? "") ?? "";
         if ($limit === "") {
+            // Empty limit should be the plausible limit for a default search,
+            // as in entering text into a quicksearch box.
             if ($user->privChair && $this->conf->time_edit_paper()) {
                 $limit = "all";
             } else if ($user->isPC) {
