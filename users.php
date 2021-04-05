@@ -293,7 +293,7 @@ function do_tags($qreq) {
     // check tags
     $tagger = new Tagger($Viewer);
     $t1 = $errors = [];
-    foreach (preg_split('/[\s,]+/', (string) $qreq->tag) as $t) {
+    foreach (preg_split('/[\s,;]+/', (string) $qreq->tag) as $t) {
         if ($t === "") {
             /* nada */
         } else if (!($t = $tagger->check($t, Tagger::NOPRIVATE))) {

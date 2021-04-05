@@ -304,7 +304,7 @@ class UserStatus extends MessageSet {
 
     private function make_keyed_object($x, $field, $lc = false) {
         if (is_string($x)) {
-            $x = preg_split('/[\s,]+/', $x);
+            $x = preg_split('/[\s,;]+/', $x);
         }
         $res = [];
         if (is_object($x) || is_associative_array($x)) {
@@ -345,7 +345,7 @@ class UserStatus extends MessageSet {
     private function make_tags_array($x, $key) {
         $t0 = array();
         if (is_string($x)) {
-            $t0 = preg_split('/[\s,]+/', $x);
+            $t0 = preg_split('/[\s,;]+/', $x);
         } else if (is_array($x)) {
             $t0 = $x;
         } else if ($x !== null) {
@@ -535,7 +535,7 @@ class UserStatus extends MessageSet {
         if (isset($cj->add_tags) || isset($cj->remove_tags)) {
             // collect old tags as map by base
             if (!isset($cj->tags) && $old_user) {
-                $cj->tags = preg_split('/[\s,]+/', $old_user->contactTags);
+                $cj->tags = preg_split('/[\s,;]+/', $old_user->contactTags);
             } else if (!isset($cj->tags)) {
                 $cj->tags = array();
             }
@@ -636,7 +636,7 @@ class UserStatus extends MessageSet {
             }
         } else if (is_string($j)) {
             $reset_roles = null;
-            $ij = preg_split('/[\s,]+/', $j);
+            $ij = preg_split('/[\s,;]+/', $j);
         } else if (is_array($j)) {
             $reset_roles = null;
             $ij = $j;

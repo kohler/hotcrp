@@ -104,7 +104,7 @@ class Tags_SettingParser extends SettingParser {
     static function parse_list(Tagger $tagger, SettingValues $sv, Si $si,
                                $checkf, $min_idx) {
         $ts = array();
-        foreach (preg_split('/\s+/', $sv->reqv($si->name)) as $t) {
+        foreach (preg_split('/[\s,;]+/', $sv->reqv($si->name)) as $t) {
             if ($t !== "" && ($tx = $tagger->check($t, $checkf))) {
                 list($tag, $idx) = Tagger::unpack($tx);
                 if ($min_idx) {
