@@ -21,7 +21,7 @@ $tOpt = PaperSearch::viewable_manager_limits($Me);
 if ($Me->privChair
     && !isset($Qreq->t)
     && $Qreq->a === "prefconflict"
-    && $Conf->can_pc_see_active_submissions()) {
+    && $Conf->time_pc_view_active_submissions()) {
     $Qreq->t = "all";
 }
 if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {

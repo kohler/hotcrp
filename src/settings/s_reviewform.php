@@ -685,7 +685,7 @@ class ReviewForm_SettingRenderer {
         }
 
         echo Ht::hidden("has_review_form", 1);
-        if (!$sv->conf->can_some_author_view_review()) {
+        if (!$sv->conf->time_some_author_view_review()) {
             echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';
         }
         $renderer = new ReviewForm_SettingRenderer;

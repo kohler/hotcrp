@@ -2988,14 +2988,29 @@ class Conf {
         return $this->time_between_settings("final_open", "final_done", "final_grace") > 0;
     }
     /** @return bool */
-    function can_some_author_view_review() {
+    function time_some_author_view_review() {
         return $this->any_response_open || $this->au_seerev > 0;
     }
     /** @return bool */
-    function can_all_author_view_decision() {
+    function time_all_author_view_decision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
     /** @return bool */
+    function time_some_author_view_decision() {
+        return $this->setting("seedec") == self::SEEDEC_ALL;
+    }
+    /** @return bool
+     * @deprecated */
+    function can_some_author_view_review() {
+        return $this->any_response_open || $this->au_seerev > 0;
+    }
+    /** @return bool
+     * @deprecated */
+    function can_all_author_view_decision() {
+        return $this->setting("seedec") == self::SEEDEC_ALL;
+    }
+    /** @return bool
+     * @deprecated */
     function can_some_author_view_decision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
@@ -3039,7 +3054,7 @@ class Conf {
     }
     /** @return bool */
     function timePCReviewPreferences() {
-        return $this->can_pc_see_active_submissions() || $this->has_any_submitted();
+        return $this->time_pc_view_active_submissions() || $this->has_any_submitted();
     }
     /** @param bool $pdf
      * @return bool */
@@ -3108,7 +3123,7 @@ class Conf {
         return $this->settings["rev_blind"];
     }
     /** @return bool */
-    function can_some_external_reviewer_view_comment() {
+    function time_some_external_reviewer_view_comment() {
         return $this->settings["extrev_view"] === 2;
     }
 
@@ -3163,6 +3178,10 @@ class Conf {
     }
 
     /** @return bool */
+    function time_pc_view_active_submissions() {
+        return ($this->_pc_see_cache & 8) !== 0;
+    }
+    /** @deprecated */
     function can_pc_see_active_submissions() {
         return ($this->_pc_see_cache & 8) !== 0;
     }

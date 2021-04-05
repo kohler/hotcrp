@@ -73,7 +73,7 @@
     [   "home/sidebar/info/site", 30, "Home_Partial::render_info_site"   ],
     {
         "name": "home/sidebar/info/accepted", "position": 40,
-        "allow_if": "conf.can_all_author_view_decision",
+        "allow_if": "conf.time_all_author_view_decision",
         "render_function": "Home_Partial::render_info_accepted"
     },
 

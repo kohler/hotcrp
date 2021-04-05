@@ -124,8 +124,8 @@ class Home_Partial {
         }
     }
     static function render_info_accepted(Contact $user) {
-        assert($user->conf->can_all_author_view_decision());
-        if ($user->conf->can_all_author_view_decision()) {
+        assert($user->conf->time_all_author_view_decision());
+        if ($user->conf->time_all_author_view_decision()) {
             list($n, $nyes) = $user->conf->count_submitted_accepted();
             echo '<li>', $user->conf->_("%d papers accepted out of %d submitted.", $nyes, $n), '</li>';
         }

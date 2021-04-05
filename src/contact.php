@@ -2707,7 +2707,7 @@ class Contact {
                            && ($prow->timeSubmitted != 0
                                || ($ci->allow_pc_broad
                                    && $prow->timeWithdrawn <= 0
-                                   && $this->conf->can_pc_see_active_submissions()))) {
+                                   && $this->conf->time_pc_view_active_submissions()))) {
                     $ci->view_authors_state = 2;
                 } else {
                     $ci->view_authors_state = 0;
@@ -3915,7 +3915,7 @@ class Contact {
             && ($this->can_view_paper($prow)
                 || ($prow->timeWithdrawn > 0
                     && ($prow->timeSubmitted < 0
-                        || $this->conf->can_pc_see_active_submissions())));
+                        || $this->conf->time_pc_view_active_submissions())));
     }
 
     /** @return bool */
@@ -4381,7 +4381,7 @@ class Contact {
 
     /** @return bool */
     function can_view_some_decision_as_author() {
-        return $this->conf->can_some_author_view_decision();
+        return $this->conf->time_some_author_view_decision();
     }
 
     /** @return bool */
@@ -4877,7 +4877,7 @@ class Contact {
             } else if ($rb === Conf::BLIND_OPTIONAL) {
                 $dl->rev->blind = "optional";
             }
-            if ($this->conf->can_some_author_view_review()) {
+            if ($this->conf->time_some_author_view_review()) {
                 $dl->rev->some_author_can_view = true;
             }
         }
@@ -4953,7 +4953,7 @@ class Contact {
                     $perm->some_author_can_view_decision = true;
                 }
                 if ($this->isPC
-                    && !$this->conf->can_some_external_reviewer_view_comment()) {
+                    && !$this->conf->time_some_external_reviewer_view_comment()) {
                     $perm->default_comment_visibility = "pc";
                 }
                 if ($this->_review_tokens) {

@@ -937,7 +937,7 @@ class Limit_SearchTerm extends SearchTerm {
         if ($limit === "reviewable") {
             if ($this->user->privChair || $this->user === $this->reviewer) {
                 if ($this->reviewer->can_accept_review_assignment_ignore_conflict(null)) {
-                    if ($this->user->conf->can_pc_see_active_submissions()) {
+                    if ($this->user->conf->time_pc_view_active_submissions()) {
                         $limit = "act";
                     } else {
                         $limit = "s";
@@ -958,7 +958,7 @@ class Limit_SearchTerm extends SearchTerm {
         } else if (in_array($limit, ["r", "rout", "req"], true)) {
             $this->lflag = $this->reviewer_lflag();
         } else if (in_array($limit, ["act", "unsub"], true)
-                   || ($this->user->conf->can_pc_see_active_submissions()
+                   || ($this->user->conf->time_pc_view_active_submissions()
                        && !in_array($limit, ["s", "acc"], true))) {
             $this->lflag = self::LFLAG_ACTIVE;
         } else {
@@ -968,7 +968,7 @@ class Limit_SearchTerm extends SearchTerm {
 
     /** @return int */
     function reviewer_lflag() {
-        if ($this->user->isPC && $this->user->conf->can_pc_see_active_submissions()) {
+        if ($this->user->isPC && $this->user->conf->time_pc_view_active_submissions()) {
             return self::LFLAG_ACTIVE;
         } else {
             return self::LFLAG_SUBMITTED;
@@ -998,7 +998,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "act":
             assert(!!($options["active"] ?? false));
             return $this->user->privChair
-                || ($this->user->isPC && $conf->can_pc_see_active_submissions());
+                || ($this->user->isPC && $conf->time_pc_view_active_submissions());
         case "reviewable":
             assert(($options["active"] ?? false) || ($options["finalized"] ?? false));
             if (($this->user !== $this->reviewer && !$this->user->allow_administer_all())
@@ -2827,7 +2827,7 @@ class PaperSearch {
     function default_limited_query() {
         if ($this->user->isPC
             && !$this->_limit_explicit
-            && $this->limit() !== ($this->conf->can_pc_see_active_submissions() ? "act" : "s")) {
+            && $this->limit() !== ($this->conf->time_pc_view_active_submissions() ? "act" : "s")) {
             return self::canonical_query($this->q, "", "", $this->_qt, $this->conf, $this->limit());
         } else {
             return $this->q;
@@ -3004,7 +3004,7 @@ class PaperSearch {
             $ts[] = "viewable";
         }
         if ($user->isPC) {
-            if ($user->conf->can_pc_see_active_submissions()) {
+            if ($user->conf->time_pc_view_active_submissions()) {
                 $ts[] = "act";
             }
             $ts[] = "s";
@@ -3039,7 +3039,7 @@ class PaperSearch {
             $ts[] = "a";
         }
         if ($user->privChair
-            && !$user->conf->can_pc_see_active_submissions()
+            && !$user->conf->time_pc_view_active_submissions()
             && $reqtype === "act") {
             $ts[] = "act";
         }

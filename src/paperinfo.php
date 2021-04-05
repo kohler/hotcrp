@@ -1133,7 +1133,7 @@ class PaperInfo {
     /** @return bool */
     function can_author_view_decision() {
         return $this->outcome != 0
-            && $this->conf->can_all_author_view_decision();
+            && $this->conf->time_all_author_view_decision();
     }
 
     /** @return bool */

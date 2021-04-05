@@ -288,14 +288,14 @@ class MailSender {
                 && $this->user->privChair
                 && (strpos($this->qreq->emailBody, "%REVIEWS%")
                     || strpos($this->qreq->emailBody, "%COMMENTS%"))) {
-                if (!$this->conf->can_some_author_view_review()) {
+                if (!$this->conf->time_some_author_view_review()) {
                     echo '<div class="warning">Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href="', $this->conf->hoturl("settings", "group=dec"), '" class="nw">Change this setting</a>)</div>', "\n";
                 }
             }
             if (isset($this->qreq->emailBody)
                 && $this->user->privChair
                 && substr($this->recipients, 0, 4) == "dec:") {
-                if (!$this->conf->can_some_author_view_decision()) {
+                if (!$this->conf->time_some_author_view_decision()) {
                     echo '<div class="warning">You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href="', $this->conf->hoturl("settings", "group=dec"), '" class="nw">Change this setting</a>)</div>', "\n";
                 }
             }
