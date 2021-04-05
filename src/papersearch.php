@@ -1697,7 +1697,7 @@ class PaperSearch {
             if ($user->privChair && $this->conf->time_edit_paper()) {
                 $limit = "all";
             } else if ($user->isPC) {
-                $limit = "act";
+                $limit = $this->conf->time_pc_view_active_submissions() ? "act" : "s";
             } else if (!$user->is_reviewer()) {
                 $limit = "a";
             } else if (!$user->is_author()) {
