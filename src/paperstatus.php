@@ -472,9 +472,6 @@ class PaperStatus extends MessageSet {
 
         // Decision
         $idecision = $ipj->decision ?? null;
-        if ($idecision === null && ($istatusstr === "accepted" || $istatusstr === "rejected")) {
-            $idecision = $istatusstr;
-        }
         if ($idecision !== null) {
             $decision_map = $this->conf->decision_map();
             if (is_int($idecision) && isset($decision_map[$idecision])) {
