@@ -482,7 +482,7 @@ class PaperStatus extends MessageSet {
                         $xpj->decision = $d;
                 }
                 if (!isset($xpj->decision)
-                    && preg_match('/\A(?:unknown|undecided|none|\?)\z/i', $idecision)) {
+                    && preg_match('/\A(?:unknown|undecided|none|\?|)\z/i', $idecision)) {
                     $xpj->decision = 0;
                 }
             }
