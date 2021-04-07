@@ -102,14 +102,17 @@ class Dbl {
     const F_ECHO = 128;
     const F_NOEXEC = 256;
 
+    /** @var int */
     static public $nerrors = 0;
     static public $default_dblink;
+    /** @var callable */
     static private $error_handler = "Dbl::default_error_handler";
     /** @var false|array<string,array{float,int,string}> */
     static private $query_log = false;
     /** @var false|string */
     static private $query_log_key = false;
     static private $query_log_file = null;
+    /** @var bool */
     static public $check_warnings = true;
     static public $landmark_sanitizer = "/^Dbl::/";
 
@@ -740,7 +743,7 @@ class Dbl {
      * @return null|int|string */
     static function compare_and_swap($dblink, $value_query, $value_query_args,
                                      $callback, $update_query, $update_query_args) {
-        while (true) {
+        for ($n = 0; $n < 200; ++$n) {
             $result = self::qe_apply($dblink, $value_query, $value_query_args);
             $value = self::fetch_value($result);
             $new_value = call_user_func($callback, $value);
@@ -754,6 +757,7 @@ class Dbl {
                 return $new_value;
             }
         }
+        throw new Exception("Dbl::compare_and_swap failure on query `" . Dbl::format_query_args($dblink, $value_query, $value_query_args) . "`");
     }
 
     static function log_queries($limit, $file = false) {
