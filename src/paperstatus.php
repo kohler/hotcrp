@@ -246,7 +246,7 @@ class PaperStatus extends MessageSet {
             if ($pj->decision === false) {
                 $pj->decision = (int) $prow->outcome;
             }
-            $submitted_status = $pj->decision > 0 ? "accepted" : "rejected";
+            $submitted_status = $prow->outcome > 0 ? "accepted" : "rejected";
         }
 
         if ($prow->timeWithdrawn > 0) {
