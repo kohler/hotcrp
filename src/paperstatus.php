@@ -64,7 +64,7 @@ class PaperStatus extends MessageSet {
     /** @var int */
     private $_saved_flags;
     /** @var list<int> */
-    private $_upload_dids;
+    private $_update_pid_dids;
     /** @var list<DocumentInfo> */
     private $_joindocs;
 
@@ -105,7 +105,7 @@ class PaperStatus extends MessageSet {
         $this->_conflict_values = [];
         $this->_conflict_ins = $this->_register_users = $this->_created_contacts = null;
         $this->_paper_submitted = $this->_documents_changed = false;
-        $this->_upload_dids = $this->_joindocs = [];
+        $this->_update_pid_dids = $this->_joindocs = [];
     }
 
     /** @param callable(object,DocumentInfo,int,PaperStatus):(?bool) $cb */
@@ -391,9 +391,13 @@ class PaperStatus extends MessageSet {
 
         // save
         if ($doc->paperStorageId > 1 || $doc->save()) {
-            $this->_upload_dids[] = $doc->paperStorageId;
             if ($doc->documentType <= 0) {
                 $this->_joindocs[] = $doc;
+            }
+            if ($doc->paperId === 0 || $doc->paperId === -1) {
+                $this->_update_pid_dids[] = $doc->paperStorageId;
+            } else {
+                assert($this->prow && $doc->paperId === $this->prow->paperId);
             }
             return $doc;
         } else {
@@ -941,10 +945,9 @@ class PaperStatus extends MessageSet {
         assert(is_object($pj));
 
         $paperid = $pj->pid ?? $pj->id ?? null;
-        if ($paperid !== null && is_int($paperid) && $paperid <= 0) {
+        if ($paperid === "new" || (is_int($paperid) && $paperid <= 0)) {
             $paperid = null;
-        }
-        if ($paperid !== null && !is_int($paperid)) {
+        } else if ($paperid !== null && !is_int($paperid)) {
             $key = isset($pj->pid) ? "pid" : "id";
             $this->syntax_error_at($key, $paperid);
             return false;
@@ -1226,9 +1229,6 @@ class PaperStatus extends MessageSet {
                     return false;
                 }
                 $this->paperId = (int) $result->insert_id;
-                if (!empty($this->_upload_dids)) {
-                    $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->_upload_dids);
-                }
                 $this->_saved_flags |= self::SAVED_NEW;
             }
         }
@@ -1239,6 +1239,9 @@ class PaperStatus extends MessageSet {
 
         if ($this->_paper_submitted) {
             $this->_postexecute_check_required_options();
+        }
+        if (!empty($this->_update_pid_dids)) {
+            $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->_update_pid_dids);
         }
 
         // maybe update `papersub` settings

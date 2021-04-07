@@ -159,6 +159,12 @@ $paper3b = $ps->paper_json(3);
 xassert_eqq($paper3b->submission->hash, "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
 
 // test submitting a new paper
+$ps->save_paper_json(json_decode("{\"id\":\"new\",\"submission\":{\"content\":\"%PDF-jiajfnbsaf\\n\",\"type\":\"application/pdf\"},\"title\":\"New paper J\",\"abstract\":\"This is a jabstract\\r\\n\",\"authors\":[{\"name\":\"Poopo\"}]}"));
+xassert_paper_status($ps);
+$newpaperj = $user_estrin->checked_paper_by_id($ps->paperId);
+xassert(!!$newpaperj->primary_document());
+ConfInvariants::test_all($Conf);
+
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com"]), null, "update"));
 xassert_paper_status($ps);
