@@ -61,10 +61,17 @@ class PaperStatus extends MessageSet {
     private $_paper_submitted;
     /** @var bool */
     private $_documents_changed;
+    /** @var int */
+    private $_saved_flags;
     /** @var list<int> */
     private $_upload_dids;
     /** @var list<DocumentInfo> */
     private $_joindocs;
+
+    const SAVED_NEW = 1;
+    const SAVED_SUBMIT = 2;
+    const SAVED_NEWSUBMIT = 4;
+    const SAVED_FINALSUBMIT = 8;
 
     function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
@@ -444,7 +451,7 @@ class PaperStatus extends MessageSet {
             }
             $xstatus->$k = $v;
         }
-        if ($istatusstr === "submitted") {
+        if ($istatusstr === "submitted" || $istatusstr === "accepted" || $istatusstr === "rejected") {
             $xstatus->submitted = $xstatus->submitted ?? true;
             $xstatus->draft = $xstatus->draft ?? false;
             $xstatus->withdrawn = $xstatus->withdrawn ?? false;
@@ -463,7 +470,35 @@ class PaperStatus extends MessageSet {
         }
         $xpj->status = $xstatus;
 
-        // Options
+        // Decision
+        $idecision = $ipj->decision ?? null;
+        if ($idecision === null && ($istatusstr === "accepted" || $istatusstr === "rejected")) {
+            $idecision = $istatusstr;
+        }
+        if ($idecision !== null) {
+            $decision_map = $this->conf->decision_map();
+            if (is_int($idecision) && isset($decision_map[$idecision])) {
+                $xpj->decision = $idecision;
+            } else if (is_string($idecision)) {
+                foreach ($decision_map as $d => $dname) {
+                    if (strcasecmp($dname, $idecision) === 0)
+                        $xpj->decision = $d;
+                }
+                if (!isset($xpj->decision)
+                    && preg_match('/\A(?:unknown|undecided|none|\?)\z/i', $idecision)) {
+                    $xpj->decision = 0;
+                }
+            }
+            if (!isset($xpj->decision)) {
+                if (is_string($idecision) || is_int($idecision)) {
+                    $this->warning_at("decision", "Unknown decision “{$idecision}”.");
+                } else {
+                    $this->syntax_error_at("decision", $idecision);
+                }
+            }
+        }
+
+        // Features
         $xpj->_bad_options = [];
         $ioptions = (object) [];
         if (isset($ipj->options)) {
@@ -624,6 +659,15 @@ class PaperStatus extends MessageSet {
             if (!$this->prow || $this->prow->timeFinalSubmitted != $time) {
                 $this->save_paperf("timeFinalSubmitted", $time);
                 $this->mark_diff("final_status");
+            }
+        }
+    }
+
+    private function _check_decision($pj) {
+        if (isset($pj->decision)) {
+            if (($this->prow ? $this->prow->outcome : 0) !== $pj->decision) {
+                $this->save_paperf("outcome", $pj->decision);
+                $this->mark_diff("decision");
             }
         }
     }
@@ -936,6 +980,7 @@ class PaperStatus extends MessageSet {
         $this->_check_fields($pj);
         $this->_check_status($pj);
         $this->_check_final_status($pj);
+        $this->_check_decision($pj);
 
         // don't save if serious error
         if (!$this->_validate_fields()) {
@@ -1147,6 +1192,7 @@ class PaperStatus extends MessageSet {
                 $this->_paper_upd["dataOverflow"] = $new_value;
             }
         }
+        $this->_saved_flags = 0;
 
         if (!empty($this->_paper_upd)) {
             $this->save_paperf("timeModified", Conf::$now);
@@ -1186,6 +1232,7 @@ class PaperStatus extends MessageSet {
                 if (!empty($this->_upload_dids)) {
                     $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->_upload_dids);
                 }
+                $this->_saved_flags |= self::SAVED_NEW;
             }
         }
 
@@ -1205,6 +1252,16 @@ class PaperStatus extends MessageSet {
             $this->conf->update_papersub_setting($this->_paper_submitted ? 1 : -1);
         }
 
+        // track submit-type flags
+        if ($this->_paper_submitted) {
+            $this->_saved_flags |= self::SAVED_SUBMIT | ($was_submitted ? 0 : self::SAVED_NEWSUBMIT);
+        }
+        if (isset($this->_paper_upd["timeFinalSubmitted"])
+            ? $this->_paper_upd["timeFinalSubmitted"] > 0
+            : $this->prow && $this->prow->timeFinalSubmitted > 0) {
+            $this->_saved_flags |= self::SAVED_FINALSUBMIT;
+        }
+
         // update automatic tags
         $this->conf->update_automatic_tags($this->paperId, "paper");
 
@@ -1215,6 +1272,35 @@ class PaperStatus extends MessageSet {
         }
 
         return true;
+    }
+
+    function log_save_activity(Contact $user, $action, $via = null) {
+        // log message
+        $actions = [];
+        if ($this->_saved_flags & self::SAVED_NEW) {
+            $actions[] = "started";
+        }
+        if ($this->_saved_flags & self::SAVED_NEWSUBMIT) {
+            $actions[] = "submitted";
+        } else if (($this->_saved_flags & self::SAVED_NEW) === 0 && $this->diffs) {
+            $actions[] = "edited";
+        }
+        $logtext = "Paper " . join(", ", $actions);
+        if ($action === "final") {
+            $logtext .= " final";
+            if (($this->_saved_flags & self::SAVED_FINALSUBMIT) === 0) {
+                $logtext .= " draft";
+            }
+        } else if (($this->_saved_flags & self::SAVED_SUBMIT) === 0) {
+            $logtext .= " draft";
+        }
+        if ($via) {
+            $logtext .= " " . trim($via);
+        }
+        if ($this->diffs) {
+            $logtext .= ": " . join(", ", array_keys($this->diffs));
+        }
+        $user->log_activity($logtext, $this->paperId);
     }
 
     /** @param object $pj

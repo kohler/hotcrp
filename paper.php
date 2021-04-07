@@ -249,33 +249,7 @@ function update_paper(Qrequest $qreq, $action) {
     }
 
     // log message
-    $actions = [];
-    if (!$prow) {
-        $actions[] = "started";
-    }
-    if ($newsubmit) {
-        $actions[] = "submitted";
-    }
-    if ($prow && !$newsubmit && $ps->diffs) {
-        $actions[] = "edited";
-    }
-    $logtext = "Paper " . join(", ", $actions);
-    if ($action === "final") {
-        $logtext .= " final";
-        if ($new_prow->timeFinalSubmitted <= 0) {
-            $logtext .= " draft";
-        }
-    } else if ($new_prow->timeSubmitted <= 0) {
-        $logtext .= " draft";
-    }
-    $diffkeys = array_keys($ps->diffs);
-    if (!$prow) {
-        $diffkeys = array_intersect($diffkeys, ["submission", "final"]);
-    }
-    if ($diffkeys) {
-        $logtext .= ": " . join(", ", $diffkeys);
-    }
-    $Me->log_activity($logtext, $new_prow->paperId);
+    $ps->log_save_activity($Me, $action);
 
     // additional information
     $notes = [];
