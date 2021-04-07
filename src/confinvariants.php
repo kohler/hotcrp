@@ -171,13 +171,17 @@ class ConfInvariants {
         Dbl::free($result);
 
         // paper denormalizations match
+        $any = $this->invariantq("select p.paperId, ps.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.paperStorageId>1 and p.paperId!=ps.paperId limit 1");
+        if ($any) {
+            $this->invariant_error("paper_id_denormalization", "bad PaperStorage link, paper #{0} (storage paper #{1})");
+        }
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any) {
             $this->invariant_error("paper_denormalization", "bad Paper denormalization, paper #{0}");
         }
-        $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.sha1 != ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
+        $any = $this->invariantq("select p.paperId, ps.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.paperId!=ps.paperId or p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any) {
-            $this->invariant_error("paper_final_denormalization", "bad Paper final denormalization, paper #{0}");
+            $this->invariant_error("paper_final_denormalization", "bad Paper final denormalization, paper #{0} (storage paper #{1})");
         }
 
         // filterType is never zero
