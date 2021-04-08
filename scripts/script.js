@@ -5667,9 +5667,9 @@ function make_suggestions(precaret, postcaret, options) {
                     || (lregion.length >= fl
                         && ltext.substr(0, fl) === lregion.substr(0, fl)))) {
                 if (can_highlight
-                    && ltext.substr(0, lregion.length) === lregion) {
+                    && ltext.substr(0, lregion.length) === lregion
+                    && (best === null || ltext.length === lregion.length)) {
                     best = res.length;
-                    can_highlight = false;
                 }
                 res.push(titem);
             }
