@@ -1204,7 +1204,7 @@ class FormulaCompiler {
         } else if ($index_types === Fexpr::IDX_PC) {
             return $this->_add_pc();
         } else {
-            assert(false);
+            assert($index_types === 0);
             return $this->define_gvar("trivial_loop", "[0]");
         }
     }

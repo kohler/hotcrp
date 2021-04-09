@@ -670,7 +670,9 @@ class FormulaGraph extends MessageSet {
                     $id .= unparse_latin_ordinal($rrow->reviewOrdinal);
                 }
                 foreach ($queries as $q) {
-                    if ($this->fx_type === Fexpr::FTAG) {
+                    if ($this->fx_type === Fexpr::FSEARCH) {
+                        $data[] = new BarElement_GraphData($q, $y, $id, $s, 0);
+                    } else if ($this->fx_type === Fexpr::FTAG) {
                         foreach ($this->_account_tags($prow) as $ta) {
                             $data[] = new BarElement_GraphData($ta, $y, $id, $s, $q);
                         }

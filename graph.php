@@ -68,8 +68,8 @@ function formulas_qrow($i, $q, $s, $status) {
     if ($q === "all") {
         $q = "";
     }
-    $klass = MessageSet::status_class($status, "papersearch");
-    $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i", "spellcheck" => false]);
+    $klass = MessageSet::status_class($status, "need-suggest papersearch want-focus");
+    $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i", "spellcheck" => false, "autocomplete" => "off", "aria-label" => "Search"]);
     $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("default" => "default", "plain" => "plain", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
     $t .= ' <span class="nb btnbox aumovebox" style="margin-left:1em"><a href="#" class="ui btn qx row-order-ui moveup" tabindex="-1">'
         . Icons::ui_triangle(0)
