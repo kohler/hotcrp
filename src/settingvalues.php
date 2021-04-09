@@ -1445,6 +1445,8 @@ class SettingValues extends MessageSet {
         return $t !== "" || !$si->parent ? $t : $this->si_message_default($si->parent);
     }
 
+    /** @param string|Si $si
+     * @return string */
     function setting_link($html, $si, $js = null) {
         if (!($si instanceof Si)) {
             $si = $this->si($si);

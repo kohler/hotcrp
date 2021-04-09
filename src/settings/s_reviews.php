@@ -296,13 +296,13 @@ class Reviews_SettingRenderer {
             && $sv->newv("pcrev_soft") > 0
             && Conf::$now < $sv->newv("pcrev_soft")
             && !$sv->has_error()) {
-            $sv->warning_at(null, "Authors can see reviews and comments although it is before the review deadline. This is sometimes unintentional.");
+            $sv->warning_at(null, $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before the " . $sv->setting_link("review deadline", "pcrev_soft") . ". This is sometimes unintentional.");
         }
 
         if (($sv->has_interest("rev_blind") || $sv->has_interest("extrev_view"))
             && $sv->newv("rev_blind") == Conf::BLIND_NEVER
             && $sv->newv("extrev_view") == 1) {
-            $sv->warning_at("extrev_view", "Reviews aren’t blind, so external reviewers can see reviewer names and comments despite your settings.");
+            $sv->warning_at("extrev_view", $sv->setting_link("Reviews aren’t blind", "rev_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "extrev_view") . ".");
         }
 
         if ($sv->has_interest("mailbody_requestreview")
