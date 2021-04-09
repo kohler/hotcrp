@@ -54,9 +54,9 @@ class TagAnno_API {
                 $q[] = "insert into PaperTagAnno (tag,annoId) values (?,?)";
                 array_push($qv, $tag, $annoid);
             }
-            if (isset($anno->heading)) {
+            if (isset($anno->heading) || isset($anno->legend)) {
                 $q[] = "update PaperTagAnno set heading=?, annoFormat=null where tag=? and annoId=?";
-                array_push($qv, $anno->heading, $tag, $annoid);
+                array_push($qv, $anno->legend ?? $anno->heading ?? null, $tag, $annoid);
             }
             if (isset($anno->tagval)) {
                 $tagval = trim($anno->tagval);

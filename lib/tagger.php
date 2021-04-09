@@ -220,7 +220,7 @@ class TagAnno implements JsonSerializable {
     }
     /** @param string $h
      * @return TagAnno */
-    static function make_heading($h) {
+    static function make_legend($h) {
         $ta = new TagAnno;
         $ta->heading = $h;
         return $ta;
@@ -249,7 +249,7 @@ class TagAnno implements JsonSerializable {
             $j["empty"] = true;
         }
         if ($this->heading !== null) {
-            $j["heading"] = $this->heading;
+            $j["legend"] = $this->heading; // XXX "heading" backward compat
         }
         if ($this->heading !== null
             && $this->heading !== ""

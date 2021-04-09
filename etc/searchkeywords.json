@@ -302,10 +302,12 @@
         "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
-        "name": "HEADING",
-        "parse_function": "Show_SearchTerm::parse_heading"
+        "name": "LEGEND",
+        "parse_function": "Show_SearchTerm::parse_legend"
     },
-    {   "name": "heading", "alias": "HEADING"   },
+    {   "name": "legend", "alias": "LEGEND"   },
+    {   "name": "HEADING", "alias": "LEGEND"   },
+    {   "name": "heading", "alias": "LEGEND"   },
     {
         "name": "ss",
         "parse_function": "PaperSearch::parse_saved_search"

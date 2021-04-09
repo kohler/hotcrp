@@ -969,10 +969,10 @@ class Autoassigner {
                            "# hotcrp_assign_show pcconf", "all,cleartag,$tag");
         $curgroup = -1;
         $index = 0;
-        $search = array("HEADING:none");
+        $search = array("LEGEND:none");
         foreach ($result[0] as $pid) {
             if ($groupmap[$pid] != $curgroup && $curgroup != -1) {
-                $search[] = "THEN HEADING:none";
+                $search[] = "THEN LEGEND:none";
             }
             $curgroup = $groupmap[$pid];
             $index += Tagger::value_increment($sequential);

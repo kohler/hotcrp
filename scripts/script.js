@@ -6138,9 +6138,9 @@ function tagannorow_fill(row, anno) {
         } else {
             row.removeAttribute("data-tags");
         }
-        var heading = anno.heading === null ? "" : anno.heading;
-        var $g = $(row).find(".plheading-group").attr({"data-format": anno.format || 0, "data-title": heading});
-        $g.text(heading === "" ? heading : heading + " ");
+        var legend = anno.legend === null ? "" : anno.legend;
+        var $g = $(row).find(".plheading-group").attr({"data-format": anno.format || 0, "data-title": legend});
+        $g.text(legend === "" ? legend : legend + " ");
         anno.format && render_text.on.call($g[0]);
         // `plheading-count` is taken care of in `searchbody_postreorder`
     }
@@ -6529,7 +6529,7 @@ function taganno_success(rv) {
                 ++annoi;
             }
             if (annoi === rv.anno.length && tagval === false) {
-                groups.push({pos: pos, tag: rv.tag, tagval: 2147483646, heading: "Untagged"});
+                groups.push({pos: pos, tag: rv.tag, tagval: 2147483646, legend: "Untagged"});
                 ++annoi;
             }
         }
@@ -6555,21 +6555,21 @@ handle_ui.on("js-annotate-order", function () {
             var $row = $(hc.render());
             $row.appendTo($d.find(".tagannos"));
             $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
-            $row.find("input[name='heading_n" + last_newannoid + "']").focus();
+            $row.find("input[name='legend_n" + last_newannoid + "']").focus();
         } else {
             var anno = [];
             for (var i = 0; i < annos.length; ++i) {
-                var heading = $d.find("input[name='heading_" + annos[i].annoid + "']").val();
+                var legend = $d.find("input[name='legend_" + annos[i].annoid + "']").val();
                 var tagval = $d.find("input[name='tagval_" + annos[i].annoid + "']").val();
                 var deleted = $d.find("input[name='deleted_" + annos[i].annoid + "']").val();
-                if (heading != annos[i].heading || tagval != annos[i].tagval || deleted)
-                    anno.push({annoid: annos[i].annoid, heading: heading, tagval: tagval, deleted: !!deleted});
+                if (legend != annos[i].legend || tagval != annos[i].tagval || deleted)
+                    anno.push({annoid: annos[i].annoid, legend: legend, tagval: tagval, deleted: !!deleted});
             }
             for (i = 1; i <= last_newannoid; ++i) {
-                heading = $d.find("input[name='heading_n" + i + "']").val();
+                legend = $d.find("input[name='legend_n" + i + "']").val();
                 tagval = $d.find("input[name='tagval_n" + i + "']").val();
-                if (heading != "" || tagval != 0)
-                    anno.push({annoid: "new", heading: heading, tagval: tagval});
+                if (legend != "" || tagval != 0)
+                    anno.push({annoid: "new", legend: legend, tagval: tagval});
             }
             $.post(hoturl_post("api/taganno", {tag: mytag}),
                    {anno: JSON.stringify(anno)}, make_onsave($d));
@@ -6580,7 +6580,7 @@ handle_ui.on("js-annotate-order", function () {
         var $div = $(this).closest(".form-g"), annoid = $div.attr("data-anno-id");
         $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
         $div.append(hidden_input("deleted_" + annoid, "1"));
-        $div.find("input[name='heading_" + annoid + "']").prop("disabled", true);
+        $div.find("input[name='legend_" + annoid + "']").prop("disabled", true);
         tooltip.erase.call(this);
         $(this).remove();
         return false;
@@ -6599,10 +6599,10 @@ handle_ui.on("js-annotate-order", function () {
         if (annoid == null)
             annoid = "n" + (last_newannoid += 1);
         hc.push('<div class="form-g" data-anno-id="' + annoid + '">', '</div>');
-        hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-d">Heading</label><input id="htctl-taganno-' + annoid + '-d" name="heading_' + annoid + '" type="text" placeholder="none" size="32" class="need-autogrow"></div>');
+        hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-d">Legend</label><input id="htctl-taganno-' + annoid + '-d" name="legend_' + annoid + '" type="text" placeholder="none" size="32" class="need-autogrow"></div>');
         hc.push('<div class="entryi"><label for="htctl-taganno-' + annoid + '-tagval">Tag value</label><div class="entry"><input id="htctl-taganno-' + annoid + '-tagval" name="tagval_' + annoid + '" type="text" size="5">', '</div></div>');
         if (anno.annoid)
-            hc.push(' <a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete heading">x</a>');
+            hc.push(' <a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete group">x</a>');
         hc.pop_n(2);
     }
     function show_dialog(rv) {
@@ -6618,11 +6618,11 @@ handle_ui.on("js-annotate-order", function () {
             add_anno(hc, annos[i]);
         }
         hc.pop();
-        hc.push('<div class="g"><button type="button" name="add">Add heading</button></div>');
+        hc.push('<div class="g"><button type="button" name="add">Add group</button></div>');
         hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save changes</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         for (var i = 0; i < annos.length; ++i) {
-            $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
+            $d.find("input[name='legend_" + annos[i].annoid + "']").val(annos[i].legend);
             $d.find("input[name='tagval_" + annos[i].annoid + "']").val(tagvalue_unparse(annos[i].tagval));
         }
         $d.on("click", "button", clickh).on("click", "a.delete-link", ondeleteclick);

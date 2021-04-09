@@ -1316,8 +1316,8 @@ class Show_SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         return SearchTerm::make_float(["view" => [$sword->kwdef->name . ":" . $sword->qword]]);
     }
-    static function parse_heading($word, SearchWord $sword) {
-        return SearchTerm::make_float(["heading" => simplify_whitespace($word)]);
+    static function parse_legend($word, SearchWord $sword) {
+        return SearchTerm::make_float(["legend" => simplify_whitespace($word)]);
     }
 }
 
@@ -2627,20 +2627,20 @@ class PaperSearch {
                 $gs = [];
                 for ($i = 0; $i !== $qe1->nthen; ++$i) {
                     $ch = $qe1->child[$i];
-                    $h = $ch->get_float("heading");
+                    $h = $ch->get_float("legend");
                     if ($h === null) {
                         $spanstr = $ch->get_float("strspan_owner") ?? $this->q;
                         $h = rtrim(substr($spanstr, $ch->pos1 ?? 0, ($ch->pos2 ?? 0) - ($ch->pos1 ?? 0)));
                     }
-                    $gs[] = TagAnno::make_heading($h);
+                    $gs[] = TagAnno::make_legend($h);
                 }
                 return $gs;
             } else {
                 $qe1 = $qe1->child[0];
             }
         }
-        if (($h = $qe1->get_float("heading"))) {
-            return [TagAnno::make_heading($h)];
+        if (($h = $qe1->get_float("legend"))) {
+            return [TagAnno::make_legend($h)];
         } else {
             return [];
         }
