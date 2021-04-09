@@ -945,7 +945,9 @@ class FormulaGraph extends MessageSet {
         $format = $isx ? $this->fx_type : $this->fy->result_format();
         $ticks = $named_ticks = null;
         if ($isx && $this->fx_type === Fexpr::FSEARCH) {
-            $named_ticks = $this->queries;
+            foreach ($this->queries as $i => $q) {
+                $named_ticks[] = $this->searches[$i]->term()->get_float("legend") ?? $q;
+            }
         } else if ($isx && $this->fx_type === Fexpr::FTAG) {
             $tagger = new Tagger($this->user);
             $named_ticks = array_map(function ($t) use ($tagger) {
