@@ -957,7 +957,7 @@ class Conf {
         if (PHP_SAPI == "cli") {
             fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n" . debug_string_backtrace());
         } else {
-            error_log("$landmark: database error: $dblink->error in $query");
+            error_log("$landmark: database error: $dblink->error in $query\n" . debug_string_backtrace());
             self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
     }
@@ -2245,11 +2245,11 @@ class Conf {
     /** @return array<int,Contact> */
     function pc_members() {
         if ($this->_pc_members_cache === null) {
-            $result = $this->q("select " . $this->_cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
-            $pc = $by_name_text = [];
+            $result = $this->qe("select " . $this->_cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+            $this->_pc_user_cache = $by_name_text = [];
             $expected_by_name_count = 0;
-            while ($result && ($u = Contact::fetch($result, $this))) {
-                $pc[$u->contactId] = $u;
+            while (($u = Contact::fetch($result, $this))) {
+                $this->_pc_user_cache[$u->contactId] = $u;
                 if (($name = $u->name()) !== "") {
                     $by_name_text[$name][] = $u;
                     $expected_by_name_count += 1;
@@ -2273,11 +2273,10 @@ class Conf {
                 }
             }
 
-            uasort($pc, $this->user_comparator());
-            $this->_pc_user_cache = $pc;
+            uasort($this->_pc_user_cache, $this->user_comparator());
 
             $this->_pc_members_cache = $this->_pc_chairs_cache = [];
-            foreach ($pc as $u) {
+            foreach ($this->_pc_user_cache as $u) {
                 if ($u->roles & Contact::ROLE_PC) {
                     $u->sort_position = count($this->_pc_members_cache);
                     $this->_pc_members_cache[$u->contactId] = $u;
@@ -2285,10 +2284,7 @@ class Conf {
                 if ($u->roles & Contact::ROLE_CHAIR) {
                     $this->_pc_chairs_cache[$u->contactId] = $u;
                 }
-            }
-
-            if ($this->_user_cache !== null) {
-                foreach ($pc as $u) {
+                if ($this->_user_cache !== null) {
                     $this->_user_cache[$u->contactId] = $u;
                 }
             }

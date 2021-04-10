@@ -1,5 +1,8 @@
 <?php
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
+// checkinvariants.php -- HotCRP batch invariant checking script
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+
+require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
 $arg = Getopt::rest($argv, "hn:", array("help", "name:", "json-reviews", "fix-json-reviews", "fix-autosearch"));
 if (isset($arg["h"]) || isset($arg["help"])
@@ -7,6 +10,8 @@ if (isset($arg["h"]) || isset($arg["help"])
     fwrite(STDOUT, "Usage: php batch/checkinvariants.php [-n CONFID] [--fix-autosearch]\n");
     exit(0);
 }
+
+require_once(SiteLoader::find("src/init.php"));
 
 $ic = new ConfInvariants($Conf);
 $ic->exec_all();

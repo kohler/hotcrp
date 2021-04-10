@@ -22,7 +22,7 @@ class Assignable {
     }
 }
 
-class AssignmentItem implements ArrayAccess {
+class AssignmentItem implements ArrayAccess, JsonSerializable {
     /** @var Assignable */
     public $before;
     /** @var ?Assignable */
@@ -38,6 +38,10 @@ class AssignmentItem implements ArrayAccess {
     function __construct($before, $existed) {
         $this->before = $before;
         $this->existed = $existed;
+    }
+    /** @return int */
+    function pid() {
+        return $this->before->pid;
     }
     /** @param string $offset
      * @return bool */
@@ -106,6 +110,21 @@ class AssignmentItem implements ArrayAccess {
     }
     function realize(AssignmentState $astate) {
         return call_user_func($astate->realizer($this->offsetGet("type")), $this, $astate);
+    }
+    function jsonSerialize() {
+        $x = [
+            "type" => $this->before->type,
+            "pid" => $this->before->pid,
+            "\$status" => $this->deleted
+                ? "DELETED"
+                : ($this->existed ? "INSERTED" : ($this->after ? "MODIFIED" : "UNCHANGED"))
+        ];
+        foreach (get_object_vars($this->after ?? $this->before) as $k => $v) {
+            if ($k !== "type" && $k !== "pid") {
+                $x[$k] = $v;
+            }
+        }
+        return $x;
     }
 }
 
