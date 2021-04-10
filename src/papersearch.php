@@ -1167,7 +1167,7 @@ class Limit_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $rrow) {
         $user = $this->user;
         if ((($this->lflag & self::LFLAG_SUBMITTED) !== 0 && $row->timeSubmitted <= 0)
-            || (($this->lflag === self::LFLAG_ACTIVE) !== 0 && $row->timeWithdrawn > 0)) {
+            || (($this->lflag & self::LFLAG_ACTIVE) !== 0 && $row->timeWithdrawn > 0)) {
             return false;
         }
         switch ($this->limit) {
@@ -2458,7 +2458,7 @@ class PaperSearch {
     function term() {
         if ($this->_qe === null) {
             if ($this->q === "re:me"
-                && $this->_limit_qe->limit === $this->_limit_qe->reviewer_lflag()) {
+                && $this->_limit_qe->lflag === $this->_limit_qe->reviewer_lflag()) {
                 $this->_qe = new Limit_SearchTerm($this->user, $this->user, "r", true);
             } else if (($qe = $this->_search_expression($this->q))) {
                 $this->_qe = $qe;
