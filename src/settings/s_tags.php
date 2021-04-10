@@ -137,6 +137,7 @@ class Tags_SettingParser extends SettingParser {
         if ($si->name == "tag_vote" && $sv->has_reqv("tag_vote")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
             if (($change = $sv->update("tag_vote", join(" ", $ts)))) {
+                $sv->request_read_lock("ContactInfo"); // for pc_members
                 $sv->request_write_lock("PaperTag");
             }
         }
@@ -144,6 +145,7 @@ class Tags_SettingParser extends SettingParser {
         if ($si->name == "tag_approval" && $sv->has_reqv("tag_approval")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             if (($change = $sv->update("tag_approval", join(" ", $ts)))) {
+                $sv->request_read_lock("ContactInfo"); // for pc_members
                 $sv->request_write_lock("PaperTag");
             }
         }
@@ -184,8 +186,13 @@ class Tags_SettingParser extends SettingParser {
         if (($si->name === "tag_vote" || $si->name === "tag_approval")
             && ($this->diffs[$si->name] ?? false)
             && !$this->cleaned) {
-            $old_votish = preg_split('/\A\s+|\#[\d.]+\s*/', strtolower($sv->oldv("tag_vote") . " " . $sv->oldv("tag_approval")));
-            $new_votish = preg_split('/\A\s+|\#[\d.]+\s*/', strtolower($sv->newv("tag_vote") . " " . $sv->newv("tag_approval")));
+            $old_votish = $new_votish = [];
+            foreach (Tagger::split_unpack(strtolower($sv->oldv("tag_vote") . " " . $sv->oldv("tag_approval"))) as $ti) {
+                $old_votish[] = $ti[0];
+            }
+            foreach (Tagger::split_unpack(strtolower($sv->newv("tag_vote") . " " . $sv->newv("tag_approval"))) as $ti) {
+                $new_votish[] = $ti[0];
+            }
             $new_votish[] = "";
 
             // remove negative votes
