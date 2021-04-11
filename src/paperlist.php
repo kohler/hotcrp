@@ -1890,7 +1890,7 @@ class PaperList implements XtContext {
             $colhead = " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">" . $ths . "</tr>\n";
 
             if (isset($this->table_attr["data-drag-tag"])
-                && $this->user->can_change_tag_anno($this->_sort_etag)) {
+                && $this->user->can_edit_tag_anno($this->_sort_etag)) {
                 $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->_sort_etag}\">";
                 if ($rstate->titlecol) {
                     $colhead .= "<td class=\"plh\" colspan=\"$rstate->titlecol\"></td>";

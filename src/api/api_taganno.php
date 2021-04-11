@@ -8,7 +8,7 @@ class TagAnno_API {
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
             return ["ok" => false, "error" => $tagger->error_html()];
         }
-        $j = ["ok" => true, "tag" => $tag, "editable" => $user->can_change_tag_anno($tag),
+        $j = ["ok" => true, "tag" => $tag, "editable" => $user->can_edit_tag_anno($tag),
               "anno" => []];
         $dt = $user->conf->tags()->add(Tagger::base($tag));
         foreach ($dt->order_anno_list() as $oa) {
@@ -23,7 +23,7 @@ class TagAnno_API {
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
             return ["ok" => false, "error" => $tagger->error_html()];
         }
-        if (!$user->can_change_tag_anno($tag)) {
+        if (!$user->can_edit_tag_anno($tag)) {
             return ["ok" => false, "error" => "Permission error."];
         }
         $reqanno = json_decode($qreq->anno ?? "");

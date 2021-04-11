@@ -1314,7 +1314,7 @@ class PaperInfo {
         if ($tags !== "") {
             $etags = [];
             foreach (explode(" ", $tags) as $tag) {
-                if ($tag !== "" && $user->can_change_tag($this, Tagger::base($tag), 0, 1))
+                if ($tag !== "" && $user->can_edit_tag($this, Tagger::base($tag), 0, 1))
                     $etags[] = $tag;
             }
             $tags = join(" ", $etags);

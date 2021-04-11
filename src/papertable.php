@@ -1267,8 +1267,8 @@ class PaperTable {
         }
 
         $tags = $this->prow->all_tags_text();
-        $is_editable = $this->user->can_change_some_tag($this->prow);
-        $is_sitewide = $is_editable && !$this->user->can_change_most_tags($this->prow);
+        $is_editable = $this->user->can_edit_some_tag($this->prow);
+        $is_sitewide = $is_editable && !$this->user->can_edit_most_tags($this->prow);
         if ($tags === "" && !$is_editable) {
             return;
         }
@@ -1784,7 +1784,7 @@ class PaperTable {
         }
         $this->papstripTags();
         foreach ($this->conf->tags() as $ltag => $t) {
-            if ($this->user->can_change_tag($this->prow, "~$ltag", null, 0)) {
+            if ($this->user->can_edit_tag($this->prow, "~$ltag", null, 0)) {
                 if ($t->approval) {
                     $this->papstrip_approval($t->tag);
                 } else if ($t->allotment) {

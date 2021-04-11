@@ -30,7 +30,7 @@ class GetRank_ListAction extends ListAction {
             });
             $lastIndex = null;
             foreach ($pset as $prow) {
-                if ($user->can_change_tag($prow, $tag, null, 1)) {
+                if ($user->can_edit_tag($prow, $tag, null, 1)) {
                     $csvt = CsvGenerator::quote($prow->title);
                     $tv = $prow->tag_value($tag);
                     $tail = ",$prow->paperId,$csvt\n";

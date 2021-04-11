@@ -126,7 +126,7 @@ class Tag_PaperColumn extends PaperColumn {
     }
     /** @param ?float $v */
     private function edit_content($pl, $row, $v) {
-        if (!$pl->user->can_change_tag($row, $this->dtag, 0, 0)) {
+        if (!$pl->user->can_edit_tag($row, $this->dtag, 0, 0)) {
             return false;
         }
         if (!$this->is_value) {

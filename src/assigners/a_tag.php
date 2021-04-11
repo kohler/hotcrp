@@ -113,7 +113,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         self::load_tag_state($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (($whyNot = $state->user->perm_change_some_tag($prow))) {
+        if (($whyNot = $state->user->perm_edit_some_tag($prow))) {
             return $whyNot->unparse_html();
         } else {
             return true;
@@ -369,7 +369,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         foreach ($res as $x) {
             if (preg_match($tag_re, $x->ltag)
                 && ($search_ltag
-                    || $state->user->can_change_tag($prow, $x->ltag, $x->_index, null))) {
+                    || $state->user->can_edit_tag($prow, $x->ltag, $x->_index, null))) {
                 $f = $state->remove($x);
             }
         }
@@ -389,7 +389,7 @@ class Tag_Assigner extends Assigner {
         $prow = $state->prow($item["pid"]);
         // check permissions
         if (!$item["_override"]) {
-            $whyNot = $state->user->perm_change_tag($prow, $item["ltag"],
+            $whyNot = $state->user->perm_edit_tag($prow, $item["ltag"],
                 $item->pre("_index"), $item->post("_index"));
             if ($whyNot) {
                 if ($whyNot["otherTwiddleTag"] ?? null) {

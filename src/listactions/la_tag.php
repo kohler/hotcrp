@@ -38,7 +38,7 @@ class Tag_ListAction extends ListAction {
             ["linelink-class" => "has-fold foldc fold99c ui-unfold js-tag-list-action", "content" => $t]];
     }
     function allow(Contact $user, Qrequest $qreq) {
-        return $user->can_change_some_tag();
+        return $user->can_edit_some_tag();
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $papers = $ssel->selection();
