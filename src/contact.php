@@ -4578,26 +4578,19 @@ class Contact {
         }
         $tag = Tagger::base($tag);
         $twiddle = strpos($tag, "~");
-        if ($twiddle === 0 && $tag[1] === "~") {
-            if (!$rights->can_administer) {
-                return false;
-            } else if (!$tagmap->has_automatic) {
-                return true;
-            } else {
-                $dt = $tagmap->check($tag);
-                return !$dt || !$dt->automatic;
-            }
-        }
-        if ($twiddle > 0
-            && substr($tag, 0, $twiddle) != $this->contactId
-            && !$rights->can_administer) {
-            return false;
-        }
         if ($twiddle !== false) {
-            $t = $this->conf->tags()->check(substr($tag, $twiddle + 1));
-            return !($t && $t->allotment && $index < 0);
+            if ($twiddle > 0
+                && substr($tag, 0, $twiddle) != $this->contactId
+                && !$rights->can_administer) {
+                return false;
+            } else if ($twiddle === 0
+                       && $tag[1] === "~") {
+                return $rights->can_administer && !$tagmap->is_automatic($tag);
+            } else {
+                return !($index < 0) || !$tagmap->is_allotment(substr($tag, $twiddle + 1));
+            }
         } else {
-            $t = $this->conf->tags()->check($tag);
+            $t = $tagmap->check($tag);
             if (!$t) {
                 return true;
             } else if ($t->automatic
@@ -4717,6 +4710,36 @@ class Contact {
                    && ($rights->can_administer || $this->conf->time_pc_view($prow, false));
         } else {
             return $this->isPC;
+        }
+    }
+
+    /** @param string $tag
+     * @return bool */
+    function can_edit_tag_somewhere($tag) {
+        assert(!!$tag);
+        if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
+            || $this->is_site_contact) {
+            return true;
+        } else if (!$this->isPC) {
+            return false;
+        }
+        $tagmap = $this->conf->tags();
+        $tag = Tagger::base($tag);
+        $twiddle = strpos($tag, "~");
+        if ($twiddle !== false) {
+            if ($twiddle > 0) {
+                return substr($tag, 0, $twiddle) == $this->contactId
+                    || $this->is_manager();
+            } else {
+                return $tag[1] !== "~"
+                    || ($this->is_manager() && !$tagmap->is_automatic($tag));
+            }
+        } else {
+            $t = $tagmap->check($tag);
+            return !$t
+                || (!$t->automatic
+                    && (!$t->track || $this->privChair)
+                    && (!$t->readonly || $this->is_manager()));
         }
     }
 
