@@ -1629,6 +1629,7 @@ class SettingValues extends MessageSet {
             }
         }
         $this->request_write_lock(...array_keys($this->need_lock));
+        $this->request_read_lock("ContactInfo");
 
         // make settings
         $this->diffs = [];

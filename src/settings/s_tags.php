@@ -137,7 +137,6 @@ class Tags_SettingParser extends SettingParser {
         if ($si->name == "tag_vote" && $sv->has_reqv("tag_vote")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
             if (($change = $sv->update("tag_vote", join(" ", $ts)))) {
-                $sv->request_read_lock("ContactInfo"); // for pc_members
                 $sv->request_write_lock("PaperTag");
             }
         }
@@ -145,7 +144,6 @@ class Tags_SettingParser extends SettingParser {
         if ($si->name == "tag_approval" && $sv->has_reqv("tag_approval")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             if (($change = $sv->update("tag_approval", join(" ", $ts)))) {
-                $sv->request_read_lock("ContactInfo"); // for pc_members
                 $sv->request_write_lock("PaperTag");
             }
         }
