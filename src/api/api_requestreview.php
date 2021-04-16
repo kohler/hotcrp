@@ -315,7 +315,7 @@ class RequestReview_API {
         foreach ($rrows as $rrow) {
             if ($rrow->requestedBy > 0
                 && ($requser = $user->conf->user_by_id($rrow->requestedBy))) {
-                HotCRPMailer::send_to($requser, "@refusereviewrequest", [
+                HotCRPMailer::send_to($requser, "@declinereviewrequest", [
                     "prow" => $prow, "reviewer_contact" => $rrow, "reason" => $reason
                 ]);
             }

@@ -496,7 +496,7 @@ if ($Me->can_administer($prow)) {
             echo '" data-conflict-type="1';
         }
         if (!$revtype && $prow->review_refusals_of_user($pc)) {
-            echo '" data-assignment-refused="1';
+            echo '" data-assignment-declined="1';
         }
         if ($rrow && $rrow->reviewRound && ($rn = $rrow->round_name())) {
             echo '" data-review-round="', htmlspecialchars($rn);

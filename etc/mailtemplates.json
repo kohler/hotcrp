@@ -363,7 +363,7 @@
 	},
 
 	{
-		"name": "refusereviewrequest",
+		"name": "declinereviewrequest",
 		"subject": "[%CONFSHORTNAME%] Review request for submission #%NUMBER% declined",
 		"body": [
 			"Dear %NAME%,\n\n",

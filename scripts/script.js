@@ -4021,7 +4021,7 @@ handle_ui.on("js-review-tokens", function () {
 window.review_form = (function ($) {
 var formj, form_order;
 var rtype_info = {
-    "-3": ["−" /* &minus; */, "Refused"], "-2": ["A", "Author"],
+    "-3": ["−" /* &minus; */, "Declined"], "-2": ["A", "Author"],
     "-1": ["C", "Conflict"], 1: ["E", "External review"],
     2: ["P", "PC review"], 3: ["2", "Secondary review"],
     4: ["1", "Primary review"], 5: ["M", "Metareview"]
@@ -8722,7 +8722,7 @@ handle_ui.on("js-decline-review", function () {
         hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
     hc.push('<textarea name="reason" rows="3" cols="60" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
-    hc.push_actions(['<button type="submit" name="refuse" value="yes" class="btn-danger">Decline review</button>',
+    hc.push_actions(['<button type="submit" name="decline" value="1" class="btn-danger">Decline review</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });

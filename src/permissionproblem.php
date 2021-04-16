@@ -156,7 +156,7 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
             $ms[] = $this->conf->_("The authors’ response is not yet ready for reviewers to view.");
         }
         if (isset($this->_a["reviewsOutstanding"])) {
-            $ms[] = $this->conf->_("You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please let the organizers know via the “Refuse review” links.");
+            $ms[] = $this->conf->_("You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please inform the organizers.");
             if ($format === 5) {
                 $ms[] = $this->conf->_("<a href=\"%s\">List assigned reviews</a>", $this->conf->hoturl("search", "q=&amp;t=r"));
             }
