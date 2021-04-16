@@ -233,9 +233,11 @@ class Autoassigner {
 
 
     private function balance_reviews($reviewtype) {
-        $q = "select contactId, count(reviewId) from PaperReview where contactId ?a";
+        $q = "select contactId, count(reviewId) from PaperReview where contactId?a";
         if ($reviewtype) {
             $q .= " and reviewType={$reviewtype}";
+        } else {
+            $q .= " and reviewType>0";
         }
         $result = $this->conf->qe($q . " group by contactId", array_keys($this->acs));
         while (($row = $result->fetch_row())) {
@@ -330,7 +332,7 @@ class Autoassigner {
             }
         }
         if (!empty($missing_bp)) {
-            $result = $this->conf->qe("select contactId, paperId from PaperReview where paperId?a and contactId?a", $this->papersel, array_keys($missing_bp));
+            $result = $this->conf->qe("select contactId, paperId from PaperReview where paperId?a and contactId?a and reviewType>0", $this->papersel, array_keys($missing_bp));
             while (($row = $result->fetch_row())) {
                 $cid = (int) $row[0];
                 $pid = (int) $row[1];

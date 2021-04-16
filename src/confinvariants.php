@@ -115,7 +115,7 @@ class ConfInvariants {
         // reviewNeedsSubmit is defined correctly
         $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r
             left join (select paperId, requestedBy, count(reviewId) ct, count(reviewSubmitted) cs
-                       from PaperReview where reviewType<" . REVIEW_SECONDARY . "
+                       from PaperReview where reviewType>0 and reviewType<" . REVIEW_SECONDARY . "
                        group by paperId, requestedBy) q
                 on (q.paperId=r.paperId and q.requestedBy=r.contactId)
             where r.reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null
@@ -123,6 +123,12 @@ class ConfInvariants {
             limit 1");
         if ($any) {
             $this->invariant_error("reviewNeedsSubmit", "bad reviewNeedsSubmit for review #{0}/{1}");
+        }
+
+        // reviewType is defined correctly
+        $any = $this->invariantq("select paperId, reviewId from PaperReview where reviewType<0 and (reviewNeedsSubmit!=0 or reviewSubmitted is not null) limit 1");
+        if ($any) {
+            $this->invariant_error("negative_reviewType", "bad nonexistent review #{0}/{1}");
         }
 
         // review rounds are defined

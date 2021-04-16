@@ -2221,10 +2221,10 @@ class Contact {
         // Load from database
         if ($this->contactId > 0) {
             $qs = ["exists (select * from PaperConflict where contactId=? and conflictType>=" . CONFLICT_AUTHOR . ")",
-                   "exists (select * from PaperReview where contactId=?)"];
+                   "exists (select * from PaperReview where contactId=? and reviewType>0)"];
             $qv = [$this->contactId, $this->contactId];
             if ($this->isPC) {
-                $qs[] = "exists (select * from PaperReview where requestedBy=? and reviewType<=" . REVIEW_PC . " and contactId!=?)";
+                $qs[] = "exists (select * from PaperReview where requestedBy=? and reviewType>0 and reviewType<=" . REVIEW_PC . " and contactId!=?)";
                 array_push($qv, $this->contactId, $this->contactId);
             } else {
                 $qs[] = "0";
@@ -2933,7 +2933,7 @@ class Contact {
     function act_reviewer_sql($table) {
         $m = [];
         if ($this->contactId > 0) {
-            $m[] = "{$table}.contactId={$this->contactId}";
+            $m[] = "({$table}.contactId={$this->contactId} and {$table}.reviewType>0)";
         }
         if (($rev_tokens = $this->review_tokens())) {
             $m[] = "{$table}.reviewToken in (" . join(",", $rev_tokens) . ")";
@@ -2946,10 +2946,12 @@ class Contact {
                     $m[] = "({$table}.paperId=" . substr($k, 3) . " and {$table}.contactId=" . $v . ")";
             }
         }
-        if (count($m) > 1) {
-            return "(" . join(" or ", $m) . ")";
+        if (empty($m)) {
+            return "false";
+        } else if (count($m) === 1) {
+            return $m[0];
         } else {
-            return empty($m) ? "false" : $m[0];
+            return "(" . join(" or ", $m) . ")";
         }
     }
 
@@ -5149,7 +5151,9 @@ class Contact {
             $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, reviewRound=$round, timeRequested=".Conf::$now."$qa, requestedBy=$new_requester_cid";
         } else if ($type && ($oldtype != $type || $rrow->reviewRound != $round)) {
             $q = "update PaperReview set reviewType=$type, reviewRound=$round";
-            if ($rrow->reviewStatus < ReviewInfo::RS_ADOPTED) {
+            if ($type < 0) {
+                $q .= ", reviewNeedsSubmit=0";
+            } else if ($rrow->reviewStatus < ReviewInfo::RS_ADOPTED) {
                 $q .= ", reviewNeedsSubmit=1";
             }
             $q .= " where reviewId=$reviewId";
@@ -5221,7 +5225,7 @@ class Contact {
         if ($direction > 0) {
             $this->conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null and reviewNeedsSubmit=1", $pid, $cid);
         } else {
-            $row = Dbl::fetch_first_row($this->conf->qe("select sum(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted is not null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid"));
+            $row = Dbl::fetch_first_row($this->conf->qe("select sum(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), sum(reviewType>0 and reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted is not null), sum(reviewType>0 and reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid"));
             if ($row && $row[0]) {
                 $rns = $row[1] ? 0 : ($row[2] ? -1 : 1);
                 if ($direction == 0 || $rns != 0)
@@ -5235,7 +5239,7 @@ class Contact {
     function unsubmit_review_row($rrow, $extra = null) {
         $needsSubmit = 1;
         if ($rrow->reviewType == REVIEW_SECONDARY) {
-            $row = Dbl::fetch_first_row($this->conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=? and requestedBy=? and reviewType<" . REVIEW_SECONDARY, $rrow->paperId, $rrow->contactId));
+            $row = Dbl::fetch_first_row($this->conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=? and requestedBy=? and reviewType>0 and reviewType<" . REVIEW_SECONDARY, $rrow->paperId, $rrow->contactId));
             if ($row && $row[0]) {
                 $needsSubmit = 0;
             } else if ($row && $row[1]) {

@@ -30,11 +30,12 @@ class ReviewToken_SearchTerm extends SearchTerm {
         $sqi->add_review_signature_columns();
         $thistab = "ReviewTokens_" . $this->token;
         $where = "reviewToken" . ($this->token ? "={$this->token}" : "!=0");
-        $sqi->add_table($thistab, ["left join", "(select r.paperId, count(r.reviewId) count from PaperReview r where $where group by paperId)"]);
-        if ($this->any !== false)
+        $sqi->add_table($thistab, ["left join", "(select r.paperId, count(r.reviewId) count from PaperReview r where $where and reviewType>0 group by paperId)"]);
+        if ($this->any !== false) {
             return "coalesce({$thistab}.count,0)>0";
-        else
+        } else {
             return "coalesce({$thistab}.count,0)=0";
+        }
     }
     function test(PaperInfo $prow, $rrow) {
         $nr = $nt = 0;

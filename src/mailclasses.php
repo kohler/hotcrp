@@ -94,7 +94,7 @@ class MailRecipients {
             }
             $row = $this->conf->fetch_first_row("select
                 exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and $pidw),
-                exists (select * from PaperReview where reviewType<" . REVIEW_PC . "  and $pidw),
+                exists (select * from PaperReview where reviewType>0 and reviewType<" . REVIEW_PC . "  and $pidw),
                 exists (select * from PaperReview where reviewType>=" . REVIEW_PC . " and reviewSubmitted is null and reviewNeedsSubmit!=0 and timeRequested>timeRequestNotified and $pidw),
                 exists (select * from Paper where timeSubmitted>0 and leadContactId!=0 and $pidw),
                 exists (select * from Paper where timeSubmitted>0 and shepherdContactId!=0 and $pidw)");
@@ -295,7 +295,7 @@ class MailRecipients {
         // build query
         if ($this->type == "all") {
             $needpaper = $needconflict = $needreview = false;
-            $where[] = "(ContactInfo.roles!=0 or lastLogin>0 or exists (select * from PaperConflict where contactId=ContactInfo.contactId) or exists (select * from PaperReview where contactId=ContactInfo.contactId))";
+            $where[] = "(ContactInfo.roles!=0 or lastLogin>0 or exists (select * from PaperConflict where contactId=ContactInfo.contactId) or exists (select * from PaperReview where contactId=ContactInfo.contactId and reviewType>0))";
         } else if ($this->type == "pc" || substr($this->type, 0, 3) == "pc:") {
             $needpaper = $needconflict = $needreview = false;
             $where[] = "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0";
@@ -306,12 +306,12 @@ class MailRecipients {
             $needpaper = $needreview = true;
             $needconflict = false;
             $joins[] = "join Paper";
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId)";
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>0)";
             $where[] = "Paper.paperId=PaperReview.paperId";
         } else if ($this->type == "lead" || $this->type == "shepherd") {
             $needpaper = $needconflict = $needreview = true;
             $joins[] = "join Paper on (Paper.{$this->type}ContactId=ContactInfo.contactId)";
-            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId)";
+            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>0)";
         } else {
             $needpaper = $needconflict = true;
             $needreview = false;

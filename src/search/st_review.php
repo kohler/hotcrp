@@ -272,6 +272,11 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         if (!empty($where)) {
             $where = ["(" . join(" or ", $where) . ")"];
         }
+        if ($this->review_type === 0) {
+            $where[] = "reviewType>0";
+        } else {
+            $where[] = "reviewType={$this->review_type}";
+        }
         if ($this->has_contacts()) {
             $cm = $this->contact_match_sql("contactId");
             if ($this->tokens) {

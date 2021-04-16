@@ -14,7 +14,7 @@ function fix_one_delegation() {
     $row = Dbl::fetch_first_row("select r.paperId, r.contactId, u.email, q.ct, q.cs, r.reviewNeedsSubmit
             from PaperReview r
             left join (select paperId, requestedBy, count(reviewId) ct, count(reviewSubmitted) cs
-                       from PaperReview where reviewType<" . REVIEW_SECONDARY . "
+                       from PaperReview where reviewType>0 and reviewType<" . REVIEW_SECONDARY . "
                        group by paperId, requestedBy) q
                 on (q.paperId=r.paperId and q.requestedBy=r.contactId)
             left join ContactInfo u on (u.contactId=r.contactId)

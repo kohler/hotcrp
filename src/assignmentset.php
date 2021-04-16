@@ -649,7 +649,7 @@ class AssignerContacts {
     /** @return array<int,Contact> */
     function reviewer_users($pids) {
         $rset = $this->pc_users();
-        $result = $this->conf->qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a group by ContactInfo.contactId", $pids);
+        $result = $this->conf->qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 and paperId?a and reviewType>0 group by ContactInfo.contactId", $pids);
         while ($result && ($c = Contact::fetch($result, $this->conf))) {
             $rset[$c->contactId] = $this->store($c);
         }
