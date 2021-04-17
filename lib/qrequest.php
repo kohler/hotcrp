@@ -26,10 +26,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
     }
     /** @param string $page
-     * @param string $path */
-    function set_page_path($page, $path) {
+     * @param ?string $path
+     * @return $this */
+    function set_page($page, $path = null) {
         $this->____page = $page;
         $this->____path = $path;
+        return $this;
     }
     /** @return string */
     function method() {
@@ -129,6 +131,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             }
         }
     }
+    /** @return $this */
     function set_req($name, $value) {
         if (is_array($value)) {
             $this->$name = "__array__";
@@ -136,6 +139,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         } else {
             $this->$name = $value;
         }
+        return $this;
     }
     /** @return int */
     function count() {
@@ -345,7 +349,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
     static function make_global() : Qrequest {
         $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
-        $qreq->set_page_path(Navigation::page(), Navigation::path());
+        $qreq->set_page(Navigation::page(), Navigation::path());
         foreach ($_GET as $k => $v) {
             $qreq->set_req($k, $v);
         }

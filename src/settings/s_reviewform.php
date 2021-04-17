@@ -399,7 +399,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $locked = false;
         $rf = $conf->review_form();
         foreach ($prows as $prow) {
-            foreach ($prow->reviews_by_id() as $rrow) {
+            foreach ($prow->all_reviews() as $rrow) {
                 if ($rrow->reviewOrdinal == 0
                     && $rrow->reviewSubmitted > 0
                     && $rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC) {

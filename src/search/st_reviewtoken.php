@@ -39,7 +39,7 @@ class ReviewToken_SearchTerm extends SearchTerm {
     }
     function test(PaperInfo $prow, $rrow) {
         $nr = $nt = 0;
-        foreach ($prow->reviews_by_id() as $rrow) {
+        foreach ($prow->all_reviews() as $rrow) {
             if ($this->user->can_view_review_assignment($prow, $rrow)) {
                 ++$nr;
                 if ($this->token

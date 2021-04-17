@@ -760,7 +760,7 @@ class Review_SearchTerm extends SearchTerm {
             $n += $this->rsm->test_review($this->user, $prow, $rrow);
         } else {
             $n = 0;
-            foreach ($prow->reviews_by_id() as $rrow) {
+            foreach ($prow->all_reviews() as $rrow) {
                 $n += $this->rsm->test_review($this->user, $prow, $rrow);
             }
         }

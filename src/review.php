@@ -1121,7 +1121,7 @@ $blind\n";
                 $class = "btn-highlight btn-savereview need-clickthrough-enable ui js-approve-review";
                 $text = "Approve review";
                 if ($rrow->requestedBy === $user->contactId) {
-                    $my_rrow = $prow->review_of_user($user);
+                    $my_rrow = $prow->review_by_user($user);
                     if (!$my_rrow || $my_rrow->reviewStatus < ReviewInfo::RS_DRAFTED) {
                         $class .= " can-adopt";
                         $text = "Approve/adopt review";
@@ -1178,9 +1178,9 @@ $blind\n";
         // From here on, edit mode.
         $reviewOrdinal = $rrow->unparse_ordinal_id();
         $forceShow = $viewer->is_admin_force() ? "&amp;forceShow=1" : "";
-        $reviewLinkArgs = "p=$prow->paperId" . ($rrow->reviewId ? "&amp;r=$reviewOrdinal" : "") . "&amp;m=re" . $forceShow;
-        $reviewPostLink = $this->conf->hoturl_post("review", $reviewLinkArgs);
-        $reviewDownloadLink = $this->conf->hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
+        $reviewlink = "p={$prow->paperId}" . ($rrow->reviewId ? "&amp;r={$reviewOrdinal}" : "");
+        $reviewPostLink = $this->conf->hoturl_post("review", "{$reviewlink}&amp;m=re{$forceShow}");
+        $reviewDownloadLink = $this->conf->hoturl("review", "{$reviewlink}&amp;m=re&amp;downloadForm=1{$forceShow}");
 
         echo '<div class="pcard revcard" id="r', $reviewOrdinal, '" data-pid="',
             $prow->paperId, '" data-rid="', ($rrow->reviewId ? : "new");
@@ -1200,7 +1200,7 @@ $blind\n";
 
         // Links
         if ($rrow->reviewId) {
-            echo '<div class="float-right"><a href="' . $this->conf->hoturl("review", "r=$reviewOrdinal&amp;text=1" . $forceShow) . '" class="xx">',
+            echo '<div class="float-right"><a href="' . $this->conf->hoturl("review", "{$reviewlink}&amp;text=1{$forceShow}") . '" class="xx">',
                 Ht::img("txt.png", "[Text]", "b"),
                 "&nbsp;<u>Plain text</u></a>",
                 "</div>";
@@ -1209,7 +1209,7 @@ $blind\n";
         echo '<h2><span class="revcard-header-name">';
         if ($rrow->reviewId) {
             echo '<a class="nn" href="',
-                $rrow->conf->hoturl("review", "r=$reviewOrdinal" . $forceShow),
+                $rrow->conf->hoturl("review", "{$reviewlink}{$forceShow}"),
                 '">Edit ', ($rrow->subject_to_approval() ? "Subreview" : "Review");
             if ($rrow->reviewOrdinal) {
                 echo "&nbsp;#", $reviewOrdinal;
@@ -1292,7 +1292,7 @@ $blind\n";
             && $this->conf->ext_subreviews < 3) {
             $ndelegated = 0;
             $napproval = 0;
-            foreach ($prow->reviews_by_id() as $rr) {
+            foreach ($prow->all_reviews() as $rr) {
                 if ($rr->reviewType === REVIEW_EXTERNAL
                     && $rr->requestedBy === $rrow->contactId) {
                     ++$ndelegated;
@@ -1394,7 +1394,7 @@ $blind\n";
                 }
             }
         }
-        if ($editable && $viewer->can_review($prow, $rrow)) {
+        if ($editable && $viewer->can_edit_review($prow, $rrow)) {
             $rj["editable"] = true;
         }
 
@@ -1433,7 +1433,7 @@ $blind\n";
             }
         }
         if ($editable && $viewer->can_rate_review($prow, $rrow)) {
-            $rj["user_rating"] = $rrow->rating_of_user($viewer);
+            $rj["user_rating"] = $rrow->rating_by_rater($viewer);
             if ($flags & self::RJ_UNPARSE_RATINGS) {
                 $rj["user_rating"] = ReviewInfo::unparse_rating($rj["user_rating"]);
             }
@@ -1512,7 +1512,7 @@ $blind\n";
         $pids = $rids = [];
         $last_view_score = ReviewInfo::VIEWSCORE_RECOMPUTE;
         foreach ($prows as $prow) {
-            foreach ($prow->reviews_by_id() as $rrow) {
+            foreach ($prow->all_reviews() as $rrow) {
                 if ($rrow->reviewViewScore_recomputed) {
                     if ($recompute) {
                         $rrow->reviewViewScore = $this->nonempty_view_score($rrow);
@@ -1559,6 +1559,10 @@ class ReviewValues extends MessageSet {
 
     /** @var int */
     public $paperId;
+    /** @var ?int */
+    public $reviewId;
+    /** @var ?string */
+    public $review_ordinal_id;
     public $req;
 
     private $finished = 0;
@@ -1907,6 +1911,7 @@ class ReviewValues extends MessageSet {
 
     function check_and_save(Contact $user, PaperInfo $prow = null, ReviewInfo $rrow = null) {
         assert(!$rrow || $rrow->paperId === $prow->paperId);
+        $this->reviewId = $this->review_ordinal_id = null;
 
         // look up paper
         if (!$prow) {
@@ -1942,11 +1947,11 @@ class ReviewValues extends MessageSet {
 
         // look up review
         if (!$rrow) {
-            $rrow = $prow->fresh_review_of_user($reviewer);
+            $rrow = $prow->fresh_review_by_user($reviewer);
         }
         if (!$rrow && $user->review_tokens()) {
             $prow->ensure_full_reviews();
-            if (($xrrows = $prow->reviews_of_user(-1, $user->review_tokens()))) {
+            if (($xrrows = $prow->reviews_by_user(-1, $user->review_tokens()))) {
                 $rrow = $xrrows[0];
             }
         }
@@ -1968,7 +1973,7 @@ class ReviewValues extends MessageSet {
                 $this->rmsg(null, "Internal error while creating review.", self::ERROR);
                 return false;
             }
-            $rrow = $prow->fresh_review_of_id($new_rrid);
+            $rrow = $prow->fresh_review_by_id($new_rrid);
         }
 
         // check permission
@@ -2447,11 +2452,13 @@ class ReviewValues extends MessageSet {
             return false;
         }
         $this->req["reviewId"] = $reviewId;
-        $new_rrow = $prow->fresh_review_of_id($reviewId);
+        $this->reviewId = $reviewId;
+        $new_rrow = $prow->fresh_review_by_id($reviewId);
         if ($new_rrow->reviewStatus !== $newstatus) {
             error_log("{$this->conf->dbname}: review #{$prow->paperId}/{$new_rrow->reviewId} saved reviewStatus {$new_rrow->reviewStatus} (expected {$newstatus})");
         }
         assert($new_rrow->reviewStatus === $newstatus);
+        $this->review_ordinal_id = $new_rrow->unparse_ordinal_id();
 
         // log updates -- but not if review token is used
         if (!$usedReviewToken

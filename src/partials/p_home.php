@@ -432,7 +432,7 @@ class Home_Partial {
     function render_submissions(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->is_author()
-            && $conf->timeStartPaper() <= 0
+            && $conf->time_start_paper() <= 0
             && !$user->privChair
             && $user->is_reviewer())
             return;
@@ -440,7 +440,7 @@ class Home_Partial {
         echo '<div class="homegrp" id="homeau">',
             $this->render_h2_home($user->is_author() ? "Your Submissions" : "Submissions");
 
-        $startable = $conf->timeStartPaper();
+        $startable = $conf->time_start_paper();
         if ($startable && !$user->has_email()) {
             echo '<em class="deadline">', $conf->unparse_setting_deadline_span("sub_reg"), "</em><br />\n<small>You must sign in to start a submission.</small>";
         } else if ($startable || $user->privChair) {

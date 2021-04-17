@@ -192,6 +192,7 @@ if (PHP_MAJOR_VERSION >= 7) {
 } else {
     xassert_eqq(substr("", 0, 1), false);
 }
+xassert(!ctype_digit(""));
 
 xassert(str_starts_with("", ""));
 xassert(str_starts_with("a", ""));

@@ -34,7 +34,7 @@ class RequestReview_API {
 
         // check proposal:
         // - check existing review
-        if ($reviewer && $prow->review_of_user($reviewer)) {
+        if ($reviewer && $prow->review_by_user($reviewer)) {
             return self::error_result(400, "email", htmlspecialchars($email) . " is already a reviewer.");
         }
         // - check existing request
@@ -44,9 +44,9 @@ class RequestReview_API {
         }
         // - check existing refusal
         if ($reviewer) {
-            $refusal = ($prow->review_refusals_of_user($reviewer))[0] ?? null;
+            $refusal = ($prow->review_refusals_by_user($reviewer))[0] ?? null;
         } else {
-            $refusal = ($prow->review_refusals_of_email($email))[0] ?? null;
+            $refusal = ($prow->review_refusals_by_email($email))[0] ?? null;
         }
         if ($refusal
             && (!$user->can_administer($prow) || !$qreq->override)) {
@@ -137,7 +137,7 @@ class RequestReview_API {
 
         // send confirmation mail
         HotCRPMailer::send_to($reviewer, "@requestreview", [
-            "prow" => $prow, "rrow" => $prow->fresh_review_of_user($reviewer),
+            "prow" => $prow, "rrow" => $prow->fresh_review_by_user($reviewer),
             "requester_contact" => $requester, "reason" => $reason
         ]);
 
@@ -236,7 +236,7 @@ class RequestReview_API {
             && ctype_digit($qreq->p)
             && strcasecmp($email, $user->email) === 0) {
             $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
-            if ($xprow && $xprow->review_refusals_of_user($user)) {
+            if ($xprow && $xprow->review_refusals_by_user($user)) {
                 $prow = $xprow;
             }
         }
@@ -253,10 +253,10 @@ class RequestReview_API {
             return self::error_result(403, "email", "Permission error.");
         }
         if ($u) {
-            $xrrows = $prow->reviews_of_user($u);
-            $refusals = $prow->review_refusals_of_user($u);
+            $xrrows = $prow->reviews_by_user($u);
+            $refusals = $prow->review_refusals_by_user($u);
         } else {
-            $refusals = $prow->review_refusals_of_email($email);
+            $refusals = $prow->review_refusals_by_email($email);
         }
 
         if (empty($xrrows) && empty($refusals)) {
@@ -339,7 +339,7 @@ class RequestReview_API {
         }
 
         if (($u = $user->conf->cached_user_by_email($email))) {
-            $xrrows = $prow->reviews_of_user($u);
+            $xrrows = $prow->reviews_by_user($u);
         }
         $result = $user->conf->qe("select * from ReviewRequest where paperId=? and email=?",
             $prow->paperId, $email);
@@ -422,7 +422,7 @@ class RequestReview_API {
             && ctype_digit($qreq->p)
             && strcasecmp($email, $user->email) === 0) {
             $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
-            if ($xprow && $xprow->review_refusals_of_user($user)) {
+            if ($xprow && $xprow->review_refusals_by_user($user)) {
                 $prow = $xprow;
             }
         }
@@ -436,7 +436,7 @@ class RequestReview_API {
             return self::error_result(403, "email", "Permission error.");
         }
 
-        $refusals = $prow->review_refusals_of_email($email);
+        $refusals = $prow->review_refusals_by_email($email);
         if (empty($refusals)) {
             return self::error_result(404, null, "No reviews declined.");
         }

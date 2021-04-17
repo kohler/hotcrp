@@ -471,7 +471,7 @@ class ContactList {
             foreach ($prows as $prow) {
                 if ($this->user->can_view_review_assignment($prow, null)
                     && $this->user->can_view_review_identity($prow, null)) {
-                    foreach ($prow->reviews_by_id() as $rrow) {
+                    foreach ($prow->all_reviews() as $rrow) {
                         if ($this->user->can_view_review_assignment($prow, $rrow)
                             && $this->user->can_view_review_identity($prow, $rrow)) {
                             $this->collect_review_data($prow, $rrow, $repapers, $review_limit, $scores);
@@ -497,7 +497,7 @@ class ContactList {
             foreach ($prows as $prow) {
                 if ($this->user->can_view_review_ratings($prow)) {
                     $allow_admin = $this->user->allow_administer($prow);
-                    foreach ($prow->reviews_by_id() as $rrow) {
+                    foreach ($prow->all_reviews() as $rrow) {
                         if (isset($ratings[$prow->paperId][$rrow->reviewId])
                             && ($allow_admin
                                 || ($this->user->can_view_review_ratings($prow, $rrow)

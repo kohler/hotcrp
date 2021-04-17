@@ -384,7 +384,7 @@ function update_schema_missing_review_ordinals($conf) {
         $prow->ensure_full_reviews();
         $next_ordinal = $next_displayed = 0;
         $update_rrows = [];
-        foreach ($prow->reviews_by_id() as $rrow) {
+        foreach ($prow->all_reviews() as $rrow) {
             $next_ordinal = max($next_ordinal, $rrow->reviewOrdinal);
             if ($rrow->reviewOrdinal > 0) {
                 $next_displayed = max($next_displayed, $rrow->timeDisplayed);
@@ -437,7 +437,7 @@ function update_schema_set_review_time_displayed($conf) {
 
     $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
     foreach ($conf->paper_set(["paperId" => $pids]) as $prow) {
-        $rrows = array_values(array_filter($prow->reviews_by_id(), function ($r) {
+        $rrows = array_values(array_filter($prow->all_reviews(), function ($r) {
             return $r->reviewSubmitted || $r->reviewOrdinal;
         }));
         usort($rrows, function ($a, $b) {

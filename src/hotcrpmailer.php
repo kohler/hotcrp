@@ -147,7 +147,7 @@ class HotCRPMailer extends Mailer {
             $rrows = [$this->rrow];
         } else {
             $this->row->ensure_full_reviews();
-            $rrows = $this->row->reviews_by_display();
+            $rrows = $this->row->reviews_as_display();
         }
 
         $text = "";
@@ -250,7 +250,7 @@ class HotCRPMailer extends Mailer {
 
     private function guess_reviewdeadline() {
         if ($this->row
-            && ($rrows = $this->row->reviews_of_user($this->recipient))) {
+            && ($rrows = $this->row->reviews_by_user($this->recipient))) {
             $rrow0 = $rrow1 = null;
             foreach ($rrows as $rrow) {
                 if (($dl = $rrow->deadline())) {

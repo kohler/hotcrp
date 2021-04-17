@@ -1046,7 +1046,7 @@ class FormulaCompiler {
     function _add_vreviews() {
         if ($this->check_gvar('$vreviews')) {
             $this->queryOptions["reviewSignatures"] = true;
-            $this->gstmt[] = "\$vreviews = " . $this->_prow() . "->viewable_reviews_by_display(\$contact);";
+            $this->gstmt[] = "\$vreviews = " . $this->_prow() . "->viewable_reviews_as_display(\$contact);";
         }
         return '$vreviews';
     }
@@ -1127,9 +1127,9 @@ class FormulaCompiler {
     function _rrow() {
         $this->indexed = true;
         if ($this->index_type === Fexpr::IDX_NONE) {
-            return $this->define_gvar("rrow", $this->_prow() . "->review_of_user(\$rrow_cid)");
+            return $this->define_gvar("rrow", $this->_prow() . "->review_by_user(\$rrow_cid)");
         } else if ($this->index_type === Fexpr::IDX_MY) {
-            return $this->define_gvar("myrrow", $this->_prow() . "->review_of_user(" . $this->user->contactId . ")");
+            return $this->define_gvar("myrrow", $this->_prow() . "->review_by_user(" . $this->user->contactId . ")");
         } else {
             $this->_lflags |= self::LFLAG_RROW;
             return "\$rrow_{$this->_lprefix}";
@@ -1250,7 +1250,7 @@ class FormulaCompiler {
                 if ($this->index_type === Fexpr::IDX_REVIEW) {
                     $v = "\$v$p";
                 } else {
-                    $v = "\$prow->viewable_review_of_user(\$i$p, \$contact)";
+                    $v = "\$prow->viewable_review_by_user(\$i$p, \$contact)";
                 }
                 array_unshift($this->lstmt, "\$rrow_{$p} = $v;");
             }

@@ -354,7 +354,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     private function data(PaperInfo $row, Contact $user) {
         $want_assigned = !$row->has_conflict($user) || $user->can_administer($row);
         $done = $started = 0;
-        foreach ($row->reviews_by_id() as $rrow) {
+        foreach ($row->all_reviews() as $rrow) {
             if ($user->can_view_review_assignment($row, $rrow)
                 && ($this->round === null || $this->round === $rrow->reviewRound)) {
                 if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
@@ -649,7 +649,7 @@ class ReviewerType_PaperColumn extends PaperColumn {
     const F_SHEPHERD = 4;
     /** @return array{?PaperListReviewAnalysis,int} */
     private function analysis(PaperList $pl, PaperInfo $row) {
-        $rrow = $row->review_of_user($this->contact);
+        $rrow = $row->review_by_user($this->contact);
         if ($rrow && (!$this->not_me || $pl->user->can_view_review_identity($row, $rrow))) {
             $ranal = $pl->make_review_analysis($rrow, $row);
         } else {
@@ -912,7 +912,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $row->ensure_review_score($this->format_field);
         $scores = [];
         $vs = $this->format_field->view_score;
-        foreach ($row->viewable_reviews_by_display($pl->user) as $rrow) {
+        foreach ($row->viewable_reviews_as_display($pl->user) as $rrow) {
             if ($rrow->reviewSubmitted
                 && isset($rrow->$fid)
                 && $rrow->$fid

@@ -91,7 +91,7 @@ class PaperContactInfo {
             $ci->mark_my_review_permissions($object->myReviewPermissions);
         } else if ($object instanceof PaperInfo
                    && $object->reviewSignatures !== null) {
-            foreach ($object->reviews_of_user($user->contactId, $user->review_tokens()) as $rrow) {
+            foreach ($object->reviews_by_user($user->contactId, $user->review_tokens()) as $rrow) {
                 $ci->mark_review($rrow);
             }
         }
@@ -736,7 +736,7 @@ class PaperInfo {
                 if (($c = ($this->conflicts())[$cid] ?? null)) {
                     $ci->conflictType = $c->conflictType;
                 }
-                foreach ($this->reviews_of_user($cid, $user->review_tokens()) as $rrow) {
+                foreach ($this->reviews_by_user($cid, $user->review_tokens()) as $rrow) {
                     $ci->mark_review($rrow);
                 }
                 $this->_contact_info[$cid] = $ci;
@@ -1165,7 +1165,7 @@ class PaperInfo {
         if (array_key_exists($cid, $this->_contact_info)) {
             $rrow = $this->_contact_info[$cid];
         } else {
-            $rrow = $this->review_of_user($cid);
+            $rrow = $this->review_by_user($cid);
         }
         return $rrow ? $rrow->reviewType : 0;
     }
@@ -2020,24 +2020,28 @@ class PaperInfo {
     }
 
     /** @return int|false */
-    private function parse_textual_id($textid) {
-        if (ctype_digit($textid)) {
-            return intval($textid);
+    private function parse_ordinal_id($oid) {
+        if ($oid === "") {
+            return 0;
+        } else if (ctype_digit($oid)) {
+            return intval($oid);
+        } else if (str_starts_with($oid, (string) $this->paperId)) {
+            $oid = (string) substr($oid, strlen((string) $this->paperId));
+            if (strlen($oid) > 1 && $oid[0] === "r" && ctype_digit(substr($oid, 1))) {
+                return intval(substr($oid, 1));
+            }
         }
-        if (str_starts_with($textid, (string) $this->paperId)) {
-            $textid = (string) substr($textid, strlen((string) $this->paperId));
-        }
-        if ($textid !== ""
-            && ctype_upper($textid)
-            && ($n = parse_latin_ordinal($textid)) > 0) {
+        if (ctype_upper($oid) && ($n = parse_latin_ordinal($oid)) > 0) {
             return -$n;
+        } else if ($oid === "rnew" || $oid === "new") {
+            return 0;
         } else {
             return false;
         }
     }
 
     /** @return array<int,ReviewInfo> */
-    function reviews_by_id() {
+    function all_reviews() {
         if ($this->_review_array === null) {
             $this->load_reviews();
         }
@@ -2045,15 +2049,15 @@ class PaperInfo {
     }
 
     /** @return list<ReviewInfo> */
-    function reviews_by_id_order() {
-        return array_values($this->reviews_by_id());
+    function reviews_as_list() {
+        return array_values($this->all_reviews());
     }
 
     /** @return list<ReviewInfo> */
-    function reviews_by_display() {
+    function reviews_as_display() {
         $srs = $urs = $ers = [];
 
-        foreach ($this->reviews_by_id() as $rrow) {
+        foreach ($this->all_reviews() as $rrow) {
             if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
                 $srs[] = $rrow;
             } else if ($rrow->is_subreview()) {
@@ -2100,15 +2104,40 @@ class PaperInfo {
 
     /** @param int $id
      * @return ?ReviewInfo */
-    function review_of_id($id) {
-        return ($this->reviews_by_id())[$id] ?? null;
+    function review_by_id($id) {
+        return ($this->all_reviews())[$id] ?? null;
     }
 
-    /** @param int|Contact $contact
+    /** @param int $ordinal
      * @return ?ReviewInfo */
-    function review_of_user($contact) {
-        $cid = self::contact_to_cid($contact);
-        foreach ($this->reviews_by_id() as $rrow) {
+    function review_by_ordinal($ordinal) {
+        foreach ($this->all_reviews() as $rrow) {
+            if ($rrow->reviewOrdinal == $ordinal) {
+                return $rrow;
+            }
+        }
+        return null;
+    }
+
+    /** @param string $oid
+     * @return false|?ReviewInfo */
+    function review_by_ordinal_id($oid) {
+        if (($n = $this->parse_ordinal_id($oid)) === false) {
+            return false;
+        } else if ($n < 0) {
+            return $this->review_by_ordinal(-$n);
+        } else if ($n > 0) {
+            return $this->review_by_id($n);
+        } else {
+            return null;
+        }
+    }
+
+    /** @param int|Contact $u
+     * @return ?ReviewInfo */
+    function review_by_user($u) {
+        $cid = self::contact_to_cid($u);
+        foreach ($this->all_reviews() as $rrow) {
             if ($rrow->contactId == $cid) {
                 return $rrow;
             }
@@ -2118,10 +2147,10 @@ class PaperInfo {
 
     /** @param int|Contact $contact
      * @return list<ReviewInfo> */
-    function reviews_of_user($contact, $rev_tokens = null) {
+    function reviews_by_user($contact, $rev_tokens = null) {
         $cid = self::contact_to_cid($contact);
         $rrows = [];
-        foreach ($this->reviews_by_id() as $rrow) {
+        foreach ($this->all_reviews() as $rrow) {
             if ($rrow->contactId == $cid
                 || ($rev_tokens
                     && $rrow->reviewToken
@@ -2134,9 +2163,9 @@ class PaperInfo {
 
     /** @param int|Contact $contact
      * @return ?ReviewInfo */
-    function viewable_review_of_user($contact, Contact $viewer) {
+    function viewable_review_by_user($contact, Contact $viewer) {
         $cid = self::contact_to_cid($contact);
-        foreach ($this->viewable_reviews_by_display($viewer) as $rrow) {
+        foreach ($this->viewable_reviews_as_display($viewer) as $rrow) {
             if ($rrow->contactId == $cid
                 && $viewer->can_view_review_identity($this, $rrow)) {
                 return $rrow;
@@ -2145,24 +2174,13 @@ class PaperInfo {
         return null;
     }
 
-    /** @param int $ordinal
-     * @return ?ReviewInfo */
-    function review_of_ordinal($ordinal) {
-        foreach ($this->reviews_by_id() as $rrow) {
-            if ($rrow->reviewOrdinal == $ordinal) {
-                return $rrow;
-            }
-        }
-        return null;
-    }
-
     /** @param int|string $token
      * @return ?ReviewInfo */
-    function review_of_token($token) {
+    function review_by_token($token) {
         if (!is_int($token)) {
             $token = decode_token($token, "V");
         }
-        foreach ($this->reviews_by_id() as $rrow) {
+        foreach ($this->all_reviews() as $rrow) {
             if ($rrow->reviewToken == $token) {
                 return $rrow;
             }
@@ -2170,17 +2188,65 @@ class PaperInfo {
         return null;
     }
 
-    /** @param string $textid
-     * @return false|?ReviewInfo */
-    function review_of_textual_id($textid) {
-        if (($n = $this->parse_textual_id($textid)) === false) {
-            return false;
-        } else if ($n < 0) {
-            return $this->review_of_ordinal(-$n);
-        } else {
-            return $this->review_of_id($n);
-        }
+
+    /** @return array<int,ReviewInfo>
+     * @deprecated */
+    function reviews_by_id() {
+        return $this->all_reviews();
     }
+    /** @return list<ReviewInfo>
+     * @deprecated */
+    function reviews_by_id_order() {
+        return $this->reviews_as_list();
+    }
+    /** @return list<ReviewInfo>
+     * @deprecated */
+    function reviews_by_display() {
+        return $this->reviews_as_display();
+    }
+    /** @param int $id
+     * @return ?ReviewInfo
+     * @deprecated */
+    function review_of_id($id) {
+        return $this->review_by_id($id);
+    }
+    /** @param int $ordinal
+     * @return ?ReviewInfo
+     * @deprecated */
+    function review_of_ordinal($ordinal) {
+        return $this->review_by_ordinal($ordinal);
+    }
+    /** @param int|Contact $contact
+     * @return ?ReviewInfo
+     * @deprecated */
+    function review_of_user($contact) {
+        return $this->review_by_user($contact);
+    }
+    /** @param int|Contact $contact
+     * @return list<ReviewInfo>
+     * @deprecated */
+    function reviews_of_user($contact, $rev_tokens = null) {
+        return $this->reviews_by_user($contact, $rev_tokens);
+    }
+    /** @param int|Contact $contact
+     * @return ?ReviewInfo
+     * @deprecated */
+    function viewable_review_of_user($contact, Contact $viewer) {
+        return $this->viewable_review_by_user($contact, $viewer);
+    }
+    /** @param int|string $token
+     * @return ?ReviewInfo
+     * @deprecated */
+    function review_of_token($token) {
+        return $this->review_by_token($token);
+    }
+    /** @param string $textid
+     * @return false|?ReviewInfo
+     * @deprecated */
+    function review_of_textual_id($textid) {
+        return $this->review_by_ordinal_id($textid);
+    }
+
 
     private function ensure_full_review_name() {
         $names = [];
@@ -2192,7 +2258,7 @@ class PaperInfo {
     }
 
     /** @return ?ReviewInfo */
-    function full_review_of_id($id) {
+    function full_review_by_id($id) {
         if ($this->_full_review_key === null
             && !isset($this->_reviews_have["full"])) {
             $this->_full_review_key = "r$id";
@@ -2206,12 +2272,12 @@ class PaperInfo {
             return $this->_full_review[0] ?? null;
         }
         $this->ensure_full_reviews();
-        return $this->review_of_id($id);
+        return $this->review_by_id($id);
     }
 
     /** @param int|Contact $contact
      * @return list<ReviewInfo> */
-    function full_reviews_of_user($contact) {
+    function full_reviews_by_user($contact) {
         $cid = self::contact_to_cid($contact);
         if ($this->_full_review_key === null
             && !isset($this->_reviews_have["full"])) {
@@ -2233,11 +2299,11 @@ class PaperInfo {
             return $this->_full_review;
         }
         $this->ensure_full_reviews();
-        return $this->reviews_of_user($contact);
+        return $this->reviews_by_user($contact);
     }
 
     /** @return ?ReviewInfo */
-    function full_review_of_ordinal($ordinal) {
+    function full_review_by_ordinal($ordinal) {
         if ($this->_full_review_key === null
             && !isset($this->_reviews_have["full"])) {
             $this->_full_review_key = "o$ordinal";
@@ -2251,22 +2317,47 @@ class PaperInfo {
             return $this->_full_review[0] ?? null;
         }
         $this->ensure_full_reviews();
-        return $this->review_of_ordinal($ordinal);
+        return $this->review_by_ordinal($ordinal);
     }
 
-    /** @return false|?ReviewInfo */
-    function full_review_of_textual_id($textid) {
-        if (($n = $this->parse_textual_id($textid)) === false) {
+    /** @param string $oid
+     * @return false|?ReviewInfo */
+    function full_review_by_ordinal_id($oid) {
+        if (($n = $this->parse_ordinal_id($oid)) === false) {
             return false;
         } else if ($n < 0) {
-            return $this->full_review_of_ordinal(-$n);
+            return $this->full_review_by_ordinal(-$n);
+        } else if ($n > 0) {
+            return $this->full_review_by_id($n);
         } else {
-            return $this->full_review_of_id($n);
+            return null;
         }
     }
 
+    /** @return ?ReviewInfo
+     * @deprecated */
+    function full_review_of_id($id) {
+        return $this->full_review_by_id($id);
+    }
+    /** @param int|Contact $contact
+     * @return list<ReviewInfo>
+     * @deprecated */
+    function full_reviews_of_user($contact) {
+        return $this->full_reviews_by_user($contact);
+    }
+    /** @return ?ReviewInfo
+     * @deprecated */
+    function full_review_of_ordinal($ordinal) {
+        return $this->full_review_by_ordinal($ordinal);
+    }
+    /** @return ?ReviewInfo
+     * @deprecated */
+    function full_review_of_textual_id($textid) {
+        return $this->full_review_by_ordinal_id($textid);
+    }
+
     /** @return ?ReviewInfo */
-    private function fresh_review_of($key, $value) {
+    private function fresh_review_by($key, $value) {
         $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.affiliation, ContactInfo.email, ContactInfo.roles, ContactInfo.contactTags from PaperReview join ContactInfo using (contactId) where paperId=? and $key=? order by paperId, reviewId", $this->paperId, $value);
         $rrow = ReviewInfo::fetch($result, $this, $this->conf);
         Dbl::free($result);
@@ -2274,22 +2365,33 @@ class PaperInfo {
     }
 
     /** @return ?ReviewInfo */
-    function fresh_review_of_id($id) {
-        return $this->fresh_review_of("reviewId", $id);
+    function fresh_review_by_id($id) {
+        return $this->fresh_review_by("reviewId", $id);
     }
 
-    /** @return ?ReviewInfo */
+    /** @param Contact|int $u
+     * @return ?ReviewInfo */
+    function fresh_review_by_user($u) {
+        return $this->fresh_review_by("contactId", self::contact_to_cid($u));
+    }
+    /** @return ?ReviewInfo
+     * @deprecated */
+    function fresh_review_of_id($id) {
+        return $this->fresh_review_by_id($id);
+    }
+    /** @return ?ReviewInfo
+     * @deprecated */
     function fresh_review_of_user($contact) {
-        return $this->fresh_review_of("contactId", self::contact_to_cid($contact));
+        return $this->fresh_review_by_user($contact);
     }
 
     /** @return list<ReviewInfo> */
-    function viewable_reviews_by_display(Contact $viewer) {
+    function viewable_reviews_as_display(Contact $viewer) {
         $cinfo = $viewer->__rights($this);
         if ($cinfo->vreviews_array === null
             || $cinfo->vreviews_version !== $this->_review_array_version) {
             $cinfo->vreviews_array = [];
-            foreach ($this->reviews_by_display() as $rrow) {
+            foreach ($this->reviews_as_display() as $rrow) {
                 if ($viewer->can_view_review($this, $rrow)) {
                     $cinfo->vreviews_array[] = $rrow;
                 }
@@ -2299,13 +2401,19 @@ class PaperInfo {
         return $cinfo->vreviews_array;
     }
 
+    /** @return list<ReviewInfo>
+     * @deprecated */
+    function viewable_reviews_by_display(Contact $viewer) {
+        return $this->viewable_reviews_as_display($viewer);
+    }
+
     /** @return bool */
     function can_view_review_identity_of($cid, Contact $viewer) {
         if ($viewer->can_administer_for_track($this, Track::VIEWREVID)
             || $cid == $viewer->contactId) {
             return true;
         }
-        foreach ($this->reviews_of_user($cid) as $rrow) {
+        foreach ($this->reviews_by_user($cid) as $rrow) {
             if ($viewer->can_view_review_identity($this, $rrow)) {
                 return true;
             }
@@ -2334,14 +2442,14 @@ class PaperInfo {
 
     private function ensure_reviewer_names_set($row_set) {
         foreach ($row_set as $prow) {
-            foreach ($prow->reviews_by_id() as $rrow) {
+            foreach ($prow->all_reviews() as $rrow) {
                 $this->conf->request_cached_user_by_id($rrow->contactId);
             }
         }
         foreach ($row_set as $prow) {
             $prow->_reviews_have["names"] = true;
             $names = [];
-            foreach ($prow->reviews_by_id() as $rrow) {
+            foreach ($prow->all_reviews() as $rrow) {
                 if (($u = $this->conf->cached_user_by_id($rrow->contactId))) {
                     $rrow->assign_name($u, $names);
                 }
@@ -2361,7 +2469,7 @@ class PaperInfo {
         $users = [];
         foreach ($row_set as $prow) {
             $prow->_reviews_have["lastLogin"] = true;
-            foreach ($prow->reviews_by_id() as $rrow) {
+            foreach ($prow->all_reviews() as $rrow) {
                 $users[$rrow->contactId] = true;
             }
         }
@@ -2369,7 +2477,7 @@ class PaperInfo {
             $result = $this->conf->qe("select contactId, lastLogin from ContactInfo where contactId?a", array_keys($users));
             $lastLogins = Dbl::fetch_iimap($result);
             foreach ($row_set as $prow) {
-                foreach ($prow->reviews_by_id() as $rrow) {
+                foreach ($prow->all_reviews() as $rrow) {
                     $rrow->lastLogin = $lastLogins[$rrow->contactId];
                 }
             }
@@ -2416,7 +2524,7 @@ class PaperInfo {
                     $this->load_review_fields($rfi->main_storage);
                 }
                 $x = explode(",", $this->$k);
-                foreach ($this->reviews_by_id_order() as $i => $rrow) {
+                foreach ($this->reviews_as_list() as $i => $rrow) {
                     $rrow->$fid = (int) $x[$i];
                 }
             }
@@ -2457,7 +2565,7 @@ class PaperInfo {
             $x = explode(",", $this->reviewWordCountSignature);
             $bad_ids = [];
 
-            foreach ($this->reviews_by_id_order() as $i => $rrow) {
+            foreach ($this->reviews_as_list() as $i => $rrow) {
                 if ($x[$i] !== ".") {
                     $rrow->reviewWordCount = (int) $x[$i];
                 } else {
@@ -2478,7 +2586,7 @@ class PaperInfo {
                 || !empty($prow->_review_array)
                 || isset($prow->reviewSignatures)) {
                 $pids[] = $prow->paperId;
-                foreach ($prow->reviews_by_id() as $rrow) {
+                foreach ($prow->all_reviews() as $rrow) {
                     $rrow->ratingSignature = "";
                 }
             }
@@ -2501,7 +2609,7 @@ class PaperInfo {
 
     /** @return bool */
     function has_author_seen_any_review() {
-        foreach ($this->reviews_by_id() as $rrow) {
+        foreach ($this->all_reviews() as $rrow) {
             if ($rrow->reviewAuthorSeen) {
                 return true;
             }
@@ -2563,8 +2671,29 @@ class PaperInfo {
         return $this->_refusal_array;
     }
 
+    /** @param int $id
+     * @return ?ReviewRefusalInfo */
+    function review_refusal_by_id($id) {
+        foreach ($this->review_refusals() as $ref) {
+            if ($ref->refusedReviewId === $id)
+                return $ref;
+        }
+        return null;
+    }
+
     /** @return list<ReviewRefusalInfo> */
-    function review_refusals_of_user(Contact $user) {
+    function review_refusals_by_user_id($uxid) {
+        $a = [];
+        foreach ($this->review_refusals() as $ref) {
+            if ($ref->contactId == $uxid) {
+                $a[] = $ref;
+            }
+        }
+        return $a;
+    }
+
+    /** @return list<ReviewRefusalInfo> */
+    function review_refusals_by_user(Contact $user) {
         $a = [];
         foreach ($this->review_refusals() as $ref) {
             if ($ref->contactId == $user->contactId
@@ -2576,7 +2705,7 @@ class PaperInfo {
     }
 
     /** @return list<ReviewRefusalInfo> */
-    function review_refusals_of_email($email) {
+    function review_refusals_by_email($email) {
         $a = [];
         foreach ($this->review_refusals() as $ref) {
             if (strcasecmp($ref->email, $email) === 0) {
@@ -2584,6 +2713,17 @@ class PaperInfo {
             }
         }
         return $a;
+    }
+
+    /** @return list<ReviewRefusalInfo>
+     * @deprecated */
+    function review_refusals_of_user(Contact $user) {
+        return $this->review_refusals_by_user($user);
+    }
+    /** @return list<ReviewRefusalInfo>
+     * @deprecated */
+    function review_refusals_of_email($email) {
+        return $this->review_refusals_by_email($email);
     }
 
 
@@ -2746,14 +2886,14 @@ class PaperInfo {
     /** @return list<ReviewInfo|CommentInfo> */
     function viewable_reviews_and_comments(Contact $user) {
         $this->ensure_full_reviews();
-        return $this->merge_reviews_and_comments($this->viewable_reviews_by_display($user), $this->viewable_comments($user));
+        return $this->merge_reviews_and_comments($this->viewable_reviews_as_display($user), $this->viewable_comments($user));
     }
 
     /** @return list<ReviewInfo|CommentInfo> */
     function viewable_submitted_reviews_and_comments(Contact $user) {
         $this->ensure_full_reviews();
         $rrows = [];
-        foreach ($this->viewable_reviews_by_display($user) as $rrow) {
+        foreach ($this->viewable_reviews_as_display($user) as $rrow) {
             if ($rrow->reviewSubmitted) {
                 $rrows[] = $rrow;
             }
@@ -2855,7 +2995,7 @@ class PaperInfo {
         foreach ($this->contacts() as $cflt) {
             $cids[] = $cflt->contactId;
         }
-        foreach ($this->reviews_by_id() as $rrow) {
+        foreach ($this->all_reviews() as $rrow) {
             $cids[] = $rrow->contactId;
         }
         foreach ($this->all_comment_skeletons() as $crow) {
@@ -2878,7 +3018,7 @@ class PaperInfo {
         if ($this->paperId <= 0) {
             return false;
         }
-        $rrows = $this->reviews_by_id();
+        $rrows = $this->all_reviews();
 
         $qs = [];
         foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRequest", "PaperTag", "PaperComment", "PaperReview", "PaperTopic", "PaperOption", "PaperConflict", "Paper", "PaperStorage", "Capability"] as $table) {

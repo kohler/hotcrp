@@ -23,7 +23,7 @@ abstract class Reconflict_SearchTerm extends SearchTerm {
         $cids = [];
         foreach ($srch->user->paper_set(["paperId" => $st, "reviewSignatures" => true, "finalized" => $srch->limit_submitted()]) as $prow) {
             if ($srch->user->can_view_paper($prow)) {
-                foreach ($prow->reviews_by_id() as $rrow) {
+                foreach ($prow->all_reviews() as $rrow) {
                     if ($rrow->reviewToken === 0
                         && $srch->user->can_view_review_identity($prow, $rrow)) {
                         $cids[$rrow->contactId] = true;

@@ -22,7 +22,7 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
 
         $texts = $errors = [];
         foreach ($ssel->paper_set($user) as $prow) {
-            $whyNot = $user->perm_review($prow, null);
+            $whyNot = $user->perm_edit_review($prow, null);
             if ($whyNot
                 && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"])) {
@@ -37,10 +37,10 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
                     }
                 }
                 if (!$this->all || !$user->allow_administer($prow)) {
-                    $rrows = $prow->full_reviews_of_user($user);
+                    $rrows = $prow->full_reviews_by_user($user);
                 } else {
                     $prow->ensure_full_reviews();
-                    $rrows = $prow->reviews_by_display();
+                    $rrows = $prow->reviews_as_display();
                 }
                 $time = null;
                 if (empty($rrows)) {

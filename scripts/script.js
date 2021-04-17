@@ -888,8 +888,10 @@ function hoturl_add(url, component) {
 function hoturl_find(x, page_component) {
     var m;
     for (var i = 0; i < x.v.length; ++i)
-        if ((m = page_component.exec(x.v[i])))
-            return [i, m[1]];
+        if ((m = page_component.exec(x.v[i]))) {
+            m[0] = i;
+            return m;
+        }
     return null;
 }
 
@@ -944,7 +946,13 @@ function hoturl(page, options) {
             want_forceShow = true;
         }
     } else if (page === "review") {
-        hoturl_clean(x, /^r=(\d+[A-Z]+)$/);
+        hoturl_clean(x, /^p=(\d+)$/);
+        if (x.last !== false
+            && (m = hoturl_find(x, /^r=(\d+)([A-Z]+|r\d+|rnew)$/))
+            && x.t.endsWith("/" + m[1])) {
+            x.t += m[2];
+            x.v.splice(m[0], 1);
+        }
     } else if (page === "help") {
         hoturl_clean(x, /^t=(\w+)$/);
     } else if (page.substring(0, 3) === "api") {
@@ -4252,27 +4260,27 @@ function revrating_key(event) {
 
 function add_review(rrow) {
     var hc = new HtmlCollector,
-        rid = rrow.ordinal ? rrow.pid + "" + rrow.ordinal : "" + rrow.rid,
-        rlink = "r=" + rid + (siteinfo.want_override_conflict ? "&forceShow=1" : ""),
+        rid = rrow.pid + (rrow.ordinal || "r" + rrow.rid),
+        rlink = "p=".concat(rrow.pid, "&r=", rid),
         has_user_rating = false, i, ratekey, selected;
+    if (siteinfo.want_override_conflict)
+        rlink += "&forceShow=1";
 
     i = rrow.ordinal ? '" data-review-ordinal="' + rrow.ordinal : '';
-    hc.push('<article id="r' + rid + '" class="pcard revcard need-anchor-unfold has-fold '
-            + (rrow.folded ? "fold20c" : "fold20o")
-            + '" data-pid="' + rrow.pid
-            + '" data-rid="' + rrow.rid + i + '">', '</article>');
+    hc.push('<article id="r'.concat(rid,
+                '" class="pcard revcard need-anchor-unfold has-fold ',
+                rrow.folded ? "fold20c" : "fold20o", '" data-pid="', rrow.pid,
+                '" data-rid="', rrow.rid, i, '">'), '</article>');
 
     // HEADER
     hc.push('<header class="revcard-head">', '</header>');
 
     // review description
     var rdesc = rrow.subreview ? "Subreview" : "Review";
-    if (rrow.draft) {
+    if (rrow.draft)
         rdesc = "Draft " + rdesc;
-    }
-    if (rrow.ordinal) {
+    if (rrow.ordinal)
         rdesc += " #" + rid;
-    }
 
     // edit/text links
     if (rrow.folded) {

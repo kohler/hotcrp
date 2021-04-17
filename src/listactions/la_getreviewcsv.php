@@ -27,7 +27,7 @@ class GetReviewCSV_ListAction extends ListAction {
             }
             $viewer = $this->author_view ? $prow->author_view_user() : $user;
             $prow->ensure_full_reviews();
-            foreach ($prow->viewable_reviews_by_display($user) as $rrow) {
+            foreach ($prow->viewable_reviews_as_display($user) as $rrow) {
                 if (($viewer === $user || $viewer->can_view_review($prow, $rrow))
                     && $rrow->reviewSubmitted) {
                     $text = [

@@ -370,7 +370,7 @@ class Autoassigner {
             }
             foreach ($this->acs as $cid => $ac) {
                 if ($prow->has_conflict($cid)
-                    || !($rrow = $prow->review_of_user($cid))
+                    || !($rrow = $prow->review_by_user($cid))
                     || ($scoreinfo !== "xa" && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)
                     || ($score && !$rrow->$score)) {
                     $scorearr[$prow->paperId][$cid] = -1;

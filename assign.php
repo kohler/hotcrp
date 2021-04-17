@@ -22,6 +22,7 @@ function assign_show_header() {
 /** @return PaperInfo */
 function assign_load() {
     global $Conf, $Me, $Qreq;
+    PaperTable::clean_request($Qreq, false);
     $prow = PaperTable::fetch_paper_request($Qreq, $Me);
     if ($prow === null) {
         assign_show_header();
@@ -211,9 +212,9 @@ if (isset($Qreq->undeclinereview)
 
 
 // paper table
-$paperTable = new PaperTable($prow, $Qreq, "assign");
+$paperTable = new PaperTable($Me, $Qreq, $prow, "assign");
 $paperTable->initialize(false, false);
-$paperTable->resolveReview(false);
+$paperTable->resolve_review(false);
 $allow_view_authors = $Me->allow_view_authors($prow);
 
 assign_show_header();
@@ -473,7 +474,7 @@ if ($Me->can_administer($prow)) {
 
         // first, name and assignment
         $ct = $prow->conflict_type($pc);
-        $rrow = $prow->review_of_user($pc);
+        $rrow = $prow->review_by_user($pc);
         if (Conflict::is_author($ct)) {
             $revtype = -2;
         } else {
@@ -495,7 +496,7 @@ if ($Me->can_administer($prow)) {
         if (Conflict::is_conflicted($ct)) {
             echo '" data-conflict-type="1';
         }
-        if (!$revtype && $prow->review_refusals_of_user($pc)) {
+        if (!$revtype && $prow->review_refusals_by_user($pc)) {
             echo '" data-assignment-declined="1';
         }
         if ($rrow && $rrow->reviewRound && ($rn = $rrow->round_name())) {
@@ -566,7 +567,7 @@ if ($Me->allow_administer($prow)) {
 }
 echo '</p>';
 
-if (($rrow = $prow->review_of_user($Me))
+if (($rrow = $prow->review_by_user($Me))
     && $rrow->reviewType == REVIEW_SECONDARY
     && ($round_name = $Conf->round_name($rrow->reviewRound))) {
     echo Ht::hidden("round", $round_name);

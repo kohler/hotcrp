@@ -156,7 +156,7 @@ class AssignmentCountSet {
                 if (($this->has & self::HAS_REVIEW)
                     && $this->user->can_view_review_assignment($prow, null)
                     && $this->user->can_view_review_identity($prow, null)) {
-                    foreach ($prow->reviews_by_id() as $rrow) {
+                    foreach ($prow->all_reviews() as $rrow) {
                         if ($rrow->reviewType >= REVIEW_PC
                             && ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED || $prow->timeSubmitted > 0)
                             && $this->user->can_view_review_assignment($prow, $rrow)

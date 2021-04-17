@@ -2956,8 +2956,12 @@ class Conf {
     }
 
     /** @return bool */
-    function timeStartPaper() {
+    function time_start_paper() {
         return $this->time_between_settings("sub_open", "sub_reg", "sub_grace") > 0;
+    }
+    /** @deprecated */
+    function timeStartPaper() {
+        return $this->time_start_paper();
     }
     /** @param ?PaperInfo $prow
      * @return bool */
@@ -3265,11 +3269,13 @@ class Conf {
         if ($param) {
             $tp = "";
             if ($page === "review"
-                && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $param, $m)) {
+                && preg_match($are . 'p=(\d+)' . $zre, $param, $m)) {
                 $tp = "/" . $m[2];
                 $param = $m[1] . $m[3];
-                if (preg_match($are . 'p=\d+' . $zre, $param, $m)) {
-                    $param = $m[1] . $m[2];
+                if (preg_match($are . 'r=(\d+)([A-Z]+|r\d+|rnew)' . $zre, $param, $mm)
+                    && $mm[2] === $m[2]) {
+                    $tp .= $mm[3];
+                    $param = $mm[1] . $mm[4];
                 }
             } else if (($is_paper_page
                         && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $param, $m))
@@ -4507,7 +4513,7 @@ class Conf {
             if ($this->setting("extrev_shepherd")) {
                 $this->paper->ensure_reviewer_names();
                 $erlist = [];
-                foreach ($this->paper->reviews_by_display() as $rrow) {
+                foreach ($this->paper->reviews_as_display() as $rrow) {
                     if ($rrow->reviewType == REVIEW_EXTERNAL
                         && !$rrow->reviewToken
                         && !in_array($rrow->contactId, $erlist)) {

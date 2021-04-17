@@ -244,7 +244,7 @@ class CommentInfo {
             return "Author";
         } else if ($this->commentType & COMMENTTYPE_BYSHEPHERD) {
             return "Shepherd";
-        } else if (($rrow = $this->prow->review_of_user($this->contactId))
+        } else if (($rrow = $this->prow->review_by_user($this->contactId))
                    && $rrow->reviewOrdinal
                    && $viewer->can_view_review($this->prow, $rrow)) {
             return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
@@ -435,7 +435,7 @@ class CommentInfo {
             if (!Contact::is_anonymous_email($email)) {
                 $cj->author_email = $email;
             } else if ($viewer->review_tokens()
-                       && ($rrows = $this->prow->reviews_of_user(-1, $viewer->review_tokens()))) {
+                       && ($rrows = $this->prow->reviews_by_user(-1, $viewer->review_tokens()))) {
                 $cj->review_token = encode_token($rrows[0]->reviewToken);
             }
         }

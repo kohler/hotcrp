@@ -255,7 +255,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
     if ($baseUrl == "profile") {
         $x .= Ht::entry("u", "", ["id" => "quicklink-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false]);
     } else {
-        $x .= Ht::entry("p", "", ["id" => "quicklink-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow", "spellcheck" => false]);
+        $x .= Ht::entry("q", "", ["id" => "quicklink-search", "size" => 10, "placeholder" => "(All)", "aria-label" => "Search", "class" => "papersearch need-suggest need-autogrow", "spellcheck" => false]);
     }
     foreach ($args as $k => $v) {
         $x .= Ht::hidden($k, $v);

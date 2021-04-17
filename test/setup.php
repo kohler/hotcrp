@@ -536,7 +536,7 @@ function fetch_review($prow, $user) {
     if (is_int($prow)) {
         $prow = $user->conf->checked_paper_by_id($prow, $user);
     }
-    return $prow->fresh_review_of_user($user);
+    return $prow->fresh_review_by_user($user);
 }
 
 /** @param Contact $user

@@ -30,7 +30,7 @@ class Mail_API {
         if (isset($qreq->r)
             && ctype_digit($qreq->r)
             && $prow
-            && ($rrow = $prow->review_of_id($qreq->r))
+            && ($rrow = $prow->review_by_id($qreq->r))
             && $user->can_view_review($prow, $rrow)) {
             $mailinfo["rrow"] = $rrow;
         }

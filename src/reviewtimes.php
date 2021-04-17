@@ -53,7 +53,7 @@ class ReviewTimes {
                         || !$user->can_view_review_identity($prow, null)))) {
                 continue;
             }
-            foreach ($prow->reviews_by_id() as $rrow) {
+            foreach ($prow->all_reviews() as $rrow) {
                 if ($this->count_review($prow, $rrow)) {
                     $viewable = $user->privChair
                         || ($user->can_view_review_assignment($prow, $rrow)

@@ -424,7 +424,7 @@ class FormulaGraph extends MessageSet {
                 if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
                     $this->_x_tagvalue_bool = $this->_x_tagvalue_bool && is_bool($x);
                     if ($rcid) {
-                        $queries = $this->_filter_queries($prow, $prow->review_of_user($rcid));
+                        $queries = $this->_filter_queries($prow, $prow->review_by_user($rcid));
                     }
                     if ($this->fx_type === Fexpr::FSEARCH) {
                         foreach ($queries as $q) {
@@ -581,7 +581,7 @@ class FormulaGraph extends MessageSet {
             $ps = $this->_paper_style($prow);
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             foreach ($revs as $rcid) {
-                $rrow = $rcid ? $prow->review_of_user($rcid) : null;
+                $rrow = $rcid ? $prow->review_by_user($rcid) : null;
                 $x = $fxf($prow, $rcid, $this->user);
                 $y = $fyf($prow, $rcid, $this->user);
                 if ($x === null || $y === null) {
@@ -653,7 +653,7 @@ class FormulaGraph extends MessageSet {
                 if ($x === null) {
                     continue;
                 }
-                $rrow = $rcid ? $prow->review_of_user($rcid) : null;
+                $rrow = $rcid ? $prow->review_by_user($rcid) : null;
                 if ($rrow) {
                     $queries = $this->_filter_queries($prow, $rrow);
                 }

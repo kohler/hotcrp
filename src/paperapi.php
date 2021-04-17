@@ -81,7 +81,7 @@ class PaperApi {
         }
         $need_id = false;
         if (isset($qreq->r)) {
-            $rrow = $prow->full_review_of_textual_id($qreq->r);
+            $rrow = $prow->full_review_by_ordinal_id($qreq->r);
             if ($rrow === false) {
                 return new JsonResult(400, "Bad request.");
             }
@@ -89,7 +89,7 @@ class PaperApi {
         } else if (isset($qreq->u)) {
             $need_id = true;
             $u = self::get_user($user, $qreq);
-            $rrows = $prow->full_reviews_of_user($u);
+            $rrows = $prow->full_reviews_by_user($u);
             if (!$rrows
                 && $user->contactId !== $u->contactId
                 && !$user->can_view_review_identity($prow, null)) {
@@ -97,7 +97,7 @@ class PaperApi {
             }
         } else {
             $prow->ensure_full_reviews();
-            $rrows = $prow->reviews_by_display();
+            $rrows = $prow->reviews_as_display();
         }
         $vrrows = [];
         $rf = $user->conf->review_form();
@@ -116,7 +116,7 @@ class PaperApi {
 
     static function reviewrating_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$qreq->r
-            || ($rrow = $prow->full_review_of_textual_id($qreq->r)) === false) {
+            || ($rrow = $prow->full_review_by_ordinal_id($qreq->r)) === false) {
             return new JsonResult(400, "Bad request.");
         } else if (!$user->can_view_review($prow, $rrow)) {
             return new JsonResult(403, "Permission error.");
@@ -136,9 +136,9 @@ class PaperApi {
             } else {
                 $user->conf->qe("insert into ReviewRating set paperId=?, reviewId=?, contactId=?, rating=? on duplicate key update rating=values(rating)", $prow->paperId, $rrow->reviewId, $user->contactId, $rating);
             }
-            $rrow = $prow->fresh_review_of_id($rrow->reviewId);
+            $rrow = $prow->fresh_review_by_id($rrow->reviewId);
         }
-        $rating = $rrow->rating_of_user($user);
+        $rating = $rrow->rating_by_rater($user);
         $jr = new JsonResult(["ok" => true, "user_rating" => $rating]);
         if ($editable) {
             $jr->content["editable"] = true;
@@ -152,7 +152,7 @@ class PaperApi {
     /** @param PaperInfo $prow */
     static function reviewround_api(Contact $user, $qreq, $prow) {
         if (!$qreq->r
-            || ($rrow = $prow->full_review_of_textual_id($qreq->r)) === false) {
+            || ($rrow = $prow->full_review_by_ordinal_id($qreq->r)) === false) {
             return new JsonResult(400, "Bad request.");
         } else if (!$user->can_administer($prow)) {
             return new JsonResult(403, "Permission error.");

@@ -1184,7 +1184,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "r":
             return $row->has_reviewer($user);
         case "rout":
-            foreach ($row->reviews_of_user($user, $user->review_tokens()) as $rrow) {
+            foreach ($row->reviews_by_user($user, $user->review_tokens()) as $rrow) {
                 if ($rrow->reviewNeedsSubmit != 0)
                     return true;
             }
@@ -1208,7 +1208,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "alladmin":
             return $user->allow_administer($row);
         case "req":
-            foreach ($row->reviews_by_id() as $rrow) {
+            foreach ($row->all_reviews() as $rrow) {
                 if ($rrow->reviewType == REVIEW_EXTERNAL
                     && $rrow->requestedBy == $user->contactXid)
                     return true;

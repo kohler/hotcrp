@@ -30,12 +30,13 @@ function review_error($msg) {
 // collect paper ID
 function review_load() {
     global $Conf, $Me, $Qreq, $prow, $paperTable;
+    PaperTable::clean_request($Qreq, true);
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
         $whyNot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
         review_error($whyNot->set("listViewable", true)->unparse_html());
     }
-    $paperTable = new PaperTable($prow, $Qreq);
-    $paperTable->resolveReview(true);
+    $paperTable = new PaperTable($Me, $Qreq, $prow);
+    $paperTable->resolve_review(true);
 }
 review_load();
 
@@ -118,6 +119,7 @@ if (isset($Qreq->update) && $Qreq->valid_post()) {
         if ($tf->check_and_save($Me, $prow, $paperTable->editrrow)
             && !$tf->has_problem_at("ready")) {
             $tf->report();
+            $Qreq->r = $tf->review_ordinal_id;
             $Conf->redirect_self($Qreq); // normally does not return
         }
     }
@@ -138,7 +140,7 @@ if (isset($Qreq->adoptreview)
     && $Me->can_approve_review($prow, $paperTable->editrrow)) {
     $tf = new ReviewValues($rf);
     $tf->paperId = $prow->paperId;
-    $my_rrow = $prow->review_of_user($Me);
+    $my_rrow = $prow->review_by_user($Me);
     if (($whyNot = $Me->perm_submit_review($prow, $my_rrow))) {
         $tf->msg_at(null, $whyNot->unparse_html(), MessageSet::ERROR);
     } else if ($tf->parse_web($Qreq, $Qreq->override)) {
@@ -153,7 +155,7 @@ if (isset($Qreq->adoptreview)
             $tfx->check_and_save($Me, $prow, $paperTable->editrrow);
         }
     }
-    if (($my_rrow = $prow->fresh_review_of_user($Me))) {
+    if (($my_rrow = $prow->fresh_review_by_user($Me))) {
         $Qreq->r = $my_rrow->reviewId;
     }
     $Conf->redirect_self($Qreq); // normally does not return
@@ -324,7 +326,7 @@ if (isset($Qreq->accept)
 
 // can we view/edit reviews?
 $viewAny = $Me->can_view_review($prow, null);
-$editAny = $Me->can_review($prow, null);
+$editAny = $Me->can_edit_review($prow, null);
 
 
 // can we see any reviews?
@@ -341,7 +343,7 @@ if (!$viewAny && !$editAny) {
 
 
 // mode
-$paperTable->fixReviewMode();
+$paperTable->fix_mode();
 if ($paperTable->mode == "edit") {
     $Conf->redirect_hoturl("paper", ["p" => $prow->paperId]);
 }
@@ -352,7 +354,7 @@ review_header();
 
 $paperTable->initialize(false, false);
 $paperTable->paptabBegin();
-$paperTable->resolveComments();
+$paperTable->resolve_comments();
 
 if (!$viewAny
     && !$editAny

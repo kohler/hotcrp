@@ -988,14 +988,14 @@ xassert(!$user_jon->can_view_review($paper13, null));
 xassert(!$user_jon->can_view_review_identity($paper13, null));
 xassert($user_jon->can_accept_review_assignment_ignore_conflict($paper13));
 xassert($user_jon->can_accept_review_assignment($paper13));
-xassert(!$user_jon->can_review($paper13, null));
+xassert(!$user_jon->can_edit_review($paper13, null));
 xassert($user_marina->can_view_paper($paper13));
 xassert($user_marina->can_view_pdf($paper13));
 xassert($user_marina->can_view_review($paper13, null));
 xassert($user_marina->can_view_review_identity($paper13, null));
 xassert($user_marina->can_accept_review_assignment_ignore_conflict($paper13));
 xassert($user_marina->can_accept_review_assignment($paper13));
-xassert($user_marina->can_review($paper13, null));
+xassert($user_marina->can_edit_review($paper13, null));
 
 $paper14 = $user_jon->checked_paper_by_id(14);
 xassert(!$paper14->has_tag("green"));
@@ -1010,14 +1010,14 @@ xassert($user_jon->can_view_review($paper14, null));
 xassert($user_jon->can_view_review_identity($paper14, null));
 xassert($user_jon->can_accept_review_assignment_ignore_conflict($paper14));
 xassert($user_jon->can_accept_review_assignment($paper14));
-xassert($user_jon->can_review($paper14, null));
+xassert($user_jon->can_edit_review($paper14, null));
 xassert(!$user_marina->can_view_paper($paper14));
 xassert(!$user_marina->can_view_pdf($paper14));
 xassert(!$user_marina->can_view_review($paper14, null));
 xassert(!$user_marina->can_view_review_identity($paper14, null));
 xassert($user_marina->can_accept_review_assignment_ignore_conflict($paper14));
 xassert($user_marina->can_accept_review_assignment($paper14));
-xassert(!$user_marina->can_review($paper14, null));
+xassert(!$user_marina->can_edit_review($paper14, null));
 
 xassert_assign($user_chair, "paper,action,user\n13,primary,jon@cs.ucl.ac.uk\n");
 xassert_assign($user_chair, "paper,action,user\n14,primary,jon@cs.ucl.ac.uk\n");
@@ -1033,14 +1033,14 @@ xassert(!$user_jon->can_view_review($paper13, null));
 xassert(!$user_jon->can_view_review_identity($paper13, null));
 xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper13));
 xassert(!$user_jon->can_accept_review_assignment($paper13));
-xassert(!$user_jon->can_review($paper13, null));
+xassert(!$user_jon->can_edit_review($paper13, null));
 xassert($user_marina->can_view_paper($paper13));
 xassert($user_marina->can_view_pdf($paper13));
 xassert($user_marina->can_view_review($paper13, null));
 xassert($user_marina->can_view_review_identity($paper13, null));
 xassert($user_marina->can_accept_review_assignment_ignore_conflict($paper13));
 xassert($user_marina->can_accept_review_assignment($paper13));
-xassert($user_marina->can_review($paper13, null));
+xassert($user_marina->can_edit_review($paper13, null));
 
 xassert($user_jon->can_view_paper($paper14));
 xassert($user_jon->can_view_pdf($paper14));
@@ -1048,14 +1048,14 @@ xassert($user_jon->can_view_review($paper14, null));
 xassert($user_jon->can_view_review_identity($paper14, null));
 xassert($user_jon->can_accept_review_assignment_ignore_conflict($paper14));
 xassert($user_jon->can_accept_review_assignment($paper14));
-xassert($user_jon->can_review($paper14, null));
+xassert($user_jon->can_edit_review($paper14, null));
 xassert(!$user_marina->can_view_paper($paper14));
 xassert(!$user_marina->can_view_pdf($paper14));
 xassert(!$user_marina->can_view_review($paper14, null));
 xassert(!$user_marina->can_view_review_identity($paper14, null));
 xassert(!$user_marina->can_accept_review_assignment_ignore_conflict($paper14));
 xassert(!$user_marina->can_accept_review_assignment($paper14));
-xassert(!$user_marina->can_review($paper14, null));
+xassert(!$user_marina->can_edit_review($paper14, null));
 
 xassert_assign_fail($user_chair, "paper,action,user\n13,primary,jon@cs.ucl.ac.uk\n");
 xassert_assign($user_chair, "paper,action,user\n14,primary,jon@cs.ucl.ac.uk\n");
@@ -1208,8 +1208,8 @@ assert_search_papers($user_chair, "re:4 19", "19");
 
 // check that there actually are tokens
 $paper19 = $user_chair->checked_paper_by_id(19);
-xassert_eqq(count($paper19->reviews_by_id()), 4);
-$revs = $paper19->reviews_by_id_order();
+xassert_eqq(count($paper19->all_reviews()), 4);
+$revs = $paper19->reviews_as_list();
 for ($i = 0; $i < 4; ++$i) {
     xassert($revs[$i]->reviewToken);
     for ($j = $i + 1; $j < 4; ++$j)

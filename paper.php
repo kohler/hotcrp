@@ -34,7 +34,7 @@ if (!isset($Qreq->p)
     }
 }
 // Editing a new submission as chair should always succeed.
-if ($Qreq->p === "new" && $Me->privChair && !$Conf->timeStartPaper()) {
+if ($Qreq->p === "new" && $Me->privChair && !$Conf->time_start_paper()) {
     $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 }
 
@@ -82,6 +82,7 @@ if ($Qreq->post && $Qreq->post_empty()) {
 // grab paper row
 function loadRows() {
     global $prow, $Me, $Qreq;
+    PaperTable::clean_request($Qreq, false);
     if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
         $whyNot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
         errorMsgExit($whyNot->set("listViewable", true)->unparse_html());
@@ -134,7 +135,7 @@ if (isset($Qreq->withdraw) && $prow && $Qreq->valid_post()) {
         }
 
         // email reviewers
-        if ($prow->reviews_by_id()) {
+        if ($prow->all_reviews()) {
             $preps = [];
             foreach ($prow->review_followers() as $minic) {
                 if ($minic->contactId !== $Me->contactId
@@ -411,13 +412,13 @@ if ($Qreq->delete && $Qreq->valid_post()) {
 
 
 // correct modes
-$paperTable = new PaperTable($prow, $Qreq);
-$paperTable->resolveComments();
+$paperTable = new PaperTable($Me, $Qreq, $prow);
+$paperTable->resolve_comments();
 if ($paperTable->can_view_reviews()
     || $paperTable->mode === "re"
-    || ($prow && $Me->can_review($prow))) {
-    $paperTable->resolveReview(false);
-    $paperTable->fixReviewMode();
+    || ($prow && $Me->can_edit_review($prow))) {
+    $paperTable->resolve_review(false);
+    $paperTable->fix_mode();
 }
 
 

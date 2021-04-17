@@ -2455,7 +2455,7 @@ class Contact {
     /** @return int|false */
     function active_review_token_for(PaperInfo $prow, ReviewInfo $rrow = null) {
         if ($this->_review_tokens !== null) {
-            foreach ($rrow ? [$rrow] : $prow->reviews_by_id() as $rr) {
+            foreach ($rrow ? [$rrow] : $prow->all_reviews() as $rr) {
                 if ($rrow->reviewToken !== 0
                     && in_array($rrow->reviewToken, $this->_review_tokens, true))
                     return $rrow->reviewToken;
@@ -2958,7 +2958,7 @@ class Contact {
     /** @return bool */
     function can_start_paper() {
         return $this->email
-            && ($this->conf->timeStartPaper() || $this->override_deadlines(null));
+            && ($this->conf->time_start_paper() || $this->override_deadlines(null));
     }
 
     /** @return ?PermissionProblem */
@@ -3957,7 +3957,7 @@ class Contact {
     }
 
     /** @return bool */
-    function can_review(PaperInfo $prow, ReviewInfo $rrow = null, $submit = false) {
+    function can_edit_review(PaperInfo $prow, ReviewInfo $rrow = null, $submit = false) {
         assert(!$rrow || $rrow->paperId == $prow->paperId);
         $rights = $this->rights($prow);
         if ($submit && !$this->can_clickthrough("review", $prow)) {
@@ -3978,8 +3978,8 @@ class Contact {
 
     /** @param ?ReviewInfo $rrow
      * @return ?PermissionProblem */
-    function perm_review(PaperInfo $prow, $rrow, $submit = false) {
-        if ($this->can_review($prow, $rrow, $submit)) {
+    function perm_edit_review(PaperInfo $prow, $rrow, $submit = false) {
+        if ($this->can_edit_review($prow, $rrow, $submit)) {
             return null;
         }
         $rights = $this->rights($prow);
@@ -4003,7 +4003,7 @@ class Contact {
                        && !$this->rights_owned_review($rights, $rrow)
                        && (!$rrow || $rrow_cid == $this->contactId)) {
                 $whyNot["reviewNotAssigned"] = true;
-            } else if ($this->can_review($prow, $rrow, false)
+            } else if ($this->can_edit_review($prow, $rrow, false)
                        && !$this->can_clickthrough("review", $prow)) {
                 $whyNot["clickthrough"] = true;
             } else {
@@ -4020,10 +4020,23 @@ class Contact {
         return $whyNot;
     }
 
+    /** @return bool
+     * @deprecated */
+    function can_review(PaperInfo $prow, ReviewInfo $rrow = null, $submit = false) {
+        return $this->can_edit_review($prow, $rrow, $submit);
+    }
+
+    /** @param ?ReviewInfo $rrow
+     * @return ?PermissionProblem
+     * @deprecated */
+    function perm_review(PaperInfo $prow, $rrow, $submit = false) {
+        return $this->perm_edit_review($prow, $rrow, $submit);
+    }
+
     /** @param ?ReviewInfo $rrow
      * @return ?PermissionProblem */
     function perm_submit_review(PaperInfo $prow, $rrow) {
-        return $this->perm_review($prow, $rrow, true);
+        return $this->perm_edit_review($prow, $rrow, true);
     }
 
     /** @return bool */
@@ -4112,7 +4125,7 @@ class Contact {
         // Do not show rating counts if rater identity is unambiguous.
         // See also PaperSearch::unusable_ratings.
         $nsubraters = 0;
-        foreach ($prow->reviews_by_id() as $rrow) {
+        foreach ($prow->all_reviews() as $rrow) {
             if ($rrow->reviewNeedsSubmit == 0
                 && $rrow->contactId != $this->contactId
                 && ($rs == REV_RATINGS_PC_EXTERNAL
@@ -4145,7 +4158,7 @@ class Contact {
             return true;
         }
         if ($this->_review_tokens) {
-            foreach ($prow->reviews_of_user($crow->contactId) as $rrow) {
+            foreach ($prow->reviews_by_user($crow->contactId) as $rrow) {
                 if ($rrow->reviewToken !== 0
                     && in_array($rrow->reviewToken, $this->_review_tokens, true))
                     return true;
@@ -4977,7 +4990,7 @@ class Contact {
                 if ($rights->act_author_view) {
                     $perm->act_author_view = true;
                 }
-                if ($this->can_review($prow, null, false)) {
+                if ($this->can_edit_review($prow, null, false)) {
                     $perm->can_review = true;
                 }
                 if ($this->can_comment($prow, null, true)) {
@@ -5014,7 +5027,7 @@ class Contact {
                 }
                 if ($this->_review_tokens) {
                     $tokens = [];
-                    foreach ($prow->reviews_by_id() as $rrow) {
+                    foreach ($prow->all_reviews() as $rrow) {
                         if ($rrow->reviewToken !== 0
                             && in_array($rrow->reviewToken, $this->_review_tokens, true))
                             $tokens[$rrow->reviewToken] = true;

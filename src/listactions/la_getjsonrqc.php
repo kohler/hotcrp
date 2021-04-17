@@ -20,7 +20,7 @@ class GetJsonRQC_ListAction extends ListAction {
             if ($user->allow_administer($prow)) {
                 $pj[] = $j = $ps->paper_json($prow);
                 $prow->ensure_full_reviews();
-                foreach ($prow->viewable_reviews_by_display($user) as $rrow) {
+                foreach ($prow->viewable_reviews_as_display($user) as $rrow) {
                     if ($rrow->reviewSubmitted) {
                         $j->reviews[] = $rf->unparse_review_json($user, $prow, $rrow, ReviewForm::RJ_NO_EDITABLE | ReviewForm::RJ_UNPARSE_RATINGS | ReviewForm::RJ_ALL_RATINGS | ReviewForm::RJ_NO_REVIEWERONLY);
                     }

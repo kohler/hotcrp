@@ -562,11 +562,11 @@ class ReviewInfo implements JsonSerializable {
         if ($this->reviewOrdinal) {
             return $this->paperId . unparse_latin_ordinal($this->reviewOrdinal);
         } else if ($this->reviewId) {
-            return "{$this->reviewId}";
+            return "{$this->paperId}r{$this->reviewId}";
         } else if ($this->paperId) {
-            return "{$this->paperId}.new";
+            return "{$this->paperId}rnew";
         } else {
-            return ".new";
+            return "new";
         }
     }
 
@@ -723,7 +723,7 @@ class ReviewInfo implements JsonSerializable {
 
     /** @param int|Contact $user
      * @return ?int */
-    function rating_of_user($user) {
+    function rating_by_rater($user) {
         $this->ensure_ratings();
         $cid = is_object($user) ? $user->contactId : $user;
         $str = ",$cid ";
@@ -733,6 +733,13 @@ class ReviewInfo implements JsonSerializable {
         } else {
             return null;
         }
+    }
+
+    /** @param int|Contact $user
+     * @return ?int
+     * @deprecated */
+    function rating_of_user($user) {
+        return $this->rating_by_rater($user);
     }
 
     /** @param int $rating
