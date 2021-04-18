@@ -30,7 +30,7 @@ class TagAnno_API {
         if (!is_object($reqanno) && !is_array($reqanno)) {
             return ["ok" => false, "error" => "Bad request."];
         }
-        $q = $qv = $errors = $errf = $inserts = [];
+        $q = $qv = $errors = $inserts = [];
         $next_annoid = $user->conf->fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
         // parse updates
         foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $anno) {
@@ -67,14 +67,13 @@ class TagAnno_API {
                     $q[] = "update PaperTagAnno set tagIndex=? where tag=? and annoId=?";
                     array_push($qv, floatval($tagval), $tag, $annoid);
                 } else {
-                    $errf["tagval_{$anno->annoid}"] = true;
-                    $errors[] = "Tag value should be a number.";
+                    $errors[] = new MessageItem("tagval_{$anno->annoid}", "Tag value should be a number.", 2);
                 }
             }
         }
         // return error if any
         if (!empty($errors)) {
-            return ["ok" => false, "error" => join("<br>", $errors), "errf" => $errf];
+            return ["ok" => false, "message_list" => $errors];
         }
         // apply changes
         if (!empty($q)) {

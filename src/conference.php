@@ -3430,7 +3430,8 @@ class Conf {
      * @param int $flags
      * @return string */
     function selfurl(Qrequest $qreq, $param = null, $flags = 0) {
-        if (Navigation::page() === "api") {
+        assert(Navigation::page() === null || $qreq->page() === Navigation::page());
+        if ($qreq->page() === "api") {
             error_log("selfurl for api page: " . debug_string_backtrace());
         }
         $param = $param ?? [];
@@ -3451,7 +3452,15 @@ class Conf {
         foreach ($param as $k => $v) {
             $x[$k] = $v;
         }
-        return $this->hoturl(Navigation::page(), $x, $flags);
+        return $this->hoturl($qreq->page(), $x, $flags);
+    }
+
+    /** @param Qrequest $qreq
+     * @param ?array $param
+     * @param int $flags
+     * @return string */
+    function selfurl_absolute(Qrequest $qreq, $param = null, $flags = 0) {
+        return $this->selfurl($qreq, $param, $flags | Conf::HOTURL_ABSOLUTE);
     }
 
 
@@ -4923,17 +4932,18 @@ class Conf {
         }
     }
     static function paper_error_json_result($whynot) {
-        $result = ["ok" => false];
+        $result = ["ok" => false, "message_list" => []];
         if ($whynot) {
             $status = isset($whynot["noPaper"]) ? 404 : 403;
-            $result["error"] = $whynot->unparse_text();
+            $m = $whynot->unparse_html();
             if (isset($whynot["signin"])) {
                 $result["loggedout"] = true;
             }
         } else {
             $status = 400;
-            $result["error"] = "Bad request, missing submission.";
+            $m = "Bad request, missing submission.";
         }
+        $result["message_list"][] = new MessageItem(null, $m, 2);
         return new JsonResult($status, $result);
     }
     function call_api($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
@@ -4944,20 +4954,25 @@ class Conf {
     function call_api_exit($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow
         $uf = $this->api($fn, $user, $qreq->method());
+        $j = $this->call_api_on($uf, $fn, $user, $qreq, $prow);
         if ($uf && $qreq->redirect && ($uf->redirect ?? false)
             && preg_match('/\A(?![a-z]+:|\/)./', $qreq->redirect)) {
-            $j = $this->call_api_on($uf, $fn, $user, $qreq, $prow);
             $a = $j->content;
-            if (($x = $a["error"] ?? null)) { // XXX many instances of `error` are html
-                Conf::msg_error(htmlspecialchars($x));
-            } else if (($x = $a["error_html"] ?? null)) {
-                Conf::msg_error($x);
+            if (($x = $a["error"] ?? $a["error_html"] ?? null)) {
+                // XXX some instances of `error` are not html!!!!!!
+                $this->msg($x, 2);
             } else if (!($a["ok"] ?? false)) {
-                Conf::msg_error("Internal error.");
+                $this->msg("Internal error.", 2);
+            }
+            foreach ($a["message_list"] ?? [] as $mx) {
+                $ma = (array) $mx;
+                if (($ma["message"] ?? "") !== "") {
+                    $this->msg($ma["message"], $ma["status"]);
+                }
             }
             Navigation::redirect_site($qreq->redirect);
         } else {
-            json_exit($this->call_api_on($uf, $fn, $user, $qreq, $prow));
+            json_exit($j);
         }
     }
 

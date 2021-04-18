@@ -750,6 +750,15 @@ class CsvGenerator {
         return $this;
     }
 
+    /** @param list<string> $texts
+     * @return $this */
+    function append_strings($texts) {
+        foreach ($texts as $t) {
+            $this->add_string($t);
+        }
+        return $this;
+    }
+
     private function _flush_stream() {
         if ($this->stream === null) {
             $this->stream = false;
@@ -873,6 +882,7 @@ class CsvGenerator {
     }
 
 
+    /** @return string */
     function mimetype_with_charset() {
         if ($this->is_csv()) {
             return "text/csv; charset=utf-8; header=" . ($this->flags & self::FLAG_HEADERS ? "present" : "absent");

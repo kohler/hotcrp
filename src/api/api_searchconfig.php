@@ -23,10 +23,7 @@ class SearchConfig_API {
             // check for errors
             $pl->table_html();
             if ($pl->message_set()->has_error()) {
-                return new JsonResult([
-                    "ok" => false,
-                    "errors" => $pl->message_set()->error_texts()
-                ]);
+                return new JsonResult(["ok" => false, "message_list" => $pl->message_set()->message_list()]);
             }
 
             if ($parsed_view === $default_view) {
@@ -193,7 +190,7 @@ class SearchConfig_API {
             $user->conf->replace_named_formulas(null);
             return self::namedformula($user, $qreq);
         } else {
-            return ["ok" => false, "error" => $msgset->error_texts(), "errf" => $msgset->message_field_map()];
+            return ["ok" => false, "message_list" => $msgset->message_list()];
         }
     }
 
@@ -308,7 +305,7 @@ class SearchConfig_API {
             $user->conf->replace_named_searches();
             return self::namedsearch($user, $qreq);
         } else {
-            return ["ok" => false, "error" => $msgset->error_texts(), "errf" => $msgset->message_field_map()];
+            return ["ok" => false, "message_list" => $msgset->message_list()];
         }
     }
 }

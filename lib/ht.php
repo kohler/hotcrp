@@ -603,7 +603,15 @@ class Ht {
      * @param int|string $status */
     static function msg($msg, $status) {
         if (is_int($status)) {
-            $status = $status >= 2 ? "error" : ($status > 0 ? "warning" : "info");
+            if ($status >= 2) {
+                $status = "error";
+            } else if ($status > 0) {
+                $status = "warning";
+            } else if ($status === -3) {
+                $status = "confirm";
+            } else {
+                $status = "info";
+            }
         }
         if (substr($status, 0, 1) === "x") {
             $status = substr($status, 1);
@@ -613,10 +621,11 @@ class Ht {
         }
         if (is_array($msg)) {
             $msg = join("", array_map(function ($x) {
-                if (str_starts_with($x, "<p") || str_starts_with($x, "<div"))
+                if (str_starts_with($x, "<p") || str_starts_with($x, "<div")) {
                     return $x;
-                else
+                } else {
                     return "<p>{$x}</p>";
+                }
             }, $msg));
         } else if ($msg !== ""
                    && !str_starts_with($msg, "<p")
@@ -638,15 +647,18 @@ class Ht {
             return $rest;
         }
     }
+    /** @return MessageSet */
+    static function message_set() {
+        self::$_msgset || (self::$_msgset = new MessageSet);
+        return self::$_msgset;
+    }
     /** @param string $field */
     static function error_at($field, $msg = "") {
-        self::$_msgset || (self::$_msgset = new MessageSet);
-        self::$_msgset->error_at($field, $msg);
+        self::message_set()->error_at($field, $msg);
     }
     /** @param string $field */
     static function warning_at($field, $msg = "") {
-        self::$_msgset || (self::$_msgset = new MessageSet);
-        self::$_msgset->warning_at($field, $msg);
+        self::message_set()->warning_at($field, $msg);
     }
     /** @param string $field */
     static function problem_status_at($field) {

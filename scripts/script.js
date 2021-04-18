@@ -1065,7 +1065,7 @@ function hoturl_get_form(action) {
 
 
 // render_xmsg
-function render_xmsg(status, msg) {
+function render_xmsg(msg, status) {
     if (typeof msg === "string")
         msg = msg === "" ? [] : [msg];
     if (msg.length === 0)
@@ -1092,6 +1092,27 @@ function render_feedback(msg, status) {
         t.push('<' + tag + ' class="feedback is-' + status + '">' + msg[i] + '</' + tag + '>');
     }
     return t.join('');
+}
+
+function render_feedback_near(msg, status, e) {
+    var x, c, m, $j;
+    if (status === 0 || status === 1 || status === 2)
+        status = ["note", "warning", "error"][status];
+    else
+        status = "note";
+    if (status === "warning" || status === "error")
+        addClass(e, "has-" + status);
+    if (hasClass(e, "entryi") && ($j = $(e).find(".entry")).length) {
+        e = $j[0];
+    } else if (!hasClass(e, "f-i")) {
+        return false;
+    }
+    c = e.firstChild;
+    while (c && c.nodeType === 1 && (c.tagName === "LABEL" || hasClass(c, "feedback")))
+        c = c.nextSibling;
+    m = render_feedback(msg, status);
+    c ? $(c).before(m) : $(e).prepend(m);
+    return true;
 }
 
 
@@ -2011,16 +2032,19 @@ function popup_skeleton(options) {
     function show_errors(data) {
         var form = $d.find("form")[0],
             dbody = $d.find(".popup-body"),
-            m = render_xmsg(2, data.error);
-        $d.find(".msg-error").remove();
-        dbody.length ? dbody.prepend(m) : $d.find("h2").after(m);
-        for (var f in data.errf || {}) {
-            var e = form[f];
-            if (e) {
-                var x = $(e).closest(".entryi, .f-i");
-                (x.length ? x : $(e)).addClass("has-error");
+            messages = "", mx, i, e, x;
+        $d.find(".msg-error, .feedback").remove();
+        for (i in data.message_list || []) {
+            mx = data.message_list[i];
+            if (mx.field && (e = form[mx.field])) {
+                x = e.closest(".entryi, .f-i");
+                if (render_feedback_near(mx.message, mx.status, x || e)) {
+                    continue;
+                }
             }
+            messages += render_xmsg(mx.message, mx.status);
         }
+        dbody.length ? dbody.prepend(messages) : $d.find("h2").after(messages);
         return $d;
     }
     function close() {
@@ -3766,26 +3790,24 @@ function make_outline_flasher(elt, rgba, duration) {
 }
 
 function setajaxcheck(elt, rv) {
+    var f, i, e, mx, reset;
     if (typeof elt == "string")
         elt = $$(elt);
     else if (elt.jquery)
         elt = elt[0];
     if (!elt)
         return;
-    if (rv && !rv.ok && rv.errf) {
-        var i, e, f = elt.closest("form");
-        for (i in rv.errf)
-            if (f && (e = f.elements[i])) {
-                elt = e;
-                break;
-            }
-    }
     make_outline_flasher(elt);
     var t = "", i, status = 0;
     if (rv && rv.message_list) {
+        f = elt.closest("form");
         for (var i = 0; i !== rv.message_list.length; ++i) {
-            t += render_feedback(rv.message_list[i].message, rv.message_list[i].status);
-            status = Math.max(status, rv.message_list[i].status);
+            mx = rv.message_list[i];
+            t += render_feedback(mx.message, mx.status);
+            status = Math.max(status, mx.status);
+            if (f && mx.field && (e = f.elements[mx.field]) && !reset) {
+                elt = reset = e;
+            }
         }
     }
     if (t === "") {
@@ -4011,7 +4033,7 @@ handle_ui.on("js-review-tokens", function () {
                         location.assign(location.href);
                     }
                 } else {
-                    $d.find("h2").after(render_xmsg(2, data.error || "Internal error."));
+                    $d.find("h2").after(render_xmsg(data.error || "Internal error.", 2));
                 }
             });
         return false;
@@ -4752,7 +4774,7 @@ function make_save_callback($c) {
             }
             var error = data.message || data.error;
             if (!/^<div/.test(error))
-                error = render_xmsg(2, error);
+                error = render_xmsg(error, 2);
             $c.find(".cmtmsg").html(error);
             $c.find("button, input[type=file]").prop("disabled", false);
             $c.find("input[name=draft]").remove();
@@ -6577,7 +6599,7 @@ handle_ui.on("js-annotate-order", function () {
                 legend = $d.find("input[name='legend_n" + i + "']").val();
                 tagval = $d.find("input[name='tagval_n" + i + "']").val();
                 if (legend != "" || tagval != 0)
-                    anno.push({annoid: "new", legend: legend, tagval: tagval});
+                    anno.push({annoid: "n" + i, legend: legend, tagval: tagval});
             }
             $.post(hoturl_post("api/taganno", {tag: mytag}),
                    {anno: JSON.stringify(anno)}, make_onsave($d));
@@ -6595,11 +6617,11 @@ handle_ui.on("js-annotate-order", function () {
     }
     function make_onsave($d) {
         return function (rv) {
-            setajaxcheck($d.find("button[name=save]"), rv);
             if (rv.ok) {
                 taganno_success(rv);
                 $d.close($d);
-            }
+            } else
+                $d.show_errors(rv);
         };
     }
     function add_anno(hc, anno) {
@@ -7892,7 +7914,7 @@ handle_ui.on("js-check-format", function () {
     if (this && "tagName" in this && this.tagName === "A")
         $self.addClass("hidden");
     var running = setTimeout(function () {
-        $cf.html(render_xmsg(0, "Checking format (this can take a while)..."));
+        $cf.html(render_xmsg("Checking format (this can take a while)...", 0));
     }, 1000);
     $.ajax(hoturl_post("api/formatcheck", {p: siteinfo.paperid}), {
         timeout: 20000, data: {

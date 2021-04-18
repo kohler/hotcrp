@@ -50,7 +50,6 @@ class RequestReview_API {
         }
         if ($refusal
             && (!$user->can_administer($prow) || !$qreq->override)) {
-            $errf = ["email" => true];
             if ($reviewer
                 && ($refusal->refusedBy == $reviewer->contactId
                     || ($refusal->refusedBy === null && $refusal->reason !== "request denied by chair"))) {
@@ -61,10 +60,11 @@ class RequestReview_API {
             if ($refusal->reason !== "" && $refusal->reason !== "request denied by chair") {
                 $msg .= " They offered this reason: <blockquote>" . htmlspecialchars($refusal->reason) . "</blockquote>";
             }
+            $message_list = [new MessageItem("email", $msg, 2)];
             if ($user->allow_administer($prow)) {
-                $errf["override"] = true;
+                $message_list[] = new MessageItem("override", null, 2);
             }
-            return self::error_result(400, $errf, $msg);
+            return new JsonResult(400, ["ok" => false, "message_list" => $message_list]);
         }
         // - check conflict
         if ($reviewer
@@ -465,10 +465,8 @@ class RequestReview_API {
         return new JsonResult(["ok" => true, "action" => "undecline"]);
     }
 
-    static function error_result($status, $errf, $message) {
-        if (is_string($errf)) {
-            $errf = [$errf => true];
-        }
-        return new JsonResult($status, ["ok" => false, "error" => $message, "errf" => $errf]);
+    /** @param string $field */
+    static function error_result($status, $field, $message) {
+        return new JsonResult($status, ["ok" => false, "message_list" => [new MessageItem($field, $message, 2)]]);
     }
 }

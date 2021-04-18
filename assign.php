@@ -150,11 +150,15 @@ if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override);
         $Conf->redirect_self($Qreq);
     } else {
-        if (isset($result->content["errf"])
-            && isset($result->content["errf"]["override"])) {
-            $result->content["error"] .= "<p>To request a review anyway, either retract the refusal or submit again with “Override” checked.</p>";
+        $emx = null;
+        foreach ($result->content["message_list"] ?? [] as $mx) {
+            if ($mx->field === "email") {
+                $emx = $mx;
+            } else if ($mx->field === "override" && $emx) {
+                $emx->message .= "<p>To request a review anyway, either retract the refusal or submit again with “Override” checked.</p>";
+            }
         }
-        $result->export_errors();
+        $result->export_messages($Conf);
         assign_load();
     }
 }
@@ -169,7 +173,7 @@ if ((isset($Qreq->deny) || isset($Qreq->denyreview))
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->deny, $Qreq->denyreview);
         $Conf->redirect_self($Qreq);
     } else {
-        $result->export_errors();
+        $result->export_messages($Conf);
         assign_load();
     }
 }
@@ -188,7 +192,7 @@ if (isset($Qreq->retractreview)
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retractreview);
         $Conf->redirect_self($Qreq);
     } else {
-        $result->export_errors();
+        $result->export_messages($Conf);
         assign_load();
     }
 }
@@ -204,7 +208,7 @@ if (isset($Qreq->undeclinereview)
         unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->unrefusereview);
         $Conf->redirect_self($Qreq);
     } else {
-        $result->export_errors();
+        $result->export_messages($Conf);
         assign_load();
     }
 }

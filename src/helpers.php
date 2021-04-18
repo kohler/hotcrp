@@ -122,13 +122,20 @@ class JsonResult {
             return new JsonResult($jr);
         }
     }
-    function export_errors() {
+    function export_errors(Conf $conf = null) {
         if (isset($this->content["error"])) {
-            Conf::msg_error($this->content["error"]);
+            Conf::msg_on($conf, $this->content["error"], 2);
         }
-        if (isset($this->content["errf"])) {
-            foreach ($this->content["errf"] as $f => $x) {
-                Ht::error_at((string) $f);
+    }
+    function export_messages(Conf $conf) {
+        $this->export_errors();
+        foreach ($this->content["message_list"] ?? [] as $mx) {
+            $ma = (array) $mx;
+            if (is_string($ma["message"] ?? null) && $ma["message"] !== "") {
+                Conf::msg_on($conf, $ma["message"], $ma["status"]);
+            }
+            if (is_string($ma["field"] ?? null)) {
+                Ht::message_set()->msg_at($ma["field"], $ma["message"] ?? null, $ma["status"]);
             }
         }
     }

@@ -152,7 +152,7 @@ class MessageSet {
 
     /** @param ?string $field
      * @param false|null|string|list<string> $msg
-     * @param -2|-1|0|1|2|3 $status
+     * @param -3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
         $mi = null;
