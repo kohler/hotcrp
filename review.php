@@ -3,372 +3,424 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-require_once("src/papertable.php");
 
-$rf = $Conf->review_form();
-$Me->add_overrides(Contact::OVERRIDE_CHECK_TIME);
 if (session_id() === "" && $Me->is_reviewer()) {
     ensure_session();
 }
 
+class ReviewPage {
+    /** @var Conf */
+    public $conf;
+    /** @var Contact */
+    public $user;
+    /** @var Qrequest */
+    public $qreq;
+    /** @var PaperInfo */
+    public $prow;
+    /** @var ?ReviewInfo */
+    public $rrow;
+    /** @var bool */
+    public $rrow_explicit;
+    /** @var PaperTable */
+    public $pt;
+    /** @var ?ReviewValues */
+    public $rv;
 
-// header
-function review_header() {
-    global $paperTable, $Qreq;
-    PaperTable::do_header($paperTable, "review", $Qreq->mode, $Qreq);
-}
-
-function review_error($msg) {
-    review_header();
-    Ht::stash_script("hotcrp.shortcut().add()");
-    $msg && Conf::msg_error($msg);
-    Conf::$main->footer();
-    exit;
-}
-
-
-// collect paper ID
-function review_load() {
-    global $Conf, $Me, $Qreq, $prow, $paperTable;
-    PaperTable::clean_request($Qreq, true);
-    if (!($prow = PaperTable::fetch_paper_request($Qreq, $Me))) {
-        $whyNot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
-        review_error($whyNot->set("listViewable", true)->unparse_html());
+    function __construct(Contact $user, Qrequest $qreq) {
+        $this->conf = $user->conf;
+        $this->user = $user;
+        $this->qreq = $qreq;
     }
-    $paperTable = new PaperTable($Me, $Qreq, $prow);
-    $paperTable->resolve_review(true);
-}
-review_load();
 
-
-// general error messages
-if ($Qreq->post && $Qreq->post_empty()) {
-    $Conf->post_missing_msg();
-} else if ($Qreq->post && $Qreq->default) {
-    if ($Qreq->has_file("uploadedFile")) {
-        $Qreq->uploadForm = 1;
-    } else {
-        $Qreq->update = 1;
+    /** @return ReviewForm */
+    function rf() {
+        return $this->conf->review_form();
     }
-} else if ($Qreq->submitreview) {
-    $Qreq->update = $Qreq->ready = 1;
-} else if ($Qreq->savedraft) {
-    $Qreq->update = 1;
-    unset($Qreq->ready);
-}
 
-
-// cancel action
-if ($Qreq->cancel) {
-    $Conf->redirect_self($Qreq);
-}
-
-
-// upload review form action
-if (isset($Qreq->uploadForm)
-    && $Qreq->has_file("uploadedFile")
-    && $Qreq->valid_post()) {
-    // parse form, store reviews
-    $tf = ReviewValues::make_text($rf, $Qreq->file_contents("uploadedFile"),
-            $Qreq->file_filename("uploadedFile"));
-    if ($tf->parse_text($Qreq->override)) {
-        $tf->check_and_save($Me, $prow, $paperTable->editrrow);
+    function header() {
+        PaperTable::do_header($this->pt, "review", $this->qreq->m, $this->qreq);
     }
-    if (!$tf->has_error() && $tf->parse_text($Qreq->override)) {
-        $tf->msg_at(null, 'Only the first review form in the file was parsed. <a href="' . hoturl("offline") . '">Upload multiple-review files here.</a>', MessageSet::WARNING);
+
+    function error_exit($msg) {
+        $this->header();
+        Ht::stash_script("hotcrp.shortcut().add()");
+        $msg && Conf::msg_error($msg);
+        $this->conf->footer();
+        exit;
     }
-    $tf->report();
-    review_load();
-} else if (isset($Qreq->uploadForm)) {
-    Conf::msg_error("Select a review form to upload.");
-}
 
-
-// check review submit requirements
-if (isset($Qreq->unsubmitreview)
-    && $paperTable->editrrow
-    && $paperTable->editrrow->reviewStatus >= ReviewInfo::RS_DELIVERED
-    && $Me->can_administer($prow)
-    && $Qreq->valid_post()) {
-    $result = $Me->unsubmit_review_row($paperTable->editrrow);
-    if (!Dbl::is_error($result) && $result->affected_rows) {
-        $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} unsubmitted", $prow);
-        $Conf->confirmMsg("Unsubmitted review.");
-    }
-    $Conf->redirect_self($Qreq);             // normally does not return
-    review_load();
-} else if (isset($Qreq->update)
-           && $paperTable->editrrow
-           && $paperTable->editrrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-    $Qreq->ready = 1;
-}
-
-
-// update review action
-if (isset($Qreq->update) && $Qreq->valid_post()) {
-    $tf = new ReviewValues($rf);
-    $tf->paperId = $prow->paperId;
-    if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow))) {
-        $tf->msg_at(null, $whyNot->unparse_html(), MessageSet::ERROR);
-    } else if ($tf->parse_web($Qreq, $Qreq->override)) {
-        if (isset($Qreq->approvesubreview)
-            && $paperTable->editrrow
-            && $Me->can_approve_review($prow, $paperTable->editrrow)) {
-            $tf->set_adopt();
-        }
-        if ($tf->check_and_save($Me, $prow, $paperTable->editrrow)
-            && !$tf->has_problem_at("ready")) {
-            $tf->report();
-            $Qreq->r = $tf->review_ordinal_id;
-            $Conf->redirect_self($Qreq); // normally does not return
-        }
-    }
-    review_load();
-    $tf->report();
-    $paperTable->set_review_values($tf);
-} else if ($Qreq->has_annex("after_login")) {
-    $tf = new ReviewValues($rf);
-    $tf->parse_web($Qreq, $Qreq->override);
-    $paperTable->set_review_values($tf);
-}
-
-
-// adopt review action
-if (isset($Qreq->adoptreview)
-    && $Qreq->valid_post()
-    && $paperTable->editrrow
-    && $Me->can_approve_review($prow, $paperTable->editrrow)) {
-    $tf = new ReviewValues($rf);
-    $tf->paperId = $prow->paperId;
-    $my_rrow = $prow->review_by_user($Me);
-    if (($whyNot = $Me->perm_submit_review($prow, $my_rrow))) {
-        $tf->msg_at(null, $whyNot->unparse_html(), MessageSet::ERROR);
-    } else if ($tf->parse_web($Qreq, $Qreq->override)) {
-        $tf->set_ready($Qreq->adoptsubmit);
-        if ($tf->check_and_save($Me, $prow, $my_rrow)
-            && !$tf->has_problem_at("ready")) {
-            $tf->report();
-
-            // mark the review as approved
-            $tfx = new ReviewValues($rf);
-            $tfx->set_adopt();
-            $tfx->check_and_save($Me, $prow, $paperTable->editrrow);
-        }
-    }
-    if (($my_rrow = $prow->fresh_review_by_user($Me))) {
-        $Qreq->r = $my_rrow->reviewId;
-    }
-    $Conf->redirect_self($Qreq); // normally does not return
-}
-
-
-// delete review action
-if (isset($Qreq->deletereview)
-    && $Qreq->valid_post()
-    && $Me->can_administer($prow)) {
-    if (!$paperTable->editrrow) {
-        Conf::msg_error("No review to delete.");
-    } else {
-        $result = $Conf->qe("delete from PaperReview where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
-        if (!Dbl::is_error($result) && $result->affected_rows) {
-            $Me->log_activity_for($paperTable->editrrow->contactId, "Review {$paperTable->editrrow->reviewId} deleted", $prow);
-            $Conf->confirmMsg("Deleted review.");
-            $Conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $prow->paperId, $paperTable->editrrow->reviewId);
-            if ($paperTable->editrrow->reviewToken !== 0) {
-                $Conf->update_rev_tokens_setting(-1);
+    function load_prow() {
+        // determine whether request names a paper
+        try {
+            $pr = new PaperRequest($this->user, $this->qreq, true);
+            $this->prow = $pr->prow;
+            if ($pr->rrow) {
+                $this->rrow = $pr->rrow;
+                $this->rrow_explicit = true;
+            } else {
+                $this->rrow = $this->my_rrow($this->qreq->m === "rea");
+                $this->rrow_explicit = false;
             }
-            if ($paperTable->editrrow->reviewType == REVIEW_META) {
-                $Conf->update_metareviews_setting(-1);
+        } catch (Redirection $redir) {
+            assert(PaperRequest::simple_qreq($this->qreq));
+            $this->conf->redirect($redir->url);
+        } catch (PermissionProblem $perm) {
+            $this->error_exit($perm->set("listViewable", true)->unparse_html());
+        }
+    }
+
+    /** @return ?ReviewInfo */
+    function my_rrow($prefer_approvable) {
+        $myrrow = $apprrow1 = $apprrow2 = null;
+        $admin = $this->user->can_administer($this->prow);
+        foreach ($this->prow->reviews_as_display() as $rrow) {
+            if ($this->user->can_view_review($this->prow, $rrow)) {
+                if ($rrow->contactId === $this->user->contactId
+                    || (!$myrrow && $this->user->is_my_review($rrow))) {
+                    $myrrow = $rrow;
+                } else if ($rrow->reviewStatus === ReviewInfo::RS_DELIVERED
+                           && !$apprrow1
+                           && $rrow->requestedBy === $this->user->contactXid) {
+                    $apprrow1 = $rrow;
+                } else if ($rrow->reviewStatus === ReviewInfo::RS_DELIVERED
+                           && !$apprrow2
+                           && $admin) {
+                    $apprrow2 = $rrow;
+                }
+            }
+        }
+        if (($apprrow1 || $apprrow2)
+            && ($prefer_approvable || !$myrrow)) {
+            return $apprrow1 ?? $apprrow2;
+        } else {
+            return $myrrow;
+        }
+    }
+
+    function reload_prow() {
+        $this->prow->load_reviews(true);
+        if ($this->rrow) {
+            $this->rrow = $this->prow->review_by_id($this->rrow->reviewId);
+        } else {
+            $this->rrow = $this->prow->review_by_ordinal_id($this->qreq->reviewId);
+        }
+    }
+
+    function handle_cancel() {
+        $this->conf->redirect($this->prow->hoturl());
+    }
+
+    function handle_update() {
+        // do not unsubmit submitted review
+        if ($this->rrow && $this->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
+            $this->qreq->ready = 1;
+        }
+
+        $rv = new ReviewValues($this->rf());
+        $rv->paperId = $this->prow->paperId;
+        if (($whynot = $this->user->perm_submit_review($this->prow, $this->rrow))) {
+            $rv->msg_at(null, $whynot->unparse_html(), MessageSet::ERROR);
+        } else if ($rv->parse_web($this->qreq, $this->qreq->override)) {
+            if (isset($this->qreq->approvesubreview)
+                && $this->rrow
+                && $this->user->can_approve_review($this->prow, $this->rrow)) {
+                $rv->set_adopt();
+            }
+            if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
+                $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
+            }
+        }
+        $rv->report();
+        if (!$rv->has_error() && !$rv->has_problem_at("ready")) {
+            $this->conf->redirect_self($this->qreq);
+        }
+        $this->rv = $rv;
+        $this->reload_prow();
+    }
+
+    function handle_upload_form() {
+        if (!$this->qreq->has_file("uploadedFile")) {
+            Conf::msg_error("Select a review form to upload.");
+            return;
+        }
+        $rv = ReviewValues::make_text($this->rf(),
+                $this->qreq->file_contents("uploadedFile"),
+                $this->qreq->file_filename("uploadedFile"));
+        if ($rv->parse_text($this->qreq->override)
+            && $rv->check_and_save($this->user, $this->prow, $this->rrow)) {
+            $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
+        }
+        if (!$rv->has_error() && $rv->parse_text($this->qreq->override)) {
+            $rv->msg_at(null, "Only the first review form in the file was parsed. " . Ht::link("Upload multiple-review files here.", $this->conf->hoturl("offline")), MessageSet::WARNING);
+        }
+        $rv->report();
+        if (!$rv->has_error()) {
+            $this->conf->redirect_self($this->qreq);
+        }
+        $this->reload_prow();
+    }
+
+    function handle_download_form() {
+        $filename = "review-" . ($this->rrow ? $this->rrow->unparse_ordinal_id() : $this->prow->paperId);
+        $rf = $this->rf();
+        $this->conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
+            ->set_inline(false)
+            ->add_string($rf->text_form_header(false)
+                         . $rf->text_form($this->prow, $this->rrow, $this->user, null))
+            ->emit();
+        exit;
+    }
+
+    function handle_download_text() {
+        $rf = $this->rf();
+        if ($this->rrow) {
+            $this->conf->make_csvg("review-" . $this->rrow->unparse_ordinal_id(), CsvGenerator::TYPE_STRING)
+                ->add_string($rf->unparse_text($this->prow, $this->rrow, $this->user))
+                ->emit();
+        } else {
+            $lastrc = null;
+            $texts = [
+                "{$this->conf->short_name} Paper #{$this->prow->paperId} Reviews and Comments\n",
+                str_repeat("=", 75) . "\n",
+                prefix_word_wrap("", "Paper #{$this->prow->paperId} {$this->prow->title}", 0, 75),
+                "\n\n"
+            ];
+            foreach ($this->prow->viewable_submitted_reviews_and_comments($this->user) as $rc) {
+                $texts[] = PaperInfo::review_or_comment_text_separator($lastrc, $rc);
+                if (isset($rc->reviewId)) {
+                    $texts[] = $rf->unparse_text($this->prow, $rc, $this->user, ReviewForm::UNPARSE_NO_TITLE);
+                } else {
+                    $texts[] = $rc->unparse_text($this->user, ReviewForm::UNPARSE_NO_TITLE);
+                }
+                $lastrc = $rc;
+            }
+            if (!$lastrc) {
+                $texts[] = "Nothing to show.\n";
+            }
+            $this->conf->make_csvg("reviews-{$this->prow->paperId}", CsvGenerator::TYPE_STRING)
+                ->append_strings($texts)
+                ->emit();
+        }
+        exit;
+    }
+
+    function handle_adopt() {
+        if (!$this->rrow || !$this->rrow_explicit) {
+            Conf::msg_error("Missing review to delete.");
+            return;
+        } else if (!$this->user->can_approve_review($this->prow, $this->rrow)) {
+            return;
+        }
+
+        $rv = new ReviewValues($this->rf());
+        $rv->paperId = $this->prow->paperId;
+        $my_rrow = $this->prow->review_by_user($this->user);
+        $my_rid = ($my_rrow ?? $this->rrow)->unparse_ordinal_id();
+        if (($whynot = $this->user->perm_submit_review($this->prow, $my_rrow))) {
+            $rv->msg_at(null, $whynot->unparse_html(), MessageSet::ERROR);
+        } else if ($rv->parse_web($this->qreq, $this->qreq->override)) {
+            $rv->set_ready($this->qreq->adoptsubmit);
+            if ($rv->check_and_save($this->user, $this->prow, $my_rrow)) {
+                $my_rid = $rv->review_ordinal_id;
+                if (!$rv->has_problem_at("ready")) {
+                    // mark the source review as approved
+                    $rvx = new ReviewValues($this->rf());
+                    $rvx->set_adopt();
+                    $rvx->check_and_save($this->user, $this->prow, $this->rrow);
+                }
+            }
+        }
+        $rv->report();
+        $this->conf->redirect_self($this->qreq, ["r" => $my_rid]);
+    }
+
+    function handle_delete() {
+        if (!$this->rrow || !$this->rrow_explicit) {
+            Conf::msg_error("Missing review to delete.");
+            return;
+        } else if (!$this->user->can_administer($this->prow)) {
+            return;
+        }
+        $result = $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?", $this->prow->paperId, $this->rrow->reviewId);
+        if ($result->affected_rows) {
+            $this->user->log_activity_for($this->rrow->contactId, "Review {$this->rrow->reviewId} deleted", $this->prow);
+            $this->conf->confirmMsg("Deleted review.");
+            $this->conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $this->prow->paperId, $this->rrow->reviewId);
+            if ($this->rrow->reviewToken !== 0) {
+                $this->conf->update_rev_tokens_setting(-1);
+            }
+            if ($this->rrow->reviewType == REVIEW_META) {
+                $this->conf->update_metareviews_setting(-1);
             }
 
             // perhaps a delegatee needs to redelegate
-            if ($paperTable->editrrow->reviewType < REVIEW_SECONDARY
-                && $paperTable->editrrow->requestedBy > 0) {
-                $Me->update_review_delegation($paperTable->editrrow->paperId, $paperTable->editrrow->requestedBy, -1);
+            if ($this->rrow->reviewType < REVIEW_SECONDARY
+                && $this->rrow->requestedBy > 0) {
+                $this->user->update_review_delegation($this->prow->paperId, $this->rrow->requestedBy, -1);
             }
-
-            unset($Qreq->r, $Qreq->reviewId);
-            $Qreq->paperId = $Qreq->p = $paperTable->editrrow->paperId;
-            $Conf->redirect_hoturl("paper", ["p" => $Qreq->paperId]);
         }
-        $Conf->redirect_self($Qreq);         // normally does not return
-        review_load();
+        $this->conf->redirect_self($this->qreq, ["r" => null, "reviewId" => null]);
     }
-}
 
-
-// download review form action
-function downloadForm($qreq) {
-    global $rf, $Conf, $Me, $prow, $paperTable;
-    $rrow = $paperTable->rrow;
-    $use_request = (!$rrow || $rrow->contactId == $Me->contactId)
-        && $prow->review_type($Me) > 0;
-    $filename = "review-{$prow->paperId}";
-    if ($rrow && $rrow->reviewOrdinal) {
-        $filename .= unparse_latin_ordinal($rrow->reviewOrdinal);
-    }
-    $Conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
-        ->set_inline(false)
-        ->add_string($rf->text_form_header(false) . $rf->text_form($prow, $rrow, $Me, $use_request ? $qreq : null))
-        ->emit();
-    exit;
-}
-
-if (isset($Qreq->downloadForm)) {
-    downloadForm($Qreq);
-}
-
-
-function download_all_text_reviews() {
-    global $rf, $Conf, $Me, $prow, $paperTable;
-    $lastrc = null;
-    $text = "";
-    foreach ($prow->viewable_submitted_reviews_and_comments($Me) as $rc) {
-        $text .= PaperInfo::review_or_comment_text_separator($lastrc, $rc);
-        if (isset($rc->reviewId)) {
-            $text .= $rf->unparse_text($prow, $rc, $Me, ReviewForm::UNPARSE_NO_TITLE);
-        } else {
-            $text .= $rc->unparse_text($Me, ReviewForm::UNPARSE_NO_TITLE);
-        }
-        $lastrc = $rc;
-    }
-    if ($text === "") {
-        $whyNot = $Me->perm_view_review($prow, null) ? : $prow->make_whynot();
-        return Conf::msg_error($whyNot->unparse_html());
-    }
-    $Conf->make_csvg("reviews-{$prow->paperId}", CsvGenerator::TYPE_STRING)
-        ->add_string($Conf->short_name . " Paper #{$prow->paperId} Reviews and Comments\n"
-            . str_repeat("=", 75) . "\n"
-            . prefix_word_wrap("", "Paper #{$prow->paperId} {$prow->title}", 0, 75)
-            . "\n\n" . $text)
-        ->emit();
-    exit;
-}
-
-function download_one_text_review(ReviewInfo $rrow) {
-    global $rf, $Conf, $Me, $prow, $paperTable;
-    $filename = "review-{$prow->paperId}";
-    if ($rrow->reviewOrdinal) {
-        $filename .= unparse_latin_ordinal($rrow->reviewOrdinal);
-    }
-    $Conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
-        ->add_string($rf->unparse_text($prow, $rrow, $Me))
-        ->emit();
-    exit;
-}
-
-if (isset($Qreq->text)) {
-    if ($paperTable->rrow) {
-        download_one_text_review($paperTable->rrow);
-    } else {
-        download_all_text_reviews();
-    }
-}
-
-
-// retract review request
-if ((isset($Qreq->refuse) || isset($Qreq->decline))
-    && ($Qreq->valid_post()
-        || ($Me->capability("@ra" . $prow->paperId) && !$Qreq->is_head()))) {
-    $decline_email = null;
-    if ($paperTable->editrrow) {
-        $Qreq->email = $decline_email = $paperTable->editrrow->email;
-    } else if (($ra_cid = $Me->capability("@ra" . $prow->paperId))
-               && ($ra_user = $Conf->cached_user_by_id($ra_cid))) {
-        $Qreq->email = $decline_email = $ra_user->email;
-    }
-    $result = RequestReview_API::declinereview($Me, $Qreq, $prow);
-    $result = JsonResult::make($result);
-    if ($result->content["ok"]) {
-        if (($Qreq->refuse === "1" || $Qreq->decline === "1")
-            && $decline_email
-            && !isset($Qreq->reason)) {
-            $Conf->confirmMsg("<p>Thank you for telling us that you cannot complete your review. If you’d like, you may enter a brief explanation here.</p>"
-                . Ht::form($Conf->hoturl_post("api/declinereview", ["p" => $prow->paperId, "email" => $decline_email, "redirect" => $Conf->hoturl_site_relative_raw("index")]))
-                . Ht::textarea("reason", $result->content["reason"], ["rows" => 3, "cols" => 40, "spellcheck" => true])
-                . '<hr class="c">'
-                . Ht::submit("Update explanation", ["class" => "btn-primary"])
-                . '</form>');
-        } else {
-            $Conf->confirmMsg("Review declined. Thank you for telling us that you cannot complete your review.");
-            unset($Qreq->email, $Qreq->firstName, $Qreq->lastName, $Qreq->affiliation, $Qreq->round, $Qreq->reason, $Qreq->override, $Qreq->retract);
-            $Conf->redirect_self($Qreq);
-        }
-    } else {
-        $result->export_errors();
-    }
-    review_load();
-}
-
-if (isset($Qreq->accept)
-    && ($Qreq->valid_post()
-        || ($Me->capability("@ra" . $prow->paperId) && !$Qreq->is_head()))) {
-    $rrow = $paperTable->editrrow;
-    if (!$rrow
-        || (!$Me->is_my_review($rrow) && !$Me->can_administer($prow))) {
-        Conf::msg_error("This review was not assigned to you, so you cannot confirm your intention to write it.");
-    } else {
-        if ($rrow->reviewStatus < ReviewInfo::RS_ACCEPTED) {
-            Dbl::qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
-                where paperId=? and reviewId=? and reviewModified<=0",
-                Conf::$now, $prow->paperId, $rrow->reviewId);
-            if ($Me->is_signed_in()) {
-                $rrow->delete_acceptor();
+    function handle_unsubmit() {
+        if ($this->rrow
+            && $this->rrow->reviewStatus >= ReviewInfo::RS_DELIVERED
+            && $this->user->can_administer($this->prow)) {
+            $result = $this->user->unsubmit_review_row($this->rrow);
+            if ($result->affected_rows) {
+                $this->user->log_activity_for($this->rrow->contactId, "Review {$this->rrow->reviewId} unsubmitted", $this->prow);
+                $this->conf->confirmMsg("Unsubmitted review.");
             }
-            $Me->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} accepted", $prow);
+            $this->conf->redirect_self($this->qreq);
         }
-        $Conf->confirmMsg("Thank you for confirming your intention to finish this review. You can download the paper and review form below.");
-        $Conf->redirect_self($Qreq);
-        review_load();
+    }
+
+    /** @return ?int */
+    function current_capability_rrid() {
+        if (($capuid = $this->user->capability("@ra{$this->prow->paperId}"))) {
+            $u = $this->conf->cached_user_by_id($capuid);
+            $rrow = $this->prow->review_by_user($capuid);
+            $refs = $u ? $this->prow->review_refusals_by_user($u) : [];
+            if ($rrow && (!$this->rrow || $this->rrow === $rrow)) {
+                return $rrow->reviewId;
+            } else if (!$rrow && !empty($refs) && $refs[0]->refusedReviewId > 0) {
+                return $refs[0]->refusedReviewId;
+            }
+        }
+        return null;
+    }
+
+    function handle_accept_decline_redirect($capuid) {
+        if (!$this->qreq->is_get()
+            || !($rrid = $this->current_capability_rrid())) {
+            return;
+        }
+        $isaccept = $this->qreq->accept;
+        echo "<!DOCTYPE html><html lang=\"en\"><head>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
+<meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
+<title>Redirection</title>
+<body>\n",
+            Ht::form($this->conf->hoturl_post("api/" . ($isaccept ? "acceptreview" : "declinereview"), ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1]), ["id" => "redirectform"]),
+            Ht::submit("Press to continue"),
+            "</form>",
+            Ht::script("document.getElementById('redirectform').submit()"),
+            "</body></html>";
+        exit;
+    }
+
+    function render_decline_message($capuid) {
+        $ref = $this->prow->review_refusals_by_user_id($capuid);
+        if ($ref && $ref[0] && $ref[0]->refusedReviewId) {
+            $rrid = $ref[0]->refusedReviewId;
+            $this->conf->msg(
+                "<p>You declined to complete this review. Thank you for informing us.</p>"
+                . Ht::form($this->conf->hoturl_post("api/declinereview", ["p" => $this->prow->paperId, "r" => $rrid, "redirect" => 1]))
+                . '<div class="f-i mt-3"><label for="declinereason">Optional explanation</label>'
+                . ($ref[0]->reason ? "" : '<div class="field-d">If you’d like, you may enter a brief explanation here.</div>')
+                . Ht::textarea("reason", $ref[0]->reason, ["rows" => 3, "cols" => 40, "spellcheck" => true, "class" => "w-text", "id" => "declinereason"])
+                . '</div><div class="aab mt-3">'
+                . '<div class="aabut">' . Ht::submit("Update explanation", ["class" => "btn-primary"])
+                . '</div><div class="aabut">' . Ht::submit("Accept review", ["formaction" => $this->conf->hoturl_post("api/acceptreview", ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1])])
+                . '</div></div></form>', 1);
+        } else {
+            $this->conf->msg("<p>You have declined to complete this review. Thank you for informing us.</p>", 1);
+        }
+    }
+
+    function render() {
+        $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
+        $pt->resolve_review($this->rrow);
+
+        // mode
+        $pt->fix_mode();
+        if ($this->rv) {
+            $pt->set_review_values($this->rv);
+        } else if ($this->qreq->has_annex("after_login")) {
+            $rv = new ReviewValues($this->rf());
+            $rv->parse_web($this->qreq, $this->qreq->override);
+            $pt->set_review_values($rv);
+        }
+
+        // paper table
+        $this->header();
+
+        $pt->initialize(false, false);
+        $pt->paptabBegin();
+        $pt->resolve_comments();
+
+        if (!$this->rrow
+            && !$this->user->can_view_review($this->prow, null)
+            && !$this->user->can_edit_review($this->prow, null)) {
+            $pt->paptabEndWithReviewMessage();
+        } else {
+            if ($pt->mode === "re") {
+                $pt->paptabEndWithEditableReview();
+                $pt->paptabComments();
+            } else {
+                $pt->paptabEndWithReviewsAndComments();
+            }
+        }
+
+        echo "</article>\n";
+        $this->conf->footer();
+    }
+
+    static function go(Contact $user, Qrequest $qreq) {
+        // fix request
+        if (!isset($qreq->m) && isset($qreq->mode)) {
+            $qreq->m = $qreq->mode;
+        }
+        if ($qreq->post && $qreq->default) {
+            if ($qreq->has_file("uploadedFile")) {
+                $qreq->uploadForm = 1;
+            } else {
+                $qreq->update = 1;
+            }
+        } else if ($qreq->submitreview) {
+            $qreq->update = $qreq->ready = 1;
+        } else if ($qreq->savedraft) {
+            $qreq->update = 1;
+            unset($qreq->ready);
+        }
+
+        $pp = new ReviewPage($user, $qreq);
+        $pp->load_prow();
+
+        // fix user
+        $user->add_overrides(Contact::OVERRIDE_CHECK_TIME);
+        $capuid = $user->capability("@ra{$pp->prow->paperId}");
+
+        // action
+        if ($qreq->cancel) {
+            $pp->handle_cancel();
+        } else if ($qreq->update && $qreq->valid_post()) {
+            $pp->handle_update();
+        } else if ($qreq->adoptreview && $qreq->valid_post()) {
+            $pp->handle_adopt();
+        } else if ($qreq->uploadForm && $qreq->valid_post()) {
+            $pp->handle_upload_form();
+        } else if ($qreq->downloadForm) {
+            $pp->handle_download_form();
+        } else if ($qreq->text) {
+            $pp->handle_download_text();
+        } else if ($qreq->unsubmitreview && $qreq->valid_post()) {
+            $pp->handle_unsubmit();
+        } else if ($qreq->deletereview && $qreq->valid_post()) {
+            $pp->handle_delete();
+        } else if (($qreq->accept || $qreq->decline) && $capuid) {
+            $pp->handle_accept_decline_redirect($capuid);
+        }
+
+        // decline review message
+        if (!$pp->rrow
+            && $capuid
+            && $pp->prow->review_refusals_by_user_id($capuid)) {
+            $pp->render_decline_message($capuid);
+        }
+
+        $pp->render();
     }
 }
 
-
-// can we view/edit reviews?
-$viewAny = $Me->can_view_review($prow, null);
-$editAny = $Me->can_edit_review($prow, null);
-
-
-// can we see any reviews?
-if (!$viewAny && !$editAny) {
-    if (($whyNotPaper = $Me->perm_view_paper($prow))) {
-        review_error($whyNotPaper->set("listViewable", true)->unparse_html());
-    }
-    if (isset($Qreq->reviewId)) {
-        Conf::msg_error("You can’t see the reviews for this paper. "
-                        . $Me->perm_view_review($prow, null)->unparse_html());
-        $Conf->redirect_hoturl("paper", "p=$prow->paperId");
-    }
-}
-
-
-// mode
-$paperTable->fix_mode();
-if ($paperTable->mode == "edit") {
-    $Conf->redirect_hoturl("paper", ["p" => $prow->paperId]);
-}
-
-
-// paper table
-review_header();
-
-$paperTable->initialize(false, false);
-$paperTable->paptabBegin();
-$paperTable->resolve_comments();
-
-if (!$viewAny
-    && !$editAny
-    && (!$paperTable->rrow
-        || !$Me->can_view_review($prow, $paperTable->rrow))) {
-    $paperTable->paptabEndWithReviewMessage();
-} else {
-    if ($paperTable->mode === "re") {
-        $paperTable->paptabEndWithEditableReview();
-        $paperTable->paptabComments();
-    } else {
-        $paperTable->paptabEndWithReviewsAndComments();
-    }
-}
-
-echo "</article>\n";
-$Conf->footer();
+ReviewPage::go($Me, $Qreq);

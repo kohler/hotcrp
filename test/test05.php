@@ -868,7 +868,9 @@ xassert_eqq($paper3->option(3)->data(), "farm farm bark bark");
 // mail to authors does not include information that only reviewers can see
 // (this matters when an author is also a reviewer)
 MailChecker::clear();
-save_review(14, $user_estrin, ["overAllMerit" => 5, "revexp" => 1, "papsum" => "Summary 1", "comaut" => "Comments 1", "ready" => false]);
+$estrin_14_rrow = save_review(14, $user_estrin, ["overAllMerit" => 5, "revexp" => 1, "papsum" => "Summary 1", "comaut" => "Comments 1", "ready" => false]);
+xassert($estrin_14_rrow);
+$estrin_14_rid = $estrin_14_rrow->reviewId;
 save_review(14, $user_varghese, ["ovemer" => 5, "revexp" => 2, "papsum" => "Summary V", "comaut" => "Comments V", "compc" => "PC V", "ready" => true]);
 $paper14 = $user_estrin->checked_paper_by_id(14);
 HotCRPMailer::send_contacts("@rejectnotify", $paper14);
@@ -877,6 +879,25 @@ xassert_assign($Conf->root_user(), "action,paper,user\ncontact,14,varghese@ccrc.
 $paper14 = $user_estrin->checked_paper_by_id(14);
 HotCRPMailer::send_contacts("@rejectnotify", $paper14);
 MailChecker::check_db("test05-reject14-2");
+
+// paper table tests
+$pr = PaperRequest::make($user_estrin, (new Qrequest("GET", ["p" => "0123"]))->set_page("paper"), false);
+xassert($pr instanceof Redirection);
+xassert_eqq($pr->url, "http://hotcrp.lcdf.org/test/paper/123");
+$pr = PaperRequest::make($user_estrin, (new Qrequest("GET", ["p" => "0123"]))->set_page("review"), false);
+xassert($pr instanceof Redirection);
+xassert_eqq($pr->url, "http://hotcrp.lcdf.org/test/review/123");
+$pr = PaperRequest::make($user_estrin, (new Qrequest("GET", ["p" => "3"]))->set_page("paper"), false);
+xassert($pr instanceof PaperRequest);
+$pr = PaperRequest::make($user_estrin, (new Qrequest("GET", ["r" => (string) $estrin_14_rid]))->set_page("paper"), false);
+xassert($pr instanceof Redirection);
+xassert_eqq($pr->url, "http://hotcrp.lcdf.org/test/paper/14?r={$estrin_14_rid}");
+$pr = PaperRequest::make($user_varghese, (new Qrequest("GET", ["r" => (string) $estrin_14_rid]))->set_page("paper"), false);
+xassert($pr instanceof Redirection);
+xassert_eqq($pr->url, "http://hotcrp.lcdf.org/test/paper/14?r={$estrin_14_rid}");
+$pr = PaperRequest::make($user_nobody, (new Qrequest("GET", ["r" => (string) $estrin_14_rid]))->set_page("paper"), false);
+xassert($pr instanceof PermissionProblem);
+xassert($pr["missingId"]);
 
 ConfInvariants::test_all($Conf);
 

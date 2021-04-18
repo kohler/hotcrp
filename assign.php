@@ -3,7 +3,6 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 require_once("src/initweb.php");
-require_once("src/papertable.php");
 if (!$Me->email) {
     $Me->escape();
 }
@@ -21,21 +20,23 @@ function assign_show_header() {
 // grab paper row
 /** @return PaperInfo */
 function assign_load() {
-    global $Conf, $Me, $Qreq;
-    PaperTable::clean_request($Qreq, false);
-    $prow = PaperTable::fetch_paper_request($Qreq, $Me);
-    if ($prow === null) {
+    global $Conf, $Me, $Qreq, $paperTable;
+    try {
+        $pr = new PaperRequest($Me, $Qreq, true);
+        $prow = $pr->prow;
+        if (($whynot = $Me->perm_request_review($prow, null, false))) {
+            $paperTable = new PaperTable($Me, $Qreq, $prow, "assign");
+            throw $whynot;
+        }
+        return $prow;
+    } catch (Redirection $redir) {
+        assert(PaperRequest::simple_qreq($Qreq));
+        $Conf->redirect($redir->url);
+    } catch (PermissionProblem $perm) {
         assign_show_header();
-        $whynot = $Qreq->checked_annex("paper_whynot", "PermissionProblem");
-        Conf::msg_error($whynot->set("listViewable", true)->unparse_html());
+        Conf::msg_error($perm->unparse_html());
         $Conf->footer();
         exit;
-    } else if (($whynot = $Me->perm_request_review($prow, null, false))) {
-        Conf::msg_error($whynot->unparse_html());
-        $Conf->redirect($prow->hoturl());
-        exit;
-    } else {
-        return $prow;
     }
 }
 $prow = assign_load();

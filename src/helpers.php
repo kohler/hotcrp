@@ -175,6 +175,16 @@ class JsonResultException extends Exception {
     }
 }
 
+class Redirection extends Exception {
+    /** @var string */
+    public $url;
+    /** @param string $url */
+    function __construct($url) {
+        parent::__construct("Redirect to $url");
+        $this->url = $url;
+    }
+}
+
 function json_exit($json, $arg2 = null) {
     global $Qreq;
     $json = JsonResult::make($json, $arg2);

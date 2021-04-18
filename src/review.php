@@ -1073,20 +1073,17 @@ $blind\n";
             && $rrow->reviewStatus === 0
             && $rrow->reviewType < REVIEW_SECONDARY
             && ($user->is_my_review($rrow) || $user->can_administer($prow))) {
-            $buttons = [];
-            $buttons[] = Ht::button("Decline", ["class" => "btn-danger ui js-decline-review"]);
-            $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn-success"]);
-            // Also see $qreq->refuse case in review.php.
             if ($rrow->requestedBy
                 && ($requester = $this->conf->cached_user_by_id($rrow->requestedBy))) {
                 $req = 'Please take a moment to accept or decline ' . Text::nameo_h($requester, NAME_P) . '’s review request.';
             } else {
                 $req = 'Please take a moment to accept or decline our review request.';
             }
-            echo '<div class="revcard-bodyinsert demargin remargin">',
-                Ht::actions($buttons, ["class" => "aab aabr aabig mt-0"],
-                            '<div style="padding-top:5px">' . $req . '</div>'),
-                "</div>\n";
+            echo '<div class="revcard-bodyinsert demargin remargin"><div class="aab aabr aabig mt-0">',
+                '<div class="flex-grow-1 pt-2">', $req, '</div>',
+                '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger", "formaction" => $this->conf->hoturl_post("api/declinereview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>',
+                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success", "formaction" => $this->conf->hoturl_post("api/acceptreview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "verbose" => 1, "redirect" => 1])]), '</div>',
+                '</div></div>';
         }
     }
 

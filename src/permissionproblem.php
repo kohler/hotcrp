@@ -2,13 +2,15 @@
 // permissionproblem.php -- HotCRP helper class for permission errors
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
+class PermissionProblem extends Exception
+    implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
     /** @var Conf */
     public $conf;
     /** @var array<string,mixed> */
     private $_a;
     /** @param ?array<string,mixed> $a */
     function __construct(Conf $conf, $a = null) {
+        parent::__construct("HotCRP permission problem");
         $this->conf = $conf;
         $this->_a = $a ?? [];
     }
@@ -94,12 +96,18 @@ class PermissionProblem implements ArrayAccess, IteratorAggregate, Countable, Js
             $this->_a["option_title"]  =  $quote($option->title());
         }
         if (isset($this->_a["invalidId"])) {
-            $x = $this->_a["invalidId"] . "Id";
-            if (isset($this->_a[$x])) {
-                $ms[] = $this->conf->_("Invalid " . $this->_a["invalidId"] . " number “%s”.", $quote($this->_a[$x]));
+            $id = $this->_a["invalidId"];
+            $idname = $id === "paper" ? "submission" : $id;
+            if (isset($this->_a["{$id}Id"])) {
+                $ms[] = $this->conf->_("Invalid {$idname} ID “%s”.", $quote($this->_a["{$id}Id"]));
             } else {
-                $ms[] = $this->conf->_("Invalid " . $this->_a["invalidId"] . " number.");
+                $ms[] = $this->conf->_("Invalid {$idname} ID.");
             }
+        }
+        if (isset($this->_a["missingId"])) {
+            $id = $this->_a["missingId"];
+            $idname = $id === "paper" ? "submission" : $id;
+            $ms[] = $this->conf->_("Missing {$idname} ID.");
         }
         if (isset($this->_a["noPaper"])) {
             $ms[] = $this->conf->_("Submission #%d does not exist.", $paperId);

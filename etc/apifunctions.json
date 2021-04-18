@@ -22,6 +22,10 @@
         "function": "Comment_API::run"
     },
     {
+        "name": "acceptreview", "post": true, "redirect": true,
+        "function": "RequestReview_API::acceptreview"
+    },
+    {
         "name": "declinereview", "post": true, "redirect": true,
         "function": "RequestReview_API::declinereview"
     },

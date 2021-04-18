@@ -383,7 +383,7 @@ class Ht {
             . '>' . htmlspecialchars($value) . '</textarea>';
     }
 
-    static function actions($actions, $js = array(), $extra_text = "") {
+    static function actions($actions, $js = []) {
         if (empty($actions)) {
             return "";
         }
@@ -409,7 +409,7 @@ class Ht {
                 $t .= '</div>';
             }
         }
-        return $t . $extra_text . "</div>\n";
+        return $t . "</div>\n";
     }
 
     /** @param string|list<string> $html
