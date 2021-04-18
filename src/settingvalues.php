@@ -1149,7 +1149,7 @@ class SettingValues extends MessageSet {
         }
         echo '">';
         if ($heading) {
-            echo '<p class="settings-itemheading">', $heading, '</p>';
+            echo '<div class="settings-itemheading">', $heading, '</div>';
         }
         foreach ($varr as $k => $item) {
             if (is_string($item)) {
