@@ -328,6 +328,34 @@ class ReviewPage {
         }
     }
 
+    function render_accept_other_message($capuid) {
+        if (($u = $this->conf->cached_user_by_id($capuid))) {
+            if (PaperRequest::simple_qreq($this->qreq)
+                && ($i = $this->user->session_user_index($u->email)) >= 0) {
+                $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITE_RELATIVE);
+                $this->conf->transfer_messages_to_session();
+                Navigation::redirect_base("u/$i/$selfurl");
+            } else if ($this->user->has_email()) {
+                $mx = 'This review is assigned to ' . htmlspecialchars($u->email) . ', while you are signed in as ' . htmlspecialchars($this->user->email) . '. You can edit the review anyway since you accessed it using a special link.';
+                if ($this->rrow->reviewStatus <= ReviewInfo::RS_DRAFTED) {
+                    $m = Ht::form($this->conf->hoturl_post("api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "redirect" => 1]), ["class" => "has-fold foldc"])
+                        . "<p class=\"mb-0\">$mx Alternately, you can <a href=\"\" class=\"ui js-foldup\">reassign it to this account</a>.</p>"
+                        . '<div class="aab mt-3 fx">';
+                    foreach ($this->user->session_users() as $e) {
+                        $m .= '<div class="aabut">' . Ht::submit("Reassign to " . htmlspecialchars($e), ["name" => "email", "value" => $e]) . '</div>';
+                    }
+                    $m .= '</div></div></form>';
+                } else {
+                    $m = "<p>{$mx}</p>";
+                }
+                $this->conf->msg($m, 1);
+            } else {
+                $this->conf->msg(
+                    '<p>This review is assigned to ' . htmlspecialchars($u->email) . '. You can edit the review since you accessed it using a special link.</p>', 1);
+            }
+        }
+    }
+
     function render() {
         $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
         $pt->resolve_review($this->rrow);
@@ -412,11 +440,16 @@ class ReviewPage {
             $pp->handle_accept_decline_redirect($capuid);
         }
 
-        // decline review message
-        if (!$pp->rrow
-            && $capuid
-            && $pp->prow->review_refusals_by_user_id($capuid)) {
-            $pp->render_decline_message($capuid);
+        // capability messages: decline, accept to different user
+        if ($capuid) {
+            if (!$pp->rrow
+                && $pp->prow->review_refusals_by_user_id($capuid)) {
+                $pp->render_decline_message($capuid);
+            } else if ($pp->rrow
+                       && $capuid === $pp->rrow->contactId
+                       && $capuid !== $user->contactXid) {
+                $pp->render_accept_other_message($capuid);
+            }
         }
 
         $pp->render();

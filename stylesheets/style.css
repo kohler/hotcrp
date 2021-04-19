@@ -650,7 +650,7 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .msg + .msg {
 	margin-top: -0.5rem;
 }
-.msg > div, .msg > p {
+.msg > div, .msg > p, .msg > form {
 	max-width: 800px;
 }
 .msg > p {

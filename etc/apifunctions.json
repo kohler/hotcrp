@@ -10,8 +10,16 @@
         "name": "manager", "alias": "administrator"
     },
     {
+        "name": "acceptreview", "post": true, "redirect": true,
+        "function": "RequestReview_API::acceptreview"
+    },
+    {
         "name": "alltags", "get": true,
         "function": "AllTags_API::run"
+    },
+    {
+        "name": "claimreview", "paper": true, "post": true, "redirect": true,
+        "function": "RequestReview_API::claimreview"
     },
     {
         "name": "clickthrough", "post": true,
@@ -20,10 +28,6 @@
     {
         "name": "comment", "paper": true, "get": true, "post": true,
         "function": "Comment_API::run"
-    },
-    {
-        "name": "acceptreview", "post": true, "redirect": true,
-        "function": "RequestReview_API::acceptreview"
     },
     {
         "name": "declinereview", "post": true, "redirect": true,

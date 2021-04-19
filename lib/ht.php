@@ -619,23 +619,24 @@ class Ht {
         if ($status === "merror") {
             $status = "error";
         }
-        if (is_array($msg)) {
-            $msg = join("", array_map(function ($x) {
-                if (str_starts_with($x, "<p") || str_starts_with($x, "<div")) {
-                    return $x;
+        $mx = "";
+        foreach (is_array($msg) ? $msg : [$msg] as $x) {
+            if ($x !== "") {
+                if ($x[0] === "<"
+                    && (str_starts_with($x, "<p")
+                        || str_starts_with($x, "<div")
+                        || str_starts_with($x, "<form"))) {
+                    $mx .= $x;
                 } else {
-                    return "<p>{$x}</p>";
+                    $mx .= "<p>{$x}</p>";
                 }
-            }, $msg));
-        } else if ($msg !== ""
-                   && !str_starts_with($msg, "<p")
-                   && !str_starts_with($msg, "<div")) {
-            $msg = "<p>{$msg}</p>";
+            }
         }
-        if ($msg === "") {
+        if ($mx !== "") {
+            return "<div class=\"msg msg-{$status}\">{$mx}</div>";
+        } else {
             return "";
         }
-        return '<div class="msg msg-' . $status . '">' . $msg . '</div>';
     }
 
 

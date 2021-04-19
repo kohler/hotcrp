@@ -30,7 +30,7 @@ class PaperRequest {
 
     static function simple_qreq(Qrequest $qreq) {
         return ($qreq->is_get() || $qreq->is_head())
-            && !array_diff($qreq->keys(), ["p", "paperId", "m", "mode", "forceShow", "go", "t", "q", "r", "reviewId", "cap", "actas"]);
+            && !array_diff($qreq->keys(), ["p", "paperId", "m", "mode", "forceShow", "t", "q", "r", "reviewId", "cap", "actas"]);
     }
 
     private function normalize(Conf $conf, Qrequest $qreq, $review) {

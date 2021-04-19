@@ -4970,7 +4970,11 @@ class Conf {
                     $this->msg($ma["message"], $ma["status"]);
                 }
             }
-            Navigation::redirect_site($qreq->redirect);
+            if (str_starts_with($qreq->redirect, "u/")) {
+                Navigation::redirect_base($qreq->redirect);
+            } else {
+                Navigation::redirect_site($qreq->redirect);
+            }
         } else {
             json_exit($j);
         }

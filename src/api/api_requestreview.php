@@ -302,7 +302,8 @@ class RequestReview_API {
             return self::error_result(400, "r", "Bad request.");
         }
         $r = intval($qreq->r);
-        if ($qreq->redirect === "1") {
+        $redirect_in = $qreq->redirect;
+        if ($redirect_in === "1") {
             $qreq->redirect = $prow->conf->hoturl_site_relative_raw("review", ["p" => $prow->paperId, "r" => $r]);
         }
 
@@ -370,6 +371,14 @@ class RequestReview_API {
                 ]);
             }
             $user->log_activity_for($rrow->contactId, "Review $rrow->reviewId declined", $prow);
+
+            // maybe add capability to URL; otherwise user will immediately be
+            // denied access
+            if ($user->contactXid === $rrow->contactId
+                && $redirect_in === "1"
+                && ($acceptor = $rrow->acceptor())) {
+                $qreq->redirect = $prow->conf->hoturl_site_relative_raw("review", ["p" => $prow->paperId, "r" => $r, "cap" => "ra{$rrow->reviewId}{$acceptor->text}"]);
+            }
         } else if (isset($qreq->reason)) {
             $prow->conf->qe("update PaperReviewRefused set reason=? where paperId=? and refusedReviewId=?", $reason, $prow->paperId, $rrid);
         } else {
@@ -377,6 +386,52 @@ class RequestReview_API {
         }
 
         return new JsonResult(["ok" => true, "action" => "decline", "reason" => $reason]);
+    }
+
+    /** @param Contact $user
+     * @param Qrequest $qreq
+     * @param PaperInfo $prow */
+    static function claimreview($user, $qreq, $prow) {
+        if (!ctype_digit($qreq->r)) {
+            return self::error_result(400, "r", "Bad request.");
+        }
+        $r = intval($qreq->r);
+        $redirect_in = $qreq->redirect;
+        if ($redirect_in === "1") {
+            $qreq->redirect = $prow->conf->hoturl_site_relative_raw("review", ["p" => $prow->paperId, "r" => $r]);
+        }
+
+        $rrow = $prow->review_by_id($r);
+        if (!$rrow) {
+            if ($user->can_administer($prow)
+                || $user->can_view_review($prow, null)) {
+                return self::error_result(404, "r", "No such review.");
+            } else {
+                return self::error_result(403, "r", "Permission error.");
+            }
+        } else if (!self::allow_accept_decline($user, $prow, $rrow)) {
+            return self::error_result(403, "r", "Permission error.");
+        } else if ($rrow->reviewStatus > ReviewInfo::RS_DRAFTED) {
+            return self::error_result(403, "r", "Reviews cannot be reassigned after submission.");
+        }
+
+        $email = $qreq->email;
+        if (!$email
+            || ($useridx = $user->session_user_index($email)) < 0
+            || !($destu = $user->conf->cached_user_by_email($email))) {
+            return self::error_result(403, "email", "Reassigning reviews is only possible for accounts you are currently signed into.");
+        }
+
+        $prow->conf->qe("update PaperReview set contactId=? where paperId=? and reviewId=? and contactId=? and reviewSubmitted is null and timeApprovalRequested<=0",
+            $destu->contactId, $prow->paperId, $rrow->reviewId, $rrow->contactId);
+        $oldu = $user->conf->cached_user_by_id($rrow->contactId);
+        $user->log_activity_for($destu->contactId, "Review {$rrow->reviewId} reassigned from " . ($oldu ? $oldu->email : "<user {$rrow->contactId}>"), $prow);
+
+        if ($redirect_in === "1"
+            && $destu->contactXid !== $user->contactXid) {
+            $qreq->redirect = "u/{$useridx}/{$qreq->redirect}";
+        }
+        return new JsonResult(["ok" => true, "action" => "claim"]);
     }
 
     /** @param Contact $user
