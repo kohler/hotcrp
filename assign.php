@@ -23,7 +23,7 @@ function assign_load() {
     global $Conf, $Me, $Qreq, $paperTable;
     try {
         $pr = new PaperRequest($Me, $Qreq, true);
-        $prow = $pr->prow;
+        $prow = $Conf->paper = $pr->prow;
         if (($whynot = $Me->perm_request_review($prow, null, false))) {
             $paperTable = new PaperTable($Me, $Qreq, $prow, "assign");
             throw $whynot;

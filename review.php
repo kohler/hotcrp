@@ -53,7 +53,7 @@ class ReviewPage {
         // determine whether request names a paper
         try {
             $pr = new PaperRequest($this->user, $this->qreq, true);
-            $this->prow = $pr->prow;
+            $this->prow = $this->conf->paper = $pr->prow;
             if ($pr->rrow) {
                 $this->rrow = $pr->rrow;
                 $this->rrow_explicit = true;

@@ -43,7 +43,7 @@ class PaperPage {
         // determine whether request names a paper
         try {
             $pr = new PaperRequest($this->user, $this->qreq, false);
-            $this->prow = $pr->prow;
+            $this->prow = $this->conf->paper = $pr->prow;
         } catch (Redirection $redir) {
             assert(PaperRequest::simple_qreq($this->qreq));
             $this->conf->redirect($redir->url);
