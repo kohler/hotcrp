@@ -606,6 +606,9 @@ class FormulaGraph extends MessageSet {
                     $xs = [$x];
                 }
                 if (!empty($xs)) {
+                    if (!isset($this->_scatter_data[$s])) {
+                        $this->_scatter_data[$s] = [];
+                    }
                     $sdata =& $this->_scatter_data[$s];
                     foreach ($xs as $xv) {
                         $sdata[] = new Scatter_GraphData($xv, $y, $id);
