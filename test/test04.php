@@ -327,7 +327,7 @@ xassert_eqq($u->affiliation, "France");
 $u = $Conf->user_by_email("betty5@_.com");
 xassert(!$u);
 $u = $Conf->contactdb_user_by_email("betty5@_.com");
-$u->activate_database_account();
+$u->ensure_account_here();
 $u = $Conf->checked_user_by_email("betty5@_.com");
 xassert($u->has_account_here());
 xassert_eqq($u->firstName, "Betty");

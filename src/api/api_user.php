@@ -79,7 +79,7 @@ class User_API {
             } else {
                 return new JsonResult(400, "No such user.");
             }
-            $dest_user->activate_database_account();
+            $dest_user->ensure_account_here();
             $dest_user->merge_and_save_data(["clickthrough" => [$hash => Conf::$now]]);
             $user->log_activity_for($dest_user, "Terms agreed " . substr($hash, 0, 10) . "...");
             return ["ok" => true];

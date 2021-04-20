@@ -417,9 +417,17 @@ class RequestReview_API {
 
         $email = $qreq->email;
         if (!$email
-            || ($useridx = $user->session_user_index($email)) < 0
-            || !($destu = $user->conf->cached_user_by_email($email))) {
-            return self::error_result(403, "email", "Reassigning reviews is only possible for accounts you are currently signed into.");
+            || ($useridx = $user->session_user_index($email)) < 0) {
+            return self::error_result(403, "email", "Reassigning reviews is only possible for accounts to which you are currently signed in.");
+        }
+
+        $destu = $user->conf->cached_user_by_email($email)
+            ?? $user->conf->contactdb_user_by_email($email);
+        if ($destu && !$destu->is_disabled()) {
+            $destu->ensure_account_here();
+        }
+        if (!$destu || $destu->is_disabled() || !$destu->has_account_here()) {
+            return self::error_result(403, "email", "That account is not enabled here.");
         }
 
         $prow->conf->qe("update PaperReview set contactId=? where paperId=? and reviewId=? and contactId=? and reviewSubmitted is null and timeApprovalRequested<=0",

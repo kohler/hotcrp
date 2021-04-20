@@ -701,7 +701,7 @@ class Contact {
                 $this->save_session("trueuser_author_check", Conf::$now);
                 $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
                 if (!empty($aupapers)) {
-                    $this->activate_database_account();
+                    $this->ensure_account_here();
                 }
             }
             if ($this->has_account_here()
@@ -772,15 +772,18 @@ class Contact {
         return $result;
     }
 
-    function activate_database_account() {
+    function ensure_account_here() {
         assert($this->has_email());
         if (!$this->has_account_here()
             && ($u = Contact::create($this->conf, null, $this))) {
-            $this->merge(get_object_vars($u));
             $this->contactDbId = 0;
-            $this->_contactdb_user = false;
-            $this->activate(null);
+            $this->merge(get_object_vars($u));
         }
+    }
+
+    /** @deprecated */
+    function activate_database_account() {
+        $this->ensure_account_here();
     }
 
     /** @return ?Contact */

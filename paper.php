@@ -455,8 +455,8 @@ class PaperPage {
         $pp->load_prow();
 
         // fix user
-        if ($qreq->is_post() && $qreq->valid_token() && !$user->has_account_here()) {
-            $user->activate_database_account();
+        if ($qreq->is_post() && $qreq->valid_token()) {
+            $user->ensure_account_here();
             // XXX escape unless update && can_start_paper???
         }
         $user->add_overrides(Contact::OVERRIDE_CHECK_TIME);
