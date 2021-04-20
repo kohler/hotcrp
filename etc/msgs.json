@@ -56,7 +56,7 @@
     ["field_description/edit", "authors", "", ["opt.maxAuthors=1"]],
     ["field_description/edit", "authors", "Submission is blind, so reviewers will not see author information.", ["opt.maxAuthors=1", "setting.sub_blind=2"]],
     ["field_description/edit", "authors", "Reviewers will see author information only after submitting a review.", ["opt.maxAuthors=1", "setting.sub_blind=3"]],
-    ["field_description/edit", "contacts", "These users can edit the submission and view reviews. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in."],
+    ["field_description/edit", "contacts", "These users can view and edit the submission. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet signed in."],
     ["field_description/edit", "nonblind", "Check this to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"],
     ["field_description/edit", "topics", "Select any topics that apply to your submission."],
     ["field_description/edit", "pc_conflicts", "Select the PC members who have conflicts of interest with this submission. %conflictdef%"],

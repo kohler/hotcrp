@@ -239,7 +239,7 @@ class PaperPage {
             }
         } else {
             if ($new_prow->timeSubmitted > 0) {
-                $notes[] = $conf->_("You will receive email when reviews are available.");
+                $notes[] = $conf->_("The submission will be considered for review.");
             } else if ($new_prow->size == 0 && !$conf->opt("noPapers")) {
                 $notes[] = $conf->_("The submission has not yet been uploaded.");
             } else if ($conf->setting("sub_freeze") > 0) {
