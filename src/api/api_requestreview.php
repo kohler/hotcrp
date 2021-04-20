@@ -390,7 +390,8 @@ class RequestReview_API {
 
     /** @param Contact $user
      * @param Qrequest $qreq
-     * @param PaperInfo $prow */
+     * @param PaperInfo $prow
+     * @return JsonResult */
     static function claimreview($user, $qreq, $prow) {
         if (!ctype_digit($qreq->r)) {
             return self::error_result(400, "r", "Bad request.");

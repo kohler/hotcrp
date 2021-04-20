@@ -17,6 +17,8 @@ class Contact {
     static public $allow_nonexistent_properties = false;
     /** @var int */
     static public $next_xid = -2;
+    /** @var ?list<string> */
+    static public $session_users;
 
     /** @var Conf */
     public $conf;
@@ -600,7 +602,9 @@ class Contact {
 
     /** @return list<string> */
     static function session_users() {
-        if (isset($_SESSION["us"])) {
+        if (isset(self::$session_users)) {
+            return self::$session_users;
+        } else if (isset($_SESSION["us"])) {
             return $_SESSION["us"];
         } else if (isset($_SESSION["u"])) {
             return [$_SESSION["u"]];
@@ -5124,7 +5128,8 @@ class Contact {
 
     /** @param int $pid
      * @param int $reviewer_cid
-     * @param int $type */
+     * @param int $type
+     * @return int|false */
     function assign_review($pid, $reviewer_cid, $type, $extra = []) {
         $result = $this->conf->qe("select * from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
         $rrow = ReviewInfo::fetch($result, null, $this->conf);

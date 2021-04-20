@@ -82,7 +82,7 @@ function hoturl_post($page, $param = null) {
 }
 
 
-class JsonResult {
+class JsonResult implements JsonSerializable {
     /** @var ?int */
     public $status;
     /** @var array<string,mixed> */
@@ -161,6 +161,9 @@ class JsonResult {
         }
         header("Content-Type: application/json; charset=utf-8");
         echo json_encode_browser($this->content);
+    }
+    function jsonSerialize() {
+        return $this->content;
     }
 }
 

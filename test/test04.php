@@ -363,4 +363,33 @@ xassert_eqq($pc_json["12"]->lastpos, 5);
 xassert_eqq($pc_json["21"]->email, "vera@bombay.com");
 xassert_eqq($pc_json["21"]->lastpos, 5);
 
+// review claiming
+Dbl::qe($Conf->contactdb(), "insert into ContactInfo set email='sophia@dros.nl', password='', firstName='Sophia', lastName='Dros'");
+$user_sophia = $Conf->user_by_email("sophia@dros.nl");
+xassert(!$user_sophia);
+$user_sophia = $Conf->contactdb_user_by_email("sophia@dros.nl");
+xassert(!!$user_sophia);
+$user_cengiz = $Conf->checked_user_by_email("cengiz@isi.edu");
+$rrid = $user_chair->assign_review(3, $user_cengiz->contactId, REVIEW_EXTERNAL);
+$paper3->load_reviews();
+xassert($rrid > 0);
+$rrow = $paper3->fresh_review_by_id($rrid);
+xassert(!!$rrow);
+xassert_eqq($rrow->contactId, $user_cengiz->contactId);
+Contact::$session_users = ["cengiz@isi.edu", "sophia@dros.nl"];
+$result = RequestReview_API::claimreview($user_cengiz, new Qrequest("POST", ["p" => "3", "r" => "$rrid", "email" => "betty6@_.com"]), $paper3);
+xassert_eqq($result->content["ok"], false);
+$rrow = $paper3->fresh_review_by_id($rrid);
+xassert(!!$rrow);
+xassert_eqq($rrow->contactId, $user_cengiz->contactId);
+$result = RequestReview_API::claimreview($user_cengiz, new Qrequest("POST", ["p" => "3", "r" => "$rrid", "email" => "sophia@dros.nl"]), $paper3);
+xassert_eqq($result->content["ok"], true);
+$user_sophia = $Conf->checked_user_by_email("sophia@dros.nl");
+xassert(!!$user_sophia);
+$rrow = $paper3->fresh_review_by_id($rrid);
+xassert(!!$rrow);
+xassert_neqq($rrow->contactId, $user_cengiz->contactId);
+xassert_eqq($rrow->contactId, $user_sophia->contactId);
+Contact::$session_users = null;
+
 xassert_exit();
