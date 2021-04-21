@@ -4440,6 +4440,7 @@ class Contact {
         //   VIEWSCORE_AUTHOR        ... and authors can view
         // So returning -3 means all scores are visible.
         // Deadlines are not considered.
+        assert(!!$rrow);
         $rights = $this->rights($prow);
         if ($rights->can_administer) {
             return VIEWSCORE_ADMINONLY - 1;

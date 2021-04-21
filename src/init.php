@@ -3,67 +3,67 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 declare(strict_types=1);
-define("HOTCRP_VERSION", "3.0b1");
+const HOTCRP_VERSION = "3.0b1";
 
 // All positive review types must be 1 digit
-define("REVIEW_META", 5);
-define("REVIEW_PRIMARY", 4);
-define("REVIEW_SECONDARY", 3);
-define("REVIEW_PC", 2);
-define("REVIEW_EXTERNAL", 1);
-define("REVIEW_REQUEST", -1);
-define("REVIEW_REFUSAL", -2);
+const REVIEW_META = 5;
+const REVIEW_PRIMARY = 4;
+const REVIEW_SECONDARY = 3;
+const REVIEW_PC = 2;
+const REVIEW_EXTERNAL = 1;
+const REVIEW_REQUEST = -1;
+const REVIEW_REFUSAL = -2;
 
-define("CONFLICT_MAXUNCONFLICTED", 1);
-define("CONFLICT_PCMASK", 31);
-define("CONFLICT_AUTHOR", 32);
-define("CONFLICT_CONTACTAUTHOR", 64);
+const CONFLICT_MAXUNCONFLICTED = 1;
+const CONFLICT_PCMASK = 31;
+const CONFLICT_AUTHOR = 32;
+const CONFLICT_CONTACTAUTHOR = 64;
 
-define("REV_RATINGS_PC", 0);
-define("REV_RATINGS_PC_EXTERNAL", 1);
-define("REV_RATINGS_NONE", 2);
+const REV_RATINGS_PC = 0;
+const REV_RATINGS_PC_EXTERNAL = 1;
+const REV_RATINGS_NONE = 2;
 
-define("DTYPE_SUBMISSION", 0);
-define("DTYPE_FINAL", -1);
-define("DTYPE_COMMENT", -2);
-define("DTYPE_EXPORT", -3);
+const DTYPE_SUBMISSION = 0;
+const DTYPE_FINAL = -1;
+const DTYPE_COMMENT = -2;
+const DTYPE_EXPORT = -3;
 
-define("VIEWSCORE_EMPTY", -3);         // score no one can see; see also reviewViewScore
-define("VIEWSCORE_ADMINONLY", -2);
-define("VIEWSCORE_REVIEWERONLY", -1);
-define("VIEWSCORE_PC", 0);
-define("VIEWSCORE_AUTHORDEC", 1);
-define("VIEWSCORE_AUTHOR", 2);
-define("VIEWSCORE_EMPTYBOUND", 3);     // bound that can see nothing
+const VIEWSCORE_EMPTY = -3;         // score no one can see; see also reviewViewScore
+const VIEWSCORE_ADMINONLY = -2;
+const VIEWSCORE_REVIEWERONLY = -1;
+const VIEWSCORE_PC = 0;
+const VIEWSCORE_AUTHORDEC = 1;
+const VIEWSCORE_AUTHOR = 2;
+const VIEWSCORE_EMPTYBOUND = 3;     // bound that can see nothing
 
-define("NAME_E", 1);   // include email
-define("NAME_B", 2);   // always put email in angle brackets
-define("NAME_EB", 3);  // NAME_E + NAME_B
-define("NAME_P", 4);   // return email or "[No name]" instead of empty string
-define("NAME_L", 8);   // "last, first"
-define("NAME_I", 16);  // first initials instead of first name
-define("NAME_S", 32);  // "last, first" according to conference preference
-define("NAME_U", 64);  // unaccented
-define("NAME_MAILQUOTE", 128); // quote name by RFC822
-define("NAME_A", 256); // affiliation
-define("NAME_PARSABLE", 512); // `last, first` if `first last` would be ambiguous
+const NAME_E = 1;   // include email
+const NAME_B = 2;   // always put email in angle brackets
+const NAME_EB = 3;  // NAME_E + NAME_B
+const NAME_P = 4;   // return email or "[No name]" instead of empty string
+const NAME_L = 8;   // "last, first"
+const NAME_I = 16;  // first initials instead of first name
+const NAME_S = 32;  // "last, first" according to conference preference
+const NAME_U = 64;  // unaccented
+const NAME_MAILQUOTE = 128; // quote name by RFC822
+const NAME_A = 256; // affiliation
+const NAME_PARSABLE = 512; // `last, first` if `first last` would be ambiguous
 
-define("COMMENTTYPE_DRAFT", 1);
-define("COMMENTTYPE_BLIND", 2);
-define("COMMENTTYPE_RESPONSE", 4);
-define("COMMENTTYPE_BYAUTHOR", 8);
-define("COMMENTTYPE_BYSHEPHERD", 16);
-define("COMMENTTYPE_HASDOC", 32);
-define("COMMENTTYPE_ADMINONLY", 0x00000);
-define("COMMENTTYPE_PCONLY", 0x10000);
-define("COMMENTTYPE_REVIEWER", 0x20000);
-define("COMMENTTYPE_AUTHOR", 0x30000);
-define("COMMENTTYPE_VISIBILITY", 0xFFF0000);
+const COMMENTTYPE_DRAFT = 1;
+const COMMENTTYPE_BLIND = 2;
+const COMMENTTYPE_RESPONSE = 4;
+const COMMENTTYPE_BYAUTHOR = 8;
+const COMMENTTYPE_BYSHEPHERD = 16;
+const COMMENTTYPE_HASDOC = 32;
+const COMMENTTYPE_ADMINONLY = 0x00000;
+const COMMENTTYPE_PCONLY = 0x10000;
+const COMMENTTYPE_REVIEWER = 0x20000;
+const COMMENTTYPE_AUTHOR = 0x30000;
+const COMMENTTYPE_VISIBILITY = 0xFFF0000;
 
-define("TAG_REGEX_NOTWIDDLE", '[a-zA-Z@*_:.][-+a-zA-Z0-9?!@*_:.\/]*');
-define("TAG_REGEX", '~?~?' . TAG_REGEX_NOTWIDDLE);
-define("TAG_MAXLEN", 80);
-define("TAG_INDEXBOUND", 2147483646);
+const TAG_REGEX_NOTWIDDLE = '[a-zA-Z@*_:.][-+a-zA-Z0-9?!@*_:.\/]*';
+const TAG_REGEX = '~?~?' . TAG_REGEX_NOTWIDDLE;
+const TAG_MAXLEN = 80;
+const TAG_INDEXBOUND = 2147483646;
 
 global $Conf, $Now, $ConfSitePATH;
 
