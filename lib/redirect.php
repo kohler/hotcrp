@@ -111,7 +111,7 @@ function ensure_session($flags = 0) {
         }
     }
 
-    if (session_id() !== "") {
+    if (session_status() === PHP_SESSION_ACTIVE) {
         error_log(debug_string_backtrace());
     }
     session_start();
