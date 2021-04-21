@@ -80,6 +80,9 @@ if (function_exists("session_create_id")) {
 }
 
 function ensure_session($flags = 0) {
+    if (headers_sent($hsfn, $hsln)) {
+        error_log("$hsfn:$hsln: headers sent: " . debug_string_backtrace());
+    }
     if (session_id() !== ""
         && !($flags & ENSURE_SESSION_REGENERATE_ID)) {
         return;
@@ -111,9 +114,6 @@ function ensure_session($flags = 0) {
         }
     }
 
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        error_log(debug_string_backtrace());
-    }
     session_start();
 
     // maybe kill old session
