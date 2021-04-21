@@ -98,13 +98,19 @@ class Options_SettingRenderer {
             "</div></div>";
     }
     static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $open = !$o->id || $o->visibility !== "rev";
+        $vis = $o->unparse_visibility();
+        $open = !$o->id || $vis !== "all";
         $self->mark_visible_property("visibility", $open);
+        $options = ["all" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible"];
+        if ($vis === "conflict") {
+            $options["conflict"] = "PC and reviewers, if conflicts are visible";
+        }
+        $options["admin"] = "Administrators only";
         echo '<div class="', $sv->control_class("optp_$xpos", "entryi is-property-visibility" . ($open ? "" : " hidden") . " short"),
             '">', $sv->label("optp_$xpos", "Visible to"),
             '<div class="entry">',
             $sv->feedback_at("optp_$xpos"),
-            Ht::select("optp_$xpos", ["rev" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible", "admin" => "Administrators only"], $o->visibility, $sv->sjs("optp_$xpos", ["id" => "optp_$xpos", "class" => "settings-opt-visibility"])),
+            Ht::select("optp_$xpos", $options, $vis, $sv->sjs("optp_$xpos", ["id" => "optp_$xpos", "class" => "settings-opt-visibility"])),
             '</div></div>';
     }
     static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -266,7 +272,7 @@ class Options_SettingRenderer {
             $sv->set_oldv("optn_$xpos", $io->name);
             $sv->set_oldv("optd_$xpos", $io->description);
             $sv->set_oldv("optvt_$xpos", $io->type);
-            $sv->set_oldv("optp_$xpos", $io->visibility);
+            $sv->set_oldv("optp_$xpos", $io->unparse_visibility());
             $sv->set_oldv("optdt_$xpos", $io->display_name());
             $sv->set_oldv("optreq_$xpos", $io->required ? "1" : "0");
             $sv->set_oldv("optec_$xpos", $io->exists_condition() ? "search" : ($io->final ? "final" : "all"));

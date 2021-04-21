@@ -3400,23 +3400,19 @@ class Contact {
             return 0;
         }
         $rights = $this->rights($prow);
-        $oview = $opt->visibility;
+        $oview = $opt->visibility();
         if ($rights->allow_administer) {
-            if ($oview === "nonblind") {
+            if ($oview === PaperOption::VIS_AUTHOR) {
                 return $rights->view_authors_state;
             } else {
                 return 2;
             }
-        } else if ($rights->act_author_view) {
+        } else if ($oview === PaperOption::VIS_SUB || $rights->act_author_view) {
             return 2;
-        } else if ($rights->allow_pc_broad || $rights->review_status > 0) {
-            if ($oview === "nonblind") {
-                return $rights->view_authors_state;
-            } else if ($oview === "conflict") {
-                return $this->can_view_conflicts($prow) ? 2 : 0;
-            } else {
-                return !$oview || $oview === "rev" ? 2 : 0;
-            }
+        } else if ($oview === PaperOption::VIS_AUTHOR) {
+            return $rights->view_authors_state;
+        } else if ($oview === PaperOption::VIS_CONFLICT) {
+            return $this->can_view_conflicts($prow) ? 2 : 0;
         } else {
             return 0;
         }
@@ -3478,16 +3474,13 @@ class Contact {
         }
         $whyNot = $prow->make_whynot();
         $rights = $this->rights($prow);
-        $oview = $opt->visibility;
+        $oview = $opt->visibility();
         if ($rights->allow_administer
-            ? $oview === "nonblind"
+            ? $oview === PaperOption::VIS_AUTHOR
               && !$this->can_view_authors($prow)
             : !$rights->act_author_view
-              && ($oview === "admin"
-                  || ((!$oview || $oview == "rev")
-                      && $rights->review_status == 0
-                      && !$rights->allow_pc_broad)
-                  || ($oview == "nonblind"
+              && ($oview === PaperOption::VIS_ADMIN
+                  || ($oview === PaperOption::VIS_AUTHOR
                       && !$this->can_view_authors($prow)))) {
             $whyNot["permission"] = "view_option";
             $whyNot["option"] = $opt;
@@ -3509,11 +3502,11 @@ class Contact {
         if ($opt->final && !$this->can_view_some_decision()) {
             return false;
         }
-        $oview = $opt->visibility;
+        $oview = $opt->visibility();
         return $this->is_author()
-            || ($oview == "admin" && $this->is_manager())
-            || ((!$oview || $oview == "rev") && $this->is_reviewer())
-            || ($oview == "nonblind" && $this->can_view_some_authors());
+            || ($oview === PaperOption::VIS_ADMIN && $this->is_manager())
+            || ($oview === PaperOption::VIS_AUTHOR && $this->can_view_some_authors())
+            || ($oview === PaperOption::VIS_CONFLICT && $this->can_view_some_conflicts());
     }
 
     /** @return bool */

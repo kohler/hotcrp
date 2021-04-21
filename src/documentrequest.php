@@ -200,8 +200,9 @@ class DocumentRequest implements JsonSerializable {
 
     function perm_view_document(Contact $user) {
         if ($this->paperId < 0) {
-            if (($this->opt->visibility === "admin" && !$user->privChair)
-                || ($this->opt->visibility !== "all" && !$user->isPC)) {
+            $vis = $this->opt->visibility();
+            if (($vis === PaperOption::VIS_ADMIN && !$user->privChair)
+                || ($vis !== PaperOption::VIS_SUB && !$user->isPC)) {
                 return $this->prow->make_whynot(["permission" => "view_option", "option" => $this->opt]);
             } else {
                 return null;

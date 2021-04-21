@@ -667,9 +667,11 @@ class PaperOption implements JsonSerializable {
     /** @var bool
      * @readonly */
     public $include_empty;
-    /** @var string
+    /** @var int
      * @readonly */
-    public $visibility; // "rev", "nonblind", "conflict", "admin"
+    private $_visibility;
+    /** @var int
+     * @readonly */
     private $display;
     public $display_expand;
     public $display_group;
@@ -684,6 +686,12 @@ class PaperOption implements JsonSerializable {
     /** @var ?PaperSearch */
     private $_editable_search;
     public $max_size;
+
+    const VIS_SUB = 0;         // visible if paper is visible (= all)
+    const VIS_AUTHOR = 1;      // visible if authors are visible
+    const VIS_CONFLICT = 2;    // visible if conflicts are visible
+    const VIS_ADMIN = 3;       // visible only to admins
+    static private $visibility_map = ["all", "nonblind", "conflict", "admin"];
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -740,10 +748,17 @@ class PaperOption implements JsonSerializable {
         $this->include_empty = ($args->include_empty ?? false) === true;
 
         $vis = $args->visibility ?? $args->view_type ?? null;
-        if (!in_array($vis, ["rev", "nonblind", "conflict", "admin"])) {
-            $vis = "rev";
+        if ($vis === null || $vis === "all" || $vis === "rev") {
+            $this->_visibility = self::VIS_SUB;
+        } else if ($vis === "nonblind") {
+            $this->_visibility = self::VIS_AUTHOR;
+        } else if ($vis === "conflict") {
+            $this->_visibility = self::VIS_CONFLICT;
+        } else if ($vis === "admin") {
+            $this->_visibility = self::VIS_ADMIN;
+        } else {
+            $this->_visibility = self::VIS_SUB;
         }
-        $this->visibility = $vis;
 
         $disp = $args->display ?? null;
         if ($args->near_submission ?? false) {
@@ -940,6 +955,7 @@ class PaperOption implements JsonSerializable {
         return $this->id ? $this->json_key() : "paper";
     }
 
+    /** @return int */
     function display() {
         return $this->display;
     }
@@ -948,6 +964,14 @@ class PaperOption implements JsonSerializable {
     }
     function display_position() {
         return $this->display_position;
+    }
+    /** @return int */
+    function visibility() {
+        return $this->_visibility;
+    }
+    /** @return string */
+    function unparse_visibility() {
+        return self::$visibility_map[$this->_visibility];
     }
 
     /** @return bool */
@@ -1089,8 +1113,8 @@ class PaperOption implements JsonSerializable {
             $j->final = true;
         }
         $j->display = $this->display_name();
-        if ($this->visibility !== "rev") {
-            $j->visibility = $this->visibility;
+        if ($this->_visibility !== self::VIS_SUB) {
+            $j->visibility = self::$visibility_map[$this->_visibility];
         }
         if ($this->exists_if !== null) {
             $j->exists_if = $this->exists_if;
