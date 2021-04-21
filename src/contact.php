@@ -3413,6 +3413,9 @@ class Contact {
             return $rights->view_authors_state;
         } else if ($oview === PaperOption::VIS_CONFLICT) {
             return $this->can_view_conflicts($prow) ? 2 : 0;
+        } else if ($oview === PaperOption::VIS_REVIEW) {
+            return $rights->review_status >= PaperContactInfo::RS_PROXIED
+                || $this->can_view_review($prow, null) ? 2 : 0;
         } else {
             return 0;
         }
@@ -3481,7 +3484,10 @@ class Contact {
             : !$rights->act_author_view
               && ($oview === PaperOption::VIS_ADMIN
                   || ($oview === PaperOption::VIS_AUTHOR
-                      && !$this->can_view_authors($prow)))) {
+                      && !$this->can_view_authors($prow))
+                  || ($oview === PaperOption::VIS_REVIEW
+                      && $rights->review_status < PaperContactInfo::RS_PROXIED
+                      && !$this->can_view_review($prow, null)))) {
             $whyNot["permission"] = "view_option";
             $whyNot["option"] = $opt;
         } else if ($opt->final
@@ -3506,7 +3512,8 @@ class Contact {
         return $this->is_author()
             || ($oview === PaperOption::VIS_ADMIN && $this->is_manager())
             || ($oview === PaperOption::VIS_AUTHOR && $this->can_view_some_authors())
-            || ($oview === PaperOption::VIS_CONFLICT && $this->can_view_some_conflicts());
+            || ($oview === PaperOption::VIS_CONFLICT && $this->can_view_some_conflicts())
+            || ($oview === PaperOption::VIS_REVIEW && $this->is_reviewer());
     }
 
     /** @return bool */

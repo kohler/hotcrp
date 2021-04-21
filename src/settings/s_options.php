@@ -101,10 +101,12 @@ class Options_SettingRenderer {
         $vis = $o->unparse_visibility();
         $open = !$o->id || $vis !== "all";
         $self->mark_visible_property("visibility", $open);
-        $options = ["all" => "PC and reviewers", "nonblind" => "PC and reviewers, if authors are visible"];
+        $options = ["all" => "PC and reviewers"];
+        $options["nonblind"] = "PC and reviewers, if authors are visible";
         if ($vis === "conflict") {
             $options["conflict"] = "PC and reviewers, if conflicts are visible";
         }
+        $options["review"] = "Submitted reviewers and PC who can see reviews";
         $options["admin"] = "Administrators only";
         echo '<div class="', $sv->control_class("optp_$xpos", "entryi is-property-visibility" . ($open ? "" : " hidden") . " short"),
             '">', $sv->label("optp_$xpos", "Visible to"),

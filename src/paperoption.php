@@ -690,8 +690,9 @@ class PaperOption implements JsonSerializable {
     const VIS_SUB = 0;         // visible if paper is visible (= all)
     const VIS_AUTHOR = 1;      // visible if authors are visible
     const VIS_CONFLICT = 2;    // visible if conflicts are visible
-    const VIS_ADMIN = 3;       // visible only to admins
-    static private $visibility_map = ["all", "nonblind", "conflict", "admin"];
+    const VIS_REVIEW = 3;      // visible after submitted review or reviews visible
+    const VIS_ADMIN = 4;       // visible only to admins
+    static private $visibility_map = ["all", "nonblind", "conflict", "review", "admin"];
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -754,6 +755,8 @@ class PaperOption implements JsonSerializable {
             $this->_visibility = self::VIS_AUTHOR;
         } else if ($vis === "conflict") {
             $this->_visibility = self::VIS_CONFLICT;
+        } else if ($vis === "review") {
+            $this->_visibility = self::VIS_REVIEW;
         } else if ($vis === "admin") {
             $this->_visibility = self::VIS_ADMIN;
         } else {
