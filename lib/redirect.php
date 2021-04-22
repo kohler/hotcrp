@@ -9,9 +9,9 @@ function make_session_name(Conf $conf, $n) {
         $n = $x;
     }
     if (($x = $conf->opt("confid"))) {
-        $n = preg_replace(',\*|\$\{confid\}|\$confid\b,', $x, $n);
+        $n = preg_replace('/\*|\$\{confid\}|\$confid\b/', $x, $n);
     }
-    return preg_replace_callback(',[^-_A-Ya-z0-9],', function ($m) {
+    return preg_replace_callback('/[^-_A-Ya-z0-9]/', function ($m) {
         return "Z" . dechex(ord($m[0]));
     }, $n);
 }
@@ -45,7 +45,7 @@ function set_session_name(Conf $conf) {
     session_name($sn);
     session_cache_limiter("");
     if (isset($_COOKIE[$sn])
-        && !preg_match(';\A[-a-zA-Z0-9,]{1,128}\z;', $_COOKIE[$sn])) {
+        && !preg_match('/\A[-a-zA-Z0-9,]{1,128}\z/', $_COOKIE[$sn])) {
         unset($_COOKIE[$sn]);
     }
 
@@ -72,19 +72,19 @@ function set_session_name(Conf $conf) {
     }
 }
 
-define("ENSURE_SESSION_ALLOW_EMPTY", 1);
-if (function_exists("session_create_id")) {
-    define("ENSURE_SESSION_REGENERATE_ID", 2);
-} else {
-    define("ENSURE_SESSION_REGENERATE_ID", 0);
-}
+const ENSURE_SESSION_ALLOW_EMPTY = 1;
+const ENSURE_SESSION_REGENERATE_ID = 2;
 
 function ensure_session($flags = 0) {
     if (headers_sent($hsfn, $hsln)) {
         error_log("$hsfn:$hsln: headers sent: " . debug_string_backtrace());
     }
+    if (($flags & ENSURE_SESSION_REGENERATE_ID) !== 0
+        && !function_exists("session_create_id")) { // PHP 7.0 compatibility
+        $flags &= ~ENSURE_SESSION_REGENERATE_ID;
+    }
     if (session_id() !== ""
-        && !($flags & ENSURE_SESSION_REGENERATE_ID)) {
+        && ($flags & ENSURE_SESSION_REGENERATE_ID) === 0) {
         return;
     }
 

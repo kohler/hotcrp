@@ -3,8 +3,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 /** @phan-file-suppress PhanRedefineFunctionInternal */
 
-define("GMPSHIM_INT_SHIFT", PHP_INT_SIZE >= 8 ? 6 : 5);
-define("GMPSHIM_INT_SIZE", 1 << GMPSHIM_INT_SHIFT);
+const GMPSHIM_INT_SHIFT = (PHP_INT_SIZE >= 8 ? 6 : 5);
+const GMPSHIM_INT_SIZE = 1 << GMPSHIM_INT_SHIFT;
 
 class GMPShim {
     static function init($v) {

@@ -226,21 +226,21 @@ class Batch_UpdateUTF8Trans {
         ksort($this->trans[3], SORT_STRING);
 
         $unicode_helper = file_get_contents(SiteLoader::find("lib/unicodehelper.php"));
-        fwrite(STDOUT, substr($unicode_helper, 0, strpos($unicode_helper, "define(")));
+        fwrite(STDOUT, substr($unicode_helper, 0, strpos($unicode_helper, "const ")));
 
         $m = $n = "";
         foreach ($this->trans[2] as $k => $v) {
             $m .= quote_key($k);
             $n .= addcslashes(substr($v . "   ", 0, self::OUTL2), "\\\"");
         }
-        fwrite(STDOUT, "define(\"UTF8_ALPHA_TRANS_2\", \"$m\");\n\ndefine(\"UTF8_ALPHA_TRANS_2_OUT\", \"$n\");\n\n");
+        fwrite(STDOUT, "const UTF8_ALPHA_TRANS_2 = \"$m\";\n\nconst UTF8_ALPHA_TRANS_2_OUT = \"$n\";\n\n");
 
         $m = $n = "";
         foreach ($this->trans[3] as $k => $v) {
             $m .= quote_key($k);
             $n .= addcslashes(substr($v . "   ", 0, self::OUTL3), "\\\"");
         }
-        fwrite(STDOUT, "define(\"UTF8_ALPHA_TRANS_3\", \"$m\");\n\ndefine(\"UTF8_ALPHA_TRANS_3_OUT\", \"$n\");\n\n");
+        fwrite(STDOUT, "const UTF8_ALPHA_TRANS_3 = \"$m\";\n\nconst UTF8_ALPHA_TRANS_3_OUT = \"$n\";\n\n");
 
         return 0;
     }

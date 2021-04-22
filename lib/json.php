@@ -3,8 +3,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 /** @phan-file-suppress PhanRedefineFunction, PhanRedefineFunctionInternal, PhanRedefineClassInternal */
 
-define("JSON_HOTCRP", 1);
-define("JSON_ERROR_EMPTY_KEY", 100);
+const JSON_HOTCRP = 1;
+const JSON_ERROR_EMPTY_KEY = 100;
 
 class Json {
     static $string_map =
