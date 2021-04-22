@@ -215,7 +215,7 @@ class TagSearchMatcher {
             foreach ($this->_tagpat as $tp) {
                 $res[] = str_replace('\\*', '.*', preg_quote($tp));
             }
-            return Dbl::format_query($this->user->conf->dblink, "$table.tag regexp ?",
+            return Dbl::format_query($this->user->conf->dblink, "$table.tag regexp _utf8 ? COLLATE utf8_general_ci",
                     count($res) > 1 ? "^(" . join("|", $res) . ")$" : "^{$res[0]}$");
         } else {
             return null;

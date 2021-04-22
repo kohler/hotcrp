@@ -162,7 +162,7 @@ class ConfInvariants {
         Dbl::free($result);
 
         // whitespace is simplified
-        $any = $this->invariantq("select email from ContactInfo where firstName regexp '^ | $|  |[\\n\\r\\t]' or lastName regexp '^ | $|  |[\\n\\r\\t]' or affiliation regexp '^ | $|  |[\\n\\r\\t]' limit 1");
+        $any = $this->invariantq("select email from ContactInfo where firstName regexp _utf8 '^ | $|  |[\\n\\r\\t]' or lastName regexp _utf8 '^ | $|  |[\\n\\r\\t]' or affiliation regexp _utf8 '^ | $|  |[\\n\\r\\t]' limit 1");
         if ($any) {
             $this->invariant_error("user_whitespace", "user whitespace is not simplified");
         }

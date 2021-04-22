@@ -512,7 +512,7 @@ function update_schema_options_setting(Conf $conf, $options_data) {
 
 function update_schema_simplify_user_whitespace(Conf $conf) {
     $cleanf = Dbl::make_multi_ql_stager($conf->dblink);
-    $result = $conf->ql_ok("select contactId, firstName, lastName, affiliation from ContactInfo where firstName regexp '  |[\\n\\r\\t]' or lastName regexp '  |[\\n\\r\\t]' or affiliation regexp '  |[\\n\\r\\t]'");
+    $result = $conf->ql_ok("select contactId, firstName, lastName, affiliation from ContactInfo where firstName regexp _utf8 '  |[\\n\\r\\t]' or lastName regexp _utf8 '  |[\\n\\r\\t]' or affiliation regexp _utf8 '  |[\\n\\r\\t]'");
     while (($row = $result->fetch_object())) {
         $cleanf("update ContactInfo set firstName=?, lastName=?, affiliation=? where contactId=?",
             [simplify_whitespace($row->firstName), simplify_whitespace($row->lastName),
@@ -1309,7 +1309,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->update_schema_version(123);
     }
     if ($conf->sversion === 123
-        && $conf->ql_ok("update ContactInfo set disabled=1 where password='' and email regexp '^anonymous[0-9]*\$'")) {
+        && $conf->ql_ok("update ContactInfo set disabled=1 where password='' and email regexp _utf8 '^anonymous[0-9]*\$' COLLATE utf8_general_ci")) {
         $conf->update_schema_version(124);
     }
     if ($conf->sversion === 124
@@ -1321,7 +1321,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->update_schema_version(126);
     }
     if ($conf->sversion === 126
-        && $conf->ql_ok("update ContactInfo set disabled=1, password='' where email regexp '^anonymous[0-9]*\$'")) {
+        && $conf->ql_ok("update ContactInfo set disabled=1, password='' where email regexp _utf8 '^anonymous[0-9]*\$' COLLATE utf8_general_ci")) {
         $conf->update_schema_version(127);
     }
     if ($conf->sversion === 127

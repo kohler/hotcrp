@@ -138,7 +138,7 @@ class ContactSearch {
         if (strcasecmp($this->text, "anonymous") == 0
             && !$this->cset
             && !($this->type & self::F_PC)) {
-            return $this->select_ids("select contactId from ContactInfo where email regexp '^anonymous[0-9]*\$'", []);
+            return $this->select_ids("select contactId from ContactInfo where email regexp _utf8 '^anonymous[0-9]*\$' COLLATE utf8_general_ci", []);
         }
 
         // split name components
