@@ -240,9 +240,9 @@ class MailRecipients {
     }
 
     function query($paper_sensitive) {
-        $cols = array();
-        $where = array("email not regexp '^anonymous[0-9]*\$'");
-        $joins = array("ContactInfo");
+        $cols = [];
+        $where = ["not disabled"];
+        $joins = ["ContactInfo"];
 
         // paper limit
         if ($this->need_papers() && isset($this->papersel)) {
