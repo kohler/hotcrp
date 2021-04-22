@@ -3892,6 +3892,33 @@ class Contact {
     }
 
     /** @return bool */
+    function can_accept_review_assignment_ignore_conflict(PaperInfo $prow = null) {
+        if ($prow) {
+            if ($this->isPC
+                && $this->conf->check_tracks($prow, $this, Track::ASSREV)) {
+                return true;
+            } else {
+                $rights = $this->rights($prow);
+                return $rights->allow_administer
+                    || ($this->isPC && $rights->reviewType > 0);
+            }
+        } else {
+            return $this->isPC
+                && $this->conf->check_all_tracks($this, Track::ASSREV);
+        }
+    }
+
+    /** @return bool */
+    function can_accept_review_assignment(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        return ($rights->allow_pc
+                || ($this->isPC && $rights->conflictType <= CONFLICT_MAXUNCONFLICTED))
+            && ($rights->reviewType > 0
+                || $rights->allow_administer
+                || $this->conf->check_tracks($prow, $this, Track::ASSREV));
+    }
+
+    /** @return bool */
     function allow_view_preference(PaperInfo $prow = null, $aggregate = false) {
         if ($prow) {
             $rights = $this->rights($prow);
@@ -3916,40 +3943,45 @@ class Contact {
     }
 
     /** @return bool */
-    function can_enter_preference(PaperInfo $prow, $submit = false) {
-        return $this->isPC
-            && ($submit
-                ? $this->can_become_reviewer_ignore_conflict($prow)
-                : $this->can_become_reviewer($prow))
-            && ($this->can_view_paper($prow)
-                || ($prow->timeWithdrawn > 0
-                    && ($prow->timeSubmitted < 0
-                        || $this->conf->time_pc_view_active_submissions())));
-    }
-
-    /** @return bool */
-    function can_accept_review_assignment_ignore_conflict(PaperInfo $prow = null) {
-        if ($prow) {
-            $rights = $this->rights($prow);
-            return ($rights->allow_administer
-                    || $this->isPC)
-                && ($rights->reviewType > 0
-                    || $rights->allow_administer
-                    || $this->conf->check_tracks($prow, $this, Track::ASSREV));
+    function can_edit_preference_for(Contact $u, PaperInfo $prow, $careful = false) {
+        // Can enter a preference iff you can be assigned a PC review
+        if (!$u->isPC) {
+            return false;
+        }
+        $rights = $this->rights($prow);
+        if ($u->contactId === $this->contactId) {
+            return $u->isPC
+                && (($careful ? $rights->allow_review : $rights->potential_reviewer)
+                    || $this->conf->check_tracks($prow, $this, Track::ASSREV))
+                && ($u->can_view_paper($prow)
+                    || ($prow->timeWithdrawn > 0
+                        && ($prow->timeSubmitted < 0
+                            || $this->conf->time_pc_view_active_submissions())));
         } else {
-            return $this->isPC
-                && $this->conf->check_all_tracks($this, Track::ASSREV);
+            return $u->isPC
+                && $rights->can_administer
+                && $u->can_accept_review_assignment_ignore_conflict($prow);
         }
     }
 
-    /** @return bool */
-    function can_accept_review_assignment(PaperInfo $prow) {
-        $rights = $this->rights($prow);
-        return ($rights->allow_pc
-                || ($this->isPC && $rights->conflictType <= CONFLICT_MAXUNCONFLICTED))
-            && ($rights->reviewType > 0
-                || $rights->allow_administer
-                || $this->conf->check_tracks($prow, $this, Track::ASSREV));
+    /** @return ?PermissionProblem */
+    function perm_edit_preference_for(Contact $u, PaperInfo $prow) {
+        if ($this->can_edit_preference_for($u, $prow)) {
+            return null;
+        }
+        $whynot = $prow->make_whynot();
+        if (!$u->isPC) {
+            $whynot["nonPC"] = true;
+        } else if ($u->contactId !== $this->contactId
+                   && !$this->can_administer($prow)) {
+            $whynot["administer"] = true;
+        } else if ($u->contactId === $this->contactId
+                   && !$u->can_view_paper($prow)) {
+            $whynot["permission"] = "view_paper";
+        } else {
+            $whynot["unacceptableReviewer"] = true;
+        }
+        return $whynot;
     }
 
     /** @param PaperContactInfo $rights

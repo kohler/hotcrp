@@ -17,8 +17,8 @@ class Preference_API {
                 return Conf::paper_error_json_result($whynot);
             }
         }
-        if (!$u->can_enter_preference($prow, true)) {
-            return new JsonResult(403, "Can’t enter preference for #{$prow->paperId}.");
+        if (!$user->can_edit_preference_for($u, $prow)) {
+            return new JsonResult(403, "Can’t edit preference for #{$prow->paperId}.");
         }
 
         if ($qreq->method() === "POST" || isset($qreq->pref)) {

@@ -212,6 +212,9 @@ class PermissionProblem extends Exception
         if (isset($this->_a["conflict"])) {
             $ms[] = $this->conf->_("You have a conflict with #%d.", $paperId);
         }
+        if (isset($this->_a["nonPC"])) {
+            $ms[] = $this->conf->_("You aren’t a member of the PC for submission #%d.", $paperId);
+        }
         if (isset($this->_a["externalReviewer"])) {
             $ms[] = $this->conf->_("External reviewers cannot view other reviews.");
         }

@@ -45,25 +45,23 @@ class Preference_AssignmentParser extends AssignmentParser {
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         return array_filter($state->pc_users(),
-            function ($u) use ($prow) {
-                return $u->can_enter_preference($prow, true);
+            function ($u) use ($prow, $state) {
+                return $state->user->can_edit_preference_for($u, $prow);
             });
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $state->reviewer->isPC ? [$state->reviewer] : false;
     }
-    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        if (!$contact->contactId) {
+    function allow_user(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
+        if (!$user->contactId) {
             return false;
-        } else if ($contact->contactId !== $state->user->contactId
-                   && !$state->user->can_administer($prow)) {
-            return "Can’t change other users’ preferences for #{$prow->paperId}.";
-        } else if (!$contact->can_enter_preference($prow, true)) {
-            if ($contact->contactId !== $state->user->contactId) {
-                return $contact->name_h(NAME_E) . " can’t enter preference for #{$prow->paperId}.";
+        } else if (!$state->user->can_edit_preference_for($user, $prow)) {
+            if ($user->contactId !== $state->user->contactId) {
+                $m = "Can’t enter a preference for " . $user->name_h(NAME_E) . " on #{$prow->paperId}. ";
             } else {
-                return "Can’t enter preference for #{$prow->paperId}.";
+                $m = "Can’t enter a preference on #{$prow->paperId}. ";
             }
+            return $m . $state->user->perm_edit_preference_for($user, $prow)->unparse_text();
         } else {
             return true;
         }
