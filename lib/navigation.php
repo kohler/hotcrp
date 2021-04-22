@@ -35,24 +35,18 @@ class NavigationState {
 
     // server variables:
     //   required: SERVER_PORT, SCRIPT_FILENAME, SCRIPT_NAME, REQUEST_URI
-    //   optional: HTTP_HOST, SERVER_NAME, HTTPS, SERVER_SOFTWARE
+    //   optional: HTTP_HOST, SERVER_NAME, HTTPS
 
     function __construct($server, $index_name = "index") {
         if (!$server) {
             return;
         }
 
-        $this->host = null;
-        if (isset($server["HTTP_HOST"])) {
-            $this->host = $server["HTTP_HOST"];
-        }
-        if (!$this->host && isset($server["SERVER_NAME"])) {
-            $this->host = $server["SERVER_NAME"];
-        }
-
-        if (isset($server["HTTPS"])
-            && $server["HTTPS"] !== ""
-            && $server["HTTPS"] !== "off") {
+        $this->host = $server["HTTP_HOST"] ?? $server["SERVER_NAME"] ?? null;
+        if ((isset($server["HTTPS"])
+             && $server["HTTPS"] !== ""
+             && $server["HTTPS"] !== "off")
+            || ($server["HTTP_X_FORWARDED_PROTO"] ?? null) === "https") {
             $x = "https://";
             $xport = 443;
         } else {
