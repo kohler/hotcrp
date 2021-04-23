@@ -975,7 +975,7 @@ class AssignmentSet {
     private $assigners = [];
     /** @var array<int,int> */
     private $assigners_pidhead = [];
-    /** @var ?list<int> */
+    /** @var ?array<int,true> */
     private $enabled_pids;
     /** @var ?array<string,true> */
     private $enabled_actions;
@@ -1051,9 +1051,9 @@ class AssignmentSet {
         foreach (is_array($paper) ? $paper : [$paper] as $p) {
             if ($p instanceof PaperInfo) {
                 $this->astate->add_prow($p);
-                $this->enabled_pids[] = $p->paperId;
+                $this->enabled_pids[$p->paperId] = true;
             } else {
-                $this->enabled_pids[] = (int) $p;
+                $this->enabled_pids[(int) $p] = true;
             }
         }
     }
@@ -1451,13 +1451,12 @@ class AssignmentSet {
         }
 
         // Implement paper restriction
-        if ($this->enabled_pids !== null) {
-            $npids = array_intersect($npids, $this->enabled_pids);
+        $all = $this->enabled_pids === null;
+        foreach ($npids as $pid) {
+            if ($all || isset($this->enabled_pids[$pid]))
+                $pids[$pid] = true;
         }
 
-        foreach ($npids as $pid) {
-            $pids[$pid] = true;
-        }
         return $val;
     }
 
