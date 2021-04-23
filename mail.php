@@ -237,16 +237,18 @@ class MailSender {
     }
 
     private function echo_actions($extra_class = "") {
-        echo '<div class="aa', $extra_class, '">',
-            Ht::submit("send", "Send", ["class" => "btn-highlight mr-3"]),
-            ' &nbsp; ';
-        $class = $this->groupable ? "" : " hidden";
+        echo '<div class="aab aabig mt-3', $extra_class, '">',
+            '<div class="aabut">', Ht::submit("send", "Send", ["class" => "btn-success"]), '</div>',
+            '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
+            '<div class="aabut ml-3 need-tooltip', $this->groupable ? " hidden" : "", '" id="mail-group-disabled" data-tooltip="These messages cannot be gathered because their contents differ.">', Ht::submit("group", "Gather recipients", ["disabled" => true]), '</div>',
+            '<div class="aabut ml-3', $this->groupable ? "" : " hidden", '" id="mail-group-enabled">';
         if (!$this->qreq->group && $this->qreq->ungroup) {
-            echo Ht::submit("group", "Gather recipients", ["class" => "mail_groupable" . $class]);
+            echo Ht::submit("group", "Gather recipients");
         } else {
-            echo Ht::submit("ungroup", "Separate recipients", ["class" => "mail_groupable" . $class]);
+            echo Ht::submit("ungroup", "Separate recipients");
         }
-        echo ' &nbsp; ', Ht::submit("cancel", "Cancel"), '</div>';
+        echo '</div></div>';
+        Ht::stash_script('$(".need-tooltip").each(tooltip)');
     }
 
     private function echo_request_form($include_cb) {
@@ -335,7 +337,7 @@ class MailSender {
             . plural($this->mrecipients, "recipient");
         $s .= "document.getElementById('mailinfo').innerHTML=\"<span class='barsep'>·</span>" . $m . "\";";
         if (!$this->sending && $this->groupable) {
-            $s .= "\$('.mail_groupable').show();";
+            $s .= "\$('#mail-group-disabled').addClass('hidden');\$('#mail-group-enabled').removeClass('hidden')";
         }
         echo Ht::unstash_script($s);
     }
