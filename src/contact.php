@@ -1769,6 +1769,7 @@ class Contact {
         return $old_roles !== $new_roles;
     }
 
+    /** @param Contact|Author|object $reg */
     function import_prop($reg) {
         if ($reg instanceof Contact) {
             foreach (self::$props as $prop => $shape) {

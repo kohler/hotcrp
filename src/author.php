@@ -37,6 +37,7 @@ class Author {
             $this->assign_string($x);
         }
     }
+
     /** @param string $s
      * @param ?int $author_index
      * @return Author */
@@ -50,6 +51,7 @@ class Author {
         $au->author_index = $author_index;
         return $au;
     }
+
     /** @param string $s
      * @return Author */
     static function make_string($s) {
@@ -57,6 +59,31 @@ class Author {
         $au->assign_string($s);
         return $au;
     }
+
+    /** @param string $s
+     * @return Author */
+    static function make_string_guess($s) {
+        $au = new Author;
+        $au->assign_string_guess($s);
+        return $au;
+    }
+
+    /** @param object|array<string,mixed> $o
+     * @return Author */
+    static function make_keyed($o) {
+        $au = new Author;
+        $au->assign_keyed($o);
+        return $au;
+    }
+
+    /** @param string $email
+     * @return Author */
+    static function make_email($email) {
+        $au = new Author;
+        $au->email = $email;
+        return $au;
+    }
+
     /** @param Author|Contact $o */
     function merge($o) {
         if ($this->email === "") {
@@ -70,6 +97,7 @@ class Author {
             $this->affiliation = $o->affiliation;
         }
     }
+
     /** @param string $s */
     function assign_string($s) {
         if (($paren = strpos($s, "(")) !== false) {
@@ -96,13 +124,7 @@ class Author {
             list($this->firstName, $this->lastName, $this->email) = Text::split_name($s, true);
         }
     }
-    /** @param string $s
-     * @return Author */
-    static function make_string_guess($s) {
-        $au = new Author;
-        $au->assign_string_guess($s);
-        return $au;
-    }
+
     /** @param string $s */
     function assign_string_guess($s) {
         $hash = strpos($s, "#");
@@ -130,48 +152,40 @@ class Author {
             }
         }
     }
+
     static private $object_keys = [
-        "firstName" => "firstName", "first" => "firstName",
-        "givenName" => "firstName", "given" => "givenName",
-        "lastName" => "lastName", "last" => "lastName",
-        "familyName" => "lastName", "family" => "familyName",
-        "name" => "name", "fullName" => "name",
-        "email" => "email", "affiliation" => "affiliation"
+        "firstName" => "firstName", "first" => "firstName", "givenName" => "firstName",
+        "given" => "firstName", "lastName" => "lastName", "last" => "lastName",
+        "familyName" => "lastName", "family" => "lastName", "email" => "email",
+        "affiliation" => "affiliation", "name" => "name", "fullName" => "name"
     ];
-    /** @param object|array<string,mixed> $o
-     * @return Author */
-    static function make_keyed($o) {
-        $au = new Author;
-        $au->assign_keyed($o);
-        return $au;
-    }
+
     /** @param object|array<string,mixed> $o */
     function assign_keyed($o) {
         if (!is_object($o) && !is_array($o)) {
             throw new Exception("invalid Author::make_keyed");
         }
+        $x = [];
         foreach (is_object($o) ? get_object_vars($o) : $o as $k => $v) {
-            if (($mk = self::$object_keys[$k] ?? null) !== null
-                && is_string($v)) {
+            $mk = self::$object_keys[$k] ?? null;
+            if ($mk !== null && is_string($v)) {
                 if ($mk === "name") {
                     $this->_name = $v;
-                    list($this->firstName, $this->lastName, $e) = Text::split_name($v, true);
-                    if ($e !== null && $this->email === "") {
+                    list($f, $l, $e) = Text::split_name($v, true);
+                    if (!isset($x["firstName"]) && !isset($x["lastName"])) {
+                        $this->firstName = $f;
+                        $this->lastName = $l;
+                    }
+                    if ($e !== null && !isset($x["email"])) {
                         $this->email = $e;
                     }
                 } else {
-                    $this->$mk = $v;
+                    $x[$mk] = $this->$mk = $v;
                 }
             }
         }
     }
-    /** @param string $email
-     * @return Author */
-    static function make_email($email) {
-        $au = new Author;
-        $au->email = $email;
-        return $au;
-    }
+
     /** @param string $s
      * @param int $paren
      * @return int */
@@ -189,6 +203,7 @@ class Author {
         }
         return $paren;
     }
+
     /** @return string */
     function name($flags = 0) {
         if (($flags & (NAME_L | NAME_I | NAME_U)) === 0 && $this->_name !== null) {
@@ -201,6 +216,7 @@ class Author {
         }
         return $name;
     }
+
     /** @return string */
     function name_h($flags = 0) {
         $name = htmlspecialchars($this->name($flags & ~NAME_A));
@@ -209,6 +225,7 @@ class Author {
         }
         return $name;
     }
+
     /** @param 0|1|2 $component
      * @return string */
     function deaccent($component) {
@@ -221,28 +238,34 @@ class Author {
         }
         return $this->_deaccents[$component];
     }
+
     /** @return bool */
     function is_empty() {
         return $this->email === "" && $this->firstName === "" && $this->lastName === "" && $this->affiliation === "";
     }
+
     /** @return bool */
     function is_conflicted() {
         assert($this->conflictType !== null);
         return $this->conflictType > CONFLICT_MAXUNCONFLICTED;
     }
+
     /** @param Author|Contact $x
      * @return bool */
     function nae_equals($x) {
         return $this->email === $x->email && $this->firstName === $x->firstName && $this->lastName === $x->lastName && $this->affiliation === $x->affiliation;
     }
+
     /** @return string */
     function unparse_tabbed() {
         return "{$this->firstName}\t{$this->lastName}\t{$this->email}\t{$this->affiliation}";
     }
+
     /** @return object */
     function unparse_nae_json() {
         return self::unparse_nae_json_for($this);
     }
+
     /** @param Author|Contact $x
      * @return object */
     static function unparse_nae_json_for($x) {

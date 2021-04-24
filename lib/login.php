@@ -53,6 +53,7 @@ class LoginHelper {
         }
     }
 
+    /** @return array|Contact */
     static private function user_lookup(Conf $conf, Qrequest $qreq) {
         // Look up the account information
         // to determine if the user is registered
@@ -67,7 +68,7 @@ class LoginHelper {
             }
         }
         return $conf->user_by_email($qreq->email)
-            ? : new Contact(["email" => $qreq->email], $conf);
+            ?? new Contact(["email" => $qreq->email], $conf);
     }
 
     static function login_info(Conf $conf, Qrequest $qreq) {

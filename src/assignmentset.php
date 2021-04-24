@@ -572,7 +572,7 @@ class AssignerContacts {
     /** @return Contact */
     function none_user() {
         if (!$this->none_user) {
-            $this->none_user = new Contact(["contactId" => 0, "roles" => 0, "email" => "", "sorter" => ""], $this->conf);
+            $this->none_user = new Contact(["contactId" => 0, "roles" => 0, "email" => ""], $this->conf);
         }
         return $this->none_user;
     }
