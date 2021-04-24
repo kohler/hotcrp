@@ -2189,65 +2189,6 @@ class PaperInfo {
     }
 
 
-    /** @return array<int,ReviewInfo>
-     * @deprecated */
-    function reviews_by_id() {
-        return $this->all_reviews();
-    }
-    /** @return list<ReviewInfo>
-     * @deprecated */
-    function reviews_by_id_order() {
-        return $this->reviews_as_list();
-    }
-    /** @return list<ReviewInfo>
-     * @deprecated */
-    function reviews_by_display() {
-        return $this->reviews_as_display();
-    }
-    /** @param int $id
-     * @return ?ReviewInfo
-     * @deprecated */
-    function review_of_id($id) {
-        return $this->review_by_id($id);
-    }
-    /** @param int $ordinal
-     * @return ?ReviewInfo
-     * @deprecated */
-    function review_of_ordinal($ordinal) {
-        return $this->review_by_ordinal($ordinal);
-    }
-    /** @param int|Contact $contact
-     * @return ?ReviewInfo
-     * @deprecated */
-    function review_of_user($contact) {
-        return $this->review_by_user($contact);
-    }
-    /** @param int|Contact $contact
-     * @return list<ReviewInfo>
-     * @deprecated */
-    function reviews_of_user($contact, $rev_tokens = null) {
-        return $this->reviews_by_user($contact, $rev_tokens);
-    }
-    /** @param int|Contact $contact
-     * @return ?ReviewInfo
-     * @deprecated */
-    function viewable_review_of_user($contact, Contact $viewer) {
-        return $this->viewable_review_by_user($contact, $viewer);
-    }
-    /** @param int|string $token
-     * @return ?ReviewInfo
-     * @deprecated */
-    function review_of_token($token) {
-        return $this->review_by_token($token);
-    }
-    /** @param string $textid
-     * @return false|?ReviewInfo
-     * @deprecated */
-    function review_of_textual_id($textid) {
-        return $this->review_by_ordinal_id($textid);
-    }
-
-
     private function ensure_full_review_name() {
         $names = [];
         foreach ($this->_full_review ?? [] as $rrow) {
@@ -2334,28 +2275,6 @@ class PaperInfo {
         }
     }
 
-    /** @return ?ReviewInfo
-     * @deprecated */
-    function full_review_of_id($id) {
-        return $this->full_review_by_id($id);
-    }
-    /** @param int|Contact $contact
-     * @return list<ReviewInfo>
-     * @deprecated */
-    function full_reviews_of_user($contact) {
-        return $this->full_reviews_by_user($contact);
-    }
-    /** @return ?ReviewInfo
-     * @deprecated */
-    function full_review_of_ordinal($ordinal) {
-        return $this->full_review_by_ordinal($ordinal);
-    }
-    /** @return ?ReviewInfo
-     * @deprecated */
-    function full_review_of_textual_id($textid) {
-        return $this->full_review_by_ordinal_id($textid);
-    }
-
     /** @return ?ReviewInfo */
     private function fresh_review_by($key, $value) {
         $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature, ContactInfo.firstName, ContactInfo.lastName, ContactInfo.affiliation, ContactInfo.email, ContactInfo.roles, ContactInfo.contactTags from PaperReview join ContactInfo using (contactId) where paperId=? and $key=? order by paperId, reviewId", $this->paperId, $value);
@@ -2374,16 +2293,6 @@ class PaperInfo {
     function fresh_review_by_user($u) {
         return $this->fresh_review_by("contactId", self::contact_to_cid($u));
     }
-    /** @return ?ReviewInfo
-     * @deprecated */
-    function fresh_review_of_id($id) {
-        return $this->fresh_review_by_id($id);
-    }
-    /** @return ?ReviewInfo
-     * @deprecated */
-    function fresh_review_of_user($contact) {
-        return $this->fresh_review_by_user($contact);
-    }
 
     /** @return list<ReviewInfo> */
     function viewable_reviews_as_display(Contact $viewer) {
@@ -2399,12 +2308,6 @@ class PaperInfo {
             $cinfo->vreviews_version = $this->_review_array_version;
         }
         return $cinfo->vreviews_array;
-    }
-
-    /** @return list<ReviewInfo>
-     * @deprecated */
-    function viewable_reviews_by_display(Contact $viewer) {
-        return $this->viewable_reviews_as_display($viewer);
     }
 
     /** @return bool */
@@ -2713,17 +2616,6 @@ class PaperInfo {
             }
         }
         return $a;
-    }
-
-    /** @return list<ReviewRefusalInfo>
-     * @deprecated */
-    function review_refusals_of_user(Contact $user) {
-        return $this->review_refusals_by_user($user);
-    }
-    /** @return list<ReviewRefusalInfo>
-     * @deprecated */
-    function review_refusals_of_email($email) {
-        return $this->review_refusals_by_email($email);
     }
 
 

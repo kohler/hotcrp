@@ -249,10 +249,6 @@ class GroupedExtensions implements XtContext {
         }
         return $cb(...$this->_ctx->args, ...[$gj]);
     }
-    /** @deprecated */
-    function call_callback($cb, $gj) {
-        return $this->call_function($cb, $gj);
-    }
 
     /** @param ?string $root
      * @return $this */
@@ -277,21 +273,6 @@ class GroupedExtensions implements XtContext {
     function set_context_args($args) {
         $this->_ctx->args = $args;
         return $this;
-    }
-    /** @deprecated */
-    function set_context($options) {
-        if (isset($options["root"]))  {
-            assert(is_string($options["root"]));
-            $this->root = $options["root"];
-        }
-        if (isset($options["args"])) {
-            assert(is_array($options["args"]));
-            $this->_ctx->args = $options["args"];
-        }
-        if (isset($options["hclass"])) {
-            assert(is_string($options["hclass"]));
-            $this->_title_class = $options["hclass"];
-        }
     }
     /** @return list<mixed> */
     function args() {

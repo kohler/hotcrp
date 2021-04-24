@@ -2223,16 +2223,7 @@ class Conf {
         return $this->_user_email_cache[$lemail];
     }
 
-    /** @param string $email
-     * @return false|int
-     * @deprecated */
-    function user_id_by_email($email) {
-        $result = $this->qe("select contactId from ContactInfo where email=?", trim($email));
-        $row = $result->fetch_row();
-        Dbl::free($result);
-        return $row ? (int) $row[0] : false;
-    }
-
+    /** @return string */
     private function _cached_user_query() {
         if ($this->_pc_members_fully_loaded) {
             return "*";
@@ -2946,22 +2937,9 @@ class Conf {
         }
     }
 
-    /** @deprecated */
-    function deadlinesAfter($name, $grace = null) {
-        return $this->time_after_setting($name);
-    }
-    /** @deprecated */
-    function deadlinesBetween($name1, $name2, $grace = null) {
-        return $this->time_between_settings($name1, $name2, $grace) > 0;
-    }
-
     /** @return bool */
     function time_start_paper() {
         return $this->time_between_settings("sub_open", "sub_reg", "sub_grace") > 0;
-    }
-    /** @deprecated */
-    function timeStartPaper() {
-        return $this->time_start_paper();
     }
     /** @param ?PaperInfo $prow
      * @return bool */
@@ -2974,10 +2952,6 @@ class Conf {
     function time_finalize_paper($prow = null) {
         return ($this->_pc_see_cache & 4) !== 0
             && (!$prow || $prow->timeSubmitted <= 0 || ($this->_pc_see_cache & 1) === 0);
-    }
-    /** @deprecated */
-    function timeFinalizePaper($prow = null) {
-        return $this->time_finalize_paper($prow);
     }
     /** @return bool */
     function allow_final_versions() {
@@ -3031,10 +3005,6 @@ class Conf {
         }
         return ($isPC ? "pcrev_" : "extrev_") . ($hard ? "hard" : "soft")
             . ($round ? "_$round" : "");
-    }
-    /** @deprecated */
-    function review_deadline($round, $isPC, $hard) {
-        return $this->review_deadline_name($round, $isPC, $hard);
     }
     function missed_review_deadline($round, $isPC, $hard) {
         $rev_open = $this->settings["rev_open"] ?? 0;
@@ -3099,11 +3069,6 @@ class Conf {
     function subBlindAlways() {
         return $this->settings["sub_blind"] === self::BLIND_ALWAYS;
     }
-    /** @return bool
-     * @deprecated */
-    function subBlindNever() {
-        return $this->settings["sub_blind"] === self::BLIND_NEVER;
-    }
 
     function is_review_blind($rrow) {
         $rb = $this->settings["rev_blind"];
@@ -3130,11 +3095,6 @@ class Conf {
     /** @return bool */
     function has_any_submitted() {
         return !($this->settings["no_papersub"] ?? false);
-    }
-    /** @return bool
-     * @deprecated */
-    function has_any_pc_viewable_pdf() {
-        return $this->has_any_submitted();
     }
     /** @return bool */
     function has_any_accepted() {
@@ -3179,10 +3139,6 @@ class Conf {
 
     /** @return bool */
     function time_pc_view_active_submissions() {
-        return ($this->_pc_see_cache & 8) !== 0;
-    }
-    /** @deprecated */
-    function can_pc_see_active_submissions() {
         return ($this->_pc_see_cache & 8) !== 0;
     }
 

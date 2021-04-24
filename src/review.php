@@ -1312,7 +1312,7 @@ $blind\n";
         }
 
         // top save changes
-        if ($viewer->timeReview($prow, $rrow) || $admin) {
+        if ($viewer->time_review($prow, $rrow) || $admin) {
             $this->_echo_accept_decline($prow, $rrow, $viewer, $reviewPostLink);
         }
 
@@ -1330,7 +1330,7 @@ $blind\n";
         $this->webFormRows($prow, $rrow, $viewer, $rvalues);
 
         // review actions
-        if ($viewer->timeReview($prow, $rrow) || $admin) {
+        if ($viewer->time_review($prow, $rrow) || $admin) {
             if ($prow->can_author_view_submitted_review()
                 && (!$rrow->subject_to_approval()
                     || !$viewer->is_my_review($rrow))) {
@@ -2174,7 +2174,7 @@ class ReviewValues extends MessageSet {
         }
         $admin = $user->allow_administer($prow);
 
-        if (!$user->timeReview($prow, $rrow)
+        if (!$user->time_review($prow, $rrow)
             && (!isset($this->req["override"]) || !$admin)) {
             $this->rmsg(null, 'The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for entering this review has passed.' . ($admin ? " Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""), self::ERROR);
             return false;

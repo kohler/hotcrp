@@ -66,11 +66,6 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
     function as_list() {
         return $this->a;
     }
-    /** @return list<string>
-     * @deprecated */
-    function as_array() {
-        return $this->a;
-    }
     /** @return array<int|string,string> */
     function as_map() {
         return $this->csvp->as_map($this->a);
@@ -914,10 +909,5 @@ class CsvGenerator {
         } else {
             Filer::download_string($this->unparse(), $this->mimetype_with_charset());
         }
-    }
-
-    /** @deprecated */
-    function download() {
-        $this->emit();
     }
 }

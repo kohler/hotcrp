@@ -333,33 +333,6 @@ function get($var, $idx, $default = null) {
     }
 }
 
-/** @param object|array|null $var
- * @param string|int $idx
- * @return string
- * @deprecated
- * @suppress PhanDeprecatedFunction */
-function get_s($var, $idx, $default = null) {
-    return (string) get($var, $idx, $default);
-}
-
-/** @param object|array|null $var
- * @param string|int $idx
- * @return int
- * @deprecated
- * @suppress PhanDeprecatedFunction */
-function get_i($var, $idx, $default = null) {
-    return (int) get($var, $idx, $default);
-}
-
-/** @param object|array|null $var
- * @param string|int $idx
- * @return float
- * @deprecated
- * @suppress PhanDeprecatedFunction */
-function get_f($var, $idx, $default = null) {
-    return (float) get($var, $idx, $default);
-}
-
 /** @param mixed $a */
 function array_to_object_recursive($a) {
     if (is_array($a) && is_associative_array($a)) {

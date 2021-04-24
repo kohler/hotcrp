@@ -1050,12 +1050,6 @@ class SettingValues extends MessageSet {
         }
         $this->cleanup_callbacks[] = [$name, $func];
     }
-    /** @param ?string $name
-     * @param callable() $func
-     * @deprecated */
-    function cleanup_callback($name, $func) {
-        $this->register_cleanup_function($name, $func);
-    }
 
     /** @param string $field
      * @param ?string $classes
@@ -1068,10 +1062,6 @@ class SettingValues extends MessageSet {
             $t .= '<div class="' . MessageSet::status_class($mx->status, $class, "is-") . '">' . $mx->message . "</div>";
         }
         return $t;
-    }
-    /** @deprecated */
-    function render_feedback_at($field, $classes = null) {
-        return $this->feedback_at($field, $classes);
     }
     /** @param string $field
      * @param ?string $classes */
@@ -1209,10 +1199,6 @@ class SettingValues extends MessageSet {
         }
         return Ht::entry($name, $v, $this->sjs($si, $js, "text")) . $t;
     }
-    /** @deprecated */
-    function render_entry($name, $js = null) {
-        return $this->entry($name, $js);
-    }
     /** @param string $name
      * @return void */
     function echo_entry($name) {
@@ -1273,10 +1259,6 @@ class SettingValues extends MessageSet {
         }
         return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($si, $js, "select")) . $t;
     }
-    /** @deprecated */
-    function render_select($name, $values, $js = null) {
-        return $this->select($name, $values, $js);
-    }
     function echo_select_group($name, $values, $description, $js = null, $hint = null) {
         $this->echo_control_group($name, $description,
             $this->select($name, $values, self::strip_group_js($js)),
@@ -1310,10 +1292,6 @@ class SettingValues extends MessageSet {
             $js["cols"] = 80;
         }
         return Ht::textarea($name, $v, $this->sjs($si, $js, "textarea")) . $t;
-    }
-    /** @deprecated */
-    function render_textarea($name, $js = null) {
-        return $this->textarea($name, $js);
     }
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);

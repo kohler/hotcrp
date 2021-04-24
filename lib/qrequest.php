@@ -303,14 +303,6 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function valid_token() {
         return $this->____post_ok;
     }
-    /** @deprecated
-     * @return bool */
-    function post_ok() {
-        if ($this->____post_ok && $this->____method !== "POST") {
-            error_log("Qrequest::post_ok() on {$this->____method}");
-        }
-        return $this->____post_ok;
-    }
     /** @return bool */
     function valid_post() {
         if ($this->____post_ok && $this->____method !== "POST") {

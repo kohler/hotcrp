@@ -1789,6 +1789,8 @@ class Contact {
         }
     }
 
+    /** @param ?Contact $actor
+     * @return ?Contact */
     static function create(Conf $conf, $actor, $reg, $flags = 0, $roles = 0) {
         // clean registration
         if (is_array($reg)) {
@@ -3848,7 +3850,8 @@ class Contact {
             && $this->conf->check_any_tracks($this, Track::UNASSREV);
     }
 
-    function timeReview(PaperInfo $prow, ReviewInfo $rrow = null) {
+    /** @return bool */
+    function time_review(PaperInfo $prow, ReviewInfo $rrow = null) {
         $rights = $this->rights($prow);
         if ($rights->reviewType > 0
             || ($rrow
@@ -4057,19 +4060,6 @@ class Contact {
             }
         }
         return $whyNot;
-    }
-
-    /** @return bool
-     * @deprecated */
-    function can_review(PaperInfo $prow, ReviewInfo $rrow = null, $submit = false) {
-        return $this->can_edit_review($prow, $rrow, $submit);
-    }
-
-    /** @param ?ReviewInfo $rrow
-     * @return ?PermissionProblem
-     * @deprecated */
-    function perm_review(PaperInfo $prow, $rrow, $submit = false) {
-        return $this->perm_edit_review($prow, $rrow, $submit);
     }
 
     /** @param ?ReviewInfo $rrow
@@ -4602,16 +4592,6 @@ class Contact {
             || ($this->isPC && $this->conf->tags()->has_public_peruser);
     }
 
-    /** @deprecated */
-    function can_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
-        return $this->can_edit_tag($prow, $tag, $previndex, $index);
-    }
-
-    /** @deprecated */
-    function perm_change_tag(PaperInfo $prow, $tag, $previndex, $index) {
-        return $this->perm_edit_tag($prow, $tag, $previndex, $index);
-    }
-
     /** @param string $tag
      * @return bool */
     function can_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
@@ -4705,16 +4685,6 @@ class Contact {
         return $whyNot;
     }
 
-    /** @deprecated */
-    function can_change_some_tag(PaperInfo $prow = null) {
-        return $this->can_edit_some_tag($prow);
-    }
-
-    /** @deprecated */
-    function perm_change_some_tag(PaperInfo $prow = null) {
-        return $this->perm_edit_some_tag($prow);
-    }
-
     /** @return bool */
     function can_edit_some_tag(PaperInfo $prow = null) {
         if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
@@ -4750,11 +4720,6 @@ class Contact {
             $whyNot["forceShow"] = true;
         }
         return $whyNot;
-    }
-
-    /** @deprecated */
-    function can_change_most_tags(PaperInfo $prow = null) {
-        return $this->can_edit_most_tags($prow);
     }
 
     /** @return bool */
@@ -4796,11 +4761,6 @@ class Contact {
                     && (!$t->track || $this->privChair)
                     && (!$t->readonly || $this->is_manager()));
         }
-    }
-
-    /** @deprecated */
-    function can_change_tag_anno($tag) {
-        return $this->can_edit_tag_anno($tag);
     }
 
     /** @param string $tag

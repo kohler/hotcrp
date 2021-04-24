@@ -1791,12 +1791,6 @@ class PaperSearch {
         $this->_warnings[] = $text;
     }
 
-    /** @param string $text
-     * @deprecated */
-    function warn($text) {
-        return $this->warning($text);
-    }
-
     private function _clear_warnings_after($nw) {
         if ($nw > 0) {
             array_splice($this->_warnings, $nw);
@@ -2665,12 +2659,6 @@ class PaperSearch {
         } else {
             return [];
         }
-    }
-
-    /** @return array<int,list<string>>
-     * @deprecated */
-    function paper_highlights() {
-        return $this->highlights_by_paper_id();
     }
 
     /** @param iterable<string> $words

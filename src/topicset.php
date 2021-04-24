@@ -116,11 +116,6 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     function offsetUnset($offset) {
         throw new Exception("invalid TopicSet::offsetUnset");
     }
-    /** @return ?string
-     * @deprecated */
-    function get($tid) {
-        return $this->_topic_map[$tid] ?? null;
-    }
     /** @param int $tid
      * @return ?string */
     function name($tid) {
