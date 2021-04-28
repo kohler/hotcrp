@@ -1510,16 +1510,14 @@ $blind\n";
         $last_view_score = ReviewInfo::VIEWSCORE_RECOMPUTE;
         foreach ($prows as $prow) {
             foreach ($prow->all_reviews() as $rrow) {
-                if ($rrow->reviewViewScore_recomputed) {
-                    if ($recompute) {
-                        $rrow->reviewViewScore = $this->nonempty_view_score($rrow);
-                    }
-                    if ($last_view_score !== $rrow->reviewViewScore) {
+                if ($rrow->need_view_score()) {
+                    $vs = $this->nonempty_view_score($rrow);
+                    if ($last_view_score !== $vs) {
                         if (!empty($rids)) {
                             $updatef("update PaperReview set reviewViewScore=? where paperId?a and reviewId?a and reviewViewScore=?", [$last_view_score, $pids, $rids, ReviewInfo::VIEWSCORE_RECOMPUTE]);
                         }
                         $pids = $rids = [];
-                        $last_view_score = $rrow->reviewViewScore;
+                        $last_view_score = $vs;
                     }
                     if (empty($pids) || $pids[count($pids) - 1] !== $rrow->paperId) {
                         $pids[] = $rrow->paperId;

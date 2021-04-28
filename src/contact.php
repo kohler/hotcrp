@@ -3658,7 +3658,7 @@ class Contact {
         }
         $seerev = $this->seerev_setting($prow, $rrow, $rights);
         if ($rrow) {
-            $viewscore = min($viewscore, $rrow->reviewViewScore);
+            $viewscore = min($viewscore, $rrow->view_score());
         }
         // See also PaperInfo::can_view_review_identity_of.
         return ($rights->act_author_view
