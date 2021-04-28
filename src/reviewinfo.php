@@ -381,7 +381,7 @@ class ReviewInfo implements JsonSerializable {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
         '@phan-var ?ReviewInfo $rrow';
         if ($rrow) {
-            $prow = $prowx instanceof PaperInfoSet ? $prowx->get($rrow->paperId) : $prowx;
+            $prow = $prowx instanceof PaperInfoSet ? $prowx->get((int) $rrow->paperId) : $prowx;
             $rrow->merge($prow, $conf);
         }
         return $rrow;
