@@ -2046,6 +2046,12 @@ class PaperInfo {
         return $this->_review_array;
     }
 
+    /** @return array<int,ReviewInfo> */
+    function all_full_reviews() {
+        $this->ensure_full_reviews();
+        return $this->all_reviews();
+    }
+
     /** @return list<ReviewInfo> */
     function reviews_as_list() {
         return array_values($this->all_reviews());
@@ -2226,10 +2232,8 @@ class PaperInfo {
                 $prow->_full_review_key = "u$cid";
             }
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $row_set->paper_ids(), $cid);
-            while (($rrow = ReviewInfo::fetch($result, null, $this->conf))) {
-                $prow = $row_set->get($rrow->paperId);
-                $rrow->set_prow($prow);
-                $prow->_full_review[] = $rrow;
+            while (($rrow = ReviewInfo::fetch($result, $row_set, $this->conf))) {
+                $rrow->prow->_full_review[] = $rrow;
             }
             Dbl::free($result);
             $this->ensure_full_review_name();

@@ -3505,6 +3505,7 @@ class Conf {
         //   "assignments"
         //   "where" => $sql    SQL 'where' clause
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
+        //   "limit" => $sql    SQL 'limit' clause
 
         $cxid = $user ? $user->contactXid : -2;
         assert($cxid > 0 || $cxid < -1);
@@ -3703,7 +3704,8 @@ class Conf {
         if (($options["tags"] ?? false) === "require") {
             $pq .= "having paperTags!=''\n";
         }
-        $pq .= ($options["order"] ?? "order by Paper.paperId") . "\n";
+        $pq .= ($options["order"] ?? "order by Paper.paperId") . "\n"
+            . ($options["limit"] ?? "");
 
         //Conf::msg_debugt($pq);
         return $this->qe_raw($pq);

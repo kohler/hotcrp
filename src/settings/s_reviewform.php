@@ -660,26 +660,26 @@ class ReviewForm_SettingRenderer {
         }
 
         $unknown_nonempty = array_values($rfj);
-        $limit = 0;
+        $minpid = 0;
         while (!empty($unknown_nonempty)) {
-            $result = $sv->conf->qe("select * from PaperReview where " . join(" or ", $where) . " limit $limit,100");
-            $expect_limit = $limit + 100;
-            while (($rrow = ReviewInfo::fetch($result, null, $sv->conf))) {
-                for ($i = 0; $i < count($unknown_nonempty); ++$i) {
-                    $fj = $unknown_nonempty[$i];
-                    $fid = $fj->internal_id;
-                    if (isset($rrow->$fid)
-                        && (isset($fj->options) ? (int) $rrow->$fid !== 0 : $rrow->$fid !== "")) {
-                        $fj->has_any_nonempty = true;
-                        array_splice($unknown_nonempty, $i, 1);
-                    } else {
-                        ++$i;
+            $pset = $sv->conf->paper_set(["where" => "Paper.paperId>$minpid", "limit" => "limit 100"]);
+            foreach ($pset as $prow) {
+                foreach ($prow->all_full_reviews() as $rrow) {
+                    for ($i = 0; $i < count($unknown_nonempty); ++$i) {
+                        $fj = $unknown_nonempty[$i];
+                        $fid = $fj->internal_id;
+                        if (isset($rrow->$fid)
+                            && (isset($fj->options) ? (int) $rrow->$fid !== 0 : $rrow->$fid !== "")) {
+                            $fj->has_any_nonempty = true;
+                            array_splice($unknown_nonempty, $i, 1);
+                        } else {
+                            ++$i;
+                        }
                     }
                 }
-                ++$limit;
+                $minpid = max($minpid, $prow->paperId);
             }
-            Dbl::free($result);
-            if ($limit !== $expect_limit) { // ran out of reviews
+            if ($pset->size() < 100) { // ran out of reviews
                 break;
             }
         }
