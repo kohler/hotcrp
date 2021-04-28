@@ -113,10 +113,11 @@ class PaperEvents {
             if (($prow = $this->prows->get($rrow->paperId))
                 && $this->user->can_view_paper($prow)
                 && !$this->user->act_author_view($prow)
-                && $this->user->following_reviews($prow)
-                && $this->user->can_view_review($prow, $rrow)) {
+                && $this->user->following_reviews($prow)) {
                 $rrow->set_prow($prow);
-                return new PaperEvent($prow, $rrow, null);
+                if ($this->user->can_view_review($prow, $rrow)) {
+                    return new PaperEvent($prow, $rrow, null);
+                }
             }
         }
     }
