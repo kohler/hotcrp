@@ -270,6 +270,7 @@ class ReviewInfo implements JsonSerializable {
         $this->conf = $conf ?? $prow->conf;
         $this->prow = $prow;
         $this->paperId = (int) $this->paperId;
+        assert($prow === null || $this->paperId === $prow->paperId);
         $this->reviewId = (int) $this->reviewId;
         $this->contactId = (int) $this->contactId;
         $this->reviewToken = (int) $this->reviewToken;
@@ -383,11 +384,13 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
-    /** @return ?ReviewInfo */
-    static function fetch($result, PaperInfo $prow = null, Conf $conf = null) {
+    /** @param PaperInfo|PaperInfoSet|null $prowx
+     * @return ?ReviewInfo */
+    static function fetch($result, $prowx = null, Conf $conf = null) {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
         '@phan-var ?ReviewInfo $rrow';
         if ($rrow) {
+            $prow = $prowx instanceof PaperInfoSet ? $prowx->get($rrow->paperId) : $prowx;
             $rrow->merge(true, $prow, $conf);
         }
         return $rrow;

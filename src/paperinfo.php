@@ -2006,10 +2006,8 @@ class PaperInfo {
         }
 
         $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
-        while (($rrow = ReviewInfo::fetch($result, null, $this->conf))) {
-            $prow = $row_set->get($rrow->paperId);
-            $rrow->set_prow($prow);
-            $prow->_review_array[$rrow->reviewId] = $rrow;
+        while (($rrow = ReviewInfo::fetch($result, $row_set, $this->conf))) {
+            $rrow->prow->_review_array[$rrow->reviewId] = $rrow;
         }
         Dbl::free($result);
 
