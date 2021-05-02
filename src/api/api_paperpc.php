@@ -26,7 +26,7 @@ class PaperPC_API {
         $pcu = $cid ? $user->conf->cached_user_by_id($cid) : null;
         $j = [
             "ok" => true,
-            "value" => $pcu ? $user->email : "none",
+            "value" => $pcu ? $pcu->email : "none",
             "result" => $pcu ? $user->name_html_for($pcu) : "None"
         ];
         if ($user->can_view_user_tags()) {
