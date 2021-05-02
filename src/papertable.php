@@ -1205,9 +1205,11 @@ class PaperTable {
             return;
         }
         $value = $this->prow->$field;
+        $id = "$type {$this->prow->paperId}";
 
         $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector js-unfold-focus need-paper-select-api"] : "");
-        echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
+        echo $this->papt($type, $editable ? Ht::label($name, $id) : $name,
+            ["type" => "ps", "fold" => $editable ? $type : false, "folded" => true]),
             '<div class="psv">';
         if (!$value) {
             $n = "";
@@ -1228,7 +1230,7 @@ class PaperTable {
                 $selopt .= " extrev";
             }
             echo '<form class="ui-submit uin fx">',
-                Ht::select($type, [], 0, ["class" => "w-99 want-focus", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value]),
+                Ht::select($type, [], 0, ["class" => "w-99 want-focus", "data-pcselector-options" => $selopt . " selected", "data-pcselector-selected" => $value, "id" => $id]),
                 '</form>';
         }
 
@@ -1265,9 +1267,9 @@ class PaperTable {
         }
 
         $tags = $this->prow->all_tags_text();
-        $is_editable = $this->user->can_edit_some_tag($this->prow);
-        $is_sitewide = $is_editable && !$this->user->can_edit_most_tags($this->prow);
-        if ($tags === "" && !$is_editable) {
+        $editable = $this->user->can_edit_some_tag($this->prow);
+        $is_sitewide = $editable && !$this->user->can_edit_most_tags($this->prow);
+        if ($tags === "" && !$editable) {
             return;
         }
 
@@ -1276,17 +1278,19 @@ class PaperTable {
         $viewable = $this->prow->sorted_viewable_tags($this->user);
 
         $tx = $tagger->unparse_link($viewable);
-        $unfolded = $is_editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
+        $unfolded = $editable && ($this->has_problem_at("tags") || $this->qreq->atab === "tags");
+        $id = "tags {$this->prow->paperId}";
 
-        $this->_papstripBegin("tags", true, $is_editable ? ["class" => "need-tag-form js-unfold-focus"] : []);
+        $this->_papstripBegin("tags", true, $editable ? ["class" => "need-tag-form js-unfold-focus"] : []);
 
-        if ($is_editable) {
+        if ($editable) {
             echo Ht::form($this->prow->hoturl(), ["data-pid" => $this->prow->paperId, "data-no-tag-report" => $unfolded ? 1 : null]);
         }
 
-        echo $this->papt("tags", "Tags", ["type" => "ps", "fold" => $is_editable ? "tags" : false]),
+        echo $this->papt("tags", $editable ? Ht::label("Tags", $id) : "Tags",
+            ["type" => "ps", "fold" => $editable ? "tags" : false]),
             '<div class="psv">';
-        if ($is_editable) {
+        if ($editable) {
             $treport = Tags_API::tagmessages($this->user, $this->prow);
 
             // uneditable
@@ -1311,11 +1315,12 @@ class PaperTable {
                 }
                 echo '</p>';
             }
-            $editable = $this->prow->sorted_editable_tags($this->user);
-            echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest ',
+            $editable_tags = $this->prow->sorted_editable_tags($this->user);
+            echo '<textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest mf-label ',
                 $is_sitewide ? "sitewide-editable-tags" : "editable-tags",
-                '" spellcheck="false">', $tagger->unparse($editable), '</textarea>',
-                '<div class="aab aabr aab-compact"><div class="aabut">',
+                '" spellcheck="false" id="', $id, '">',
+                $tagger->unparse($editable_tags),
+                '</textarea><div class="aab aabr aab-compact"><div class="aabut">',
                 Ht::submit("cancel", "Cancel"),
                 '</div><div class="aabut">',
                 Ht::submit("save", "Save", ["class" => "btn-primary"]),
@@ -1327,7 +1332,7 @@ class PaperTable {
         }
         echo "</div>";
 
-        if ($is_editable) {
+        if ($editable) {
             echo "</form>";
         }
         if ($unfolded) {
@@ -1337,15 +1342,17 @@ class PaperTable {
     }
 
     function papstripOutcomeSelector() {
+        $id = "decision {$this->prow->paperId}";
         $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api js-unfold-focus"]);
-        echo $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
+        echo $this->papt("decision", Ht::label("Decision", $id),
+                ["type" => "ps", "fold" => "decision"]),
             '<div class="psv"><form class="ui-submit uin fx">';
         if (isset($this->qreq->forceShow)) {
             echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
         }
         echo Ht::select("decision", $this->conf->decision_map(),
                         (string) $this->prow->outcome,
-                        ["class" => "w-99 want-focus"]),
+                        ["class" => "w-99 want-focus", "id" => $id]),
             '</form><p class="fn odname js-psedit-result">',
             htmlspecialchars($this->conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";
@@ -1385,7 +1392,7 @@ class PaperTable {
             . '<span class="is-tag-index" data-tag-base="' . $tag . '">' . $totval . '</span> ' . $kind . '</a></div>';
     }
 
-    private function papstrip_tag_entry_title($s, $tag, $value) {
+    private function papstrip_tag_entry_title($s, $tag, $value, $label) {
         $ts = "#$tag";
         if (($color = $this->conf->tags()->color_classes($tag))) {
             $ts = '<span class="' . $color . ' taghh">' . $ts . '</span>';
@@ -1397,7 +1404,7 @@ class PaperTable {
                 . '">: <span class="is-tag-index" data-tag-base="~'
                 . $tag . '">' . $value . '</span></span>';
         }
-        return $s;
+        return $label ? Ht::label($s, "tag:~{$tag} {$this->prow->paperId}") : $s;
     }
 
     private function papstrip_rank($tag) {
@@ -1410,12 +1417,13 @@ class PaperTable {
         if (isset($this->qreq->forceShow)) {
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         }
-        echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} rank", $tag, $myval),
-                         array("type" => "ps", "fold" => $id, "float" => $totmark)),
+        echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} rank", $tag, $myval, true),
+                         ["type" => "ps", "fold" => $id, "float" => $totmark, "fnclass" => "mf"]),
             '<div class="psv"><div class="fx">',
             Ht::entry("tagindex", $myval,
-                      ["size" => 4, "class" => "is-tag-index want-focus",
-                       "data-tag-base" => "~$tag", "inputmode" => "decimal"]),
+                ["size" => 4, "class" => "is-tag-index want-focus mf-label-success",
+                 "data-tag-base" => "~{$tag}", "inputmode" => "decimal",
+                 "id" => "tag:~{$tag} {$this->prow->paperId}"]),
             ' <span class="barsep">·</span> ',
             '<a href="', $this->conf->hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
             ' <div class="hint" style="margin-top:4px"><strong>Tip:</strong> <a href="', $this->conf->hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Search “editsort:#~', $tag, '”</a> to drag and drop your ranking, or <a href="', $this->conf->hoturl("offline"), '">use offline reviewing</a> to rank many papers at once.</div>',
@@ -1432,10 +1440,13 @@ class PaperTable {
         if (isset($this->qreq->forceShow)) {
             echo Ht::hidden("forceShow", $this->qreq->forceShow);
         }
-        echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} votes", $tag, $myval),
+        echo $this->papt($id, $this->papstrip_tag_entry_title("{{}} votes", $tag, $myval, true),
                          ["type" => "ps", "fold" => $id, "float" => $totmark]),
             '<div class="psv"><div class="fx">',
-            Ht::entry("tagindex", $myval, ["size" => 4, "class" => "is-tag-index want-focus", "data-tag-base" => "~$tag", "inputmode" => "decimal"]),
+            Ht::entry("tagindex", $myval,
+                ["size" => 4, "class" => "is-tag-index want-focus mf-label-success",
+                 "data-tag-base" => "~{$tag}", "inputmode" => "decimal",
+                 "id" => "tag:~{$tag} {$this->prow->paperId}"]),
             " &nbsp;of $allotment",
             ' <span class="barsep">·</span> ',
             '<a href="', $this->conf->hoturl("search", "q=" . urlencode("editsort:-#~$tag")), '">Edit all</a>',
@@ -1454,9 +1465,10 @@ class PaperTable {
         }
         echo $this->papt($id,
             $this->papstrip_tag_entry_title('<label><span class="checkc">'
-                . Ht::checkbox("tagindex", "0", $myval !== "", ["class" => "is-tag-index want-focus", "data-tag-base" => "~$tag"])
-                . '</span>{{}} vote</label>', $tag, false),
-            ["type" => "ps", "fnclass" => "checki", "float" => $totmark]),
+                . Ht::checkbox("tagindex", "0", $myval !== "",
+                    ["class" => "is-tag-index want-focus", "data-tag-base" => "~$tag"])
+                . '</span>{{}} vote</label>', $tag, false, false),
+                ["type" => "ps", "fnclass" => "checki", "float" => $totmark]),
             "</form></div>\n";
     }
 

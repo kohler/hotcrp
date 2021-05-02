@@ -1212,6 +1212,14 @@ function input_default_value(elt) {
     }
 }
 
+function input_set_default_value(elt, val) {
+    if (input_is_checkboxlike(elt)) {
+        elt.setAttribute("data-default-checked", val == "" ? "false" : "true");
+    } else {
+        elt.setAttribute("data-default-value", val);
+    }
+}
+
 function input_differs(elt) {
     var expected = input_default_value(elt);
     if (input_is_checkboxlike(elt))
@@ -3714,10 +3722,7 @@ function row_order_change(e, delta, action) {
             if (m && m[2] != new_index) {
                 this.name = m[1] + new_index;
                 if (this.name in defaults) {
-                    if (input_is_checkboxlike(this))
-                        this.setAttribute("data-default-checked", defaults[this.name] ? "true" : "false");
-                    else
-                        this.setAttribute("data-default-value", defaults[this.name]);
+                    input_set_default_value(this, defaults[this.name]);
                 }
                 changes.push(this);
             }
@@ -3760,76 +3765,63 @@ return row_order_ui;
 })($);
 
 
-// check marks for ajax saves
-function make_outline_flasher(elt, rgba, duration) {
-    var h = elt.hotcrp_outline_flasher, hold_duration;
-    if (!h)
-        h = elt.hotcrp_outline_flasher = {old_outline: elt.style.outline};
-    if (h.interval) {
-        clearInterval(h.interval);
-        h.interval = null;
-    }
-    if (rgba) {
-        duration = duration || 3000;
-        hold_duration = duration * 0.6;
-        h.start = now_msec();
-        h.interval = setInterval(function () {
-            var now = now_msec(), delta = now - h.start, opacity = 0;
-            if (delta < hold_duration)
-                opacity = 0.5;
-            else if (delta <= duration)
-                opacity = 0.5 * Math.cos((delta - hold_duration) / (duration - hold_duration) * Math.PI);
-            if (opacity <= 0.03) {
-                elt.style.outline = h.old_outline;
-                clearInterval(h.interval);
-                h.interval = null;
-            } else
-                elt.style.outline = "4px solid rgba(" + rgba + ", " + opacity + ")";
-        }, 13);
-    }
-}
-
-function setajaxcheck(elt, rv) {
-    var f, i, e, mx, reset;
-    if (typeof elt == "string")
-        elt = $$(elt);
-    else if (elt.jquery)
-        elt = elt[0];
-    if (!elt)
-        return;
-    make_outline_flasher(elt);
-    var t = "", i, status = 0;
+function minifeedback(e, rv) {
+    var t = "", status = 0, i, mx;
     if (rv && rv.message_list) {
-        f = elt.closest("form");
-        for (var i = 0; i !== rv.message_list.length; ++i) {
+        for (i = 0; i !== rv.message_list.length; ++i) {
             mx = rv.message_list[i];
             t += render_feedback(mx.message, mx.status);
             status = Math.max(status, mx.status);
-            if (f && mx.field && (e = f.elements[mx.field]) && !reset) {
-                elt = reset = e;
-            }
         }
     }
-    if (t === "") {
-        if (rv && rv.error) {
-            t = rv.error;
-            status = 2;
-        } else if (rv && rv.warning) {
-            t = rv.warning;
-            status = rv.ok ? 1 : 2;
-        } else if (!rv || !rv.ok) {
-            t = "Error";
-            status = 2;
+    if (t === "" && (!rv || !rv.ok)) {
+        if (rv && (rv.error || rv.warning)) {
+            log_jserror("rv has error/warning: " + JSON.stringify(rv));
         }
+        t = "Error";
+        status = 2;
     }
-    if (status === 0)
-        make_outline_flasher(elt, "0, 200, 0");
-    else if (status === 1)
-        make_outline_flasher(elt, "133, 92, 4");
-    else
-        elt.style.outline = "5px solid red";
+    removeClass(e, "has-error");
+    removeClass(e, "has-warning");
+    if (status > 0)
+        addClass(e, status > 1 ? "has-error" : "has-warning");
     if (t)
-        make_bubble(t, status === 2 ? "errorbubble" : "warningbubble").near(elt).removeOn(elt, "input change click hide" + (status === 2 ? "" : " focus blur"));
+        make_bubble(t, status > 1 ? "errorbubble" : "warningbubble").near(e).removeOn(e, "input change click hide" + (status > 1 ? "" : " focus blur"));
+
+    var ce, checkish = e.tagName === "BUTTON" || e.tagName === "SELECT" || e.type === "checkbox" || e.type === "radio";
+    if (checkish || hasClass(e, "mf-label")
+        || (status === 0 && hasClass(e, "mf-label-success"))) {
+        ce = e.closest("label");
+        if (!ce && e.id)
+            ce = document.querySelector("label[for='" + e.id + "']");
+    }
+    if (!ce && hasClass(e, "mf"))
+        ce = e;
+    else if (!ce) {
+        ce = e.parentElement;
+        if (!hasClass(ce, "mf")) {
+            ce = document.createElement("div");
+            ce.className = checkish ? "mf mf-absolute" : "mf mf-text";
+            e.parentElement.replaceChild(ce, e);
+            ce.appendChild(e);
+        }
+    }
+
+    $(ce).find(".is-mf").remove();
+    var mfe = document.createElement("span");
+    mfe.className = "is-mf mf-" + ["success", "warning", "error"][status];
+    ce.appendChild(mfe);
+    if (status === 0) {
+        var to, fn = function () {
+            e.removeEventListener("input", fn);
+            clearTimeout(to);
+            if (mfe.parentElement === ce)
+                ce.removeChild(mfe);
+        };
+        e.addEventListener("input", fn);
+        f = parseFloat(getComputedStyle(mfe, ":after").animationDuration + 1) * 1000;
+        to = setTimeout(fn, f);
+    }
 }
 
 function link_urls(t) {
@@ -5202,7 +5194,9 @@ function quicklink_shortcut(evt, key) {
         // at end of list
         a = evt.target || evt.srcElement;
         a = (a && a.tagName == "INPUT" ? a : $$("quicklink-list"));
-        make_outline_flasher(a, "200, 0, 0", 1000);
+        removeClass(a, "flash-error-outline");
+        void a.offsetWidth;
+        addClass(a, "flash-error-outline");
         return true;
     } else
         return false;
@@ -6056,16 +6050,6 @@ function comment_completion_q(elt) {
 
 
 // review preferences
-function setfollow() {
-    var $self = $(this);
-    $.post(hoturl_post("api/follow", {p: $self.attr("data-pid") || siteinfo.paperid}),
-           {following: this.checked, reviewer: $self.data("reviewer") || siteinfo.user.email},
-           function (rv) {
-               setajaxcheck($self[0], rv);
-               rv.ok && ($self[0].checked = rv.following);
-           });
-}
-
 var add_revpref_ajax = (function () {
     var blurred_at = 0;
 
@@ -6099,7 +6083,7 @@ var add_revpref_ajax = (function () {
         $.ajax(hoturl_post("api/revpref", {p: pid}), {
             method: "POST", data: {pref: self.value, u: cid},
             success: function (rv) {
-                setajaxcheck(self, rv);
+                minifeedback(self, rv);
                 if (rv && rv.ok && rv.value != null)
                     self.value = rv.value === "0" ? "" : rv.value;
             }, trackOutstanding: true
@@ -6477,15 +6461,15 @@ if ("pushState" in window.history) {
 function add_draghandle() {
     removeClass(this, "need-draghandle");
     var x = document.createElement("span");
-    x.className = "dragtaghandle";
+    x.className = "draghandle js-drag-tag";
     x.setAttribute("title", "Drag to change order");
     if (this.tagName === "TD") {
         x.style.float = "right";
         x.style.position = "static";
-        x.style.paddingRight = "24px";
+        x.style.marginRight = "8px";
         this.insertBefore(x, null);
     } else
-        this.parentElement.insertBefore(x, this.nextSibling);
+        this.parentElement.insertBefore(x, this);
 }
 
 function PaperRow(tbody, l, r, index, full_ordertag, dragtag) {
@@ -6665,17 +6649,15 @@ handle_ui.on("js-annotate-order", function () {
 function paperlist_tag_ui() {
 
 var plt_tbody, full_ordertag, dragtag,
-    rowanal, highlight_entries,
-    dragging, srcindex, dragindex, dragger,
+    rowanal, dragging, srcindex, dragindex, dragger,
     scroller, mousepos, scrolldelta;
 
 function make_tag_save_callback(elt) {
     return function (rv) {
         if (elt)
-            setajaxcheck(elt, rv);
+            minifeedback(elt, rv);
         if (rv.ok) {
             var focus = document.activeElement;
-            highlight_entries = true;
             if (rv.p) {
                 for (var i in rv.p) {
                     rv.p[i].pid = +i;
@@ -6683,19 +6665,10 @@ function make_tag_save_callback(elt) {
                 }
             } else
                 $(window).trigger("hotcrptags", [rv]);
-            highlight_entries = false;
             if (focus)
                 focus.focus();
         }
     };
-}
-
-function set_tags_callback(evt, data) {
-    var si = analyze_rows(data.pid);
-    if (highlight_entries && rowanal[si].entry) {
-        setajaxcheck(rowanal[si].entry, {ok: true});
-    }
-    row_move(si);
 }
 
 function tag_save() {
@@ -6705,7 +6678,7 @@ function tag_save() {
     else if ((newval = tagvalue_parse(this.value)) !== null)
         ch = m[1] + "#" + (newval !== false ? newval : "clear");
     else {
-        setajaxcheck(this, {ok: false, error: "Value must be a number (or empty to remove the tag)."});
+        minifeedback(this, {ok: false, message_list: [{message: "Value must be a number (or empty to remove the tag).", status: 2}]});
         return;
     }
     $.post(hoturl_post("api/settags", {p: m[2], forceShow: 1}),
@@ -7046,6 +7019,7 @@ function tag_mousedown(evt) {
         dragging.attachEvent("onmouseup", tag_mouseup);
         dragging.attachEvent("onmousecapture", tag_mouseup);
     }
+    addClass(document.body, "grabbing");
     tag_mousemove(evt);
     evt.stopPropagation();
     evt.preventDefault();
@@ -7062,6 +7036,7 @@ function tag_mouseup(evt) {
         dragging.detachEvent("onmousecapture", tag_mouseup);
         dragging.releaseCapture();
     }
+    removeClass(document.body, "grabbing");
     if (dragger) {
         dragger = dragger.remove();
         delete window.disable_tooltip;
@@ -7081,9 +7056,11 @@ plt_tbody = this.tagName === "TABLE" ? this.tBodies[0] : this;
         .on("change.edittag_ajax", "input.edittagval", tag_save)
         .on("keydown.edittag_ajax", "input.edittagval", make_onkey("Enter", tag_save));
     if ((full_ordertag = this.getAttribute("data-order-tag")))
-        $(window).on("hotcrptags", set_tags_callback);
+        $(window).on("hotcrptags", function (event, data) {
+            row_move(analyze_rows(data.pid));
+        });
     if ((dragtag = this.getAttribute("data-drag-tag")))
-        $(this).on("mousedown.edittag_ajax", "span.dragtaghandle", tag_mousedown);
+        $(this).on("mousedown.edittag_ajax", "span.js-drag-tag", tag_mousedown);
 }).call(plt_tbody.parentNode);
 }
 
@@ -7228,7 +7205,7 @@ function render_assignment_selector() {
             sel.add(opt, null);
         }
     }
-    this.className = "select";
+    this.className = "select mf mr-2";
     this.removeAttribute("data-assignment");
     this.appendChild(sel);
 }
@@ -7253,18 +7230,18 @@ function set(f, $j, text) {
 }
 
 handle_ui.on("js-plinfo-edittags", function () {
-    var div = $(this).closest("div.pl_tags")[0],
+    var div = $(this).closest("div.pl_tags")[0], ta,
         prow = prownear(div), pid = +prow.getAttribute("data-pid");
     function start(rv) {
         if (!rv.ok || !rv.pid || rv.pid != pid)
             return;
-        $(div).html('<em class="plx">Tags:</em> '
-            + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" class="want-focus need-suggest tags" data-tooltip-anchor="v"></textarea>'
-            + ' &nbsp;<button type="button" name="tagsave ' + rv.pid + '">Save</button>'
-            + ' &nbsp;<button type="button" name="tagcancel ' + rv.pid + '">Cancel</button>');
-        var $ta = $(div).find("textarea");
-        suggest.call($ta[0]);
-        $ta.val(rv.tags_edit_text).autogrow()
+        $(div).html('<div class="d-inline-flex"><em class="plx mr-2"><label for="tags ' + rv.pid + '">Tags</label>:</em>'
+            + '<div class="mf mf-text w-text"><textarea name="tags ' + rv.pid + '" cols="120" rows="1" class="want-focus need-suggest tags w-text" style="vertical-align:-0.5rem" data-tooltip-anchor="v" id="tags ' + rv.pid + '"></textarea></div>'
+            + '<button type="button" name="tagsave ' + rv.pid + '" class="btn-primary ml-2">Save</button>'
+            + '<button type="button" name="tagcancel ' + rv.pid + '" class="ml-2">Cancel</button></div>');
+        ta = $(div).find("textarea")[0];
+        suggest.call(ta);
+        $(ta).val(rv.tags_edit_text).autogrow()
             .on("keydown", make_onkey("Enter", do_submit))
             .on("keydown", make_onkey("Escape", do_cancel));
         $(div).find("button[name^=tagsave]").click(do_submit);
@@ -7273,20 +7250,20 @@ handle_ui.on("js-plinfo-edittags", function () {
     }
     function do_submit() {
         $.post(hoturl_post("api/settags", {p: pid, forceShow: 1}),
-            {tags: $(div).find("textarea").val()},
+            {tags: $(ta).val()},
             function (rv) {
+                minifeedback(ta, rv);
                 if (rv.ok)
                     $(window).trigger("hotcrptags", [rv]);
-                else
-                    setajaxcheck($(div).find("textarea"), rv);
             });
     }
     function do_cancel() {
         var focused = document.activeElement
-            && $(document.activeElement).closest("div.pl_tags")[0] === div;
+            && document.activeElement.closest("div.pl_tags") === div;
+        $(ta).trigger("hide");
         render_row_tags(div);
         if (focused)
-            focus_within($(div).closest("tr")[0]);
+            focus_within(div.closest("tr"));
     }
     $.post(hoturl_post("api/settags", {p: pid, forceShow: 1}), start); // XXX should be GET
 });
@@ -7451,21 +7428,25 @@ function make_tag_column_callback(f) {
     if (/^~[^~]/.test(tag))
         tag = siteinfo.user.cid + tag;
     return function (evt, rv) {
-        var e = pidfield(rv.pid, f), tags = rv.tags, tagval = null;
-        if (!e.length || f.missing)
+        var e = pidfield(rv.pid, f)[0];
+        if (!e || f.missing)
             return;
-        for (var i = 0; i != tags.length; ++i)
-            if (tags[i].substr(0, tag.length) === tag && tags[i].charAt(tag.length) === "#") {
-                tagval = tags[i].substr(tag.length + 1);
-                break;
+        var tv = tag_value(rv.tags, tag), input = e.querySelector("input");
+        if (input) {
+            var oldval = input_default_value(input),
+                tvs = tv === null ? "" : String(tv);
+            if (oldval !== (input.type === "checkbox" ? tvs !== "" : tvs)) {
+                if (input.type === "checkbox") {
+                    input.checked = tv !== null;
+                } else {
+                    if (document.activeElement !== e)
+                        input.value = tvs;
+                }
+                input_set_default_value(input, tv);
+                minifeedback(input, {ok: true});
             }
-        if (e.find("input").length) {
-            e.find(".edittag").prop("checked", tagval !== null);
-            e.find(".edittagval").val(tagval === null ? "" : String(tagval));
-        } else if (tagval === "0")
-            e.html(/tagval/.test(f.className) ? "0" : "✓");
-        else
-            e.html(tagval === null ? "" : tagval);
+        } else
+            e.html(tvs === "0" && !/tagval/.test(f.className) ? "✓" : tvs);
     };
 }
 
@@ -8161,7 +8142,7 @@ handle_ui.on("js-follow-change", function (event) {
         {p: $(self).attr("data-pid") || siteinfo.paperid}),
         {following: this.checked, reviewer: $(self).data("reviewer") || siteinfo.user.email},
         function (rv) {
-            setajaxcheck(self, rv);
+            minifeedback(self, rv);
             rv.ok && (self.checked = rv.following);
         });
 });
@@ -8178,25 +8159,16 @@ var edit_conditions = {};
 
 function prepare_paper_select() {
     var self = this,
-        ctl = $(self).find("select, textarea").first()[0],
+        ctl = $(self).find("select, textarea")[0],
         keyed = 0;
     function cancel(close) {
         $(ctl).val(input_default_value(ctl));
         close && foldup.call(self, null, {f: true});
     }
-    function done(ok, message) {
-        $(self).find(".psfn .savesuccess, .psfn .savefailure").remove();
-        var $s = $("<span class=\"save" + (ok ? "success" : "failure") + "\"></span>");
-        $s.appendTo($(self).find(".psfn"));
-        if (ok)
-            $s.delay(1000).fadeOut();
-        if (message)
-            make_bubble(message, "errorbubble").anchor("w").near($s[0]);
-    }
     function make_callback(close) {
         return function (data) {
+            minifeedback(ctl, data);
             if (data.ok) {
-                done(true);
                 ctl.setAttribute("data-default-value", data.value);
                 close && foldup.call(self, null, {f: true});
                 var $p = $(self).find(".js-psedit-result").first();
@@ -8205,8 +8177,6 @@ function prepare_paper_select() {
                     make_pattern_fill(data.color_classes || "");
                     $p.html('<span class="taghh ' + data.color_classes + '">' + $p.html() + '</span>');
                 }
-            } else {
-                done(false, data.error);
             }
             ctl.disabled = false;
         }
@@ -8324,6 +8294,7 @@ function save_pstags(evt) {
             if (data.ok) {
                 if (!data.message_list || !data.message_list.length) {
                     foldup.call($f[0], null, {f: true});
+                    minifeedback(f.elements.tags, {ok: true});
                 }
                 $(window).trigger("hotcrptags", [data]);
                 removeClass(f.elements.tags, "has-error");
@@ -8369,39 +8340,14 @@ function save_pstagindex(event) {
         return false;
     }
     function done(data) {
-        var messages = "", i, status = 0;
         $f.removeClass("submitting");
-        if (!data.ok) {
-            messages += render_feedback("Your changes were not saved.", 2);
-            status = 2;
-        }
-        if (data.message_list) {
-            for (i = 0; i !== data.message_list.length; ++i) {
-                var mx = data.message_list[i];
-                if (mx.status > 1 || interesting(mx.message)) {
-                    messages += render_feedback(mx.message, mx.status);
-                    status = Math.max(status, mx.status);
-                }
-            }
-        }
-        if (data.ok && messages === "") {
+        minifeedback($f.find("input")[0], data);
+        if (data.ok && (data.message_list || []).length === 0) {
             foldup.call($f[0], null, {f: true});
         } else {
             focus_within($f);
         }
         data.ok && $(window).trigger("hotcrptags", [data]);
-
-        $f.find(".psfn .savesuccess, .psfn .savefailure").remove();
-        var $s = $("<span class=\"save" + (data.ok ? "success" : "failure") + "\"></span>");
-        $s.appendTo($f.find(".psfn").first());
-        if (data.ok)
-            $s.delay(1000).fadeOut();
-        if (messages !== "") {
-            make_bubble(messages, status > 1 ? "errorbubble" : "warningbubble").anchor("w")
-                .near($(inputs[0]).is(":visible") ? inputs[0] : $f.find(".psfn")[0])
-                .removeOn($f.find("input"), "input")
-                .removeOn(document.body, "fold");
-        }
     }
     $.post(hoturl_post("api/settags", {p: $f.attr("data-pid")}),
             {"addtags": assignments.join(" ")}, done);
@@ -8646,6 +8592,32 @@ return {
 })($);
 
 
+function tag_value(taglist, t) {
+    if (t.charAt(0) === "~" && t.charAt(1) !== "~")
+        t = siteinfo.user.cid + t;
+    t += "#";
+    for (i = 0; i !== taglist.length; ++i)
+        if (taglist[i].startsWith(t))
+            return +taglist[i].substr(t.length);
+    return null;
+}
+
+function set_tag_index(e, taglist) {
+    var res = tag_value(taglist, e.getAttribute("data-tag-base")), i;
+    res = res === null ? "" : String(res);
+    if (e.tagName === "SPAN") {
+        e.textContent = res;
+        toggleClass(e.closest(".is-nonempty-tags"), "hidden", res === "");
+    } else {
+        if (e.type === "checkbox") {
+            e.checked = res !== "";
+        } else if (document.activeElement !== e) {
+            e.value = res;
+        }
+        input_set_default_value(e, res);
+    }
+}
+
 if (siteinfo.paperid) {
     $(window).on("hotcrptags", function (event, data) {
         if (data.pid != siteinfo.paperid)
@@ -8658,20 +8630,7 @@ if (siteinfo.paperid) {
             this.className = t;
         });
         $(".is-tag-index").each(function () {
-            var $j = $(this), res = "",
-                t = $j.data("tagBase") + "#", i;
-            if (t.charAt(0) == "~" && t.charAt(1) != "~")
-                t = siteinfo.user.cid + t;
-            for (i = 0; i != data.tags.length; ++i)
-                if (data.tags[i].substr(0, t.length) == t)
-                    res = data.tags[i].substr(t.length);
-            if (this.tagName !== "INPUT") {
-                $j.text(res).closest(".is-nonempty-tags").toggleClass("hidden", res === "");
-            } else if (this.type === "checkbox") {
-                this.checked = res !== "";
-            } else if (document.activeElement !== this) {
-                this.value = res;
-            }
+            set_tag_index(this, data.tags);
         });
         $("h1.paptitle .tagdecoration").remove();
         if (data.tag_decoration_html)
@@ -8706,7 +8665,6 @@ handle_ui.on("js-disable-user", function (event) {
     $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.closest("form").getAttribute("data-user")}),
         disabled ? {enable: 1} : {disable: 1},
         function (data) {
-            setajaxcheck(self, data);
             self.disabled = false;
             if (data.ok) {
                 if (data.disabled) {
@@ -8720,6 +8678,7 @@ handle_ui.on("js-disable-user", function (event) {
                 }
                 $(self.closest("form")).find(".js-send-user-accountinfo").prop("disabled", data.disabled);
             }
+            minifeedback(self, data);
         });
 });
 
@@ -8729,7 +8688,7 @@ handle_ui.on("js-send-user-accountinfo", function (event) {
     $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.closest("form").getAttribute("data-user")}),
         {sendinfo: 1},
         function (data) {
-            setajaxcheck(self, data);
+            minifeedback(self, data);
         });
 });
 
@@ -9171,11 +9130,8 @@ handle_ui.on("js-assign-review", function (event) {
     data["pcs" + m[2]] = value;
     $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
         data, function (rv) {
-            if (self.tagName === "SELECT")
-                self.setAttribute("data-default-value", value);
-            else
-                self.setAttribute("data-default-checked", value ? "true" : "false");
-            setajaxcheck(self, rv);
+            input_set_default_value(self, value);
+            minifeedback(self, rv);
             form_highlight(form, self);
         });
 });

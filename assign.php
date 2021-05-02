@@ -110,7 +110,7 @@ function pcAssignments($qreq) {
     $aset->parse(join("", $t));
     if ($aset->execute()) {
         if ($qreq->ajax) {
-            json_exit(["ok" => true]);
+            json_exit($aset->json_result());
         } else {
             $Conf->confirmMsg("Assignments saved." . $aset->messages_div_html());
             $Conf->redirect_self($qreq);
@@ -119,7 +119,7 @@ function pcAssignments($qreq) {
         }
     } else {
         if ($qreq->ajax) {
-            json_exit(["ok" => false, "error" => join("<br />", $aset->messages_html())]);
+            json_exit($aset->json_result());
         } else {
             $Conf->errorMsg(join("<br />", $aset->messages_html()));
         }

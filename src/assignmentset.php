@@ -1162,16 +1162,16 @@ class AssignmentSet {
         }
     }
     /** @return JsonResult */
-    function json_result($landmarks = false) {
+    function json_result() {
         if ($this->has_error()) {
-            $jr = new JsonResult(403, ["ok" => false, "error" => $this->messages_div_html($landmarks)]);
+            $jr = new JsonResult(403, ["ok" => false, "message_list" => $this->message_list()]);
             if ($this->astate->has_user_error) {
                 $jr->status = 422;
                 $jr->content["user_error"] = true;
             }
             return $jr;
         } else if ($this->astate->has_messages()) {
-            return new JsonResult(["ok" => true, "response" => $this->messages_div_html($landmarks)]);
+            return new JsonResult(["ok" => true, "message_list" => $this->message_list()]);
         } else {
             return new JsonResult(["ok" => true]);
         }

@@ -135,7 +135,7 @@ class Preference_PaperColumn extends PaperColumn {
             }
             $t = '<input name="' . $iname . '" class="uikd uich revpref" value="'
                 . ($pv_exists ? unparse_preference($pv) : "")
-                . '" type="text" size="4" tabindex="2" placeholder="0" inputmode="numeric" />';
+                . '" type="text" size="4" tabindex="2" placeholder="0" inputmode="numeric">';
             if ($has_conflict && $this->show_conflict) {
                 $t .= " " . review_type_icon(-1);
             }

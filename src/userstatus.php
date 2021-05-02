@@ -1537,10 +1537,10 @@ topics. We use this information to help match papers to reviewers.</p>',
             echo '<div class="btngrid">';
             if (!$us->is_viewer_user()) {
                 echo Ht::button($us->user->disabled ? "Enable account" : "Disable account", [
-                    "class" => "ui js-disable-user " . ($us->user->disabled ? "btn-success" : "btn-danger")
+                    "class" => "ui js-disable-user mf btn relative " . ($us->user->disabled ? "btn-success" : "btn-danger")
                 ]), '<p class="pt-1">Disabled accounts cannot sign in or view the site.</p>';
             }
-            echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo", "disabled" => $us->user->disabled]);
+            echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf btn relative", "disabled" => $us->user->disabled]);
             echo '</div>';
         }
     }

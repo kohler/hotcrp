@@ -311,6 +311,9 @@ span.nb {
 .wait, body.wait input, body.wait button {
 	cursor: wait !important;
 }
+.grabbing, body.grabbing, body.grabbing .draghandle {
+	cursor: grabbing !important;
+}
 .checki {
 	padding-left: 1.3125em;
 }
@@ -460,6 +463,9 @@ label.checki {
 .text-right {
 	text-align: right;
 }
+.align-top {
+	vertical-align: top;
+}
 .align-middle {
 	vertical-align: middle;
 }
@@ -472,6 +478,9 @@ label.checki {
 }
 .d-inline-block {
 	display: inline-block !important;
+}
+.d-table {
+	display: table !important;
 }
 .d-flex {
 	display: flex !important;
@@ -493,8 +502,8 @@ label.checki {
 .align-items-center {
 	align-items: center !important;
 }
-.d-table {
-	display: table !important;
+.relative {
+	position: relative;
 }
 .column-count-3 {
 	-webkit-column-count: 3 !important;
@@ -725,7 +734,7 @@ span.hastitle {
 	border-top: 2px solid #000000;
 	border-right: 2px solid transparent;
 	animation: spinner .6s linear infinite;
-	content: '';
+	content: "";
 }
 
 /* multimessage */
@@ -1268,15 +1277,55 @@ button > .licon, .btn > .licon {
 
 
 /* Ajax checks */
-.savesuccess:before {
+.mf-text, .mf-absolute {
+	position: relative;
+	display: inline-block;
+}
+.is-mf:after {
+	display: inline-block;
+	font-size: smaller;
+	pointer-events: none;
+	padding-left: 0.25em;
+}
+.mf-text .is-mf {
+	position: absolute;
+	right: 0.35em;
+	bottom: 0.5em;
+}
+.mf-absolute .is-mf {
+	position: absolute;
+	left: 100%;
+	bottom: 0;
+}
+.select .is-mf {
+	position: absolute;
+	left: 100%;
+	bottom: 0.5em;
+}
+.btn .is-mf {
+	position: absolute;
+	left: 100%;
+}
+.is-mf.mf-success:after {
 	content: "\2713";
 	color: #00bb00;
-	padding-left: 0.5em;
+	animation: 5s ease-in minifeedback-fadeout;
 }
-.savefailure:before {
+.is-mf.mf-error:after {
 	content: "\2717";
 	color: #ff0000;
-	padding-left: 0.5em;
+}
+@keyframes minifeedback-fadeout {
+	65% { opacity: 1; }
+	70%, to { opacity: 0; }
+}
+
+.flash-error-outline {
+	animation: 1s ease-in flash-error-outline;
+}
+@keyframes flash-error-outline {
+	from { outline: 4px solid rgba(200, 0, 0, 0.6); }
+	to { outline: 4px solid rgba(200, 0, 0, 0); }
 }
 
 
@@ -1296,9 +1345,6 @@ table.key-value {
 /* Other types of captions and entries */
 table.paper, table.settings {
 	width: 100%;
-	position: relative;
-}
-div.relative {
 	position: relative;
 }
 td.textarea, td.top {
@@ -1731,8 +1777,13 @@ img.check {
 .minw-50 {
 	min-width: 50%;
 }
-.w-99, textarea.w-text, textarea.w-entry-text {
+.w-99 {
 	width: 99%;
+}
+textarea.w-text, textarea.w-entry-text {
+	width: 100%;
+	margin-left: 0;
+	margin-right: 0;
 }
 textarea[name=comment] {
 	min-height: 10em;
@@ -2439,16 +2490,14 @@ td.plf {
 table.pltable-reviewerhome > thead > tr > th.plh {
 	border-bottom: none;
 }
-span.dragtaghandle {
+span.draghandle {
 	display: inline-block;
-	position: relative;
-	bottom: -0.25em;
-	background-color: #999999;
-	margin-left: .25em;
-	width: 11px;
-	height: 1.3em;
+	width: 0.75em;
+	height: 1em;
+	vertical-align: -0.125em;
 	cursor: move;
-	background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAAAXNSR0IArs4c6QAAADtJREFUCNdjOHz4zs/Dh+9cYEADTAwMDF8YGBj4Dh++gypha6sizMDAoMSADyAby4Qm94WBgYEPn04GAD/XFLwv6x9HAAAAAElFTkSuQmCC') repeat;
+	cursor: ns-resize;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' aria-hidden='true' width='12' height='16'%3E%3Cpath d='M8 13a1 1 0 100-2 1 1 0 000 2zm-4 0a1 1 0 100-2 1 1 0 000 2zm1-5a1 1 0 11-2 0 1 1 0 012 0zm3 1a1 1 0 100-2 1 1 0 000 2zm1-5a1 1 0 11-2 0 1 1 0 012 0zM4 5a1 1 0 100-2 1 1 0 000 2z'%3E%3C/path%3E%3C/svg%3E");
 }
 
 .editformulas-formula, .editsearches-search {

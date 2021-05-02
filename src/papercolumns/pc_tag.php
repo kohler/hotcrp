@@ -141,7 +141,7 @@ class Tag_PaperColumn extends PaperColumn {
         }
         if (!$this->is_value) {
             return "<input type=\"checkbox\" class=\"uic js-range-click edittag\" data-range-type=\"tag:{$this->dtag}\" name=\"tag:{$this->dtag} {$row->paperId}\" value=\"x\" tabindex=\"2\""
-                . ($v !== null ? ' checked="checked"' : '') . " />";
+                . ($v !== null ? ' checked="checked">' : '>');
         }
         $t = '<input type="text" class="edittagval';
         if ($this->editsort) {
@@ -149,7 +149,7 @@ class Tag_PaperColumn extends PaperColumn {
             $pl->need_render = true;
         }
         return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
-            . ($v !== null ? htmlspecialchars((string) $v) : "") . '" tabindex="2" />';
+            . ($v !== null ? htmlspecialchars((string) $v) : "") . '" tabindex="2">';
     }
     function text(PaperList $pl, PaperInfo $row) {
         if (($v = $row->tag_value($this->etag)) === null) {
