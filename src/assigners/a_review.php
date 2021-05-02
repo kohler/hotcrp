@@ -10,6 +10,8 @@ class Review_Assignable extends Assignable {
     /** @var ?string */
     public $_round;
     /** @var ?int */
+    public $_rmodified;
+    /** @var ?int */
     public $_rsubmitted;
     /** @var ?int */
     public $_rnondraft;
@@ -33,6 +35,12 @@ class Review_Assignable extends Assignable {
     /** @return self */
     function fresh() {
         return new Review_Assignable($this->pid, $this->cid);
+    }
+    /** @param int $x
+     * @return $this */
+    function set_rmodified($x) {
+        $this->_rmodified = $x;
+        return $this;
     }
     /** @param int $x
      * @return $this */
@@ -79,13 +87,14 @@ class Review_AssignmentParser extends AssignmentParser {
     }
     static function load_review_state(AssignmentState $state) {
         if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make")) {
-            $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted, timeApprovalRequested, requestedBy from PaperReview where paperId?a", $state->paper_ids());
+            $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewModified, reviewSubmitted, timeApprovalRequested, requestedBy from PaperReview where paperId?a", $state->paper_ids());
             while (($row = $result->fetch_row())) {
                 $round = $state->conf->round_name((int) $row[3]);
                 $ra = new Review_Assignable((int) $row[0], (int) $row[1], (int) $row[2], $round);
-                $ra->set_rsubmitted($row[4] > 0 ? 1 : 0);
-                $ra->set_rnondraft($row[4] > 0 || $row[5] != 0 ? 1 : 0);
-                $ra->set_requested_by((int) $row[6]);
+                $ra->set_rmodified($row[4] > 1 ? 1 : 0);
+                $ra->set_rsubmitted($row[5] > 0 ? 1 : 0);
+                $ra->set_rnondraft($row[5] > 0 || $row[6] != 0 ? 1 : 0);
+                $ra->set_requested_by((int) $row[7]);
                 $state->load($ra);
             }
             Dbl::free($result);
@@ -186,12 +195,16 @@ class Review_AssignmentParser extends AssignmentParser {
 
         if ($rev !== null
             && (($rdata->oldtype !== null && $rdata->oldtype !== $rev->_rtype)
-                || ($rdata->oldround !== null && $rdata->oldround !== $rev->_round)
-                || (!$rdata->newtype && $rev->_rsubmitted))) {
+                || ($rdata->oldround !== null && $rdata->oldround !== $rev->_round))) {
             $state->add($rev);
             return true;
-        } else if (!$rdata->newtype
-                   || ($rev === null && !$rdata->might_create_review())) {
+        } else if (!$rdata->newtype) {
+            if ($rev !== null) {
+                $rev->_rtype = 0;
+                $state->add($rev);
+            }
+            return true;
+        } else if ($rev === null && !$rdata->might_create_review()) {
             return true;
         }
 
@@ -246,6 +259,9 @@ class Review_Assigner extends Assigner {
     static function make(AssignmentItem $item, AssignmentState $state) {
         if (!$item->pre("_rtype") && $item->post("_rtype")) {
             Conflict_Assigner::check_unconflicted($item, $state);
+        } else if ($item->pre("_rtype") && !$item->post("_rtype") && $item->pre("_rmodified")) {
+            $uname = $state->user_by_id($item["cid"])->name_h(NAME_E);
+            throw new Exception("{$uname} has already modified their review, so it cannot be unassigned.");
         }
         return new Review_Assigner($item, $state);
     }
@@ -271,7 +287,7 @@ class Review_Assigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $t = $aset->user->reviewer_html_for($this->contact);
-        if ($this->item->deleted()) {
+        if (!$this->item["_rtype"]) {
             $t = '<del>' . $t . '</del>';
         }
         if ($this->item->differs("_rtype") || $this->item->differs("_rsubmitted")) {
@@ -337,7 +353,7 @@ class Review_Assigner extends Assigner {
             $extra["round_number"] = (int) $aset->conf->round_number($round, true);
         }
         if ($this->contact->is_anonymous_user()
-            && (!$this->item->existed() || $this->item->deleted())) {
+            && (!$this->item->existed() || !$this->item["_rtype"])) {
             $extra["token"] = true;
             $aset->cleanup_callback("rev_token", function ($vals) use ($aset) {
                 $aset->conf->update_rev_tokens_setting(min($vals));

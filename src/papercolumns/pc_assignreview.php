@@ -74,12 +74,13 @@ class AssignReview_PaperColumn extends PaperColumn {
         } else {
             $rt = min(max($ci->reviewType, 0), REVIEW_META);
         }
+        $rs = $ci->reviewSubmitted ? " s" : "";
         $pl->need_render = true;
         $t = '<span class="need-assignment-selector';
         if (!$this->contact->can_accept_review_assignment_ignore_conflict($row)
             && $rt <= 0) {
             $t .= " conflict";
         }
-        return $t . '" data-assignment="' . $this->contact->contactId . ' ' . $rt . '"></span>';
+        return "{$t}\" data-assignment=\"{$this->contact->contactId} {$rt}{$rs}\"></span>";
     }
 }

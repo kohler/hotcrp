@@ -7190,10 +7190,9 @@ function render_assignment_selector() {
         sel = document.createElement("select"),
         rts = ["0", "None", "4", "Primary", "3", "Secondary", "2", "Optional", "5", "Metareview", "-1", "Conflict"],
         asstext = this.getAttribute("data-assignment"),
-        revtype, i = asstext.indexOf(" ");
-    sel.name = "assrev" + prow.getAttribute("data-pid") + "u" + asstext.substring(0, i);
-    revtype = asstext.substring(i + 1);
-    sel.setAttribute("data-default-value", revtype);
+        revtype, m = asstext.match(/^(\S+) (\S+)(.*)$/);
+    sel.name = "assrev" + prow.getAttribute("data-pid") + "u" + m[1];
+    sel.setAttribute("data-default-value", m[2]);
     sel.className = "uich js-assign-review";
     sel.tabIndex = 2;
     for (var i = 0; i < rts.length; i += 2) {
@@ -7201,7 +7200,9 @@ function render_assignment_selector() {
             var opt = document.createElement("option");
             opt.value = rts[i];
             opt.text = rts[i + 1];
-            opt.defaultSelected = opt.selected = revtype === rts[i];
+            opt.defaultSelected = opt.selected = m[2] === rts[i];
+            if (m[3] && rts[i] === "0")
+                opt.disabled = true;
             sel.add(opt, null);
         }
     }
