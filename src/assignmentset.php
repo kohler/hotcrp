@@ -117,7 +117,7 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
             "pid" => $this->before->pid,
             "\$status" => $this->deleted
                 ? "DELETED"
-                : ($this->existed ? "INSERTED" : ($this->after ? "MODIFIED" : "UNCHANGED"))
+                : ($this->existed ? ($this->after ? "MODIFIED" : "UNCHANGED") : "INSERTED")
         ];
         foreach (get_object_vars($this->after ?? $this->before) as $k => $v) {
             if ($k !== "type" && $k !== "pid") {
