@@ -674,18 +674,43 @@ class ReviewForm implements JsonSerializable {
         }
     }
 
+    /** @return ?ReviewField */
+    private function view_default_score() {
+        $f = $this->fmap["overAllMerit"];
+        if ($f->displayed && $f->view_score >= VIEWSCORE_PC) {
+            return $f;
+        }
+        foreach ($this->forder as $f) {
+            if ($f->has_options && $f->view_score >= VIEWSCORE_PC)
+                return $f;
+        }
+        return null;
+    }
     /** @return string */
     function view_default() {
-        $f = $this->fmap["overAllMerit"];
-        if ($f->displayed && $f->search_keyword()) {
-            return "show:" . $f->search_keyword();
+        $f = $this->view_default_score();
+        return $f ? "show:" . $f->search_keyword() : "";
+    }
+    /** @return list<ReviewField> */
+    function highlighted_main_scores() {
+        $s = $this->conf->setting_data("pldisplay_default");
+        if ($s === null) {
+            $f = $this->view_default_score();
+            return $f && $f->main_storage ? [$f] : [];
         }
-        foreach ($this->forder as $fx) {
-            if ($fx->has_options && $fx->search_keyword()) {
-                return "show:" . $fx->search_keyword();
+        $fs = [];
+        foreach (PaperSearch::view_generator(SearchSplitter::split_balanced_parens($s)) as $v) {
+            if (($v[0] === "show" || $v[0] === "showsort")
+                && ($x = $this->conf->find_all_fields($v[1]))
+                && count($x) === 1
+                && $x[0] instanceof ReviewField
+                && $x[0]->has_options
+                && $x[0]->view_score >= VIEWSCORE_PC
+                && $x[0]->main_storage) {
+                $fs[] = $x[0];
             }
         }
-        return "";
+        return $fs;
     }
 
     function jsonSerialize() {

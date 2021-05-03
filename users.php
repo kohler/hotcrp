@@ -430,8 +430,8 @@ if (count($tOpt) > 1) {
     if (isset($pl->scoreMax)) {
         echo '<td class="pad">';
         $revViewScore = $Viewer->permissive_view_score_bound();
-        $uldisplay = $Viewer->session("uldisplay", " tags overAllMerit ");
-        foreach ($Conf->all_review_fields() as $f)
+        $uldisplay = ContactList::uldisplay($Viewer);
+        foreach ($Conf->all_review_fields() as $f) {
             if ($f->view_score > $revViewScore
                 && $f->has_options
                 && $f->main_storage) {
@@ -440,6 +440,7 @@ if (count($tOpt) > 1) {
                     "&nbsp;", Ht::label($f->name_html),
                     Ht::hidden("has_show{$f->id}", 1), "<br />";
             }
+        }
         echo "</td>";
     }
     echo "<td>", Ht::submit("redisplay", "Redisplay"), "</td></tr>\n";

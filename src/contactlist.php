@@ -729,14 +729,25 @@ class ContactList {
         }
     }
 
-    function addScores($a) {
+    static function uldisplay(Contact $user) {
+        $uldisplay = $user->session("uldisplay");
+        if ($uldisplay === null) {
+            $uldisplay = " tags ";
+            foreach ($user->conf->review_form()->highlighted_main_scores() as $rf) {
+                $uldisplay .= "{$rf->id} ";
+            }
+        }
+        return $uldisplay;
+    }
+
+    private function addScores($a) {
         if ($this->user->isPC) {
-            $uldisplay = $this->user->session("uldisplay", " tags overAllMerit ");
+            $uldisplay = self::uldisplay($this->user);
             foreach ($this->conf->all_review_fields() as $f) {
                 if ($f->has_options && strpos($uldisplay, " {$f->id} ") !== false)
                     array_push($a, $f->id);
             }
-            $this->scoreMax = array();
+            $this->scoreMax = [];
         }
         return $a;
     }
@@ -984,7 +995,7 @@ class ContactList {
             $body .= $t . $tt;
         }
 
-        $uldisplay = $this->user->session("uldisplay", " tags overAllMerit ");
+        $uldisplay = self::uldisplay($this->user);
         $foldclasses = array();
         foreach (self::$folds as $k => $fold) {
             if (($this->have_folds[$fold] ?? null) !== null) {

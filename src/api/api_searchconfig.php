@@ -34,6 +34,9 @@ class SearchConfig_API {
                 $user->conf->save_setting("{$report}display_default", 1, join(" ", $parsed_view));
             }
             $user->save_session("{$report}display", null);
+            if ($report === "pl") {
+                $user->save_session("uldisplay", null);
+            }
         }
 
         $pl = new PaperList($report, $search, ["sort" => true]);

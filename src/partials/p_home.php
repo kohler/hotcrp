@@ -187,21 +187,7 @@ class Home_Partial {
     /** @param Conf $conf
      * @return list<ReviewField> */
     private function default_review_fields($conf) {
-        if ($this->_rfs === null) {
-            $this->_rfs = [];
-            $s = $conf->setting_data("pldisplay_default")
-                ?? $conf->review_form()->view_default() ?? "";
-            foreach (PaperSearch::view_generator(SearchSplitter::split_balanced_parens($s)) as $v) {
-                if (($v[0] === "show" || $v[0] === "showsort")
-                    && ($fs = $conf->find_all_fields($v[1]))
-                    && count($fs) === 1
-                    && $fs[0] instanceof ReviewField
-                    && $fs[0]->displayed
-                    && $fs[0]->main_storage) {
-                    $this->_rfs[] = $fs[0];
-                }
-            }
-        }
+        $this->_rfs = $this->_rfs ?? $conf->review_form()->highlighted_main_scores();
         return $this->_rfs;
     }
 
@@ -308,7 +294,7 @@ class Home_Partial {
             echo $conf->_("The average PC member has submitted %1\$.1f reviews with %2\$#As.",
                 $sumpc_submit / $npc, $score_texts, count($score_texts));
             if ($user->isPC || $user->privChair) {
-                echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class=\"barsep\">·</span><a href=\"", $conf->hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
+                echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc"), "\">details</a><span class=\"barsep\">·</span><a href=\"", $conf->hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
             }
             echo "<br>\n";
         }
