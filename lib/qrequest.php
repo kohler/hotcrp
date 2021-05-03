@@ -17,6 +17,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $____page;
     /** @var ?string */
     private $____path;
+    /** @param string $method */
     function __construct($method, $data = null) {
         $this->____method = $method;
         if ($data) {
@@ -24,6 +25,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
                 $this->$k = $v;
             }
         }
+    }
+    /** @param Qrequest $qreq
+     * @return Qrequest */
+    static function empty_clone($qreq) {
+        $qreq2 = new Qrequest($qreq->____method);
+        return $qreq2->set_page($qreq->____page, $qreq->____path);
     }
     /** @param string $page
      * @param ?string $path

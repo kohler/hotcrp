@@ -1582,8 +1582,8 @@ class PaperList implements XtContext {
         return $t;
     }
 
-    static function render_footer_row($arrow_ncol, $ncol, $header,
-                            $lllgroups, $activegroup = -1, $extra = null) {
+    static private function render_footer_row($arrow_ncol, $ncol, $header,
+                            $lllgroups, $activegroup = -1) {
         $foot = "<tr class=\"pl_footrow\">\n   ";
         if ($arrow_ncol) {
             $foot .= '<td class="plf pl_footselector" colspan="' . $arrow_ncol . '">'
@@ -1655,10 +1655,10 @@ class PaperList implements XtContext {
             }
             $foot .= "   </tr></tbody></table>";
         }
-        return $foot . (string) $extra . "<hr class=\"c\" /></td>\n </tr>";
+        return $foot . "<hr class=\"c\" /></td>\n </tr>";
     }
 
-    private function _footer($ncol, $extra, Qrequest $qreq) {
+    private function _footer($ncol, Qrequest $qreq) {
         if ($this->count == 0) {
             return "";
         }
@@ -1690,7 +1690,7 @@ class PaperList implements XtContext {
             "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
             . $this->conf->selfurl($qreq, ["selectall" => 1, "#" => "plact"])
             . '">select all ' . $this->count . "</a>), then&nbsp;",
-            $lllgroups, $whichlll, $extra);
+            $lllgroups, $whichlll);
     }
 
     /** @return bool */
@@ -1729,7 +1729,7 @@ class PaperList implements XtContext {
         return $this->search->create_session_list_object($this->paper_ids(), $this->_listDescription(), $this->sortdef());
     }
 
-    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options */
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,nofooter?:bool,live?:bool} $options */
     private function _table_render($options) {
         $this->_prepare();
         // need tags for row coloring
@@ -1938,7 +1938,7 @@ class PaperList implements XtContext {
         reset($this->_vcolumns);
         if (current($this->_vcolumns) instanceof Selector_PaperColumn
             && !($options["nofooter"] ?? false)) {
-            $tfoot .= $this->_footer($ncol, $options["footer_extra"] ?? "", $this->qreq);
+            $tfoot .= $this->_footer($ncol, $this->qreq);
         }
         if ($tfoot) {
             $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable-colored" : "") . '">' . $tfoot . "</tfoot>\n";
@@ -1948,7 +1948,7 @@ class PaperList implements XtContext {
         return $rstate;
     }
 
-    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,fullheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,fullheader?:bool,nofooter?:bool,live?:bool} $options
      * @return PaperListTableRender */
     function table_render($options = []) {
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
@@ -1957,7 +1957,7 @@ class PaperList implements XtContext {
         return $rstate;
     }
 
-    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,fullheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options */
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,fullheader?:bool,nofooter?:bool,live?:bool} $options */
     function echo_table_html($options = []) {
         $render = $this->table_render($options);
         if (!$render->error) {
@@ -1974,7 +1974,7 @@ class PaperList implements XtContext {
         }
     }
 
-    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,fullheader?:bool,nofooter?:bool,footer_extra?:string,live?:bool} $options
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,fullheader?:bool,nofooter?:bool,live?:bool} $options
      * @return string */
     function table_html($options = []) {
         ob_start();

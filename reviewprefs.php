@@ -115,13 +115,13 @@ if ($Qreq->fn === "saveprefs" && $Qreq->valid_post()) {
 // paper selection
 global $SSel;
 $SSel = SearchSelection::make($Qreq, $Me);
-SearchSelectioN::clear_request($Qreq);
+SearchSelection::clear_request($Qreq);
 
 
 // Set multiple paper preferences
 if ($Qreq->fn === "setpref" && $Qreq->valid_post()) {
     if (!$SSel->is_empty()) {
-        $new_qreq = new Qrequest($Qreq->method());
+        $new_qreq = Qrequest::empty_clone($Qreq);
         foreach ($SSel->selection() as $p) {
             $new_qreq["revpref{$p}u{$reviewer->contactId}"] = $Qreq->pref;
         }
@@ -332,11 +332,8 @@ if ($Qreq->sort) {
 echo Ht::form($Conf->hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-paperlist assignpc"]),
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1);
-echo "<div class=\"pltable-fullw-container\">\n",
-    '<noscript><div style="text-align:center">', Ht::submit("fn", "Save changes", ["value" => "saveprefs"]), '</div></noscript>';
-$pl->echo_table_html(["fold_session_prefix" => "pfdisplay.",
-                      "footer_extra" => "<div id=\"plactr\">" . Ht::submit("fn", "Save changes", ["data-default-submit-all" => 1, "value" => "saveprefs"]) . "</div>",
-                      "list" => true, "live" => true]);
+echo "<div class=\"pltable-fullw-container\">\n";
+$pl->echo_table_html(["fold_session_prefix" => "pfdisplay.", "list" => true, "live" => true]);
 echo "</div></form>\n";
 
 $Conf->footer();
