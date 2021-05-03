@@ -3,10 +3,19 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class Home_Partial {
+    /** @var int */
     private $_nh2 = 0;
     private $_in_reviews;
-    private $_merit_field;
-    private $_my_rinfo;
+    /** @var ?list<ReviewField> */
+    private $_rfs;
+    /** @var int */
+    private $_r_num_submitted = 0;
+    /** @var int */
+    private $_r_num_needs_submit = 0;
+    /** @var list<int> */
+    private $_r_unsubmitted_rounds;
+    /** @var list<int|float> */
+    private $_rf_means;
     private $_tokens_done;
 
     static function disabled_request(Contact $user, Qrequest $qreq) {
@@ -175,105 +184,140 @@ class Home_Partial {
             "</div></form></div>\n";
     }
 
+    /** @param Conf $conf
+     * @return list<ReviewField> */
+    private function default_review_fields($conf) {
+        if ($this->_rfs === null) {
+            $this->_rfs = [];
+            $s = $conf->setting_data("pldisplay_default")
+                ?? $conf->review_form()->view_default() ?? "";
+            foreach (PaperSearch::view_generator(SearchSplitter::split_balanced_parens($s)) as $v) {
+                if (($v[0] === "show" || $v[0] === "showsort")
+                    && ($fs = $conf->find_all_fields($v[1]))
+                    && count($fs) === 1
+                    && $fs[0] instanceof ReviewField
+                    && $fs[0]->displayed
+                    && $fs[0]->main_storage) {
+                    $this->_rfs[] = $fs[0];
+                }
+            }
+        }
+        return $this->_rfs;
+    }
+
     function render_reviews(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->privChair
-            && !($user->is_reviewer() && $conf->has_any_submitted()))
+            && !($user->is_reviewer() && $conf->has_any_submitted())) {
             return;
-
-        $this->_merit_field = null;
-        $all_review_fields = $conf->all_review_fields();
-        $merit_field = $all_review_fields["overAllMerit"] ?? null;
-        if ($merit_field && $merit_field->displayed && $merit_field->main_storage) {
-            $this->_merit_field = $merit_field;
         }
 
+        // which review fields to show?
+
         // Information about my reviews
-        $where = array();
+        $where = [];
         if ($user->contactId) {
             $where[] = "PaperReview.contactId=" . $user->contactId;
         }
         if (($tokens = $user->review_tokens())) {
             $where[] = "reviewToken in (" . join(",", $tokens) . ")";
         }
-        $this->_my_rinfo = null;
         if (!empty($where)) {
-            $rinfo = (object) ["num_submitted" => 0, "num_needs_submit" => 0, "unsubmitted_rounds" => [], "scores" => []];
-            $mfs = $this->_merit_field ? $this->_merit_field->main_storage : "null";
-            $result = $user->conf->qe("select reviewType, reviewSubmitted, reviewNeedsSubmit, timeApprovalRequested, reviewRound, $mfs from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0)");
+            $rfs = $this->default_review_fields($conf);
+            $q = "select reviewType, reviewSubmitted, reviewNeedsSubmit, timeApprovalRequested, reviewRound";
+            $missing_rounds = $scores = [];
+            foreach ($rfs as $rf) {
+                $q .= ", " . $rf->main_storage;
+                $scores[] = [];
+            }
+            $result = $user->conf->qe("$q from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0)");
             while (($row = $result->fetch_row())) {
                 if ($row[1] || $row[3] < 0) {
-                    $rinfo->num_submitted += 1;
-                    $rinfo->num_needs_submit += 1;
-                    if ($row[5] !== null) {
-                        $rinfo->scores[] = $row[5];
+                    $this->_r_num_submitted += 1;
+                    $this->_r_num_needs_submit += 1;
+                    for ($i = 0; $i !== count($rfs); ++$i) {
+                        if ($row[5 + $i] !== null)
+                            $scores[$i][] = (int) $row[5 + $i];
                     }
                 } else if ($row[2]) {
-                    $rinfo->num_needs_submit += 1;
-                    $rinfo->unsubmitted_rounds[$row[4]] = true;
+                    $this->_r_num_needs_submit += 1;
+                    $missing_rounds[(int) $row[4]] = true;
                 }
             }
             Dbl::free($result);
-            $rinfo->unsubmitted_rounds = join(",", array_keys($rinfo->unsubmitted_rounds));
-            $rinfo->scores = join(",", $rinfo->scores);
-            $rinfo->mean_score = ScoreInfo::mean_of($rinfo->scores, true);
-            if ($rinfo->num_submitted > 0 || $rinfo->num_needs_submit > 0) {
-                $this->_my_rinfo = $rinfo;
+            $this->_r_unsubmitted_rounds = array_keys($missing_rounds);
+            $this->_rf_means = [];
+            foreach ($scores as $sarr) {
+                $this->_rf_means[] = ScoreInfo::mean_of($sarr, true);
             }
         }
+        $has_rinfo = $this->_r_num_needs_submit > 0;
 
         // Information about PC reviews
-        $npc = $sumpcSubmit = $npcScore = $sumpcScore = 0;
+        $npc = $sumpc_submit = $npc_submit = 0;
+        $pc_rf_means = [];
         if ($user->isPC || $user->privChair) {
-            $result = Dbl::qe_raw("select count(reviewId) num_submitted,
-        group_concat(overAllMerit) scores
-        from ContactInfo
-        left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
-            where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0
-        group by ContactInfo.contactId");
+            $rfs = $this->default_review_fields($conf);
+            $q = "select count(reviewId) num_submitted";
+            $scores = [];
+            foreach ($rfs as $rf) {
+                $q .= ", group_concat(coalesce({$rf->main_storage},'')) {$rf->id}Scores";
+                $scores[] = [];
+            }
+            $result = Dbl::qe_raw("$q from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
+                where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0 group by ContactInfo.contactId");
             while (($row = $result->fetch_row())) {
                 ++$npc;
                 if ($row[0]) {
-                    $sumpcSubmit += $row[0];
-                    ++$npcScore;
-                    $sumpcScore += ScoreInfo::mean_of($row[1], true);
+                    $npc_submit += 1;
+                    $sumpc_submit += (int) $row[0];
+                    for ($i = 0; $i !== count($rfs); ++$i) {
+                        $scores[$i][] = ScoreInfo::mean_of($row[1 + $i], true);
+                    }
                 }
             }
             Dbl::free($result);
+            foreach ($scores as $sarr) {
+                $pc_rf_means[] = ScoreInfo::mean_of($sarr, true);
+            }
         }
 
         echo '<div class="homegrp" id="homerev">';
 
         // Overview
         echo $this->render_h2_home("Reviews");
-        if ($this->_my_rinfo) {
-            echo $conf->_("You have submitted %1\$d of <a href=\"%3\$s\">%2\$d reviews</a> with average %4\$s score %5\$s.",
-                $this->_my_rinfo->num_submitted, $this->_my_rinfo->num_needs_submit,
-                $conf->hoturl("search", "q=&amp;t=r"),
-                $this->_merit_field ? $this->_merit_field->name_html : false,
-                $this->_merit_field ? $this->_merit_field->unparse_average($this->_my_rinfo->mean_score) : false),
+        if ($has_rinfo) {
+            $score_texts = [];
+            foreach ($this->default_review_fields($conf) as $i => $rf) {
+                if ($this->_rf_means[$i] !== null) {
+                    $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_average($this->_rf_means[$i]), $this->_r_num_submitted);
+                }
+            }
+            echo $conf->_("You have submitted %1\$d of <a href=\"%3\$s\">%2\$d reviews</a> with %4\$#As.",
+                $this->_r_num_submitted, $this->_r_num_needs_submit,
+                $conf->hoturl("search", "q=&amp;t=r"), $score_texts, count($score_texts)),
                 "<br>\n";
         }
         if (($user->isPC || $user->privChair) && $npc) {
-            echo $conf->_("The average PC member has submitted %.1f reviews with average %s score %s.",
-                $sumpcSubmit / $npc,
-                $this->_merit_field && $npcScore ? $this->_merit_field->name_html : false,
-                $this->_merit_field && $npcScore ? $this->_merit_field->unparse_average($sumpcScore / $npcScore) : false);
+            $score_texts = [];
+            foreach ($this->default_review_fields($conf) as $i => $rf) {
+                if ($pc_rf_means[$i] !== null) {
+                    $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_average($pc_rf_means[$i]), null);
+                }
+            }
+            echo $conf->_("The average PC member has submitted %1\$.1f reviews with %2\$#As.",
+                $sumpc_submit / $npc, $score_texts, count($score_texts));
             if ($user->isPC || $user->privChair) {
                 echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class=\"barsep\">·</span><a href=\"", $conf->hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
             }
             echo "<br>\n";
         }
-        if ($this->_my_rinfo
-            && $this->_my_rinfo->num_submitted < $this->_my_rinfo->num_needs_submit
+        if ($this->_r_num_submitted < $this->_r_num_needs_submit
             && !$conf->time_review_open()) {
             echo ' <em class="deadline">The site is not open for reviewing.</em><br>', "\n";
-        } else if ($this->_my_rinfo
-                   && $this->_my_rinfo->num_submitted < $this->_my_rinfo->num_needs_submit) {
-            $missing_rounds = explode(",", $this->_my_rinfo->unsubmitted_rounds);
-            sort($missing_rounds, SORT_NUMERIC);
-            foreach ($missing_rounds as $round) {
-                $round = (int) $round;
+        } else if ($this->_r_num_submitted < $this->_r_num_needs_submit) {
+            sort($this->_r_unsubmitted_rounds, SORT_NUMERIC);
+            foreach ($this->_r_unsubmitted_rounds as $round) {
                 if (($rname = $conf->round_name($round))) {
                     if (strlen($rname) == 1) {
                         $rname = "“{$rname}”";
@@ -287,7 +331,7 @@ class Home_Partial {
                     }
                     $d = $conf->unparse_setting_time_span($dn);
                     if ($d != "N/A") {
-                        echo ' <em class="deadline">Please submit your ', $rname, ($this->_my_rinfo->num_needs_submit == 1 ? "review" : "reviews"), " by $d.</em><br>\n";
+                        echo ' <em class="deadline">Please submit your ', $rname, ($this->_r_num_needs_submit == 1 ? "review" : "reviews"), " by $d.</em><br>\n";
                     }
                 } else if ($conf->time_review($round, $user->isPC, true)) {
                     $dn = $conf->review_deadline_name($round, $user->isPC, false);
@@ -310,14 +354,14 @@ class Home_Partial {
             echo '  <span class="hint">As an administrator, you may review <a href="', $conf->hoturl("search", "q=&amp;t=s"), "\">any submitted paper</a>.</span><br>\n";
         }
 
-        if ($this->_my_rinfo) {
+        if ($has_rinfo) {
             echo '<div id="foldre" class="homesubgrp foldo">';
         }
 
         // Actions
         $sep = "";
         $xsep = ' <span class="barsep">·</span> ';
-        if ($this->_my_rinfo) {
+        if ($has_rinfo) {
             echo $sep, foldupbutton(), "<a href=\"", $conf->hoturl("search", "q=re%3Ame"), "\" title=\"Search in your reviews (more display and download options)\"><strong>Your Reviews</strong></a>";
             $sep = $xsep;
         }
@@ -340,7 +384,8 @@ class Home_Partial {
             $sep = $xsep;
         }
 
-        if ($this->_my_rinfo && $conf->setting("rev_ratings") != REV_RATINGS_NONE) {
+        if ($has_rinfo
+            && $conf->setting("rev_ratings") != REV_RATINGS_NONE) {
             $badratings = PaperSearch::unusable_ratings($user);
             $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
             $result = $conf->qe_raw("select sum((rating&" . ReviewInfo::RATING_GOODMASK . ")!=0), sum((rating&" . ReviewInfo::RATING_BADMASK . ")!=0) from PaperReview join ReviewRating using (reviewId) where PaperReview.contactId={$user->contactId} $qx");
@@ -370,7 +415,7 @@ class Home_Partial {
             }
         }
 
-        if ($this->_my_rinfo) {
+        if ($has_rinfo) {
             echo "</div>";
         }
 

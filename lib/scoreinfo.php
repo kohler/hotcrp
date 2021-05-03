@@ -59,13 +59,16 @@ class ScoreInfo {
         }
     }
 
+    /** @param list<int|float>|string $data
+     * @param bool $positive
+     * @return ?float */
     static function mean_of($data, $positive = false) {
         $n = $sum = 0;
         if (is_array($data)) {
             foreach ($data as $x) {
                 if ($x !== null && (!$positive || $x > 0)) {
                     ++$n;
-                    $sum += +$x;
+                    $sum += $x;
                 }
             }
         } else if (is_string($data) && $data !== "") {
@@ -74,7 +77,7 @@ class ScoreInfo {
                     $x = +$x;
                     if (!$positive || $x > 0) {
                         ++$n;
-                        $sum += +$x;
+                        $sum += $x;
                     }
                 }
             }

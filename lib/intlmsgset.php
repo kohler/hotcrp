@@ -63,6 +63,10 @@ class IntlMsg {
                 }
                 $compar = $m[3];
                 $compval = $m[4];
+                if ($compval !== "" && $compval[0] === "\$"
+                    && !$this->resolve_arg($ms, $args, $compval, $compval)) {
+                    return false;
+                }
                 if ($compar === "") {
                     $bval = (bool) $val && $val !== "0";
                     $weight = $bval === (strlen($m[1]) % 2 === 0) ? 1 : 0;
@@ -360,7 +364,7 @@ class IntlMsgSet {
                 /* do nothing */
             } else if ($pos < strlen($s) && $s[$pos] === "%") {
                 $s = substr($s, 0, $pos) . substr($s, $pos + 1);
-            } else if (preg_match('/(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
+            } else if (preg_match('/(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AO]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
                 $argi = $m[1] ? +$m[1] : ++$argnum;
                 if (isset($args[$argi])) {
                     $val = $args[$argi];
@@ -368,12 +372,18 @@ class IntlMsgSet {
                         assert(is_array($val));
                         $val = $val[substr($m[2], 1, -1)] ?? null;
                     }
-                    $conv = $m[3] . ($m[4] === "H" || $m[4] === "U" ? "s" : $m[4]);
-                    $x = sprintf("%$conv", $val);
-                    if ($m[4] === "H") {
-                        $x = htmlspecialchars($x);
-                    } else if ($m[4] === "U") {
-                        $x = urlencode($x);
+                    if ($m[3] && is_array($val)) {
+                        $val = commajoin($val, $m[3] === "#O" ? "or" : "and");
+                    }
+                    $conv = $m[4];
+                    if ($m[5] === "H") {
+                        $x = htmlspecialchars($conv === "" ? $val : sprintf("%{$conv}s", $val));
+                    } else if ($m[5] === "U") {
+                        $x = urlencode($conv === "" ? $val : sprintf("%{$conv}s", $val));
+                    } else if ($m[5] === "s" && $conv === "") {
+                        $x = (string) $val;
+                    } else {
+                        $x = sprintf("%{$conv}s", $val);
                     }
                     $s = substr($s, 0, $pos - 1) . $x . substr($s, $pos + strlen($m[0]));
                     $pos = $pos - 1 + strlen($x);
