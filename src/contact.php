@@ -3513,6 +3513,7 @@ class Contact {
         }
         $oview = $opt->visibility();
         return $this->is_author()
+            || $oview === PaperOption::VIS_SUB
             || ($oview === PaperOption::VIS_ADMIN && $this->is_manager())
             || ($oview === PaperOption::VIS_AUTHOR && $this->can_view_some_authors())
             || ($oview === PaperOption::VIS_CONFLICT && $this->can_view_some_conflicts())
