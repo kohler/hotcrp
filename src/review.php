@@ -681,7 +681,7 @@ class ReviewForm implements JsonSerializable {
             return $f;
         }
         foreach ($this->forder as $f) {
-            if ($f->has_options && $f->view_score >= VIEWSCORE_PC)
+            if ($f->has_options && $f->view_score >= VIEWSCORE_PC && $f->main_storage)
                 return $f;
         }
         return null;
@@ -696,7 +696,7 @@ class ReviewForm implements JsonSerializable {
         $s = $this->conf->setting_data("pldisplay_default");
         if ($s === null) {
             $f = $this->view_default_score();
-            return $f && $f->main_storage ? [$f] : [];
+            return $f ? [$f] : [];
         }
         $fs = [];
         foreach (PaperSearch::view_generator(SearchSplitter::split_balanced_parens($s)) as $v) {
