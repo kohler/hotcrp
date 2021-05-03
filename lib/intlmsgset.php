@@ -383,7 +383,7 @@ class IntlMsgSet {
                     } else if ($m[5] === "s" && $conv === "") {
                         $x = (string) $val;
                     } else {
-                        $x = sprintf("%{$conv}s", $val);
+                        $x = sprintf("%{$conv}{$m[5]}", $val);
                     }
                     $s = substr($s, 0, $pos - 1) . $x . substr($s, $pos + strlen($m[0]));
                     $pos = $pos - 1 + strlen($x);
