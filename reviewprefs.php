@@ -70,7 +70,7 @@ function prefs_hoturl_args() {
 }
 
 // Update preferences
-function savePreferences($Qreq, $reset_p) {
+function savePreferences($qreq, $reset_p) {
     global $Conf, $Me, $reviewer, $incorrect_reviewer;
     if ($incorrect_reviewer) {
         Conf::msg_error("Preferences not saved.");
@@ -80,7 +80,7 @@ function savePreferences($Qreq, $reset_p) {
     $csvg = new CsvGenerator;
     $csvg->select(["paper", "email", "preference"]);
     $suffix = "u" . $reviewer->contactId;
-    foreach ($Qreq as $k => $v) {
+    foreach ($qreq as $k => $v) {
         if (strlen($k) > 7 && substr($k, 0, 7) == "revpref") {
             if (str_ends_with($k, $suffix)) {
                 $k = substr($k, 0, -strlen($suffix));
@@ -100,9 +100,9 @@ function savePreferences($Qreq, $reset_p) {
     if ($aset->execute()) {
         Conf::msg_confirm("Preferences saved.");
         if ($reset_p) {
-            unset($Qreq->p, $Qreq->pap);
+            unset($qreq->p, $qreq->pap);
         }
-        $Conf->redirect_self($Qreq);
+        $Conf->redirect_self($qreq);
     } else {
         Conf::msg_error(join("<br />", $aset->messages_html()));
     }
@@ -332,7 +332,8 @@ if ($Qreq->sort) {
 echo Ht::form($Conf->hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "class" => "ui-submit js-submit-paperlist assignpc"]),
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1);
-echo "<div class=\"pltable-fullw-container\">\n";
+echo "<div class=\"pltable-fullw-container\">\n",
+    '<noscript><div style="text-align:center">', Ht::submit("fn", "Save changes", ["value" => "saveprefs", "class" => "btn-primary"]), '</div></noscript>';
 $pl->echo_table_html(["fold_session_prefix" => "pfdisplay.", "list" => true, "live" => true]);
 echo "</div></form>\n";
 
