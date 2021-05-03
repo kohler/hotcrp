@@ -675,18 +675,17 @@ class ReviewForm implements JsonSerializable {
     }
 
     /** @return string */
-    function default_display() {
+    function view_default() {
         $f = $this->fmap["overAllMerit"];
-        if (!$f->displayed || !$f->search_keyword()) {
-            $f = null;
-            foreach ($this->forder as $fx) {
-                if ($fx->has_options && $fx->search_keyword()) {
-                    $f = $fx;
-                    break;
-                }
+        if ($f->displayed && $f->search_keyword()) {
+            return "show:" . $f->search_keyword();
+        }
+        foreach ($this->forder as $fx) {
+            if ($fx->has_options && $fx->search_keyword()) {
+                return "show:" . $fx->search_keyword();
             }
         }
-        return $f ? " " . $f->search_keyword() . " " : " ";
+        return "";
     }
 
     function jsonSerialize() {

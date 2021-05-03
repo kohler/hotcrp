@@ -14,19 +14,21 @@ class SearchConfig_API {
             if (!isset($qreq->display)) {
                 return new JsonResult(400, "Bad request.");
             }
+
             $pl = new PaperList($report, $search, ["sort" => true]);
-            $pl->apply_view_report_default();
-            $default_view = $pl->unparse_view(true);
             $pl->parse_view($qreq->display, PaperList::VIEWORIGIN_EXPLICIT);
             $parsed_view = $pl->unparse_view(true);
-
             // check for errors
             $pl->table_html();
             if ($pl->message_set()->has_error()) {
                 return new JsonResult(["ok" => false, "message_list" => $pl->message_set()->message_list()]);
             }
 
-            if ($parsed_view === $default_view) {
+            $pl = new PaperList($report, $search, ["sort" => true]);
+            $pl->apply_view_report_default(true);
+            $baseline_view = $pl->unparse_view(true);
+
+            if ($parsed_view === $baseline_view) {
                 $user->conf->save_setting("{$report}display_default", null);
             } else {
                 $user->conf->save_setting("{$report}display_default", 1, join(" ", $parsed_view));

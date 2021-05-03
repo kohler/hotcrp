@@ -562,14 +562,14 @@ class PaperList implements XtContext {
         }
     }
 
-    function apply_view_report_default() {
+    function apply_view_report_default($no_settings = false) {
+        $s = null;
+        if (($this->_report_id === "pl" || $this->_report_id === "pf")
+            && !$no_settings) {
+            $s = $this->conf->setting_data("{$this->_report_id}display_default");
+        }
         if ($this->_report_id === "pl") {
-            $s = $this->conf->setting_data("pldisplay_default")
-                ?? $this->conf->review_form()->default_display();
-        } else if ($this->_report_id === "pf") {
-            $s = $this->conf->setting_data("pfdisplay_default");
-        } else {
-            $s = null;
+            $s = $s ?? $this->conf->review_form()->view_default();
         }
         $this->parse_view($s, self::VIEWORIGIN_DEFAULT_DISPLAY);
     }
@@ -1582,7 +1582,7 @@ class PaperList implements XtContext {
         return $t;
     }
 
-    static private function render_footer_row($arrow_ncol, $ncol, $header,
+    static function render_footer_row($arrow_ncol, $ncol, $header,
                             $lllgroups, $activegroup = -1) {
         $foot = "<tr class=\"pl_footrow\">\n   ";
         if ($arrow_ncol) {
