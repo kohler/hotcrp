@@ -155,6 +155,9 @@
     "advanced": {
         "weak": true
     },
+    "ai": {
+        "weak": true
+    },
     "analytics": {
         "weak": true
     },
@@ -404,6 +407,9 @@
         "weak": true,
         "alternate": [{"word": "t", "if": "massachusetts institute"}]
     },
+    "technological": {
+        "weak": true
+    },
     "technologies": {
         "weak": true
     },
@@ -597,6 +603,9 @@
     "georgia": {
         "weak": true,
         "sync": "tech"
+    },
+    "germany": {
+        "weak": true
     },
     "google": {
         "nameish": false
@@ -926,7 +935,7 @@
         "alternate": [
             {"word": "uw", "if": "university"}
         ],
-        "sync": ["george", "lee"]
+        "sync": ["george", "lee", "state"]
     },
     "wisconsin": {
         "alternate": [
