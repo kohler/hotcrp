@@ -715,6 +715,9 @@
         "weak": true,
         "alternate": [{"word": "ucl", "if": "university college"}]
     },
+    "los": {
+        "weak": true
+    },
     "louisiana": {
         "alternate": [{"word": "lsu", "if": "university state"}],
         "sync": "state"
