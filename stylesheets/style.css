@@ -2819,7 +2819,7 @@ a.badge:active {
 }
 .pspcard {
 	position: relative;
-	z-index: 1;
+	z-index: 2;
 	background: #edf3f5;
 	color: #2b2b2b;
 	padding: 16px 20px 20px 24px;
@@ -2833,6 +2833,7 @@ a.badge:active {
 .pslcard-nav {
 	-webkit-position: sticky;
 	position: sticky;
+	z-index: 1;
 	top: 104px;
 	margin: 20px 20px 0 24px;
 }
