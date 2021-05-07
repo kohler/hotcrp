@@ -449,7 +449,7 @@ scripts/buzzer.js
 scripts/emojicodes.json
 scripts/graph.js
 scripts/jquery-1.12.4.min.js
-scripts/jquery-3.5.1.min.js
+scripts/jquery-3.6.0.min.js
 scripts/script.js
 scripts/settings.js
 
