@@ -144,13 +144,25 @@ class PaperRequest {
     }
 
     /** @param Conf $conf
+     * @param Qrequest $qreq
+     * @param int $pid
+     * @return Redirection */
+    private function signin_redirection($conf, $qreq, $pid) {
+        return new Redirection($conf->hoturl("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITE_RELATIVE | Conf::HOTURL_RAW)]));
+    }
+
+    /** @param Conf $conf
      * @param Contact $user
      * @param Qrequest $qreq
      * @return PaperInfo */
     function find_paper($conf, $user, $qreq) {
         $pid = $this->find_pid($conf, $user, $qreq);
         if ($pid === 0) {
-            return PaperInfo::make_new($user);
+            if ($user->has_email()) {
+                return PaperInfo::make_new($user);
+            } else {
+                throw $this->signin_redirection($conf, $qreq, 0);
+            }
         } else {
             $options = ["topics" => true, "options" => true];
             if ($user->privChair
@@ -169,7 +181,11 @@ class PaperRequest {
                     throw new PermissionProblem($conf, ["missingId" => "paper"]);
                 }
             } else if (($whynot = $user->perm_view_paper($prow, false, $pid))) {
-                throw $whynot;
+                if ($user->has_email()) {
+                    throw $whynot;
+                } else {
+                    throw $this->signin_redirection($conf, $qreq, $pid);
+                }
             }
             return $prow;
         }

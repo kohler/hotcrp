@@ -95,6 +95,9 @@ class Signin_Partial {
         ensure_session();
         $user->conf->header("Sign in", "home");
         $gx->push_render_cleanup("__footer");
+        if ($qreq->is_get() && $qreq->redirect) {
+            $user->conf->msg("You need to sign in to access that page.", 2);
+        }
     }
 
     static function render_signin_form(Contact $user, Qrequest $qreq, $gx) {
@@ -112,6 +115,9 @@ class Signin_Partial {
             '" id="homeacct">',
             Ht::form($conf->hoturl("signin"), ["class" => "compact-form ui-submit uin js-signin"]),
             Ht::hidden("post", post_value(true));
+        if ($qreq->redirect) {
+            echo Ht::hidden("redirect", $qreq->redirect);
+        }
         if (!$unfolded) {
             echo Ht::unstash_script('hotcrp.fold("homeacct",false)');
         }
@@ -230,7 +236,7 @@ class Signin_Partial {
             echo '<div class="mb-5">',
                 $user->conf->_("Use this page to sign out of the site."),
                 '</div><div class="popup-actions">',
-                Ht::submit("go", "Sign out", ["class" => "btn-danger float-left", "value" => 1]),
+                Ht::submit("Sign out", ["class" => "btn-danger float-left", "value" => 1]),
                 Ht::submit("cancel", "Cancel", ["class" => "float-left uic js-no-signin", "formnovalidate" => true]),
                 '</div>';
         }

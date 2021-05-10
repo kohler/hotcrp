@@ -151,7 +151,7 @@ class HelpRenderer extends Ht {
         $t = Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "nw"])
             . Ht::entry("q", $q["q"], ["size" => $size])
             . " &nbsp;"
-            . Ht::submit("go", "Search");
+            . Ht::submit("Search");
         foreach ($q as $k => $v) {
             if ($k !== "q")
                 $t .= Ht::hidden($k, $v);
