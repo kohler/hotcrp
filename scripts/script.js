@@ -3819,8 +3819,7 @@ function minifeedback(e, rv) {
                 ce.removeChild(mfe);
         };
         e.addEventListener("input", fn);
-        f = parseFloat(getComputedStyle(mfe, ":after").animationDuration + 1) * 1000;
-        to = setTimeout(fn, f);
+        to = setTimeout(fn, parseFloat(getComputedStyle(mfe, ":after").animationDuration + 1) * 1000);
     }
 }
 
