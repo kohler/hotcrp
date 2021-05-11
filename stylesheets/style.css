@@ -1864,16 +1864,17 @@ span.author, span.conflict {
 	font-weight: bold;
 	color: #ff0000;
 }
-pre.entryexample {
-	padding: 0.4em 0.5em;
-	background: #eeeeee;
-	border: 1px solid #dddddd;
+.entryexample {
+	padding: 0.4em 0.75em 0.4em 0.5em;
+	background: #f5f7fe;
+	border: 1px solid #ddd;
+	border-radius: 4px;
 	display: table;
 	overflow-wrap: break-word;
 	white-space: pre-wrap;
 	margin-bottom: 1em;
 }
-pre.entryexample.dark {
+.entryexample.dark {
 	background: rgba(66, 66, 88, 0.95);
 }
 pre.email {
