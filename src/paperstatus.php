@@ -982,17 +982,15 @@ class PaperStatus extends MessageSet {
         $this->_check_status($pj);
         $this->_check_final_status($pj);
         $this->_check_decision($pj);
-
-        // don't save if serious error
-        if (!$this->_validate_fields()) {
-            return false;
-        }
+        $ok = $this->_validate_fields();
 
         // prepare changes for saving
-        $this->_save_fields();
+        if ($ok) {
+            $this->_save_fields();
+        }
 
         // correct blindness setting
-        if ($this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {
+        if ($ok && $this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {
             $want_blind = $this->conf->submission_blindness() !== Conf::BLIND_NEVER;
             if (!$this->prow || $this->prow->blind !== $want_blind) {
                 $this->save_paperf("blind", $want_blind ? 1 : 0);
@@ -1003,20 +1001,25 @@ class PaperStatus extends MessageSet {
         }
 
         // don't save if creating a mostly-empty paper
-        if ($this->paperId <= 0) {
+        if ($ok && $this->paperId <= 0) {
             if (!array_diff(array_keys($this->_paper_upd), ["authorInformation", "blind"])
                 && (!isset($this->_paper_upd["authorInformation"])
                     || $this->_paper_upd["authorInformation"] === (new Author($this->user))->unparse_tabbed())
                 && empty($this->_topic_ins)
                 && empty($this->_option_ins)) {
                 $this->error_at(null, "Empty submission. Please fill out the submission fields and try again.");
-                return false;
+                $ok = false;
             }
         }
 
-        $this->_check_contacts_last($pj);
-        $this->_ensure_creator_contact();
-        return true;
+        // validate contacts
+        if ($ok) {
+            $this->_check_contacts_last($pj);
+            $this->_ensure_creator_contact();
+        }
+
+        $this->_nnprow->remove_option_overrides();
+        return $ok;
     }
 
 

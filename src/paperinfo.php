@@ -511,8 +511,6 @@ class PaperInfo {
     /** @var array<int,?PaperValue> */
     private $_option_array = [];
     /** @var ?array<int,PaperValue> */
-    private $_new_option_array;
-    /** @var ?array<int,PaperValue> */
     private $_base_option_array;
     /** @var array<int,DocumentInfo> */
     private $_document_array;
@@ -1754,27 +1752,16 @@ class PaperInfo {
         $this->_option_array[$ov->id] = $ov;
     }
 
-    /** @param int|PaperOption $o
-     * @return PaperValue
-     * @deprecated */
-    function new_option($o) {
-        $id = is_int($o) ? $o : $o->id;
-        if (!array_key_exists($id, $this->_new_option_array ?? [])) {
-            $this->_new_option_array[$id] = $this->force_option($o);
+    function remove_option_overrides() {
+        if ($this->_base_option_array !== null) {
+            foreach ($this->_base_option_array as $id => $ov) {
+                $this->_option_array[$id] = $ov;
+            }
+            $this->_base_option_array = null;
         }
-        /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-        return $this->_new_option_array[$id];
-    }
-
-    /** @deprecated */
-    function set_new_option(PaperValue $ov) {
-        $this->_new_option_array[$ov->id] = $ov;
     }
 
     function invalidate_options($reload = false) {
-        if ($this->_base_option_array !== null) {
-            echo '<p class="is-error">', htmlspecialchars(json_encode($this->_new_option_array)), '</p>';
-        }
         assert($this->_base_option_array === null);
         $this->optionIds = $this->_option_values = $this->_option_data = null;
         $this->_option_array = [];
