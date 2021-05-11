@@ -6,10 +6,14 @@ class TagAnno_API {
     static function get(Contact $user, Qrequest $qreq) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
-            return ["ok" => false, "error" => $tagger->error_html()];
+            return MessageItem::make_error_json($tagger->error_html());
         }
-        $j = ["ok" => true, "tag" => $tag, "editable" => $user->can_edit_tag_anno($tag),
-              "anno" => []];
+        $j = [
+            "ok" => true,
+            "tag" => $tag,
+            "editable" => $user->can_edit_tag_anno($tag),
+            "anno" => []
+        ];
         $dt = $user->conf->tags()->add(Tagger::base($tag));
         foreach ($dt->order_anno_list() as $oa) {
             if ($oa->annoId !== null)
@@ -21,7 +25,7 @@ class TagAnno_API {
     static function set(Contact $user, Qrequest $qreq) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
-            return ["ok" => false, "error" => $tagger->error_html()];
+            return MessageItem::make_error_json($tagger->error_html());
         }
         if (!$user->can_edit_tag_anno($tag)) {
             return ["ok" => false, "error" => "Permission error."];

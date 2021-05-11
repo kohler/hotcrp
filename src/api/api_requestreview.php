@@ -14,7 +14,7 @@ class RequestReview_API {
         }
 
         if (($whyNot = $user->perm_request_review($prow, $round, true))) {
-            return new JsonResult(403, ["ok" => false, "error" => $whyNot->unparse_html()]);
+            return new JsonResult(403, MessageItem::make_error_json($whyNot->unparse_html()));
         }
         if (!isset($qreq->email)) {
             return new JsonResult(400, "Bad request.");
@@ -166,7 +166,7 @@ class RequestReview_API {
             assert(isset($row["review_token"]));
             return new JsonResult(["ok" => true, "action" => "token", "review_token" => $row["review_token"]]);
         } else {
-            return new JsonResult(400, ["ok" => false, "error" => $aset->messages_div_html()]);
+            return new JsonResult(400, ["ok" => false, "message_list" => $aset->message_list()]);
         }
     }
 

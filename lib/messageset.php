@@ -28,9 +28,17 @@ class MessageItem implements JsonSerializable {
         if ($this->field !== null) {
             $x["field"] = $this->field;
         }
-        $x["message"] = $this->message;
+        if ($this->message !== "") {
+            $x["message"] = $this->message;
+        }
         $x["status"] = $this->status;
         return (object) $x;
+    }
+
+    /** @param ?string $message
+     * @return array{ok:false,message_list:list<MessageItem>} */
+    static function make_error_json($message) {
+        return ["ok" => false, "message_list" => [new MessageItem(null, $message ?? "", 2)]];
     }
 }
 

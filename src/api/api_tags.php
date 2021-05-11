@@ -164,7 +164,7 @@ class Tags_API {
     static function votereport_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
-            return ["ok" => false, "error" => $tagger->error_html()];
+            return MessageItem::make_error_json($tagger->error_html());
         }
         if (!$user->can_view_peruser_tag($prow, $tag)) {
             return ["ok" => false, "error" => "Permission error."];

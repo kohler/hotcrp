@@ -20,7 +20,7 @@ class GraphData_API {
         if (!$fg->has_error()) {
             return ["ok" => true] + $fg->graph_json();
         } else {
-            return new JsonResult(400, ["ok" => false, "error" => Ht::msg($fg->message_texts(), 2)]);
+            return new JsonResult(400, ["ok" => false, "message_list" => $fg->message_list()]);
         }
     }
 }

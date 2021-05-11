@@ -2040,10 +2040,12 @@ function popup_skeleton(options) {
     function show_errors(data) {
         var form = $d.find("form")[0],
             dbody = $d.find(".popup-body"),
-            messages = "", mx, i, e, x;
+            messages = "", mx, i, e, x, mlist = data.message_list;
         $d.find(".msg-error, .feedback").remove();
-        for (i in data.message_list || []) {
-            mx = data.message_list[i];
+        if (!mlist && data.error)
+            mlist = [{message: escape_entities(data.error), status: 2}];
+        for (i in mlist || []) {
+            mx = mlist[i];
             if (mx.field && (e = form[mx.field])) {
                 x = e.closest(".entryi, .f-i");
                 if (render_feedback_near(mx.message, mx.status, x || e)) {
@@ -3773,6 +3775,9 @@ function minifeedback(e, rv) {
             t += render_feedback(mx.message, mx.status);
             status = Math.max(status, mx.status);
         }
+    } else if (rv && rv.error) {
+        t = render_feedback(escape_entities(rv.error), 2);
+        status = 2;
     }
     if (t === "" && (!rv || !rv.ok)) {
         if (rv && (rv.error || rv.warning)) {

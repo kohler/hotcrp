@@ -18,7 +18,7 @@ function document_error($status, $msg) {
 
     header("HTTP/1.1 $status");
     if (isset($Qreq->fn)) {
-        json_exit(["ok" => false, "error" => $msg ? : "Internal error."]);
+        json_exit(MessageItem::make_error_json($msg));
     } else {
         $Conf->header("Download", null);
         $msg && Conf::msg_error($msg);
@@ -135,9 +135,9 @@ function document_download(Contact $user, $qreq) {
     // check for contents request
     if ($qreq->fn === "listing" || $qreq->fn === "consolidatedlisting") {
         if (!$doc->is_archive()) {
-            json_exit(["ok" => false, "error" => "That file is not an archive."]);
+            json_exit(MessageItem::make_error_json("That file is not an archive."));
         } else if (($listing = $doc->archive_listing(65536)) === false) {
-            json_exit(["ok" => false, "error" => $doc->error ? $doc->error_html : "Internal error."]);
+            json_exit(MessageItem::make_error_json($doc->error ? $doc->error_html : "Internal error."));
         } else {
             $listing = ArchiveInfo::clean_archive_listing($listing);
             if ($qreq->fn === "consolidatedlisting") {
