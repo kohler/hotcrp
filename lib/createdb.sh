@@ -399,17 +399,22 @@ if [ "$createuser" = y ]; then
     # 2. DROP USER
     # 3. CREATE USER
     for host in $allhosts; do
+        echo "select User from user where User='$DBUSER' and Host='$host';" | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql | grep . >/dev/null 2>&1
+        if [ $? = 0 ]; then
+            if $verbose; then
+                echo ". DROP USER '$DBUSER'@'$host';"
+            fi
+            eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
+DROP USER '$DBUSER'@'$host';
+__EOF__
+        fi
         if $verbose; then
             cat <<__EOF__
-. GRANT USAGE ON *.* TO '$DBUSER'@'$host' IDENTIFIED BY <REDACTED>;
-. DROP USER '$DBUSER'@'$host';
 . FLUSH PRIVILEGES;
 . CREATE USER '$DBUSER'@'$host' IDENTIFIED BY <REDACTED>;
 __EOF__
         fi
         eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
-GRANT USAGE ON *.* TO '$DBUSER'@'$host' IDENTIFIED BY '`sql_dbpass`';
-DROP USER '$DBUSER'@'$host';
 FLUSH PRIVILEGES;
 CREATE USER '$DBUSER'@'$host' IDENTIFIED BY '`sql_dbpass`';
 __EOF__
