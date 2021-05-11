@@ -512,6 +512,8 @@ class PaperInfo {
     private $_option_array = [];
     /** @var ?array<int,PaperValue> */
     private $_new_option_array;
+    /** @var ?array<int,PaperValue> */
+    private $_base_option_array;
     /** @var array<int,DocumentInfo> */
     private $_document_array;
     /** @var ?array<int,array<int,int>> */
@@ -1740,6 +1742,21 @@ class PaperInfo {
 
     /** @param int|PaperOption $o
      * @return PaperValue */
+    function base_option($o) {
+        $id = is_int($o) ? $o : $o->id;
+        return $this->_base_option_array[$id] ?? $this->force_option($o);
+    }
+
+    function override_option(PaperValue $ov) {
+        if (!isset($this->_base_option_array[$ov->id])) {
+            $this->_base_option_array[$ov->id] = $this->force_option($ov->option);
+        }
+        $this->_option_array[$ov->id] = $ov;
+    }
+
+    /** @param int|PaperOption $o
+     * @return PaperValue
+     * @deprecated */
     function new_option($o) {
         $id = is_int($o) ? $o : $o->id;
         if (!array_key_exists($id, $this->_new_option_array ?? [])) {
@@ -1749,12 +1766,16 @@ class PaperInfo {
         return $this->_new_option_array[$id];
     }
 
+    /** @deprecated */
     function set_new_option(PaperValue $ov) {
         $this->_new_option_array[$ov->id] = $ov;
     }
 
     function invalidate_options($reload = false) {
-        assert($this->_new_option_array === null);
+        if ($this->_base_option_array !== null) {
+            echo '<p class="is-error">', htmlspecialchars(json_encode($this->_new_option_array)), '</p>';
+        }
+        assert($this->_base_option_array === null);
         $this->optionIds = $this->_option_values = $this->_option_data = null;
         $this->_option_array = [];
         if ($reload) {

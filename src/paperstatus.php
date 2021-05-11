@@ -685,7 +685,7 @@ class PaperStatus extends MessageSet {
             if (!$ov->has_error()) {
                 $opt->value_store($ov, $this);
             }
-            $this->_nnprow->set_new_option($ov);
+            $this->_nnprow->override_option($ov);
             $this->_field_values[$opt->id] = $ov;
         }
     }
@@ -695,8 +695,9 @@ class PaperStatus extends MessageSet {
             $this->warning_at("options", $this->_("Unknown options ignored (%2\$s).", count($pj->_bad_options), htmlspecialchars(join("; ", $pj->_bad_options))));
         }
         foreach ($this->_nnprow->form_fields() as $o) {
-            if (isset($pj->{$o->json_key()})) {
-                $this->_check_one_field($o, $pj->{$o->json_key()});
+            $jk = $o->json_key();
+            if (isset($pj->$jk)) {
+                $this->_check_one_field($o, $pj->$jk);
             }
         }
     }
@@ -704,7 +705,7 @@ class PaperStatus extends MessageSet {
     private function _validate_fields() {
         $max_status = 0;
         foreach ($this->_nnprow->form_fields() as $opt) {
-            $ov = $this->_nnprow->new_option($opt);
+            $ov = $this->_nnprow->force_option($opt);
             $errorindex = count($ov->message_list());
             if (!$ov->has_error()) {
                 $ov->option->value_check($ov, $this->user);
@@ -726,7 +727,7 @@ class PaperStatus extends MessageSet {
             }
             $v1 = $ov->value_list();
             $d1 = $ov->data_list();
-            $oldv = $this->_nnprow->force_option($ov->option);
+            $oldv = $this->_nnprow->base_option($ov->option);
             if ($v1 !== $oldv->value_list() || $d1 !== $oldv->data_list()) {
                 if (!$ov->option->value_save($ov, $this)) {
                     // normal option

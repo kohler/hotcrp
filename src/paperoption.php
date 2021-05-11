@@ -152,6 +152,9 @@ class PaperValue implements JsonSerializable {
         $this->prow->invalidate_options(true);
         $this->load_value_data();
     }
+    function call($method, ...$args) {
+        return $this->option->$method($this, ...$args);
+    }
 
     /** @param string $name
      * @return bool */

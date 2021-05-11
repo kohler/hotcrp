@@ -6,6 +6,9 @@ class Authors_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
     }
+    function author_list(PaperValue $ov) {
+        return PaperInfo::parse_author_list($ov->data_by_index(0) ?? "");
+    }
     function value_force(PaperValue $ov) {
         $ov->set_value_data([1], [$ov->prow->authorInformation]);
     }
@@ -25,7 +28,7 @@ class Authors_PaperOption extends PaperOption {
         return $au;
     }
     function value_check(PaperValue $ov, Contact $user) {
-        $aulist = PaperInfo::parse_author_list($ov->data_by_index(0) ?? "");
+        $aulist = $this->author_list($ov);
         $nreal = 0;
         foreach ($aulist as $auth) {
             $nreal += $auth->is_empty() ? 0 : 1;
@@ -72,7 +75,7 @@ class Authors_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        $authlist = PaperInfo::parse_author_list($ov->data_by_index(0) ?? "");
+        $authlist = $this->author_list($ov);
         $v = "";
         foreach ($authlist as $auth) {
             if (!$auth->is_empty())
@@ -262,8 +265,8 @@ class Authors_PaperOption extends PaperOption {
             ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
             'data-row-template="', htmlspecialchars($this->editable_authors_tr($pt, '$', null, null, $max_authors !== 1, $readonly)), '">';
 
-        $aulist = PaperInfo::parse_author_list($ov->data_by_index(0));
-        $reqaulist = PaperInfo::parse_author_list($reqov->data_by_index(0));
+        $aulist = $this->author_list($ov);
+        $reqaulist = $this->author_list($reqov);
         $nreqau = count($reqaulist);
         while ($nreqau > 0 && $reqaulist[$nreqau-1]->is_empty()) {
             --$nreqau;
