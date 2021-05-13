@@ -228,17 +228,20 @@ class MailRecipients {
             && $this->type !== "all";
     }
 
-    /** @return int */
+    /** @param bool $paper_sensitive
+     * @return int */
     function combination_type($paper_sensitive) {
         if (preg_match('/\A(?:pc|pc:.*|(?:|unc|new)pcrev|lead|shepherd)\z/', $this->type)) {
             return 2;
-        } else if ($paper_sensitive) {
+        } else if ($this->is_authors() || $paper_sensitive) {
             return 1;
         } else {
             return 0;
         }
     }
 
+    /** @param bool $paper_sensitive
+     * @return string|false */
     function query($paper_sensitive) {
         $cols = [];
         $where = ["not disabled"];
@@ -389,7 +392,7 @@ class MailRecipients {
         $q .= "\norder by ";
         if (!$needpaper) {
             $q .= "email";
-        } else if ($paper_sensitive) {
+        } else if ($this->is_authors() || $paper_sensitive) {
             $q .= "Paper.paperId, email";
         } else {
             $q .= "email, Paper.paperId";

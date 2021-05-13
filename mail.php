@@ -31,7 +31,7 @@ if (isset($Qreq->fromlog)
 }
 
 // create options
-$tOpt = array();
+$tOpt = [];
 if ($Me->privChair) {
     $tOpt["s"] = "Submitted papers";
     if ($Conf->time_pc_view_decision(false) && $Conf->has_any_accepted()) {
@@ -100,10 +100,11 @@ if (isset($Qreq->prevt) && isset($Qreq->prevq)) {
 $papersel = null;
 if (isset($Qreq->p) && is_array($Qreq->p)
     && !isset($Qreq->psearch)) {
-    $papersel = array();
-    foreach ($Qreq->p as $p)
+    $papersel = [];
+    foreach ($Qreq->p as $p) {
         if (($p = cvtint($p)) > 0)
             $papersel[] = $p;
+    }
     sort($papersel);
     $Qreq->q = join(" ", $papersel);
     $Qreq->plimit = 1;
@@ -419,7 +420,7 @@ class MailSender {
         $nprintrows = 0;
         foreach (["To", "cc", "bcc", "reply-to", "Subject"] as $k) {
             if ($k == "To") {
-                $vh = array();
+                $vh = [];
                 foreach ($show_prep->to as $to) {
                     $vh[] = htmlspecialchars(MimeText::decode_header($to));
                 }
@@ -502,8 +503,8 @@ class MailSender {
         $nrows_done = 0;
         $nrows_total = $result->num_rows;
         $nwarnings = 0;
-        $preperrors = array();
-        $revinform = ($this->recipients == "newpcrev" ? array() : null);
+        $preperrors = [];
+        $revinform = ($this->recipients === "newpcrev" ? [] : null);
         while (($rowdata = $result->fetch_assoc())) {
             $row = new PaperInfo($rowdata, $this->user, $this->conf);
             $contact = new Contact($rowdata, $this->conf);
@@ -684,7 +685,7 @@ echo Ht::entry("q", (string) $Qreq->q, [
 if (count($tOpt) == 1) {
     echo htmlspecialchars($tOpt[$Qreq->t]);
 } else {
-    echo " ", Ht::select("t", $tOpt, $Qreq->t, array("id" => "t"));
+    echo " ", Ht::select("t", $tOpt, $Qreq->t, ["id" => "t"]);
 }
 echo " &nbsp;", Ht::submit("psearch", "Search");
 echo "</span>";
@@ -709,7 +710,7 @@ if (!$Qreq->newrev_since && ($t = $Conf->setting("pcrev_informtime")))
     $Qreq->newrev_since = $Conf->parseableTime($t, true);
 echo 'Assignments since:&nbsp; ',
     Ht::entry("newrev_since", $Qreq->newrev_since,
-              array("placeholder" => "(all)", "size" => 30)),
+              ["placeholder" => "(all)", "size" => 30]),
     '</div>';
 
 echo '<div class="fx9 g"></div>';
@@ -748,7 +749,7 @@ echo "  <tr><td class=\"mhnp nw\"><label for=\"subject\">Subject:</label></td><t
 
  <tr><td></td><td class=\"mhb\">\n",
     Ht::textarea("emailBody", $Qreq->emailBody,
-            array("class" => "text-monospace", "rows" => 20, "cols" => 80, "spellcheck" => "true")),
+            ["class" => "text-monospace", "rows" => 20, "cols" => 80, "spellcheck" => "true"]),
     "</td></tr>
 </table></div>\n\n";
 
