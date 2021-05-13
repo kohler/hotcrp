@@ -1866,7 +1866,7 @@ span.author, span.conflict {
 }
 .entryexample {
 	padding: 0.4em 0.75em 0.4em 0.5em;
-	background: rgba(233, 238, 242, 0.4);
+	background: rgba(238, 240, 242, 0.4);
 	border: 1px solid #ddd;
 	border-radius: 4px;
 	display: table;
