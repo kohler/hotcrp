@@ -851,6 +851,18 @@ class PaperTable {
         if ($vas === 1 || $this->allFolded) {
             $fr->value .= '</a>';
         }
+        if ($this->admin) {
+            if ($this->prow->timeSubmitted <= 0) {
+                $mailt = "all";
+            } else if ($this->prow->outcome != 0 && $this->prow->can_author_view_decision()) {
+                $mailt = $this->prow->outcome > 0 ? "dec:yes" : "dec:no";
+            } else {
+                $mailt = "s";
+            }
+            $fr->value .= ' <a class="fx9 q" href="'
+                . $this->conf->hoturl("mail", ["t" => $mailt, "plimit" => 1, "q" => $this->prow->paperId])
+                . '">✉️</a>';
+        }
         $fr->value .= '</h3></div>';
 
         // contents

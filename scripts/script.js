@@ -3118,15 +3118,17 @@ $(function () {
 
 // special-case folding for author table
 handle_ui.on("js-aufoldup", function (event) {
-    var e = $$("foldpaper"),
-        m9 = e.className.match(/\bfold9([co])\b/),
-        m8 = e.className.match(/\bfold8([co])\b/);
-    if (m9 && (!m8 || m8[1] == "o"))
-        foldup.call(e, event, {n: 9, required: true});
-    if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o")) {
-        foldup.call(e, event, {n: 8, required: true});
-        if (m8[1] == "o" && $$("foldpscollab"))
-            fold("pscollab", 1);
+    if (event.target === this || event.target.tagName !== "A") {
+        var e = $$("foldpaper"),
+            m9 = e.className.match(/\bfold9([co])\b/),
+            m8 = e.className.match(/\bfold8([co])\b/);
+        if (m9 && (!m8 || m8[1] == "o"))
+            foldup.call(e, event, {n: 9, required: true});
+        if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o")) {
+            foldup.call(e, event, {n: 8, required: true});
+            if (m8[1] == "o" && $$("foldpscollab"))
+                fold("pscollab", 1);
+        }
     }
 });
 

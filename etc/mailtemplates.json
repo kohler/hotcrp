@@ -514,13 +514,13 @@
 
 	{
 		"name": "generic",
-		"title": "Generic",
+		"title": "Message to authors",
 		"allow_pc": true,
 		"position": 0,
 		"default_recipients": "s",
 		"subject": "[%CONFSHORTNAME%] Submission #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Dear %NAME%,\n\n",
+			"Dear authors,\n\n",
 			"Your message here.\n\n",
 			"       Title: %TITLE%\n",
 			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
@@ -537,6 +537,19 @@
 		"subject": "[%CONFSHORTNAME%] Message",
 		"body": [
 			"Dear program committee,\n\n",
+			"Your message here.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+	{
+		"name": "reviewers",
+		"title": "Message to reviewers",
+		"allow_pc": true,
+		"position": 2,
+		"default_recipients": "rev",
+		"subject": "[%CONFSHORTNAME%] Review for #%NUMBER% %TITLEHINT%",
+		"body": [
+			"Dear %NAME%,\n\n",
 			"Your message here.\n\n",
 			"%SIGNATURE%\n"
 		]
