@@ -120,7 +120,7 @@ class Tag_ListAction extends ListAction {
                 $user->conf->confirmMsg("Tags saved.");
             }
             $args = ["atab" => "tag"] + $qreq->subset_as_array(["tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless"]);
-            $user->conf->redirect_self($qreq, $args);
+            return new Redirection($user->conf->selfurl($qreq, $args, Conf::HOTURL_RAW));
         }
     }
 }

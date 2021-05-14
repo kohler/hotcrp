@@ -85,7 +85,7 @@ class ListAction {
             $selection = new SearchSelection($selection);
         }
         if (!$uf || !Conf::xt_resolve_require($uf) || !is_string($uf->function)) {
-            return new JsonResult(404, "Function `{$name}` not found.");
+            return new JsonResult(404, "Function not found.");
         } else if (($uf->paper ?? false) && $selection->is_empty()) {
             return new JsonResult(400, "No papers selected.");
         } else if ($uf->function[0] === "+") {
@@ -117,6 +117,9 @@ class ListAction {
             }
         } else if ($res instanceof CsvGenerator) {
             $res->emit();
+            exit;
+        } else if ($res instanceof Redirection) {
+            $user->conf->redirect($res->url);
             exit;
         }
     }
