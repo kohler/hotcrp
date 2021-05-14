@@ -244,11 +244,23 @@
         "function": "+Decide_ListAction"
     },
     {
-        "name": "mail", "get": true,
+        "name": "mail",
         "render_function": "Mail_ListAction::render", "title": "Mail",
-        "position": 1000,
-        "allow_if": "manager", "display_if": "!listreport:pf",
-        "function": "+Mail_ListAction"
+        "position": 1000, "display_if": "!listreport:pf"
+    },
+    {
+        "name": "mail/authors", "get": true,
+        "title": "Contact authors",
+        "position": 10, "allow_if": "manager",
+        "function": "+Mail_ListAction",
+        "mail_template": "authors"
+    },
+    {
+        "name": "mail/reviewers", "get": true,
+        "title": "Reviewers",
+        "position": 100, "allow_if": "manager",
+        "function": "+Mail_ListAction",
+        "mail_template": "reviewers"
     },
     {
         "name": "uploadpref",

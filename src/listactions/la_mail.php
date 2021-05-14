@@ -3,20 +3,36 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Mail_ListAction extends ListAction {
+    private $template;
+    private $recipients;
+    function __construct(Conf $conf, $uf) {
+        $this->template = $uf->mail_template ?? null;
+        $this->recipients = $uf->recipients ?? null;
+    }
     function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager() && $qreq->page() !== "reviewprefs";
     }
-    static function render(PaperList $pl, Qrequest $qreq) {
-        return [Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $qreq->recipients, ["class" => "want-focus"])
-            . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "mail", "data-default-submit-all" => 1, "class" => "uic js-submit-mark"])];
+    static function render(PaperList $pl, Qrequest $qreq, GroupedExtensions $gex) {
+        $sel_opt = ListAction::members_selector_options($gex, "mail");
+        if (!empty($sel_opt)) {
+            return Ht::select("mailfn", $sel_opt, $qreq->mailfn,
+                              ["class" => "want-focus js-submit-action-info-mail", "style" => "max-width:10em"])
+                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "mail", "data-default-submit-all" => 1, "class" => "uic js-submit-mark"]);
+        } else {
+            return null;
+        }
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
-        $r = in_array($qreq->recipients, ["au", "rev"]) ? $qreq->recipients : "all";
+        $args = [];
         if ($ssel->equals_search(new PaperSearch($user, $qreq))) {
-            $x = "q=" . urlencode($qreq->q) . "&plimit=1";
+            $args["q"] = $qreq->q;
+            $args["plimit"] = 1;
         } else {
-            $x = "p=" . join("+", $ssel->selection());
+            $args["p"] = join(" ", $ssel->selection());
         }
-        $user->conf->redirect_hoturl("mail", $x . "&t=" . urlencode($qreq->t) . "&to=$r");
+        $args["t"] = $qreq->t;
+        $args["template"] = $this->template;
+        $args["to"] = $this->recipients;
+        $user->conf->redirect_hoturl("mail", $args);
     }
 }

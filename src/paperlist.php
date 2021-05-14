@@ -188,7 +188,6 @@ class PaperList implements XtContext {
     private $_viewf = [];
     /** @var array<string,?list<string>> */
     private $_view_decorations = [];
-    private $_atab;
 
     const VIEWORIGIN_MASK = 15;
     const VIEWORIGIN_NONE = -1;
@@ -281,7 +280,6 @@ class PaperList implements XtContext {
         if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"])) {
             $this->set_view("linkto", true, null, [$qreq->linkto]);
         }
-        $this->_atab = $qreq->atab;
 
         $this->tagger = new Tagger($this->user);
 
@@ -325,6 +323,7 @@ class PaperList implements XtContext {
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
     }
 
+    /** @return ?bool */
     function xt_check_element($e, $xt, $user, Conf $conf) {
         if (str_starts_with($e, "listhas:")) {
             return $this->has(substr($e, 8));
@@ -359,7 +358,6 @@ class PaperList implements XtContext {
         case "reviewersSel":
             return "sel id title status [linkto assign]";
         default:
-            error_log($this->conf->dbname . ": No such report {$this->_report_id}");
             return "";
         }
     }
@@ -1582,6 +1580,8 @@ class PaperList implements XtContext {
         return $t;
     }
 
+    /** @param int $arrow_ncol
+     * @param int $ncol */
     static function render_footer_row($arrow_ncol, $ncol, $header,
                             $lllgroups, $activegroup = -1) {
         $foot = "<tr class=\"pl_footrow\">\n   ";
@@ -1709,6 +1709,7 @@ class PaperList implements XtContext {
         return $this->rowset()->paper_ids();
     }
 
+    /** @return ?string */
     private function _listDescription() {
         switch ($this->_report_id) {
         case "reviewAssignment":
