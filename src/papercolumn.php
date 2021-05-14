@@ -198,7 +198,7 @@ class Selector_PaperColumn extends PaperColumn {
         if ($is_text) {
             return "Selected";
         } else {
-            return '<input type="checkbox" class="uic js-range-click is-range-group" data-range-type="pap[]" aria-label="Select all">';
+            return '<input type="checkbox" class="uic js-range-click is-range-group ignore-diff" data-range-type="pap[]" aria-label="Select all">';
         }
     }
     protected function checked(PaperList $pl, PaperInfo $row) {
@@ -211,7 +211,7 @@ class Selector_PaperColumn extends PaperColumn {
             $c .= ' checked';
         }
         return '<span class="pl_rownum fx6">' . $pl->count . '. </span>'
-            . '<input type="checkbox" class="uic uikd js-range-click js-selector" name="pap[]" value="' . $row->paperId . '"' . $c . ' aria-label="#' . $row->paperId . '">';
+            . '<input type="checkbox" class="uic uikd js-range-click js-selector ignore-diff" name="pap[]" value="' . $row->paperId . '"' . $c . ' aria-label="#' . $row->paperId . '">';
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";

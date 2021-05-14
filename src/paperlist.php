@@ -1658,14 +1658,24 @@ class PaperList implements XtContext {
         return $foot . "<hr class=\"c\" /></td>\n </tr>";
     }
 
-    private function _footer($ncol, Qrequest $qreq) {
+    /** @param int $ncol
+     * @return string */
+    private function _footer($ncol, $action_filter) {
         if ($this->count == 0) {
             return "";
+        }
+        $qreq = $this->qreq;
+        $atab = null;
+        if (($selfhref = !!$qreq->page())) {
+            $atab = $qreq->fn ?? $qreq->atab;
         }
 
         $gex = ListAction::grouped_extensions($this->user);
         $gex->add_xt_checker([$this, "xt_check_element"]);
-        $gex->filter_by("display_if");
+        $gex->apply_key_filter("display_if");
+        if ($action_filter) {
+            $gex->apply_filter($action_filter);
+        }
         $lllgroups = [];
         $whichlll = -1;
         foreach ($gex->members("") as $rf) {
@@ -1677,9 +1687,11 @@ class PaperList implements XtContext {
                     $lllg = [$lllg];
                 }
                 array_unshift($lllg, $rf->name, $rf->title);
-                $lllg[0] = $this->conf->selfurl($qreq, ["atab" => $lllg[0], "#" => "plact"]);
+                if ($selfhref) {
+                    $lllg[0] = $this->conf->selfurl($qreq, ["atab" => $lllg[0], "#" => "plact"]);
+                }
                 $lllgroups[] = $lllg;
-                if ($qreq->fn == $rf->name || $this->_atab == $rf->name) {
+                if ($atab === $rf->name) {
                     $whichlll = count($lllgroups) - 1;
                 }
             }
@@ -1688,7 +1700,7 @@ class PaperList implements XtContext {
         $footsel_ncol = $this->_view_kanban ? 0 : 1;
         return self::render_footer_row($footsel_ncol, $ncol - $footsel_ncol,
             "<b>Select papers</b> (or <a class=\"ui js-select-all\" href=\""
-            . $this->conf->selfurl($qreq, ["selectall" => 1, "#" => "plact"])
+            . ($selfhref ? $this->conf->selfurl($this->qreq, ["selectall" => 1, "#" => "plact"]) : "")
             . '">select all ' . $this->count . "</a>), then&nbsp;",
             $lllgroups, $whichlll);
     }
@@ -1730,7 +1742,7 @@ class PaperList implements XtContext {
         return $this->search->create_session_list_object($this->paper_ids(), $this->_listDescription(), $this->sortdef());
     }
 
-    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,nofooter?:bool,live?:bool} $options */
+    /** @param array{list?:bool,attributes?:array,fold_session_prefix?:string,noheader?:bool,nofooter?:bool,live?:bool,action_filter?:callable} $options */
     private function _table_render($options) {
         $this->_prepare();
         // need tags for row coloring
@@ -1939,7 +1951,7 @@ class PaperList implements XtContext {
         reset($this->_vcolumns);
         if (current($this->_vcolumns) instanceof Selector_PaperColumn
             && !($options["nofooter"] ?? false)) {
-            $tfoot .= $this->_footer($ncol, $this->qreq);
+            $tfoot .= $this->_footer($ncol, $options["action_filter"] ?? null);
         }
         if ($tfoot) {
             $rstate->tfoot = ' <tfoot class="pltable' . ($rstate->hascolors ? " pltable-colored" : "") . '">' . $tfoot . "</tfoot>\n";

@@ -125,20 +125,28 @@ class GroupedExtensions implements XtContext {
         return null;
     }
 
-    /** @param string $key */
-    function filter_by($key) {
-        $old_context = $this->conf->xt_swap_context($this);
+    /** @param callable(object,GroupedExtensions):bool $f */
+    function apply_filter($f) {
         foreach ($this->_jall as &$jl) {
-            for ($i = 0; $i !== count($jl); ) {
-                if (isset($jl[$i]->$key)
-                    && !$this->conf->xt_check($jl[$i]->$key, $jl[$i], $this->viewer)) {
-                    array_splice($jl, $i, 1);
-                } else {
+            $n = count($jl);
+            for ($i = 0; $i !== $n; ) {
+                if ($f($jl[$i], $this)) {
                     ++$i;
+                } else {
+                    array_splice($jl, $i, 1);
+                    --$n;
                 }
             }
         }
         $this->_raw = [];
+    }
+
+    /** @param string $key */
+    function apply_key_filter($key) {
+        $old_context = $this->conf->xt_swap_context($this);
+        $this->apply_filter(function ($jx, $gex) use ($key) {
+            return !isset($jx->$key) || $this->conf->xt_check($jx->$key, $jx, $this->viewer);
+        });
         $this->conf->xt_context = $old_context;
     }
 
