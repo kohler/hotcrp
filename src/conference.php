@@ -3382,16 +3382,10 @@ class Conf {
     ];
 
     /** @param Qrequest $qreq
-     * @param ?array $param
+     * @param array $param
      * @param int $flags
      * @return string */
-    function selfurl(Qrequest $qreq, $param = null, $flags = 0) {
-        assert(Navigation::page() === null || $qreq->page() === Navigation::page());
-        if ($qreq->page() === "api") {
-            error_log("selfurl for api page: " . debug_string_backtrace());
-        }
-        $param = $param ?? [];
-
+    private function qrequrl($qreq, $param, $flags) {
         $x = [];
         foreach ($qreq as $k => $v) {
             $ak = self::$selfurl_safe[$k] ?? false;
@@ -3415,8 +3409,48 @@ class Conf {
      * @param ?array $param
      * @param int $flags
      * @return string */
+    function selfurl(Qrequest $qreq, $param = null, $flags = 0) {
+        if (!$qreq->page() || $qreq->page() === "api") {
+            error_log("selfurl for bad page: " . debug_string_backtrace());
+        }
+        if (($p = Navigation::page()) !== null && $p !== $qreq->page()) {
+            error_log("selfurl on different page: " . debug_string_backtrace());
+        }
+        return $this->qrequrl($qreq, $param ?? [], $flags);
+    }
+
+    /** @param Qrequest $qreq
+     * @param ?array $param
+     * @param int $flags
+     * @return string */
     function selfurl_absolute(Qrequest $qreq, $param = null, $flags = 0) {
         return $this->selfurl($qreq, $param, $flags | Conf::HOTURL_ABSOLUTE);
+    }
+
+    /** @param Qrequest $qreq
+     * @param ?array $param
+     * @param int $flags
+     * @return string */
+    function site_referrer_url(Qrequest $qreq, $param = null, $flags = 0) {
+        if (($r = $qreq->referrer()) && ($rf = parse_url($r))) {
+            $sup = Navigation::siteurl_path();
+            $path = $rf["path"] ?? "";
+            if ($path !== "" && str_starts_with($path, $sup)) {
+                $xqreq = new Qrequest("GET");
+                $p = substr($path, strlen($sup));
+                if (($slash = strpos($p, "/"))) {
+                    $xqreq->set_page(substr($p, $slash), substr($p, $slash + 1));
+                } else {
+                    $xqreq->set_page($p);
+                }
+                preg_match_all('/([^=;&]+)=([^;&]+)/', $rf["query"] ?? "", $m, PREG_SET_ORDER);
+                foreach ($m as $mx) {
+                    $xqreq[urldecode($mx[1])] = urldecode($mx[2]);
+                }
+                return $this->qrequrl($xqreq, $param ?? [], $flags);
+            }
+        }
+        return $this->selfurl($qreq, $param, $flags);
     }
 
 
