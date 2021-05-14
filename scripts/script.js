@@ -1224,23 +1224,28 @@ function input_differs(elt) {
     var expected = input_default_value(elt);
     if (input_is_checkboxlike(elt))
         return elt.checked !== expected;
-    else {
-        var current = elt.tagName === "SELECT" ? $(elt).val() : elt.value;
-        return !text_eq(current, expected);
-    }
+    else if (elt.type === "button" || elt.type === "submit" || elt.type === "reset")
+        return false;
+    else
+        return !text_eq(elt.value, expected);
 }
 
 function form_differs(form, want_ediff) {
-    var ediff = null, $is = $(form).find("input, select, textarea");
-    if (!$is.length)
-        $is = $(form).filter("input, select, textarea");
-    $is.each(function () {
-        if (!hasClass(this, "ignore-diff") && input_differs(this)) {
-            ediff = this;
-            return false;
-        }
-    });
-    return want_ediff ? ediff : !!ediff;
+    var ediff = null, coll, i, len, e;
+    if (form instanceof HTMLFormElement)
+        coll = form.elements;
+    else {
+        coll = $(form).find("input, select, textarea");
+        if (!coll.length)
+            coll = $(form).filter("input, select, textarea");
+    }
+    len = coll.length;
+    for (i = 0; i !== len; ++i) {
+        e = coll[i];
+        if (!hasClass(e, "ignore-diff") && input_differs(e))
+            return want_ediff ? e : true;
+    }
+    return false;
 }
 
 function form_highlight(form, elt) {
@@ -3350,7 +3355,7 @@ function close_unnecessary(event) {
     var $a = $(event.target).closest(".has-assignment"),
         $as = $a.closest(".has-assignment-set"),
         d = $as.data("lastAssignmentModified");
-    if (d && d !== $a[0] && !form_differs($(d))) {
+    if (d && d !== $a[0] && !form_differs(d)) {
         $(d).find(".has-assignment-ui").remove();
         $(d).addClass("foldc").removeClass("foldo");
     }
