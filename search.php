@@ -103,11 +103,13 @@ $pl->apply_view_session();
 $pl->apply_view_qreq();
 if (isset($Qreq->q)) {
     $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
+    $pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FOOTER | PaperList::DECOR_STATISTICS | PaperList::DECOR_LIST);
+    $pl->set_table_fold_session("pldisplay.");
     if ($SSel->count()) {
         $pl->set_selection($SSel);
     }
     $pl->qopts["options"] = true; // get efficient access to `has(OPTION)`
-    $pl_text = $pl->table_html(["fold_session_prefix" => "pldisplay.", "list" => true, "live" => true]);
+    $pl_text = $pl->table_html();
     unset($Qreq->atab);
 } else {
     $pl_text = null;

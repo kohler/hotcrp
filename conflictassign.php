@@ -58,7 +58,8 @@ foreach ($Conf->full_pc_members() as $pc) {
     $paperlist->set_reviewer_user($pc);
     $paperlist->set_row_filter($filter);
     $paperlist->set_table_id_class(null, "pltable-fullw");
-    $tr = $paperlist->table_render(["nofooter" => true, "fullheader" => true]);
+    $paperlist->set_table_decor(PaperList::DECOR_EVERYHEADER);
+    $tr = $paperlist->table_render();
     if (!$tr->is_empty()) {
         if (!$any) {
             echo Ht::form(hoturl("conflictassign")),

@@ -299,7 +299,8 @@ if ($reviewer) {
     echo '</div>';
 
     $pl->set_table_id_class("foldpl", "pltable-fullw");
-    $pl->echo_table_html(["nofooter" => true, "list" => true, "live" => true]);
+    $pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
+    $pl->echo_table_html();
 
     echo '<div class="aab aabr aabig"><div class="aabut">',
         Ht::submit("update", "Save assignments", ["class" => "btn-primary"]),

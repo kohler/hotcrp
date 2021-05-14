@@ -622,14 +622,14 @@ echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);
 if (isset($Qreq->requery) || isset($Qreq->has_pap)) {
     $search = (new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q]))->set_urlbase("autoassign");
     $plist = new PaperList("reviewersSel", $search);
-    $plist->set_selection($SSel);
+    $plist->set_selection($SSel)->set_table_decor(PaperList::DECOR_HEADER);
 
     if ($search->paper_ids()) {
         echo "<br><span class=\"hint\">Assignments will apply to the selected papers.</span>";
     }
 
     echo '<div class="g"></div>';
-    $plist->echo_table_html(["nofooter" => true]);
+    $plist->echo_table_html();
     echo Ht::hidden("prevt", $Qreq->t), Ht::hidden("prevq", $Qreq->q),
         Ht::hidden("has_pap", 1);
 }

@@ -396,7 +396,8 @@ class Home_Partial {
             $plist->set_table_id_class(null, "pltable-reviewerhome");
             if (!$plist->is_empty()) {
                 echo '<div class="fx"><hr class="g">';
-                $plist->echo_table_html(["list" => true]);
+                $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
+                $plist->echo_table_html();
                 echo '</div>';
             }
         }
@@ -486,7 +487,8 @@ class Home_Partial {
             $plist = new PaperList("authorHome", new PaperSearch($user, ["t" => "a"]));
             if (!$plist->is_empty()) {
                 echo '<hr class="g">';
-                $plist->echo_table_html(["noheader" => true, "list" => true]);
+                $plist->set_table_decor(PaperList::DECOR_LIST);
+                $plist->echo_table_html();
             }
         }
 

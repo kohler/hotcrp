@@ -134,6 +134,8 @@ $pl->apply_view_report_default();
 $pl->apply_view_session();
 $pl->apply_view_qreq();
 $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
+$pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FOOTER | PaperList::DECOR_LIST);
+$pl->set_table_fold_session("pfdisplay.");
 
 
 // DISPLAY OPTIONS
@@ -220,7 +222,7 @@ echo Ht::form($Conf->hoturl_post("reviewprefs", $hoturl_args), ["id" => "sel", "
     Ht::hidden_default_submit("default", 1);
 echo "<div class=\"pltable-fullw-container\">\n",
     '<noscript><div style="text-align:center">', Ht::submit("fn", "Save changes", ["value" => "saveprefs", "class" => "btn-primary"]), '</div></noscript>';
-$pl->echo_table_html(["fold_session_prefix" => "pfdisplay.", "list" => true, "live" => true]);
+$pl->echo_table_html();
 echo "</div></form>\n";
 
 $Conf->footer();

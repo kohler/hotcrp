@@ -2024,7 +2024,8 @@ class Assignment_PaperColumn extends PaperColumn {
         $plist = new PaperList("reviewers", $search);
         $plist->add_column("autoassignment", $pc);
         $plist->set_table_id_class("foldpl", "pltable-fullw");
-        $plist->echo_table_html(["nofooter" => true]);
+        $plist->set_table_decor(PaperList::DECOR_HEADER);
+        $plist->echo_table_html();
 
         if (count(array_intersect_key($pc->change_counts->bypc, $pc->conf->pc_members()))) {
             $summary = [];
