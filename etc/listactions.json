@@ -156,16 +156,14 @@
         "title": "Preference file",
         "position": 1,
         "allow_if": "pc", "display_if": "listreport:pf",
-        "function": "+GetRevpref_ListAction",
-        "abstracts": false
+        "function": "+Revpref_ListAction"
     },
     {
         "name": "get/revprefx", "get": true,
         "title": "Preference file with abstracts",
         "position": 2,
         "allow_if": "pc", "display_if": "listreport:pf",
-        "function": "+GetRevpref_ListAction",
-        "abstracts": true
+        "function": "+Revpref_ListAction"
     },
     {
         "name": "get/allrevpref", "get": true,
@@ -263,15 +261,25 @@
         "mail_template": "reviewers"
     },
     {
-        "name": "uploadpref",
-        "render_function": "GetRevpref_ListAction::render_upload", "title": "Upload",
+        "name": "tryuploadpref", "post": true,
+        "render_function": "Revpref_ListAction::render_upload", "title": "Upload",
         "allow_if": "pc", "display_if": "listreport:pf",
+        "function": "+Revpref_ListAction",
         "position": 100
     },
     {
-        "name": "setpref",
-        "render_function": "GetRevpref_ListAction::render_set", "title": "Set preferences",
+        "name": "uploadpref", "post": true,
+        "allow_if": "pc", "function": "+Revpref_ListAction"
+    },
+    {
+        "name": "applyuploadpref", "post": true,
+        "allow_if": "pc", "function": "+Revpref_ListAction"
+    },
+    {
+        "name": "setpref", "post": true,
+        "render_function": "Revpref_ListAction::render_set", "title": "Set selected",
         "allow_if": "pc", "display_if": "listreport:pf",
+        "function": "+Revpref_ListAction",
         "position": 200
     }
 ]
