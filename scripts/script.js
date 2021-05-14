@@ -1314,7 +1314,7 @@ function refocus_within(elt) {
 
 // rangeclick
 handle_ui.on("js-range-click", function (event) {
-    var $f = $(this).closest("form"),
+    var $f = $(this.form),
         rangeclick_state = $f[0].jsRangeClick || {},
         kind = this.getAttribute("data-range-type") || this.name;
     $f[0].jsRangeClick = rangeclick_state;
@@ -2167,10 +2167,9 @@ function override_deadlines(callback) {
             if (callback && $.isFunction(callback)) {
                 callback();
             } else {
-                var form = self.closest("form");
-                $(form).append(hidden_input(self.getAttribute("data-override-submit") || "", "1")).append(hidden_input("override", "1"));
-                addClass(form, "submitting");
-                form.submit();
+                $(self.form).append(hidden_input(self.getAttribute("data-override-submit") || "", "1")).append(hidden_input("override", "1"));
+                addClass(self.form, "submitting");
+                self.form.submit();
             }
             $d.close();
         });
@@ -2190,8 +2189,8 @@ function form_submitter(form, event) {
 }
 
 handle_ui.on("js-mark-submit", function () {
-    var f = this.closest("form");
-    f && (f.hotcrpSubmitter = [this.name, (new Date).getTime()]);
+    if (this.form)
+        this.form.hotcrpSubmitter = [this.name, (new Date).getTime()];
 });
 
 
@@ -3263,15 +3262,14 @@ $(function () {
 // autosubmit
 
 $(document).on("focus", "input.js-autosubmit", function (event) {
-    var $self = $(event.target);
-    $self.closest("form").data("autosubmitType", $self.data("autosubmitType") || false);
+    $(event.target.form).data("autosubmitType", $(event.target).data("autosubmitType") || false);
 });
 
 $(document).on("keypress", "input.js-autosubmit", function (event) {
     if (event_modkey(event) || event_key(event) !== "Enter") {
         return;
     }
-    var f = event.target.closest("form"),
+    var f = event.target.form,
         type = $(f).data("autosubmitType"),
         defaulte = f ? f.elements["default"] : null;
     if (defaulte && type) {
@@ -3286,14 +3284,14 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
 });
 
 handle_ui.on("js-submit-mark", function (event) {
-    $(this).closest("form").data("submitMark", event.target.value);
+    $(this.form).data("submitMark", event.target.value);
 });
 
 handle_ui.on("js-keydown-enter-submit", function (event) {
     if (event.type === "keydown"
         && !(event_modkey(event) & (event_modkey.SHIFT | event_modkey.ALT))
         && event_key(event) === "Enter") {
-        $(event.target.closest("form")).trigger("submit");
+        $(event.target.form).trigger("submit");
         event.preventDefault();
     }
 });
@@ -3399,7 +3397,7 @@ handle_ui.on("js-assignment-fold", function (event) {
     event.stopPropagation();
 });
 handle_ui.on("js-assignment-autosave", function (event) {
-    var f = this.closest("form");
+    var f = this.form;
     toggleClass(f, "ignore-diff", this.checked);
     $(f).find(".autosave-hidden").toggleClass("hidden", this.checked);
     form_highlight(f);
@@ -3411,7 +3409,7 @@ var email_info = [], email_info_at = 0;
 handle_ui.on("input.js-email-populate", function (event) {
     var self = this,
         v = self.value.toLowerCase().trim(),
-        f = this.closest("form"),
+        f = this.form,
         fn = null, ln = null, nn = null, af = null, placeholder = false;
     if (this.name === "email" || this.name === "uemail") {
         fn = f.elements.firstName;
@@ -3509,7 +3507,7 @@ handle_ui.on("input.js-email-populate", function (event) {
 })();
 
 handle_ui.on("js-request-review-preview-email", function (event) {
-    var f = this.closest("form"),
+    var f = this.form,
         a = {p: siteinfo.paperid, template: "requestreview"},
         self = this;
     function fv(field, defaultv) {
@@ -3716,7 +3714,7 @@ function row_order_change(e, delta, action) {
             var m = /^(.*?)(\d+|\$)$/.exec(this.getAttribute("name"));
             if (m && new_index === null) {
                 if (m[2] === '$') {
-                    var f = this.closest("form");
+                    var f = this.form;
                     new_index = 1;
                     while (f.elements[m[1] + new_index])
                         ++new_index;
@@ -4635,7 +4633,7 @@ function visibility_change() {
 }
 
 function ready_change() {
-    $(this).closest("form").find("button[name=bsubmit]").text(this.checked ? "Submit" : "Save draft");
+    $(this.form).find("button[name=bsubmit]").text(this.checked ? "Submit" : "Save draft");
 }
 
 function make_update_words(jq, wlimit) {
@@ -7761,7 +7759,7 @@ handle_ui.on("js-plinfo", function (event) {
         throw new Exception("bad plinfo");
     var types = [this.name.substring(4)], dofold = !this.checked;
     if (types[0] === "anonau") {
-        var form = this.closest("form"), showau = form && form.elements.showau;
+        var form = this.form, showau = form && form.elements.showau;
         if (!dofold && showau)
             showau.checked = true;
         else if (!showau && dofold)
@@ -8095,7 +8093,7 @@ handle_ui.on("js-remove-document", function (event) {
 });
 
 handle_ui.on("js-withdraw", function (event) {
-    var f = this.closest("form"),
+    var f = this.form,
         hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Are you sure you want to withdraw this submission from consideration and/or publication?');
     if (!this.hasAttribute("data-revivable"))
@@ -8114,7 +8112,7 @@ handle_ui.on("js-withdraw", function (event) {
 });
 
 handle_ui.on("js-delete-paper", function (event) {
-    var f = this.closest("form"),
+    var f = this.form,
         hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="delete" value="1" class="btn-danger">Delete</button>',
@@ -8130,7 +8128,7 @@ handle_ui.on("js-clickthrough", function (event) {
     if (!$container.length)
         $container = $(this).closest(".pcontainer");
     $.post(hoturl_post("api/clickthrough", {accept: 1, p: siteinfo.paperid}),
-        $(this).closest("form").serialize(),
+        $(this.form).serialize(),
         function (data) {
             if (data && data.ok) {
                 $container.find(".need-clickthrough-show").removeClass("need-clickthrough-show hidden");
@@ -8655,7 +8653,7 @@ handle_ui.on("js-cannot-delete-user", function (event) {
 });
 
 handle_ui.on("js-delete-user", function (event) {
-    var f = this.closest("form"),
+    var f = this.form,
         hc = popup_skeleton({near: this, action: f}), x;
     hc.push('<p>Be careful: This will permanently delete all information about this user from the database and <strong>cannot be undone</strong>.</p>');
     if ((x = this.getAttribute("data-delete-info")))
@@ -8669,7 +8667,7 @@ handle_ui.on("js-delete-user", function (event) {
 handle_ui.on("js-disable-user", function (event) {
     var disabled = hasClass(this, "btn-success"), self = this;
     self.disabled = true;
-    $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.closest("form").getAttribute("data-user")}),
+    $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
         disabled ? {enable: 1} : {disable: 1},
         function (data) {
             self.disabled = false;
@@ -8683,7 +8681,7 @@ handle_ui.on("js-disable-user", function (event) {
                     removeClass(self, "btn-success");
                     addClass(self, "btn-danger");
                 }
-                $(self.closest("form")).find(".js-send-user-accountinfo").prop("disabled", data.disabled);
+                $(self.form).find(".js-send-user-accountinfo").prop("disabled", data.disabled);
             }
             minifeedback(self, data);
         });
@@ -8692,7 +8690,7 @@ handle_ui.on("js-disable-user", function (event) {
 handle_ui.on("js-send-user-accountinfo", function (event) {
     var self = this;
     self.disabled = true;
-    $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.closest("form").getAttribute("data-user")}),
+    $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
         {sendinfo: 1},
         function (data) {
             minifeedback(self, data);
@@ -8702,7 +8700,7 @@ handle_ui.on("js-send-user-accountinfo", function (event) {
 var profile_ui = (function ($) {
 return function (event) {
     if (hasClass(this, "js-role")) {
-        var $f = $(this).closest("form"),
+        var $f = $(this.form),
             pctype = $f.find("input[name=pctype]:checked").val(),
             ass = $f.find("input[name=ass]:checked").length;
         foldup.call(this, null, {n: 1, f: !pctype || pctype === "none"});
@@ -8713,18 +8711,8 @@ return function (event) {
 
 
 // review UI
-handle_ui.on("js-decline-review", function () {
-    var f = this.closest("form"),
-        hc = popup_skeleton({near: this, action: f});
-    hc.push('<p>Select “Decline review” to decline this review. Thank you for your consideration.</p>');
-    hc.push('<textarea name="reason" rows="3" cols="60" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
-    hc.push_actions(['<button type="submit" name="decline" value="1" class="btn-danger">Decline review</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    hc.show();
-});
-
 handle_ui.on("js-deny-review-request", function () {
-    var f = this.closest("form"),
+    var f = this.form,
         hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Select “Deny request” to deny this review request.</p>');
     hc.push('<textarea name="reason" rows="3" cols="60" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
@@ -8735,7 +8723,7 @@ handle_ui.on("js-deny-review-request", function () {
 });
 
 handle_ui.on("js-delete-review", function () {
-    var f = this.closest("form"),
+    var f = this.form,
         hc = popup_skeleton({near: this, action: f});
     hc.push('<p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="deletereview" value="1" class="btn-danger">Delete review</button>',
@@ -8766,7 +8754,7 @@ handle_ui.on("js-approve-review", function (event) {
     $d.on("click", "button", function (event) {
         var b = event.target.name;
         if (b !== "cancel") {
-            var form = self.closest("form");
+            var form = self.form;
             $(form).append(hidden_input(b, "1"))
                 .append(hidden_input(b.startsWith("adopt") ? "adoptreview" : "update", "1"));
             addClass(form, "submitting");
@@ -9121,7 +9109,7 @@ handle_ui.on("js-assign-review", function (event) {
     var form, m;
     if (event.type !== "change"
         || !(m = /^assrev(\d+)u(\d+)$/.exec(this.name))
-        || ((form = $(this).closest("form")[0])
+        || ((form = this.form)
             && form.autosave
             && !form.autosave.checked))
         return;
