@@ -118,7 +118,7 @@ if (isset($Qreq->p) && is_array($Qreq->p)
 
 // Load template if requested
 if (isset($Qreq->loadtmpl)) {
-    $t = $Qreq->get("template", "generic");
+    $t = $Qreq->get("template") ?? "generic";
     $template = (array) $Conf->mail_template($t);
     if (((!isset($template["title"]) || $template["title"] === false)
          && !isset($template["allow_template"]))

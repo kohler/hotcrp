@@ -514,6 +514,10 @@
 
 	{
 		"name": "generic",
+		"alias": "authors"
+	},
+	{
+		"name": "authors",
 		"title": "Message to authors",
 		"allow_pc": true,
 		"position": 0,
@@ -532,7 +536,7 @@
 		"name": "pc",
 		"title": "Message to PC",
 		"allow_pc": true,
-		"position": 1,
+		"position": 2,
 		"default_recipients": "pc",
 		"subject": "[%CONFSHORTNAME%] Message",
 		"body": [
@@ -545,12 +549,14 @@
 		"name": "reviewers",
 		"title": "Message to reviewers",
 		"allow_pc": true,
-		"position": 2,
+		"position": 1,
 		"default_recipients": "rev",
 		"subject": "[%CONFSHORTNAME%] Review for #%NUMBER% %TITLEHINT%",
 		"body": [
 			"Dear %NAME%,\n\n",
 			"Your message here.\n\n",
+			"       Title: %TITLE%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"%SIGNATURE%\n"
 		]
 	},

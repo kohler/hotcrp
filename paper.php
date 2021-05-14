@@ -172,7 +172,6 @@ class PaperPage {
         }
         if ($whynot) {
             Conf::msg_error($whynot->unparse_html());
-            error_log("X " . $this->user->overrides() . " $action");
             $this->useRequest = !$is_new; // XXX used to have more complex logic
             return;
         }

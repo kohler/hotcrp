@@ -5110,7 +5110,7 @@ class Conf {
 
     function _add_mail_template_json($fj) {
         if (isset($fj->name) && is_string($fj->name)) {
-            if (is_array($fj->body)) {
+            if (isset($fj->body) && is_array($fj->body)) {
                 $fj->body = join("", $fj->body);
             }
             return self::xt_add($this->_mail_template_map, $fj->name, $fj);
