@@ -8983,6 +8983,7 @@ handle_ui.on("js-select-all", function () {
 
 
 handle_ui.on("js-tag-list-action", function () {
+    removeClass(this, "ui-unfold");
     $("select.js-submit-action-info-tag").on("change", function () {
         var $t = $(this).closest(".linelink"),
             $ty = $t.find("select[name=tagfn]");
