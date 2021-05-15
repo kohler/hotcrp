@@ -8,8 +8,8 @@ class Get_ListAction {
         if (!empty($sel_opt)) {
             // Note that `js-submit-paperlist` JS handler depends on this
             return Ht::select("getfn", $sel_opt, $qreq->getfn,
-                              ["class" => "want-focus js-submit-action-info-get", "style" => "max-width:10em"])
-                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "data-default-submit-all" => 1, "class" => "uic js-submit-mark"]);
+                              ["class" => "want-focus js-submit-action-info-get w-small-selector ignore-diff"])
+                . $pl->action_submit("get", ["formmethod" => "get", "class" => "can-submit-all"]);
         } else {
             return null;
         }

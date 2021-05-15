@@ -611,7 +611,7 @@ echo Ht::entry("q", $Qreq->q, [
         "id" => "autoassignq", "placeholder" => "(All)",
         "size" => 40, "aria-label" => "Search",
         "class" => Ht::control_class("q", "papersearch js-autosubmit need-suggest"),
-        "data-autosubmit-type" => "requery", "spellcheck" => false
+        "data-submit-fn" => "requery", "spellcheck" => false
     ]), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1) {
     echo Ht::select("t", $tOpt, $Qreq->t);

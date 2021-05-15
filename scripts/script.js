@@ -885,6 +885,26 @@ function hoturl_add(url, component) {
     return url + (url.indexOf("?") < 0 ? "?" : "&") + component;
 }
 
+function hoturl_remove(url, component) {
+    var hash = url.indexOf("#"), pos = url.indexOf("?");
+    component += "=";
+    while (pos >= 0 && (pos = url.indexOf(component, pos)) > 0 && (hash < 0 || pos < hash)) {
+        if (url.charAt(pos - 1) === "?" || url.charAt(pos - 1) === ";" || url.charAt(pos - 1) === "&") {
+            var amp = url.indexOf("&", pos), semi = url.indexOf(";", pos),
+                stop = Math.min(hash < 0 ? url.length : hash,
+                                amp < 0 ? url.length : amp + 1,
+                                semi < 0 ? url.length : semi + 1);
+            if (stop === (hash < 0 ? url.length : hash))
+                --pos;
+            url = url.substring(0, pos) + url.substring(stop);
+            if (hash >= 0)
+                hash = url.indexOf("#", pos);
+        } else
+            ++pos;
+    }
+    return url;
+}
+
 function hoturl_find(x, page_component) {
     var m;
     for (var i = 0; i < x.v.length; ++i)
@@ -1194,6 +1214,15 @@ function input_is_checkboxlike(elt) {
     return elt.type === "checkbox" || elt.type === "radio";
 }
 
+function input_successful(elt) {
+    if (elt.disabled || !elt.name)
+        return false;
+    else if (elt.type === "checkbox" || elt.type === "radio")
+        return elt.checked;
+    else
+        return elt.type !== "button" && elt.type !== "submit" && elt.type !== "reset";
+}
+
 function input_default_value(elt) {
     if (input_is_checkboxlike(elt)) {
         if (elt.hasAttribute("data-default-checked")) {
@@ -1242,7 +1271,7 @@ function form_differs(form, want_ediff) {
     len = coll.length;
     for (i = 0; i !== len; ++i) {
         e = coll[i];
-        if (!hasClass(e, "ignore-diff") && input_differs(e))
+        if (e.name && !hasClass(e, "ignore-diff") && input_differs(e))
             return want_ediff ? e : true;
     }
     return false;
@@ -3266,30 +3295,24 @@ $(function () {
 
 // autosubmit
 
-$(document).on("focus", "input.js-autosubmit", function (event) {
-    $(event.target.form).data("autosubmitType", $(event.target).data("autosubmitType") || false);
-});
-
 $(document).on("keypress", "input.js-autosubmit", function (event) {
     if (event_modkey(event) || event_key(event) !== "Enter") {
         return;
     }
-    var f = event.target.form,
-        type = $(f).data("autosubmitType"),
-        defaulte = f ? f.elements["default"] : null;
-    if (defaulte && type) {
-        f.elements.defaultact.value = type;
+    var f = event.target.form, fn = this.getAttribute("data-submit-fn"),
+        dest;
+    if (fn && f.elements.defaultfn && f.elements["default"]) {
+        f.elements.defaultfn.value = fn;
+        dest = f.elements["default"];
+    } else if (fn && f.elements[fn]) {
+        dest = f.elements[fn];
+    }
+    if (dest) {
         event.target.blur();
-        defaulte.click();
+        dest.click();
     }
-    if (defaulte || !type) {
-        event.stopPropagation();
-        event.preventDefault();
-    }
-});
-
-handle_ui.on("js-submit-mark", function (event) {
-    $(this.form).data("submitMark", event.target.value);
+    event.stopPropagation();
+    event.preventDefault();
 });
 
 handle_ui.on("js-keydown-enter-submit", function (event) {
@@ -9018,86 +9041,96 @@ handle_ui.on("js-assign-list-action", function () {
     });
 });
 
-handle_ui.on("js-submit-paperlist", function (event) {
-    // analyze why this is being submitted
-    var $self = $(this), fn = $self.data("submitMark");
-    $self.removeData("submitMark");
-    if (!fn && this.elements.defaultact)
-        fn = this.elements.defaultact.value;
-    if (!fn && document.activeElement) {
-        var td = document.activeElement.closest("td");
-        if (td && hasClass(td, "lld")) {
-            var $sub = $(td.closest(".linelink.active")).find("input[type=submit], button[type=submit]");
-            if ($sub.length == 1)
-                fn = this.elements.defaultact.value = $sub[0].value;
+handle_ui.on("js-submit-list", function (event) {
+    // choose action
+    var form = this, fn, fnbutton, e, ne, i, es, t;
+    if (this instanceof HTMLButtonElement) {
+        fn = this.value;
+        fnbutton = this;
+        form = this.form;
+    } else if (form.elements.defaultfn && form.elements.defaultfn.value) {
+        fn = form.elements.defaultfn.value;
+        fnbutton = form.querySelector(".js-submit-list[name=fn,value='" + fn + "']");
+    } else if (document.activeElement) {
+        e = document.activeElement.closest(".pl-footer-part");
+        es = e ? e.querySelectorAll(".js-submit-list") : null;
+        if (es && es.length === 1) {
+            fn = es[0].value;
+            fnbutton = es[0];
         }
     }
+    if (fn && fn.indexOf("/") < 0 && (e = form.elements[fn + "fn"]) && e.value)
+        fn += "/" + e.value;
 
-    // find what is selected
-    var paps = this.elements["pap[]"];
-    if (paps && paps.length) {
-        paps = Array.prototype.slice.call(paps);
-        for (var i = 0; i !== paps.length; ++i) {
-            paps[i].setAttribute("data-range-type", "pap[]");
-            paps[i].removeAttribute("name");
-        }
+    // find selected
+    var table = (fnbutton && fnbutton.closest("table.pltable")) || form;
+    es = table.querySelectorAll("input.js-selector");
+    var allval = [], chkval = [], isdefault;
+    for (i = 0; i !== es.length; ++i) {
+        allval.push(es[i].value);
+        es[i].checked && chkval.push(es[i].value);
     }
-    var allval = [], chkval = [];
-    $self.find("input.js-selector").each(function () {
-        allval.push(this.value);
-        if (this.checked)
-            chkval.push(this.value);
-    });
-
-    // if nothing selected, either select all or error out
-    if (!chkval.length) {
-        var subbtn = fn && $self.find("input[type=submit], button[type=submit]").filter("[value=" + fn + "]");
-        if (subbtn && subbtn.length == 1 && subbtn.data("defaultSubmitAll")) {
-            chkval = allval;
-        } else {
-            alert("Select one or more papers first.");
-            event.preventDefault();
-            return;
-        }
-    }
-    if (!this.elements.p) {
-        $self.append(hidden_input("p", "", {"class": "is-selector-submit"}));
-    }
-    this.elements.p.value = chkval.join(" ");
-
-    // encode the expected download in the form action, to ease debugging
-    var action = $self.data("originalAction");
-    if (!action)
-        $self.data("originalAction", (action = this.action));
-    if (fn === "get") {
-        var getform = $$("searchgetform"), input;
-        if (!getform) {
-            getform = hoturl_get_form(action);
-            getform.appendChild(hidden_input("forceShow", ""));
-            getform.appendChild(hidden_input("fn", ""));
-            getform.appendChild(hidden_input("p", ""));
-            getform.setAttribute("id", "searchgetform");
-            document.body.appendChild(getform);
-        }
-        if (this.elements.forceShow && this.elements.forceShow.value !== "") {
-            getform.elements.forceShow.value = this.elements.forceShow.value;
-            getform.elements.forceShow.disabled = false;
-        } else {
-            getform.elements.forceShow.disabled = true;
-        }
-        getform.elements.fn.value = fn + "/" + this.elements.getfn.value;
-        getform.elements.p.value = this.elements.p.value;
-        getform.submit();
+    if (!chkval.length && fnbutton && hasClass(fnbutton, "can-submit-all")) {
+        chkval = allval;
+        isdefault = true;
+    } else if (!chkval.length) {
+        alert("Select one or more rows first.");
         event.preventDefault();
-    } else {
-        if (fn && /^[-_\w]+$/.test(fn)) {
-            $self.find(".js-submit-action-info-" + fn).each(function () {
-                fn += "-" + ($(this).val() || "");
-            });
-            action = hoturl_add(action, "action=" + encodeURIComponent(fn));
-        }
-        this.action = action;
+        return;
     }
+
+    // create a new form
+    for (e = document.body.firstChild; e; e = ne) {
+        ne = e.nextSibling;
+        if (e.className === "is-background-form")
+            document.body.removeChild(e);
+    }
+    var bgform, action = form.action;
+    if (fnbutton && fnbutton.hasAttribute("formaction"))
+        action = fnbutton.getAttribute("formaction");
+    if (fnbutton && fnbutton.getAttribute("formmethod") === "get" && chkval.length < 20) {
+        bgform = hoturl_get_form(action);
+        if (!bgform.elements.fn)
+            bgform.appendChild(hidden_input("fn", ""));
+        bgform.elements.fn.value = fn;
+    } else {
+        bgform = document.createElement("form");
+        bgform.setAttribute("method", "post");
+        bgform.setAttribute("enctype", "multipart/form-data");
+        bgform.setAttribute("accept-charset", "UTF-8");
+        if (chkval.length < 20) {
+            action = hoturl_add(hoturl_remove(action, "p"), "p=" + encodeURIComponent(chkval.join(" ")));
+            chkval = null;
+        }
+        bgform.action = hoturl_add(hoturl_remove(action, "fn"), "fn=" + encodeURIComponent(fn));
+    }
+    bgform.className = "is-background-form";
+    if (fnbutton && fnbutton.hasAttribute("formtarget"))
+        bgform.setAttribute("target", fnbutton.getAttribute("formtarget"));
+    if (chkval)
+        bgform.appendChild(hidden_input("p", chkval.join(" ")));
+    if (isdefault)
+        bgform.appendChild(hidden_input("pdefault", "yes"));
+    if (form.elements.forceShow && form.elements.forceShow.value !== "")
+        bgform.appendChild(hidden_input("forceShow", form.elements.forceShow.value));
+    if (fnbutton && (e = fnbutton.closest(".pl-footer-part"))) {
+        es = e.querySelectorAll("input, select, textarea");
+        for (i = 0; i !== es.length; ++i) {
+            if (input_successful(es[i])) {
+                if (es[i].type === "file") {
+                    e = document.createElement("input");
+                    e.setAttribute("type", "file");
+                    e.setAttribute("name", es[i].name);
+                    bgform.appendChild(e);
+                    e.files = es[i].files;
+                } else
+                    bgform.appendChild(hidden_input(es[i].name, es[i].value));
+            }
+        }
+    }
+    document.body.appendChild(bgform);
+    bgform.submit();
+    event.preventDefault();
 });
 
 

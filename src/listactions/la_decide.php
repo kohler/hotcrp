@@ -10,7 +10,7 @@ class Decide_ListAction extends ListAction {
         $opts = $pl->conf->decision_map();
         return ["Set to &nbsp;"
                 . Ht::select("decision", $opts, "", ["class" => "want-focus js-submit-action-info-decide"])
-                . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "class" => "uic js-submit-mark"])];
+                . $pl->action_submit("decide")];
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $aset = new AssignmentSet($user, true);

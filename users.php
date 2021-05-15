@@ -10,8 +10,12 @@ if ($Viewer->contactId && $Viewer->is_disabled()) {
     $Viewer = new Contact(["email" => $Viewer->email], $Conf);
 }
 
-if (isset($Qreq->default) && $Qreq->defaultact) {
-    $Qreq->fn = $Qreq->defaultact;
+if (isset($Qreq->default) && $Qreq->defaultfn) {
+    $Qreq->fn = $Qreq->defaultfn;
+}
+if ($Qreq->fn && ($p = strpos($Qreq->fn, "/")) !== false) {
+    $Qreq[substr($Qreq->fn, 0, $p) . "fn"] = substr($Qreq->fn, $p + 1);
+    $Qreq->fn = substr($Qreq->fn, 0, $p);
 }
 
 
@@ -88,31 +92,7 @@ function paperselPredicate($papersel) {
     return "ContactInfo.contactId" . sql_in_int_list($papersel);
 }
 
-$Qreq->allow_a("pap");
-if (isset($Qreq->pap) && is_string($Qreq->pap)) {
-    $Qreq->pap = preg_split('/\s+/', $Qreq->pap);
-}
-if ((isset($Qreq->pap) && is_array($Qreq->pap))
-    || ($Qreq->fn === "get" && !isset($Qreq->pap))) {
-    $allowed_papers = array();
-    $pl = new ContactList($Viewer, true);
-    // Ensure that we only select contacts we're allowed to see.
-    if (($rows = $pl->rows($Qreq->t))) {
-        foreach ($rows as $row)
-            $allowed_papers[$row->contactId] = true;
-    }
-    $papersel = array();
-    if (isset($Qreq->pap)) {
-        foreach ($Qreq->pap as $p)
-            if (($p = cvtint($p)) > 0 && isset($allowed_papers[$p]))
-                $papersel[] = $p;
-    } else {
-        $papersel = array_keys($allowed_papers);
-    }
-    if (empty($papersel)) {
-        unset($papersel);
-    }
-}
+$papersel = SearchSelection::make($Qreq)->selection();
 
 if ($Qreq->fn === "get"
     && $Qreq->getfn === "nameemail"
@@ -477,7 +457,7 @@ if ($Viewer->privChair && $Qreq->t == "pc") {
 
 if ($pl->any->sel) {
     echo Ht::form($Conf->hoturl_post("users", ["t" => $Qreq->t])),
-        Ht::hidden("defaultact", "", ["id" => "defaultact"]),
+        Ht::hidden("defaultfn", ""),
         Ht::hidden_default_submit("default", 1);
     if (isset($Qreq->sort)) {
         echo Ht::hidden("sort", $Qreq->sort);

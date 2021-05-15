@@ -15,22 +15,22 @@ class Tag_ListAction extends ListAction {
         // tag name cell
         $t = "";
         if ($pl->user->privChair) {
-            $t .= '<span class="fx99"><a class="ui q js-foldup" href="">'
+            $t .= '<span class="fx99"><a class="ui q js-foldup" href="" data-fold-target="0">'
                 . expander(null, 0) . "</a></span>";
         }
         $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
             . Ht::entry("tag", $qreq->tag,
-                        ["size" => 15, "class" => "want-focus js-autosubmit js-submit-action-info-tag need-suggest tags", "data-autosubmit-type" => "tag"])
-            . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-mark"]);
+                        ["size" => 15, "class" => "want-focus js-autosubmit js-submit-action-info-tag need-suggest tags", "data-submit-fn" => "tag"])
+            . $pl->action_submit("tag");
         if ($pl->user->privChair) {
             $t .= '<div class="fx"><div style="margin:2px 0">'
-                . Ht::checkbox("tagcr_gapless", 1, !!$qreq->tagcr_gapless, array("style" => "margin-left:0"))
+                . Ht::checkbox("tagcr_gapless", 1, !!$qreq->tagcr_gapless, ["class" => "ml-0"])
                 . "&nbsp;" . Ht::label("Gapless order") . "</div>"
                 . '<div style="margin:2px 0">Using: &nbsp;'
                 . Ht::select("tagcr_method", PaperRank::methods(), $qreq->tagcr_method)
                 . "</div>"
                 . '<div style="margin:2px 0">Source tag: &nbsp;~'
-                . Ht::entry("tagcr_source", $qreq->tagcr_source, array("size" => 15))
+                . Ht::entry("tagcr_source", $qreq->tagcr_source, ["size" => 15])
                 . "</div></div>";
         }
 

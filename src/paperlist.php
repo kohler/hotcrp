@@ -221,6 +221,8 @@ class PaperList implements XtContext {
     private $_table_fold_session;
     /** @var ?callable */
     private $_footer_filter;
+    /** @var ?array<string,mixed> */
+    private $_action_submit_attr;
 
     /** @var list<PaperColumn> */
     private $_vcolumns = [];
@@ -410,6 +412,13 @@ class PaperList implements XtContext {
         return $this;
     }
 
+    /** @param callable(PaperList,PaperInfo):bool $filter
+     * @return $this */
+    function set_row_filter($filter) {
+        $this->_row_filter = $filter;
+        return $this;
+    }
+
     /** @param callable $action_filter
      * @return $this */
     function set_footer_filter($action_filter) {
@@ -417,10 +426,10 @@ class PaperList implements XtContext {
         return $this;
     }
 
-    /** @param callable(PaperList,PaperInfo):bool $filter
+    /** @param ?array $attr
      * @return $this */
-    function set_row_filter($filter) {
-        $this->_row_filter = $filter;
+    function set_action_submit_attr($attr) {
+        $this->_action_submit_attr = $attr;
         return $this;
     }
 
@@ -1693,6 +1702,15 @@ class PaperList implements XtContext {
             $foot .= "   </tr></tbody></table>";
         }
         return $foot . "<hr class=\"c\" /></td>\n </tr>";
+    }
+
+    /** @param string $fn
+     * @param array<string,mixed> $js
+     * @return string */
+    function action_submit($fn, $js = []) {
+        $js["value"] = $fn;
+        $js["class"] = rtrim("uic js-submit-list ml-2 " . ($js["class"] ?? ""));
+        return Ht::submit("fn", "Go", $js + ($this->_action_submit_attr ?? []));
     }
 
     /** @param int $ncol

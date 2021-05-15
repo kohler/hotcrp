@@ -287,7 +287,7 @@ class Options_SettingRenderer {
 
         echo '<div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
             $sv->feedback_at("optn_$xpos"),
-            Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "style" => "font-weight:bold", "class" => "need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
+            Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "class" => "need-tooltip font-weight-bold", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
             Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-opt-id", "data-default-value" => $o->id > 0 ? $o->id : ""]),
             Ht::hidden("optfp_$xpos", count($this->rendered_options), ["class" => "settings-opt-fp", "data-default-value" => count($this->rendered_options)]),
             '</div>';

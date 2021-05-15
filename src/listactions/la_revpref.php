@@ -13,13 +13,13 @@ class Revpref_ListAction extends ListAction {
     }
     static function render_upload(PaperList $pl) {
         return ["<b>&nbsp;preference file:</b> &nbsp;"
-                . "<input class=\"want-focus js-autosubmit\" type=\"file\" name=\"fileupload\" accept=\"text/plain,text/csv\" size=\"20\" data-autosubmit-type=\"tryuploadpref\" />&nbsp; "
-                . Ht::submit("fn", "Go", ["value" => "tryuploadpref", "data-default-submit-all" => 1, "class" => "uic js-submit-mark"])];
+                . "<input class=\"want-focus js-autosubmit\" type=\"file\" name=\"fileupload\" accept=\"text/plain,text/csv\" size=\"20\" data-submit-fn=\"tryuploadpref\" />"
+                . $pl->action_submit("tryuploadpref", ["class" => "can-submit-all"])];
     }
     static function render_set(PaperList $pl) {
         return ["<b> preferences:</b> &nbsp;"
-            . Ht::entry("pref", "", array("class" => "want-focus js-autosubmit", "size" => 4, "data-autosubmit-type" => "setpref"))
-            . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "setpref", "class" => "uic js-submit-mark"])];
+            . Ht::entry("pref", "", array("class" => "want-focus js-autosubmit", "size" => 4, "data-submit-fn" => "setpref"))
+            . $pl->action_submit("setpref")];
     }
     /** @param ?string $reviewer
      * @return ?Contact */

@@ -7,8 +7,8 @@ if ($Me->is_empty()) {
     $Me->escape();
 }
 
-if (isset($Qreq->default) && $Qreq->defaultact) {
-    $Qreq->fn = $Qreq->defaultact;
+if (isset($Qreq->default) && $Qreq->defaultfn) {
+    $Qreq->fn = $Qreq->defaultfn;
 }
 assert(!$Qreq->ajax);
 
@@ -453,7 +453,7 @@ if ($pl_text) {
 
     if ($pl->has("sel")) {
         echo Ht::form($Conf->selfurl($Qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel", "class" => "ui-submit js-submit-paperlist"]),
-            Ht::hidden("defaultact", "", ["id" => "defaultact"]),
+            Ht::hidden("defaultfn", ""),
             Ht::hidden("forceShow", (string) $Qreq->forceShow, ["id" => "forceShow"]),
             Ht::hidden_default_submit("default", 1);
     }

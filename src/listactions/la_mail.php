@@ -16,8 +16,8 @@ class Mail_ListAction extends ListAction {
         $sel_opt = ListAction::members_selector_options($gex, "mail");
         if (!empty($sel_opt)) {
             return Ht::select("mailfn", $sel_opt, $qreq->mailfn,
-                              ["class" => "want-focus js-submit-action-info-mail", "style" => "max-width:10em"])
-                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "mail", "data-default-submit-all" => 1, "class" => "uic js-submit-mark"]);
+                              ["class" => "want-focus js-submit-action-info-mail ignore-diff"])
+                . $pl->action_submit("mail", ["class" => "can-submit-all", "formmethod" => "get"]);
         } else {
             return null;
         }

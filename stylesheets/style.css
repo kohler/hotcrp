@@ -425,6 +425,9 @@ label.checki {
 	margin-top: 5em !important;
 	margin-top: 5rem !important;
 }
+.ml-0 {
+	margin-left: 0 !important;
+}
 .ml-1 {
 	margin-left: 0.25em !important;
 	margin-left: 0.25rem !important;
@@ -1779,6 +1782,9 @@ img.check {
 }
 .w-99 {
 	width: 99%;
+}
+.w-small-selector {
+	max-width: 10em;
 }
 textarea.w-text, textarea.w-entry-text {
 	width: 100%;

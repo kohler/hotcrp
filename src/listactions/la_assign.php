@@ -24,7 +24,7 @@ class Assign_ListAction extends ListAction {
                           ["class" => "want-focus js-submit-action-info-assign"])
             . '<span class="fx"> &nbsp;<span class="js-assign-for">for</span> &nbsp;'
             . Ht::select("markpc", [], 0, ["data-pcselector-selected" => $qreq->markpc])
-            . "</span> &nbsp;" . Ht::submit("fn", "Go", ["value" => "assign", "class" => "uic js-submit-mark"]),
+            . "</span>" . $pl->action_submit("assign"),
             ["linelink-class" => "has-fold foldc ui-unfold js-assign-list-action"]];
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
