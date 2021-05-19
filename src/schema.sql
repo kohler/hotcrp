@@ -516,7 +516,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 246);
+insert into Settings (name, value) values ('allowPaperOption', 247);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);
@@ -533,7 +533,7 @@ insert into Settings (name, value) values ('extrev_chairreq', 2);
 -- default outcome map
 insert into Settings (name, value, data) values ('outcome_map', 1, '{"0":"Unspecified","-1":"Rejected","1":"Accepted"}');
 -- default review form
-insert into Settings (name, value, data) values ('review_form',1,'{"overAllMerit":{"name":"Overall merit","position":1,"visibility":"au","options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},"reviewerQualification":{"name":"Reviewer expertise","position":2,"visibility":"au","options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},"t01":{"name":"Paper summary","position":3,"display_space":5,"visibility":"au"},"t02":{"name":"Comments for author","position":4,"display_space":15,"visibility":"au"},"t03":{"name":"Comments for PC","position":5,"display_space":10,"visibility":"pc"}}');
+insert into Settings (name, value, data) values ('review_form',1,'{"overAllMerit":{"name":"Overall merit","position":1,"visibility":"au","options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},"reviewerQualification":{"name":"Reviewer expertise","position":2,"visibility":"au","options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},"t01":{"name":"Paper summary","position":3,"visibility":"au"},"t02":{"name":"Comments for author","position":4,"visibility":"au"},"t03":{"name":"Comments for PC","position":5,"visibility":"pc"}}');
 
 insert ignore into PaperStorage set
     paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain',

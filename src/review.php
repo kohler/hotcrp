@@ -60,6 +60,7 @@ class ReviewField implements JsonSerializable {
     public $options;
     /** @var int */
     public $option_letter = 0;
+    /** @var int */
     public $display_space;
     /** @var int */
     public $view_score;
@@ -601,7 +602,7 @@ class ReviewForm implements JsonSerializable {
   "options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},
 "reviewerQualification":{"name":"Reviewer expertise","position":2,"visibility":"au",
   "options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},
-"t01":{"name":"Paper summary","position":3,"display_space":5,"visibility":"au"},
+"t01":{"name":"Paper summary","position":3,"visibility":"au"},
 "t02":{"name":"Comments to authors","position":4,"visibility":"au"},
 "t03":{"name":"Comments to PC","position":5,"visibility":"pc"}}');
         }

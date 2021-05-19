@@ -1994,6 +1994,21 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         Dbl::qx($conf->dblink, "delete from Settings where name='opt.allow_auseerev_unlessincomplete'");
         $conf->update_schema_version(246);
     }
+    if ($conf->sversion === 246) {
+        if (($rfj = $conf->review_form_json())) {
+            if (isset($rfj->t01)) {
+                unset($rfj->t01->display_space);
+            }
+            if (isset($rfj->t02)) {
+                unset($rfj->t02->display_space);
+            }
+            if (isset($rfj->t03)) {
+                unset($rfj->t03->display_space);
+            }
+            $conf->save_setting("review_form", 1, $rfj);
+        }
+        $conf->update_schema_version(247);
+    }
 
     $conf->ql_ok("delete from Settings where name='__schema_lock'");
     Conf::$main = $old_conf_g;

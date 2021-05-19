@@ -413,7 +413,7 @@ function create_field_view(fieldj) {
             hc.push('<label class="checki g"><span class="checkc"><input type="radio" disabled></span>No entry</label>');
         }
     } else
-        hc.push('<textarea class="w-text" rows="2" disabled>(Text field)</textarea>');
+        hc.push('<textarea class="w-text" rows="' + Math.max(fieldj.display_space || 0, 3) + '" disabled>(Text field)</textarea>');
 
     return $(hc.render());
 }
