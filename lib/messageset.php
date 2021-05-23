@@ -339,6 +339,13 @@ class MessageSet {
             return $rest;
         }
     }
+    /** @param string $message
+     * @param int $status
+     * @return string */
+    static function render_feedback_p($message, $status) {
+        $k = self::status_class($status, "feedback", "is-");
+        return "<p class=\"{$k}\">{$message}</p>";
+    }
     /** @param ?string|false $field
      * @param string $rest
      * @param string $prefix

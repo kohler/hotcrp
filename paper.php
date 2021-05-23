@@ -384,8 +384,8 @@ class PaperPage {
             $pt->paptabEndWithoutReviews();
         } else {
             if ($pt->mode === "re") {
-                $pt->paptabEndWithEditableReview();
-                $pt->echo_comments();
+                $pt->echo_review_form();
+                $pt->echo_main_link();
             } else if ($pt->can_view_reviews()) {
                 $pt->paptabEndWithReviewsAndComments();
             } else {

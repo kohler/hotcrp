@@ -2069,8 +2069,7 @@ class PaperTable {
         $subrev = [];
         $cflttype = $user->view_conflict_type($prow);
         $allow_actas = $user->privChair && $user->allow_administer($prow);
-        $admin = $user->can_administer($prow);
-        $hideUnviewable = ($cflttype > 0 && !$admin)
+        $hideUnviewable = ($cflttype > 0 && !$this->admin)
             || (!$user->act_pc($prow) && !$conf->setting("extrev_view"));
         $show_ratings = $user->can_view_review_ratings($prow);
         $xsep = ' <span class="barsep">·</span> ';
@@ -2121,7 +2120,7 @@ class PaperTable {
 
             $t = '<td class="rl nw">';
             if (!$canView
-                || ($rr->reviewStatus < ReviewInfo::RS_DRAFTED && !$user->can_edit_review($prow, $rr))) {
+               || ($rr->reviewStatus < ReviewInfo::RS_DRAFTED && !$user->can_edit_review($prow, $rr))) {
                 $t .= $id;
             } else {
                 if ((!$this->can_view_reviews
@@ -2267,9 +2266,7 @@ class PaperTable {
     private function _review_links() {
         $prow = $this->prow;
         $cflttype = $this->user->view_conflict_type($prow);
-        $allow_admin = $this->user->allow_administer($prow);
         $any_comments = false;
-        $admin = $this->user->can_administer($prow);
         $xsep = ' <span class="barsep">·</span> ';
 
         $nvisible = 0;
@@ -2362,7 +2359,7 @@ class PaperTable {
             && $this->mode !== "edit"
             && $this->user->can_request_review($prow, null, true)) {
             $t[] = '<a href="' . $this->conf->hoturl("assign", "p=$prow->paperId") . '" class="xx revlink">'
-                . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
+                . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->admin ? "Assign reviews" : "External reviews") . "</u></a>";
         }
 
         // new comment
@@ -2377,7 +2374,7 @@ class PaperTable {
 
         // new response
         if (!$nocmt
-            && ($prow->has_author($this->user) || $allow_admin)
+            && ($prow->has_author($this->user) || $this->allow_admin)
             && $this->conf->any_response_open) {
             foreach ($this->conf->resp_rounds() as $rrd) {
                 $cr = null;
@@ -2404,10 +2401,10 @@ class PaperTable {
         }
 
         // override conflict
-        if ($allow_admin && !$admin) {
+        if ($this->allow_admin && !$this->admin) {
             $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="xx">'
                 . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing</span>";
-        } else if ($this->user->privChair && !$allow_admin) {
+        } else if ($this->user->privChair && !$this->allow_admin) {
             $x = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
         }
 
@@ -2427,7 +2424,7 @@ class PaperTable {
     private function _review_overview_card($rtable, $ifempty, $msgs) {
         $t = "";
         if ($rtable) {
-            $t .= $this->review_table(null);
+            $t .= $this->review_table();
         }
         $t .= $this->_review_links();
         if (($empty = ($t === ""))) {
@@ -2592,10 +2589,74 @@ class PaperTable {
         $this->_review_overview_card($this->user->can_view_review_assignment($this->prow, null), "", $m);
     }
 
-    function paptabEndWithEditableReview() {
-        $act_pc = $this->user->act_pc($this->prow);
+    /** @param bool $editable
+     * @return bool */
+    private function _mark_review_messages($editable, ReviewInfo $rrow) {
+        if (($this->user->is_owned_review($rrow) || $this->admin)
+            && !$this->conf->time_review($rrow, $this->user->act_pc($this->prow), true)) {
+            if ($this->admin) {
+                $override = " As an administrator, you can override this deadline.";
+            } else {
+                $override = "";
+            }
+            if ($this->conf->time_review_open()) {
+                $t = 'The <a href="' . $this->conf->hoturl("deadlines") . '">review deadline</a> has passed, so the review can no longer be changed.';
+            } else {
+                $t = "The site is not open for reviewing, so the review cannot be changed.";
+            }
+            if (!$this->admin) {
+                $rrow->message_list[] = new MessageItem(null, $t, MessageSet::URGENT_NOTE);
+                return false;
+            } else {
+                $rrow->message_list[] = new MessageItem(null, "{$t} As an administrator, you can override this deadline.", MessageSet::WARNING);
+            }
+        } else if (!$this->user->can_edit_review($this->prow, $this->editrrow)) {
+            return false;
+        }
 
-        // review messages
+        // administrator?
+        if (!$this->user->is_my_review($rrow)) {
+            if ($this->user->is_owned_review($rrow)) {
+                $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but you can make changes since you requested it.", MessageSet::NOTE);
+            } else if ($this->admin) {
+                $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but as an administrator you can still make changes.", MessageSet::NOTE);
+            }
+        }
+
+        // delegate?
+        if (!$rrow->reviewSubmitted
+            && $rrow->contactId == $this->user->contactId
+            && $rrow->reviewType == REVIEW_SECONDARY
+            && $this->conf->ext_subreviews < 3) {
+            $ndelegated = 0;
+            $napproval = 0;
+            foreach ($this->prow->all_reviews() as $rr) {
+                if ($rr->reviewType === REVIEW_EXTERNAL
+                    && $rr->requestedBy === $rrow->contactId) {
+                    ++$ndelegated;
+                    if ($rr->reviewStatus === ReviewInfo::RS_DELIVERED) {
+                        ++$napproval;
+                    }
+                }
+            }
+
+            if ($ndelegated == 0) {
+                $t = "As a secondary reviewer, you can <a href=\"" . $this->conf->hoturl("assign", "p=$rrow->paperId") . "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
+            } else if ($rrow->reviewNeedsSubmit == 0) {
+                $t = "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
+            } else if ($napproval) {
+                $t = "A delegated external reviewer has submitted their review for approval. If you approve that review, you won’t need to submit your own.";
+            } else {
+                $t = "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
+            }
+            $rrow->message_list[] = new MessageItem(null, $t, MessageSet::NOTE);
+        }
+
+        return $editable;
+    }
+
+    function echo_review_form() {
+        // notecard messages
         $msgs = [];
         if ($this->editrrow && !$this->user->is_signed_in()) {
             $msgs[] = $this->conf->_("You followed a review link to edit this review. You can also <a href=\"%s\">sign in to the site</a>.", $this->conf->hoturl("signin", ["email" => $this->editrrow->email, "cap" => null]));
@@ -2611,35 +2672,36 @@ class PaperTable {
 
         }
 
-        // review form, possibly with deadline warning
-        $opt = ["edit" => $this->mode === "re"];
+        // review
+        $editable = $this->mode === "re";
+        if ($this->editrrow) {
+            $editable = $this->_mark_review_messages($editable, $this->editrrow);
+        }
+        if ($editable) {
+            if (!$this->user->can_clickthrough("review", $this->prow)) {
+                self::echo_review_clickthrough();
+            }
+            $this->conf->review_form()->echo_form($this->prow, $this->editrrow, $this->user, $this->review_values);
+        } else {
+            $this->echo_rc([$this->editrrow], false);
+        }
+    }
 
-        if ($this->editrrow
-            && ($this->user->is_owned_review($this->editrrow) || $this->admin)
-            && !$this->conf->time_review($this->editrrow, $act_pc, true)) {
-            if ($this->admin) {
-                $override = " As an administrator, you can override this deadline.";
-            } else {
-                $override = "";
-                if ($this->editrrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-                    $opt["edit"] = false;
-                }
-            }
-            if ($this->conf->time_review_open()) {
-                $opt["editmessage"] = 'The <a href="' . $this->conf->hoturl("deadlines") . '">review deadline</a> has passed, so the review can no longer be changed.' . $override;
-            } else {
-                $opt["editmessage"] = "The site is not open for reviewing, so the review cannot be changed." . $override;
-            }
-        } else if (!$this->user->can_edit_review($this->prow, $this->editrrow)) {
-            $opt["edit"] = false;
+    function echo_main_link() {
+        // intended for pages like review editing where we need a link back
+        $t = [];
+        $dlimgjs = ["class" => "dlimg", "width" => 24, "height" => 24];
+        $title = count($this->viewable_rrows) > 1 ? "All reviews" : "Main";
+        $t[] = '<a href="' . $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]) .  '" class="xx revlink">'
+            . Ht::img("view48.png", "[{$title}]", $dlimgjs) . "&nbsp;<u>{$title}</u></a>";
+
+        if ($this->allow_admin && !$this->admin) {
+            $t[] = '<a href="' . $this->prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="revlink xx">'
+                . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a>";
         }
 
-        // maybe clickthrough
-        if ($opt["edit"] && !$this->user->can_clickthrough("review", $this->prow)) {
-            self::echo_review_clickthrough();
-        }
-        $rf = $this->conf->review_form();
-        $rf->show($this->prow, $this->editrrow, $this->user, $opt, $this->review_values);
+        echo '<div class="pcard notecard"><div class="papcard-body"><p class="sd">',
+            join("", $t), "</div></div>\n";
     }
 
 
@@ -2647,7 +2709,6 @@ class PaperTable {
     function resolve_review($want_review) {
         $this->prow->ensure_full_reviews();
         $this->all_rrows = $this->prow->reviews_as_display();
-
         $this->viewable_rrows = [];
         $rf = $this->conf->review_form();
         $unresolved_fields = $rf->all_fields();

@@ -3350,6 +3350,14 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 	margin-bottom: 24px;
 	margin-bottom: 1.5rem;
 }
+.revcard-feedback {
+	margin-bottom: 16px;
+	margin-bottom: 1rem;
+}
+.revcard-feedback + .revcard-form {
+	margin-top: 32px;
+	margin-top: 2rem;
+}
 .pedcard-head h2, .revcard-head h2 {
 	display: inline-block;
 	margin-right: 1.5em;

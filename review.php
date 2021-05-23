@@ -378,11 +378,12 @@ class ReviewPage {
             && !$this->user->can_edit_review($this->prow, $this->rrow)) {
             $pt->paptabEndWithReviewMessage();
         } else {
-            if ($pt->mode === "re") {
-                $pt->paptabEndWithEditableReview();
-                $pt->echo_comments();
+            if ($pt->mode === "re" || $this->rrow) {
+                $pt->echo_review_form();
+                $pt->echo_main_link();
             } else if ($this->rrow) {
                 $pt->echo_rc([$this->rrow], false);
+                $pt->echo_main_link();
             } else {
                 $pt->paptabEndWithReviewsAndComments();
             }

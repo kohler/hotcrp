@@ -1104,20 +1104,20 @@ function render_feedback(msg, status) {
         msg = msg === "" ? [] : [msg];
     if (msg.length === 0)
         return '';
-    if (status === 0 || status === 1 || status === 2)
-        status = ["note", "warning", "error"][status];
-    var t = [], i;
+    if (typeof status === "number" && status >= -2 && status <= 3)
+        status = ["urgent-note", "note", "", "warning", "error", "error"][status + 2];
+    var t = "", i;
     for (var i = 0; i !== msg.length; ++i) {
         var tag = msg[i].indexOf('<p') < 0 ? 'p' : 'div';
-        t.push('<' + tag + ' class="feedback is-' + status + '">' + msg[i] + '</' + tag + '>');
+        t = t.concat('<', tag, ' class="feedback', status ? " is-" : "", status, '">', msg[i], '</', tag, '>');
     }
-    return t.join('');
+    return t;
 }
 
 function render_feedback_near(msg, status, e) {
     var x, c, m, $j;
-    if (status === 0 || status === 1 || status === 2)
-        status = ["note", "warning", "error"][status];
+    if (typeof status === "number" && status >= -2 && $status <= 3)
+        status = ["urgent-note", "note", "", "warning", "error", "error"][status + 2];
     else
         status = "note";
     if (status === "warning" || status === "error")
@@ -4373,10 +4373,14 @@ function add_review(rrow) {
             hc.push(revtime);
         hc.push('</div>');
     }
-
-    if (rrow.message_html)
-        hc.push('<div class="hint">' + rrow.message_html + '</div>');
     hc.push_pop('<hr class="c">');
+
+    if (rrow.message_list) {
+        hc.push('<div class="revcard-feedback fx20">', '</div>');
+        for (i = 0; i !== rrow.message_list.length; ++i)
+            hc.push(render_feedback(rrow.message_list[i].message, rrow.message_list[i].status));
+        hc.pop();
+    }
 
     // body
     hc.push('<div class="revcard-render fx20">', '</div>');

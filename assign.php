@@ -218,7 +218,6 @@ if (isset($Qreq->undeclinereview)
 
 // paper table
 $paperTable = new PaperTable($Me, $Qreq, $prow);
-$paperTable->initialize(false, false);
 $paperTable->resolve_review(false);
 $allow_view_authors = $Me->allow_view_authors($prow);
 
@@ -230,7 +229,7 @@ $paperTable->echo_paper_info();
 
 
 // reviewer information
-$t = $paperTable->review_table(null);
+$t = $paperTable->review_table();
 if ($t !== "") {
     echo '<div class="pcard revcard">',
         '<div class="revcard-head"><h2>Reviews</h2></div>',

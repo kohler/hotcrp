@@ -1182,22 +1182,11 @@ $blind\n";
         echo Ht::actions($buttons, ["class" => "aab aabig"]);
     }
 
-    function show(PaperInfo $prow, ReviewInfo $rrow_in = null, Contact $viewer,
-                  $options, ReviewValues $rvalues = null) {
-        $editmode = $options["edit"] ?? false;
+    function echo_form(PaperInfo $prow, ReviewInfo $rrow_in = null, Contact $viewer,
+                       ReviewValues $rvalues = null) {
         $rrow = $rrow_in ?? ReviewInfo::make_blank($prow, $viewer);
         self::check_review_author_seen($prow, $rrow, $viewer);
 
-        if (!$editmode) {
-            $rj = $this->unparse_review_json($viewer, $prow, $rrow);
-            if ($options["editmessage"] ?? false) {
-                $rj->message_html = $options["editmessage"];
-            }
-            echo Ht::unstash_script("hotcrp.add_review(" . json_encode_browser($rj) . ");\n");
-            return;
-        }
-
-        // From here on, edit mode.
         $reviewOrdinal = $rrow->unparse_ordinal_id();
         $forceShow = $viewer->is_admin_force() ? "&amp;forceShow=1" : "";
         $reviewlink = "p={$prow->paperId}" . ($rrow->reviewId ? "&amp;r={$reviewOrdinal}" : "");
@@ -1277,10 +1266,6 @@ $blind\n";
             echo '</div>';
         }
 
-        if ($options["editmessage"] ?? false) {
-            echo '<div class="hint">', $options["editmessage"], "</div>\n";
-        }
-
         // download?
         echo '<hr class="c">';
         echo "<table class=\"revoff\"><tr>
@@ -1294,50 +1279,18 @@ $blind\n";
       <span class=\"hint\"><strong>Tip:</strong> Use <a href=\"", $this->conf->hoturl("search"), "\">Search</a> or <a href=\"", $this->conf->hoturl("offline"), "\">Offline reviewing</a> to download or upload many forms at once.</span></td>
     </tr></table></div>\n";
 
+        if (!empty($rrow->message_list)) {
+            echo '<div class="revcard-feedback">';
+            foreach ($rrow->message_list ?? [] as $mx) {
+                echo MessageSet::render_feedback_p($mx->message, $mx->status);
+            }
+            echo '</div>';
+        }
+
         // review card
-        echo '<div class="revcard-body">';
-
-        // administrator?
-        $admin = $viewer->allow_administer($prow);
-        if (!$viewer->is_my_review($rrow)) {
-            if ($viewer->is_owned_review($rrow)) {
-                echo Ht::msg("This isn’t your review, but you can make changes since you requested it.", 0);
-            } else if ($admin) {
-                echo Ht::msg("This isn’t your review, but as an administrator you can still make changes.", 0);
-            }
-        }
-
-        // delegate?
-        if (!$rrow->reviewSubmitted
-            && $rrow->contactId == $viewer->contactId
-            && $rrow->reviewType == REVIEW_SECONDARY
-            && $this->conf->ext_subreviews < 3) {
-            $ndelegated = 0;
-            $napproval = 0;
-            foreach ($prow->all_reviews() as $rr) {
-                if ($rr->reviewType === REVIEW_EXTERNAL
-                    && $rr->requestedBy === $rrow->contactId) {
-                    ++$ndelegated;
-                    if ($rr->reviewStatus === ReviewInfo::RS_DELIVERED) {
-                        ++$napproval;
-                    }
-                }
-            }
-
-            if ($ndelegated == 0) {
-                $t = "As a secondary reviewer, you can <a href=\"" . $this->conf->hoturl("assign", "p=$rrow->paperId") . "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
-            } else if ($rrow->reviewNeedsSubmit == 0) {
-                $t = "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
-            } else if ($napproval) {
-                $t = "A delegated external reviewer has submitted their review for approval. If you approve that review, you won’t need to submit your own.";
-            } else {
-                $t = "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
-            }
-            echo Ht::msg($t, 0);
-        }
-
-        // top save changes
-        if ($viewer->time_review($prow, $rrow) || $admin) {
+        echo '<div class="revcard-form">';
+        $allow_admin = $viewer->allow_administer($prow);
+        if ($viewer->time_review($prow, $rrow) || $allow_admin) {
             $this->_echo_accept_decline($prow, $rrow, $viewer, $reviewPostLink);
         }
 
@@ -1355,14 +1308,14 @@ $blind\n";
         $this->webFormRows($prow, $rrow, $viewer, $rvalues);
 
         // review actions
-        if ($viewer->time_review($prow, $rrow) || $admin) {
+        if ($viewer->time_review($prow, $rrow) || $allow_admin) {
             if ($prow->can_author_view_submitted_review()
                 && (!$rrow->subject_to_approval()
                     || !$viewer->is_my_review($rrow))) {
                 echo '<div class="feedback is-warning mb-2">Authors will be notified about submitted reviews.</div>';
             }
             if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED
-                && !$admin) {
+                && !$allow_admin) {
                 echo '<div class="feedback is-warning mb-2">Only administrators can remove or unsubmit the review at this point.</div>';
             }
             $this->_echo_review_actions($prow, $rrow, $viewer, $reviewPostLink);
@@ -1444,6 +1397,11 @@ $blind\n";
         if ($time > 0 && $time > $rrow->timeRequested) {
             $rj["modified_at"] = (int) $time;
             $rj["modified_at_text"] = $this->conf->unparse_time_point($time);
+        }
+
+        // messages
+        if ($rrow->message_list) {
+            $rj["message_list"] = $rrow->message_list;
         }
 
         // ratings

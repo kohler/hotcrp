@@ -133,6 +133,10 @@ class ReviewInfo implements JsonSerializable {
     /** @var ?string */
     public $ratingSignature;
 
+    // other
+    /** @var ?list<MessageItem> */
+    public $message_list;
+
     const VIEWSCORE_RECOMPUTE = -100;
 
     const RS_EMPTY = 0;
