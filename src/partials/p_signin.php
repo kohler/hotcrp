@@ -24,7 +24,7 @@ class Signin_Partial {
         if ($sid !== "" || $action !== "signin") {
             error_log($msg);
         }
-
+        ensure_session();
         $user->conf->msg($user->conf->_i("badpost"), 2);
     }
 
