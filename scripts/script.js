@@ -225,7 +225,7 @@ $(document).ajaxError(function (event, jqxhr, settings, httperror) {
         } catch (e) {
         }
     }
-    if ((!data || !data.user_error) && jqxhr.status != 502) {
+    if (jqxhr.status != 502) {
         var msg = url_absolute(settings.url) + " API failure: ";
         if (siteinfo.user && siteinfo.user.email)
             msg += "user " + siteinfo.user.email + ", ";
@@ -279,7 +279,7 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
             || typeof rjson !== "object"
             || rjson.ok !== false)
             rjson = {ok: false};
-        if (!rjson.error)
+        if (!rjson.error) /* XXX */
             rjson.error = jqxhr_error_message(jqxhr, status, errormsg);
         for (i = 0; i !== success.length; ++i)
             success[i](rjson, jqxhr, status);

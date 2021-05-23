@@ -48,7 +48,7 @@ class User_API {
         }
 
         if (empty($users)) {
-            return new JsonResult(404, ["ok" => false, "user_error" => true]);
+            return new JsonResult(["ok" => false]);
         } else {
             $u = $users[0];
             $ok = strcasecmp($u->email, $email) === 0;
@@ -59,10 +59,7 @@ class User_API {
                 && ($pc = $prow->potential_conflict_html($u))) {
                 $rj["potential_conflict"] = PaperInfo::potential_conflict_tooltip_html($pc);
             }
-            if (!$ok) {
-                $rj["user_error"] = true;
-            }
-            return new JsonResult($ok ? 200 : 404, $rj);
+            return new JsonResult($rj);
         }
     }
 
@@ -113,7 +110,7 @@ class User_API {
             $user->send_mail("@accountinfo");
             return new JsonResult(["ok" => true, "u" => $user->email]);
         } else {
-            return new JsonResult(["ok" => false, "u" => $user->email, "error" => "User disabled.", "user_error" => true]);
+            return new JsonResult(["ok" => false, "u" => $user->email, "error" => "User disabled."]);
         }
     }
 
