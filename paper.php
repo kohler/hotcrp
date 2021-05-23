@@ -26,13 +26,13 @@ class PaperPage {
         $this->qreq = $qreq;
     }
 
-    function header() {
+    function echo_header() {
         $m = $this->pt ? $this->pt->mode : ($this->qreq->m ?? "p");
-        PaperTable::do_header($this->pt, "paper-" . ($m == "edit" ? "edit" : "view"), $m, $this->qreq);
+        PaperTable::echo_header($this->pt, "paper-" . ($m === "edit" ? "edit" : "view"), $m, $this->qreq);
     }
 
     function error_exit($msg) {
-        $this->header();
+        $this->echo_header();
         Ht::stash_script("hotcrp.shortcut().add()");
         $msg && Conf::msg_error($msg);
         $this->conf->footer();
@@ -340,35 +340,10 @@ class PaperPage {
         }
     }
 
-    function render() {
-        // correct modes
-        $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
-        $pt->resolve_comments();
-        if ($pt->can_view_reviews()
-            || $pt->mode === "re"
-            || ($this->prow->paperId > 0 && $this->user->can_edit_review($this->prow))) {
-            $pt->resolve_review(false);
-            $pt->fix_mode();
-        }
-
-        // prepare paper table
-        if ($pt->mode == "edit") {
-            $old_overrides = $this->user->remove_overrides(Contact::OVERRIDE_CHECK_TIME);
-            $editable = $this->user->can_edit_paper($this->prow);
-            if ($this->user->can_edit_final_paper($this->prow)) {
-                $editable = "f";
-            }
-            $this->user->set_overrides($old_overrides);
-        } else {
-            $editable = false;
-        }
-
-        $pt->initialize($editable, $editable && $this->useRequest);
-        if ($pt->mode === "edit" && !$this->ps) {
-            if ($this->prow->paperId <= 0) {
-                $this->prow->set_allow_absent(true);
-            }
-            $this->ps = $this->ps ?? PaperStatus::make_prow($this->user, $this->prow);
+    private function prepare_edit_mode() {
+        if (!$this->ps) {
+            $this->prow->set_allow_absent($this->prow->paperId === 0);
+            $this->ps = PaperStatus::make_prow($this->user, $this->prow);
             $old_overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             foreach ($this->prow->form_fields() as $o) {
                 if ($this->user->can_edit_option($this->prow, $o)) {
@@ -380,25 +355,42 @@ class PaperPage {
             $this->user->set_overrides($old_overrides);
             $this->prow->set_allow_absent(false);
         }
+
+        $old_overrides = $this->user->remove_overrides(Contact::OVERRIDE_CHECK_TIME);
+        $editable = $this->user->can_edit_paper($this->prow)
+            || $this->user->can_edit_final_paper($this->prow);
+        $this->user->set_overrides($old_overrides);
+        $this->pt->set_edit_status($this->ps, $editable, $editable && $this->useRequest);
+    }
+
+    function render() {
+        // correct modes
+        $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
+        if ($pt->can_view_reviews()
+            || $pt->mode === "re"
+            || ($this->prow->paperId > 0 && $this->user->can_edit_review($this->prow))) {
+            $pt->resolve_review(false);
+        }
+        $pt->resolve_comments();
         if ($pt->mode === "edit") {
-            $pt->set_edit_status($this->ps);
+            $this->prepare_edit_mode();
         }
 
         // produce paper table
-        $this->header();
-        $pt->paptabBegin();
+        $this->echo_header();
+        $pt->echo_paper_info();
 
         if ($pt->mode === "edit") {
             $pt->paptabEndWithoutReviews();
         } else {
             if ($pt->mode === "re") {
                 $pt->paptabEndWithEditableReview();
-                $pt->paptabComments();
+                $pt->echo_comments();
             } else if ($pt->can_view_reviews()) {
                 $pt->paptabEndWithReviewsAndComments();
             } else {
                 $pt->paptabEndWithReviewMessage();
-                $pt->paptabComments();
+                $pt->echo_comments();
             }
             // restore comment across logout bounce
             if ($this->qreq->editcomment) {

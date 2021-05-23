@@ -37,12 +37,12 @@ class ReviewPage {
         return $this->conf->review_form();
     }
 
-    function header() {
-        PaperTable::do_header($this->pt, "review", $this->qreq->m, $this->qreq);
+    function echo_header() {
+        PaperTable::echo_header($this->pt, "review", $this->qreq->m, $this->qreq);
     }
 
     function error_exit($msg) {
-        $this->header();
+        $this->echo_header();
         Ht::stash_script("hotcrp.shortcut().add()");
         $msg && Conf::msg_error($msg);
         $this->conf->footer();
@@ -359,9 +359,9 @@ class ReviewPage {
     function render() {
         $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
         $pt->resolve_review($this->rrow);
+        $pt->resolve_comments();
 
         // mode
-        $pt->fix_mode();
         if ($this->rv) {
             $pt->set_review_values($this->rv);
         } else if ($this->qreq->has_annex("after_login")) {
@@ -371,20 +371,18 @@ class ReviewPage {
         }
 
         // paper table
-        $this->header();
+        $this->echo_header();
+        $pt->echo_paper_info();
 
-        $pt->initialize(false, false);
-        $pt->paptabBegin();
-        $pt->resolve_comments();
-
-        if (!$this->rrow
-            && !$this->user->can_view_review($this->prow, null)
-            && !$this->user->can_edit_review($this->prow, null)) {
+        if (!$this->user->can_view_review($this->prow, $this->rrow)
+            && !$this->user->can_edit_review($this->prow, $this->rrow)) {
             $pt->paptabEndWithReviewMessage();
         } else {
             if ($pt->mode === "re") {
                 $pt->paptabEndWithEditableReview();
-                $pt->paptabComments();
+                $pt->echo_comments();
+            } else if ($this->rrow) {
+                $pt->echo_rc([$this->rrow], false);
             } else {
                 $pt->paptabEndWithReviewsAndComments();
             }

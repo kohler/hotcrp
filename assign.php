@@ -13,7 +13,7 @@ $Conf->site_contact();
 // header
 function assign_show_header() {
     global $paperTable, $Qreq;
-    PaperTable::do_header($paperTable, "assign", "assign", $Qreq);
+    PaperTable::echo_header($paperTable, "assign", "assign", $Qreq);
 }
 
 
@@ -25,7 +25,7 @@ function assign_load() {
         $pr = new PaperRequest($Me, $Qreq, true);
         $prow = $Conf->paper = $pr->prow;
         if (($whynot = $Me->perm_request_review($prow, null, false))) {
-            $paperTable = new PaperTable($Me, $Qreq, $prow, "assign");
+            $paperTable = new PaperTable($Me, $Qreq, $prow);
             throw $whynot;
         }
         return $prow;
@@ -217,7 +217,7 @@ if (isset($Qreq->undeclinereview)
 
 
 // paper table
-$paperTable = new PaperTable($Me, $Qreq, $prow, "assign");
+$paperTable = new PaperTable($Me, $Qreq, $prow);
 $paperTable->initialize(false, false);
 $paperTable->resolve_review(false);
 $allow_view_authors = $Me->allow_view_authors($prow);
@@ -226,7 +226,7 @@ assign_show_header();
 
 
 // begin form and table
-$paperTable->paptabBegin();
+$paperTable->echo_paper_info();
 
 
 // reviewer information
