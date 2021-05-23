@@ -3535,13 +3535,13 @@ handle_ui.on("input.js-email-populate", function (event) {
 })();
 
 handle_ui.on("js-request-review-preview-email", function (event) {
-    var f = this.form,
+    var f = this.closest("form"),
         a = {p: siteinfo.paperid, template: "requestreview"},
         self = this;
     function fv(field, defaultv) {
-        var x = f[field] && f[field].value.trim();
+        var x = f.elements[field] && f.elements[field].value.trim();
         if (x === "")
-            x = f[field].getAttribute("placeholder");
+            x = f.elements[field].getAttribute("placeholder");
         if (x === false || x === "" || x == null)
             x = defaultv;
         if (x !== "")
