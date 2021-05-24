@@ -8633,7 +8633,7 @@ function tag_value(taglist, t) {
     if (t.charAt(0) === "~" && t.charAt(1) !== "~")
         t = siteinfo.user.cid + t;
     t += "#";
-    for (i = 0; i !== taglist.length; ++i)
+    for (var i = 0; i !== taglist.length; ++i)
         if (taglist[i].startsWith(t))
             return +taglist[i].substr(t.length);
     return null;
