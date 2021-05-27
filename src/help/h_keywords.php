@@ -39,15 +39,18 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("ab:\"very novel\"", "abstract contains “very novel”");
         echo $hth->tgroup("Authors");
         echo $hth->search_trow("au:poletto", "author list contains “poletto”");
-        if ($hth->user->isPC)
+        if ($hth->user->isPC) {
             echo $hth->search_trow("au:pc", "one or more authors are PC members (author email matches PC email)");
+        }
         echo $hth->search_trow("au:>4", "more than four authors");
         echo $hth->tgroup("Collaborators");
         echo $hth->search_trow("co:liskov", "collaborators contains “liskov”");
         echo $hth->tgroup("Topics");
         echo $hth->search_trow("topic:link", "selected topics match “link”");
 
-        $opts = array_filter($hth->conf->options()->normal(), function ($o) { return $o->form_position() !== false; });
+        $opts = array_filter($hth->conf->options()->normal(), function ($o) {
+            return $o->form_position() !== false && $o->search_keyword() !== false;
+        });
         usort($opts, function ($a, $b) {
             if ($a->final !== $b->final) {
                 return $a->final ? 1 : -1;
@@ -55,12 +58,9 @@ class Keywords_HelpTopic {
                 return PaperOption::compare($a, $b);
             }
         });
-
         $oex = [];
         foreach ($opts as $o) {
-            if ($o->search_keyword() !== false) {
-                $oex = array_merge($oex, $o->search_examples($hth->user, PaperOption::EXAMPLE_HELP));
-            }
+            $oex = array_merge($oex, $o->search_examples($hth->user, PaperOption::EXAMPLE_HELP));
         }
 
         if (!empty($oex)) {

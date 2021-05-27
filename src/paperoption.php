@@ -332,7 +332,8 @@ class PaperOptionList implements IteratorAggregate {
     function assign_search_keywords($nonpaper, AbbreviationMatcher $am) {
         $cb = [$this, "option_by_id"];
         foreach ($this->option_json_map() as $id => $oj) {
-            if ((($oj->nonpaper ?? false) === true) === $nonpaper) {
+            if (!isset($oj->search_keyword)
+                && (($oj->nonpaper ?? false) === true) === $nonpaper) {
                 if ($oj->name ?? null) {
                     $e = AbbreviationEntry::make_lazy($oj->name, $cb, [$id], Conf::MFLAG_OPTION);
                     $s = $am->ensure_entry_keyword($e, AbbreviationMatcher::KW_CAMEL, Conf::MFLAG_OPTION) ?? false;
