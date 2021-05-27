@@ -24,7 +24,7 @@ class GetDocument_ListAction extends ListAction {
     static function expand2(GroupedExtensions $gex) {
         $user = $gex->viewer();
         foreach ($user->conf->options()->display_fields() as $o) {
-            if ($o->is_document() && $user->can_view_some_option($o))
+            if ($o->has_document() && $user->can_view_some_option($o))
                 $gex->add(self::list_action_json($o));
         }
     }
@@ -36,10 +36,10 @@ class GetDocument_ListAction extends ListAction {
         foreach ($ssel->paper_set($user) as $row) {
             if (($whyNot = $user->perm_view_option($row, $opt))) {
                 $docset->add_error_html($whyNot->unparse_html());
-            } else if (($doc = $row->document($opt->id))) {
-                $docset->add_as($doc, $doc->export_filename());
             } else {
-                $docset->add_error_html($row->conf->_("Submission #%d has no %s field.", $row->paperId, $opt->title_html()));
+                foreach ($row->documents($opt->id) as $doc) {
+                    $docset->add_as($doc, $doc->export_filename());
+                }
             }
         }
         $user->set_overrides($old_overrides);
