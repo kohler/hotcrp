@@ -782,10 +782,13 @@ if ($Me->privChair) {
 echo '<div class="aa c">',
     Ht::submit("Prepare mail", ["class" => "btn-primary"]), ' &nbsp; <span class="hint">You’ll be able to review the mails before they are sent.</span>
 </div>
+';
 
-
-<div id="mailref">Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
+function echo_mail_keyword_help() {
+    global $Conf;
+    echo '<div id="mailref">Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
 <hr class="g">
+
 <div class="ctable no-hmargin">
 <dl class="ctelt">
 <dt><code>%URL%</code></dt>
@@ -811,7 +814,31 @@ echo '<div class="aa c">',
     <dd>First couple words of paper title (useful for mail subject).</dd>
 <dt><code>%OPT(AUTHORS)%</code></dt>
     <dd>Paper authors (if recipient is allowed to see the authors).</dd>
-</dl><dl class="ctelt">
+';
+
+    $opts = array_filter($Conf->options()->normal(), function ($o) {
+        return $o->display_position() !== false
+            && $o->can_render(FieldRender::CFMAIL);
+    });
+    usort($opts, function ($a, $b) {
+        if ($a->final !== $b->final) {
+            return $a->final ? 1 : -1;
+        } else {
+            return PaperOption::compare($a, $b);
+        }
+    });
+    if (!empty($opts)) {
+        echo '<dt><code>%', htmlspecialchars($opts[0]->search_keyword()), '%</code></dt>
+    <dd>Value of paper’s “', $opts[0]->title_html(), '” submission field.';
+        if (count($opts) > 1) {
+            echo ' Also ', join(", ", array_map(function ($o) {
+                return '<code>%' . htmlspecialchars($o->search_keyword()) . '%</code>';
+            }, array_slice($opts, 1))), '.';
+        }
+        echo "</dd>\n<dt><code>%IF(", htmlspecialchars($opts[0]->search_keyword()), ')%...%ENDIF%</code></dt>
+    <dd>Include text if paper has a “', $opts[0]->title_html(), "” submission field.</dd>\n";
+    }
+    echo '</dl><dl class="ctelt">
 <dt><code>%REVIEWS%</code></dt>
     <dd>Pretty-printed paper reviews.</dd>
 <dt><code>%COMMENTS%</code></dt>
@@ -834,7 +861,10 @@ echo '<div class="aa c">',
     <dd>Value of paper’s <code><i>tag</i></code>.</dd>
 </dl>
 </div></div>
+';
+}
 
-</form>';
 
+echo_mail_keyword_help();
+echo '</form>';
 $Conf->footer();

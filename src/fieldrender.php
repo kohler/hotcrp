@@ -24,7 +24,8 @@ class FieldRender {
     const CFCOLUMN = 8;
     const CFLISTSUGGEST = 16;
     const CFCSV = 32;
-    const CFVERBOSE = 64;
+    const CFMAIL = 64;
+    const CFVERBOSE = 128;
 
     const CTEXT = 0;
     const CPAGE = 3;

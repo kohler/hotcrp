@@ -61,5 +61,6 @@
     {"match": "#(~?~?[a-zA-Z@*_:.][-a-zA-Z0-9!@*_:.\/]*)", "function": "*kw_tagvalue", "expand_if": "*kw_haspaper"},
     {"name": "SHEPHERD", "function": "*kw_paperpc", "expand_if": "*kw_haspaper", "userx": "CONTACT", "pctype": "shepherd"},
     {"name": "SHEPHERDNAME", "function": "*kw_paperpc", "expand_if": "*kw_haspaper", "userx": "NAME", "pctype": "shepherd"},
-    {"name": "SHEPHERDEMAIL", "function": "*kw_paperpc", "expand_if": "*kw_haspaper", "userx": "EMAIL", "pctype": "shepherd"}
+    {"name": "SHEPHERDEMAIL", "function": "*kw_paperpc", "expand_if": "*kw_haspaper", "userx": "EMAIL", "pctype": "shepherd"},
+    {"match": "(_*(?:[A-Za-z~][a-z~?!]*|[0-9][0-9.]*|\\.[0-9][0-9.]*)+)", "function": "*kw_paperfield", "expand_if": ["*kw_haspaper", "*kw_is_paperfield"], "priority": -1}
 ]

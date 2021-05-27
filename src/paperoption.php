@@ -1245,6 +1245,10 @@ class PaperOption implements JsonSerializable {
             && strpos($this->list_class, "pl-no-suggest") !== false) {
             return false;
         }
+        if (($context & FieldRender::CFMAIL) !== 0
+            && $this->search_keyword() === false) {
+            return false;
+        }
         if (($context & FieldRender::CFPAGE) !== 0
             && $this->display_position === false) {
             return false;

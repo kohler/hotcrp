@@ -444,15 +444,17 @@ class Mailer {
         foreach ($mks as $uf) {
             $uf->input_string = $what;
             $ok = $this->recipient || (isset($uf->global) && $uf->global);
-            if ($ok && isset($uf->expand_if)) {
-                if (is_string($uf->expand_if)) {
-                    if ($uf->expand_if[0] === "*") {
-                        $ok = call_user_func([$this, substr($uf->expand_if, 1)], $uf);
+
+            $xchecks = $uf->expand_if ?? [];
+            foreach (is_array($xchecks) ? $xchecks : [$xchecks] as $xf) {
+                if (is_string($xf)) {
+                    if ($xf[0] === "*") {
+                        $ok = $ok && call_user_func([$this, substr($xf, 1)], $uf);
                     } else {
-                        $ok = call_user_func($uf->expand_if, $this, $uf);
+                        $ok = $ok && call_user_func($xf, $this, $uf);
                     }
                 } else {
-                    $ok = $uf->expand_if;
+                    $ok = $ok && !!$xf;
                 }
             }
 

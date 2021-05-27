@@ -402,6 +402,24 @@ class HotCRPMailer extends Mailer {
             return "(none)";
         }
     }
+    function kw_is_paperfield($uf) {
+        $uf->option = $this->conf->options()->find($uf->match_data[1]);
+        return !!$uf->option && $uf->option->can_render(FieldRender::CFMAIL);
+    }
+    function kw_paperfield($args, $isbool, $uf) {
+        if (!$this->permuser->can_view_option($this->row, $uf->option)
+            || !($ov = $this->row->option($uf->option))) {
+            return $isbool ? false : "";
+        } else {
+            $fr = new FieldRender(FieldRender::CFMAIL, $this->permuser);
+            $uf->option->render($fr, $ov);
+            if ($isbool) {
+                return ($fr->value ?? "") !== "";
+            } else {
+                return (string) $fr->value;
+            }
+        }
+    }
     function kw_paperpc($args, $isbool, $uf) {
         $k = $uf->pctype . "ContactId";
         $cid = $this->row->$k;
