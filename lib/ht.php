@@ -334,10 +334,11 @@ class Ht {
             $js = $value;
             $value = null;
         } else if ($js === null) {
-            $js = array();
+            $js = [];
         }
-        $js["class"] = trim(($js["class"] ?? "") . " hidden");
-        return self::submit($name, $value, $js);
+        $js["class"] = trim(($js["class"] ?? "") . " pseudohidden");
+        $js["value"] = $value;
+        return self::submit($name, "", $js);
     }
 
     private static function apply_placeholder(&$value, &$js) {

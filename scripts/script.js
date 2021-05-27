@@ -3299,9 +3299,13 @@ $(document).on("keypress", "input.js-autosubmit", function (event) {
     if (event_modkey(event) || event_key(event) !== "Enter") {
         return;
     }
-    var f = event.target.form, fn = this.getAttribute("data-submit-fn"),
+    var f = event.target.form,
+        fn = this.getAttribute("data-submit-fn"),
         dest;
-    if (fn && f.elements.defaultfn && f.elements["default"]) {
+    if (fn === "false") {
+        event.preventDefault();
+        return;
+    } else if (fn && f.elements.defaultfn && f.elements["default"]) {
         f.elements.defaultfn.value = fn;
         dest = f.elements["default"];
     } else if (fn && f.elements[fn]) {
