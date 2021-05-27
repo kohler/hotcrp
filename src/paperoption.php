@@ -1234,16 +1234,24 @@ class PaperOption implements JsonSerializable {
         $prow->mark_inactive_documents();
     }
 
-    function render(FieldRender $fr, PaperValue $ov) {
+    /** @return bool */
+    function can_render($context) {
+        if (($context & (FieldRender::CFLIST | FieldRender::CFLISTSUGGEST)) !== 0
+            && (!is_string($this->list_class) || $this->search_keyword() === false)) {
+            return false;
+        }
+        if (($context & FieldRender::CFLISTSUGGEST) !== 0
+            && strpos($this->list_class, "pl-no-suggest") !== false) {
+            return false;
+        }
+        if (($context & FieldRender::CFPAGE) !== 0
+            && $this->display_position === false) {
+            return false;
+        }
+        return true;
     }
 
-    const LIST_DISPLAY_SUGGEST = 1;
-    /** @return bool */
-    function supports_list_display($context = 0) {
-        return is_string($this->list_class)
-            && ($context !== self::LIST_DISPLAY_SUGGEST
-                || strpos($this->list_class, "pl-no-suggest") === false)
-            && $this->search_keyword() !== false;
+    function render(FieldRender $fr, PaperValue $ov) {
     }
 
     /** @return ?FormatSpec */

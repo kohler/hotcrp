@@ -91,7 +91,7 @@ class Option_PaperColumnFactory {
         if (!$ocolon && $oname === "options") {
             $x = [];
             foreach ($user->user_option_list() as $opt) {
-                if ($opt->supports_list_display(PaperOption::LIST_DISPLAY_SUGGEST))
+                if ($opt->can_render(FieldRender::CFLIST | FieldRender::CFLISTSUGGEST))
                     $x[] = self::option_json($xfj, $opt);
             }
             return $x;
@@ -100,7 +100,7 @@ class Option_PaperColumnFactory {
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
-            if ($opt->supports_list_display()) {
+            if ($opt->can_render(FieldRender::CFLIST)) {
                 return self::option_json($xfj, $opt);
             }
             PaperColumn::column_error($user, "Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
@@ -113,7 +113,7 @@ class Option_PaperColumnFactory {
         $cs = array_map(function ($opt) {
             return $opt->search_keyword();
         }, array_filter($user->user_option_list(), function ($opt) {
-            return $opt->supports_list_display(PaperOption::LIST_DISPLAY_SUGGEST);
+            return $opt->can_render(FieldRender::CFLIST | FieldRender::CFLISTSUGGEST);
         }));
         if (!empty($cs)) {
             array_unshift($cs, "options");

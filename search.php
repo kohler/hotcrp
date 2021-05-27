@@ -189,7 +189,7 @@ if ($pl_text) {
 
     // Options
     foreach ($Conf->options() as $ox) {
-        if ($ox->supports_list_display(PaperOption::LIST_DISPLAY_SUGGEST)
+        if ($ox->can_render(FieldRender::CFLIST | FieldRender::CFLISTSUGGEST)
             && $pl->has("opt$ox->id")) {
             $display_options->checkbox_item(10, $ox->search_keyword(), $ox->name);
         }
