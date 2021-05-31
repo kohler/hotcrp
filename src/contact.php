@@ -2197,17 +2197,31 @@ class Contact {
         }
     }
 
-    function log_activity($text, $paperId = null) {
+    /** @param string $text
+     * @param null|int|PaperInfo|list<int|PaperInfo> $pids */
+    function log_activity($text, $pids = null) {
         $this->mark_activity();
         if (!$this->is_anonymous_user()) {
-            $this->conf->log_for($this, $this, $text, $paperId);
+            $this->conf->log_for($this, $this, $text, $pids);
         }
     }
 
-    function log_activity_for($user, $text, $paperId = null) {
+    /** @param null|int|Contact $dest_user
+     * @param string $text
+     * @param null|int|PaperInfo|list<int|PaperInfo> $pids */
+    function log_activity_for($dest_user, $text, $pids = null) {
         $this->mark_activity();
         if (!$this->is_anonymous_user()) {
-            $this->conf->log_for($this, $user, $text, $paperId);
+            $this->conf->log_for($this, $dest_user, $text, $pids);
+        }
+    }
+
+    /** @param string $text
+     * @param null|int|PaperInfo|list<int|PaperInfo> $pids */
+    function log_activity_dedup($text, $pids = null) {
+        $this->mark_activity();
+        if (!$this->is_anonymous_user()) {
+            $this->conf->log_for($this, $this, $text, $pids, true);
         }
     }
 

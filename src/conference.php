@@ -4547,7 +4547,7 @@ class Conf {
     // Action recording
     //
 
-    const action_log_query = "insert into ActionLog (ipaddr, contactId, destContactId, trueContactId, paperId, timestamp, action) values ?v";
+    const action_log_query = "insert into ActionLog (ipaddr, contactId, destContactId, trueContactId, paperId, timestamp, action)";
     const action_log_query_action_index = 6;
 
     function save_logs($on) {
@@ -4577,7 +4577,7 @@ class Conf {
                 }
             }
             if (!empty($qv)) {
-                $this->qe(self::action_log_query, $qv);
+                $this->qe(self::action_log_query . " values ?v", $qv);
             }
             $this->_save_logs = null;
         }
@@ -4604,8 +4604,9 @@ class Conf {
     /** @param null|int|Contact $user
      * @param null|int|Contact $dest_user
      * @param string $text
-     * @param null|int|PaperInfo|list<int|PaperInfo> $pids */
-    function log_for($user, $dest_user, $text, $pids = null) {
+     * @param null|int|PaperInfo|list<int|PaperInfo> $pids
+     * @param bool $dedup */
+    function log_for($user, $dest_user, $text, $pids = null, $dedup = false) {
         if (is_object($pids)) {
             $pids = [$pids->paperId];
         } else if (is_array($pids)) {
@@ -4634,7 +4635,14 @@ class Conf {
         $dest_user = self::log_clean_user($dest_user, $text);
 
         if ($this->_save_logs === null) {
-            $this->qe(self::action_log_query, self::format_log_values($text, $user, $dest_user, $true_user, $pids));
+            $values = self::format_log_values($text, $user, $dest_user, $true_user, $pids);
+            if ($dedup && count($values) === 1) {
+                $this->qe_apply(self::action_log_query . " select ?, ?, ?, ?, ?, ?, ? from dual"
+                    . " where (select max(logId) from (select * from ActionLog order by logId desc limit 100) t1 where ipaddr<=>? and contactId<=>? and destContactId<=>? and trueContactId<=>? and paperId<=>? and timestamp>=?-3600 and action<=>?) is null",
+                    array_merge($values[0], $values[0]));
+            } else {
+                $this->qe(self::action_log_query . " values ?v", $values);
+            }
         } else {
             $key = "$user,$dest_user,$true_user|$text";
             if (!isset($this->_save_logs[$key])) {
