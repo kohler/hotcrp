@@ -2784,7 +2784,6 @@ class Contact {
             $rights = $this->rights($prow);
             return $rights->allow_administer;
         } else {
-            error_log(debug_string_backtrace());
             return $this->privChair;
         }
     }
@@ -4565,12 +4564,17 @@ class Contact {
 
         // conflict checks
         $tag = Tagger::base($tag);
-        $dt = $this->conf->tags();
+        $tagmap = $this->conf->tags();
         if ($prow) {
             $rights = $this->rights($prow);
-            if (!($rights->allow_pc
-                  || ($rights->allow_pc_broad && $this->conf->tag_seeall)
-                  || ($this->privChair && $dt->is_sitewide($tag)))) {
+            if (!$rights->allow_pc
+                && (!$this->privChair
+                    || !$tagmap->has_sitewide
+                    || !$tagmap->is_sitewide($tag))
+                && (!$rights->allow_pc_broad
+                    || (!$this->conf->tag_seeall
+                        && (!$tagmap->has_conflict_free
+                            || !$tagmap->is_conflict_free($tag))))) {
                 return false;
             }
             $allow_administer = $rights->allow_administer;
@@ -4585,10 +4589,10 @@ class Contact {
                 || ($twiddle === 0 && $tag[1] !== "~")
                 || ($twiddle > 0
                     && (substr($tag, 0, $twiddle) == $this->contactId
-                        || $dt->is_public_peruser(substr($tag, $twiddle + 1)))))
+                        || $tagmap->is_public_peruser(substr($tag, $twiddle + 1)))))
             && ($twiddle !== false
-                || !$dt->has_hidden
-                || !$dt->is_hidden($tag)
+                || !$tagmap->has_hidden
+                || !$tagmap->is_hidden($tag)
                 || $this->can_view_hidden_tags($prow));
     }
 
@@ -4619,41 +4623,45 @@ class Contact {
         }
         $rights = $this->rights($prow);
         $tagmap = $this->conf->tags();
-        if (!($rights->allow_pc
-              && ($rights->can_administer || $this->conf->time_pc_view($prow, false)))) {
+        if (!$rights->allow_pc_broad
+            || (!$rights->allow_pc && !$tagmap->has_conflict_free)
+            || (!$rights->can_administer && !$this->conf->time_pc_view($prow, false))) {
             if ($this->privChair && $tagmap->has_sitewide) {
-                $dt = $tagmap->check($tag);
-                return $dt && $dt->sitewide && !$dt->automatic;
+                $tag = Tagger::base($tag);
+                $tw = strpos($tag, "~");
+                return ($tw === false || ($tw === 0 && $tag[1] === "~"))
+                    && ($t = $tagmap->check($tag))
+                    && $t->sitewide
+                    && !$t->automatic;
             } else {
                 return false;
             }
         }
         $tag = Tagger::base($tag);
-        $twiddle = strpos($tag, "~");
-        if ($twiddle !== false) {
-            if ($twiddle > 0
-                && substr($tag, 0, $twiddle) != $this->contactId
-                && !$rights->can_administer) {
-                return false;
-            } else if ($twiddle === 0
-                       && $tag[1] === "~") {
-                return $rights->can_administer && !$tagmap->is_automatic($tag);
-            } else {
-                return !($index < 0) || !$tagmap->is_allotment(substr($tag, $twiddle + 1));
-            }
-        } else {
+        $tw = strpos($tag, "~");
+        if ($tw === false || ($tw === 0 && $tag[1] === "~")) {
             $t = $tagmap->check($tag);
-            if (!$t) {
-                return true;
-            } else if ($t->automatic
-                       || ($t->track && !$this->privChair)
-                       || ($t->hidden && !$this->can_view_hidden_tags($prow))) {
-                return false;
-            } else {
-                return $rights->can_administer
-                    || ($this->privChair && $t->sitewide)
-                    || (!$t->readonly && !$t->rank);
-            }
+            return ($rights->allow_pc
+                    || ($t && $t->conflict_free))
+                && ($tw === false || $this->privChair)
+                && (!$t || !$t->automatic)
+                && (!$t || !$t->track || $this->privChair)
+                && (!$t || !$t->hidden || $this->can_view_hidden_tags($prow))
+                && (!$t
+                    || (!$t->readonly && !$t->rank)
+                    || $rights->can_administer
+                    || ($this->privChair && $t->sitewide));
+        } else {
+            $t = $tagmap->check(substr($tag, $tw + 1));
+            return ($rights->allow_pc
+                    || ($t && $t->conflict_free))
+                && ($tw === 0
+                    || $rights->can_administer
+                    || ($tw === strlen((string) $this->contactId)
+                        && str_starts_with($tag, (string) $this->contactId)))
+                && (!($index < 0)
+                    || !$t
+                    || !$t->allotment);
         }
     }
 
