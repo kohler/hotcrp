@@ -1116,7 +1116,7 @@ function render_feedback(msg, status) {
 
 function render_feedback_near(msg, status, e) {
     var x, c, m, $j;
-    if (typeof status === "number" && status >= -2 && $status <= 3)
+    if (typeof status === "number" && status >= -2 && status <= 3)
         status = ["urgent-note", "note", "", "warning", "error", "error"][status + 2];
     else
         status = "note";
