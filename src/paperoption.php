@@ -201,6 +201,10 @@ class PaperValue implements JsonSerializable {
     function warning($msg) {
         $this->msg($msg, MessageSet::WARNING);
     }
+    /** @return int */
+    function problem_status() {
+        return $this->_ms ? $this->_ms->problem_status() : 0;
+    }
     /** @return bool */
     function has_error() {
         return $this->_ms && $this->_ms->has_error();
