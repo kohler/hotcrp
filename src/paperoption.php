@@ -1553,6 +1553,9 @@ class Document_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->list_class = $this->list_class ?? "";
+        if ($this->id === 0 && !$conf->opt("noPapers")) {
+            $this->set_required(true);
+        }
     }
 
     function is_document() {
