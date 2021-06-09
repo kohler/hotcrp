@@ -193,7 +193,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_web(new Qrequest("POST", []), $newpaper, "submit"));
 xassert_array_eqq(array_keys($ps->diffs), ["status"], true);
 xassert($ps->execute_save());
-xassert_paper_status($ps);
+xassert_paper_status_saved_nonrequired($ps, MessageSet::WARNING);
 
 $newpaper = $user_estrin->checked_paper_by_id($ps->paperId);
 xassert($newpaper);
@@ -205,20 +205,20 @@ $aus = $newpaper->author_list();
 xassert_eqq($aus[0]->firstName, "Bobby");
 xassert_eqq($aus[0]->lastName, "Flay");
 xassert_eqq($aus[0]->email, "flay@_.com");
-xassert($newpaper->timeSubmitted > 0);
+xassert($newpaper->timeSubmitted == 0);
 xassert($newpaper->timeWithdrawn <= 0);
 xassert_eqq($newpaper->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 
 // test submitting a new paper from scratch
 $ps = new PaperStatus($Conf, $user_estrin);
-xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com"]), null, "update"));
+xassert($ps->prepare_save_paper_web((new Qrequest("POST", ["submitpaper" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_submission" => 1]))->set_file_content("submission", "%PDF-2", null, "application/pdf"), null, "update"));
 xassert_paper_status($ps);
 xassert($ps->diffs["title"]);
 xassert($ps->diffs["abstract"]);
 xassert($ps->diffs["authors"]);
 xassert($ps->diffs["contacts"]);
 xassert($ps->execute_save());
-xassert_paper_status($ps);
+xassert_paper_status_saved_nonrequired($ps);
 
 $newpaper = $user_estrin->checked_paper_by_id($ps->paperId);
 xassert($newpaper);
@@ -258,6 +258,22 @@ xassert($newpaperx->timeSubmitted <= 0);
 xassert($newpaperx->timeWithdrawn <= 0);
 xassert_eqq($newpaperx->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 
+// submitting a new paper saves as draft if PDF missing
+$ps = new PaperStatus($Conf, $user_estrin);
+xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:name_1" => "Bobby Flay", "authors:email_1" => "flay@_.com", "has_submission" => 1]), null, "update"));
+xassert_paper_status($ps);
+xassert($ps->diffs["title"]);
+xassert($ps->diffs["abstract"]);
+xassert($ps->diffs["authors"]);
+xassert($ps->diffs["contacts"]);
+xassert($ps->execute_save());
+xassert_paper_status_saved_nonrequired($ps);
+
+$newpaperx = $user_estrin->checked_paper_by_id($ps->paperId);
+xassert($newpaperx);
+xassert($newpaperx->timeSubmitted <= 0);
+
+// saving options
 $ps = new PaperStatus($Conf, $user_estrin);
 xassert($ps->prepare_save_paper_web(new Qrequest("POST", ["opt1" => "10", "has_opt1" => "1"]), $newpaper, "update"));
 xassert_array_eqq(array_keys($ps->diffs), ["calories", "status"], true);

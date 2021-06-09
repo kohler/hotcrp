@@ -572,4 +572,20 @@ function xassert_paper_status(PaperStatus $ps, $maxstatus = MessageSet::INFO) {
     }
 }
 
+function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = MessageSet::INFO) {
+    xassert($ps->save_status() !== 0);
+    if ($ps->problem_status() > $maxstatus) {
+        $asserted = false;
+        foreach ($ps->problem_list() as $mx) {
+            if ($mx->message !== "Entry required.") {
+                if (!$asserted) {
+                    xassert($ps->problem_status() <= $maxstatus);
+                    $asserted = true;
+                }
+                error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));
+            }
+        }
+    }
+}
+
 MailChecker::clear();

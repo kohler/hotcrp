@@ -1608,7 +1608,7 @@ conference.
               Chris Lilley (World Wide Web Consortium)
         Site: http://hotcrp.lcdf.org/test/paper/14?cap={{}}
 
-0 papers were accepted out of 32 submissions.
+0 papers were accepted out of {{}} submissions.
 
 Visit the submission site for reviews, comments, and related
 information. Reviews and comments are also included below.
@@ -1659,7 +1659,7 @@ conference.
               Chris Lilley (World Wide Web Consortium)
         Site: http://hotcrp.lcdf.org/test/paper/14?cap={{}}
 
-0 papers were accepted out of 32 submissions.
+0 papers were accepted out of {{}} submissions.
 
 Visit the submission site for reviews, comments, and related
 information. Reviews and comments are also included below.

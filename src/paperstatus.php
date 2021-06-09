@@ -62,16 +62,17 @@ class PaperStatus extends MessageSet {
     /** @var bool */
     private $_documents_changed;
     /** @var int */
-    private $_saved_flags;
+    private $_save_status;
     /** @var list<int> */
     private $_update_pid_dids;
     /** @var list<DocumentInfo> */
     private $_joindocs;
 
-    const SAVED_NEW = 1;
-    const SAVED_SUBMIT = 2;
-    const SAVED_NEWSUBMIT = 4;
-    const SAVED_FINALSUBMIT = 8;
+    const SAVE_STATUS_ANY = 1;
+    const SAVE_STATUS_NEW = 2;
+    const SAVE_STATUS_SUBMIT = 4;
+    const SAVE_STATUS_NEWSUBMIT = 8;
+    const SAVE_STATUS_FINALSUBMIT = 16;
 
     function __construct(Conf $conf, Contact $user = null, $options = array()) {
         $this->conf = $conf;
@@ -106,6 +107,7 @@ class PaperStatus extends MessageSet {
         $this->_conflict_ins = $this->_register_users = $this->_created_contacts = null;
         $this->_paper_submitted = $this->_documents_changed = false;
         $this->_update_pid_dids = $this->_joindocs = [];
+        $this->_save_status = 0;
     }
 
     /** @param callable(object,DocumentInfo,int,PaperStatus):(?bool) $cb */
@@ -605,7 +607,6 @@ class PaperStatus extends MessageSet {
             $pj_draft = true;
         }
 
-        $submitted = $pj_submitted;
         if (isset($pj->status->submitted_at)) {
             $submitted_at = $pj->status->submitted_at;
         } else if ($this->prow) {
@@ -613,6 +614,7 @@ class PaperStatus extends MessageSet {
         } else {
             $submitted_at = 0;
         }
+
         if ($pj_withdrawn) {
             if ($pj_submitted && $submitted_at <= 0) {
                 $submitted_at = -100;
@@ -647,6 +649,7 @@ class PaperStatus extends MessageSet {
             $this->save_paperf("timeWithdrawn", 0);
             $this->mark_diff("status");
         }
+
         $this->_paper_submitted = $pj_submitted && !$pj_withdrawn;
     }
 
@@ -1180,6 +1183,9 @@ class PaperStatus extends MessageSet {
 
     /** @return bool */
     function execute_save() {
+        assert($this->_save_status === 0);
+        $this->_save_status = self::SAVE_STATUS_ANY;
+
         $dataOverflow = $this->prow ? $this->prow->dataOverflow : null;
         if (!empty($this->_paper_overflow_upd)) {
             $dataOverflow = $dataOverflow ?? [];
@@ -1196,7 +1202,6 @@ class PaperStatus extends MessageSet {
                 $this->_paper_upd["dataOverflow"] = $new_value;
             }
         }
-        $this->_saved_flags = 0;
 
         if (!empty($this->_paper_upd)) {
             $this->save_paperf("timeModified", Conf::$now);
@@ -1233,7 +1238,7 @@ class PaperStatus extends MessageSet {
                     return false;
                 }
                 $this->paperId = (int) $result->insert_id;
-                $this->_saved_flags |= self::SAVED_NEW;
+                $this->_save_status |= self::SAVE_STATUS_NEW;
             }
         }
 
@@ -1258,12 +1263,12 @@ class PaperStatus extends MessageSet {
 
         // track submit-type flags
         if ($this->_paper_submitted) {
-            $this->_saved_flags |= self::SAVED_SUBMIT | ($was_submitted ? 0 : self::SAVED_NEWSUBMIT);
+            $this->_save_status |= self::SAVE_STATUS_SUBMIT | ($was_submitted ? 0 : self::SAVE_STATUS_NEWSUBMIT);
         }
         if (isset($this->_paper_upd["timeFinalSubmitted"])
             ? $this->_paper_upd["timeFinalSubmitted"] > 0
             : $this->prow && $this->prow->timeFinalSubmitted > 0) {
-            $this->_saved_flags |= self::SAVED_FINALSUBMIT;
+            $this->_save_status |= self::SAVE_STATUS_FINALSUBMIT;
         }
 
         // update automatic tags
@@ -1280,22 +1285,23 @@ class PaperStatus extends MessageSet {
 
     function log_save_activity(Contact $user, $action, $via = null) {
         // log message
+        assert($this->_save_status !== 0);
         $actions = [];
-        if ($this->_saved_flags & self::SAVED_NEW) {
+        if (($this->_save_status & self::SAVE_STATUS_NEW) !== 0) {
             $actions[] = "started";
         }
-        if ($this->_saved_flags & self::SAVED_NEWSUBMIT) {
+        if (($this->_save_status & self::SAVE_STATUS_NEWSUBMIT) !== 0) {
             $actions[] = "submitted";
-        } else if (($this->_saved_flags & self::SAVED_NEW) === 0 && $this->diffs) {
+        } else if (($this->_save_status & self::SAVE_STATUS_NEW) === 0 && $this->diffs) {
             $actions[] = "edited";
         }
         $logtext = "Paper " . join(", ", $actions);
         if ($action === "final") {
             $logtext .= " final";
-            if (($this->_saved_flags & self::SAVED_FINALSUBMIT) === 0) {
+            if (($this->_save_status & self::SAVE_STATUS_FINALSUBMIT) === 0) {
                 $logtext .= " draft";
             }
-        } else if (($this->_saved_flags & self::SAVED_SUBMIT) === 0) {
+        } else if (($this->_save_status & self::SAVE_STATUS_SUBMIT) === 0) {
             $logtext .= " draft";
         }
         if ($via) {
@@ -1328,5 +1334,10 @@ class PaperStatus extends MessageSet {
         } else {
             return false;
         }
+    }
+
+    /** @return int */
+    function save_status() {
+        return $this->_save_status;
     }
 }

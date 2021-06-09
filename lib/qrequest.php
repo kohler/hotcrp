@@ -205,14 +205,17 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function contains($key) {
         return property_exists($this, $key);
     }
-    /** @param string $name */
+    /** @param string $name
+     * @return $this */
     function set_file($name, $finfo) {
         $this->____files[$name] = $finfo;
+        return $this;
     }
     /** @param string $name
      * @param string $content
      * @param ?string $filename
-     * @param ?string $mimetype */
+     * @param ?string $mimetype
+     * @return $this */
     function set_file_content($name, $content, $filename = null, $mimetype = null) {
         $this->____files[$name] = [
             "name" => $filename ?? "__set_file_content.$name",
@@ -221,6 +224,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             "content" => $content,
             "error" => 0
         ];
+        return $this;
     }
     /** @return bool */
     function has_files() {
