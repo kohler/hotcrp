@@ -653,8 +653,8 @@ class PaperTable {
         echo '<div class="ready-container ',
             $ready_open ? "foldo" : "foldc",
             '"><div class="checki fx"><span class="checkc">',
-            Ht::checkbox("submitpaper", 1, $checked, ["class" => "uich js-check-submittable", "disabled" => !$ready_open]),
-            " </span>";
+            Ht::checkbox("submitpaper", 1, $checked, ["disabled" => !$ready_open]),
+            "</span>";
         if ($this->conf->setting("sub_freeze")) {
             echo Ht::label("<strong>" . $this->conf->_("The submission is complete") . "</strong>"),
                 '<p class="settings-ap hint">You must complete the submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</p>';
@@ -669,12 +669,7 @@ class PaperTable {
         if ($accepts !== null && count($accepts) == 1) {
             $t .= ' accept="' . $accepts[0]->mimetype . '"';
         }
-        $t .= ' size="30" class="';
-        $k = ["uich", "document-uploader"];
-        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
-            $k[] = "js-check-submittable primary-document";
-        }
-        return $t . join(" ", $k) . '">';
+        return $t . ' size="30" class="uich document-uploader">';
     }
 
     function render_abstract(FieldRender $fr, PaperOption $o) {
@@ -1905,7 +1900,7 @@ class PaperTable {
         }
         $form_js = [
             "id" => "form-paper",
-            "class" => "need-unload-protection ui-submit js-submit-paper",
+            "class" => "need-unload-protection uich ui-submit js-submit-paper",
             "data-alert-toggle" => "paper-alert"
         ];
         if ($this->prow->timeSubmitted > 0) {
