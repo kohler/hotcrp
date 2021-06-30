@@ -150,7 +150,7 @@ class Signin_Partial {
         $is_external_login = $user->conf->external_login();
         echo '<div class="', Ht::control_class("email", "f-i fx"), '">',
             Ht::label($is_external_login ? "Username" : "Email", "signin_email"),
-            Ht::feedback_at("email"),
+            Ht::render_feedback_at("email"),
             Ht::entry("email", (string) $qreq->email, [
                 "size" => 36, "id" => "signin_email", "class" => "fullw",
                 "autocomplete" => "username", "tabindex" => 1,
@@ -171,7 +171,7 @@ class Signin_Partial {
         }
         $password_reset = $user->session("password_reset");
         echo Ht::label("Password", "signin_password"),
-            Ht::feedback_at("password"),
+            Ht::render_feedback_at("password"),
             Ht::password("password",
                 Ht::problem_status_at("password") !== 1 ? "" : $qreq->password, [
                 "size" => 36, "id" => "signin_password", "class" => "fullw",
@@ -271,8 +271,8 @@ class Signin_Partial {
             '<label for="', $k, '">',
             ($k === "email" ? "Email" : "Email or password reset code"),
             '</label>',
-            Ht::feedback_at("resetcap"),
-            Ht::feedback_at("email"),
+            Ht::render_feedback_at("resetcap"),
+            Ht::render_feedback_at("email"),
             Ht::entry($k, $qreq[$k], [
                 "size" => 36, "id" => $k, "class" => "fullw",
                 "autocomplete" => $k === "email" ? $k : null,
@@ -525,13 +525,13 @@ class Signin_Partial {
     static function render_reset_form_password() {
         echo '<div class="', Ht::control_class("password", "f-i"), '">',
             '<label for="password">New password</label>',
-            Ht::feedback_at("password"),
+            Ht::render_feedback_at("password"),
             Ht::password("password", "", ["class" => "fullw", "size" => 36, "id" => "password", "autocomplete" => "new-password", "autofocus" => true]),
             '</div>',
 
             '<div class="', Ht::control_class("password2", "f-i"), '">',
             '<label for="password2">Repeat new password</label>',
-            Ht::feedback_at("password2"),
+            Ht::render_feedback_at("password2"),
             Ht::password("password2", "", ["class" => "fullw", "size" => 36, "id" => "password2", "autocomplete" => "new-password"]),
             '</div>';
     }

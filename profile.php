@@ -84,12 +84,12 @@ function change_email_by_capability($Qreq) {
                 '</div>';
         }
         echo '<div class="', Ht::control_class("changeemail", "f-i"), '"><label for="changeemail">Change code</label>',
-            Ht::feedback_at("changeemail"),
+            Ht::render_feedback_at("changeemail"),
             Ht::entry("changeemail", $Qreq->changeemail == "1" ? "" : $Qreq->changeemail, ["id" => "changeemail", "class" => "fullw", "autocomplete" => "one-time-code"]),
             '</div>';
         if ($newcdbu) {
             echo '<div class="', Ht::control_class("password", "f-i"), '"><label for="password">Password for ', htmlspecialchars($newemail), '</label>',
-            Ht::feedback_at("password"),
+            Ht::render_feedback_at("password"),
             Ht::password("password", "", ["autocomplete" => "password", "class" => "fullw"]),
             '</div>';
         }
