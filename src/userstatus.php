@@ -1361,14 +1361,22 @@ class UserStatus extends MessageSet {
         if ($us->viewer->can_change_password($us->user)) {
             $us->render_section("Change password");
             $pws = $us->_req_passwords ?? ["", ""];
+            $open = $pws[0] !== "" || $pws[1] !== ""
+                || $us->has_problem_at("upassword") || $us->has_problem_at("upassword2");
+            echo '<div class="has-fold foldc js-unfold-focus">';
+            if (!$open) {
+                echo '<div class="fn">',
+                    Ht::button("Change password", ["class" => "ui js-foldup need-profile-current-password", "disabled" => true]),
+                    '</div><div class="fx">';
+            }
             echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
                 '<label for="upassword">New password</label>',
-                Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password"]),
+                Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password want-focus"]),
                 '</div>',
                 '<div class="', $us->control_class("password", "f-i w-text"), '">',
                 '<label for="upassword2">Repeat new password</label>',
                 Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password"]),
-                '</div>';
+                '</div>', $open ? '' : '</div>', '</div>';
         }
     }
 
