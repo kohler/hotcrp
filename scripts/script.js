@@ -57,7 +57,7 @@ if ("classList" in document.createElement("span")
         $(e).toggleClass(k, v);
     };
     classList = function (e) {
-        var k = $.trim(e.className);
+        var k = e.className.trim();
         return k === "" ? [] : k.split(/\s+/);
     };
 }
@@ -8721,17 +8721,20 @@ handle_ui.on("js-send-user-accountinfo", function (event) {
         });
 });
 
-var profile_ui = (function ($) {
-return function (event) {
-    if (hasClass(this, "js-role")) {
-        var $f = $(this.form),
-            pctype = $f.find("input[name=pctype]:checked").val(),
-            ass = $f.find("input[name=ass]:checked").length;
-        foldup.call(this, null, {n: 1, f: !pctype || pctype === "none"});
-        foldup.call(this, null, {n: 2, f: (!pctype || pctype === "none") && ass === 0});
+handle_ui.on("js-profile-role", function () {
+    var $f = $(this.form),
+        pctype = $f.find("input[name=pctype]:checked").val(),
+        ass = $f.find("input[name=ass]:checked").length;
+    foldup.call(this, null, {n: 1, f: !pctype || pctype === "none"});
+    foldup.call(this, null, {n: 2, f: (!pctype || pctype === "none") && ass === 0});
+});
+
+handle_ui.on("js-profile-current-password", function () {
+    if (this.value.trim() !== "") {
+        $(this.form).find(".need-profile-current-password").prop("disabled", false);
+        removeClass(this, "uii");
     }
-};
-})($);
+});
 
 
 // review UI
@@ -10071,7 +10074,6 @@ window.hotcrp = {
     onload: hotcrp_load,
     paper_edit_conditions: edit_paper_ui.edit_condition,
     prepare_editable_paper: edit_paper_ui.prepare,
-    profile_ui: profile_ui,
     render_list: plinfo.render_needed,
     render_text_page: render_text.on_page,
     scorechart: scorechart,

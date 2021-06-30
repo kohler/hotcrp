@@ -37,8 +37,6 @@ class UserStatus extends MessageSet {
     private $_gxt;
     /** @var ?bool */
     private $_req_security;
-    /** @var ?bool */
-    private $_req_need_security;
     /** @var ?array{string,string} */
     private $_req_passwords;
 
@@ -1136,21 +1134,28 @@ class UserStatus extends MessageSet {
 
 
     static function request_security(UserStatus $us, $cj, Qrequest $qreq, $uf) {
-        $us->_req_security = $us->_req_need_security = false;
-        if ($us->allow_security()
-            && isset($qreq->oldpassword)) {
-            $info = $us->viewer->check_password_info(trim((string) $qreq->oldpassword));
-            $us->_req_security = $info["ok"];
-            $us->request_group("security");
-            if (!$us->_req_security && $us->_req_need_security) {
-                $us->error_at("oldpassword", "Incorrect current password. Changes to other security settings were ignored.");
+        if ($us->allow_security()) {
+            if (trim($qreq->oldpassword ?? "") !== "") {
+                $us->has_req_security($qreq);
             }
+            $us->request_group("security");
         }
     }
 
     /** @return bool */
-    function has_req_security() {
-        $this->_req_need_security = true;
+    function has_req_security(Qrequest $qreq) {
+        if ($this->_req_security === null) {
+            $this->_req_security = false;
+            if ($this->allow_security()
+                && isset($qreq->oldpassword)
+                && trim($qreq->oldpassword) !== "") {
+                $info = $this->viewer->check_password_info(trim((string) $qreq->oldpassword));
+                $this->_req_security = $info["ok"];
+            }
+            if (!$this->_req_security) {
+                $this->error_at("oldpassword", "Incorrect current password. Changes to other security settings were ignored.");
+            }
+        }
         return $this->_req_security;
     }
 
@@ -1160,7 +1165,7 @@ class UserStatus extends MessageSet {
         $us->_req_passwords = [(string) $qreq->upassword, (string) $qreq->upassword2];
         if ($pw === "" && $pw2 === "") {
             // do nothing
-        } else if ($us->has_req_security()
+        } else if ($us->has_req_security($qreq)
                    && $us->viewer->can_change_password($us->user)) {
             if ($pw !== $pw2) {
                 $us->error_at("password", "Those passwords do not match.");
@@ -1339,15 +1344,16 @@ class UserStatus extends MessageSet {
     }
 
     static function render_current_password(UserStatus $us, Qrequest $qreq) {
-        echo '<p class="w-text">Re-enter your current password to make changes to ',
-            $us->self ? "" : "other users’ ",
-            'security settings.</p>',
-            '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',
+        $original_ignore_msgs = $us->swap_ignore_messages(false);
+        $us->msg_at("oldpassword", "Enter your current password to make changes to security settings.", 1);
+        $us->swap_ignore_messages($original_ignore_msgs);
+        echo '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',
             '<label for="oldpassword">',
             $us->self ? "Current password" : "Current password for " . htmlspecialchars($us->viewer->email),
             '</label>',
+            $us->render_feedback_at("oldpassword"),
             Ht::entry("viewer_email", $us->viewer->email, ["autocomplete" => "username", "class" => "hidden ignore-diff", "readonly" => true]),
-            Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "oldpassword"]),
+            Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff uii js-profile-current-password", "id" => "oldpassword", "autofocus" => true]),
             '</div>';
     }
 
@@ -1357,11 +1363,11 @@ class UserStatus extends MessageSet {
             $pws = $us->_req_passwords ?? ["", ""];
             echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
                 '<label for="upassword">New password</label>',
-                Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]),
+                Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password"]),
                 '</div>',
                 '<div class="', $us->control_class("password", "f-i w-text"), '">',
                 '<label for="upassword2">Repeat new password</label>',
-                Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password")]),
+                Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password"]),
                 '</div>';
         }
     }
@@ -1428,10 +1434,10 @@ class UserStatus extends MessageSet {
         foreach (["chair" => "PC chair", "pc" => "PC member",
                   "none" => "Not on the PC"] as $k => $v) {
             echo '<label class="checki"><span class="checkc">',
-                Ht::radio("pctype", $k, $pcrole === $k, ["class" => "js-role", "data-default-checked" => $cpcrole === $k]),
+                Ht::radio("pctype", $k, $pcrole === $k, ["class" => "uich js-profile-role", "data-default-checked" => $cpcrole === $k]),
                 '</span>', $v, "</label>\n";
         }
-        Ht::stash_script('$(".js-role").on("change", hotcrp.profile_ui);$(function(){$(".js-role").first().trigger("change")})');
+        Ht::stash_script('$(function(){$(".js-profile-role").first().trigger("change")})');
 
         echo "</td><td><span class=\"sep\"></span></td><td>";
         $is_ass = $cis_ass = ($us->user->roles & Contact::ROLE_ADMIN) !== 0;
@@ -1439,7 +1445,7 @@ class UserStatus extends MessageSet {
             $is_ass = isset($qreq->ass);
         }
         echo '<div class="checki"><label><span class="checkc">',
-            Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "js-role"]),
+            Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "uich js-profile-role"]),
             '</span>Sysadmin</label>',
             '<p class="f-h">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</p></div></td></tr></table>', "\n";
     }

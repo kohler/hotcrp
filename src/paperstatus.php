@@ -219,8 +219,7 @@ class PaperStatus extends MessageSet {
         }
         $this->user = $user;
 
-        $original_no_msgs = $this->ignore_msgs;
-        $this->ignore_msgs = true;
+        $original_no_msgs = $this->swap_ignore_messages(true);
 
         $this->prow = $prow;
         $this->paperId = $prow->paperId;
@@ -281,7 +280,7 @@ class PaperStatus extends MessageSet {
             $pj->final_submitted_at = $prow->timeFinalSubmitted;
         }
 
-        $this->ignore_msgs = $original_no_msgs;
+        $this->swap_ignore_messages($original_no_msgs);
         $this->user = $original_user;
         return $pj;
     }

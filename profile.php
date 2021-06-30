@@ -596,7 +596,7 @@ if (!$newProfile && !$useRequest) {
 
 // compute current form json
 if ($useRequest) {
-    $UserStatus->ignore_msgs = true;
+    $UserStatus->swap_ignore_messages(true);
 } else {
     if (($cdbu = $Acct->contactdb_user())) {
         $Acct->import_prop($cdbu);
