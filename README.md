@@ -1,13 +1,12 @@
 HotCRP Conference Review Software [![Build Status](https://travis-ci.com/kohler/hotcrp.svg?branch=master)](https://travis-ci.com/kohler/hotcrp)
 =================================
 
-HotCRP is awesome software for managing review processes, especially
-for academic conferences. It supports paper submission, review and
-comment management, rebuttals, and the PC meeting. Its main strengths
-are flexibility and ease of use in the review process, especially
-through smart paper search and an extensive tagging facility. It is
-widely used in computer science conferences and for internal review
-processes at several large companies.
+HotCRP is awesome software for managing review processes, especially for
+academic conferences. It supports paper submission, review and comment
+management, rebuttals, and the PC meeting. Its main strengths are flexibility
+and ease of use in the review process, especially through smart paper search
+and an extensive tagging facility. It has been widely used in computer science
+conferences and for internal review processes at several large companies.
 
 Multitrack conferences with per-track deadlines should use other software.
 
@@ -22,7 +21,7 @@ HotCRP runs on Unix, including Mac OS X. It requires the following
 software:
 
 * Nginx, http://nginx.org/ \
-  (You may be able to use another web server that works with PHP.)
+  (Or [Apache](https://httpd.apache.org), or another web server that works with PHP)
 * PHP version 7.0 or higher, http://php.net/
   - Including MySQL support, php-fpm, php-gmp, and php-intl
 * MySQL version 5 or higher, http://mysql.org/
