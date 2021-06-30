@@ -1817,10 +1817,6 @@ class PaperSearch {
         return !empty($this->_warnings);
     }
     /** @return list<string> */
-    function warning_texts() {
-        return $this->_warnings ?? [];
-    }
-    /** @return list<string> */
     function problem_texts() {
         return $this->_warnings ?? [];
     }

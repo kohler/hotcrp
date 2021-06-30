@@ -333,18 +333,13 @@ class MessageSet {
         } else {
             $sclass = "";
         }
-        if ($sclass !== "") {
-            return $rest . ($rest === "" ? $prefix : " " . $prefix) . $sclass;
+        if ($sclass !== "" && $rest !== "") {
+            return "$rest $prefix$sclass";
+        } else if ($sclass !== "") {
+            return "$prefix$sclass";
         } else {
             return $rest;
         }
-    }
-    /** @param string $message
-     * @param int $status
-     * @return string */
-    static function render_feedback_p($message, $status) {
-        $k = self::status_class($status, "feedback", "is-");
-        return "<p class=\"{$k}\">{$message}</p>";
     }
     /** @param ?string|false $field
      * @param string $rest
@@ -371,21 +366,37 @@ class MessageSet {
     function message_fields() {
         return array_keys($this->errf);
     }
-    /** @return list<string> */
-    function error_fields() {
-        if ($this->problem_status >= self::ERROR) {
-            return array_keys(array_filter($this->errf, function ($v) { return $v >= self::ERROR; }));
-        } else {
-            return [];
+    /** @param int $min_status
+     * @return list<string> */
+    private function min_status_fields($min_status) {
+        $fs = [];
+        if ($this->problem_status >= $min_status) {
+            foreach ($this->errf as $f => $v) {
+                if ($v >= $min_status) {
+                    $fs[] = $f;
+                }
+            }
+        }
+        return $fs;
+    }
+    /** @param int $min_status
+     * @return \Generator<MessageItem> */
+    private function min_status_list($min_status) {
+        if ($this->problem_status >= $min_status) {
+            foreach ($this->msgs as $mx) {
+                if ($mx->status >= $min_status) {
+                    yield $mx;
+                }
+            }
         }
     }
     /** @return list<string> */
-    function warning_fields() {
-        return array_keys(array_filter($this->errf, function ($v) { return $v == self::WARNING; }));
+    function error_fields() {
+        return $this->min_status_fields(self::ERROR);
     }
     /** @return list<string> */
     function problem_fields() {
-        return array_keys(array_filter($this->errf, function ($v) { return $v >= self::WARNING; }));
+        return $this->min_status_fields(self::WARNING);
     }
     /** @return list<MessageItem> */
     function message_list() {
@@ -395,55 +406,54 @@ class MessageSet {
     function message_texts() {
         return self::list_texts($this->msgs);
     }
-    /** @return iterable<MessageItem> */
+    /** @return \Generator<MessageItem> */
     function error_list() {
-        if ($this->problem_status >= self::ERROR) {
-            return array_filter($this->msgs, function ($mx) { return $mx->status >= self::ERROR; });
-        } else {
-            return [];
-        }
+        return $this->min_status_list(self::ERROR);
     }
     /** @return list<string> */
     function error_texts() {
         return self::list_texts($this->error_list());
     }
-    /** @return iterable<MessageItem> */
-    function warning_list() {
-        if ($this->problem_status >= self::WARNING) {
-            return array_filter($this->msgs, function ($mx) { return $mx->status == self::WARNING; });
-        } else {
-            return [];
-        }
-    }
-    /** @return list<string> */
-    function warning_texts() {
-        return self::list_texts($this->warning_list());
-    }
-    /** @return iterable<MessageItem> */
+    /** @return \Generator<MessageItem> */
     function problem_list() {
-        if ($this->problem_status >= self::WARNING) {
-            return array_filter($this->msgs, function ($mx) { return $mx->status >= self::WARNING; });
-        } else {
-            return [];
-        }
+        return $this->min_status_list(self::WARNING);
     }
     /** @return list<string> */
     function problem_texts() {
         return self::list_texts($this->problem_list());
     }
     /** @param string $field
-     * @return iterable<MessageItem> */
+     * @return \Generator<MessageItem> */
     function message_list_at($field) {
         $field = $this->canonfield[$field] ?? $field;
         if (isset($this->errf[$field])) {
-            return array_filter($this->msgs, function ($mx) use ($field) { return $mx->field === $field; });
-        } else {
-            return [];
+            foreach ($this->msgs as $mx) {
+                if ($mx->field === $field) {
+                    yield $mx;
+                }
+            }
         }
     }
     /** @param string $field
      * @return list<string> */
     function message_texts_at($field) {
         return self::list_texts($this->message_list_at($field));
+    }
+
+    /** @param string $message
+     * @param int $status
+     * @return string */
+    static function render_feedback_p($message, $status) {
+        $k = self::status_class($status, "feedback", "is-");
+        return "<p class=\"{$k}\">{$message}</p>";
+    }
+    /** @param string $field
+     * @return string */
+    function render_feedback_at($field) {
+        $t = "";
+        foreach ($this->message_list_at($field) as $mx) {
+            $t .= self::render_feedback_p($mx->message, $mx->status);
+        }
+        return $t;
     }
 }
