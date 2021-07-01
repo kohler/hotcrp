@@ -7986,10 +7986,19 @@ $(background_format_check);
 
 handle_ui.on("change.js-submit-paper", function (event) {
     if (event.target && (event.target.name === "submission" || event.target.name === "final" || event.target.name === "submitpaper")) {
-        var readye = this.elements.submitpaper,
-            doce = this.elements.final || this.elements.submission,
-            was = this.getAttribute("data-submitted"),
-            is = was || (doce && !!doce.value);
+        var readye = this.elements.submitpaper, was, is;
+        was = is = this.getAttribute("data-submitted");
+        if (!was) {
+            var e0 = this.elements.final || this.elements.submission;
+            if (e0 && e0.value) {
+                is = true;
+            } else if ((e0 = this.elements.has_final || this.elements.has_submission)) {
+                e0 = e0.nextSibling;
+                if (!hasClass(e0, "has-document"))
+                    throw new Error("bad has-document");
+                is = e0.hasAttribute("data-docid");
+            }
+        }
         if (!was)
             fold($(this).find(".ready-container"), !is);
         if (readye && readye.type === "checkbox" && is) {
