@@ -7997,6 +7997,8 @@ handle_ui.on("change.js-submit-paper", function (event) {
                 if (!hasClass(e0, "has-document"))
                     throw new Error("bad has-document");
                 is = e0.hasAttribute("data-docid");
+            } else {
+                is = true;
             }
         }
         if (!was)
