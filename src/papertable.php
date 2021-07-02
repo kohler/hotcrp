@@ -411,7 +411,7 @@ class PaperTable {
         } else {
             $for = $rest["for"] ?? false;
         }
-        echo '<div class="pfe';
+        echo '<div class="pf pfe';
         if (!$opt->test_exists($this->prow) || ($rest["hidden"] ?? false)) {
             echo ' hidden';
         }

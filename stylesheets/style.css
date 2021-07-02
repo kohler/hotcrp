@@ -3242,13 +3242,13 @@ h3.pavfn, h3.psfn, h3.revfn {
 }
 .field-required:after {
 	content: " *";
-	color: #ff0000;
+	color: #ee0000;
 	font-variant: normal;
 	font-weight: normal;
 	text-transform: none;
 }
 .field-required-explanation {
-	color: #ff0000;
+	color: #ee0000;
 }
 .longtext-fader {
 	z-index: 1;
