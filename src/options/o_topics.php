@@ -54,7 +54,8 @@ class Topics_PaperOption extends PaperOption {
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         $vs = [];
         foreach ($prow->conf->topic_set() as $tid => $tname) {
-            if (+$qreq["top$tid"] > 0) {
+            $v = $qreq["topics:$tid"] ?? $qreq["top$tid"] ?? ""; // backward compat
+            if ($v !== "" && $v !== "0") {
                 $vs[] = $tid;
             }
         }
@@ -129,7 +130,7 @@ class Topics_PaperOption extends PaperOption {
                     $arg["data-default-checked"] = isset($ptopics[$tg->tid]);
                     $checked = in_array($tg->tid, $reqov->value_list());
                     echo '<label class="checki cteltx"><span class="checkc">',
-                        Ht::checkbox("top{$tg->tid}", 1, $checked, $arg),
+                        Ht::checkbox("topics:{$tg->tid}", 1, $checked, $arg),
                         '</span>', $topics->unparse_name_html($tg->tid), '</label>';
                 } else {
                     echo '<div class="cteltx"><span class="topicg">',

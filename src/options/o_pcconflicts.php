@@ -210,6 +210,7 @@ class PCConflicts_PaperOption extends PaperOption {
             echo '"><label>';
 
             $js = ["id" => "pcc$id", "disabled" => $readonly];
+            $hidden = "";
             if (Conflict::is_author($pct)
                 || (!$admin && Conflict::is_pinned($pct))) {
                 if ($selectors) {
@@ -242,12 +243,12 @@ class PCConflicts_PaperOption extends PaperOption {
                 $js["class"] = "uic js-range-click conflict-entry";
                 $checked = Conflict::is_conflicted($ct);
                 echo '<span class="checkc">',
-                    Ht::hidden("has_pcc$id", 1),
                     Ht::checkbox("pcc$id", $checked ? $ct : Conflict::GENERAL, $checked, $js),
                     '</span>';
+                $hidden = Ht::hidden("has_pcc$id", 1);
             }
 
-            echo $label, "</label>";
+            echo $label, "</label>", $hidden;
             if ($pcconfmatch) {
                 echo $pcconfmatch[0];
             }

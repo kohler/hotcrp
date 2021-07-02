@@ -8485,7 +8485,7 @@ edit_conditions.topic = function (ec, form) {
         return has_topics === ec.topics;
     }
     for (var i = 0; i !== ec.topics.length; ++i)
-        if (form.elements["top" + ec.topics[i]].checked)
+        if (form.elements["topics:" + ec.topics[i]].checked)
             return true;
     return false;
 };
