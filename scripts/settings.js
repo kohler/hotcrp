@@ -387,7 +387,7 @@ function create_field_view(fieldj) {
     var hc = new HtmlCollector;
     hc.push('<div>', '</div>');
 
-    hc.push('<h3 class="revet">', '</h3>');
+    hc.push('<h3 class="rfehead">', '</h3>');
     hc.push('<label class="revfn'.concat(fieldj.required ? " field-required" : "", '">', escape_entities(fieldj.name || "<unnamed>"), '</label>'));
     var t = field_visibility_text(fieldj.visibility), i;
     if (t)

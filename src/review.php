@@ -762,8 +762,8 @@ class ReviewForm implements JsonSerializable {
                 $rval = $f->normalize_option_value($rval);
             }
 
-            echo '<div class="rv rveg" data-rf="', $f->uid(), '"><h3 class="',
-                $rvalues ? $rvalues->control_class($fid, "revet") : "revet";
+            echo '<div class="rf rfe" data-rf="', $f->uid(), '"><h3 class="',
+                $rvalues ? $rvalues->control_class($fid, "rfehead") : "rfehead";
             if ($f->has_options) {
                 echo '" id="', $f->id;
             }
@@ -1296,7 +1296,7 @@ $blind\n";
 
         // blind?
         if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
-            echo '<div class="rveg"><h3 class="revet checki"><label class="revfn">',
+            echo '<div class="rge"><h3 class="rfehead checki"><label class="revfn">',
                 Ht::hidden("has_blind", 1),
                 '<span class="checkc">', Ht::checkbox("blind", 1, ($rvalues ? !!($rvalues->req["blind"] ?? null) : $rrow->reviewBlind)), '</span>',
                 "Anonymous review</span></h3>\n",

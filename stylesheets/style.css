@@ -537,8 +537,7 @@ td.g {
 .c, .clear {
 	clear: both;
 }
-.clearfix:after, .pst:after, .pavt:after, .papet:after,
-.revvt:after, .revet:after,
+.clearfix:after, .pst:after, .pavt:after, .revvt:after,
 .cmteditinfo:after, .aa:after, .aab:after,
 .entryi:after, .popup-actions:after, .modal-content:after, .f-horizontal:after {
 	clear: both;
@@ -3215,10 +3214,10 @@ a.badge:active {
 	margin: 0 -5px 0.15em;
 	padding: 0 5px;
 }
-.papfn, .pavfn, .psfn, .revfn {
+.pavfn, .psfn, .revfn {
 	font-weight: bold;
 }
-h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
+h3.pavfn, h3.psfn, h3.revfn {
 	font-size: inherit;
 	display: inline;
 	margin: 0;
@@ -3226,20 +3225,17 @@ h3.papfn, h3.pavfn, h3.psfn, h3.revfn {
 .pavfnsp:after {
 	content: " ";
 }
-.papet {
+.pfehead {
 	font-size: inherit;
 	color: #313168;
 	margin-top: 0;
 	margin-bottom: 0.25rem;
 }
-.papet.papet-separator {
+.pf-separator > .pfehead {
 	font-size: larger;
 	margin-top: 1rem;
 }
-.papet .papfn {
-	float: left;
-}
-.papfn .n {
+.pfehead .n {
 	font-variant: normal;
 	font-weight: normal;
 	text-transform: none;
@@ -3397,7 +3393,7 @@ a:hover .t-editor,
 .rve {
 	margin-top: 16px;
 }
-.rveg {
+.rfe, .rge {
 	margin-bottom: 36px;
 }
 .revvt {
@@ -3406,11 +3402,11 @@ a:hover .t-editor,
 .revv.revscore {
 	margin-top: -2px;
 }
-.revet {
+.rfehead {
 	font-size: inherit;
 	margin-bottom: 0.25rem;
 }
-.revet > .revfn {
+.rfehead > .revfn {
 	color: #683131;
 }
 .field-visibility {
@@ -3454,32 +3450,29 @@ a:hover .t-editor,
 	grid-template-columns: 1fr minmax(1.5rem, 3.33%) 1fr calc(96.67% - 696px);
 	margin-bottom: -1.25rem;
 }
-.rvg, .rvl, .rvr {
+.rfd0, .rfd1, .rfd2 {
 	margin-bottom: 1.25rem;
 	margin-right: auto;
 }
-.rvl, .rvr {
+.rfd1, .rfd2 {
 	max-width: 348px;
 }
-.rvg {
+.rfd0 {
 	grid-column: 1 / 5;
 }
-.rvl {
+.rfd1 {
 	grid-column: 1 / 2;
 }
-.rvr {
+.rfd2 {
 	grid-column: 3 / 4;
 }
-.papeg {
+.pfe, .pge {
 	margin-bottom: 2.5rem;
 }
-.papeg-separator {
+.pfe.pf-separator {
 	margin-top: 3rem;
 	border-top: 3px solid #9e9ece;
 	max-width: 720px;
-}
-.aab + .papeg {
-	margin-top: 1rem;
 }
 .settingsgroup {
 	margin: 12px -24px;

@@ -1320,9 +1320,9 @@ class Separator_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        echo '<div class="papeg papeg-separator">';
+        echo '<div class="pfe pf-separator">';
         if (($h = $pt->edit_title_html($this))) {
-            echo '<h3 class="papet papet-separator">', $h, '</h3>';
+            echo '<h3 class="pfehead">', $h, '</h3>';
         }
         echo '</div>';
     }

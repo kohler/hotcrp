@@ -411,7 +411,7 @@ class PaperTable {
         } else {
             $for = $rest["for"] ?? false;
         }
-        echo '<div class="papeg';
+        echo '<div class="pfe';
         if (!$opt->test_exists($this->prow) || ($rest["hidden"] ?? false)) {
             echo ' hidden';
         }
@@ -419,7 +419,7 @@ class PaperTable {
             echo ' want-fieldchange has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode($opt->exists_script_expression($this->prow)));
             Ht::stash_script('$(hotcrp.paper_edit_conditions)', 'edit_condition');
         }
-        echo '"><h3 class="', $this->control_class($opt->formid, "papet");
+        echo '"><h3 class="', $this->control_class($opt->formid, "pfehead");
         if ($for === "checkbox") {
             echo " checki";
         }
@@ -429,11 +429,8 @@ class PaperTable {
         if (($id = $rest["id"] ?? false)) {
             echo '" id="' . $id;
         }
-        $klass = "papfn";
-        if ($opt->required) {
-            $klass .= " field-required";
-        }
-        echo '">', Ht::label($heading ?? $this->edit_title_html($opt), $for === "checkbox" ? false : $for, ["class" => $klass]);
+        echo '">', Ht::label($heading ?? $this->edit_title_html($opt),
+            $for === "checkbox" ? false : $for, ["class" => $opt->required ? "field-required" : ""]);
         if ($opt->visibility() === PaperOption::VIS_ADMIN) {
             echo '<div class="field-visibility">(hidden from reviewers)</div>';
         }
@@ -1674,7 +1671,7 @@ class PaperTable {
             }
         }
         if ($this->edit_status->has_messages_at(":main")) {
-            echo '<div class="papeg">', $this->messages_at(":main"), '</div>';
+            echo '<div class="pge">', $this->messages_at(":main"), '</div>';
         }
     }
 

@@ -3251,7 +3251,7 @@ function jump_hash(hash, focus) {
     }
     // find destination element
     e = hash ? document.getElementById(hash) : null;
-    if (e && (p = e.closest(".papeg, .rveg, .f-i, .form-g, .entryi, .checki"))) {
+    if (e && (p = e.closest(".pfe, .rfe, .f-i, .form-g, .entryi, .checki"))) {
         var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
         if ((eg.width <= 0 && eg.height <= 0)
             || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {
@@ -4131,8 +4131,8 @@ function render_review_body(rrow) {
             display = last_display == 1 ? 2 : 0;
         }
 
-        t += '<div class="rv rv' + "glr".charAt(display) + '" data-rf="' + f.uid +
-            '"><div class="revvt"><h3 class="revfn">' + f.name_html;
+        t = t.concat('<div class="rf rfd', display, '" data-rf="', f.uid,
+            '"><div class="revvt"><h3 class="revfn">', f.name_html);
         x = f.visibility;
         if (x == "audec" && hotcrp_status && hotcrp_status.myperm
             && hotcrp_status.myperm.some_author_can_view_decision) {
@@ -8546,11 +8546,11 @@ function add_pslitem_header() {
     }
 }
 
-function add_pslitem_papeg() {
-    if (hasClass(this, "papeg-separator")) {
+function add_pslitem_pfe() {
+    if (hasClass(this, "pf-separator")) {
         var $j = $('<li class="pslitem pslitem-separator"></li>');
         add_pslitem($j[0], true);
-    } else if (hasClass(this.firstChild, "papet")) {
+    } else if (hasClass(this.firstChild, "pfehead")) {
         add_pslitem_header.call(this.firstChild);
     }
 }
@@ -8590,7 +8590,7 @@ return {
         var f = document.getElementById("form-paper");
         hiliter_children(f);
         f.elements.submitpaper && $(f.elements.submitpaper).change();
-        $(".papeg").each(add_pslitem_papeg);
+        $(".pfe").each(add_pslitem_pfe);
         var h = $(".btn-savepaper").first(),
             k = hasClass(f, "alert") ? "" : " hidden";
         $(".pslcard-nav").append('<div class="paper-alert mt-5' + k + '">'
@@ -8615,8 +8615,8 @@ return {
     },
     load_review: function () {
         hiliter_children("#form-review");
-        $(".revet").each(add_pslitem_header);
-        if ($(".revet").length) {
+        $(".rfehead").each(add_pslitem_header);
+        if ($(".rfehead").length) {
             $(".pslcard > .pslitem:last-child").addClass("mb-3");
         }
         var h = $(".btn-savereview").first(),
