@@ -472,6 +472,12 @@ label.checki {
 .text-end {
 	text-align: end;
 }
+.text-left {
+	text-align: left;
+}
+.text-right {
+	text-align: right;
+}
 .align-top {
 	vertical-align: top;
 }
