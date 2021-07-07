@@ -366,7 +366,7 @@ if ($Me->isPC || $Me->privChair) {
             }
             echo '</div>';
         }
-        echo '<p class="mt-1 mb-2 text-right"><button class="small ui js-edit-namedsearches" type="button">Edit saved searches</button></p></div>';
+        echo '<p class="mt-1 mb-2 text-end"><button class="small ui js-edit-namedsearches" type="button">Edit saved searches</button></p></div>';
         $ss = true;
     } else {
         $ss = false;

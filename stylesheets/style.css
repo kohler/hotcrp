@@ -463,8 +463,14 @@ label.checki {
 	padding-top: 0.5rem !important;
 }
 
-.text-right {
-	text-align: right;
+.text-start {
+	text-align: start;
+}
+.text-center {
+	text-align: center;
+}
+.text-end {
+	text-align: end;
 }
 .align-top {
 	vertical-align: top;
