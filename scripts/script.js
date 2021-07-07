@@ -8452,7 +8452,7 @@ edit_conditions.text_present = function (ec, form) {
 };
 edit_conditions.numeric = function (ec, form) {
     var e = form.elements["opt" + ec.id],
-        v = $.trim(e ? e.value : ""), n;
+        v = (e ? e.value : "").trim(), n;
     return v !== "" && !isNaN((n = parseFloat(v))) ? n : null;
 };
 edit_conditions.document_count = function (ec, form) {

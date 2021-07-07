@@ -4,7 +4,7 @@
 
 require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
 
-$arg = Getopt::rest($argv, "hn:t:xwacN", ["help", "name:", "type:", "narrow", "wide", "all", "no-header", "comments", "sitename", "no-text", "no-score"]);
+$arg = Getopt::rest($argv, "hn:t:xwarcfN", ["help", "name:", "type:", "narrow", "wide", "all", "no-header", "reviews", "comments", "fields", "sitename", "no-text", "no-score", "format:"]);
 if (isset($arg["h"]) || isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/reviewcsv.php [-n CONFID] [-t COLLECTION] [-acx] [QUERY...]
 Output a CSV file containing all reviews for the papers matching QUERY.
@@ -13,159 +13,274 @@ Options include:
   -t, --type COLLECTION  Search COLLECTION “s” (submitted) or “all” [s].
   -x, --narrow           Narrow output.
   -a, --all              Include all reviews, not just submitted reviews.
+  -r, --reviews          Include reviews (default unless -c or -f).
   -c, --comments         Include comments.
+  -f, --fields           Include paper fields.
   -N, --sitename         Include site name and class in CSV.
   --no-text              Omit text fields.
   --no-score             Omit score fields.
   --no-header            Omit CSV header.
+  --format=FMT           Only output text fields with format FMT.
   QUERY...               A search term.\n");
     exit(0);
-}
-$narrow = isset($arg["x"]) || isset($arg["narrow"]);
-$all = isset($arg["a"]) || isset($arg["all"]);
-$comments = isset($arg["c"]) || isset($arg["comments"]);
-if ($comments && !$narrow) {
-    fwrite(STDERR, "batch/reviewcsv.php: ‘-c’ requires ‘--narrow’ format.\n");
-    exit(1);
-} else if ($narrow && (isset($arg["w"]) || isset($arg["wide"]))) {
-    fwrite(STDERR, "batch/reviewcsv.php: ‘--wide’ and ‘--narrow’ contradict.\n");
-    exit(1);
-}
-$no_text = isset($arg["no-text"]);
-$no_score = isset($arg["no-score"]);
-if ($comments && $no_text) {
-    fwrite(STDERR, "batch/reviewcsv.php: ‘-c’ and ‘--no-text’ contradict.\n");
-    exit(1);
 }
 
 require_once(SiteLoader::find("src/init.php"));
 
-$user = $Conf->root_user();
+class FieldCSVOutput {
+    public $conf;
+    public $user;
+    public $fr;
+    public $wide = false;
+    public $narrow = false;
+    public $fields = false;
+    public $reviews = false;
+    public $comments = false;
+    public $all_status = false;
+    public $no_header = false;
+    public $no_score = false;
+    public $no_text = false;
+    public $format;
+    public $rfseen = [];
+    public $output = [];
+    public $csv;
+
+    function __construct($conf) {
+        $this->conf = $conf;
+        $this->user = $conf->root_user();
+        $this->fr = new FieldRender(FieldRender::CFHTML, $this->user);
+        $this->csv = new CsvGenerator;
+    }
+
+    function parse_arg($arg) {
+        if (isset($arg["w"]) || isset($arg["wide"])) {
+            $this->wide = true;
+        }
+        if (isset($arg["x"]) || isset($arg["narrow"])) {
+            $this->narrow = true;
+        }
+        if (isset($arg["f"]) || isset($arg["fields"])) {
+            $this->fields = true;
+        }
+        if (isset($arg["r"]) || isset($arg["reviews"])) {
+            $this->reviews = true;
+        }
+        if (isset($arg["c"]) || isset($arg["comments"])) {
+            $this->comments = true;
+        }
+        if (isset($arg["a"]) || isset($arg["all"])) {
+            $this->all_status = true;
+        }
+        if (isset($arg["no-header"])) {
+            $this->no_header = true;
+        }
+        if (isset($arg["no-score"])) {
+            $this->no_score = true;
+        }
+        if (isset($arg["no-text"])) {
+            $this->no_text = true;
+        }
+        if (isset($arg["format"])) {
+            if (ctype_digit($arg["format"])) {
+                $this->format = intval($arg["format"]);
+            } else {
+                fwrite(STDERR, "batch/reviewcsv.php: ‘--format’ should be an integer.\n");
+                exit(1);
+            }
+        }
+    }
+
+    function prepare($arg) {
+        if (!$this->fields && !$this->reviews && !$this->comments) {
+            $this->reviews = true;
+        }
+        if ($this->wide && $this->narrow) {
+            fwrite(STDERR, "batch/reviewcsv.php: ‘--wide’ and ‘--narrow’ contradict.\n");
+            exit(1);
+        } else if (!$this->wide && !$this->narrow) {
+            $this->wide = !$this->fields && !$this->comments && $this->format === null;
+            $this->narrow = !$this->wide;
+        }
+        if ($this->no_text && ($this->fields || $this->comments)) {
+            fwrite(STDERR, "batch/reviewcsv.php: These options prohibit ‘--no-text’.\n");
+            exit(1);
+        }
+        if (!$this->narrow && ($this->fields || $this->comments || $this->format !== null)) {
+            fwrite(STDERR, "batch/reviewcsv.php: These options require ‘-x/--narrow’.\n");
+            exit(1);
+        }
+
+        $this->header = [];
+        if (isset($arg["N"]) || isset($arg["sitename"])) {
+            $this->header[] = "sitename";
+            $this->header[] = "siteclass";
+        }
+        array_push($this->header, "pid", "review", "email", "round", "submitted_at");
+        if ($this->all_status || $this->comments) {
+            $this->header[] = "status";
+        }
+        if ($this->narrow) {
+            $this->header[] = "field";
+            $this->header[] = "format";
+            $this->header[] = "data";
+        }
+    }
+
+    function add_row($x) {
+        if ($this->format !== null
+            && isset($x["format"])
+            && $x["format"] !== $this->format) {
+            return;
+        }
+        if ($this->narrow && empty($this->output)) {
+            $this->csv->select($this->header, !$this->no_header);
+            $this->output[] = true;
+        }
+        if ($this->narrow) {
+            $this->csv->add_row($x);
+        } else {
+            $this->output[] = $x;
+        }
+    }
+
+    function add_fields($prow, $x) {
+        $x["review"] = "";
+        $x["email"] = "";
+        $x["round"] = "";
+        $x["submitted_at"] = $prow->timeSubmitted > 0 ? $prow->timeSubmitted : "";
+        if ($prow->timeSubmitted > 0) {
+            $rs = "submitted";
+        } else if ($prow->timeWithdrawn > 0) {
+            $rs = "withdrawn";
+        } else {
+            $rs = "draft";
+        }
+        $x["status"] = $rs;
+        foreach ($prow->display_fields() as $o) {
+            if (($o->type === "title"
+                 || $o->type === "abstract"
+                 || $o->type === "text")
+                && $o->can_render($this->fr->context)
+                && ($v = $prow->option($o))) {
+                $o->render($this->fr, $v);
+                $x["field"] = $o->title();
+                $x["format"] = $this->fr->value_format;
+                $x["data"] = $this->fr->value;
+                $this->add_row($x);
+            }
+        }
+    }
+
+    function add_comment($prow, $crow, $x) {
+        $x["review"] = $crow->unparse_html_id();
+        $x["email"] = $crow->email;
+        if ($crow->commentType & COMMENTTYPE_RESPONSE) {
+            $x["round"] = $prow->conf->resp_round_text($crow->commentRound);
+        }
+        $rs = $crow->commentType & COMMENTTYPE_DRAFT ? "draft " : "";
+        if ($crow->commentType & COMMENTTYPE_RESPONSE) {
+            $rs .= "response";
+        } else if ($crow->commentType & COMMENTTYPE_BYAUTHOR) {
+            $rs .= "author comment";
+        } else {
+            $rs .= "comment";
+        }
+        $x["submitted_at"] = $crow->timeDisplayed ? : ($crow->timeNotified ? : $crow->timeModified);
+        $x["status"] = $rs;
+        $x["field"] = "comment";
+        $x["format"] = $crow->commentFormat ?? $prow->conf->default_format;
+        $x["data"] = $crow->commentOverflow ? : $crow->comment;
+        $this->add_row($x);
+    }
+
+    function add_review($prow, $rrow, $x) {
+        $x["review"] = $rrow->unparse_ordinal_id();
+        $x["email"] = $rrow->email;
+        $x["round"] = $prow->conf->round_name($rrow->reviewRound);
+        $x["submitted_at"] = $rrow->reviewSubmitted;
+        $x["status"] = $rrow->status_description();
+        $x["format"] = $rrow->reviewFormat ?? $prow->conf->default_format;
+        foreach ($rrow->viewable_fields($this->user) as $fid => $f) {
+            if ($f->has_options ? $this->no_score : $this->no_text) {
+                continue;
+            }
+            $fv = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
+            if ($fv === "") {
+                // ignore
+            } else if ($this->narrow) {
+                $x["field"] = $f->name;
+                $x["data"] = $fv;
+                $this->add_row($x);
+            } else {
+                $this->rfseen[$fid] = true;
+                $x[$f->name] = $fv;
+            }
+        }
+        if (!$this->narrow) {
+            $this->add_row($x);
+        }
+    }
+
+    function output($stream) {
+        if (!empty($this->output) && !$this->narrow) {
+            foreach ($this->conf->all_review_fields() as $fid => $f) {
+                if (isset($this->rfseen[$fid])) {
+                    $this->header[] = $f->name;
+                }
+            }
+            $this->csv->select($this->header, !$this->no_header);
+            foreach ($this->output as $orow) {
+                $this->csv->add_row($orow);
+            }
+        }
+
+        @fwrite($stream, $this->csv->unparse());
+    }
+}
+
+$fcsv = new FieldCSVOutput($Conf);
+$fcsv->parse_arg($arg);
+$fcsv->prepare($arg);
+
 $t = $arg["t"] ?? "s";
-$searchtypes = PaperSearch::viewable_limits($user, $t);
+$searchtypes = PaperSearch::viewable_limits($fcsv->user, $t);
 if (!isset($searchtypes[$t])) {
     fwrite(STDERR, "batch/reviewcsv.php: No search collection ‘{$t}’.\n");
     exit(1);
 }
 
-$search = new PaperSearch($user, ["q" => join(" ", $arg["_"]), "t" => $t]);
+$search = new PaperSearch($fcsv->user, ["q" => join(" ", $arg["_"]), "t" => $t]);
 foreach ($search->problem_texts() as $w) {
     fwrite(STDERR, "$w\n");
 }
 
-$csv = new CsvGenerator;
-$header = [];
-if (isset($arg["N"]) || isset($arg["sitename"])) {
-    array_push($header, "sitename", "siteclass");
-}
-array_push($header, "pid", "review", "email", "round", "submitted_at");
-if ($all || $comments) {
-    $header[] = "status";
-}
-if ($narrow) {
-    $header[] = "field";
-    $header[] = "format";
-    $header[] = "data";
-}
 $pset = $Conf->paper_set(["paperId" => $search->paper_ids()]);
-$rf = $Conf->review_form();
-
-$output = [];
-function add_row($x) {
-    global $csv, $header, $arg, $narrow, $output;
-    if ($narrow && empty($output)) {
-        $csv->select($header, !isset($arg["no-header"]));
-        $output[] = true;
-    }
-    if ($narrow) {
-        $csv->add_row($x);
-    } else {
-        $output[] = $x;
-    }
-}
-
-$fields = [];
 foreach ($search->sorted_paper_ids() as $pid) {
     $prow = $pset[$pid];
     $prow->ensure_full_reviews();
     $prow->ensure_reviewer_names();
-    foreach ($comments ? $prow->viewable_reviews_and_comments($user) : $prow->reviews_by_display() as $xrow) {
-        $crow = $xrow instanceof CommentInfo ? $xrow : null;
-        $rrow = $xrow instanceof ReviewInfo ? $xrow : null;
-        if (($crow && !$all && ($crow->commentType & COMMENTTYPE_DRAFT))
-            || ($rrow && ($rrow->reviewStatus < ReviewInfo::RS_DRAFTED
-                          || (!$all && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)))) {
-            continue;
-        }
-        $x = [
-            "sitename" => $Conf->opt("confid"),
-            "siteclass" => $Conf->opt("siteclass"),
-            "pid" => $prow->paperId
-        ];
-        if ($crow) {
-            $x["review"] = $crow->unparse_html_id();
-            $x["email"] = $crow->email;
-            if ($crow->commentType & COMMENTTYPE_RESPONSE) {
-                $x["round"] = $Conf->resp_round_text($crow->commentRound);
+    $px = [
+        "sitename" => $Conf->opt("confid"),
+        "siteclass" => $Conf->opt("siteclass"),
+        "pid" => $prow->paperId
+    ];
+    if ($fcsv->fields) {
+        $fcsv->add_fields($prow, $px);
+    }
+    foreach ($fcsv->comments ? $prow->viewable_reviews_and_comments($fcsv->user) : $prow->reviews_by_display() as $xrow) {
+        if ($xrow instanceof CommentInfo) {
+            if ($fcsv->comments
+                && ($fcsv->all_status || !($xrow->commentType & COMMENTTYPE_DRAFT))) {
+                $fcsv->add_comment($prow, $xrow, $px);
             }
-            $rs = $crow->commentType & COMMENTTYPE_DRAFT ? "draft " : "";
-            if ($crow->commentType & COMMENTTYPE_RESPONSE) {
-                $rs .= "response";
-            } else if ($crow->commentType & COMMENTTYPE_BYAUTHOR) {
-                $rs .= "author comment";
-            } else {
-                $rs .= "comment";
-            }
-            $x["submitted_at"] = $crow->timeDisplayed ? : ($crow->timeNotified ? : $crow->timeModified);
-            $x["status"] = $rs;
-            $x["field"] = "comment";
-            $x["format"] = $crow->commentFormat;
-            $x["data"] = $crow->commentOverflow ? : $crow->comment;
-            add_row($x);
-        } else if ($rrow) {
-            $x["review"] = $rrow->unparse_ordinal_id();
-            $x["email"] = $rrow->email;
-            $x["round"] = $Conf->round_name($rrow->reviewRound);
-            $x["submitted_at"] = $rrow->reviewSubmitted;
-            $x["status"] = $rrow->status_description();
-            if ($rrow->reviewFormat === null) {
-                $x["format"] = $Conf->default_format;
-            } else {
-                $x["format"] = $rrow->reviewFormat;
-            }
-            foreach ($rrow->viewable_fields($user) as $fid => $f) {
-                if ($f->has_options ? $no_score : $no_text) {
-                    continue;
-                }
-                $fv = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
-                if ($fv === "") {
-                    // ignore
-                } else if ($narrow) {
-                    $x["field"] = $f->name;
-                    $x["data"] = $fv;
-                    add_row($x);
-                } else {
-                    $fields[$fid] = true;
-                    $x[$f->name] = $fv;
-                }
-            }
-            if (!$narrow) {
-                add_row($x);
+        } else {
+            if ($fcsv->reviews
+                && $xrow->reviewStatus >= ReviewInfo::RS_DRAFTED
+                && ($fcsv->all_status || $xrow->reviewStatus >= ReviewInfo::RS_COMPLETED)) {
+                $fcsv->add_review($prow, $xrow, $px);
             }
         }
     }
 }
 
-if (!empty($output) && !$narrow) {
-    foreach ($rf->all_fields() as $fid => $f) {
-        if (isset($fields[$fid])) {
-            $header[] = $f->name;
-        }
-    }
-    $csv->select($header, !isset($arg["no-header"]));
-    foreach ($output as $orow) {
-        $csv->add_row($orow);
-    }
-}
-
-@fwrite(STDOUT, $csv->unparse());
+$fcsv->output(STDOUT);
