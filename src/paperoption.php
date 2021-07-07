@@ -965,6 +965,10 @@ class PaperOption implements JsonSerializable {
     function dtype_name() {
         return $this->id ? $this->json_key() : "paper";
     }
+    /** @return string */
+    function uid() {
+        return $this->json_key();
+    }
 
     /** @return int */
     function display() {

@@ -28,8 +28,11 @@ Options include:
 require_once(SiteLoader::find("src/init.php"));
 
 class FieldCSVOutput {
+    /** @var Conf */
     public $conf;
+    /** @var Contact */
     public $user;
+    /** @var FieldRender */
     public $fr;
     public $wide = false;
     public $narrow = false;
@@ -40,11 +43,18 @@ class FieldCSVOutput {
     public $no_header = false;
     public $no_score = false;
     public $no_text = false;
+    /** @var ?int */
     public $format;
+    /** @var associative-array<string,true> */
     public $rfseen = [];
+    /** @var list<string> */
+    public $header;
+    /** @var list<array> */
     public $output = [];
+    /** @var CsvGenerator */
     public $csv;
 
+    /** @param Conf $conf */
     function __construct($conf) {
         $this->conf = $conf;
         $this->user = $conf->root_user();
@@ -132,17 +142,18 @@ class FieldCSVOutput {
             && $x["format"] !== $this->format) {
             return;
         }
-        if ($this->narrow && empty($this->output)) {
-            $this->csv->select($this->header, !$this->no_header);
-            $this->output[] = true;
-        }
         if ($this->narrow) {
+            if (empty($this->output)) {
+                $this->csv->select($this->header, !$this->no_header);
+                $this->output[] = [];
+            }
             $this->csv->add_row($x);
         } else {
             $this->output[] = $x;
         }
     }
 
+    /** @param PaperInfo $prow */
     function add_fields($prow, $x) {
         $x["review"] = "";
         $x["email"] = "";
@@ -171,6 +182,8 @@ class FieldCSVOutput {
         }
     }
 
+    /** @param PaperInfo $prow
+     * @param CommentInfo $crow */
     function add_comment($prow, $crow, $x) {
         $x["review"] = $crow->unparse_html_id();
         $x["email"] = $crow->email;
@@ -193,6 +206,8 @@ class FieldCSVOutput {
         $this->add_row($x);
     }
 
+    /** @param PaperInfo $prow
+     * @param ReviewInfo $rrow */
     function add_review($prow, $rrow, $x) {
         $x["review"] = $rrow->unparse_ordinal_id();
         $x["email"] = $rrow->email;
@@ -273,7 +288,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
                 && ($fcsv->all_status || !($xrow->commentType & COMMENTTYPE_DRAFT))) {
                 $fcsv->add_comment($prow, $xrow, $px);
             }
-        } else {
+        } else if ($xrow instanceof ReviewInfo) {
             if ($fcsv->reviews
                 && $xrow->reviewStatus >= ReviewInfo::RS_DRAFTED
                 && ($fcsv->all_status || $xrow->reviewStatus >= ReviewInfo::RS_COMPLETED)) {
