@@ -484,7 +484,7 @@ function make_args(selector, args) {
 function position_label(axis, p, prefix) {
     var aa = axis.axis_args, t = '<span class="nw">' + (prefix || "");
     if (aa.label)
-        t += escape_entities(aa.label) + " ";
+        t += escape_html(aa.label) + " ";
     return t + aa.ticks.unparse_html.call(axis, p, true) + '</span>';
 }
 

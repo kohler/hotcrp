@@ -102,7 +102,7 @@ function render_table(pcm) {
         if (tr.papers) {
             hc.push("<tbody class=\"has-tracker\" data-trackerid=\"" + tr.trackerid + "\">", "</tbody>");
             if (tr.name) {
-                hc.push('<tr><td class="tracker-table remargin-left remargin-right" colspan="4"><span class="tracker-name">' + escape_entities(tr.name) + '</span></td></tr>');
+                hc.push('<tr><td class="tracker-table remargin-left remargin-right" colspan="4"><span class="tracker-name">' + escape_html(tr.name) + '</span></td></tr>');
             }
             for (var p = tr.paper_offset; p < tr.papers.length; ++p) {
                 make_row(hc, p - tr.paper_offset, tr.papers[p], pcm);
@@ -211,8 +211,8 @@ function do_kiosk() {
     hc.push('<p>Kiosk mode is a discussion status page with no other site privileges. It’s safe to leave a browser in kiosk mode open in the hallway.</p>');
     hc.push('<p><strong>Kiosk mode will sign your browser out of the site.</strong> Do not use kiosk mode on your main browser.</p>');
     hc.push('<p>These URLs access kiosk mode directly:</p>');
-    hc.push('<dl><dt>With papers</dt><dd>' + escape_entities(info.kiosk_urls[1])
-            + '</dd><dt>Conflicts only</dt><dd>' + escape_entities(info.kiosk_urls[0])
+    hc.push('<dl><dt>With papers</dt><dd>' + escape_html(info.kiosk_urls[1])
+            + '</dd><dt>Conflicts only</dt><dd>' + escape_html(info.kiosk_urls[0])
             + '</dd></dl>');
     if (show_papers)
         hc.push('<input type="hidden" name="buzzer_showpapers" value="1" />');

@@ -169,7 +169,7 @@ handle_ui.on("js-settings-add-track", function () {
 handle_ui.on("js-settings-copy-topics", function () {
     var topics = [];
     $(this).closest(".has-copy-topics").find("[name^=top]").each(function () {
-        topics.push(escape_entities(this.value));
+        topics.push(escape_html(this.value));
     });
     var node = $("<textarea></textarea>").appendTo(document.body);
     node.val(topics.join("\n"));
@@ -327,7 +327,7 @@ function remove() {
         fid = $f.attr("data-revfield");
     $f.find(".rf-position").val(0);
     $f.detach().hide().appendTo("#reviewform_removedcontainer");
-    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-rf-deleted"><span class="settings-revfn" style="text-decoration:line-through">' + escape_entities($f.find("#rf_name_" + fid).val()) + '</span>&nbsp; (field removed)</div>');
+    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-rf-deleted"><span class="settings-revfn" style="text-decoration:line-through">' + escape_html($f.find("#rf_name_" + fid).val()) + '</span>&nbsp; (field removed)</div>');
     fill_order();
 }
 
@@ -360,7 +360,7 @@ function option_value_html(fieldj, value) {
         t += " " + (fieldj.option_class_prefix || "sv") + n;
     }
     return [t + '">' + unparse_option(fieldj, value) + '.</strong>',
-            escape_entities(fieldj.options[value - 1] || "Unknown")];
+            escape_html(fieldj.options[value - 1] || "Unknown")];
 }
 
 function view_unfold(event) {
@@ -388,7 +388,7 @@ function create_field_view(fieldj) {
     hc.push('<div>', '</div>');
 
     hc.push('<h3 class="rfehead">', '</h3>');
-    hc.push('<label class="revfn'.concat(fieldj.required ? " field-required" : "", '">', escape_entities(fieldj.name || "<unnamed>"), '</label>'));
+    hc.push('<label class="revfn'.concat(fieldj.required ? " field-required" : "", '">', escape_html(fieldj.name || "<unnamed>"), '</label>'));
     var t = field_visibility_text(fieldj.visibility), i;
     if (t)
         hc.push('<div class="field-visibility">'.concat(t, '</div>'));
@@ -397,7 +397,7 @@ function create_field_view(fieldj) {
     if (fieldj.exists_if && /^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(fieldj.exists_if)) {
         hc.push('<p class="feedback is-warning">Present on ' + fieldj.exists_if.substring(6) + ' reviews</p>');
     } else if (fieldj.exists_if) {
-        hc.push('<p class="feedback is-warning">Present on reviews matching “' + escape_entities(fieldj.exists_if) + '”</p>');
+        hc.push('<p class="feedback is-warning">Present on reviews matching “' + escape_html(fieldj.exists_if) + '”</p>');
     }
 
     if (fieldj.description)

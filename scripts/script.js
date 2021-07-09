@@ -397,15 +397,15 @@ function geometry_translate(g, dx, dy) {
 
 
 // text transformation
-var escape_entities = (function () {
-    var re = /[&<>\"']/g;
-    var rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "\'": "&#39;"};
-    return function (s) {
-        if (s === null || typeof s === "number")
-            return s;
-        return s.replace(re, function (match) { return rep[match]; });
-    };
-})();
+function escape_html(s) {
+    if (s === null || typeof s === "number")
+        return s;
+    return s.replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39");
+}
 
 var urlencode = (function () {
     var re = /%20|[!~*'()]/g;
@@ -1014,11 +1014,11 @@ function hoturl_post(page, options) {
 }
 
 function hoturl_html(page, options) {
-    return escape_entities(hoturl(page, options));
+    return escape_html(hoturl(page, options));
 }
 
 function hoturl_post_html(page, options) {
-    return escape_entities(hoturl_post(page, options));
+    return escape_html(hoturl_post(page, options));
 }
 
 function url_absolute(url, loc) {
@@ -1929,7 +1929,7 @@ function show_tooltip(info) {
             }
         },
         text: function (new_text) {
-            return tt.html(escape_entities(new_text));
+            return tt.html(escape_html(new_text));
         },
         near: function () {
             return near;
@@ -2050,7 +2050,7 @@ function popup_skeleton(options) {
     var near = options.near || options.anchor;
     hc.push('<div class="modal" role="dialog"><div class="modal-dialog'
         + (!near || near === window ? " modal-dialog-centered" : "")
-        + (options.style ? '" style="' + escape_entities(options.style) : '')
+        + (options.style ? '" style="' + escape_html(options.style) : '')
         + '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8"'
         + (options.form_class ? ' class="' + options.form_class + '"' : '')
         + '>', '</form></div></div></div>');
@@ -2066,7 +2066,7 @@ function popup_skeleton(options) {
             messages = "", mx, i, e, x, mlist = data.message_list;
         $d.find(".msg-error, .feedback").remove();
         if (!mlist && data.error)
-            mlist = [{message: escape_entities(data.error), status: 2}];
+            mlist = [{message: escape_html(data.error), status: 2}];
         for (i in mlist || []) {
             mx = mlist[i];
             if (mx.field && (e = form[mx.field])) {
@@ -2363,7 +2363,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     t += '</td><td class="tracker-pid">';
     if (paper.pid)
-        t += '<a class="uu" href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
+        t += '<a class="uu" href="' + escape_html(url) + '">#' + paper.pid + '</a>';
     t += '</td><td class="tracker-body"';
     if (idx >= 2 && (tr.allow_administer || tr.position_at))
         t += ' colspan="2"';
@@ -2393,9 +2393,9 @@ function tracker_html(tr) {
         + (tr.papers && tr.papers[tr.paper_offset].pid == siteinfo.paperid ? "match" : "nomatch")
         + (tr.tracker_here ? " tracker-active" : "");
     if (tr.listinfo || tr.listid)
-        t += ' has-hotlist" data-hotlist="' + escape_entities(tr.listinfo || tr.listid);
+        t += ' has-hotlist" data-hotlist="' + escape_html(tr.listinfo || tr.listid);
     t += '" data-trackerid="' + tr.trackerid + '">';
-    var logo = escape_entities(tr.logo || "☞");
+    var logo = escape_html(tr.logo || "☞");
     var logo_class = logo === "☞" ? "tracker-logo tracker-logo-fist" : "tracker-logo";
     if (tr.allow_administer)
         t += '<a class="ui nn js-tracker need-tooltip ' + logo_class + '" aria-label="Tracker settings and status" href="">' + logo + '</a>';
@@ -2414,7 +2414,7 @@ function tracker_html(tr) {
         if (i === 0)
             t += '<td rowspan="' + rows.length + '" class="tracker-logo-td"><div class="tracker-logo-space"></div></td>';
         if (i === 0 && tr.name)
-            t += '<td rowspan="' + rows.length + '" class="tracker-name-td"><span class="tracker-name">' + escape_entities(tr.name) + '</span></td>';
+            t += '<td rowspan="' + rows.length + '" class="tracker-name-td"><span class="tracker-name">' + escape_html(tr.name) + '</span></td>';
         t += rows[i];
         if (i === 0 && (tr.allow_administer || tr.position_at)) {
             t += '<td rowspan="' + Math.min(2, rows.length) + '" class="tracker-elapsed nb">';
@@ -2523,12 +2523,12 @@ handle_ui.on("js-tracker", function (event) {
     var $d, trno = 1, elapsed_timer;
     function push_tracker(hc, tr) {
         hc.push('<div class="lg tracker-group" data-index="' + trno + '" data-trackerid="' + tr.trackerid + '">', '</div>');
-        hc.push('<input type="hidden" name="tr' + trno + '-id" value="' + escape_entities(tr.trackerid) + '">');
+        hc.push('<input type="hidden" name="tr' + trno + '-id" value="' + escape_html(tr.trackerid) + '">');
         if (tr.trackerid === "new" && siteinfo.paperid)
             hc.push('<input type="hidden" name="tr' + trno + '-p" value="' + siteinfo.paperid + '">');
         if (tr.listinfo)
-            hc.push('<input type="hidden" name="tr' + trno + '-listinfo" value="' + escape_entities(tr.listinfo) + '">');
-        hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><div class="entry"><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_entities(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div></div>');
+            hc.push('<input type="hidden" name="tr' + trno + '-listinfo" value="' + escape_html(tr.listinfo) + '">');
+        hc.push('<div class="entryi"><label for="htctl-tr' + trno + '-name">Name</label><div class="entry"><input id="htctl-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_html(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div></div>');
         var vis = tr.visibility || "", vistype = vis === "" ? "" : vis.charAt(0);
         hc.push('<div class="entryi has-fold fold' + (vistype === "" ? "c" : "o") + '" data-fold-values="+ -"><label for="htctl-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
         hc.push('<span class="select"><select id="htctl-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup" data-default-value="' + vistype + '">', '</select></span>');
@@ -2536,7 +2536,7 @@ handle_ui.on("js-tracker", function (event) {
         for (var i in vismap)
             hc.push('<option value="' + i + '"' + (i === vistype ? " selected" : "") + '>' + vismap[i] + '</option>');
         hc.pop();
-        hc.push_pop('  <input type="text" name="tr' + trno + '-vis" value="' + escape_entities(vis.substring(1)) + '" placeholder="(tag)" class="need-suggest need-autogrow pc-tags fx">');
+        hc.push_pop('  <input type="text" name="tr' + trno + '-vis" value="' + escape_html(vis.substring(1)) + '" placeholder="(tag)" class="need-suggest need-autogrow pc-tags fx">');
         if (dl.tracker && (vis = dl.tracker.global_visibility)) {
             hc.push('<div class="entryi"><label><a href="' + hoturl("settings", "group=tracks") + '" target="_blank">Global visibility</a></label><div class="entry">', '</div></div>');
             if (vis === "+none")
@@ -3797,7 +3797,7 @@ function minifeedback(e, rv) {
             status = Math.max(status, mx.status);
         }
     } else if (rv && rv.error) {
-        t = render_feedback(escape_entities(rv.error), 2);
+        t = render_feedback(escape_html(rv.error), 2);
         status = 2;
     }
     if (t === "" && (!rv || !rv.ok)) {
@@ -3870,7 +3870,7 @@ function render0(text) {
             && ch !== "\t")
             lines[i] = " ";
     }
-    text = "<p>" + link_urls(escape_entities(lines.join(""))) + "</p>";
+    text = "<p>" + link_urls(escape_html(lines.join(""))) + "</p>";
     return text.replace(/\r\n?(?:\r\n?)+|\n\n+/g, "</p><p>");
 }
 
@@ -4058,7 +4058,7 @@ handle_ui.on("js-review-tokens", function () {
     var hc = popup_skeleton();
     hc.push('<h2>Review tokens</h2>');
     hc.push('<p>Enter tokens to gain access to the corresponding reviews.</p>');
-    hc.push('<input type="text" size="60" name="token" value="' + escape_entities(this.getAttribute("data-review-tokens") || "") + '" placeholder="Review tokens">');
+    hc.push('<input type="text" size="60" name="token" value="' + escape_html(this.getAttribute("data-review-tokens") || "") + '" placeholder="Review tokens">');
     hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save tokens</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     $d = hc.show();
@@ -4101,7 +4101,7 @@ tooltip.add_builder("rf-description", function (info) {
                 d += "<div class=\"od\">Choices are:</div>";
                 for (si = 0, vo = fieldj.score_info.value_order();
                      si < vo.length; ++si)
-                    d += "<div class=\"od\"><strong class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</strong>&nbsp;" + escape_entities(fieldj.options[vo[si] - 1]) + "</div>";
+                    d += "<div class=\"od\"><strong class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</strong>&nbsp;" + escape_html(fieldj.options[vo[si] - 1]) + "</div>";
             }
             info = $.extend({content: d, anchor: "w"}, info);
         }
@@ -4153,7 +4153,7 @@ function render_review_body(rrow) {
         } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid]))) {
             t += '<p class="revv revscore"><span class="revscorenum">' +
                 f.score_info.unparse_revnum(x) + ' </span><span class="revscoredesc">' +
-                escape_entities(f.options[x - 1]) + '</span></p>';
+                escape_html(f.options[x - 1]) + '</span></p>';
         } else {
             t += '<p class="revv revnoscore">' + (f.required ? "Unknown" : "No entry") + '</p>';
         }
@@ -4353,7 +4353,7 @@ function add_review(rrow) {
             '" title="' + rtype_info[rrow.rtype][1] +
             '"><span class="rti">' + rtype_info[rrow.rtype][0] + '</span></span>';
         if (rrow.round)
-            revname += ' <span class="revround" title="Review round">' + escape_entities(rrow.round) + '</span>';
+            revname += ' <span class="revround" title="Review round">' + escape_html(rrow.round) + '</span>';
     }
     if (rrow.modified_at) {
         revtime = '<time class="revtime" datetime="' + (new Date(rrow.modified_at * 1000)).toISOString() + '">' + rrow.modified_at_text + '</time>';
@@ -4402,7 +4402,7 @@ return {
         for (i in formj) {
             f = formj[i];
             f.uid = i;
-            f.name_html = escape_entities(f.name);
+            f.name_html = escape_html(f.name);
             if (f.options)
                 f.score_info = make_score_info(f.options.length, f.option_letter, f.option_class_prefix);
         }
@@ -4553,7 +4553,7 @@ function render_editing(hc, cj) {
 
     hc.push('<form><div style="font-weight:normal;font-style:normal">', '</div></form>');
     if (cj.review_token) {
-        hc.push('<input type="hidden" name="review_token" value="' + escape_entities(cj.review_token) + '">');
+        hc.push('<input type="hidden" name="review_token" value="' + escape_html(cj.review_token) + '">');
     }
     hc.push('<div class="f-i">', '</div>');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
@@ -7152,7 +7152,7 @@ function check_version(url, versionstr) {
 // user rendering
 function render_user(u) {
     if (!u.name_html)
-        u.name_html = escape_entities(u.name);
+        u.name_html = escape_html(u.name);
     if (u.color_classes && !u.user_html)
         u.user_html = '<span class="' + u.color_classes + ' taghh">' + u.name_html + '</span>';
     return u.user_html || u.name_html;
@@ -7504,7 +7504,7 @@ function add_column(f) {
         classEnd = ' class="pl ' + classes + '"', h = f.title, stmpl;
     if (f.sort_name && (stmpl = self.getAttribute("data-sort-url-template"))) {
         stmpl = stmpl.replace(/\{sort\}/, urlencode(f.sort_name));
-        h = '<a class="pl_sort" rel="nofollow" href="' + escape_entities(stmpl) + '">' + h + '</a>';
+        h = '<a class="pl_sort" rel="nofollow" href="' + escape_html(stmpl) + '">' + h + '</a>';
     }
     h = '<th class="pl plh ' + classes + '">' + h + '</th>';
     $j.find("thead > tr.pl_headrow:first-child").each(function () {
@@ -8537,7 +8537,7 @@ function add_pslitem_header() {
     }
     if (id) {
         var xt = header_text(l),
-            e = xt ? add_pslitem(id, escape_entities(xt), this.parentElement) : null;
+            e = xt ? add_pslitem(id, escape_html(xt), this.parentElement) : null;
         if (e) {
             hasClass(this, "has-error") && addClass(e.firstChild, "is-error");
             hasClass(this, "has-warning") && addClass(e.firstChild, "is-warning");
@@ -8811,17 +8811,17 @@ handle_ui.on("js-edit-formulas", function () {
         hc.push('<div class="editformulas-formula" data-formula-number="' + count + '">', '</div>');
         hc.push('<div class="entryi"><label for="htctl_formulaname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
         if (f.editable) {
-            hc.push('<input type="text" id="htctl_formulaname_' + count + '" class="editformulas-name need-autogrow" name="formulaname_' + count + '" size="30" value="' + escape_entities(f.name) + '" placeholder="Formula name">');
+            hc.push('<input type="text" id="htctl_formulaname_' + count + '" class="editformulas-name need-autogrow" name="formulaname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Formula name">');
             hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete formula">x</a>');
         } else
-            hc.push(escape_entities(f.name));
+            hc.push(escape_html(f.name));
         hc.pop();
         hc.push('<div class="entryi"><label for="htctl_formulaexpression_' + count + '">Expression</label><div class="entry">', '</div></div>');
         if (f.editable)
-            hc.push('<textarea class="editformulas-expression need-autogrow w-99" id="htctl_formulaexpression_' + count + '" name="formulaexpression_' + count + '" rows="1" cols="64" placeholder="Formula definition">' + escape_entities(f.expression) + '</textarea>')
+            hc.push('<textarea class="editformulas-expression need-autogrow w-99" id="htctl_formulaexpression_' + count + '" name="formulaexpression_' + count + '" rows="1" cols="64" placeholder="Formula definition">' + escape_html(f.expression) + '</textarea>')
                 .push('<input type="hidden" name="formulaid_' + count + '" value="' + f.id + '">');
         else
-            hc.push(escape_entities(f.expression));
+            hc.push(escape_html(f.expression));
         hc.pop();
         if (f.error_html) {
             hc.push('<div class="entryi"><label class="is-error">Error</label><div class="entry">' + f.error_html + '</div></div>');
@@ -8913,10 +8913,10 @@ handle_ui.on("js-edit-view-options", function () {
         hc.push('<div style="max-width:480px;max-width:40rem;position:relative">', '</div>');
         hc.push('<h2>View options</h2>');
         hc.push('<div class="f-i"><div class="f-c">Default view options</div>', '</div>');
-        hc.push('<div class="reportdisplay-default">' + escape_entities(display_default || "(none)") + '</div>');
+        hc.push('<div class="reportdisplay-default">' + escape_html(display_default || "(none)") + '</div>');
         hc.pop();
         hc.push('<div class="f-i"><div class="f-c">Current view options</div>', '</div>');
-        hc.push('<textarea class="reportdisplay-current w-99 need-autogrow uikd js-keydown-enter-submit" name="display" rows="1" cols="60">' + escape_entities(display_current || "") + '</textarea>');
+        hc.push('<textarea class="reportdisplay-current w-99 need-autogrow uikd js-keydown-enter-submit" name="display" rows="1" cols="60">' + escape_html(display_current || "") + '</textarea>');
         hc.pop();
         hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save options as default</button>', '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
@@ -8937,16 +8937,16 @@ handle_ui.on("js-edit-namedsearches", function () {
         hc.push('<div class="editsearches-search" data-search-number="' + count + '">', '</div>');
         hc.push('<div class="entryi"><label for="htctl_searchname_' + count + '">Name</label><div class="entry nw">', '</div></div>');
         if (f.editable) {
-            hc.push('<input type="text" id="htctl_searchname_' + count + '" class="editsearches-name need-autogrow" name="searchname_' + count + '" size="30" value="' + escape_entities(f.name) + '" placeholder="Search name">');
+            hc.push('<input type="text" id="htctl_searchname_' + count + '" class="editsearches-name need-autogrow" name="searchname_' + count + '" size="30" value="' + escape_html(f.name) + '" placeholder="Search name">');
             hc.push('<a class="ui closebtn delete-link need-tooltip" href="" aria-label="Delete search">x</a>');
         } else
-            hc.push(escape_entities(f.name));
+            hc.push(escape_html(f.name));
         hc.pop();
         hc.push('<div class="entryi"><label for="htctl_searchquery_' + count + '">Search</label><div class="entry">', '</div></div>');
         if (f.editable)
-            hc.push('<textarea class="editsearches-query need-autogrow w-99" id="htctl_searchquery_' + count + '" name="searchq_' + count + '" rows="1" cols="64" placeholder="(All)">' + escape_entities(f.q) + '</textarea>');
+            hc.push('<textarea class="editsearches-query need-autogrow w-99" id="htctl_searchquery_' + count + '" name="searchq_' + count + '" rows="1" cols="64" placeholder="(All)">' + escape_html(f.q) + '</textarea>');
         else
-            hc.push(escape_entities(f.q));
+            hc.push(escape_html(f.q));
         hc.push('<input type="hidden" name="searchid_' + count + '" value="' + (f.id || f.name) + '">');
         hc.pop();
         if (f.error_html) {
@@ -10071,6 +10071,7 @@ window.hotcrp = {
     check_version: check_version,
     demand_load: demand_load,
     edit_comment: papercomment.edit,
+    escape_html: escape_html,
     focus_within: focus_within,
     fold: fold,
     fold_storage: fold_storage,
