@@ -2548,7 +2548,7 @@ div.merror pre {
 
 hr {
 	margin: 0.75em 0;
-	border: 0;
+	border: 0 none;
 	border-top: 1px solid #9999cc;
 	height: 1px;
 }
@@ -2558,10 +2558,11 @@ hr.double-line {
 }
 hr.c {
 	margin: 0;
-	border: 0 none;
+	border-top: 0 none;
 	height: 0;
 }
 hr.g, hr.mg, hr.ug {
+	border-top: 0 none;
 	height: 0;
 }
 
