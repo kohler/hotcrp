@@ -592,7 +592,7 @@ Assignment methods:
  <li><a href="', $Conf->hoturl("conflictassign"), '">Potential conflicts</a></li>
  <li><a href="', $Conf->hoturl("bulkassign"), '">Bulk update</a></li>
 </ul>
-<hr class="hr">
+<hr>
 <p>Types of PC review:</p>
 <dl><dt>', review_type_icon(REVIEW_PRIMARY), ' Primary</dt><dd>Mandatory review</dd>
   <dt>', review_type_icon(REVIEW_SECONDARY), ' Secondary</dt><dd>May be delegated to external reviewers</dd>

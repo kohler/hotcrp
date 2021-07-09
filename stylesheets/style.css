@@ -2548,10 +2548,13 @@ div.merror pre {
 
 hr {
 	margin: 0.75em 0;
-	border: 0 none;
+	border: 0;
+	border-top: 1px solid #9999cc;
 	height: 1px;
-	color: #9999cc; /* for IE6 */
-	background-color: #9999cc;
+}
+hr.double-line {
+	border-bottom: 1px solid #9999cc;
+	height: 3px;
 }
 hr.c {
 	margin: 0;
