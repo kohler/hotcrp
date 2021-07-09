@@ -52,7 +52,9 @@ class PaperTable {
     /** @var int */
     private $npapstrip = 0;
     /** @var bool */
-    private $allow_folds = false;
+    private $require_folds;
+    /** @var bool */
+    private $allow_folds;
     /** @var ?ReviewValues */
     private $review_values;
     private $matchPreg;
@@ -110,7 +112,8 @@ class PaperTable {
                 $this->mode = "p";
             }
         }
-        $this->allow_folds = $this->mode === "re" || $this->mode === "assign";
+        $this->require_folds = $this->allow_folds =
+            $this->mode === "re" || $this->mode === "assign";
     }
 
     /** @param 'p'|'edit'|'re'|'assign' $mode
@@ -317,9 +320,9 @@ class PaperTable {
     }
 
     private function echoDivEnter() {
-        // 4: topics, 6: abstract, 7: [JavaScript abstract expansion],
-        // 8: blind authors, 9: full authors
-        $foldstorage = [4 => "t", 6 => "b", 8 => "a", 9 => "p"];
+        // 4="t": topics, 6="b": abstract, 7: [JavaScript abstract expansion],
+        // 8="a": blind authors, 9="p": full authors
+        $foldstorage = [4 => "t", 6 => "b", 9 => "p"];
         $this->foldnumber = ["topics" => 4];
 
         // other expansions
@@ -346,17 +349,21 @@ class PaperTable {
 
         // what is folded?
         // if highlighting, automatically unfold abstract/authors
+        $vas = $this->user->view_authors_state($this->prow);
         $this->foldmap = [];
         foreach ($foldstorage as $num => $k) {
-            $this->foldmap[$num] = $this->allow_folds || $k === "a";
+            $this->foldmap[$num] = $this->allow_folds;
         }
+        $this->foldmap[8] = $vas === 1;
         if ($this->foldmap[6]) {
             $abstract = $this->highlight($this->prow->abstract_text(), "ab", $match);
             if ($match || !$this->abstract_foldable($abstract)) {
                 $this->foldmap[6] = false;
             }
         }
-        if ($this->matchPreg && ($this->foldmap[8] || $this->foldmap[9])) {
+        if ($this->matchPreg
+            && $vas !== 0
+            && ($this->foldmap[8] || $this->foldmap[9])) {
             $this->highlight($this->prow->authorInformation, "au", $match);
             if ($match) {
                 $this->foldmap[8] = $this->foldmap[9] = false;
@@ -366,12 +373,12 @@ class PaperTable {
         // collect folders
         $folders = [];
         foreach ($this->foldmap as $num => $f) {
-            if ($num !== 8 || $this->user->view_authors_state($this->prow) === 1) {
+            if ($num !== 8 || $vas === 1) {
                 $folders[] = "fold" . $num . ($f ? "c" : "o");
             }
         }
         echo '<div id="foldpaper" class="', join(" ", $folders);
-        if ($this->allow_folds) {
+        if ($this->require_folds) {
             echo '">';
         } else {
             echo (empty($folders) ? "" : " "),
@@ -2776,8 +2783,7 @@ class PaperTable {
                 || $this->prow->timeSubmitted <= 0)) {
             $this->mode = "edit";
         }
-        $this->allow_folds = $this->mode === "re"
-            || $this->mode === "assign"
+        $this->allow_folds = $this->require_folds
             || ($this->mode === "p" && $this->can_view_reviews && !empty($this->all_rrows));
     }
 
