@@ -487,7 +487,7 @@ class Ht {
     }
 
     static function link_urls($html) {
-        return preg_replace('@((?:https?|ftp)://(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;&])(["().,:;]*)(?=[\s<>&]|\z)@s',
+        return preg_replace('@((?:https?|ftp)://(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;?!&])(["().,:;?!]*)(?=[\s<>&]|\z)@s',
                             '<a href="$1" rel="noreferrer">$1</a>$2', $html);
     }
 

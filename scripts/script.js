@@ -3850,7 +3850,7 @@ function minifeedback(e, rv) {
 }
 
 function link_urls(t) {
-    var re = /((?:https?|ftp):\/\/(?:[^\s<>\"&]|&amp;)*[^\s<>\"().,:;&])([\"().,:;]*)(?=[\s<>&]|$)/g;
+    var re = /((?:https?|ftp):\/\/(?:[^\s<>\"&]|&amp;)*[^\s<>\"().,:;?!&])([\"().,:;?!]*)(?=[\s<>&]|$)/g;
     return t.replace(re, function (m, a, b) {
         return '<a href="' + a + '" rel="noreferrer">' + a + '</a>' + b;
     });
