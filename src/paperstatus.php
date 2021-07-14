@@ -205,20 +205,14 @@ class PaperStatus extends MessageSet {
         return $d;
     }
 
-    function paper_json($prow, $args = array()) {
+    /** @param int|PaperInfo $prow */
+    function paper_json($prow) {
         if (is_int($prow)) {
             $prow = $this->conf->paper_by_id($prow, $this->user, ["topics" => true, "options" => true]);
         }
-
-        $original_user = $user = $this->user;
-        if ($args["forceShow"] ?? false) {
-            $user = $this->conf->root_user();
-        }
-        if (!$prow || !$user->can_view_paper($prow)) {
+        if (!$prow || !$this->user->can_view_paper($prow)) {
             return null;
         }
-        $this->user = $user;
-
         $original_no_msgs = $this->swap_ignore_messages(true);
 
         $this->prow = $prow;
@@ -228,7 +222,7 @@ class PaperStatus extends MessageSet {
         $pj->pid = (int) $prow->paperId;
 
         foreach ($this->prow->form_fields() as $opt) {
-            if (!$user || $user->can_view_option($this->prow, $opt)) {
+            if ($this->user->can_view_option($this->prow, $opt)) {
                 $ov = $prow->force_option($opt);
                 $oj = $opt->value_unparse_json($ov, $this);
                 if ($oj !== null) {
@@ -241,7 +235,7 @@ class PaperStatus extends MessageSet {
             }
         }
 
-        if (!$user || $user->can_view_authors($prow)) {
+        if ($this->user->can_view_authors($prow)) {
             $pj->authors = [];
             foreach ($prow->author_list() as $au) {
                 $pj->authors[] = $au->unparse_nae_json();
@@ -249,7 +243,7 @@ class PaperStatus extends MessageSet {
         }
 
         $submitted_status = "submitted";
-        if ($prow->outcome != 0 && $user->can_view_decision($prow)) {
+        if ($prow->outcome != 0 && $this->user->can_view_decision($prow)) {
             $pj->decision = $this->conf->decision_name($prow->outcome);
             if ($pj->decision === false) {
                 $pj->decision = (int) $prow->outcome;
@@ -281,7 +275,6 @@ class PaperStatus extends MessageSet {
         }
 
         $this->swap_ignore_messages($original_no_msgs);
-        $this->user = $original_user;
         return $pj;
     }
 
