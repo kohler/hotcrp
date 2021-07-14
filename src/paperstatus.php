@@ -3,9 +3,12 @@
 // Copyright (c) 2008-2021 Eddie Kohler; see LICENSE.
 
 class PaperStatus extends MessageSet {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    // public $user; -- inherited from MessageSet
+    /** @var Contact
+     * @readonly */
+    public $user;
     /** @var ?PaperInfo */
     private $prow;
     /** @var int */

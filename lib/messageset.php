@@ -43,8 +43,6 @@ class MessageItem implements JsonSerializable {
 }
 
 class MessageSet {
-    /** @var ?Contact */
-    public $user;
     /** @var bool */
     public $ignore_msgs = false;
     /** @var bool */
