@@ -47,12 +47,6 @@ class MessageSet {
     public $ignore_msgs = false;
     /** @var bool */
     public $ignore_duplicates = false;
-    /** @var ?array<string,true> */
-    private $allow_error;
-    /** @var ?array<string,true> */
-    private $werror;
-    /** @var ?array<string,string> */
-    private $canonfield;
     /** @var array<string,int> */
     private $errf;
     /** @var list<MessageItem> */
@@ -80,53 +74,6 @@ class MessageSet {
         $this->clear_messages();
     }
 
-    /** @param string $src
-     * @param string $dst
-     * @return $this */
-    function translate_field($src, $dst) {
-        $this->canonfield[$src] = $this->canonical_field($dst);
-        return $this;
-    }
-    /** @param string $field
-     * @return string */
-    function canonical_field($field) {
-        assert(!!$field);
-        return $field ? $this->canonfield[$field] ?? $field : $field;
-    }
-    /** @param string $field
-     * @return bool */
-    function allow_error_at($field) {
-        return $this->allow_error && isset($this->allow_error[$this->canonical_field($field)]);
-    }
-    /** @param string $field
-     * @param bool $v
-     * @return $this */
-    function set_allow_error_at($field, $v) {
-        $field = $this->canonical_field($field);
-        if ($v) {
-            $this->allow_error[$field] = true;
-        } else {
-            unset($this->allow_error[$field]);
-        }
-        return $this;
-    }
-    /** @param string $field
-     * @return bool */
-    function werror_at($field) {
-        return $this->werror && isset($this->werror[$this->canonical_field($field)]);
-    }
-    /** @param string $field
-     * @param bool $v
-     * @return $this */
-    function set_werror_at($field, $v) {
-        $field = $this->canonical_field($field);
-        if ($v) {
-            $this->werror[$field] = true;
-        } else if ($this->werror) {
-            unset($this->werror[$field]);
-        }
-        return $this;
-    }
     /** @param bool $im
      * @return bool */
     function swap_ignore_messages($im) {
@@ -141,67 +88,57 @@ class MessageSet {
         return $this;
     }
 
-    /** @param ?string $field
-     * @param string $msg
-     * @param -4|-3|-2|-1|0|1|2|3 $status
+    /** @param MessageItem $mi
      * @return int|false */
-    function message_index($field, $msg, $status) {
-        if ($field === null || ($this->errf[$field] ?? -5) >= $status) {
+    private function message_index($mi) {
+        if ($mi->field === null
+            ? $this->problem_status >= $mi->status
+            : ($this->errf[$mi->field] ?? -5) >= $mi->status) {
             foreach ($this->msgs as $i => $m) {
-                if ($m->field === $field
-                    && $m->message === $msg
-                    && $m->status === $status)
+                if ($m->field === $mi->field
+                    && $m->message === $mi->message
+                    && $m->status === $mi->status)
                     return $i;
             }
         }
         return false;
     }
 
+    /** @param MessageItem $mi */
+    function add($mi) {
+        if (!$this->ignore_msgs) {
+            if ($mi->field !== null) {
+                $old_status = $this->errf[$mi->field] ?? -5;
+                $this->errf[$mi->field] = max($this->errf[$mi->field] ?? 0, $mi->status);
+            } else {
+                $old_status = $this->problem_status;
+            }
+            $this->problem_status = max($this->problem_status, $mi->status);
+            if ($mi->message !== ""
+                && (!$this->ignore_duplicates
+                    || $old_status < $mi->status
+                    || $this->message_index($mi) === false)) {
+                $this->msgs[] = $mi;
+            }
+        }
+    }
+
     /** @param ?string $field
-     * @param false|null|string|list<string> $msg
+     * @param false|null|string $msg
      * @param -4|-3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
-        $mi = null;
-        if (!$this->ignore_msgs) {
-            if ($field !== null && $field !== false && $field !== "") {
-                $field = $this->canonfield[$field] ?? $field;
-                if ($status === self::WARNING && ($this->werror[$field] ?? false)) {
-                    $status = self::ERROR;
-                } else if ($status === self::ERROR && ($this->allow_error[$field] ?? false)) {
-                    $status = self::WARNING;
-                }
-                $old_status = $this->errf[$field] ?? -5;
-                $this->errf[$field] = max($this->errf[$field] ?? 0, $status);
-            } else {
-                $field = null;
-                $old_status = $this->problem_status;
-            }
-            if (is_string($msg)) {
-                $msg = [$msg];
-            } else if ($msg === null || $msg === false) {
-                $msg = [];
-            }
-            foreach ($msg as $mt) {
-                if ($mt !== ""
-                    && (!$this->ignore_duplicates
-                        || $old_status < $status
-                        || $this->message_index($field, $mt, $status) === false)) {
-                    $this->msgs[] = $mi = new MessageItem($field, $mt, $status);
-                }
-            }
-            $this->problem_status = max($this->problem_status, $status);
+        if ($field === false || $field === "") {
+            $field = null;
         }
-        return $mi ?? new MessageItem(null, "", $status);
+        if ($msg === null || $msg === false) {
+            $msg = "";
+        }
+        $mi = new MessageItem($field, $msg, $status);
+        $this->add($mi);
+        return $mi;
     }
-    /** @param ?string $field
-     * @param false|null|string|list<string> $msg
-     * @param 0|1|2|3 $status
-     * @return MessageItem
-     * @deprecated */
-    function msg($field, $msg, $status) {
-        return $this->msg_at($field, $msg, $status);
-    }
+
     /** @param ?string $field
      * @param false|null|string $msg
      * @return MessageItem */
@@ -271,7 +208,6 @@ class MessageSet {
      * @return int */
     function problem_status_at($field) {
         if ($this->problem_status >= self::WARNING) {
-            $field = $this->canonfield[$field] ?? $field;
             return $this->errf[$field] ?? 0;
         } else {
             return 0;
@@ -281,7 +217,6 @@ class MessageSet {
      * @return bool */
     function has_messages_at($field) {
         if (!empty($this->errf)) {
-            $field = $this->canonfield[$field] ?? $field;
             if (isset($this->errf[$field])) {
                 foreach ($this->msgs as $mx) {
                     if ($mx->field === $field)
@@ -308,7 +243,6 @@ class MessageSet {
         $ps = 0;
         if ($this->problem_status > $ps) {
             foreach ($fields as $f) {
-                $f = $this->canonfield[$f] ?? $f;
                 $ps = max($ps, $this->errf[$f] ?? 0);
             }
         }
@@ -426,7 +360,6 @@ class MessageSet {
     /** @param string $field
      * @return \Generator<MessageItem> */
     function message_list_at($field) {
-        $field = $this->canonfield[$field] ?? $field;
         if (isset($this->errf[$field])) {
             foreach ($this->msgs as $mx) {
                 if ($mx->field === $field) {

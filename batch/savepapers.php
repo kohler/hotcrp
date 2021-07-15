@@ -246,8 +246,6 @@ class BatchSavePapers {
             "add_topics" => $this->add_topics,
             "content_file_prefix" => $this->document_directory
         ]);
-        $ps->set_allow_error_at("topics", true);
-        $ps->set_allow_error_at("options", true);
         $ps->on_document_import([$this, "on_document_import"]);
 
         $pid = $ps->save_paper_json($j);

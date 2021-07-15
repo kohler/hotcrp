@@ -303,7 +303,6 @@ class PaperTable {
         $this->editable = $editable;
         $this->useRequest = $useRequest;
         $this->edit_status = $status;
-        $this->edit_status->translate_field("authorInformation", "authors");
     }
 
     function set_review_values(ReviewValues $rvalues = null) {
@@ -810,7 +809,7 @@ class PaperTable {
         $vas = $this->user->view_authors_state($this->prow);
         if ($vas === 0) {
             $fr->value = '<div class="pg">'
-                . $this->papt("authorInformation", $o->title_html(0))
+                . $this->papt("authors", $o->title_html(0))
                 . '<div class="pavb"><i>Hidden for blind review</i></div>'
                 . "</div>\n\n";
             return;
@@ -899,7 +898,7 @@ class PaperTable {
                 || $this->prow->timeSubmitted <= 0)) {
             $contacts_option = $this->conf->option_by_id(PaperOption::CONTACTSID);
             $fr->value .= '<div class="pg fx9' . ($vas > 1 ? "" : " fx8") . '">'
-                . $this->papt("authorInformation", $contacts_option->title_html(count($contacts)))
+                . $this->papt("contacts", $contacts_option->title_html(count($contacts)))
                 . '<div class="pavb">'
                 . $this->authorData($contacts, "col", $this->user)
                 . "</div></div>\n\n";

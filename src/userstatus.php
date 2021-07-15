@@ -48,11 +48,9 @@ class UserStatus extends MessageSet {
         "allfinal" => Contact::WATCH_FINAL_SUBMIT_ALL
     ];
 
-    static private $field_synonym_map = [
+    static private $web_to_message_map = [
         "preferredEmail" => "preferred_email",
-        "addressLine1" => "address", "addressLine2" => "address",
-        "zipCode" => "zip", "postal_code" => "zip",
-        "contactTags" => "tags", "uemail" => "email"
+        "uemail" => "email"
     ];
 
     static public $topic_interest_name_map = [
@@ -69,9 +67,6 @@ class UserStatus extends MessageSet {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         parent::__construct();
-        foreach (self::$field_synonym_map as $src => $dst) {
-            $this->translate_field($src, $dst);
-        }
     }
     function clear() {
         $this->clear_messages();
@@ -1271,8 +1266,10 @@ class UserStatus extends MessageSet {
     }
 
 
+    /** @param string $field */
     function render_field($field, $caption, $entry, $class = "f-i w-text") {
-        echo '<div class="', $this->control_class($field, $class), '">',
+        $msfield = self::$web_to_message_map[$field] ?? $field;
+        echo '<div class="', $this->control_class($msfield, $class), '">',
             ($field ? Ht::label($caption, $field) : "<div class=\"f-c\">{$caption}</div>"),
             $entry, "</div>";
     }
@@ -1320,7 +1317,7 @@ class UserStatus extends MessageSet {
             $us->render_field("uemail", "Email" . $actas,
                 Ht::entry("uemail", $qreq->email ?? $user->email, ["class" => $email_class, "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => $user->email, "type" => "email"]));
         } else if (!$user->is_empty()) {
-            $us->render_field(false, "Username" . $actas,
+            $us->render_field("", "Username" . $actas,
                 htmlspecialchars($user->email));
             $us->render_field("preferredEmail", "Email",
                 Ht::entry("preferredEmail", $qreq->preferredEmail ?? $user->preferredEmail, ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => $user->preferredEmail, "type" => "email"]));
@@ -1532,7 +1529,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         $us->gxt()->render_open_section("w-text fx2");
         $us->gxt()->render_title("Tags");
         if ($us->viewer->privChair) {
-            echo '<div class="', $us->control_class("contactTags", "f-i"), '">',
+            echo '<div class="', $us->control_class("tags", "f-i"), '">',
                 Ht::entry("contactTags", $qreq->contactTags ?? $itags, ["size" => 60, "data-default-value" => $itags]),
                 "</div>
   <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p>\n";
