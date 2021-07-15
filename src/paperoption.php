@@ -184,7 +184,7 @@ class PaperValue implements JsonSerializable {
         return $this->_ms;
     }
     /** @param MessageSet $ms */
-    function add_messages_to($ms) {
+    function copy_messages_to($ms) {
         if ($this->_ms) {
             $ms->add_set($this->_ms);
         }
@@ -1637,7 +1637,7 @@ class Document_PaperOption extends PaperOption {
             && !$this->conf->opt("noPapers")
             && ($ov->value ?? 0) <= 1
             && !$ov->prow->allow_absent()) {
-            $ov->warning($this->conf->_("Entry required to complete submission."));
+            $ov->msg($this->conf->_("Entry required to complete submission."), MessageSet::WARNING_NOTE);
         }
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {

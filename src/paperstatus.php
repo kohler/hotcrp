@@ -673,53 +673,41 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function _check_one_field(PaperOption $opt, $oj) {
-        if ($oj === null) {
-            $ov = null;
-        } else if ($oj instanceof PaperValue) {
-            $ov = $oj;
-        } else {
-            $ov = $opt->parse_json($this->_nnprow, $oj);
-        }
-        if ($ov !== null) {
-            if (!$ov->has_error()) {
-                $opt->value_store($ov, $this);
-            }
-            $this->_nnprow->override_option($ov);
-            $this->_field_values[$opt->id] = $ov;
-        }
-    }
-
     private function _check_fields($pj) {
+        foreach ($this->_nnprow->form_fields() as $opt) {
+            if ($this->user->can_edit_option($this->_nnprow, $opt)
+                || ($this->user->is_site_contact
+                    && isset($pj->{$opt->json_key()}))) {
+                $oj = $pj->{$opt->json_key()} ?? null;
+                if ($oj === null) {
+                    $ov = null;
+                } else if ($oj instanceof PaperValue) {
+                    $ov = $oj;
+                } else {
+                    $ov = $opt->parse_json($this->_nnprow, $oj);
+                }
+                if ($ov !== null) {
+                    $opt->value_check($ov, $this->user);
+                    if (!$ov->has_error()) {
+                        $opt->value_store($ov, $this);
+                        $this->_nnprow->override_option($ov);
+                        $this->_field_values[$opt->id] = $ov;
+                    }
+                } else {
+                    $ov = $this->_nnprow->force_option($opt);
+                    $opt->value_check($ov, $this->user);
+                }
+                $ov->copy_messages_to($this);
+            }
+        }
         if (!empty($pj->_bad_options)) {
             $this->warning_at("options", $this->_("Unknown options ignored (%2\$s).", count($pj->_bad_options), htmlspecialchars(join("; ", $pj->_bad_options))));
         }
-        foreach ($this->_nnprow->form_fields() as $o) {
-            $jk = $o->json_key();
-            if (isset($pj->$jk)) {
-                $this->_check_one_field($o, $pj->$jk);
-            }
-        }
-    }
-
-    private function _validate_fields() {
-        $max_status = 0;
-        foreach ($this->_nnprow->form_fields() as $opt) {
-            $ov = $this->_nnprow->force_option($opt);
-            if (!$ov->has_error()) {
-                $ov->option->value_check($ov, $this->user);
-            }
-            foreach ($ov->message_list() as $i => $mx) {
-                $max_status = max($max_status, $mx->status);
-                $this->msg_at($mx->field, $mx->message, $mx->status);
-            }
-        }
-        return $max_status < MessageSet::ESTOP;
     }
 
     private function _save_fields() {
         foreach ($this->_field_values ?? [] as $ov) {
-            if ($ov->has_error()) {
+            if ($ov->has_error()) { // XXX should never have errors here
                 continue;
             }
             $v1 = $ov->value_list();
@@ -979,9 +967,9 @@ class PaperStatus extends MessageSet {
         $this->_check_status($pj);
         $this->_check_final_status($pj);
         $this->_check_decision($pj);
-        $ok = $this->_validate_fields();
 
         // prepare changes for saving
+        $ok = $this->problem_status() < MessageSet::ESTOP;
         if ($ok) {
             $this->_save_fields();
         }
