@@ -291,20 +291,22 @@ class PaperStatus extends MessageSet {
     function warning_at_option(PaperOption $o, $msg) {
         $this->warning_at($o->field_key(), $msg);
     }
-    function landmarked_message_texts() {
+    function syntax_error_at($key, $value) {
+        $this->error_at($key, "Validation error [" . htmlspecialchars($key) . "]");
+        error_log($this->conf->dbname . ": PaperStatus: syntax error $key " . gettype($value));
+    }
+    /** @return list<string> */
+    function landmarked_problem_texts() {
         $ms = [];
         foreach ($this->message_list() as $mx) {
-            if ($mx->message) {
+            if ($mx->message
+                && $mx->status >= MessageSet::WARNING
+                && !str_ends_with($mx->field ?? "", ":context")) {
                 $o = $mx->field ? $this->conf->options()->option_by_field_key($mx->field) : null;
                 $ms[] = ($o ? htmlspecialchars($o->edit_title()) . ": " : "") . $mx->message;
             }
         }
         return $ms;
-    }
-
-    function syntax_error_at($key, $value) {
-        $this->error_at($key, "Validation error [" . htmlspecialchars($key) . "]");
-        error_log($this->conf->dbname . ": PaperStatus: syntax error $key " . gettype($value));
     }
 
 
@@ -704,15 +706,12 @@ class PaperStatus extends MessageSet {
         $max_status = 0;
         foreach ($this->_nnprow->form_fields() as $opt) {
             $ov = $this->_nnprow->force_option($opt);
-            $errorindex = count($ov->message_list());
             if (!$ov->has_error()) {
                 $ov->option->value_check($ov, $this->user);
             }
             foreach ($ov->message_list() as $i => $mx) {
                 $max_status = max($max_status, $mx->status);
-                if ($i < $errorindex || $mx->status >= MessageSet::ERROR) {
-                    $this->msg_at($mx->field, $mx->message, $mx->status);
-                }
+                $this->msg_at($mx->field, $mx->message, $mx->status);
             }
         }
         return $max_status < MessageSet::ESTOP;

@@ -258,7 +258,7 @@ class BatchSavePapers {
         }
         // XXX does not change decision
         $prefix = $pidtext . ": ";
-        foreach ($ps->landmarked_message_texts() as $msg) {
+        foreach ($ps->landmarked_problem_texts() as $msg) {
             fwrite(STDERR, $prefix . htmlspecialchars_decode($msg) . "\n");
         }
         if (!$pid) {

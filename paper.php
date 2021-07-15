@@ -151,7 +151,7 @@ class PaperPage {
                 // XXX save uploaded files
                 $this->ps->error_at(null, "<strong>Your uploaded files were ignored.</strong>");
             }
-            $emsg = $this->ps->landmarked_message_texts();
+            $emsg = $this->ps->landmarked_problem_texts();
             Conf::msg_error(space_join($conf->_("Your changes were not saved. Please fix these errors and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
             return;
         }
@@ -179,10 +179,8 @@ class PaperPage {
         // actually update
         $this->ps->execute_save();
 
-        $webnotes = "";
-        if ($this->ps->has_messages()) {
-            $webnotes .= " <ul><li>" . join("</li><li>", $this->ps->landmarked_message_texts()) . "</li></ul>";
-        }
+        $warnmsgs = $this->ps->landmarked_problem_texts();
+        $webnotes = $warnmsgs ? " <ul><li>" . join("</li><li>", $warnmsgs) . "</li></ul>" : "";
 
         $new_prow = $conf->paper_by_id($this->ps->paperId, $this->user, ["topics" => true, "options" => true]);
         if (!$new_prow) {
