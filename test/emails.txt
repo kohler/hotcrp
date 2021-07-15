@@ -1114,7 +1114,7 @@ submitted. The review is available on the submission site.
 
         Site: http://hotcrp.lcdf.org/test/paper/1
        Title: Scalable Timers for Soft State Protocols
-   Review by: Mark Handley <mjh@isi.edu>
+   Review by: Lixia Zhang <lixia@cs.ucla.edu>
 
 For the most up-to-date reviews and comments, or to unsubscribe from
 email notification, see the submission site.
@@ -1126,7 +1126,7 @@ concerns.
 
 Review #1B
 ===========================================================================
-* Reviewer: Mark Handley <mjh@isi.edu>
+* Reviewer: Lixia Zhang <lixia@cs.ucla.edu>
 
 Overall merit
 -------------

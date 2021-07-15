@@ -18,7 +18,7 @@
     {"name": "Sally Floyd", "email": "floyd@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory", "roles": ["pc"], "tags": "red blue"},
     {"name": "Scott Shenker", "email": "shenker@parc.xerox.com", "affiliation": "Xerox PARC", "roles": ["pc", "chair"]},
     {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"},
-    {"name": "Wilma Ojuelegba", "email": "ojuelegba@gmail.com", "affiliation": "Stanford", "roles": ["pc"]},
+    {"name": "Wilma Ojuelegba", "email": "ojuelegba@gmail.com", "affiliation": "INRIA", "roles": ["pc"]},
     {"name": "Véra Djükuba", "email": "vera@bombay.com", "affiliation": "Bombay Institute", "roles": ["pc"]},
     {"name": "Randy H. Katz", "email": "randy@cs.berkeley.edu", "affiliation": "University of California, Berkeley"}
 ],
@@ -32,6 +32,7 @@
         {"name": "Sally Floyd", "email": "floyd@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"},
         {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"}
     ],
+    "pc_conflicts": ["mjh@isi.edu", "peter.danzig@usc.edu"],
     "submission": {"content": "%PDF-whatever"},
     "submitted": true,
     "options": {"calories": 1020}
@@ -391,7 +392,7 @@
 "assignments_1": [
     "paper,action,email,round",
     "1,primary,mgbaker@cs.stanford.edu",
-    "1,primary,mjh@isi.edu",
+    "1,primary,lixia@cs.ucla.edu",
     "1,primary,varghese@ccrc.wustl.edu",
     "2,primary,chair@_.com",
     "2,primary,jon@cs.ucl.ac.uk",

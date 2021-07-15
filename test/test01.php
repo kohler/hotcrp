@@ -25,6 +25,7 @@ $user_wilma = $Conf->checked_user_by_email("ojuelegba@gmail.com"); // pc
 $user_mjh = $Conf->checked_user_by_email("mjh@isi.edu"); // pc
 $user_pdruschel = $Conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
 $user_randy = $Conf->checked_user_by_email("randy@cs.berkeley.edu"); // author
+$user_lixia = $Conf->checked_user_by_email("lixia@cs.ucla.edu"); // pc
 $user_nobody = new Contact;
 
 // users are different
@@ -280,23 +281,23 @@ xassert($user_wilma->can_view_review($paper1, $review1));
 xassert($user_mgbaker->has_review());
 xassert($user_mgbaker->has_outstanding_review());
 xassert($user_mgbaker->can_view_review($paper1, $review1));
-xassert($user_mjh->has_review());
-xassert($user_mjh->has_outstanding_review());
-xassert(!$user_mjh->can_view_review($paper1, $review1));
+xassert($user_lixia->has_review());
+xassert($user_lixia->has_outstanding_review());
+xassert(!$user_lixia->can_view_review($paper1, $review1));
 xassert($user_varghese->has_review());
 xassert($user_varghese->has_outstanding_review());
 xassert(!$user_varghese->can_view_review($paper1, $review1));
 xassert($user_marina->has_review());
 xassert($user_marina->has_outstanding_review());
 xassert($user_marina->can_view_review($paper1, $review1));
-$review2 = save_review(1, $user_mjh, $revreq);
+$review2 = save_review(1, $user_lixia, $revreq);
 MailChecker::check_db("test01-save-review1B");
 xassert($user_wilma->can_view_review($paper1, $review1));
 xassert($user_wilma->can_view_review($paper1, $review2));
 xassert($user_mgbaker->can_view_review($paper1, $review1));
 xassert($user_mgbaker->can_view_review($paper1, $review2));
-xassert($user_mjh->can_view_review($paper1, $review1));
-xassert($user_mjh->can_view_review($paper1, $review2));
+xassert($user_lixia->can_view_review($paper1, $review1));
+xassert($user_lixia->can_view_review($paper1, $review2));
 xassert(!$user_varghese->can_view_review($paper1, $review1));
 xassert(!$user_varghese->can_view_review($paper1, $review2));
 xassert($user_marina->can_view_review($paper1, $review1));
@@ -308,8 +309,8 @@ xassert($user_wilma->can_view_review($paper1, $review1));
 xassert($user_wilma->can_view_review($paper1, $review2));
 xassert($user_mgbaker->can_view_review($paper1, $review1));
 xassert($user_mgbaker->can_view_review($paper1, $review2));
-xassert($user_mjh->can_view_review($paper1, $review1));
-xassert($user_mjh->can_view_review($paper1, $review2));
+xassert($user_lixia->can_view_review($paper1, $review1));
+xassert($user_lixia->can_view_review($paper1, $review2));
 xassert(!$user_marina->can_view_review($paper1, $review1));
 xassert(!$user_marina->can_view_review($paper1, $review2));
 
@@ -389,7 +390,7 @@ $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,action,email\n1,pri,estrin@usc.edu\n");
 xassert_eqq(join("\n", $assignset->message_texts()), "Deborah Estrin <estrin@usc.edu> has a conflict with #1.");
 $assignset->execute();
-assert_query("select email from PaperReview r join ContactInfo c on (c.contactId=r.contactId) where paperId=1 order by email", "mgbaker@cs.stanford.edu\nmjh@isi.edu\nvarghese@ccrc.wustl.edu");
+assert_query("select email from PaperReview r join ContactInfo c on (c.contactId=r.contactId) where paperId=1 order by email", "lixia@cs.ucla.edu\nmgbaker@cs.stanford.edu\nvarghese@ccrc.wustl.edu");
 
 // check AssignmentSet error messages and landmarks
 $assignset = new AssignmentSet($Admin, false);

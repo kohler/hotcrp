@@ -409,6 +409,7 @@ xassert_eqq($nprow1->abstract, "They\nsee\r\nlots of\n\n\ncolors.");
 // collaborators saving
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators(), "");
+$Conf->save_refresh_setting("sub_collab", 1);
 
 $ps = new PaperStatus($Conf, $user_estrin);
 $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "collaborators" => "  John Fart\rMIT\n\nButt Man (UCLA)"]), $nprow1, "update");
@@ -460,6 +461,7 @@ xassert_array_eqq(array_keys($ps->diffs), ["collaborators"], true);
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
 xassert_eqq($nprow1->collaborators(), "One guy (MIT)");
 xassert_eqq($nprow1->dataOverflow, null);
+$Conf->save_refresh_setting("sub_collab", null);
 
 // topic saving
 $Conf->qe("insert into TopicArea (topicName) values ('Cloud computing'), ('Architecture'), ('Security'), ('Cloud networking')");

@@ -577,7 +577,8 @@ function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = Me
     if ($ps->problem_status() > $maxstatus) {
         $asserted = false;
         foreach ($ps->problem_list() as $mx) {
-            if ($mx->message !== "Entry required.") {
+            if ($mx->message !== "Entry required."
+                && $mx->message !== "Entry required to complete submission.") {
                 if (!$asserted) {
                     xassert($ps->problem_status() <= $maxstatus);
                     $asserted = true;
