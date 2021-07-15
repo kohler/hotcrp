@@ -183,21 +183,32 @@ class PaperValue implements JsonSerializable {
         $this->_ms = $this->_ms ?? new MessageSet;
         return $this->_ms;
     }
-    function set_message_set(MessageSet $ms) {
-        $this->_ms = $ms;
+    /** @param MessageSet $ms */
+    function add_messages_to($ms) {
+        if ($this->_ms) {
+            $ms->add_set($this->_ms);
+        }
     }
+    /** @param string $field
+     * @param ?string $msg
+     * @param -4|-3|-2|-1|0|1|2|3 $status */
     function msg_at($field, $msg, $status) {
         $this->message_set()->msg_at($field, $msg, $status);
     }
+    /** @param ?string $msg
+     * @param -4|-3|-2|-1|0|1|2|3 $status */
     function msg($msg, $status) {
         $this->message_set()->msg_at($this->option->field_key(), $msg, $status);
     }
+    /** @param ?string $msg */
     function estop($msg) {
         $this->msg($msg, MessageSet::ESTOP);
     }
+    /** @param ?string $msg */
     function error($msg) {
         $this->msg($msg, MessageSet::ERROR);
     }
+    /** @param ?string $msg */
     function warning($msg) {
         $this->msg($msg, MessageSet::WARNING);
     }

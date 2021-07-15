@@ -123,6 +123,18 @@ class MessageSet {
         }
     }
 
+    /** @param MessageSet $ms */
+    function add_set($ms) {
+        if (!$this->ignore_msgs) {
+            foreach ($ms->msgs as $mi) {
+                $this->add($mi);
+            }
+            foreach ($ms->errf as $field => $status) {
+                $this->errf[$field] = max($this->errf[$field] ?? 0, $status);
+            }
+        }
+    }
+
     /** @param ?string $field
      * @param false|null|string $msg
      * @param -4|-3|-2|-1|0|1|2|3 $status

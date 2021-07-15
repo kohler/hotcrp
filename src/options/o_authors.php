@@ -35,7 +35,7 @@ class Authors_PaperOption extends PaperOption {
         }
         if ($nreal === 0 && !$ov->prow->allow_absent()) {
             $ov->estop($this->conf->_("Entry required."));
-            $ov->msg_at("authors:1", false, MessageSet::ERROR);
+            $ov->msg_at("authors:1", null, MessageSet::ERROR);
         }
         $max_authors = $this->conf->opt("maxAuthors");
         if ($max_authors > 0 && $nreal > $max_authors) {
@@ -47,11 +47,11 @@ class Authors_PaperOption extends PaperOption {
             if (strpos($auth->email, "@") === false
                 && strpos($auth->affiliation, "@") !== false) {
                 $msg1 = true;
-                $ov->msg_at("authors:" . ($n + 1), false, MessageSet::WARNING);
+                $ov->msg_at("authors:" . ($n + 1), null, MessageSet::WARNING);
             } else if ($auth->firstName === "" && $auth->lastName === ""
                        && $auth->email === "" && $auth->affiliation !== "") {
                 $msg2 = true;
-                $ov->msg_at("authors:" . ($n + 1), false, MessageSet::WARNING);
+                $ov->msg_at("authors:" . ($n + 1), null, MessageSet::WARNING);
             } else if ($auth->email !== "" && !validate_email($auth->email)
                        && !$ov->prow->author_by_email($auth->email)) {
                 $ov->estop(null);

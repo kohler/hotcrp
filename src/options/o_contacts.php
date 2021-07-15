@@ -91,7 +91,7 @@ class Contacts_PaperOption extends PaperOption {
                     $ov->error("“" . htmlspecialchars($c->email) . "” is not a valid email address.");
                 }
                 if ($c->author_index) {
-                    $ov->msg_at("contacts:{$c->author_index}", false, MessageSet::ERROR);
+                    $ov->msg_at("contacts:{$c->author_index}", null, MessageSet::ERROR);
                 }
                 $bad_ca[] = $c;
             }

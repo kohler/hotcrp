@@ -348,8 +348,8 @@ class PaperPage {
             foreach ($this->prow->form_fields() as $o) {
                 if ($this->user->can_edit_option($this->prow, $o)) {
                     $ov = $this->prow->force_option($o);
-                    $ov->set_message_set($this->ps);
                     $o->value_check($ov, $this->user);
+                    $ov->add_messages_to($this->ps);
                 }
             }
             $this->user->set_overrides($old_overrides);
