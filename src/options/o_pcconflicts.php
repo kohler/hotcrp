@@ -49,7 +49,7 @@ class PCConflicts_PaperOption extends PaperOption {
             foreach ($this->conf->full_pc_members() as $p) {
                 if (($vm[$p->contactId] ?? 0) === 0 /* not MAXUNCONFLICTED */
                     && $ov->prow->potential_conflict($p)) {
-                    $pcs[] = Ht::link($p->name_h(NAME_P), "#pcc{$p->contactId}", ["class" => "uu"]);
+                    $pcs[] = Ht::link($p->name_h(NAME_P), "#pcconf:{$p->contactId}", ["class" => "uu"]);
                 }
             }
             if (!empty($pcs)) {
@@ -78,8 +78,10 @@ class PCConflicts_PaperOption extends PaperOption {
     function parse_web(PaperInfo $prow, Qrequest $qreq) {
         $vm = self::paper_value_map($prow);
         foreach ($prow->conf->pc_members() as $cid => $pc) {
-            if (isset($qreq["has_pcc$cid"]) || isset($qreq["pcc$cid"])) {
-                $ct = $qreq["pcc$cid"] ?? "0";
+            if (isset($qreq["has_pcconf:$cid"]) || isset($qreq["pcconf:$cid"])
+                // XXX backward compat:
+                || isset($qreq["has_pcc$cid"]) || isset($qreq["pcc$cid"])) {
+                $ct = $qreq["pcconf:$cid"] ?? $qreq["pcc$cid"] ?? "0";
                 if (ctype_digit($ct) && $ct >= 0 && $ct <= 127) {
                     $this->update_value_map($vm, $cid, (int) $ct);
                 }
@@ -209,7 +211,7 @@ class PCConflicts_PaperOption extends PaperOption {
             }
             echo '"><label>';
 
-            $js = ["id" => "pcc$id", "disabled" => $readonly];
+            $js = ["id" => "pcconf:$id", "disabled" => $readonly];
             $hidden = "";
             if (Conflict::is_author($pct)
                 || (!$admin && Conflict::is_pinned($pct))) {
@@ -226,7 +228,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 } else {
                     echo '<span class="checkc">', Ht::checkbox(null, 1, Conflict::is_conflicted($pct), ["disabled" => true]), '</span>';
                 }
-                echo Ht::hidden("pcc$id", $pct, ["class" => "conflict-entry", "disabled" => true]);
+                echo Ht::hidden("pcconf:$id", $pct, ["class" => "conflict-entry", "disabled" => true]);
             } else if ($selectors) {
                 $xctypes = $ctypes;
                 if (!isset($xctypes[$ct])) {
@@ -235,17 +237,17 @@ class PCConflicts_PaperOption extends PaperOption {
                 $js["class"] = "conflict-entry";
                 $js["data-default-value"] = $pct;
                 echo '<span class="pcconf-editselector">',
-                    Ht::select("pcc$id", $xctypes, $ct, $js),
+                    Ht::select("pcconf:$id", $xctypes, $ct, $js),
                     '</span>';
             } else {
                 $js["data-default-checked"] = Conflict::is_conflicted($pct);
-                $js["data-range-type"] = "pcc";
+                $js["data-range-type"] = "pcconf";
                 $js["class"] = "uic js-range-click conflict-entry";
                 $checked = Conflict::is_conflicted($ct);
                 echo '<span class="checkc">',
-                    Ht::checkbox("pcc$id", $checked ? $ct : Conflict::GENERAL, $checked, $js),
+                    Ht::checkbox("pcconf:$id", $checked ? $ct : Conflict::GENERAL, $checked, $js),
                     '</span>';
-                $hidden = Ht::hidden("has_pcc$id", 1);
+                $hidden = Ht::hidden("has_pcconf:$id", 1);
             }
 
             echo $label, "</label>", $hidden;

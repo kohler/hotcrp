@@ -8504,11 +8504,11 @@ edit_conditions.collaborators = function (ec, form) {
 edit_conditions.pc_conflict = function (ec, form) {
     var n = 0, elt;
     for (var i = 0; i !== ec.cids.length; ++i)
-        if ((elt = form.elements["pcc" + ec.cids[i]])
+        if ((elt = form.elements["pcconf:" + ec.cids[i]])
             && (elt.type === "checkbox" ? elt.checked : +elt.value > 1)) {
             ++n;
-            if (ec.compar === "!=" && ec.value === 0)
-                return true;
+            if (n > ec.value)
+                break;
         }
     return evaluate_compar(n, ec.compar, ec.value);
 };
