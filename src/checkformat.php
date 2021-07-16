@@ -236,7 +236,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $pages = $this->npages;
             assert(is_int($pages));
             if ($pages < $spec->pagelimit[0]) {
-                $this->warning_at("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $pages . ".");
+                $this->problem_at("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $pages . ".");
             }
             if ($pages > $spec->pagelimit[1]
                 && $spec->unlimitedref
@@ -286,7 +286,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             }
             $maxpages = $spec->pagelimit ? $spec->pagelimit[1] : 0;
             if (count($px) > $maxpages * 0.75) {
-                $this->warning_at("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . self::page_message($px) . ".");
+                $this->problem_at("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . self::page_message($px) . ".");
             }
         }
 
@@ -364,7 +364,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $this->msg_at("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
             }
             if (!empty($hipx)) {
-                $this->warning_at("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
+                $this->problem_at("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
             }
         }
 
@@ -396,7 +396,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
                 $this->msg_at("bodylineheight", "Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
             }
             if (!empty($hipx)) {
-                $this->warning_at("bodylineheight", "Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
+                $this->problem_at("bodylineheight", "Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
             }
         }
     }

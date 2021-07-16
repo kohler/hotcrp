@@ -53,6 +53,10 @@ class MessageSet {
     private $msgs;
     /** @var int */
     private $problem_status;
+    /** @var ?array<string,int> */
+    private $pstatus_at;
+    /** @var int */
+    private $default_pstatus = 1;
 
     const WARNING_NOTE = -4;
     const SUCCESS = -3;
@@ -86,6 +90,11 @@ class MessageSet {
     function set_ignore_duplicates($v) {
         $this->ignore_duplicates = $v;
         return $this;
+    }
+    /** @param string $field
+     * @param -4|-3|-2|-1|0|1|2|3 $status */
+    function set_status_for_problem_at($field, $status) {
+        $this->pstatus_at[$field] = $status;
     }
 
     /** @param MessageItem $mi
@@ -168,6 +177,13 @@ class MessageSet {
      * @return MessageItem */
     function warning_at($field, $msg) {
         return $this->msg_at($field, $msg, self::WARNING);
+    }
+    /** @param ?string $field
+     * @param false|null|string $msg
+     * @return MessageItem */
+    function problem_at($field, $msg) {
+        $status = $this->pstatus_at[$field] ?? $this->default_pstatus;
+        return $this->msg_at($field, $msg, $status);
     }
     /** @param ?string $field
      * @param false|null|string $msg
