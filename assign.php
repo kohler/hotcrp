@@ -153,6 +153,7 @@ if ((isset($Qreq->requestreview) || isset($Qreq->approvereview))
     } else {
         $emx = null;
         foreach ($result->content["message_list"] ?? [] as $mx) {
+            '@phan-var-force MessageItem $mx';
             if ($mx->field === "email") {
                 $emx = $mx;
             } else if ($mx->field === "override" && $emx) {

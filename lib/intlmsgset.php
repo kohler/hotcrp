@@ -19,6 +19,10 @@ class IntlMsg {
     /** @var ?IntlMsg */
     public $next;
 
+    /** @param list<string> $args
+     * @param string $argname
+     * @param ?string &$val
+     * @return bool */
     private function resolve_arg(IntlMsgSet $ms, $args, $argname, &$val) {
         $component = false;
         if (strpos($argname, "[") !== false
@@ -54,6 +58,8 @@ class IntlMsg {
             return 0;
         }
         $nreq = 0;
+        $compval = null;
+        '@phan-var-force ?string $compval';
         foreach ($this->require as $req) {
             if (preg_match('/\A\s*(!*)\s*(\S+?)\s*(\z|[=!<>]=?|≠|≤|≥|!?\^=)\s*(\S*)\s*\z/', $req, $m)
                 && ($m[1] === "" || ($m[3] === "" && $m[4] === ""))
@@ -63,8 +69,9 @@ class IntlMsg {
                 }
                 $compar = $m[3];
                 $compval = $m[4];
-                if ($compval !== "" && $compval[0] === "\$"
-                    && !$this->resolve_arg($ms, $args, $compval, $compval)) {
+                if ($m[4] !== ""
+                    && $m[4][0] === "\$"
+                    && !$this->resolve_arg($ms, $args, $m[4], $compval)) {
                     return false;
                 }
                 if ($compar === "") {
