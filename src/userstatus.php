@@ -11,8 +11,8 @@ class UserStatus extends MessageSet {
     public $viewer;
     /** @var Contact */
     public $user;
-    /** @var ?bool */
-    public $self;
+    /** @var bool */
+    public $is_auth_user;
     /** @var bool */
     public $notify = false;
     /** @var bool */
@@ -66,6 +66,11 @@ class UserStatus extends MessageSet {
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
+        if ($viewer->is_root_user()) {
+            $this->set_user(new Contact(null, $this->conf));
+        } else {
+            $this->set_user($viewer);
+        }
         parent::__construct();
     }
     function clear() {
@@ -73,26 +78,35 @@ class UserStatus extends MessageSet {
         $this->unknown_topics = null;
     }
     function set_user(Contact $user) {
-        $old_user = $this->user;
-        $this->user = $user;
-        $this->self = $this->user === $this->viewer && !$this->viewer->is_actas_user();
-        if ($this->_gxt && $this->user !== $old_user) {
-            $this->_gxt->reset_context();
-            $this->initialize_gxt();
+        if ($user !== $this->user) {
+            $this->user = $user;
+            $auth_user = Contact::$base_auth_user ?? $this->viewer;
+            $this->is_auth_user = $auth_user->has_email()
+                && strcasecmp($auth_user->email, $user->email) === 0;
+            if ($this->_gxt) {
+                $this->_gxt->reset_context();
+                $this->initialize_gxt();
+            }
         }
     }
 
     /** @return bool */
     function is_new_user() {
-        return $this->user && !$this->user->email;
+        return !$this->user->email;
     }
-    /** @return bool */
-    function is_viewer_user() {
-        return $this->user && $this->user->contactId == $this->viewer->contactId;
+    /** Test if the edited user is the authenticated user.
+     * @return bool */
+    function is_auth_user() {
+        return $this->is_auth_user;
+    }
+    /** Test if the edited user is the authenticated user and same as the viewer.
+     * @return bool */
+    function is_auth_self() {
+        return $this->is_auth_user && !Contact::$base_auth_user;
     }
     /** @return ?Contact */
-    function global_self() {
-        return $this->self ? $this->user->contactdb_user() : null;
+    function contactdb_user() {
+        return $this->user->contactdb_user();
     }
     /** @return ?Contact */
     function actor() {
@@ -120,9 +134,9 @@ class UserStatus extends MessageSet {
     /** @return bool */
     function allow_security() {
         return !$this->conf->external_login()
-            && ($this->self
-                || ((!$this->user || !$this->user->is_empty())
-                    && $this->viewer->privChair
+            && ($this->is_auth_self()
+                || ($this->viewer->privChair
+                    && !$this->user->is_empty()
                     && !$this->conf->contactdb()
                     && !$this->conf->opt("chairHidePasswords")));
     }
@@ -131,8 +145,8 @@ class UserStatus extends MessageSet {
     function xt_allower($e, $xt, Contact $user, Conf $conf) {
         if ($e === "profile_security") {
             return $this->allow_security();
-        } else if ($e === "self") {
-            return $this->self;
+        } else if ($e === "auth_self") {
+            return $this->is_auth_self();
         } else {
             return null;
         }
@@ -195,7 +209,7 @@ class UserStatus extends MessageSet {
     }
 
     function autocomplete($what) {
-        if ($this->self) {
+        if ($this->is_auth_self()) {
             return $what;
         } else if ($what === "email" || $what === "username" || $what === "current-password") {
             return "nope";
@@ -723,11 +737,12 @@ class UserStatus extends MessageSet {
     }
 
 
-    static function crosscheck_main(UserStatus $us, Contact $user) {
-        $cdbu = $user->contactdb_user();
+    static function crosscheck_main(UserStatus $us) {
         if ($us->gxt()->root() !== "main") {
             return;
         }
+        $user = $us->user;
+        $cdbu = $us->contactdb_user();
         if ($user->firstName === ""
             && $user->lastName === ""
             && ($user->contactId > 0 || !$cdbu || ($cdbu->firstName === "" && $cdbu->lastName === ""))) {
@@ -742,9 +757,9 @@ class UserStatus extends MessageSet {
             if ($user->collaborators() === "") {
                 $us->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
             }
-            if ($user->conf->has_topics()
+            if ($us->conf->has_topics()
                 && !$user->topic_interest_map()
-                && !$user->conf->opt("allowNoTopicInterests")) {
+                && !$us->conf->opt("allowNoTopicInterests")) {
                 $us->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
             }
         }
@@ -1287,7 +1302,8 @@ class UserStatus extends MessageSet {
     }
 
     function global_profile_difference($key) {
-        if (($cdbu = $this->global_self())) {
+        if ($this->is_auth_self()
+            && ($cdbu = $this->contactdb_user())) {
             $cdbprop = $cdbu->prop($key) ?? "";
             if (($this->user->prop($key) ?? "") !== $cdbprop) {
                 if ($cdbprop !== "") {
@@ -1346,7 +1362,7 @@ class UserStatus extends MessageSet {
         $us->swap_ignore_messages($original_ignore_msgs);
         echo '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',
             '<label for="oldpassword">',
-            $us->self ? "Current password" : "Current password for " . htmlspecialchars($us->viewer->email),
+            $us->is_auth_self() ? "Current password" : "Current password for " . htmlspecialchars($us->viewer->email),
             '</label>',
             $us->render_feedback_at("oldpassword"),
             Ht::entry("viewer_email", $us->viewer->email, ["autocomplete" => "username", "class" => "hidden ignore-diff", "readonly" => true]),
@@ -1546,7 +1562,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             $us->gxt()->push_close_section('</div>');
             $us->gxt()->render_title("User administration");
             echo '<div class="btngrid">';
-            if (!$us->is_viewer_user()) {
+            if (!$us->is_auth_user()) {
                 echo Ht::button($us->user->disabled ? "Enable account" : "Disable account", [
                     "class" => "ui js-disable-user mf btn relative " . ($us->user->disabled ? "btn-success" : "btn-danger")
                 ]), '<p class="pt-1">Disabled accounts cannot sign in or view the site.</p>';
@@ -1562,7 +1578,7 @@ topics. We use this information to help match papers to reviewers.</p>',
 
         if ($us->viewer->privChair
             && !$us->is_new_user()
-            && !$us->is_viewer_user()
+            && !$us->is_auth_user()
             && $us->gxt()->root === "main") {
             $tracks = self::user_paper_info($us->conf, $us->user->contactId);
             $args = ["class" => "ui"];
@@ -1592,7 +1608,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             $buttons[] = [Ht::button("Delete user", $args), "(admin only)"];
         }
 
-        if ($us->self
+        if ($us->is_auth_self()
             && $us->gxt()->root === "main") {
             array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
         }

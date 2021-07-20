@@ -35,7 +35,7 @@ if (!isset($_GET["p"])
 // trackerstatus is a special case: prevent session creation
 if ($_GET["fn"] === "trackerstatus") {
     require_once("src/init.php");
-    Contact::$no_guser = true;
+    Contact::$no_main_user = true;
     require_once("src/initweb.php");
     MeetingTracker::trackerstatus_api(new Contact(null, $Conf));
     exit;
@@ -127,4 +127,4 @@ function handle_api(Conf $conf, Contact $me, Qrequest $qreq) {
     json_exit($j);
 }
 
-handle_api(Conf::$main, Contact::$guser, $Qreq);
+handle_api(Conf::$main, Contact::$main_user, $Qreq);

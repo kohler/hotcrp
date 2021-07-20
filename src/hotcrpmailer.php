@@ -73,7 +73,6 @@ class HotCRPMailer extends Mailer {
 
     /** @param ?Contact $recipient */
     function reset($recipient = null, $rest = []) {
-        global $Me;
         parent::reset($recipient, $rest);
         if ($recipient) {
             assert($recipient instanceof Contact);

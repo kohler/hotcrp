@@ -8,11 +8,12 @@ class Contact {
     /** @var int */
     static public $rights_version = 1;
     /** @var ?Contact */
-    static public $guser;
+    static public $main_user;
     /** @var bool */
-    static public $no_guser = false;
-    /** @var ?Contact */
-    static public $true_user;
+    static public $no_main_user = false;
+    /** The base authenticated user when "acting as"; otherwise null.
+     * @var ?Contact */
+    static public $base_auth_user;
     /** @var bool */
     static public $allow_nonexistent_properties = false;
     /** @var int */
@@ -376,9 +377,9 @@ class Contact {
         $this->_contactdb_user = false;
     }
 
-    static function set_guser(Contact $user = null) {
+    static function set_main_user(Contact $user = null) {
         global $Me;
-        Contact::$guser = $Me = $user;
+        Contact::$main_user = $Me = $user;
     }
 
 
@@ -625,7 +626,7 @@ class Contact {
 
     /** @return Contact */
     private function actas_user($x) {
-        assert(!self::$true_user || self::$true_user === $this);
+        assert(!self::$base_auth_user || self::$base_auth_user === $this);
 
         // translate to email
         if (is_numeric($x)) {
@@ -678,7 +679,7 @@ class Contact {
             if ($actascontact !== $this) {
                 Conf::$hoturl_defaults["actas"] = urlencode($actascontact->email);
                 $_SESSION["last_actas"] = $actascontact->email;
-                self::$true_user = $this;
+                self::$base_auth_user = $this;
                 return $actascontact->activate($qreq, true);
             }
         }
@@ -698,7 +699,7 @@ class Contact {
         }
 
         // Maybe auto-create a user
-        if (!self::$true_user && $this->email) {
+        if (!self::$base_auth_user && $this->email) {
             $trueuser_aucheck = $this->session("trueuser_author_check", 0);
             if (!$this->has_account_here()
                 && $trueuser_aucheck + 600 < Conf::$now) {
@@ -922,7 +923,7 @@ class Contact {
 
     /** @return bool */
     function is_actas_user() {
-        return $this->_activated && self::$true_user;
+        return $this->_activated && self::$base_auth_user;
     }
 
     /** @return bool */
@@ -2522,12 +2523,11 @@ class Contact {
 
     /** @return array<int,int> */
     function topic_interest_map() {
-        global $Me;
         if ($this->_topic_interest_map === null) {
             if ($this->contactId <= 0 || !$this->conf->has_topics()) {
                 $this->_topic_interest_map = [];
             } else if (($this->roles & self::ROLE_PCLIKE)
-                       && $this !== $Me
+                       && $this !== Contact::$main_user
                        && ($pcm = $this->conf->pc_members())
                        && $this === ($pcm[$this->contactId] ?? null)) {
                 self::load_topic_interests($pcm);
@@ -2584,7 +2584,7 @@ class Contact {
                 && $this->contactId > 0
                 && $this->contactId == $acct->contactId
                 && $this->_activated
-                && !self::$true_user);
+                && !self::$base_auth_user);
     }
 
 

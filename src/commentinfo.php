@@ -100,7 +100,6 @@ class CommentInfo {
 
     /** @param ?PaperInfo $prow */
     static function echo_script($prow) {
-        global $Me;
         if (Ht::mark_stash("papercomment")) {
             $t = [];
             $crow = new CommentInfo(null, $prow, $prow->conf);
@@ -108,7 +107,7 @@ class CommentInfo {
             foreach ($prow->conf->resp_rounds() as $rrd) {
                 $j = ["words" => $rrd->words];
                 $crow->commentRound = $rrd->number;
-                if ($Me->can_respond($prow, $crow)) {
+                if (Contact::$main_user->can_respond($prow, $crow)) {
                     if (($m = $rrd->instructions($prow->conf)) !== false) {
                         $j["instrux"] = $m;
                     }

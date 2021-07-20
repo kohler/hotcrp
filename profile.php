@@ -60,7 +60,7 @@ function change_email_by_capability($Qreq) {
         $capdata->delete();
         $Conf->confirmMsg("Your email address has been changed.");
         if (!$Me->has_account_here() || $Me->contactId == $Acct->contactId) {
-            Contact::set_guser($Acct->activate($Qreq));
+            Contact::set_main_user($Acct->activate($Qreq));
         }
         if (Contact::session_user_index($capcontent->oldemail) >= 0) {
             LoginHelper::change_session_users([
@@ -589,6 +589,7 @@ if (!$useRequest
 // set warnings about user json
 if (!$newProfile && !$useRequest) {
     $UserStatus->gxt()->set_context_args([$UserStatus, $Acct]);
+    assert($UserStatus->user === $Acct);
     foreach ($UserStatus->gxt()->members("__crosscheck", "crosscheck_function") as $gj) {
         $UserStatus->gxt()->call_function($gj->crosscheck_function, $gj);
     }
@@ -742,7 +743,9 @@ $UserStatus->set_context_args([$UserStatus, $Qreq]);
 $UserStatus->render_group($newProfile === 2 ? "__bulk" : $profile_topic);
 
 if ($newProfile !== 2) {
-    if ($UserStatus->global_self() && false) {
+    if (false
+        && $UserStatus->is_auth_self()
+        && $UserStatus->contactdb_user()) {
         echo '<div class="form-g"><div class="checki"><label><span class="checkc">',
             Ht::checkbox("saveglobal", 1, $useRequest ? !!$Qreq->saveglobal : true, ["class" => "ignore-diff"]),
             '</span>Update global profile</label></div></div>';

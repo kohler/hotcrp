@@ -222,7 +222,9 @@ class Conf {
     /** @var ?IntlMsgSet */
     private $_ims;
     private $_format_info;
+    /** @var bool */
     private $_updating_automatic_tags = false;
+    /** @var null|false|\mysqli */
     private $_cdb = false;
 
     /** @var ?XtContext */
@@ -2183,10 +2185,10 @@ class Conf {
         $id = (int) $id;
         if ($id === 0) {
             return null;
-        } else if (Contact::$guser
-                   && Contact::$guser->conf === $this
-                   && Contact::$guser->contactId === $id) {
-            return Contact::$guser;
+        } else if (Contact::$main_user
+                   && Contact::$main_user->conf === $this
+                   && Contact::$main_user->contactId === $id) {
+            return Contact::$main_user;
         }
         if (!array_key_exists($id, $this->_user_cache ?? [])) {
             $this->_user_cache_missing[] = $id;
@@ -2199,10 +2201,10 @@ class Conf {
      * @return ?Contact */
     function cached_user_by_email($email) {
         if ($email
-            && Contact::$guser
-            && Contact::$guser->conf === $this
-            && strcasecmp(Contact::$guser->email, $email) === 0) {
-            return Contact::$guser;
+            && Contact::$main_user
+            && Contact::$main_user->conf === $this
+            && strcasecmp(Contact::$main_user->email, $email) === 0) {
+            return Contact::$main_user;
         }
         $lemail = strtolower($email);
         $this->_user_email_cache = $this->_user_email_cache ?? [];
@@ -3166,7 +3168,6 @@ class Conf {
      * @param int $flags
      * @return string */
     function hoturl($page, $param = null, $flags = 0) {
-        global $Me;
         $nav = Navigation::get();
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
         $t = $page;
@@ -3214,9 +3215,10 @@ class Conf {
         $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
         if ($is_paper_page
             && $this->paper
-            && $Me->can_administer($this->paper)
-            && $this->paper->has_conflict($Me)
-            && $Me->conf === $this
+            && Contact::$main_user
+            && Contact::$main_user->conf === $this
+            && Contact::$main_user->can_administer($this->paper)
+            && $this->paper->has_conflict(Contact::$main_user)
             && preg_match($are . 'p=' . $this->paper->paperId . $zre, $param)
             && !preg_match($are . 'forceShow=/', $param)) {
             $param .= $amp . "forceShow=1";
@@ -4035,7 +4037,6 @@ class Conf {
     }
 
     function header_head($title, $extra = []) {
-        global $Me;
         // clear session list cookies
         foreach ($_COOKIE as $k => $v) {
             if (str_starts_with($k, "hotlist-info"))
@@ -4148,15 +4149,15 @@ class Conf {
                 $siteinfo["defaults"][$k] = urldecode($v);
             }
         }
-        if ($Me) {
-            if ($Me->email) {
-                $siteinfo["user"]["email"] = $Me->email;
+        if (($user = Contact::$main_user)) {
+            if ($user->email) {
+                $siteinfo["user"]["email"] = $user->email;
             }
-            if ($Me->is_pclike()) {
+            if ($user->is_pclike()) {
                 $siteinfo["user"]["is_pclike"] = true;
             }
-            if ($Me->has_account_here()) {
-                $siteinfo["user"]["cid"] = $Me->contactId;
+            if ($user->has_account_here()) {
+                $siteinfo["user"]["cid"] = $user->contactId;
             }
         }
 
@@ -4168,7 +4169,7 @@ class Conf {
         if ($pid) {
             $siteinfo["paperid"] = $pid;
         }
-        if ($pid && $Me && $Me->is_admin_force()) {
+        if ($pid && $user && $user->is_admin_force()) {
             $siteinfo["want_override_conflict"] = true;
         }
 
@@ -4212,7 +4213,8 @@ class Conf {
     }
 
     function header_body($title, $id, $extra = []) {
-        global $Me, $Qreq;
+        global $Qreq;
+        $user = Contact::$main_user;
         echo "<body";
         if ($id) {
             echo ' id="body-', $id, '"';
@@ -4238,8 +4240,8 @@ class Conf {
 
         // deadlines settings
         $my_deadlines = null;
-        if ($Me) {
-            $my_deadlines = $Me->my_deadlines($this->paper ? [$this->paper] : []);
+        if ($user) {
+            $my_deadlines = $user->my_deadlines($this->paper ? [$this->paper] : []);
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
         if ($this->default_format) {
@@ -4262,44 +4264,42 @@ class Conf {
 
         // $header_profile
         $profile_html = "";
-        if ($Me && !$Me->is_empty()) {
+        if ($user && !$user->is_empty()) {
             // profile link
             $profile_parts = [];
-            if ($Me->has_email() && !$Me->is_disabled()) {
-                if (!$Me->is_anonymous_user()) {
+            if ($user->has_email() && !$user->is_disabled()) {
+                if (!$user->is_anonymous_user()) {
                     $purl = $this->hoturl("profile");
-                    $profile_parts[] = "<a class=\"q\" href=\"{$purl}\"><strong>" . htmlspecialchars($Me->email) . "</strong></a> &nbsp; <a href=\"{$purl}\">Profile</a>";
+                    $profile_parts[] = "<a class=\"q\" href=\"{$purl}\"><strong>" . htmlspecialchars($user->email) . "</strong></a> &nbsp; <a href=\"{$purl}\">Profile</a>";
                 } else {
-                    $profile_parts[] = "<strong>" . htmlspecialchars($Me->email) . "</strong>";
+                    $profile_parts[] = "<strong>" . htmlspecialchars($user->email) . "</strong>";
                 }
             }
 
             // "act as" link
-            if (($actas = $_SESSION["last_actas"] ?? null)
-                && (($Me->privChair && strcasecmp($actas, $Me->email) !== 0)
-                    || Contact::$true_user)) {
-                // Link becomes true user if not currently chair.
-                $actas = Contact::$true_user ? Contact::$true_user->email : $actas;
-                $profile_parts[] = "<a href=\""
-                    . $this->selfurl($Qreq, ["actas" => Contact::$true_user ? null : $actas]) . "\">"
-                    . (Contact::$true_user ? "Admin" : htmlspecialchars($actas))
-                    . "&nbsp;" . Ht::img("viewas.png", "Act as " . htmlspecialchars($actas))
-                    . "</a>";
+            if (Contact::$base_auth_user) {
+                $profile_parts[] = '<a href="' . $this->selfurl($Qreq, ["actas" => null])
+                    . '">Admin&nbsp;' . Ht::img('viewas.png', 'Act as ' . htmlspecialchars(Contact::$base_auth_user->email)) . '</a>';
+            } else if (($actas = $_SESSION["last_actas"] ?? null)
+                       && $user->privChair
+                       && strcasecmp($user->email, $actas) !== 0) {
+                $profile_parts[] = '<a href="' . $this->selfurl($Qreq, ["actas" => $actas])
+                    . '">' . htmlspecialchars($actas) . '&nbsp;' . Ht::img('viewas.png', 'Act as ' . htmlspecialchars($actas)) . '</a>';
             }
 
             // help
-            if (!$Me->is_disabled()) {
+            if (!$user->is_disabled()) {
                 $helpargs = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
                 $profile_parts[] = '<a href="' . $this->hoturl("help", $helpargs) . '">Help</a>';
             }
 
             // sign in and out
-            if (!$Me->is_signed_in()
+            if (!$user->is_signed_in()
                 && !($this->opt["httpAuthLogin"] ?? false)
                 && $id !== "signin") {
                 $profile_parts[] = '<a href="' . $this->hoturl("signin", ["cap" => null]) . '" class="nw">Sign in</a>';
             }
-            if ((!$Me->is_empty() || ($this->opt["httpAuthLogin"] ?? false))
+            if ((!$user->is_empty() || ($this->opt["httpAuthLogin"] ?? false))
                 && $id !== "signout") {
                 $profile_parts[] = Ht::form($this->hoturl_post("signout", ["cap" => null]), ["class" => "d-inline"])
                     . Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"])
@@ -4342,8 +4342,8 @@ class Conf {
         if (($x = $this->opt("maintenance"))) {
             echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
         }
-        if ($Me && ($msgs = $Me->session("msgs"))) {
-            $Me->save_session("msgs", null);
+        if ($user && ($msgs = $user->session("msgs"))) {
+            $user->save_session("msgs", null);
             foreach ($msgs as $m) {
                 $this->msg($m[0], $m[1]);
             }
@@ -4385,8 +4385,8 @@ class Conf {
         }
 
         // Callback for version warnings
-        if ($Me
-            && $Me->privChair
+        if ($user
+            && $user->privChair
             && (!isset($_SESSION["updatecheck"])
                 || $_SESSION["updatecheck"] + 3600 <= Conf::$now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {
@@ -4429,13 +4429,12 @@ class Conf {
     }
 
     function footer() {
-        global $Me;
         echo "<hr class=\"c\"></div>", // class='body'
             '<div id="footer">',
             $this->opt("extraFooter", ""),
             '<a class="uu" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->opt("noFooterVersion")) {
-            if ($Me && $Me->privChair) {
+            if (Contact::$main_user && Contact::$main_user->privChair) {
                 echo " v", HOTCRP_VERSION, " [";
                 if (($git_data = self::git_status())
                     && $git_data[0] !== $git_data[1]) {
@@ -4624,7 +4623,7 @@ class Conf {
         $true_user = 0;
         if ($user && is_object($user)) {
             if ($user->is_actas_user()) {
-                $true_user = Contact::$true_user->contactId;
+                $true_user = Contact::$base_auth_user->contactId;
             } else if (!$user->contactId
                        && !empty($pids)
                        && $user->has_capability_for($pids[0])) {

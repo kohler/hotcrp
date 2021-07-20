@@ -542,11 +542,12 @@ class AssignerContacts {
     static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, affiliation, collaborators, roles, contactTags, primaryContactId";
     static public $cdb_query = "contactDbId, firstName, lastName, email, affiliation, collaborators, 0 roles, '' contactTags, 0 primaryContactId";
     function __construct(Conf $conf, Contact $viewer) {
-        global $Me;
         $this->conf = $conf;
         $this->viewer = $viewer;
-        if ($Me && $Me->contactId > 0 && $Me->conf === $conf) {
-            $this->store($Me);
+        if (($user = Contact::$main_user)
+            && $user->contactId > 0
+            && $user->conf === $conf) {
+            $this->store($user);
         }
     }
     private function store(Contact $c) {

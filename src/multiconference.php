@@ -120,7 +120,7 @@ class Multiconference {
             if (!Conf::$main) {
                 Conf::set_main_instance(new Conf($Opt, false));
             }
-            Contact::set_guser(null);
+            Contact::set_main_user(null);
             header("HTTP/1.1 404 Not Found");
             Conf::$main->header("HotCRP Error", "", ["action_bar" => false]);
             foreach ($errors as $i => &$e) {

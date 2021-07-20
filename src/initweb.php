@@ -58,7 +58,7 @@ function initialize_web() {
     Conf::$main->prepare_security_headers();
 
     // skip user initialization if requested
-    if (Contact::$no_guser) {
+    if (Contact::$no_main_user) {
         return;
     }
 
@@ -125,7 +125,7 @@ function initialize_web() {
         $guser = new Contact($trueemail ? (object) ["email" => $trueemail] : null);
     }
     $guser = $guser->activate($Qreq, true);
-    Contact::set_guser($guser);
+    Contact::set_main_user($guser);
 
     // author view capability documents should not be indexed
     if (!$guser->email
