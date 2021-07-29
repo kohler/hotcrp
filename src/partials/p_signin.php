@@ -142,8 +142,9 @@ class Signin_Partial {
             }
             echo '<p class="is-warning"><span class="warning-mark"></span> ', $user->conf->_("You are already signed in as %s. Use this form to add another account to this browser session.", commajoin($links)), '</p>';
         }
-        echo '<p class="mb-5">',
-            $user->conf->_("Sign in to submit or review papers."), '</p>';
+        if (($t = $user->conf->_("Sign in to submit or review papers.")) !== "") {
+            echo '<p class="mb-5">', $t, '</p>';
+        }
     }
 
     static function render_signin_form_email(Contact $user, Qrequest $qreq, $gx) {
