@@ -30,6 +30,10 @@ class IntlMsg {
             $argname = $m[1];
             $component = $m[2];
         }
+        $iscount = $argname[0] === "#";
+        if ($iscount) {
+            $argname = substr($argname, 1);
+        }
         if ($argname[0] === "\$") {
             $which = substr($argname, 1);
             if (ctype_digit($which)) {
@@ -37,16 +41,21 @@ class IntlMsg {
             } else {
                 return false;
             }
-        } else if (($ans = $ms->resolve_requirement_argument($argname))) {
-            $val = is_array($ans) ? $ans[0] : $ans;
         } else {
-            return false;
+            $val = $ms->resolve_requirement_argument($argname);
         }
         if ($component !== false) {
             if (is_array($val)) {
                 $val = $val[$component] ?? null;
             } else if (is_object($val)) {
                 $val = $val->$component ?? null;
+            } else {
+                return false;
+            }
+        }
+        if ($iscount) {
+            if (is_array($val)) {
+                $val = count($val);
             } else {
                 return false;
             }
@@ -96,11 +105,8 @@ class IntlMsg {
                     return false;
                 }
                 $nreq += $weight;
-            } else if (($weight = $ms->resolve_requirement($req)) !== null) {
-                if ($weight <= 0) {
-                    return false;
-                }
-                $nreq += $weight;
+            } else {
+                return false;
             }
         }
         return $nreq;
@@ -110,6 +116,7 @@ class IntlMsg {
 class IntlMsgSet {
     /** @var array<string,IntlMsg> */
     private $ims = [];
+    /** @var list<callable(string):(false|array{true,mixed})> */
     private $require_resolvers = [];
     private $_context_prefix;
     private $_default_priority;
@@ -266,22 +273,15 @@ class IntlMsgSet {
         return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true, "template" => $im && $im->template]);
     }
 
+    /** @param callable(string):(false|array{true,mixed}) $function */
     function add_requirement_resolver($function) {
         $this->require_resolvers[] = $function;
     }
-    function resolve_requirement($requirement) {
+    /** @param string $s */
+    function resolve_requirement_argument($s) {
         foreach ($this->require_resolvers as $fn) {
-            if (($x = call_user_func($fn, $requirement, true)) !== null) {
-                return $x;
-            }
-        }
-        return null;
-    }
-    function resolve_requirement_argument($argname) {
-        foreach ($this->require_resolvers as $fn) {
-            if (($x = call_user_func($fn, $argname, false)) !== null) {
-                return $x;
-            }
+            if (($v = call_user_func($fn, $s)))
+                return $v[1];
         }
         return null;
     }

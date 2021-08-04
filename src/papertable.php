@@ -620,10 +620,10 @@ class PaperTable {
                 if (($stamps = self::pdf_stamps_html($doc))) {
                     $stamps = '<span class="sep"></span>' . $stamps;
                 }
-                if ($dtype == DTYPE_FINAL) {
+                if ($dtype === DTYPE_FINAL) {
                     $dhtml = $this->conf->option_by_id($dtype)->title_html();
                 } else {
-                    $dhtml = $o->title_html($this->prow->timeSubmitted != 0);
+                    $dhtml = $o->title_html($this->prow->timeSubmitted == 0);
                 }
                 $fr->value .= '<p class="pgsm">' . $dprefix . $doc->link_html('<span class="pavfn">' . $dhtml . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps . '</p>';
             }

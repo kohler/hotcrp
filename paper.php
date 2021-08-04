@@ -136,6 +136,7 @@ class PaperPage {
         }
     }
 
+    /** @return string */
     private function deadline_note($dl, $future_msg, $past_msg) {
         $deadline = $this->conf->unparse_setting_time_span($dl);
         $strong = false;

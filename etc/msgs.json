@@ -30,7 +30,7 @@
 
     ["field", "title", "Title"],
     ["field", "submission", "Submission"],
-    ["field", "submission", "Draft submission", ["!$1"]],
+    ["field", "submission", "Draft submission", ["$1"]],
     ["field/edit", "submission", "Submission"],
     ["field/plural", "submission", "Submissions"],
     ["field", "final", "Final version"],

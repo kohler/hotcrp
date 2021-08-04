@@ -4752,15 +4752,15 @@ class Conf {
         return $this->ims()->_ci($context, $id, ...$args);
     }
 
-    function resolve_ims_requirement($s, $isreq) {
-        if ($isreq) {
-            return null;
-        } else if (str_starts_with($s, "setting.")) {
-            return [$this->setting(substr($s, 8))];
+    /** @param string $s
+     * @return false|array{true,mixed} */
+    function resolve_ims_requirement($s) {
+        if (str_starts_with($s, "setting.")) {
+            return [true, $this->setting(substr($s, 8))];
         } else if (str_starts_with($s, "opt.")) {
-            return [$this->opt(substr($s, 4))];
+            return [true, $this->opt(substr($s, 4))];
         } else {
-            return null;
+            return false;
         }
     }
 
