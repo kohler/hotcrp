@@ -136,6 +136,26 @@ class PaperPage {
         }
     }
 
+    private function deadline_note($dl, $future_msg, $past_msg) {
+        $deadline = $this->conf->unparse_setting_time_span($dl);
+        $strong = false;
+        if ($deadline === "N/A") {
+            $msg = "";
+        } else if ($this->conf->time_after_setting($dl)) {
+            $msg = $past_msg;
+            $strong = true;
+        } else {
+            $msg = $future_msg;
+        }
+        if ($msg !== "") {
+            $msg = $this->conf->_($msg, $deadline);
+        }
+        if ($msg !== "" && $strong) {
+            $msg = "<strong>{$msg}</strong>";
+        }
+        return $msg;
+    }
+
     function handle_update($action) {
         $conf = $this->conf;
         // XXX lock tables
@@ -225,40 +245,28 @@ class PaperPage {
             if ($new_prow->timeFinalSubmitted <= 0) {
                 $notes[] = $conf->_("The final version has not yet been submitted.");
             }
-            $deadline = $conf->unparse_setting_time_span("final_soft");
-            if ($deadline !== "N/A" && $conf->time_after_setting("final_soft")) {
-                $x = $conf->_("The deadline for submitting final versions was %s.", $deadline);
-                if ($x != "") {
-                    $notes[] = "<strong>$x</strong>";
-                }
-            } else if ($deadline != "N/A") {
-                $notes[] = $conf->_("You have until %s to make further changes.", $deadline);
+            $notes[] = $this->deadline_note("final_soft",
+                "You have until %s to make further changes.",
+                "The deadline for submitting final versions was %s.");
+        } else if ($new_prow->timeSubmitted > 0) {
+            $notes[] = $conf->_("The submission will be considered for review.");
+            if ($conf->setting("sub_freeze") <= 0) {
+                $notes[] = $this->deadline_note("sub_update",
+                    "You have until %s to make further changes.", "");
             }
         } else {
-            if ($new_prow->timeSubmitted > 0) {
-                $notes[] = $conf->_("The submission will be considered for review.");
-            } else if ($new_prow->size == 0 && !$conf->opt("noPapers")) {
-                $notes[] = $conf->_("The submission has not yet been uploaded.");
-            } else if ($conf->setting("sub_freeze") > 0) {
+            if ($conf->setting("sub_freeze") > 0) {
                 $notes[] = $conf->_("The submission has not yet been completed.");
+            } else if ($new_prow->size == 0 && !$conf->opt("noPapers")) {
+                $notes[] = $conf->_("The submission PDF has not yet been uploaded.");
             } else {
                 $notes[] = $conf->_("The submission is marked as not ready for review.");
             }
-            $deadline = $conf->unparse_setting_time_span("sub_update");
-            if ($deadline !== "N/A"
-                && ($new_prow->timeSubmitted <= 0 || $conf->setting("sub_freeze") <= 0)) {
-                $notes[] = $conf->_("Further updates are allowed until %s.", $deadline);
-            }
-            $deadline = $conf->unparse_setting_time_span("sub_sub");
-            if ($deadline != "N/A" && $new_prow->timeSubmitted <= 0) {
-                if ($conf->setting("sub_freeze") > 0) {
-                    $x = $conf->_("If the submission is not completed by %s, it will not be considered.", $deadline);
-                } else {
-                    $x = $conf->_("If the submission is not ready for review by %s, it will not be considered.", $deadline);
-                }
-                if ($x != "") {
-                    $notes[] = "<strong>$x</strong>";
-                }
+            $notes[] = $this->deadline_note("sub_update",
+                "You have until %s to make further changes.",
+                "The deadline for updating submissions was %s.");
+            if (($msg = $this->deadline_note("sub_sub", "If the submission is not completed by %s, it will not be considered.", "")) !== "") {
+                $notes[] = "<strong>{$msg}</strong>";
             }
         }
         $notes = join(" ", array_filter($notes, function ($n) { return $n !== ""; }));

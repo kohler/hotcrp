@@ -1557,12 +1557,12 @@ class PaperTable {
             $sub_reg = $this->conf->setting("sub_reg");
             $sub_upd = $this->conf->setting("sub_update");
             if ($sub_reg > 0 && $sub_upd > 0 && $sub_reg < $sub_upd) {
-                $t[] = $this->conf->_("All submissions must be registered by %s and completed by %s.", $this->conf->unparse_setting_time("sub_reg"), $this->conf->unparse_setting_time("sub_sub"));
+                $t[] = $this->conf->_("Submissions must be registered by %s and completed by %s.", $this->conf->unparse_setting_time("sub_reg"), $this->conf->unparse_setting_time("sub_sub"));
                 if (!$this->conf->opt("noPapers")) {
                     $t[] = $this->conf->_("PDF upload is not required to register.");
                 }
             } else if ($sub_upd > 0) {
-                $t[] = $this->conf->_("All submissions must be completed by %s.", $this->conf->unparse_setting_time("sub_update"));
+                $t[] = $this->conf->_("Submissions must be completed by %s.", $this->conf->unparse_setting_time("sub_update"));
             }
             $this->_main_message(space_join($t), 0);
             if (($v = $this->conf->_i("submit"))) {
@@ -1592,7 +1592,7 @@ class PaperTable {
                 $t = [];
                 $t[] = $this->conf->_("This submission is not yet ready for review.");
                 if ($this->conf->setting("sub_update")) {
-                    $t[] = $this->conf->_("All submissions must be completed by %s to be considered.", $this->conf->unparse_setting_time("sub_update"));
+                    $t[] = $this->conf->_("Submissions must be completed by %s to be considered.", $this->conf->unparse_setting_time("sub_update"));
                 } else {
                     $t[] = $this->conf->_("Incomplete submissions will not be considered.");
                 }
