@@ -311,7 +311,7 @@ administrator’s identity.</p>\n\n";
 
         } else if ($gj->itemid === 3) {
             echo "<li><p>Set ", $hth->setting_link("“Who can <strong>see decisions?</strong>”", "seedec"),
-  " to “Authors, PC members, and reviewers.”";
+  " to “Authors, reviewers, and all PC members.”";
             if (!$hth->conf->setting("shepherd_hide"))
                 echo " This will also make shepherd names visible to authors.";
             echo "</p></li>\n";
