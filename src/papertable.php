@@ -832,12 +832,18 @@ class PaperTable {
         if ($vas === 1) {
             $auname .= " <span class=\"n\">(deblinded)</span>";
         } else if ($this->user->act_author_view($this->prow)) {
-            $sb = $this->conf->submission_blindness();
-            if ($sb === Conf::BLIND_ALWAYS
-                || ($sb === Conf::BLIND_OPTIONAL && $this->prow->blind)) {
-                $auname .= " <span class=\"n\">(blind)</span>";
-            } else if ($sb === Conf::BLIND_UNTILREVIEW) {
-                $auname .= " <span class=\"n\">(blind until review)</span>";
+            // Tell authors whether they are blind.
+            // Accepted papers are sometimes not blind.
+            if ($this->prow->outcome <= 0
+                || !$this->user->can_view_decision($this->prow)
+                || !$this->conf->time_reviewer_view_accepted_authors()) {
+                $sb = $this->conf->submission_blindness();
+                if ($sb === Conf::BLIND_ALWAYS
+                    || ($sb === Conf::BLIND_OPTIONAL && $this->prow->blind)) {
+                    $auname .= " <span class=\"n\">(blind)</span>";
+                } else if ($sb === Conf::BLIND_UNTILREVIEW) {
+                    $auname .= " <span class=\"n\">(blind until review)</span>";
+                }
             }
         }
 
