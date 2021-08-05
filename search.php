@@ -441,7 +441,7 @@ if ($pl_text) {
     if ($Me->has_hidden_papers()
         && !empty($Me->hidden_papers)
         && $Me->is_actas_user()) {
-        $pl->message_set()->warning_at(null, $Conf->_("Papers #%s are totally hidden when viewing the site as another user.", numrangejoin(array_keys($Me->hidden_papers)), count($Me->hidden_papers)));
+        $pl->message_set()->warning_at(null, $Conf->_("Submissions %#Ns are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#$n"; }, array_keys($Me->hidden_papers))));
     }
     if ($Search->has_problem() || $pl->message_set()->has_messages()) {
         echo '<div class="msgs-wide">';

@@ -382,6 +382,10 @@ class Text {
     }
 
 
+    /** @param string $text
+     * @param null|string|TextPregexes $match
+     * @param ?int &$n
+     * @return string */
     static function highlight($text, $match, &$n = null) {
         $n = 0;
         if ($match === null || $match === false || $match === "" || $text == "") {
@@ -484,10 +488,14 @@ class Text {
         return [];
     }
 
+    /** @param string $word
+     * @return bool */
     static function is_boring_word($word) {
         return isset(self::$boring_words[strtolower($word)]);
     }
 
+    /** @param string $text
+     * @return string */
     static function single_line_paragraphs($text) {
         $lines = preg_split('/((?:\r\n?|\n)(?:[-+*][ \t]|\d+\.)?)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
         $n = count($lines);
@@ -502,6 +510,8 @@ class Text {
         return join("", $lines);
     }
 
+    /** @param string $x
+     * @return string */
     static function html_to_text($x) {
         if (strpos($x, "<") !== false) {
             $x = preg_replace('/\s*<\s*p\s*>\s*(.*?)\s*<\s*\/\s*p\s*>/si', "\n\n\$1\n\n", $x);

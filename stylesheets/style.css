@@ -753,11 +753,7 @@ span.hastitle {
 
 /* multimessage */
 .mmm {
-	margin-top: 0.3em;
 	margin-bottom: 0.3em;
-}
-.mmm:first-child {
-	margin-top: 0;
 }
 .mmm:last-child {
 	margin-bottom: 0;

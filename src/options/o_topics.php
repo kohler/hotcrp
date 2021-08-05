@@ -43,7 +43,7 @@ class Topics_PaperOption extends PaperOption {
         $this->conf->topic_set()->sort($vs);
         $ov->set_value_data($vs, array_fill(0, count($vs), null));
         if (!empty($bad_topics)) {
-            $ov->warning($ps->_("Unknown topics ignored (%2\$s).", count($bad_topics), htmlspecialchars(join("; ", $bad_topics))));
+            $ov->warning($ps->_("Unknown topics ignored (%#H).", $bad_topics));
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {

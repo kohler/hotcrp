@@ -701,7 +701,7 @@ class PaperStatus extends MessageSet {
             }
         }
         if (!empty($pj->_bad_options)) {
-            $this->warning_at("options", $this->_("Unknown options ignored (%2\$s).", count($pj->_bad_options), htmlspecialchars(join("; ", $pj->_bad_options))));
+            $this->warning_at("options", $this->_("Unknown options ignored (%#H).", $pj->_bad_options));
         }
     }
 
