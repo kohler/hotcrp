@@ -671,7 +671,7 @@ sub calc_doc_page_types ($) {
                 } elsif ($h =~ /\AAppendix/i) {
                     $see_appendix = "yes";
                     $saw_appendix = $see_appendix if $saw_acks_refs || $is_first;
-                } else {
+                } elsif (!$see_appendix || $h =~ /\A[\dIVX]+[\. ]/) {
                     $see_acks_refs = $saw_acks_refs = $saw_appendix = $saw_conclusion = 0;
                 }
                 $is_first = 0;
