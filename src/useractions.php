@@ -68,7 +68,7 @@ class UserActions {
 
         $j = (object) ["ok" => true, "users" => $done];
         if ($disabled) {
-            $j->warnings[] = $user->conf->_("Skipped disabled accounts %2\$s.", count($disabled), htmlspecialchars(commajoin($disabled)));
+            $j->warnings[] = $user->conf->_("Skipped disabled accounts %#H.", $disabled);
         }
         return $j;
     }

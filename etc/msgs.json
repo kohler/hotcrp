@@ -88,13 +88,13 @@
     ["Reviews %#s unchanged.", "Review %#s unchanged.", ["#$1=1"]],
     ["Reviews %#s unchanged.", "Review unchanged.", ["$2"]],
     ["Reviews %#s unchanged.", "Draft review unchanged.", ["$2=2"]],
-    ["Reviews %#s unchanged.", "Review unchanged. The review will not be visible to others until it is approved.", ["#$2=3"]],
+    ["Reviews %#s unchanged.", "Review unchanged. The review will not be visible to others until it is approved.", ["$2=3"]],
     ["Ignored blank review forms %#s.", "Ignored blank review form %#s.", ["#$1=1"]],
     ["Ignored blank review forms %#s.", "Ignored blank review form.", ["$2"]],
 
     ["Submissions %#Ns are totally hidden when viewing the site as another user.", "Submission %#Ns is totally hidden when viewing the site as another user.", ["#$1=1"]],
 
-    ["Skipped disabled accounts %2$s.", "Skipped disabled account %2$s.", ["$1=1"]],
+    ["Skipped disabled accounts %#H.", "Skipped disabled account %#H.", ["#$1=1"]],
 
     ["eperm", "Permission error.", "You aren’t allowed to view submission #%2$d.", ["$1=view_paper"]],
     ["eperm", "Permission error.", "You aren’t allowed to view submission #%2$d’s documents.", ["$1=view_doc"]],
