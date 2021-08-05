@@ -27,7 +27,7 @@ function document_error($status, $msg) {
     }
 }
 
-function document_history_element(DocumentInfo $doc) {
+function document_history_element(DocumentInfo $doc, $active) {
     $pj = ["hash" => $doc->text_hash(), "at" => $doc->timestamp, "mimetype" => $doc->mimetype];
     if ($doc->size) {
         $pj["size"] = $doc->size;
@@ -35,6 +35,10 @@ function document_history_element(DocumentInfo $doc) {
     if ($doc->filename) {
         $pj["filename"] = $doc->filename;
     }
+    if ($active) {
+        $pj["active"] = true;
+    }
+    $pj["link"] = $doc->url(null, DocumentInfo::DOCURL_INCLUDE_TIME | Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
     return (object) $pj;
 }
 
@@ -43,10 +47,8 @@ function document_history(Contact $user, PaperInfo $prow, $dtype) {
 
     $pjs = $actives = [];
     foreach ($docs as $doc) {
-        $pj = document_history_element($doc);
-        $pj->active = true;
+        $pjs[] = document_history_element($doc, true);
         $actives[$doc->paperStorageId] = true;
-        $pjs[] = $pj;
     }
 
     if ($user->can_view_document_history($prow)
@@ -54,7 +56,7 @@ function document_history(Contact $user, PaperInfo $prow, $dtype) {
         $result = $prow->conf->qe("select paperId, paperStorageId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null order by paperStorageId desc", $prow->paperId, $dtype);
         while (($doc = DocumentInfo::fetch($result, $prow->conf, $prow))) {
             if (!isset($actives[$doc->paperStorageId]))
-                $pjs[] = document_history_element($doc);
+                $pjs[] = document_history_element($doc, false);
         }
         Dbl::free($result);
     }

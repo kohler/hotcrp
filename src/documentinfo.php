@@ -1212,20 +1212,22 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
+    const DOCURL_INCLUDE_TIME = 1024;
+
     /** @return string */
     function url($filters = null, $flags = 0) {
-        if ($filters === null) {
-            $filters = $this->filters_applied;
-        }
         if ($this->mimetype) {
-            $f = "file=" . rawurlencode($this->export_filename($filters));
+            $f = ["file" => $this->export_filename($filters ?? $this->filters_applied)];
         } else {
-            $f = "p=$this->paperId";
+            $f = ["p" => $this->paperId];
             if ($this->documentType == DTYPE_FINAL) {
-                $f .= "&amp;final=1";
+                $f["final"] = 1;
             } else if ($this->documentType > 0) {
-                $f .= "&amp;dt=$this->documentType";
+                $f["dt"] = $this->documentType;
             }
+        }
+        if ($flags & self::DOCURL_INCLUDE_TIME) {
+            $f["at"] = $this->timestamp;
         }
         return $this->conf->hoturl("doc", $f, $flags);
     }
