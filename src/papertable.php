@@ -410,7 +410,8 @@ class PaperTable {
         return MessageSet::status_class($ps, $rest, $prefix);
     }
 
-    /** @param ?string $heading */
+    /** @param ?string $heading
+     * @return void */
     function echo_editable_option_papt(PaperOption $opt, $heading = null, $rest = []) {
         if (!isset($rest["for"])) {
             $for = $opt->readable_formid();
@@ -445,7 +446,8 @@ class PaperTable {
         echo Ht::hidden("has_{$opt->formid}", 1);
     }
 
-    /** @param array<string,int|string> $extra */
+    /** @param array<string,int|string> $extra
+     * @return string */
     private function papt($what, $name, $extra = []) {
         $fold = $extra["fold"] ?? false;
         $editfolder = $extra["editfolder"] ?? false;
@@ -512,6 +514,10 @@ class PaperTable {
         return $c;
     }
 
+    /** @param string $text
+     * @param string $pregname
+     * @param int &$n
+     * @return string */
     function highlight($text, $pregname, &$n = null) {
         if ($this->matchPreg && isset($this->matchPreg[$pregname])) {
             $text = Text::highlight($text, $this->matchPreg[$pregname], $n);
@@ -522,6 +528,8 @@ class PaperTable {
         return $text;
     }
 
+    /** @param string $field
+     * @return string */
     function messages_at($field) {
         $t = "";
         foreach ($this->edit_status ? $this->edit_status->message_list_at($field) : [] as $mx) {
@@ -546,7 +554,8 @@ class PaperTable {
         echo $this->messages_at($opt->formid . ":context");
     }
 
-    /** @param PaperOption $opt */
+    /** @param PaperOption $opt
+     * @return string */
     function edit_title_html($opt) {
         $t = $opt->edit_title();
         if (str_ends_with($t, ")")
@@ -821,14 +830,14 @@ class PaperTable {
         // "author" or "authors"?
         $auname = $o->title_html(count($aulist));
         if ($vas === 1) {
-            $auname .= " (deblinded)";
+            $auname .= " <span class=\"n\">(deblinded)</span>";
         } else if ($this->user->act_author_view($this->prow)) {
             $sb = $this->conf->submission_blindness();
             if ($sb === Conf::BLIND_ALWAYS
                 || ($sb === Conf::BLIND_OPTIONAL && $this->prow->blind)) {
-                $auname .= " (blind)";
+                $auname .= " <span class=\"n\">(blind)</span>";
             } else if ($sb === Conf::BLIND_UNTILREVIEW) {
-                $auname .= " (blind until review)";
+                $auname .= " <span class=\"n\">(blind until review)</span>";
             }
         }
 
