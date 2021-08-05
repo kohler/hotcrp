@@ -325,7 +325,10 @@ class FormatSpec {
 }
 
 interface FormatChecker {
-    function error_kinds(FormatSpec $spec);
-    function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc);
-    function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc);
+    /** @return list<string> */
+    function known_fields(FormatSpec $spec);
+    /** @return void */
+    function check(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc);
+    /** @return ?string */
+    function report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc);
 }

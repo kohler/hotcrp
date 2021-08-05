@@ -1766,7 +1766,7 @@ class Document_PaperOption extends PaperOption {
                 $spec = $this->conf->format_spec($this->id);
                 $has_cf = $spec && !$spec->is_empty();
                 if ($has_cf) {
-                    $pt->cf->check_document($ov->prow, $doc);
+                    $pt->cf->check_document($doc);
                 }
             }
 
@@ -1791,7 +1791,7 @@ class Document_PaperOption extends PaperOption {
             if ($has_cf) {
                 echo '<div class="document-format">';
                 if ($pt->cf->has_problem() && $pt->cf->check_ok()) {
-                    echo $pt->cf->document_report($ov->prow, $doc);
+                    echo $pt->cf->document_report($doc);
                 }
                 echo '</div>';
             }

@@ -199,7 +199,7 @@ class PaperStatus extends MessageSet {
             if (!$this->_cf) {
                 $this->_cf = new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
             }
-            $this->_cf->check_document($this->prow, $doc);
+            $this->_cf->check_document($doc);
             if ($this->_cf->has_problem()) {
                 $this->msg_at($o->field_key(), false, $this->_cf->problem_status());
             }

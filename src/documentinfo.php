@@ -1296,7 +1296,7 @@ class DocumentInfo implements JsonSerializable {
                 $runflag = CheckFormat::RUN_IF_NECESSARY;
             }
             $cf = new CheckFormat($this->conf, $runflag);
-            $cf->check_document($this->prow, $this);
+            $cf->check_document($this);
             if ($cf->has_problem()) {
                 if ($cf->has_error()) {
                     $suffix .= "x";
@@ -1362,7 +1362,7 @@ class DocumentInfo implements JsonSerializable {
             return $m->npages;
         } else if ($this->content_file()) {
             $cf = $cf ?? new CheckFormat($this->conf);
-            $cf->check_document($this->prow, $this);
+            $cf->check_document($this);
             return $cf->npages;
         } else {
             return null;

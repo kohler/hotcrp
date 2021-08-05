@@ -12,16 +12,19 @@ class FormatCheck_API {
         if (($whynot = $docreq->perm_view_document($user))) {
             return new JsonResult(isset($whynot["permission"]) ? 403 : 404, $whynot->unparse_html());
         }
-        $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;
-        $cf = new CheckFormat($user->conf, $runflag);
-        $doc = $docreq->prow->document($docreq->dtype, $docreq->docid, true);
-        $cf->check_document($docreq->prow, $doc);
-        return [
-            "ok" => $cf->check_ok(),
-            "npages" => $cf->npages,
-            "result" => $cf->document_report($docreq->prow, $doc),
-            "problem_fields" => $cf->problem_fields(),
-            "has_error" => $cf->has_error()
-        ];
+        if (($doc = $docreq->prow->document($docreq->dtype, $docreq->docid, true))) {
+            $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;
+            $cf = new CheckFormat($user->conf, $runflag);
+            $cf->check_document($doc);
+            return [
+                "ok" => $cf->check_ok(),
+                "npages" => $cf->npages,
+                "result" => $cf->document_report($doc),
+                "problem_fields" => $cf->problem_fields(),
+                "has_error" => $cf->has_error()
+            ];
+        } else {
+            return new JsonResult(404, "No such document");
+        }
     }
 }

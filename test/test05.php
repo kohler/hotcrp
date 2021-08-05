@@ -807,7 +807,7 @@ xassert_eqq($doc->npages($cf), 50);    // ...even on reload
 
 // check format checker; this uses result from previous npages()
 $cf_nec = new CheckFormat($Conf, CheckFormat::RUN_IF_NECESSARY);
-$cf_nec->check_document($paper3, $doc);
+$cf_nec->check_document($doc);
 xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit textblock");
 xassert(!$cf_nec->need_recheck());
 xassert(!$cf_nec->run_attempted());
@@ -819,7 +819,7 @@ $Conf->invalidate_caches(["options" => true]);
 
 // that actually requires rerunning banal because its cached result is truncated
 $doc = $paper3->document(DTYPE_SUBMISSION);
-$cf_nec->check_document($paper3, $doc);
+$cf_nec->check_document($doc);
 xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit");
 xassert(!$cf_nec->need_recheck());
 xassert($cf_nec->run_attempted());
@@ -827,7 +827,7 @@ xassert($cf_nec->run_attempted());
 // but then the result is cached
 $paper3->invalidate_documents();
 $doc = $paper3->document(DTYPE_SUBMISSION);
-$cf_nec->check_document($paper3, $doc);
+$cf_nec->check_document($doc);
 xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit");
 xassert(!$cf_nec->need_recheck());
 xassert(!$cf_nec->run_attempted());
@@ -839,7 +839,7 @@ xassert_paper_status($ps);
 // once the format is checked
 $paper3 = $user_estrin->checked_paper_by_id(3);
 $doc = $paper3->document(DTYPE_SUBMISSION);
-$cf_nec->check_document($paper3, $doc);
+$cf_nec->check_document($doc);
 xassert_eqq(join(" ", $cf_nec->problem_fields()), "");
 xassert(!$cf_nec->need_recheck());
 xassert($cf_nec->run_attempted());
@@ -850,7 +850,7 @@ $Conf->invalidate_caches(["options" => true]);
 
 $paper3->invalidate_documents();
 $doc = $paper3->document(DTYPE_SUBMISSION);
-$cf_nec->check_document($paper3, $doc);
+$cf_nec->check_document($doc);
 xassert_eqq(join(" ", $cf_nec->problem_fields()), "pagelimit");
 xassert(!$cf_nec->need_recheck());
 xassert(!$cf_nec->run_attempted());

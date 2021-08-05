@@ -25,8 +25,8 @@ require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
 
 $dp = $Conf->docstore();
 if (!$dp) {
-   fwrite(STDERR, "batch/cleandocstore.php: Conference doesn't use docstore\n");
-   exit(1);
+    fwrite(STDERR, "batch/cleandocstore.php: Conference doesn't use docstore\n");
+    exit(1);
 }
 preg_match('{\A((?:/[^/%]*(?=/|\z))+)}', $dp, $m);
 $usage_directory = $m[1];

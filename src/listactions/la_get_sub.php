@@ -18,7 +18,7 @@ class GetCheckFormat_ListAction extends ListAction {
             $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
             $doc = $prow->document($dtype, 0, true);
             if ($doc && $doc->mimetype === "application/pdf") {
-                $cf->check_document($prow, $doc);
+                $cf->check_document($doc);
                 $pages = $cf->npages ?? "?";
                 $errf = $cf->problem_fields();
                 if (empty($errf)) {

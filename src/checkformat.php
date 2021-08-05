@@ -2,7 +2,7 @@
 // checkformat.php -- HotCRP/banal integration
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-class CheckFormat extends MessageSet implements FormatChecker {
+class CheckFormat extends MessageSet {
     const RUN_ALWAYS = 0;
     const RUN_IF_NECESSARY = 1;
     const RUN_IF_NECESSARY_TIMEOUT = 2;
@@ -21,7 +21,8 @@ class CheckFormat extends MessageSet implements FormatChecker {
     private $conf;
     /** @var int */
     public $allow_run;
-    private $checkers = [];
+    /** @var array<string,FormatChecker> */
+    private $fcheckers = [];
     /** @var ?string */
     public $banal_stdout;
     /** @var ?string */
@@ -52,15 +53,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $z = $this->conf->opt("banalZoom");
             self::$banal_args = $z ? "-zoom=$z" : "";
         }
-    }
-
-    function error_kinds(FormatSpec $spec) {
-        $ks = [];
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $k) {
-            if ($spec->unparse_key($k) !== "")
-                $ks[] = $k;
-        }
-        return $ks;
+        $this->fcheckers["default"] = new Default_FormatChecker;
     }
 
     function msg_fail($what) {
@@ -96,7 +89,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return json_decode($this->banal_stdout);
     }
 
-    private function banal_json(DocumentInfo $doc, FormatSpec $spec) {
+    function banal_json(DocumentInfo $doc, FormatSpec $spec) {
         if ($this->allow_run === CheckFormat::RUN_IF_NECESSARY_TIMEOUT
             && CheckFormat::$runtime >= CheckFormat::TIMEOUT) {
             $allow_run = CheckFormat::RUN_NEVER;
@@ -192,7 +185,7 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
-    private function check_banal_json($bj, FormatSpec $spec) {
+    function check_banal_json($bj, FormatSpec $spec) {
         if ($bj && isset($bj->cfmsg) && is_array($bj->cfmsg)) {
             foreach ($bj->cfmsg as $m) {
                 $this->msg_at($m[0], $m[1], $m[2]);
@@ -401,36 +394,6 @@ class CheckFormat extends MessageSet implements FormatChecker {
         }
     }
 
-    function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc) {
-        if (($bj = $cf->banal_json($doc, $spec))) {
-            $cf->check_banal_json($bj, $spec);
-        } else {
-            assert(($cf->run_flags & CheckFormat::RUN_DESIRED) !== 0);
-            $cf->msg_fail(null);
-        }
-    }
-
-    function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, DocumentInfo $doc) {
-        $t = "";
-        if ($this->has_problem()) {
-            $msgs = [];
-            foreach ($this->problem_list() as $mx) {
-                $msgs[] = $mx->status > MessageSet::WARNING ? "<strong>{$mx->message}</strong>" : $mx->message;
-            }
-            if ($this->has_error()) {
-                $status = "error";
-                $start = "This document violates the submission format requirements. The most serious errors are in bold.";
-            } else {
-                $status = "warning";
-                $start = "This document may violate the submission format requirements.";
-            }
-            $t .= Ht::msg("<p>$start</p>\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\n<p>Submissions that violate the requirements will not be considered. <strong>However,</strong> the automated format checker can misreport errors (for instance, it can miscalculate margins and text sizes for certain figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.</p>", $status);
-        } else if (!$this->has_problem()) {
-            $t .= Ht::msg("Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", "confirm");
-        }
-        return $t;
-    }
-
 
     // CHECKING ORCHESTRATION
 
@@ -441,16 +404,26 @@ class CheckFormat extends MessageSet implements FormatChecker {
         $this->run_flags = 0;
     }
 
-    /** @param string $chk */
-    private function checker($chk) {
-        if ($chk === "banal" || $chk === "CheckFormat") {
-            return $this;
-        } else {
-            if (!isset($this->checkers[$chk])) {
-                $this->checkers[$chk] = new $chk;
+    /** @param FormatSpec $spec
+     * @return list<FormatChecker> */
+    private function spec_checkers($spec) {
+        $chk = [];
+        $has_default = false;
+        foreach ($spec->checkers as $c) {
+            if ($c === "") {
+                $c = "default";
             }
-            return $this->checkers[$chk];
+            if (!isset($this->fcheckers[$c])) {
+                /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName, PhanUndeclaredClass */
+                $this->fcheckers[$c] = new $c;
+            }
+            $chk[] = $this->fcheckers[$c];
+            $has_default = $has_default || $c === "default";
         }
+        if (!$has_default) {
+            $chk[] = $this->fcheckers["default"];
+        }
+        return $chk;
     }
 
     function check_file($filename, $spec) {
@@ -477,24 +450,18 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return $bj;
     }
 
-    function check_document(PaperInfo $prow, DocumentInfo $doc = null) {
-        assert(!$doc || $doc->prow === $prow);
+    function check_document(DocumentInfo $doc) {
         $this->clear();
         $this->run_flags |= CheckFormat::RUN_STARTED;
-        if (!$doc || $doc->mimetype !== "application/pdf") {
-            $this->msg_fail($doc ? "The format checker only works on PDF files." : "No such document.");
+        if ($doc->mimetype !== "application/pdf") {
+            $this->msg_fail("The format checker only works on PDF files.");
             return;
         }
 
         $done_me = false;
-        $spec = $prow->conf->format_spec($doc->documentType);
-        foreach ($spec->checkers as $chk) {
-            $checker = $this->checker($chk);
-            $done_me = $done_me || $checker === $this;
-            $checker->check($this, $spec, $prow, $doc);
-        }
-        if (!$done_me) {
-            $this->check($this, $spec, $prow, $doc);
+        $spec = $doc->conf->format_spec($doc->documentType);
+        foreach ($this->spec_checkers($spec) as $checker) {
+            $checker->check($this, $spec, $doc);
         }
 
         // save information about the run
@@ -505,14 +472,14 @@ class CheckFormat extends MessageSet implements FormatChecker {
             $doc->update_metadata($this->metadata_updates);
         }
         // record check status in `Paper` table
-        if ($prow->is_primary_document($doc)
+        if ($doc->prow->is_primary_document($doc)
             && ($this->run_flags & CheckFormat::RUN_DESIRED) === 0
             && $this->check_ok()
             && $spec->timestamp) {
             $x = $this->has_error() ? -$spec->timestamp : $spec->timestamp;
-            if ($x != $prow->pdfFormatStatus) {
-                $prow->pdfFormatStatus = (string) $x;
-                $prow->conf->qe("update Paper set pdfFormatStatus=? where paperId=?", $prow->pdfFormatStatus, $prow->paperId);
+            if ($x != $doc->prow->pdfFormatStatus) {
+                $doc->prow->pdfFormatStatus = (string) $x;
+                $doc->conf->qe("update Paper set pdfFormatStatus=? where paperId=?", $doc->prow->pdfFormatStatus, $doc->paperId);
             }
         }
     }
@@ -540,24 +507,69 @@ class CheckFormat extends MessageSet implements FormatChecker {
         return ($this->run_flags & CheckFormat::RUN_ATTEMPTED) !== 0;
     }
 
-    function document_report(PaperInfo $prow, DocumentInfo $doc) {
-        $spec = $prow->conf->format_spec($doc->documentType);
-        foreach ($spec->checkers as $chk)
-            if (($checker = $this->checker($chk))
-                && $checker !== $this
-                && ($report = $checker->report($this, $spec, $prow, $doc))) {
-                return $report;
+    /** @return string */
+    function document_report(DocumentInfo $doc) {
+        $spec = $doc->conf->format_spec($doc->documentType);
+        $report = null;
+        foreach ($this->spec_checkers($spec) as $checker) {
+            $report = $report ?? $checker->report($this, $spec, $doc);
         }
-        return $this->report($this, $spec, $prow, $doc);
+        return $report ?? "";
     }
 
-    function spec_error_kinds($dtype) {
+    /** @param int $dtype
+     * @return list<string> */
+    function known_fields($dtype) {
         $spec = $this->conf->format_spec($dtype);
-        $ekinds = $this->error_kinds($spec);
-        foreach ($spec->checkers as $chk) {
-            if (($checker = $this->checker($chk)) && $checker !== $this)
-                $ekinds = $ekinds + $checker->error_kinds($spec);
+        $ekinds = [];
+        foreach ($this->spec_checkers($spec) as $checker) {
+            $ckinds = $checker->known_fields($spec);
+            $ekinds = empty($ekinds) ? $ckinds : array_unique(array_merge($ekinds, $ckinds));
         }
         return $ekinds;
+    }
+}
+
+class Default_FormatChecker implements FormatChecker {
+    /** @return list<string> */
+    function known_fields(FormatSpec $spec) {
+        $ks = [];
+        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $k) {
+            if ($spec->unparse_key($k) !== "")
+                $ks[] = $k;
+        }
+        return $ks;
+    }
+
+    /** @return void */
+    function check(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {
+        if (($bj = $cf->banal_json($doc, $spec))) {
+            $cf->check_banal_json($bj, $spec);
+        } else {
+            assert(($cf->run_flags & CheckFormat::RUN_DESIRED) !== 0);
+            $cf->msg_fail(null);
+        }
+    }
+
+    /** @return ?string */
+    function report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {
+        $t = "";
+        if ($cf->has_problem()) {
+            $msgs = [];
+            foreach ($cf->problem_list() as $mx) {
+                $msgs[] = $mx->status > MessageSet::WARNING ? "<strong>{$mx->message}</strong>" : $mx->message;
+            }
+            if ($cf->has_error()) {
+                $status = "error";
+                $start = "This document violates the submission format requirements. The most serious errors are in <strong>bold</strong>.";
+            } else {
+                $status = "warning";
+                $start = "This document may violate the submission format requirements.";
+            }
+            $t .= Ht::msg("<p>$start</p>\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\n<p>Submissions that violate the requirements will not be considered. <strong>However,</strong> the automated format checker can misreport errors (for instance, it can miscalculate margins and text sizes for certain figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.</p>", $status);
+        } else {
+            $t .= Ht::msg("Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", "confirm");
+        }
+        return $t;
     }
 }

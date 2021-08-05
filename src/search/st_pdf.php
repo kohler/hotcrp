@@ -46,9 +46,9 @@ class PaperPDF_SearchTerm extends SearchTerm {
             return new PaperPDF_SearchTerm($srch, $dtype, false);
         }
         $cf = new CheckFormat($srch->conf);
-        $errf = $cf->spec_error_kinds($dtype === null ? DTYPE_SUBMISSION : $dtype);
+        $errf = $cf->known_fields($dtype ?? DTYPE_SUBMISSION);
         if ($dtype === null && empty($errf)) {
-            $errf = $cf->spec_error_kinds(DTYPE_FINAL);
+            $errf = $cf->known_fields(DTYPE_FINAL);
         }
         if (empty($errf)) {
             $srch->warning($sword->source_html() . ": Format checking is not enabled.");
@@ -119,7 +119,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
             if (!$doc || $doc->mimetype !== "application/pdf") {
                 return false;
             }
-            $this->cf->check_document($row, $doc);
+            $this->cf->check_document($doc);
             if ($this->cf->need_recheck()) {
                 if (!$this->cf_warn) {
                     $this->srch->warning("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
