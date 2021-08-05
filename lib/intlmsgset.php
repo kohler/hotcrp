@@ -371,7 +371,7 @@ class IntlMsgSet {
                 /* do nothing */
             } else if ($pos < strlen($s) && $s[$pos] === "%") {
                 $s = substr($s, 0, $pos) . substr($s, $pos + 1);
-            } else if (preg_match('/(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AO]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
+            } else if (preg_match('/(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AON]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
                 $argi = $m[1] ? +$m[1] : ++$argnum;
                 if (isset($args[$argi])) {
                     $val = $args[$argi];
@@ -380,7 +380,13 @@ class IntlMsgSet {
                         $val = $val[substr($m[2], 1, -1)] ?? null;
                     }
                     if ($m[3] && is_array($val)) {
-                        $val = commajoin($val, $m[3] === "#O" ? "or" : "and");
+                        if ($m[3] === "#N") {
+                            $val = numrangejoin($val);
+                        } else if ($m[3] === "#O") {
+                            $val = commajoin($val, "or");
+                        } else {
+                            $val = commajoin($val, "and");
+                        }
                     }
                     $conv = $m[4];
                     if ($m[5] === "H") {
