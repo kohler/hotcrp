@@ -328,6 +328,8 @@ interface FormatChecker {
     /** @return list<string> */
     function known_fields(FormatSpec $spec);
     /** @return void */
+    function prepare(CheckFormat $cf, FormatSpec $spec);
+    /** @return void */
     function check(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc);
     /** @return ?string */
     function report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc);

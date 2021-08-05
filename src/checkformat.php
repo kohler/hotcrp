@@ -37,6 +37,8 @@ class CheckFormat extends MessageSet {
     public $run_flags = 0;
     /** @var array<string,mixed> */
     public $metadata_updates = [];
+    /** @var ?FormatSpec */
+    private $last_spec;
 
     static private $banal_args;
     /** @var int */
@@ -220,7 +222,7 @@ class CheckFormat extends MessageSet {
                 }
             }
             if (!$ok) {
-                $this->error_at("papersize", "Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper") . ".");
+                $this->problem_at("papersize", "Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper") . ".", 2);
             }
         }
 
@@ -229,7 +231,7 @@ class CheckFormat extends MessageSet {
             $pages = $this->npages;
             assert(is_int($pages));
             if ($pages < $spec->pagelimit[0]) {
-                $this->problem_at("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $pages . ".");
+                $this->problem_at("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $pages . ".", 1);
             }
             if ($pages > $spec->pagelimit[1]
                 && $spec->unlimitedref
@@ -240,7 +242,7 @@ class CheckFormat extends MessageSet {
                 }
             }
             if ($pages > $spec->pagelimit[1]) {
-                $this->error_at("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], $spec->unlimitedref ? "non-reference page" : "page") . ", found " . $pages . ".");
+                $this->problem_at("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], $spec->unlimitedref ? "non-reference page" : "page") . ", found " . $pages . ".", 2);
             }
         }
         $this->body_pages = count(array_filter($bj->pages, function ($pg) {
@@ -261,7 +263,7 @@ class CheckFormat extends MessageSet {
                     || (isset($pg->d) && $pg->d === 0);
             }));
             if ($nd0_pages == $this->npages) {
-                $this->error_at("notext", "This document appears to contain no text. Perhaps the PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.");
+                $this->problem_at("notext", "This document appears to contain no text. Perhaps the PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", 2);
             }
         }
 
@@ -312,7 +314,7 @@ class CheckFormat extends MessageSet {
                     }
                 }
             if (!empty($px)) {
-                $this->msg_at("textblock", "Margins too small: text width exceeds "
+                $this->problem_at("textblock", "Margins too small: text width exceeds "
                     . FormatSpec::unparse_dimen($spec->textblock[0]) . " by "
                     . (count($px) > 1 ? "up to " : "")
                     . ((int) (100 * $maxx / $spec->textblock[0] + .5) - 100)
@@ -320,7 +322,7 @@ class CheckFormat extends MessageSet {
                     $this->body_error_status($nbadx));
             }
             if (!empty($py)) {
-                $this->msg_at("textblock", "Margins too small: text height exceeds "
+                $this->problem_at("textblock", "Margins too small: text height exceeds "
                     . FormatSpec::unparse_dimen($spec->textblock[1]) . " by "
                     . (count($py) > 1 ? "up to " : "")
                     . ((int) (100 * $maxy / $spec->textblock[1] + .5) - 100)
@@ -354,7 +356,7 @@ class CheckFormat extends MessageSet {
                 }
             }
             if (!empty($lopx)) {
-                $this->msg_at("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
+                $this->problem_at("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
             }
             if (!empty($hipx)) {
                 $this->problem_at("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
@@ -386,7 +388,7 @@ class CheckFormat extends MessageSet {
                 }
             }
             if (!empty($lopx)) {
-                $this->msg_at("bodylineheight", "Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
+                $this->problem_at("bodylineheight", "Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
             }
             if (!empty($hipx)) {
                 $this->problem_at("bodylineheight", "Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
@@ -460,7 +462,15 @@ class CheckFormat extends MessageSet {
 
         $done_me = false;
         $spec = $doc->conf->format_spec($doc->documentType);
-        foreach ($this->spec_checkers($spec) as $checker) {
+        $checkers = $this->spec_checkers($spec);
+        if ($spec !== $this->last_spec) {
+            $this->last_spec = $spec;
+            $this->clear_status_for_problem_at();
+            foreach ($checkers as $checker) {
+                $checker->prepare($this, $spec);
+            }
+        }
+        foreach ($checkers as $checker) {
             $checker->check($this, $spec, $doc);
         }
 
@@ -539,6 +549,10 @@ class Default_FormatChecker implements FormatChecker {
                 $ks[] = $k;
         }
         return $ks;
+    }
+
+    /** @return void */
+    function prepare(CheckFormat $cf, FormatSpec $spec) {
     }
 
     /** @return void */
