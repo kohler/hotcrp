@@ -4270,7 +4270,11 @@ class Conf {
             if ($user->has_email() && !$user->is_disabled()) {
                 if (!$user->is_anonymous_user()) {
                     $purl = $this->hoturl("profile");
-                    $profile_parts[] = "<a class=\"q\" href=\"{$purl}\"><strong>" . htmlspecialchars($user->email) . "</strong></a> &nbsp; <a href=\"{$purl}\">Profile</a>";
+                    $link = "<a class=\"qq\" href=\"{$purl}\"><strong>" . htmlspecialchars($user->email) . "</strong></a>";
+                    if ($user->is_actas_user()) {
+                        $link = "<span class=\"header-actas\"><span class=\"warning-mark\"></span> Acting as {$link}</span>";
+                    }
+                    $profile_parts[] = "{$link} &nbsp; <a href=\"{$purl}\">Profile</a>";
                 } else {
                     $profile_parts[] = "<strong>" . htmlspecialchars($user->email) . "</strong>";
                 }

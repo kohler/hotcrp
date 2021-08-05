@@ -133,6 +133,16 @@ body.paper > #top {
 	text-align: right;
 	float: right;
 }
+.header-actas {
+	display: inline-block;
+	color: #a16300;
+	background-color: #fffdbd;
+	border: 1px solid #c07700;
+	border-radius: 4px;
+	padding: 12px 6px 4px;
+	margin-top: -13px;
+	margin-bottom: -5px;
+}
 .usertime {
 	padding-top: 1px;
 	font-size: smaller;
