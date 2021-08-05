@@ -157,6 +157,16 @@ class PaperPage {
         return $msg;
     }
 
+    /** @return list<PaperOption> */
+    private function missing_required_fields(PaperInfo $prow) {
+        $missing = [];
+        foreach ($prow->form_fields() as $o) {
+            if ($o->test_required($prow) && !$o->value_present($prow->force_option($o)))
+                $missing[] = $o;
+        }
+        return $missing;
+    }
+
     function handle_update($action) {
         $conf = $this->conf;
         // XXX lock tables
@@ -258,15 +268,16 @@ class PaperPage {
         } else {
             if ($conf->setting("sub_freeze") > 0) {
                 $notes[] = $conf->_("The submission has not yet been completed.");
-            } else if ($new_prow->size == 0 && !$conf->opt("noPapers")) {
-                $notes[] = $conf->_("The submission PDF has not yet been uploaded.");
+            } else if (($missing = $this->missing_required_fields($new_prow))) {
+                $missing_names = array_map(function ($o) { return $o->missing_title(); }, $missing);
+                $notes[] = $conf->_("The submission is not ready for review; required fields %#H are missing.", $missing_names);
             } else {
                 $notes[] = $conf->_("The submission is marked as not ready for review.");
             }
             $notes[] = $this->deadline_note("sub_update",
                 "You have until %s to make further changes.",
                 "The deadline for updating submissions was %s.");
-            if (($msg = $this->deadline_note("sub_sub", "If the submission is not completed by %s, it will not be considered.", "")) !== "") {
+            if (($msg = $this->deadline_note("sub_sub", "Submissions incomplete as of %s will not be considered for review.", "")) !== "") {
                 $notes[] = "<strong>{$msg}</strong>";
             }
         }

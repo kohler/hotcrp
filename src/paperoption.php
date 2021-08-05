@@ -920,6 +920,10 @@ class PaperOption implements JsonSerializable {
     function edit_title() {
         return $this->title ?? $this->conf->_ci("field/edit", $this->formid);
     }
+    /** @return string */
+    function missing_title() {
+        return $this->title ?? $this->conf->_ci("field/missing", $this->formid);
+    }
 
     /** @return AbbreviationMatcher */
     private function abbrev_matcher() {
