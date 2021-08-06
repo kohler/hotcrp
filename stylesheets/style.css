@@ -3776,7 +3776,7 @@ a.tagbg, span.tagbg {
 	padding-right: 2px;
 	text-indent: 0;
 }
-del .tagbg {
+del .tagbg, .text-decoration-line-through {
 	-webkit-text-decoration-line: line-through;
 	text-decoration-line: line-through;
 }

@@ -121,8 +121,11 @@ form also can include:</p>
   multi-track conferences.</li>\n";
 
         } else if ($gj->itemid === 6) {
-            echo "<li><p><strong>", $hth->hotlink("Collect review preferences from the PC.", "reviewprefs"), "</strong> PC members can rank-order papers they
-  want or don’t want to review.  They can either set their preferences ",
+            echo "<li><p><strong>", $hth->hotlink("Collect review preferences from the PC.", "reviewprefs"), "</strong>
+  PC members can enter per-paper review preferences (also known as bids) to
+  mark papers they want or don’t want to review. Preferences are integers, typically
+  in the range −20 to 20; the higher the number, the more desired the review assignment.
+  Users can either set their preferences ",
   $hth->hotlink("all at once", "reviewprefs"), ", or (often more
   convenient) page through the ", $hth->search_link("list of submitted papers", ""),
   " and set their preferences on the ", $hth->hotlink("paper pages", "paper"), ".</p>

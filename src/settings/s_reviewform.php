@@ -635,52 +635,9 @@ class ReviewForm_SettingRenderer {
 
         $rfj = [];
         foreach ($rf->fmap as $f) {
-            $rfj[$f->short_id] = $f->unparse_json();
-        }
-
-        // track whether fields have any nonempty values
-        $where = ["false", "false"];
-        foreach ($rf->fmap as $f) {
-            $fj = $rfj[$f->short_id];
-            $fj->internal_id = $f->id;
-            $fj->has_any_nonempty = false;
-            if ($f->json_storage) {
-                if ($f->has_options) {
-                    $where[0] = "sfields is not null";
-                } else {
-                    $where[1] = "tfields is not null";
-                }
-            } else {
-                if ($f->has_options) {
-                    $where[] = "{$f->main_storage}!=0";
-                } else {
-                    $where[] = "coalesce({$f->main_storage},'')!=''";
-                }
-            }
-        }
-
-        $unknown_nonempty = array_values($rfj);
-        $minpid = 0;
-        while (!empty($unknown_nonempty)) {
-            $pset = $sv->conf->paper_set(["where" => "Paper.paperId>$minpid", "limit" => "limit 100"]);
-            foreach ($pset as $prow) {
-                foreach ($prow->all_full_reviews() as $rrow) {
-                    for ($i = 0; $i < count($unknown_nonempty); ++$i) {
-                        $fj = $unknown_nonempty[$i];
-                        $fid = $fj->internal_id;
-                        if (isset($rrow->$fid)
-                            && (isset($fj->options) ? (int) $rrow->$fid !== 0 : $rrow->$fid !== "")) {
-                            $fj->has_any_nonempty = true;
-                            array_splice($unknown_nonempty, $i, 1);
-                        } else {
-                            ++$i;
-                        }
-                    }
-                }
-                $minpid = max($minpid, $prow->paperId);
-            }
-            if ($pset->size() < 100) { // ran out of reviews
-                break;
+            $rfj[$f->short_id] = $fj = $f->unparse_json();
+            if ($f->displayed) {
+                $fj->search_keyword = $f->search_keyword();
             }
         }
 
@@ -690,7 +647,7 @@ class ReviewForm_SettingRenderer {
         }
         $renderer = new ReviewForm_SettingRenderer;
         echo '<template id="rf_template" class="hidden">';
-        echo '<div id="rf_$" class="settings-rf f-contain has-fold fold2c" data-revfield="$">',
+        echo '<div id="rf_$" class="settings-rf f-contain has-fold fold2c" data-rfid="$">',
             '<a href="" class="q settings-field-folder">',
             expander(null, 2, "Edit field"),
             '</a>',
@@ -723,7 +680,6 @@ class ReviewForm_SettingRenderer {
         echo '</template>';
 
         echo "<div id=\"reviewform_container\"></div>",
-            "<div id=\"reviewform_removedcontainer\"></div>",
             Ht::button("Add score field", ["class" => "ui js-settings-add-review-field score"]),
             "<span class=\"sep\"></span>",
             Ht::button("Add text field", ["class" => "ui js-settings-add-review-field"]);

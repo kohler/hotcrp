@@ -67,11 +67,11 @@ handle_ui.on("js-settings-option-move", function (event) {
                 if (!$(this).find(".settings-opt-fp").length)
                     $(this).remove();
             });
-            $odiv.find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
+            $odiv.find("input[type=text]").prop("disabled", true).addClass("text-decoration-line-through");
             if ((x = this.getAttribute("data-option-exists")))
                 $odiv.append('<div class="f-i"><em>This field will be deleted from the submission form and from ' + plural(x, 'submission') + '.</em></div>');
             else
-                $odiv.append('<div class="f-i"><em>This field will be deleted from the submission form.</em></div>');
+                $odiv.append('<div class="f-i"><em>This field will be deleted from the submission form. It is not used on any submissions.</em></div>');
         }
     }
     settings_option_positions();
@@ -153,7 +153,7 @@ handle_ui.on("js-settings-new-autosearch", function (event) {
 handle_ui.on("js-settings-delete-autosearch", function (event) {
     var odiv = $(this).closest(".settings_tag_autosearch")[0];
     $(odiv).find("input[name^=tag_autosearch_q_]").val("");
-    $(odiv).find("input[type=text]").prop("disabled", true).css("text-decoration", "line-through");
+    $(odiv).find("input[type=text]").prop("disabled", true).addClass("text-decoration-line-through");
 });
 
 handle_ui.on("js-settings-add-track", function () {
@@ -266,12 +266,15 @@ function option_class_prefix(fieldj) {
 }
 
 function fill_order() {
-    var i, c = $("#reviewform_container")[0], n;
-    for (i = 1, n = c.firstChild; n; ++i, n = n.nextSibling)
-        $(n).find(".rf-position").val(i);
-    c = $("#reviewform_removedcontainer")[0];
-    for (n = c.firstChild; n; n = n.nextSibling)
-        $(n).find(".rf-position").val(0);
+    var i, c = $("#reviewform_container")[0], n, pos;
+    for (i = 1, n = c.firstChild; n; n = n.nextSibling) {
+        if (hasClass(n, "settings-rf-deleted")) {
+            pos = 0;
+        } else {
+            pos = i++;
+        }
+        $(n).find(".rf-position").val(pos);
+    }
     form_highlight("#settingsform");
 }
 
@@ -316,18 +319,46 @@ function fill_field($f, fid, fieldj, order) {
     fill_field_control("#rf_ecs_" + fid, ecs, order);
     $("#rf_" + fid + " textarea").trigger("change");
     $("#rf_" + fid + "_view").html("").append(create_field_view(fieldj));
-    $("#rf_" + fid + "_delete").attr("aria-label", fieldj.has_any_nonempty ? "Delete from form and current reviews" : "Delete from form");
-    order && fill_field_control("#rf_position_" + fid, fieldj.position || 0, order);
+    $("#rf_" + fid + "_delete").attr("aria-label", "Delete from form");
+    if (order) {
+        fill_field_control("#rf_position_" + fid, fieldj.position || 0, order);
+    }
+    if (fieldj.search_keyword) {
+        $("#rf_" + fid).attr("data-rf", fieldj.search_keyword);
+    }
     fold_properties(fid);
     return false;
 }
 
 function remove() {
-    var $f = $(this).closest(".settings-rf"),
-        fid = $f.attr("data-revfield");
-    $f.find(".rf-position").val(0);
-    $f.detach().hide().appendTo("#reviewform_removedcontainer");
-    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings-rf-deleted"><span class="settings-revfn" style="text-decoration:line-through">' + escape_html($f.find("#rf_name_" + fid).val()) + '</span>&nbsp; (field removed)</div>');
+    var rf = this.closest(".settings-rf"),
+        fid = rf.getAttribute("data-rfid"),
+        form = rf.closest("form");
+    if (hasClass(rf, "settings-rf-new")) {
+        rf.parentElement.removeChild(rf);
+    } else {
+        addClass(rf, "settings-rf-deleted");
+        var $rfedit = $("#rf_" + fid + "_edit");
+        $rfedit.children().addClass("hidden", true);
+        var name = form.elements["rf_name_" + fid];
+        $(name).prop("disabled", true).addClass("text-decoration-line-through");
+        removeClass(name.closest(".entryi"), "hidden");
+        $rfedit.append('<div class="f-i"><em id="rf_'.concat(fid, '_removemsg">This field will be deleted from the review form.</em></div>'));
+        if (rf.hasAttribute("data-rf")) {
+            var search = {q: "has:" + rf.getAttribute("data-rf"), t: "all", forceShow: 1};
+            $.get(hoturl("api/search", search), null, function (v) {
+                var t;
+                if (v && v.ok && v.ids && v.ids.length)
+                    t = 'This field will be deleted from the review form and from reviews on <a href="'.concat(hoturl_html("search", search), '" target="_blank">', plural(v.ids.length, "submission"), "</a>.");
+                else if (v && v.ok)
+                    t = "This field will be deleted from the review form. No reviews have used the field.";
+                else
+                    t = "This field will be deleted from the review form and possibly from some reviews.";
+                $("#rf_" + fid + "_removemsg").html(t);
+            });
+        }
+        foldup.call(rf, event, {n: 2, f: false});
+    }
     fill_order();
 }
 
@@ -364,8 +395,9 @@ function option_value_html(fieldj, value) {
 }
 
 function view_unfold(event) {
-    var $f = $(event.target).closest(".settings-rf");
-    if ($f.hasClass("fold2c") || !form_differs($f))
+    var rf = event.target.closest(".settings-rf");
+    if ((hasClass(rf, "fold2c") || !form_differs(rf))
+        && !hasClass(rf, "settings-rf-deleted"))
         foldup.call(event.target, event, {n: 2});
     return false;
 }
@@ -421,7 +453,7 @@ function create_field_view(fieldj) {
 function move_field(event) {
     var isup = $(this).hasClass("moveup"),
         $f = $(this).closest(".settings-rf").detach(),
-        fid = $f.attr("data-revfield"),
+        fid = $f.attr("data-rfid"),
         pos = $f.find(".rf-position").val() | 0,
         $c = $("#reviewform_container")[0], $n, i;
     for (i = 1, $n = $c.firstChild;
@@ -434,7 +466,6 @@ function move_field(event) {
 
 function append_field(fid, pos) {
     var $f = $("#rf_" + fid), i, $j, $tmpl = $("#rf_template");
-    $("#revfieldremoved_" + fid).remove();
 
     if ($f.length) {
         $f.detach().show().appendTo("#reviewform_container");
@@ -487,8 +518,10 @@ function add_field(fid) {
     original[fid] = original[fid] || {};
     original[fid].position = fieldorder.length;
     append_field(fid, fieldorder.length);
-    foldup.call($("#rf_" + fid)[0], null, {n: 2, f: false});
-    $("#rf_position_" + fid).attr("data-default-value", "0");
+    var rf = document.getElementById("rf_" + fid);
+    addClass(rf, "settings-rf-new");
+    foldup.call(rf, null, {n: 2, f: false});
+    document.getElementById("rf_position_" + fid).setAttribute("data-default-value", "0");
     form_highlight("#settingsform");
     return true;
 }
@@ -510,7 +543,7 @@ function rfs(data) {
     });
 
     // construct form
-    for (i = 0; i != fieldorder.length; ++i) {
+    for (i = 0; i !== fieldorder.length; ++i) {
         append_field(fieldorder[i], i + 1);
     }
     $("#reviewform_container").on("click", "a.settings-field-folder", view_unfold);
@@ -571,7 +604,7 @@ function add_dialog(fid, focus) {
     }
     function submit(event) {
         add_field(fid);
-        template && fill_field($("#rf_" + fid), fid, samples[template - 1], false);
+        fill_field($("#rf_" + fid), fid, template ? samples[template - 1] : {}, false);
         $("#rf_name_" + fid)[0].focus();
         $d.close();
         event.preventDefault();
@@ -618,14 +651,8 @@ function add_dialog(fid, focus) {
 
 handle_ui.on("js-settings-add-review-field", function () {
     var has_options = hasClass(this, "score"), fid;
-    // prefer recently removed fields
+    // prefer fields that have ever been defined
     var i = 0, x = [];
-    for (var $n = $("#reviewform_removedcontainer")[0].firstChild;
-         $n && $n.hasAttribute("data-revfield"); $n = $n.nextSibling) {
-        x.push([$n.getAttribute("data-revfield"), i]);
-        ++i;
-    }
-    // otherwise prefer fields that have ever been defined
     for (fid in original)
         if ($.inArray(fid, fieldorder) < 0) {
             x.push([fid, i + (original[fid].name && original[fid].name !== "Field name" ? 0 : 1000)]);
