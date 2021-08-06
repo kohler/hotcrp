@@ -237,7 +237,7 @@ class PaperPage {
             $actiontext = "Updated final";
             $template = "@submitfinalpaper";
         } else if ($newsubmit) {
-            $actiontext = "Submitted";
+            $actiontext = "Updated";
             $template = "@submitpaper";
         } else if ($is_new) {
             $actiontext = "Registered";
@@ -260,7 +260,7 @@ class PaperPage {
                 "You have until %s to make further changes.",
                 "The deadline for submitting final versions was %s.");
         } else if ($new_prow->timeSubmitted > 0) {
-            $notes[] = $conf->_("The submission will be considered for review.");
+            $notes[] = $conf->_("The submission is ready for review.");
             if ($conf->setting("sub_freeze") <= 0) {
                 $notes[] = $this->deadline_note("sub_update",
                     "You have until %s to make further changes.", "");

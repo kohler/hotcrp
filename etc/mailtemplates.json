@@ -200,7 +200,7 @@
 		"name": "submitpaper",
 		"subject": "[%CONFSHORTNAME%] Submitted #%NUMBER% %TITLEHINT%",
 		"body": [
-			"Submission #%PAPER% has been submitted for review on the %CONFNAME% site.\n\n",
+			"Submission #%PAPER% is now ready for review on the %CONFNAME% site.\n\n",
 			"       Title: %TITLE%\n",
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",

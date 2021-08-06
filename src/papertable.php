@@ -1626,7 +1626,7 @@ class PaperTable {
             }
         } else if ($this->user->can_edit_paper($this->prow)) {
             if ($this->mode === "edit") {
-                $this->_main_message('This submission is ready and will be considered for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), MessageSet::SUCCESS);
+                $this->_main_message('This submission is ready for review. You do not need to take further action. However, you can still make changes if you wish.' . $this->deadline_setting_is("sub_update", "submission deadline"), MessageSet::SUCCESS);
             }
         } else if ($this->conf->allow_final_versions()
                    && $this->prow->outcome > 0
