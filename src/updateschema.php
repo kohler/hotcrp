@@ -1189,36 +1189,36 @@ function updateSchema($conf) {
     }
     if ($conf->sversion === 106
         && $conf->ql_ok("alter table PaperComment add `authorOrdinal` int(11) NOT NULL default '0'")
-        && $conf->ql_ok("update PaperComment set authorOrdinal=ordinal where commentType>=" . COMMENTTYPE_AUTHOR)) {
+        && $conf->ql_ok("update PaperComment set authorOrdinal=ordinal where commentType>=" . CommentInfo::CT_AUTHOR)) {
         $conf->update_schema_version(107);
     }
 
     // repair missing comment ordinals; reset incorrect `ordinal`s for
     // author-visible comments
     if ($conf->sversion === 107) {
-        $result = $conf->ql_ok("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " order by commentId");
+        $result = $conf->ql_ok("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_PCONLY . " and commentType<" . CommentInfo::CT_AUTHOR . " order by commentId");
         while (($row = $result->fetch_row())) {
             $conf->ql_ok("update PaperComment,
 (select coalesce(count(commentId),0) commentCount from Paper
-    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
+    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_PCONLY . " and commentType<" . CommentInfo::CT_AUTHOR . " and commentId<$row[1])
     where Paper.paperId=$row[0] group by Paper.paperId) t
 set ordinal=(t.commentCount+1) where commentId=$row[1]");
         }
 
-        $result = $conf->ql_ok("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
+        $result = $conf->ql_ok("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_AUTHOR . " order by commentId");
         while (($row = $result->fetch_row())) {
             $conf->ql_ok("update PaperComment,
 (select coalesce(count(commentId),0) commentCount from Paper
-    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
+    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_AUTHOR . " and commentId<$row[1])
     where Paper.paperId=$row[0] group by Paper.paperId) t
 set authorOrdinal=(t.commentCount+1) where commentId=$row[1]");
         }
 
-        $result = $conf->ql_ok("select paperId, commentId from PaperComment where ordinal=authorOrdinal and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
+        $result = $conf->ql_ok("select paperId, commentId from PaperComment where ordinal=authorOrdinal and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_AUTHOR . " order by commentId");
         while (($row = $result->fetch_row())) {
             $conf->ql_ok("update PaperComment,
 (select coalesce(max(ordinal),0) maxOrdinal from Paper
-    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
+    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT) . ")=0 and commentType>=" . CommentInfo::CT_PCONLY . " and commentType<" . CommentInfo::CT_AUTHOR . " and commentId<$row[1])
     where Paper.paperId=$row[0] group by Paper.paperId) t
 set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         }
@@ -1887,7 +1887,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $conf->update_schema_version(222);
     }
     if ($conf->sversion === 222
-        && $conf->ql_ok("update PaperComment set timeDisplayed=if(timeNotified=0,timeModified,timeNotified) where timeDisplayed=0 and (commentType&" . COMMENTTYPE_DRAFT . ")=0")) {
+        && $conf->ql_ok("update PaperComment set timeDisplayed=if(timeNotified=0,timeModified,timeNotified) where timeDisplayed=0 and (commentType&" . CommentInfo::CT_DRAFT . ")=0")) {
         $conf->update_schema_version(223);
     }
     if ($conf->sversion === 223

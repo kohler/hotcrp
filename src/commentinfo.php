@@ -38,16 +38,33 @@ class CommentInfo {
     /** @var ?string */
     public $email;
 
+    const CT_DRAFT = 1;
+    const CT_BLIND = 2;
+    const CT_RESPONSE = 4;
+    const CT_BYAUTHOR = 8;
+    const CT_BYSHEPHERD = 16;
+    const CT_HASDOC = 32;
+    const CT_ADMINONLY = 0x00000;
+    const CT_PCONLY = 0x10000;
+    const CT_REVIEWER = 0x20000;
+    const CT_AUTHOR = 0x30000;
+    const CT_VISIBILITY = 0xFFF0000;
+
     static private $visibility_map = [
-        COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc",
-        COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au"
+        0x00000 /* CT_ADMINONLY */ => "admin",
+        0x10000 /* CT_PCONLY */ => "pc",
+        0x20000 /* CT_REVIEWER */ => "rev",
+        0x30000 /* CT_AUTHOR */ => "au"
     ];
     /** @var array<string,int> */
     static private $visibility_revmap = [
-        "admin" => COMMENTTYPE_ADMINONLY,
-        "pc" => COMMENTTYPE_PCONLY, "p" => COMMENTTYPE_PCONLY,
-        "rev" => COMMENTTYPE_REVIEWER, "r" => COMMENTTYPE_REVIEWER,
-        "au" => COMMENTTYPE_AUTHOR, "a" => COMMENTTYPE_AUTHOR
+        "admin" => 0x00000 /* CT_ADMINONLY */,
+        "pc" => 0x10000 /* CT_PCONLY */,
+        "p" => 0x10000 /* CT_PCONLY */,
+        "rev" => 0x20000 /* CT_REVIEWER */,
+        "r" => 0x20000 /* CT_REVIEWER */,
+        "au" => 0x30000 /* CT_AUTHOR */,
+        "a" => 0x30000 /* CT_AUTHOR */
     ];
 
 
@@ -69,7 +86,7 @@ class CommentInfo {
         $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
         if ($this->commentType === null) {
-            $this->commentType = COMMENTTYPE_REVIEWER;
+            $this->commentType = self::CT_REVIEWER;
         } else {
             $this->commentType = (int) $this->commentType;
         }
@@ -89,7 +106,7 @@ class CommentInfo {
     /** @param int $round
      * @return CommentInfo */
     static function make_response_template($round, PaperInfo $prow) {
-        return new CommentInfo(["commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $round], $prow);
+        return new CommentInfo(["commentType" => self::CT_RESPONSE, "commentRound" => $round], $prow);
     }
 
     function set_prow(PaperInfo $prow) {
@@ -103,7 +120,7 @@ class CommentInfo {
         if (Ht::mark_stash("papercomment")) {
             $t = [];
             $crow = new CommentInfo(null, $prow, $prow->conf);
-            $crow->commentType = COMMENTTYPE_RESPONSE;
+            $crow->commentType = self::CT_RESPONSE;
             foreach ($prow->conf->resp_rounds() as $rrd) {
                 $j = ["words" => $rrd->words];
                 $crow->commentRound = $rrd->number;
@@ -127,26 +144,26 @@ class CommentInfo {
 
     /** @return bool */
     function is_response() {
-        return ($this->commentType & COMMENTTYPE_RESPONSE) !== 0;
+        return ($this->commentType & self::CT_RESPONSE) !== 0;
     }
 
     /** @param int $ctype
      * @return bool */
     static private function commenttype_needs_ordinal($ctype) {
-        return !($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
-            && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY;
+        return !($ctype & (self::CT_RESPONSE | self::CT_DRAFT))
+            && ($ctype & self::CT_VISIBILITY) !== self::CT_ADMINONLY;
     }
 
     /** @param int $ctype
      * @return bool */
     private function ordinal_missing($ctype) {
         return self::commenttype_needs_ordinal($ctype)
-            && !($ctype >= COMMENTTYPE_AUTHOR ? $this->authorOrdinal : $this->ordinal);
+            && !($ctype >= self::CT_AUTHOR ? $this->authorOrdinal : $this->ordinal);
     }
 
     /** @return ?string */
     function unparse_ordinal() {
-        $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
+        $is_author = $this->commentType >= self::CT_AUTHOR;
         $o = $is_author ? $this->authorOrdinal : $this->ordinal;
         if (self::commenttype_needs_ordinal($this->commentType) && $o) {
             return ($is_author ? "A" : "") . $o;
@@ -157,11 +174,11 @@ class CommentInfo {
 
     /** @return string */
     function unparse_html_id() {
-        $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
+        $is_author = $this->commentType >= self::CT_AUTHOR;
         $o = $is_author ? $this->authorOrdinal : $this->ordinal;
         if (self::commenttype_needs_ordinal($this->commentType) && $o) {
             return ($is_author ? "cA" : "c") . $o;
-        } else if ($this->commentType & COMMENTTYPE_RESPONSE) {
+        } else if ($this->commentType & self::CT_RESPONSE) {
             return $this->conf->resp_round_text($this->commentRound) . "response";
         } else {
             return "cx" . $this->commentId;
@@ -179,10 +196,10 @@ class CommentInfo {
 
     /** @return ?string */
     function unparse_response_text() {
-        if ($this->commentType & COMMENTTYPE_RESPONSE) {
+        if ($this->commentType & self::CT_RESPONSE) {
             $rname = $this->conf->resp_round_name($this->commentRound);
             $t = $rname == "1" ? "Response" : "$rname Response";
-            if ($this->commentType & COMMENTTYPE_DRAFT) {
+            if ($this->commentType & self::CT_DRAFT) {
                 $t = "Draft $t";
             }
             return $t;
@@ -205,7 +222,7 @@ class CommentInfo {
                 || $cr->unparse_commenter_pseudonym($viewer)) {
                 $cid = $cr->contactId;
             }
-            if ($cr->commentType & COMMENTTYPE_RESPONSE) {
+            if ($cr->commentType & self::CT_RESPONSE) {
                 if (!empty($result))
                     $result[count($result) - 1][2] = ";";
                 $connector = ";";
@@ -239,9 +256,9 @@ class CommentInfo {
 
     /** @return ?string */
     private function unparse_commenter_pseudonym(Contact $viewer) {
-        if ($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR)) {
+        if ($this->commentType & (self::CT_RESPONSE | self::CT_BYAUTHOR)) {
             return "Author";
-        } else if ($this->commentType & COMMENTTYPE_BYSHEPHERD) {
+        } else if ($this->commentType & self::CT_BYSHEPHERD) {
             return "Shepherd";
         } else if (($rrow = $this->prow->review_by_user($this->contactId))
                    && $rrow->reviewOrdinal
@@ -259,7 +276,7 @@ class CommentInfo {
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
         }
-        if ($this->commentType & COMMENTTYPE_RESPONSE) {
+        if ($this->commentType & self::CT_RESPONSE) {
             $n = "<i>" . $this->unparse_response_text() . "</i>"
                 . ($n === "Author" ? "" : " ($n)");
         }
@@ -273,7 +290,7 @@ class CommentInfo {
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
         }
-        if ($this->commentType & COMMENTTYPE_RESPONSE) {
+        if ($this->commentType & self::CT_RESPONSE) {
             $n = $this->unparse_response_text()
                 . ($n === "Author" ? "" : " ($n)");
         }
@@ -305,7 +322,7 @@ class CommentInfo {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             $tags = $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
-            if ($this->commentType & COMMENTTYPE_RESPONSE) {
+            if ($this->commentType & self::CT_RESPONSE) {
                 $tags = preg_replace('{ \S*response(?:|#\S+)(?= |\z)}i', "", $tags);
             }
             return $tags;
@@ -323,12 +340,12 @@ class CommentInfo {
 
     /** @return bool */
     function has_attachments() {
-        return ($this->commentType & COMMENTTYPE_HASDOC) !== 0;
+        return ($this->commentType & self::CT_HASDOC) !== 0;
     }
 
     /** @return DocumentInfoSet */
     function attachments() {
-        if ($this->commentType & COMMENTTYPE_HASDOC) {
+        if ($this->commentType & self::CT_HASDOC) {
             return $this->prow->linked_documents($this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END, $this);
         } else {
             return new DocumentInfoSet;
@@ -367,7 +384,7 @@ class CommentInfo {
                 "pid" => $this->prow->paperId,
                 "cid" => $this->commentId,
                 "ordinal" => $this->unparse_ordinal(),
-                "visibility" => self::$visibility_map[$this->commentType & COMMENTTYPE_VISIBILITY]
+                "visibility" => self::$visibility_map[$this->commentType & self::CT_VISIBILITY]
             ];
         } else {
             // placeholder for new comment
@@ -378,17 +395,17 @@ class CommentInfo {
             ];
         }
 
-        if ($this->commentType & COMMENTTYPE_BLIND) {
+        if ($this->commentType & self::CT_BLIND) {
             $cj->blind = true;
         }
-        if ($this->commentType & COMMENTTYPE_DRAFT) {
+        if ($this->commentType & self::CT_DRAFT) {
             $cj->draft = true;
         }
-        if ($this->commentType & COMMENTTYPE_RESPONSE) {
+        if ($this->commentType & self::CT_RESPONSE) {
             $cj->response = $this->conf->resp_round_name($this->commentRound);
-        } else if ($this->commentType & COMMENTTYPE_BYAUTHOR) {
+        } else if ($this->commentType & self::CT_BYAUTHOR) {
             $cj->by_author = true;
-        } else if ($this->commentType & COMMENTTYPE_BYSHEPHERD) {
+        } else if ($this->commentType & self::CT_BYSHEPHERD) {
             $cj->by_shepherd = true;
         }
 
@@ -419,7 +436,7 @@ class CommentInfo {
             || ($viewer->allow_administer($this->prow)
                 && $viewer->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
         if ($idable || $idable_override) {
-            if (!($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR))
+            if (!($this->commentType & (self::CT_RESPONSE | self::CT_BYAUTHOR))
                 && $viewer->can_view_user_tags()
                 && ($cuser = $this->conf->pc_member_by_id($this->contactId))) {
                 $cj->author = $viewer->reviewer_html_for($cuser);
@@ -439,7 +456,7 @@ class CommentInfo {
             }
         }
         if ((!$idable
-             || ($this->commentType & (COMMENTTYPE_VISIBILITY | COMMENTTYPE_BLIND)) == (COMMENTTYPE_AUTHOR | COMMENTTYPE_BLIND))
+             || ($this->commentType & (self::CT_VISIBILITY | self::CT_BLIND)) === (self::CT_AUTHOR | self::CT_BLIND))
             && ($p = $this->unparse_commenter_pseudonym($viewer))) {
             $cj->author_pseudonym = $p;
         }
@@ -481,7 +498,7 @@ class CommentInfo {
     /** @param int $flags
      * @return string */
     function unparse_text(Contact $contact, $flags = 0) {
-        if (!($this->commentType & COMMENTTYPE_RESPONSE)) {
+        if (!($this->commentType & self::CT_RESPONSE)) {
             $ordinal = $this->unparse_ordinal();
             $x = "Comment" . ($ordinal ? " @$ordinal" : "");
         } else if (($rname = $this->conf->resp_round_text($this->commentRound))) {
@@ -492,7 +509,7 @@ class CommentInfo {
         if ($contact->can_view_comment_identity($this->prow, $this)) {
             $x .= " by " . Text::nameo($this, NAME_EB);
         } else if (($p = $this->unparse_commenter_pseudonym($contact))
-                   && ($p !== "Author" || !($this->commentType & COMMENTTYPE_RESPONSE))) {
+                   && ($p !== "Author" || !($this->commentType & self::CT_RESPONSE))) {
             $x .= " by " . $p;
         }
         $x .= "\n" . str_repeat("-", 75) . "\n";
@@ -541,7 +558,7 @@ class CommentInfo {
 
 
     private function save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn) {
-        $okey = $ctype >= COMMENTTYPE_AUTHOR ? "authorOrdinal" : "ordinal";
+        $okey = $ctype >= self::CT_AUTHOR ? "authorOrdinal" : "ordinal";
         $q = "update $Table, (select coalesce(max($Table.$okey),0) maxOrdinal
     from $LinkTable
     left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn)
@@ -571,31 +588,31 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         $req_visibility = self::$visibility_revmap[$req->visibility ?? ""] ?? null;
         if ($req_visibility === null && $this->commentId) {
-            $req_visibility = $this->commentType & COMMENTTYPE_VISIBILITY;
+            $req_visibility = $this->commentType & self::CT_VISIBILITY;
         }
 
-        $is_response = !!($this->commentType & COMMENTTYPE_RESPONSE);
+        $is_response = !!($this->commentType & self::CT_RESPONSE);
         $response_name = null;
         if ($is_response) {
-            $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR;
+            $ctype = self::CT_RESPONSE | self::CT_AUTHOR;
             if (!($req->submit ?? null)) {
-                $ctype |= COMMENTTYPE_DRAFT;
+                $ctype |= self::CT_DRAFT;
             }
             $response_name = $this->conf->resp_round_name($this->commentRound);
         } else if ($contact->act_author_view($this->prow)) {
-            $ctype = ($req_visibility ?? COMMENTTYPE_AUTHOR) | COMMENTTYPE_BYAUTHOR;
+            $ctype = ($req_visibility ?? self::CT_AUTHOR) | self::CT_BYAUTHOR;
         } else {
-            $ctype = $req_visibility ?? COMMENTTYPE_REVIEWER;
+            $ctype = $req_visibility ?? self::CT_REVIEWER;
         }
         if ($is_response
             ? $this->prow->blind
             : $this->conf->is_review_blind(!!($req->blind ?? null))) {
-            $ctype |= COMMENTTYPE_BLIND;
+            $ctype |= self::CT_BLIND;
         }
         if ($this->commentId
-            ? $this->commentType & COMMENTTYPE_BYSHEPHERD
+            ? $this->commentType & self::CT_BYSHEPHERD
             : $contact->contactId == $this->prow->shepherdContactId) {
-            $ctype |= COMMENTTYPE_BYSHEPHERD;
+            $ctype |= self::CT_BYSHEPHERD;
         }
 
         // tags
@@ -631,15 +648,15 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         // attachments
         $docids = $old_docids = [];
         if (($docs = ($req->docs ?? null))) {
-            $ctype |= COMMENTTYPE_HASDOC;
+            $ctype |= self::CT_HASDOC;
             $docids = array_map(function ($doc) { return $doc->paperStorageId; }, $docs);
         }
-        if ($this->commentType & COMMENTTYPE_HASDOC) {
+        if ($this->commentType & self::CT_HASDOC) {
             $old_docids = $this->attachment_ids();
         }
 
         // notifications
-        $displayed = !($ctype & COMMENTTYPE_DRAFT);
+        $displayed = !($ctype & self::CT_DRAFT);
 
         // query
         if (($text = $req->text ?? null) !== false) {
@@ -680,21 +697,21 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 // make sure there is exactly one response
                 $q .= " from (select $LinkTable.$LinkColumn, coalesce(commentId, 0) commentId
                 from $LinkTable
-                left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=$this->commentRound)
+                left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn and (commentType&" . self::CT_RESPONSE . ")!=0 and commentRound=$this->commentRound)
                 where $LinkTable.$LinkColumn={$this->prow->$LinkColumn} limit 1) t
         where t.commentId=0";
             }
         } else {
-            $change = ($this->commentType >= COMMENTTYPE_AUTHOR) != ($ctype >= COMMENTTYPE_AUTHOR);
+            $change = ($this->commentType >= self::CT_AUTHOR) !== ($ctype >= self::CT_AUTHOR);
             if ($this->timeModified >= Conf::$now) {
                 Conf::advance_current_time($this->timeModified);
             }
             // do not notify on updates within 3 hours
             $qa = "";
             if ($this->timeNotified + 10800 < Conf::$now
-                || (($ctype & COMMENTTYPE_RESPONSE)
-                    && !($ctype & COMMENTTYPE_DRAFT)
-                    && ($this->commentType & COMMENTTYPE_DRAFT))) {
+                || (($ctype & self::CT_RESPONSE)
+                    && !($ctype & self::CT_DRAFT)
+                    && ($this->commentType & self::CT_DRAFT))) {
                 $qa .= ", timeNotified=" . Conf::$now;
             }
             // reset timeDisplayed if you change the comment type
@@ -730,15 +747,15 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         if ($text === false) {
             $log .= " deleted";
         } else {
-            if (($ctype & COMMENTTYPE_DRAFT) === 0
-                && (!$this->commentId || ($this->commentType & COMMENTTYPE_DRAFT) !== 0)) {
+            if (($ctype & self::CT_DRAFT) === 0
+                && (!$this->commentId || ($this->commentType & self::CT_DRAFT) !== 0)) {
                 $log .= " submitted";
             } else if ($this->commentId) {
                 $log .= " edited";
             } else {
                 $log .= " started";
             }
-            if ($ctype & COMMENTTYPE_DRAFT) {
+            if ($ctype & self::CT_DRAFT) {
                 $log .= " draft";
             }
             $ch = [];
@@ -747,7 +764,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $ch[] = "text";
             }
             if ($this->commentId
-                && ($ctype | COMMENTTYPE_DRAFT) !== ($this->commentType | COMMENTTYPE_DRAFT)) {
+                && ($ctype | self::CT_DRAFT) !== ($this->commentType | self::CT_DRAFT)) {
                 $ch[] = "visibility";
             }
             if ($ctags !== $expected_tags) {
@@ -813,10 +830,10 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         if ($minic->can_view_comment($this->prow, $this)
             // Don't send notifications about draft responses to the chair,
             // even though the chair can see draft responses.
-            && (!($ctype & COMMENTTYPE_DRAFT) || $this->prow->has_author($minic))) {
-            if (($ctype & COMMENTTYPE_RESPONSE) && ($ctype & COMMENTTYPE_DRAFT)) {
+            && (!($ctype & self::CT_DRAFT) || $this->prow->has_author($minic))) {
+            if (($ctype & self::CT_RESPONSE) && ($ctype & self::CT_DRAFT)) {
                 $tmpl = "@responsedraftnotify";
-            } else if ($ctype & COMMENTTYPE_RESPONSE) {
+            } else if ($ctype & self::CT_RESPONSE) {
                 $tmpl = "@responsenotify";
             } else {
                 $tmpl = "@commentnotify";

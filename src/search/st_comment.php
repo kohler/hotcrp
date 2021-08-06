@@ -10,7 +10,7 @@ class Comment_SearchTerm extends SearchTerm {
     /** @var ?TagSearchMatcher */
     private $tags;
     /** @var int */
-    private $type_mask = COMMENTTYPE_DRAFT;
+    private $type_mask;
     /** @var int */
     private $type_value = 0;
     /** @var bool */
@@ -23,12 +23,13 @@ class Comment_SearchTerm extends SearchTerm {
         $this->user = $user;
         $this->csm = $csm;
         $this->tags = $tags;
+        $this->type_mask = CommentInfo::CT_DRAFT;
         if (!$kwdef->response || !$kwdef->comment) {
-            $this->type_mask |= COMMENTTYPE_RESPONSE;
-            $this->type_value |= $kwdef->comment ? 0 : COMMENTTYPE_RESPONSE;
+            $this->type_mask |= CommentInfo::CT_RESPONSE;
+            $this->type_value |= $kwdef->comment ? 0 : CommentInfo::CT_RESPONSE;
         }
         if ($kwdef->draft) {
-            $this->type_value |= COMMENTTYPE_DRAFT;
+            $this->type_value |= CommentInfo::CT_DRAFT;
         }
         $this->only_author = $kwdef->only_author;
         $this->commentRound = $kwdef->round;
@@ -99,7 +100,7 @@ class Comment_SearchTerm extends SearchTerm {
             $where[] = "(commentType&{$this->type_mask})={$this->type_value}";
         }
         if ($this->only_author) {
-            $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
+            $where[] = "commentType>=" . CommentInfo::CT_AUTHOR;
         }
         if ($this->commentRound) {
             $where[] = "commentRound=" . $this->commentRound;
@@ -115,12 +116,12 @@ class Comment_SearchTerm extends SearchTerm {
         return "coalesce($thistab.count,0)" . $this->csm->conservative_nonnegative_comparison();
     }
     function test(PaperInfo $row, $rrow) {
-        $textless = $this->type_mask === (COMMENTTYPE_DRAFT | COMMENTTYPE_RESPONSE);
+        $textless = $this->type_mask === (CommentInfo::CT_DRAFT | CommentInfo::CT_RESPONSE);
         $n = 0;
         foreach ($row->viewable_comment_skeletons($this->user, $textless) as $crow) {
             if ($this->csm->test_contact($crow->contactId)
                 && ($crow->commentType & $this->type_mask) == $this->type_value
-                && (!$this->only_author || $crow->commentType >= COMMENTTYPE_AUTHOR)
+                && (!$this->only_author || $crow->commentType >= CommentInfo::CT_AUTHOR)
                 && (!$this->tags || $this->tags->test((string) $crow->viewable_tags($this->user))))
                 ++$n;
         }

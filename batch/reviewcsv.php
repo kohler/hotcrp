@@ -187,13 +187,13 @@ class FieldCSVOutput {
     function add_comment($prow, $crow, $x) {
         $x["review"] = $crow->unparse_html_id();
         $x["email"] = $crow->email;
-        if ($crow->commentType & COMMENTTYPE_RESPONSE) {
+        if ($crow->commentType & CommentInfo::CT_RESPONSE) {
             $x["round"] = $prow->conf->resp_round_text($crow->commentRound);
         }
-        $rs = $crow->commentType & COMMENTTYPE_DRAFT ? "draft " : "";
-        if ($crow->commentType & COMMENTTYPE_RESPONSE) {
+        $rs = $crow->commentType & CommentInfo::CT_DRAFT ? "draft " : "";
+        if ($crow->commentType & CommentInfo::CT_RESPONSE) {
             $rs .= "response";
-        } else if ($crow->commentType & COMMENTTYPE_BYAUTHOR) {
+        } else if ($crow->commentType & CommentInfo::CT_BYAUTHOR) {
             $rs .= "author comment";
         } else {
             $rs .= "comment";
@@ -285,7 +285,7 @@ foreach ($search->sorted_paper_ids() as $pid) {
     foreach ($fcsv->comments ? $prow->viewable_reviews_and_comments($fcsv->user) : $prow->reviews_by_display() as $xrow) {
         if ($xrow instanceof CommentInfo) {
             if ($fcsv->comments
-                && ($fcsv->all_status || !($xrow->commentType & COMMENTTYPE_DRAFT))) {
+                && ($fcsv->all_status || !($xrow->commentType & CommentInfo::CT_DRAFT))) {
                 $fcsv->add_comment($prow, $xrow, $px);
             }
         } else if ($xrow instanceof ReviewInfo) {

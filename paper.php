@@ -424,7 +424,7 @@ class PaperPage {
                 foreach ($this->prow->viewable_comments($this->user) as $crow) {
                     if ($crow->commentId == $cid
                         || ($cid === null
-                            && ($crow->commentType & COMMENTTYPE_RESPONSE) != 0
+                            && ($crow->commentType & CommentInfo::CT_RESPONSE) != 0
                             && $crow->commentRound === $preferred_resp_round))
                         $j = $crow->unparse_json($this->user);
                 }

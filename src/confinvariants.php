@@ -225,7 +225,7 @@ class ConfInvariants {
         }
 
         // non-draft comments are displayed
-        $any = $this->invariantq("select paperId, commentId from PaperComment where timeDisplayed=0 and (commentType&" . COMMENTTYPE_DRAFT . ")=0 limit 1");
+        $any = $this->invariantq("select paperId, commentId from PaperComment where timeDisplayed=0 and (commentType&" . CommentInfo::CT_DRAFT . ")=0 limit 1");
         if ($any) {
             $this->invariant_error("submitted comment #{0}/{1} has no timeDisplayed");
         }

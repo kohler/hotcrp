@@ -2392,7 +2392,7 @@ class PaperTable {
             foreach ($this->conf->resp_rounds() as $rrd) {
                 $cr = null;
                 foreach ($this->mycrows ? : [] as $crow) {
-                    if (($crow->commentType & COMMENTTYPE_RESPONSE)
+                    if (($crow->commentType & CommentInfo::CT_RESPONSE)
                         && $crow->commentRound == $rrd->number) {
                         $cr = $crow;
                     }
@@ -2402,7 +2402,7 @@ class PaperTable {
                     $cid = $this->conf->resp_round_text($rrd->number) . "response";
                     $what = "Add";
                     if ($cr->commentId) {
-                        $what = $cr->commentType & COMMENTTYPE_DRAFT ? "Edit draft" : "Edit";
+                        $what = $cr->commentType & CommentInfo::CT_DRAFT ? "Edit draft" : "Edit";
                     }
                     $t[] = '<a class="uic js-edit-comment xx revlink" href="#' . $cid . '">'
                         . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
@@ -2503,7 +2503,7 @@ class PaperTable {
 
     private function has_response($respround) {
         foreach ($this->mycrows as $cr) {
-            if (($cr->commentType & COMMENTTYPE_RESPONSE)
+            if (($cr->commentType & CommentInfo::CT_RESPONSE)
                 && $cr->commentRound == $respround)
                 return true;
         }
@@ -2547,7 +2547,7 @@ class PaperTable {
         if ($comments) {
             $cs = [];
             if ($this->user->can_comment($this->prow, null)) {
-                $commentType = $this->prow->has_author($this->user) ? COMMENTTYPE_BYAUTHOR : 0;
+                $commentType = $this->prow->has_author($this->user) ? CommentInfo::CT_BYAUTHOR : 0;
                 $cs[] = new CommentInfo(["commentType" => $commentType], $this->prow);
             }
             if ($this->admin || $this->prow->has_author($this->user)) {

@@ -4215,7 +4215,7 @@ class Contact {
     /** @param ?CommentInfo $crow
      * @return bool */
     function can_comment(PaperInfo $prow, $crow, $submit = false) {
-        if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE)) {
+        if ($crow && ($crow->commentType & CommentInfo::CT_RESPONSE)) {
             return $this->can_respond($prow, $crow, $submit);
         }
         $rights = $this->rights($prow);
@@ -4236,13 +4236,13 @@ class Contact {
                 || $rights->allow_administer
                 || $this->is_my_comment($prow, $crow)
                 || ($author
-                    && ($crow->commentType & COMMENTTYPE_BYAUTHOR)));
+                    && ($crow->commentType & CommentInfo::CT_BYAUTHOR) !== 0));
     }
 
     /** @param ?CommentInfo $crow
      * @return ?PermissionProblem */
     function perm_comment(PaperInfo $prow, $crow, $submit = false) {
-        if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE)) {
+        if ($crow && ($crow->commentType & CommentInfo::CT_RESPONSE)) {
             return $this->perm_respond($prow, $crow, $submit);
         } else if ($this->can_comment($prow, $crow, $submit)) {
             return null;
@@ -4281,7 +4281,7 @@ class Contact {
     /** @return bool */
     function can_respond(PaperInfo $prow, CommentInfo $crow, $submit = false) {
         if ($prow->timeSubmitted <= 0
-            || !($crow->commentType & COMMENTTYPE_RESPONSE)
+            || !($crow->commentType & CommentInfo::CT_RESPONSE)
             || !($rrd = ($prow->conf->resp_rounds())[$crow->commentRound] ?? null)) {
             return false;
         }
@@ -4344,25 +4344,25 @@ class Contact {
     /** @param ?CommentInfo $crow
      * @return bool */
     function can_view_comment(PaperInfo $prow, $crow, $textless = false) {
-        $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
+        $ctype = $crow ? $crow->commentType : CommentInfo::CT_AUTHOR;
         $rights = $this->rights($prow);
         return ($crow && $this->is_my_comment($prow, $crow))
             || ($rights->can_administer
-                && ($ctype >= COMMENTTYPE_AUTHOR
+                && ($ctype >= CommentInfo::CT_AUTHOR
                     || $rights->potential_reviewer))
             || ($rights->act_author_view
-                && (($ctype & (COMMENTTYPE_BYAUTHOR | COMMENTTYPE_RESPONSE))
-                    || ($ctype >= COMMENTTYPE_AUTHOR
-                        && !($ctype & COMMENTTYPE_DRAFT)
+                && (($ctype & (CommentInfo::CT_BYAUTHOR | CommentInfo::CT_RESPONSE))
+                    || ($ctype >= CommentInfo::CT_AUTHOR
+                        && !($ctype & CommentInfo::CT_DRAFT)
                         && $this->can_view_submitted_review_as_author($prow))))
             || (!$rights->view_conflict_type
-                && (!($ctype & COMMENTTYPE_DRAFT)
-                    || ($textless && ($ctype & COMMENTTYPE_RESPONSE)))
+                && (!($ctype & CommentInfo::CT_DRAFT)
+                    || ($textless && ($ctype & CommentInfo::CT_RESPONSE)))
                 && ($rights->allow_pc
-                    ? $ctype >= COMMENTTYPE_PCONLY
-                    : $ctype >= COMMENTTYPE_REVIEWER)
+                    ? $ctype >= CommentInfo::CT_PCONLY
+                    : $ctype >= CommentInfo::CT_REVIEWER)
                 && $this->can_view_review($prow, null)
-                && ($ctype >= COMMENTTYPE_AUTHOR
+                && ($ctype >= CommentInfo::CT_AUTHOR
                     || $this->conf->setting("cmt_revid")
                     || $this->can_view_review_identity($prow, null)));
     }
@@ -4372,7 +4372,7 @@ class Contact {
     function can_view_comment_text(PaperInfo $prow, $crow) {
         // assume can_view_comment is true
         if (!$crow
-            || ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) !== (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT)) {
+            || ($crow->commentType & (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) !== (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) {
             return true;
         }
         $rights = $this->rights($prow);
@@ -4392,7 +4392,7 @@ class Contact {
     /** @param ?CommentInfo $crow
      * @return bool */
     function can_view_comment_identity(PaperInfo $prow, $crow) {
-        if ($crow && ($crow->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_BYAUTHOR))) {
+        if ($crow && ($crow->commentType & (CommentInfo::CT_RESPONSE | CommentInfo::CT_BYAUTHOR))) {
             return $this->can_view_authors($prow);
         }
         $rights = $this->rights($prow);
@@ -4403,7 +4403,7 @@ class Contact {
                      && $this->conf->setting("extrev_view") >= 2))
                 && ($this->can_view_review_identity($prow, null)
                     || ($crow && $prow->can_view_review_identity_of($crow->commentId, $this))))
-            || !$this->conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0);
+            || !$this->conf->is_review_blind(!$crow || ($crow->commentType & CommentInfo::CT_BLIND) != 0);
     }
 
     /** @param ?CommentInfo $crow

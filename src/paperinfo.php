@@ -2808,7 +2808,7 @@ class PaperInfo {
             return "";
         } else if (isset($a->reviewId)
                    || isset($b->reviewId)
-                   || (($a->commentType | $b->commentType) & COMMENTTYPE_RESPONSE)) {
+                   || (($a->commentType | $b->commentType) & CommentInfo::CT_RESPONSE)) {
             return "\n\n\n";
         } else {
             return "\n\n";

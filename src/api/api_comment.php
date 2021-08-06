@@ -11,7 +11,7 @@ class Comment_API {
     }
     /** @return ?CommentInfo */
     static private function find_response($round, PaperInfo $prow) {
-        return $round === false ? null : self::find_comment("(commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=" . (int) $round, $prow);
+        return $round === false ? null : self::find_comment("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0 and commentRound=" . (int) $round, $prow);
     }
     static private function save_success_message(CommentInfo $xcrow) {
         $what = $xcrow->commentId ? "saved" : "deleted";
@@ -20,7 +20,7 @@ class Comment_API {
         } else {
             $rname = $xcrow->conf->resp_round_text($xcrow->commentRound);
             $rname = $rname ? "$rname response" : "Response";
-            if ($xcrow->commentId && !($xcrow->commentType & COMMENTTYPE_DRAFT)) {
+            if ($xcrow->commentId && !($xcrow->commentType & CommentInfo::CT_DRAFT)) {
                 return Ht::msg("$rname submitted.", "confirm");
             } else {
                 return Ht::msg("$rname $what.", "confirm");
