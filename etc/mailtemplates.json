@@ -508,6 +508,20 @@
 		"subject": "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
 		"body": [
 			"A comment for %CONFNAME% submission #%NUMBER% has been posted. For the most up-to-date comments, or to unsubscribe from email notification, see the submission site.\n\n",
+			"       Title: %TITLE%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"%SIGNATURE%\n\n",
+			"%COMMENTS%\n"
+		]
+	},
+
+	{
+		"name": "admincommentnotify",
+		"subject": "[%CONFSHORTNAME%] Comment for administrators of #%NUMBER% %TITLEHINT%",
+		"body": [
+			"A comment for the administrators of %CONFNAME% submission #%NUMBER% has been posted. For the most up-to-date comments, see the submission site.\n\n",
+			"       Title: %TITLE%\n",
 			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
@@ -520,6 +534,7 @@
 		"subject": "[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
 		"body": [
 			"The authors' response for %CONFNAME% submission #%NUMBER% is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"       Title: %TITLE%\n",
 			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
@@ -532,6 +547,7 @@
 		"subject": "[%CONFSHORTNAME%] Draft response for #%NUMBER% %TITLEHINT%",
 		"body": [
 			"The draft authors' response for %CONFNAME% submission #%NUMBER% has been updated as shown below. This response has not yet been submitted to reviewers. For the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"       Title: %TITLE%\n",
 			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",

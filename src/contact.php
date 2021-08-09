@@ -4840,13 +4840,13 @@ class Contact {
     /** @return bool */
     function following_reviews(PaperInfo $prow) {
         $w = $prow->watch($this);
-        if ($w & self::WATCH_REVIEW_EXPLICIT) {
+        if (($w & self::WATCH_REVIEW_EXPLICIT) !== 0) {
             return ($w & self::WATCH_REVIEW) !== 0;
         } else {
-            return ($this->defaultWatch & self::WATCH_REVIEW_ALL)
-                || (($this->defaultWatch & self::WATCH_REVIEW_MANAGED)
+            return ($this->defaultWatch & self::WATCH_REVIEW_ALL) !== 0
+                || (($this->defaultWatch & self::WATCH_REVIEW_MANAGED) !== 0
                     && $this->is_primary_administrator($prow))
-                || (($this->defaultWatch & self::WATCH_REVIEW)
+                || (($this->defaultWatch & self::WATCH_REVIEW) !== 0
                     && ($prow->has_author($this)
                         || $prow->has_reviewer($this)
                         || $prow->has_commenter($this)));

@@ -48,7 +48,7 @@ class CommentInfo {
     const CT_PCONLY = 0x10000;
     const CT_REVIEWER = 0x20000;
     const CT_AUTHOR = 0x30000;
-    const CT_VISIBILITY = 0xFFF0000;
+    const CT_VISIBILITY = 0xFFF0000; // no higher bits supported
 
     static private $visibility_map = [
         0x00000 /* CT_ADMINONLY */ => "admin",
@@ -792,9 +792,19 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $comments = $this->prow->fetch_comments("commentId=$cmtid");
             $this->merge(get_object_vars($comments[$cmtid]), $this->prow);
             if ($this->timeNotified == $this->timeModified) {
-                foreach ($this->prow->review_followers() as $minic) {
-                    if ($minic->contactId !== $contact->contactId)
-                        $this->watch_callback($minic);
+                if ($is_response && ($ctype & self::CT_DRAFT) !== 0) {
+                    $tmpl = "@responsedraftnotify";
+                } else if ($is_response) {
+                    $tmpl = "@responsenotify";
+                } else if (($ctype & self::CT_VISIBILITY) === self::CT_ADMINONLY) {
+                    $tmpl = "@admincommentnotify";
+                } else {
+                    $tmpl = "@commentnotify";
+                }
+                foreach ($this->followers() as $minic) {
+                    if ($minic->contactId !== $contact->contactId) {
+                        HotCRPMailer::send_to($minic, $tmpl, ["prow" => $this->prow, "comment_row" => $this]);
+                    }
                 }
             }
         } else {
@@ -824,21 +834,31 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         return true;
     }
 
-    /** @param Contact $minic */
-    function watch_callback($minic) {
+    /** @return list<Contact> */
+    function followers() {
         $ctype = $this->commentType;
-        if ($minic->can_view_comment($this->prow, $this)
-            // Don't send notifications about draft responses to the chair,
-            // even though the chair can see draft responses.
-            && (!($ctype & self::CT_DRAFT) || $this->prow->has_author($minic))) {
-            if (($ctype & self::CT_RESPONSE) && ($ctype & self::CT_DRAFT)) {
-                $tmpl = "@responsedraftnotify";
-            } else if ($ctype & self::CT_RESPONSE) {
-                $tmpl = "@responsenotify";
+        $nocheck = false;
+        if (($ctype & self::CT_DRAFT) !== 0) {
+            if (($ctype & (self::CT_RESPONSE | self::CT_BYAUTHOR)) !== 0) {
+                $cids = array_keys($this->prow->contacts());
             } else {
-                $tmpl = "@commentnotify";
+                $cids = [$this->contactId];
             }
-            HotCRPMailer::send_to($minic, $tmpl, ["prow" => $this->prow, "comment_row" => $this]);
+            $us = $this->prow->generic_followers($cids, "false", null);
+        } else if (($ctype & self::CT_VISIBILITY) === self::CT_ADMINONLY) {
+            $us = $this->prow->administrators();
+            $nocheck = true;
+        } else {
+            $us = $this->prow->review_followers();
         }
+        for ($i = 0; $i !== count($us); ) {
+            if ($us[$i]->can_view_comment($this->prow, $this)
+                && ($nocheck || $us[$i]->following_reviews($this->prow))) {
+                ++$i;
+            } else {
+                array_splice($us, $i, 1);
+            }
+        }
+        return $us;
     }
 }
