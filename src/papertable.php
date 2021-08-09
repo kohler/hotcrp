@@ -451,10 +451,11 @@ class PaperTable {
     private function papt($what, $name, $extra = []) {
         $fold = $extra["fold"] ?? false;
         $editfolder = $extra["editfolder"] ?? false;
-        $foldnum = $foldnumclass = false;
-        if ($fold || $editfolder) {
-            $foldnum = $extra["foldnum"] ?? 0;
-            $foldnumclass = $foldnum ? " data-fold-target=\"$foldnum\"" : "";
+        $foldnum = $fold || $editfolder ? $extra["foldnum"] ?? 0 : 0;
+        $foldnumclass = "";
+        if ($foldnum || isset($extra["foldopen"])) {
+            $foldnumclass = " data-fold-target=\"{$foldnum}"
+                . (isset($extra["foldopen"]) ? "o\"" : "\"");
         }
 
         if (($extra["type"] ?? null) === "ps") {
@@ -1321,7 +1322,7 @@ class PaperTable {
         }
 
         echo $this->papt("tags", $editable ? Ht::label("Tags", $id) : "Tags",
-            ["type" => "ps", "fold" => $editable ? "tags" : false]),
+            ["type" => "ps", "fold" => $editable ? "tags" : false, "foldopen" => true]),
             '<div class="psv">';
         if ($editable) {
             $treport = Tags_API::tagmessages($this->user, $this->prow);
