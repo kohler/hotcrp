@@ -442,7 +442,7 @@ class PaperTable {
             echo '<div class="field-visibility">(hidden from reviewers)</div>';
         }
         echo '</h3>';
-        $this->echo_field_hint($opt);
+        $this->echo_field_hint($opt, $rest["context_args"] ?? null);
         echo Ht::hidden("has_{$opt->formid}", 1);
     }
 
@@ -538,16 +538,18 @@ class PaperTable {
         return $t;
     }
 
-    /** @param PaperOption $opt */
-    function echo_field_hint($opt) {
+    /** @param PaperOption $opt
+     * @param ?list<mixed> $context_args */
+    function echo_field_hint($opt, $context_args = null) {
         echo $this->messages_at($opt->formid);
         $fr = new FieldRender(FieldRender::CFHTML);
         $fr->value_format = 5;
         if ($opt->description_format !== null) {
             $fr->value_format = $opt->description_format;
         }
+        $context_args = $context_args ?? [];
         $this->conf->ims()->render_ci($fr, "field_description/edit",
-                                      $opt->formid, $opt->description);
+                                      $opt->formid, $opt->description, ...$context_args);
         if (!$fr->is_empty()) {
             echo $fr->value_html("field-d");
         }

@@ -3,13 +3,49 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class Topics_PaperOption extends PaperOption {
+    /** @var int */
+    private $min_count = 0;
+    /** @var ?int */
+    private $max_count;
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->set_exists_if(!!$this->conf->setting("has_topics"));
+        if (is_int($args->min_count ?? null)) {
+            $this->min_count = $args->min_count;
+            $this->required = $this->min_count > 0;
+        } else if ($this->required) {
+            $this->min_count = 1;
+        }
+        if (is_int($args->max_count ?? null)) {
+            $this->max_count = $args->max_count;
+        }
+    }
+    function jsonSerialize() {
+        $j = parent::jsonSerialize();
+        if ($this->min_count > 1) {
+            $j->min_count = $this->min_count;
+        }
+        if ($this->max_count !== null) {
+            $j->max_count = $this->max_count;
+        }
+        return $j;
     }
     function value_force(PaperValue $ov) {
         $vs = $ov->prow->topic_list();
         $ov->set_value_data($vs, array_fill(0, count($vs), null));
+    }
+    function value_check(PaperValue $ov, Contact $user) {
+        if ($this->test_exists($ov->prow)) {
+            if ($this->min_count > 0
+                && !$ov->prow->allow_absent()
+                && $ov->value_count() < $this->min_count) {
+                $ov->error($this->conf->_("You must select at least %d topics.", $this->min_count));
+            }
+            if ($this->max_count !== null
+                && $ov->value_count() > $this->max_count) {
+                $ov->error($this->conf->_("You can select at most %d topics.", $this->max_count));
+            }
+        }
     }
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $vs = $ov->value_list();
@@ -116,7 +152,7 @@ class Topics_PaperOption extends PaperOption {
         return $ov;
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $pt->echo_editable_option_papt($this, null, ["id" => "topics"]);
+        $pt->echo_editable_option_papt($this, null, ["id" => "topics", "context_args" => [$this->min_count, $this->max_count]]);
         echo '<div class="papev"><ul class="ctable">';
         $ptopics = $pt->prow->topic_map();
         $topics = $this->conf->topic_set();
