@@ -2892,6 +2892,12 @@ class PaperInfo {
     }
 
     /** @return list<Contact> */
+    function register_followers() {
+        $fl = Contact::WATCH_PAPER_REGISTER_ALL | ($this->timeSubmitted > 0 ? Contact::WATCH_PAPER_NEWSUBMIT_ALL : 0);
+        return $this->generic_followers([], "(defaultWatch&{$fl})!=0 and roles!=0", "following_paper_register");
+    }
+
+    /** @return list<Contact> */
     function newsubmit_followers() {
         return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_PAPER_NEWSUBMIT_ALL . ")!=0 and roles!=0", "following_paper_newsubmit");
     }

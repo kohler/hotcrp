@@ -227,6 +227,19 @@
 	},
 
 	{
+		"name": "registernotify",
+		"subject": "[%CONFSHORTNAME%] New draft submission #%NUMBER% %TITLEHINT%",
+		"body": [
+			"A new draft submission for %CONFNAME% has been received.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"Control notifications for new draft submissions on Profile > Preferences.\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
 		"name": "newsubmitnotify",
 		"subject": "[%CONFSHORTNAME%] New submission #%NUMBER% %TITLEHINT%",
 		"body": [

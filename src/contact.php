@@ -102,6 +102,7 @@ class Contact {
     const WATCH_REVIEW_MANAGED = 8;
     const WATCH_PAPER_NEWSUBMIT_ALL = 16;
     const WATCH_FINAL_UPDATE_ALL = 32;
+    const WATCH_PAPER_REGISTER_ALL = 64;
     /** @var int */
     public $defaultWatch = self::WATCH_REVIEW;
 
@@ -4850,6 +4851,12 @@ class Contact {
                         || $prow->has_reviewer($this)
                         || $prow->has_commenter($this)));
         }
+    }
+
+    /** @return bool */
+    function following_paper_register(PaperInfo $prow) {
+        $fl = $this->allow_administer($prow) ? self::WATCH_PAPER_REGISTER_ALL | ($prow->timeSubmitted > 0 ? self::WATCH_PAPER_NEWSUBMIT_ALL : 0) : 0;
+        return ($this->defaultWatch & $fl) !== 0;
     }
 
     /** @return bool */
