@@ -2869,7 +2869,7 @@ class PaperInfo {
      * @param ?string $fn
      * @return list<Contact> */
     function generic_followers($cids, $clause, $fn) {
-        $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, preferredEmail, password, roles, contactTags, disabled, primaryContactId, defaultWatch from ContactInfo where (contactId?a or $clause) and not disabled", $cids);
+        $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, preferredEmail, password, roles, contactTags, disabled, primaryContactId, defaultWatch from ContactInfo where (contactId?a or ($clause)) and not disabled", $cids);
         $watchers = [];
         while (($minic = Contact::fetch($result, $this->conf))) {
             if ($minic->can_view_paper($this)
@@ -2907,12 +2907,12 @@ class PaperInfo {
             if (($w & Contact::WATCH_REVIEW) !== 0)
                 $cids[] = $cid;
         }
-        return $this->generic_followers($cids, "(defaultWatch&" . (Contact::WATCH_REVIEW_ALL | Contact::WATCH_REVIEW_MANAGED) . ")!=0", "following_reviews");
+        return $this->generic_followers($cids, "(defaultWatch&" . (Contact::WATCH_REVIEW_ALL | Contact::WATCH_REVIEW_MANAGED) . ")!=0 and roles!=0", "following_reviews");
     }
 
     /** @return list<Contact> */
-    function final_submit_followers() {
-        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_FINAL_SUBMIT_ALL . ")!=0", "following_final_submit");
+    function final_update_followers() {
+        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_FINAL_UPDATE_ALL . ")!=0 and roles!=0", "following_final_update");
     }
 
     function delete_from_database(Contact $user = null) {

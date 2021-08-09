@@ -14,8 +14,6 @@ class PaperStatus extends MessageSet {
     /** @var int */
     public $paperId;
     /** @var bool */
-    private $no_notify = false;
-    /** @var bool */
     private $export_ids = false;
     /** @var bool */
     private $hide_docids = false;
@@ -77,10 +75,10 @@ class PaperStatus extends MessageSet {
     const SAVE_STATUS_NEWSUBMIT = 8;
     const SAVE_STATUS_FINALSUBMIT = 16;
 
-    function __construct(Conf $conf, Contact $user = null, $options = array()) {
+    function __construct(Conf $conf, Contact $user = null, $options = []) {
         $this->conf = $conf;
         $this->user = $user ?? $conf->root_user();
-        foreach (["no_notify", "export_ids", "hide_docids", "add_topics",
+        foreach (["export_ids", "hide_docids", "add_topics",
                   "export_content", "disable_users",
                   "allow_any_content_file", "content_file_prefix"] as $k) {
             if (array_key_exists($k, $options))

@@ -316,11 +316,16 @@ class PaperPage {
             }
 
             // other mail confirmations
-            if ($action == "final" && !Dbl::has_error() && !$this->ps->has_error()) {
-                foreach ($new_prow->final_submit_followers() as $minic) {
-                    if ($minic->contactId !== $this->user->contactId)
-                        HotCRPMailer::send_to($minic, "@finalsubmitnotify", ["prow" => $new_prow]);
-                }
+            if ($action === "final" && $new_prow->timeFinalSubmitted > 0) {
+                $followers = $new_prow->final_update_followers();
+                $template = "@finalsubmitnotify";
+            } else {
+                $followers = [];
+                $template = "@none";
+            }
+            foreach ($followers as $minic) {
+                if ($minic->contactId !== $this->user->contactId)
+                    HotCRPMailer::send_to($minic, $template, ["prow" => $new_prow]);
             }
         }
 

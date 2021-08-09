@@ -45,7 +45,7 @@ class UserStatus extends MessageSet {
         "allreviews" => Contact::WATCH_REVIEW_ALL,
         "adminreviews" => Contact::WATCH_REVIEW_MANAGED,
         "managedreviews" => Contact::WATCH_REVIEW_MANAGED,
-        "allfinal" => Contact::WATCH_FINAL_SUBMIT_ALL
+        "allfinal" => Contact::WATCH_FINAL_UPDATE_ALL
     ];
 
     static private $web_to_message_map = [
@@ -258,18 +258,18 @@ class UserStatus extends MessageSet {
         }
 
         if ($user->defaultWatch) {
-            $cj->follow = (object) array();
-            if ($user->defaultWatch & Contact::WATCH_REVIEW) {
-                $cj->follow->reviews = true;
+            $cj->follow = (object) [];
+            $dw = $user->defaultWatch;
+            if ($dw & Contact::WATCH_REVIEW_ALL) {
+                $dw |= Contact::WATCH_REVIEW;
             }
-            if ($user->defaultWatch & Contact::WATCH_REVIEW_ALL) {
-                $cj->follow->reviews = $cj->follow->allreviews = true;
-            }
-            if ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED) {
-                $cj->follow->adminreviews = true;
-            }
-            if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL) {
-                $cj->follow->allfinal = true;
+            foreach (self::$watch_keywords as $kw => $bit) {
+                if ($dw === 0) {
+                    break;
+                } else if (($dw & $bit) !== 0) {
+                    $cj->follow->$kw = true;
+                    $dw &= ~$bit;
+                }
             }
         }
 
@@ -965,7 +965,7 @@ class UserStatus extends MessageSet {
 
         // Follow
         if (isset($cj->follow)
-            && (!$us->no_nonempty_pc || $user->defaultWatch == Contact::WATCH_REVIEW)) {
+            && (!$us->no_nonempty_pc || $user->defaultWatch === Contact::WATCH_REVIEW)) {
             $w = 0;
             $wmask = ($cj->follow->partial ?? false ? 0 : 0xFFFFFFFF);
             foreach (self::$watch_keywords as $k => $bit) {
@@ -1115,7 +1115,7 @@ class UserStatus extends MessageSet {
             $follow["allreviews"] = !!$qreq->watchallreviews;
         }
         if ($qreq->has_watchadminreviews
-            && ($us->viewer->privChair || $us->user->isPC)) {
+            && ($us->viewer->privChair || $us->user->is_manager())) {
             $follow["adminreviews"] = !!$qreq->watchadminreviews;
         }
         if ($qreq->has_watchallfinal
@@ -1398,6 +1398,18 @@ class UserStatus extends MessageSet {
         $us->render_field("country", "Country/region", $t);
     }
 
+    /** @param int $reqwatch
+     * @param int $iwatch
+     * @param int $wbit
+     * @param string $wname
+     * @param string $wlabel */
+    private static function render_watch_checkbox(UserStatus $us, $reqwatch, $iwatch, $wbit, $wname, $wlabel) {
+        echo '<label class="checki"><span class="checkc">',
+            Ht::hidden("has_watch{$wname}", 1),
+            Ht::checkbox("watch{$wname}", 1, ($reqwatch & $wbit) !== 0, ["data-default-checked" => ($iwatch & $wbit) !== 0]),
+            '</span>', $us->conf->_($wlabel), "</label>\n";
+    }
+
     static function render_follow(UserStatus $us, Qrequest $qreq) {
         $us->render_section("Email notification");
         $reqwatch = $iwatch = $us->user->defaultWatch;
@@ -1406,32 +1418,24 @@ class UserStatus extends MessageSet {
                 $reqwatch = ($reqwatch & ~$bit) | ($qreq["watch$kw"] ? $bit : 0);
             }
         }
-        echo Ht::hidden("has_watchreview", 1);
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
-            echo Ht::hidden("has_watchallreviews", 1);
-            echo "<table class=\"w-text\"><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td>",
-                "<td><label class=\"checki\"><span class=\"checkc\">",
-                Ht::checkbox("watchreview", 1, ($reqwatch & Contact::WATCH_REVIEW) !== 0, ["data-default-checked" => ($iwatch & Contact::WATCH_REVIEW) !== 0]),
-                "</span>", $us->conf->_("Reviews and comments on authored or reviewed submissions"), "</label>\n";
+            echo "<table class=\"w-text\"><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td><td>";
+            self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                Contact::WATCH_REVIEW, "review", "Reviews and comments on authored or reviewed submissions");
             if (!$us->user->is_empty() && $us->user->is_manager()) {
-                echo "<label class=\"checki\"><span class=\"checkc\">",
-                    Ht::checkbox("watchadminreviews", 1, ($reqwatch & Contact::WATCH_REVIEW_MANAGED) !== 0, ["data-default-checked" => ($iwatch & Contact::WATCH_REVIEW_MANAGED) !== 0]),
-                    "</span>", $us->conf->_("Reviews and comments on submissions you administer"),
-                    Ht::hidden("has_watchadminreviews", 1), "</label>\n";
+                self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                    Contact::WATCH_REVIEW_MANAGED, "adminreviews", "Reviews and comments on submissions you administer");
             }
-            echo "<label class=\"checki\"><span class=\"checkc\">",
-                Ht::checkbox("watchallreviews", 1, ($reqwatch & Contact::WATCH_REVIEW_ALL) !== 0, ["data-default-checked" => ($iwatch & Contact::WATCH_REVIEW_ALL) !== 0]),
-                "</span>", $us->conf->_("Reviews and comments on <i>all</i> submissions"), "</label>\n";
+            self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                Contact::WATCH_REVIEW_ALL, "allreviews", "Reviews and comments on <em>all</em> submissions");
             if (!$us->user->is_empty() && $us->user->is_manager()) {
-                echo "<label class=\"checki\"><span class=\"checkc\">",
-                    Ht::checkbox("watchallfinal", 1, ($reqwatch & Contact::WATCH_FINAL_SUBMIT_ALL) !== 0, ["data-default-checked" => ($iwatch & Contact::WATCH_FINAL_SUBMIT_ALL) !== 0]),
-                    "</span>", $us->conf->_("Updates to final versions for submissions you administer"),
-                    Ht::hidden("has_watchallfinal", 1), "</label>\n";
+                self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                    Contact::WATCH_FINAL_UPDATE_ALL, "allfinal", "Updates to final versions for submissions you administer");
             }
             echo "</td></tr></table>";
         } else {
-            echo Ht::checkbox("watchreview", 1, ($reqwatch & Contact::WATCH_REVIEW) !== 0, ["data-default-checked" => ($iwatch & Contact::WATCH_REVIEW) !== 0]), "&nbsp;",
-                Ht::label($us->conf->_("Send mail for new comments on authored or reviewed papers"));
+            self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                Contact::WATCH_REVIEW, "review", "Send mail for new reviews and comments on authored or reviewed submissions");
         }
         echo "</div>\n";
     }

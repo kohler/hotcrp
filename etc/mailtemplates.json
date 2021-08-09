@@ -231,8 +231,10 @@
 		"subject": "[%CONFSHORTNAME%] Updated final version #%NUMBER% %TITLEHINT%",
 		"body": [
 			"The final version for %CONFNAME% submission #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
-			"Contact %ADMIN% with any questions or concerns.\n\n",
+			"Control notifications for final version updates on Profile > Preferences.\n\n",
 			"%SIGNATURE%\n"
 		]
 	},

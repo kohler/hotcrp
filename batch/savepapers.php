@@ -241,7 +241,6 @@ class BatchSavePapers {
         }
 
         $ps = new PaperStatus($this->conf, null, [
-            "no_notify" => true,
             "disable_users" => $this->disable_users,
             "add_topics" => $this->add_topics,
             "content_file_prefix" => $this->document_directory

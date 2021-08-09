@@ -100,7 +100,8 @@ class Contact {
     const WATCH_REVIEW = 2;
     const WATCH_REVIEW_ALL = 4;
     const WATCH_REVIEW_MANAGED = 8;
-    const WATCH_FINAL_SUBMIT_ALL = 32;
+    const WATCH_FINAL_UPDATE_ALL = 32;
+    /** @var int */
     public $defaultWatch = self::WATCH_REVIEW;
 
     private $_topic_interest_map;
@@ -4851,9 +4852,9 @@ class Contact {
     }
 
     /** @return bool */
-    function following_final_submit(PaperInfo $prow) {
+    function following_final_update(PaperInfo $prow) {
         return $this->allow_administer($prow)
-            && ($this->defaultWatch & self::WATCH_FINAL_SUBMIT_ALL) !== 0;
+            && ($this->defaultWatch & self::WATCH_FINAL_UPDATE_ALL) !== 0;
     }
 
 

@@ -176,18 +176,14 @@ if ($Qreq->fn === "get"
             $has_topics = true;
         }
         $f = [];
-        if ($user->defaultWatch & Contact::WATCH_REVIEW) {
-            $f[] = "reviews";
-        }
-        if (($user->defaultWatch & Contact::WATCH_REVIEW_ALL)
-            && ($user->roles & Contact::ROLE_PCLIKE)) {
-            $f[] = "allreviews";
-        }
-        if ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED) {
-            $f[] = "adminreviews";
-        }
-        if ($user->defaultWatch & Contact::WATCH_FINAL_SUBMIT_ALL) {
-            $f[] = "allfinal";
+        $dw = $user->defaultWatch;
+        foreach (UserStatus::$watch_keywords as $kw => $bit) {
+            if ($dw === 0) {
+                break;
+            } else if (($dw & $bit) !== 0) {
+                $f[] = $kw;
+                $dw &= ~$bit;
+            }
         }
         $row["follow"] = empty($f) ? "none" : join(" ", $f);
         if ($user->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
