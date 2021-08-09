@@ -426,8 +426,10 @@ foreach ($requests as $req) {
             $buttons[] = Ht::submit("approvereview", "Approve proposal", ["class" => "btn-sm btn-success"]);
             $buttons[] = Ht::submit("denyreview", "Deny proposal", ["class" => "btn-sm ui js-deny-review-request"]); // XXX reason
         }
-        if ($req[0] === 0) {
+        if ($req[0] === 0 && $rrow->reviewStatus > ReviewInfo::RS_ACCEPTED) {
             $buttons[] = Ht::submit("retractreview", "Retract review", ["class" => "btn-sm"]);
+        } else if ($req[0] === 0) {
+            $buttons[] = Ht::submit("retractreview", "Retract review request", ["class" => "btn-sm"]);
         } else if ($req[0] === 1 && $Me->contactId > 0 && $rrow->requestedBy == $Me->contactId) {
             $buttons[] = Ht::submit("retractreview", "Retract proposal", ["class" => "btn-sm"]);
         }
