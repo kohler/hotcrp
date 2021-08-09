@@ -41,6 +41,7 @@ class UserStatus extends MessageSet {
     private $_req_passwords;
 
     public static $watch_keywords = [
+        "allnewsubmit" => Contact::WATCH_PAPER_NEWSUBMIT_ALL,
         "reviews" => Contact::WATCH_REVIEW,
         "allreviews" => Contact::WATCH_REVIEW_ALL,
         "adminreviews" => Contact::WATCH_REVIEW_MANAGED,
@@ -1107,6 +1108,10 @@ class UserStatus extends MessageSet {
         }
 
         $follow = [];
+        if ($qreq->has_watchallnewsubmit
+            && ($us->viewer->privChair || $us->user->is_track_manager())) {
+            $follow["allnewsubmit"] = !!$qreq->watchallnewsubmit;
+        }
         if ($qreq->has_watchreview) {
             $follow["reviews"] = !!$qreq->watchreview;
         }
@@ -1420,6 +1425,10 @@ class UserStatus extends MessageSet {
         }
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
             echo "<table class=\"w-text\"><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td><td>";
+            if (!$us->user->is_empty() && $us->user->is_track_manager()) {
+                self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                    Contact::WATCH_PAPER_NEWSUBMIT_ALL, "allnewsubmit", "Newly ready submissions");
+            }
             self::render_watch_checkbox($us, $reqwatch, $iwatch,
                 Contact::WATCH_REVIEW, "review", "Reviews and comments on authored or reviewed submissions");
             if (!$us->user->is_empty() && $us->user->is_manager()) {

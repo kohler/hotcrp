@@ -100,6 +100,7 @@ class Contact {
     const WATCH_REVIEW = 2;
     const WATCH_REVIEW_ALL = 4;
     const WATCH_REVIEW_MANAGED = 8;
+    const WATCH_PAPER_NEWSUBMIT_ALL = 16;
     const WATCH_FINAL_UPDATE_ALL = 32;
     /** @var int */
     public $defaultWatch = self::WATCH_REVIEW;
@@ -4849,6 +4850,12 @@ class Contact {
                         || $prow->has_reviewer($this)
                         || $prow->has_commenter($this)));
         }
+    }
+
+    /** @return bool */
+    function following_paper_newsubmit(PaperInfo $prow) {
+        return $this->allow_administer($prow)
+            && ($this->defaultWatch & self::WATCH_PAPER_NEWSUBMIT_ALL) !== 0;
     }
 
     /** @return bool */

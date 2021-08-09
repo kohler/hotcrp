@@ -2892,6 +2892,11 @@ class PaperInfo {
     }
 
     /** @return list<Contact> */
+    function newsubmit_followers() {
+        return $this->generic_followers([], "(defaultWatch&" . Contact::WATCH_PAPER_NEWSUBMIT_ALL . ")!=0 and roles!=0", "following_paper_newsubmit");
+    }
+
+    /** @return list<Contact> */
     function review_followers() {
         $cids = [];
         foreach ($this->contacts() as $cflt) {

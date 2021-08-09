@@ -319,6 +319,9 @@ class PaperPage {
             if ($action === "final" && $new_prow->timeFinalSubmitted > 0) {
                 $followers = $new_prow->final_update_followers();
                 $template = "@finalsubmitnotify";
+            } else if ($newsubmit) {
+                $followers = $new_prow->newsubmit_followers();
+                $template = "@newsubmitnotify";
             } else {
                 $followers = [];
                 $template = "@none";
