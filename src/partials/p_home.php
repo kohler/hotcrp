@@ -429,7 +429,7 @@ class Home_Partial {
             }
             $tokens = array_map("encode_token", $user->review_tokens());
             $ttexts = array_map(function ($t) use ($user) {
-                return Ht::link($t, $user->conf->hoturl("paper", ["p" => "token:$t"]));
+                return Ht::link($t, $user->conf->hoturl("paper", ["q" => "token:$t"]));
             }, $tokens);
             echo '<a href="" class="ui js-review-tokens" data-review-tokens="',
                 join(" ", $tokens), '">Review tokens</a>',
@@ -450,7 +450,7 @@ class Home_Partial {
 
         echo '<div class="homegrp">', $this->render_h2_home("Requested Reviews");
         if ($user->has_review_pending_approval()) {
-            echo '<a href="', $conf->hoturl("paper", "m=rea&amp;p=re%3Apending-my-approval"),
+            echo '<a href="', $conf->hoturl("paper", "m=rea&amp;q=re%3Apending-my-approval"),
                 ($user->has_review_pending_approval(true) ? '" class="attention' : ''),
                 '">Reviews pending approval</a> <span class="barsep">·</span> ';
         }
