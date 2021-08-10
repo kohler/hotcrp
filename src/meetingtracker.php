@@ -649,7 +649,7 @@ class MeetingTracker {
             $cid_join = "contactId=-2 and false";
         }
 
-        $result = $user->conf->qe_raw("select p.paperId, p.title, p.paperFormat, p.leadContactId, p.managerContactId, " . PaperInfo::my_review_permissions_sql("r.") . " myReviewPermissions, conf.conflictType{$col}
+        $result = $user->conf->qe_raw("select p.paperId, p.title, p.paperFormat, p.leadContactId, p.managerContactId, coalesce(" . PaperInfo::my_review_permissions_sql("r.") . ",'') myReviewPermissions, conf.conflictType{$col}
             from Paper p
             left join PaperReview r on (r.paperId=p.paperId and r.$cid_join and r.reviewType>0)
             left join PaperConflict conf on (conf.paperId=p.paperId and conf.$cid_join and conf.conflictType>" . CONFLICT_MAXUNCONFLICTED . ")
