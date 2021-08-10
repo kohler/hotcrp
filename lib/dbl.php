@@ -705,8 +705,9 @@ class Dbl {
     static function fetch_first_columns(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = array();
-        while ($result && ($row = $result->fetch_row()))
+        while ($result && ($row = $result->fetch_row())) {
             $x[] = $row[0];
+        }
         $result && $result->close();
         return $x;
     }

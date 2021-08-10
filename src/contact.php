@@ -127,6 +127,8 @@ class Contact {
     private $_db_roles;
     /** @var ?int */
     private $_active_roles;
+    /** @var ?associative-array<int,int> */
+    private $_conflict_types;
     /** @var ?bool */
     private $_has_outstanding_review;
     /** @var ?bool */
@@ -2247,8 +2249,10 @@ class Contact {
 
     private function load_author_reviewer_status() {
         // Load from database
+        $this->_db_roles = $this->_active_roles = 0;
+        $this->_conflict_types = [];
         if ($this->contactId > 0) {
-            $qs = ["exists (select * from PaperConflict where contactId=? and conflictType>=" . CONFLICT_AUTHOR . ")",
+            $qs = ["(select group_concat(paperId, ' ', conflictType) from PaperConflict where contactId=?)",
                    "exists (select * from PaperReview where contactId=? and reviewType>0)"];
             $qv = [$this->contactId, $this->contactId];
             if ($this->isPC) {
@@ -2264,15 +2268,23 @@ class Contact {
                 $qs[] = "0";
             }
             $result = $this->conf->qe_apply("select " . join(", ", $qs), $qv);
-            $row = $result->fetch_row();
-            $this->_db_roles = ($row && $row[0] > 0 ? self::ROLE_AUTHOR : 0)
-                | ($row && $row[1] > 0 ? self::ROLE_REVIEWER : 0)
-                | ($row && $row[2] > 0 ? self::ROLE_REQUESTER : 0);
-            $this->_active_roles = $this->_db_roles
-                | ($row && $row[3] > 0 ? self::ROLE_REVIEWER : 0);
+            if (($row = $result->fetch_row())) {
+                if ($row[0] !== null) {
+                    foreach (explode(",", $row[0]) as $pc) {
+                        $sp = strpos($pc, " ");
+                        $ct = (int) substr($pc, $sp + 1);
+                        $this->_conflict_types[(int) substr($pc, 0, $sp)] = $ct;
+                        if ($ct >= CONFLICT_AUTHOR) {
+                            $this->_db_roles |= self::ROLE_AUTHOR;
+                        }
+                    }
+                }
+                $this->_db_roles |= ($row[1] > 0 ? self::ROLE_REVIEWER : 0)
+                    | ($row[2] > 0 ? self::ROLE_REQUESTER : 0);
+                $this->_active_roles = $this->_db_roles
+                    | ($row[3] > 0 ? self::ROLE_REVIEWER : 0);
+            }
             Dbl::free($result);
-        } else {
-            $this->_db_roles = $this->_active_roles = 0;
         }
 
         // Update contact information from capabilities
@@ -2289,7 +2301,7 @@ class Contact {
 
     private function check_rights_version() {
         if ($this->_rights_version !== self::$rights_version) {
-            $this->_db_roles = $this->_active_roles =
+            $this->_db_roles = $this->_active_roles = $this->_conflict_types =
                 $this->_has_outstanding_review = $this->_is_lead =
                 $this->_is_explicit_manager = $this->_is_metareviewer =
                 $this->_can_view_pc = $this->_dangerous_track_mask =
@@ -2328,7 +2340,7 @@ class Contact {
     /** @return bool */
     function is_author() {
         $this->check_rights_version();
-        if (!isset($this->_active_roles)) {
+        if ($this->_active_roles === null) {
             $this->load_author_reviewer_status();
         }
         return ($this->_active_roles & self::ROLE_AUTHOR) !== 0;
@@ -2341,6 +2353,15 @@ class Contact {
             $this->_authored_papers = $this->is_author() ? $this->paper_set(["author" => true, "tags" => true])->as_list() : [];
         }
         return $this->_authored_papers;
+    }
+
+    /** @return associative-array<int,int> */
+    function conflict_types() {
+        $this->check_rights_version();
+        if ($this->_conflict_types === null) {
+            $this->load_author_reviewer_status();
+        }
+        return $this->_conflict_types;
     }
 
     /** @return bool */
