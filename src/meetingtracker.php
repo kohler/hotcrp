@@ -671,7 +671,11 @@ class MeetingTracker {
                      || !$hide_conflicted_papers)
                     && $user->tracker_kiosk_state != 1) {
                     $p->pid = $prow->paperId;
-                    $p->title = $prow->title;
+                    if ($prow->title === "") {
+                        $p->title = "[No title]";
+                    } else {
+                        $p->title = $prow->title;
+                    }
                     if (($format = $prow->title_format())) {
                         $p->format = $format;
                     }
