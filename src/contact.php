@@ -2919,7 +2919,7 @@ class Contact {
             || ($this->isPC
                 && $this->conf->check_default_track($this, Track::VIEWTRACKER)
                 && (!$tracker_json
-                    || !isset($tracker_json->visibility)
+                    || ($tracker_json->visibility ?? "") === ""
                     || ($this->has_tag(substr($tracker_json->visibility, 1))
                         === ($tracker_json->visibility[0] === "+"))))
             || $this->tracker_kiosk_state > 0;
@@ -2932,7 +2932,7 @@ class Contact {
                 || $perm === "+none"
                 || $this->has_permission($perm))
             && (!$tracker_json
-                || !isset($tracker_json->visibility)
+                || ($tracker_json->visibility ?? "") === ""
                 || ($this->has_tag(substr($tracker_json->visibility, 1))
                     === ($tracker_json->visibility[0] === "+")));
     }

@@ -2547,6 +2547,7 @@ handle_ui.on("js-tracker", function (event) {
                 hc.push('PC members without tag ' + vis.substring(1));
             hc.push_pop('<div class="f-h">This setting restricts all trackers.</div>');
         }
+        hc.push('<div class="entryi"><label></label><div class="entry"><label class="checki"><input type="hidden" name="has_tr' + trno + '-hideconflicts" value="1"><input class="checkc" name="tr' + trno + '-hideconflicts" value="1" type="checkbox"' + (tr.hide_conflicts ? ' checked' : '') + '>Hide conflicted papers</label></div></div>');
         if (tr.start_at)
             hc.push('<div class="entryi"><label>Elapsed time</label><span class="trackerdialog-elapsed" data-start-at="' + tr.start_at + '"></span></div>');
         try {
@@ -2583,6 +2584,7 @@ handle_ui.on("js-tracker", function (event) {
         var tr = {
             is_new: true, trackerid: "new",
             visibility: wstorage.site(false, "hotcrp-tracking-visibility"),
+            hide_conflicts: true,
             listinfo: document.body.getAttribute("data-hotlist")
         }, $myg = $(this).closest("div.lg"), hc = new HtmlCollector;
         if (siteinfo.paperid)
