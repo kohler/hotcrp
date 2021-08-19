@@ -498,19 +498,26 @@ class CommentInfo {
     /** @param int $flags
      * @return string */
     function unparse_text(Contact $contact, $flags = 0) {
-        if (!($this->commentType & self::CT_RESPONSE)) {
+        if ($this->commentType & self::CT_RESPONSE) {
+            $rrd = ($this->conf->resp_rounds())[$this->commentRound] ?? null;
+            if ($rrd && $rrd->name !== "1") {
+                $x = "{$rrd->name} Response";
+            } else {
+                $x = "Response";
+            }
+        } else {
+            $rrd = null;
             $ordinal = $this->unparse_ordinal();
             $x = "Comment" . ($ordinal ? " @$ordinal" : "");
-        } else if (($rname = $this->conf->resp_round_text($this->commentRound))) {
-            $x = "$rname Response";
-        } else {
-            $x = "Response";
         }
         if ($contact->can_view_comment_identity($this->prow, $this)) {
             $x .= " by " . Text::nameo($this, NAME_EB);
         } else if (($p = $this->unparse_commenter_pseudonym($contact))
                    && ($p !== "Author" || !($this->commentType & self::CT_RESPONSE))) {
             $x .= " by " . $p;
+        }
+        if ($rrd && $rrd->words) {
+            $x .= " (" . plural(count_words($this->commentOverflow ?? $this->comment), "word") . ")";
         }
         $x .= "\n" . str_repeat("-", 75) . "\n";
         $flowed = ($flags & ReviewForm::UNPARSE_FLOWED) !== 0;
