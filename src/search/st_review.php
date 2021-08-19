@@ -538,7 +538,7 @@ class Review_SearchTerm extends SearchTerm {
 
     /** @param list<string> $components
      * @param int $i
-     * @return ?Review_SearchTerm */
+     * @return ?SearchTerm */
     static private function parse_components(ReviewSearchMatcher $rsm, $components, $i, PaperSearch $srch) {
         $contacts = null;
         for (; $i < count($components); ++$i) {

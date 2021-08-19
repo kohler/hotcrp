@@ -4,7 +4,8 @@
 
 class Reviews_SettingRenderer {
     /** @param SettingValues $sv
-     * @param int|'$' $rnum */
+     * @param int|'$' $rnum
+     * @param int $review_count */
     private static function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
         $rname = "roundname_$rnum";
         if ($sv->use_req() && $rnum !== '$') {
@@ -139,7 +140,7 @@ class Reviews_SettingRenderer {
             }
         }
         echo '</div><div id="newround" class="hidden">';
-        self::echo_round($sv, '$', "", "", true);
+        self::echo_round($sv, '$', "", 0, true);
         echo '</div><div class="g"></div>';
         echo Ht::button("Add round", ["id" => "settings_review_round_add"]),
             ' &nbsp; <span class="hint"><a href="', $sv->conf->hoturl("help", "t=revround"), '">What is this?</a></span>',

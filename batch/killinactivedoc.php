@@ -22,10 +22,11 @@ while (($doc = DocumentInfo::fetch($result, $Conf)))
 if (count($killable)) {
     fwrite(STDOUT, join("\n", $killable) . "\n");
     if (!$force) {
-        fwrite(STDOUT, "\nKill " . plural($killable, "document") . "? (y/n) ");
+        fwrite(STDOUT, "\nKill " . plural(count($killable), "document") . "? (y/n) ");
         $x = fread(STDIN, 100);
-        if (!preg_match('/\A[yY]/', $x))
+        if (!preg_match('/\A[yY]/', $x)) {
             die("* Exiting\n");
+        }
     }
     $Conf->qe_raw("update PaperStorage set paper=NULL where paperStorageId in ("
         . join(",", array_keys($killable)) . ")");

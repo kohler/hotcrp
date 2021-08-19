@@ -323,6 +323,9 @@ function tempdir($mode = 0700) {
 
 
 // text helpers
+/** @param array $what
+ * @param string $joinword
+ * @return string */
 function commajoin($what, $joinword = "and") {
     $what = array_values($what);
     $c = count($what);
@@ -337,12 +340,18 @@ function commajoin($what, $joinword = "and") {
     }
 }
 
+/** @param array $what
+ * @param string $prefix
+ * @param string $joinword
+ * @return string */
 function prefix_commajoin($what, $prefix, $joinword = "and") {
     return commajoin(array_map(function ($x) use ($prefix) {
         return $prefix . $x;
     }, $what), $joinword);
 }
 
+/** @param iterable $range
+ * @return string */
 function numrangejoin($range) {
     $a = [];
     $format = $first = $last = null;
@@ -383,38 +392,63 @@ function numrangejoin($range) {
     return commajoin($a);
 }
 
+/** @param int|float|array $n
+ * @param string $what
+ * @return string */
 function pluralx($n, $what) {
-    if (is_array($n)) {
-        $n = count($n);
-    }
-    return $n == 1 ? $what : pluralize($what);
+    $z = is_array($n) ? count($n) : $n;
+    return $z == 1 ? $what : pluralize($what);
 }
 
-function pluralize($what) {
-    if ($what === "this") {
-        return "these";
-    } else if ($what === "has") {
-        return "have";
-    } else if ($what === "is") {
-        return "are";
-    } else if (str_ends_with($what, ")")
-               && preg_match('/\A(.*?)(\s*\([^)]*\))\z/', $what, $m)) {
-        return pluralize($m[1]) . $m[2];
-    } else if (preg_match('/\A.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz]y)\z/', $what)) {
-        if (substr($what, -1) === "y") {
-            return substr($what, 0, -1) . "ies";
+/** @param string $s
+ * @return string
+ * @suppress PhanParamSuspiciousOrder */
+function pluralize($s) {
+    if ($s[0] === "t"
+        && (str_starts_with($s, "this ") || str_starts_with($s, "that "))) {
+        return ($s[2] === "i" ? "these " : "those ") . pluralize(substr($s, 5));
+    }
+    $len = strlen($s);
+    $last = $s[$len - 1];
+    if ($last === "s") {
+        if ($s === "this") {
+            return "these";
+        } else if ($s === "has") {
+            return "have";
+        } else if ($s === "is") {
+            return "are";
         } else {
-            return $what . "es";
+            return "{$s}es";
         }
+    } else if ($last === "h"
+               && $len > 1
+               && ($s[$len - 2] === "s" || $s[$len - 2] === "c")) {
+        return "{$s}es";
+    } else if ($last === "y"
+               && $len > 1
+               && strpos("bcdfgjklmnpqrstvxz", $s[$len - 2]) !== false) {
+        return substr($s, 0, $len - 1) . "ies";
+    } else if ($last === "t"
+               && $s === "that") {
+        return "those";
+    } else if ($last === ")"
+               && preg_match('/\A(.*?)(\s*\([^)]*\))\z/', $s, $m)) {
+        return pluralize($m[1]) . $m[2];
     } else {
-        return $what . "s";
+        return "{$s}s";
     }
 }
 
+/** @param int|float|array $n
+ * @param string $what
+ * @return string */
 function plural($n, $what) {
-    return (is_array($n) ? count($n) : $n) . ' ' . pluralx($n, $what);
+    $z = is_array($n) ? count($n) : $n;
+    return "$z " . pluralx($z, $what);
 }
 
+/** @param int $n
+ * @return string */
 function ordinal($n) {
     $x = $n;
     if ($x > 100) {
@@ -426,6 +460,9 @@ function ordinal($n) {
     return $n . ($x < 1 || $x > 3 ? "th" : ($x == 1 ? "st" : ($x == 2 ? "nd" : "rd")));
 }
 
+/** @param string $text
+ * @param bool $all
+ * @return int */
 function tabLength($text, $all) {
     $len = 0;
     for ($i = 0; $i < strlen($text); ++$i) {
@@ -442,7 +479,8 @@ function tabLength($text, $all) {
     return $len;
 }
 
-/** @param string $varname */
+/** @param string $varname
+ * @return int */
 function ini_get_bytes($varname, $value = null) {
     $val = trim($value !== null ? $value : ini_get($varname));
     $last = strlen($val) ? strtolower($val[strlen($val) - 1]) : ".";

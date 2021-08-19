@@ -1959,12 +1959,12 @@ class Conf {
     /** @param int $rnum
      * @return string */
     function resp_round_text($rnum) {
-        $rname = $this->resp_round_name($rnum);
-        return $rname == "1" ? "" : $rname;
+        $rrd = ($this->resp_rounds())[$rnum] ?? null;
+        return $rrd && $rrd->name !== "1" ? $rrd->name : "";
     }
 
     /** @param string $rname
-     * @return string|bool */
+     * @return string|false */
     static function resp_round_name_error($rname) {
         return self::round_name_error($rname);
     }
@@ -2785,7 +2785,8 @@ class Conf {
     }
 
     // NB must return HTML-safe plaintext
-    /** @param int $timestamp */
+    /** @param int $timestamp
+     * @return string */
     private function _unparse_time($timestamp, $type) {
         if ($timestamp <= 0) {
             return "N/A";
@@ -2814,32 +2815,39 @@ class Conf {
         }
         return $timestamp;
     }
-    /** @param int $timestamp */
+    /** @param int $timestamp
+     * @return string */
     function unparse_time_long($timestamp) {
         return $this->_unparse_time($timestamp, "long");
     }
-    /** @param int $timestamp */
+    /** @param int $timestamp
+     * @return string */
     function unparse_time($timestamp) {
         return $this->_unparse_time($timestamp, "timestamp");
     }
-    /** @param int $timestamp */
+    /** @param int $timestamp
+     * @return string */
     function unparse_time_obscure($timestamp) {
         return $this->_unparse_time($timestamp, "obscure");
     }
-    /** @param int $timestamp */
+    /** @param int $timestamp
+     * @return string */
     function unparse_time_point($timestamp) {
         return $this->_date_format("j M Y", $timestamp);
     }
-    /** @param int $timestamp */
+    /** @param int $timestamp
+     * @return string */
     function unparse_time_log($timestamp) {
         return $this->_date_format("d/M/Y:H:i:s O", $timestamp);
     }
-    /** @param int $timestamp */
+    /** @param int $timestamp
+     * @return string */
     function unparse_time_iso($timestamp) {
         return $this->_date_format("Ymd\\THis", $timestamp);
     }
     /** @param int $timestamp
-     * @param int $now */
+     * @param int $now
+     * @return string */
     function unparse_time_relative($timestamp, $now = 0, $format = 0) {
         $d = abs($timestamp - ($now ? : Conf::$now));
         if ($d >= 5227200) {
@@ -2878,18 +2886,21 @@ class Conf {
             return $timestamp < ($now ? : Conf::$now) ? $d . " ago" : "in " . $d;
         }
     }
-    /** @param int $timestamp */
+    /** @param int $timestamp
+     * @return string */
     function unparse_usertime_span($timestamp) {
         return '<span class="usertime hidden need-usertime" data-time="' . $timestamp . '"></span>';
     }
 
-    /** @param string $name */
+    /** @param string $name
+     * @return string */
     function unparse_setting_time($name) {
         $t = $this->settings[$name] ?? 0;
         return $this->unparse_time_long($t);
     }
     /** @param string $name
-     * @param string $suffix */
+     * @param string $suffix
+     * @return string */
     function unparse_setting_time_span($name, $suffix = "") {
         $t = $this->settings[$name] ?? 0;
         if ($t > 0) {
@@ -2898,7 +2909,8 @@ class Conf {
             return "N/A";
         }
     }
-    /** @param string $name */
+    /** @param string $name
+     * @return string */
     function unparse_setting_deadline_span($name) {
         $t = $this->settings[$name] ?? 0;
         if ($t > 0) {

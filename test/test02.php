@@ -186,7 +186,7 @@ xassert_eqq($csvr[2], "Hi");
 xassert_eqq(numrangejoin([1, 2, 3, 4, 6, 8]), "1–4, 6, and 8");
 xassert_eqq(numrangejoin(["#1", "#2", "#3", 4, "xx6", "xx7", 8]), "#1–3, 4, xx6–7, and 8");
 
-// random PHP behavior tests
+// PHP behavior tests
 if (PHP_MAJOR_VERSION >= 7) {
     xassert_eqq(substr("", 0, 1), ""); // UGH
 } else {
@@ -799,6 +799,19 @@ xassert_eqq(!!$aum->test("All (UIUC)", true), false);
 //xassert_eqq(!!$aum->test("All (University of Illinois)", true), true);
 xassert_eqq(!!$aum->test("All (University of Illinois Chicago)", false), true);
 xassert_eqq(!!$aum->test("All (University of Illinois Chicago)", true), true);
+
+// plural
+xassert_eqq(pluralx(1, "that"), "that");
+xassert_eqq(pluralx(1, "that butt"), "that butt");
+xassert_eqq(pluralx(2, "that"), "those");
+xassert_eqq(pluralx(2, "that butt"), "those butts");
+xassert_eqq(pluralx(2, "this"), "these");
+xassert_eqq(pluralx(2, "this butt"), "these butts");
+xassert_eqq(pluralx(2, "day"), "days");
+xassert_eqq(pluralx(2, "ply"), "plies");
+xassert_eqq(pluralx(2, "worth"), "worths");
+xassert_eqq(pluralx(2, "hutch"), "hutches");
+xassert_eqq(pluralx(2, "ass"), "asses");
 
 // i18n messages
 $ms = new IntlMsgSet;

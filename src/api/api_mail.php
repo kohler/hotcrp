@@ -27,10 +27,11 @@ class Mail_API {
         if (isset($qreq->reason)) {
             $mailinfo["reason"] = $qreq->reason;
         }
-        if (isset($qreq->r)
-            && ctype_digit($qreq->r)
+        $rid = $qreq->r;
+        if (isset($rid)
+            && ctype_digit($rid)
             && $prow
-            && ($rrow = $prow->review_by_id($qreq->r))
+            && ($rrow = $prow->review_by_id((int) $rid))
             && $user->can_view_review($prow, $rrow)) {
             $mailinfo["rrow"] = $rrow;
         }

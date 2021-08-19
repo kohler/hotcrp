@@ -576,7 +576,7 @@ class ReviewInfo implements JsonSerializable {
     /** @return int */
     function view_score() {
         if ($this->reviewViewScore === self::VIEWSCORE_RECOMPUTE) {
-            assert($this->prow);
+            assert(!!$this->prow);
             $this->reviewViewScore = $this->prow->conf->review_form()->nonempty_view_score($this);
         }
         return $this->reviewViewScore;
