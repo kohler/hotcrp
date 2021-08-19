@@ -505,7 +505,7 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->valid_post()) {
     } else if ($Acct->has_account_here()) {
         $tracks = UserStatus::user_paper_info($Conf, $Acct->contactId);
         if (!empty($tracks->soleAuthor)) {
-            Conf::msg_error("This account can’t be deleted since it is sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . UserStatus::render_paper_link($Conf, $tracks->soleAuthor) . ". You will be able to delete the account after deleting those papers or adding additional paper contacts.");
+            Conf::msg_error("This account can’t be deleted since it is sole contact for " . UserStatus::render_paper_link($Conf, $tracks->soleAuthor) . ". You will be able to delete the account after deleting those papers or adding additional paper contacts.");
         } else if ($Acct->data("locked")) {
             Conf::msg_error("This account is locked and can’t be deleted.");
         } else {

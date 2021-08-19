@@ -201,13 +201,16 @@ class UserStatus extends MessageSet {
         return $pinfo;
     }
 
+    /** @param list<int> $pids
+     * @return string */
     static function render_paper_link(Conf $conf, $pids) {
         if (count($pids) === 1) {
-            return Ht::link("#{$pids[0]}", $conf->hoturl("paper", ["p" => $pids[0]]));
+            $l = Ht::link("#{$pids[0]}", $conf->hoturl("paper", ["p" => $pids[0]]));
         } else {
-            return Ht::link(commajoin(array_map(function ($p) { return "#$p"; }, $pids)),
-                            $conf->hoturl("search", ["q" => join(" ", $pids)]));
+            $l = Ht::link(commajoin(array_map(function ($p) { return "#$p"; }, $pids)),
+                          $conf->hoturl("search", ["q" => join(" ", $pids)]));
         }
+        return pluralx(count($pids), "submission") . " " . $l;
     }
 
     function autocomplete($what) {
@@ -1574,6 +1577,34 @@ topics. We use this information to help match papers to reviewers.</p>',
         }
     }
 
+    private static function render_delete_action(UserStatus $us) {
+        $tracks = self::user_paper_info($us->conf, $us->user->contactId);
+        $args = ["class" => "ui btn btn-danger"];
+        if (!empty($tracks->soleAuthor)) {
+            $args["class"] .= " js-cannot-delete-user";
+            $args["data-sole-author"] = self::render_paper_link($us->conf, $tracks->soleAuthor);
+        } else {
+            $args["class"] .= " js-delete-user";
+            $x = $y = [];
+            if (!empty($tracks->author)) {
+                $x[] = "is contact for " . self::render_paper_link($us->conf, $tracks->author);
+                $y[] = "delete " . pluralx($tracks->author, "this authorship association");
+            }
+            if (!empty($tracks->review)) {
+                $x[] = "reviewed " . self::render_paper_link($us->conf, $tracks->review);
+                $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this review");
+            }
+            if (!empty($tracks->comment)) {
+                $x[] = "commented on " . self::render_paper_link($us->conf, $tracks->comment);
+                $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this comment");
+            }
+            if (!empty($x)) {
+                $args["data-delete-info"] = "<p>This user " . commajoin($x) . ". Deleting the user will also " . commajoin($y) . ".</p>";
+            }
+        }
+        echo Ht::button("Delete account", $args), '<p class="pt-1"></p>';
+    }
+
     static function render_main_actions(UserStatus $us, Qrequest $qreq) {
         if ($us->viewer->privChair
             && !$us->is_new_user()) {
@@ -1581,13 +1612,14 @@ topics. We use this information to help match papers to reviewers.</p>',
             echo '<div class="form-outline-section">';
             $us->gxt()->push_close_section('</div>');
             $us->gxt()->render_title("User administration");
-            echo '<div class="btngrid">';
+            echo '<div class="btngrid">',
+                Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf btn relative", "disabled" => $us->user->disabled]), '<p></p>';
             if (!$us->is_auth_user()) {
                 echo Ht::button($us->user->disabled ? "Enable account" : "Disable account", [
-                    "class" => "ui js-disable-user mf btn relative " . ($us->user->disabled ? "btn-success" : "btn-danger")
-                ]), '<p class="pt-1">Disabled accounts cannot sign in or view the site.</p>';
+                    "class" => "ui js-disable-user btn " . ($us->user->disabled ? "btn-success" : "btn-danger")
+                ]), '<p class="pt-1 mb-0">Disabled accounts cannot sign in or view the site.</p>';
+                self::render_delete_action($us);
             }
-            echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf btn relative", "disabled" => $us->user->disabled]);
             echo '</div>';
         }
     }
@@ -1595,44 +1627,10 @@ topics. We use this information to help match papers to reviewers.</p>',
     static function render_actions(UserStatus $us, Qrequest $qreq) {
         $buttons = [Ht::submit("save", $us->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
             Ht::submit("cancel", "Cancel", ["formnovalidate" => true])];
-
-        if ($us->viewer->privChair
-            && !$us->is_new_user()
-            && !$us->is_auth_user()
-            && $us->gxt()->root === "main") {
-            $tracks = self::user_paper_info($us->conf, $us->user->contactId);
-            $args = ["class" => "ui"];
-            if (!empty($tracks->soleAuthor)) {
-                $args["class"] .= " js-cannot-delete-user";
-                $args["data-sole-author"] = pluralx($tracks->soleAuthor, "submission") . " " . self::render_paper_link($us->conf, $tracks->soleAuthor);
-            } else {
-                $args["class"] .= " js-delete-user";
-                $x = $y = [];
-                if (!empty($tracks->author)) {
-                    $x[] = "contact for " . pluralx($tracks->author, "submission") . " " . self::render_paper_link($us->conf, $tracks->author);
-                    $y[] = "delete " . pluralx($tracks->author, "this") . " " . pluralx($tracks->author, "authorship association");
-                }
-                if (!empty($tracks->review)) {
-                    $x[] = "reviewer for " . pluralx($tracks->review, "submission") . " " . self::render_paper_link($us->conf, $tracks->review);
-                    $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->review, "this") . " " . pluralx($tracks->review, "review");
-                }
-                if (!empty($tracks->comment)) {
-                    $x[] = "commenter for " . pluralx($tracks->comment, "submission") . " " . self::render_paper_link($us->conf, $tracks->comment);
-                    $y[] = "<strong>permanently delete</strong> " . pluralx($tracks->comment, "this") . " " . pluralx($tracks->comment, "comment");
-                }
-                if (!empty($x)) {
-                    $args["data-delete-info"] = "<p>This user is " . commajoin($x) . ". Deleting the user will also " . commajoin($y) . ".</p>";
-                }
-            }
-            $buttons[] = "";
-            $buttons[] = [Ht::button("Delete user", $args), "(admin only)"];
-        }
-
         if ($us->is_auth_self()
             && $us->gxt()->root === "main") {
             array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
         }
-
         $us->gxt()->render_close_section();
         echo Ht::actions($buttons, ["class" => "aab aabig mt-7"]);
     }
