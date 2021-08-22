@@ -1377,7 +1377,7 @@ class UserStatus extends MessageSet {
             '<label for="oldpassword">',
             $us->is_auth_self() ? "Current password" : "Current password for " . htmlspecialchars($us->viewer->email),
             '</label>',
-            $us->render_feedback_at("oldpassword"),
+            $us->feedback_html_at("oldpassword"),
             Ht::entry("viewer_email", $us->viewer->email, ["autocomplete" => "username", "class" => "hidden ignore-diff", "readonly" => true]),
             Ht::password("oldpassword", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff uii js-profile-current-password", "id" => "oldpassword", "autofocus" => true]),
             '</div>';

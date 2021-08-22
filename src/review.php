@@ -1282,7 +1282,7 @@ $blind\n";
         if (!empty($rrow->message_list)) {
             echo '<div class="revcard-feedback">';
             foreach ($rrow->message_list ?? [] as $mx) {
-                echo MessageSet::render_feedback_p($mx->message, $mx->status);
+                echo MessageSet::feedback_p_html($mx->message, $mx->status);
             }
             echo '</div>';
         }

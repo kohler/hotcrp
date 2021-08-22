@@ -408,17 +408,30 @@ class MessageSet {
     /** @param string $message
      * @param int $status
      * @return string */
-    static function render_feedback_p($message, $status) {
+    static function feedback_p_html($message, $status) {
         $k = self::status_class($status, "feedback", "is-");
         return "<p class=\"{$k}\">{$message}</p>";
     }
     /** @param string $field
      * @return string */
-    function render_feedback_at($field) {
+    function feedback_html_at($field) {
         $t = "";
         foreach ($this->message_list_at($field) as $mx) {
-            $t .= self::render_feedback_p($mx->message, $mx->status);
+            $t .= self::feedback_p_html($mx->message, $mx->status);
         }
         return $t;
+    }
+    /** @param string $message
+     * @param int $status
+     * @return string
+     * @deprecated */
+    static function render_feedback_p($message, $status) {
+        return self::feedback_p_html($message, $status);
+    }
+    /** @param string $field
+     * @return string
+     * @deprecated */
+    function render_feedback_at($field) {
+        return self::feedback_html_at($field);
     }
 }

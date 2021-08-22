@@ -667,11 +667,13 @@ class Ht {
     }
     /** @param string $field
      * @return string */
-    static function render_feedback_at($field) {
-        return self::$_msgset ? self::$_msgset->render_feedback_at($field) : "";
+    static function feedback_html_at($field) {
+        return self::$_msgset ? self::$_msgset->feedback_html_at($field) : "";
     }
-    /** @deprecated */
-    static function feedback_at($field) {
-        return self::render_feedback_at($field);
+    /** @param string $field
+     * @return string
+     * @deprecated */
+    static function render_feedback_at($field) {
+        return self::feedback_html_at($field);
     }
 }
