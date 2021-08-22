@@ -1231,6 +1231,15 @@ class PaperOption implements JsonSerializable {
             ]),
             "</div></div>\n\n";
     }
+    /** @param PaperInfo $prow
+     * @return string */
+    function web_edit_html(PaperInfo $prow, Contact $user) {
+        ob_start();
+        $pt = new PaperTable($user, new Qrequest("POST"), $prow);
+        $ov = $prow->force_option($this);
+        $this->echo_web_edit($pt, $ov, $ov);
+        return ob_get_clean();
+    }
 
     function validate_document(DocumentInfo $doc) {
         return true;
