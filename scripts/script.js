@@ -8641,6 +8641,18 @@ return {
             .find(".btn-savereview").click(function () {
                 $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
             });
+    },
+    replace_field: function (field, elt) {
+        var pfe = $$(field).closest(".pfe");
+        if (elt.tagName !== "DIV" || !hasClass(elt, "pfe")) {
+            throw new Error("bad DIV");
+        }
+        pfe.className = elt.className;
+        while (pfe.firstChild)
+            pfe.removeChild(pfe.firstChild);
+        while (elt.firstChild)
+            pfe.appendChild(elt.firstChild);
+        add_pslitem_pfe.call(pfe);
     }
 };
 })($);
@@ -10102,6 +10114,7 @@ window.hotcrp = {
     prepare_editable_paper: edit_paper_ui.prepare,
     render_list: plinfo.render_needed,
     render_text_page: render_text.on_page,
+    replace_editable_field: edit_paper_ui.replace_field,
     scorechart: scorechart,
     set_default_format: render_text.set_default_format,
     set_response_round: papercomment.set_resp_round,
