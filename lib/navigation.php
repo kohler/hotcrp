@@ -264,10 +264,10 @@ class NavigationState {
         return $this->page;
     }
 
-    /** @param null|false|string $url
+    /** @param ?string $url
      * @return string */
     function make_absolute($url) {
-        if ($url === false || $url === null) {
+        if ($url === false /* XXX */ || $url === null) {
             return $this->server . $this->site_path;
         }
         preg_match(',\A((?:https?://[^/]+)?)(/*)((?:[.][.]/)*)(.*)\z,i', $url, $m);
@@ -404,7 +404,7 @@ class Navigation {
         return self::$s->php_suffix;
     }
 
-    /** @param string $url
+    /** @param ?string $url
      * @return string */
     static function make_absolute($url) {
         return self::$s->make_absolute($url);

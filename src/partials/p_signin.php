@@ -37,12 +37,12 @@ class Signin_Partial {
             foreach ($gx->members("signin/request") as $gj) {
                 $info = call_user_func($gj->signin_function, $user, $qreq, $info, $gj);
             }
-            Navigation::redirect();
+            $user->conf->redirect();
         } else if ($user->conf->opt("httpAuthLogin")) {
             LoginHelper::check_http_auth($user, $qreq);
         } else if ($qreq->valid_post()) {
             if (!$user->is_empty() && strcasecmp($qreq->email, $user->email) === 0) {
-                Navigation::redirect();
+                $user->conf->redirect();
             } else if (!$qreq->start) {
                 $info = ["ok" => true];
                 foreach ($gx->members("signin/request") as $gj) {
@@ -208,7 +208,7 @@ class Signin_Partial {
     static function signout_request(Contact $user, Qrequest $qreq) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
-            Navigation::redirect();
+            $user->conf->redirect();
         } else if ($qreq->valid_post()) {
             LoginHelper::logout($user, true);
             Navigation::redirect($user->conf->hoturl("index", "signedout=1"));
@@ -289,7 +289,7 @@ class Signin_Partial {
         assert($qreq->method() === "POST");
         $conf = $user->conf;
         if ($qreq->cancel) {
-            Navigation::redirect();
+            $conf->redirect();
         } else if (!$user->conf->allow_user_self_register()) {
             // do nothing
         } else if ($qreq->valid_post()) {
@@ -355,7 +355,7 @@ class Signin_Partial {
     static function forgot_request(Contact $user, Qrequest $qreq) {
         assert($qreq->method() === "POST");
         if ($qreq->cancel) {
-            Navigation::redirect();
+            $user->conf->redirect();
         } else if ($qreq->valid_post()) {
             $info = LoginHelper::forgot_password_info($user->conf, $qreq, false);
             if ($info["ok"]) {
@@ -408,7 +408,7 @@ class Signin_Partial {
         ensure_session();
         $conf = $user->conf;
         if ($qreq->cancel) {
-            Navigation::redirect();
+            $conf->redirect();
         } else if ($conf->external_login()) {
             return;
         }

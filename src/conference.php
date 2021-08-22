@@ -3487,7 +3487,7 @@ class Conf {
     /** @param ?string $url */
     function redirect($url = null) {
         $this->transfer_messages_to_session();
-        Navigation::redirect($url);
+        Navigation::redirect($url ?? $this->hoturl("index"));
     }
 
     /** @param string $page
