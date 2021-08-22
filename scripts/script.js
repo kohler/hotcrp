@@ -3961,7 +3961,7 @@ return render_text;
 
 
 // left menus
-var add_pslitem = (function () {
+var navsidebar = (function () {
 var pslcard, observer, linkmap;
 function observer_fn(entries) {
     for (var i = 0; i !== entries.length; ++i) {
@@ -3969,34 +3969,47 @@ function observer_fn(entries) {
         psli && toggleClass(psli, "pslitem-intersecting", e.isIntersecting);
     }
 }
-return function (id, name, elt) {
-    if (observer === undefined) {
-        observer = linkmap = null;
-        if (window.IntersectionObserver) {
-            observer = new IntersectionObserver(observer_fn, {rootMargin: "-32px 0px"});
-        }
-        if (window.WeakMap) {
-            linkmap = new WeakMap;
-        }
-        pslcard = $(".pslcard")[0];
+function initialize() {
+    observer = linkmap = null;
+    if (window.IntersectionObserver) {
+        observer = new IntersectionObserver(observer_fn, {rootMargin: "-32px 0px"});
     }
-    if (name == undefined) {
-        elt = typeof id === "string" ? $$(id) : id;
-        return linkmap ? linkmap.get(elt) : null;
-    } else if (pslcard) {
-        if (name === false) {
-            observer && observer.unobserve($$(id));
-            $(pslcard).find("a[href='#" + id + "']").remove();
-        } else if (typeof id === "string") {
-            var $psli = $('<li class="pslitem ui js-click-child"><a href="#' + id + '" class="x hover-child">' + name + '</a></li>');
-            $psli.appendTo(pslcard);
-            elt = elt || $$(id);
-            linkmap && linkmap.set(elt, $psli[0]);
+    if (window.WeakMap) {
+        linkmap = new WeakMap;
+    }
+    pslcard = $(".pslcard")[0];
+}
+return {
+    get: function (idelt) {
+        pslcard === undefined && initialize();
+        return linkmap ? linkmap.get(typeof idelt === "string" ? $$(idelt) : idelt) : null;
+    },
+    set: function (id, html, elt) {
+        var psli;
+        pslcard === undefined && initialize();
+        elt = elt || $$(id);
+        if (!linkmap || !(psli = linkmap.get(elt))) {
+            psli = document.createElement("li");
+            psli.className = "pslitem ui js-click-child";
+            pslcard.appendChild(psli);
+            linkmap && linkmap.set(elt, psli);
             observer && observer.observe(elt);
-            return $psli[0];
-        } else {
-            pslcard.appendChild(id);
         }
+        psli.innerHTML = '<a href="#'.concat(id, '" class="x hover-child">', html, '</a>');
+        return psli;
+    },
+    remove: function (idelt) {
+        var psli, elt = typeof idelt === "string" ? $$(idelt) : idelt;
+        pslcard === undefined && initialize();
+        observer && observer.unobserve(elt);
+        if (linkmap && (psli = linkmap.get(elt))) {
+            pslcard.removeChild(psli);
+            linkmap.delete(elt);
+        }
+    },
+    append_li: function (li) {
+        pslcard === undefined && initialize();
+        pslcard.appendChild(li);
     }
 };
 })();
@@ -4394,7 +4407,7 @@ function add_review(rrow) {
         $j.find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
     }
     score_header_tooltips($j);
-    add_pslitem("r" + rid, rdesc);
+    navsidebar.set("r" + rid, rdesc);
 }
 
 return {
@@ -4773,9 +4786,8 @@ function save_change_id($c, ocid, ncid) {
         cp.id = ncid;
         cp = cp.closest(".cmtcard");
         if (cp.id === "cc" + ocid) {
-            add_pslitem("cc" + ocid, false);
             cp.id = "cc" + ncid;
-            add_pslitem("cc" + ncid, "Comment");
+            navsidebar.set("cc" + ncid, "Comment");
         }
         delete cmts[ocid];
         newcmt && papercomment.add(newcmt);
@@ -4922,7 +4934,7 @@ function render_cmt($c, cj, editing, msg) {
             ide = ide.closest(".cmtcard");
         }
         if (hasClass(ide, "cmtcard")) {
-            add_pslitem(ide.id, false);
+            navsidebar.remove(ide);
         }
         $("#ccactions a[href='#" + ide.id + "']").closest(".aabut").removeClass("hidden");
         $(ide).remove();
@@ -4999,7 +5011,7 @@ function render_cmt($c, cj, editing, msg) {
         var $chead_name = chead.find(".cmtcard-header-name");
         if ($chead_name.html() !== t) {
             $chead_name.html(t);
-            if ((i = add_pslitem(cid)))
+            if ((i = navsidebar.get(cid)))
                 $(i).find("a").html(t);
         }
     }
@@ -5106,7 +5118,7 @@ function add(cj, editing) {
                 cdesc = "Comment";
             }
             if (cdesc) {
-                add_pslitem(cj.response ? cid : "cc" + cid, cdesc);
+                navsidebar.set(cj.response ? cid : "cc" + cid, cdesc);
             }
         } else {
             var $psl = $(".pslcard").children().last();
@@ -8519,7 +8531,7 @@ function run_edit_conditions() {
     var f = this.closest("form"),
         ec = JSON.parse(this.getAttribute("data-edit-condition")),
         off = !evaluate_edit_condition(ec, f),
-        link = add_pslitem(this);
+        link = navsidebar.get(this);
     toggleClass(this, "hidden", off);
     link && toggleClass(link, "hidden", off);
 }
@@ -8539,11 +8551,11 @@ function add_pslitem_header() {
     }
     if (id) {
         var xt = header_text(l),
-            e = xt ? add_pslitem(id, escape_html(xt), this.parentElement) : null;
+            e = xt ? navsidebar.set(id, escape_html(xt), this.parentElement) : null;
         if (e) {
-            hasClass(this, "has-error") && addClass(e.firstChild, "is-error");
-            hasClass(this, "has-warning") && addClass(e.firstChild, "is-warning");
-            hasClass(this.parentElement, "hidden") && addClass(e, "hidden");
+            toggleClass(e.firstChild, "is-error", hasClass(this, "has-error"));
+            toggleClass(e.firstChild, "is-warning", hasClass(this, "has-warning"));
+            toggleClass(e, "hidden", hasClass(this.parentElement, "hidden"));
         }
     }
 }
@@ -8551,7 +8563,7 @@ function add_pslitem_header() {
 function add_pslitem_pfe() {
     if (hasClass(this, "pf-separator")) {
         var $j = $('<li class="pslitem pslitem-separator"></li>');
-        add_pslitem($j[0], true);
+        navsidebar.append_li($j[0]);
     } else if (hasClass(this.firstChild, "pfehead")) {
         add_pslitem_header.call(this.firstChild);
     }
