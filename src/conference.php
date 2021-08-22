@@ -4299,8 +4299,9 @@ class Conf {
             } else if (($actas = $_SESSION["last_actas"] ?? null)
                        && $user->privChair
                        && strcasecmp($user->email, $actas) !== 0) {
+                $actas_html = htmlspecialchars($actas);
                 $profile_parts[] = '<a href="' . $this->selfurl($Qreq, ["actas" => $actas])
-                    . '">' . htmlspecialchars($actas) . '&nbsp;' . Ht::img('viewas.png', 'Act as ' . htmlspecialchars($actas)) . '</a>';
+                    . '">' . $actas_html . '&nbsp;' . Ht::img('viewas.png', "Act as $actas_html") . '</a>';
             }
 
             // help

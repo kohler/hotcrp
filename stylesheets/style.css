@@ -135,6 +135,10 @@ body.paper > #top {
 }
 .header-actas {
 	display: inline-block;
+	position: fixed;
+	top: 9px;
+	right: 22em;
+	z-index: 1;
 	color: #a16300;
 	background-color: #fffdbd;
 	border: 1px solid #c07700;
