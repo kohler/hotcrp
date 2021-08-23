@@ -3988,21 +3988,18 @@ class Contact {
     /** @return bool */
     function can_edit_preference_for(Contact $u, PaperInfo $prow, $careful = false) {
         // Can enter a preference iff you can be assigned a PC review
-        if (!$u->isPC) {
-            return false;
-        }
-        $rights = $this->rights($prow);
         if ($u->contactId === $this->contactId) {
             return $u->isPC
-                && (($careful ? $rights->allow_review : $rights->potential_reviewer)
-                    || $this->conf->check_tracks($prow, $this, Track::ASSREV))
+                && ($careful
+                    ? $u->can_accept_review_assignment($prow)
+                    : $u->can_accept_review_assignment_ignore_conflict($prow))
                 && ($u->can_view_paper($prow)
                     || ($prow->timeWithdrawn > 0
                         && ($prow->timeSubmitted < 0
                             || $this->conf->time_pc_view_active_submissions())));
         } else {
             return $u->isPC
-                && $rights->can_administer
+                && $this->can_administer($prow)
                 && $u->can_accept_review_assignment_ignore_conflict($prow);
         }
     }
