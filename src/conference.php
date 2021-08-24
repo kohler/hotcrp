@@ -4032,6 +4032,9 @@ class Conf {
         if (($cip = $this->opt("crossOriginIsolation")) !== false) {
             header("Cross-Origin-Opener-Policy: same-origin");
         }
+        if (($sts = $this->opt("strictTransportSecurity"))) {
+            header("Strict-Transport-Security: $sts");
+        }
     }
 
     function set_cookie($name, $value, $expires_at) {
