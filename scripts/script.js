@@ -83,6 +83,22 @@ if (!String.prototype.endsWith) {
             && this.substring(this_len - search.length, this_len) === search;
     };
 }
+if (!String.prototype.repeat) {
+    String.prototype.repeat = function (count) {
+        var str = "" + this;
+        count = count > 0 ? count|0 : 0;
+        if (str.length === 0 || count === 0) {
+            return "";
+        }
+        var len = str.length * count;
+        count = Math.floor(Math.log(count) / Math.log(2));
+        while (count) {
+            str += str;
+            --count;
+        }
+        return str + str.substring(0, len - str.length);
+    }
+}
 
 
 function lower_bound_index(a, v) {
