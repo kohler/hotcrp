@@ -4,13 +4,13 @@
         "title": "Conference abbreviation",
         "type": "simplestring", "size": 20, "autogrow": true,
         "require": "src/settings/s_basics.php",
-        "validator_class": "Basics_SettingParser"
+        "parser_class": "Basics_SettingParser"
     },
     {
         "name": "conference_name", "storage": "opt.longName", "group": "basics",
         "title": "Conference name", "placeholder": "(same as abbreviation)",
         "type": "simplestring", "size": 70,
-        "validator_class": "Basics_SettingParser"
+        "parser_class": "Basics_SettingParser"
     },
     {
         "name": "au_seerev", "group": "decisions",
@@ -177,7 +177,7 @@
         "name": "site_contact_email", "group": "basics",
         "title": "Email of site contact", "storage": "opt.contactEmail",
         "type": "emailstring", "optional": true, "size": 40, "invalid_value": "you@example.com",
-        "validator_class": "Basics_SettingParser"
+        "parser_class": "Basics_SettingParser", "position": 1
     },
     {
         "name": "site_contact_name", "group": "basics",
@@ -522,7 +522,8 @@
     {
         "name": "sub_sub", "group": "submissions",
         "title": "Submission deadline",
-        "type": "date", "validator_class": "Submissions_SettingParser", "position": 1
+        "type": "date", "position": 1,
+        "parser_class": "Submissions_SettingParser"
     },
     {
         "name": "sub_update",

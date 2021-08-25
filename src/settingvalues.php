@@ -47,10 +47,8 @@ class Si {
     public $size;
     /** @var ?string */
     public $placeholder;
-    /** @var ?class-string */
-    public $parser_class;
     /** @var class-string */
-    public $validator_class;
+    public $parser_class;
     /** @var bool */
     public $disabled = false;
     public $invalid_value;
@@ -112,7 +110,6 @@ class Si {
         "title_pattern" => "is_string",
         "tags" => "is_string_list",
         "type" => "is_string",
-        "validator_class" => "is_string",
         "values" => "is_array"
     ];
 
@@ -629,6 +626,7 @@ class Si {
 }
 
 class SettingParser {
+    /** @return bool */
     function parse_req(SettingValues $sv, Si $si) {
         return false;
     }
@@ -703,9 +701,8 @@ class SettingValues extends MessageSet {
     /** @var bool */
     private $all_perm;
 
+    /** @var associative-array<string,SettingParser> */
     private $parsers = [];
-    /** @var list<Si> */
-    private $validate_si = [];
     /** @var list<Si> */
     private $saved_si = [];
     /** @var list<array{?string,callable()}> */
@@ -923,7 +920,7 @@ class SettingValues extends MessageSet {
     }
     /** @return SettingParser */
     private function si_parser(Si $si) {
-        $class = $si->parser_class ?? $si->validator_class;
+        $class = $si->parser_class;
         if (!isset($this->parsers[$class])) {
             $this->parsers[$class] = new $class($this, $si);
         }
@@ -1601,9 +1598,6 @@ class SettingValues extends MessageSet {
                     $v = null;
                 }
                 $this->save($si->name, $v);
-                if ($si->validator_class) {
-                    $this->validate_si[] = $si;
-                }
                 if ($si->ifnonempty) {
                     $this->save($si->ifnonempty, $v === null || $v === "" ? null : 1);
                 }
@@ -1629,11 +1623,6 @@ class SettingValues extends MessageSet {
         // parse and validate settings
         foreach (Si::si_map($this->conf) as $si) {
             $this->account($si);
-        }
-        foreach ($this->validate_si as $si) {
-            if ($this->si_parser($si)->validate($this, $si)) {
-                $this->saved_si[] = $si;
-            }
         }
         $this->request_write_lock(...array_keys($this->need_lock));
         $this->request_read_lock("ContactInfo");

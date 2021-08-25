@@ -47,19 +47,12 @@ class Submissions_SettingRenderer {
 }
 
 class Submissions_SettingParser extends SettingParser {
-    function validate(SettingValues $sv, Si $si) {
-        $d1 = $sv->newv($si->name);
-        if ($si->name === "sub_open") {
-            if ($d1 <= 0
-                && $sv->oldv("sub_open") > 0
-                && $sv->newv("sub_sub") <= 0) {
-                $sv->save("sub_close", Conf::$now);
-            }
-        } else if ($si->name === "sub_sub") {
+    function parse_req(SettingValues $sv, Si $si) {
+        $v = $sv->si_base_parse_req($si);
+        if ($v !== null) {
+            $sv->save("sub_sub", $v <= 0 ? null : $v);
             $sv->check_date_before("sub_reg", "sub_sub", true);
-            $sv->save("sub_update", $d1);
-        } else if ($si->name === "final_done") {
-            $sv->check_date_before("final_soft", "final_done", true);
+            $sv->save("sub_update", $v <= 0 ? null : $v);
         }
         return false;
     }

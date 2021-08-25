@@ -323,7 +323,7 @@ class Round_SettingParser extends SettingParser {
 
     static function clean_round_name($name) {
         $name = trim($name);
-        if (!preg_match('{\A(?:\(no name\)|default|unnamed|n/a)\z}i', $name)) {
+        if (!preg_match('/\A(?:\(no name\)|default|unnamed|n\/a)\z/i', $name)) {
             return $name;
         } else {
             return "";
@@ -428,7 +428,7 @@ class Round_SettingParser extends SettingParser {
 class RoundSelector_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
         $sv->save($si->name, null);
-        if (preg_match('{\A\#(\d+)\z}', $sv->reqv($si->name), $m)) {
+        if (preg_match('/\A\#(\d+)\z/', $sv->reqv($si->name), $m)) {
             $t = Round_SettingParser::clean_round_name($sv->reqv("roundname_$m[1]"));
             if ($t === "") {
                 // null for extrev_roundtag means “same as PC”
@@ -439,6 +439,7 @@ class RoundSelector_SettingParser extends SettingParser {
                 $sv->save($si->name, $t);
             }
         }
+        return false;
     }
 }
 
