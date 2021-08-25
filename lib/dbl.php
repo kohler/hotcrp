@@ -34,6 +34,10 @@ class Dbl_Result {
         $r->errno = 0;
         return $r;
     }
+    /** @return list<array<int,?string>> */
+    function fetch_all() {
+        return [];
+    }
     /** @return ?array<int,?string> */
     function fetch_row() {
         return null;
