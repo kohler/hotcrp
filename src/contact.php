@@ -3994,7 +3994,8 @@ class Contact {
                     ? $u->can_accept_review_assignment($prow)
                     : $u->can_accept_review_assignment_ignore_conflict($prow))
                 && ($u->can_view_paper($prow)
-                    || ($prow->timeWithdrawn > 0
+                    || (!$careful
+                        && $prow->timeWithdrawn > 0
                         && ($prow->timeSubmitted < 0
                             || $this->conf->time_pc_view_active_submissions())));
         } else {
