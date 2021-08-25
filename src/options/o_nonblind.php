@@ -20,7 +20,7 @@ class Nonblind_PaperOption extends PaperOption {
         $ps->save_paperf("blind", $ov->value ? 0 : 1);
         return true;
     }
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return PaperValue::make($prow, $this, $qreq->blind ? null : 1);
     }
     function parse_json(PaperInfo $prow, $j) {

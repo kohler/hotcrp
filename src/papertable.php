@@ -1958,7 +1958,7 @@ class PaperTable {
                 $ov = $reqov = $this->prow->force_option($o);
                 if ($this->useRequest
                     && $this->qreq["has_{$o->formid}"]
-                    && ($x = $o->parse_web($this->prow, $this->qreq))) {
+                    && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
                     $reqov = $x;
                 }
                 $o->echo_web_edit($this, $ov, $reqov);
@@ -2036,7 +2036,7 @@ class PaperTable {
                 $ov = $reqov = $this->prow->force_option($o);
                 if ($this->useRequest
                     && $this->qreq["has_{$o->formid}"]
-                    && ($x = $o->parse_web($this->prow, $this->qreq))) {
+                    && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
                     $reqov = $x;
                 }
                 $o->echo_web_edit($this, $ov, $reqov);

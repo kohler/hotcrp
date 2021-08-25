@@ -102,7 +102,7 @@ class Contacts_PaperOption extends PaperOption {
         $ov->set_anno("bad_users", $bad_ca);
         $ov->set_anno("modified", true);
     }
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $ov = PaperValue::make_force($prow, $this);
         $ca = $ov->anno("users");
         $bad_ca = $new_ca = [];

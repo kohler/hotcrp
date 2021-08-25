@@ -120,7 +120,7 @@ class Authors_PaperOption extends PaperOption {
             }
         }
     }
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         if (isset($qreq["auemail1"]) && !isset($qreq["authors:email_1"])) {
             self::translate_qreq($qreq);
         }

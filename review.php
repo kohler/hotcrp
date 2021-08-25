@@ -120,7 +120,7 @@ class ReviewPage {
         $rv->paperId = $this->prow->paperId;
         if (($whynot = $this->user->perm_submit_review($this->prow, $this->rrow))) {
             $rv->msg_at(null, $whynot->unparse_html(), MessageSet::ERROR);
-        } else if ($rv->parse_web($this->qreq, $this->qreq->override)) {
+        } else if ($rv->parse_qreq($this->qreq, $this->qreq->override)) {
             if (isset($this->qreq->approvesubreview)
                 && $this->rrow
                 && $this->user->can_approve_review($this->prow, $this->rrow)) {
@@ -218,7 +218,7 @@ class ReviewPage {
         $my_rid = ($my_rrow ?? $this->rrow)->unparse_ordinal_id();
         if (($whynot = $this->user->perm_submit_review($this->prow, $my_rrow))) {
             $rv->msg_at(null, $whynot->unparse_html(), MessageSet::ERROR);
-        } else if ($rv->parse_web($this->qreq, $this->qreq->override)) {
+        } else if ($rv->parse_qreq($this->qreq, $this->qreq->override)) {
             $rv->set_ready($this->qreq->adoptsubmit);
             if ($rv->check_and_save($this->user, $this->prow, $my_rrow)) {
                 $my_rid = $rv->review_ordinal_id;
@@ -366,7 +366,7 @@ class ReviewPage {
             $pt->set_review_values($this->rv);
         } else if ($this->qreq->has_annex("after_login")) {
             $rv = new ReviewValues($this->rf());
-            $rv->parse_web($this->qreq, $this->qreq->override);
+            $rv->parse_qreq($this->qreq, $this->qreq->override);
             $pt->set_review_values($rv);
         }
 

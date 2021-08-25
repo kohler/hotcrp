@@ -24,7 +24,7 @@ class Title_PaperOption extends PaperOption {
         $ps->save_paperf("title", $ov->data());
         return true;
     }
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return $this->parse_json_string($prow, $qreq->title, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_SIMPLIFY);
     }
     function parse_json(PaperInfo $prow, $j) {

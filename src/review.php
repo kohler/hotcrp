@@ -1838,7 +1838,7 @@ class ReviewValues extends MessageSet {
         "approvesubreview" => true, "default" => true
     ];
 
-    function parse_web(Qrequest $qreq, $override) {
+    function parse_qreq(Qrequest $qreq, $override) {
         assert($this->text === null && $this->finished === 0);
         $this->req = [];
         foreach ($qreq as $k => $v) {

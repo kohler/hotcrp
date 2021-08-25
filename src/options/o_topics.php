@@ -87,7 +87,7 @@ class Topics_PaperOption extends PaperOption {
         $ps->_topic_ins = $ov->value_list();
         return true;
     }
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $vs = [];
         foreach ($prow->conf->topic_set() as $tid => $tname) {
             $v = $qreq["topics:$tid"] ?? $qreq["top$tid"] ?? ""; // backward compat

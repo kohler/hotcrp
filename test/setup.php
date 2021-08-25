@@ -546,7 +546,7 @@ function save_review($paper, $user, $revreq, $rrow = null) {
     $prow = $user->conf->checked_paper_by_id($pid, $user);
     $rf = Conf::$main->review_form();
     $tf = new ReviewValues($rf);
-    $tf->parse_web(new Qrequest("POST", $revreq), false);
+    $tf->parse_qreq(new Qrequest("POST", $revreq), false);
     $tf->check_and_save($user, $prow, $rrow ?? fetch_review($prow, $user));
     foreach ($tf->problem_list() as $mx) {
         error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));

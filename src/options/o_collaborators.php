@@ -34,7 +34,7 @@ class Collaborators_PaperOption extends PaperOption {
         }
         return true;
     }
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $ov = $this->parse_json_string($prow, $qreq->collaborators, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_TRIM);
         $this->normalize_value($ov);
         return $ov;

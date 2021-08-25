@@ -1166,7 +1166,7 @@ class PaperOption implements JsonSerializable {
     }
 
     /** @return ?PaperValue */
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return null;
     }
     /** @return ?PaperValue */
@@ -1370,7 +1370,7 @@ class Checkbox_PaperOption extends PaperOption {
         return $ov->value ? true : false;
     }
 
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return PaperValue::make($prow, $this, $qreq[$this->formid] > 0 ? 1 : null);
     }
     function parse_json(PaperInfo $prow, $j) {
@@ -1467,7 +1467,7 @@ class Selector_PaperOption extends PaperOption {
         return $this->selector[$ov->value - 1] ?? null;
     }
 
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $v = trim((string) $qreq[$this->formid]);
         if ($v === "" || $v === "0") {
             return PaperValue::make($prow, $this);
@@ -1672,7 +1672,7 @@ class Document_PaperOption extends PaperOption {
         }
     }
 
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $fk = $this->field_key();
         $fk2 = "opt{$this->id}";
         if (($doc = DocumentInfo::make_request($qreq, $fk, $prow->paperId, $this->id, $this->conf))
@@ -1901,7 +1901,7 @@ class Numeric_PaperOption extends PaperOption {
         return $ov->value;
     }
 
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $v = trim((string) $qreq[$this->formid]);
         $iv = intval($v);
         if (is_numeric($v) && (float) $iv === floatval($v)) {
@@ -2004,7 +2004,7 @@ class Text_PaperOption extends PaperOption {
         return $x !== "" ? $x : null;
     }
 
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return $this->parse_json_string($prow, convert_to_utf8($qreq[$this->formid]));
     }
     function parse_json(PaperInfo $prow, $j) {
@@ -2118,7 +2118,7 @@ class Attachments_PaperOption extends PaperOption {
         }
     }
 
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $dids = $anno = [];
         $ov = PaperValue::make($prow, $this, -1);
         foreach ($this->value_dids($prow->force_option($this)) as $i => $did) {

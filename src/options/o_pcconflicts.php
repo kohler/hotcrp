@@ -75,7 +75,7 @@ class PCConflicts_PaperOption extends PaperOption {
     private function update_value_map(&$vm, $k, $v) {
         $vm[$k] = (($vm[$k] ?? 0) & ~CONFLICT_PCMASK) | $v;
     }
-    function parse_web(PaperInfo $prow, Qrequest $qreq) {
+    function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $vm = self::paper_value_map($prow);
         foreach ($prow->conf->pc_members() as $cid => $pc) {
             if (isset($qreq["has_pcconf:$cid"]) || isset($qreq["pcconf:$cid"])

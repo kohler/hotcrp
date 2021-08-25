@@ -915,7 +915,7 @@ class PaperStatus extends MessageSet {
                 && (!$o->final || $action === "final")
                 && (!$updatecontacts || $o->id === PaperOption::CONTACTSID)) {
                 // XXX test_editable
-                $pj->{$o->json_key()} = $o->parse_web($nnprow, $qreq);
+                $pj->{$o->json_key()} = $o->parse_qreq($nnprow, $qreq);
             }
         }
 
