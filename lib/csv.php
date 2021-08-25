@@ -7,7 +7,7 @@ if (!function_exists("gmp_init")) {
 }
 
 class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
-    /** @var list<string> */
+    /** @var array<int|string,string> */
     private $a;
     /** @var CsvParser */
     private $csvp;
@@ -17,6 +17,8 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         $this->a = $a;
         $this->csvp = $csvp;
     }
+    /** @param int|string $offset
+     * @return bool */
     function offsetExists($offset) {
         if (is_string($offset)
             && ($i = $this->csvp->column($offset)) >= 0) {
@@ -24,6 +26,8 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         }
         return isset($this->a[$offset]);
     }
+    /** @param int|string $offset
+     * @return string */
     function& offsetGet($offset) {
         if (is_string($offset)
             && ($i = $this->csvp->column($offset, true)) >= 0) {
@@ -35,6 +39,8 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         }
         return $x;
     }
+    /** @param int|string $offset
+     * @param string $value */
     function offsetSet($offset, $value) {
         if (is_string($offset)
             && ($i = $this->csvp->column($offset, true)) >= 0) {
@@ -42,6 +48,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         }
         $this->a[$offset] = $value;
     }
+    /** @param int|string $offset */
     function offsetUnset($offset) {
         if (is_string($offset)
             && ($i = $this->csvp->column($offset)) >= 0) {
@@ -49,6 +56,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         }
         unset($this->a[$offset]);
     }
+    /** @return Generator<string> */
     function getIterator() {
         foreach ($this->a as $i => $v) {
             $offset = is_int($i) ? $this->csvp->column_at($i) : $i;
