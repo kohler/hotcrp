@@ -1530,13 +1530,14 @@ class SettingValues extends MessageSet {
             }
             $err = "Should be a URL.";
         } else if ($si->type === "htmlstring") {
-            if (($v = CleanHTML::basic_clean($v, $err)) !== false) {
+            $ch = CleanHTML::basic();
+            if (($v = $ch->clean($v)) !== false) {
                 if (str_starts_with($si->storage(), "msg.")
                     && $v === $this->si_message_default($si))
                     return "";
                 return $v;
             }
-            /* $err set by CleanHTML::basic_clean */
+            $err = $ch->last_error;
         } else if ($si->type === "radio") {
             foreach ($si->values as $allowedv) {
                 if ((string) $allowedv === $v)

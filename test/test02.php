@@ -1608,14 +1608,14 @@ xassert_eqq($mailer->expand("%OTHERCONTACT%", "to"), "noname@c.com");
 
 // HTML cleaning
 $err = null;
-xassert_eqq(CleanHTML::basic_clean('<a>Hello', $err), false);
-xassert_eqq(CleanHTML::basic_clean('<a>Hello</a>', $err), '<a>Hello</a>');
-xassert_eqq(CleanHTML::basic_clean('<script>Hello</script>', $err), false);
-xassert_eqq(CleanHTML::basic_clean('< SCRIPT >Hello</script>', $err), false);
-xassert_eqq(CleanHTML::basic_clean('<a href = fuckovia ><B>Hello</b></a>', $err), '<a href="fuckovia"><b>Hello</b></a>');
-xassert_eqq(CleanHTML::basic_clean('<a href = " javaScript:hello" ><B>Hello</b></a>', $err), false);
-xassert_eqq(CleanHTML::basic_clean('<a href = "https://hello" onclick="fuck"><B>Hello</b></a>', $err), false);
-xassert_eqq(CleanHTML::basic_clean('<a href =\'https:"""//hello\' butt><B>Hello</b></a>', $err), '<a href="https:&quot;&quot;&quot;//hello" butt><b>Hello</b></a>');
+xassert_eqq(CleanHTML::basic_clean('<a>Hello'), false);
+xassert_eqq(CleanHTML::basic_clean('<a>Hello</a>'), '<a>Hello</a>');
+xassert_eqq(CleanHTML::basic_clean('<script>Hello</script>'), false);
+xassert_eqq(CleanHTML::basic_clean('< SCRIPT >Hello</script>'), false);
+xassert_eqq(CleanHTML::basic_clean('<a href = fuckovia ><B>Hello</b></a>'), '<a href="fuckovia"><b>Hello</b></a>');
+xassert_eqq(CleanHTML::basic_clean('<a href = " javaScript:hello" ><B>Hello</b></a>'), false);
+xassert_eqq(CleanHTML::basic_clean('<a href = "https://hello" onclick="fuck"><B>Hello</b></a>'), false);
+xassert_eqq(CleanHTML::basic_clean('<a href =\'https:"""//hello\' butt><B>Hello</b></a>'), '<a href="https:&quot;&quot;&quot;//hello" butt><b>Hello</b></a>');
 
 // base48 encoding
 for ($i = 0; $i !== 1000; ++$i) {

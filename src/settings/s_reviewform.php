@@ -15,15 +15,15 @@ class ReviewForm_SettingParser extends SettingParser {
         if (!$sv->has_reqv("rf_description_{$xpos}")) {
             return;
         }
-        $x = CleanHTML::basic_clean($sv->reqv("rf_description_{$xpos}"), $err);
-        if ($x !== false) {
+        $ch = CleanHTML::basic();
+        if (($x = $ch->clean($sv->reqv("rf_description_{$xpos}"))) !== false) {
             if ($x !== "") {
                 $fj->description = trim($x);
             } else {
                 unset($fj->description);
             }
         } else if (isset($fj->position)) {
-            $sv->error_at("rf_description_{$xpos}", $err);
+            $sv->error_at("rf_description_{$xpos}", $ch->last_error);
         }
     }
 

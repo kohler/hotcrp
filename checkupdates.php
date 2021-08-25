@@ -62,7 +62,7 @@ if ($Me->privChair
             }
             $m .= "</div>";
             if (isset($update["message"]) && is_string($update["message"])) {
-                $m .= "<div class=\"bigid\">" . CleanHTML::basic_clean($update["message"], $error) . "</div>";
+                $m .= "<div class=\"bigid\">" . CleanHTML::basic_clean($update["message"]) . "</div>";
             }
             if (isset($update["to"]) && is_string($update["to"])) {
                 $m .= "<div class=\"bigid\">First unaffected commit: " . htmlspecialchars($update["to"]);

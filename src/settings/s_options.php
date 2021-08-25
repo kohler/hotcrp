@@ -198,11 +198,11 @@ class Options_SettingRenderer {
         }
 
         if ($sv->has_reqv("optd_$ipos")) {
-            $t = CleanHTML::basic_clean($sv->reqv("optd_$ipos"), $htmlerr);
-            if ($t !== false) {
+            $ch = CleanHTML::basic();
+            if (($t = $ch->clean($sv->reqv("optd_$ipos"))) !== false) {
                 $args->description = $t;
             } else {
-                $sv->error_at("optd_$ipos", $htmlerr);
+                $sv->error_at("optd_$ipos", $ch->last_error);
                 $args->description = $sv->reqv("optd_$ipos");
             }
         }
