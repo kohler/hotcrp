@@ -71,7 +71,7 @@ class Decisions_SettingParser extends SettingParser {
         echo "</div>\n";
     }
 
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         $dec_revmap = array();
         for ($ndec = 1; $sv->has_reqv("dec_name_$ndec"); ++$ndec) {
             $dname = simplify_whitespace($sv->reqv("dec_name_$ndec"));

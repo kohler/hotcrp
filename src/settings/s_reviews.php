@@ -328,7 +328,7 @@ class Round_SettingParser extends SettingParser {
         }
     }
 
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         assert($si->name === "tag_rounds");
         $this->rev_round_changes = [];
 
@@ -424,7 +424,7 @@ class Round_SettingParser extends SettingParser {
 }
 
 class RoundSelector_SettingParser extends SettingParser {
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         $sv->save($si->name, null);
         if (preg_match('{\A\#(\d+)\z}', $sv->reqv($si->name), $m)) {
             $t = Round_SettingParser::clean_round_name($sv->reqv("roundname_$m[1]"));
@@ -441,7 +441,7 @@ class RoundSelector_SettingParser extends SettingParser {
 }
 
 class ReviewDeadline_SettingParser extends SettingParser {
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         assert($sv->has_savedv("tag_rounds"));
 
         $rref = (int) substr($si->suffix(), 1);

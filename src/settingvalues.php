@@ -454,7 +454,7 @@ class Si {
 }
 
 class SettingParser {
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         return false;
     }
     function validate(SettingValues $sv, Si $si) {
@@ -860,7 +860,8 @@ class SettingValues extends MessageSet {
         return $perm;
     }
 
-    /** @param string $name */
+    /** @param string $name
+     * @return null|int|string */
     function oldv($name) {
         return $this->si_oldv($this->si($name));
     }
@@ -869,7 +870,8 @@ class SettingValues extends MessageSet {
     function set_oldv($name, $value) {
         $this->explicit_oldv[$name] = $value;
     }
-    private function si_oldv(Si $si) {
+    /** @return null|int|string */
+    function si_oldv(Si $si) {
         if (array_key_exists($si->name, $this->explicit_oldv)) {
             $val = $this->explicit_oldv[$si->name];
         } else if ($si->storage_type & Si::SI_OPT) {
@@ -1558,7 +1560,7 @@ class SettingValues extends MessageSet {
                 || !$this->si_editable($si)) {
                 /* ignore changes to disabled/internal settings */;
             } else if ($si->parser_class) {
-                if ($this->si_parser($si)->parse($this, $si)) {
+                if ($this->si_parser($si)->parse_req($this, $si)) {
                     $this->saved_si[] = $si;
                 }
             } else if ($si->storage_type !== Si::SI_NONE) {

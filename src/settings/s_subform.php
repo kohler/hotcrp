@@ -271,7 +271,7 @@ class SubForm_SettingRenderer {
 }
 
 class Banal_SettingParser extends SettingParser {
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         if ($si->base_name === "sub_banal") {
             return BanalSettings::parse(substr($si->name, 9), $sv, true);
         } else {

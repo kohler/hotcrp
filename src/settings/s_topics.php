@@ -71,7 +71,7 @@ class Topics_SettingParser extends SettingParser {
         }
     }
 
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         if ($sv->has_reqv("topnew")) {
             foreach (explode("\n", $sv->reqv("topnew")) as $x) {
                 $t = $this->check_topic($x);

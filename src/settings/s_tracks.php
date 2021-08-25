@@ -243,7 +243,7 @@ class Tracks_SettingRenderer {
 }
 
 class Tracks_SettingParser extends SettingParser {
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         $tagger = new Tagger($sv->user);
         $tracks = (object) array();
         $missing_tags = false;

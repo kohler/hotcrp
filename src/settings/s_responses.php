@@ -78,9 +78,10 @@ class Responses_SettingParser extends SettingParser {
         echo '</div></div></div>';
     }
 
-    function parse(SettingValues $sv, Si $si) {
-        if (!$sv->newv("resp_active"))
+    function parse_req(SettingValues $sv, Si $si) {
+        if (!$sv->newv("resp_active")) {
             return false;
+        }
         $old_roundnames = self::resp_round_names($sv->conf);
         $roundnames = array(1);
         $roundnames_set = array();

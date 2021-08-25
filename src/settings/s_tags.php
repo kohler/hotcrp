@@ -120,7 +120,7 @@ class Tags_SettingParser extends SettingParser {
     function my_parse_list(Si $si, $checkf, $min_idx) {
         return self::parse_list($this->tagger, $this->sv, $si, $checkf, $min_idx);
     }
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         assert($this->sv === $sv);
         $change = false;
 

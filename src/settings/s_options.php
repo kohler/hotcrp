@@ -425,7 +425,7 @@ class Options_SettingParser extends SettingParser {
         return Options_SettingRenderer::make_requested_option($sv, $io, $xpos);
     }
 
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         if ($sv->has_reqv("options:version")
             && (int) $sv->reqv("options:version") !== (int) $sv->conf->setting("options")) {
             $sv->error_at("options", "You modified options settings in another tab. Please reload.");

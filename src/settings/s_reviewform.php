@@ -284,7 +284,7 @@ class ReviewForm_SettingParser extends SettingParser {
         return $fs;
     }
 
-    function parse(SettingValues $sv, Si $si) {
+    function parse_req(SettingValues $sv, Si $si) {
         $this->nrfj = (object) array();
         $this->byname = [];
 
