@@ -21,7 +21,7 @@ if (isset($arg["count"]) && !ctype_digit($arg["count"])) {
     exit(1);
 }
 
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
+require_once(dirname(__DIR__) . "/src/init.php");
 
 $dp = $Conf->docstore();
 if (!$dp) {

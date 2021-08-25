@@ -1,5 +1,5 @@
 <?php
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
+require_once(dirname(__DIR__) . "/src/init.php");
 
 $optind = null;
 $arg = getopt("acdmn:t", ["absent", "common", "dups", "modifier-bases", "name:", "terminators"], $optind);

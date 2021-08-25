@@ -1,5 +1,5 @@
 <?php
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
+require_once(dirname(__DIR__) . "/src/init.php");
 
 $arg = getopt("hn:", array("help", "name:"));
 if (isset($arg["h"]) || isset($arg["help"])) {

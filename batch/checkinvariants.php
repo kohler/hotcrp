@@ -2,7 +2,7 @@
 // checkinvariants.php -- HotCRP batch invariant checking script
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
+require_once(dirname(__DIR__) . "/src/siteloader.php");
 
 $arg = Getopt::rest($argv, "hn:", array("help", "name:", "json-reviews", "fix-json-reviews", "fix-autosearch"));
 if (isset($arg["h"]) || isset($arg["help"])

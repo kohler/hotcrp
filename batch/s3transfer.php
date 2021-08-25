@@ -6,7 +6,7 @@ if (isset($arg["h"]) || isset($arg["help"])) {
     exit(0);
 }
 
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/init.php', __FILE__));
+require_once(dirname(__DIR__) . "/src/init.php");
 
 $active = false;
 if (isset($arg["a"]) || isset($arg["active"])) {

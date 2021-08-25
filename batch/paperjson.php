@@ -2,7 +2,7 @@
 // paperjson.php -- HotCRP paper export script
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
+require_once(dirname(__DIR__) . "/src/siteloader.php");
 
 $arg = Getopt::rest($argv, "hn:t:N1", ["help", "name:", "type:", "sitename", "single"]);
 if (isset($arg["h"]) || isset($arg["help"])) {

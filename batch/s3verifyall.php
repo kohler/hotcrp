@@ -1,5 +1,5 @@
 <?php
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
+require_once(dirname(__DIR__) . "/src/siteloader.php");
 
 $arg = getopt("hn:c:Vm:", ["help", "name:", "count:", "verbose", "match:"]);
 if (isset($arg["c"]) && !isset($arg["count"])) {

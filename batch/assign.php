@@ -1,5 +1,5 @@
 <?php
-require_once(preg_replace('/\/batch\/[^\/]+/', '/src/siteloader.php', __FILE__));
+require_once(dirname(__DIR__) . "/src/siteloader.php");
 
 $arg = Getopt::rest($argv, "hn:d", ["help", "name:", "dry-run"]);
 if (isset($arg["h"]) || isset($arg["help"]) || count($arg["_"]) > 1) {
