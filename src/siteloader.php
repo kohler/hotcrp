@@ -92,16 +92,9 @@ class SiteLoader {
 
     static function read_main_options() {
         global $Opt;
-        if (defined("HOTCRP_OPTIONS")) {
-            $files = [HOTCRP_OPTIONS];
-        } else  {
-            $files = [self::$root."/conf/options.php", self::$root."/conf/options.inc"];
-        }
-        foreach ($files as $f) {
-            if ((@include $f) !== false) {
-                $Opt["loaded"][] = $f;
-                break;
-            }
+        $file = defined("HOTCRP_OPTIONS") ? HOTCRP_OPTIONS : self::$root . "/conf/options.php";
+        if ((@include $file) !== false) {
+            $Opt["loaded"][] = $file;
         }
     }
 
