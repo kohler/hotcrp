@@ -181,13 +181,13 @@ class PermissionProblem extends Exception
             } else {
                 $open_dname = false;
             }
-            $start = $open_dname ? $this->conf->setting($open_dname, -1) : 1;
+            $start = $open_dname ? $this->conf->setting($open_dname) ?? -1 : 1;
             if ($dname === "extrev_chairreq") {
                 $end_dname = $this->conf->review_deadline_name($this->_a["reviewRound"] ?? null, false, true);
             } else {
                 $end_dname = $dname;
             }
-            $end = $this->conf->setting($end_dname, -1);
+            $end = $this->conf->setting($end_dname) ?? -1;
             if ($dname == "au_seerev") {
                 $ms[] = $this->conf->_c("etime", "Action not available.", $dname, $paperId);
             } else if ($start <= 0 || $start == $end) {

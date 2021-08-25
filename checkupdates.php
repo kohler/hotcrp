@@ -31,7 +31,7 @@ if ($Me->privChair
         if (isset($update["settings"]) && is_array($update["settings"]))
             foreach ($update["settings"] as $k => $v) {
                 if (preg_match('/\A([!<>]?)(-?\d+|now)\z/', $v, $m)) {
-                    $setting = $Conf->setting($k, 0);
+                    $setting = $Conf->setting($k) ?? 0;
                     if ($m[2] == "now") {
                         $m[2] = time();
                     }
@@ -48,7 +48,7 @@ if ($Me->privChair
                 }
             }
         $errid = isset($update["errid"]) && ctype_alnum("" . $update["errid"]) ? $update["errid"] : false;
-        if ($errid && $Conf->setting("ignoreupdate_$errid", 0) > time()) {
+        if ($errid && ($Conf->setting("ignoreupdate_$errid") ?? 0) > time()) {
             $ok = false;
         }
         if ($ok) {

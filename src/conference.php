@@ -762,19 +762,23 @@ class Conf {
     }
 
     /** @param string $name
+     * @param ?int $unused_defval XXX
      * @return ?int */
-    function setting($name, $defval = null) {
-        return $this->settings[$name] ?? $defval;
+    function setting($name, $unused_defval = null) {
+        return $this->settings[$name] ?? $unused_defval;
     }
 
     /** @param string $name
+     * @param ?string $unused_defval XXX
      * @return ?string */
-    function setting_data($name, $defval = null) {
-        return $this->settingTexts[$name] ?? $defval;
+    function setting_data($name, $unused_defval = null) {
+        return $this->settingTexts[$name] ?? $unused_defval;
     }
 
-    function setting_json($name, $defval = null) {
-        $x = $this->settingTexts[$name] ?? $defval;
+    /** @param string $name
+     * @return mixed */
+    function setting_json($name) {
+        $x = $this->settingTexts[$name] ?? null;
         return is_string($x) ? json_decode($x) : $x;
     }
 
@@ -836,9 +840,10 @@ class Conf {
 
 
     /** @param string $name
+     * @param mixed $unused_defval XXX
      * @return mixed */
-    function opt($name, $defval = null) {
-        return $this->opt[$name] ?? $defval;
+    function opt($name, $unused_defval = null) {
+        return $this->opt[$name] ?? $unused_defval;
     }
 
     /** @param string $name
@@ -2489,7 +2494,7 @@ class Conf {
 
     // update the 'papersub' setting: are there any submitted papers?
     function update_papersub_setting($adding) {
-        if ($this->setting("no_papersub", 0) > 0 ? $adding >= 0 : $adding <= 0) {
+        if (($this->setting("no_papersub") ?? 0) > 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe("delete from Settings where name='no_papersub'");
             $this->qe("insert into Settings (name, value) select 'no_papersub', 1 from dual where exists (select * from Paper where timeSubmitted>0) = 0");
             $this->settings["no_papersub"] = (int) $this->fetch_ivalue("select value from Settings where name='no_papersub'");
@@ -2497,37 +2502,38 @@ class Conf {
     }
 
     function update_paperacc_setting($adding) {
-        if ($this->setting("paperacc", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+        if (($this->setting("paperacc") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'paperacc', exists (select * from Paper where outcome>0 and timeSubmitted>0) on duplicate key update value=values(value)");
             $this->settings["paperacc"] = (int) $this->fetch_ivalue("select value from Settings where name='paperacc'");
         }
     }
 
     function update_rev_tokens_setting($adding) {
-        if ($this->setting("rev_tokens", 0) === -1)
+        if (($this->setting("rev_tokens") ?? 0) === -1) {
             $adding = 0;
-        if ($this->setting("rev_tokens", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+        }
+        if (($this->setting("rev_tokens") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'rev_tokens', exists (select * from PaperReview where reviewToken!=0) on duplicate key update value=values(value)");
             $this->settings["rev_tokens"] = (int) $this->fetch_ivalue("select value from Settings where name='rev_tokens'");
         }
     }
 
     function update_paperlead_setting($adding) {
-        if ($this->setting("paperlead", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+        if (($this->setting("paperlead") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'paperlead', exists (select * from Paper where leadContactId>0 or shepherdContactId>0) on duplicate key update value=values(value)");
             $this->settings["paperlead"] = (int) $this->fetch_ivalue("select value from Settings where name='paperlead'");
         }
     }
 
     function update_papermanager_setting($adding) {
-        if ($this->setting("papermanager", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+        if (($this->setting("papermanager") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'papermanager', exists (select * from Paper where managerContactId>0) on duplicate key update value=values(value)");
             $this->settings["papermanager"] = (int) $this->fetch_ivalue("select value from Settings where name='papermanager'");
         }
     }
 
     function update_metareviews_setting($adding) {
-        if ($this->setting("metareviews", 0) <= 0 ? $adding >= 0 : $adding <= 0) {
+        if (($this->setting("metareviews") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'metareviews', exists (select * from PaperReview where reviewType=" . REVIEW_META . ") on duplicate key update value=values(value)");
             $this->settings["metareviews"] = (int) $this->fetch_ivalue("select value from Settings where name='metareviews'");
         }

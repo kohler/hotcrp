@@ -3103,7 +3103,7 @@ class Contact {
     /** @return bool */
     function can_withdraw_paper(PaperInfo $prow, $display_only = false) {
         $rights = $this->rights($prow);
-        $sub_withdraw = $this->conf->setting("sub_withdraw", 0);
+        $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
         $override = $this->override_deadlines($rights);
         return $rights->allow_author_edit
             && ($sub_withdraw !== -1
@@ -3126,7 +3126,7 @@ class Contact {
         $whyNot = $this->perm_edit_paper_failure($prow, $rights);
         if ($rights->allow_author_edit && !$this->override_deadlines($rights)) {
             $whyNot["permission"] = "withdraw";
-            $sub_withdraw = $this->conf->setting("sub_withdraw", 0);
+            $sub_withdraw = $this->conf->setting("sub_withdraw") ?? 0;
             if ($sub_withdraw === 0 && $prow->has_author_seen_any_review()) {
                 $whyNot["reviewsSeen"] = true;
             } else if ($prow->outcome != 0) {
@@ -3852,7 +3852,7 @@ class Contact {
                 || (($rights->reviewType >= REVIEW_PC
                      || ($this->isPC
                          && $prow->leadContactId === $this->contactXid))
-                    && $this->conf->setting("extrev_chairreq", 0) >= 0))
+                    && ($this->conf->setting("extrev_chairreq") ?? 0) >= 0))
             && (!$check_time
                 || $this->conf->time_review($round, false, true)
                 || $this->override_deadlines($rights));
@@ -3869,7 +3869,7 @@ class Contact {
             && (($rights->reviewType < REVIEW_PC
                  && (!$this->isPC
                      || $prow->leadContactId !== $this->contactXid))
-                || $this->conf->setting("extrev_chairreq", 0) < 0)) {
+                || ($this->conf->setting("extrev_chairreq") ?? 0) < 0)) {
             $whyNot["permission"] = "request_review";
         } else {
             $whyNot["deadline"] = "extrev_chairreq";
@@ -4278,7 +4278,7 @@ class Contact {
         } else if (!$rights->allow_pc
                    && !$rights->allow_review
                    && ($rights->conflictType < CONFLICT_AUTHOR
-                       || $this->conf->setting("cmt_author", 0) <= 0)) {
+                       || ($this->conf->setting("cmt_author") ?? 0) <= 0)) {
             $whyNot["permission"] = "comment";
         } else if ($prow->timeWithdrawn > 0) {
             $whyNot["withdrawn"] = true;
@@ -5262,7 +5262,7 @@ class Contact {
                 $this->update_review_delegation($pid, $new_requester_cid, 1);
             }
             if ($type >= REVIEW_PC
-                && $this->conf->setting("pcrev_assigntime", 0) < Conf::$now) {
+                && ($this->conf->setting("pcrev_assigntime") ?? 0) < Conf::$now) {
                 $this->conf->save_setting("pcrev_assigntime", Conf::$now);
             }
         } else if (!$type) {

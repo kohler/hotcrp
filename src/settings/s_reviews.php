@@ -90,7 +90,7 @@ class Reviews_SettingRenderer {
         }
 
         $sv->set_oldv("extrev_roundtag", "#same");
-        if ($sv->conf->setting_data("extrev_roundtag", null) !== null) {
+        if ($sv->conf->setting_data("extrev_roundtag") !== null) {
             $sv->set_oldv("extrev_roundtag", "#" . $sv->conf->assignment_round(true));
         }
         $extround_value = $sv->oldv("extrev_roundtag");

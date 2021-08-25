@@ -11,7 +11,7 @@ class AdminHome_Partial {
         }
         if (isset($qreq->clearnewpcrev)
             && ctype_digit($qreq->clearnewpcrev)
-            && $user->conf->setting("pcrev_informtime", 0) <= $qreq->clearnewpcrev
+            && ($user->conf->setting("pcrev_informtime") ?? 0) <= $qreq->clearnewpcrev
             && !$qreq->is_head()) {
             $user->conf->save_setting("pcrev_informtime", $qreq->clearnewpcrev);
         }
@@ -77,7 +77,7 @@ class AdminHome_Partial {
                 $m[] = $errmarker . "The <code>\$Opt[\"$k\"]</code> setting, ‘<code>" . htmlspecialchars($url) . "</code>’, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem.";
         }
         // Unnotified reviews?
-        if ($conf->setting("pcrev_assigntime", 0) > $conf->setting("pcrev_informtime", 0)) {
+        if (($conf->setting("pcrev_assigntime") ?? 0) > ($conf->setting("pcrev_informtime") ?? 0)) {
             $assigntime = $conf->setting("pcrev_assigntime");
             $result = $conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1");
             if ($result->num_rows) {
