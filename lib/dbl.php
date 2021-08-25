@@ -807,7 +807,7 @@ class Dbl {
         $dblink = count($args) > 1 ? $args[0] : self::$default_dblink;
         $utf8 = $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
         $qstr = count($args) > 1 ? $args[1] : $args[0];
-        return "_" . $utf8 . $qstr;
+        return "_{$utf8}{$qstr}";
     }
 
     /** @return string */
@@ -816,7 +816,7 @@ class Dbl {
         $dblink = count($args) > 1 ? $args[0] : self::$default_dblink;
         $utf8 = $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
         $qstr = count($args) > 1 ? $args[1] : $args[0];
-        return "_" . $utf8 . $qstr . " collate " . $utf8 . "_general_ci";
+        return "_{$utf8}{$qstr} collate {$utf8}_general_ci";
     }
 }
 

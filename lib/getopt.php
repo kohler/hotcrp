@@ -97,6 +97,7 @@ class Getopt {
     }
 }
 
+/** @deprecated */
 function getopt_rest($argv, $options, $longopts = []) {
     return Getopt::rest($argv, $options, $longopts);
 }
