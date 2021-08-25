@@ -4,6 +4,9 @@
 
 // setting information
 class Si {
+    /** @var Conf
+     * @readonly */
+    public $conf;
     /** @var string */
     public $name;
     /** @var string */
@@ -60,6 +63,8 @@ class Si {
     public $message_context_setting;
     /** @var ?string */
     public $date_backup;
+    /** @var ?string */
+    public $last_parse_error;
 
     /** @var array<string,bool> */
     static public $option_is_value = [];
@@ -119,7 +124,8 @@ class Si {
         }
     }
 
-    function __construct($j) {
+    function __construct(Conf $conf, $j) {
+        $this->conf = $conf;
         if (preg_match('/\.|_(?:\$|n\d*|m?\d+)\z/', $j->name)) {
             trigger_error("setting {$j->name} name format error");
         }
@@ -325,7 +331,7 @@ class Si {
     }
 
     /** @return array<string,string> */
-    function hoturl_param($conf) {
+    function hoturl_param() {
         $param = ["group" => $this->canonical_page];
         if ($this->hashid !== false) {
             $param["#"] = $this->hashid ?? $this->name;
@@ -333,20 +339,189 @@ class Si {
         return $param;
     }
 
-    /** @param Conf $conf
-     * @return string */
-    function hoturl($conf) {
-        return $conf->hoturl("settings", $this->hoturl_param($conf));
+    /** @return string */
+    function hoturl() {
+        return $this->conf->hoturl("settings", $this->hoturl_param());
     }
 
     /** @param SettingValues $sv
      * @return string */
     function sv_hoturl($sv) {
         if ($this->canonical_page !== null
-            && $this->canonical_page === $sv->canonical_page) {
-            return "#" . urlencode($this->hashid ? : $this->name);
+            && $this->canonical_page === $sv->canonical_page
+            && $this->hashid !== false) {
+            return "#" . urlencode($this->hashid ?? $this->name);
         } else {
-            return $this->hoturl($sv->conf);
+            return $this->hoturl();
+        }
+    }
+
+
+    /** @param ?string $reqv
+     * @return null|false|int|string */
+    function base_parse_reqv(SettingValues $sv, $reqv) {
+        $this->last_parse_error = null;
+        if ($reqv === null) {
+            if ($this->type === "cdate" || $this->type === "checkbox") {
+                return 0;
+            } else {
+                return null;
+            }
+        }
+
+        $v = trim($reqv);
+        if (($this->placeholder !== null && $this->placeholder === $v)
+            || ($this->invalid_value && $this->invalid_value === $v)) {
+            $v = "";
+        }
+
+        if ($this->type === "checkbox") {
+            return $v != "" ? 1 : 0;
+        } else if ($this->type === "cdate") {
+            if ($v != "") {
+                $v = $sv->si_oldv($this);
+                return $v > 0 ? $v : Conf::$now;
+            } else {
+                return 0;
+            }
+        } else if ($this->type === "date" || $this->type === "ndate") {
+            if ($v === ""
+                || $v === "0"
+                || strcasecmp($v, "N/A") === 0
+                || strcasecmp($v, "same as PC") === 0
+                || ($this->type !== "ndate" && strcasecmp($v, "none") === 0)) {
+                return -1;
+            } else if (strcasecmp($v, "none") === 0) {
+                return 0;
+            } else if (($v = $this->conf->parse_time($v)) !== false) {
+                return $v;
+            } else {
+                $this->last_parse_error = "Please enter a valid date.";
+                return false;
+            }
+        } else if ($this->type === "grace") {
+            if (($v = SettingParser::parse_interval($v)) !== false) {
+                return intval($v);
+            } else {
+                $this->last_parse_error = "Please enter a valid grace period.";
+                return false;
+            }
+        } else if ($this->type === "int" || $this->type === "zint") {
+            if (preg_match("/\\A[-+]?[0-9]+\\z/", $v)) {
+                return intval($v);
+            } else if ($v == "" && $this->placeholder !== null) {
+                return 0;
+            } else {
+                $this->last_parse_error = "Please enter a valid whole number.";
+                return false;
+            }
+        } else if ($this->type === "string") {
+            // Avoid storing the default message in the database
+            if (substr($this->name, 0, 9) == "mailbody_") {
+                $t = $sv->expand_mail_template(substr($this->name, 9), true);
+                $v = cleannl($v);
+                if ($t["body"] === $v) {
+                    return "";
+                }
+            }
+            return $v;
+        } else if ($this->type === "simplestring") {
+            return simplify_whitespace($v);
+        } else if ($this->type === "tag"
+                   || $this->type === "tagbase") {
+            $v = trim($v);
+            if ($v === "" && $this->optional) {
+                return "";
+            }
+            $tagger = new Tagger($sv->user);
+            if (($v = $tagger->check($v, $this->type === "tagbase" ? Tagger::NOVALUE : 0))) {
+                return $v;
+            } else {
+                $this->last_parse_error = $tagger->error_html();
+                return false;
+            }
+        } else if ($this->type === "emailheader") {
+            $mt = new MimeText;
+            $v = $mt->encode_email_header("", $v);
+            if ($v !== false) {
+                return $v == "" ? "" : MimeText::decode_header($v);
+            } else {
+                $this->last_parse_error = "Please enter a valid email destination list. " . $mt->unparse_error();
+                return false;
+            }
+        } else if ($this->type === "emailstring") {
+            $v = trim($v);
+            if ($v === "" && $this->optional) {
+                return "";
+            } else if (validate_email($v) || $v === $sv->oldv($this->name)) {
+                return $v;
+            } else {
+                $this->last_parse_error = "Please enter a valid email address.";
+                return false;
+            }
+        } else if ($this->type === "urlstring") {
+            $v = trim($v);
+            if (($v === "" && $this->optional)
+                || preg_match('/\A(?:https?|ftp):\/\/\S+\z/', $v)) {
+                return $v;
+            } else {
+                $this->last_parse_error = "Please enter a valid URL.";
+                return false;
+            }
+        } else if ($this->type === "htmlstring") {
+            $ch = CleanHTML::basic();
+            if (($v = $ch->clean($v)) !== false) {
+                if (str_starts_with($this->storage(), "msg.")
+                    && $v === $sv->si_message_default($this))
+                    return "";
+                return $v;
+            } else {
+                $this->last_parse_error = $ch->last_error;
+                return false;
+            }
+        } else if ($this->type === "radio") {
+            foreach ($this->values as $allowedv) {
+                if ((string) $allowedv === $v)
+                    return $allowedv;
+            }
+            $this->last_parse_error = "Please enter a valid choice.";
+            return false;
+        } else {
+            throw new Error("Don't know how to base_parse_reqv {$this->name}.");
+        }
+    }
+
+    /** @param null|int|string $v
+     * @return string */
+    function base_unparse_reqv($v) {
+        if ($this->type === "cdate" || $this->type === "checkbox") {
+            return $v ? "1" : "";
+        } else if ($this->is_date()) {
+            if ($v === null) {
+                return "";
+            } else if ($this->placeholder !== "N/A"
+                       && $this->placeholder !== "none"
+                       && $v === 0) {
+                return "none";
+            } else if ($v <= 0) {
+                return "";
+            } else if ($v === 1) {
+                return "now";
+            } else {
+                return $this->conf->parseableTime($v, true);
+            }
+        } else if ($this->type === "grace") {
+            if ($v === null || $v <= 0 || !is_numeric($v)) {
+                return "none";
+            } else if ($v % 3600 === 0) {
+                return ($v / 3600) . " hr";
+            } else if ($v % 60 === 0) {
+                return ($v / 60) . " min";
+            } else {
+                return sprintf("%d:%02d", intval($v / 60), $v % 60);
+            }
+        } else {
+            return (string) $v;
         }
     }
 
@@ -398,7 +573,7 @@ class Si {
                     $j->canonical_page = $canonpage[$j->group];
                 }
                 if (($j->extensible ?? null) !== "override") {
-                    $sim[$j->name] = new Si($j);
+                    $sim[$j->name] = new Si($conf, $j);
                 } else {
                     $overrides[] = $j;
                 }
@@ -814,8 +989,7 @@ class SettingValues extends MessageSet {
             && !isset($js["data-default-value"])
             && !isset($js["data-default-checked"])) {
             if ($si && $this->si_has_interest($si)) {
-                $v = $this->si_oldv($si);
-                $x["data-default-value"] = $this->si_unparse_value($v, $si);
+                $x["data-default-value"] = $si->base_unparse_reqv($this->si_oldv($si));
             } else if (isset($this->explicit_oldv[$name])) {
                 $x["data-default-value"] = $this->explicit_oldv[$name];
             }
@@ -1184,7 +1358,7 @@ class SettingValues extends MessageSet {
         $v = $this->si_curv($si);
         $t = "";
         if (!$this->use_req() || !$this->si_has_interest($si)) {
-            $v = $this->si_unparse_value($v, $si);
+            $v = $si->base_unparse_reqv($v);
         }
         $js = $js ?? [];
         if ($si->size && !isset($js["size"])) {
@@ -1341,44 +1515,6 @@ class SettingValues extends MessageSet {
             $hint, $close, "</div></div>";
     }
 
-    private function si_unparse_value($v, Si $si) {
-        if ($si->type === "cdate" || $si->type === "checkbox") {
-            return $v ? "1" : "";
-        } else if ($si->is_date()) {
-            return $this->si_unparse_date_value($v, $si);
-        } else if ($si->type === "grace") {
-            return $this->si_unparse_grace_value($v, $si);
-        } else {
-            return $v;
-        }
-    }
-    private function si_unparse_date_value($v, Si $si) {
-        if ($si->date_backup
-            && $this->curv($si->date_backup) == $v) {
-            return "";
-        } else if ($si->placeholder !== "N/A"
-                   && $si->placeholder !== "none"
-                   && $v === 0) {
-            return "none";
-        } else if ($v <= 0) {
-            return "";
-        } else if ($v == 1) {
-            return "now";
-        } else {
-            return $this->conf->parseableTime($v, true);
-        }
-    }
-    private function si_unparse_grace_value($v, Si $si) {
-        if ($v === null || $v <= 0 || !is_numeric($v)) {
-            return "none";
-        } else if ($v % 3600 == 0) {
-            return ($v / 3600) . " hr";
-        } else if ($v % 60 == 0) {
-            return ($v / 60) . " min";
-        } else {
-            return sprintf("%d:%02d", intval($v / 60), $v % 60);
-        }
-    }
     function check_date_before($name0, $name1, $force_name0) {
         if (($d1 = $this->newv($name1))) {
             $d0 = $this->newv($name0);
@@ -1415,7 +1551,7 @@ class SettingValues extends MessageSet {
     }
 
     /** @param Si $si */
-    private function si_message_default($si) {
+    function si_message_default($si) {
         assert(str_starts_with($si->storage(), "msg."));
         $ctxarg = null;
         if (($ctxname = $si->message_context_setting)) {
@@ -1435,123 +1571,16 @@ class SettingValues extends MessageSet {
     }
 
 
-    function parse_value(Si $si) {
-        $v = $this->reqv($si->name);
-        if ($v === null) {
-            if (in_array($si->type, ["cdate", "checkbox"])) {
-                return 0;
-            } else {
-                return null;
-            }
-        }
-
-        $v = trim($v);
-        if (($si->placeholder !== null && $si->placeholder === $v)
-            || ($si->invalid_value && $si->invalid_value === $v)) {
-            $v = "";
-        }
-
-        if ($si->type === "checkbox") {
-            return $v != "" ? 1 : 0;
-        } else if ($si->type === "cdate") {
-            if ($v != "") {
-                $v = $this->si_oldv($si);
-                return $v > 0 ? $v : Conf::$now;
-            } else {
-                return 0;
-            }
-        } else if ($si->type === "date" || $si->type === "ndate") {
-            if ((string) $v === ""
-                || $v === "0"
-                || !strcasecmp($v, "N/A")
-                || !strcasecmp($v, "same as PC")
-                || ($si->type !== "ndate" && !strcasecmp($v, "none"))) {
-                return -1;
-            } else if (!strcasecmp($v, "none")) {
-                return 0;
-            } else if (($v = $this->conf->parse_time($v)) !== false) {
-                return $v;
-            }
-            $err = "Should be a date.";
-        } else if ($si->type === "grace") {
-            if (($v = SettingParser::parse_interval($v)) !== false) {
-                return intval($v);
-            }
-            $err = "Should be a grace period.";
-        } else if ($si->type === "int" || $si->type === "zint") {
-            if (preg_match("/\\A[-+]?[0-9]+\\z/", $v)) {
-                return intval($v);
-            } else if ($v == "" && $si->placeholder !== null) {
-                return 0;
-            }
-            $err = "Should be a number.";
-        } else if ($si->type === "string") {
-            // Avoid storing the default message in the database
-            if (substr($si->name, 0, 9) == "mailbody_") {
-                $t = $this->expand_mail_template(substr($si->name, 9), true);
-                $v = cleannl($v);
-                if ($t["body"] === $v) {
-                    return "";
-                }
-            }
-            return $v;
-        } else if ($si->type === "simplestring") {
-            return simplify_whitespace($v);
-        } else if ($si->type === "tag"
-                   || $si->type === "tagbase") {
-            $tagger = new Tagger($this->user);
-            $v = trim($v);
-            if ($v === "" && $si->optional) {
-                return $v;
-            }
-            $v = $tagger->check($v, $si->type === "tagbase" ? Tagger::NOVALUE : 0);
-            if ($v) {
-                return $v;
-            }
-            $err = $tagger->error_html();
-        } else if ($si->type === "emailheader") {
-            $mt = new MimeText;
-            $v = $mt->encode_email_header("", $v);
-            if ($v !== false) {
-                return ($v == "" ? "" : MimeText::decode_header($v));
-            }
-            $err = "Malformed destination list: " . $mt->unparse_error();
-        } else if ($si->type === "emailstring") {
-            $v = trim($v);
-            if ($v === "" && $si->optional) {
-                return "";
-            } else if (validate_email($v) || $v === $this->oldv($si->name)) {
-                return $v;
-            }
-            $err = "Should be an email address.";
-        } else if ($si->type === "urlstring") {
-            $v = trim($v);
-            if (($v === "" && $si->optional)
-                || preg_match(',\A(?:https?|ftp)://\S+\z,', $v)) {
-                return $v;
-            }
-            $err = "Should be a URL.";
-        } else if ($si->type === "htmlstring") {
-            $ch = CleanHTML::basic();
-            if (($v = $ch->clean($v)) !== false) {
-                if (str_starts_with($si->storage(), "msg.")
-                    && $v === $this->si_message_default($si))
-                    return "";
-                return $v;
-            }
-            $err = $ch->last_error;
-        } else if ($si->type === "radio") {
-            foreach ($si->values as $allowedv) {
-                if ((string) $allowedv === $v)
-                    return $allowedv;
-            }
-            $err = "Unexpected value.";
+    /** @param Si $si
+     * @return null|int|string */
+    function si_base_parse_req($si) {
+        $v = $si->base_parse_reqv($this, $this->reqv($si->name));
+        if ($v === false) {
+            $this->error_at($si, $si->last_parse_error);
+            return null;
         } else {
             return $v;
         }
-
-        $this->error_at($si, $err);
-        return null;
     }
 
     private function account(Si $si1) {
@@ -1563,11 +1592,8 @@ class SettingValues extends MessageSet {
                 if ($this->si_parser($si)->parse_req($this, $si)) {
                     $this->saved_si[] = $si;
                 }
-            } else if ($si->storage_type !== Si::SI_NONE) {
-                $v = $this->parse_value($si);
-                if ($v === null || $v === false) {
-                    return;
-                }
+            } else if ($si->storage_type !== Si::SI_NONE
+                       && ($v = $this->si_base_parse_req($si)) !== null) {
                 if (is_int($v)
                     && $v <= 0
                     && $si->type !== "radio"
@@ -1705,7 +1731,7 @@ class SettingValues extends MessageSet {
             }
         } else if ($si->type === "grace") {
             if ($v > 0) {
-                return $this->si_unparse_grace_value($v, $si);
+                return $si->base_unparse_reqv($v);
             } else {
                 return false;
             }

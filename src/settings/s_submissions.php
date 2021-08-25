@@ -13,6 +13,8 @@ class Submissions_SettingRenderer {
         // maybe sub_reg was overridden
         if (($sub_reg = $sv->conf->setting("__sub_reg")) !== null) {
             $sv->set_oldv("sub_reg", $sub_reg);
+        } else if ($sv->oldv("sub_reg") === $sv->oldv("sub_sub")) {
+            $sv->set_oldv("sub_reg", null);
         }
         $sv->echo_entry_group("sub_reg", "Registration deadline", null, "New submissions can be started until this deadline.");
         $sv->echo_entry_group("sub_sub", "Submission deadline", null, "Submissions must be complete by this deadline.");

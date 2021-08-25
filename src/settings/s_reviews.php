@@ -45,10 +45,12 @@ class Reviews_SettingRenderer {
         } else {
             $dlsuf = "";
         }
-        $si = $sv->si("extrev_soft$dlsuf");
-        $si->date_backup = "pcrev_soft$dlsuf";
-        $si = $sv->si("extrev_hard$dlsuf");
-        $si->date_backup = "pcrev_hard$dlsuf";
+        if ($sv->oldv("extrev_soft$dlsuf") === $sv->oldv("pcrev_soft$dlsuf")) {
+            $sv->set_oldv("extrev_soft$dlsuf", null);
+        }
+        if ($sv->oldv("extrev_hard$dlsuf") === $sv->oldv("pcrev_hard$dlsuf")) {
+            $sv->set_oldv("extrev_hard$dlsuf", null);
+        }
 
         echo '<div class="settings-2col" style="margin-left:3em">';
         $sv->echo_entry_group("pcrev_soft$entrysuf", "PC deadline", ["horizontal" => true]);
@@ -459,14 +461,14 @@ class ReviewDeadline_SettingParser extends SettingParser {
             assert($rnum !== false);
             $rnum += 1;
         }
+        $prefix = $si->prefix();
+        $suffix = $rnum ? "_$rnum" : "";
 
-        $deadline = $si->prefix();
-        $k = $deadline . ($rnum ? "_$rnum" : "");
-        $v = $sv->parse_value($si);
-        $sv->save($k, $v <= 0 ? null : $v);
-
-        if ($v > 0 && str_ends_with($deadline, "hard")) {
-            $sv->check_date_before(substr($deadline, 0, -4) . "soft" . ($rnum ? "_$rnum" : ""), $si->name, true);
+        if (($v = $sv->si_base_parse_req($si)) !== null) {
+            $sv->save("{$prefix}{$suffix}", $v <= 0 ? null : $v);
+            if ($v > 0 && str_ends_with($prefix, "hard")) {
+                $sv->check_date_before(substr($prefix, 0, -4) . "soft{$suffix}", $si->name, true);
+            }
         }
 
         return false;

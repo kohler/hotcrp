@@ -4,6 +4,9 @@
 
 class FinalVersions_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
+        if ($sv->oldv("final_soft") === $sv->oldv("final_done")) {
+            $sv->set_oldv("final_soft", null);
+        }
         echo '<div class="has-fold fold2o">';
         $sv->echo_checkbox('final_open', '<strong>Collect final versions of accepted submissions</strong>', ["class" => "uich js-foldup", "group_class" => "form-g", "group_open" => true]);
         echo '<div class="fx2 mt-3"><div class="form-g">';

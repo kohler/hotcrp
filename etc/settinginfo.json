@@ -95,7 +95,7 @@
     {
         "name": "final_soft", "group": "final",
         "title": "Final version upload deadline",
-        "type": "date", "date_backup": "final_done"
+        "type": "date"
     },
     {
         "name": "has_topics",
@@ -517,7 +517,7 @@
     {
         "name": "sub_reg", "group": "submissions",
         "title": "Submission registration deadline",
-        "type": "date", "date_backup": "sub_sub", "position": 0
+        "type": "date", "position": 0
     },
     {
         "name": "sub_sub", "group": "submissions",

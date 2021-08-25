@@ -117,22 +117,22 @@ class Responses_SettingParser extends SettingParser {
 
         foreach ($roundnames_set as $i) {
             $isuf = $i ? "_$i" : "";
-            if (($v = $sv->parse_value($sv->si("resp_open$isuf"))) !== null) {
+            if (($v = $sv->si_base_parse_req($sv->si("resp_open$isuf"))) !== null) {
                 $sv->save("resp_open$isuf", $v <= 0 ? null : $v);
             }
-            if (($v = $sv->parse_value($sv->si("resp_done$isuf"))) !== null) {
+            if (($v = $sv->si_base_parse_req($sv->si("resp_done$isuf"))) !== null) {
                 $sv->save("resp_done$isuf", $v <= 0 ? null : $v);
             }
-            if (($v = $sv->parse_value($sv->si("resp_grace$isuf"))) !== null) {
+            if (($v = $sv->si_base_parse_req($sv->si("resp_grace$isuf"))) !== null) {
                 $sv->save("resp_grace$isuf", $v <= 0 ? null : $v);
             }
-            if (($v = $sv->parse_value($sv->si("resp_words$isuf"))) !== null) {
+            if (($v = $sv->si_base_parse_req($sv->si("resp_words$isuf"))) !== null) {
                 $sv->save("resp_words$isuf", $v < 0 ? null : $v);
             }
-            if (($v = $sv->parse_value($sv->si("resp_search$isuf"))) !== null) {
-                $sv->save("resp_search$isuf", $v !== "" ? $v : null);
+            if (($v = $sv->si_base_parse_req($sv->si("resp_search$isuf"))) !== null) {
+                $sv->save("resp_search$isuf", $v === "" ? null : $v);
             }
-            if (($v = $sv->parse_value($sv->si("resp_instrux_$i"))) !== null) {
+            if (($v = $sv->si_base_parse_req($sv->si("resp_instrux_$i"))) !== null) {
                 $sv->save("resp_instrux_$i", $v);
             }
             $sv->check_date_before("resp_open$isuf", "resp_done$isuf", false);
