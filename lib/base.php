@@ -100,19 +100,21 @@ function cleannl($text) {
     return $text;
 }
 
-function space_join(/* $str_or_array, ... */) {
-    $t = "";
-    foreach (func_get_args() as $arg) {
-        if (is_array($arg)) {
-            foreach ($arg as $x) {
-                if ($x !== "" && $x !== false && $x !== null)
-                    $t .= ($t === "" ? "" : " ") . $x;
-            }
-        } else if ($arg !== "" && $arg !== false && $arg !== null) {
-            $t .= ($t === "" ? "" : " ") . $arg;
-        }
+/** @param array $what
+ * @param string $joinword
+ * @return string */
+function commajoin($what, $joinword = "and") {
+    $what = array_values($what);
+    $c = count($what);
+    if ($c == 0) {
+        return "";
+    } else if ($c == 1) {
+        return $what[0];
+    } else if ($c == 2) {
+        return $what[0] . " " . $joinword . " " . $what[1];
+    } else {
+        return join(", ", array_slice($what, 0, -1)) . ", " . $joinword . " " . $what[count($what) - 1];
     }
-    return $t;
 }
 
 /** @param string $str
@@ -174,6 +176,25 @@ function simplify_whitespace($str) {
     return trim(preg_replace('/(?:[\x00-\x20\x7F]|\xC2[\x80-\xA0]|\xE2\x80[\x80-\x8A\xA8\xA9\xAF]|\xE2\x81\x9F|\xE3\x80\x80)+/', " ", $str));
 }
 
+/** @param string $text
+ * @param bool $all
+ * @return int */
+function tab_width($text, $all) {
+    $len = 0;
+    for ($i = 0; $i < strlen($text); ++$i) {
+        if ($text[$i] === ' ') {
+            ++$len;
+        } else if ($text[$i] === '\t') {
+            $len += 8 - ($len % 8);
+        } else if (!$all) {
+            break;
+        } else {
+            ++$len;
+        }
+    }
+    return $len;
+}
+
 /** @param string $prefix
  * @param string $text
  * @param int|string $indent
@@ -222,6 +243,15 @@ function friendly_boolean($x) {
     } else {
         return null;
     }
+}
+
+/** @param string $varname
+ * @return int */
+function ini_get_bytes($varname, $value = null) {
+    $val = trim($value !== null ? $value : ini_get($varname));
+    $last = strlen($val) ? strtolower($val[strlen($val) - 1]) : ".";
+    /** @phan-suppress-next-line PhanParamSuspiciousOrder */
+    return (int) ceil(floatval($val) * (1 << (+strpos(".kmg", $last) * 10)));
 }
 
 

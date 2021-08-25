@@ -324,23 +324,6 @@ function tempdir($mode = 0700) {
 
 // text helpers
 /** @param array $what
- * @param string $joinword
- * @return string */
-function commajoin($what, $joinword = "and") {
-    $what = array_values($what);
-    $c = count($what);
-    if ($c == 0) {
-        return "";
-    } else if ($c == 1) {
-        return $what[0];
-    } else if ($c == 2) {
-        return $what[0] . " " . $joinword . " " . $what[1];
-    } else {
-        return join(", ", array_slice($what, 0, -1)) . ", " . $joinword . " " . $what[count($what) - 1];
-    }
-}
-
-/** @param array $what
  * @param string $prefix
  * @param string $joinword
  * @return string */
@@ -458,34 +441,6 @@ function ordinal($n) {
         $x = $x % 10;
     }
     return $n . ($x < 1 || $x > 3 ? "th" : ($x == 1 ? "st" : ($x == 2 ? "nd" : "rd")));
-}
-
-/** @param string $text
- * @param bool $all
- * @return int */
-function tabLength($text, $all) {
-    $len = 0;
-    for ($i = 0; $i < strlen($text); ++$i) {
-        if ($text[$i] === ' ') {
-            ++$len;
-        } else if ($text[$i] === '\t') {
-            $len += 8 - ($len % 8);
-        } else if (!$all) {
-            break;
-        } else {
-            ++$len;
-        }
-    }
-    return $len;
-}
-
-/** @param string $varname
- * @return int */
-function ini_get_bytes($varname, $value = null) {
-    $val = trim($value !== null ? $value : ini_get($varname));
-    $last = strlen($val) ? strtolower($val[strlen($val) - 1]) : ".";
-    /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-    return (int) ceil(floatval($val) * (1 << (+strpos(".kmg", $last) * 10)));
 }
 
 /** @param int|float $n

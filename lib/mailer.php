@@ -618,7 +618,7 @@ class Mailer {
                         $line = $m[1] . $this->expandvar($m[2]) . $m[3];
                     }
                     if (preg_match('/\A([ \t]*.*?: )(%\w+(?:|\([^\)]*\))%|\S+)\s*\z/s', $line, $m)
-                        && ($tl = tabLength($m[1], true)) <= 20) {
+                        && ($tl = tab_width($m[1], true)) <= 20) {
                         if (str_starts_with($m[2], "%OPT(")) {
                             if (($yes = $this->expandvar($m[2], true))) {
                                 $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), $tl, $this->width, $this->flowed);

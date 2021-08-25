@@ -182,8 +182,12 @@ class PaperPage {
                 // XXX save uploaded files
                 $this->ps->error_at(null, "<strong>Your uploaded files were ignored.</strong>");
             }
+            $t = $conf->_("Your changes were not saved. Please fix these errors and try again.");
             $emsg = $this->ps->landmarked_problem_texts();
-            Conf::msg_error(space_join($conf->_("Your changes were not saved. Please fix these errors and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
+            if (!empty($emsg)) {
+                $t = "<p>{$t}</p><ul><li>" . join("</li><li>", $emsg) . "</li></ul>";
+            }
+            Conf::msg_error($t);
             return;
         }
 

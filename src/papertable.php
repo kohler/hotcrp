@@ -1582,7 +1582,7 @@ class PaperTable {
             } else if ($sub_upd > 0) {
                 $t[] = $this->conf->_("Submissions must be completed by %s.", $this->conf->unparse_setting_time("sub_update"));
             }
-            $this->_main_message(space_join($t), 0);
+            $this->_main_message(join(" ", $t), 0);
             if (($v = $this->conf->_i("submit"))) {
                 $this->_main_message($v, 0);
             }
@@ -1614,7 +1614,7 @@ class PaperTable {
                 } else {
                     $t[] = $this->conf->_("Incomplete submissions will not be considered.");
                 }
-                $this->_main_message(space_join($t), 1);
+                $this->_main_message(join(" ", $t), 1);
             } else if (isset($whyNot["updateSubmitted"])
                        && $this->user->can_finalize_paper($this->prow)) {
                 $this->_main_message('This submission is not ready for review. Although you cannot make further changes, the current version can be still be submitted for review.' . $this->deadline_setting_is("sub_sub") . $this->_deadline_override_message(), 1);
