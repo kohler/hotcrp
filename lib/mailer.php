@@ -111,7 +111,7 @@ class MailPreparation {
         }
 
         if ($this->can_send_external()
-            && $this->conf->opt("internalMailer", strncasecmp(PHP_OS, "WIN", 3) != 0)
+            && ($this->conf->opt("internalMailer") ?? strncasecmp(PHP_OS, "WIN", 3) != 0)
             && ($sendmail = ini_get("sendmail_path"))) {
             $htext = join("", $headers);
             $f = popen($extra ? "$sendmail $extra" : $sendmail, "wb");

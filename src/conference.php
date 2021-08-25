@@ -4071,7 +4071,7 @@ class Conf {
             echo $font_script, "\n";
         }
 
-        foreach (mkarray($this->opt("prependStylesheets", [])) as $css) {
+        foreach (mkarray($this->opt("prependStylesheets") ?? []) as $css) {
             echo $this->make_css_link($css), "\n";
         }
         echo $this->make_css_link("stylesheets/style.css"), "\n";
@@ -4079,12 +4079,12 @@ class Conf {
             echo '<meta name="viewport" content="width=device-width, initial-scale=1">', "\n";
             echo $this->make_css_link("stylesheets/mobile.css", "screen and (max-width: 1100px)"), "\n";
         }
-        foreach (mkarray($this->opt("stylesheets", [])) as $css) {
+        foreach (mkarray($this->opt("stylesheets") ?? []) as $css) {
             echo $this->make_css_link($css), "\n";
         }
 
         // favicon
-        $favicon = $this->opt("favicon", "images/review48.png");
+        $favicon = $this->opt("favicon") ?? "images/review48.png";
         if ($favicon) {
             if (strpos($favicon, "://") === false && $favicon[0] != "/") {
                 if ($this->opt["assetsUrl"] && substr($favicon, 0, 7) === "images/") {
@@ -4196,7 +4196,7 @@ class Conf {
         }
 
         // other scripts
-        foreach ($this->opt("scripts", []) as $file) {
+        foreach ($this->opt("scripts") ?? [] as $file) {
             Ht::stash_html($this->make_script_file($file) . "\n");
         }
 
@@ -4451,7 +4451,7 @@ class Conf {
     function footer() {
         echo "<hr class=\"c\"></div>", // class='body'
             '<div id="footer">',
-            $this->opt("extraFooter", ""),
+            $this->opt("extraFooter") ?? "",
             '<a class="uu" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->opt("noFooterVersion")) {
             if (Contact::$main_user && Contact::$main_user->privChair) {

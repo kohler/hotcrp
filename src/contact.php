@@ -1936,7 +1936,7 @@ class Contact {
     // obsolete
     private function password_hmac_key($keyid) {
         if ($keyid === null) {
-            $keyid = $this->conf->opt("passwordHmacKeyid", 0);
+            $keyid = $this->conf->opt("passwordHmacKeyid") ?? 0;
         }
         $key = $this->conf->opt("passwordHmacKey.$keyid");
         if (!$key && $keyid == 0) {

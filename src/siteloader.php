@@ -68,7 +68,7 @@ class SiteLoader {
         if (isset($ConfSitePATH)) {
             self::$root = $ConfSitePATH;
         } else {
-            self::$root = substr(__FILE__, 0, strrpos(__FILE__, "/"));
+            self::$root = __DIR__;
             while (self::$root !== ""
                    && !file_exists(self::$root . "/src/init.php")) {
                 self::$root = substr(self::$root, 0, strrpos(self::$root, "/"));

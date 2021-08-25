@@ -24,7 +24,7 @@ if ($Me->privChair
         if (isset($update["opt"]) && is_array($update["opt"])) {
             foreach ($update["opt"] as $k => $v) {
                 $kk = ($k[0] == "-" ? substr($k, 1) : $k);
-                $test = $Conf->opt($kk, null) == $v;
+                $test = $Conf->opt($kk) == $v;
                 $ok = $ok && ($k[0] == "-" ? !$test : $test);
             }
         }
