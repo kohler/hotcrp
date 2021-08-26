@@ -438,6 +438,10 @@ class RoundSelector_SettingParser extends SettingParser {
             }
         }
     }
+
+    function unparse_json(SettingValues $sv, Si $si) {
+        return $si->base_unparse_json($sv->newv($si->name));
+    }
 }
 
 class ReviewDeadline_SettingParser extends SettingParser {
@@ -468,5 +472,9 @@ class ReviewDeadline_SettingParser extends SettingParser {
                 $sv->check_date_before(substr($prefix, 0, -4) . "soft{$suffix}", $si->name, true);
             }
         }
+    }
+
+    function unparse_json(SettingValues $sv, Si $si) {
+        return $si->base_unparse_json($sv->newv($si->name));
     }
 }

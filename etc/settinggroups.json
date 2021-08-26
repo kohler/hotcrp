@@ -10,7 +10,7 @@
     },
     {
         "name": "basics/site-contact", "position": 20,
-        "render_function": "Basics_SettingParser::render_site_contact",
+        "render_function": "SiteContact_SettingParser::render_site_contact",
         "title": "Site contact"
     },
     {

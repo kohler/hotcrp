@@ -39,7 +39,7 @@ function choose_setting_group($qreq, SettingValues $sv) {
     if ($want_group !== $req_group && !$qreq->post && $qreq->post_empty()) {
         $Conf->redirect_self($qreq, ["group" => $want_group, "#" => $sv->group_hashid($req_group)]);
     }
-    $sv->canonical_page = $want_group;
+    $sv->set_canonical_page($want_group);
     return $want_group;
 }
 $Group = $Qreq->group = choose_setting_group($Qreq, $Sv);

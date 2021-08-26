@@ -309,6 +309,14 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
+    function unparse_json(SettingValues $sv, Si $si) {
+        $fj = [];
+        foreach ($sv->conf->all_review_fields() as $f) {
+            $fj[] = $f->unparse_json(true);
+        }
+        return $fj;
+    }
+
     private function clear_existing_fields($fields, Conf $conf) {
         // clear fields from main storage
         $clear_sfields = $clear_tfields = [];

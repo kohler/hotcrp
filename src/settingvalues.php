@@ -19,8 +19,6 @@ class Si {
     public $title_pattern;
     /** @var ?string */
     public $group;
-    /** @var ?string */
-    public $canonical_page;
     /** @var ?list<string> */
     public $tags;
     /** @var null|int|float */
@@ -92,7 +90,6 @@ class Si {
 
     static private $key_storage = [
         "autogrow" => "is_bool",
-        "canonical_page" => "is_string",
         "date_backup" => "is_string",
         "disabled" => "is_bool",
         "group" => "is_string",
@@ -178,6 +175,8 @@ class Si {
 
         if (!$this->type && $this->parser_class) {
             $this->type = "special";
+        } else if ((!$this->type && !$this->internal) || $this->type === "none") {
+            trigger_error("setting {$j->name}.type missing");
         }
 
         $s = $this->storage ?? $this->name;
@@ -234,6 +233,9 @@ class Si {
         $si->name .= $suffix;
         if ($this->storage) {
             $si->storage .= $suffix;
+        }
+        if ($this->ifnonempty) {
+            $si->ifnonempty .= $suffix;
         }
         if ($this->message_context_setting
             && str_starts_with($this->message_context_setting, "+")) {
@@ -313,14 +315,6 @@ class Si {
         return $this->storage ?? $this->name;
     }
 
-    /** @return bool */
-    function active_value() {
-        return !$this->internal
-            && !$this->disabled
-            && $this->type
-            && $this->type !== "none";
-    }
-
 
     /** @return bool */
     function is_date() {
@@ -329,7 +323,7 @@ class Si {
 
     /** @return array<string,string> */
     function hoturl_param() {
-        $param = ["group" => $this->canonical_page];
+        $param = ["group" => $this->group];
         if ($this->hashid !== false) {
             $param["#"] = $this->hashid ?? $this->name;
         }
@@ -344,9 +338,8 @@ class Si {
     /** @param SettingValues $sv
      * @return string */
     function sv_hoturl($sv) {
-        if ($this->canonical_page !== null
-            && $this->canonical_page === $sv->canonical_page
-            && $this->hashid !== false) {
+        if ($this->hashid !== false
+            && (!$this->group || $sv->canonical_page === $this->group)) {
             return "#" . urlencode($this->hashid ?? $this->name);
         } else {
             return $this->hoturl();
@@ -523,6 +516,49 @@ class Si {
         }
     }
 
+    /** @param null|int|string $v
+     * @return mixed */
+    function base_unparse_json($v) {
+        if ($this->type === "checkbox" || $this->type === "cdate") {
+            return !!$v;
+        } else if ($this->type === "date" || $this->type === "ndate") {
+            if ($v > 0) {
+                return $this->conf->parseableTime($v, true);
+            } else {
+                return false;
+            }
+        } else if ($this->type === "grace") {
+            if ($v > 0) {
+                return $this->base_unparse_reqv($v);
+            } else {
+                return false;
+            }
+        } else if ($this->type === "int") {
+            return $v > 0 ? (int) $v : false;
+        } else if ($this->type === "zint") {
+            return (int) $v;
+        } else if ($this->type === "string"
+                   || $this->type === "simplestring"
+                   || $this->type === "tag"
+                   || $this->type === "tagbase"
+                   || $this->type === "tagselect"
+                   || $this->type === "emailheader"
+                   || $this->type === "emailstring"
+                   || $this->type === "urlstring"
+                   || $this->type === "htmlstring") {
+            return (string) $v !== "" ? $v : false;
+        } else if ($this->type === "radio") {
+            $pos = array_search($v, $this->values);
+            if ($pos !== false && $this->json_values && isset($this->json_values[$pos])) {
+                return $this->json_values[$pos];
+            } else {
+                return $v;
+            }
+        } else {
+            return $v;
+        }
+    }
+
 
     /** @return array<string,Si> */
     static function make_si_map(Conf $conf) {
@@ -564,11 +600,11 @@ class Si {
             }
             if ($conf->xt_allowed($j) && !isset($sim[$j->name])) {
                 Conf::xt_resolve_require($j);
-                if (isset($j->group)) {
-                    if (!array_key_exists($j->group, $canonpage)) {
-                        $canonpage[$j->group] = $gex->canonical_group($j->group);
+                if (($g = $j->group ?? null)) {
+                    if (!array_key_exists($g, $canonpage)) {
+                        $canonpage[$g] = $gex->canonical_group($g) ?? $g;
                     }
-                    $j->canonical_page = $canonpage[$j->group];
+                    $j->group = $canonpage[$g];
                 }
                 if (($j->extensible ?? null) !== "override") {
                     $sim[$j->name] = new Si($conf, $j);
@@ -627,11 +663,19 @@ class Si {
 }
 
 class SettingParser {
+    /** @return bool */
+    function set_oldv(SettingValues $sv, Si $si) {
+        return false;
+    }
     /** @return void */
     function parse_req(SettingValues $sv, Si $si) {
     }
-    function unparse_json(SettingValues $sv, Si $si, $j) {
+    /** @return mixed */
+    function unparse_json(SettingValues $sv, Si $si) {
+        error_log("Si {$si->name} missing");
+        return null;
     }
+    /** @return void */
     function store_value(SettingValues $sv, Si $si) {
     }
 
@@ -758,7 +802,11 @@ class SettingValues extends MessageSet {
      * @param string $v */
     function set_req($k, $v) {
         $this->req[$k] = $v;
-        if (preg_match('/\A(?:has_)?(\S+?)(|_n\d*|_m?\d+)\z/', $k, $m)) {
+        if (str_starts_with($k, "has_")) {
+            $k = substr($k, 4);
+            $this->req[$k] = $this->req[$k] ?? null;
+        }
+        if (preg_match('/\A(\S+?)(|_n\d*|_m?\d+)\z/', $k, $m)) {
             if (!isset($this->req_has_suffixes[$m[1]])) {
                 $this->req_has_suffixes[$m[1]] = [$m[2]];
             } else if (!in_array($m[2], $this->req_has_suffixes[$m[1]])) {
@@ -962,7 +1010,7 @@ class SettingValues extends MessageSet {
             $si = Si::get($this->conf, $name);
         }
         $x = ["id" => $name];
-        if ($si) {
+        if ($si && !isset($js["disabled"]) && !isset($js["readonly"])) {
             if ($si->disabled) {
                 $x["disabled"] = true;
             } else if (!$this->si_editable($si)) {
@@ -1000,6 +1048,10 @@ class SettingValues extends MessageSet {
         }
     }
 
+    /** @param string $page */
+    function set_canonical_page($page) {
+        $this->canonical_page = $page;
+    }
     /** @param string $name
      * @return bool */
     function editable($name) {
@@ -1007,15 +1059,17 @@ class SettingValues extends MessageSet {
     }
     /** @return bool */
     function si_editable(Si $si) {
+        assert(!!$si->group);
         $perm = $this->all_perm;
         if ($this->perm !== null) {
             for ($i = 0; $i !== count($this->perm); $i += 2) {
                 if ($si->group === $this->perm[$i]
                     || ($si->tags !== null && in_array($this->perm[$i], $si->tags, true))) {
-                    return $this->perm[$i + 1];
-                } else if ($si->canonical_page !== $si->group
-                           && $si->canonical_page === $this->perm[$i]) {
-                    $perm = $this->perm[$i + 1];
+                    if ($this->perm[$i + 1]) {
+                        $perm = true;
+                    } else {
+                        return false;
+                    }
                 }
             }
         }
@@ -1034,7 +1088,8 @@ class SettingValues extends MessageSet {
     }
     /** @return null|int|string */
     function si_oldv(Si $si) {
-        if (array_key_exists($si->name, $this->explicit_oldv)) {
+        if (array_key_exists($si->name, $this->explicit_oldv)
+            || ($si->parser_class && $this->si_parser($si)->set_oldv($this, $si))) {
             $val = $this->explicit_oldv[$si->name];
         } else if ($si->storage_type & Si::SI_OPT) {
             $val = $this->conf->opt(substr($si->storage(), 4)) ?? $si->default_value;
@@ -1146,13 +1201,15 @@ class SettingValues extends MessageSet {
     /** @param string $name
      * @return bool */
     function has_interest($name) {
-        return !$this->canonical_page || $this->si_has_interest($this->si($name));
+        return !$this->canonical_page
+            || $this->si_has_interest($this->si($name));
     }
     /** @return bool */
     function si_has_interest(Si $si) {
         return !$this->canonical_page
-            || !$si->canonical_page
-            || $si->canonical_page === $this->canonical_page
+            || !$si->group
+            || $si->group === $this->canonical_page
+            || (isset($si->tags) && in_array($this->canonical_page, $si->tags))
             || array_key_exists($si->storage(), $this->savedv);
     }
 
@@ -1585,11 +1642,12 @@ class SettingValues extends MessageSet {
         }
     }
 
-    private function account(Si $si1) {
+    private function account_req(Si $si1) {
         foreach ($this->req_sis($si1) as $si) {
-            if (!$si->active_value()
+            if ($si->internal
+                || $si->disabled
                 || !$this->si_editable($si)) {
-                /* ignore changes to disabled/internal settings */;
+                /* ignore changes to disabled/internal settings */
             } else if ($si->parser_class) {
                 $this->si_parser($si)->parse_req($this, $si);
             } else if ($si->storage_type !== Si::SI_NONE
@@ -1630,7 +1688,7 @@ class SettingValues extends MessageSet {
     function execute() {
         // parse and validate settings
         foreach (Si::si_map($this->conf) as $si) {
-            $this->account($si);
+            $this->account_req($si);
         }
         $this->request_write_lock(...array_keys($this->need_lock));
         $this->request_read_lock("ContactInfo");
@@ -1715,61 +1773,22 @@ class SettingValues extends MessageSet {
         return !$this->has_error();
     }
 
-
-    function unparse_json_value(Si $si) {
-        $v = $this->si_oldv($si);
-        if ($si->type === "checkbox" || $si->type === "cdate") {
-            return !!$v;
-        } else if ($si->type === "date" || $si->type === "ndate") {
-            if ($v > 0) {
-                return $this->conf->parseableTime($v, true);
-            } else {
-                return false;
-            }
-        } else if ($si->type === "grace") {
-            if ($v > 0) {
-                return $si->base_unparse_reqv($v);
-            } else {
-                return false;
-            }
-        } else if ($si->type === "int") {
-            return $v > 0 ? (int) $v : false;
-        } else if ($si->type === "zint") {
-            return (int) $v;
-        } else if ($si->type === "string"
-                   || $si->type === "simplestring"
-                   || $si->type === "tag"
-                   || $si->type === "tagbase"
-                   || $si->type === "tagselect"
-                   || $si->type === "emailheader"
-                   || $si->type === "emailstring"
-                   || $si->type === "urlstring"
-                   || $si->type === "htmlstring") {
-            return (string) $v !== "" ? $v : false;
-        } else if ($si->type === "radio") {
-            $pos = array_search($v, $si->values);
-            if ($pos !== false && $si->json_values && isset($si->json_values[$pos])) {
-                return $si->json_values[$pos];
-            } else {
-                return $v;
-            }
-        } else {
-            return $v;
-        }
-    }
-
+    /** @return associative-array<string,mixed> */
     function unparse_json() {
         assert(!$this->use_req());
-        $j = (object) [];
+        $j = [];
         foreach (Si::si_map($this->conf) as $si) {
-            if ($this->si_has_interest($si)
-                && $si->active_value()
-                && $si->json_name) {
+            if (!$si->internal
+                && !$si->disabled
+                && $si->json_name
+                && $this->si_has_interest($si)) {
                 if ($si->parser_class) {
-                    $this->si_parser($si)->unparse_json($this, $si, $j);
+                    $v = $this->si_parser($si)->unparse_json($this, $si);
                 } else {
-                    $v = $this->unparse_json_value($si);
-                    $j->{$si->json_name} = $v;
+                    $v = $si->base_unparse_json($this->si_oldv($si));
+                }
+                if ($v !== null) {
+                    $j[$si->json_name] = $v;
                 }
             }
         }

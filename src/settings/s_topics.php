@@ -58,10 +58,6 @@ class Topics_SettingRenderer {
 }
 
 class Topics_SettingParser extends SettingParser {
-    private $new_topics;
-    private $deleted_topics;
-    private $changed_topics;
-
     private function check_topic($t) {
         $t = simplify_whitespace($t);
         if (!preg_match('/\A(?:\d+\z|[-+,;:]|–|—)/', $t)) {
@@ -71,53 +67,93 @@ class Topics_SettingParser extends SettingParser {
         }
     }
 
+    /** @return list<object> */
+    function unparse_current_json(Conf $conf) {
+        $j = [];
+        foreach ($conf->topic_set() as $tid => $tname) {
+            $j[] = (object) ["id" => $tid, "name" => $tname];
+        }
+        return $j;
+    }
+
+    function set_oldv(SettingValues $sv, Si $si) {
+        $sv->set_oldv("topics", json_encode_db($this->unparse_current_json($sv->conf)));
+        return true;
+    }
+
     function parse_req(SettingValues $sv, Si $si) {
+        $j = json_decode($sv->oldv("topics"));
+        for ($i = 0; $i !== count($j); ) {
+            $tid = $j[$i]->id;
+            if (($x = $sv->reqv("top$tid")) !== null) {
+                $t = $this->check_topic($x);
+                if ($t === false) {
+                    $sv->error_at("top$tid", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
+                    ++$i;
+                } else if ($t === "") {
+                    array_splice($j, $i, 1);
+                } else {
+                    $j[$i]->name = $t;
+                    ++$i;
+                }
+            } else {
+                ++$i;
+            }
+        }
         if ($sv->has_reqv("topnew")) {
             foreach (explode("\n", $sv->reqv("topnew")) as $x) {
                 $t = $this->check_topic($x);
                 if ($t === false) {
                     $sv->error_at("topnew", "Topic name “" . htmlspecialchars(trim($x)) . "” is reserved. Please choose another name.");
                 } else if ($t !== "") {
-                    $this->new_topics[] = [$t]; // NB array of arrays
+                    $j[] = (object) ["name" => $t];
                 }
             }
         }
-        $tmap = $sv->conf->topic_set();
-        foreach ($tmap as $tid => $tname) {
-            if (($x = $sv->reqv("top$tid")) !== null) {
-                $t = $this->check_topic($x);
-                if ($t === false) {
-                    if ($this->check_topic($tname)) {
-                        $sv->error_at("top$tid", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
-                    }
-                } else if ($t === "") {
-                    $this->deleted_topics[] = $tid;
-                } else if ($tname !== $t) {
-                    $this->changed_topics[$tid] = $t;
-                }
-            }
-        }
-        if (!$sv->has_error()) {
+        if (!$sv->has_error()
+            && $sv->update("topics", json_encode_db($j))) {
             $sv->request_write_lock("TopicArea", "PaperTopic", "TopicInterest");
             $sv->request_store_value($si);
         }
     }
 
+    function unparse_json(SettingValues $sv, Si $si) {
+        return json_decode($sv->newv("topics"));
+    }
+
     function store_value(SettingValues $sv, Si $si) {
-        if ($this->new_topics) {
-            $sv->conf->qe("insert into TopicArea (topicName) values ?v", $this->new_topics);
-        }
-        if ($this->deleted_topics) {
-            $sv->conf->qe("delete from TopicArea where topicId?a", $this->deleted_topics);
-            $sv->conf->qe("delete from PaperTopic where topicId?a", $this->deleted_topics);
-            $sv->conf->qe("delete from TopicInterest where topicId?a", $this->deleted_topics);
-        }
-        if ($this->changed_topics) {
-            foreach ($this->changed_topics as $tid => $t) {
-                $sv->conf->qe("update TopicArea set topicName=? where topicId=?", $t, $tid);
+        $oldm = $sv->conf->topic_set()->as_array();
+        $newj = json_decode($sv->newv("topics"));
+        $newt1 = $newt2 = $delt = $changet = [];
+        foreach ($newj as $t) {
+            if (!isset($t->id) || $t->id === "new") {
+                $newt1[] = [$t->name];
+            } else if (!isset($oldm[$t->id])) {
+                $newt2[] = [$t->id, $t->name];
+            } else {
+                if ($oldm[$t->id] !== $t->name) {
+                    $changet[] = $t;
+                }
+                unset($oldm[$t->id]);
             }
         }
-        if ($this->new_topics || $this->deleted_topics || $this->changed_topics) {
+        if (!empty($newt1)) {
+            $sv->conf->qe("insert into TopicArea (topicName) values ?v", $newt1);
+        }
+        if (!empty($newt2)) {
+            $sv->conf->qe("insert into TopicArea (topicId,topicName) values ?v", $newt1);
+        }
+        if (!empty($oldm)) {
+            $sv->conf->qe("delete from TopicArea where topicId?a", array_keys($oldm));
+            $sv->conf->qe("delete from PaperTopic where topicId?a", array_keys($oldm));
+            $sv->conf->qe("delete from TopicInterest where topicId?a", array_keys($oldm));
+        }
+        if (!empty($changet)) {
+            foreach ($changet as $t) {
+                $sv->conf->qe("update TopicArea set topicName=? where topicId=?", $t->name, $t->id);
+            }
+        }
+        if (!empty($newt1) || !empty($newt1) || !empty($oldm) || !empty($changet)) {
             $has_topics = $sv->conf->fetch_ivalue("select exists (select * from TopicArea)");
             $sv->save("has_topics", $has_topics ? 1 : null);
             $sv->mark_diff("topics");

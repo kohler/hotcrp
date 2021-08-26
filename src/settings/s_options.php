@@ -466,12 +466,12 @@ class Options_SettingParser extends SettingParser {
         }
     }
 
-    function unparse_json(SettingValues $sv, Si $si, $j) {
+    function unparse_json(SettingValues $sv, Si $si) {
         $oj = [];
         foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
             $oj[] = $o->jsonSerialize();
         }
-        $j->options = $oj;
+        return $oj;
     }
 
     function store_value(SettingValues $sv, Si $si) {

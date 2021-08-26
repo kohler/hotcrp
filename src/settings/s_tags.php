@@ -10,35 +10,20 @@ class Tags_SettingRenderer {
         return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
     }
     static function render_tag_chair(SettingValues $sv) {
-        // Remove `~~` tags from the set of defined chair-only tags. (They can
-        // get on the list if they're defined in some other way.)
-        $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
-            return !str_starts_with($t->tag, "~~")
-                && $t->tag !== "perm:*";
-        });
-        $sv->set_oldv("tag_chair", self::render_tags($ts));
         $sv->echo_entry_group("tag_chair", null, ["class" => "need-suggest tags"], "PC members can see these tags, but only administrators can change them.");
     }
     static function render_tag_sitewide(SettingValues $sv) {
-        $sv->set_oldv("tag_sitewide", self::render_tags($sv->conf->tags()->filter("sitewide")));
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager()) {
             $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-suggest tags"], "Administrators can see and change these tags for every submission.");
         }
     }
     static function render_tag_approval(SettingValues $sv) {
-        $sv->set_oldv("tag_approval", self::render_tags($sv->conf->tags()->filter("approval")));
         $sv->echo_entry_group("tag_approval", null, ["class" => "need-suggest tags"], "<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>");
     }
     static function render_tag_vote(SettingValues $sv) {
-        $x = [];
-        foreach ($sv->conf->tags()->filter("allotment") as $t) {
-            $x[] = "{$t->tag}#{$t->allotment}";
-        }
-        $sv->set_oldv("tag_vote", join(" ", $x));
         $sv->echo_entry_group("tag_vote", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)");
     }
     static function render_tag_rank(SettingValues $sv) {
-        $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank") ?? "");
         $sv->echo_entry_group("tag_rank", null, null, 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)');
     }
     static function render(SettingValues $sv) {
@@ -120,45 +105,61 @@ class Tags_SettingParser extends SettingParser {
     function my_parse_list(Si $si, $checkf, $min_idx) {
         return self::parse_list($this->tagger, $this->sv, $si, $checkf, $min_idx);
     }
+
+    function set_oldv(SettingValues $sv, Si $si) {
+        if ($si->name === "tag_chair") {
+            $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
+                return !str_starts_with($t->tag, "~~")
+                    && $t->tag !== "perm:*";
+            });
+            $sv->set_oldv("tag_chair", Tags_SettingRenderer::render_tags($ts));
+        } else if ($si->name === "tag_sitewide") {
+            $sv->set_oldv("tag_sitewide", Tags_SettingRenderer::render_tags($sv->conf->tags()->filter("sitewide")));
+        } else if ($si->name === "tag_approval") {
+            $sv->set_oldv("tag_approval", Tags_SettingRenderer::render_tags($sv->conf->tags()->filter("approval")));
+        } else if ($si->name === "tag_vote") {
+            $x = [];
+            foreach ($sv->conf->tags()->filter("allotment") as $t) {
+                $x[] = "{$t->tag}#{$t->allotment}";
+            }
+            $sv->set_oldv("tag_vote", join(" ", $x));
+        } else if ($si->name === "tag_rank") {
+            $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank") ?? "");
+        } else {
+            return false;
+        }
+        return true;
+    }
+
     function parse_req(SettingValues $sv, Si $si) {
         assert($this->sv === $sv);
 
-        if ($si->name === "tag_chair" && $sv->has_reqv("tag_chair")) {
+        if ($si->name === "tag_chair") {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
             $sv->update($si->name, join(" ", $ts));
-        }
-
-        if ($si->name === "tag_sitewide" && $sv->has_reqv("tag_sitewide")) {
+        } else if ($si->name === "tag_sitewide") {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
             $sv->update($si->name, join(" ", $ts));
-        }
-
-        if ($si->name === "tag_vote" && $sv->has_reqv("tag_vote")) {
+        } else if ($si->name === "tag_vote") {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
             if ($sv->update("tag_vote", join(" ", $ts))) {
                 $sv->request_write_lock("PaperTag");
                 $sv->request_store_value($si);
             }
-        }
-
-        if ($si->name === "tag_approval" && $sv->has_reqv("tag_approval")) {
+        } else if ($si->name === "tag_approval") {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             if ($sv->update("tag_approval", join(" ", $ts))) {
                 $sv->request_write_lock("PaperTag");
                 $sv->request_store_value($si);
             }
-        }
-
-        if ($si->name === "tag_rank" && $sv->has_reqv("tag_rank")) {
+        } else if ($si->name === "tag_rank") {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             if (count($ts) > 1) {
                 $sv->error_at("tag_rank", "Multiple ranking tags are not supported yet.");
             } else {
                 $sv->update("tag_rank", join(" ", $ts));
             }
-        }
-
-        if ($si->name === "tag_color") {
+        } else if ($si->name === "tag_color") {
             $ts = [];
             foreach ($sv->conf->tags()->canonical_colors() as $k) {
                 if ($sv->has_reqv("tag_color_$k")) {
@@ -168,12 +169,14 @@ class Tags_SettingParser extends SettingParser {
                 }
             }
             $sv->update("tag_color", join(" ", $ts));
-        }
-
-        if ($si->name === "tag_au_seerev" && $sv->has_reqv("tag_au_seerev")) {
+        } else if ($si->name === "tag_au_seerev") {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             $sv->update("tag_au_seerev", join(" ", $ts));
         }
+    }
+
+    function unparse_json(SettingValues $sv, Si $si) {
+        return $sv->newv($si->name);
     }
 
     function store_value(SettingValues $sv, Si $si) {

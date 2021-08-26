@@ -55,4 +55,7 @@ class Submissions_SettingParser extends SettingParser {
             $sv->save("sub_update", $v <= 0 ? null : $v);
         }
     }
+    function unparse_json(SettingValues $sv, Si $si) {
+        return $si->base_unparse_json($sv->newv($si->name));
+    }
 }

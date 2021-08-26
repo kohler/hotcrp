@@ -375,6 +375,7 @@ src/settings/s_responses.php
 src/settings/s_reviewform.php
 src/settings/s_reviews.php
 src/settings/s_reviewvisibility.php
+src/settings/s_sitecontact.php
 src/settings/s_submissions.php
 src/settings/s_subform.php
 src/settings/s_tags.php

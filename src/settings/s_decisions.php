@@ -11,7 +11,7 @@ class Decisions_SettingParser extends SettingParser {
         echo '<div class="has-fold foldo is-decision-type mb-2', $isnew ? ' is-new-decision-type' : '', '">',
             $sv->feedback_at("dec_name_$suffix"),
             $sv->feedback_at("dec_class_$suffix"),
-            $sv->entry("dec_name_$suffix", ["readonly" => !$editable, "data-submission-count" => $count]);
+            $sv->entry("dec_name_$suffix", ["data-submission-count" => $count]);
         if ($editable) {
             echo '<a href="" class="fx ui js-settings-remove-decision-type ml-2 btn qx need-tooltip" aria-label="Delete decision" tabindex="-1">✖</a>';
         }
@@ -19,15 +19,15 @@ class Decisions_SettingParser extends SettingParser {
         $class = $sv->curv("dec_class_$suffix");
         if ($isnew) {
             echo Ht::select("dec_class_$suffix",
-                    ["a" => "Accept class", "r" => "Reject class"], $class,
-                    $sv->sjs("dec_class_$suffix", ["data-default-value" => "a", "disabled" => !$editable]));
+                    ["a" => "Accept category", "r" => "Reject category"], $class,
+                    $sv->sjs("dec_class_$suffix", ["data-default-value" => "a"]));
             if ($sv->has_error_at("dec_class_$suffix")) {
                 echo '<label class="d-inline-block checki ml-2"><span class="checkc">',
                     Ht::checkbox("dec_classconfirm_$suffix", 1, false),
                     '</span><span class="is-error">Confirm</span></label>';
             }
         } else {
-            echo $class === "a" ? "Accept class" : "Reject class";
+            echo $class === "a" ? "Accept category" : "Reject category";
             if ($count) {
                 echo ", ", plural($count, "submission");
             }
@@ -69,63 +69,103 @@ class Decisions_SettingParser extends SettingParser {
         echo "</div>\n";
     }
 
+    function set_oldv(SettingValues $sv, Si $si) {
+        $j = [];
+        foreach ($sv->conf->decision_map() as $did => $name) {
+            if ($did)
+                $j[] = (object) ["id" => $did, "category" => $did > 0 ? "a" : "r", "name" => $name];
+        }
+        $sv->set_oldv("decisions", json_encode_db($j));
+        return true;
+    }
+
     function parse_req(SettingValues $sv, Si $si) {
-        $curmap = $sv->conf->decision_map();
-        $map = $revmap = $newlist = [];
+        $dj = json_decode($sv->oldv("decisions"));
+
+        // parse request
         foreach ($sv->req_suffixes("dec_name") as $suffix) {
-            $dname = $sv->base_parse_req("dec_name$suffix");
-            if ($dname === "") {
-                // remove decision
-            } else if (($t = Conf::decision_name_error($dname))) {
-                $sv->error_at("dec_name$suffix", htmlspecialchars($t));
-            } else if (isset($revmap[strtolower($dname)])) {
-                $sv->error_at("dec_name$suffix", "Decision name “{$dname}” cannot be reused.");
+            $name = $sv->base_parse_req("dec_name$suffix");
+            if (str_starts_with($suffix, "_n")) {
+                $did = "new";
+                $klass = $sv->reqv("dec_class$suffix") === "r" ? "r" : "a";
+                $i = count($dj);
             } else {
-                $revmap[strtolower($dname)] = true;
-                if (str_starts_with($suffix, "_n")) {
-                    $klass = $sv->reqv("dec_class$suffix") === "r" ? "r" : "a";
-                    if ($sv->has_reqv("dec_classconfirm$suffix")
-                        || ($klass === "a" && stripos($dname, "reject") === false)
-                        || ($klass === "r" && stripos($dname, "accept") === false)) {
-                        $newlist[] = [$dname, $klass];
-                    } else {
-                        $n1 = $klass === "a" ? "an Accept" : "a Reject";
-                        $n2 = $klass === "a" ? "reject" : "accept";
-                        $sv->error_at("dec_class$suffix", "An {$n1}-class decision should not typically have “{$n2}” in its name. Either change the decision name or decision class or check the “Confirm” box to save anyway.");
-                    }
-                } else if (str_starts_with($suffix, "_m")) {
-                    $map[-(int) substr($suffix, 2)] = $dname;
-                } else {
-                    $map[(int) substr($suffix, 1)] = $dname;
+                $did = str_starts_with($suffix, "_m") ? -(int) substr($suffix, 2) : (int) substr($suffix, 1);
+                $klass = $did < 0 ? "r" : "a";
+                for ($i = 0; $i !== count($dj) && $dj[$i]->id !== $did; ++$i) {
                 }
             }
-        }
-        foreach ($newlist as $nl) {
-            $val = $step = $nl[1] === "a" ? 1 : -1;
-            while (isset($map[$val]) || isset($curmap[$val])) {
-                $val += $step;
+            if ($i < count($dj) && $dj[$i]->name === $name) {
+                // always ok
+            } else if ($name === "") {
+                if ($i < count($dj)) {
+                    array_splice($dj, $i, 1);
+                }
+            } else if (($error = Conf::decision_name_error($name))) {
+                $sv->error_at("dec_name$suffix", htmlspecialchars($error));
+            } else if ($i < count($dj)
+                       || $sv->reqv("dec_classconfirm$suffix")
+                       || ($klass === "a" && stripos($name, "reject") === false)
+                       || ($klass === "r" && stripos($name, "accept") === false)) {
+                if ($i === count($dj)) {
+                    $dj[] = (object) ["id" => $did, "category" => $klass, "name" => ""];
+                    if ($did === "new")
+                        $dj[$i]->suffix = $suffix;
+                }
+                $dj[$i]->name = $name;
+            } else {
+                $n1 = $klass === "a" ? "An Accept" : "A Reject";
+                $n2 = $klass === "a" ? "reject" : "accept";
+                $sv->error_at("dec_class$suffix", "{$n1}-category decision should not typically have “{$n2}” in its name. Either change the decision name or category or check the “Confirm” box to save anyway.");
             }
-            $map[$val] = $nl[0];
         }
-        ksort($curmap);
-        ksort($map);
-        if ($curmap != $map) {
-            $sv->save("outcome_map", json_encode_db($map));
+
+        // check for name reuse
+        $revmap = [];
+        foreach ($dj as $d) {
+            $n = strtolower($d->name);
+            if (isset($revmap[$n])) {
+                $suffix = $d->suffix ?? ($d->id > 0 ? "_{$d->id}" : "_m" . -$d->id);
+                $sv->error_at("dec_name$suffix", "Decision name “" . htmlspecialchars($d->name) . "” cannot be reused.");
+            } else {
+                $revmap[$n] = true;
+            }
+        }
+
+        // sort and save
+        usort($dj, function ($a, $b) {
+            if ($a->category !== $b->category) {
+                return $a->category === "r" ? -1 : 1;
+            } else {
+                return strcasecmp($a->name, $b->name);
+            }
+        });
+        if ($sv->update("decisions", json_encode_db($dj))) {
             $sv->request_write_lock("Paper");
             $sv->request_store_value($si);
         }
     }
 
+    function unparse_json(SettingValues $sv, Si $si) {
+        return json_decode($sv->oldv("decisions"));
+    }
+
     function store_value(SettingValues $sv, Si $si) {
         $curmap = $sv->conf->decision_map();
-        $map = json_decode($sv->newv("outcome_map"), true);
-        $dels = [];
-        foreach ($curmap as $k => $v) {
-            if ($k && !isset($map[$k]))
-                $dels[] = $k;
+        $newmap = [];
+        foreach (json_decode($sv->newv("decisions")) as $d) {
+            if (($did = $d->id) === "new") {
+                $did = $delta = ($d->category === "r" ? -1 : 1);
+                while (isset($newmap[$did]) || isset($curmap[$did])) {
+                    $did += $delta;
+                }
+            }
+            $newmap[$did] = $d->name;
         }
+        $sv->save("outcome_map", json_encode_db($newmap));
+        $dels = array_diff_key($curmap, $newmap);
         if (!empty($dels)) {
-            $sv->conf->qe("update Paper set outcome=0 where outcome?a", $dels);
+            $sv->conf->qe("update Paper set outcome=0 where outcome?a", array_keys($dels));
         }
     }
 }

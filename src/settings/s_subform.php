@@ -10,22 +10,23 @@ class BanalSettings {
             $sv->set_oldv("sub_banal_$k$suffix", $cfs->unparse_key($k));
         }
 
-        $open = $sv->curv("sub_banal$suffix") > 0;
+        $open = $sv->curv("sub_banal_val$suffix") > 0;
         $uropen = !in_array($sv->curv("sub_banal_pagelimit$suffix"), ["", "N/A"]);
-        $sv->echo_checkbox("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
-        echo Ht::hidden("has_sub_banal$suffix", 1),
-            '<div class="settings-2col fx">';
-        $sv->echo_entry_group("sub_banal_papersize$suffix", "Paper size", ["horizontal" => true], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
+        $editable = $sv->editable("sub_banal$suffix");
+        echo Ht::hidden("has_sub_banal$suffix", 1);
+        $sv->echo_checkbox("sub_banal_val$suffix", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
+        echo '<div class="settings-2col fx">';
+        $sv->echo_entry_group("sub_banal_papersize$suffix", "Paper size", ["horizontal" => true, "readonly" => !$editable], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
         echo '<div class="entryg">';
-        $sv->echo_entry_group("sub_banal_textblock$suffix", "Text block", ["horizontal" => true], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
-        $sv->echo_entry_group("sub_banal_columns$suffix", "Columns", ["horizontal" => true]);
+        $sv->echo_entry_group("sub_banal_textblock$suffix", "Text block", ["horizontal" => true, "readonly" => !$editable], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
+        $sv->echo_entry_group("sub_banal_columns$suffix", "Columns", ["horizontal" => true, "readonly" => !$editable]);
         echo '</div><div class="entryg">';
-        $sv->echo_entry_group("sub_banal_pagelimit$suffix", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit"]);
+        $sv->echo_entry_group("sub_banal_pagelimit$suffix", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit", "readonly" => !$editable]);
         echo '<div class="entryi fx2"><label></label><div class="entry settings-banal-unlimitedref">';
-        $sv->echo_checkbox("sub_banal_unlimitedref$suffix", "Unlimited reference pages", ["disabled" => !$uropen, "label_class" => $uropen ? null : "dim"]);
+        $sv->echo_checkbox("sub_banal_unlimitedref$suffix", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
         echo '</div></div></div>';
-        $sv->echo_entry_group("sub_banal_bodyfontsize$suffix", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt"]);
-        $sv->echo_entry_group("sub_banal_bodylineheight$suffix", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt"]);
+        $sv->echo_entry_group("sub_banal_bodyfontsize$suffix", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
+        $sv->echo_entry_group("sub_banal_bodylineheight$suffix", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
         echo "</div></div>\n";
     }
     static private function cf_status(CheckFormat $cf) {
@@ -65,9 +66,9 @@ class BanalSettings {
         }
     }
     static function parse($suffix, $sv, $check) {
-        if (!$sv->has_reqv("sub_banal$suffix")) {
+        if (!$sv->reqv("sub_banal_val$suffix")) {
             $fs = new FormatSpec($sv->newv("sub_banal_opt$suffix"));
-            $sv->save("sub_banal$suffix", $fs->is_banal_empty() ? 0 : -1);
+            $sv->save("sub_banal_val$suffix", $fs->is_banal_empty() ? 0 : -1);
             return false;
         }
 
@@ -101,7 +102,7 @@ class BanalSettings {
                        && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2]) {
                 $cfs->pagelimit = [+$m[1], +$m[2]];
             } else {
-                $sv->error_at("sub_banal_pagelimit$suffix", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
+                $sv->error_at("sub_banal_pagelimit$suffix", "Requires a whole number greater than 0, or a page range such as <code>2-4</code>.");
                 $problem = true;
             }
         }
@@ -118,7 +119,7 @@ class BanalSettings {
             if (($sx = cvtint($s, -1)) >= 0)
                 $cfs->columns = $sx;
             else {
-                $sv->error_at("sub_banal_columns$suffix", "Columns must be a whole number.");
+                $sv->error_at("sub_banal_columns$suffix", "Requires a whole number.");
                 $problem = true;
             }
         }
@@ -174,7 +175,7 @@ class BanalSettings {
             && strcasecmp($s, "N/A") !== 0) {
             $cfs->bodyfontsize = FormatSpec::parse_range($s);
             if (!$cfs->bodyfontsize) {
-                $sv->error_at("sub_banal_bodyfontsize$suffix", "Minimum body font size must be a number bigger than 0.");
+                $sv->error_at("sub_banal_bodyfontsize$suffix", "Requires a number greater than 0.");
                 $problem = true;
             }
         }
@@ -185,7 +186,7 @@ class BanalSettings {
             && strcasecmp($s, "N/A") !== 0) {
             $cfs->bodylineheight = FormatSpec::parse_range($s);
             if (!$cfs->bodylineheight) {
-                $sv->error_at("sub_banal_bodylineheight$suffix", "Minimum body line height must be a number bigger than 0.");
+                $sv->error_at("sub_banal_bodylineheight$suffix", "Requires a number greater than 0.");
                 $problem = true;
             }
         }
@@ -204,15 +205,15 @@ class BanalSettings {
             $unparse = "";
         }
         $sv->save("sub_banal_data$suffix", $unparse);
-        if ($old_unparse !== $unparse || $sv->oldv("sub_banal$suffix") <= 0) {
-            $sv->save("sub_banal$suffix", $unparse !== "" ? Conf::$now : 0);
+        if ($old_unparse !== $unparse || $sv->oldv("sub_banal_val$suffix") <= 0) {
+            $sv->save("sub_banal_val$suffix", $unparse !== "" ? Conf::$now : 0);
         } else {
-            $sv->save("sub_banal$suffix", $unparse === "" ? 0 : $sv->oldv("sub_banal$suffix"));
+            $sv->save("sub_banal_val$suffix", $unparse === "" ? 0 : $sv->oldv("sub_banal_val$suffix"));
         }
 
         if ($suffix === ""
-            && !$sv->oldv("sub_banal_m1")
-            && !$sv->has_reqv("has_sub_banal_m1")) {
+            && !$sv->oldv("sub_banal_val_m1")
+            && !$sv->has_reqv("sub_banal_m1")) {
             $m1spec = new FormatSpec($sv->oldv("sub_banal_opt_m1"));
             if ($m1spec->is_banal_empty()) {
                 $sv->save("sub_banal_data_m1", $unparse);

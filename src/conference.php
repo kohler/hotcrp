@@ -586,16 +586,16 @@ class Conf {
     function refresh_options() {
         // set longName, downloadPrefix, etc.
         $confid = $this->opt["confid"];
-        if ((!isset($this->opt["longName"]) || $this->opt["longName"] == "")
-            && (!isset($this->opt["shortName"]) || $this->opt["shortName"] == "")) {
-            $this->opt["shortNameDefaulted"] = true;
-            $this->opt["longName"] = $this->opt["shortName"] = $confid;
-        } else if (!isset($this->opt["longName"]) || $this->opt["longName"] == "") {
+        if (($this->opt["longName"] ?? "") === "") {
+            if (($this->opt["shortName"] ?? "") === "") {
+                $this->opt["shortNameDefaulted"] = true;
+                $this->opt["shortName"] = $confid;
+            }
             $this->opt["longName"] = $this->opt["shortName"];
-        } else if (!isset($this->opt["shortName"]) || $this->opt["shortName"] == "") {
+        } else if (($this->opt["shortName"] ?? "") === "") {
             $this->opt["shortName"] = $this->opt["longName"];
         }
-        if (!isset($this->opt["downloadPrefix"]) || $this->opt["downloadPrefix"] == "") {
+        if (($this->opt["downloadPrefix"] ?? "") === "") {
             $this->opt["downloadPrefix"] = $confid . "-";
         }
         $this->short_name = $this->opt["shortName"];
@@ -2087,7 +2087,6 @@ class Conf {
             ];
             if ((!$args["email"] || $args["email"] === "you@example.com")
                 && ($row = $this->default_site_contact())) {
-                $this->set_opt("defaultSiteContact", true);
                 unset($args["fullName"]);
                 $args["email"] = $row->email;
                 $args["firstName"] = $row->firstName;
