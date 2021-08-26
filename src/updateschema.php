@@ -208,7 +208,7 @@ function update_schema_transfer_country($conf) {
 }
 
 function update_schema_review_word_counts($conf) {
-    $rf = new ReviewForm($conf->review_form_json(), $conf);
+    $rf = new ReviewForm($conf, $conf->review_form_json());
     do {
         $n = 0;
         $result = $conf->ql("select * from PaperReview where reviewWordCount is null limit 32");

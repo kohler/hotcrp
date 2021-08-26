@@ -30,7 +30,7 @@ function choose_setting_group($qreq, SettingValues $sv) {
         } else if ($sv->conf->time_after_setting("sub_sub") || $sv->conf->time_review_open()) {
             $want_group = $sv->canonical_group("reviews");
         } else {
-            $want_group = $sv->canonical_group("sub");
+            $want_group = $sv->canonical_group("submissions");
         }
     }
     if (!$want_group) {

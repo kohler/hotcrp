@@ -641,7 +641,11 @@ class ReviewInfo implements JsonSerializable {
             } else if (($short_id = self::$score_field_map[$id] ?? null)) {
                 $m = new ReviewFieldInfo($id, $short_id, true, $id, null);
             }
-            self::$field_info_map[$id] = $m;
+            if ($m) {
+                self::$field_info_map[$m->id] = self::$field_info_map[$m->short_id] = $m;
+            } else {
+                self::$field_info_map[$id] = $m;
+            }
         }
         return $m;
     }

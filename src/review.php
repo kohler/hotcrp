@@ -8,15 +8,20 @@
 //         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
 
 class ReviewFieldInfo {
-    /** @var non-empty-string */
+    /** @var non-empty-string
+     * @readonly */
     public $id;
-    /** @var non-empty-string */
+    /** @var non-empty-string
+     * @readonly */
     public $short_id;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $has_options;
-    /** @var ?non-empty-string */
+    /** @var ?non-empty-string
+     * @readonly */
     public $main_storage;
-    /** @var ?non-empty-string */
+    /** @var ?non-empty-string
+     * @readonly */
     public $json_storage;
 
     /** @param bool $has_options
@@ -102,7 +107,7 @@ class ReviewField implements JsonSerializable {
         VIEWSCORE_AUTHOR => "au"
     ];
 
-    function __construct(ReviewFieldInfo $finfo, Conf $conf) {
+    function __construct(Conf $conf, ReviewFieldInfo $finfo) {
         $this->id = $finfo->id;
         $this->short_id = $finfo->short_id;
         $this->has_options = $finfo->has_options;
@@ -110,12 +115,16 @@ class ReviewField implements JsonSerializable {
         $this->json_storage = $finfo->json_storage;
         $this->conf = $conf;
     }
-    static function make_template($has_options, Conf $conf) {
+
+    /** @param bool $has_options
+     * @return ReviewField */
+    static function make_template(Conf $conf, $has_options) {
         $id = $has_options ? "s00" : "t00";
-        return new ReviewField(new ReviewFieldInfo($id, $id, $has_options, null, null), $conf);
+        return new ReviewField($conf, new ReviewFieldInfo($id, $id, $has_options, null, null));
     }
 
-    function assign($j) {
+    /** @param object $j */
+    function assign_json($j) {
         $this->name = $j->name ?? "Field name";
         $this->name_html = htmlspecialchars($this->name);
         $this->description = $j->description ?? "";
@@ -205,8 +214,16 @@ class ReviewField implements JsonSerializable {
         return join(" OR ", $rs);
     }
 
-    function unparse_json($for_settings = false) {
-        $j = (object) array("name" => $this->name);
+    /** @param bool $for_settings
+     * @return object */
+    function unparse_json($for_settings) {
+        $j = (object) [];
+        if ($for_settings) {
+            $j->id = $this->short_id;
+        } else {
+            $j->uid = $this->uid();
+        }
+        $j->name = $this->name;
         if ($this->description) {
             $j->description = $this->description;
         }
@@ -240,7 +257,7 @@ class ReviewField implements JsonSerializable {
         return $j;
     }
     function jsonSerialize() {
-        return $this->unparse_json();
+        return $this->unparse_json(false);
     }
 
     /** @return string */
@@ -559,7 +576,8 @@ class ReviewField implements JsonSerializable {
 class ReviewForm implements JsonSerializable {
     const NOTIFICATION_DELAY = 10800;
 
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
     /** @var array<string,ReviewField> */
     public $fmap;      // all fields, whether or not displayed, key id
@@ -594,7 +612,8 @@ class ReviewForm implements JsonSerializable {
         }
     }
 
-    function __construct($rfj, Conf $conf) {
+    /** @param null|array|object $rfj */
+    function __construct(Conf $conf, $rfj) {
         $this->conf = $conf;
         $this->fmap = $this->forder = [];
 
@@ -611,10 +630,13 @@ class ReviewForm implements JsonSerializable {
         }
 
         foreach ($rfj as $fid => $j) {
+            if (is_int($fid)) {
+                $fid = $j->id;
+            }
             if (($finfo = ReviewInfo::field_info($fid))) {
-                $f = new ReviewField($finfo, $conf);
+                $f = new ReviewField($conf, $finfo);
                 $this->fmap[$f->id] = $f;
-                $f->assign($j);
+                $f->assign_json($j);
             }
         }
         uasort($this->fmap, "ReviewForm::fmap_compare");
@@ -715,20 +737,11 @@ class ReviewForm implements JsonSerializable {
         return $fs;
     }
 
+    /** @return list<object> */
     function jsonSerialize() {
         $fmap = [];
         foreach ($this->fmap as $f) {
-            $fmap[$f->id] = $f->unparse_json(true);
-        }
-        return $fmap;
-    }
-
-    /** @param array<string,ReviewField> $fields
-     * @return array<string,array> */
-    function unparse_form_json($fields) {
-        $fmap = [];
-        foreach ($fields as $f) {
-            $fmap[$f->uid()] = $f->unparse_json();
+            $fmap[] = $f->unparse_json(true);
         }
         return $fmap;
     }

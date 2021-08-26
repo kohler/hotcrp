@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class ReviewForm_SettingParser extends SettingParser {
+    /** @var list<object> */
     private $nrfj;
     private $byname;
     private $_option_error_printed = false;
@@ -259,7 +260,7 @@ class ReviewForm_SettingParser extends SettingParser {
     static function requested_fields(SettingValues $sv) {
         $fs = [];
         $max_fields = ["s" => "s00", "t" => "t00"];
-        foreach ($sv->conf->review_form()->fmap as $fid => $f) {
+        foreach ($sv->conf->all_review_fields() as $f) {
             $fs[$f->short_id] = true;
             if (strcmp($f->short_id, $max_fields[$f->short_id[0]]) > 0) {
                 $max_fields[$f->short_id[0]] = $f->short_id;
@@ -285,17 +286,17 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     function parse_req(SettingValues $sv, Si $si) {
-        $this->nrfj = (object) array();
+        $this->nrfj = [];
         $this->byname = [];
 
         $rf = $sv->conf->review_form();
         foreach (self::requested_fields($sv) as $fid => $x) {
             if (($finfo = ReviewInfo::field_info($fid))) {
-                $f = $rf->fmap[$finfo->id] ?? new ReviewField($finfo, $sv->conf);
+                $f = $rf->fmap[$finfo->id] ?? new ReviewField($sv->conf, $finfo);
                 $fj = $this->populate_field($sv, $f, $fid);
                 $xf = clone $f;
-                $xf->assign($fj);
-                $this->nrfj->{$finfo->id} = $xf->unparse_json(true);
+                $xf->assign_json($fj);
+                $this->nrfj[] = $xf->unparse_json(true);
             } else if ($sv->has_reqv("rf_position_{$fid}")
                        && $sv->reqv("rf_position_{$fid}") > 0) {
                 $sv->error_at("rf_name_{$fid}", "Too many review fields. You must delete some other fields before adding this one.");
@@ -423,7 +424,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     function store_value(SettingValues $sv, Si $si) {
         $oform = $sv->conf->review_form();
-        $nform = new ReviewForm($this->nrfj, $sv->conf);
+        $nform = new ReviewForm($sv->conf, $this->nrfj);
         $clear_fields = $clear_options = [];
         $reset_wordcount = $assign_ordinal = $reset_view_score = false;
         foreach ($nform->all_fields() as $nf) {
@@ -623,11 +624,9 @@ class ReviewForm_SettingRenderer {
 <p>Or use consecutive capital letters (lower letters are better).</p></div>');
 
         $rfj = [];
-        foreach ($rf->fmap as $f) {
-            $rfj[$f->short_id] = $fj = $f->unparse_json();
-            if ($f->displayed) {
-                $fj->search_keyword = $f->search_keyword();
-            }
+        foreach ($rf->all_fields() as $f) {
+            $rfj[] = $fj = $f->unparse_json(true);
+            $fj->search_keyword = $f->search_keyword();
         }
 
         echo Ht::hidden("has_review_form", 1);
@@ -645,7 +644,7 @@ class ReviewForm_SettingRenderer {
             '<div class="entryi mb-3"><div class="entry">',
             '<input name="rf_name_$" id="rf_name_$" type="text" size="50" style="font-weight:bold" placeholder="Field name">',
             '</div></div>';
-        $rfield = ReviewField::make_template(true, $sv->conf);
+        $rfield = ReviewField::make_template($sv->conf, true);
         foreach ($sv->group_members("reviewfield/properties") as $gj) {
             if (isset($gj->render_review_property_function)) {
                 Conf::xt_resolve_require($gj);
@@ -673,14 +672,14 @@ class ReviewForm_SettingRenderer {
             "<span class=\"sep\"></span>",
             Ht::button("Add text field", ["class" => "ui js-settings-add-review-field"]);
 
-        Ht::stash_script("hotcrp.settings.review_form({"
-            . "fields:" . json_encode_browser($rfj)
-            . ", samples:" . json_encode_browser($samples)
-            . ", errf:" . json_encode_browser($sv->message_field_map())
-            . ", message_list:" . json_encode_browser($sv->message_list())
-            . ", req:" . json_encode_browser($req)
-            . ", stemplate:" . json_encode_browser(ReviewField::make_template(true, $sv->conf))
-            . ", ttemplate:" . json_encode_browser(ReviewField::make_template(false, $sv->conf))
-            . "})");
+        $sj = [];
+        $sj["fields"] = $rfj;
+        $sj["samples"] = $samples;
+        $sj["errf"] = $sv->message_field_map();
+        $sj["message_list"] = $sv->message_list();
+        $sj["req"] = $req;
+        $sj["stemplate"] = ReviewField::make_template($sv->conf, true)->unparse_json(true);
+        $sj["ttemplate"] = ReviewField::make_template($sv->conf, false)->unparse_json(true);
+        Ht::stash_script("hotcrp.settings.review_form(" . json_encode_browser($sj) . ")");
     }
 }

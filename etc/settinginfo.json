@@ -3,7 +3,6 @@
         "name": "conference_abbreviation", "storage": "opt.shortName", "group": "basics",
         "title": "Conference abbreviation",
         "type": "simplestring", "size": 20, "autogrow": true,
-        "require": "src/settings/s_basics.php",
         "parser_class": "Basics_SettingParser"
     },
     {

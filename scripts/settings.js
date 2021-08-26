@@ -542,13 +542,15 @@ function add_field(fid) {
 
 function rfs(data) {
     var i, fid, $j, m, elt, entryi;
-    original = data.fields;
+    original = {};
     samples = data.samples;
     stemplate = data.stemplate;
     ttemplate = data.ttemplate;
 
     fieldorder = [];
-    for (fid in original) {
+    for (i in data.fields) {
+        fid = data.fields[i].id || i;
+        original[fid] = data.fields[i];
         if (original[fid].position)
             fieldorder.push(fid);
     }
@@ -618,7 +620,10 @@ function add_dialog(fid, focus) {
     }
     function submit(event) {
         add_field(fid);
-        fill_field($("#rf_" + fid), fid, template ? samples[template - 1] : {}, false);
+        var tmpl = template ? samples[template - 1] : {};
+        if (!template && has_options)
+            tmpl.required = true;
+        fill_field($("#rf_" + fid), fid, tmpl, false);
         $("#rf_name_" + fid)[0].focus();
         $d.close();
         event.preventDefault();
@@ -664,27 +669,18 @@ function add_dialog(fid, focus) {
 }
 
 handle_ui.on("js-settings-add-review-field", function () {
-    var has_options = hasClass(this, "score"), fid;
-    // prefer fields that have ever been defined
-    var i = 0, x = [];
-    for (fid in original)
-        if ($.inArray(fid, fieldorder) < 0) {
-            x.push([fid, i + (original[fid].name && original[fid].name !== "Field name" ? 0 : 1000)]);
-            ++i;
-        }
-    // find a field
-    x.sort(function (a, b) { return a[1] - b[1]; });
-    for (i = 0; i != x.length; ++i)
-        if (!has_options === (x[i][0].charAt(0) === "t"))
-            return add_dialog(x[i][0]);
+    var has_options = hasClass(this, "score"),
+        tmpl = has_options ? stemplate : ttemplate;
+    if (!tmpl || !/^[a-z]+00$/.test(tmpl.id))
+        throw new Error("bad template");
     // no field found, so add one
-    var ffmt = has_options ? "s%02d" : "t%02d";
+    var ffmt = tmpl.id.substring(0, tmpl.id.length - 2) + "%02d", i, fid;
     for (i = 1; ; ++i) {
         fid = sprintf(ffmt, i);
         if ($.inArray(fid, fieldorder) < 0)
             break;
     }
-    original[fid] = has_options ? stemplate : ttemplate;
+    original[fid] = Object.assign({}, tmpl, {id: fid});
     return add_dialog(fid);
 });
 

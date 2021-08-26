@@ -4429,13 +4429,14 @@ function add_review(rrow) {
 return {
     set_form: function (j) {
         var i, f;
-        formj = $.extend(formj || {}, j);
-        for (i in formj) {
-            f = formj[i];
-            f.uid = i;
+        formj = formj || {};
+        for (i in j) {
+            f = j[i];
+            f.uid = f.uid || i;
             f.name_html = escape_html(f.name);
             if (f.options)
                 f.score_info = make_score_info(f.options.length, f.option_letter, f.option_class_prefix);
+            formj[f.uid] = f;
         }
         form_order = $.map(formj, function (v) { return v; });
         form_order.sort(function (a, b) { return a.position - b.position; });

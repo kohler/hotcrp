@@ -13,7 +13,11 @@ class GetJsonRQC_ListAction extends ListAction {
             $results["hotcrp_commit"] = $git_data[0];
         }
         $rf = $user->conf->review_form();
-        $results["reviewform"] = $rf->unparse_form_json($rf->bound_viewable_fields(VIEWSCORE_REVIEWERONLY));
+        $fj = [];
+        foreach ($rf->bound_viewable_fields(VIEWSCORE_REVIEWERONLY) as $f) {
+            $fj[$f->uid()] = $f->unparse_json(false);
+        }
+        $results["reviewform"] = $fj;
         $pj = [];
         $ps = new PaperStatus($user->conf, $user, ["hide_docids" => true]);
         foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {

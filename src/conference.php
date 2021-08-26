@@ -1497,18 +1497,19 @@ class Conf {
     }
 
 
+    /** @return null|array|object */
     function review_form_json() {
         $x = $this->settingTexts["review_form"] ?? null;
         if (is_string($x)) {
-            $x = $this->settingTexts["review_form"] = json_decode($x);
+            $x = json_decode($x);
         }
-        return is_object($x) ? $x : null;
+        return is_array($x) || is_object($x) ? $x : null;
     }
 
     /** @return ReviewForm */
     function review_form() {
         if ($this->_review_form === null) {
-            $this->_review_form = new ReviewForm($this->review_form_json(), $this);
+            $this->_review_form = new ReviewForm($this, $this->review_form_json());
         }
         return $this->_review_form;
     }

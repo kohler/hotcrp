@@ -2744,7 +2744,11 @@ class PaperTable {
                 }
             }
         }
-        Ht::stash_script("hotcrp.set_review_form(" . json_encode_browser($rf->unparse_form_json(array_diff_key($rf->all_fields(), $unresolved_fields))) . ")");
+        $fj = [];
+        foreach (array_diff_key($rf->all_fields(), $unresolved_fields) as $f) {
+            $fj[] = $f->unparse_json(false);
+        }
+        Ht::stash_script("hotcrp.set_review_form(" . json_encode_browser($fj) . ")");
 
         $this->rrow = $this->prow->review_by_ordinal_id((string) $this->qreq->reviewId);
 
