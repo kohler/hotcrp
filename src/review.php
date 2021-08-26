@@ -276,6 +276,7 @@ class ReviewField implements JsonSerializable {
             && $this->view_score >= VIEWSCORE_AUTHORDEC;
     }
 
+    /** @return ?string */
     function typical_score() {
         if ($this->_typical_score === false && $this->has_options) {
             $n = count($this->options);
@@ -290,6 +291,7 @@ class ReviewField implements JsonSerializable {
         return $this->_typical_score;
     }
 
+    /** @return ?array{string,string} */
     function typical_score_range() {
         if (!$this->has_options || count($this->options) < 2) {
             return null;
@@ -302,6 +304,7 @@ class ReviewField implements JsonSerializable {
         }
     }
 
+    /** @return ?array{string,string} */
     function full_score_range() {
         if (!$this->has_options) {
             return null;
@@ -651,11 +654,14 @@ class ReviewForm implements JsonSerializable {
     }
     /** @return list<ReviewField> */
     function example_fields(Contact $user) {
+        $hfs = $this->highlighted_main_scores();
+        $hpos = 0;
         $fs = [];
         foreach ($this->viewable_fields($user) as $f) {
             if ($f->has_options && $f->search_keyword()) {
-                if ($f->id === "overAllMerit") {
-                    array_unshift($fs, $f);
+                if (in_array($f, $hfs)) {
+                    array_splice($fs, $hpos, 0, [$f]);
+                    ++$hpos;
                 } else {
                     $fs[] = $f;
                 }
@@ -676,7 +682,7 @@ class ReviewForm implements JsonSerializable {
     }
 
     /** @return ?ReviewField */
-    private function view_default_score() {
+    function default_highlighted_score() {
         $f = $this->fmap["overAllMerit"];
         if ($f->displayed && $f->view_score >= VIEWSCORE_PC) {
             return $f;
@@ -687,16 +693,11 @@ class ReviewForm implements JsonSerializable {
         }
         return null;
     }
-    /** @return string */
-    function view_default() {
-        $f = $this->view_default_score();
-        return $f ? "show:" . $f->search_keyword() : "";
-    }
     /** @return list<ReviewField> */
     function highlighted_main_scores() {
         $s = $this->conf->setting_data("pldisplay_default");
         if ($s === null) {
-            $f = $this->view_default_score();
+            $f = $this->default_highlighted_score();
             return $f ? [$f] : [];
         }
         $fs = [];

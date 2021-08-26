@@ -617,8 +617,10 @@ class PaperList implements XtContext {
             && !$no_settings) {
             $s = $this->conf->setting_data("{$this->_report_id}display_default");
         }
-        if ($this->_report_id === "pl") {
-            $s = $s ?? $this->conf->review_form()->view_default();
+        if ($this->_report_id === "pl"
+            && $s === null
+            && ($f = $this->conf->review_form()->default_highlighted_score())) {
+            $s = "show:" . $f->search_keyword();
         }
         $this->parse_view($s, self::VIEWORIGIN_DEFAULT_DISPLAY);
     }
