@@ -767,11 +767,6 @@ class SettingValues extends MessageSet {
         }
     }
 
-    /** @param string $k */
-    function unset_req($k) {
-        unset($this->req[$k]);
-    }
-
     function session_highlight() {
         foreach ($this->user->session("settings_highlight", []) as $f => $v) {
             $this->msg_at($f, null, $v);
