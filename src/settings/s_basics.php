@@ -35,7 +35,7 @@ class Basics_SettingParser extends SettingParser {
     }
 
     function parse_req(SettingValues $sv, Si $si) {
-        $v = $sv->si_base_parse_req($si);
+        $v = $sv->base_parse_req($si);
         if ($v === null) {
             // do nothing
         } else if ($si->name === "site_contact_email") {

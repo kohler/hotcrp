@@ -48,7 +48,7 @@ class Submissions_SettingRenderer {
 
 class Submissions_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
-        $v = $sv->si_base_parse_req($si);
+        $v = $sv->base_parse_req($si);
         if ($v !== null) {
             $sv->save("sub_sub", $v <= 0 ? null : $v);
             $sv->check_date_before("sub_reg", "sub_sub", true);

@@ -762,17 +762,15 @@ class Conf {
     }
 
     /** @param string $name
-     * @param ?int $unused_defval XXX
      * @return ?int */
-    function setting($name, $unused_defval = null) {
-        return $this->settings[$name] ?? $unused_defval;
+    function setting($name) {
+        return $this->settings[$name] ?? null;
     }
 
     /** @param string $name
-     * @param ?string $unused_defval XXX
      * @return ?string */
-    function setting_data($name, $unused_defval = null) {
-        return $this->settingTexts[$name] ?? $unused_defval;
+    function setting_data($name) {
+        return $this->settingTexts[$name] ?? null;
     }
 
     /** @param string $name
@@ -840,10 +838,9 @@ class Conf {
 
 
     /** @param string $name
-     * @param mixed $unused_defval XXX
      * @return mixed */
-    function opt($name, $unused_defval = null) {
-        return $this->opt[$name] ?? $unused_defval;
+    function opt($name) {
+        return $this->opt[$name] ?? null;
     }
 
     /** @param string $name

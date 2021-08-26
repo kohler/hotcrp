@@ -646,8 +646,11 @@ class Mailer {
     }
 
 
-    function expand_template($templateName, $default = false) {
-        return $this->expand($this->conf->mail_template($templateName, $default));
+    /** @param string $name
+     * @param bool $use_default
+     * @return array{body:string,subject:string} */
+    function expand_template($name, $use_default = false) {
+        return $this->expand($this->conf->mail_template($name, $use_default));
     }
 
 

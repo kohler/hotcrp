@@ -43,6 +43,19 @@
         "parser_class": "Decisions_SettingParser"
     },
     {
+        "name": "dec_name", "group": "decisions",
+        "extensible": true, "internal": true, "title": "Decision name",
+        "type": "simplestring", "size": 35, "placeholder": "Decision name"
+    },
+    {
+        "name": "dec_class", "group": "decisions",
+        "extensible": true, "internal": true, "title": "Decision class"
+    },
+    {
+        "name": "dec_classconfirm", "group": "decisions",
+        "extensible": true, "internal": true
+    },
+    {
         "name": "extrev_chairreq", "group": "reviews",
         "json_name": "review_external_request",
         "title": "PC chair must approve proposed external reviewers",
@@ -60,7 +73,7 @@
     {
         "name": "extrev_roundtag", "group": "reviews",
         "title": "External assignment review round",
-        "type": "tag", "parser_class": "RoundSelector_SettingParser",
+        "type": "tagselect", "parser_class": "RoundSelector_SettingParser",
         "require": "src/settings/s_reviews.php", "position": 1
     },
     {
@@ -319,7 +332,7 @@
     {
         "name": "rev_roundtag", "group": "reviews",
         "title": "Assignment review round",
-        "type": "tag", "parser_class": "RoundSelector_SettingParser",
+        "type": "tagselect", "parser_class": "RoundSelector_SettingParser",
         "require": "src/settings/s_reviews.php", "position": 1
     },
     {

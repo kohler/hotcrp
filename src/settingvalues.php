@@ -425,7 +425,8 @@ class Si {
         } else if ($this->type === "simplestring") {
             return simplify_whitespace($v);
         } else if ($this->type === "tag"
-                   || $this->type === "tagbase") {
+                   || $this->type === "tagbase"
+                   || $this->type === "tagselect") {
             $v = trim($v);
             if ($v === "" && $this->optional) {
                 return "";
@@ -961,9 +962,8 @@ class SettingValues extends MessageSet {
     }
     /** @param Si|string $name
      * @param ?array<string,mixed> $js
-     * @param ?string $type
      * @return array<string,mixed> */
-    function sjs($name, $js = null, $type = null) {
+    function sjs($name, $js = null) {
         if ($name instanceof Si) {
             $si = $name;
             $name = $si->name;
@@ -975,7 +975,7 @@ class SettingValues extends MessageSet {
             if ($si->disabled) {
                 $x["disabled"] = true;
             } else if (!$this->si_editable($si)) {
-                if (in_array($type, ["checkbox", "radio", "select"], true)) {
+                if (in_array($si->type, ["checkbox", "radio", "select", "cdate", "tagselect"], true)) {
                     $x["disabled"] = true;
                 } else {
                     $x["readonly"] = true;
@@ -1075,6 +1075,11 @@ class SettingValues extends MessageSet {
     /** @param string $name */
     function reqv($name) {
         return $this->req[$name] ?? null;
+    }
+    /** @param string $prefix
+     * @return list<string> */
+    function req_suffixes($prefix) {
+        return $this->req_has_suffixes[$prefix] ?? [];
     }
     /** @return list<Si> */
     private function req_sis(Si $si) {
@@ -1264,7 +1269,7 @@ class SettingValues extends MessageSet {
         $js["id"] = $name;
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js, "checkbox"));
+            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js));
     }
     /** @param string $name
      * @param string $text
@@ -1338,7 +1343,7 @@ class SettingValues extends MessageSet {
 
             echo '<div class="settings-radioitem checki">',
                 $label1, '<span class="checkc">',
-                Ht::radio($name, $k, $k == $x, $this->sjs($name, $item, "radio")),
+                Ht::radio($name, $k, $k == $x, $this->sjs($name, $item)),
                 '</span>', $label, $label2, $hint, '</div>';
         }
         $this->echo_feedback_at($name);
@@ -1370,7 +1375,7 @@ class SettingValues extends MessageSet {
         if ($si->parser_class) {
             $t = Ht::hidden("has_$name", 1);
         }
-        return Ht::entry($name, $v, $this->sjs($si, $js, "text")) . $t;
+        return Ht::entry($name, $v, $this->sjs($si, $js)) . $t;
     }
     /** @param string $name
      * @return void */
@@ -1430,7 +1435,7 @@ class SettingValues extends MessageSet {
         if ($si->parser_class) {
             $t = Ht::hidden("has_$name", 1);
         }
-        return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($si, $js, "select")) . $t;
+        return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($si, $js)) . $t;
     }
     function echo_select_group($name, $values, $description, $js = null, $hint = null) {
         $this->echo_control_group($name, $description,
@@ -1464,7 +1469,7 @@ class SettingValues extends MessageSet {
         if (!isset($js["cols"])) {
             $js["cols"] = 80;
         }
-        return Ht::textarea($name, $v, $this->sjs($si, $js, "textarea")) . $t;
+        return Ht::textarea($name, $v, $this->sjs($si, $js)) . $t;
     }
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
@@ -1512,6 +1517,10 @@ class SettingValues extends MessageSet {
             $hint, $close, "</div></div>";
     }
 
+    /** @param string $name0
+     * @param string $name1
+     * @param bool $force_name0
+     * @return bool */
     function check_date_before($name0, $name1, $force_name0) {
         if (($d1 = $this->newv($name1))) {
             $d0 = $this->newv($name0);
@@ -1528,6 +1537,8 @@ class SettingValues extends MessageSet {
         return true;
     }
 
+    /** @param string $type
+     * @return string */
     function type_hint($type) {
         if (str_ends_with($type, "date") && !isset($this->hint_status["date"])) {
             $this->hint_status["date"] = true;
@@ -1536,18 +1547,22 @@ class SettingValues extends MessageSet {
             $this->hint_status["grace"] = true;
             return "Example: “15 min”";
         } else {
-            return false;
+            return "";
         }
     }
 
-    function expand_mail_template($name, $default) {
+    /** @param string $name
+     * @param bool $use_default
+     * @return array{subject:string,body:string} */
+    function expand_mail_template($name, $use_default) {
         if (!$this->null_mailer) {
             $this->null_mailer = new HotCRPMailer($this->conf, null, ["width" => false]);
         }
-        return $this->null_mailer->expand_template($name, $default);
+        return $this->null_mailer->expand_template($name, $use_default);
     }
 
-    /** @param Si $si */
+    /** @param Si $si
+     * @return string */
     function si_message_default($si) {
         assert(str_starts_with($si->storage(), "msg."));
         $ctxarg = null;
@@ -1561,16 +1576,15 @@ class SettingValues extends MessageSet {
     /** @param string|Si $si
      * @return string */
     function setting_link($html, $si, $js = null) {
-        if (!($si instanceof Si)) {
-            $si = $this->si($si);
-        }
+        $si = is_string($si) ? $this->si($si) : $si;
         return Ht::link($html, $si->sv_hoturl($this), $js);
     }
 
 
-    /** @param Si $si
+    /** @param string|Si $si
      * @return null|int|string */
-    function si_base_parse_req($si) {
+    function base_parse_req($si) {
+        $si = is_string($si) ? $this->si($si) : $si;
         $v = $si->base_parse_reqv($this, $this->reqv($si->name));
         if ($v === false) {
             $this->error_at($si, $si->last_parse_error);
@@ -1590,7 +1604,7 @@ class SettingValues extends MessageSet {
                     $this->saved_si[] = $si;
                 }
             } else if ($si->storage_type !== Si::SI_NONE
-                       && ($v = $this->si_base_parse_req($si)) !== null) {
+                       && ($v = $this->base_parse_req($si)) !== null) {
                 if (is_int($v)
                     && $v <= 0
                     && $si->type !== "radio"
@@ -1732,6 +1746,7 @@ class SettingValues extends MessageSet {
                    || $si->type === "simplestring"
                    || $si->type === "tag"
                    || $si->type === "tagbase"
+                   || $si->type === "tagselect"
                    || $si->type === "emailheader"
                    || $si->type === "emailstring"
                    || $si->type === "urlstring"
@@ -1796,6 +1811,7 @@ class SettingValues extends MessageSet {
                    || $si->type === "simplestring"
                    || $si->type === "tag"
                    || $si->type === "tagbase"
+                   || $si->type === "tagselect"
                    || $si->type === "emailheader"
                    || $si->type === "emailstring"
                    || $si->type === "urlstring"

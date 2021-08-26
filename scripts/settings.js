@@ -123,20 +123,34 @@ handle_ui.on("js-settings-banal-pagelimit", function (evt) {
 
 handle_ui.on("js-settings-add-decision-type", function (event) {
     var $t = $("#settings-decision-types"), next = 1;
-    while ($t.find("input[name=dec_name_" + next + "]").length)
+    while ($t.find("input[name=dec_name_n" + next + "]").length)
         ++next;
     $("#settings-decision-type-notes").removeClass("hidden");
-    var h = $("#settings-new-decision-type").html().replace(/_0/g, "_" + next),
+    var h = $("#settings-new-decision-type").html().replace(/_\$/g, "_n" + next),
         $r = $(h).appendTo($t);
     $r.find("input[type=text]").autogrow();
-    $r.find("input[name=dec_name_" + next + "]")[0].focus();
+    $r.find("input[name=dec_name_n" + next + "]")[0].focus();
 });
 
 handle_ui.on("js-settings-remove-decision-type", function (event) {
-    var $r = $(this).closest("tr");
-    $r.addClass("hidden").find("input[name^=dec_name]").val("");
-    $r.find("select[name^=dec_class]").val("1");
-    form_highlight($r.closest("form"));
+    var $r = $(this).closest(".is-decision-type"),
+        ne = $r.find("input[name^=dec_name]")[0],
+        sc = ne.getAttribute("data-submission-count")|0;
+    if (ne.name.startsWith("dec_name_n")) {
+        $r.remove();
+        if (!$("#settings-decision-types .is-new-decision-type").length)
+            $("#settings-decision-type-notes").addClass("hidden");
+    } else {
+        foldup.call(ne, {f: true});
+        addClass(ne, "hidden");
+        ne.value = "";
+        $(ne).after('<span class="text-decoration-line-through">'.concat(escape_html(ne.defaultValue), '</span>'));
+        var t = '<div class="f-i"><em>This decision will be removed';
+        if (sc)
+            t = t.concat(' and <a href="', hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, 'submission'), '</a> set to undecided');
+        $r.after(t + '.</em></div>');
+        form_highlight($r.closest("form"));
+    }
 });
 
 handle_ui.on("js-settings-new-autosearch", function (event) {

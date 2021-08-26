@@ -75,7 +75,7 @@ class Reviews_SettingRenderer {
         // Deadlines
         $sv->render_section("Deadlines &amp; rounds", "rounds");
         echo '<p>Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
-        echo '<p class="f-h">', ($sv->type_hint("date") ? : ""), '</p>';
+        echo '<p class="f-h">', $sv->type_hint("date"), '</p>';
 
         $rounds = $sv->conf->round_list();
         if ($sv->use_req()) {
@@ -158,10 +158,10 @@ class Reviews_SettingRenderer {
         $extselector = array_merge(["#same" => "(same as PC)"], $selector);
         echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',
             $sv->label("rev_roundtag", "New PC reviews use round&nbsp; "),
-            Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag", null, "select")),
+            Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
             ' <span class="barsep">·</span> ',
             $sv->label("extrev_roundtag", "New external reviews use round&nbsp; "),
-            Ht::select("extrev_roundtag", $extselector, $extround_value, $sv->sjs("extrev_roundtag", null, "select")),
+            Ht::select("extrev_roundtag", $extselector, $extround_value, $sv->sjs("extrev_roundtag")),
             '</div>';
     }
 
@@ -465,7 +465,7 @@ class ReviewDeadline_SettingParser extends SettingParser {
         $prefix = $si->prefix();
         $suffix = $rnum ? "_$rnum" : "";
 
-        if (($v = $sv->si_base_parse_req($si)) !== null) {
+        if (($v = $sv->base_parse_req($si)) !== null) {
             $sv->save("{$prefix}{$suffix}", $v <= 0 ? null : $v);
             if ($v > 0 && str_ends_with($prefix, "hard")) {
                 $sv->check_date_before(substr($prefix, 0, -4) . "soft{$suffix}", $si->name, true);
