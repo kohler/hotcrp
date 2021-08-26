@@ -10,6 +10,8 @@ class ReviewForm_SettingParser extends SettingParser {
     public $field;
     /** @var string */
     public $source_html;
+    /** @var array<string,list<string>> */
+    public $clear_req = [];
 
     static function parse_description_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
         if (!$sv->has_reqv("rf_description_{$xpos}")) {
@@ -302,8 +304,15 @@ class ReviewForm_SettingParser extends SettingParser {
             }
         }
 
-        $sv->request_write_lock("PaperReview");
-        return true;
+        if ($sv->update("review_form", json_encode_db($this->nrfj))) {
+            $sv->request_write_lock("PaperReview");
+            $sv->request_store_value($si);
+            foreach ($sv->req as $k => $v) {
+                if (str_starts_with($k, "rf_")
+                    && ($pos = strrpos($k, "_")) !== 2)
+                    $this->clear_req[substr($k, $pos + 1)][] = $k;
+            }
+        }
     }
 
     private function clear_existing_fields($fields, Conf $conf) {
@@ -419,17 +428,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    function save(SettingValues $sv, Si $si) {
-        if (!$sv->update("review_form", json_encode_db($this->nrfj))) {
-            return;
-        }
-        $reqk = [];
-        foreach ($sv->req as $k => $v) {
-            if (str_starts_with($k, "rf_")
-                && ($colon = strrpos($k, "_")) !== 2)
-                $reqk[substr($k, $colon + 1)][] = $k;
-        }
-
+    function store_value(SettingValues $sv, Si $si) {
         $oform = $sv->conf->review_form();
         $nform = new ReviewForm($this->nrfj, $sv->conf);
         $clear_fields = $clear_options = [];
@@ -460,7 +459,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 && $nf->view_score >= VIEWSCORE_AUTHORDEC) {
                 $assign_ordinal = true;
             }
-            foreach ($reqk[$nf->short_id] ?? [] as $k) {
+            foreach ($this->clear_req[$nf->short_id] ?? [] as $k) {
                 $sv->unset_req($k);
             }
         }

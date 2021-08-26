@@ -405,13 +405,11 @@ class Round_SettingParser extends SettingParser {
         // register callback if we need to change reviews' rounds
         if (!empty($this->rev_round_changes)) {
             $sv->request_write_lock("PaperReview", "ReviewRequest", "PaperReviewRefused");
-            return true;
-        } else {
-            return false;
+            $sv->request_store_value($si);
         }
     }
 
-    function save(SettingValues $sv, Si $si) {
+    function store_value(SettingValues $sv, Si $si) {
         if ($this->rev_round_changes) {
             $qx = "case";
             foreach ($this->rev_round_changes as $old => $new) {
@@ -439,7 +437,6 @@ class RoundSelector_SettingParser extends SettingParser {
                 $sv->save($si->name, $t);
             }
         }
-        return false;
     }
 }
 
@@ -450,7 +447,7 @@ class ReviewDeadline_SettingParser extends SettingParser {
         $rref = (int) substr($si->suffix(), 1);
         if ($sv->reqv("deleteround_$rref")) {
             // setting already deleted by tag_rounds parsing
-            return false;
+            return;
         }
 
         $name = Round_SettingParser::clean_round_name($sv->reqv("roundname_$rref"));
@@ -471,7 +468,5 @@ class ReviewDeadline_SettingParser extends SettingParser {
                 $sv->check_date_before(substr($prefix, 0, -4) . "soft{$suffix}", $si->name, true);
             }
         }
-
-        return false;
     }
 }

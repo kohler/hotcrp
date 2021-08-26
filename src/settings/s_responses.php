@@ -80,7 +80,7 @@ class Responses_SettingParser extends SettingParser {
 
     function parse_req(SettingValues $sv, Si $si) {
         if (!$sv->newv("resp_active")) {
-            return false;
+            return;
         }
         $old_roundnames = self::resp_round_names($sv->conf);
         $roundnames = array(1);
@@ -143,6 +143,5 @@ class Responses_SettingParser extends SettingParser {
         } else {
             $sv->save("resp_rounds", null);
         }
-        return false;
     }
 }

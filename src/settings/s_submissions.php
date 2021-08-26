@@ -54,6 +54,5 @@ class Submissions_SettingParser extends SettingParser {
             $sv->check_date_before("sub_reg", "sub_sub", true);
             $sv->save("sub_update", $v <= 0 ? null : $v);
         }
-        return false;
     }
 }

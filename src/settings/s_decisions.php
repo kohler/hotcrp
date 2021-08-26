@@ -112,13 +112,11 @@ class Decisions_SettingParser extends SettingParser {
         if ($curmap != $map) {
             $sv->save("outcome_map", json_encode_db($map));
             $sv->request_write_lock("Paper");
-            return true;
-        } else {
-            return false;
+            $sv->request_store_value($si);
         }
     }
 
-    function save(SettingValues $sv, Si $si) {
+    function store_value(SettingValues $sv, Si $si) {
         $curmap = $sv->conf->decision_map();
         $map = json_decode($sv->newv("outcome_map"), true);
         $dels = [];

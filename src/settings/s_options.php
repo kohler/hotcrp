@@ -453,8 +453,16 @@ class Options_SettingParser extends SettingParser {
         if (!$sv->has_error()) {
             uasort($new_opts, "PaperOption::compare");
             $this->stashed_options = $new_opts;
-            $sv->request_write_lock("PaperOption");
-            return true;
+            $newj = [];
+            foreach ($new_opts as $o){
+                $newj[] = $o->jsonSerialize();
+            }
+            $sv->save("next_optionid", null);
+            if ($sv->update("options", empty($newj) ? null : json_encode_db($newj))) {
+                $sv->update("options:version", (int) $sv->conf->setting("options") + 1);
+                $sv->request_write_lock("PaperOption");
+                $sv->request_store_value($si);
+            }
         }
     }
 
@@ -466,28 +474,20 @@ class Options_SettingParser extends SettingParser {
         $j->options = $oj;
     }
 
-    function save(SettingValues $sv, Si $si) {
-        $newj = [];
-        foreach ($this->stashed_options as $o) {
-            $newj[] = $o->jsonSerialize();
-        }
-        $sv->save("next_optionid", null);
-        if ($sv->update("options", empty($newj) ? null : json_encode_db($newj))) {
-            $sv->update("options:version", (int) $sv->conf->setting("options") + 1);
-            $deleted_ids = array();
-            foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
-                $newo = $this->stashed_options[$o->id] ?? null;
-                if (!$newo
-                    || ($newo->type !== $o->type
-                        && !$newo->change_type($o, true, true)
-                        && !$o->change_type($newo, false, true))) {
-                    $deleted_ids[] = $o->id;
-                }
+    function store_value(SettingValues $sv, Si $si) {
+        $deleted_ids = array();
+        foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
+            $newo = $this->stashed_options[$o->id] ?? null;
+            if (!$newo
+                || ($newo->type !== $o->type
+                    && !$newo->change_type($o, true, true)
+                    && !$o->change_type($newo, false, true))) {
+                $deleted_ids[] = $o->id;
             }
-            if (!empty($deleted_ids)) {
-                $sv->conf->qe("delete from PaperOption where optionId?a", $deleted_ids);
-            }
-            $sv->mark_invalidate_caches(["autosearch" => true]);
         }
+        if (!empty($deleted_ids)) {
+            $sv->conf->qe("delete from PaperOption where optionId?a", $deleted_ids);
+        }
+        $sv->mark_invalidate_caches(["autosearch" => true]);
     }
 }

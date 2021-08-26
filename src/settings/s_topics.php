@@ -99,11 +99,11 @@ class Topics_SettingParser extends SettingParser {
         }
         if (!$sv->has_error()) {
             $sv->request_write_lock("TopicArea", "PaperTopic", "TopicInterest");
-            return true;
+            $sv->request_store_value($si);
         }
     }
 
-    function save(SettingValues $sv, Si $si) {
+    function store_value(SettingValues $sv, Si $si) {
         if ($this->new_topics) {
             $sv->conf->qe("insert into TopicArea (topicName) values ?v", $this->new_topics);
         }

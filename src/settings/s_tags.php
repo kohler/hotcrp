@@ -122,29 +122,30 @@ class Tags_SettingParser extends SettingParser {
     }
     function parse_req(SettingValues $sv, Si $si) {
         assert($this->sv === $sv);
-        $change = false;
 
         if ($si->name === "tag_chair" && $sv->has_reqv("tag_chair")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
-            $change = $sv->update($si->name, join(" ", $ts));
+            $sv->update($si->name, join(" ", $ts));
         }
 
         if ($si->name === "tag_sitewide" && $sv->has_reqv("tag_sitewide")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
-            $change = $sv->update($si->name, join(" ", $ts));
+            $sv->update($si->name, join(" ", $ts));
         }
 
         if ($si->name === "tag_vote" && $sv->has_reqv("tag_vote")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
-            if (($change = $sv->update("tag_vote", join(" ", $ts)))) {
+            if ($sv->update("tag_vote", join(" ", $ts))) {
                 $sv->request_write_lock("PaperTag");
+                $sv->request_store_value($si);
             }
         }
 
         if ($si->name === "tag_approval" && $sv->has_reqv("tag_approval")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            if (($change = $sv->update("tag_approval", join(" ", $ts)))) {
+            if ($sv->update("tag_approval", join(" ", $ts))) {
                 $sv->request_write_lock("PaperTag");
+                $sv->request_store_value($si);
             }
         }
 
@@ -153,7 +154,7 @@ class Tags_SettingParser extends SettingParser {
             if (count($ts) > 1) {
                 $sv->error_at("tag_rank", "Multiple ranking tags are not supported yet.");
             } else {
-                $change = $sv->update("tag_rank", join(" ", $ts));
+                $sv->update("tag_rank", join(" ", $ts));
             }
         }
 
@@ -166,23 +167,17 @@ class Tags_SettingParser extends SettingParser {
                     }
                 }
             }
-            $change = $sv->update("tag_color", join(" ", $ts));
+            $sv->update("tag_color", join(" ", $ts));
         }
 
         if ($si->name === "tag_au_seerev" && $sv->has_reqv("tag_au_seerev")) {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            $change = $sv->update("tag_au_seerev", join(" ", $ts));
+            $sv->update("tag_au_seerev", join(" ", $ts));
         }
-
-        if ($change) {
-            $this->diffs[$si->name] = true;
-        }
-        return true;
     }
 
-    function save(SettingValues $sv, Si $si) {
+    function store_value(SettingValues $sv, Si $si) {
         if (($si->name === "tag_vote" || $si->name === "tag_approval")
-            && ($this->diffs[$si->name] ?? false)
             && !$this->cleaned) {
             $old_votish = $new_votish = [];
             foreach (Tagger::split_unpack(strtolower($sv->oldv("tag_vote") . " " . $sv->oldv("tag_approval"))) as $ti) {

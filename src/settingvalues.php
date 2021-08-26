@@ -627,16 +627,12 @@ class Si {
 }
 
 class SettingParser {
-    /** @return bool */
+    /** @return void */
     function parse_req(SettingValues $sv, Si $si) {
-        return false;
-    }
-    function validate(SettingValues $sv, Si $si) {
-        return false;
     }
     function unparse_json(SettingValues $sv, Si $si, $j) {
     }
-    function save(SettingValues $sv, Si $si) {
+    function store_value(SettingValues $sv, Si $si) {
     }
 
     /** @param string $v
@@ -1600,9 +1596,7 @@ class SettingValues extends MessageSet {
                 || !$this->si_editable($si)) {
                 /* ignore changes to disabled/internal settings */;
             } else if ($si->parser_class) {
-                if ($this->si_parser($si)->parse_req($this, $si)) {
-                    $this->saved_si[] = $si;
-                }
+                $this->si_parser($si)->parse_req($this, $si);
             } else if ($si->storage_type !== Si::SI_NONE
                        && ($v = $this->base_parse_req($si)) !== null) {
                 if (is_int($v)
@@ -1633,6 +1627,11 @@ class SettingValues extends MessageSet {
         }
     }
 
+    /** @param Si $si */
+    function request_store_value($si) {
+        $this->saved_si[] = $si;
+    }
+
     function execute() {
         // parse and validate settings
         foreach (Si::si_map($this->conf) as $si) {
@@ -1661,7 +1660,7 @@ class SettingValues extends MessageSet {
 
             // apply settings
             foreach ($this->saved_si as $si) {
-                $this->si_parser($si)->save($this, $si);
+                $this->si_parser($si)->store_value($this, $si);
             }
 
             $dv = $av = array();

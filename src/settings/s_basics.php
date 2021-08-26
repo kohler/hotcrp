@@ -62,6 +62,5 @@ class Basics_SettingParser extends SettingParser {
                 });
             }
         }
-        return false;
     }
 }
