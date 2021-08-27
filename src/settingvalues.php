@@ -58,8 +58,6 @@ class Si {
     /** @var ?string */
     public $message_context_setting;
     /** @var ?string */
-    public $date_backup;
-    /** @var ?string */
     public $last_parse_error;
 
     /** @var array<string,bool> */
@@ -90,7 +88,6 @@ class Si {
 
     static private $key_storage = [
         "autogrow" => "is_bool",
-        "date_backup" => "is_string",
         "disabled" => "is_bool",
         "group" => "is_string",
         "ifnonempty" => "is_string",
