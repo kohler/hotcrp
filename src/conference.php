@@ -4041,12 +4041,14 @@ class Conf {
     }
 
     function set_cookie($name, $value, $expires_at) {
+        $secure = $this->opt("sessionSecure") ?? false;
+        $samesite = $this->opt("sessionSameSite") ?? "Lax";
         $opt = [
             "expires" => $expires_at, "path" => Navigation::site_path(),
             "domain" => $this->opt("sessionDomain") ?? "",
-            "secure" => $this->opt("sessionSecure") ?? false
+            "secure" => $secure
         ];
-        if (($samesite = $this->opt("sessionSameSite") ?? "Lax")) {
+        if ($samesite && ($secure || $samesite !== "None")) {
             $opt["samesite"] = $samesite;
         }
         if (!hotcrp_setcookie($name, $value, $opt)) {
