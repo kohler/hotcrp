@@ -9,7 +9,7 @@ class Topics_PaperOption extends PaperOption {
     private $max_count;
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->set_exists_if(!!$this->conf->setting("has_topics"));
+        $this->set_exists_condition(!!$this->conf->setting("has_topics"));
         if (is_int($args->min_count ?? null)) {
             $this->min_count = $args->min_count;
             $this->required = $this->min_count > 0;

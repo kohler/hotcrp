@@ -5,7 +5,7 @@
 class PCConflicts_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->set_exists_if(!!$this->conf->setting("sub_pcconf"));
+        $this->set_exists_condition(!!$this->conf->setting("sub_pcconf"));
     }
     /** @return array<int,int> */
     static private function paper_value_map(PaperInfo $prow) {

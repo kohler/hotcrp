@@ -698,6 +698,7 @@ class PaperOption implements JsonSerializable {
     private $display_position;
     /** @var null|string|false */
     public $list_class;
+    /** @var ?string */
     private $exists_if;
     /** @var ?PaperSearch */
     private $_exists_search;
@@ -831,18 +832,18 @@ class PaperOption implements JsonSerializable {
 
         $this->list_class = $args->list_class ?? null;
 
-        if (property_exists($args, "exists_if")) {
-            $this->set_exists_if($args->exists_if);
-        } else if (isset($args->edit_condition)) { // XXX backwards compat
-            $this->set_exists_if($args->edit_condition);
+        $x = property_exists($args, "exists_if") ? $args->exists_if : ($args->edit_condition ?? null);
+        // XXX edit_condition backward compat
+        if ($x !== null && $x !== true) {
+            $this->set_exists_condition($x);
+        }
+
+        $x = $args->editable_if ?? null;
+        if ($x !== null && $x !== true) {
+            $this->set_editable_condition($x);
         }
 
         $this->max_size = $args->max_size ?? null;
-
-        if (($x = $args->editable_if ?? null) !== null && $x !== true) {
-            $this->editable_if = $x;
-            $this->_editable_search = new PaperSearch($this->conf->root_user(), $x === false ? "NONE" : $x);
-        }
     }
 
     /** @param object $args
@@ -1012,17 +1013,27 @@ class PaperOption implements JsonSerializable {
     function exists_condition() {
         return $this->exists_if;
     }
+    /** @param ?string &$condition
+     * @param null|bool|string $expr
+     * @return ?PaperSearch */
+    private function compile_condition(&$condition, $expr) {
+        if ($expr === null || $expr === true || $expr === "") {
+            $condition = null;
+            return null;
+        } else {
+            $condition = $expr === false ? "NONE" : $expr;
+            return new PaperSearch($this->conf->root_user(), $condition);
+        }
+    }
+    /** @param $x null|bool|string */
+    function set_exists_condition($x) {
+        if (($this->_exists_search = $this->compile_condition($this->exists_if, $x))) {
+            $this->_exists_search->set_expand_automatic(true);
+        }
+    }
     function exists_script_expression(PaperInfo $prow) {
         $s = $this->_exists_search;
         return $s ? $s->term()->script_expression($prow) : null;
-    }
-    protected function set_exists_if($x) {
-        if ($x !== null && $x !== true) {
-            $this->exists_if = $x;
-            $this->_exists_search = (new PaperSearch($this->conf->root_user(), $x === false ? "NONE" : $x))->set_expand_automatic(true);
-        } else {
-            $this->exists_if = $this->_exists_search = null;
-        }
     }
 
     /** @return bool */
@@ -1032,6 +1043,10 @@ class PaperOption implements JsonSerializable {
     /** @return ?string */
     function editable_condition() {
         return $this->editable_if;
+    }
+    /** @param $x null|bool|string */
+    function set_editable_condition($x) {
+        $this->_editable_search = $this->compile_condition($this->editable_if, $x);
     }
 
     /** @return bool */
@@ -1147,7 +1162,7 @@ class PaperOption implements JsonSerializable {
             $j->visibility = self::$visibility_map[$this->_visibility];
         }
         if ($this->exists_if !== null) {
-            $j->exists_if = $this->exists_if;
+            $j->exists_if = $this->exists_if === "NONE" ? false : $this->exists_if;
         }
         if ($this->editable_if !== null) {
             $j->editable_if = $this->editable_if;
