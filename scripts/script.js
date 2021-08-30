@@ -2872,6 +2872,7 @@ function comet_tracker() {
 
 // deadline loading
 function load(dlx, is_initial) {
+    dlx.initial_load = is_initial ? dlx.now || now_sec() : dl.initial_load;
     if (dlx)
         window.hotcrp_status = dl = dlx;
     dl.load = dl.load || now_sec();
@@ -3193,7 +3194,7 @@ var push_history_state, ever_push_history_state = false;
 if ("pushState" in window.history) {
     push_history_state = function (href) {
         var state;
-        if (!history.state) {
+        if (!history.state || !href) {
             state = {href: location.href};
             $(document).trigger("collectState", [state]);
             history.replaceState(state, document.title, state.href);
@@ -6111,7 +6112,7 @@ function comment_completion_q(elt) {
 
 // review preferences
 var add_revpref_ajax = (function () {
-    var blurred_at = 0;
+    var blurred_at = 0, posted_revpref;
 
     function rp(selector, on_unload) {
         var $e = $(selector);
@@ -6134,7 +6135,18 @@ var add_revpref_ajax = (function () {
         blurred_at = now_msec();
     }
 
-    function rp_change() {
+    function rp_init_collecting() {
+        $(window).on("beforeunload", function () {
+            push_history_state();
+        });
+        $(document).on("collectState", function (event, state) {
+            state.initial_load = hotcrp_status.initial_load;
+            state.posted_revpref = posted_revpref;
+        });
+        return {};
+    }
+
+    function rp_change(event) {
         var self = this, pid = this.name.substr(7), cid = null, pos;
         if ((pos = pid.indexOf("u")) > 0) {
             cid = pid.substr(pos + 1);
@@ -6144,10 +6156,23 @@ var add_revpref_ajax = (function () {
             method: "POST", data: {pref: self.value, u: cid},
             success: function (rv) {
                 minifeedback(self, rv);
-                if (rv && rv.ok && rv.value != null)
-                    self.value = rv.value === "0" ? "" : rv.value;
+                if (rv && rv.ok && rv.value != null) {
+                    posted_revpref = posted_revpref || rp_init_collecting();
+                    posted_revpref[self.name] = self.value = self.defaultValue =
+                        rv.value === "0" ? "" : rv.value;
+                }
             }, trackOutstanding: true
         });
+    }
+
+    function rp_load() {
+        if ((history.state && history.state.initial_load) === hotcrp_status.initial_load) {
+            var i, rp = history.state.posted_revpref || {};
+            for (i in rp) {
+                var e = $("input.revpref[name=" + i + "]")[0];
+                e && (e.defaultValue = rp[i]);
+            }
+        }
     }
 
     function rp_unload() {
@@ -6164,8 +6189,10 @@ var add_revpref_ajax = (function () {
                 rp_change.call(this);
             }
         } else if (event.type === "change")
-            rp_change.call(this);
+            rp_change.call(this, event);
     });
+
+    $(window).on("load", rp_load);
 
     return rp;
 })();
