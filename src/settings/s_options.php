@@ -226,7 +226,7 @@ class Options_SettingRenderer {
         if ($sv->has_reqv("optec_$ipos")) {
             $ec = $sv->reqv("optec_$ipos");
             $args->final = $ec === "final";
-            $ecs = $ec === "search" ? $sv->reqv("optecs_$ipos") : "";
+            $ecs = $ec === "search" ? simplify_whitespace($sv->reqv("optecs_$ipos")) : "";
             if ($ecs === "" || $ecs === "(All)") {
                 unset($args->exists_if);
             } else if ($ecs !== null) {
