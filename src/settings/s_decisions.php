@@ -80,7 +80,7 @@ class Decisions_SettingParser extends SettingParser {
     }
 
     function parse_req(SettingValues $sv, Si $si) {
-        $dj = json_decode($sv->oldv("decisions"));
+        $dj = json_decode($sv->oldv("decisions")) ?? [];
 
         // parse request
         foreach ($sv->req_suffixes("dec_name") as $suffix) {

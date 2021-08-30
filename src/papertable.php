@@ -3,24 +3,32 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class PaperTable {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly */
     public $user;
-    /** @var Qrequest */
+    /** @var Qrequest
+     * @readonly */
     private $qreq;
-    /** @var PaperInfo */
+    /** @var PaperInfo
+     * @readonly */
     public $prow;
-
-    /** @var 'p'|'edit'|'re'|'assign' */
+    /** @var 'p'|'edit'|'re'|'assign'
+     * @readonly */
     public $mode;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     private $allow_admin;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     private $admin;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     private $allow_edit_final;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     private $can_view_reviews;
 
     /** @var ?ReviewInfo */
@@ -40,7 +48,8 @@ class PaperTable {
     /** @var bool */
     private $allreviewslink;
 
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $editable = false;
     /** @var bool */
     private $useRequest;
@@ -57,12 +66,16 @@ class PaperTable {
     private $allow_folds;
     /** @var ?ReviewValues */
     private $review_values;
+    /** @var array<string,TextPregexes> */
     private $matchPreg;
+    /** @var array<int,bool> */
     private $foldmap;
+    /** @var array<string,int> */
     private $foldnumber;
 
     /** @var ?CheckFormat */
     public $cf;
+    /** @var bool */
     private $quit = false;
 
     function __construct(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
@@ -237,9 +250,7 @@ class PaperTable {
             && preg_match('/\Ap\/([^\/]*)\/([^\/]*)(?:\/|\z)/', $list->listid, $m)) {
             $hlquery = is_string($list->highlight) ? $list->highlight : urldecode($m[2]);
             $ps = new PaperSearch($this->user, ["t" => $m[1], "q" => $hlquery]);
-            foreach ($ps->field_highlighters() as $k => $v) {
-                $this->matchPreg[$k] = $v;
-            }
+            $this->matchPreg = $ps->field_highlighters();
         }
         if (empty($this->matchPreg)) {
             $this->matchPreg = null;
@@ -297,7 +308,8 @@ class PaperTable {
     }
 
     /** @param bool $editable
-     * @param bool $useRequest */
+     * @param bool $useRequest
+     * @suppress PhanAccessReadOnlyProperty */
     function set_edit_status(PaperStatus $status, $editable, $useRequest) {
         assert($this->mode === "edit" && !$this->edit_status);
         $this->editable = $editable;
@@ -394,19 +406,33 @@ class PaperTable {
             return 0;
         }
     }
-    function has_problem_at($f) {
-        return $this->problem_status_at($f) > 0;
+    /** @param string $field
+     * @param string $msg
+     * @param -4|-3|-2|-1|0|1|2|3 $status
+     * @return MessageItem */
+    function msg_at($field, $msg, $status) {
+        $this->edit_status = $this->edit_status ?? new MessageSet;
+        return $this->edit_status->msg_at($field, $msg, $status);
     }
-    function has_error_class($f) {
-        return $this->has_problem_at($f) ? " has-error" : "";
+    /** @param string $field
+     * @return bool */
+    function has_problem_at($field) {
+        return $this->problem_status_at($field) > 0;
     }
-    /** @param string $f */
-    function control_class($f, $rest = "", $prefix = "has-") {
-        return MessageSet::status_class($this->problem_status_at($f), $rest, $prefix);
+    /** @param string $field
+     * @return string */
+    function has_error_class($field) {
+        return $this->has_problem_at($field) ? " has-error" : "";
     }
-    /** @param list<string> $fs */
-    function max_control_class($fs, $rest = "", $prefix = "has-") {
-        $ps = $this->edit_status ? $this->edit_status->max_problem_status_at($fs) : 0;
+    /** @param string $field
+     * @return string */
+    function control_class($field, $rest = "", $prefix = "has-") {
+        return MessageSet::status_class($this->problem_status_at($field), $rest, $prefix);
+    }
+    /** @param list<string> $fields
+     * @return string */
+    function max_control_class($fields, $rest = "", $prefix = "has-") {
+        $ps = $this->edit_status ? $this->edit_status->max_problem_status_at($fields) : 0;
         return MessageSet::status_class($ps, $rest, $prefix);
     }
 
@@ -2721,7 +2747,8 @@ class PaperTable {
     }
 
 
-    /** @param bool $want_review */
+    /** @param bool $want_review
+     * @suppress PhanAccessReadOnlyProperty */
     function resolve_review($want_review) {
         $this->prow->ensure_full_reviews();
         $this->all_rrows = $this->prow->reviews_as_display();

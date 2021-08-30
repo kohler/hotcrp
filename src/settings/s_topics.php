@@ -82,7 +82,7 @@ class Topics_SettingParser extends SettingParser {
     }
 
     function parse_req(SettingValues $sv, Si $si) {
-        $j = json_decode($sv->oldv("topics"));
+        $j = json_decode($sv->oldv("topics")) ?? [];
         for ($i = 0; $i !== count($j); ) {
             $tid = $j[$i]->id;
             if (($x = $sv->reqv("top$tid")) !== null) {
