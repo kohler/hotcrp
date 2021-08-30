@@ -1823,6 +1823,8 @@ class Document_PaperOption extends PaperOption {
 
         if (!$readonly) {
             echo '<div class="document-replacer">', Ht::button($doc ? "Replace" : "Upload", ["class" => "ui js-replace-document", "id" => "{$fk}:upload"]), '</div>';
+        } else if (!$doc) {
+            echo '<p>(No upload)</p>';
         }
         echo "</div></div>\n\n";
     }
@@ -2202,6 +2204,8 @@ class Attachments_PaperOption extends PaperOption {
         echo '</div>';
         if (!$readonly) {
             echo Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]);
+        } else if ($ov->document_set()->is_empty()) {
+            echo '<p>(No uploads)</p>';
         }
         echo "</div>\n\n";
     }
