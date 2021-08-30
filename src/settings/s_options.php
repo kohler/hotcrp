@@ -331,7 +331,7 @@ class Options_SettingRenderer {
         $sv->render_section("Submission fields");
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_options", 1),
-            Ht::hidden("options:version", (int) $sv->conf->setting("options")),
+            Ht::hidden("options_version", (int) $sv->conf->setting("options")),
             "\n\n";
 
         echo '<div id="settings_opts" class="c">';
@@ -426,8 +426,8 @@ class Options_SettingParser extends SettingParser {
     }
 
     function parse_req(SettingValues $sv, Si $si) {
-        if ($sv->has_reqv("options:version")
-            && (int) $sv->reqv("options:version") !== (int) $sv->conf->setting("options")) {
+        if ($sv->has_reqv("options_version")
+            && (int) $sv->reqv("options_version") !== (int) $sv->conf->setting("options")) {
             $sv->error_at("options", "You modified options settings in another tab. Please reload.");
         }
 
@@ -459,7 +459,7 @@ class Options_SettingParser extends SettingParser {
             }
             $sv->save("next_optionid", null);
             if ($sv->update("options", empty($newj) ? null : json_encode_db($newj))) {
-                $sv->update("options:version", (int) $sv->conf->setting("options") + 1);
+                $sv->update("options_version", (int) $sv->conf->setting("options") + 1);
                 $sv->request_write_lock("PaperOption");
                 $sv->request_store_value($si);
             }
@@ -475,7 +475,7 @@ class Options_SettingParser extends SettingParser {
     }
 
     function store_value(SettingValues $sv, Si $si) {
-        $deleted_ids = array();
+        $deleted_ids = [];
         foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
             $newo = $this->stashed_options[$o->id] ?? null;
             if (!$newo

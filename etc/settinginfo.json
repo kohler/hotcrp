@@ -246,7 +246,7 @@
         "type": "string", "storage": "dat.options"
     },
     {
-        "name": "options:version", "internal": true,
+        "name": "options_version", "internal": true,
         "storage": "val.options"
     },
     {
