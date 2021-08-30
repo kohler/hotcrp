@@ -273,6 +273,8 @@ class Conf {
     static public $main;
     /** @var int */
     static public $now;
+    /** @var int|float */
+    static public $unow;
 
     static public $no_invalidate_caches = false;
     static public $next_xt_subposition = 0;
@@ -321,10 +323,11 @@ class Conf {
         }
     }
 
-    /** @param int $t */
+    /** @param int|float $t */
     static function set_current_time($t) {
         global $Now;
-        $Now = Conf::$now = $t;
+        self::$unow = $t;
+        $Now = Conf::$now = (int) $t;
         if (Conf::$main) {
             Conf::$main->refresh_time_settings();
         }

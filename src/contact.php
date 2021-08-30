@@ -4896,7 +4896,7 @@ class Contact {
     /** @param ?list<PaperInfo> $prows */
     function my_deadlines($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
-        $dl = (object) ["now" => Conf::$now, "email" => $this->email ? : null];
+        $dl = (object) ["now" => Conf::$unow, "email" => $this->email ? : null];
         if ($this->privChair) {
             $dl->is_admin = true;
         } else if ($this->is_track_manager()) {

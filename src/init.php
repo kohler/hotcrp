@@ -76,7 +76,7 @@ require_once(SiteLoader::find("lib/dbl.php"));
 require_once(SiteLoader::find("src/helpers.php"));
 require_once(SiteLoader::find("src/conference.php"));
 require_once(SiteLoader::find("src/contact.php"));
-Conf::set_current_time(time());
+Conf::set_current_time(microtime(true));
 
 
 // Set locale to C (so that, e.g., strtolower() on UTF-8 data doesn't explode)
