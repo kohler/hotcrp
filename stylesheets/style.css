@@ -2264,6 +2264,7 @@ img.bm {
 .pl_lastvisit, .pl_logtime {
 	padding-right: 1.25em;
 	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
 }
 td.pl_lastvisit, td.pl_logtime {
 	font-size: smaller;

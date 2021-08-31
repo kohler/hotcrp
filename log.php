@@ -517,7 +517,7 @@ if ($Qreq->download) {
     $csvg->select(["date", "email", "affected_email", "via",
                    $narrow ? "paper" : "papers", "action"]);
     foreach ($lrg->page_rows(1) as $row) {
-        $date = strftime("%Y-%m-%d %H:%M:%S %z", (int) $row->timestamp);
+        $date = date("Y-m-d H:i:s e", (int) $row->timestamp);
         $xusers = $xdest_users = [];
         foreach ($lrg->users_for($row, "contactId") as $u) {
             $xusers[] = $u->email;
@@ -600,9 +600,9 @@ function searchbar(LogRowGenerator $lrg, $page) {
     } else if ($page === 1) {
         $dplaceholder = "now";
     } else if (($rows = $lrg->page_rows($page))) {
-        $dplaceholder = $Conf->unparse_time((int) $rows[0]->timestamp);
+        $dplaceholder = $Conf->unparse_time_log((int) $rows[0]->timestamp);
     } else if ($first_timestamp) {
-        $dplaceholder = $Conf->unparse_time((int) $first_timestamp);
+        $dplaceholder = $Conf->unparse_time_log((int) $first_timestamp);
     }
 
     echo Ht::form(hoturl("log"), ["method" => "get", "id" => "searchform", "class" => "clearfix"]);
@@ -774,7 +774,7 @@ $Conf->header("Log", "actionlog");
 $trs = [];
 $has_dest_user = false;
 foreach ($lrg->page_rows($page) as $row) {
-    $t = ['<td class="pl pl_logtime">' . $Conf->unparse_time((int) $row->timestamp) . '</td>'];
+    $t = ['<td class="pl pl_logtime">' . $Conf->unparse_time_log((int) $row->timestamp) . '</td>'];
 
     $xusers = $lrg->users_for($row, "contactId");
     $xdest_users = $lrg->users_for($row, "destContactId");

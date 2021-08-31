@@ -2844,7 +2844,7 @@ class Conf {
     /** @param int $timestamp
      * @return string */
     function unparse_time_log($timestamp) {
-        return $this->_date_format("d/M/Y:H:i:s O", $timestamp);
+        return $this->_date_format("Y-m-d H:i:s O", $timestamp);
     }
     /** @param int $timestamp
      * @return string */

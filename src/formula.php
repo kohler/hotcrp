@@ -2261,8 +2261,8 @@ class Formula implements JsonSerializable {
                 return $this->user->reviewer_html_for($x);
             } else if ($this->_format === Fexpr::FDATE
                        || $this->_format === Fexpr::FTIME) {
-                $f = $this->_format === Fexpr::FTIME ? "%Y-%m-%dT%T" : "%Y-%m-%d";
-                return $x > 0 ? strftime($f, $x) : "";
+                $f = $this->_format === Fexpr::FTIME ? "Y-m-d\\TH:i:s" : "Y-m-d";
+                return $x > 0 ? date($f, $x) : "";
             } else if ($this->_format === Fexpr::FDATEDELTA
                        || $this->_format === Fexpr::FTIMEDELTA) {
                 return $this->_unparse_duration($x);
@@ -2291,8 +2291,8 @@ class Formula implements JsonSerializable {
                 return $this->user->name_text_for($x);
             } else if ($this->_format === Fexpr::FDATE
                        || $this->_format === Fexpr::FTIME) {
-                $f = $this->_format === Fexpr::FTIME ? "%Y-%m-%dT%T" : "%Y-%m-%d";
-                return $x > 0 ? strftime($f, $x) : "";
+                $f = $this->_format === Fexpr::FTIME ? "Y-m-d\\TH:i:s" : "Y-m-d";
+                return $x > 0 ? date($f, $x) : "";
             } else if ($this->_format === Fexpr::FDATEDELTA
                        || $this->_format === Fexpr::FTIMEDELTA) {
                 return $this->_unparse_duration($x);
