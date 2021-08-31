@@ -62,7 +62,8 @@ foreach ($Conf->full_pc_members() as $pc) {
     $tr = $paperlist->table_render();
     if (!$tr->is_empty()) {
         if (!$any) {
-            echo Ht::form(hoturl("conflictassign")),
+            echo Ht::form($Conf->hoturl("conflictassign")),
+                Ht::entry("____updates____", "", ["class" => "hidden ignore-diff"]),
                 $tr->table_start,
                 Ht::unstash(),
                 ($tr->thead ? : ""),

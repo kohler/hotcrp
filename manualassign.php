@@ -271,7 +271,8 @@ if ($reviewer) {
     $pl->apply_view_qreq();
     echo Ht::form($Conf->hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $Qreq->sort]), ["class" => "assignpc ignore-diff"]),
         Ht::hidden("t", $Qreq->t),
-        Ht::hidden("q", $Qreq->q);
+        Ht::hidden("q", $Qreq->q),
+        Ht::entry("____updates____", "", ["class" => "hidden ignore-diff"]);
     $rev_rounds = $Conf->round_selector_options(false);
     $expected_round = $Conf->assignment_round_option(false);
 

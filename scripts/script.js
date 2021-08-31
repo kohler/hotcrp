@@ -1063,18 +1063,6 @@ function hoturl_absolute_base() {
     return siteinfo.absolute_base;
 }
 
-function hidden_input(name, value, attr) {
-    var input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = value;
-    if (attr) {
-        for (var k in attr)
-            input.setAttribute(k, attr[k]);
-    }
-    return input;
-}
-
 function hoturl_post_go(page, options) {
     var form = document.createElement("form");
     form.setAttribute("method", "post");
@@ -1247,10 +1235,25 @@ function input_default_value(elt) {
 }
 
 function input_set_default_value(elt, val) {
-    if (input_is_checkboxlike(elt)) {
-        elt.setAttribute("data-default-checked", val == "" ? "false" : "true");
+    var cb = input_is_checkboxlike(elt), upd, j;
+    if (cb) {
+        elt.removeAttribute("data-default-checked");
+        elt.defaultChecked = val == "";
     } else {
-        elt.setAttribute("data-default-value", val);
+        elt.removeAttribute("data-default-value");
+        elt.defaultValue = val;
+    }
+    // 2021 Chrome workaround
+    if (elt.name && elt.form && (upd = elt.form.elements.____updates____)) {
+        try {
+            j = JSON.parse(upd.value || "{}");
+        } catch (e) {
+            j = {};
+        }
+        if (elt.type === "radio" && !elt.checked)
+            val = elt.form.elements[elt.name].value;
+        j[elt.name] = val || "";
+        upd.value = JSON.stringify(j);
     }
 }
 
@@ -1290,6 +1293,42 @@ function form_highlight(form, elt) {
         $("." + form.getAttribute("data-alert-toggle")).toggleClass("hidden", !alerting);
     }
 }
+
+function hidden_input(name, value, attr) {
+    var input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    if (attr) {
+        for (var k in attr)
+            input.setAttribute(k, attr[k]);
+    }
+    return input;
+}
+
+$(function () {
+    $("form").each(function () {
+        var upd = this.elements.____updates____, j, n, e, e2, i;
+        if (upd && upd.value) {
+            try {
+                j = JSON.parse(upd.value);
+                for (n in j)
+                    if ((e = this.elements[n])) {
+                        if (e.type === "checkbox")
+                            e.defaultChecked = e.value === j[n];
+                        else if (e instanceof RadioNodeList) {
+                            for (i = 0; i !== e.length; ++i) {
+                                e2 = e.item(i);
+                                e2.defaultChecked = e2.value === j[n];
+                            }
+                        } else
+                            e.defaultValue = j[n];
+                    }
+            } catch (e) {
+            }
+        }
+    });
+});
 
 function hiliter_children(form) {
     form = $(form)[0];
@@ -6112,7 +6151,7 @@ function comment_completion_q(elt) {
 
 // review preferences
 var add_revpref_ajax = (function () {
-    var blurred_at = 0, posted_revpref;
+    var blurred_at = 0;
 
     function rp(selector, on_unload) {
         var $e = $(selector);
@@ -6135,17 +6174,6 @@ var add_revpref_ajax = (function () {
         blurred_at = now_msec();
     }
 
-    function rp_init_collecting() {
-        $(window).on("beforeunload", function () {
-            push_history_state();
-        });
-        $(document).on("collectState", function (event, state) {
-            state.initial_load = hotcrp_status.initial_load;
-            state.posted_revpref = posted_revpref;
-        });
-        return {};
-    }
-
     function rp_change(event) {
         var self = this, pid = this.name.substr(7), cid = null, pos;
         if ((pos = pid.indexOf("u")) > 0) {
@@ -6157,22 +6185,11 @@ var add_revpref_ajax = (function () {
             success: function (rv) {
                 minifeedback(self, rv);
                 if (rv && rv.ok && rv.value != null) {
-                    posted_revpref = posted_revpref || rp_init_collecting();
-                    posted_revpref[self.name] = self.value = self.defaultValue =
-                        rv.value === "0" ? "" : rv.value;
+                    self.value = rv.value === "0" ? "" : rv.value;
+                    input_set_default_value(self, self.value);
                 }
             }, trackOutstanding: true
         });
-    }
-
-    function rp_load() {
-        if ((history.state && history.state.initial_load) === hotcrp_status.initial_load) {
-            var i, rp = history.state.posted_revpref || {};
-            for (i in rp) {
-                var e = $("input.revpref[name=" + i + "]")[0];
-                e && (e.defaultValue = rp[i]);
-            }
-        }
     }
 
     function rp_unload() {
@@ -6191,8 +6208,6 @@ var add_revpref_ajax = (function () {
         } else if (event.type === "change")
             rp_change.call(this, event);
     });
-
-    $(window).on("load", rp_load);
 
     return rp;
 })();
