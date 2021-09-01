@@ -603,86 +603,54 @@ function rfs(data) {
     form_highlight("#settingsform");
 };
 
-function add_dialog(fid, focus) {
-    var $d, template = 0, has_options = fid.charAt(0) === "s";
+function add_dialog() {
+    var $d, sel;
+    function cur_sample() {
+        return samples[sel.options[sel.selectedIndex].value | 0] || samples[0];
+    }
     function render_template() {
-        var $dtn = $d.find(".newreviewfield-template-name"),
-            $dt = $d.find(".newreviewfield-template");
-        if (!template || !samples[template - 1] || !samples[template - 1].options != !has_options) {
-            template = 0;
-            $dtn.text("(Blank)");
-            $dt.html("");
-        } else {
-            var s = samples[template - 1];
-            $dtn.text(s.selector);
-            $dt.html(rf_render_view(s));
-        }
+        $d.find(".settings-rf-template-view").html(rf_render_view(cur_sample()));
     }
     function submit(event) {
+        var sample = cur_sample(),
+            has_options = !!sample.options,
+            ffmt = has_options ? "s%02d" : "t%02d",
+            i, fid;
+        for (i = 1; ; ++i) {
+            fid = sprintf(ffmt, i);
+            if ($.inArray(fid, fieldorder) < 0)
+                break;
+        }
+        original[fid] = Object.assign({}, has_options ? stemplate : ttemplate, {id: fid});
         rf_add(fid);
-        var tmpl = template ? samples[template - 1] : {};
-        if (!template && has_options)
-            tmpl.required = true;
-        rf_fill($("#rf_" + fid), fid, tmpl, false);
+        if (sample.is_example)
+            sample = Object.assign({}, sample, {name: ""});
+        rf_fill($("#rf_" + fid), fid, sample, false);
         $("#rf_name_" + fid)[0].focus();
         $d.close();
         event.preventDefault();
     }
-    function click() {
-        if (this.name == "next" || this.name == "prev") {
-            var dir = this.name == "next" ? 1 : -1;
-            template += dir;
-            if (template < 0)
-                template = samples.length;
-            while (template
-                   && samples[template - 1]
-                   && !samples[template - 1].options !== !has_options)
-                template += dir;
-            render_template();
-        }
-    }
-    function change_template() {
-        ++template;
-        while (samples[template - 1] && !samples[template - 1].options != !has_options)
-            ++template;
-        render_template();
-    }
     function create() {
-        var hc = popup_skeleton();
-        hc.push('<h2>' + (has_options ? "Add score field" : "Add text field") + '</h2>');
+        var hc = popup_skeleton(), i;
+        hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
-        hc.push('<table style="width:500px;max-width:90%;margin-bottom:2em"><tbody><tr>', '</tr></tbody></table>');
-        hc.push('<td style="text-align:left"><button name="prev" type="button" class="need-tooltip" data-tooltip="Previous template">&lt;</button></td>');
-        hc.push('<td class="newreviewfield-template-name" style="text-align:center"></td>');
-        hc.push('<td style="text-align:right"><button name="next" type="button" class="need-tooltip" data-tooltip="Next template">&gt;</button></td>');
+        hc.push('<select name="rf_template" class="w-99 want-focus" size="5">', '</select>');
+        for (i = 0; i !== samples.length; ++i)
+            hc.push('<option value="'.concat(i, i ? '">' : '" selected>', escape_html(samples[i].selector), '</option>'));
         hc.pop();
-        hc.push('<div class="newreviewfield-template" style="width:500px;max-width:90%;min-height:6em"></div>');
-        hc.push_actions(['<button type="submit" name="add" class="btn-primary want-focus">Create field</button>',
+        hc.push('<div class="settings-rf-template-view" style="width:500px;max-width:90%;min-height:10em"></div>');
+        hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',
             '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
+        sel = $d.find("select")[0];
         render_template();
-        $d.find(".newreviewfield-template-name").on("click", change_template);
-        $d.on("click", "button", click);
+        $(sel).on("input", render_template);
         $d.find("form").on("submit", submit);
     }
     create();
 }
 
-handle_ui.on("js-settings-add-review-field", function () {
-    var has_options = hasClass(this, "score"),
-        tmpl = has_options ? stemplate : ttemplate;
-    if (!tmpl || !/^[a-z]+00$/.test(tmpl.id))
-        throw new Error("bad template");
-    // no field found, so add one
-    var ffmt = tmpl.id.substring(0, tmpl.id.length - 2) + "%02d", i, fid;
-    for (i = 1; ; ++i) {
-        fid = sprintf(ffmt, i);
-        if ($.inArray(fid, fieldorder) < 0)
-            break;
-    }
-    original[fid] = Object.assign({}, tmpl, {id: fid});
-    return add_dialog(fid);
-});
+handle_ui.on("js-settings-rf-add", add_dialog);
 
 return rfs;
 })();

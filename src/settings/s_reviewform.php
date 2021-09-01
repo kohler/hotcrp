@@ -658,9 +658,7 @@ class ReviewForm_SettingRenderer {
         echo '</template>';
 
         echo "<div id=\"settings-rform\"></div>",
-            Ht::button("Add score field", ["class" => "ui js-settings-add-review-field score"]),
-            "<span class=\"sep\"></span>",
-            Ht::button("Add text field", ["class" => "ui js-settings-add-review-field"]);
+            Ht::button("Add field", ["class" => "ui js-settings-rf-add"]);
 
         $sj = [];
         $sj["fields"] = $rfj;
