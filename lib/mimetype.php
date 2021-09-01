@@ -184,7 +184,14 @@ class Mimetype {
     /** @param list<string|Mimetype> $types
      * @return string */
     static function list_description($types) {
-        return commajoin(array_map("Mimetype::description", $types), "or");
+        if (count($types) === 0) {
+            return "any file";
+        } else if (count($types) === 1) {
+            return Mimetype::description($types[0]);
+        } else {
+            $m = array_unique(array_map("Mimetype::description", $types));
+            return commajoin($m, "or");
+        }
     }
 
     /** @param string|Mimetype $type
