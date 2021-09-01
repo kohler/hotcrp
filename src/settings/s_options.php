@@ -124,7 +124,7 @@ class Options_SettingRenderer {
     }
     /** @return PaperOption */
     static function make_placeholder_option(SettingValues $sv, $id) {
-        return PaperOption::make((object) [
+        return PaperOption::make($sv->conf, (object) [
             "id" => $id,
             "name" => "Field name",
             "description" => "",
@@ -132,7 +132,7 @@ class Options_SettingRenderer {
             "position" => 1000,
             "display" => "prominent",
             "json_key" => "__fake__"
-        ], $sv->conf);
+        ]);
     }
     /** @param string $expr
      * @param string $field
@@ -231,7 +231,7 @@ class Options_SettingRenderer {
             }
         }
 
-        return PaperOption::make((object) $args, $sv->conf);
+        return PaperOption::make($sv->conf, (object) $args);
     }
 
     private function render_option(SettingValues $sv, PaperOption $io = null, $ipos) {
@@ -362,13 +362,43 @@ class Options_SettingRenderer {
         }
         echo "</div>\n";
 
+        // render sample options
+        echo '<div id="settings-sform-samples" class="hidden">';
+        $jtypes = $sv->conf->option_type_map();
+        uasort($jtypes, "Conf::xt_position_compare");
+
+        $otypes = [];
+        foreach ($jtypes as $uf) {
+            if (!isset($uf->display_if)
+                || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)) {
+                $args = [
+                    "id" => 1000,
+                    "name" => $uf->title ?? $uf->name,
+                    "type" => $uf->type ?? $uf->name,
+                    "position" => 1,
+                    "display" => "prominent",
+                    "json_key" => "__demo_{$uf->name}__"
+                ];
+                if ($uf->sample ?? null) {
+                    $args = array_merge((array) $uf->sample, $args);
+                }
+                $o = PaperOption::make($sv->conf, (object) $args);
+                $ov = PaperValue::make($self->pt->prow, $o);
+                echo '<div class="settings-sf-view" data-name="', htmlspecialchars($uf->name), '" data-title="', htmlspecialchars($uf->title ?? $uf->name), '">';
+                $o->echo_web_edit($self->pt, $ov, $ov);
+                echo '</div>';
+            }
+        }
+
+        echo '</div>';
+
         ob_start();
         $self->render_option($sv, null, 0);
         $newopt = ob_get_clean();
 
-        echo '<div style="margin-top:2em" id="settings-sf-new" data-template="',
+        echo '<div class="mt-5" id="settings-sf-new" data-template="',
             htmlspecialchars($newopt), '">',
-            Ht::button("Add submission field", ["class" => "ui js-settings-sf-new"]),
+            Ht::button("Add submission field", ["class" => "ui js-settings-sf-add"]),
             "</div>\n";
     }
 

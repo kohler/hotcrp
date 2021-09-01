@@ -60,9 +60,10 @@ handle_ui.on("js-settings-sf-move", function (event) {
         odiv.parentNode.insertBefore(odiv, odiv.nextSibling.nextSibling);
     else if (hasClass(this, "delete")) {
         var $odiv = $(odiv), x;
-        if ($odiv.find(".settings-sf-id").val() === "new")
+        if ($odiv.find(".settings-sf-id").val() === "new") {
             $odiv.remove();
-        else {
+            form_highlight("#settingsform");
+        } else {
             tooltip.erase.call(this);
             $odiv.find(".settings-sf-fp").val("deleted").change();
             $odiv.find(".f-i, .entryi").each(function () {
@@ -79,19 +80,56 @@ handle_ui.on("js-settings-sf-move", function (event) {
     settings_sf_positions();
 });
 
-handle_ui.on("js-settings-sf-new", function (event) {
-    var h = $("#settings-sf-new").attr("data-template");
-    var next = 1;
-    while ($("#optn_" + next).length)
-        ++next;
-    h = h.replace(/_0/g, "_" + next);
-    var odiv = $(h).appendTo("#settings-sform");
-    odiv.find(".need-autogrow").autogrow();
-    odiv.find(".need-tooltip").each(tooltip);
-    odiv.find(".js-settings-sf-type").change();
-    $("#optn_" + next)[0].focus();
-    settings_sf_positions();
-});
+
+function add_dialog() {
+    var $d, sel;
+    function cur_option() {
+        return sel.options[sel.selectedIndex] || sel.options[0];
+    }
+    function render_template() {
+        var opt = cur_option(),
+            samp = $$("settings-sform-samples").childNodes[opt.value | 0];
+        $d.find(".settings-sf-template-view").html($(samp).html());
+    }
+    function submit(event) {
+        var opt = cur_option(),
+            samp = $$("settings-sform-samples").childNodes[opt.value | 0],
+            h = $$("settings-sf-new").getAttribute("data-template"),
+            next = 1, odiv;
+        while ($$("optn_" + next))
+            ++next;
+        h = h.replace(/_0/g, "_" + next);
+        odiv = $(h).appendTo("#settings-sform");
+        odiv.find(".need-autogrow").autogrow();
+        odiv.find(".need-tooltip").each(tooltip);
+        odiv.find(".js-settings-sf-type").val(samp.getAttribute("data-name")).change();
+        $$("optn_" + next).focus();
+        settings_sf_positions();
+        $d.close();
+        event.preventDefault();
+    }
+    function create() {
+        var hc = popup_skeleton(), i;
+        hc.push('<h2>Add field</h2>');
+        hc.push('<p>Choose a template for the new field.</p>');
+        hc.push('<select name="sf_template" class="w-99 want-focus" size="5">', '</select>');
+        $("#settings-sform-samples").children().each(function (i) {
+            hc.push('<option value="'.concat(i, i ? '">' : '" selected>', escape_html(this.getAttribute("data-title")), '</option>'));
+        });
+        hc.pop();
+        hc.push('<div class="settings-sf-template-view mt-4" style="width:500px;max-width:90%;min-height:10em"></div>');
+        hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',
+            '<button type="button" name="cancel">Cancel</button>']);
+        $d = hc.show();
+        sel = $d.find("select")[0];
+        render_template();
+        $(sel).on("input", render_template);
+        $d.find("form").on("submit", submit);
+    }
+    create();
+}
+
+handle_ui.on("js-settings-sf-add", add_dialog);
 
 function settings_sf_positions() {
     $(".settings-sf .moveup, .settings-sf .movedown").prop("disabled", false);
@@ -347,7 +385,7 @@ function rf_fill($f, fid, fieldj, order) {
     return false;
 }
 
-function remove() {
+function rf_delete() {
     var rf = this.closest(".settings-rf"),
         fid = rf.getAttribute("data-rfid"),
         form = rf.closest("form");
@@ -466,7 +504,7 @@ function rf_render_view(fieldj) {
     return $(hc.render());
 }
 
-function move_field(event) {
+function rf_move(event) {
     var isup = $(this).hasClass("moveup"),
         $f = $(this).closest(".settings-rf").detach(),
         fid = $f.attr("data-rfid"),
@@ -521,8 +559,8 @@ function rf_append(fid, pos) {
         $f.find(".reviewrow_rounds").remove();
     }
 
-    $f.find(".js-settings-rf-delete").on("click", remove);
-    $f.find(".js-settings-rf-move").on("click", move_field);
+    $f.find(".js-settings-rf-delete").on("click", rf_delete);
+    $f.find(".js-settings-rf-move").on("click", rf_move);
     $f.appendTo("#settings-rform");
 
     rf_fill($f, fid, original[fid], true);

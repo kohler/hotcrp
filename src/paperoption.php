@@ -396,7 +396,7 @@ class PaperOptionList implements IteratorAggregate {
         } else {
             $this->_imap[$id] = null;
             if (($oj = ($this->intrinsic_json_map())[$id] ?? null)
-                && ($o = PaperOption::make($oj, $this->conf))) {
+                && ($o = PaperOption::make($this->conf, $oj))) {
                 $this->_imap[$id] = $o;
             }
         }
@@ -416,7 +416,7 @@ class PaperOptionList implements IteratorAggregate {
                 if (($oj = ($this->option_json_map())[$id] ?? null)
                     && Conf::xt_enabled($oj)
                     && $this->conf->xt_allowed($oj)) {
-                    $this->_omap[$id] = PaperOption::make($oj, $this->conf);
+                    $this->_omap[$id] = PaperOption::make($this->conf, $oj);
                 }
             }
             return $this->_omap[$id];
@@ -848,7 +848,7 @@ class PaperOption implements JsonSerializable {
 
     /** @param object $args
      * @return PaperOption */
-    static function make($args, Conf $conf) {
+    static function make(Conf $conf, $args) {
         assert(is_object($args));
         Conf::xt_resolve_require($args);
         $fn = $args->function ?? $args->callback ?? null; /* XXX */

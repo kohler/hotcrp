@@ -9,11 +9,13 @@
     },
     {
         "name": "selector", "title": "Selector", "position": 200,
-        "has_selector": true, "function": "+Selector_PaperOption"
+        "has_selector": true, "function": "+Selector_PaperOption",
+        "sample": {"selector": ["Option 1", "Option 2", "Option 3"]}
     },
     {
         "name": "radio", "title": "Radio buttons", "position": 300,
-        "has_selector": true, "function": "+Selector_PaperOption"
+        "has_selector": true, "function": "+Selector_PaperOption",
+        "sample": {"selector": ["Option 1", "Option 2", "Option 3"]}
     },
     {
         "name": "numeric", "title": "Numeric", "position": 400,
@@ -24,8 +26,9 @@
         "function": "+Text_PaperOption"
     },
     {
-        "name": "text:ds_5", "title": "Multiline text", "position": 550,
-        "function": "+Text_PaperOption"
+        "name": "text:ds_5", "type": "text", "title": "Multiline text", "position": 550,
+        "function": "+Text_PaperOption",
+        "sample": {"display_space": 5}
     },
     {
         "match": "text:ds_(\\d+)",
