@@ -2911,7 +2911,6 @@ function comet_tracker() {
 
 // deadline loading
 function load(dlx, is_initial) {
-    dlx.initial_load = is_initial ? dlx.now || now_sec() : dl.initial_load;
     if (dlx)
         window.hotcrp_status = dl = dlx;
     dl.load = dl.load || now_sec();
