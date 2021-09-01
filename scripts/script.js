@@ -24,6 +24,62 @@ if (!window.JSON || !window.JSON.parse) {
     window.JSON = {parse: $.parseJSON};
 }
 
+if (typeof Object.assign !== "function") {
+    Object.defineProperty(Object, "assign", {
+        value: function assign(target, rest) {
+            var d = Object(target), i, s, k, hop = Object.prototype.hasOwnProperty;
+            for (i = 1; i < arguments.length; ++i) {
+                s = arguments[i];
+                if (s !== null && s !== undefined) {
+                    for (k in s)
+                        if (hop.call(s, k))
+                            d[k] = s[k];
+                }
+            }
+            return d;
+        }, writable: true, configurable: true
+    });
+}
+
+if (!String.prototype.startsWith) {
+    Object.defineProperty(String.prototype, "startsWith", {
+        value: function startsWith(search, pos) {
+            pos = pos > 0 ? pos|0 : 0;
+            return this.length >= pos + search.length
+                && this.substring(pos, pos + search.length) === search;
+        }, writable: true, configurable: true
+    });
+}
+if (!String.prototype.endsWith) {
+    Object.defineProperty(String.prototype, "endsWith", {
+        value: function endsWith(search, this_len) {
+            if (this_len === undefined || this_len > this.length) {
+                this_len = this.length;
+            }
+            return this_len >= search.length
+                && this.substring(this_len - search.length, this_len) === search;
+        }, writable: true, configurable: true
+    });
+}
+if (!String.prototype.repeat) {
+    Object.defineProperty(String.prototype, "repeat", {
+        value: function repeat(count) {
+            var str = "" + this;
+            count = count > 0 ? count|0 : 0;
+            if (str.length === 0 || count === 0) {
+                return "";
+            }
+            var len = str.length * count;
+            count = Math.floor(Math.log(count) / Math.log(2));
+            while (count) {
+                str += str;
+                --count;
+            }
+            return str + str.substring(0, len - str.length);
+        }, writable: true, configurable: true
+    });
+}
+
 var hasClass, addClass, removeClass, toggleClass, classList;
 if ("classList" in document.createElement("span")
     && !/MSIE|rv:11\.0/.test(navigator.userAgent || "")) {
@@ -65,39 +121,6 @@ if (!Element.prototype.closest) {
     Element.prototype.closest = function (s) {
         return $(this).closest(s)[0];
     };
-}
-
-if (!String.prototype.startsWith) {
-    String.prototype.startsWith = function (search, pos) {
-        pos = pos > 0 ? pos|0 : 0;
-        return this.length >= pos + search.length
-            && this.substring(pos, pos + search.length) === search;
-    };
-}
-if (!String.prototype.endsWith) {
-    String.prototype.endsWith = function (search, this_len) {
-        if (this_len === undefined || this_len > this.length) {
-            this_len = this.length;
-        }
-        return this_len >= search.length
-            && this.substring(this_len - search.length, this_len) === search;
-    };
-}
-if (!String.prototype.repeat) {
-    String.prototype.repeat = function (count) {
-        var str = "" + this;
-        count = count > 0 ? count|0 : 0;
-        if (str.length === 0 || count === 0) {
-            return "";
-        }
-        var len = str.length * count;
-        count = Math.floor(Math.log(count) / Math.log(2));
-        while (count) {
-            str += str;
-            --count;
-        }
-        return str + str.substring(0, len - str.length);
-    }
 }
 
 
