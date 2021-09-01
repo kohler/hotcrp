@@ -57,6 +57,8 @@ class PaperTable {
     private $edit_status;
     /** @var list<PaperOption> */
     private $edit_fields;
+    /** @var bool */
+    public $edit_show_all_visibility = false;
 
     /** @var int */
     private $npapstrip = 0;
@@ -464,8 +466,17 @@ class PaperTable {
         }
         echo '">', Ht::label($heading ?? $this->edit_title_html($opt),
             $for === "checkbox" ? false : $for, ["class" => $opt->required ? "field-required" : ""]);
-        if ($opt->visibility() === PaperOption::VIS_ADMIN) {
+        $vis = $opt->visibility();
+        if ($vis === PaperOption::VIS_ADMIN) {
             echo '<div class="field-visibility">(hidden from reviewers)</div>';
+        } else if ($this->edit_show_all_visibility) {
+            if ($vis === PaperOption::VIS_AUTHOR) {
+                echo '<div class="field-visibility">(hidden on blind submissions)</div>';
+            } else if ($vis === PaperOption::VIS_REVIEW) {
+                echo '<div class="field-visibility">(hidden until review)</div>';
+            } else if ($vis === PaperOption::VIS_CONFLICT) {
+                // XXX
+            }
         }
         echo '</h3>';
         $this->echo_field_hint($opt, $rest["context_args"] ?? null);

@@ -30,13 +30,6 @@ handle_ui.on("js-settings-sub-nopapers", function (event) {
 
 $(function () { $(".js-settings-sub-nopapers").trigger("change"); });
 
-handle_ui.on("js-settings-sf-type", function (event) {
-    var v = this.value;
-    $(this).closest(".settings-sf").find(".has-optvt-condition").each(function () {
-        toggleClass(this, "hidden", this.getAttribute("data-optvt-condition").split(" ").indexOf(v) < 0);
-    });
-});
-
 handle_ui.on("js-settings-show-property", function () {
     var prop = this.getAttribute("data-property"),
         $j = $(this).closest(".settings-sf, .settings-rf").find(".is-property-" + prop);
@@ -47,6 +40,16 @@ handle_ui.on("js-settings-show-property", function () {
         var $jx = $j.find("input, select, textarea").not("[type=hidden], :disabled");
         $jx.length && setTimeout(function () { focus_at($jx[0]); }, 0);
     }
+});
+
+
+(function () {
+
+handle_ui.on("js-settings-sf-type", function (event) {
+    var v = this.value;
+    $(this).closest(".settings-sf").find(".has-optvt-condition").each(function () {
+        toggleClass(this, "hidden", this.getAttribute("data-optvt-condition").split(" ").indexOf(v) < 0);
+    });
 });
 
 handle_ui.on("js-settings-sf-move", function (event) {
@@ -91,22 +94,38 @@ handle_ui.on("js-settings-sf-new", function (event) {
 });
 
 function settings_sf_positions() {
-    if ($(".settings-sf").length) {
-        $(".settings-sf .moveup, .settings-sf .movedown").prop("disabled", false);
-        $(".settings-sf:first-child .moveup").prop("disabled", true);
-        $(".settings-sf:last-child .movedown").prop("disabled", true);
-        var index = 0;
-        $(".settings-sf-fp").each(function () {
-            if (this.value !== "deleted" && this.name !== "optfp_0") {
-                ++index;
-                if (this.value != index)
-                    $(this).val(index).change();
-            }
-        });
-    }
+    $(".settings-sf .moveup, .settings-sf .movedown").prop("disabled", false);
+    $(".settings-sf:first-child .moveup").prop("disabled", true);
+    $(".settings-sf:last-child .movedown").prop("disabled", true);
+    var index = 0;
+    $(".settings-sf-fp").each(function () {
+        if (this.value !== "deleted" && this.name !== "optfp_0") {
+            ++index;
+            if (this.value != index)
+                $(this).val(index).change();
+        }
+    });
 }
 
-$(settings_sf_positions);
+$(function () {
+    if ($(".settings-sf").length) {
+        $(".settings-sf-view").find("input, select, textarea, button").each(function () {
+            this.removeAttribute("name"); // do not submit with form
+            if (this.type === "checkbox" || this.type === "radio" || this.type === "button")
+                this.disabled = true;
+            else if (this.type !== "select")
+                this.readonly = true;
+            removeClass(this, "ui");
+        });
+        $("#settings-sform").on("unfold", ".settings-sf", function (evt, opts) {
+            $(this).find("textarea").css("height", "auto").autogrow();
+            $(this).find("input[type=text]").autogrow();
+        });
+        settings_sf_positions();
+    }
+});
+
+})();
 
 
 handle_ui.on("js-settings-banal-pagelimit", function (evt) {
@@ -291,20 +310,6 @@ function fill_order() {
     form_highlight("#settingsform");
 }
 
-function fold_property(fid, property, $j, hideval) {
-    var $f = $("#rf_" + fid), hidden = true;
-    for (var i = 0; i !== $j.length; ++i) {
-        hidden = hidden && !input_differs($j[i]) && $($j[i]).val() == hideval[i];
-    }
-    $f.find(".is-property-" + property).toggleClass("hidden", hidden);
-    $f.find(".js-settings-show-property[data-property=\"".concat(property, "\"]")).toggleClass("btn-disabled", !hidden);
-}
-
-function fold_properties(fid) {
-    fold_property(fid, "description", $("#rf_description_" + fid), [""]);
-    fold_property(fid, "editing", $("#rf_ec_" + fid), ["all"]);
-}
-
 function rf_fill_control(sel, value, order) {
     var $j = $(sel).val(value);
     order && $j.attr("data-default-value", value);
@@ -339,7 +344,6 @@ function rf_fill($f, fid, fieldj, order) {
     if (fieldj.search_keyword) {
         $("#rf_" + fid).attr("data-rf", fieldj.search_keyword);
     }
-    fold_properties(fid);
     return false;
 }
 
@@ -577,7 +581,6 @@ function rfs(data) {
             if ($j[0] && !text_eq($j.val(), data.req[i])) {
                 $j.val(data.req[i]);
                 foldup.call($j[0], null, {n: 2, f: false});
-                fold_properties(m[1]);
             }
         }
     }

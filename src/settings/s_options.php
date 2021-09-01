@@ -3,22 +3,14 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class Options_SettingRenderer {
+    /** @var PaperTable */
+    private $pt;
     /** @var array<int,bool> */
     private $rendered_options = [];
     /** @var int */
     private $max_xpos = 0;
-    /** @var array<string,bool> */
-    private $properties = [];
     /** @var ?array<int,int> */
     private $have_options;
-
-    /** @param string $property
-     * @param bool $visible */
-    function mark_visible_property($property, $visible) {
-        if (!$visible || !isset($this->properties[$property])) {
-            $this->properties[$property] = $visible;
-        }
-    }
 
     static function render_type_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $optvt = $o->type;
@@ -68,9 +60,7 @@ class Options_SettingRenderer {
             "</div></div>\n";
     }
     static function render_description_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $open = !$o->id || (string) $o->description !== "";
-        $self->mark_visible_property("description", $open);
-        echo '<div class="', $sv->control_class("optd_$xpos", "entryi is-property-description" . ($open ? "" : " hidden")),
+        echo '<div class="', $sv->control_class("optd_$xpos", "entryi is-property-description"),
             '">', $sv->label("optd_$xpos", "Description"),
             '<div class="entry">',
             $sv->feedback_at("optd_$xpos"),
@@ -78,9 +68,7 @@ class Options_SettingRenderer {
             '</div></div>';
     }
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $open = !$o->id || $o->final;
-        $self->mark_visible_property("editing", $open);
-        echo '<div class="', $sv->control_class("optec_$xpos", "entryi is-property-editing" . ($open ? "" : " hidden")),
+        echo '<div class="', $sv->control_class("optec_$xpos", "entryi is-property-editing"),
             '">', $sv->label("optec_$xpos", "Present on"),
             '<div class="entry">',
             $sv->feedback_at("optec_$xpos"),
@@ -88,9 +76,7 @@ class Options_SettingRenderer {
             "</div></div>";
     }
     static function render_required_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $open = !$o->id || $o->required;
-        $self->mark_visible_property("editing", $open);
-        echo '<div class="', $sv->control_class("optreq_$xpos", "entryi is-property-editing" . ($open ? "" : " hidden")),
+        echo '<div class="', $sv->control_class("optreq_$xpos", "entryi is-property-editing"),
             '">', $sv->label("optreq_$xpos", "Required"),
             '<div class="entry">',
             $sv->feedback_at("optreq_$xpos"),
@@ -99,26 +85,23 @@ class Options_SettingRenderer {
     }
     static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $vis = $o->unparse_visibility();
-        $open = !$o->id || $vis !== "all";
-        $self->mark_visible_property("visibility", $open);
-        $options = ["all" => "PC and reviewers"];
-        $options["nonblind"] = "PC and reviewers, if authors are visible";
+        $options = ["all" => "Visible to reviewers"];
+        $options["nonblind"] = "Hidden on blind submissions";
         if ($vis === "conflict") {
-            $options["conflict"] = "PC and reviewers, if conflicts are visible";
+            $options["conflict"] = "Hidden until conflicts are visible";
         }
-        $options["review"] = "Submitted reviewers and PC who can see reviews";
-        $options["admin"] = "Administrators only";
-        echo '<div class="', $sv->control_class("optp_$xpos", "entryi is-property-visibility" . ($open ? "" : " hidden") . " short"),
-            '">', $sv->label("optp_$xpos", "Visible to"),
+        $options["review"] = "Hidden until review";
+        $options["admin"] = "Hidden from reviewers";
+        echo '<div class="', $sv->control_class("optp_$xpos", "entryi is-property-visibility short has-fold fold" . ($vis === "review" ? "o" : "c")),
+            '" data-fold-values="review">', $sv->label("optp_$xpos", "Visibility"),
             '<div class="entry">',
             $sv->feedback_at("optp_$xpos"),
-            Ht::select("optp_$xpos", $options, $vis, $sv->sjs("optp_$xpos", ["id" => "optp_$xpos", "class" => "settings-sf-visibility"])),
+            Ht::select("optp_$xpos", $options, $vis, $sv->sjs("optp_$xpos", ["id" => "optp_$xpos", "class" => "settings-sf-visibility uich js-foldup"])),
+            '<div class="hint fx">The field will be visible to reviewers who have submitted a review, and to PC members who can see all reviews.</div>',
             '</div></div>';
     }
     static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        $open = !$o->id || $o->display() !== PaperOption::DISP_PROMINENT;
-        $self->mark_visible_property("display", $open);
-        echo '<div class="', $sv->control_class("optdt_$xpos", "entryi is-property-display" . ($open ? "" : " hidden") . " short"),
+        echo '<div class="', $sv->control_class("optdt_$xpos", "entryi is-property-display short"),
             '">', $sv->label("optdt_$xpos", "Display"),
             '<div class="entry">',
             $sv->feedback_at("optdt_$xpos"),
@@ -251,13 +234,6 @@ class Options_SettingRenderer {
         return PaperOption::make((object) $args, $sv->conf);
     }
 
-    private function echo_property_button($property, $icon, $label) {
-        if (isset($this->properties[$property])) {
-            $all_open = $this->properties[$property];
-            echo Ht::button($icon, ["class" => "btn-licon ui js-settings-show-property need-tooltip" . ($all_open ? " btn-disabled" : ""), "aria-label" => $label, "data-property" => $property]);
-        }
-    }
-
     private function render_option(SettingValues $sv, PaperOption $io = null, $ipos) {
         if ($io && isset($this->rendered_options[$io->id])) {
             return;
@@ -280,13 +256,39 @@ class Options_SettingRenderer {
             $sv->set_oldv("optreq_$xpos", $io->required ? "1" : "0");
             $sv->set_oldv("optec_$xpos", $io->exists_condition() ? "search" : ($io->final ? "final" : "all"));
             $sv->set_oldv("optecs_$xpos", $io->exists_condition());
+            $config_open = json_encode($io) !== json_encode($o);
+        } else {
+            $config_open = true;
         }
 
-        $this->properties = [];
+        echo '<div class="settings-sf has-fold fold2', $config_open ? "o" : "c", '">',
+            '<a href="" class="q ui js-settings-field-unfold">', expander(null, 2), '</a>';
 
-        echo '<div class="settings-sf has-fold fold2o"><a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
+        // field rendering
+        if ($io) {
+            echo '<div class="settings-sf-view fn2 ui js-foldup">';
+            if ($io->exists_condition()) {
+                $this->pt->msg_at($io->formid, "Present on submissions matching “" . htmlspecialchars($io->exists_condition()) . "”", MessageSet::WARNING_NOTE);
+            }
+            if ($io->final) {
+                $this->pt->msg_at($io->formid, "Present on final versions", MessageSet::WARNING_NOTE);
+            }
+            if ($io->editable_condition()) {
+                $this->pt->msg_at($io->formid, "Editable on submisisons matching “" . htmlspecialchars($io->editable_condition()) . "”", MessageSet::WARNING_NOTE);
+            }
+            $ei = $io->editable_condition();
+            $xi = $io->exists_condition();
+            $io->set_editable_condition(true);
+            $io->set_exists_condition(true);
+            $ov = $this->pt->prow->force_option($io);
+            $io->echo_web_edit($this->pt, $ov, $ov);
+            $io->set_editable_condition($ei);
+            $io->set_exists_condition($xi);
+            echo '</div>';
+        }
 
-        echo '<div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
+        // field configuration
+        echo '<div class="fx2"><div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
             $sv->feedback_at("optn_$xpos"),
             Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "class" => "need-tooltip font-weight-bold", "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
             Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-sf-id", "data-default-value" => $o->id > 0 ? $o->id : ""]),
@@ -313,12 +315,7 @@ class Options_SettingRenderer {
             }
         }
 
-        echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">';
-        $this->echo_property_button("description", Icons::ui_description(), "Description");
-        $this->echo_property_button("editing", Icons::ui_edit_hide(), "Edit requirements");
-        $this->echo_property_button("visibility", Icons::ui_visibility_hide(), "Reviewer visibility");
-        $this->echo_property_button("display", Icons::ui_display(), "Display settings");
-        echo '</span><span class="btnbox">',
+        echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
             Ht::button(Icons::ui_movearrow(0), ["class" => "btn-licon ui js-settings-sf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_movearrow(2), ["class" => "btn-licon ui js-settings-sf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
@@ -332,6 +329,8 @@ class Options_SettingRenderer {
 
     static function render(SettingValues $sv) {
         $self = new Options_SettingRenderer;
+        $self->pt = new PaperTable($sv->user, new Qrequest("GET"));
+        $self->pt->edit_show_all_visibility = true;
         $sv->render_section("Submission fields");
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_options", 1),
@@ -383,7 +382,7 @@ class Options_SettingRenderer {
             && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
             foreach ($options as $pos => $o) {
                 if (($o->visibility ?? null) === "nonblind") {
-                    $sv->warning_at("optp_" . ($pos + 1), "The “" . htmlspecialchars($o->name) . "” field is “visible if authors are visible,” but authors are not visible. You may want to change " . $sv->setting_link("Settings &gt; Submissions &gt; Blind submission", "sub_blind") . " to “Blind until review.”");
+                    $sv->warning_at("optp_" . ($pos + 1), "The “" . htmlspecialchars($o->name) . "” field is “hidden on blind submissions,” but all submissions are blind. You may want to change " . $sv->setting_link("Settings &gt; Submissions &gt; Blind submission", "sub_blind") . " to “Blind until review.”");
                 }
             }
         }

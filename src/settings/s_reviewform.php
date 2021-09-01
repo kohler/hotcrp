@@ -495,21 +495,8 @@ class ReviewForm_SettingParser extends SettingParser {
 }
 
 class ReviewForm_SettingRenderer {
-    /** @var ?array<string,bool> */
-    private $properties = [];
-
-    /** @param string $property
-     * @param bool $visible */
-    function mark_visible_property($property, $visible) {
-        if (!$visible || !isset($this->properties[$property])) {
-            $this->properties[$property] = $visible;
-        }
-    }
-
     static function render_description_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
-        $open = !$f->id || $f->description || true;
-        $self->mark_visible_property("description", $open);
-        echo '<div class="', $sv->control_class("rf_description_{$xpos}", "entryi is-property-description" . ($open ? "" : " hidden")),
+        echo '<div class="', $sv->control_class("rf_description_{$xpos}", "entryi is-property-description"),
             '">', $sv->label("rf_description_{$xpos}", "Description"),
             '<div class="entry">',
             $sv->feedback_at("rf_description_{$xpos}"),
@@ -521,7 +508,6 @@ class ReviewForm_SettingRenderer {
         if (!$f->has_options) {
             return;
         }
-        $self->mark_visible_property("options", true);
         echo '<div class="', $sv->control_class("rf_options_{$xpos}", "entryi is-property-options"),
             '">', $sv->label("rf_options_{$xpos}", "Choices"),
             '<div class="entry">',
@@ -534,7 +520,6 @@ class ReviewForm_SettingRenderer {
         if (!$f->has_options) {
             return;
         }
-        $self->mark_visible_property("options", true);
         echo '<div class="', $sv->control_class("rf_required_{$xpos}", "entryi is-property-options"),
             '">', $sv->label("rf_required_{$xpos}", "Required"),
             '<div class="entry">',
@@ -663,10 +648,7 @@ class ReviewForm_SettingRenderer {
             }
         }
 
-        echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">';
-        $renderer->echo_property_button("description", Icons::ui_description(), "Description");
-        $renderer->echo_property_button("editing", Icons::ui_edit_hide(), "Edit requirements");
-        echo '</span><span class="btnbox">',
+        echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
             Ht::button(Icons::ui_movearrow(0), ["id" => "rf_\$_moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_movearrow(2), ["id" => "rf_\$_movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
