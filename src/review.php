@@ -214,11 +214,11 @@ class ReviewField implements JsonSerializable {
         return join(" OR ", $rs);
     }
 
-    /** @param bool $for_settings
+    /** @param 0|1|2 $for_settings
      * @return object */
     function unparse_json($for_settings) {
         $j = (object) [];
-        if ($for_settings) {
+        if ($for_settings > 0) {
             $j->id = $this->short_id;
         } else {
             $j->uid = $this->uid();
@@ -249,7 +249,7 @@ class ReviewField implements JsonSerializable {
         }
         if ($this->exists_if) {
             $j->exists_if = $this->exists_if;
-        } else if ($this->round_mask && $for_settings) {
+        } else if ($this->round_mask && $for_settings > 1) {
             $j->round_mask = $this->round_mask;
         } else if ($this->round_mask) {
             $j->exists_if = $this->unparse_round_mask();
@@ -257,7 +257,7 @@ class ReviewField implements JsonSerializable {
         return $j;
     }
     function jsonSerialize() {
-        return $this->unparse_json(false);
+        return $this->unparse_json(0);
     }
 
     /** @return string */
@@ -741,7 +741,7 @@ class ReviewForm implements JsonSerializable {
     function jsonSerialize() {
         $fmap = [];
         foreach ($this->fmap as $f) {
-            $fmap[] = $f->unparse_json(true);
+            $fmap[] = $f->unparse_json(2);
         }
         return $fmap;
     }

@@ -365,7 +365,7 @@ class PaperList implements XtContext {
         case "conflictassign":
             return "id title authors aufull potentialconflict [revtype basicheader] [editconf basicheader] [linkto assign]";
         case "pf":
-            return "sel id title topicscore revtype [editmypref topicsort]";
+            return "sel id title topicscore revtype [editmypref topicscore]";
         case "reviewers":
             return "[sel selected] id title status [linkto assign]";
         case "reviewersSel":

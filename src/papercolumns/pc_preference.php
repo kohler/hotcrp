@@ -25,7 +25,7 @@ class Preference_PaperColumn extends PaperColumn {
         $this->statistics = new ScoreInfo;
     }
     function add_decoration($decor) {
-        if ($decor === "topicsort") {
+        if ($decor === "topicscore" || $decor === "topicsort") {
             $this->secondary_sort_topic_score = true;
             return $this->__add_decoration($decor);
         } else if ($decor === "edit") {

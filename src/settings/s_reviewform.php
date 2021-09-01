@@ -196,7 +196,7 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     private function populate_field(SettingValues $sv, ReviewField $f, $xpos) {
-        $fj = $f->unparse_json(true);
+        $fj = $f->unparse_json(2);
         $this->field = $f;
 
         // field name
@@ -296,7 +296,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 $fj = $this->populate_field($sv, $f, $fid);
                 $xf = clone $f;
                 $xf->assign_json($fj);
-                $this->nrfj[] = $xf->unparse_json(true);
+                $this->nrfj[] = $xf->unparse_json(2);
             } else if ($sv->has_reqv("rf_position_{$fid}")
                        && $sv->reqv("rf_position_{$fid}") > 0) {
                 $sv->error_at("rf_name_{$fid}", "Too many review fields. You must delete some other fields before adding this one.");
@@ -312,7 +312,7 @@ class ReviewForm_SettingParser extends SettingParser {
     function unparse_json(SettingValues $sv, Si $si) {
         $fj = [];
         foreach ($sv->conf->all_review_fields() as $f) {
-            $fj[] = $f->unparse_json(true);
+            $fj[] = $f->unparse_json(2);
         }
         return $fj;
     }
@@ -633,7 +633,7 @@ class ReviewForm_SettingRenderer {
 
         $rfj = [];
         foreach ($rf->all_fields() as $f) {
-            $rfj[] = $fj = $f->unparse_json(true);
+            $rfj[] = $fj = $f->unparse_json(1);
             $fj->search_keyword = $f->search_keyword();
         }
 
@@ -686,8 +686,8 @@ class ReviewForm_SettingRenderer {
         $sj["errf"] = $sv->message_field_map();
         $sj["message_list"] = $sv->message_list();
         $sj["req"] = $req;
-        $sj["stemplate"] = ReviewField::make_template($sv->conf, true)->unparse_json(true);
-        $sj["ttemplate"] = ReviewField::make_template($sv->conf, false)->unparse_json(true);
+        $sj["stemplate"] = ReviewField::make_template($sv->conf, true)->unparse_json(1);
+        $sj["ttemplate"] = ReviewField::make_template($sv->conf, false)->unparse_json(1);
         Ht::stash_script("hotcrp.settings.review_form(" . json_encode_browser($sj) . ")");
     }
 }
