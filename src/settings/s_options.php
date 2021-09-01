@@ -45,7 +45,7 @@ class Options_SettingRenderer {
             '">', $sv->label("optvt_$xpos", "Type"),
             '<div class="entry">',
             $sv->feedback_at("optvt_$xpos"),
-            Ht::select("optvt_$xpos", $otypes, $optvt, $sv->sjs("optvt_$xpos", ["class" => "uich js-settings-option-type", "id" => "optvt_$xpos"])),
+            Ht::select("optvt_$xpos", $otypes, $optvt, $sv->sjs("optvt_$xpos", ["class" => "uich js-settings-sf-type", "id" => "optvt_$xpos"])),
             "</div></div>\n";
 
         if ($o instanceof Selector_PaperOption) {
@@ -64,7 +64,7 @@ class Options_SettingRenderer {
             '" data-optvt-condition="selector radio">', $sv->label("optv_$xpos", "Choices"),
             '<div class="entry">',
             $sv->feedback_at("optv_$xpos"),
-            Ht::textarea("optv_$xpos", $value, $sv->sjs("optv_$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "w-entry-text need-autogrow need-tooltip", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus"])),
+            Ht::textarea("optv_$xpos", $value, $sv->sjs("optv_$xpos", ["rows" => $rows, "cols" => 50, "id" => "optv_$xpos", "class" => "w-entry-text need-autogrow need-tooltip", "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus"])),
             "</div></div>\n";
     }
     static function render_description_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -74,7 +74,7 @@ class Options_SettingRenderer {
             '">', $sv->label("optd_$xpos", "Description"),
             '<div class="entry">',
             $sv->feedback_at("optd_$xpos"),
-            Ht::textarea("optd_$xpos", $o->description, $sv->sjs("optd_$xpos", ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "w-entry-text settings-opt-description need-autogrow"])),
+            Ht::textarea("optd_$xpos", $o->description, $sv->sjs("optd_$xpos", ["rows" => 2, "cols" => 80, "id" => "optd_$xpos", "class" => "w-entry-text settings-sf-description need-autogrow"])),
             '</div></div>';
     }
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -112,7 +112,7 @@ class Options_SettingRenderer {
             '">', $sv->label("optp_$xpos", "Visible to"),
             '<div class="entry">',
             $sv->feedback_at("optp_$xpos"),
-            Ht::select("optp_$xpos", $options, $vis, $sv->sjs("optp_$xpos", ["id" => "optp_$xpos", "class" => "settings-opt-visibility"])),
+            Ht::select("optp_$xpos", $options, $vis, $sv->sjs("optp_$xpos", ["id" => "optp_$xpos", "class" => "settings-sf-visibility"])),
             '</div></div>';
     }
     static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -126,7 +126,7 @@ class Options_SettingRenderer {
                                        "topics" => "Grouped with topics",
                                        "submission" => "Near submission"],
                        $o->display_name(),
-                       $sv->sjs("optdt_$xpos", ["id" => "optdt_$xpos", "class" => "settings-opt-display"])),
+                       $sv->sjs("optdt_$xpos", ["id" => "optdt_$xpos", "class" => "settings-sf-display"])),
             "</div></div>";
     }
 
@@ -262,6 +262,7 @@ class Options_SettingRenderer {
         if ($io && isset($this->rendered_options[$io->id])) {
             return;
         }
+
         $xpos = $ipos ?? $this->max_xpos + 1;
         $this->max_xpos = max($this->max_xpos, $xpos);
         $this->rendered_options[$io ? $io->id : "new_$xpos"] = true;
@@ -283,16 +284,17 @@ class Options_SettingRenderer {
 
         $this->properties = [];
 
-        echo '<div class="settings-opt has-fold fold2o"><a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
+        echo '<div class="settings-sf has-fold fold2o"><a href="" class="q ui settings-field-folder"><span class="expander"><span class="in0 fx2">▼</span></span></a>';
 
         echo '<div class="', $sv->control_class("optn_$xpos", "f-i"), '">',
             $sv->feedback_at("optn_$xpos"),
-            Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "class" => "need-tooltip font-weight-bold", "data-tooltip-info" => "settings-option", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
-            Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-opt-id", "data-default-value" => $o->id > 0 ? $o->id : ""]),
-            Ht::hidden("optfp_$xpos", count($this->rendered_options), ["class" => "settings-opt-fp", "data-default-value" => count($this->rendered_options)]),
+            Ht::entry("optn_$xpos", $o->name, $sv->sjs("optn_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "optn_$xpos", "class" => "need-tooltip font-weight-bold", "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
+            Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-sf-id", "data-default-value" => $o->id > 0 ? $o->id : ""]),
+            Ht::hidden("optfp_$xpos", count($this->rendered_options), ["class" => "settings-sf-fp", "data-default-value" => count($this->rendered_options)]),
             '</div>';
 
-        Ht::stash_html('<div id="option_caption_name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div><div id="option_caption_choices" class="hidden"><p>Enter choices one per line.</p></div>', 'settings_option_caption');
+        Ht::stash_html('<div id="settings-sf-caption-name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div>', 'settings-sf-caption-name');
+        Ht::stash_html('<div id="settings-sf-caption-choices" class="hidden"><p>Enter choices one per line.</p></div>', 'settings-sf-caption-choices');
 
         foreach ($sv->group_members("options/properties") as $gj) {
             if (isset($gj->render_option_property_function)) {
@@ -317,12 +319,14 @@ class Options_SettingRenderer {
         $this->echo_property_button("visibility", Icons::ui_visibility_hide(), "Reviewer visibility");
         $this->echo_property_button("display", Icons::ui_display(), "Display settings");
         echo '</span><span class="btnbox">',
-            Ht::button(Icons::ui_movearrow(0), ["class" => "btn-licon ui js-settings-option-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
-            Ht::button(Icons::ui_movearrow(2), ["class" => "btn-licon ui js-settings-option-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
+            Ht::button(Icons::ui_movearrow(0), ["class" => "btn-licon ui js-settings-sf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
+            Ht::button(Icons::ui_movearrow(2), ["class" => "btn-licon ui js-settings-sf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
-            Ht::button(Icons::ui_trash(), ["class" => "btn-licon ui js-settings-option-move delete need-tooltip", "aria-label" => "Delete", "data-option-exists" => $this->have_options[$o->id] ?? false]),
-            "</div></div>\n";
+            Ht::button(Icons::ui_trash(), ["class" => "btn-licon ui js-settings-sf-move delete need-tooltip", "aria-label" => "Delete", "data-option-exists" => $this->have_options[$o->id] ?? false]),
+            "</div></div>\n",
+            '</div>';
 
+        // close option
         echo '</div>';
     }
 
@@ -334,7 +338,7 @@ class Options_SettingRenderer {
             Ht::hidden("options_version", (int) $sv->conf->setting("options")),
             "\n\n";
 
-        echo '<div id="settings_opts" class="c">';
+        echo '<div id="settings-sform" class="c">';
         $iposl = [];
         if ($sv->use_req()) {
             for ($ipos = 1; $sv->has_reqv("optid_$ipos"); ++$ipos) {
@@ -363,9 +367,9 @@ class Options_SettingRenderer {
         $self->render_option($sv, null, 0);
         $newopt = ob_get_clean();
 
-        echo '<div style="margin-top:2em" id="settings_newopt" data-template="',
+        echo '<div style="margin-top:2em" id="settings-sf-new" data-template="',
             htmlspecialchars($newopt), '">',
-            Ht::button("Add submission field", ["class" => "ui js-settings-option-new"]),
+            Ht::button("Add submission field", ["class" => "ui js-settings-sf-new"]),
             "</div>\n";
     }
 

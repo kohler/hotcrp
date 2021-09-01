@@ -513,7 +513,7 @@ class ReviewForm_SettingRenderer {
             '">', $sv->label("rf_description_{$xpos}", "Description"),
             '<div class="entry">',
             $sv->feedback_at("rf_description_{$xpos}"),
-            Ht::textarea("rf_description_{$xpos}", $f->description ?? "", ["id" => "rf_description_{$xpos}", "rows" => 2, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"]),
+            Ht::textarea("rf_description_{$xpos}", $f->description ?? "", ["id" => "rf_description_{$xpos}", "rows" => 2, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus"]),
             '</div></div>';
     }
 
@@ -526,7 +526,7 @@ class ReviewForm_SettingRenderer {
             '">', $sv->label("rf_options_{$xpos}", "Choices"),
             '<div class="entry">',
             $sv->feedback_at("rf_options_{$xpos}"),
-            Ht::textarea("rf_options_{$xpos}", "" /* XXX */, ["id" => "rf_options_{$xpos}", "rows" => 6, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus"]),
+            Ht::textarea("rf_options_{$xpos}", "" /* XXX */, ["id" => "rf_options_{$xpos}", "rows" => 6, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus"]),
             '</div></div>';
     }
 
@@ -586,9 +586,9 @@ class ReviewForm_SettingRenderer {
             $ecs = "";
         }
         $ecv = isset($ecsel[$ecs]) ? $ecs : ($ecs ? "custom" : "all");
-        Ht::stash_html('<div id="settings-review-form-caption-ecs" class="hidden">'
+        Ht::stash_html('<div id="settings-rf-caption-ecs" class="hidden">'
             . ($gj->caption_html ?? '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>')
-            . '</div>', "settings-review-form-caption-ecs");
+            . '</div>', "settings-rf-caption-ecs");
         echo '<div class="', $sv->control_class("rf_ec_{$xpos}", "entryi is-property-editing has-fold fold" . ($ecs === "custom" ? "o" : "c")),
             '" data-fold-values="custom">', $sv->label("rf_ec_{$xpos}", "Present on"),
             '<div class="entry">',
@@ -597,7 +597,7 @@ class ReviewForm_SettingRenderer {
             Ht::select("rf_ec_{$xpos}", $ecsel, $ecv, ["id" => "rf_ec_{$xpos}", "class" => "uich js-foldup"]),
             ' &nbsp;',
             Ht::entry("rf_ecs_{$xpos}", $ecs,
-                      $sv->sjs("rf_ecs_{$xpos}", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-review-form", "data-tooltip-type" => "focus", "size" => 30, "spellcheck" => false])),
+                      $sv->sjs("rf_ecs_{$xpos}", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus", "size" => 30, "spellcheck" => false])),
             '</div></div>';
     }
 
@@ -619,11 +619,11 @@ class ReviewForm_SettingRenderer {
             }
         }
 
-        Ht::stash_html('<div id="settings-review-form-caption-description" class="hidden">'
+        Ht::stash_html('<div id="settings-rf-caption-description" class="hidden">'
             . '<p>Enter an HTML description for the review form.
     Include any guidance you’d like to provide for reviewers.
     Note that complex HTML will not appear on offline review forms.</p></div>'
-            . '<div id="settings-review-form-caption-options" class="hidden">'
+            . '<div id="settings-rf-caption-options" class="hidden">'
             . '<p>Enter one choice per line, numbered starting from 1 (higher numbers are better). For example:</p>
 <pre class="entryexample">1. Reject
 2. Weak reject
@@ -644,7 +644,7 @@ class ReviewForm_SettingRenderer {
         $renderer = new ReviewForm_SettingRenderer;
         echo '<template id="rf_template" class="hidden">';
         echo '<div id="rf_$" class="settings-rf f-contain has-fold fold2c" data-rfid="$">',
-            '<a href="" class="q settings-field-folder">',
+            '<a href="" class="q ui js-settings-field-unfold">',
             expander(null, 2, "Edit field"),
             '</a>',
             '<div id="rf_$_view" class="settings-rf-view fn2 ui js-foldup"></div>',
@@ -675,7 +675,7 @@ class ReviewForm_SettingRenderer {
             "</div></div>";
         echo '</template>';
 
-        echo "<div id=\"reviewform_container\"></div>",
+        echo "<div id=\"settings-rform\"></div>",
             Ht::button("Add score field", ["class" => "ui js-settings-add-review-field score"]),
             "<span class=\"sep\"></span>",
             Ht::button("Add text field", ["class" => "ui js-settings-add-review-field"]);
