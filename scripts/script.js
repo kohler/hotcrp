@@ -443,7 +443,7 @@ function escape_html(s) {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39");
+        .replace(/'/g, "&#39;");
 }
 
 var urlencode = (function () {
