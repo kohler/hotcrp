@@ -90,23 +90,6 @@ if (PHP_VERSION_ID < 80000
     libxml_disable_entity_loader(true);
 }
 
-
-function read_included_options(&$files) {
-    global $Opt;
-    if (is_string($files)) {
-        $files = [$files];
-    }
-    for ($i = 0; $i !== count($files); ++$i) {
-        foreach (SiteLoader::expand_includes($files[$i]) as $f) {
-            $key = "missing";
-            if ((@include $f) !== false) {
-                $key = "loaded";
-            }
-            $Opt[$key][] = $f;
-        }
-    }
-}
-
 function expand_json_includes_callback($includelist, $callback) {
     $includes = [];
     foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $str) {
@@ -164,14 +147,14 @@ if (!($Opt["loaded"] ?? null)) {
     if ($Opt["multiconference"] ?? null) {
         Multiconference::init();
     }
-    if (isset($Opt["include"]) && $Opt["include"]) {
-        read_included_options($Opt["include"]);
+    if ($Opt["include"] ?? null) {
+        SiteLoader::read_included_options();
     }
 }
 if (!($Opt["loaded"] ?? null) || ($Opt["missing"] ?? null)) {
     Multiconference::fail_bad_options();
 }
-if (isset($Opt["dbLogQueries"]) && $Opt["dbLogQueries"]) {
+if ($Opt["dbLogQueries"] ?? null) {
     Dbl::log_queries($Opt["dbLogQueries"], $Opt["dbLogQueryFile"] ?? null);
 }
 
@@ -180,15 +163,17 @@ if (isset($Opt["dbLogQueries"]) && $Opt["dbLogQueries"]) {
 if (!($Opt["memoryLimit"] ?? null) && ini_get_bytes("memory_limit") < (128 << 20)) {
     $Opt["memoryLimit"] = "128M";
 }
-if (isset($Opt["memoryLimit"]) && $Opt["memoryLimit"]) {
+if ($Opt["memoryLimit"] ?? null) {
     ini_set("memory_limit", $Opt["memoryLimit"]);
 }
 
 
 // Create the conference
-if (!Conf::$main) {
-    Conf::set_main_instance(new Conf($Opt, true));
-}
-if (!Conf::$main->dblink) {
-    Multiconference::fail_bad_database();
+if (!Conf::$no_main) {
+    if (!Conf::$main) {
+        Conf::set_main_instance(new Conf($Opt, true));
+    }
+    if (!Conf::$main->dblink) {
+        Multiconference::fail_bad_database();
+    }
 }

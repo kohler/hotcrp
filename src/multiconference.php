@@ -87,7 +87,7 @@ class Multiconference {
         $Opt = self::$original_opt;
         self::assign_confid($Opt, $confid);
         if ($Opt["include"] ?? null) {
-            read_included_options($Opt["include"]);
+            SiteLoader::read_included_options();
         }
         $newconf = ($Opt["missing"] ?? null) ? null : new Conf($Opt, true);
         $Opt = $save_opt;

@@ -90,14 +90,6 @@ class SiteLoader {
         }
     }
 
-    static function read_main_options() {
-        global $Opt;
-        $file = defined("HOTCRP_OPTIONS") ? HOTCRP_OPTIONS : self::$root . "/conf/options.php";
-        if ((@include $file) !== false) {
-            $Opt["loaded"][] = $file;
-        }
-    }
-
     // Set up conference options
     /** @return list<string> */
     static private function expand_includes_once($file, $includepath, $globby) {
@@ -178,14 +170,36 @@ class SiteLoader {
         return $results;
     }
 
+    static private function read_options_file($file) {
+        global $Opt;
+        if ((@include $file) !== false) {
+            $Opt["loaded"][] = $file;
+        } else {
+            $Opt["missing"][] = $file;
+        }
+    }
+
+    static function read_main_options() {
+        $file = defined("HOTCRP_OPTIONS") ? HOTCRP_OPTIONS : self::$root . "/conf/options.php";
+        self::read_options_file($file);
+    }
+
+    static function read_included_options() {
+        global $Opt;
+        if (is_string($Opt["include"])) {
+            $Opt["include"] = [$Opt["include"]];
+        }
+        for ($i = 0; $i !== count($Opt["include"]); ++$i) {
+            foreach (self::expand_includes($Opt["include"][$i]) as $f) {
+                if (!in_array($f, $Opt["loaded"])) {
+                    self::read_options_file($f);
+                }
+            }
+        }
+    }
+
     static function autoloader($class_name) {
-        $f = null;
-        if (isset(self::$map[$class_name])) {
-            $f = self::$map[$class_name];
-        }
-        if (!$f) {
-            $f = strtolower($class_name) . ".php";
-        }
+        $f = self::$map[$class_name] ?? strtolower($class_name) . ".php";
         foreach (self::expand_includes($f, ["autoload" => true]) as $fx) {
             require_once($fx);
         }

@@ -269,6 +269,8 @@ class Conf {
     /** @var null|false|SessionList */
     private $_active_list = false;
 
+    /** @var bool */
+    static public $no_main = false;
     /** @var Conf */
     static public $main;
     /** @var int */
@@ -5191,15 +5193,7 @@ class Conf {
         if ($this->_mail_template_map === null) {
             $this->_mail_template_map = [];
             if ($this->opt("mailtemplate_include")) { // XXX backwards compatibility
-                global $mailTemplates;
-                $mailTemplates = [];
-                read_included_options($this->opt["mailtemplate_include"]);
-                '@phan-var-force array<string,mixed> $mailTemplates';
-                foreach ($mailTemplates as $name => $template) {
-                    error_log("Warning: Adding obsolete mail template for $name");
-                    $template["name"] = $name;
-                    $this->_add_mail_template_json((object) $template);
-                }
+                error_log("Warning: Ignoring obsolete \$[\"mailtemplate_include\"]");
             }
             expand_json_includes_callback(["etc/mailtemplates.json"], [$this, "_add_mail_template_json"]);
             if (($mts = $this->opt("mailTemplates"))) {
