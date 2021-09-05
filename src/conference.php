@@ -224,8 +224,6 @@ class Conf {
     private $_format_info;
     /** @var bool */
     private $_updating_automatic_tags = false;
-    /** @var null|false|\mysqli */
-    private $_cdb = false;
 
     /** @var ?XtContext */
     public $xt_context;
@@ -277,6 +275,8 @@ class Conf {
     static public $now;
     /** @var int|float */
     static public $unow;
+    /** @var false|null|\mysqli */
+    static private $_cdb = false;
 
     static public $no_invalidate_caches = false;
     static public $next_xt_subposition = 0;
@@ -2413,14 +2413,21 @@ class Conf {
     // contactdb
 
     /** @return ?\mysqli */
-    function contactdb() {
-        if ($this->_cdb === false) {
-            $this->_cdb = null;
-            if (($dsn = $this->opt("contactdb_dsn"))) {
-                list($this->_cdb, $dbname) = Dbl::connect_dsn($dsn);
+    static function main_contactdb() {
+        global $Opt;
+        if (self::$_cdb === false) {
+            self::$_cdb = null;
+            $dsn = Conf::$main ? Conf::$main->opt("contactdb_dsn") : $Opt["contactdb_dsn"] ?? null;
+            if ($dsn) {
+                list(self::$_cdb, $dbname) = Dbl::connect_dsn($dsn);
             }
         }
-        return $this->_cdb;
+        return self::$_cdb;
+    }
+
+    /** @return ?\mysqli */
+    function contactdb() {
+        return self::$_cdb === false ? self::main_contactdb() : self::$_cdb;
     }
 
     /** @param string $where
