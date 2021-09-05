@@ -253,7 +253,10 @@ class Author {
     /** @param Author|Contact $x
      * @return bool */
     function nae_equals($x) {
-        return $this->email === $x->email && $this->firstName === $x->firstName && $this->lastName === $x->lastName && $this->affiliation === $x->affiliation;
+        return $this->email === $x->email
+            && $this->firstName === $x->firstName
+            && $this->lastName === $x->lastName
+            && $this->affiliation === $x->affiliation;
     }
 
     /** @return string */
@@ -270,11 +273,17 @@ class Author {
      * @return object */
     static function unparse_nae_json_for($x) {
         $j = [];
-        foreach (["email", "firstName", "lastName", "affiliation"] as $i => $k) {
-            if ($x->$k !== "") {
-                $jk = $i >= 1 && $i <= 2 ? substr($k, 0, -4) : $k;
-                $j[$jk] = $x->$k;
-            }
+        if ($x->email !== "") {
+            $j["email"] = $x->email;
+        }
+        if ($x->firstName !== "") {
+            $j["first"] = $x->firstName;
+        }
+        if ($x->lastName !== "") {
+            $j["last"] = $x->lastName;
+        }
+        if ($x->affiliation !== "") {
+            $j["affiliation"] = $x->affiliation;
         }
         return (object) $j;
     }

@@ -1555,6 +1555,59 @@ class PaperInfo {
         return $c;
     }
 
+    /** @return PaperInfoLikelyContacts */
+    function likely_contacts() {
+        $contacts = $this->contacts(true);
+        $lc = new PaperInfoLikelyContacts;
+        $uanames = [];
+        foreach ($this->author_list() as $au) {
+            $lc->author_list[] = $au;
+            $lc->author_cids[] = [];
+            $uanames[] = trim(preg_replace('/[-\s.,;:]+/', ' ', UnicodeHelper::deaccent($au->name())));
+        }
+        foreach ($contacts as $cflt) {
+            $nm_full = $nm_uaname = $nm_last = $nm_email = $fulli = $uanamei = $lasti = $emaili = 0;
+            if ($cflt->email !== "") {
+                foreach ($lc->author_list as $i => $au) {
+                    if (strcasecmp($cflt->email, $au->email) === 0) {
+                        ++$nm_email;
+                        $emaili = $i;
+                    }
+                }
+            }
+            if ($nm_email !== 1 && ($cflt_name = $cflt->name()) !== "") {
+                $cflt_uaname = trim(preg_replace('/[-\s.,;:]+/', ' ', UnicodeHelper::deaccent($cflt_name)));
+                foreach ($lc->author_list as $i => $au) {
+                    if (strcasecmp($cflt_name, $au->name()) === 0) {
+                        ++$nm_full;
+                        $fulli = $i;
+                    } else if ($cflt_uaname !== ""
+                               && strcasecmp($cflt_uaname, $uanames[$i]) === 0) {
+                        ++$nm_uaname;
+                        $uanamei = $i;
+                    } else if ($cflt->lastName !== ""
+                               && strcasecmp($cflt->lastName, $au->lastName) === 0) {
+                        ++$nm_last;
+                        $lasti = $i;
+                    }
+                }
+            }
+            if ($nm_email === 1) {
+                $lc->author_list[$emaili]->contactId = $cflt->contactId;
+                array_unshift($lc->author_cids[$emaili], $cflt->contactId);
+            } else if ($nm_full === 1) {
+                $lc->author_cids[$fulli][] = $cflt->contactId;
+            } else if ($nm_uaname === 1) {
+                $lc->author_cids[$uanamei][] = $cflt->contactId;
+            } else if ($nm_last === 1) {
+                $lc->author_cids[$lasti][] = $cflt->contactId;
+            } else {
+                $lc->nonauthor_contacts[] = $cflt;
+            }
+        }
+        return $lc;
+    }
+
 
     function load_preferences() {
         if ($this->_row_set && ++$this->_row_set->loaded_allprefs >= 10) {
@@ -2962,5 +3015,32 @@ class PaperInfo {
         } else {
             return false;
         }
+    }
+}
+
+class PaperInfoLikelyContacts implements JsonSerializable {
+    /** @var list<Author> */
+    public $author_list = [];
+    /** @var list<list<int>> */
+    public $author_cids = [];
+    /** @var list<Author> */
+    public $nonauthor_contacts = [];
+
+    /** @return array{author_list:list<object>,author_cids:list<list<int>>,nonauthor_contacts?:list<object>} */
+    function jsonSerialize() {
+        $x = ["author_list" => [], "author_cids" => $this->author_cids];
+        foreach ($this->author_list as $au) {
+            $j = $au->unparse_nae_json();
+            if ($au->contactId > 0) {
+                $j->contactId = $au->contactId;
+            }
+            $x["author_list"][] = $j;
+        }
+        foreach ($this->nonauthor_contacts as $au) {
+            $j = $au->unparse_nae_json();
+            $j->contactId = $au->contactId;
+            $x["nonauthor_contacts"][] = $j;
+        }
+        return $x;
     }
 }
