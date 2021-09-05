@@ -1075,7 +1075,7 @@ class PaperInfo {
 
 
     /** @return string|false */
-    function deaccented_field($field) {
+    private function deaccented_field($field) {
         $data = $this->$field;
         if ((string) $data !== "") {
             $field_deaccent = $field . "_deaccent";
@@ -1090,12 +1090,6 @@ class PaperInfo {
         } else {
             return false;
         }
-    }
-
-    /** @return string */
-    function unaccented_field($field) {
-        $s = $this->deaccented_field($field);
-        return $s === false ? $this->$field : $s;
     }
 
     /** @param TextPregexes $reg

@@ -55,23 +55,6 @@ class TextPregexes {
             }
         }
     }
-
-    /** @return TextPregexes
-     * @deprecated */
-    function merge(TextPregexes $r = null) {
-        if (!$r || $r->is_empty()) {
-            return $this;
-        } else if ($this->is_empty()) {
-            return $r;
-        } else {
-            $t = "{$r->preg_utf8}|{$this->preg_utf8}";
-            if ($this->preg_raw !== null && $r->preg_raw !== null) {
-                return new TextPregexes("{$r->preg_raw}|{$this->preg_raw}", $t);
-            } else {
-                return new TextPregexes(null, $t);
-            }
-        }
-    }
 }
 
 class Text {
@@ -297,7 +280,8 @@ class Text {
         }
     }
 
-    /** @return string */
+    /** @param ?string $s
+     * @return string */
     static function initial($s) {
         $x = "";
         if ((string) $s !== "") {
@@ -376,7 +360,10 @@ class Text {
         return $reg;
     }
 
-    /** @param ?TextPregexes $reg */
+    /** @param ?TextPregexes $reg
+     * @param string $text
+     * @param string|false $deaccented_text
+     * @return bool */
     static function match_pregexes($reg, $text, $deaccented_text) {
         return $reg && $reg->match($text, $deaccented_text);
     }
