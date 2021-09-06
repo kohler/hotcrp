@@ -53,11 +53,10 @@ as a guide).
 
 2. Edit `conf/options.php`, which is annotated to guide you.
 
-3. Configure your web server to access HotCRP. For Nginx, configure Nginx to
-access `php-fpm` for anything under the HotCRP URL path. All accesses
-should be redirected to `index.php`. This example, which would go in a
-`server` block, makes `/testconf` point at a HotCRP installation in
-/home/kohler/hotcrp (assuming `php-fpm` is listening on port 9000):
+3. Configure your web server to access HotCRP. For Nginx, all accesses under
+the HotCRP directory should be handled by `php-fpm` on `index.php`. For
+example, this `location` makes `/testconf` access a HotCRP installation
+in /home/kohler/hotcrp (assuming `php-fpm` is listening on port 9000):
 
         location /testconf/ {
             fastcgi_pass 127.0.0.1:9000;
@@ -67,8 +66,8 @@ should be redirected to `index.php`. This example, which would go in a
             include fastcgi_params;
         }
 
-    You may also set up separate `location` blocks so that Nginx
-serves files under `images/`, `scripts/`, and `stylesheets/` directly.
+    You may also add `location` blocks for Nginx to serve static files under
+`images/`, `scripts/`, and `stylesheets/` itself.
 
 4. Update PHP settings.
 
