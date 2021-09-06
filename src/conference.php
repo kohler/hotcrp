@@ -267,8 +267,6 @@ class Conf {
     /** @var null|false|SessionList */
     private $_active_list = false;
 
-    /** @var bool */
-    static public $no_main = false;
     /** @var Conf */
     static public $main;
     /** @var int */

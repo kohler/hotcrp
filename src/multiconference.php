@@ -3,8 +3,10 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Multiconference {
+    /** @var array<string,mixed> */
     static private $original_opt;
-    static private $cache;
+    /** @var array<string,?Conf> */
+    static private $conf_cache;
 
     static function init() {
         global $Opt, $argv;
@@ -41,7 +43,7 @@ class Multiconference {
                         break;
                     }
                 }
-            } else if (preg_match(',/([^/]+)/\z,', $base, $m)) {
+            } else if (preg_match('/\/([^\/]+)\/\z/', $base, $m)) {
                 $confid = $m[1];
             }
         }
@@ -56,10 +58,12 @@ class Multiconference {
         self::assign_confid($Opt, $confid);
     }
 
+    /** @param array<string,mixed> &$opt
+     * @param string $confid */
     static function assign_confid(&$opt, $confid) {
         foreach (["dbName", "dbUser", "dbPassword", "dsn"] as $k) {
             if (isset($opt[$k]) && is_string($opt[$k]))
-                $opt[$k] = preg_replace('/\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b/', $confid, $opt[$k]);
+                $opt[$k] = str_replace('${confid}', $confid, $opt[$k]);
         }
         if (!($opt["dbName"] ?? null) && !($opt["dsn"] ?? null)) {
             $opt["dbName"] = $confid;
@@ -67,24 +71,37 @@ class Multiconference {
         $opt["confid"] = $confid;
     }
 
-    static function get_confid($confid) {
-        if (self::$cache === null) {
-            self::$cache = [];
+    /** @param ?string $root
+     * @param string $confid
+     * @return ?Conf */
+    static function get_conf($root, $confid) {
+        if (self::$conf_cache === null) {
+            self::$conf_cache = [];
             if (Conf::$main && ($xconfid = Conf::$main->opt("confid"))) {
-                self::$cache[$xconfid] = Conf::$main;
+                self::$conf_cache[SiteLoader::$root . "{}{$xconfid}"] = Conf::$main;
             }
         }
-        $conf = self::$cache[$confid] ?? null;
-        if ($conf === null && ($conf = self::load_confid($confid))) {
-            self::$cache[$confid] = $conf;
+        $root = $root ?? SiteLoader::$root;
+        $key = "{$root}{}{$confid}";
+        if (!array_key_exists($key, self::$conf_cache)) {
+            self::$conf_cache[$key] = self::load_conf($root, $confid);
         }
-        return $conf;
+        return self::$conf_cache[$key];
     }
 
-    static function load_confid($confid) {
+    /** @param ?string $root
+     * @param string $confid
+     * @return ?Conf */
+    static function load_conf($root, $confid) {
         global $Opt;
         $save_opt = $Opt;
-        $Opt = self::$original_opt;
+        $root = $root ?? SiteLoader::$root;
+        if ($root === SiteLoader::$root) {
+            $Opt = self::$original_opt;
+        } else {
+            $Opt = [];
+            SiteLoader::read_options_file("{$root}/conf/options.php");
+        }
         self::assign_confid($Opt, $confid);
         if ($Opt["include"] ?? null) {
             SiteLoader::read_included_options();
@@ -92,6 +109,16 @@ class Multiconference {
         $newconf = ($Opt["missing"] ?? null) ? null : new Conf($Opt, true);
         $Opt = $save_opt;
         return $newconf;
+    }
+
+    /** @deprecated */
+    static function get_confid($confid) {
+        return self::get_conf(null, $confid);
+    }
+
+    /** @deprecated */
+    static function load_confid($confid) {
+        return self::load_conf(null, $confid);
     }
 
     static function fail_message($errors) {
@@ -132,6 +159,7 @@ class Multiconference {
         exit;
     }
 
+    /** @return string */
     static private function nonexistence_error() {
         if (PHP_SAPI === "cli") {
             return "This is a multiconference installation. Use `-n CONFID` to specify a conference.";

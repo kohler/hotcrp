@@ -64,19 +64,13 @@ class SiteLoader {
     static public $root;
 
     static function set_root() {
-        global $ConfSitePATH;
-        if (isset($ConfSitePATH)) {
-            self::$root = $ConfSitePATH;
-        } else {
-            self::$root = __DIR__;
-            while (self::$root !== ""
-                   && !file_exists(self::$root . "/src/init.php")) {
-                self::$root = substr(self::$root, 0, strrpos(self::$root, "/"));
-            }
-            if (self::$root === "") {
-                self::$root = "/var/www/html";
-            }
-            $ConfSitePATH = self::$root;
+        self::$root = __DIR__;
+        while (self::$root !== ""
+               && !file_exists(self::$root . "/src/init.php")) {
+            self::$root = substr(self::$root, 0, strrpos(self::$root, "/"));
+        }
+        if (self::$root === "") {
+            self::$root = "/var/www/html";
         }
     }
 
@@ -170,7 +164,8 @@ class SiteLoader {
         return $results;
     }
 
-    static private function read_options_file($file) {
+    /** @param string $file */
+    static function read_options_file($file) {
         global $Opt;
         if ((@include $file) !== false) {
             $Opt["loaded"][] = $file;

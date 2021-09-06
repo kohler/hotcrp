@@ -65,7 +65,7 @@ const TAG_REGEX = '~?~?' . TAG_REGEX_NOTWIDDLE;
 const TAG_MAXLEN = 80;
 const TAG_INDEXBOUND = 2147483646;
 
-global $Conf, $Now, $ConfSitePATH;
+global $Conf, $Now;
 
 require_once("siteloader.php");
 require_once(SiteLoader::find("lib/navigation.php"));
@@ -169,7 +169,7 @@ if ($Opt["memoryLimit"] ?? null) {
 
 
 // Create the conference
-if (!Conf::$no_main) {
+if (!($Opt["__no_main"] ?? false)) {
     if (!Conf::$main) {
         Conf::set_main_instance(new Conf($Opt, true));
     }
