@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class Multiconference {
-    /** @var array<string,mixed> */
+    /** @var ?array<string,mixed> */
     static private $original_opt;
     /** @var array<string,?Conf> */
     static private $conf_cache;
@@ -96,7 +96,7 @@ class Multiconference {
         global $Opt;
         $save_opt = $Opt;
         $root = $root ?? SiteLoader::$root;
-        if ($root === SiteLoader::$root) {
+        if ($root === SiteLoader::$root && self::$original_opt !== null) {
             $Opt = self::$original_opt;
         } else {
             $Opt = [];
