@@ -101,6 +101,7 @@ etc/affiliationmatchers.json
 etc/apifunctions.json
 etc/assignmentparsers.json
 etc/capabilityhandlers.json
+etc/distoptions.php
 etc/formulafunctions.json
 etc/helptopics.json
 etc/intrinsicoptions.json
@@ -207,7 +208,6 @@ src/contact.php
 src/contactcountmatcher.php
 src/contactlist.php
 src/contactsearch.php
-src/distoptions.php
 src/documentfiletree.php
 src/documentinfo.php
 src/documentinfoset.php

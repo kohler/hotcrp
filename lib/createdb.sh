@@ -484,7 +484,7 @@ create_options () {
 global $Opt;'
     test -z "$minimal_options" && awk 'BEGIN { p = 1 }
 /^\$Opt\[.db/ { p = 0 }
-{ if (p) print }' < "${SRCDIR}${distoptions_file}"
+{ if (p) print }' < "${ETCDIR}${distoptions_file}"
     cat <<__EOF__
 \$Opt["dbName"] = "$DBNAME";
 \$Opt["dbUser"] = "$DBUSER";
@@ -492,7 +492,7 @@ global $Opt;'
 __EOF__
     test -z "$minimal_options" && awk 'BEGIN { p = 0 }
 /^\$Opt\[.db/ { p = 1; next }
-{ if (p) print }' < "${SRCDIR}${distoptions_file}"
+{ if (p) print }' < "${ETCDIR}${distoptions_file}"
 }
 
 is_group_member () {
@@ -519,7 +519,7 @@ if findoptions >/dev/null; then
         echo "* You should move $current_options there."
     fi
     echo
-elif [ -r "${SRCDIR}${distoptions_file}" -o -n "$minimal_options" ]; then
+elif [ -r "${ETCDIR}${distoptions_file}" -o -n "$minimal_options" ]; then
     $qecho
     $qecho "Creating $expected_options..."
     create_options > "$expected_options"

@@ -48,11 +48,10 @@ ensure that your PHP can read this file.
 
     If you don’t want to run `lib/createdb.sh`, you will have to create your
 own database and user, initialize the database with the contents of
-`src/schema.sql`, and create `conf/options.php` (use `src/distoptions.php`
+`src/schema.sql`, and create `conf/options.php` (using `etc/distoptions.php`
 as a guide).
 
 2. Edit `conf/options.php`, which is annotated to guide you.
-(`lib/createdb.sh` creates this file based on `src/distoptions.php`.)
 
 3. Configure your web server to access HotCRP. For Nginx, configure Nginx to
 access `php-fpm` for anything under the HotCRP URL path. All accesses

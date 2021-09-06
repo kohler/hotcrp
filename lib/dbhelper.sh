@@ -265,4 +265,5 @@ fi
 CONFDIR="`echo "${MAINDIR}conf/" | sed 's,^\./\(.\),\1,'`"
 OLDCONFDIR="`echo "${MAINDIR}Code/" | sed 's,^\./\(.\),\1,'`"
 SRCDIR="`echo "${MAINDIR}src/" | sed 's,^\./\(.\),\1,'`"
-export MAINDIR LIBDIR CONFDIR OLDCONFDIR SRCDIR
+ETCDIR="`echo "${MAINDIR}etc/" | sed 's,^\./\(.\),\1,'`"
+export MAINDIR LIBDIR CONFDIR OLDCONFDIR SRCDIR ETCDIR
