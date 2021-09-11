@@ -303,10 +303,12 @@ class Conf {
 
     static public $hoturl_defaults = null;
 
-    function __construct($options, $make_dsn) {
+    /** @param array<string,mixed> $options
+     * @param bool $connect */
+    function __construct($options, $connect) {
         // unpack dsn, connect to database, load current settings
         $this->dsn = Dbl::make_dsn($options);
-        list($this->dblink, $this->dbname) = Dbl::connect_dsn($this->dsn, !$make_dsn);
+        list($this->dblink, $this->dbname) = Dbl::connect_dsn($this->dsn, !$connect);
         $this->opt = $options;
         $this->opt["dbName"] = $this->dbname;
         $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;

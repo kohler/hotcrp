@@ -95,6 +95,7 @@ class Multiconference {
     static function load_conf($root, $confid) {
         global $Opt;
         $save_opt = $Opt;
+        '@phan-var array<string,mixed> $save_opt';
         $root = $root ?? SiteLoader::$root;
         if ($root === SiteLoader::$root && self::$original_opt !== null) {
             $Opt = self::$original_opt;

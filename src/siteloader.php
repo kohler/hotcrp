@@ -181,6 +181,7 @@ class SiteLoader {
 
     static function read_included_options() {
         global $Opt;
+        '@phan-var array<string,mixed> $Opt';
         if (is_string($Opt["include"])) {
             $Opt["include"] = [$Opt["include"]];
         }
