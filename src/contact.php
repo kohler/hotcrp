@@ -3909,45 +3909,20 @@ class Contact {
     }
 
     /** @return bool */
-    function can_become_reviewer(PaperInfo $prow = null) {
-        if ($prow) {
-            $rights = $this->rights($prow);
-            return $rights->allow_review
-                || ($rights->allow_pc
-                    && $this->conf->check_tracks($prow, $this, Track::ASSREV));
-        } else {
-            return $this->isPC
-                && $this->conf->check_all_tracks($this, Track::ASSREV);
-        }
+    function can_accept_some_review_assignment() {
+        return $this->isPC
+            && $this->conf->check_all_tracks($this, Track::ASSREV);
     }
 
     /** @return bool */
-    function can_become_reviewer_ignore_conflict(PaperInfo $prow = null) {
-        if ($prow) {
+    function can_accept_review_assignment_ignore_conflict(PaperInfo $prow) {
+        if ($this->isPC
+            && $this->conf->check_tracks($prow, $this, Track::ASSREV)) {
+            return true;
+        } else {
             $rights = $this->rights($prow);
-            return $rights->potential_reviewer
-                || ($rights->allow_pc_broad
-                    && $this->conf->check_tracks($prow, $this, Track::ASSREV));
-        } else {
-            return $this->isPC
-                && $this->conf->check_all_tracks($this, Track::ASSREV);
-        }
-    }
-
-    /** @return bool */
-    function can_accept_review_assignment_ignore_conflict(PaperInfo $prow = null) {
-        if ($prow) {
-            if ($this->isPC
-                && $this->conf->check_tracks($prow, $this, Track::ASSREV)) {
-                return true;
-            } else {
-                $rights = $this->rights($prow);
-                return $rights->allow_administer
-                    || ($this->isPC && $rights->reviewType > 0);
-            }
-        } else {
-            return $this->isPC
-                && $this->conf->check_all_tracks($this, Track::ASSREV);
+            return $rights->allow_administer
+                || ($this->isPC && $rights->reviewType > 0);
         }
     }
 

@@ -1175,20 +1175,6 @@ class PaperInfo {
         return $ci && $ci->review_status > PaperContactInfo::RS_UNSUBMITTED;
     }
 
-    /** @return array<int,Contact> */
-    function pc_can_become_reviewer_ignore_conflict() {
-        if (!$this->conf->check_track_review_sensitivity()) {
-            return $this->conf->pc_members();
-        } else {
-            $pcm = array();
-            foreach ($this->conf->pc_members() as $cid => $pc) {
-                if ($pc->can_become_reviewer_ignore_conflict($this))
-                    $pcm[$cid] = $pc;
-            }
-            return $pcm;
-        }
-    }
-
 
     function load_tags() {
         $result = $this->conf->qe("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=? group by paperId", $this->paperId);

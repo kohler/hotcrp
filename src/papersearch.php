@@ -936,7 +936,7 @@ class Limit_SearchTerm extends SearchTerm {
         // optimize SQL for some limits
         if ($limit === "reviewable") {
             if ($this->user->privChair || $this->user === $this->reviewer) {
-                if ($this->reviewer->can_accept_review_assignment_ignore_conflict(null)) {
+                if ($this->reviewer->can_accept_some_review_assignment()) {
                     if ($this->user->conf->time_pc_view_active_submissions()) {
                         $limit = "act";
                     } else {
