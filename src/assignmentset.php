@@ -723,6 +723,7 @@ class AssignmentError extends Exception {
 abstract class AssignmentParser {
     /** @var string $type */
     public $type;
+    /** @param string $type */
     function __construct($type) {
         $this->type = $type;
     }
@@ -821,6 +822,7 @@ abstract class AssignmentParser {
 }
 
 abstract class UserlessAssignmentParser extends AssignmentParser {
+    /** @param string $type */
     function __construct($type) {
         parent::__construct($type);
     }
@@ -854,21 +856,27 @@ class Assigner {
             $this->contact = $state->user_by_id($this->cid);
         }
     }
+    /** @return string */
     function unparse_description() {
         return "";
     }
+    /** @return string */
     function unparse_display(AssignmentSet $aset) {
         return "";
     }
     /** @return void */
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
     }
+    /** @return void */
     function account(AssignmentSet $aset, AssignmentCountSet $delta) {
     }
+    /** @return void */
     function add_locks(AssignmentSet $aset, &$locks) {
     }
+    /** @return void */
     function execute(AssignmentSet $aset) {
     }
+    /** @return void */
     function cleanup(AssignmentSet $aset) {
     }
 }
@@ -1001,6 +1009,7 @@ class AssignmentSet {
     private $unparse_search;
     /** @var array<string,bool> */
     private $unparse_columns = [];
+    /** @var ?string */
     private $assignment_type;
     /** @var array<string,array{callable,mixed}> */
     private $cleanup_callbacks = [];
@@ -1874,6 +1883,8 @@ class AssignmentSet {
         return $this->astate->prow($pid);
     }
 
+    /** @param bool $verbose
+     * @return bool */
     function execute($verbose = false) {
         if ($this->has_error() || empty($this->assigners)) {
             if ($verbose && $this->astate->has_messages()) {
@@ -1967,10 +1978,15 @@ class AssignmentSet {
     function cleanup_update_rights() {
         $this->cleanup_callback("update_rights", "Contact::update_rights");
     }
+    /** @param int $pid */
     function cleanup_notify_tracker($pid) {
         $this->cleanup_notify_tracker[$pid] = true;
     }
 
+    /** @param Contact $contact
+     * @param string $text
+     * @param ?bool $forceShow
+     * @return bool */
     static function run($contact, $text, $forceShow = null) {
         $aset = new AssignmentSet($contact, $forceShow);
         $aset->parse($text);
