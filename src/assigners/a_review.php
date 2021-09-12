@@ -76,6 +76,7 @@ class Review_Assignable extends Assignable {
 }
 
 class Review_AssignmentParser extends AssignmentParser {
+    /** @var int */
     private $rtype;
     function __construct(Conf $conf, $aj) {
         parent::__construct($aj->name);
@@ -108,6 +109,19 @@ class Review_AssignmentParser extends AssignmentParser {
     private function make_rdata($req, AssignmentState $state) {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        if ($state->user->can_administer($prow)) {
+            if ($prow->timeWithdrawn <= 0 && $prow->timeSubmitted > 0) {
+                return true;
+            } else if ($prow->timeWithdrawn > 0) {
+                return new AssignmentError($prow->make_whynot(["withdrawn" => true]));
+            } else {
+                return new AssignmentError($prow->make_whynot(["notSubmitted" => true]));
+            }
+        } else {
+            return false;
+        }
+    }
     /** @param CsvRow $req */
     function user_universe($req, AssignmentState $state) {
         if ($this->rtype > REVIEW_EXTERNAL) {
@@ -132,7 +146,7 @@ class Review_AssignmentParser extends AssignmentParser {
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->might_create_review()) {
-            return false;
+            return null;
         } else {
             $cf = $state->make_filter("cid",
                 new Review_Assignable($prow->paperId, null, $rdata->oldtype ? : null, $rdata->oldround));
@@ -155,7 +169,7 @@ class Review_AssignmentParser extends AssignmentParser {
             && ($u = $state->user_by_email($user, true, []))) {
             return [$u];
         } else {
-            return false;
+            return null;
         }
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
@@ -166,7 +180,7 @@ class Review_AssignmentParser extends AssignmentParser {
         // PC reviews must be PC members
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->newtype >= REVIEW_PC && !$contact->is_pc_member()) {
-            return $contact->name_h(NAME_E) . " is not a PC member and cannot be assigned a PC review.";
+            return new AssignmentError($contact->name_h(NAME_E) . " is not a PC member and cannot be assigned a PC review.");
         }
         // Conflict allowed if we're not going to assign a new review
         if ($this->rtype == 0
@@ -177,7 +191,7 @@ class Review_AssignmentParser extends AssignmentParser {
         // Check whether review assignments are acceptable
         if ($contact->is_pc_member()
             && !$contact->can_accept_review_assignment_ignore_conflict($prow)) {
-            return $contact->name_h(NAME_E) . " cannot be assigned to review #{$prow->paperId}.";
+            return new AssignmentError($contact->name_h(NAME_E) . " cannot be assigned to review #{$prow->paperId}.");
         }
         // Conflicts are checked later
         return true;

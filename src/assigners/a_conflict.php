@@ -43,16 +43,16 @@ class Conflict_AssignmentParser extends AssignmentParser {
         self::load_conflict_state($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->user->can_administer($prow)
-            && !$state->user->privChair
-            && !$prow->has_author($state->user)) {
-            return "You can’t administer #{$prow->paperId}.";
-        } else if (!$this->iscontact
-                   && !$state->user->can_administer($prow)
-                   && ($whyNot = $state->user->perm_edit_paper($prow))) {
-            return $whyNot->unparse_html();
-        } else {
+        if ($state->user->can_administer($prow)) {
             return true;
+        } else if ($prow->has_author($state->user)) {
+            if ($this->iscontact || !($whyNot = $state->user->perm_edit_paper($prow))) {
+                return true;
+            } else {
+                return new AssignmentError($whyNot);
+            }
+        } else {
+            return false;
         }
     }
     /** @return ?CountMatcher */
@@ -81,7 +81,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $cids = array_map(function ($x) { return $x->cid; }, $m);
             return $state->users_by_id($cids);
         } else {
-            return false;
+            return null;
         }
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
@@ -117,7 +117,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
                 $ct = $state->conf->conflict_types()->parse_assignment($text, $old_ct_na);
             }
             if ($ct === false || Conflict::is_author($ct)) {
-                return "Bad conflict type “{$text}”.";
+                return new AssignmentError("Bad conflict type “{$text}”.");
             }
             if (!$admin) {
                 $ct = Conflict::set_pinned($ct, false);

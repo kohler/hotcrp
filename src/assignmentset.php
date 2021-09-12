@@ -710,7 +710,17 @@ class AssignmentCsv {
     }
 }
 
-class AssignmentParser {
+class AssignmentError extends Exception {
+    /** @param string|PermissionProblem $message */
+    function __construct($message) {
+        if ($message instanceof PermissionProblem) {
+            $message = $message->unparse_html();
+        }
+        parent::__construct($message);
+    }
+}
+
+abstract class AssignmentParser {
     /** @var string $type */
     public $type;
     function __construct($type) {
@@ -733,26 +743,19 @@ class AssignmentParser {
     function expand_papers($req, AssignmentState $state) {
         return (string) $req["paper"];
     }
+
     // Load relevant state from the database into `$state`.
     function load_state(AssignmentState $state) {
     }
+
     // Return `true` iff this user may perform this action class on this paper.
-    // To indicate an error, call `$state->paper_error($html)`, or,
-    // equivalently, return `$html`. This is called before the action is fully
-    // parsed, so it may be appropriate to return `true` here and perform the
-    // actual permission check later.
-    function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->user->can_administer($prow)
-            && !$state->user->privChair) {
-            return "You can’t administer #{$prow->paperId}.";
-        } else if ($prow->timeWithdrawn > 0) {
-            return "#{$prow->paperId} has been withdrawn.";
-        } else if ($prow->timeSubmitted <= 0) {
-            return "#{$prow->paperId} is not submitted.";
-        } else {
-            return true;
-        }
-    }
+    // To indicate an error, return an `AssignmentError` or simply `false`
+    // (which means the user cannot administer the submission).
+    // Called before the action is fully parsed, so it may be appropriate to
+    // return `true` here and perform the full permission check later.
+    /** @return bool|AssignmentError */
+    abstract function allow_paper(PaperInfo $prow, AssignmentState $state);
+
     // Return a descriptor of the set of users relevant for this action.
     // Returns `"none"`, `"pc"`, `"reviewers"`, `"pc+reviewers"`, or `"any"`.
     /** @param CsvRow $req
@@ -760,56 +763,64 @@ class AssignmentParser {
     function user_universe($req, AssignmentState $state) {
         return "pc";
     }
+
     // Return a conservative approximation of the papers relevant for this
-    // action, or `false` if such an approximation is difficult to compute.
+    // action, or `null` if such an approximation is difficult to compute.
     // The approximation is an array whose keys are paper IDs; a truthy value
     // for pid X means the action applies to paper X.
     //
     // The assignment logic calls `paper_filter` when an action is applied to
     // an unusually large number of papers, such as removing all reviews by a
     // specific user.
-    /** @param CsvRow $req */
+    /** @param CsvRow $req
+     * @return ?array */
     function paper_filter($contact, $req, AssignmentState $state) {
-        return false;
+        return null;
     }
+
     // Return the list of users corresponding to user `"any"` for this request,
-    // or false if `"any"` is an invalid user.
-    /** @param CsvRow $req */
+    // or null if `"any"` is an invalid user.
+    /** @param CsvRow $req
+     * @return ?array<Contact> */
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
-        return false;
+        return null;
     }
+
     // Return the list of users relevant for this request, whose user is not
     // specified, or false if an explicit user is required.
-    /** @param CsvRow $req */
+    /** @param CsvRow $req
+     * @return ?array<Contact> */
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
-        return false;
+        return null;
     }
+
     // Return the list of users corresponding to `$user`, which is an anonymous
-    // user (either `anonymous\d*` or `anonymous-new`), or false if a
+    // user (either `anonymous\d*` or `anonymous-new`), or null if a
     // non-anonymous user is required.
-    /** @param CsvRow $req */
+    /** @param CsvRow $req
+     * @return ?array<Contact> */
     function expand_anonymous_user(PaperInfo $prow, $req, $user, AssignmentState $state) {
-        return false;
+        return null;
     }
+
     // Return true iff this action may be applied to paper `$prow` and user
     // `$contact`. Note that `$contact` might not be a true database user;
     // for instance, it might have `contactId == 0` (for user `"none"`)
     // or it might have a negative `contactId` (for a user that doesn’t yet
     // exist in the database).
-    /** @param CsvRow $req */
-    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        return false;
-    }
+    /** @param CsvRow $req
+     * @return bool|AssignmentError */
+    abstract function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state);
+
     // Apply this action to `$state`. Return `true` iff the action succeeds.
-    // To indicate an error, call `$state->error($html)`, or, equivalently,
-    // return `$html`.
-    /** @param CsvRow $req */
-    function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
-        return true;
-    }
+    // To indicate an error, call `$state->error($html)` and return `false`,
+    // or, equivalently, return an `AssignmentError`.
+    /** @param CsvRow $req
+     * @return bool|AssignmentError */
+    abstract function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state);
 }
 
-class UserlessAssignmentParser extends AssignmentParser {
+abstract class UserlessAssignmentParser extends AssignmentParser {
     function __construct($type) {
         parent::__construct($type);
     }
@@ -1186,7 +1197,7 @@ class AssignmentSet {
         }
     }
 
-    /** @return string|false|list<Contact> */
+    /** @return null|string|list<Contact> */
     private function lookup_users($req, AssignmentParser $aparser) {
         // check user universe
         $users = $aparser->user_universe($req, $this->astate);
@@ -1282,27 +1293,25 @@ class AssignmentSet {
                 return $ret->users();
             } else if (count($ret->user_ids()) > 1) {
                 $this->error("“" . self::req_user_html($req) . "” matches more than one $cset_text, use a full email address to disambiguate.");
-                return false;
+                return null;
             } else {
                 $this->error("No $cset_text matches “" . self::req_user_html($req) . "”.");
-                return false;
+                return null;
             }
-        } else {
+        } else if ($email
+                   && validate_email($email)
+                   && ($u = $this->astate->user_by_email($email, true, $req))) {
             // create contact
-            if ($email
-                && validate_email($email)
-                && ($u = $this->astate->user_by_email($email, true, $req))) {
-                return [$u];
-            } else if (!$email) {
+            return [$u];
+        } else {
+            if (!$email) {
                 $this->error("Missing email address.");
-                return false;
             } else if (!validate_email($email)) {
                 $this->error("Email address “" . htmlspecialchars($email) . "” is invalid.");
-                return false;
             } else {
                 $this->error("Could not create user.");
-                return false;
             }
+            return null;
         }
     }
 
@@ -1466,41 +1475,42 @@ class AssignmentSet {
         return $this->conf->assignment_parser($action, $this->user);
     }
 
+    /** @return ?list<Contact> */
     private function expand_special_user($user, AssignmentParser $aparser, PaperInfo $prow, $req) {
         if ($user === "any") {
-            $u = $aparser->expand_any_user($prow, $req, $this->astate);
+            $us = $aparser->expand_any_user($prow, $req, $this->astate);
         } else if ($user === "missing") {
-            $u = $aparser->expand_missing_user($prow, $req, $this->astate);
-            if ($u === false || $u === null) {
+            $us = $aparser->expand_missing_user($prow, $req, $this->astate);
+            if ($us === null) {
                 $this->astate->error("User required.");
-                return false;
+                return null;
             }
         } else if (substr_compare($user, "anonymous", 0, 9) === 0) {
-            $u = $aparser->expand_anonymous_user($prow, $req, $user, $this->astate);
+            $us = $aparser->expand_anonymous_user($prow, $req, $user, $this->astate);
         } else {
-            $u = false;
+            $us = null;
         }
-        if ($u === false || $u === null) {
+        if ($us === null) {
             $this->astate->error("User “" . htmlspecialchars($user) . "” is not allowed here.");
         }
-        return $u;
+        return $us;
     }
 
-    private function apply(AssignmentParser $aparser = null, $req) {
+    /** @param CsvRow $req
+     * @return void */
+    private function apply_req(AssignmentParser $aparser = null, $req) {
         // check action
         if (!$aparser) {
             if ($req["action"]) {
                 $this->error("Unknown action “" . htmlspecialchars($req["action"]) . "”.");
-                return false;
             } else {
                 $this->error("Missing action.");
-                return false;
             }
-        }
-        if ($this->enabled_actions !== null
-            && !isset($this->enabled_actions[$aparser->type])) {
+            return;
+        } else if ($this->enabled_actions !== null
+                   && !isset($this->enabled_actions[$aparser->type])) {
             $this->error("Action " . htmlspecialchars($aparser->type) . " disabled.");
-            return false;
+            return;
         }
 
         // parse paper
@@ -1512,7 +1522,7 @@ class AssignmentSet {
             $pidmap = [];
             $x = $this->collect_papers((string) $req["paper"], $pidmap, true);
             if (empty($pidmap)) {
-                return false;
+                return;
             }
             $pfield_straight = $x === 2;
             $pids = array_keys($pidmap);
@@ -1523,8 +1533,8 @@ class AssignmentSet {
 
         // clean user parts
         $contacts = $this->lookup_users($req, $aparser);
-        if ($contacts === false || $contacts === null) {
-            return false;
+        if ($contacts === null) {
+            return;
         }
 
         // maybe filter papers
@@ -1532,7 +1542,7 @@ class AssignmentSet {
             && is_array($contacts)
             && count($contacts) == 1
             && $contacts[0]->contactId > 0
-            && ($pf = $aparser->paper_filter($contacts[0], $req, $this->astate))) {
+            && ($pf = $aparser->paper_filter($contacts[0], $req, $this->astate)) !== null) {
             $npids = [];
             foreach ($pids as $p) {
                 if ($pf[$p] ?? null)
@@ -1569,19 +1579,16 @@ class AssignmentSet {
         if (!$any_success) {
             $this->astate->mark_matching_errors();
         }
-        return $any_success;
     }
 
-    /** @return 0|1|-1 */
+    /** @param list<Contact>|string $contacts
+     * @param CsvRow $req
+     * @return 0|1|-1 */
     private function apply_paper(PaperInfo $prow, $contacts, AssignmentParser $aparser, $req) {
-        $err = $aparser->allow_paper($prow, $this->astate);
-        if ($err !== true) {
-            if ($err === false) {
-                $err = $prow->make_whynot(["administer" => true])->unparse_html();
-            }
-            if (is_string($err)) {
-                $this->astate->paper_error($err);
-            }
+        $allow = $aparser->allow_paper($prow, $this->astate);
+        if ($allow !== true) {
+            $allow = $allow ? : new AssignmentError($prow->make_whynot(["administer" => true]));
+            $this->astate->paper_error($allow->getMessage());
             return 0;
         }
 
@@ -1589,7 +1596,7 @@ class AssignmentSet {
         $pusers = $contacts;
         if (!is_array($pusers)) {
             $pusers = $this->expand_special_user($pusers, $aparser, $prow, $req);
-            if ($pusers === false || $pusers === null) {
+            if ($pusers === null) {
                 return -1;
             }
         }
@@ -1597,30 +1604,24 @@ class AssignmentSet {
         $ret = 0;
         foreach ($pusers as $contact) {
             $err = $aparser->allow_user($prow, $contact, $req, $this->astate);
-            if ($err === false) {
-                if (!$contact->contactId) {
-                    $this->astate->error("User “none” is not allowed here. [{$contact->email}]");
-                    return -1;
-                } else if ($prow->has_conflict($contact)) {
-                    $err = $contact->name_h(NAME_E) . " has a conflict with #{$prow->paperId}.";
-                } else {
-                    $err = $contact->name_h(NAME_E) . " cannot be assigned to #{$prow->paperId}.";
-                }
-            }
             if ($err !== true) {
-                if (is_string($err)) {
-                    $this->astate->paper_error($err);
+                if (!$err && !$contact->contactId) {
+                    $this->astate->error("User “none” is not allowed here.");
+                    return -1;
+                } else if (!$err) {
+                    $err = new AssignmentError($contact->name_h(NAME_E)
+                        . ($prow->has_conflict($contact) ? " has a conflict with " : " cannot be assigned to ")
+                        . "#{$prow->paperId}.");
                 }
+                $this->astate->paper_error($err->getMessage());
                 continue;
             }
 
             $err = $aparser->apply($prow, $contact, $req, $this->astate);
-            if ($err !== true) {
-                if (is_string($err)) {
-                    $this->astate->error($err);
-                }
-            } else {
+            if ($err === true) {
                 $ret = 1;
+            } else if ($err) {
+                $this->astate->error($err->getMessage());
             }
         }
         return $ret;
@@ -1687,7 +1688,7 @@ class AssignmentSet {
                 }
                 set_time_limit(30);
             }
-            $this->apply($linereq[1], $linereq[2]);
+            $this->apply_req($linereq[1], $linereq[2]);
         }
 
         // call finishers

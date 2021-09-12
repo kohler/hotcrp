@@ -70,11 +70,11 @@ class Follow_AssignmentParser extends AssignmentParser {
             $cids = array_map(function ($x) { return $x->cid; }, $m);
             return $state->users_by_id($cids);
         } else {
-            return false;
+            return null;
         }
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
-        return $state->reviewer->contactId > 0 ? [$state->reviewer] : false;
+        return $state->reviewer->contactId > 0 ? [$state->reviewer] : null;
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return $contact->contactId != 0
@@ -85,7 +85,7 @@ class Follow_AssignmentParser extends AssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $fs = $this->follow_state($req, $state);
         if ($fs[0] === false) {
-            return "Bad follow type.";
+            return new AssignmentError("Bad follow type.");
         }
         $res = $state->remove(new Follow_Assignable($prow->paperId, $contact->contactId));
         $watch = ($res ? $res[0]->_watch & ~(Contact::WATCH_REVIEW | Contact::WATCH_REVIEW_EXPLICIT) : 0) | $fs[0];

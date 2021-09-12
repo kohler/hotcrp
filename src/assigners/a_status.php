@@ -62,12 +62,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         $this->xtype = $aj->type;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if (!$state->user->can_administer($prow)
-            && !$prow->has_author($state->user)) {
-            return "You can’t administer #{$prow->paperId}.";
-        } else {
-            return true;
-        }
+        return $state->user->can_administer($prow) || $prow->has_author($state->user);
     }
     static function load_status_state(AssignmentState $state) {
         if ($state->mark_type("status", ["pid"], "Status_Assigner::make")) {
@@ -87,14 +82,14 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         if ($this->xtype === "submit") {
             if ($res->_submitted === 0) {
                 if (($whynot = $state->user->perm_finalize_paper($prow))) {
-                    return $whynot->unparse_html();
+                    return new AssignmentError($whynot);
                 }
                 $res->_submitted = ($res->_withdrawn > 0 ? -Conf::$now : Conf::$now);
             }
         } else if ($this->xtype === "unsubmit") {
             if ($res->_submitted !== 0) {
                 if (($whynot = $state->user->perm_edit_paper($prow))) {
-                    return $whynot->unparse_html();
+                    return new AssignmentError($whynot);
                 }
                 $res->_submitted = 0;
             }
@@ -102,7 +97,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             if ($res->_withdrawn === 0) {
                 assert($res->_submitted >= 0);
                 if (($whynot = $state->user->perm_withdraw_paper($prow))) {
-                    return $whynot->unparse_html();
+                    return new AssignmentError($whynot);
                 }
                 $res->_withdrawn = Conf::$now;
                 $res->_submitted = -$res->_submitted;
@@ -120,7 +115,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             if ($res->_withdrawn !== 0) {
                 assert($res->_submitted <= 0);
                 if (($whynot = $state->user->perm_revive_paper($prow))) {
-                    return $whynot->unparse_html();
+                    return new AssignmentError($whynot);
                 }
                 $res->_withdrawn = 0;
                 if ($res->_submitted === -100) {

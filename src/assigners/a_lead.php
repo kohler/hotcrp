@@ -42,11 +42,13 @@ class Lead_AssignmentParser extends AssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($this->key === "manager") {
-            return $state->user->privChair ? true : "You can’t change paper administrators.";
-        } else if (!$state->user->can_administer($prow)) {
-            return "You can’t administer #{$prow->paperId}.";
+            if ($state->user->privChair) {
+                return true;
+            } else {
+                return new AssignmentError("Only chairs and sysadmins can change paper administrators.");
+            }
         } else {
-            return true;
+            return $state->user->can_administer($prow);
         }
     }
     function user_universe($req, AssignmentState $state) {
@@ -62,7 +64,7 @@ class Lead_AssignmentParser extends AssignmentParser {
             $cids = array_map(function ($x) { return $x->_cid; }, $m);
             return $state->users_by_id($cids);
         } else {
-            return false;
+            return null;
         }
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
@@ -78,7 +80,7 @@ class Lead_AssignmentParser extends AssignmentParser {
             return true;
         } else {
             $verb = $this->key === "manager" ? "administer" : $this->key;
-            return $contact->name_h(NAME_E) . " can’t $verb #{$prow->paperId}.";
+            return new AssignmentError($contact->name_h(NAME_E) . " can’t $verb #{$prow->paperId}.");
         }
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {

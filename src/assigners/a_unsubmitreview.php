@@ -9,6 +9,9 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
     function load_state(AssignmentState $state) {
         Review_AssignmentParser::load_review_state($state);
     }
+    function allow_paper(PaperInfo $prow, AssignmentState $state) {
+        return $state->user->can_administer($prow);
+    }
     function user_universe($req, AssignmentState $state) {
         return "reviewers";
     }
@@ -31,13 +34,15 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         $oldround = null;
         if ($rarg0 !== ""
             && strcasecmp($rarg0, "any") != 0
-            && ($oldround = $state->conf->sanitize_round_name($rarg0)) === false)
-            return Conf::round_name_error($rarg0);
+            && ($oldround = $state->conf->sanitize_round_name($rarg0)) === false) {
+            return new AssignmentError(Conf::round_name_error($rarg0));
+        }
         $targ0 = trim((string) $req["reviewtype"]);
         $oldtype = null;
         if ($targ0 !== ""
-            && ($oldtype = ReviewInfo::parse_type($targ0)) === false)
-            return "Invalid review type.";
+            && ($oldtype = ReviewInfo::parse_type($targ0)) === false) {
+            return new AssignmentError("Invalid review type.");
+        }
 
         // remove existing review
         $matches = $state->remove((new Review_Assignable($prow->paperId, $contact->contactId, $oldtype, $oldround))->set_rnondraft(1));

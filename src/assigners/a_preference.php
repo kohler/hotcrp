@@ -50,7 +50,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             });
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
-        return $state->reviewer->isPC ? [$state->reviewer] : false;
+        return $state->reviewer->isPC ? [$state->reviewer] : null;
     }
     function allow_user(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
         if (!$user->contactId) {
@@ -61,7 +61,7 @@ class Preference_AssignmentParser extends AssignmentParser {
             } else {
                 $m = "Can’t enter a preference on #{$prow->paperId}. ";
             }
-            return $m . $state->user->perm_edit_preference_for($user, $prow)->unparse_text();
+            return new AssignmentError($m . $state->user->perm_edit_preference_for($user, $prow)->unparse_html());
         } else {
             return true;
         }
@@ -113,7 +113,7 @@ class Preference_AssignmentParser extends AssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $pref = $req["preference"];
         if ($pref === null) {
-            return "Missing preference.";
+            return new AssignmentError("Missing preference.");
         }
         $ppref = self::parse($pref);
         if ($ppref === null) {
@@ -132,7 +132,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         $exp = $req["expertise"];
         if ($exp && ($exp = trim($exp)) !== "") {
             if (($pexp = self::parse($exp)) === null || $pexp[0]) {
-                return "Invalid expertise “" . htmlspecialchars($exp) . "”.";
+                return new AssignmentError("Invalid expertise “" . htmlspecialchars($exp) . "”.");
             }
             $ppref[1] = $pexp[1];
         }

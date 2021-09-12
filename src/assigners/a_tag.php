@@ -114,7 +114,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if (($whyNot = $state->user->perm_edit_some_tag($prow))) {
-            return $whyNot->unparse_html();
+            return new AssignmentError($whyNot);
         } else {
             return true;
         }
