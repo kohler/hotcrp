@@ -111,12 +111,10 @@ class Review_AssignmentParser extends AssignmentParser {
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($state->user->can_administer($prow)) {
-            if ($prow->timeWithdrawn <= 0 && $prow->timeSubmitted > 0) {
+            if ($prow->timeWithdrawn <= 0 || $this->rtype === 0) {
                 return true;
-            } else if ($prow->timeWithdrawn > 0) {
-                return new AssignmentError($prow->make_whynot(["withdrawn" => true]));
             } else {
-                return new AssignmentError($prow->make_whynot(["notSubmitted" => true]));
+                return new AssignmentError($prow->make_whynot(["withdrawn" => true]));
             }
         } else {
             return false;
