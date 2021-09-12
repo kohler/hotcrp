@@ -1912,7 +1912,7 @@ class PaperSearch {
 
     static function status_field_matcher(Conf $conf, $word, $quoted = null) {
         if (strlen($word) >= 3
-            && ($k = Text::simple_search($word, ["w0" => "withdrawn", "s0" => "submitted", "s1" => "ready", "s2" => "complete", "u0" => "in progress", "u1" => "unsubmitted", "u2" => "not ready", "u3" => "incomplete", "a0" => "active", "x0" => "no submission"]))) {
+            && ($k = Text::simple_search($word, ["w0" => "withdrawn", "s0" => "submitted", "s1" => "ready", "s2" => "complete", "u0" => "in progress", "u1" => "unsubmitted", "u2" => "not ready", "u3" => "incomplete", "u4" => "draft", "a0" => "active", "x0" => "no submission"]))) {
             $k = array_map(function ($x) { return $x[0]; }, array_keys($k));
             $k = array_unique($k);
             if (count($k) === 1) {
