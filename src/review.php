@@ -705,8 +705,8 @@ class ReviewForm implements JsonSerializable {
 
     /** @return ?ReviewField */
     function default_highlighted_score() {
-        $f = $this->fmap["overAllMerit"];
-        if ($f->displayed && $f->view_score >= VIEWSCORE_PC) {
+        $f = $this->fmap["overAllMerit"] ?? null;
+        if ($f && $f->displayed && $f->view_score >= VIEWSCORE_PC) {
             return $f;
         }
         foreach ($this->forder as $f) {
