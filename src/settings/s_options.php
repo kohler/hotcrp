@@ -487,7 +487,7 @@ class Options_SettingParser extends SettingParser {
             uasort($new_opts, "PaperOption::compare");
             $this->stashed_options = $new_opts;
             $newj = [];
-            foreach ($new_opts as $o){
+            foreach ($new_opts as $o) {
                 $newj[] = $o->jsonSerialize();
             }
             $sv->save("next_optionid", null);

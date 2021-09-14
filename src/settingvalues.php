@@ -83,6 +83,7 @@ class Si {
         "tag" => self::SI_DATA,
         "tagbase" => self::SI_DATA,
         "taglist" => self::SI_DATA,
+        "tagselect" => self::SI_DATA,
         "urlstring" => self::SI_DATA
     ];
 

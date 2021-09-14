@@ -1860,10 +1860,8 @@ class Conf {
     /** @param bool $external
      * @return string */
     function assignment_round_option($external) {
-        if (!$external
-            || ($x = $this->settingTexts["extrev_roundtag"] ?? null) === null) {
-            $x = (string) ($this->settingTexts["rev_roundtag"] ?? null);
-        }
+        $x = $external ? $this->settingTexts["extrev_roundtag"] ?? null : null;
+        $x = $x ?? $this->settingTexts["rev_roundtag"] ?? "";
         return $x === "" ? "unnamed" : $x;
     }
 

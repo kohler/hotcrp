@@ -255,7 +255,7 @@ var added = 0;
 function namechange() {
     var roundnum = this.id.substr(10), name = $.trim($(this).val());
     $("#rev_roundtag_" + roundnum + ", #extrev_roundtag_" + roundnum)
-        .text(name === "" ? "(no name)" : name);
+        .text(name === "" ? "unnamed" : name).val(name);
 }
 
 function add() {
@@ -265,8 +265,8 @@ function add() {
     $("#round_container").show();
     $("#roundtable").append($("#newround").html().replace(/\$/g, i));
     var $mydiv = $("#roundname_" + i).closest(".js-settings-review-round");
-    $("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
-    $("#extrev_roundtag").append('<option value="#' + i + '" id="extrev_roundtag_' + i + '">(new round)</option>');
+    $("#rev_roundtag").append('<option value="" id="rev_roundtag_' + i + '">(new round)</option>');
+    $("#extrev_roundtag").append('<option value="" id="extrev_roundtag_' + i + '">(new round)</option>');
     $("#roundname_" + i).focus().on("input change", namechange);
 }
 

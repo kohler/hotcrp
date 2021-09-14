@@ -84,27 +84,14 @@ class Reviews_SettingRenderer {
         }
 
         // prepare round selector
-        $sv->set_oldv("rev_roundtag", "#" . $sv->conf->assignment_round(false));
-        $round_value = $sv->oldv("rev_roundtag");
-        if (preg_match('/\A\#(\d+)\z/', $sv->curv("rev_roundtag"), $m)
-            && ($rounds[intval($m[1])] ?? ";") !== ";") {
-            $round_value = $m[0];
-        }
-
-        $sv->set_oldv("extrev_roundtag", "#same");
-        if ($sv->conf->setting_data("extrev_roundtag") !== null) {
-            $sv->set_oldv("extrev_roundtag", "#" . $sv->conf->assignment_round(true));
-        }
-        $extround_value = $sv->oldv("extrev_roundtag");
-        if (preg_match('/\A\#(\d+)\z/', $sv->curv("extrev_roundtag"), $m)
-            && ($rounds[intval($m[1])] ?? ";") !== ";") {
-            $extround_value = $m[0];
-        }
+        $sv->set_oldv("rev_roundtag", $sv->conf->setting_data("rev_roundtag") ?? "");
+        $t = $sv->conf->setting_data("extrev_roundtag") ?? "default";
+        $sv->set_oldv("extrev_roundtag", $t === "unnamed" ? "" : $t);
 
         // does round 0 exist?
         $print_round0 = true;
-        if ($round_value != "#0"
-            && $extround_value != "#0"
+        if ($sv->curv("rev_roundtag") !== ""
+            && $sv->curv("extrev_roundtag") !== ""
             && (!$sv->use_req() || $sv->has_reqv("roundname_0"))
             && !$sv->conf->round0_defined()) {
             $print_round0 = false;
@@ -125,9 +112,9 @@ class Reviews_SettingRenderer {
         $selector = [];
         foreach ($roundorder as $i => $rname) {
             if ($rname !== "" && $rname !== ";") {
-                $selector["#$i"] = (object) ["label" => $rname, "id" => "rev_roundtag_$i"];
+                $selector[$rname] = (object) ["label" => $rname, "id" => "rev_roundtag_$i"];
             } else if ($i === 0 && $print_round0) {
-                $selector["#0"] = "unnamed";
+                $selector[""] = (object) ["label" => "unnamed", "id" => "rev_roundtag_0"];
             }
         }
 
@@ -155,13 +142,13 @@ class Reviews_SettingRenderer {
         }
         Ht::stash_script('hotcrp.settings.review_round()');
 
-        $extselector = array_merge(["#same" => "(same as PC)"], $selector);
+        $extselector = array_merge(["default" => "(same as PC)"], $selector);
         echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',
             $sv->label("rev_roundtag", "New PC reviews use round&nbsp; "),
-            Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
+            Ht::select("rev_roundtag", $selector, $sv->curv("rev_roundtag"), $sv->sjs("rev_roundtag")),
             ' <span class="barsep">·</span> ',
             $sv->label("extrev_roundtag", "New external reviews use round&nbsp; "),
-            Ht::select("extrev_roundtag", $extselector, $extround_value, $sv->sjs("extrev_roundtag")),
+            Ht::select("extrev_roundtag", $extselector, $sv->curv("extrev_roundtag"), $sv->sjs("extrev_roundtag")),
             '</div>';
     }
 
@@ -321,15 +308,6 @@ class Reviews_SettingRenderer {
 class Round_SettingParser extends SettingParser {
     private $rev_round_changes = array();
 
-    static function clean_round_name($name) {
-        $name = trim($name);
-        if (!preg_match('/\A(?:\(no name\)|default|unnamed|n\/a)\z/i', $name)) {
-            return $name;
-        } else {
-            return "";
-        }
-    }
-
     function parse_req(SettingValues $sv, Si $si) {
         assert($si->name === "tag_rounds");
         $this->rev_round_changes = [];
@@ -350,8 +328,11 @@ class Round_SettingParser extends SettingParser {
                     $this->rev_round_changes[$i] = 0;
                 }
             } else if (($name = $sv->reqv("roundname_$i")) !== null) {
-                $name = self::clean_round_name($name);
+                $name = trim($name);
                 $lname = strtolower($name);
+                if ($lname === "unnamed" || $lname === "default" || $lname === "n/a") {
+                    $name = $lname = "";
+                }
                 if (isset($roundlnames[$lname])) {
                     $sv->error_at("roundname_$i", "Round names must be distinct. Use bulk assignment to change existing reviews’ rounds.");
                     $sv->error_at("roundname_" . $roundlnames[$lname]);
@@ -425,17 +406,19 @@ class Round_SettingParser extends SettingParser {
 
 class RoundSelector_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
-        $sv->save($si->name, null);
-        if (preg_match('/\A\#(\d+)\z/', $sv->reqv($si->name), $m)) {
-            $t = Round_SettingParser::clean_round_name($sv->reqv("roundname_$m[1]"));
-            if ($t === "") {
-                // null for extrev_roundtag means “same as PC”
-                if ($si->name === "extrev_roundtag")
-                    $sv->save($si->name, "unnamed");
-            } else if ($t !== ";"
-                       && array_search(strtolower($t), explode(" ", strtolower($sv->newv("tag_rounds")))) !== false) {
-                $sv->save($si->name, $t);
-            }
+        $name = trim($sv->reqv($si->name));
+        $lname = strtolower($name);
+        if ($lname === "(new round)" || $lname === "n/a") {
+            $name = $lname = "default";
+        }
+        if ($lname === "default") {
+            $sv->save($si->name, null);
+        } else if ($lname === "" || $lname === "unnamed") {
+            $sv->save($si->name, $si->name === "rev_roundtag" ? null : "unnamed");
+        } else if (!($err = Conf::round_name_error($lname))) {
+            $sv->save($si->name, $name);
+        } else {
+            $sv->error_at($si->name, $err . " ($lname)");
         }
     }
 
@@ -454,7 +437,13 @@ class ReviewDeadline_SettingParser extends SettingParser {
             return;
         }
 
-        $name = Round_SettingParser::clean_round_name($sv->reqv("roundname_$rref"));
+        $name = trim($sv->reqv("roundname_$rref"));
+        if (strcasecmp($name, "default") === 0
+            || strcasecmp($name, "unnamed") === 0
+            || strcasecmp($name, "n/a") === 0) {
+            $name = "";
+        }
+
         $rounds = explode(" ", strtolower($sv->newv("tag_rounds")));
         if ($name === "") {
             $rnum = 0;
