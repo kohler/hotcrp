@@ -499,7 +499,8 @@ class Conf {
             | ($tf === 1 ? 2 : 0)
             | ($tf > 0 ? 4 : 0)
             | (($this->settings["pc_seeallpdf"] ?? 0) > 0 ? 16 : 0);
-        if (($this->settings["pc_seeall"] ?? 0) > 0 && ($this->_pc_see_cache & 2) !== 0) {
+        if (($this->settings["pc_seeall"] ?? 0) > 0
+            && ($this->_pc_see_cache & 4) !== 0) {
             $this->_pc_see_cache |= 8;
         }
 
