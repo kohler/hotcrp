@@ -1020,7 +1020,8 @@ class Contact {
         if ($pfx !== "n") {
             $n = htmlspecialchars($n);
         }
-        if ($pfx === "r") {
+        if ($pfx === "r"
+            && (isset($user->contactTags) || ($user->roles ?? 0) > 0)) {
             $dt = $this->conf->tags();
             if (($user->contactTags !== null || ($user->roles > 0 && $dt->has_role_decoration))
                 && ($this->can_view_user_tags() || $user->contactId === $this->contactXid)
@@ -1248,7 +1249,8 @@ class Contact {
         }
     }
 
-    /** @return string */
+    /** @param Contact $x
+     * @return string */
     static function all_contact_tags_for($x) {
         if ($x->roles & self::ROLE_PC) {
             return " pc#0{$x->contactTags}";
