@@ -284,13 +284,6 @@ class PaperOptionList implements IteratorAggregate {
         }
     }
 
-    /** @param array<int,object> $jmap */
-    function set_option_json_map($jmap) {
-        $this->_jmap = $jmap;
-        $this->_omap = [];
-        $this->_olist = $this->_olist_nonfinal = $this->_nonpaper_am = null;
-    }
-
     /** @return array<int,object> */
     private function option_json_map() {
         if ($this->_jmap === null) {
