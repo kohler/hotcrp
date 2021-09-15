@@ -379,7 +379,7 @@ class Conf {
         if ($this->sversion < 247) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
-            updateSchema($this);
+            (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;
         }
         if ($this->sversion < 200) {
