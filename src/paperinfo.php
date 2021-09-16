@@ -414,7 +414,7 @@ class PaperInfo {
     public $finalPaperStorageId;
     /** @var ?string */
     public $pdfFormatStatus;
-    /** @var ?string */
+    /** @var null|int|string */
     public $size;
     /** @var ?string */
     public $mimetype;

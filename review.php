@@ -358,7 +358,7 @@ class ReviewPage {
 
     function render() {
         $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
-        $pt->resolve_review($this->rrow);
+        $pt->resolve_review(!!$this->rrow);
         $pt->resolve_comments();
 
         // mode
