@@ -595,16 +595,25 @@ class DocumentInfo implements JsonSerializable {
         if (($s3 = $this->conf->s3_docstore())
             && ($s3k = $this->s3_key())) {
             if (($dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR))
-                && function_exists("curl_init")
-                && ($stream = @fopen($dspath . "~", "x+b"))) {
-                $s3l = $s3->start_curl_get($s3k)->set_response_body_stream($stream)->set_expected_size($this->size());
-                $s3l->run();
-                return $this->handle_load_s3_curl($s3l, $dspath);
-            } else {
-                return $this->load_s3_direct($s3, $s3k, $dspath);
+                && function_exists("curl_init")) {
+                $stream = @fopen("{$dspath}~", "x+b");
+                if ($stream === false
+                    && @filemtime("{$dspath}~") < Conf::$now - 3600
+                    && @unlink("{$dspath}~")) {
+                    $stream = @fopen("{$dspath}~", "x+b");
+                }
+                if ($stream) {
+                    $s3l = $s3->start_curl_get($s3k)
+                        ->set_response_body_stream($stream)
+                        ->set_expected_size($this->size());
+                    $s3l->run();
+                    return $this->handle_load_s3_curl($s3l, $dspath);
+                }
             }
+            return $this->load_s3_direct($s3, $s3k, $dspath);
+        } else {
+            return false;
         }
-        return false;
     }
 
     /** @param CurlS3Result $s3l
