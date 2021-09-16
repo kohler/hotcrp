@@ -370,7 +370,17 @@ class DocumentInfo implements JsonSerializable {
     /** @return bool */
     function ensure_size() {
         if ($this->size == 0 && $this->paperStorageId !== 1) {
-            $this->size = (int) $this->content_size();
+            if ($this->content_available()
+                || $this->load_docstore()
+                || (!$this->conf->opt("dbNoPapers") && $this->load_database())
+                || !$this->check_s3()
+                || ($size = $this->conf->s3_docstore()->head_size($this->s3_key())) === false) {
+                $size = (int) $this->content_size();
+            }
+            $this->size = $size;
+            if ($this->size != 0 && $this->paperStorageId > 1) {
+                $this->conf->qe("update PaperStorage set size=? where paperId=? and paperStorageId=? and size=0", $this->size, $this->paperId, $this->paperStorageId);
+            }
         }
         return $this->size != 0 || $this->paperStorageId === 1;
     }
