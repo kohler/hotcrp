@@ -1851,7 +1851,7 @@ class PaperInfo {
             && !$full) {
             $infokey = $dtype === DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson";
             $infoJson = $this->$infokey ?? false;
-            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => $this->timestamp ?? null, "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => $this->size ?? null, "infoJson" => $infoJson, "is_partial" => true], $this->conf, $this);
+            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => $this->timestamp ?? null, "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => $this->size, "infoJson" => $infoJson, "is_partial" => true], $this->conf, $this);
         }
 
         if ($this->_document_array === null) {
@@ -1883,6 +1883,18 @@ class PaperInfo {
                  && $doc->documentType === DTYPE_SUBMISSION)
                 || ($doc->paperStorageId == $this->finalPaperStorageId
                     && $doc->documentType === DTYPE_FINAL));
+    }
+
+    /** @return int */
+    function primary_document_size() {
+        // ensure `Paper.size` exists (might not due to import bugs)
+        if ($this->size == 0
+            && $this->paperStorageId > 1
+            && ($doc = $this->primary_document())
+            && ($this->size = $doc->size()) > 0) {
+            $this->conf->qe("update Paper set size=? where paperId=? and paperStorageId=? and size=0", $this->size, $this->paperId, $this->paperStorageId);
+        }
+        return (int) $this->size;
     }
 
     /** @param int $dtype

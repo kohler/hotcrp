@@ -29,7 +29,7 @@ function document_error($status, $msg) {
 
 function document_history_element(DocumentInfo $doc, $active) {
     $pj = ["hash" => $doc->text_hash(), "at" => $doc->timestamp, "mimetype" => $doc->mimetype];
-    if ($doc->size) {
+    if ($active ? $doc->size() : $doc->size) {
         $pj["size"] = $doc->size;
     }
     if ($doc->filename) {
