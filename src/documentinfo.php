@@ -627,20 +627,20 @@ class DocumentInfo implements JsonSerializable {
         fclose($s3l->dstream);
         $unlink = true;
         if ($s3l->status === 200) {
-            if (($sz = self::filesize_expected($dspath . "~", $this->size)) !== $this->size) {
+            if (($sz = self::filesize_expected("{$dspath}~", $this->size)) !== $this->size) {
                 error_log("Disk error: GET $s3l->skey: expected size {$this->size}, got " . json_encode($sz));
                 $s3l->status = 500;
-            } else if (rename($dspath . "~", $dspath)) {
+            } else if (rename("{$dspath}~", $dspath)) {
                 $this->filestore = $dspath;
                 $unlink = false;
             } else {
-                $this->content = file_get_contents($dspath . "~");
+                $this->content = file_get_contents("{$dspath}~");
             }
         } else {
             error_log("S3 error: GET $s3l->skey: $s3l->status $s3l->status_text " . json_encode_db($s3l->response_headers));
         }
         if ($unlink) {
-            @unlink($dspath . "~");
+            @unlink("{$dspath}~");
         }
         return $s3l->status === 200;
     }
