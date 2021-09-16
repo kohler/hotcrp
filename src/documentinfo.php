@@ -1291,12 +1291,12 @@ class DocumentInfo implements JsonSerializable {
             $alt = "[" . ($m && $m->description ? $m->description : $this->mimetype) . "]";
         }
 
-        $x = '<a href="' . $p . '" class="q' . ($need_run ? " need-format-check" : "") . '">'
+        $x = "<a href=\"{$p}\" class=\"q" . ($need_run ? " need-format-check" : "") . '">'
             . Ht::img($img . $suffix . ($small ? "" : "24") . ".png", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
         if ($html) {
             $x .= "&nbsp;" . $html;
         }
-        if ($this->size > 0 && !($flags & self::L_NOSIZE)) {
+        if (!($flags & self::L_NOSIZE) && $this->size() > 0) {
             $x .= " <span class=\"dlsize\">" . ($html ? "(" : "")
                 . unparse_byte_size($this->size) . ($html ? ")" : "") . "</span>";
         }

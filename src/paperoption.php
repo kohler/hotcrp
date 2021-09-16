@@ -1788,7 +1788,7 @@ class Document_PaperOption extends PaperOption {
             }
 
             echo '<div class="document-file">',
-                $doc->link_html(htmlspecialchars($doc->filename ?? "")),
+                $doc->link_html(htmlspecialchars($doc->filename ?? $doc->export_filename())),
                 '</div><div class="document-stamps">';
             if (($stamps = PaperTable::pdf_stamps_html($doc))) {
                 echo $stamps;
