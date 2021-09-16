@@ -162,8 +162,8 @@ class PaperStatus extends MessageSet {
         if ($doc->timestamp) {
             $d->timestamp = $doc->timestamp;
         }
-        if ($doc->size) {
-            $d->size = $doc->size;
+        if (($sz = $doc->size()) > 0) {
+            $d->size = $sz;
         }
         if ($doc->filename) {
             $d->filename = $doc->filename;

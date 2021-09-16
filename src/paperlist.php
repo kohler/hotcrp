@@ -1133,7 +1133,7 @@ class PaperList implements XtContext {
     /** @param PaperInfo $row
      * @return string */
     function _contentDownload($row) {
-        if ($row->size !== 0
+        if ($row->paperStorageId > 1
             && $this->user->can_view_pdf($row)
             && ($doc = $row->primary_document())) {
             return "&nbsp;" . $doc->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
