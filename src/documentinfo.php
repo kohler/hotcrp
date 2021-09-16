@@ -370,6 +370,8 @@ class DocumentInfo implements JsonSerializable {
     /** @return bool */
     function ensure_size() {
         if ($this->size == 0 && $this->paperStorageId !== 1) {
+            // NB This function may be called from `load_s3()`!
+            // Avoid a recursive call to `load_s3()` via `head_size()`
             if ($this->content_available()
                 || $this->load_docstore()
                 || (!$this->conf->opt("dbNoPapers") && $this->load_database())
