@@ -84,9 +84,9 @@ class Text {
                 $firstName = $initial;
             }
             if (($flags & NAME_L) !== 0) {
-                $name = $lastName . ", " . $firstName;
+                $name = "{$lastName}, {$firstName}";
             } else {
-                $name = $firstName . " " . $lastName;
+                $name = "{$firstName} {$lastName}";
             }
         } else if ($lastName !== "") {
             $name = $lastName;
@@ -96,7 +96,7 @@ class Text {
             return "";
         } else if ($email !== "") {
             if (($flags & NAME_B) !== 0) {
-                return "<" . $email . ">";
+                return "<{$email}>";
             } else {
                 return $email;
             }
@@ -111,7 +111,11 @@ class Text {
             $name = "\"" . addcslashes($name, '"\\') . "\"";
         }
         if ($email !== "" && ($flags & NAME_E) !== 0) {
-            $name .= " <" . $email . ">";
+            if ($name !== "") {
+                $name = "{$name} <{$email}>";
+            } else {
+                $name = "<{$email}>";
+            }
         }
         return $name;
     }
