@@ -23,7 +23,9 @@ class Conflict_Assignable extends Assignable {
 }
 
 class Conflict_AssignmentParser extends AssignmentParser {
+    /** @var bool */
     private $remove;
+    /** @var bool */
     private $iscontact;
     function __construct(Conf $conf, $aj) {
         parent::__construct("conflict");
@@ -54,6 +56,9 @@ class Conflict_AssignmentParser extends AssignmentParser {
         } else {
             return false;
         }
+    }
+    function user_universe($req, AssignmentState $state) {
+        return $this->iscontact ? "any" : "pc";
     }
     /** @return ?CountMatcher */
     private function _matcher($req, Conf $conf) {
