@@ -173,7 +173,7 @@ class ReviewPage {
 
     function handle_download_text() {
         $rf = $this->rf();
-        if ($this->rrow) {
+        if ($this->rrow && $this->rrow_explicit) {
             $this->conf->make_csvg("review-" . $this->rrow->unparse_ordinal_id(), CsvGenerator::TYPE_STRING)
                 ->add_string($rf->unparse_text($this->prow, $this->rrow, $this->user))
                 ->emit();
