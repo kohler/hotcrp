@@ -672,7 +672,8 @@ class Contact {
         return $u;
     }
 
-    /** @return Contact */
+    /** @param ?Qrequest $qreq
+     * @return Contact */
     function activate($qreq, $signin = false) {
         $this->_activated = true;
 
