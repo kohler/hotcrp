@@ -2183,6 +2183,10 @@ class PaperSearch {
                     && $splitter->match('/\G(?:|(?:THEN|then|HIGHLIGHT(?::\w+)?)(?:\s|\().*)\z/')) {
                     $word = $uword;
                 }
+                if ($word === "") {
+                    error_log("problem: no op, str “{$str}”");
+                    break;
+                }
                 // Search like "ti:(foo OR bar)" adds a default keyword.
                 if ($word[strlen($word) - 1] === ":"
                     && preg_match('/\A(?:[-_.a-zA-Z0-9]+:|"[^"]+":)\z/', $word)
