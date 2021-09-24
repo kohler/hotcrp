@@ -105,7 +105,8 @@ class Review_AssignmentParser extends AssignmentParser {
         self::load_review_state($state);
         Conflict_AssignmentParser::load_conflict_state($state);
     }
-    /** @param CsvRow $req */
+    /** @param CsvRow $req
+     * @return ReviewAssigner_Data */
     private function make_rdata($req, AssignmentState $state) {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
@@ -197,7 +198,7 @@ class Review_AssignmentParser extends AssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->error) {
-            return $rdata->error;
+            return new AssignmentError($rdata->error);
         }
 
         $revmatch = new Review_Assignable($prow->paperId, $contact->contactId);

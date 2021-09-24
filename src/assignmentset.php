@@ -894,13 +894,21 @@ class Null_AssignmentParser extends UserlessAssignmentParser {
 }
 
 class ReviewAssigner_Data {
+    /** @var ?string */
     public $oldround;
+    /** @var ?string */
     public $newround;
+    /** @var bool */
     public $explicitround = false;
+    /** @var ?int */
     public $oldtype;
+    /** @var ?int */
     public $newtype;
+    /** @var bool */
     public $creator = true;
-    public $error = false;
+    /** @var ?string */
+    public $error;
+    /** @return array{?string,?string,bool} */
     static function separate($key, $req, $state, $rtype) {
         $a0 = $a1 = trim((string) $req[$key]);
         $require_match = $rtype ? false : $a0 !== "";
