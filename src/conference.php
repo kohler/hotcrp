@@ -4074,29 +4074,51 @@ class Conf {
                 $this->set_cookie($k, "", Conf::$now - 86400);
         }
 
-        echo "<!DOCTYPE html>
-<html lang=\"en\">
-<head>
-<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
-<meta name=\"google\" content=\"notranslate\">\n";
+        echo "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n",
+            "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n";
 
-        if (($font_script = $this->opt("fontScript"))) {
-            if (!str_starts_with($font_script, "<script")) {
-                $font_script = Ht::script($font_script);
+        // gather stylesheets
+        $cssx = [];
+        $has_default_css = $has_media = false;
+        foreach ($this->opt("stylesheets") ?? [] as $css) {
+            if (is_string($css)) {
+                $cssf = $css;
+                $media = $integrity = null;
+            } else {
+                $cssf = $css["href"];
+                $media = $css["media"] ?? null;
+                $integrity = $css["integrity"] ?? null;
             }
-            echo $font_script, "\n";
+            if ($cssf !== false) {
+                $cssx[] = $this->make_css_link($cssf, $media, $integrity);
+            }
+            $has_default_css = $has_default_css
+                || $cssf === "stylesheets/style.css"
+                || $cssf === false;
+            $has_media = $has_media || $media !== null;
         }
 
-        foreach (mkarray($this->opt("prependStylesheets") ?? []) as $css) {
-            echo $this->make_css_link($css), "\n";
+        // meta elements
+        $meta = $this->opt("metaTags") ?? [];
+        if ($has_media) {
+            $meta["viewport"] = $meta["viewport"] ?? "width=device-width, initial-scale=1";
         }
-        echo $this->make_css_link("stylesheets/style.css"), "\n";
-        if ($this->opt("mobileStylesheet")) {
-            echo '<meta name="viewport" content="width=device-width, initial-scale=1">', "\n";
-            echo $this->make_css_link("stylesheets/mobile.css", "screen and (max-width: 1100px)"), "\n";
+        foreach ($meta as $key => $value) {
+            if ($value === false) {
+                // nothing
+            } else if ($key === "default-style" || $key === "content-security-policy") {
+                echo "<meta http-equiv=\"", $key, "\" content=\"", htmlspecialchars($value), "\">\n";
+            } else {
+                echo "<meta name=\"", htmlspecialchars($key), "\" content=\"", htmlspecialchars($value), "\">\n";
+            }
         }
-        foreach (mkarray($this->opt("stylesheets") ?? []) as $css) {
-            echo $this->make_css_link($css), "\n";
+
+        // css references
+        if (!$has_default_css) {
+            echo $this->make_css_link("stylesheets/style.css"), "\n";
+        }
+        foreach ($cssx as $css) {
+            echo $css, "\n";
         }
 
         // favicon
