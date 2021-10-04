@@ -3951,28 +3951,21 @@ class Conf {
         $this->_active_list = $list;
     }
 
-    /** @param non-empty-string $url
+    /** @param array $x
      * @return string */
-    function make_css_link($url, $media = null, $integrity = null) {
-        if (str_starts_with($url, "<meta") || str_starts_with($url, "<link")) {
-            return $url;
+    function make_css_link($x) {
+        $x["rel"] = $x["rel"] ?? "stylesheet";
+        $url = $x["href"];
+        if ($url[0] !== "/"
+            && (($url[0] !== "h" && $url[0] !== "H")
+                || (strtolower(substr($url, 0, 5)) !== "http:"
+                    && strtolower(substr($url, 0, 6)) !== "https:"))) {
+            if (($mtime = @filemtime(SiteLoader::find($url))) !== false) {
+                $url .= "?mtime=$mtime";
+            }
+            $x["href"] = $this->opt["assetsUrl"] . $url;
         }
-        $t = '<link rel="stylesheet" type="text/css" href="';
-        $absolute = preg_match('/\A(?:https:?:|\/)/i', $url);
-        if (!$absolute) {
-            $t .= $this->opt["assetsUrl"];
-        }
-        $t .= htmlspecialchars($url);
-        if (!$absolute && ($mtime = @filemtime(SiteLoader::find($url))) !== false) {
-            $t .= "?mtime=$mtime";
-        }
-        if ($media) {
-            $t .= '" media="' . $media;
-        }
-        if ($integrity) {
-            $t .= '" crossorigin="anonymous" integrity="' . $integrity;
-        }
-        return $t . '">';
+        return "<link" . Ht::extra($x) . ">";
     }
 
     /** @param non-empty-string $url
@@ -4082,20 +4075,11 @@ class Conf {
         $has_default_css = $has_media = false;
         foreach ($this->opt("stylesheets") ?? [] as $css) {
             if (is_string($css)) {
-                $cssf = $css;
-                $media = $integrity = null;
-            } else {
-                $cssf = $css["href"];
-                $media = $css["media"] ?? null;
-                $integrity = $css["integrity"] ?? null;
+                $css = ["href" => $css];
             }
-            if ($cssf !== false) {
-                $cssx[] = $this->make_css_link($cssf, $media, $integrity);
-            }
-            $has_default_css = $has_default_css
-                || $cssf === "stylesheets/style.css"
-                || $cssf === false;
-            $has_media = $has_media || $media !== null;
+            $cssx[] = $this->make_css_link($css);
+            $has_default_css = $has_default_css || $css["href"] === "stylesheets/style.css";
+            $has_media = $has_media || ($css["media"] ?? null) !== null;
         }
 
         // meta elements
@@ -4106,6 +4090,9 @@ class Conf {
         foreach ($meta as $key => $value) {
             if ($value === false) {
                 // nothing
+            } else if (is_int($key)) {
+                assert(str_starts_with($value, "<meta"));
+                echo $value, "\n";
             } else if ($key === "default-style" || $key === "content-security-policy") {
                 echo "<meta http-equiv=\"", $key, "\" content=\"", htmlspecialchars($value), "\">\n";
             } else {
@@ -4115,7 +4102,7 @@ class Conf {
 
         // css references
         if (!$has_default_css) {
-            echo $this->make_css_link("stylesheets/style.css"), "\n";
+            echo $this->make_css_link(["href" => "stylesheets/style.css"]), "\n";
         }
         foreach ($cssx as $css) {
             echo $css, "\n";
