@@ -497,7 +497,30 @@ class UpdateSchema {
             }
         }
         $this->conf->save_setting("options", 1, $options_array);
-        return true;
+        return $options_array;
+    }
+
+    private function v248_options_setting($options_array) {
+        foreach ($options_array as $v) {
+            if (is_object($v)) {
+                if ($v->near_submission ?? false) {
+                    $v->display = "submission";
+                    unset($v->near_submission);
+                } else if (($v->highlight ?? false)
+                           || ($v->display ?? null) === "default") {
+                    $v->display = "prominent";
+                    unset($v->prominent);
+                } else if (($v->display ?? null) === false) {
+                    $v->display = "none";
+                }
+                if (!isset($v->page_position) && isset($v->display_position)) {
+                    $v->page_position = $v->display_position;
+                    unset($v->display_position);
+                }
+            }
+        }
+        $this->conf->save_setting("options", 1, $options_array);
+        return $options_array;
     }
 
     private function v243_simplify_user_whitespace() {
@@ -536,26 +559,33 @@ class UpdateSchema {
         // (must do this early because PaperOptionList depends on that format)
         $options_data = $conf->setting_json("options");
         if (is_object($options_data)) {
-            $this->v1_options_setting($options_data);
+            $options_data = $this->v1_options_setting($options_data);
+        }
+        if (is_array($options_data) && $conf->sversion <= 247) {
+            $options_data = $this->v248_options_setting($options_data);
         }
 
         if ($conf->sversion === 6
-            && $conf->ql_ok("alter table ReviewRequest add `reason` text"))
+            && $conf->ql_ok("alter table ReviewRequest add `reason` text")) {
             $conf->update_schema_version(7);
+        }
         if ($conf->sversion === 7
             && $conf->ql_ok("alter table PaperReview add `textField7` mediumtext NOT NULL")
             && $conf->ql_ok("alter table PaperReview add `textField8` mediumtext NOT NULL")
             && $conf->ql_ok("insert into ReviewFormField set fieldName='textField7', shortName='Additional text field'")
-            && $conf->ql_ok("insert into ReviewFormField set fieldName='textField8', shortName='Additional text field'"))
+            && $conf->ql_ok("insert into ReviewFormField set fieldName='textField8', shortName='Additional text field'")) {
             $conf->update_schema_version(8);
+        }
         if ($conf->sversion === 8
             && $conf->ql_ok("alter table ReviewFormField add `levelChar` tinyint(1) NOT NULL default '0'")
             && $conf->ql_ok("alter table PaperReviewArchive add `textField7` mediumtext NOT NULL")
-            && $conf->ql_ok("alter table PaperReviewArchive add `textField8` mediumtext NOT NULL"))
+            && $conf->ql_ok("alter table PaperReviewArchive add `textField8` mediumtext NOT NULL")) {
             $conf->update_schema_version(9);
+        }
         if ($conf->sversion === 9
-            && $conf->ql_ok("alter table Paper add `sha1` varbinary(20) NOT NULL default ''"))
+            && $conf->ql_ok("alter table Paper add `sha1` varbinary(20) NOT NULL default ''")) {
             $conf->update_schema_version(10);
+        }
         if ($conf->sversion === 10
             && $conf->ql_ok("alter table PaperReview add `reviewRound` tinyint(1) NOT NULL default '0'")
             && $conf->ql_ok("alter table PaperReviewArchive add `reviewRound` tinyint(1) NOT NULL default '0'")
@@ -2041,6 +2071,9 @@ class UpdateSchema {
                 $conf->save_setting("review_form", 1, $rfj);
             }
             $conf->update_schema_version(247);
+        }
+        if ($conf->sversion === 247) {
+            $conf->update_schema_version(248);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

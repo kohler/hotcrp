@@ -713,17 +713,6 @@ class PaperOption implements JsonSerializable {
     const VIS_ADMIN = 4;       // visible only to admins
     static private $visibility_map = ["all", "nonblind", "conflict", "review", "admin"];
 
-    const DISP_TOPICS = 0;
-    const DISP_PROMINENT = 1;
-    const DISP_SUBMISSION = 2;
-    const DISP_DEFAULT = 3;
-    const DISP_NONE = -1;
-    static private $display_map = [
-        "default" => self::DISP_DEFAULT, "submission" => self::DISP_SUBMISSION,
-        "topics" => self::DISP_TOPICS, "prominent" => self::DISP_PROMINENT,
-        "none" => self::DISP_NONE
-    ];
-
     static private $callback_map = [
         "separator" => "+Separator_PaperOption",
         "checkbox" => "+Checkbox_PaperOption",
@@ -781,21 +770,6 @@ class PaperOption implements JsonSerializable {
             $this->_visibility = self::VIS_SUB;
         }
 
-        $disp = $args->display ?? null;
-        if ($args->near_submission ?? false) {
-            $disp = "submission";
-        } else if ($args->highlight ?? false) {
-            $disp = "prominent";
-        } else if ($disp === null) {
-            $disp = "topics";
-        } else if ($disp === false) {
-            $disp = "none";
-        }
-        $disp = self::$display_map[$disp] ?? self::DISP_DEFAULT;
-        if ($disp === self::DISP_DEFAULT) {
-            $disp = $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
-        }
-
         $p = $args->position ?? null;
         if ((is_int($p) || is_float($p))
             && ($this->id <= 0 || $p > 0)) {
@@ -806,9 +780,10 @@ class PaperOption implements JsonSerializable {
 
         $p = $args->form_position ?? null;
         if ($p === null) {
-            if ($disp === self::DISP_SUBMISSION) {
+            $disp = $args->display ?? null;
+            if ($disp === "submission") {
                 $p = 1100 + $this->position;
-            } else if ($disp === self::DISP_PROMINENT) {
+            } else if ($disp === "prominent") {
                 $p = 3100 + $this->position;
             } else {
                 $p = 3600 + $this->position;
@@ -816,7 +791,7 @@ class PaperOption implements JsonSerializable {
         }
         $this->form_position = $p;
 
-        if ($disp < 0) {
+        if (($args->display ?? null) === "none") {
             $p = false;
         }
         $this->page_position = $args->page_position ?? $args->display_position ?? $p;
