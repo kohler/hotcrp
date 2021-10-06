@@ -690,9 +690,6 @@ class PaperOption implements JsonSerializable {
     /** @var int
      * @readonly */
     private $_visibility;
-    /** @var int
-     * @readonly */
-    private $display;
     public $page_expand;
     public $page_group;
     private $form_position;
@@ -726,7 +723,6 @@ class PaperOption implements JsonSerializable {
         "topics" => self::DISP_TOPICS, "prominent" => self::DISP_PROMINENT,
         "none" => self::DISP_NONE
     ];
-    static private $display_rmap = null;
 
     static private $callback_map = [
         "separator" => "+Separator_PaperOption",
@@ -795,9 +791,9 @@ class PaperOption implements JsonSerializable {
         } else if ($disp === false) {
             $disp = "none";
         }
-        $this->display = self::$display_map[$disp] ?? self::DISP_DEFAULT;
-        if ($this->display === self::DISP_DEFAULT) {
-            $this->display = $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
+        $disp = self::$display_map[$disp] ?? self::DISP_DEFAULT;
+        if ($disp === self::DISP_DEFAULT) {
+            $disp = $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
         }
 
         $p = $args->position ?? null;
@@ -810,9 +806,9 @@ class PaperOption implements JsonSerializable {
 
         $p = $args->form_position ?? null;
         if ($p === null) {
-            if ($this->display === self::DISP_SUBMISSION) {
+            if ($disp === self::DISP_SUBMISSION) {
                 $p = 1100 + $this->position;
-            } else if ($this->display === self::DISP_PROMINENT) {
+            } else if ($disp === self::DISP_PROMINENT) {
                 $p = 3100 + $this->position;
             } else {
                 $p = 3600 + $this->position;
@@ -820,7 +816,7 @@ class PaperOption implements JsonSerializable {
         }
         $this->form_position = $p;
 
-        if ($this->display < 0) {
+        if ($disp < 0) {
             $p = false;
         }
         $this->page_position = $args->page_position ?? $args->display_position ?? $p;
@@ -988,10 +984,6 @@ class PaperOption implements JsonSerializable {
         return $this->json_key();
     }
 
-    /** @return int */
-    function display() {
-        return $this->display;
-    }
     /** @return int|float|false */
     function form_position() {
         return $this->form_position;
@@ -1140,11 +1132,17 @@ class PaperOption implements JsonSerializable {
         return null;
     }
 
+    /** @return string */
     function display_name() {
-        if (!self::$display_rmap) {
-            self::$display_rmap = array_flip(self::$display_map);
+        if ($this->page_position === false) {
+            return "none";
+        } else if ($this->page_position < 3000) {
+            return "submission";
+        } else if ($this->page_position < 3500) {
+            return "prominent";
+        } else {
+            return "topics";
         }
-        return self::$display_rmap[$this->display];
     }
 
     /** @return object */
