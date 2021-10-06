@@ -783,11 +783,12 @@ class Conf {
      * @return mixed */
     function setting_json($name) {
         $x = $this->settingTexts[$name] ?? null;
-        return is_string($x) ? json_decode($x) : $x;
+        return $x !== null ? json_decode($x) : null;
     }
 
     /** @param string $name
      * @param ?int $value
+     * @param null|string|array|object $data
      * @return bool */
     function save_setting($name, $value, $data = null) {
         $change = false;
@@ -806,7 +807,7 @@ class Conf {
             $result = $this->qe("insert into Settings set name=?, value=?, data=? on duplicate key update value=values(value), data=values(data)", $name, $value, $dval);
             if (!Dbl::is_error($result)) {
                 $this->settings[$name] = $value;
-                $this->settingTexts[$name] = $data;
+                $this->settingTexts[$name] = $dval;
                 $change = true;
             }
         }
