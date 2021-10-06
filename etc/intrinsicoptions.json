@@ -9,14 +9,14 @@
     {
         "name": "Submission version", "id": -1008, "final": true,
         "search_keyword": false, "json_key": false,
-        "form_position": false, "display_position": 1999,
+        "form_position": false, "page_position": 1999,
         "type": "intrinsic2", "include_empty": true,
         "function": "+SubmissionVersion_PaperOption"
     },
     {
         "name": "Abstract", "id": -1004,
         "json_key": "abstract",
-        "form_position": 2001, "display_expand": true,
+        "form_position": 2001, "page_expand": true,
         "type": "abstract", "include_empty": true,
         "function": "+Abstract_PaperOption"
     },
@@ -30,28 +30,28 @@
     {
         "name": "Submission anonymity", "id": -1002,
         "json_key": "nonblind",
-        "form_position": 3002, "display_position": false,
+        "form_position": 3002, "page_position": false,
         "type": "nonblind", "include_empty": true,
         "function": "+Nonblind_PaperOption"
     },
     {
         "name": "Contacts", "id": -1003,
         "json_key": "contacts",
-        "form_position": 3050, "display_position": false, "visibility": "conflict",
+        "form_position": 3050, "page_position": false, "visibility": "conflict",
         "type": "contacts", "include_empty": true,
         "function": "+Contacts_PaperOption"
     },
     {
         "name": "Topics", "id": -1005,
         "json_key": "topics",
-        "form_position": 3501, "display_group": "topics",
+        "form_position": 3501, "page_group": "topics",
         "type": "topics", "include_empty": true,
         "function": "+Topics_PaperOption"
     },
     {
         "name": "PC conflicts", "id": -1006,
         "json_key": "pc_conflicts",
-        "form_position": 5001, "display_position": false, "visibility": "nonblind",
+        "form_position": 5001, "page_position": false, "visibility": "nonblind",
         "type": "pc_conflicts", "include_empty": true,
         "function": "+PCConflicts_PaperOption"
     },

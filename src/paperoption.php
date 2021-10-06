@@ -525,9 +525,10 @@ class PaperOptionList implements IteratorAggregate {
         return $olist;
     }
 
-    /** @return array<int,PaperOption> */
+    /** @return array<int,PaperOption>
+     * @deprecated */
     function display_fields(PaperInfo $prow = null) {
-        $olist = $this->unsorted_field_list($prow, "display_position");
+        $olist = $this->unsorted_field_list($prow, "page_position");
         uasort($olist, "PaperOption::compare");
         return $olist;
     }
@@ -536,6 +537,13 @@ class PaperOptionList implements IteratorAggregate {
     function form_fields(PaperInfo $prow = null) {
         $olist = $this->unsorted_field_list($prow, "form_position");
         uasort($olist, "PaperOption::form_compare");
+        return $olist;
+    }
+
+    /** @return array<int,PaperOption> */
+    function page_fields(PaperInfo $prow = null) {
+        $olist = $this->unsorted_field_list($prow, "page_position");
+        uasort($olist, "PaperOption::compare");
         return $olist;
     }
 
@@ -685,16 +693,17 @@ class PaperOption implements JsonSerializable {
     /** @var int
      * @readonly */
     private $display;
-    public $display_expand;
-    public $display_group;
+    public $page_expand;
+    public $page_group;
     private $form_position;
-    private $display_position;
+    private $page_position;
     /** @var null|string|false */
     public $list_class;
     /** @var ?string */
     private $exists_if;
     /** @var ?PaperSearch */
     private $_exists_search;
+    /** @var ?string */
     private $editable_if;
     /** @var ?PaperSearch */
     private $_editable_search;
@@ -814,13 +823,13 @@ class PaperOption implements JsonSerializable {
         if ($this->display < 0) {
             $p = false;
         }
-        $this->display_position = $args->display_position ?? $p;
-        $this->display_expand = !!($args->display_expand ?? false);
-        $this->display_group = $args->display_group ?? null;
-        if ($this->display_group === null
-            && $this->display_position >= 3500
-            && $this->display_position < 4000) {
-            $this->display_group = "topics";
+        $this->page_position = $args->page_position ?? $args->display_position ?? $p;
+        $this->page_expand = !!($args->page_expand ?? false);
+        $this->page_group = $args->page_group ?? null;
+        if ($this->page_group === null
+            && $this->page_position >= 3500
+            && $this->page_position < 4000) {
+            $this->page_group = "topics";
         }
 
         $this->list_class = $args->list_class ?? null;
@@ -863,9 +872,9 @@ class PaperOption implements JsonSerializable {
     /** @param PaperOption $a
      * @param PaperOption $b */
     static function compare($a, $b) {
-        $ap = $a->display_position();
+        $ap = $a->page_position();
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
-        $bp = $b->display_position();
+        $bp = $b->page_position();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
         return $ap <=> $bp ? : (strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id);
     }
@@ -983,11 +992,18 @@ class PaperOption implements JsonSerializable {
     function display() {
         return $this->display;
     }
+    /** @return int|float|false */
     function form_position() {
         return $this->form_position;
     }
+    /** @return int|float|false */
+    function page_position() {
+        return $this->page_position;
+    }
+    /** @return int|float|false
+     * @deprecated */
     function display_position() {
-        return $this->display_position;
+        return $this->page_position;
     }
     /** @return int */
     function visibility() {
@@ -1275,7 +1291,8 @@ class PaperOption implements JsonSerializable {
         $prow->mark_inactive_documents();
     }
 
-    /** @return bool */
+    /** @param int $context
+     * @return bool */
     function can_render($context) {
         if (($context & (FieldRender::CFLIST | FieldRender::CFLISTSUGGEST)) !== 0
             && (!is_string($this->list_class) || $this->search_keyword() === false)) {
@@ -1290,7 +1307,7 @@ class PaperOption implements JsonSerializable {
             return false;
         }
         if (($context & FieldRender::CFPAGE) !== 0
-            && $this->display_position === false) {
+            && $this->page_position === false) {
             return false;
         }
         return true;
@@ -1853,7 +1870,7 @@ class Document_PaperOption extends PaperOption {
             } else if ($fr->for_page()) {
                 $fr->title = "";
                 $dif = 0;
-                if ($this->display_position() >= 2000) {
+                if ($this->page_position() >= 2000) {
                     $dif = DocumentInfo::L_SMALL;
                 }
                 $fr->set_html($d->link_html('<span class="pavfn">' . $this->title_html() . '</span>', $dif));
@@ -2212,7 +2229,7 @@ class Attachments_PaperOption extends PaperOption {
                 $linkname = htmlspecialchars($d->member_filename());
                 if ($fr->want_list()) {
                     $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
-                } else if ($this->display_position() >= 2000) {
+                } else if ($this->page_position() >= 2000) {
                     $dif = DocumentInfo::L_SMALL;
                 } else {
                     $dif = 0;
@@ -2233,7 +2250,7 @@ class Attachments_PaperOption extends PaperOption {
             } else {
                 $fr->set_html('<p class="od">' . join('</p><p class="od">', $ts) . '</p>');
             }
-            if ($fr->for_page() && $this->display_position() < 2000) {
+            if ($fr->for_page() && $this->page_position() < 2000) {
                 $fr->title = false;
                 $v = '<div class="pgsm';
                 if ($fr->table && $fr->user->view_option_state($ov->prow, $this) === 1) {
@@ -2270,7 +2287,7 @@ class Attachments_PaperOption extends PaperOption {
 class Unknown_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         $args->type = "__unknown" . $args->id . "__";
-        $args->form_position = $args->display_position = false;
+        $args->form_position = $args->page_position = false;
         parent::__construct($conf, $args);
     }
 }

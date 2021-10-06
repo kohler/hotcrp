@@ -167,7 +167,7 @@ class FieldCSVOutput {
             $rs = "draft";
         }
         $x["status"] = $rs;
-        foreach ($prow->display_fields() as $o) {
+        foreach ($prow->page_fields() as $o) {
             if (($o->type === "title"
                  || $o->type === "abstract"
                  || $o->type === "text")

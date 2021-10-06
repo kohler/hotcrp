@@ -48,7 +48,7 @@ class Abstract_PaperOption extends PaperOption {
             $fr->table->render_abstract($fr, $this);
         } else {
             $text = $ov->prow->abstract_text();
-            if (trim($text) !== "") {
+            if ($text !== "") {
                 $fr->value = $text;
                 $fr->value_format = $ov->prow->abstract_format();
             } else if (!$this->conf->opt("noAbstract")

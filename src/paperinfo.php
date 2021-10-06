@@ -1803,14 +1803,20 @@ class PaperInfo {
         }
     }
 
-    /** @return array<int,PaperOption> */
+    /** @return array<int,PaperOption>
+     * @deprecated */
     function display_fields() {
-        return $this->conf->options()->display_fields($this);
+        return $this->conf->options()->page_fields($this);
     }
 
     /** @return array<int,PaperOption> */
     function form_fields() {
         return $this->conf->options()->form_fields($this);
+    }
+
+    /** @return array<int,PaperOption> */
+    function page_fields() {
+        return $this->conf->options()->page_fields($this);
     }
 
     /** @return string */

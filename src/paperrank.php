@@ -132,7 +132,7 @@ class PaperRank {
 
 
     // compare two vote sets
-    function _comparRankIRV($a, $b) {
+    static function _comparRankIRV($a, $b) {
         for ($i = 0; $i < count($a); ++$i) {
             if ($a[$i] != $b[$i])
                 return $a[$i] < $b[$i] ? -1 : 1;

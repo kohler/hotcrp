@@ -340,19 +340,19 @@ class PaperTable {
 
         // other expansions
         $next_foldnum = 10;
-        foreach ($this->prow->display_fields() as $o) {
-            if ($o->display_position() !== false
-                && $o->display_position() >= 1000
-                && $o->display_position() < 5000
+        foreach ($this->prow->page_fields() as $o) {
+            if ($o->page_position() !== false
+                && $o->page_position() >= 1000
+                && $o->page_position() < 5000
                 && ($o->id <= 0 || $this->user->allow_view_option($this->prow, $o))
-                && $o->display_group !== null) {
-                if (strlen($o->display_group) > 1
-                    && !isset($this->foldnumber[$o->display_group])) {
-                    $this->foldnumber[$o->display_group] = $next_foldnum;
-                    $foldstorage[$next_foldnum] = str_replace(" ", "_", $o->display_group);
+                && $o->page_group !== null) {
+                if (strlen($o->page_group) > 1
+                    && !isset($this->foldnumber[$o->page_group])) {
+                    $this->foldnumber[$o->page_group] = $next_foldnum;
+                    $foldstorage[$next_foldnum] = str_replace(" ", "_", $o->page_group);
                     ++$next_foldnum;
                 }
-                if ($o->display_expand) {
+                if ($o->page_expand) {
                     $this->foldnumber[$o->formid] = $next_foldnum;
                     $foldstorage[$next_foldnum] = $o->formid;
                     ++$next_foldnum;
@@ -976,16 +976,16 @@ class PaperTable {
         $fr->value = $fr->value_html();
         $fr->value_format = 5;
 
-        if ($fr->title !== "" && $o->display_group && !$fr->value_long) {
+        if ($fr->title !== "" && $o->page_group && !$fr->value_long) {
             $title = htmlspecialchars($fr->title);
             if ($fr->value === "") {
-                $fr->value = '<h3 class="pavfn">' . $title . '</h3>';
+                $fr->value = "<h3 class=\"pavfn\">{$title}</h3>";
             } else if ($fr->value[0] === "<"
                        && preg_match('{\A((?:<(?:div|p).*?>)*)}', $fr->value, $cm)) {
-                $fr->value = $cm[1] . '<h3 class="pavfn pavfnsp">' . $title
-                    . ':</h3> ' . substr($fr->value, strlen($cm[1]));
+                $fr->value = "{$cm[1]}<h3 class=\"pavfn pavfnsp\">{$title}:</h3> "
+                    . substr($fr->value, strlen($cm[1]));
             } else {
-                $fr->value = '<h3 class="pavfn pavfnsp">' . $title . ':</h3> ' . $fr->value;
+                $fr->value = "<h3 class=\"pavfn pavfnsp\">{$title}:</h3> {$fr->value}";
             }
             $fr->value_long = false;
             $fr->title = "";
@@ -1022,7 +1022,7 @@ class PaperTable {
         if ($group_flags & 4) {
             $group_types[] = "Options";
         }
-        return htmlspecialchars($this->conf->_c("field_group", $renders[$first]->option->display_group, commajoin($group_names), commajoin($group_types)));
+        return htmlspecialchars($this->conf->_c("field_group", $renders[$first]->option->page_group, commajoin($group_names), commajoin($group_types)));
     }
 
     private function _echo_normal_body() {
@@ -1033,10 +1033,10 @@ class PaperTable {
         $renders = [];
         $fr = new FieldRender(FieldRender::CPAGE, $this->user);
         $fr->table = $this;
-        foreach ($this->prow->display_fields() as $o) {
-            if ($o->display_position() === false
-                || $o->display_position() < 1000
-                || $o->display_position() >= 5000
+        foreach ($this->prow->page_fields() as $o) {
+            if ($o->page_position() === false
+                || $o->page_position() < 1000
+                || $o->page_position() >= 5000
                 || ($vos = $this->user->view_option_state($this->prow, $o)) === 0) {
                 continue;
             }
@@ -1055,9 +1055,9 @@ class PaperTable {
             // compute size of group
             $o1 = $renders[$first]->option;
             $last = $first + 1;
-            if ($o1->display_group !== null && $this->allow_folds) {
+            if ($o1->page_group !== null && $this->allow_folds) {
                 while ($last !== count($renders)
-                       && $renders[$last]->option->display_group === $o1->display_group) {
+                       && $renders[$last]->option->page_group === $o1->page_group) {
                     ++$last;
                 }
             }
@@ -1070,18 +1070,18 @@ class PaperTable {
             }
 
             // change column
-            if ($o1->display_position() >= 2000) {
-                if (!$lasto1 || $lasto1->display_position() < 2000) {
+            if ($o1->page_position() >= 2000) {
+                if (!$lasto1 || $lasto1->page_position() < 2000) {
                     echo '<div class="paperinfo"><div class="paperinfo-c">';
-                } else if ($o1->display_position() >= 3000
-                           && $lasto1->display_position() < 3000) {
+                } else if ($o1->page_position() >= 3000
+                           && $lasto1->page_position() < 3000) {
                     if ($in_paperinfo_i) {
                         echo '</div>'; // paperinfo-i
                         $in_paperinfo_i = false;
                     }
                     echo '</div><div class="paperinfo-c">';
                 }
-                if ($o1->display_expand) {
+                if ($o1->page_expand) {
                     if ($in_paperinfo_i) {
                         echo '</div>';
                         $in_paperinfo_i = false;
@@ -1094,7 +1094,7 @@ class PaperTable {
             }
 
             // echo start of group
-            if ($o1->display_group !== null && $this->allow_folds) {
+            if ($o1->page_group !== null && $this->allow_folds) {
                 if ($nvos1 === 0 || $nvos1 === $last - $first) {
                     $group_html = $this->_group_name_html($renders, $first, $last, $nvos1 === 0 ? 2 : 1);
                 } else {
@@ -1109,7 +1109,7 @@ class PaperTable {
                 if ($nvos1 === $last - $first) {
                     $class .= " fx8";
                 }
-                $foldnum = $this->foldnumber[$o1->display_group] ?? 0;
+                $foldnum = $this->foldnumber[$o1->page_group] ?? 0;
                 if ($foldnum && $renders[$first]->title !== "") {
                     $group_html = '<span class="fn' . $foldnum . '">'
                         . $group_html . '</span><span class="fx' . $foldnum
@@ -1163,11 +1163,11 @@ class PaperTable {
             }
 
             // echo end of group
-            if ($o1->display_group !== null && $this->allow_folds) {
+            if ($o1->page_group !== null && $this->allow_folds) {
                 echo '</div></div>';
             }
-            if ($o1->display_position() >= 2000
-                && $o1->display_expand) {
+            if ($o1->page_position() >= 2000
+                && $o1->page_expand) {
                 echo '</div>';
             }
             $lasto1 = $o1;
@@ -1177,7 +1177,7 @@ class PaperTable {
         if ($in_paperinfo_i) {
             echo '</div>';
         }
-        if ($lasto1 && $lasto1->display_position() >= 2000) {
+        if ($lasto1 && $lasto1->page_position() >= 2000) {
             echo '</div></div>';
         }
     }

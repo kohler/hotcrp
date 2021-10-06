@@ -16,14 +16,14 @@ class GetDocument_ListAction extends ListAction {
             "get" => true,
             "dtype" => $opt->id,
             "title" => "Documents/" . $opt->plural_title(),
-            "position" => $opt->display_position(),
+            "position" => $opt->page_position(),
             "display_if" => "listhas:" . $opt->field_key(),
             "function" => "+GetDocument_ListAction"
         ];
     }
     static function expand2(GroupedExtensions $gex) {
         $user = $gex->viewer();
-        foreach ($user->conf->options()->display_fields() as $o) {
+        foreach ($user->conf->options()->page_fields() as $o) {
             if ($o->has_document() && $user->can_view_some_option($o))
                 $gex->add(self::list_action_json($o));
         }
