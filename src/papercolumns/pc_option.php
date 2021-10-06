@@ -16,7 +16,9 @@ class Option_PaperColumn extends PaperColumn {
         }
         $pl->qopts["options"] = true;
         $this->fr = new FieldRender(0, $pl->user);
-        $this->className = preg_replace('/(?: +|\A)(?:pl-no-suggest|pl-prefer-row' . ($this->as_row ? '|plrd|plr|plc' : '') . ')(?= |\z)/', '', $this->className);
+        if ($this->as_row) {
+            $this->className = ltrim(preg_replace('/(?: +|\A)(?:plrd|plr|plc)(?= |\z)/', "", $this->className));
+        }
         return true;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
@@ -81,9 +83,13 @@ class Option_PaperColumnFactory {
         $cj = (array) $xfj;
         $cj["name"] = $opt->search_keyword();
         $cj["option_id"] = $opt->id;
-        $cj["className"] = $opt->list_class;
-        $cj["row"] = strpos($opt->list_class, "pl-prefer-row") !== false;
-        $cj["column"] = !$cj["row"];
+        $cs = [];
+        foreach ($opt->classes as $k) {
+            if (str_starts_with($k, "pl"))
+                $cs[] = $k;
+        }
+        $cj["className"] = join(" ", $cs);
+        $cj["prefer_row"] = array_search("prefer-row", $opt->classes, true) !== false;
         return (object) $cj;
     }
     static function expand($name, Contact $user, $xfj, $m) {
@@ -91,7 +97,7 @@ class Option_PaperColumnFactory {
         if (!$ocolon && $oname === "options") {
             $x = [];
             foreach ($user->user_option_list() as $opt) {
-                if ($opt->can_render(FieldRender::CFLIST | FieldRender::CFLISTSUGGEST))
+                if ($opt->can_render(FieldRender::CFLIST))
                     $x[] = self::option_json($xfj, $opt);
             }
             return $x;
@@ -110,14 +116,13 @@ class Option_PaperColumnFactory {
         return null;
     }
     static function completions(Contact $user, $fxt) {
-        $cs = array_map(function ($opt) {
-            return $opt->search_keyword();
-        }, array_filter($user->user_option_list(), function ($opt) {
-            return $opt->can_render(FieldRender::CFLIST | FieldRender::CFLISTSUGGEST);
-        }));
-        if (!empty($cs)) {
-            array_unshift($cs, "options");
+        $cs = [];
+        foreach ($user->user_option_list() as $opt) {
+            if ($opt->search_keyword() !== false
+                && $opt->can_render(FieldRender::CFSUGGEST)) {
+                $cs[] = $opt->search_keyword();
+            }
         }
-        return $cs;
+        return empty($cs) ? $cs : array_merge(["options"], $cs);
     }
 }

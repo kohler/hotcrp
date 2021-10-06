@@ -817,7 +817,7 @@ function echo_mail_keyword_help() {
 ';
 
     $opts = array_filter($Conf->options()->normal(), function ($o) {
-        return $o->page_position() !== false
+        return $o->search_keyword() !== false
             && $o->can_render(FieldRender::CFMAIL);
     });
     usort($opts, function ($a, $b) {

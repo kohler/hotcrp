@@ -9,7 +9,7 @@
     {
         "name": "Submission version", "id": -1008, "final": true,
         "search_keyword": false, "json_key": false,
-        "form_position": false, "page_position": 1999,
+        "form_position": false, "page_position": 1999, "className": "no-suggest",
         "type": "intrinsic2", "include_empty": true,
         "function": "+SubmissionVersion_PaperOption"
     },

@@ -58,7 +58,7 @@ class FieldCSVOutput {
     function __construct($conf) {
         $this->conf = $conf;
         $this->user = $conf->root_user();
-        $this->fr = new FieldRender(FieldRender::CFHTML, $this->user);
+        $this->fr = new FieldRender(FieldRender::CFLIST | FieldRender::CFCSV | FieldRender::CFHTML, $this->user);
         $this->csv = new CsvGenerator;
     }
 

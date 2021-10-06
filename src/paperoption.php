@@ -433,7 +433,7 @@ class PaperOptionList implements IteratorAggregate {
         if (($colon = strpos($key, ":"))) {
             $key = substr($key, 0, $colon);
         }
-        foreach ($this->unsorted_field_list() as $f) {
+        foreach ($this->unsorted_field_list(null, 0) as $f) {
             if ($f->field_key() === $key)
                 return $f;
         }
@@ -509,6 +509,8 @@ class PaperOptionList implements IteratorAggregate {
         }
     }
 
+    /** @param ?string $key
+     * @return array<int,PaperOption> */
     private function unsorted_field_list(PaperInfo $prow = null, $key = null) {
         $nonfinal = $prow && $prow->outcome <= 0;
         $olist = [];
@@ -694,8 +696,10 @@ class PaperOption implements JsonSerializable {
     public $page_group;
     private $form_position;
     private $page_position;
-    /** @var null|string|false */
-    public $list_class;
+    /** @var int */
+    private $render_contexts;
+    /** @var list<string> */
+    public $classes;
     /** @var ?string */
     private $exists_if;
     /** @var ?PaperSearch */
@@ -727,8 +731,9 @@ class PaperOption implements JsonSerializable {
         "attachments" => "+Attachments_PaperOption"
     ];
 
-    /** @param stdClass $args */
-    function __construct(Conf $conf, $args) {
+    /** @param stdClass $args
+     * @param string $default_className */
+    function __construct(Conf $conf, $args, $default_className = "") {
         assert(is_object($args));
         assert($args->id > 0 || isset($args->json_key));
         if (!is_object($args)) {
@@ -803,7 +808,30 @@ class PaperOption implements JsonSerializable {
             $this->page_group = "topics";
         }
 
-        $this->list_class = $args->list_class ?? null;
+        $this->classes = explode(" ", $args->className ?? $default_className);
+
+        $this->render_contexts = FieldRender::CFPAGE | FieldRender::CFLIST | FieldRender::CFSUGGEST | FieldRender::CFMAIL | FieldRender::CFFORM;
+        foreach ($this->classes as $k) {
+            if ($k === "hidden") {
+                $this->render_contexts = 0;
+            } else if ($k === "no-page") {
+                $this->render_contexts &= ~FieldRender::CFPAGE;
+            } else if ($k === "no-form") {
+                $this->render_contexts &= ~FieldRender::CFFORM;
+            } else if ($k === "only-form") {
+                $this->render_contexts &= FieldRender::CFFORM;
+            } else if ($k === "no-list") {
+                $this->render_contexts &= ~(FieldRender::CFLIST | FieldRender::CFSUGGEST);
+            } else if ($k === "no-suggest") {
+                $this->render_contexts &= ~FieldRender::CFSUGGEST;
+            }
+        }
+        if ($this->form_position === false) {
+            $this->render_contexts &= ~FieldRender::CFFORM;
+        }
+        if ($this->page_position === false) {
+            $this->render_contexts &= ~FieldRender::CFPAGE;
+        }
 
         $x = property_exists($args, "exists_if") ? $args->exists_if : ($args->edit_condition ?? null);
         // XXX edit_condition backward compat
@@ -1267,23 +1295,7 @@ class PaperOption implements JsonSerializable {
     /** @param int $context
      * @return bool */
     function can_render($context) {
-        if (($context & (FieldRender::CFLIST | FieldRender::CFLISTSUGGEST)) !== 0
-            && (!is_string($this->list_class) || $this->search_keyword() === false)) {
-            return false;
-        }
-        if (($context & FieldRender::CFLISTSUGGEST) !== 0
-            && strpos($this->list_class, "pl-no-suggest") !== false) {
-            return false;
-        }
-        if (($context & FieldRender::CFMAIL) !== 0
-            && $this->search_keyword() === false) {
-            return false;
-        }
-        if (($context & FieldRender::CFPAGE) !== 0
-            && $this->page_position === false) {
-            return false;
-        }
-        return true;
+        return ($context & $this->render_contexts) !== 0;
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
@@ -1343,7 +1355,7 @@ class PaperOption implements JsonSerializable {
 
 class Separator_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
-        parent::__construct($conf, $args);
+        parent::__construct($conf, $args, "only-form");
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         echo '<div class="pf pfe pf-separator">';
@@ -1356,8 +1368,7 @@ class Separator_PaperOption extends PaperOption {
 
 class Checkbox_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
-        parent::__construct($conf, $args);
-        $this->list_class = $this->list_class ?? "plc";
+        parent::__construct($conf, $args, "plc");
     }
 
     function value_compare($av, $bv) {
@@ -1426,7 +1437,6 @@ class Selector_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         $this->selector = $args->selector ?? [];
-        $this->list_class = $this->list_class ?? "";
     }
 
     function selector_options() {
@@ -1578,7 +1588,6 @@ class Selector_PaperOption extends PaperOption {
 class Document_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $this->list_class = $this->list_class ?? "";
         if ($this->id === 0 && !$conf->opt("noPapers")) {
             $this->set_required(true);
         }
@@ -1886,8 +1895,7 @@ class Document_PaperOption extends PaperOption {
 
 class Numeric_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
-        parent::__construct($conf, $args);
-        $this->list_class = $this->list_class ?? "plrd";
+        parent::__construct($conf, $args, "plrd");
     }
 
     function value_present(PaperValue $ov) {
@@ -1972,9 +1980,8 @@ class Text_PaperOption extends PaperOption {
     public $display_space;
 
     function __construct(Conf $conf, $args) {
-        parent::__construct($conf, $args);
+        parent::__construct($conf, $args, "prefer-row pl_text");
         $this->display_space = $args->display_space ?? 0;
-        $this->list_class = $this->list_class ?? "pl-prefer-row pl_text";
     }
 
     static function expand($name, Contact $user, $fxt, $m) {
@@ -2051,8 +2058,7 @@ class Text_PaperOption extends PaperOption {
 
 class Attachments_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
-        parent::__construct($conf, $args);
-        $this->list_class = $this->list_class ?? "pl-prefer-row";
+        parent::__construct($conf, $args, "prefer-row");
     }
 
     function has_document() {
@@ -2261,6 +2267,6 @@ class Unknown_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         $args->type = "__unknown" . $args->id . "__";
         $args->form_position = $args->page_position = false;
-        parent::__construct($conf, $args);
+        parent::__construct($conf, $args, "hidden");
     }
 }
