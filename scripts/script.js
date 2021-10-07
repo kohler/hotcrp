@@ -1264,6 +1264,7 @@ function input_set_default_value(elt, val) {
         elt.defaultChecked = val == "";
     } else {
         elt.removeAttribute("data-default-value");
+        elt.value = elt.value; // set dirty value flag
         elt.defaultValue = val;
     }
     // 2021 Chrome workaround
@@ -3750,7 +3751,7 @@ function row_order_change(e, delta, action) {
     }
     var max_rows = +$tbody.attr("data-max-rows") || 0,
         min_rows = Math.max(+$tbody.attr("data-min-rows") || 0, 1),
-        autogrow = $tbody.attr("data-row-order-autogrow");
+        autogrow = $tbody.hasClass("row-order-autogrow");
 
     var defaults = {};
     $tbody.find("input, select, textarea").each(function () {
@@ -3849,19 +3850,16 @@ function row_order_ui(event) {
 }
 handle_ui.on("row-order-ui", row_order_ui);
 
-row_order_ui.autogrow = function ($j) {
-    $j = $j || $(this);
-    if (!$j.attr("data-row-order-autogrow")) {
-        $j.attr("data-row-order-autogrow", true)
-            .removeClass("need-row-order-autogrow")
-            .on("input change", "input, select, textarea", function () {
+$(function () {
+    $(".need-row-order-autogrow").each(function () {
+        if (!hasClass(this, "row-order-autogrow")) {
+            addClass(this, "row-order-autogrow");
+            removeClass(this, "need-row-order-autogrow");
+            $(this).on("input change", "input, select, textarea", function () {
                 row_order_change(this, 0, 0);
             });
-    }
-};
-
-$(function () {
-    $(".need-row-order-autogrow").each(row_order_ui.autogrow);
+        }
+    });
 });
 
 return row_order_ui;
