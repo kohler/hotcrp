@@ -338,7 +338,7 @@ sql_dbpass () {
 }
 
 php_dbpass () {
-    echo_dbpass | sed -e 's,\([\\"'"'"']\),\\\1,g'
+    echo_dbpass | sed -e 's,\([\\"$'"'"']\),\\\1,g'
 }
 
 
