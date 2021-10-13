@@ -856,6 +856,8 @@ class ReviewInfo implements JsonSerializable {
         return $this->_data->acceptor;
     }
 
+    /** @param string $text
+     * @return bool */
     function acceptor_is($text) {
         if ($this->_data === null) {
             $this->_load_data();

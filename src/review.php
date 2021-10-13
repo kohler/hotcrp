@@ -351,6 +351,9 @@ class ReviewField implements JsonSerializable {
         return $this->search_keyword();
     }
 
+    /** @param int $option_letter
+     * @param int|float $value
+     * @return string */
     static function unparse_letter($option_letter, $value) {
         $ivalue = (int) $value;
         $ch = $option_letter - $ivalue;

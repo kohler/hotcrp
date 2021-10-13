@@ -413,9 +413,9 @@ foreach ($requests as $req) {
         || ($req[0] !== 2 && $Me->contactId > 0 && $rrow->requestedBy == $Me->contactId)) {
         echo Ht::form($Conf->hoturl_post("assign", ["p" => $prow->paperId, "action" => "managerequest", "email" => $rrow->email, "round" => $rrow->reviewRound]), ["class" => "fx"]);
         if (!isset($rrow->contactId) || !$rrow->contactId) {
-            foreach (["firstName", "lastName", "affiliation"] as $k) {
-                echo Ht::hidden($k, $rrow->$k);
-            }
+            echo Ht::hidden("firstName", $rrow->firstName),
+                Ht::hidden("lastName", $rrow->lastName),
+                Ht::hidden("affiliation", $rrow->affiliation);
         }
         $buttons = [];
         if ($reason) {

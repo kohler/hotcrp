@@ -433,7 +433,7 @@ class PaperOptionList implements IteratorAggregate {
         if (($colon = strpos($key, ":"))) {
             $key = substr($key, 0, $colon);
         }
-        foreach ($this->unsorted_field_list(null, 0) as $f) {
+        foreach ($this->unsorted_field_list(null, null) as $f) {
             if ($f->field_key() === $key)
                 return $f;
         }

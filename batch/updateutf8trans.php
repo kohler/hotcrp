@@ -53,19 +53,19 @@ class Batch_UpdateUTF8Trans {
         if ($sin === ""
             || ord(substr($sin, 0, 1)) < 0xC0
             || ord(substr($sin, 0, 1)) >= 0xF0) {
-            fwrite(STDERR, "input argument {$sxin}->$sout is bad\n");
+            fwrite(STDERR, "input argument {$sxin}=>{$sout} is bad\n");
         } else if (strlen($sout) > ($l > 2 ? self::OUTL3 : self::OUTL2)) {
-            fwrite(STDERR, "output argument {$sxin}->$sout too long\n");
+            fwrite(STDERR, "output argument {$sxin}=>{$sout} too long\n");
         } else if (($sout === "" && !isset($this->trans[$l][$sin]))
                    || (isset($this->trans[$l][$sin]) && $this->trans[$l][$sin] === $soutch)) {
             /* skip */
         } else if (!$override && isset($this->trans[$l][$sin])) {
-            fwrite(STDERR, "ignore $sin {$sxin}->$sout, have {$sxin}->" . sprintf("U+%04X", UnicodeHelper::utf8_ord($this->trans[$l][$sin])) . "\n");
+            fwrite(STDERR, "ignore $sin {$sxin}=>{$sout}, have {$sxin}=>" . sprintf("U+%04X", UnicodeHelper::utf8_ord($this->trans[$l][$sin])) . "\n");
         } else if ($sout === "") {
-            fwrite(STDERR, "change $sin {$sxin}->\n");
+            fwrite(STDERR, "change $sin {$sxin}=>\n");
             unset($this->trans[strlen($sin)][$sin]);
         } else {
-            fwrite(STDERR, "change $sin {$sxin}->$sout\n");
+            fwrite(STDERR, "change $sin {$sxin}=>{$sout}\n");
             $this->trans[strlen($sin)][$sin] = $soutch;
         }
     }
