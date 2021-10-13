@@ -233,8 +233,8 @@ class Reviews_SettingRenderer {
         }
         $sv->echo_radio_table("pcrev_editdelegate", [
                 0 => "No",
-                1 => "Yes",
-                2 => "Yes, and external reviews are hidden until requesters approve them",
+                1 => "Yes, but external reviewers still own their reviews (requesters cannot adopt them)",
+                2 => "Yes, and external reviews are hidden until requesters approve or adopt them",
                 3 => $label3
             ], "Can PC members edit the external reviews they requested?",
             ["fold_values" => [3]]);
