@@ -28,9 +28,12 @@ class GetScores_ListAction extends ListAction {
                         $this_scores = false;
                         $b = $a;
                         foreach ($rrow->viewable_fields($user) as $field => $f) {
-                            if ($f->has_options && ($rrow->$field || !$f->required)) {
-                                $b[$f->search_keyword()] = $f->unparse_value($rrow->$field);
-                                $any_scores[$f->search_keyword()] = $this_scores = true;
+                            if ($f->has_options) {
+                                $v = $rrow->$field ?? null;
+                                if ($v || !$f->required) {
+                                    $b[$f->search_keyword()] = $f->unparse_value($v);
+                                    $any_scores[$f->search_keyword()] = $this_scores = true;
+                                }
                             }
                         }
                         if ($this_scores) {
@@ -40,7 +43,7 @@ class GetScores_ListAction extends ListAction {
                             }
                             if ($user->can_view_review_identity($row, $rrow)) {
                                 $any_reviewer_identity = true;
-                                $b["reviewername"] = trim($rrow->firstName . " " . $rrow->lastName);
+                                $b["reviewername"] = trim("{$rrow->firstName} {$rrow->lastName}");
                                 $b["email"] = $rrow->email;
                             }
                             $texts[] = $b;
