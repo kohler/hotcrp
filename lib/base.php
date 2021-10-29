@@ -260,23 +260,17 @@ function ini_get_bytes($varname, $value = null) {
 /** @param string $email */
 function validate_email($email) {
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
-    if (!preg_match(':\A[-!#$%&\'*+./0-9=?A-Z^_`a-z{|}~]+@(.+)\z:', $email, $m)) {
-        return false;
-    } else if ($m[1][0] === "_") {
-        return preg_match(':\A_\.[0-9A-Za-z]+\z:', $m[1]);
-    } else {
-        return preg_match(':\A([-0-9A-Za-z]+\.)+[0-9A-Za-z]+\z:', $m[1]);
-    }
+    return preg_match('/\A[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+\z/', $email);
 }
 
 /** @param string $word */
 function mime_quote_string($word) {
-    return '"' . preg_replace('_(?=[\x00-\x1F\\"])_', '\\', $word) . '"';
+    return '"' . preg_replace('/(?=[\x00-\x1F\\"])/', '\\', $word) . '"';
 }
 
 /** @param string $word */
 function mime_token_quote($word) {
-    if (preg_match('_\A[^][\x00-\x20\x80-\xFF()<>@,;:\\"/?=]+\z_', $word)) {
+    if (preg_match('/\A[^][\x00-\x20\x80-\xFF()<>@,;:\\"\/?=]+\z/', $word)) {
         return $word;
     } else {
         return mime_quote_string($word);
@@ -285,7 +279,7 @@ function mime_token_quote($word) {
 
 /** @param string $words */
 function rfc2822_words_quote($words) {
-    if (preg_match(':\A[-A-Za-z0-9!#$%&\'*+/=?^_`{|}~ \t]*\z:', $words)) {
+    if (preg_match('/\A[-A-Za-z0-9!#$%&\'*+\/=?^_`{|}~ \t]*\z/', $words)) {
         return $words;
     } else {
         return mime_quote_string($words);
