@@ -1770,6 +1770,9 @@ class Document_PaperOption extends PaperOption {
         if ($this->max_size !== null) {
             echo ' data-document-max-size="', (int) $this->max_size, '"';
         }
+        if ($this->id === DTYPE_SUBMISSION && $noPapers) {
+            echo ' data-document-optional="true"';
+        }
         echo '>';
 
         // current version, if any

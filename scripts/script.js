@@ -8089,7 +8089,7 @@ handle_ui.on("change.js-submit-paper", function (event) {
                 e0 = e0.nextSibling;
                 if (!hasClass(e0, "has-document"))
                     throw new Error("bad has-document");
-                is = e0.hasAttribute("data-docid");
+                is = e0.hasAttribute("data-docid") || e0.hasAttribute("data-document-optional");
             } else {
                 is = true;
             }
