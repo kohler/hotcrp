@@ -189,6 +189,8 @@ class PaperList implements XtContext {
     private $_view_kanban = false;
     /** @var bool */
     private $_view_force = false;
+    /** @var int */
+    private $_view_hide_all = -1;
     /** @var array<string,int> */
     private $_viewf = [];
     /** @var array<string,?list<string>> */
@@ -495,11 +497,14 @@ class PaperList implements XtContext {
             $k = substr($k, 1, -1);
         }
         if ($k === "all") {
-            assert($v === false && $decorations === null);
+            assert($v === false && empty($decorations));
             $views = array_keys($this->_viewf);
             foreach ($views as $k) {
-                $this->set_view($k, $v, $origin, null);
+                if ($k !== "sel" && $k !== "statistics") {
+                    $this->set_view($k, $v, $origin, null);
+                }
             }
+            $this->_view_hide_all = max($origin, $this->_view_hide_all);
             return;
         }
         $k = self::$view_synonym[$k] ?? $k;
@@ -509,7 +514,8 @@ class PaperList implements XtContext {
         if ($origin === self::VIEWORIGIN_REPORT) {
             $flags = ($flags & ~self::VIEW_REPORTSHOW) | ($v ? self::VIEW_REPORTSHOW : 0);
         }
-        if (($flags & self::VIEWORIGIN_MASK) <= $origin) {
+        if (($flags & self::VIEWORIGIN_MASK) <= $origin
+            && (!$v || $this->_view_hide_all <= $origin)) {
             $flags = ($flags & self::VIEW_REPORTSHOW)
                 | $origin
                 | ($v ? self::VIEW_SHOW : 0);
