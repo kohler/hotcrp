@@ -419,6 +419,10 @@ label.checki {
 .mt-0 {
 	margin-top: 0 !important;
 }
+.mt-1 {
+	margin-top: 0.25em !important;
+	margin-top: 0.25rem !important;
+}
 .mt-2 {
 	margin-top: 0.5em !important;
 	margin-top: 0.5rem !important;
@@ -518,6 +522,9 @@ label.checki {
 .d-inline-flex {
 	display: inline-flex !important;
 	align-items: baseline;
+}
+.flex-row-reverse {
+	flex-direction: row-reverse;
 }
 .flex-wrap {
 	flex-wrap: wrap;
@@ -1206,9 +1213,6 @@ button.btn-link:hover {
 	display: flex;
 	justify-content: flex-end;
 }
-.aab-compact {
-	margin-top: 0;
-}
 .aab:first-child {
 	margin-top: 0;
 }
@@ -1219,6 +1223,10 @@ button.btn-link:hover {
 	margin-right: 1em;
 	text-align: center;
 	line-height: 2;
+}
+.flex-row-reverse > .aabut {
+	margin-right: 0em;
+	margin-left: 1em;
 }
 .aabut > .hint {
 	margin-top: -0.25em;
