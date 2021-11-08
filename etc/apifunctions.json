@@ -87,7 +87,7 @@
     },
     {
         "name": "mentioncompletion", "get": true, "post": true,
-        "function": "PaperApi::mentioncompletion_api"
+        "function": "Completion_API::mentioncompletion_api"
     },
     {
         "name": "pc", "get": true, "post": true,
@@ -122,6 +122,10 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search"
+    },
+    {
+        "name": "searchcompletion", "get": true,
+        "function": "Completion_API::searchcompletion_api"
     },
     {
         "name": "session", "get": true, "allow_disabled": true,

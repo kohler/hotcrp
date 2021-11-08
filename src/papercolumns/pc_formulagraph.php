@@ -14,15 +14,18 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     function prepare(PaperList $pl, $visible) {
         if (!$this->formula->check($pl->user)
             || !($this->formula->result_format() instanceof ReviewField)
-            || !$pl->user->can_view_formula($this->formula))
+            || !$pl->user->can_view_formula($this->formula)) {
             return false;
+        }
         $this->format_field = $this->formula->result_format();
         $this->formula_function = $this->formula->compile_sortable_function();
         $this->indexes_function = null;
-        if ($this->formula->indexed())
+        if ($this->formula->indexed()) {
             $this->indexes_function = Formula::compile_indexes_function($pl->user, $this->formula->index_type());
-        if ($visible)
+        }
+        if ($visible) {
             $this->formula->add_query_options($pl->qopts);
+        }
         parent::prepare($pl, $visible);
         return true;
     }
@@ -56,5 +59,9 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
             $cj["formula"] = $formula;
             return [(object) $cj];
         }
+    }
+
+    static function completions(Contact $user, $xfj) {
+        return ["graph(<formula>)"];
     }
 }

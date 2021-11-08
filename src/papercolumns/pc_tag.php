@@ -182,4 +182,12 @@ class Tag_PaperColumn extends PaperColumn {
         }
         return $rs;
     }
+
+    static function completions(Contact $user, $xfj) {
+        if ($user->can_view_tags(null)) {
+            return ["#<tag>"];
+        } else {
+            return [];
+        }
+    }
 }

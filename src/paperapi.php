@@ -52,29 +52,6 @@ class PaperApi {
         return ["ok" => true, "following" => $following];
     }
 
-    /** @param ?PaperInfo $prow */
-    static function mentioncompletion_api(Contact $user, $qreq, $prow) {
-        $result = [];
-        if ($user->can_view_pc()) {
-            $pcmap = $user->conf->pc_completion_map();
-            foreach ($user->conf->pc_users() as $pc) {
-                if (!$pc->is_disabled()
-                    && (!$prow || $pc->can_view_new_comment_ignore_conflict($prow))) {
-                    $primary = true;
-                    foreach ($pc->completion_items() as $k => $level) {
-                        if (($pcmap[$k] ?? null) === $pc) {
-                            $skey = $primary ? "s" : "sm1";
-                            $result[$k] = [$skey => $k, "d" => $pc->name()];
-                            $primary = false;
-                        }
-                    }
-                }
-            }
-        }
-        ksort($result);
-        return ["ok" => true, "mentioncompletion" => array_values($result)];
-    }
-
     static function review_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$user->can_view_review($prow, null)) {
             return new JsonResult(403, "Permission error.");

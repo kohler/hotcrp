@@ -225,4 +225,12 @@ class Preference_PaperColumn extends PaperColumn {
         }
         return $rs;
     }
+
+    static function completions(Contact $user, $xfj) {
+        if ($user->isPC && $user->can_view_preference(null)) {
+            return ["pref:<user>"];
+        } else {
+            return [];
+        }
+    }
 }

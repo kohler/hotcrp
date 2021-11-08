@@ -97,11 +97,6 @@ function handle_api(Conf $conf, Contact $me, Qrequest $qreq) {
                    "rows" => $rows, "more" => $more]);
     }
 
-    if ($qreq->fn === "searchcompletion") {
-        $s = new PaperSearch($me, "");
-        json_exit(["ok" => true, "searchcompletion" => $s->search_completion()]);
-    }
-
     // from here on: `status` and `track` requests
     $is_track = $qreq->fn === "track";
     if ($is_track) {

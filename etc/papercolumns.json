@@ -63,7 +63,7 @@
     {
         "match": "(?:pref:|revpref:|preference:)(.+?)", "priority": -1, "allow_if": "manager",
         "expand_function": "Preference_PaperColumn::expand",
-        "completion": "pref:<user>"
+        "completion_function": "Preference_PaperColumn::completions"
     },
     {
         "name": "revdelegation", "title": "Requested reviews",
@@ -145,7 +145,7 @@
         "function": "+FormulaGraph_PaperColumn",
         "position": 1200,
         "expand_function": "FormulaGraph_PaperColumn::expand",
-        "completion": "graph(<formula>)"
+        "completion_function": "FormulaGraph_PaperColumn::completions"
     },
     {
         "match": ".*", "priority": -3000,
@@ -173,10 +173,10 @@
     },
     {
         "match": "(#)([-a-zA-Z0-9!@*_:.\/~]+)", "priority": -1, "allow_if": "pc",
-        "tagvalue": null,
-        "sort": true, "completion": "#<tag>",
+        "tagvalue": null, "sort": true,
         "function": "+Tag_PaperColumn",
         "expand_function": "Tag_PaperColumn::expand",
+        "completion_function": "Tag_PaperColumn::completions",
         "position": 1400
     },
     {
