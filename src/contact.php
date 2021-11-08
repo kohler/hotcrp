@@ -3410,13 +3410,14 @@ class Contact {
             return true;
         } else if (!$rights->allow_pc_broad && !$rights->potential_reviewer) {
             return false;
+        } else {
+            $pccv = $this->conf->setting("sub_pcconfvis");
+            return $pccv === 2
+                || (!$pccv
+                    && ($this->can_view_authors($prow)
+                        || ($this->conf->setting("tracker")
+                            && MeetingTracker::can_view_tracker_at($this, $prow))));
         }
-        $pccv = $this->conf->setting("sub_pcconfvis");
-        return $pccv == 2
-            || (!$pccv
-                && ($this->can_view_authors($prow)
-                    || ($this->conf->setting("tracker")
-                        && MeetingTracker::can_view_tracker_at($this, $prow))));
     }
 
     /** @return bool */
@@ -3424,9 +3425,11 @@ class Contact {
         return $this->is_manager()
             || $this->is_author()
             || ($this->is_reviewer()
-                && (($pccv = $this->conf->setting("sub_pcconfvis")) == 2
+                && (($pccv = $this->conf->setting("sub_pcconfvis")) === 2
                     || (!$pccv
-                        && ($this->can_view_some_authors() || $this->conf->setting("tracker")))));
+                        && ($this->can_view_some_authors()
+                            || ($this->conf->setting("tracker")
+                                && MeetingTracker::can_view_some_tracker($this))))));
     }
 
     /** @param PaperOption $opt

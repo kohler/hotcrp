@@ -11,6 +11,15 @@ class MeetingTracker {
     }
 
     /** @return bool */
+    static function can_view_some_tracker(Contact $user) {
+        foreach (self::lookup($user->conf)->ts as $tc) {
+            if ($user->can_view_tracker($tc))
+                return true;
+        }
+        return false;
+    }
+
+    /** @return bool */
     static function can_view_tracker_at(Contact $user, PaperInfo $prow) {
         foreach (self::lookup($prow->conf)->ts as $tc) {
             if (array_search($prow->paperId, $tc->ids) !== false
