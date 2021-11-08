@@ -5,8 +5,12 @@
 class MeetingTracker {
     /** @return MeetingTracker_ConfigSet */
     static function lookup(Conf $conf) {
+        $tracker_data = $conf->setting_data("tracker");
         $ts = new MeetingTracker_ConfigSet;
-        $ts->parse_array(json_decode($conf->setting_data("tracker"), true));
+        $ts->parse_array(json_decode($tracker_data, true));
+        if (empty($ts->ts) && $tracker_data && $conf->setting("tracker")) {
+            $conf->save_setting("tracker", 0, $tracker_data);
+        }
         return $ts;
     }
 
