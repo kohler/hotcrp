@@ -1716,11 +1716,13 @@ class Document_PaperOption extends PaperOption {
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
         if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
             $noPapers = $this->conf->opt("noPapers");
-            if ($noPapers === 1
-                || $noPapers === true
-                || ($this->id === DTYPE_FINAL) !== $pt->user->allow_edit_final_paper($ov->prow)) {
-                return;
-            }
+        } else {
+            $noPapers = false;
+        }
+        if ($noPapers === 1
+            || $noPapers === true
+            || ($this->id === DTYPE_FINAL) !== $pt->user->allow_edit_final_paper($ov->prow)) {
+            return;
         }
 
         // XXXX this is super gross

@@ -341,6 +341,7 @@ class MeetingTracker {
         }
     }
 
+    /** @param Qrequest $qreq */
     static function trackerconfig_api(Contact $user, $qreq) {
         if (!$user->is_track_manager() || !$qreq->valid_post()) {
             return json_exit(403, "Permission error.");
@@ -817,6 +818,7 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
     /** @var list<MeetingTracker_Config> */
     public $ts = [];
 
+    /** @param array $a */
     function parse_array($a) {
         if ($a && isset($a["ts"])) {
             $this->trackerid = $a["trackerid"];
