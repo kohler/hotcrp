@@ -140,4 +140,12 @@ class Conflict_PaperColumn extends PaperColumn {
         }
         return $rs;
     }
+
+    static function completions(Contact $user, $fxt) {
+        if ($user->can_view_some_conflicts()) {
+            return [($fxt->show_description ?? false) ? "pcconfdesc:<user>" : "pcconf:<user>"];
+        } else {
+            return [];
+        }
+    }
 }

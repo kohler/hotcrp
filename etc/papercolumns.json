@@ -216,13 +216,13 @@
         "position": 420
     },
     {
-        "name": "pcconflicts", "title": "PC conflicts",
-        "prefer_row": true, "completion": "pcconflicts", "function": "+PCConflicts_PaperColumn",
+        "name": "pcconf", "title": "PC conflicts",
+        "prefer_row": true, "completion": true, "function": "+PCConflicts_PaperColumn",
         "position": 450
     },
-    {   "name": "conflicts", "alias": "pcconflicts"   },
-    {   "name": "pc-conflicts", "alias": "pcconflicts", "deprecated": true   },
-    {   "name": "pcconf", "alias": "pcconflicts"   },
+    {   "name": "conflicts", "alias": "pcconf"   },
+    {   "name": "pc-conflicts", "alias": "pcconf", "deprecated": true   },
+    {   "name": "pcconflicts", "alias": "pcconf"   },
     {
         "name": "allpref", "title": "Preferences",
         "prefer_row": true, "completion": true, "function": "+PreferenceList_PaperColumn",
