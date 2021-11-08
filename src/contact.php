@@ -3506,11 +3506,12 @@ class Contact {
 
     /** @return array<int,PaperOption> */
     function user_option_list() {
-        if ($this->conf->has_any_accepted() && $this->can_view_some_decision()) {
-            return $this->conf->options()->normal();
-        } else {
-            return $this->conf->options()->nonfinal();
+        $a = [];
+        foreach ($this->conf->options() as $id => $opt) {
+            if ($this->can_view_some_option($opt))
+                $a[$id] = $opt;
         }
+        return $a;
     }
 
     /** @param PaperOption $opt
