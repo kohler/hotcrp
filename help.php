@@ -27,6 +27,7 @@ $Conf->header("Help", "help", ["title_div" => '<hr class="c">', "body_class" => 
 $hth = new HelpRenderer($help_topics, $Me);
 
 
+/** @param HelpRenderer $hth */
 function show_help_topics($hth) {
     echo "<dl>\n";
     foreach ($hth->groups() as $ht) {

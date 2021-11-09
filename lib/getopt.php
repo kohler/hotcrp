@@ -3,6 +3,10 @@
 // Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
 
 class Getopt {
+    /** @param list<string> $argv
+     * @param string $options
+     * @param list<string> $longopts
+     * @return array<string,string|list<string>> */
     static function rest($argv, $options, $longopts = []) {
         $plongopts = [];
         foreach ($longopts as $n) {
@@ -95,9 +99,4 @@ class Getopt {
         $res["_"] = array_slice($argv, $i);
         return $res;
     }
-}
-
-/** @deprecated */
-function getopt_rest($argv, $options, $longopts = []) {
-    return Getopt::rest($argv, $options, $longopts);
 }

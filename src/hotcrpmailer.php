@@ -116,7 +116,7 @@ class HotCRPMailer extends Mailer {
         }
         if ($this->row
             && $this->rrow
-            && $this->conf->is_review_blind($this->rrow)
+            && $this->conf->is_review_blind((bool) $this->rrow->reviewBlind)
             && !$this->permuser->privChair
             && !$this->permuser->can_view_review_identity($this->row, $this->rrow)) {
             if ($isbool) {

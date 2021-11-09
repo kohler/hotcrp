@@ -64,6 +64,9 @@ function unparse_number_pm_text($n) {
     }
 }
 
+/** @param string $url
+ * @param string $component
+ * @return string */
 function hoturl_add_raw($url, $component) {
     if (($pos = strpos($url, "#")) !== false) {
         $component .= substr($url, $pos);
@@ -72,6 +75,9 @@ function hoturl_add_raw($url, $component) {
     return $url . (strpos($url, "?") === false ? "?" : "&") . $component;
 }
 
+/** @param string $page
+ * @param null|string|array $param
+ * @return string */
 function hoturl($page, $param = null) {
     return Conf::$main->hoturl($page, $param);
 }
@@ -197,12 +203,6 @@ function json_exit($json, $arg2 = null) {
         $json->emit($Qreq && $Qreq->valid_token());
         exit;
     }
-}
-
-/** @deprecated */
-function csv_exit(CsvGenerator $csv) {
-    $csv->emit();
-    exit;
 }
 
 function foldupbutton($foldnum = 0, $content = "", $js = null) {
@@ -455,12 +455,6 @@ function unparse_byte_size_binary($n) {
     }
 }
 
-/** @param PermissionProblem $whyNot
- * @deprecated */
-function whyNotText($whyNot, $text_only = false) {
-    return $whyNot->unparse($text_only ? 0 : 5);
-}
-
 function actionBar($mode = null, $qreq = null) {
     global $Me;
     if ($Me->is_disabled()) {
@@ -557,23 +551,6 @@ function unparse_latin_ordinal($n) {
     }
 }
 
-/** @param null|ReviewInfo|int $ord
- * @return string
- * @deprecated */
-function unparseReviewOrdinal($ord) {
-    if (!$ord) {
-        return ".";
-    } else if (is_object($ord)) {
-        if ($ord->reviewOrdinal) {
-            return $ord->paperId . unparse_latin_ordinal($ord->reviewOrdinal);
-        } else {
-            return (string) $ord->reviewId;
-        }
-    } else {
-        return unparse_latin_ordinal($ord);
-    }
-}
-
 /** @param ?int $expertise
  * @return string */
 function unparse_expertise($expertise) {
@@ -623,7 +600,11 @@ function unparse_preference_span($preference, $always = false) {
     return $t;
 }
 
-function review_type_icon($revtype, $unfinished = null, $classes = null) {
+/** @param int $revtype
+ * @param bool $unfinished
+ * @param ?string $classes
+ * @return string */
+function review_type_icon($revtype, $unfinished = false, $classes = null) {
     // see also script.js:review_form
     assert(!!$revtype);
     return '<span class="rto rt' . $revtype
@@ -633,10 +614,12 @@ function review_type_icon($revtype, $unfinished = null, $classes = null) {
         . '"><span class="rti">' . ReviewForm::$revtype_icon_text[$revtype] . '</span></span>';
 }
 
+/** @return string */
 function review_lead_icon() {
     return '<span class="rto rtlead" title="Lead"><span class="rti">L</span></span>';
 }
 
+/** @return string */
 function review_shepherd_icon() {
     return '<span class="rto rtshep" title="Shepherd"><span class="rti">S</span></span>';
 }
@@ -644,6 +627,8 @@ function review_shepherd_icon() {
 
 // Aims to return a random password string with at least
 // `$length * 5` bits of entropy.
+/** @param int $length
+ * @return string */
 function hotcrp_random_password($length = 14) {
     // XXX it is possible to correctly account for loss of entropy due
     // to use of consonant pairs; I have only estimated
@@ -683,6 +668,9 @@ function hotcrp_random_password($length = 14) {
 }
 
 
+/** @param int|string $x
+ * @param string $format
+ * @return string */
 function encode_token($x, $format = "") {
     $s = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     $t = "";
@@ -712,6 +700,8 @@ function encode_token($x, $format = "") {
     }
 }
 
+/** @param string $x
+ * @param string $format */
 function decode_token($x, $format = "") {
     $map = "//HIJKLMNO///////01234567/89:;</=>?@ABCDEFG";
     $t = "";

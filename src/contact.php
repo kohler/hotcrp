@@ -3318,12 +3318,6 @@ class Contact {
         return $this->perm_view_paper($prow, true);
     }
 
-    /** @return bool
-     * @deprecated */
-    function can_view_some_pdf() {
-        return true;
-    }
-
     /** @return bool */
     function can_view_document_history(PaperInfo $prow) {
         if ($this->privChair) {
@@ -3790,7 +3784,7 @@ class Contact {
             || ($rights->allow_review
                 && $prow->review_not_incomplete($this)
                 && $seerevid_setting >= 0)
-            || !$this->conf->is_review_blind($rbase);
+            || !$this->conf->is_review_blind(!$rbase || $rbase->reviewType < 0 || (bool) $rbase->reviewBlind);
     }
 
     /** @return bool */
@@ -3824,13 +3818,6 @@ class Contact {
         return $rights->can_administer
             || $rights->allow_pc
             || $rights->allow_review;
-    }
-
-    /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
-     * @return bool
-     * @deprecated */
-    function can_view_review_round(PaperInfo $prow, $rbase = null) {
-        return $this->can_view_review_meta($prow, $rbase);
     }
 
     /** @return bool */
@@ -4407,7 +4394,7 @@ class Contact {
                      && $this->conf->setting("extrev_view") >= 2))
                 && ($this->can_view_review_identity($prow, null)
                     || ($crow && $prow->can_view_review_identity_of($crow->commentId, $this))))
-            || !$this->conf->is_review_blind(!$crow || ($crow->commentType & CommentInfo::CT_BLIND) != 0);
+            || !$this->conf->is_review_blind(!$crow || ($crow->commentType & CommentInfo::CT_BLIND) !== 0);
     }
 
     /** @param ?CommentInfo $crow

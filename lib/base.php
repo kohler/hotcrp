@@ -152,7 +152,8 @@ if (!function_exists("mac_os_roman_to_utf8")) {
     }
 }
 
-/** @param string $str */
+/** @param string $str
+ * @return string */
 function convert_to_utf8($str) {
     if (substr($str, 0, 3) === "\xEF\xBB\xBF") {
         $str = substr($str, 3);
@@ -169,7 +170,8 @@ function convert_to_utf8($str) {
     }
 }
 
-/** @param string $str */
+/** @param string $str
+ * @return string */
 function simplify_whitespace($str) {
     // Replace invisible Unicode space-type characters with true spaces,
     // including control characters and DEL.
@@ -230,11 +232,14 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = f
     return $out;
 }
 
-/** @param string $text */
+/** @param string $text
+ * @return int */
 function count_words($text) {
     return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text);
 }
 
+/** @param mixed $x
+ * @return ?bool */
 function friendly_boolean($x) {
     if (is_bool($x)) {
         return $x;
@@ -257,18 +262,21 @@ function ini_get_bytes($varname, $value = null) {
 
 // email and MIME helpers
 
-/** @param string $email */
+/** @param string $email
+ * @return bool */
 function validate_email($email) {
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
     return preg_match('/\A[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+\z/', $email);
 }
 
-/** @param string $word */
+/** @param string $word
+ * @return string */
 function mime_quote_string($word) {
     return '"' . preg_replace('/(?=[\x00-\x1F\\"])/', '\\', $word) . '"';
 }
 
-/** @param string $word */
+/** @param string $word
+ * @return string */
 function mime_token_quote($word) {
     if (preg_match('/\A[^][\x00-\x20\x80-\xFF()<>@,;:\\"\/?=]+\z/', $word)) {
         return $word;
@@ -277,7 +285,8 @@ function mime_token_quote($word) {
     }
 }
 
-/** @param string $words */
+/** @param string $words
+ * @return string */
 function rfc2822_words_quote($words) {
     if (preg_match('/\A[-A-Za-z0-9!#$%&\'*+\/=?^_`{|}~ \t]*\z/', $words)) {
         return $words;
@@ -327,14 +336,17 @@ function base64url_decode($text) {
 if (defined("JSON_UNESCAPED_LINE_TERMINATORS")) {
     // JSON_UNESCAPED_UNICODE is only safe to send to the browser if
     // JSON_UNESCAPED_LINE_TERMINATORS is defined.
+    /** @return string */
     function json_encode_browser($x, $flags = 0) {
         return json_encode($x, $flags | JSON_UNESCAPED_UNICODE);
     }
 } else {
+    /** @return string */
     function json_encode_browser($x, $flags = 0) {
         return json_encode($x, $flags);
     }
 }
+/** @return string */
 function json_encode_db($x, $flags = 0) {
     return json_encode($x, $flags | JSON_UNESCAPED_UNICODE);
 }
@@ -443,6 +455,7 @@ function assert_callback() {
 }
 //assert_options(ASSERT_CALLBACK, "assert_callback");
 
+/** @return string */
 function debug_string_backtrace() {
     $s = preg_replace_callback('/^\#(\d+)/m', function ($m) {
         return "#" . ($m[1] - 1);
@@ -467,10 +480,16 @@ if (!function_exists("zlib_get_coding_type")) {
 // pcntl helpers
 
 if (function_exists("pcntl_wifexited") && pcntl_wifexited(0) !== null) {
+    /** @param int $status
+     * @param int $exitstatus
+     * @return bool */
     function pcntl_wifexitedwith($status, $exitstatus = 0) {
         return pcntl_wifexited($status) && pcntl_wexitstatus($status) == $exitstatus;
     }
 } else {
+    /** @param int $status
+     * @param int $exitstatus
+     * @return bool */
     function pcntl_wifexitedwith($status, $exitstatus = 0) {
         return ($status & 0xff7f) == ($exitstatus << 8);
     }

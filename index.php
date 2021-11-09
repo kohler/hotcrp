@@ -11,11 +11,11 @@ if ($nav->page === "u") {
     if ($unum !== false && ctype_digit($unum)) {
         if (!$nav->shift_path_components(2)) {
             // redirect `/u/USERINDEX` => `/u/USERINDEX/`
-            Navigation::redirect($nav->server . $nav->base_path . "u/" . $unum . "/" . $nav->query);
+            Navigation::redirect("{$nav->server}{$nav->base_path}u/{$unum}/{$nav->query}");
         }
     } else {
         // redirect `/u/XXXX` => `/`
-        Navigation::redirect($nav->server . $nav->base_path . $nav->query);
+        Navigation::redirect("{$nav->server}{$nav->base_path}{$nav->query}");
     }
 }
 

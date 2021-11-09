@@ -2371,7 +2371,8 @@ class Conf {
         return array_values($this->pc_tagmap());
     }
 
-    /** @return bool */
+    /** @param string $tag
+     * @return bool */
     function pc_tag_exists($tag) {
         return isset(($this->pc_tagmap())[strtolower($tag)]);
     }
@@ -2502,6 +2503,7 @@ class Conf {
 
 
     // update the 'papersub' setting: are there any submitted papers?
+    /** @param int $adding */
     function update_papersub_setting($adding) {
         if (($this->setting("no_papersub") ?? 0) > 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe("delete from Settings where name='no_papersub'");
@@ -2510,6 +2512,7 @@ class Conf {
         }
     }
 
+    /** @param int $adding */
     function update_paperacc_setting($adding) {
         if (($this->setting("paperacc") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'paperacc', exists (select * from Paper where outcome>0 and timeSubmitted>0) on duplicate key update value=values(value)");
@@ -2517,6 +2520,7 @@ class Conf {
         }
     }
 
+    /** @param int $adding */
     function update_rev_tokens_setting($adding) {
         if (($this->setting("rev_tokens") ?? 0) === -1) {
             $adding = 0;
@@ -2527,6 +2531,7 @@ class Conf {
         }
     }
 
+    /** @param int $adding */
     function update_paperlead_setting($adding) {
         if (($this->setting("paperlead") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'paperlead', exists (select * from Paper where leadContactId>0 or shepherdContactId>0) on duplicate key update value=values(value)");
@@ -2534,6 +2539,7 @@ class Conf {
         }
     }
 
+    /** @param int $adding */
     function update_papermanager_setting($adding) {
         if (($this->setting("papermanager") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'papermanager', exists (select * from Paper where managerContactId>0) on duplicate key update value=values(value)");
@@ -2541,6 +2547,7 @@ class Conf {
         }
     }
 
+    /** @param int $adding */
     function update_metareviews_setting($adding) {
         if (($this->setting("metareviews") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
             $this->qe_raw("insert into Settings (name, value) select 'metareviews', exists (select * from PaperReview where reviewType=" . REVIEW_META . ") on duplicate key update value=values(value)");
@@ -3002,21 +3009,6 @@ class Conf {
     function time_some_author_view_decision() {
         return $this->setting("seedec") == self::SEEDEC_ALL;
     }
-    /** @return bool
-     * @deprecated */
-    function can_some_author_view_review() {
-        return $this->any_response_open || $this->au_seerev > 0;
-    }
-    /** @return bool
-     * @deprecated */
-    function can_all_author_view_decision() {
-        return $this->setting("seedec") == self::SEEDEC_ALL;
-    }
-    /** @return bool
-     * @deprecated */
-    function can_some_author_view_decision() {
-        return $this->setting("seedec") == self::SEEDEC_ALL;
-    }
     /** @return bool */
     function time_review_open() {
         $rev_open = $this->settings["rev_open"] ?? 0;
@@ -3099,17 +3091,16 @@ class Conf {
         return $this->settings["sub_blind"] === self::BLIND_ALWAYS;
     }
 
-    function is_review_blind($rrow) {
+    /** @param ?bool $rrow_blind
+     * @return bool */
+    function is_review_blind($rrow_blind) {
         $rb = $this->settings["rev_blind"];
         if ($rb == self::BLIND_ALWAYS) {
             return true;
         } else if ($rb != self::BLIND_OPTIONAL) {
             return false;
         } else {
-            if (is_object($rrow)) {
-                $rrow = (bool) $rrow->reviewBlind;
-            }
-            return $rrow === null || $rrow;
+            return $rrow_blind !== false;
         }
     }
     /** @return int */
