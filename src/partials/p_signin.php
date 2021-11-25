@@ -49,9 +49,9 @@ class Signin_Partial {
                     $info = call_user_func($gj->signin_function, $user, $qreq, $info, $gj);
                 }
                 if ($info["ok"] || isset($info["redirect"])) {
-                    Navigation::redirect($info["redirect"] ?? "");
+                    $user->conf->redirect($info["redirect"] ?? "");
                 } else if (($code = self::_check_reset_code($user, $qreq))) {
-                    Navigation::redirect($user->conf->hoturl("resetpassword", ["__PATH__" => $code]));
+                    $user->conf->redirect_hoturl("resetpassword", ["__PATH__" => $code]);
                 } else {
                     LoginHelper::login_error($user->conf, $qreq, $info);
                 }
@@ -211,9 +211,9 @@ class Signin_Partial {
             $user->conf->redirect();
         } else if ($qreq->valid_post()) {
             LoginHelper::logout($user, true);
-            Navigation::redirect($user->conf->hoturl("index", "signedout=1"));
+            $user->conf->redirect_hoturl("index", "signedout=1");
         } else if (!isset($_SESSION) || $user->is_empty()) {
-            Navigation::redirect($user->conf->hoturl("index", "signedout=1"));
+            $user->conf->redirect_hoturl("index", "signedout=1");
         } else {
             self::bad_post_error($user, $qreq, "signout");
         }
@@ -300,9 +300,9 @@ class Signin_Partial {
                     && $prep->reset_capability
                     && isset($info["firstuser"])) {
                     $conf->msg("As the first user, you have been assigned system administrator privilege. Use this screen to set a password. All later users will have to sign in normally.", "xconfirm");
-                    Navigation::redirect($conf->hoturl("resetpassword/" . urlencode($prep->reset_capability)));
+                    $conf->redirect_hoturl("resetpassword", ["__PATH__" => $prep->reset_capability]);
                 } else if ($prep) {
-                    Navigation::redirect($conf->hoturl("signin"));
+                    $conf->redirect_hoturl("signin");
                 }
             } else {
                 LoginHelper::login_error($user->conf, $qreq, $info);
@@ -360,7 +360,7 @@ class Signin_Partial {
             $info = LoginHelper::forgot_password_info($user->conf, $qreq, false);
             if ($info["ok"]) {
                 self::mail_user($user->conf, $info);
-                Navigation::redirect($info["redirect"] ?? $qreq->annex("redirect"));
+                $user->conf->redirect($info["redirect"] ?? $qreq->annex("redirect"));
             } else {
                 LoginHelper::login_error($user->conf, $qreq, $info);
             }
@@ -426,7 +426,7 @@ class Signin_Partial {
             if ($qreq->valid_post()) {
                 $nqreq = new Qrequest("POST", ["email" => $resetcap]);
                 $nqreq->approve_token();
-                $nqreq->set_annex("redirect", $user->conf->hoturl("resetpassword"));
+                $nqreq->set_annex("redirect", $user->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_SERVERREL));
                 self::forgot_request($user, $nqreq); // may redirect
                 if (Ht::problem_status_at("email")) {
                     Ht::error_at("resetcap");
@@ -477,7 +477,7 @@ class Signin_Partial {
                     "email" => $this->_reset_user->email,
                     "password" => $p1
                 ]);
-                Navigation::redirect($conf->hoturl("signin"));
+                $conf->redirect_hoturl("signin");
             }
         } else if (!$this->_reset_user
                    && $this->_reset_capdata) {

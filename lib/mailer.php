@@ -340,7 +340,7 @@ class Mailer {
                     }
                 }
             }
-            return $m->conf->hoturl($a[0], $a[1], Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
+            return $m->conf->hoturl_raw($a[0], $a[1], Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS);
         }
     }
 
@@ -428,7 +428,7 @@ class Mailer {
             $capinfo->set_user($this->recipient)->set_expires_after(259200);
             $token = $capinfo->create();
         }
-        return $this->conf->hoturl("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
+        return $this->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
     }
 
     function expandvar($what, $isbool = false) {

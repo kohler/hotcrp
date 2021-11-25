@@ -678,13 +678,17 @@ class PaperInfo {
         return $pp->merge($rest);
     }
 
-    /** @return string */
+    /** @param array $param
+     * @param int $flags
+     * @return string */
     function hoturl($param = [], $flags = 0) {
         $param["p"] = $this->paperId;
         return $this->conf->hoturl("paper", $param, $flags);
     }
 
-    /** @return string */
+    /** @param array $param
+     * @param int $flags
+     * @return string */
     function reviewurl($param = [], $flags = 0) {
         $param["p"] = $this->paperId;
         return $this->conf->hoturl("review", $param, $flags);

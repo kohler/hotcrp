@@ -265,7 +265,7 @@ class NavigationState {
     }
 
     /** @param string $url
-     * @param ?string $site
+     * @param ?string $siteref
      * @return string */
     function make_absolute($url, $siteref = null) {
         preg_match('/\A((?:https?:\/\/[^\/]+)?)(\/*)((?:\.\.\/)*)(.*)\z/i', $url, $m);
@@ -285,6 +285,18 @@ class NavigationState {
                 $m[3] = substr($m[3], 3);
             }
             return "{$this->server}{$siteref}{$m[3]}{$m[4]}";
+        }
+    }
+
+    /** @param bool $allow_http_if_localhost
+     * @return void */
+    function redirect_http_to_https($allow_http_if_localhost = false) {
+        if ($this->protocol == "http://"
+            && (!$allow_http_if_localhost
+                || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
+                    && $_SERVER["REMOTE_ADDR"] !== "::1"))) {
+            Navigation::redirect_absolute("https://" . ($this->host ? : "localhost")
+                . $this->siteurl_path("{$this->page}{$this->php_suffix}{$this->path}{$this->query}"));
         }
     }
 }
@@ -412,20 +424,25 @@ class Navigation {
     }
 
     /** @param ?string $url
-     * @return void */
+     * @return void
+     * @deprecated */
     static function redirect($url = null) {
         $url = self::make_absolute($url ?? self::site_absolute());
-        // Might have an HTML-encoded URL; decode at least &amp;.
-        $url = str_replace("&amp;", "&", $url);
-
         foreach (self::$redirect_callbacks ?? [] as $cb) {
             call_user_func($cb);
         }
-        if (preg_match('/\A[a-z]+:\/\//', $url)) {
-            header("Location: $url");
-        }
+        self::redirect_absolute($url);
+    }
 
-        echo "<!DOCTYPE html><html lang=\"en\"><head>
+    /** @param string $url
+     * @return void */
+    static function redirect_absolute($url) {
+        assert(str_starts_with($url, "https://") || str_starts_with($url, "http://"));
+        // Might have an HTML-encoded URL; decode at least &amp;.
+        $url = str_replace("&amp;", "&", $url);
+        header("Location: $url");
+        echo "<!DOCTYPE html>
+<html lang=\"en\"><head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
 <title>Redirection</title>
@@ -437,27 +454,19 @@ class Navigation {
     }
 
     /** @param string $site_url
-     * @return void */
+     * @return void
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     static function redirect_site($site_url) {
         self::redirect(self::site_absolute() . $site_url);
     }
 
     /** @param string $base_url
-     * @return void */
+     * @return void
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     static function redirect_base($base_url) {
         self::redirect(self::base_absolute() . $base_url);
-    }
-
-    /** @param bool $allow_http_if_localhost
-     * @return void */
-    static function redirect_http_to_https($allow_http_if_localhost = false) {
-        if (self::$s->protocol == "http://"
-            && (!$allow_http_if_localhost
-                || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
-                    && $_SERVER["REMOTE_ADDR"] !== "::1"))) {
-            self::redirect("https://" . (self::$s->host ? : "localhost")
-                           . self::siteurl_path(self::$s->page . self::$s->php_suffix . self::$s->path . self::$s->query));
-        }
     }
 }
 

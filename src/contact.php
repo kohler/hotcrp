@@ -1482,7 +1482,7 @@ class Contact {
             if (($path = Navigation::path())) {
                 $x["__PATH__"] = preg_replace('/^\/+/', "", $path);
             }
-            $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITE_RELATIVE);
+            $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, Conf::$now + 120];
             if ($qreq->valid_token()) {
                 $this->conf->errorMsg("You must sign in to access that page. Your changes were not saved; after signing in, you may submit them again.");

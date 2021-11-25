@@ -3180,7 +3180,8 @@ class Conf {
     const HOTURL_ABSOLUTE = 4;
     const HOTURL_SITEREL = 8;
     const HOTURL_SITE_RELATIVE = 8;
-    const HOTURL_NO_DEFAULTS = 16;
+    const HOTURL_SERVERREL = 16;
+    const HOTURL_NO_DEFAULTS = 32;
 
     /** @param string $page
      * @param null|string|array $param
@@ -3330,8 +3331,10 @@ class Conf {
         if ($anchor !== "") {
             $t .= $anchor;
         }
-        if ($flags & self::HOTURL_SITE_RELATIVE) {
+        if ($flags & self::HOTURL_SITEREL) {
             return $t;
+        } else if ($flags & self::HOTURL_SERVERREL) {
+            return $nav->site_path . $t;
         }
         $need_site_path = false;
         if ($page === "index") {
@@ -3357,6 +3360,14 @@ class Conf {
     /** @param string $page
      * @param null|string|array $param
      * @param int $flags
+     * @return string */
+    function hoturl_raw($page, $param = null, $flags = 0) {
+        return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
+    }
+
+    /** @param string $page
+     * @param null|string|array $param
+     * @param int $flags
      * @return string
      * @deprecated */
     function hoturl_absolute($page, $param = null, $flags = 0) {
@@ -3368,7 +3379,7 @@ class Conf {
      * @return string
      * @deprecated */
     function hoturl_site_relative_raw($page, $param = null) {
-        return $this->hoturl($page, $param, self::HOTURL_SITE_RELATIVE | self::HOTURL_RAW);
+        return $this->hoturl($page, $param, self::HOTURL_SITEREL | self::HOTURL_RAW);
     }
 
     /** @param string $page
@@ -3378,14 +3389,11 @@ class Conf {
         return $this->hoturl($page, $param, self::HOTURL_POST);
     }
 
-    /** @param string $page
+    /** @param string $html
+     * @param string $page
      * @param null|string|array $param
-     * @param int $flags
+     * @param ?array $js
      * @return string */
-    function hoturl_raw($page, $param = null, $flags = 0) {
-        return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
-    }
-
     function hotlink($html, $page, $param = null, $js = null) {
         return Ht::link($html, $this->hoturl($page, $param), $js);
     }
@@ -3487,8 +3495,9 @@ class Conf {
 
     /** @param ?string $url */
     function redirect($url = null) {
+        $nav = Navigation::get();
         $this->transfer_messages_to_session();
-        Navigation::redirect($url ?? $this->hoturl("index"));
+        Navigation::redirect_absolute($nav->make_absolute($url ?? $this->hoturl("index")));
     }
 
     /** @param string $page
@@ -5005,11 +5014,13 @@ class Conf {
                     $this->msg($ma["message"], $ma["status"]);
                 }
             }
+            $nav = Navigation::get();
             if (str_starts_with($qreq->redirect, "u/")) {
-                Navigation::redirect_base($qreq->redirect);
+                $url = $nav->make_absolute($qreq->redirect, $nav->base_path);
             } else {
-                Navigation::redirect_site($qreq->redirect);
+                $url = $nav->make_absolute($qreq->redirect, $nav->site_path);
             }
+            $this->redirect($url);
         } else {
             json_exit($j);
         }

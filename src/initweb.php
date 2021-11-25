@@ -5,6 +5,9 @@
 require_once("init.php");
 global $Conf, $Me, $Qreq;
 
+/** @param NavigationState $nav
+ * @param int $uindex
+ * @param int $nusers */
 function initialize_user_redirect($nav, $uindex, $nusers) {
     if ($nav->page === "api") {
         if ($nusers === 0) {
@@ -13,18 +16,21 @@ function initialize_user_redirect($nav, $uindex, $nusers) {
             json_exit(["ok" => false, "error" => "Bad user specification."]);
         }
     } else if ($_SERVER["REQUEST_METHOD"] === "GET") {
-        $page = $nusers > 0 ? "u/$uindex/" : "";
-        if ($nav->page !== "index" || $nav->path !== "") {
-            $page .= $nav->page . $nav->php_suffix . $nav->path;
+        $page = $nav->base_absolute();
+        if ($nusers > 0) {
+            $page = "{$page}u/$uindex/";
         }
-        Navigation::redirect_base($page . $nav->query);
+        if ($nav->page !== "index" || $nav->path !== "") {
+            $page = "{$page}{$nav->page}{$nav->php_suffix}{$nav->path}";
+        }
+        Navigation::redirect_absolute($page . $nav->query);
     } else {
         Conf::msg_error("You have been signed out from this account.");
     }
 }
 
+/** @return Qrequest */
 function initialize_web() {
-    global $Qreq;
     $conf = Conf::$main;
     $nav = Navigation::get();
 
@@ -35,17 +41,17 @@ function initialize_web() {
 
     // maybe redirect to https
     if (Conf::$main->opt("redirectToHttps")) {
-        Navigation::redirect_http_to_https(Conf::$main->opt("allowLocalHttp"));
+        $nav->redirect_http_to_https(Conf::$main->opt("allowLocalHttp"));
     }
 
-    // collect $Qreq
-    $Qreq = Qrequest::make_global();
+    // collect $qreq
+    $qreq = Qrequest::make_global();
 
     // check method
-    if ($Qreq->method() !== "GET"
-        && $Qreq->method() !== "POST"
-        && $Qreq->method() !== "HEAD"
-        && ($Qreq->method() !== "OPTIONS" || $nav->page !== "api")) {
+    if ($qreq->method() !== "GET"
+        && $qreq->method() !== "POST"
+        && $qreq->method() !== "HEAD"
+        && ($qreq->method() !== "OPTIONS" || $nav->page !== "api")) {
         header("HTTP/1.0 405 Method Not Allowed");
         exit;
     }
@@ -59,7 +65,7 @@ function initialize_web() {
 
     // skip user initialization if requested
     if (Contact::$no_main_user) {
-        return;
+        return $qreq;
     }
 
     // set up session
@@ -72,13 +78,13 @@ function initialize_web() {
     $sn = session_name();
 
     // check CSRF token, using old value of session ID
-    if ($Qreq->post && $sn && isset($_COOKIE[$sn])) {
+    if ($qreq->post && $sn && isset($_COOKIE[$sn])) {
         $sid = $_COOKIE[$sn];
-        $l = strlen($Qreq->post);
-        if ($l >= 8 && $Qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
-            $Qreq->approve_token();
+        $l = strlen($qreq->post);
+        if ($l >= 8 && $qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
+            $qreq->approve_token();
         } else if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            error_log("{$conf->dbname}: bad post={$Qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
+            error_log("{$conf->dbname}: bad post={$qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
         }
     }
     ensure_session(ENSURE_SESSION_ALLOW_EMPTY);
@@ -92,25 +98,35 @@ function initialize_web() {
     // determine user
     $trueemail = $_SESSION["u"] ?? null;
     $userset = $_SESSION["us"] ?? ($trueemail ? [$trueemail] : []);
+    $usercount = count($userset);
     '@phan-var list<string> $userset';
 
     $uindex = 0;
     if ($nav->shifted_path === "") {
-        // redirect to `/u` version
-        if (isset($_GET["i"])) {
-            $uindex = Contact::session_user_index($_GET["i"]);
-        } else if ($_SERVER["REQUEST_METHOD"] === "GET"
-                   && $nav->page !== "api"
-                   && count($userset) > 1) {
-            $uindex = -1;
+        $wantemail = $_GET["i"] ?? $trueemail;
+        while ($wantemail !== null
+               && $uindex < $usercount
+               && strcasecmp($userset[$uindex], $wantemail) !== 0) {
+            ++$uindex;
         }
-    } else if (substr($nav->shifted_path, 0, 2) === "u/") {
-        $uindex = empty($userset) ? -1 : (int) substr($nav->shifted_path, 2);
+        if ($uindex < $usercount
+            && ($usercount > 1 || isset($_GET["i"]))
+            && $nav->page !== "api"
+            && ($_SERVER["REQUEST_METHOD"] === "GET" || $_SERVER["REQUEST_METHOD"] === "HEAD")) {
+            // redirect to `/u` version
+            $nav->query = preg_replace('/[?&]i=[^&]+(?=&|\z)/', '', $nav->query);
+            if (str_starts_with($nav->query, "&")) {
+                $nav->query = "?" . substr($nav->query, 1);
+            }
+            initialize_user_redirect($nav, $uindex, count($userset));
+        }
+    } else if (str_starts_with($nav->shifted_path, "u/")) {
+        $uindex = $usercount === 0 ? -1 : (int) substr($nav->shifted_path, 2);
     }
-    if ($uindex > 0 && $uindex < count($userset)) {
+    if ($uindex >= 0 && $uindex < $usercount) {
         $trueemail = $userset[$uindex];
     } else if ($uindex !== 0) {
-        initialize_user_redirect($nav, 0, count($userset));
+        initialize_user_redirect($nav, 0, $usercount);
     }
 
     if (isset($_GET["i"])
@@ -124,7 +140,7 @@ function initialize_web() {
     if (!$guser) {
         $guser = new Contact($trueemail ? (object) ["email" => $trueemail] : null);
     }
-    $guser = $guser->activate($Qreq, true);
+    $guser = $guser->activate($qreq, true);
     Contact::set_main_user($guser);
 
     // author view capability documents should not be indexed
@@ -138,7 +154,7 @@ function initialize_web() {
     if ($guser->is_disabled()) {
         $gj = $conf->page_partials($guser)->get($nav->page);
         if (!$gj || !($gj->allow_disabled ?? false)) {
-            Navigation::redirect_site($conf->hoturl_site_relative_raw("index"));
+            $conf->redirect_hoturl("index");
         }
     }
 
@@ -155,12 +171,12 @@ function initialize_web() {
         if ($lb[0] == $conf->dsn
             && $lb[2] !== "index"
             && $lb[2] == Navigation::page()) {
-            assert($Qreq instanceof Qrequest);
+            assert($qreq instanceof Qrequest);
             foreach ($lb[3] as $k => $v) {
-                if (!isset($Qreq[$k]))
-                    $Qreq[$k] = $v;
+                if (!isset($qreq[$k]))
+                    $qreq[$k] = $v;
             }
-            $Qreq->set_annex("after_login", true);
+            $qreq->set_annex("after_login", true);
         }
         unset($_SESSION["login_bounce"]);
     }
@@ -181,6 +197,8 @@ function initialize_web() {
         }
         $_SESSION["addrs"] = $as;
     }
+
+    return $qreq;
 }
 
-initialize_web();
+$Qreq = initialize_web();

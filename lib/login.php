@@ -44,7 +44,7 @@ class LoginHelper {
 
         $info = self::login_info($conf, $qreq); // XXX
         if ($info["ok"]) {
-            Navigation::redirect($info["redirect"] ?? "");
+            $conf->redirect($info["redirect"] ?? "");
         } else {
             $conf->header("Error", "home");
             Conf::msg_error("This site is using HTTP authentication to manage its users, and you have provided incorrect authentication data.");
@@ -207,7 +207,7 @@ class LoginHelper {
             $user->save_session("freshlogin", true);
             $where = $user->conf->hoturl_raw("index");
         }
-        Navigation::redirect($where);
+        $user->conf->redirect($where);
         exit;
     }
 

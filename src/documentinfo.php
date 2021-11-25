@@ -1467,7 +1467,7 @@ class DocumentInfo implements JsonSerializable {
         if ($this->has_hash()) {
             $x["hash"] = $this->text_hash();
         }
-        $x["siteurl"] = $this->url(null, Conf::HOTURL_SITE_RELATIVE | Conf::HOTURL_RAW);
+        $x["siteurl"] = $this->url(null, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
         return (object) $x;
     }
     function jsonSerialize() {

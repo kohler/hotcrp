@@ -455,6 +455,9 @@ function unparse_byte_size_binary($n) {
     }
 }
 
+/** @param ?string $mode
+ * @param ?Qrequest $qreq
+ * @return string */
 function actionBar($mode = null, $qreq = null) {
     global $Me;
     if ($Me->is_disabled()) {

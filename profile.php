@@ -67,7 +67,7 @@ function change_email_by_capability($Qreq) {
                 $capcontent->oldemail => -1, $newemail => 1
             ]);
         }
-        Navigation::redirect($Conf->hoturl("profile"));
+        $Conf->redirect_hoturl("profile");
     } else {
         $Conf->header("Change email", "account", ["action_bar" => false]);
         if ($Acct) {
@@ -157,7 +157,7 @@ if ($Qreq->u === "me" || $Qreq->u === "self") {
     } else if (($id = cvtint($Qreq->u)) > 0) {
         $Acct = $Conf->user_by_id($id);
     } else if ($Qreq->u === "" && $Qreq->search) {
-        Navigation::redirect_site("users");
+        $Conf->redirect_hoturl("users");
     } else {
         $Acct = $Conf->user_by_email($Qreq->u);
         if (!$Acct && $Qreq->search) {

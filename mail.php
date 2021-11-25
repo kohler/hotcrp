@@ -572,7 +572,7 @@ class MailSender {
             if (empty($preperrors)) {
                 Conf::msg_error("No users match “" . $this->recip->unparse() . "” for that search.");
             }
-            echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('mailform').action=" . json_encode_browser($this->conf->hoturl("mail", "check=1", Conf::HOTURL_RAW | Conf::HOTURL_POST)));
+            echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('mailform').action=" . json_encode_browser($this->conf->hoturl_raw("mail", "check=1", Conf::HOTURL_POST)));
             return false;
         }
 
@@ -620,7 +620,7 @@ if (isset($Qreq->monreq)) {
     $plist = new PaperList("reqrevs", new PaperSearch($Me, ["t" => "req", "q" => ""]));
     $plist->set_table_id_class("foldpl", "pltable-fullw");
     if ($plist->is_empty()) {
-        $Conf->infoMsg('You have not requested any external reviews.  <a href="' . hoturl("index") . '">Return home</a>');
+        $Conf->infoMsg('You have not requested any external reviews.  <a href="' . $Conf->hoturl("index") . '">Return home</a>');
     } else {
         echo "<h2>Requested reviews</h2>\n\n";
         $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
@@ -629,7 +629,7 @@ if (isset($Qreq->monreq)) {
         if ($plist->has("need_review")) {
             echo "Some of your requested external reviewers have not completed their reviews.  To send them an email reminder, check the text below and then select &ldquo;Prepare mail.&rdquo;  You’ll get a chance to review the emails and select specific reviewers to remind.";
         } else {
-            echo 'All of your requested external reviewers have completed their reviews.  <a href="', hoturl("index"), '">Return home</a>';
+            echo 'All of your requested external reviewers have completed their reviews.  <a href="', $Conf->hoturl("index"), '">Return home</a>';
         }
         echo "</div>\n";
     }
@@ -770,7 +770,7 @@ if ($Me->privChair) {
         $i = 1;
         while (($row = $result->fetch_object())) {
             echo '<div class="mhdd"><div style="position:relative;overflow:hidden">',
-                '<div style="position:absolute;white-space:nowrap"><span style="min-width:2em;text-align:right;display:inline-block" class="dim">', $i, '.</span> <a class="q" href="', hoturl("mail", "fromlog=" . $row->mailId), '">', htmlspecialchars($row->subject), ' &ndash; <span class="dim">', htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)), "</span></a></div>",
+                '<div style="position:absolute;white-space:nowrap"><span style="min-width:2em;text-align:right;display:inline-block" class="dim">', $i, '.</span> <a class="q" href="', $Conf->hoturl("mail", "fromlog=" . $row->mailId), '">', htmlspecialchars($row->subject), ' &ndash; <span class="dim">', htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)), "</span></a></div>",
                 "<br></div></div>\n";
             ++$i;
         }

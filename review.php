@@ -107,7 +107,7 @@ class ReviewPage {
     }
 
     function handle_cancel() {
-        $this->conf->redirect($this->prow->hoturl());
+        $this->conf->redirect($this->prow->hoturl([], Conf::HOTURL_RAW));
     }
 
     function handle_update() {
@@ -296,7 +296,8 @@ class ReviewPage {
             return;
         }
         $isaccept = $this->qreq->accept;
-        echo "<!DOCTYPE html><html lang=\"en\"><head>
+        echo "<!DOCTYPE html>
+<html lang=\"en\"><head>
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
 <title>Redirection</title>
@@ -332,9 +333,8 @@ class ReviewPage {
         if (($u = $this->conf->cached_user_by_id($capuid))) {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = $this->user->session_user_index($u->email)) >= 0) {
-                $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITE_RELATIVE);
-                $this->conf->transfer_messages_to_session();
-                Navigation::redirect_base("u/$i/$selfurl");
+                $selfurl = $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
+                $this->conf->redirect(Navigation::base_absolute() . "u/{$i}/{$selfurl}");
             } else if ($this->user->has_email()) {
                 $mx = 'This review is assigned to ' . htmlspecialchars($u->email) . ', while you are signed in as ' . htmlspecialchars($this->user->email) . '. You can edit the review anyway since you accessed it using a special link.';
                 if ($this->rrow->reviewStatus <= ReviewInfo::RS_DRAFTED) {

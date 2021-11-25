@@ -35,7 +35,7 @@ class Home_Partial {
             && $user->session("freshlogin") === true) {
             if (self::need_profile_redirect($user)) {
                 $user->save_session("freshlogin", "redirect");
-                Navigation::redirect($user->conf->hoturl("profile", "redirect=1"));
+                $user->conf->redirect_hoturl("profile", "redirect=1");
             } else {
                 $user->save_session("freshlogin", null);
             }
