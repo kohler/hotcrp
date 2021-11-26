@@ -10,15 +10,18 @@ class SessionList {
     /** @var ?string */
     public $description;
     /** @var ?string */
-    public $url;
-    /** @var ?string */
     public $urlbase;
     public $highlight;
+    /** @var ?string */
     public $digest;
+    /** @var ?int */
     public $curid;
-    public $previd;
-    public $nextid;
-    public $id_position = false;
+    /** @var ?int */
+    private $previd;
+    /** @var ?int */
+    private $nextid;
+    /** @var null|false|int */
+    private $id_position;
 
     /** @param string $listid
      * @param list<int> $ids
@@ -237,9 +240,24 @@ class SessionList {
 
             if ($ids !== null || $digest !== null) {
                 $list = new SessionList($listid, $ids);
-                foreach (get_object_vars($j) as $k => $v) {
-                    if ($k !== "listid" && $k !== "ids")
-                        $list->$k = $v;
+                if (isset($j->description) && is_string($j->description)) {
+                    $list->description = $j->description;
+                }
+                if (isset($j->urlbase) && is_string($j->urlbase)) {
+                    $list->urlbase = $j->urlbase;
+                }
+                if (isset($j->highlight)) {
+                    $list->highlight = $j->highlight;
+                }
+                $list->digest = $digest;
+                if (isset($j->curid) && is_int($j->curid)) {
+                    $list->curid = $j->curid;
+                }
+                if (isset($j->previd) && is_int($j->previd)) {
+                    $list->previd = $j->previd;
+                }
+                if (isset($j->nextid) && is_int($j->nextid)) {
+                    $list->nextid = $j->nextid;
                 }
                 return $list;
             } else {
@@ -259,28 +277,27 @@ class SessionList {
 
     /** @return ?string */
     function full_site_relative_url() {
-        $args = Conf::$hoturl_defaults ? : [];
-        if ($this->url) {
-            $url = $this->url;
-        } else if ($this->urlbase) {
-            $url = $this->urlbase;
-            if (preg_match('/\Ap\/[^\/]*\/([^\/]*)(?:|\/([^\/]*))\z/', $this->listid, $m)) {
-                if ($m[1] !== "" || str_starts_with($url, "search")) {
-                    $url .= (strpos($url, "?") ? "&" : "?") . "q=" . $m[1];
-                }
-                if (isset($m[2]) && $m[2] !== "") {
-                    foreach (explode("&", $m[2]) as $kv) {
-                        $eq = strpos($kv, "=");
-                        $args[substr($kv, 0, $eq)] = substr($kv, $eq + 1);
-                    }
-                }
-            }
-        } else {
+        if (!$this->urlbase) {
             return null;
         }
+        $args = Conf::$hoturl_defaults ? : [];
+        $url = $this->urlbase;
+        if (preg_match('/\Ap\/[^\/]*\/([^\/]*)(?:|\/([^\/]*))\z/', $this->listid, $m)) {
+            if ($m[1] !== "" || str_starts_with($url, "search")) {
+                $url .= (strpos($url, "?") ? "&" : "?") . "q=" . $m[1];
+            }
+            if (isset($m[2]) && $m[2] !== "") {
+                foreach (explode("&", $m[2]) as $kv) {
+                    $eq = strpos($kv, "=");
+                    $args[substr($kv, 0, $eq)] = substr($kv, $eq + 1);
+                }
+            }
+        }
         foreach ($args as $k => $v) {
-            if (!preg_match('{[&?]' . preg_quote($k) . '=}', $url))
-                $url .= (strpos($url, "?") ? "&" : "?") . $k . "=" . $v;
+            if (!preg_match('{[&?]' . preg_quote($k) . '=}', $url)) {
+                $sep = strpos($url, "?") === false ? "?" : "&";
+                $url = "{$url}{$sep}{$k}={$v}";
+            }
         }
         return $url;
     }
@@ -288,10 +305,20 @@ class SessionList {
     /** @return string */
     function info_string() {
         $j = [];
-        foreach (get_object_vars($this) as $k => $v) {
-            if ($v != null
-                && !in_array($k, ["ids", "id_position", "curid", "previd", "nextid"], true))
-                $j[$k] = $v;
+        if (isset($this->listid)) {
+            $j["listid"] = $this->listid;
+        }
+        if (isset($this->description)) {
+            $j["description"] = $this->description;
+        }
+        if (isset($this->urlbase)) {
+            $j["urlbase"] = $this->urlbase;
+        }
+        if (isset($this->highlight)) {
+            $j["highlight"] = $this->highlight;
+        }
+        if (isset($this->digest)) {
+            $j["digest"] = $this->digest;
         }
         if ($this->ids !== null) {
             $j["ids"] = self::encode_ids($this->ids);
@@ -328,7 +355,8 @@ class SessionList {
         $user->conf->set_cookie("hotlist-info-" . $t, $this->info_string(), Conf::$now + 20);
     }
 
-    /** @param int $id */
+    /** @param int $id
+     * @return bool */
     function set_current_id($id) {
         if ($this->curid !== $id) {
             $this->curid = $this->previd = $this->nextid = null;
@@ -337,17 +365,18 @@ class SessionList {
         return $this->id_position !== false;
     }
 
-    /** @param int $delta */
+    /** @param int $delta
+     * @return int|false */
     function neighbor_id($delta) {
-        if ($this->id_position !== false) {
+        if ($delta === -1 && $this->previd !== null) {
+            return $this->previd;
+        } else if ($delta === 1 && $this->nextid !== null) {
+            return $this->nextid;
+        } else if (isset($this->curid) && $this->set_current_id($this->curid)) {
             $pos = $this->id_position + $delta;
             if ($pos >= 0 && isset($this->ids[$pos])) {
                 return $this->ids[$pos];
             }
-        } else if ($delta === -1 && $this->previd !== null) {
-            return $this->previd;
-        } else if ($delta === 1 && $this->nextid !== null) {
-            return $this->nextid;
         }
         return false;
     }

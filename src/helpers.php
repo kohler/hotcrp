@@ -485,8 +485,9 @@ function actionBar($mode = null, $qreq = null) {
     $x = "";
     if (($list = Conf::$main->active_list())) {
         $x .= '<td class="vbar quicklinks">';
-        if (($prev = $list->neighbor_id(-1)) !== false)
+        if (($prev = $list->neighbor_id(-1)) !== false) {
             $x .= _one_quicklink($prev, $goBase, $xmode, $listtype, true) . " ";
+        }
         if ($list->description) {
             $url = $list->full_site_relative_url();
             if ($url) {
@@ -495,8 +496,9 @@ function actionBar($mode = null, $qreq = null) {
                 $x .= '<span id="quicklink-list">' . $list->description . '</span>';
             }
         }
-        if (($next = $list->neighbor_id(1)) !== false)
+        if (($next = $list->neighbor_id(1)) !== false) {
             $x .= " " . _one_quicklink($next, $goBase, $xmode, $listtype, false);
+        }
         $x .= '</td>';
 
         if ($Me->is_track_manager() && $listtype == "p") {
