@@ -164,7 +164,7 @@ if ($Qreq->u === "me" || $Qreq->u === "self") {
             $cs = new ContactSearch(ContactSearch::F_USER, $Qreq->u, $Me);
             if ($cs->user_ids()) {
                 $Acct = $Conf->user_by_id(($cs->user_ids())[0]);
-                $list = new SessionList("u/all/" . urlencode($Qreq->search), $cs->user_ids(), "“" . htmlspecialchars($Qreq->u) . "”", $Conf->hoturl_site_relative_raw("users", ["t" => "all"]));
+                $list = new SessionList("u/all/" . urlencode($Qreq->search), $cs->user_ids(), "“" . htmlspecialchars($Qreq->u) . "”", $Conf->hoturl_raw("users", ["t" => "all"], Conf::HOTURL_SITEREL));
                 $list->set_cookie($Me);
                 $Qreq->u = $Acct->email;
             } else {

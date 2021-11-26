@@ -1736,7 +1736,7 @@ class PaperSearch {
             && $this->_reviewer_user->contactId !== $this->user->contactXid) {
             $args["reviewer"] = $this->_reviewer_user->email;
         }
-        $this->_urlbase = $this->conf->hoturl_site_relative_raw($base, $args);
+        $this->_urlbase = $this->conf->hoturl_raw($base, $args, Conf::HOTURL_SITEREL);
         return $this;
     }
 

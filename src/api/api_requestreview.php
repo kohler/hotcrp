@@ -243,7 +243,7 @@ class RequestReview_API {
         }
         $r = intval($qreq->r);
         if ($qreq->redirect === "1") {
-            $qreq->redirect = $prow->conf->hoturl_site_relative_raw("review", ["p" => $prow->paperId, "r" => $r]);
+            $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
         }
 
         // maybe user can view paper because of a declined review
@@ -305,7 +305,7 @@ class RequestReview_API {
         $r = intval($qreq->r);
         $redirect_in = $qreq->redirect;
         if ($redirect_in === "1") {
-            $qreq->redirect = $prow->conf->hoturl_site_relative_raw("review", ["p" => $prow->paperId, "r" => $r]);
+            $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
         }
 
         $reason = trim($qreq->reason);
@@ -378,7 +378,7 @@ class RequestReview_API {
             if ($user->contactXid === $rrow->contactId
                 && $redirect_in === "1"
                 && ($acceptor = $rrow->acceptor())) {
-                $qreq->redirect = $prow->conf->hoturl_site_relative_raw("review", ["p" => $prow->paperId, "r" => $r, "cap" => "ra{$rrow->reviewId}{$acceptor->text}"]);
+                $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r, "cap" => "ra{$rrow->reviewId}{$acceptor->text}"], Conf::HOTURL_SITEREL);
             }
         } else if (isset($qreq->reason)) {
             $prow->conf->qe("update PaperReviewRefused set reason=? where paperId=? and refusedReviewId=?", $reason, $prow->paperId, $rrid);
@@ -400,7 +400,7 @@ class RequestReview_API {
         $r = intval($qreq->r);
         $redirect_in = $qreq->redirect;
         if ($redirect_in === "1") {
-            $qreq->redirect = $prow->conf->hoturl_site_relative_raw("review", ["p" => $prow->paperId, "r" => $r]);
+            $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
         }
 
         $rrow = $prow->review_by_id($r);

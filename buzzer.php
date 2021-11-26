@@ -121,8 +121,8 @@ $no_discussion = '<div class="remargin-left remargin-right"><h2>No discussion</h
 if ($Me->is_track_manager()) {
     $no_discussion .= '<p>To start a discussion, <a href="' . hoturl("search") . '">search</a> for a list, go to a paper in that list, and use the “&#9759;” button.</p>';
     $buzzer_status["kiosk_urls"] = [
-        $Conf->hoturl_absolute("buzzer", ["__PATH__" => $kiosk_keys[0]], Conf::HOTURL_RAW),
-        $Conf->hoturl_absolute("buzzer", ["__PATH__" => $kiosk_keys[1]], Conf::HOTURL_RAW)
+        $Conf->hoturl_raw("buzzer", ["__PATH__" => $kiosk_keys[0]], Conf::HOTURL_ABSOLUTE),
+        $Conf->hoturl_raw("buzzer", ["__PATH__" => $kiosk_keys[1]], Conf::HOTURL_ABSOLUTE)
     ];
 } else if ($kiosk) {
     $buzzer_status["is_kiosk"] = true;

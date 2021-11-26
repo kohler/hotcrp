@@ -264,13 +264,11 @@ class NavigationState {
         return $this->page;
     }
 
-    /** @param ?string $url
+    /** @param string $url
+     * @param ?string $site
      * @return string */
-    function make_absolute($url) {
-        if ($url === false /* XXX */ || $url === null) {
-            return $this->server . $this->site_path;
-        }
-        preg_match(',\A((?:https?://[^/]+)?)(/*)((?:[.][.]/)*)(.*)\z,i', $url, $m);
+    function make_absolute($url, $siteref = null) {
+        preg_match('/\A((?:https?:\/\/[^\/]+)?)(\/*)((?:\.\.\/)*)(.*)\z/i', $url, $m);
         if ($m[1] !== "") {
             return $url;
         } else if (strlen($m[2]) > 1) {
@@ -278,13 +276,15 @@ class NavigationState {
         } else if ($m[2] === "/") {
             return $this->server . $url;
         } else {
-            $site = substr($this->request_uri, 0, strlen($this->request_uri) - strlen($this->query));
-            $site = preg_replace('/\/[^\/]+\z/', "/", $site);
+            if ($siteref === null) {
+                $siteref = preg_replace('/\/[^\/]+\z/', "/",
+                    substr($this->request_uri, 0, strlen($this->request_uri) - strlen($this->query)));
+            }
             while ($m[3]) {
-                $site = preg_replace('/\/[^\/]+\/\z/', "/", $site);
+                $siteref = preg_replace('/\/[^\/]+\/\z/', "/", $siteref);
                 $m[3] = substr($m[3], 3);
             }
-            return $this->server . $site . $m[3] . $m[4];
+            return "{$this->server}{$siteref}{$m[3]}{$m[4]}";
         }
     }
 }
@@ -404,16 +404,17 @@ class Navigation {
         return self::$s->php_suffix;
     }
 
-    /** @param ?string $url
+    /** @param string $url
+     * @param ?string $siteref
      * @return string */
-    static function make_absolute($url) {
-        return self::$s->make_absolute($url);
+    static function make_absolute($url, $siteref = null) {
+        return self::$s->make_absolute($url, $siteref);
     }
 
     /** @param ?string $url
      * @return void */
     static function redirect($url = null) {
-        $url = self::make_absolute($url);
+        $url = self::make_absolute($url ?? self::site_absolute());
         // Might have an HTML-encoded URL; decode at least &amp;.
         $url = str_replace("&amp;", "&", $url);
 

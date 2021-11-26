@@ -1075,7 +1075,7 @@ class ContactList {
                 }
             }
             $l = new SessionList("u/" . $listlink, $ids, $listtitle,
-                $this->conf->hoturl_site_relative_raw("users", ["t" => $listlink]));
+                $this->conf->hoturl_raw("users", ["t" => $listlink], Conf::HOTURL_SITEREL));
             $x .= " has-hotlist\" data-hotlist=\"" . htmlspecialchars($l->info_string());
         }
         return $x . "\">" . $body . "</tbody></table>";

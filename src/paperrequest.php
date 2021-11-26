@@ -148,7 +148,7 @@ class PaperRequest {
      * @param int $pid
      * @return Redirection */
     private function signin_redirection($conf, $qreq, $pid) {
-        return new Redirection($conf->hoturl("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITE_RELATIVE | Conf::HOTURL_RAW)]));
+        return new Redirection($conf->hoturl("signin", ["redirect" => $conf->selfurl($qreq, ["p" => $pid ? : "new"], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW)]));
     }
 
     /** @param Conf $conf

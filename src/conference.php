@@ -3178,6 +3178,7 @@ class Conf {
     const HOTURL_RAW = 1;
     const HOTURL_POST = 2;
     const HOTURL_ABSOLUTE = 4;
+    const HOTURL_SITEREL = 8;
     const HOTURL_SITE_RELATIVE = 8;
     const HOTURL_NO_DEFAULTS = 16;
 
@@ -3356,14 +3357,16 @@ class Conf {
     /** @param string $page
      * @param null|string|array $param
      * @param int $flags
-     * @return string */
+     * @return string
+     * @deprecated */
     function hoturl_absolute($page, $param = null, $flags = 0) {
         return $this->hoturl($page, $param, self::HOTURL_ABSOLUTE | $flags);
     }
 
     /** @param string $page
      * @param null|string|array $param
-     * @return string */
+     * @return string
+     * @deprecated */
     function hoturl_site_relative_raw($page, $param = null) {
         return $this->hoturl($page, $param, self::HOTURL_SITE_RELATIVE | self::HOTURL_RAW);
     }
@@ -3437,14 +3440,6 @@ class Conf {
             error_log("selfurl on different page: " . debug_string_backtrace());
         }
         return $this->qrequrl($qreq, $param ?? [], $flags);
-    }
-
-    /** @param Qrequest $qreq
-     * @param ?array $param
-     * @param int $flags
-     * @return string */
-    function selfurl_absolute(Qrequest $qreq, $param = null, $flags = 0) {
-        return $this->selfurl($qreq, $param, $flags | Conf::HOTURL_ABSOLUTE);
     }
 
     /** @param Qrequest $qreq
@@ -4993,7 +4988,9 @@ class Conf {
         // XXX precondition: $user->can_view_paper($prow) || !$prow
         $uf = $this->api($fn, $user, $qreq->method());
         $j = $this->call_api_on($uf, $fn, $user, $qreq, $prow);
-        if ($uf && $qreq->redirect && ($uf->redirect ?? false)
+        if ($uf
+            && $qreq->redirect
+            && ($uf->redirect ?? false)
             && preg_match('/\A(?![a-z]+:|\/)./', $qreq->redirect)) {
             $a = $j->content;
             if (($x = $a["error"] ?? $a["error_html"] ?? null)) {
