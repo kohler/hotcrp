@@ -3497,6 +3497,7 @@ class Conf {
     function redirect($url = null) {
         $nav = Navigation::get();
         $this->transfer_messages_to_session();
+        session_write_close();
         Navigation::redirect_absolute($nav->make_absolute($url ?? $this->hoturl("index")));
     }
 
