@@ -3512,6 +3512,17 @@ class Conf {
         $this->redirect($this->selfurl($qreq, $param, self::HOTURL_RAW));
     }
 
+    /** @param string $siteurl
+     * @return string */
+    function make_absolute_site($siteurl) {
+        $nav = Navigation::get();
+        if (str_starts_with($siteurl, "u/")) {
+            return $nav->make_absolute($siteurl, $nav->base_path);
+        } else {
+            return $nav->make_absolute($siteurl, $nav->site_path);
+        }
+    }
+
 
     /** @param string $basename
      * @param int $flags
@@ -5014,13 +5025,7 @@ class Conf {
                     $this->msg($ma["message"], $ma["status"]);
                 }
             }
-            $nav = Navigation::get();
-            if (str_starts_with($qreq->redirect, "u/")) {
-                $url = $nav->make_absolute($qreq->redirect, $nav->base_path);
-            } else {
-                $url = $nav->make_absolute($qreq->redirect, $nav->site_path);
-            }
-            $this->redirect($url);
+            $this->redirect($this->make_absolute_site($qreq->redirect));
         } else {
             json_exit($j);
         }
