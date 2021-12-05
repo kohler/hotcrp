@@ -18,6 +18,7 @@ class Getopt {
         $olen = strlen($options ?? "");
         for ($i = 0; $i !== $olen; ) {
             if (ctype_alnum($options[$i])) {
+                $opt = $options[$i];
                 $type = 0;
                 ++$i;
                 if ($i < $olen && $options[$i] === ":") {
@@ -31,7 +32,7 @@ class Getopt {
                     $i += 2;
                     $type = 3;
                 }
-                $this->po[$options[$i]] = [$options[$i], $type, null];
+                $this->po[$opt] = [$opt, $type, null];
             } else {
                 throw new Error("Getopt \$options");
             }

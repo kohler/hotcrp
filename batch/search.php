@@ -4,8 +4,8 @@
 
 require_once(dirname(__DIR__) . "/src/siteloader.php");
 
-$arg = Getopt::rest($argv, "hn:t:f:N", ["help", "name:", "type:", "field:", "show:", "header", "no-header", "sitename"]);
-if (isset($arg["h"]) || isset($arg["help"])) {
+$arg = (new Getopt)->long("n:,name:", "t:,type:", "f[],field[],show[]", "N,sitename", "header", "no-header", "help,h")->parse($argv);
+if (isset($arg["help"])) {
     fwrite(STDOUT, "Usage: php batch/search.php [-n CONFID] [-t COLLECTION] [-f FIELD]+ [QUERY...]
 Output a CSV file containing the FIELDs for the papers matching QUERY.
 
@@ -17,9 +17,6 @@ Options include:
   --no-header            Omit CSV header.
   QUERY...               A search term.\n");
     exit(0);
-}
-if (isset($arg["type"]) && !isset($arg["t"])) {
-    $arg["t"] = $arg["type"];
 }
 
 require_once(SiteLoader::find("src/init.php"));
@@ -35,10 +32,7 @@ if (!isset($searchtypes[$t])) {
 $search = new PaperSearch($user, ["q" => join(" ", $arg["_"]), "t" => $t]);
 $paperlist = new PaperList("empty", $search);
 $paperlist->set_view("pid", true);
-$fields = array_merge(mkarray($arg["f"] ?? []),
-                      mkarray($arg["field"] ?? []),
-                      mkarray($arg["show"] ?? []));
-foreach ($fields as $f) {
+foreach ($arg["f"] ?? [] as $f) {
     $paperlist->set_view($f, true);
 }
 list($header, $body) = $paperlist->text_csv();
@@ -47,7 +41,7 @@ foreach ($search->problem_texts() as $w) {
 }
 if (!empty($body)) {
     $csv = new CsvGenerator;
-    $sitename = isset($arg["N"]) || isset($arg["sitename"]);
+    $sitename = isset($arg["N"]);
     $siteid = $Conf->opt("confid");
     $siteclass = $Conf->opt("siteclass");
     if ((isset($arg["header"]) || count($header) > 1 || $sitename)
