@@ -1,10 +1,10 @@
 <?php
 require_once(dirname(__DIR__) . "/src/siteloader.php");
 
-$arg = Getopt::rest($argv, "hn:qrf:",
-    ["help", "name:", "filter=f:", "quiet", "disable", "disable-users",
-     "reviews", "match-title", "ignore-pid", "ignore-errors", "add-topics", "no-log"]);
-if (isset($arg["h"]) || isset($arg["help"])
+$arg = (new Getopt)->long("n:,name:", "f[],filter[]", "r,reviews", "q,quiet",
+    "disable-users,disable", "match-title", "ignore-pid", "ignore-errors", "add-topics",
+    "no-log", "help,h")->parse($argv);
+if (isset($arg["help"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
     fwrite(STDOUT, "Usage: php batch/savepapers.php [-n CONFID] [OPTIONS] FILE
@@ -74,16 +74,15 @@ class BatchSavePapers {
     }
 
     function set_args($arg) {
-        $this->quiet = isset($arg["q"]) || isset($arg["quiet"]);
+        $this->quiet = isset($arg["q"]);
         $this->ignore_errors = isset($arg["ignore-errors"]);
         $this->ignore_pid = isset($arg["ignore-pid"]);
         $this->match_title = isset($arg["match-title"]);
-        $this->disable_users = isset($arg["disable"]) || isset($arg["disable-users"]);
+        $this->disable_users = isset($arg["disable-users"]);
         $this->add_topics = isset($arg["add-topics"]);
-        $this->reviews = isset($arg["r"]) || isset($arg["reviews"]);
+        $this->reviews = isset($arg["r"]);
         $this->log = !isset($arg["no-log"]);
-        $fs = $arg["f"] ?? [];
-        foreach (is_array($fs) ? $fs : [$fs] as $f) {
+        foreach ($arg["f"] ?? [] as $f) {
             if (($colon = strpos($f, ":")) !== false
                 && $colon + 1 < strlen($f)
                 && $f[$colon + 1] !== ":") {
