@@ -1459,7 +1459,7 @@ class PaperTable {
             $extradiv = ' data-tooltip-anchor="h" data-tooltip-info="votereport" data-tag="' . htmlspecialchars($tag) . '"';
         }
         return '<div class="' . $class . '"' . $extradiv
-            . '><a class="qq" href="' . $this->conf->hoturl("search", "q=" . urlencode("show:#$tag sort:" . ($reverse ? "-" : "") . "#$tag")) . '">'
+            . '><a class="q" href="' . $this->conf->hoturl("search", "q=" . urlencode("show:#$tag sort:" . ($reverse ? "-" : "") . "#$tag")) . '">'
             . '<span class="is-tag-index" data-tag-base="' . $tag . '">' . $totval . '</span> ' . $kind . '</a></div>';
     }
 
@@ -2030,7 +2030,7 @@ class PaperTable {
         } else {
             $close = '';
         }
-        echo '<a href="#top" class="qq"><span class="header-site-name">',
+        echo '<a href="#top" class="q"><span class="header-site-name">',
             htmlspecialchars($this->conf->short_name), '</span> ';
         if ($this->prow->paperId <= 0) {
             echo "new submission";

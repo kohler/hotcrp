@@ -638,7 +638,7 @@ echo Ht::form($Conf->hoturl_post("profile", $form_params), [
 
 // left menu
 echo '<div class="leftmenu-left"><nav class="leftmenu-menu">',
-    '<h1 class="leftmenu"><a href="" class="uic js-leftmenu qq">Account</a></h1>',
+    '<h1 class="leftmenu"><a href="" class="uic js-leftmenu q">Account</a></h1>',
     '<ul class="leftmenu-list">';
 
 if ($Me->privChair) {

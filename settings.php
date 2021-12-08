@@ -68,7 +68,7 @@ echo Ht::form($Conf->hoturl_post("settings", "group=$Group"),
               ["id" => "settingsform", "class" => "need-unload-protection"]);
 
 echo '<div class="leftmenu-left"><nav class="leftmenu-menu">',
-    '<h1 class="leftmenu"><a href="" class="uic js-leftmenu qq">Settings</a></h1>',
+    '<h1 class="leftmenu"><a href="" class="uic js-leftmenu q">Settings</a></h1>',
     '<ul class="leftmenu-list">';
 foreach ($Sv->group_members("") as $gj) {
     if ($gj->name === $Group) {

@@ -4301,11 +4301,11 @@ class Conf {
         // site header
         if ($id === "home") {
             $site_div = '<div id="header-site" class="header-site-home">'
-                . '<h1><a class="qq" href="' . $this->hoturl("index", ["cap" => null])
+                . '<h1><a class="q" href="' . $this->hoturl("index", ["cap" => null])
                 . '">' . htmlspecialchars($this->short_name) . '</a></h1></div>';
         } else {
             $site_div = '<div id="header-site" class="header-site-page">'
-                . '<a class="qq" href="' . $this->hoturl("index", ["cap" => null])
+                . '<a class="q" href="' . $this->hoturl("index", ["cap" => null])
                 . '"><span class="header-site-name">' . htmlspecialchars($this->short_name)
                 . '</span> Home</a></div>';
         }
@@ -4318,7 +4318,7 @@ class Conf {
             if ($user->has_email() && !$user->is_disabled()) {
                 if (!$user->is_anonymous_user()) {
                     $purl = $this->hoturl("profile");
-                    $link = "<a class=\"qq\" href=\"{$purl}\"><strong>" . htmlspecialchars($user->email) . "</strong></a>";
+                    $link = "<a class=\"q\" href=\"{$purl}\"><strong>" . htmlspecialchars($user->email) . "</strong></a>";
                     if ($user->is_actas_user()) {
                         $link = "<span class=\"header-actas\"><span class=\"warning-mark\"></span> Acting as {$link}</span>";
                     }
@@ -4485,7 +4485,7 @@ class Conf {
         echo "<hr class=\"c\"></div>", // class='body'
             '<div id="footer">',
             $this->opt("extraFooter") ?? "",
-            '<a class="uu" href="https://hotcrp.com/">HotCRP</a>';
+            '<a class="u" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->opt("noFooterVersion")) {
             if (Contact::$main_user && Contact::$main_user->privChair) {
                 echo " v", HOTCRP_VERSION, " [";

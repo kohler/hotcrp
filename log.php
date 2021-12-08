@@ -762,7 +762,7 @@ function render_users($users, $via) {
         return '<div class="has-fold foldc"><a href="" class="ui js-foldup">'
             . expander(null, 0)
             . '</a>'
-            . '<span class="fn"><a href="" class="ui js-foldup qq">'
+            . '<span class="fn"><a href="" class="ui js-foldup q">'
             . sprintf($Conf->_($fmt, count($ts)), count($ts))
             . '</a></span><span class="fx">' . join(", ", $ts)
             . '</span></div>';

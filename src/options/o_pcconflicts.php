@@ -49,7 +49,7 @@ class PCConflicts_PaperOption extends PaperOption {
             foreach ($this->conf->full_pc_members() as $p) {
                 if (($vm[$p->contactId] ?? 0) === 0 /* not MAXUNCONFLICTED */
                     && $ov->prow->potential_conflict($p)) {
-                    $pcs[] = Ht::link($p->name_h(NAME_P), "#pcconf:{$p->contactId}", ["class" => "uu"]);
+                    $pcs[] = Ht::link($p->name_h(NAME_P), "#pcconf:{$p->contactId}", ["class" => "u"]);
                 }
             }
             if (!empty($pcs)) {

@@ -40,7 +40,7 @@ class AssignmentCount {
             return $t;
         } else {
             $url = $pc->conf->hoturl("search", "q=" . urlencode("$prefix:{$pc->email}"));
-            return "<a class=\"qq\" href=\"{$url}\">{$t}</a>";
+            return "<a class=\"q\" href=\"{$url}\">{$t}</a>";
         }
     }
     /** @param Contact $pc

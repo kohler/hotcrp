@@ -254,30 +254,31 @@ td.quicklinks, #tracker-connect {
 
 
 /* generic horizontal styles */
-:link, :visited, .btn-link, a.nv, a.ui {
+:link, :visited, .btn-link {
 	color: #004daa;
 }
 .ptitle:visited, .pnum:visited, .track:visited {
 	color: #660099;
 }
-a:hover, a.nv:hover, a.ui:hover, .btn-link:hover, .js-click-child:hover a.hover-child {
+a:hover, .btn-link:hover, .js-click-child:hover a.hover-child {
 	color: #c45500;
 }
-a.q, a.u, a.qx {
-	color: black;
-}
-a.qq, a.uu, a.nn, a.mailto, a.btn, a.btn:hover,
+/* XXX remove .qq, .uu, .qx */
+a.qq, a.uu, a.qx,
+a.q, a.u, a.nn, a.mailto, a.btn, a.btn:hover,
 .is-error a, .is-warning a, .is-note a, .is-warning-note a, .is-urgent-note a {
 	color: inherit;
 }
 a.btn {
 	cursor: default;
 }
-a.q:active, a.qq:active, a.u:active, a.uu:active, a.nn:active, a.mailto:active,
+a.qq:active, a.uu:active,
+a.q:active, a.u:active, a.nn:active, a.mailto:active,
 a.attention, .btn-link:active {
 	color: red;
 }
-a.q, a.qq, a.qx, a.x, a.xx, a.nn, a.btn,
+a.qq, a.qx,
+a.q, a.x, a.xx, a.nn, a.btn,
 div.papmode.active > a, div.papmode.active:hover > a.noul, .leftmenu-item > a,
 a.pnum, a.ptitle, a.mailto, u.x, .noul {
 	-webkit-text-decoration-line: none;

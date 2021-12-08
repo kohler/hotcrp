@@ -45,7 +45,7 @@ function show_help_topics($hth) {
 
 echo '<div class="leftmenu-left"><nav class="leftmenu-menu"><h1 class="leftmenu">';
 if ($topic !== "topics") {
-    echo '<a href="', $Conf->hoturl("help"), '" class="qq uic js-leftmenu">Help</a>';
+    echo '<a href="', $Conf->hoturl("help"), '" class="q uic js-leftmenu">Help</a>';
 } else {
     echo "Help";
 }

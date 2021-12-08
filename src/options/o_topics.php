@@ -210,7 +210,7 @@ class Topics_PaperOption extends PaperOption {
                 $tname = $topics->name($tid);
                 $x = $topics->unparse_name_html($tid);
                 if ($user && $user->isPC) {
-                    $x = Ht::link($x, $this->conf->hoturl("search", ["q" => "topic:" . SearchWord::quote($tname)]), ["class" => "qq"]);
+                    $x = Ht::link($x, $this->conf->hoturl("search", ["q" => "topic:" . SearchWord::quote($tname)]), ["class" => "q"]);
                 }
                 $ts[] = $t . '">' . $x . '</li>';
                 $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);

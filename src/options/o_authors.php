@@ -235,11 +235,11 @@ class Authors_PaperOption extends PaperOption {
             . $this->editable_author_component_entry($pt, $n, "name", $au, $reqau, $ignore_diff, $readonly) . ' '
             . $this->editable_author_component_entry($pt, $n, "affiliation", $au, $reqau, $ignore_diff,$readonly);
         if (!$readonly) {
-            $t .= ' <span class="nb btnbox aumovebox"><button type="button" class="ui qx need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
+            $t .= ' <span class="nb btnbox aumovebox"><button type="button" class="ui need-tooltip row-order-ui moveup" aria-label="Move up" tabindex="-1">'
                 . Icons::ui_triangle(0)
-                . '</button><button type="button" class="ui qx need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
+                . '</button><button type="button" class="ui need-tooltip row-order-ui movedown" aria-label="Move down" tabindex="-1">'
                 . Icons::ui_triangle(2)
-                . '</button><button type="button" class="ui qx need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>';
+                . '</button><button type="button" class="ui need-tooltip row-order-ui delete" aria-label="Delete" tabindex="-1">✖</button></span>';
         }
         return $t . $pt->messages_at("authors:$n")
             . $pt->messages_at("authors:email_$n")

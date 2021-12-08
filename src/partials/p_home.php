@@ -171,7 +171,7 @@ class Home_Partial {
 
         $tOpt = PaperSearch::viewable_limits($user);
         echo '<div class="homegrp d-table" id="homelist">',
-            $this->render_h2_home('<a class="qq" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
+            $this->render_h2_home('<a class="q" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
             Ht::form($conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",

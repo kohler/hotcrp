@@ -513,7 +513,7 @@ if ($Me->can_administer($prow)) {
             echo '" data-review-in-progress="';
         }
         echo '"><div class="pctbname pctbname', $crevtype, ' ui js-assignment-fold">',
-            '<a class="qq ui js-assignment-fold" href="">', expander(null, 0),
+            '<a class="q ui js-assignment-fold" href="">', expander(null, 0),
             $Me->reviewer_html_for($pc), '</a>';
         if ($crevtype != 0) {
             echo review_type_icon($crevtype, $rrow && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED, "ml-2");

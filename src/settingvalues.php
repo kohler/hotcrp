@@ -1523,7 +1523,7 @@ class SettingValues extends MessageSet {
             $si->default_value = $this->si_message_default($si);
         }
         $current = $this->curv($name);
-        $description = '<a class="ui qq js-foldup" href="">'
+        $description = '<a class="ui q js-foldup" href="">'
             . expander(null, 0) . $description . '</a>';
         echo '<div class="f-i has-fold fold', ($current == $si->default_value ? "c" : "o"), '">',
             '<div class="f-c', $xclass, ' ui js-foldup">',
@@ -1550,7 +1550,7 @@ class SettingValues extends MessageSet {
                 $this->label($name, $description), '<div>';
             $close = "";
         } else {
-            $description = '<a class="ui qq js-foldup href="">'
+            $description = '<a class="ui q js-foldup href="">'
                 . expander(null, 0) . $description . '</a>';
             echo '<div class="entryi has-fold foldc">',
                 $this->label($name, $description), '<div>',

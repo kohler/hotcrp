@@ -1342,7 +1342,7 @@ class Tagger {
                 }
                 $b = self::unparse_emoji_html($e, $count);
                 if ($type === self::DECOR_PAPER && !empty($links)) {
-                    $b = '<a class="qq" href="' . $this->conf->hoturl("search", ["q" => join(" OR ", $links)]) . '">' . $b . '</a>';
+                    $b = '<a class="q" href="' . $this->conf->hoturl("search", ["q" => join(" OR ", $links)]) . '">' . $b . '</a>';
                 }
                 if ($x === "") {
                     $x = " ";

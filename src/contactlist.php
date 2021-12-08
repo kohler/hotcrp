@@ -549,7 +549,7 @@ class ContactList {
             }
             $t = '<span class="taghl">' . $t . '</span>';
             if ($this->user->privChair) {
-                $t = "<a href=\"" . $this->conf->hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? ' class="uu"' : "") . ">$t</a>";
+                $t = "<a href=\"" . $this->conf->hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? ' class="u"' : "") . ">$t</a>";
             }
             if (($viewable = $row->viewable_tags($this->user))
                 && $this->conf->tags()->has_decoration) {
@@ -699,7 +699,7 @@ class ContactList {
                 $x = [];
                 foreach (Tagger::split($tags) as $t) {
                     if ($t !== "pc#0")
-                        $x[] = '<a class="qq nw" href="' . $this->conf->hoturl("users", "t=%23" . Tagger::base($t)) . '">' . $this->tagger->unparse_hashed($t) . '</a>';
+                        $x[] = '<a class="q nw" href="' . $this->conf->hoturl("users", "t=%23" . Tagger::base($t)) . '">' . $this->tagger->unparse_hashed($t) . '</a>';
                 }
                 return join(" ", $x);
             } else {

@@ -1561,7 +1561,7 @@ function to_rgba(c) {
 }
 
 function make_model(color) {
-    return $('<div class="bubble hidden' + color + '"><div class="bubtail bubtail0' + color + '"></div></div>').appendTo(document.body);
+    return $('<div class="bubble hidden'.concat(color, '"><div class="bubtail bubtail0', color, '"></div></div>')).appendTo(document.body);
 }
 
 function calculate_sizes(color) {
@@ -1588,7 +1588,7 @@ return function (content, bubopt) {
     var nearpos = null, dirspec = bubopt.anchor, dir = null,
         color = bubopt.color ? " " + bubopt.color : "";
 
-    var bubdiv = $('<div class="bubble' + color + '" style="margin:0"><div class="bubtail bubtail0' + color + '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1' + color + '" style="width:0;height:0"></div></div>')[0];
+    var bubdiv = $('<div class="bubble'.concat(color, '" style="margin:0"><div class="bubtail bubtail0', color, '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1', color, '" style="width:0;height:0"></div></div>'))[0];
     document.body.appendChild(bubdiv);
     if (bubopt["pointer-events"])
         $(bubdiv).css({"pointer-events": bubopt["pointer-events"]});
@@ -2127,12 +2127,12 @@ function popup_skeleton(options) {
     var hc = new HtmlCollector, $d = null;
     options = options || {};
     var near = options.near || options.anchor;
-    hc.push('<div class="modal" role="dialog"><div class="modal-dialog'
-        + (!near || near === window ? " modal-dialog-centered" : "")
-        + (options.style ? '" style="' + escape_html(options.style) : '')
-        + '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8"'
-        + (options.form_class ? ' class="' + options.form_class + '"' : '')
-        + '>', '</form></div></div></div>');
+    hc.push('<div class="modal" role="dialog"><div class="modal-dialog'.concat(
+        !near || near === window ? " modal-dialog-centered" : "",
+        options.style ? '" style="' + escape_html(options.style) : '',
+        '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8"',
+        options.form_class ? ' class="' + options.form_class + '"' : '',
+        '>'), '</form></div></div></div>');
     hc.push_actions = function (actions) {
         hc.push('<div class="popup-actions">', '</div>');
         if (actions)
@@ -2442,7 +2442,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     t += '</td><td class="tracker-pid">';
     if (paper.pid)
-        t += '<a class="uu" href="' + escape_html(url) + '">#' + paper.pid + '</a>';
+        t += '<a class="u" href="'.concat(escape_html(url), '">#', paper.pid, '</a>');
     t += '</td><td class="tracker-body"';
     if (idx >= 2 && (tr.allow_administer || tr.position_at))
         t += ' colspan="2"';
@@ -2454,13 +2454,13 @@ function tracker_paper_columns(tr, idx, wwidth) {
             title = title.replace(/^(\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 50) + "…";
         else if (wwidth <= 768 && title.length > 50)
             title = title.replace(/^(\S+\s+\S+\s+\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 75) + "…";
-        x.push('<a class="tracker-title uu' + f + '" href="' + url + '">' + text_to_html(title) + '</a>');
+        x.push('<a class="tracker-title u'.concat(f, '" href="', url, '">', text_to_html(title), '</a>'));
         if (paper.format)
             tracker_has_format = true;
     }
     for (var i = 0; i !== tracker_map.length; ++i)
         if (paper[tracker_map[i][0]])
-            x.push('<span class="tracker-' + tracker_map[i][1] + '">' + tracker_map[i][2] + '</span>');
+            x.push('<span class="tracker-'.concat(tracker_map[i][1], '">', tracker_map[i][2], '</span>'));
     return t + x.join(" &nbsp;&#183;&nbsp; ") + '</td>';
 }
 
@@ -2477,9 +2477,9 @@ function tracker_html(tr) {
     var logo = escape_html(tr.logo || "☞");
     var logo_class = logo === "☞" ? "tracker-logo tracker-logo-fist" : "tracker-logo";
     if (tr.allow_administer)
-        t += '<a class="ui nn js-tracker need-tooltip ' + logo_class + '" aria-label="Tracker settings and status" href="">' + logo + '</a>';
+        t += '<a class="ui nn js-tracker need-tooltip '.concat(logo_class, '" aria-label="Tracker settings and status" href="">', logo, '</a>');
     else
-        t += '<div class="' + logo_class + '">' + logo + '</div>';
+        t += '<div class="'.concat(logo_class, '">', logo, '</div>');
     var rows = [], i, wwidth = $(window).width();
     if (!tr.papers || !tr.papers[0]) {
         rows.push('<td><a href=\"' + text_to_html(siteinfo.site_relative + tr.url) + '\">Discussion list</a></td>');
@@ -2491,9 +2491,9 @@ function tracker_html(tr) {
     for (i = 0; i < rows.length; ++i) {
         t += '<tr class="tracker-row">';
         if (i === 0)
-            t += '<td rowspan="' + rows.length + '" class="tracker-logo-td"><div class="tracker-logo-space"></div></td>';
+            t += '<td rowspan="'.concat(rows.length, '" class="tracker-logo-td"><div class="tracker-logo-space"></div></td>');
         if (i === 0 && tr.name)
-            t += '<td rowspan="' + rows.length + '" class="tracker-name-td"><span class="tracker-name">' + escape_html(tr.name) + '</span></td>';
+            t += '<td rowspan="'.concat(rows.length, '" class="tracker-name-td"><span class="tracker-name">', escape_html(tr.name), '</span></td>');
         t += rows[i];
         if (i === 0 && (tr.allow_administer || tr.position_at)) {
             t += '<td rowspan="' + Math.min(2, rows.length) + '" class="tracker-elapsed nb">';
@@ -4275,7 +4275,7 @@ function unparse_ratings(ratings, user_rating, editable) {
                         "Too narrow", "Disrespectful", "Not correct"];
     var t = [];
     t.push('<span class="revrating-group flag fn">'
-           + (editable ? '<a href="" class="qq ui js-revrating-unfold">' : '<a href="' + hoturl("help", {t: "revrate"}) + '" class="qq">')
+           + (editable ? '<a href="" class="q ui js-revrating-unfold">' : '<a href="' + hoturl("help", {t: "revrate"}) + '" class="q">')
            + '&#x2691;</a></span>');
     for (var i = 0; i < rating_names.length; ++i) {
         if (editable) {
@@ -4299,7 +4299,7 @@ function unparse_ratings(ratings, user_rating, editable) {
     if (editable) {
         t.push('<span class="revrating-group fn"><button class="ui js-foldup">…</button></span>');
         return '<div class="revrating editable has-fold foldc ui js-revrating-unfold' + (user_rating === 2 ? ' want-revrating-generalize' : '') + '">'
-            + '<div class="f-c fx"><a href="' + hoturl("help", {t: "revrate"}) + '" class="qq">Review ratings <span class="n">(anonymous reviewer feedback)</span></a></div>'
+            + '<div class="f-c fx"><a href="' + hoturl("help", {t: "revrate"}) + '" class="q">Review ratings <span class="n">(anonymous reviewer feedback)</span></a></div>'
             + t.join(" ") + '</div>';
     } else if (t) {
         return '<div class="revrating">' + t.join(" ") + '</div>';
@@ -4558,14 +4558,14 @@ function comment_identity_time(cj) {
         }
         t.push('<span class="t-editor">✎</span></a></div>');
     } else if (cj.ordinal) {
-        t.push('<div class="cmtnumid cmtnum"><a class="qq" href="#' + cj_cid(cj)
+        t.push('<div class="cmtnumid cmtnum"><a class="q" href="#' + cj_cid(cj)
                + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
                + cj.ordinal + '</span></a></div>');
     }
     if (cj.author && cj.author_hidden) {
         t.push('<address class="cmtname fold9c" itemprop="author"><span class="fx9' +
                (cj.author_email ? '" title="' + cj.author_email : '') +
-               '">' + cj.author + ' </span><a class="ui qq js-foldup" href="" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
+               '">' + cj.author + ' </span><a class="ui q js-foldup" href="" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
                (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deblinded)</span></a></address>');
     } else if (cj.author) {
         x = cj.author;
@@ -4588,7 +4588,7 @@ function comment_identity_time(cj) {
     if (!cj.response && cj.tags) {
         x = [];
         for (i in cj.tags) {
-            x.push('<a class="qq" href="' + hoturl_html("search", {q: "cmt:#" + unparse_tag(cj.tags[i], true)}) + '">#' + unparse_tag(cj.tags[i]) + '</a>');
+            x.push('<a class="q" href="' + hoturl_html("search", {q: "cmt:#" + unparse_tag(cj.tags[i], true)}) + '">#' + unparse_tag(cj.tags[i]) + '</a>');
         }
         t.push('<div class="cmttags">' + x.join(" ") + '</div>');
     }
@@ -7197,7 +7197,7 @@ handle_ui.on("js-expand-archive", function (evt) {
     fold($j[0]);
     if (!$j.find(".archiveexpansion").length) {
         $j.append('<span class="archiveexpansion fx"></span>');
-        $.ajax(hoturl_add($j.find("a").filter(":not(.qq)").attr("href"), "fn=consolidatedlisting"), {
+        $.ajax(hoturl_add($j.find("a").filter(":not(.q)").attr("href"), "fn=consolidatedlisting"), {
             method: "GET", success: function (data) {
                 if (data.ok && data.result)
                     $j.find(".archiveexpansion").text(" (" + data.result + ")");
@@ -7515,7 +7515,7 @@ function compute_row_tagset(tagstr, editable) {
             if ((tagx & 2) || tindex != "0")
                 h = '<a class="nn nw" href="' + hoturl("search", {q: q}) + '"><u class="x">#' + tbase + '</u>#' + tindex + '</a>';
             else
-                h = '<a class="qq nw" href="' + hoturl("search", {q: q}) + '">#' + tbase + '</a>';
+                h = '<a class="q nw" href="' + hoturl("search", {q: q}) + '">#' + tbase + '</a>';
             if (taghighlighter && taghighlighter.test(tbase))
                 h = '<strong>' + h + '</strong>';
             t.push([h, text.substring(twiddle, hash), text.substring(hash + 1), tagx]);
