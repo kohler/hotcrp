@@ -19,6 +19,9 @@ table, tr, td, th {
 	border-collapse: collapse;
 	empty-cells: show;
 }
+table {
+	line-height: inherit;
+}
 .p {
 	margin-bottom: 1em;
 }

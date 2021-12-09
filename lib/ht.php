@@ -158,7 +158,8 @@ class Ht {
      * @return string */
     static function select($name, $opt, $selected = null, $js = null) {
         if (is_array($selected) && $js === null) {
-            list($js, $selected) = array($selected, null);
+            $js = $selected;
+            $selected = null;
         }
         $disabled = $js["disabled"] ?? null;
         if (is_array($disabled)) {
@@ -174,7 +175,7 @@ class Ht {
             } else if (is_array($info)) {
                 $info = (object) $info;
             } else if (is_scalar($info)) {
-                $info = (object) array("label" => $info);
+                $info = (object) ["label" => $info];
                 if (is_array($disabled) && isset($disabled[$value])) {
                     $info->disabled = $disabled[$value];
                 }
@@ -205,7 +206,9 @@ class Ht {
                 if ($first_value === false) {
                     $first_value = $value;
                 }
-                if (strcmp((string) $value, $selected) === 0 && !$has_selected) {
+                if ($selected !== null
+                    && strcmp((string) $value, $selected) === 0
+                    && !$has_selected) {
                     $x .= ' selected';
                     $has_selected = true;
                 }
@@ -296,7 +299,7 @@ class Ht {
             $js = $html;
             $html = "";
         } else if ($js === null) {
-            $js = array();
+            $js = [];
         }
         $type = isset($js["type"]) ? $js["type"] : "button";
         if (!isset($js["value"]) && isset($js["name"]) && $type !== "button") {
@@ -452,7 +455,7 @@ class Ht {
      * @return string */
     static function img($src, $alt, $js = null) {
         if (is_string($js)) {
-            $js = array("class" => $js);
+            $js = ["class" => $js];
         }
         if (self::$img_base && !preg_match(',\A(?:https?:/|/),i', $src)) {
             $src = self::$img_base . $src;
@@ -567,7 +570,13 @@ class Ht {
     }
 
 
-    static function contextual_diagnostic($s, $pos1, $pos2, $message, $status = null) {
+    /** @param string $s
+     * @param int $pos1
+     * @param int $pos2
+     * @param string $msg
+     * @param ?int $status
+     * @return string */
+    static function contextual_diagnostic($s, $pos1, $pos2, $msg, $status = null) {
         $klass = $status && $status === 1 ? "is-warning" : "is-error";
         if (is_usascii($s)) {
             $s = preg_replace('/\s/', " ", $s);
@@ -588,9 +597,8 @@ class Ht {
             $t = htmlspecialchars($s);
         }
         $indent = str_repeat(" ", $spaces);
-        return $t . "\n"
-            . $indent . '<span class="' . $klass . '">' . str_repeat("↑", $arrows) . "</span>\n"
-            . $indent . '<span class="text-default ' . $klass . '">' . $message . "</span>\n";
+        return "{$t}\n{$indent}<span class=\"{$klass}\">"
+            . str_repeat("↑", $arrows) . "</span>\n{$indent}<span class=\"text-default {$klass}\">{$msg}</span>\n";
     }
 
 
