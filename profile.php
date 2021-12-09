@@ -359,7 +359,6 @@ function parseBulkFile(Contact $user, $text, $filename) {
     }
 
     $ustatus = new UserStatus($user);
-    $ustatus->notify = true; // notify all new users
     $ustatus->no_deprivilege_self = true;
     $ustatus->no_nonempty_profile = true;
     $ustatus->add_csv_synonyms($csv);
@@ -370,6 +369,7 @@ function parseBulkFile(Contact $user, $text, $filename) {
         $ustatus->clear_messages();
         $cj = (object) ["id" => null];
         $ustatus->parse_csv_group("", $cj, $line);
+        $ustatus->notify = friendly_boolean($line["notify"]) ?? true;
         if (($saved_user = save_user($cj, $ustatus, null))) {
             $x = "<a class=\"nb\" href=\"" . $conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
             if ($ustatus->notified) {

@@ -931,6 +931,8 @@ class UserStatus extends MessageSet {
         }
         if (!empty($this->diffs)) {
             $user->conf->log_for($this->viewer, $user, "Account edited: " . join(", ", array_keys($this->diffs)));
+        } else if ($this->created) {
+            $this->diffs["create"] = true;
         }
 
         // Notify of new accounts or new PC-ness
