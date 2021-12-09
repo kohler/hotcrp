@@ -205,6 +205,7 @@ abstract class Fexpr implements JsonSerializable {
         return $cmp;
     }
 
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         if ($this->op) {
             $x = ["op" => $this->op];
@@ -2374,6 +2375,7 @@ class Formula implements JsonSerializable {
         return $this->check() ? $this->_parse->index_type : 0;
     }
 
+    #[\ReturnTypeWillChange]
     /** @return array<string,string> */
     function jsonSerialize() {
         $j = [];

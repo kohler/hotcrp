@@ -876,6 +876,7 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $j = ["confid" => $this->conf->dbname];
         foreach (get_object_vars($this) as $k => $v) {

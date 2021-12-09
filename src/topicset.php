@@ -93,6 +93,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         }
     }
 
+    #[\ReturnTypeWillChange]
     /** @return int */
     function count() {
         return count($this->_topic_map);
@@ -101,18 +102,23 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     function as_array() {
         return $this->_topic_map;
     }
+    #[\ReturnTypeWillChange]
     function getIterator() {
         return new ArrayIterator($this->_topic_map);
     }
+    #[\ReturnTypeWillChange]
     function offsetExists($offset) {
         return isset($this->_topic_map[$offset]);
     }
+    #[\ReturnTypeWillChange]
     function offsetGet($offset) {
         return $this->_topic_map[$offset];
     }
+    #[\ReturnTypeWillChange]
     function offsetSet($offset, $value) {
         throw new Exception("invalid TopicSet::offsetSet");
     }
+    #[\ReturnTypeWillChange]
     function offsetUnset($offset) {
         throw new Exception("invalid TopicSet::offsetUnset");
     }

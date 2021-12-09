@@ -260,6 +260,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function size() {
         return count($this->prows);
     }
+    #[\ReturnTypeWillChange]
     /** @return int */
     function count() {
         return count($this->prows);
@@ -337,20 +338,25 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return false;
     }
+    #[\ReturnTypeWillChange]
     /** @return Iterator<PaperInfo> */
     function getIterator() {
         return new ArrayIterator($this->prows);
     }
+    #[\ReturnTypeWillChange]
     function offsetExists($offset) {
         return isset($this->by_pid[$offset]);
     }
+    #[\ReturnTypeWillChange]
     /** @return ?PaperInfo */
     function offsetGet($offset) {
         return $this->by_pid[$offset] ?? null;
     }
+    #[\ReturnTypeWillChange]
     function offsetSet($offset, $value) {
         throw new Exception("invalid PaperInfoSet::offsetSet");
     }
+    #[\ReturnTypeWillChange]
     function offsetUnset($offset) {
         throw new Exception("invalid PaperInfoSet::offsetUnset");
     }
@@ -3028,6 +3034,7 @@ class PaperInfoLikelyContacts implements JsonSerializable {
     /** @var list<Author> */
     public $nonauthor_contacts = [];
 
+    #[\ReturnTypeWillChange]
     /** @return array{author_list:list<object>,author_cids:list<list<int>>,nonauthor_contacts?:list<object>} */
     function jsonSerialize() {
         $x = ["author_list" => [], "author_cids" => $this->author_cids];

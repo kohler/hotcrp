@@ -89,9 +89,11 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this->____referrer;
     }
 
+    #[\ReturnTypeWillChange]
     function offsetExists($offset) {
         return property_exists($this, $offset);
     }
+    #[\ReturnTypeWillChange]
     function& offsetGet($offset) {
         $x = null;
         if (property_exists($this, $offset)) {
@@ -99,13 +101,16 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $x;
     }
+    #[\ReturnTypeWillChange]
     function offsetSet($offset, $value) {
         $this->$offset = $value;
         unset($this->____a[$offset]);
     }
+    #[\ReturnTypeWillChange]
     function offsetUnset($offset) {
         unset($this->$offset);
     }
+    #[\ReturnTypeWillChange]
     function getIterator() {
         return new ArrayIterator($this->as_array());
     }
@@ -161,10 +166,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         return $this;
     }
+    #[\ReturnTypeWillChange]
     /** @return int */
     function count() {
         return count(get_object_vars($this)) - 9;
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->as_array();
     }

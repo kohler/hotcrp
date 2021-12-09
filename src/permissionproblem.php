@@ -14,11 +14,13 @@ class PermissionProblem extends Exception
         $this->conf = $conf;
         $this->_a = $a ?? [];
     }
+    #[\ReturnTypeWillChange]
     /** @param string $offset
      * @return bool */
     function offsetExists($offset) {
         return array_key_exists($offset, $this->_a);
     }
+    #[\ReturnTypeWillChange]
     /** @param string $offset */
     function& offsetGet($offset) {
         $x = null;
@@ -27,15 +29,18 @@ class PermissionProblem extends Exception
         }
         return $x;
     }
+    #[\ReturnTypeWillChange]
     /** @param string $offset
      * @param mixed $value */
     function offsetSet($offset, $value) {
         $this->_a[$offset] = $value;
     }
+    #[\ReturnTypeWillChange]
     /** @param string $offset */
     function offsetUnset($offset) {
         unset($this->_a[$offset]);
     }
+    #[\ReturnTypeWillChange]
     function getIterator() {
         return new ArrayIterator($this->as_array());
     }
@@ -61,10 +66,12 @@ class PermissionProblem extends Exception
         }
         return $this;
     }
+    #[\ReturnTypeWillChange]
     /** @return int */
     function count() {
         return count($this->_a);
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->as_array();
     }

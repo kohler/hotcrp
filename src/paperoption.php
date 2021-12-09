@@ -224,6 +224,7 @@ class PaperValue implements JsonSerializable {
     function message_list() {
         return $this->_ms ? $this->_ms->message_list() : [];
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         if ($this->_data === null
             || $this->_data === []
@@ -455,6 +456,7 @@ class PaperOptionList implements IteratorAggregate {
         return $this->_olist;
     }
 
+    #[\ReturnTypeWillChange]
     function getIterator() {
         $this->normal();
         return new ArrayIterator($this->_olist);
@@ -1148,6 +1150,7 @@ class PaperOption implements JsonSerializable {
         }
     }
 
+    #[\ReturnTypeWillChange]
     /** @return object */
     function jsonSerialize() {
         $j = (object) ["id" => (int) $this->id, "name" => $this->name];

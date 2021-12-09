@@ -17,6 +17,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         $this->a = $a;
         $this->csvp = $csvp;
     }
+    #[\ReturnTypeWillChange]
     /** @param int|string $offset
      * @return bool */
     function offsetExists($offset) {
@@ -26,6 +27,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         }
         return isset($this->a[$offset]);
     }
+    #[\ReturnTypeWillChange]
     /** @param int|string $offset
      * @return string */
     function& offsetGet($offset) {
@@ -39,6 +41,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         }
         return $x;
     }
+    #[\ReturnTypeWillChange]
     /** @param int|string $offset
      * @param string $value */
     function offsetSet($offset, $value) {
@@ -48,6 +51,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         }
         $this->a[$offset] = $value;
     }
+    #[\ReturnTypeWillChange]
     /** @param int|string $offset */
     function offsetUnset($offset) {
         if (is_string($offset)
@@ -56,6 +60,7 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         }
         unset($this->a[$offset]);
     }
+    #[\ReturnTypeWillChange]
     /** @return Generator<string> */
     function getIterator() {
         foreach ($this->a as $i => $v) {
@@ -63,10 +68,12 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
             yield $offset => $v;
         }
     }
+    #[\ReturnTypeWillChange]
     /** @return int */
     function count() {
         return count($this->a);
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->as_map();
     }
@@ -527,6 +534,7 @@ class CsvParser implements Iterator {
         return $a;
     }
 
+    #[\ReturnTypeWillChange]
     /** @return CsvRow */
     function current() {
         if ($this->_current === null) {
@@ -535,11 +543,13 @@ class CsvParser implements Iterator {
         return $this->_current;
     }
 
+    #[\ReturnTypeWillChange]
     /** @return int */
     function key() {
         return $this->_current_pos;
     }
 
+    #[\ReturnTypeWillChange]
     /** @return void */
     function next() {
         if ($this->_current === null) {
@@ -550,6 +560,7 @@ class CsvParser implements Iterator {
         $this->_current_pos = $this->lpos;
     }
 
+    #[\ReturnTypeWillChange]
     /** @return void */
     function rewind() {
         $this->lpos = $this->_rewind_pos;
@@ -558,6 +569,7 @@ class CsvParser implements Iterator {
         $this->_current_pos = $this->lpos;
     }
 
+    #[\ReturnTypeWillChange]
     /** @return bool */
     function valid() {
         return $this->lpos !== count($this->lines);

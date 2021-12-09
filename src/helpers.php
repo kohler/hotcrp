@@ -169,6 +169,7 @@ class JsonResult implements JsonSerializable {
         header("Content-Type: application/json; charset=utf-8");
         echo json_encode_browser($this->content);
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->content;
     }
@@ -333,7 +334,7 @@ function numrangejoin($range) {
                 $a[] = $first . "–" . substr($last, $plen);
             }
         }
-        if ($current !== "" && ctype_digit($current)) {
+        if ($current !== "" && (is_int($current) || ctype_digit($current))) {
             $format = "%0" . strlen((string) $current) . "d";
             $plen = 0;
             $first = $last = $current;

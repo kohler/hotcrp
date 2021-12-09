@@ -256,6 +256,7 @@ class ReviewField implements JsonSerializable {
         }
         return $j;
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->unparse_json(0);
     }
@@ -740,6 +741,7 @@ class ReviewForm implements JsonSerializable {
         return $fs;
     }
 
+    #[\ReturnTypeWillChange]
     /** @return list<object> */
     function jsonSerialize() {
         $fmap = [];

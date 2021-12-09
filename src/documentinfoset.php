@@ -147,6 +147,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function size() {
         return count($this->docs);
     }
+    #[\ReturnTypeWillChange]
     /** @return int */
     function count() {
         return count($this->docs);
@@ -184,10 +185,12 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function filename_by_index($i) {
         return $this->ufn[$i] ?? null;
     }
+    #[\ReturnTypeWillChange]
     /** @return Iterator<DocumentInfo> */
     function getIterator() {
         return new ArrayIterator($this->docs);
     }
+    #[\ReturnTypeWillChange]
     /** @param int|string $offset
      * @return bool */
     function offsetExists($offset) {
@@ -195,6 +198,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             ? isset($this->docs[$offset])
             : $offset !== "" && in_array($offset, $this->ufn);
     }
+    #[\ReturnTypeWillChange]
     /** @param int|string $offset
      * @return ?DocumentInfo */
     function offsetGet($offset) {
@@ -203,9 +207,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         return is_int($offset) ? $this->docs[$offset] ?? null : null;
     }
+    #[\ReturnTypeWillChange]
     function offsetSet($offset, $value) {
         throw new Exception("invalid DocumentInfoSet::offsetSet");
     }
+    #[\ReturnTypeWillChange]
     function offsetUnset($offset) {
         throw new Exception("invalid DocumentInfoSet::offsetUnset");
     }

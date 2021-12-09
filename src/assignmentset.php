@@ -43,20 +43,24 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
     function pid() {
         return $this->before->pid;
     }
+    #[\ReturnTypeWillChange]
     /** @param string $offset
      * @return bool */
     function offsetExists($offset) {
         $x = $this->after ?? $this->before;
         return isset($x->$offset);
     }
+    #[\ReturnTypeWillChange]
     /** @param string $offset */
     function offsetGet($offset) {
         $x = $this->after ?? $this->before;
         return $x->$offset ?? null;
     }
+    #[\ReturnTypeWillChange]
     function offsetSet($offset, $value) {
         throw new Exception("invalid AssignmentItem::offsetSet");
     }
+    #[\ReturnTypeWillChange]
     function offsetUnset($offset) {
         throw new Exception("invalid AssignmentItem::offsetUnset");
     }
@@ -111,6 +115,7 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
     function realize(AssignmentState $astate) {
         return call_user_func($astate->realizer($this->offsetGet("type")), $this, $astate);
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $x = [
             "type" => $this->before->type,
@@ -922,11 +927,11 @@ class ReviewAssigner_Data {
         }
         $a0 = is_string($a0) ? trim($a0) : $a0;
         $a1 = is_string($a1) ? trim($a1) : $a1;
-        if (strcasecmp($a0, "any") === 0) {
+        if ($a0 !== null && strcasecmp($a0, "any") === 0) {
             $a0 = null;
             $require_match = true;
         }
-        if (strcasecmp($a1, "any") === 0) {
+        if ($a1 !== null && strcasecmp($a1, "any") === 0) {
             $a1 = null;
             $require_match = true;
         }

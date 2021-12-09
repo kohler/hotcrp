@@ -72,6 +72,7 @@ require_once(SiteLoader::find("lib/navigation.php"));
 require_once(SiteLoader::find("lib/polyfills.php"));
 require_once(SiteLoader::find("lib/base.php"));
 require_once(SiteLoader::find("lib/redirect.php"));
+mysqli_report(MYSQLI_REPORT_OFF);
 require_once(SiteLoader::find("lib/dbl.php"));
 require_once(SiteLoader::find("src/helpers.php"));
 require_once(SiteLoader::find("src/conference.php"));

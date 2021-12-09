@@ -2013,8 +2013,8 @@ class Contact {
         $local_ok = $this->contactId > 0
             && $this->password
             && $this->check_hashed_password($input, $this->password);
-        $cdb_ok = $cdbu
-            && $cdbu->password
+        $cdb_password = $cdbu ? (string) $cdbu->password : "";
+        $cdb_ok = $cdb_password
             && $this->check_hashed_password($input, $cdbu->password);
         $cdb_older = !$cdbu || $cdbu->passwordTime < $this->passwordTime;
 
@@ -2026,8 +2026,7 @@ class Contact {
         }
 
         // users with reset passwords cannot log in
-        if (($cdbu
-             && str_starts_with($cdbu->password, " reset"))
+        if (str_starts_with($cdb_password, " reset")
             || ($cdb_older
                 && !$cdb_ok
                 && str_starts_with($this->password, " reset"))) {
@@ -2036,12 +2035,11 @@ class Contact {
 
         // users with unset passwords cannot log in
         // This logic should correspond closely with Contact::password_unset().
-        if (($cdbu
-             && (!$cdb_older || !$local_ok)
-             && str_starts_with($cdbu->password, " unset"))
-            || ((!$cdbu || (string) $cdbu->password === "")
+        if (((!$cdb_older || !$local_ok)
+             && str_starts_with($cdb_password, " unset"))
+            || ($cdb_password === ""
                 && str_starts_with($this->password, " unset"))
-            || ((!$cdbu || (string) $cdbu->password === "")
+            || ($cdb_password === ""
                 && (string) $this->password === "")) {
             return ["ok" => false, "email" => true, "unset" => true];
         }
@@ -2062,10 +2060,10 @@ class Contact {
                     $x["local_password_age"] = ceil((Conf::$now - $this->passwordTime) / 8640) / 10;
                 }
             }
-            if ($cdbu && $cdbu->password) {
-                if ($cdbu->password[0] === " "
-                    && $cdbu->password[1] !== "$") {
-                    $x["cdbu_password"] = $cdbu->password;
+            if ($cdb_password !== "") {
+                if ($cdb_password[0] === " "
+                    && $cdb_password[1] !== "$") {
+                    $x["cdbu_password"] = $cdb_password;
                 }
                 if ($cdbu->passwordTime > 0) {
                     $x["cdb_password_age"] = ceil((Conf::$now - $cdbu->passwordTime) / 8640) / 10;
@@ -2091,8 +2089,8 @@ class Contact {
 
         // update cdb password
         if ($cdb_ok
-            || ($cdbu && (string) $cdbu->password === "")) {
-            if (!$cdb_ok || $this->password_needs_rehash($cdbu->password)) {
+            || ($cdbu && $cdb_password === "")) {
+            if (!$cdb_ok || $this->password_needs_rehash($cdb_password)) {
                 $cdbu->set_prop("password", $this->hash_password($input));
             }
             if (!$cdb_ok || !$cdbu->passwordTime) {

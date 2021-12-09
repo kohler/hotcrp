@@ -336,7 +336,7 @@ class Dbl {
                 }
                 ++$nextpos;
             } else if ($nextch === "s") {
-                $arg = $dblink->real_escape_string($arg);
+                $arg = $dblink->real_escape_string($arg ?? "");
                 ++$nextpos;
             } else if ($nextch === "l") {
                 $arg = sqlq_for_like($arg);
@@ -344,7 +344,7 @@ class Dbl {
                 if (substr($qstr, $nextpos + 1, 1) === "s") {
                     ++$nextpos;
                 } else {
-                    $arg = "'" . $arg . "'";
+                    $arg = "'{$arg}'";
                 }
             } else if ($nextch === "v") {
                 ++$nextpos;

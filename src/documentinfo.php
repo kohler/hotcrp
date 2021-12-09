@@ -1470,6 +1470,7 @@ class DocumentInfo implements JsonSerializable {
         $x["siteurl"] = $this->url(null, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
         return (object) $x;
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $x = [];
         foreach (get_object_vars($this) as $k => $v) {

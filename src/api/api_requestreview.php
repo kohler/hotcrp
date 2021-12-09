@@ -30,7 +30,7 @@ class RequestReview_API {
         }
 
         $name_args = Author::make_keyed(["firstName" => $qreq->firstName, "lastName" => $qreq->lastName, "name" => $qreq->name, "affiliation" => $qreq->affiliation, "email" => $email]);
-        $reason = trim($qreq->reason);
+        $reason = trim($qreq->reason ?? "");
 
         // check proposal:
         // - check existing review

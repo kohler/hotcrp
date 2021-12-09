@@ -235,6 +235,7 @@ class TagAnno implements JsonSerializable {
         $ta->heading = "Untagged";
         return $ta;
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $j = [];
         if ($this->pos !== null) {
@@ -469,6 +470,7 @@ class TagMap implements IteratorAggregate {
         ksort($this->storage);
         $this->sorted = true;
     }
+    #[\ReturnTypeWillChange]
     function getIterator() {
         $this->sorted || $this->sort_storage();
         return new ArrayIterator($this->storage);

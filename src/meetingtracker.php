@@ -741,6 +741,7 @@ class MeetingTracker_Config implements JsonSerializable {
         $this->hide_conflicts = $a["hide_conflicts"] ?? false;
     }
 
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $a = [
             "trackerid" => $this->trackerid,
@@ -885,6 +886,7 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
         return false;
     }
 
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         if (empty($this->ts)) {
             return [
@@ -939,6 +941,7 @@ class MeetingTracker_BrowserInfo implements JsonSerializable {
     /** @var ?string */
     public $global_visibility;
 
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $a = [
             "trackerid" => $this->trackerid,

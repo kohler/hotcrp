@@ -773,7 +773,7 @@ class SettingValues extends MessageSet {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->all_perm = $user->privChair;
-        foreach (Tagger::split_unpack($user->contactTags) as $ti) {
+        foreach (Tagger::split_unpack($user->contactTags ?? "") as $ti) {
             if (strcasecmp($ti[0], "perm:write-setting") === 0) {
                 $this->all_perm = $ti[1] >= 0;
             } else if (stri_starts_with($ti[0], "perm:write-setting:")) {
