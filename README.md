@@ -20,13 +20,13 @@ Prerequisites
 HotCRP runs on Unix, including Mac OS X. It requires the following
 software:
 
-* Nginx, http://nginx.org/ \
+* Nginx, https://nginx.org/ \
   (Or [Apache](https://httpd.apache.org), or another web server that works with PHP)
 * PHP version 7.0 or higher, http://php.net/
   - Including MySQL support, php-fpm, php-gmp, and php-intl
-* MySQL version 5 or higher, http://mysql.org/
-* The zip compressor, http://www.info-zip.org/
-* Poppler’s version of pdftohtml, http://poppler.freedesktop.org/ (only
+* MariaDB, https://mariadb.org/
+* The zip compressor, https://www.info-zip.org/
+* Poppler’s version of pdftohtml, https://poppler.freedesktop.org/ (only
   required for format checking)
 
 You may need to install additional packages, such as php73, php73-fpm,
@@ -36,8 +36,8 @@ Installation
 ------------
 
 1. Run `lib/createdb.sh` to create the database. Use
-`lib/createdb.sh OPTIONS` to pass options to MySQL, such as `--user`
-and `--password`. Many MySQL installations require privilege to create
+`lib/createdb.sh OPTIONS` to pass options to MariaDB, such as `--user`
+and `--password`. Many MariaDB installations require privilege to create
 tables, so you may need `sudo lib/createdb.sh OPTIONS`. Run
 `lib/createdb.sh --help` for more information. You will need to
 decide on a name for your database (no spaces allowed).
@@ -96,19 +96,18 @@ setting is 86400, e.g., 24 hours:
 `session.gc_maxlifetime` to 86400 anyway, then edit `conf/options.php`
 to set `$Opt["sessionLifetime"]` to the correct session timeout.
 
-5. Edit MySQL’s my.cnf (typical locations: `/etc/mysql/my.cnf` or
-`/etc/mysql/mysql.conf.d/mysqld.cnf`) to ensure that MySQL can handle
+5. Edit MariaDB’s my.cnf (typical locations: `/etc/mariadb/my.cnf` or
+`/etc/mariadb/mysql.conf.d/mysqld.cnf`) to ensure that MySQL can handle
 paper-sized objects.  It should contain something like this:
 
         [mysqld]
         max_allowed_packet=32M
 
-    max_allowed_packet must be at least as large as the largest paper
-you are willing to accept. It defaults to 1M on some systems, which is
-not nearly large enough. HotCRP will warn you if it is too small. Some
-MySQL setups, such as on Mac OS X, may not have a my.cnf by default;
-just create one. If you edit my.cnf, also restart the mysqld server.
-On Linux try something like `sudo /etc/init.d/mysql restart`.
+    max_allowed_packet must be at least as large as the largest paper you are
+willing to accept. It defaults to 1M on some systems, which is not nearly
+large enough. HotCRP will warn you if it is too small. Some MariaDB or MySQL
+setups, such as on Mac OS X, may not have a my.cnf by default; just create
+one. If you edit my.cnf, also restart the database server.
 
 6. Enable a mail transport agent, such as Postfix or Sendmail. You may need
 help from an administrator to ensure HotCRP can send mail.
@@ -144,8 +143,8 @@ submissions in the database, so the backup file may be quite large.
 Run `lib/restoredb.sh BACKUPFILE` at the shell prompt to restore the
 database from a backup stored in `BACKUPFILE`.
 
-Run `lib/runsql.sh` at the shell prompt to get a MySQL command prompt
-for the conference database.
+Run `lib/runsql.sh` at the shell prompt to get a SQL command prompt for the
+conference database.
 
 Updates
 -------
