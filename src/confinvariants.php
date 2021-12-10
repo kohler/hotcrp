@@ -162,8 +162,9 @@ class ConfInvariants {
         Dbl::free($result);
 
         // whitespace is simplified
-        $regex = Dbl::utf8($this->conf->dblink, "'^ | \$|  |[\\n\\r\\t]'");
-        $any = $this->invariantq("select email from ContactInfo where convert(firstName using utf8mb4) regexp $regex or convert(lastName using utf8mb4) regexp $regex or convert(affiliation using utf8mb4) regexp $regex limit 1");
+        $utf8cs = Dbl::utf8_charset($this->conf->dblink);
+        $regex = "_{$utf8cs}'^ | \$|  |[\\n\\r\\t]'";
+        $any = $this->invariantq("select email from ContactInfo where convert(firstName using $utf8cs) regexp $regex or convert(lastName using $utf8cs) regexp $regex or convert(affiliation using $utf8cs) regexp $regex limit 1");
         if ($any) {
             $this->invariant_error("user_whitespace", "user whitespace is not simplified");
         }

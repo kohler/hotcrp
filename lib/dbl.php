@@ -835,22 +835,47 @@ class Dbl {
         self::$query_log = false;
     }
 
-    /** @return string */
-    static function utf8(/* [$dblink,] $qstr */) {
-        $args = func_get_args();
-        $dblink = count($args) > 1 ? $args[0] : self::$default_dblink;
+    /** @param \mysqli|string $dblink
+     * @param ?string $qstr
+     * @return string */
+    static function utf8($dblink, $qstr = null) {
+        if (is_string($dblink)) {
+            $qstr = $dblink;
+            $dblink = self::$default_dblink;
+        }
         $utf8 = $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
-        $qstr = count($args) > 1 ? $args[1] : $args[0];
         return "_{$utf8}{$qstr}";
     }
 
-    /** @return string */
-    static function utf8ci(/* [$dblink,] $qstr */) {
-        $args = func_get_args();
-        $dblink = count($args) > 1 ? $args[0] : self::$default_dblink;
+    /** @param \mysqli|string $dblink
+     * @param ?string $qstr
+     * @return string */
+    static function utf8ci($dblink, $qstr = null) {
+        if (is_string($dblink)) {
+            $qstr = $dblink;
+            $dblink = self::$default_dblink;
+        }
         $utf8 = $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
-        $qstr = count($args) > 1 ? $args[1] : $args[0];
         return "_{$utf8}{$qstr} collate {$utf8}_general_ci";
+    }
+
+    /** @param \mysqli|string $dblink
+     * @param ?string $qstr
+     * @return string */
+    static function convert_utf8($dblink, $qstr = null) {
+        if (is_string($dblink)) {
+            $qstr = $dblink;
+            $dblink = self::$default_dblink;
+        }
+        $utf8 = $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
+        return "convert($qstr using $utf8)";
+    }
+
+    /** @param ?\mysqli $dblink
+     * @return string */
+    static function utf8_charset($dblink = null) {
+        $dblink = $dblink ?? self::$default_dblink;
+        return $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
     }
 }
 
