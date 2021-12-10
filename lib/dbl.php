@@ -154,14 +154,14 @@ class Dbl {
         global $Opt;
 
         $dbhost = $dbuser = $dbpass = $dbname = $dbport = null;
-        if ($dsn && preg_match('|^mysql://([^:@/]*)/(.*)|', $dsn, $m)) {
+        if ($dsn && preg_match('/^mysql:\/\/([^:@\/]*)\/(.*)/', $dsn, $m)) {
             $dbhost = urldecode($m[1]);
             $dbname = urldecode($m[2]);
-        } else if ($dsn && preg_match('|^mysql://([^:@/]*)@([^/]*)/(.*)|', $dsn, $m)) {
+        } else if ($dsn && preg_match('/^mysql:\/\/([^:@\/]*)@([^\/]*)\/(.*)/', $dsn, $m)) {
             $dbhost = urldecode($m[2]);
             $dbuser = urldecode($m[1]);
             $dbname = urldecode($m[3]);
-        } else if ($dsn && preg_match('|^mysql://([^:@/]*):([^@/]*)@([^/]*)/(.*)|', $dsn, $m)) {
+        } else if ($dsn && preg_match('/^mysql:\/\/([^:@\/]*):([^@\/]*)@([^\/]*)\/(.*)/', $dsn, $m)) {
             $dbhost = urldecode($m[3]);
             $dbuser = urldecode($m[1]);
             $dbpass = urldecode($m[2]);

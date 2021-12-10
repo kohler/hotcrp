@@ -18,7 +18,7 @@ AddDefaultCharset UTF-8
 DirectoryIndex index.php
 
 # Prevent access to SCM directory, logs, test, README, regardless of case.
-RedirectMatch 403 ^.*/(\.[Gg][Ii][Tt].*|\.[Mm][Yy].*|[Rr][Ee][Aa][Dd][Mm][Ee].*|[Ff][Ii][Ll][Ee][Ss][Tt][Oo][Rr][Ee]|[Dd][Oo][Cc][Ss]|[Cc][Oo][Nn][Ff]|[Cc][Oo][Dd][Ee]|[Ll][Oo][Gg][Ss])($|/.*$)
+RedirectMatch 403 ^.*/(\..*|[Rr][Ee][Aa][Dd][Mm][Ee].*|[Ff][Ii][Ll][Ee][Ss][Tt][Oo][Rr][Ee]|[Dd][Oo][Cc][Ss]|[Cc][Oo][Nn][Ff]|[Cc][Oo][Dd][Ee]|[Ll][Oo][Gg][Ss])($|/.*$)
 
 # Don't use MultiViews, which can conflict with mod_rewrite suffixless URLs.
 Options -MultiViews
