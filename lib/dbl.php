@@ -268,16 +268,45 @@ class Dbl {
         $strpos = $argpos = 0;
         $usedargs = [];
         $simpleargs = true;
+        $U_mysql8 = null;
         while (($strpos = strpos($qstr, "?", $strpos)) !== false) {
-            // argument name
+            $prefix = substr($qstr, 0, $strpos);
             $nextpos = $strpos + 1;
             $nextch = substr($qstr, $nextpos, 1);
+
+            // non-argument expansions
             if ($nextch === "?") {
-                $qstr = substr($qstr, 0, $strpos + 1) . substr($qstr, $strpos + 2);
-                $strpos = $strpos + 1;
+                $qstr = $prefix . substr($qstr, $nextpos);
+                $strpos = $nextpos;
                 continue;
-            } else if ($nextch === "{"
-                       && ($rbracepos = strpos($qstr, "}", $nextpos + 1)) !== false) {
+            } else if ($nextch === "U") {
+                $U_mysql8 = $U_mysql8 ?? (strpos($dblink->server_info, "Maria") === false
+                                          && $dblink->server_version >= 80020);
+                $ql = substr($qstr, 0, $strpos);
+                if (substr($qstr, $nextpos + 1, 1) === "(") {
+                    $rparen = strpos($qstr, ")", $nextpos + 2);
+                    $name = substr($qstr, $nextpos + 2, $rparen - $nextpos - 2);
+                    $suffix = substr($qstr, $rparen + 1);
+                    if ($U_mysql8) {
+                        $qstr = "{$prefix}__values.{$name}{$suffix}";
+                    } else {
+                        $qstr = "{$prefix}values({$name}){$suffix}";
+                    }
+                } else {
+                    $suffix = substr($qstr, $nextpos + 1);
+                    if ($U_mysql8) {
+                        $qstr = "{$prefix} as __values {$suffix}";
+                    } else {
+                        $qstr = "{$prefix}{$suffix}";
+                    }
+                }
+                $nextpos = strlen($qstr) - strlen($suffix);
+                continue;
+            }
+
+            // find argument
+            if ($nextch === "{"
+                && ($rbracepos = strpos($qstr, "}", $nextpos + 1)) !== false) {
                 $thisarg = substr($qstr, $nextpos + 1, $rbracepos - $nextpos - 1);
                 if ($thisarg === (string) (int) $thisarg)
                     --$thisarg;
@@ -294,6 +323,7 @@ class Dbl {
                 trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
             }
             $usedargs[$thisarg] = true;
+
             // argument format
             $arg = $argv[$thisarg] ?? null;
             if ($nextch === "e" || $nextch === "E") {
@@ -387,7 +417,7 @@ class Dbl {
             }
             // combine
             $suffix = substr($qstr, $nextpos);
-            $qstr = substr($qstr, 0, $strpos) . $arg . $suffix;
+            $qstr = "$prefix$arg$suffix";
             $strpos = strlen($qstr) - strlen($suffix);
         }
         if ($simpleargs && $argpos !== count($argv)) {

@@ -35,6 +35,8 @@ xassert_eqq($sig["signature"], "fea454ca298b7da1c68078a5d1bdbfbbe0d65c699e0f91ac
 xassert_eqq(Dbl::format_query("Hello"), "Hello");
 xassert_eqq(Dbl::format_query("Hello??"), "Hello?");
 xassert_eqq(Dbl::format_query("Hello????"), "Hello??");
+xassert_eqq(Dbl::format_query("Hello????? What the heck", 1), "Hello??1 What the heck");
+xassert_in_eqq(Dbl::format_query("Hello ?U? ?U(a)?", 1, 2), ["Hello 1 values(a)2", "Hello  as __values 1 __values.a2"]);
 xassert_eqq(Dbl::format_query("select ?, ?, ?, ?s, ?s, ?s, ?",
                               1, "a", null, 2, "b", null, 3),
             "select 1, 'a', NULL, 2, b, , 3");

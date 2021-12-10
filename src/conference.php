@@ -804,7 +804,7 @@ class Conf {
             if (is_array($dval) || is_object($dval)) {
                 $dval = json_encode_db($dval);
             }
-            $result = $this->qe("insert into Settings (name, value, data) values (?, ?, ?) on duplicate key update value=values(value), data=values(data)", $name, $value, $dval);
+            $result = $this->qe("insert into Settings (name, value, data) values (?, ?, ?) ?U on duplicate key update value=?U(value), data=?U(data)", $name, $value, $dval);
             if (!Dbl::is_error($result)) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $dval;

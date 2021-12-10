@@ -85,7 +85,7 @@ if ($users) {
 
     // perform role updates
     if (!empty($qv)) {
-        Dbl::ql($cdb, "insert into Roles (contactDbId,confid,roles,activity_at) values ?v on duplicate key update roles=values(roles), activity_at=values(activity_at)", $qv);
+        Dbl::ql($cdb, "insert into Roles (contactDbId,confid,roles,activity_at) values ?v ?U on duplicate key update roles=?U(roles), activity_at=?U(activity_at)", $qv);
     }
 
     // remove old roles
@@ -105,7 +105,7 @@ if ($papers) {
     Dbl::free($result);
 
     if (!empty($qv)) {
-        Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title) values ?v on duplicate key update title=values(title)", $qv);
+        Dbl::ql($cdb, "insert into ConferencePapers (confid,paperId,title) values ?v ?U on duplicate key update title=?U(title)", $qv);
     }
     Dbl::ql($cdb, "delete from ConferencePapers where confid=? and paperId?A", $confid, $pids);
     if ($confrow->last_submission_at != $max_submitted) {

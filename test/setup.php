@@ -306,6 +306,23 @@ function xassert_neqq($a, $b) {
     return $ok;
 }
 
+/** @param list $b
+ * @return bool */
+function xassert_in_eqq($a, $b) {
+    ++Xassert::$n;
+    $ok = false;
+    foreach ($b as $bx) {
+        $ok = $ok || $a === $bx;
+    }
+    if ($ok) {
+        ++Xassert::$nsuccess;
+    } else {
+        trigger_error("Assertion " . var_export($a, true) . " \in " . var_export($b, true)
+                      . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    }
+    return $ok;
+}
+
 /** @return bool */
 function xassert_eq($a, $b) {
     ++Xassert::$n;

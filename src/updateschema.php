@@ -264,7 +264,7 @@ class UpdateSchema {
                 $qv[] = [$row->mimetypeid, $row->mimetype, $extension];
         }
         Dbl::free($result);
-        return empty($qv) || $this->conf->ql_ok("insert into Mimetype (mimetypeid, mimetype, extension) values ?v on duplicate key update extension=values(extension)", $qv);
+        return empty($qv) || $this->conf->ql_ok("insert into Mimetype (mimetypeid, mimetype, extension) values ?v ?U on duplicate key update extension=?U(extension)", $qv);
     }
 
     private function v174_paper_review_tfields() {
@@ -630,8 +630,8 @@ class UpdateSchema {
             && $conf->ql_ok("alter table OptionType add `optionValues` text NOT NULL default ''")) {
             $conf->update_schema_version(14);
         }
-        if ($conf->sversion === 14
-            && $conf->ql_ok("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)")) {
+        if ($conf->sversion === 14) {
+            $conf->update_rev_tokens_setting(0);
             $conf->update_schema_version(15);
         }
         if ($conf->sversion === 15) {
@@ -688,10 +688,11 @@ class UpdateSchema {
             $conf->update_schema_version(25);
         }
         if ($conf->sversion === 25) {
-            if ($conf->settings["final_done"] > 0
+            if (($fd = $conf->settings["final_done"]) > 0
                 && !isset($conf->settings["final_soft"])
-                && $conf->ql_ok("insert into Settings (name, value) values ('final_soft', " . $conf->settings["final_done"] . ") on duplicate key update value=values(value)"))
-                $conf->settings["final_soft"] = $conf->settings["final_done"];
+                && $conf->ql_ok("insert into Settings (name, value) values ('final_soft', ?) on duplicate key update value=?", $fd, $fd)) {
+                $conf->settings["final_soft"] = $fd;
+            }
             $conf->update_schema_version(26);
         }
         if ($conf->sversion === 26

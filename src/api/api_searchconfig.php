@@ -305,7 +305,7 @@ class SearchConfig_API {
                 $qv[] = ["ss:" . $search_names[$lname], Conf::$now, json_encode_db($q)];
             }
             if (!empty($qv)) {
-                $user->conf->qe("insert into Settings (name, value, data) values ?v on duplicate key update value=values(value), data=values(data)", $qv);
+                $user->conf->qe("insert into Settings (name, value, data) values ?v ?U on duplicate key update value=?U(value), data=?U(data)", $qv);
             }
             $user->conf->replace_named_searches();
             return self::namedsearch($user, $qreq);
