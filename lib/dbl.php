@@ -835,6 +835,13 @@ class Dbl {
         self::$query_log = false;
     }
 
+    /** @param ?\mysqli $dblink
+     * @return string */
+    static function utf8_charset($dblink = null) {
+        $dblink = $dblink ?? self::$default_dblink;
+        return $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
+    }
+
     /** @param \mysqli|string $dblink
      * @param ?string $qstr
      * @return string */
@@ -869,13 +876,6 @@ class Dbl {
         }
         $utf8 = $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
         return "convert($qstr using $utf8)";
-    }
-
-    /** @param ?\mysqli $dblink
-     * @return string */
-    static function utf8_charset($dblink = null) {
-        $dblink = $dblink ?? self::$default_dblink;
-        return $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
     }
 }
 
