@@ -439,7 +439,7 @@ class Tag_Assigner extends Assigner {
         if ($this->index === null) {
             $aset->stage_qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
         } else {
-            $aset->stage_qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
+            $aset->stage_qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=?", $this->pid, $this->tag, $this->index, $this->index);
         }
         if ($this->index !== null
             && str_ends_with($this->tag, ':')) {

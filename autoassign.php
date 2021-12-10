@@ -75,7 +75,7 @@ if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && $Qreq->method() !== "POS
     if (count($x)
         || $Conf->setting_data("autoassign_badpairs")
         || (!isset($Qreq->badpairs) != !$Conf->setting("autoassign_badpairs"))) {
-        $Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', ?, ?) on duplicate key update data=values(data), value=values(value)", isset($Qreq->badpairs) ? 1 : 0, join(" ", $x));
+        $Conf->save_setting("autoassign_badpairs", isset($Qreq->badpairs) ? 1 : 0, join(" ", $x));
     }
 }
 

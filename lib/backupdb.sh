@@ -115,7 +115,7 @@ database_dump () {
     echo "--"
     echo "-- Force HotCRP to invalidate server caches"
     echo "--"
-    echo "INSERT INTO "'`Settings` (`name`,`value`)'" VALUES ('frombackup',UNIX_TIMESTAMP()) ON DUPLICATE KEY UPDATE value=greatest(value,values(value));"
+    echo "INSERT INTO "'`Settings` (`name`,`value`)'" VALUES ('frombackup',UNIX_TIMESTAMP()) ON DUPLICATE KEY UPDATE value=greatest(value,UNIX_TIMESTAMP());"
 }
 
 get_sversion () {

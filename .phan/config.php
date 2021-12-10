@@ -111,7 +111,8 @@ $config = [
 
     "suppress_issue_types" => [
         "PhanUnusedPublicMethodParameter",
-        "PhanParamReqAfterOpt"
+        "PhanParamReqAfterOpt", // remove when PHP 7.0 is not supported
+        "PhanUndeclaredClassAttribute"
     ],
 
     "plugins" => [

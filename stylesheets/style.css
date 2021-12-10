@@ -81,7 +81,7 @@ address {
 
 
 /* page background */
-body, .text-default {
+html, .text-default {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
 		"Helvetica Neue", Arial, sans-serif,
 		"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";

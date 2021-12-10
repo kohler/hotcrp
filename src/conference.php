@@ -735,7 +735,7 @@ class Conf {
             Dbl::free($result);
         }
         $this->ql("delete from Capability where timeExpires>0 and timeExpires<".Conf::$now);
-        $this->ql("insert into Settings set name='__capability_gc', value=".Conf::$now." on duplicate key update value=values(value)");
+        $this->ql("insert into Settings set name='__capability_gc', value=? on duplicate key update value=?", Conf::$now, Conf::$now);
         $this->settings["__capability_gc"] = Conf::$now;
     }
 
@@ -804,7 +804,7 @@ class Conf {
             if (is_array($dval) || is_object($dval)) {
                 $dval = json_encode_db($dval);
             }
-            $result = $this->qe("insert into Settings set name=?, value=?, data=? on duplicate key update value=values(value), data=values(data)", $name, $value, $dval);
+            $result = $this->qe("insert into Settings (name, value, data) values (?, ?, ?) on duplicate key update value=values(value), data=values(data)", $name, $value, $dval);
             if (!Dbl::is_error($result)) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $dval;
@@ -2502,21 +2502,31 @@ class Conf {
     }
 
 
+    /** @param string $name
+     * @param string $existsq
+     * @param int $adding */
+    private function update_setting_exists($name, $existsq, $adding) {
+        if ($adding >= 0) {
+            $this->qe_raw("insert into Settings (name, value) select '$name', 1 from dual where $existsq on duplicate key update value=1");
+        }
+        if ($adding <= 0) {
+            $this->qe_raw("delete from Settings where name='$name' and not ($existsq)");
+        }
+        $this->settings[$name] = (int) $this->fetch_ivalue("select value from Settings where name='$name'");
+    }
+
     // update the 'papersub' setting: are there any submitted papers?
     /** @param int $adding */
     function update_papersub_setting($adding) {
-        if (($this->setting("no_papersub") ?? 0) > 0 ? $adding >= 0 : $adding <= 0) {
-            $this->qe("delete from Settings where name='no_papersub'");
-            $this->qe("insert into Settings (name, value) select 'no_papersub', 1 from dual where exists (select * from Paper where timeSubmitted>0) = 0");
-            $this->settings["no_papersub"] = (int) $this->fetch_ivalue("select value from Settings where name='no_papersub'");
+        if (($this->setting("no_papersub") ?? 0) <= 0 ? $adding <= 0 : $adding >= 0) {
+            $this->update_setting_exists("no_papersub", "not exists (select * from Paper where timeSubmitted>0)", -$adding);
         }
     }
 
     /** @param int $adding */
     function update_paperacc_setting($adding) {
         if (($this->setting("paperacc") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
-            $this->qe_raw("insert into Settings (name, value) select 'paperacc', exists (select * from Paper where outcome>0 and timeSubmitted>0) on duplicate key update value=values(value)");
-            $this->settings["paperacc"] = (int) $this->fetch_ivalue("select value from Settings where name='paperacc'");
+            $this->update_setting_exists("paperacc", "exists (select * from Paper where outcome>0 and timeSubmitted>0)", $adding);
         }
     }
 
@@ -2526,32 +2536,28 @@ class Conf {
             $adding = 0;
         }
         if (($this->setting("rev_tokens") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
-            $this->qe_raw("insert into Settings (name, value) select 'rev_tokens', exists (select * from PaperReview where reviewToken!=0) on duplicate key update value=values(value)");
-            $this->settings["rev_tokens"] = (int) $this->fetch_ivalue("select value from Settings where name='rev_tokens'");
+            $this->update_setting_exists("rev_tokens", "exists (select * from PaperReview where reviewToken!=0)", $adding);
         }
     }
 
     /** @param int $adding */
     function update_paperlead_setting($adding) {
         if (($this->setting("paperlead") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
-            $this->qe_raw("insert into Settings (name, value) select 'paperlead', exists (select * from Paper where leadContactId>0 or shepherdContactId>0) on duplicate key update value=values(value)");
-            $this->settings["paperlead"] = (int) $this->fetch_ivalue("select value from Settings where name='paperlead'");
+            $this->update_setting_exists("paperlead", "exists (select * from Paper where leadContactId>0 or shepherdContactId>0)", $adding);
         }
     }
 
     /** @param int $adding */
     function update_papermanager_setting($adding) {
         if (($this->setting("papermanager") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
-            $this->qe_raw("insert into Settings (name, value) select 'papermanager', exists (select * from Paper where managerContactId>0) on duplicate key update value=values(value)");
-            $this->settings["papermanager"] = (int) $this->fetch_ivalue("select value from Settings where name='papermanager'");
+            $this->update_setting_exists("papermanager", "exists (select * from Paper where managerContactId>0)", $adding);
         }
     }
 
     /** @param int $adding */
     function update_metareviews_setting($adding) {
         if (($this->setting("metareviews") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {
-            $this->qe_raw("insert into Settings (name, value) select 'metareviews', exists (select * from PaperReview where reviewType=" . REVIEW_META . ") on duplicate key update value=values(value)");
-            $this->settings["metareviews"] = (int) $this->fetch_ivalue("select value from Settings where name='metareviews'");
+            $this->update_setting_exists("metareviews", "exists (select * from PaperReview where reviewType=" . REVIEW_META . ")", $adding);
         }
     }
 

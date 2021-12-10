@@ -111,7 +111,7 @@ class PaperApi {
             if ($rating === 0) {
                 $user->conf->qe("delete from ReviewRating where paperId=? and reviewId=? and contactId=?", $prow->paperId, $rrow->reviewId, $user->contactId);
             } else {
-                $user->conf->qe("insert into ReviewRating set paperId=?, reviewId=?, contactId=?, rating=? on duplicate key update rating=values(rating)", $prow->paperId, $rrow->reviewId, $user->contactId, $rating);
+                $user->conf->qe("insert into ReviewRating set paperId=?, reviewId=?, contactId=?, rating=? on duplicate key update rating=?", $prow->paperId, $rrow->reviewId, $user->contactId, $rating, $rating);
             }
             $rrow = $prow->fresh_review_by_id($rrow->reviewId);
         }

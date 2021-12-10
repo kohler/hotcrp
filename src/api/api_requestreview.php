@@ -347,11 +347,12 @@ class RequestReview_API {
         // commit refusal to database
         if ($rrow) {
             $prow->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, refusedReviewType=?, refusedReviewId=?, reviewRound=?, data=?
-                on duplicate key update reason=coalesce(values(reason),reason)",
+                on duplicate key update reason=coalesce(?,reason)",
                 $prow->paperId, $rrow->email, $rrow->contactId,
                 $rrow->requestedBy, $rrow->timeRequested,
                 $user->contactId, Conf::$now, $reason, $rrow->reviewType,
-                $rrid, $rrow->reviewRound, $rrow->data_string());
+                $rrid, $rrow->reviewRound, $rrow->data_string(),
+                $reason);
             $prow->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
                 $prow->paperId, $rrid);
 
