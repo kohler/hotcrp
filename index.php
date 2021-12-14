@@ -3,6 +3,58 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 require_once("lib/navigation.php");
+
+/** @param Contact $user
+ * @param Qrequest $qreq
+ * @param string $group
+ * @param GroupedExtensions $gx */
+function gx_call_requests($user, $qreq, $group, $gx) {
+    $gx->add_xt_checker([$qreq, "xt_allow"]);
+    $reqgj = [];
+    $not_allowed = false;
+    foreach ($gx->members($group, "request_function") as $gj) {
+        if ($gx->allowed($gj->allow_request_if ?? null, $gj)) {
+            $reqgj[] = $gj;
+        } else {
+            $not_allowed = true;
+        }
+    }
+    if ($not_allowed && $qreq->is_post() && !$qreq->valid_token()) {
+        $user->conf->msg($user->conf->_i("badpost"), 2);
+    }
+    foreach ($reqgj as $gj) {
+        if ($gx->call_function($gj->request_function, $gj) === false) {
+            break;
+        }
+    }
+}
+
+/** @param Contact $user
+ * @param Qrequest $qreq
+ * @param NavigationState $nav */
+function gx_go($user, $qreq, $nav) {
+    try {
+        $gx = $user->conf->page_partials($user);
+        $pagej = $gx->get($nav->page);
+        if (!$pagej || str_starts_with($pagej->name, "__")) {
+            header("HTTP/1.0 404 Not Found");
+        } else if ($user->is_disabled() && !($pagej->allow_disabled ?? false)) {
+            header("HTTP/1.0 403 Forbidden");
+        } else if (isset($pagej->render_php)) {
+            return $pagej->render_php;
+        } else {
+            $gx->set_root($pagej->group)->set_context_args([$user, $qreq, $gx]);
+            gx_call_requests($user, $qreq, $pagej->group, $gx);
+            $gx->render_group($pagej->group, true);
+        }
+    } catch (Redirection $redir) {
+        $user->conf->redirect($redir->url);
+    } catch (JsonCompletion $jc) {
+        $jc->result->emit($qreq->valid_token());
+    } catch (PageCompletion $pc) {
+    }
+}
+
 $nav = Navigation::get();
 
 // handle `/u/USERINDEX/`
@@ -19,46 +71,19 @@ if ($nav->page === "u") {
     }
 }
 
-function gx_call_requests(Conf $conf, Contact $user, Qrequest $qreq, $group, GroupedExtensions $gx) {
-    $gx->add_xt_checker([$qreq, "xt_allow"]);
-    $reqgj = [];
-    $not_allowed = false;
-    foreach ($gx->members($group, "request_function") as $gj) {
-        if ($gx->allowed($gj->allow_request_if ?? null, $gj)) {
-            $reqgj[] = $gj;
-        } else {
-            $not_allowed = true;
-        }
-    }
-    if ($not_allowed && $qreq->is_post() && !$qreq->valid_token()) {
-        $conf->msg($conf->_i("badpost"), 2);
-    }
-    foreach ($reqgj as $gj) {
-        if ($gx->call_function($gj->request_function, $gj) === false) {
-            break;
-        }
-    }
-}
-
 // handle special pages
-if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "stylesheets") {
+if ($nav->page === "api") {
+    require_once("src/init.php");
+    API_Page::go_nav($nav, Conf::$main);
+} else if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "stylesheets") {
     $_GET["file"] = $nav->page . $nav->path;
     include("cacheable.php");
 } else if ($nav->page === "api" || $nav->page === "cacheable" || $nav->page === "scorechart") {
     include("{$nav->page}.php");
 } else {
-    require_once("src/initweb.php");
-    $gx = $Conf->page_partials($Me);
-    $pagej = $gx->get($nav->page);
-    if (!$pagej || str_starts_with($pagej->name, "__")) {
-        header("HTTP/1.0 404 Not Found");
-    } else if ($Me->is_disabled() && !($pagej->allow_disabled ?? false)) {
-        header("HTTP/1.0 403 Forbidden");
-    } else if (isset($pagej->render_php)) {
-        include($pagej->render_php);
-    } else {
-        $gx->set_root($pagej->group)->set_context_args([$Me, $Qreq, $gx]);
-        gx_call_requests($Conf, $Me, $Qreq, $pagej->group, $gx);
-        $gx->render_group($pagej->group, true);
+    require_once("src/init.php");
+    initialize_request();
+    if (($s = gx_go($Me, $Qreq, $nav))) {
+        include($s);
     }
 }

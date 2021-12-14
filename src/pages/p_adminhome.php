@@ -1,8 +1,8 @@
 <?php
-// src/partials/p_adminhome.php -- HotCRP home page partials for administrators
+// src/pages/p_adminhome.php -- HotCRP home page fragments for administrators
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-class AdminHome_Partial {
+class AdminHome_Page {
     static function check_admin(Contact $user, Qrequest $qreq) {
         assert($user->privChair && $qreq->valid_token());
         if (isset($qreq->clearbug)

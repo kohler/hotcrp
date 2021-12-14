@@ -175,17 +175,6 @@ class JsonResult implements JsonSerializable {
     }
 }
 
-class JsonResultException extends Exception {
-    /** @var JsonResult */
-    public $result;
-    /** @var int */
-    static public $capturing = 0;
-    /** @param JsonResult $j */
-    function __construct($j) {
-        $this->result = $j;
-    }
-}
-
 class Redirection extends Exception {
     /** @var string */
     public $url;
@@ -196,11 +185,30 @@ class Redirection extends Exception {
     }
 }
 
+class PageCompletion extends Exception {
+    function __construct() {
+        parent::__construct("Page complete");
+    }
+}
+
+class JsonCompletion extends Exception {
+    /** @var JsonResult */
+    public $result;
+    /** @var int */
+    static public $capturing = 0;
+    /** @param JsonResult $j */
+    function __construct($j) {
+        $this->result = $j;
+    }
+}
+
+class_alias("JsonCompletion", "JsonResultException");
+
 function json_exit($json, $arg2 = null) {
     global $Qreq;
     $json = JsonResult::make($json, $arg2);
-    if (JsonResultException::$capturing > 0) {
-        throw new JsonResultException($json);
+    if (JsonCompletion::$capturing > 0) {
+        throw new JsonCompletion($json);
     } else {
         $json->emit($Qreq && $Qreq->valid_token());
         exit;

@@ -127,8 +127,8 @@ class PaperContactInfo {
         }
     }
 
+    /** @param Contact $user */
     static function load_into(PaperInfo $prow, $user) {
-        global $Me;
         $conf = $prow->conf;
         $pid = $prow->paperId;
         $q = "select conflictType, reviewType, reviewSubmitted, reviewNeedsSubmit";
@@ -158,8 +158,9 @@ class PaperContactInfo {
         }
         if ($cid > 0
             && !$rev_tokens
-            && (!$Me || ($Me->contactId != $cid
-                         && ($Me->privChair || $Me->contactXid === $prow->managerContactId)))
+            && (!($viewer = Contact::$main_user)
+                || ($viewer->contactId != $cid
+                    && ($viewer->privChair || $viewer->contactXid === $prow->managerContactId)))
             && ($pcm = $conf->pc_members())
             && isset($pcm[$cid])) {
             foreach ($pcm as $u) {

@@ -2,7 +2,8 @@
 // checkupdates.php -- HotCRP update checker helper
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-require_once("src/initweb.php");
+require_once("src/init.php");
+$Qreq || initialize_request();
 header("Content-Type: " . ($Qreq->text ? "text/plain" : "application/json"));
 
 if ($Me->privChair

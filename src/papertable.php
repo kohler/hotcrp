@@ -158,7 +158,6 @@ class PaperTable {
     /** @param ?PaperTable $paperTable
      * @param Qrequest $qreq */
     static function echo_header($paperTable, $id, $action_mode, $qreq) {
-        global $Me;
         $conf = $paperTable ? $paperTable->conf : Conf::$main;
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
@@ -178,8 +177,8 @@ class PaperTable {
         } else {
             $paperTable->initialize_list();
             $title = "#" . $prow->paperId;
-            $viewable_tags = $prow->viewable_tags($Me);
-            if ($viewable_tags || $Me->can_view_tags($prow)) {
+            $viewable_tags = $prow->viewable_tags($paperTable->user);
+            if ($viewable_tags || $paperTable->user->can_view_tags($prow)) {
                 $t .= ' has-tag-classes';
                 if (($color = $prow->conf->tags()->color_classes($viewable_tags)))
                     $t .= ' ' . $color;
@@ -210,7 +209,7 @@ class PaperTable {
 
             $t .= '</span></span></a>';
             if ($viewable_tags && $conf->tags()->has_decoration) {
-                $tagger = new Tagger($Me);
+                $tagger = new Tagger($paperTable->user);
                 $t .= $tagger->unparse_decoration_html($viewable_tags);
             }
         }
@@ -223,8 +222,8 @@ class PaperTable {
         $body_class = "paper";
         if ($paperTable
             && $prow->paperId
-            && $Me->has_overridable_conflict($prow)
-            && ($Me->overrides() & Contact::OVERRIDE_CONFLICT)) {
+            && $paperTable->user->has_overridable_conflict($prow)
+            && ($paperTable->user->overrides() & Contact::OVERRIDE_CONFLICT)) {
             $body_class .= " fold5o";
         } else {
             $body_class .= " fold5c";

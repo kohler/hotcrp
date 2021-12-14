@@ -3,7 +3,8 @@
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 // First buzzer version by Nickolai B. Zeldovich
 
-require_once("src/initweb.php");
+require_once("src/init.php");
+$Qreq || initialize_request();
 
 function kiosk_manager(Contact $user, Qrequest $qreq) {
     $kiosks = (array) ($user->conf->setting_json("__tracker_kiosk") ? : array());

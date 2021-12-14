@@ -2,7 +2,8 @@
 // graph.php -- HotCRP review preference graph drawing page
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
-require_once("src/initweb.php");
+require_once("src/init.php");
+$Qreq || initialize_request();
 
 $Graph = $Qreq->g;
 if (!$Graph

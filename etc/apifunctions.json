@@ -38,6 +38,10 @@
         "function": "Decision_API::run"
     },
     {
+        "name": "events", "get": true,
+        "function": "Events_API::run"
+    },
+    {
         "name": "fieldtext", "get": true,
         "function": "Search_API::fieldtext"
     },

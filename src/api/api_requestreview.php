@@ -5,7 +5,8 @@
 class RequestReview_API {
     /** @param Contact $user
      * @param Qrequest $qreq
-     * @param PaperInfo $prow */
+     * @param PaperInfo $prow
+     * @return JsonResult */
     static function requestreview($user, $qreq, $prow) {
         $round = null;
         if ((string) $qreq->round !== ""
@@ -147,7 +148,8 @@ class RequestReview_API {
 
     /** @param Contact $user
      * @param Qrequest $qreq
-     * @param PaperInfo $prow */
+     * @param PaperInfo $prow
+     * @return JsonResult */
     static function requestreview_anonymous($user, $qreq, $prow) {
         if (trim((string) $qreq->firstName) !== ""
             || trim((string) $qreq->lastName) !== "") {
@@ -172,7 +174,8 @@ class RequestReview_API {
 
     /** @param Contact $user
      * @param Qrequest $qreq
-     * @param PaperInfo $prow */
+     * @param PaperInfo $prow
+     * @return JsonResult */
     static function denyreview($user, $qreq, $prow) {
         if (!$user->allow_administer($prow)) {
             return new JsonResult(403, "Permission error.");
@@ -221,7 +224,8 @@ class RequestReview_API {
 
     /** @param Contact $user
      * @param PaperInfo $prow
-     * @param ReviewInfo|ReviewRefusalInfo $remrow */
+     * @param ReviewInfo|ReviewRefusalInfo $remrow
+     * @return bool */
     static function allow_accept_decline($user, $prow, $remrow) {
         if ($user->can_administer($prow)) {
             return true;
@@ -236,7 +240,8 @@ class RequestReview_API {
 
     /** @param Contact $user
      * @param Qrequest $qreq
-     * @param PaperInfo $prow */
+     * @param PaperInfo $prow
+     * @return JsonResult */
     static function acceptreview($user, $qreq, $prow) {
         if (!ctype_digit($qreq->r)) {
             return self::error_result(400, "r", "Bad request.");
@@ -297,7 +302,8 @@ class RequestReview_API {
 
     /** @param Contact $user
      * @param Qrequest $qreq
-     * @param PaperInfo $prow */
+     * @param PaperInfo $prow
+     * @return JsonResult */
     static function declinereview($user, $qreq, $prow) {
         if (!ctype_digit($qreq->r)) {
             return self::error_result(400, "r", "Bad request.");
@@ -447,7 +453,8 @@ class RequestReview_API {
 
     /** @param Contact $user
      * @param Qrequest $qreq
-     * @param PaperInfo $prow */
+     * @param PaperInfo $prow
+     * @return JsonResult */
     static function retractreview($user, $qreq, $prow) {
         $xrrows = $xrequests = [];
         $email = trim($qreq->email);
@@ -527,7 +534,8 @@ class RequestReview_API {
 
     /** @param Contact $user
      * @param Qrequest $qreq
-     * @param ?PaperInfo $prow */
+     * @param ?PaperInfo $prow
+     * @return JsonResult */
     static function undeclinereview($user, $qreq, $prow) {
         $refusals = [];
         $email = trim($qreq->email);
@@ -582,7 +590,8 @@ class RequestReview_API {
         return new JsonResult(["ok" => true, "action" => "undecline"]);
     }
 
-    /** @param string $field */
+    /** @param string $field
+     * @return JsonResult */
     static function error_result($status, $field, $message) {
         return new JsonResult($status, ["ok" => false, "message_list" => [new MessageItem($field, $message, 2)]]);
     }

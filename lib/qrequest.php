@@ -19,6 +19,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $____path;
     /** @var ?string */
     private $____referrer;
+
+    /** @var Qrequest */
+    static public $main_request;
+
     /** @param string $method */
     function __construct($method, $data = null) {
         $this->____method = $method;
@@ -422,6 +426,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         if (!empty($errors)) {
             $qreq->set_annex("upload_errors", $errors);
         }
+        Qrequest::$main_request = $qreq;
         return $qreq;
     }
 }

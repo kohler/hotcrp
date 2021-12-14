@@ -1,8 +1,8 @@
 <?php
-// src/partials/p_home.php -- HotCRP home page partials
+// src/pages/p_home.php -- HotCRP home page
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-class Home_Partial {
+class Home_Page {
     /** @var int */
     private $_nh2 = 0;
     private $_in_reviews;
@@ -156,7 +156,7 @@ class Home_Partial {
 
     function render_signin(Contact $user, Qrequest $qreq, $gx) {
         if (!$user->has_email() || $qreq->signin) {
-            Signin_Partial::render_signin_form($user, $qreq, $gx);
+            Signin_Page::render_signin_form($user, $qreq, $gx);
         }
     }
 

@@ -542,7 +542,8 @@ function call_api($fn, $user, $qreq, $prow) {
         $qreq = new Qrequest("POST", $qreq);
         $qreq->approve_token();
     }
-    $jr = $user->conf->call_api($fn, $user, $qreq, $prow);
+    $uf = $user->conf->api($fn, $user, $qreq->method());
+    $jr = $user->conf->call_api_on($uf, $fn, $user, $qreq, $prow);
     return $jr->content;
 }
 

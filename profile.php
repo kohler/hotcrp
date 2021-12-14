@@ -2,7 +2,8 @@
 // profile.php -- HotCRP profile management page
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-require_once("src/initweb.php");
+require_once("src/init.php");
+$Qreq || initialize_request();
 
 // check for change-email capabilities
 

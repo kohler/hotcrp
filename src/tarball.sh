@@ -110,7 +110,7 @@ etc/mailkeywords.json
 etc/mailtemplates.json
 etc/msgs.json
 etc/optiontypes.json
-etc/pagepartials.json
+etc/pages.json
 etc/papercolumns.json
 etc/profilegroups.json
 etc/reviewformlibrary.json
@@ -168,6 +168,7 @@ src/api/api_comment.php
 src/api/api_completion.php
 src/api/api_decision.php
 src/api/api_error.php
+src/api/api_events.php
 src/api/api_formatcheck.php
 src/api/api_graphdata.php
 src/api/api_mail.php
@@ -253,7 +254,6 @@ src/helpers.php
 src/helprenderer.php
 src/hotcrpmailer.php
 src/init.php
-src/initweb.php
 src/listaction.php
 src/listactions/la_assign.php
 src/listactions/la_decide.php
@@ -277,6 +277,8 @@ src/listactions/la_mail.php
 src/listactions/la_revpref.php
 src/listactions/la_tag.php
 src/listsorter.php
+src/logentry.php
+src/logentryfilter.php
 src/mailclasses.php
 src/meetingtracker.php
 src/mergecontacts.php
@@ -290,6 +292,19 @@ src/options/o_pcconflicts.php
 src/options/o_submissionversion.php
 src/options/o_title.php
 src/options/o_topics.php
+src/pages/p_adminhome.php
+src/pages/p_api.php
+src/pages/p_deadlines.php
+src/pages/p_doc.php
+src/pages/p_help.php
+src/pages/p_home.php
+src/pages/p_log.php
+src/pages/p_paper.php
+src/pages/p_review.php
+src/pages/p_reviewprefs.php
+src/pages/p_search.php
+src/pages/p_settings.php
+src/pages/p_signin.php
 src/paperapi.php
 src/papercolumn.php
 src/papercolumns/pc_administrator.php
@@ -324,9 +339,6 @@ src/papersearch.php
 src/paperstatus.php
 src/papertable.php
 src/paperrank.php
-src/partials/p_adminhome.php
-src/partials/p_home.php
-src/partials/p_signin.php
 src/permissionproblem.php
 src/review.php
 src/reviewdiffinfo.php

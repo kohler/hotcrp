@@ -106,14 +106,14 @@ function cleannl($text) {
 function commajoin($what, $joinword = "and") {
     $what = array_values($what);
     $c = count($what);
-    if ($c == 0) {
+    if ($c === 0) {
         return "";
-    } else if ($c == 1) {
+    } else if ($c === 1) {
         return $what[0];
-    } else if ($c == 2) {
+    } else if ($c === 2) {
         return $what[0] . " " . $joinword . " " . $what[1];
     } else {
-        return join(", ", array_slice($what, 0, -1)) . ", " . $joinword . " " . $what[count($what) - 1];
+        return join(", ", array_slice($what, 0, -1)) . ", " . $joinword . " " . $what[$c - 1];
     }
 }
 

@@ -2,7 +2,8 @@
 // users.php -- HotCRP people listing/editing page
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-require_once("src/initweb.php");
+require_once("src/init.php");
+$Qreq || initialize_request();
 require_once("src/contactlist.php");
 
 $Viewer = $Me;

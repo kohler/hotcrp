@@ -4955,7 +4955,8 @@ class Conf {
         return self::xt_enabled($uf) ? $uf : null;
     }
     /** @return JsonResult */
-    private function call_api_on($uf, $fn, Contact $user, Qrequest $qreq, $prow) {
+    function call_api_on($uf, $fn, Contact $user, Qrequest $qreq, $prow) {
+        // NOTE: Does not check $user->can_view_paper($prow)
         $method = $qreq->method();
         if ($method !== "GET"
             && $method !== "HEAD"
@@ -4980,14 +4981,14 @@ class Conf {
         } else if (!is_string($uf->function)) {
             return new JsonResult(404, "Function not found.");
         } else {
-            ++JsonResultException::$capturing;
+            ++JsonCompletion::$capturing;
             try {
                 self::xt_resolve_require($uf);
                 $j = call_user_func($uf->function, $user, $qreq, $prow, $uf);
-            } catch (JsonResultException $ex) {
+            } catch (JsonCompletion $ex) {
                 $j = $ex->result;
             }
-            --JsonResultException::$capturing;
+            --JsonCompletion::$capturing;
             return JsonResult::make($j);
         }
     }
@@ -5005,37 +5006,6 @@ class Conf {
         }
         $result["message_list"][] = new MessageItem(null, $m, 2);
         return new JsonResult($status, $result);
-    }
-    function call_api($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
-        // XXX precondition: $user->can_view_paper($prow) || !$prow
-        $uf = $this->api($fn, $user, $qreq->method());
-        return $this->call_api_on($uf, $fn, $user, $qreq, $prow);
-    }
-    function call_api_exit($fn, Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
-        // XXX precondition: $user->can_view_paper($prow) || !$prow
-        $uf = $this->api($fn, $user, $qreq->method());
-        $j = $this->call_api_on($uf, $fn, $user, $qreq, $prow);
-        if ($uf
-            && $qreq->redirect
-            && ($uf->redirect ?? false)
-            && preg_match('/\A(?![a-z]+:|\/)./', $qreq->redirect)) {
-            $a = $j->content;
-            if (($x = $a["error"] ?? $a["error_html"] ?? null)) {
-                // XXX some instances of `error` are not html!!!!!!
-                $this->msg($x, 2);
-            } else if (!($a["ok"] ?? false)) {
-                $this->msg("Internal error.", 2);
-            }
-            foreach ($a["message_list"] ?? [] as $mx) {
-                $ma = (array) $mx;
-                if (($ma["message"] ?? "") !== "") {
-                    $this->msg($ma["message"], $ma["status"]);
-                }
-            }
-            $this->redirect($this->make_absolute_site($qreq->redirect));
-        } else {
-            json_exit($j);
-        }
     }
 
 
@@ -5348,7 +5318,7 @@ class Conf {
     /** @return GroupedExtensions */
     function page_partials(Contact $viewer) {
         if (!$this->_page_partials || $this->_page_partials->viewer() !== $viewer) {
-            $this->_page_partials = new GroupedExtensions($viewer, ["etc/pagepartials.json"], $this->opt("pagePartials"));
+            $this->_page_partials = new GroupedExtensions($viewer, ["etc/pages.json"], $this->opt("pages"));
         }
         return $this->_page_partials;
     }

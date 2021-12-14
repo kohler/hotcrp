@@ -2,7 +2,8 @@
 // mail.php -- HotCRP mail tool
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-require_once("src/initweb.php");
+require_once("src/init.php");
+$Qreq || initialize_request();
 require_once("src/mailclasses.php");
 if (!$Me->is_manager() && !$Me->isPC) {
     $Me->escape();

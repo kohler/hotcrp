@@ -2,7 +2,8 @@
 // autoassign.php -- HotCRP automatic paper assignment page
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-require_once("src/initweb.php");
+require_once("src/init.php");
+$Qreq || initialize_request();
 if (!$Me->is_manager()) {
     $Me->escape();
 }
