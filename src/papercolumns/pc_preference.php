@@ -143,7 +143,7 @@ class Preference_PaperColumn extends PaperColumn {
                 $iname .= "u" . $this->user->contactId;
             }
             $pvt = $pv_exists ? unparse_preference($pv) : "";
-            $t = "<input name=\"{$iname}\" class=\"uikd uich revpref\" value=\"{$pvt}\" type=\"text\" size=\"4\" tabindex=\"2\" placeholder=\"0\" inputmode=\"numeric\">";
+            $t = "<input name=\"{$iname}\" class=\"uikd uich revpref\" value=\"{$pvt}\" type=\"text\" size=\"4\" tabindex=\"2\" placeholder=\"0\">";
             if ($has_conflict && $this->show_conflict) {
                 $t .= " " . review_type_icon(-1);
             }
