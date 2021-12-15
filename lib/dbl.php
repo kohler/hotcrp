@@ -118,6 +118,8 @@ class Dbl {
     static private $query_log_file = null;
     /** @var bool */
     static public $check_warnings = true;
+    /** @var bool */
+    static public $verbose = false;
     static public $landmark_sanitizer = "/^Dbl::/";
 
     static function has_error() {
@@ -438,7 +440,7 @@ class Dbl {
 
     /** @return mysqli_result|bool|null */
     static private function call_query($dblink, $flags, $qfunc, $qstr) {
-        if ($flags & self::F_ECHO) {
+        if (($flags & self::F_ECHO) || self::$verbose) {
             error_log($qstr);
         }
         if ($flags & self::F_NOEXEC) {
