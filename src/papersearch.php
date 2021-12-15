@@ -1696,7 +1696,8 @@ class PaperSearch {
         if ($limit === "") {
             // Empty limit should be the plausible limit for a default search,
             // as in entering text into a quicksearch box.
-            if ($user->privChair && $this->conf->time_edit_paper()) {
+            if ($user->privChair
+                && ($user->is_root_user() || $this->conf->time_edit_paper())) {
                 $limit = "all";
             } else if ($user->isPC) {
                 $limit = $this->conf->time_pc_view_active_submissions() ? "act" : "s";

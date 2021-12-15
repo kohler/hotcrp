@@ -201,7 +201,6 @@ class Completion_API {
 
     /** @param Qrequest $qreq */
     static function searchcompletion_api(Contact $user, $qreq) {
-        $s = new PaperSearch($user, "");
         return ["ok" => true, "searchcompletion" => self::search_completions($user, "")];
     }
 
