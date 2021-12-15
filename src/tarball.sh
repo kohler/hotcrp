@@ -228,6 +228,7 @@ src/formulas/f_optionpresent.php
 src/formulas/f_optionvalue.php
 src/formulas/f_pdfsize.php
 src/formulas/f_pref.php
+src/formulas/f_realnumberoption.php
 src/formulas/f_reviewer.php
 src/formulas/f_reviewermatch.php
 src/formulas/f_reviewround.php
@@ -288,7 +289,9 @@ src/options/o_authors.php
 src/options/o_collaborators.php
 src/options/o_contacts.php
 src/options/o_nonblind.php
+src/options/o_numeric.php
 src/options/o_pcconflicts.php
+src/options/o_realnumber.php
 src/options/o_submissionversion.php
 src/options/o_title.php
 src/options/o_topics.php
@@ -372,6 +375,7 @@ src/search/st_paperstatus.php
 src/search/st_proposal.php
 src/search/st_perm.php
 src/search/st_pdf.php
+src/search/st_realnumberoption.php
 src/search/st_reconflict.php
 src/search/st_review.php
 src/search/st_reviewtoken.php

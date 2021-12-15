@@ -383,7 +383,8 @@ class Options_SettingRenderer {
                     $args = array_merge((array) $uf->sample, $args);
                 }
                 $o = PaperOption::make($sv->conf, (object) $args);
-                $ov = PaperValue::make($self->pt->prow, $o);
+                $ov = $o->parse_json($self->pt->prow, $args["value"] ?? null)
+                    ?? PaperValue::make($self->pt->prow, $o);
                 echo '<div class="settings-sf-view" data-name="', htmlspecialchars($uf->name), '" data-title="', htmlspecialchars($uf->title ?? $uf->name), '">';
                 $o->echo_web_edit($self->pt, $ov, $ov);
                 echo '</div>';

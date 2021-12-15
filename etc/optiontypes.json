@@ -18,17 +18,24 @@
         "sample": {"selector": ["Option 1", "Option 2", "Option 3"]}
     },
     {
-        "name": "numeric", "title": "Numeric", "position": 400,
-        "function": "+Numeric_PaperOption"
+        "name": "numeric", "title": "Whole number", "position": 400,
+        "function": "+Numeric_PaperOption",
+        "sample": {"value": 10}
+    },
+    {
+        "name": "realnumber", "title": "Decimal number", "position": 401,
+        "function": "+RealNumber_PaperOption",
+        "sample": {"value": -12.5}
     },
     {
         "name": "text", "title": "Text", "position": 500,
-        "function": "+Text_PaperOption"
+        "function": "+Text_PaperOption",
+        "sample": {"value": "Text entry"}
     },
     {
         "name": "text:ds_5", "type": "text", "title": "Multiline text", "position": 550,
         "function": "+Text_PaperOption",
-        "sample": {"display_space": 5}
+        "sample": {"display_space": 5, "value": "Long text entry"}
     },
     {
         "match": "text:ds_(\\d+)",
