@@ -294,6 +294,9 @@ src/options/o_title.php
 src/options/o_topics.php
 src/pages/p_adminhome.php
 src/pages/p_api.php
+src/pages/p_cacheable.php
+src/pages/p_checkupdates.php
+src/pages/p_conflictassign.php
 src/pages/p_deadlines.php
 src/pages/p_doc.php
 src/pages/p_help.php
@@ -302,6 +305,7 @@ src/pages/p_log.php
 src/pages/p_paper.php
 src/pages/p_review.php
 src/pages/p_reviewprefs.php
+src/pages/p_scorechart.php
 src/pages/p_search.php
 src/pages/p_settings.php
 src/pages/p_signin.php

@@ -77,9 +77,14 @@ if ($nav->page === "api") {
     API_Page::go_nav($nav, Conf::$main);
 } else if ($nav->page === "images" || $nav->page === "scripts" || $nav->page === "stylesheets") {
     $_GET["file"] = $nav->page . $nav->path;
-    include("cacheable.php");
-} else if ($nav->page === "api" || $nav->page === "cacheable" || $nav->page === "scorechart") {
-    include("{$nav->page}.php");
+    include("src/pages/p_cacheable.php");
+    Cacheable_Page::go_nav($nav);
+} else if ($nav->page === "cacheable") {
+    include("src/pages/p_cacheable.php");
+    Cacheable_Page::go_nav($nav);
+} else if ($nav->page === "scorechart") {
+    include("src/pages/p_scorechart.php");
+    Scorechart_Page::go_param($_GET);
 } else {
     require_once("src/init.php");
     initialize_request();
