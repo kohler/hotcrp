@@ -2464,13 +2464,18 @@ class PaperTable {
             CommentInfo::echo_script($prow);
         }
 
-        $t = empty($t) ? "" : '<p class="sd">' . join("", $t) . '</p>';
+        $aut = "";
         if ($prow->has_author($this->user)) {
-            $t = '<p class="sd">' . $this->conf->_('You are an <span class="author">author</span> of this submission.') . '</p>' . $t;
+            if ($prow->author_by_email($this->user->email)) {
+                $aut = $this->conf->_('You are an <span class="author">author</span> of this submission.');
+            } else {
+                $aut = $this->conf->_('You are a <span class="author">contact</span> for this submission.');
+            }
         } else if ($prow->has_conflict($this->user)) {
-            $t = '<p class="sd">' . $this->conf->_('You have a <span class="conflict">conflict</span> with this submission.') . '</p>' . $t;
+            $aut = $this->conf->_('You have a <span class="conflict">conflict</span> with this submission.');
         }
-        return $pret . $t;
+        return $pret . ($aut ? "<p class=\"sd\">{$aut}</p>" : "")
+            . (empty($t) ? "" : '<p class="sd">' . join("", $t) . '</p>');
     }
 
     private function _review_overview_card($rtable, $ifempty, $msgs) {
