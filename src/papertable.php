@@ -1909,7 +1909,15 @@ class PaperTable {
     private function _mode_nav() {
         $tx = [];
         if ($this->allow_mode("edit", false)) {
-            $tx[] = $this->_mode_nav_link("Edit", $this->prow->hoturl(["m" => "edit"]), "edit48.png", $this->mode === "edit");
+            if ($this->allow_admin
+                && $this->mode !== "edit"
+                && !$this->user->can_edit_paper($this->prow)
+                && !$this->prow->has_author($this->user)) {
+                $url = $this->prow->hoturl(["m" => "edit", "forceShow" => true]);
+            } else {
+                $url = $this->prow->hoturl(["m" => "edit"]);
+            }
+            $tx[] = $this->_mode_nav_link("Edit", $url, "edit48.png", $this->mode === "edit");
         }
         if ($this->allow_mode("re", false)) {
             $hl = $this->mode === "re" && (!$this->editrrow || $this->user->is_my_review($this->editrrow));
