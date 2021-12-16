@@ -3431,8 +3431,7 @@ class Conf {
             }
             if ($ak
                 && ($ak === $k || !isset($qreq[$ak]))
-                && !array_key_exists($ak, $param)
-                && !is_array($v)) {
+                && !array_key_exists($ak, $param)) {
                 $x[$ak] = $v;
             }
         }

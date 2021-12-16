@@ -197,6 +197,7 @@ src/assignmentset.php
 src/author.php
 src/authormatcher.php
 src/autoassigner.php
+src/autoassignerinterface.php
 src/banal
 src/capabilities/cap_authorview.php
 src/capabilities/cap_reviewaccept.php
@@ -297,6 +298,7 @@ src/options/o_title.php
 src/options/o_topics.php
 src/pages/p_adminhome.php
 src/pages/p_api.php
+src/pages/p_autoassign.php
 src/pages/p_cacheable.php
 src/pages/p_checkupdates.php
 src/pages/p_conflictassign.php

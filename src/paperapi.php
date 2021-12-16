@@ -14,7 +14,7 @@ class PaperApi {
                 || strcasecmp($x, $user->email) == 0) {
                 $u = $user;
             } else if (ctype_digit($x)) {
-                $u = $user->conf->cached_user_by_id($x);
+                $u = $user->conf->cached_user_by_id(intval($x));
             } else {
                 $u = $user->conf->cached_user_by_email($x);
             }

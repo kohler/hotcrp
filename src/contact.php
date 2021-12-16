@@ -634,8 +634,8 @@ class Contact {
         assert(!self::$base_auth_user || self::$base_auth_user === $this);
 
         // translate to email
-        if (is_numeric($x)) {
-            $acct = $this->conf->user_by_id($x);
+        if (ctype_digit($x)) {
+            $acct = $this->conf->user_by_id(intval($x));
             $email = $acct ? $acct->email : null;
         } else if ($x === "admin") {
             $email = $this->email;

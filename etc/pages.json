@@ -187,7 +187,7 @@
 
     {   "name": "api", "render_function": "API_Page::go", "allow_disabled": true   },
     {   "name": "assign", "render_php": "assign.php"   },
-    {   "name": "autoassign", "render_php": "autoassign.php"   },
+    {   "name": "autoassign", "render_function": "Autoassign_Page::go"   },
     {   "name": "bulkassign", "render_php": "bulkassign.php"   },
     {   "name": "buzzer", "render_php": "buzzer.php"   },
     {   "name": "checkupdates", "render_function": "CheckUpdates_Page::go"   },

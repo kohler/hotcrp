@@ -13,7 +13,7 @@ class AdminHome_Page {
             && ctype_digit($qreq->clearnewpcrev)
             && ($user->conf->setting("pcrev_informtime") ?? 0) <= $qreq->clearnewpcrev
             && !$qreq->is_head()) {
-            $user->conf->save_setting("pcrev_informtime", $qreq->clearnewpcrev);
+            $user->conf->save_setting("pcrev_informtime", intval($qreq->clearnewpcrev));
         }
         if (isset($qreq->clearbug) || isset($qreq->clearnewpcrev)) {
             unset($qreq->clearbug, $qreq->clearnewpcrev);
