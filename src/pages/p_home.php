@@ -294,7 +294,7 @@ class Home_Page {
             echo $conf->_("The average PC member has submitted %1\$.1f reviews with %2\$#As.",
                 $sumpc_submit / $npc, $score_texts, count($score_texts));
             if ($user->isPC || $user->privChair) {
-                echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc"), "\">details</a><span class=\"barsep\">·</span><a href=\"", $conf->hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
+                echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc"), "\">details</a><span class=\"barsep\">·</span><a href=\"", $conf->hoturl("graph", "group=procrastination"), "\">graphs</a>)</small>";
             }
             echo "<br>\n";
         }

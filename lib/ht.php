@@ -76,6 +76,11 @@ class Ht {
         }
     }
 
+    /** @return string */
+    static function script_open() {
+        return self::$_script_open . '>';
+    }
+
     /** @param string $script
      * @return string */
     static function script($script) {

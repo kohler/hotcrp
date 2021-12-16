@@ -185,6 +185,14 @@
     [   "resetpassword/form/actions", 100, "forgotpassword/form/actions"   ],
 
 
+    {   "name": "graph", "render_function": "Graph_Page::go"   },
+    {   "name": "graph/formula", "render_function": "FormulaGraph_Page::go",
+        "title": "Formula", "position": 20, "allow_if": "pc"   },
+    {   "name": "graph/procrastination", "render_function": "ProcrastinationGraph_Page::go",
+        "title": "Procrastination", "position": 10, "allow_if": "pc"   },
+    [   "graph/reviewerlameness", false, "graph/procrastination"    ],
+
+
     {   "name": "api", "render_function": "API_Page::go", "allow_disabled": true   },
     {   "name": "assign", "render_php": "assign.php"   },
     {   "name": "autoassign", "render_function": "Autoassign_Page::go"   },
@@ -194,7 +202,6 @@
     {   "name": "conflictassign", "render_function": "ConflictAssign_Page::go"   },
     {   "name": "deadlines", "render_function": "Deadlines_Page::go", "allow_disabled": true   },
     {   "name": "doc", "render_function": "Doc_Page::go"   },
-    {   "name": "graph", "render_php": "graph.php"   },
     {   "name": "help", "render_function": "Help_Page::go"   },
     {   "name": "log", "render_function": "Log_Page::go"   },
     {   "name": "mail", "render_php": "mail.php"   },

@@ -3265,7 +3265,7 @@ class Conf {
                         && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $param, $m))
                        || ($page === "help"
                            && preg_match($are . 't=(\w+)' . $zre, $param, $m))
-                       || ($page === "settings"
+                       || (($page === "settings" || $page === "graph")
                            && preg_match($are . 'group=(\w+)' . $zre, $param, $m))) {
                 $tp = "/" . $m[2];
                 $param = $m[1] . $m[3];
@@ -3275,10 +3275,8 @@ class Conf {
                     $tp .= "/" . $m[2];
                     $param = $m[1] . $m[3];
                 }
-            } else if (($page === "graph"
-                        && preg_match($are . 'g=([^&?]+)' . $zre, $param, $m))
-                       || ($page === "doc"
-                           && preg_match($are . 'file=([^&]+)' . $zre, $param, $m))) {
+            } else if ($page === "doc"
+                       && preg_match($are . 'file=([^&]+)' . $zre, $param, $m)) {
                 $tp = "/" . str_replace("%2F", "/", $m[2]);
                 $param = $m[1] . $m[3];
             } else if ($page === "profile"
