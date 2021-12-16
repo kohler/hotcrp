@@ -169,7 +169,7 @@ class Home_Page {
             return;
         }
 
-        $tOpt = PaperSearch::viewable_limits($user);
+        $limits = PaperSearch::viewable_limits($user);
         echo '<div class="homegrp d-table" id="homelist">',
             $this->render_h2_home('<a class="q" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
             Ht::form($conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
@@ -179,7 +179,7 @@ class Home_Page {
                 "placeholder" => "(All)", "spellcheck" => false,
                 "aria-labelledby" => "homesearch-label"
             ]), '<div class="form-basic-search-in"> in ',
-            PaperSearch::limit_selector($tOpt, key($tOpt), ["class" => "ml-1"]),
+            PaperSearch::limit_selector($conf, $limits, $limits[0], ["class" => "ml-1"]),
             Ht::submit("Search", ["class" => "ml-3"]),
             "</div></form></div>\n";
     }

@@ -2985,7 +2985,7 @@ class PaperSearch {
     }
 
     /** @param ?string $reqtype
-     * @return array<string,string> */
+     * @return list<string> */
     static function viewable_limits(Contact $user, $reqtype = null) {
         if ($reqtype !== null && $reqtype !== "") {
             $reqtype = self::canonical_limit($reqtype);
@@ -3037,10 +3037,10 @@ class PaperSearch {
         if ($user->privChair) {
             $ts[] = "all";
         }
-        return self::expand_limits($user->conf, $ts);
+        return $ts;
     }
 
-    /** @return array<string,string> */
+    /** @return list<string> */
     static function viewable_manager_limits(Contact $user) {
         if ($user->privChair) {
             if ($user->conf->has_any_manager()) {
@@ -3052,23 +3052,17 @@ class PaperSearch {
         } else {
             $ts = ["admin"];
         }
-        return self::expand_limits($user->conf, $ts);
+        return $ts;
     }
 
-    /** @param list<string> $ts
-     * @return array<string,string> */
-    static private function expand_limits(Conf $conf, $ts) {
-        $topt = [];
-        foreach ($ts as $t) {
-            $topt[$t] = self::limit_description($conf, $t);
-        }
-        return $topt;
-    }
-
-    static function limit_selector($tOpt, $type, $extra = []) {
-        if (count($tOpt) > 1) {
+    /** @param list<string> $limits
+     * @param string $selected
+     * @return string */
+    static function limit_selector(Conf $conf, $limits, $selected, $extra = []) {
+        if ($extra["select"] ?? count($limits) > 1) {
+            unset($extra["select"]);
             $sel_opt = [];
-            foreach ($tOpt as $k => $v) {
+            foreach ($limits as $k) {
                 if (count($sel_opt)
                     && $k === "a") {
                     $sel_opt["xxxa"] = null;
@@ -3077,16 +3071,18 @@ class PaperSearch {
                            && !isset($sel_opt["xxxa"])) {
                     $sel_opt["xxxb"] = null;
                 }
-                $sel_opt[$k] = $v;
+                $sel_opt[$k] = self::limit_description($conf, $k);
             }
             if (!isset($extra["aria-label"])) {
                 $extra["aria-label"] = "Search collection";
             }
-            return Ht::select("t", $sel_opt, $type, $extra);
-        } else if (isset($extra["id"])) {
-            return '<span id="' . htmlspecialchars($extra["id"]) . '">' . current($tOpt) . '</span>';
+            return Ht::select("t", $sel_opt, $selected, $extra);
         } else {
-            return current($tOpt);
+            $t = self::limit_description($conf, $selected);
+            if (isset($extra["id"])) {
+                $t = '<span id="' . htmlspecialchars($extra["id"]) . "\">{$t}</span>";
+            }
+            return $t . Ht::hidden("t", $selected);
         }
     }
 }

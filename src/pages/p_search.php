@@ -248,8 +248,9 @@ class Search_Page {
             "</td></tr></table></div></form></div>";
     }
 
-    /** @param Qrequest $qreq */
-    private function render_list($pl_text, $qreq, $tOpt) {
+    /** @param Qrequest $qreq
+     * @param list<string> $limits */
+    private function render_list($pl_text, $qreq, $limits) {
         $search = $this->pl->search;
 
         if ($this->user->has_hidden_papers()
@@ -285,10 +286,9 @@ class Search_Page {
                     $a[] = "$xa=" . urlencode($qreq[$xa]);
                 }
             }
-            reset($tOpt);
-            if (key($tOpt) !== $search->limit()
+            if ($limits[0] !== $search->limit()
                 && !in_array($search->limit(), ["all", "viewable", "act"], true)) {
-                echo " (<a href=\"", $this->conf->hoturl("search", join("&amp;", $a)), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
+                echo " (<a href=\"", $this->conf->hoturl("search", join("&amp;", $a)), "\">Repeat search in ", htmlspecialchars(strtolower(PaperSearch::limit_description($this->conf, $limits[0]))), "</a>)";
             }
         }
 
@@ -335,7 +335,7 @@ class Search_Page {
             htmlspecialchars($search->default_limited_query()),
             '"><div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
-        $tOpt = PaperSearch::viewable_limits($user, $search->limit());
+        $limits = PaperSearch::viewable_limits($user, $search->limit());
         $qtOpt = $this->field_search_types();
 
         // Basic search tab
@@ -344,14 +344,9 @@ class Search_Page {
                 "size" => 40, "tabindex" => 1,
                 "class" => "papersearch want-focus need-suggest flex-grow-1",
                 "placeholder" => "(All)", "aria-label" => "Search"
-            ]), '<div class="form-basic-search-in">';
-        if ($search->limit_explicit() || count($tOpt) === 1) {
-            echo " in ", htmlspecialchars(PaperSearch::limit_description($this->conf, $search->limit())),
-                Ht::hidden("t", $search->limit());
-        } else {
-            echo " in ", PaperSearch::limit_selector($tOpt, $search->limit(), ["tabindex" => 1, "class" => "ml-1"]);
-        }
-        echo Ht::submit("Search", ["tabindex" => 1, "class" => "ml-3"]), "</div></form>";
+            ]), '<div class="form-basic-search-in"> in ',
+            PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["tabindex" => 1, "class" => "ml-1", "select" => !$search->limit_explicit() && count($limits) > 1]),
+            Ht::submit("Search", ["tabindex" => 1, "class" => "ml-3"]), "</div></form>";
 
         echo '</div>';
 
@@ -360,16 +355,16 @@ class Search_Page {
             Ht::form($this->conf->hoturl("search"), ["method" => "get"]),
             '<div class="d-inline-block">',
             '<div class="entryi medium"><label for="htctl-advanced-qt">Search</label><div class="entry">',
-            Ht::select("qt", $qtOpt, $qreq->get("qt", "n"), ["id" => "htctl-advanced-qt"]), '</div></div>',
+            Ht::select("qt", $qtOpt, $qreq->qt ?? "n", ["id" => "htctl-advanced-qt"]), '</div></div>',
             '<div class="entryi medium"><label for="htctl-advanced-qa">With <b>all</b> the words</label><div class="entry">',
-            Ht::entry("qa", $qreq->get("qa", $qreq->get("q", "")), ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest", "spellcheck" => false]), '</div></div>',
+            Ht::entry("qa", $qreq->qa ?? $qreq->q ?? "", ["id" => "htctl-advanced-qa", "size" => 60, "class" => "papersearch want-focus need-suggest", "spellcheck" => false]), '</div></div>',
             '<div class="entryi medium"><label for="htctl-advanced-qo">With <b>any</b> of the words</label><div class="entry">',
-            Ht::entry("qo", $qreq->get("qo", ""), ["id" => "htctl-advanced-qo", "size" => 60, "spellcheck" => false]), '</div></div>',
+            Ht::entry("qo", $qreq->qo ?? "", ["id" => "htctl-advanced-qo", "size" => 60, "spellcheck" => false]), '</div></div>',
             '<div class="entryi medium"><label for="htctl-advanced-qx"><b>Without</b> the words</label><div class="entry">',
-            Ht::entry("qx", $qreq->get("qx", ""), ["id" => "htctl-advanced-qx", "size" => 60, "spellcheck" => false]), '</div></div>';
+            Ht::entry("qx", $qreq->qx ?? "", ["id" => "htctl-advanced-qx", "size" => 60, "spellcheck" => false]), '</div></div>';
         if (!$search->limit_explicit()) {
             echo '<div class="entryi medium"><label for="htctl-advanced-q">In</label><div class="entry">',
-                PaperSearch::limit_selector($tOpt, $search->limit(), ["id" => "htctl-advanced-q"]), '</div></div>';
+                PaperSearch::limit_selector($this->conf, $limits, $search->limit(), ["id" => "htctl-advanced-q"]), '</div></div>';
         }
         echo '<div class="entryi medium"><label></label><div class="entry">',
             Ht::submit("Search"),
@@ -409,7 +404,7 @@ class Search_Page {
 
         // Paper body
         if ($pl_text !== null) {
-            $this->render_list($pl_text, $qreq, $tOpt);
+            $this->render_list($pl_text, $qreq, $limits);
         } else {
             echo '<hr class="g">';
         }

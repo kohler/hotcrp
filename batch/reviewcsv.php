@@ -258,8 +258,7 @@ $fcsv->parse_arg($arg);
 $fcsv->prepare($arg);
 
 $t = $arg["t"] ?? "s";
-$searchtypes = PaperSearch::viewable_limits($fcsv->user, $t);
-if (!isset($searchtypes[$t])) {
+if (!in_array($t, PaperSearch::viewable_limits($fcsv->user, $t))) {
     fwrite(STDERR, "batch/reviewcsv.php: No search collection ‘{$t}’.\n");
     exit(1);
 }

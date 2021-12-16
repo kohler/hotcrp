@@ -10,10 +10,9 @@ if (!$Me->is_manager()) {
 $Me->add_overrides(Contact::OVERRIDE_CONFLICT);
 
 // request cleaning
-$tOpt = PaperSearch::viewable_manager_limits($Me);
-if (!$Qreq->t || !isset($tOpt[$Qreq->t])) {
-    reset($tOpt);
-    $Qreq->t = key($tOpt);
+$limits = PaperSearch::viewable_manager_limits($Me);
+if (!$Qreq->t || !in_array($Qreq->t, $limits)) {
+    $Qreq->t = $limits[0];
 }
 
 if (!$Qreq->q || trim($Qreq->q) == "(All)") {
@@ -177,12 +176,8 @@ echo "<tr><td>Paper selection: &nbsp;</td><td>",
         "id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
         "class" => "papersearch want-focus need-suggest", "aria-label" => "Search",
         "spellcheck" => false
-    ]), " &nbsp;in &nbsp;";
-if (count($tOpt) > 1) {
-    echo Ht::select("t", $tOpt, $Qreq->t);
-} else {
-    echo join("", $tOpt);
-}
+    ]), " &nbsp;in &nbsp;",
+    PaperSearch::limit_selector($Conf, $limits, $Qreq->t);
 echo "</td></tr>\n",
     "<tr><td colspan=\"2\"><hr class=\"g\">\n";
 

@@ -25,9 +25,8 @@ if ($Me->privChair
     && $Conf->time_pc_view_active_submissions()) {
     $Qreq->t = "all";
 }
-if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {
-    reset($tOpt);
-    $Qreq->t = key($tOpt);
+if (!isset($Qreq->t) || !in_array($Qreq->t, $tOpt)) {
+    $Qreq->t = $tOpt[0];
 }
 
 // PC selection
@@ -613,13 +612,9 @@ echo Ht::entry("q", $Qreq->q, [
         "size" => 40, "aria-label" => "Search",
         "class" => Ht::control_class("q", "papersearch js-autosubmit need-suggest"),
         "data-submit-fn" => "requery", "spellcheck" => false
-    ]), " &nbsp;in &nbsp;";
-if (count($tOpt) > 1) {
-    echo Ht::select("t", $tOpt, $Qreq->t);
-} else {
-    echo join("", $tOpt);
-}
-echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);
+    ]), " &nbsp;in &nbsp;",
+    PaperSearch::limit_selector($Conf, $tOpt, $Qreq->t),
+    " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery"]);
 if (isset($Qreq->requery) || isset($Qreq->has_pap)) {
     $search = (new PaperSearch($Me, ["t" => $Qreq->t, "q" => $Qreq->q]))->set_urlbase("autoassign");
     $plist = new PaperList("reviewersSel", $search);

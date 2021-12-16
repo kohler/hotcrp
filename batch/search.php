@@ -23,8 +23,7 @@ require_once(SiteLoader::find("src/init.php"));
 
 $user = $Conf->root_user();
 $t = $arg["t"] ?? "s";
-$searchtypes = PaperSearch::viewable_limits($user, $t);
-if (!isset($searchtypes[$t])) {
+if (!in_array($t, PaperSearch::viewable_limits($user, $t))) {
     fwrite(STDERR, "batch/search.php: No search collection ‘{$t}’.\n");
     exit(1);
 }
