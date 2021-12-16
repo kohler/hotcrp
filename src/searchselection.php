@@ -25,17 +25,15 @@ class SearchSelection {
      * @param ?string $key
      * @return SearchSelection */
     static function make($qreq, Contact $user = null, $key = null) {
-        $ps = null;
-        if ($key !== null) {
+        $key = $key ?? ($qreq->has("p") ? "p" : "pap");
+        if ($qreq->has_a($key)) {
             $ps = $qreq->get_a($key);
-        } else {
-            $ps = $qreq->get_a(isset($qreq["p"]) ? "p" : "pap");
-        }
-        if ($ps === "all") {
+        } else if ($qreq->get($key) === "all") {
             $ps = $user ? (new PaperSearch($user, $qreq))->sorted_paper_ids() : null;
-        }
-        if (is_string($ps)) {
-            $ps = preg_split('/\s+/', $ps);
+        } else if ($qreq->has($key)) {
+            $ps = preg_split('/\s+/', $qreq->get($key));
+        } else {
+            $ps = null;
         }
         return new SearchSelection($ps);
     }

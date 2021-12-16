@@ -545,13 +545,13 @@ xassert_eqq($q->b, 2);
 xassert_eqq(count($q), 2);
 xassert_eqq($q->c, null);
 xassert_eqq(count($q), 2);
-$q->c = array();
+$q->c = "s";
 xassert_eqq(count($q), 3);
-$q->c[] = 1;
-xassert_eqq(json_encode($q->c), "[1]");
+xassert_eqq(json_encode($q->c), "\"s\"");
+xassert_eqq(json_encode($q->d), "null");
 xassert_eqq(count($q), 3);
-xassert_eqq(json_encode($q), "{\"a\":1,\"b\":2,\"c\":[1]}");
-xassert_eqq(Json::encode($q), "{\"a\":1,\"b\":2,\"c\":[1]}");
+xassert_eqq(json_encode($q), "{\"a\":1,\"b\":2,\"c\":\"s\"}");
+xassert_eqq(Json::encode($q), "{\"a\":1,\"b\":2,\"c\":\"s\"}");
 
 // Contact::is_anonymous_email tests
 xassert(Contact::is_anonymous_email("anonymous"));

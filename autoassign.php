@@ -30,7 +30,6 @@ if (!isset($Qreq->t) || !in_array($Qreq->t, $tOpt)) {
 }
 
 // PC selection
-$Qreq->allow_a("pap", "p");
 if (!isset($Qreq->has_pcc) && isset($Qreq->pcs)) {
     $Qreq->has_pcc = true;
     foreach (preg_split('/\s+/', $Qreq->pcs) as $n) {

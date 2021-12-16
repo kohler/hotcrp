@@ -7,6 +7,7 @@ class AutoassignerCosts implements JsonSerializable {
     public $preference = 60;
     public $expertise_x = -200;
     public $expertise_y = -140;
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return get_object_vars($this);
     }

@@ -85,12 +85,10 @@ if (isset($Qreq->template) && !isset($Qreq->check) && !isset($Qreq->default)) {
 if (!isset($Qreq->q) || trim($Qreq->q) == "(All)") {
     $Qreq->q = "";
 }
-$Qreq->allow_a("p", "pap");
-if (!isset($Qreq->p) && isset($Qreq->pap)) { // support p= and pap=
-    $Qreq->p = $Qreq->pap;
-}
-if (isset($Qreq->p) && is_string($Qreq->p)) {
-    $Qreq->p = preg_split('/\s+/', $Qreq->p);
+if (isset($Qreq->p) && !$Qreq->has_a("p")) {
+    $Qreq->set_a("p", preg_split('/\s+/', $Qreq->p));
+} else if (!isset($Qreq->p) && isset($Qreq->pap)) {
+    $Qreq->set_a("p", $Qreq->has_a("pap") ? $Qreq->get_a("pap") : preg_split('/\s+/', $Qreq->pap));
 }
 // It's OK to just set $Qreq->p from the input without
 // validation because MailRecipients filters internally
@@ -104,11 +102,9 @@ if (isset($Qreq->prevt) && isset($Qreq->prevq)) {
     }
 }
 $papersel = null;
-if (isset($Qreq->p)
-    && is_array($Qreq->p)
-    && !isset($Qreq->recheck)) {
+if ($Qreq->has_a("p") && !isset($Qreq->recheck)) {
     $papersel = [];
-    foreach ($Qreq->p as $p) {
+    foreach ($Qreq->get_a("p") as $p) {
         if (($p = cvtint($p)) > 0)
             $papersel[] = $p;
     }

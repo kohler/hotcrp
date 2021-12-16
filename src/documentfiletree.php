@@ -306,6 +306,7 @@ class DocumentFileTree implements JsonSerializable {
         return $this->_filecount === 0;
     }
 
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $answer = ["__treeid__" => $this->treeid];
         $dirs = $this->_dirinfo;

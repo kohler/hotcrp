@@ -239,6 +239,7 @@ class DocumentRequest implements JsonSerializable {
         }
     }
 
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $j = ["req_filename" => $this->req_filename, "pid" => $this->paperId, "dtype" => $this->dtype];
         foreach (["linkid", "attachment", "docid"] as $k) {

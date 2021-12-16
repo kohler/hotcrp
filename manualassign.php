@@ -19,14 +19,6 @@ if (!$Qreq->q || trim($Qreq->q) == "(All)") {
     $Qreq->q = "";
 }
 
-$Qreq->allow_a("p", "pap");
-if (!$Qreq->p && $Qreq->pap) {
-    $Qreq->p = $Qreq->pap;
-}
-if (is_string($Qreq->p)) {
-    $Qreq->p = preg_split('/\s+/', $Qreq->p);
-}
-
 $reviewer = $Me;
 if (isset($Qreq->reviewer)) {
     foreach ($Conf->full_pc_members() as $pcm) {
