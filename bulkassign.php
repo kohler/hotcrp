@@ -96,12 +96,12 @@ if (isset($Qreq->saveassignment)
 
 
 $Conf->header("Assignments", "bulkassign", ["subtitle" => "Bulk update"]);
-echo '<div class="mb-5 clearfix">',
-    '<div class="papmode"><a href="', $Conf->hoturl("autoassign"), '">Automatic</a></div>',
-    '<div class="papmode"><a href="', $Conf->hoturl("manualassign"), '">Manual</a></div>',
-    '<div class="papmode"><a href="', $Conf->hoturl("conflictassign"), '">Conflicts</a></div>',
-    '<div class="papmode active"><a href="', $Conf->hoturl("bulkassign"), '">Bulk update</a></div>',
-    '</div>';
+echo '<nav class="papmodes mb-5 clearfix"><ul>',
+    '<li class="papmode"><a href="', $Conf->hoturl("autoassign"), '">Automatic</a></li>',
+    '<li class="papmode"><a href="', $Conf->hoturl("manualassign"), '">Manual</a></li>',
+    '<li class="papmode"><a href="', $Conf->hoturl("conflictassign"), '">Conflicts</a></li>',
+    '<li class="papmode active"><a href="', $Conf->hoturl("bulkassign"), '">Bulk update</a></li>',
+    '</ul></nav>';
 
 
 // upload review form action

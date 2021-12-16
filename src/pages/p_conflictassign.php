@@ -14,12 +14,12 @@ class ConflictAssign_Page {
         $user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
         $conf->header("Assignments", "assignpc", ["subtitle" => "Conflicts"]);
-        echo '<div class="mb-5 clearfix">',
-            '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
-            '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
-            '<div class="papmode active"><a href="', hoturl("conflictassign"), '">Conflicts</a></div>',
-            '<div class="papmode"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
-            '</div>';
+        echo '<nav class="papmodes mb-5 clearfix"><ul>',
+            '<li class="papmode"><a href="', $conf->hoturl("autoassign"), '">Automatic</a></li>',
+            '<li class="papmode"><a href="', $conf->hoturl("manualassign"), '">Manual</a></li>',
+            '<li class="papmode active"><a href="', $conf->hoturl("conflictassign"), '">Conflicts</a></li>',
+            '<li class="papmode"><a href="', $conf->hoturl("bulkassign"), '">Bulk update</a></li>',
+            '</ul></nav>';
 
         echo '<div class="w-text mt-5 mb-5">';
 

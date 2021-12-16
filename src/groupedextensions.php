@@ -224,6 +224,7 @@ class GroupedExtensions implements XtContext {
         return $this->members("");
     }
 
+    /** @return bool */
     function allowed($allowed, $gj) {
         if (isset($allowed)) {
             $old_context = $this->conf->xt_swap_context($this);

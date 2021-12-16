@@ -282,13 +282,13 @@ a.attention, .btn-link:active {
 }
 a.qq, a.qx,
 a.q, a.x, a.xx, a.nn, a.btn,
-div.papmode.active > a, div.papmode.active:hover > a.noul, .leftmenu-item > a,
+.papmode.active > a, .papmode.active:hover > a.noul, .leftmenu-item > a,
 a.pnum, a.ptitle, a.mailto, u.x, .noul {
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
 }
 a.q:hover, a.qq:hover, a.x:hover,
-div.papmode.active:hover > a, .leftmenu-item:hover > a,
+.papmode.active:hover > a, .leftmenu-item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
@@ -484,6 +484,10 @@ label.checki {
 	padding-top: 0.5em !important;
 	padding-top: 0.5rem !important;
 }
+.pl-3 {
+	padding-left: 1em !important;
+	padding-left: 1rem !important;
+}
 
 .text-start {
 	text-align: start;
@@ -576,7 +580,7 @@ td.g {
 }
 .clearfix:after, .pst:after, .pavt:after, .revvt:after,
 .cmteditinfo:after, .aa:after, .aab:after,
-.entryi:after, .popup-actions:after, .modal-content:after, .f-horizontal:after {
+.entryi:after, .popup-actions:after, .modal-content:after {
 	clear: both;
 	content: "";
 	display: block;
@@ -1616,13 +1620,6 @@ input.wide {
 .f-i, .f-checkbox, .f-m {
 	margin-bottom: 1.25em;
 }
-.f-horizontal {
-	margin-right: -18px;
-	margin-bottom: 1em;
-}
-.f-i:last-child, .f-horizontal:last-child {
-	margin-bottom: 0;
-}
 label.f-c, .f-i > label {
 	display: table;
 }
@@ -1651,29 +1648,13 @@ label.f-c, .f-i > label {
 	margin-top: 0.25rem;
 	margin-bottom: 0.25rem;
 }
-.f-2col {
-	-webkit-columns: 300px 2;
-	columns: 300px 2;
-	-webkit-column-gap: 18px;
-	column-gap: 18px;
+.f-mcol {
+	display: flex;
+	flex-wrap: wrap;
+	column-gap: 24px;
 }
-.f-2col > .f-i {
-	margin-bottom: 0;
-	padding-bottom: 1.25em;
-	-webkit-column-break-inside: avoid;
-	page-break-inside: avoid;
-	break-inside: avoid;
-}
-.f-2col:last-child {
-	margin-bottom: -1.25em;
-}
-.f-horizontal > .f-i, .f-horizontal > .f-ig {
-	float: left;
-	width: auto;
-	margin: 0 18px 0 0;
-}
-.f-horizontal > .f-h {
-	margin-right: 18px;
+.f-mcol > * {
+	flex-grow: 1;
 }
 
 
@@ -1809,6 +1790,9 @@ img.check {
 }
 .w-entry-text {
 	max-width: 560px;
+}
+.maxw-480 {
+	max-width: 480px;
 }
 .minw-50 {
 	min-width: 50%;
@@ -2842,7 +2826,7 @@ a.badge:active {
 	padding: 12px 0 0 24px;
 	z-index: 5;
 }
-.submission-modes > ul {
+.submission-modes > ul, .papmodes > ul {
 	list-style-type: none;
 	margin: 0;
 	padding: 0;

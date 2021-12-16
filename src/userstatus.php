@@ -1359,7 +1359,7 @@ class UserStatus extends MessageSet {
                       Ht::entry("preferredEmail", $qreq->preferredEmail ?? $user->preferredEmail, ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => $user->preferredEmail, "type" => "email"]));
         }
 
-        echo '<div class="f-2col w-text">';
+        echo '<div class="f-mcol w-text">';
         $t = Ht::entry("firstName", $qreq->firstName ?? $user->firstName, ["size" => 24, "autocomplete" => $us->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => $user->firstName]) . $us->global_profile_difference("firstName");
         $us->render_field("firstName", "First name (given name)", $t, "f-i");
 

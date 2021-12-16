@@ -1,5 +1,5 @@
 <?php
-// intlmsg.php -- HotCRP helper functions for message i18n
+// intlmsgset.php -- HotCRP helper functions for message i18n
 // Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
 
 class IntlMsg {
@@ -7,6 +7,7 @@ class IntlMsg {
     public $context;
     /** @var string */
     public $otext;
+    /** @var ?list<string> */
     public $require;
     /** @var float */
     public $priority = 0.0;
