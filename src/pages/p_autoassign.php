@@ -254,7 +254,6 @@ class Autoassign_Page {
     }
 
     private function bp_selector($i, $which) {
-        global $Qreq;
         return Ht::select("bp$which$i", [], 0,
             ["class" => "need-pcselector uich badpairs", "data-pcselector-selected" => $this->qreq["bp$which$i"], "data-pcselector-options" => "[\"(PC member)\",\"*\"]", "data-default-value" => $this->qreq["bp$which$i"]]);
     }
