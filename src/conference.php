@@ -4059,7 +4059,7 @@ class Conf {
         $secure = $this->opt("sessionSecure") ?? false;
         $samesite = $this->opt("sessionSameSite") ?? "Lax";
         $opt = [
-            "expires" => $expires_at, "path" => Navigation::site_path(),
+            "expires" => $expires_at, "path" => Navigation::base_path(),
             "domain" => $this->opt("sessionDomain") ?? "",
             "secure" => $secure
         ];

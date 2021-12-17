@@ -347,6 +347,11 @@ class Navigation {
         return self::$s->site_path;
     }
 
+    /** @return string */
+    static function base_path() {
+        return self::$s->base_path;
+    }
+
     /** @param ?string $url
      * @return string */
     static function siteurl($url = null) {
