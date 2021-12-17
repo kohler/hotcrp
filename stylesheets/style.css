@@ -899,24 +899,29 @@ span.hastitle {
 
 /* topics */
 .topic-2:before {
-	content: "\2b07\fe0e";
+	content: "\2b07";
 	color: #bb5555;
+	padding-right: 0.125em;
 }
 .topic-1:before {
 	content: "↓";
 	color: #bb5555;
+	padding-right: 0.125em;
 }
 .topic0:before {
-	content: "⚬ ";
+	content: "⚬";
 	color: #aaaaaa;
+	padding-right: 0.25em;
 }
 .topic1:before {
 	content: "↑";
 	color: #00aa00;
+	padding-right: 0.125em;
 }
 .topic2:before, .topic3:before, .topic4:before {
-	content: "\2b06\fe0e";
+	content: "\2b06";
 	color: #00aa00;
+	padding-right: 0.125em;
 }
 .topic-2:before, .topic-1:before, .topic0:before, .topic1:before,
 .topic2:before, .topic3:before, .topic4:before {
