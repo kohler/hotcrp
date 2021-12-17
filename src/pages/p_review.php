@@ -296,7 +296,7 @@ class Review_Page {
 <meta http-equiv=\"Content-Script-Type\" content=\"text/javascript\" />
 <title>Redirection</title>
 <body>\n",
-            Ht::form($this->conf->hoturl_post("api/" . ($isaccept ? "acceptreview" : "declinereview"), ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1]), ["id" => "redirectform"]),
+            Ht::form($this->conf->hoturl("=api/" . ($isaccept ? "acceptreview" : "declinereview"), ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1]), ["id" => "redirectform"]),
             Ht::submit("Press to continue"),
             "</form>",
             Ht::script("document.getElementById(\"redirectform\").submit()"),
@@ -310,13 +310,13 @@ class Review_Page {
             $rrid = $ref[0]->refusedReviewId;
             $this->conf->msg(
                 "<p>You declined to complete this review. Thank you for informing us.</p>"
-                . Ht::form($this->conf->hoturl_post("api/declinereview", ["p" => $this->prow->paperId, "r" => $rrid, "redirect" => 1]))
+                . Ht::form($this->conf->hoturl("=api/declinereview", ["p" => $this->prow->paperId, "r" => $rrid, "redirect" => 1]))
                 . '<div class="f-i mt-3"><label for="declinereason">Optional explanation</label>'
                 . ($ref[0]->reason ? "" : '<div class="field-d">If you’d like, you may enter a brief explanation here.</div>')
                 . Ht::textarea("reason", $ref[0]->reason, ["rows" => 3, "cols" => 40, "spellcheck" => true, "class" => "w-text", "id" => "declinereason"])
                 . '</div><div class="aab mt-3">'
                 . '<div class="aabut">' . Ht::submit("Update explanation", ["class" => "btn-primary"])
-                . '</div><div class="aabut">' . Ht::submit("Accept review", ["formaction" => $this->conf->hoturl_post("api/acceptreview", ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1])])
+                . '</div><div class="aabut">' . Ht::submit("Accept review", ["formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1])])
                 . '</div></div></form>', 1);
         } else {
             $this->conf->msg("<p>You have declined to complete this review. Thank you for informing us.</p>", 1);
@@ -332,7 +332,7 @@ class Review_Page {
             } else if ($this->user->has_email()) {
                 $mx = 'This review is assigned to ' . htmlspecialchars($u->email) . ', while you are signed in as ' . htmlspecialchars($this->user->email) . '. You can edit the review anyway since you accessed it using a special link.';
                 if ($this->rrow->reviewStatus <= ReviewInfo::RS_DRAFTED) {
-                    $m = Ht::form($this->conf->hoturl_post("api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "redirect" => 1]), ["class" => "has-fold foldc"])
+                    $m = Ht::form($this->conf->hoturl("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "redirect" => 1]), ["class" => "has-fold foldc"])
                         . "<p class=\"mb-0\">$mx Alternately, you can <a href=\"\" class=\"ui js-foldup\">reassign it to this account</a>.</p>"
                         . '<div class="aab mt-3 fx">';
                     foreach ($this->user->session_users() as $e) {

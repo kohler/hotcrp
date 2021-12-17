@@ -1125,8 +1125,8 @@ $blind\n";
             }
             echo '<div class="revcard-bodyinsert demargin remargin"><div class="aab aabr aabig mt-0">',
                 '<div class="flex-grow-1 pt-2">', $req, '</div>',
-                '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger", "formaction" => $this->conf->hoturl_post("api/declinereview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>',
-                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success", "formaction" => $this->conf->hoturl_post("api/acceptreview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "verbose" => 1, "redirect" => 1])]), '</div>',
+                '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger", "formaction" => $this->conf->hoturl("=api/declinereview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "redirect" => 1])]), '</div>',
+                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success", "formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $prow->paperId, "r" => $rrow->reviewId, "verbose" => 1, "redirect" => 1])]), '</div>',
                 '</div></div>';
         }
     }
@@ -1209,8 +1209,8 @@ $blind\n";
         $reviewOrdinal = $rrow->unparse_ordinal_id();
         $forceShow = $viewer->is_admin_force() ? "&amp;forceShow=1" : "";
         $reviewlink = "p={$prow->paperId}" . ($rrow->reviewId ? "&amp;r={$reviewOrdinal}" : "");
-        $reviewPostLink = $this->conf->hoturl_post("review", "{$reviewlink}&amp;m=re{$forceShow}");
-        $reviewDownloadLink = $this->conf->hoturl("review", "{$reviewlink}&amp;m=re&amp;downloadForm=1{$forceShow}");
+        $reviewPostLink = $this->conf->hoturl("=review", "{$reviewlink}&amp;m=re{$forceShow}");
+        $reviewDownloadLink = $this->conf->hoturl("review", "{$reviewlink}&amp;m=re&amp;download=1{$forceShow}");
 
         echo '<div class="pcard revcard" id="r', $reviewOrdinal, '" data-pid="',
             $prow->paperId, '" data-rid="', ($rrow->reviewId ? : "new");

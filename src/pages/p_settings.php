@@ -78,7 +78,7 @@ class Settings_Page {
         echo Ht::unstash(), // clear out other script references
             $conf->make_script_file("scripts/settings.js"), "\n",
 
-            Ht::form($conf->hoturl_post("settings", "group={$group}"),
+            Ht::form($conf->hoturl("=settings", "group={$group}"),
                      ["id" => "settingsform", "class" => "need-unload-protection"]),
 
             '<div class="leftmenu-left"><nav class="leftmenu-menu">',

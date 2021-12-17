@@ -466,7 +466,7 @@ class Users_Page {
         }
 
         if ($pl->any->sel) {
-            echo Ht::form($this->conf->hoturl_post("users", ["t" => $this->qreq->t])),
+            echo Ht::form($this->conf->hoturl("=users", ["t" => $this->qreq->t])),
                 Ht::hidden("defaultfn", ""),
                 Ht::hidden_default_submit("default", 1),
                 isset($this->qreq->sort) ? Ht::hidden("sort", $this->qreq->sort) : "",

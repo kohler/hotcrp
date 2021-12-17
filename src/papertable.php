@@ -1977,7 +1977,7 @@ class PaperTable {
         if ($this->useRequest) {
             $form_js["class"] .= " alert";
         }
-        echo Ht::form($this->conf->hoturl_post("paper", $form_url), $form_js);
+        echo Ht::form($this->conf->hoturl("=paper", $form_url), $form_js);
         Ht::stash_script('$(hotcrp.load_editable_paper)');
     }
 

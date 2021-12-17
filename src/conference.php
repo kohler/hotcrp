@@ -3196,6 +3196,10 @@ class Conf {
     function hoturl($page, $param = null, $flags = 0) {
         $nav = Navigation::get();
         $amp = ($flags & self::HOTURL_RAW ? "&" : "&amp;");
+        if (str_starts_with($page, "=")) {
+            $page = substr($page, 1);
+            $flags |= self::HOTURL_POST;
+        }
         $t = $page;
         $are = '/\A(|.*?(?:&|&amp;))';
         $zre = '(?:&(?:amp;)?|\z)(.*)\z/';
@@ -4357,7 +4361,7 @@ class Conf {
             }
             if ((!$user->is_empty() || ($this->opt["httpAuthLogin"] ?? false))
                 && $id !== "signout") {
-                $profile_parts[] = Ht::form($this->hoturl_post("signout", ["cap" => null]), ["class" => "d-inline"])
+                $profile_parts[] = Ht::form($this->hoturl("=signout", ["cap" => null]), ["class" => "d-inline"])
                     . Ht::button("Sign out", ["type" => "submit", "class" => "btn btn-link"])
                     . "</form>";
             }

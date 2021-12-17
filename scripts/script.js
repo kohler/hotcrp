@@ -944,10 +944,10 @@ function hoturl_remove(url, component) {
     return url;
 }
 
-function hoturl_find(x, page_component) {
+function hoturl_find(xv, page_component) {
     var m;
-    for (var i = 0; i < x.v.length; ++i)
-        if ((m = page_component.exec(x.v[i]))) {
+    for (var i = 0; i < xv.length; ++i)
+        if ((m = page_component.exec(xv[i]))) {
             m[0] = i;
             return m;
         }
@@ -956,7 +956,7 @@ function hoturl_find(x, page_component) {
 
 function hoturl_clean(x, page_component, allow_fail) {
     if (x.last !== false && x.v.length) {
-        var im = hoturl_find(x, page_component);
+        var im = hoturl_find(x.v, page_component);
         if (im) {
             x.last = im[1];
             x.t += "/" + im[1];
@@ -967,7 +967,7 @@ function hoturl_clean(x, page_component, allow_fail) {
 }
 
 function hoturl(page, options) {
-    var i, m, v, anchor = "", want_forceShow;
+    var i, k, m, v, x, xv, anchor = "", want_forceShow;
     if (siteinfo.site_relative == null || siteinfo.suffix == null) {
         siteinfo.site_relative = siteinfo.suffix = "";
         log_jserror("missing siteinfo");
@@ -981,21 +981,28 @@ function hoturl(page, options) {
             options = m[1];
             anchor = m[2];
         }
-        x.v = options.split(/&/);
+        xv = options.split(/&/);
     } else {
-        x.v = [];
-        for (i in options) {
-            v = options[i];
+        xv = [];
+        for (k in options) {
+            v = options[k];
             if (v == null)
                 /* skip */;
-            else if (i === "anchor" /* XXX deprecated */ || i === "#")
+            else if (k === "#")
                 anchor = "#" + v;
             else
-                x.v.push(encodeURIComponent(i) + "=" + encodeURIComponent(v));
+                xv.push(encodeURIComponent(k).concat("=", encodeURIComponent(v).replace(/%20/g, "+")));
         }
     }
-    if (page.substring(0, 3) === "api" && !hoturl_find(x, /^base=/))
-        x.v.push("base=" + encodeURIComponent(siteinfo.site_relative));
+
+    if (page.startsWith("=")) {
+        xv.push("post=" + siteinfo.postvalue);
+        page = page.substring(1);
+    }
+    if (page.substring(0, 3) === "api" && !hoturl_find(xv, /^base=/)) {
+        xv.push("base=" + encodeURIComponent(siteinfo.site_relative));
+    }
+    x = {t: page, v: xv};
 
     if (page === "paper") {
         hoturl_clean(x, /^p=(\d+)$/);
@@ -1007,7 +1014,7 @@ function hoturl(page, options) {
     } else if (page === "review") {
         hoturl_clean(x, /^p=(\d+)$/);
         if (x.last !== false
-            && (m = hoturl_find(x, /^r=(\d+)([A-Z]+|r\d+|rnew)$/))
+            && (m = hoturl_find(xv, /^r=(\d+)([A-Z]+|r\d+|rnew)$/))
             && x.t.endsWith("/" + m[1])) {
             x.t += m[2];
             x.v.splice(m[0], 1);
@@ -1035,12 +1042,12 @@ function hoturl(page, options) {
     }
 
     if (siteinfo.want_override_conflict && want_forceShow
-        && !hoturl_find(x, /^forceShow=/))
-        x.v.push("forceShow=1");
+        && !hoturl_find(xv, /^forceShow=/))
+        xv.push("forceShow=1");
     if (siteinfo.defaults)
-        x.v.push(serialize_object(siteinfo.defaults));
-    if (x.v.length)
-        x.t += "?" + x.v.join("&");
+        xv.push(serialize_object(siteinfo.defaults));
+    if (xv.length)
+        x.t += "?" + xv.join("&");
     return siteinfo.site_relative + x.t + anchor;
 }
 
@@ -2588,7 +2595,7 @@ function tracker_refresh() {
             req += "&tracker_start_at=" + ts[2];
         if (ts[3])
             reqdata["hotlist-info"] = ts[3];
-        $.post(hoturl_post("api/track", req), reqdata, load_success);
+        $.post(hoturl("=api/track", req), reqdata, load_success);
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker_refresh, 25000);
         wstorage.site(true, "hotcrp-tracking", ts);
@@ -2720,7 +2727,7 @@ handle_ui.on("js-tracker", function (event) {
         for (var i in trd)
             f.appendChild($('<input class="tracker-changemark" type="hidden" name="tr' + i + '-changed" value="1">')[0]);
 
-        $.post(hoturl_post("api/trackerconfig"),
+        $.post(hoturl("=api/trackerconfig"),
                $d.find("form").serialize(),
                make_submit_success(hiding));
         event.preventDefault();
@@ -2775,7 +2782,7 @@ handle_ui.on("js-tracker", function (event) {
         || !hasClass(document.body, "has-hotlist")) {
         start();
     } else {
-        $.post(hoturl_post("api/trackerconfig"),
+        $.post(hoturl("=api/trackerconfig"),
                {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": siteinfo.paperid, "tr1-vis": wstorage.site(false, "hotcrp-tracking-visibility")},
                make_submit_success({}, "new"));
     }
@@ -2792,7 +2799,7 @@ function tracker_configure_success() {
 handle_ui.on("js-tracker-stop", function (event) {
     var e = event.target.closest(".has-tracker");
     if (e && e.hasAttribute("data-trackerid"))
-        $.post(hoturl_post("api/trackerconfig"),
+        $.post(hoturl("=api/trackerconfig"),
             {"tr1-id": e.getAttribute("data-trackerid"), "tr1-stop": 1},
             reload);
 });
@@ -3118,7 +3125,7 @@ function fold(elt, dofold, foldnum) {
             isopen ? delete sj[s] : sj[s] = 1;
             wstorage(false, "fold", $.isEmptyObject(sj) ? null : sj);
         } else if ((s = fold_session_for.call(elt, foldnum, "session"))) {
-            $.post(hoturl_post("api/session", {v: s + (isopen ? "=1" : "=0")}));
+            $.post(hoturl("=api/session", {v: s + (isopen ? "=1" : "=0")}));
         }
     }
 
@@ -3594,7 +3601,7 @@ handle_ui.on("input.js-email-populate", function (event) {
                 args.potential_conflict = 1;
                 args.p = siteinfo.paperid;
             }
-            $.ajax(hoturl_post("api/user", args), {
+            $.ajax(hoturl("=api/user", args), {
                 method: "GET", success: success
             });
         } else if (v === email_info[i + 1].lemail) {
@@ -4132,7 +4139,7 @@ handle_ui.on("js-review-tokens", function () {
     var $d;
     function submit(evt) {
         $d.find(".msg").remove();
-        $.post(hoturl_post("api/reviewtoken"), $d.find("form").serialize(),
+        $.post(hoturl("=api/reviewtoken"), $d.find("form").serialize(),
             function (data) {
                 if (data.ok) {
                     $d.close();
@@ -4338,8 +4345,8 @@ handle_ui.on("js-revrating", function () {
         fold($rr[0], false);
     }
     var $card = $(this).closest(".revcard");
-    $.post(hoturl_post("api", {p: $card.attr("data-pid"), r: $card.data("rid"),
-                               fn: "reviewrating"}),
+    $.post(hoturl("=api", {p: $card.attr("data-pid"), r: $card.data("rid"),
+                           fn: "reviewrating"}),
         {user_rating: (current & ~off) | on},
         function (data, status, jqxhr) {
             var result = data && data.ok ? "Feedback saved." : (data && data.error ? data.error : "Internal error.");
@@ -4881,7 +4888,7 @@ function make_save_callback($c) {
                 var arg = {editcomment: 1, p: siteinfo.paperid};
                 if ($c.c.cid)
                     arg.c = $c.c.cid;
-                form.action = hoturl_post("paper", arg);
+                form.action = hoturl("=paper", arg);
                 form.submit();
             }
             var error = data.message || data.error;
@@ -4958,7 +4965,7 @@ function save_editor(elt, action, really) {
     if (action === "delete") {
         arg.delete = 1;
     }
-    var url = hoturl_post("api/comment", arg),
+    var url = hoturl("=api/comment", arg),
         callback = make_save_callback($c);
     if (window.FormData) {
         $.ajax(url, {
@@ -5140,7 +5147,7 @@ function render_cmt_text(format, value, response, textj, chead) {
 
 handle_ui.on("js-submit-comment", function () {
     var $c = $cmt(this);
-    $.ajax(hoturl_post("api/comment", {p: siteinfo.paperid, c: $c.c.cid}), {
+    $.ajax(hoturl("=api/comment", {p: siteinfo.paperid, c: $c.c.cid}), {
         method: "POST", data: {override: 1, response: $c.c.response, text: $c.c.text},
         success: make_save_callback($c)
     });
@@ -6200,7 +6207,7 @@ var add_revpref_ajax = (function () {
             cid = pid.substr(pos + 1);
             pid = pid.substr(0, pos);
         }
-        $.ajax(hoturl_post("api/revpref", {p: pid}), {
+        $.ajax(hoturl("=api/revpref", {p: pid}), {
             method: "POST", data: {pref: self.value, u: cid},
             success: function (rv) {
                 minifeedback(self, rv);
@@ -6531,7 +6538,7 @@ function search_sort_click(evt) {
 function search_scoresort_change(evt) {
     var scoresort = $(this).val(),
         re = / (?:counts|average|median|variance|maxmin|my)\b/;
-    $.post(hoturl_post("api/session"), {v: "scoresort=" + scoresort});
+    $.post(hoturl("=api/session"), {v: "scoresort=" + scoresort});
     plinfo.set_scoresort(scoresort);
     $("#foldpl > thead").find("a.pl_sort").each(function () {
         var href = this.getAttribute("href"), sorter = href_sorter(href);
@@ -6707,7 +6714,7 @@ handle_ui.on("js-annotate-order", function () {
                 if (legend != "" || tagval != 0)
                     anno.push({annoid: "n" + i, legend: legend, tagval: tagval});
             }
-            $.post(hoturl_post("api/taganno", {tag: mytag}),
+            $.post(hoturl("=api/taganno", {tag: mytag}),
                    {anno: JSON.stringify(anno)}, make_onsave($d));
         }
         return false;
@@ -6763,7 +6770,7 @@ handle_ui.on("js-annotate-order", function () {
         }
         $d.on("click", "button", clickh).on("click", "a.delete-link", ondeleteclick);
     }
-    $.get(hoturl_post("api/taganno", {tag: mytag}), show_dialog);
+    $.get(hoturl("=api/taganno", {tag: mytag}), show_dialog);
 });
 
 
@@ -6803,7 +6810,7 @@ function tag_save() {
         minifeedback(this, {ok: false, message_list: [{message: "Value must be a number (or empty to remove the tag).", status: 2}]});
         return;
     }
-    $.post(hoturl_post("api/settags", {p: m[2], forceShow: 1}),
+    $.post(hoturl("=api/settags", {p: m[2], forceShow: 1}),
            {addtags: ch}, make_tag_save_callback(this));
 }
 
@@ -7116,11 +7123,11 @@ function commit_drag(si, di) {
         } else if (rowanal[i].annoid)
             annosaves.push({annoid: rowanal[i].annoid, tagval: tagvalue_unparse(rowanal[i].newvalue)});
     if (saves.length)
-        $.post(hoturl_post("api/settags", {forceShow: 1}),
+        $.post(hoturl("=api/settags", {forceShow: 1}),
                {tagassignment: saves.join(",")},
                make_tag_save_callback(rowanal[si].entry));
     if (annosaves.length)
-        $.post(hoturl_post("api/taganno", {tag: dragtag, forceShow: 1}),
+        $.post(hoturl("=api/taganno", {tag: dragtag, forceShow: 1}),
                {anno: JSON.stringify(annosaves)}, taganno_success);
 }
 
@@ -7372,7 +7379,7 @@ handle_ui.on("js-plinfo-edittags", function () {
         focus_within(div);
     }
     function do_submit() {
-        $.post(hoturl_post("api/settags", {p: pid, forceShow: 1}),
+        $.post(hoturl("=api/settags", {p: pid, forceShow: 1}),
             {tags: $(ta).val()},
             function (rv) {
                 minifeedback(ta, rv);
@@ -7388,7 +7395,7 @@ handle_ui.on("js-plinfo-edittags", function () {
         if (focused)
             focus_within(div.closest("tr"));
     }
-    $.post(hoturl_post("api/settags", {p: pid, forceShow: 1}), start); // XXX should be GET
+    $.post(hoturl("=api/settags", {p: pid, forceShow: 1}), start); // XXX should be GET
 });
 
 
@@ -7752,7 +7759,7 @@ function plinfo(type, dofold) {
             loadargs.session = sesv;
             ses = null;
         }
-        $.get(hoturl_post("api", $.extend(loadargs, hotlist_search_params(self, true))),
+        $.get(hoturl("=api", $.extend(loadargs, hotlist_search_params(self, true))),
               make_callback(type === "aufull" ? null : dofold, xtype));
         if (type === "anonau" || type === "aufull")
             fold(self, dofold, foldmap(type));
@@ -7770,7 +7777,7 @@ function plinfo(type, dofold) {
     }
     // update session
     if (ses)
-        $.post(hoturl_post("api/session", {v: sesv}));
+        $.post(hoturl("=api/session", {v: sesv}));
     return false;
 }
 
@@ -8020,7 +8027,7 @@ handle_ui.on("js-check-format", function () {
     var running = setTimeout(function () {
         $cf.html(render_xmsg("Checking format (this can take a while)...", 0));
     }, 1000);
-    $.ajax(hoturl_post("api/formatcheck", {p: siteinfo.paperid}), {
+    $.ajax(hoturl("=api/formatcheck", {p: siteinfo.paperid}), {
         timeout: 20000, data: {
             dt: $d[0].getAttribute("data-dtype"), docid: $d[0].getAttribute("data-docid")
         },
@@ -8256,7 +8263,7 @@ handle_ui.on("js-clickthrough", function (event) {
         $container = $(this).closest(".js-clickthrough-container");
     if (!$container.length)
         $container = $(this).closest(".pcontainer");
-    $.post(hoturl_post("api/clickthrough", {accept: 1, p: siteinfo.paperid}),
+    $.post(hoturl("=api/clickthrough", {accept: 1, p: siteinfo.paperid}),
         $(this.form).serialize(),
         function (data) {
             if (data && data.ok) {
@@ -8272,7 +8279,7 @@ handle_ui.on("js-clickthrough", function (event) {
 
 handle_ui.on("js-follow-change", function (event) {
     var self = this;
-    $.post(hoturl_post("api/follow",
+    $.post(hoturl("=api/follow",
         {p: $(self).attr("data-pid") || siteinfo.paperid}),
         {following: this.checked, reviewer: $(self).data("reviewer") || siteinfo.user.email},
         function (rv) {
@@ -8320,7 +8327,7 @@ function prepare_paper_select() {
         if ((keyed && evt.type !== "blur" && now_msec() <= keyed + 1)
             || ctl.disabled) {
         } else if (saveval !== oldval) {
-            $.post(hoturl_post("api/" + ctl.name, {p: siteinfo.paperid}),
+            $.post(hoturl("=api/" + ctl.name, {p: siteinfo.paperid}),
                    $(self).find("form").serialize(),
                    make_callback(evt.type !== "blur"));
             ctl.disabled = true;
@@ -8421,7 +8428,7 @@ function save_pstags(evt) {
     var f = this, $f = $(f);
     evt.preventDefault();
     $f.find("input").prop("disabled", true);
-    $.ajax(hoturl_post("api/settags", {p: $f.attr("data-pid")}), {
+    $.ajax(hoturl("=api/settags", {p: $f.attr("data-pid")}), {
         method: "POST", data: $f.serialize(), timeout: 4000,
         success: function (data) {
             $f.find("input").prop("disabled", false);
@@ -8483,7 +8490,7 @@ function save_pstagindex(event) {
         }
         data.ok && $(window).trigger("hotcrptags", [data]);
     }
-    $.post(hoturl_post("api/settags", {p: $f.attr("data-pid")}),
+    $.post(hoturl("=api/settags", {p: $f.attr("data-pid")}),
             {"addtags": assignments.join(" ")}, done);
 }
 
@@ -8807,7 +8814,7 @@ handle_ui.on("js-delete-user", function (event) {
 handle_ui.on("js-disable-user", function (event) {
     var disabled = hasClass(this, "btn-success"), self = this;
     self.disabled = true;
-    $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
+    $.post(hoturl("=api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
         disabled ? {enable: 1} : {disable: 1},
         function (data) {
             self.disabled = false;
@@ -8830,7 +8837,7 @@ handle_ui.on("js-disable-user", function (event) {
 handle_ui.on("js-send-user-accountinfo", function (event) {
     var self = this;
     self.disabled = true;
-    $.post(hoturl_post("api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
+    $.post(hoturl("=api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
         {sendinfo: 1},
         function (data) {
             minifeedback(self, data);
@@ -8957,7 +8964,7 @@ handle_ui.on("js-edit-formulas", function () {
     }
     function submit(event) {
         event.preventDefault();
-        $.post(hoturl_post("api/namedformula"),
+        $.post(hoturl("=api/namedformula"),
             $d.find("form").serialize(),
             function (data) {
                 if (data.ok)
@@ -8981,7 +8988,7 @@ handle_ui.on("js-edit-formulas", function () {
         $d.on("click", "a.delete-link", ondelete);
         $d.on("submit", "form", submit);
     }
-    $.get(hoturl_post("api/namedformula"), function (data) {
+    $.get(hoturl("=api/namedformula"), function (data) {
         if (data.ok)
             create(data.formulas);
     });
@@ -8990,7 +8997,7 @@ handle_ui.on("js-edit-formulas", function () {
 handle_ui.on("js-edit-view-options", function () {
     var $d;
     function submit(event) {
-        $.ajax(hoturl_post("api/viewoptions"), {
+        $.ajax(hoturl("=api/viewoptions"), {
             method: "POST", data: $(this).serialize(),
             success: function (data) {
                 if (data.ok) {
@@ -9027,7 +9034,7 @@ handle_ui.on("js-edit-view-options", function () {
         $d = hc.show();
         $d.on("submit", "form", submit);
     }
-    $.ajax(hoturl_post("api/viewoptions", {q: $("#searchform input[name=q]").val()}), {
+    $.ajax(hoturl("=api/viewoptions", {q: $("#searchform input[name=q]").val()}), {
         success: function (data) {
             if (data.ok)
                 create(data.display_default, data.display_current);
@@ -9084,7 +9091,7 @@ handle_ui.on("js-edit-namedsearches", function () {
     }
     function submit(event) {
         event.preventDefault();
-        $.post(hoturl_post("api/namedsearch"),
+        $.post(hoturl("=api/namedsearch"),
             $d.find("form").serialize(),
             function (data) {
                 if (data.ok)
@@ -9109,7 +9116,7 @@ handle_ui.on("js-edit-namedsearches", function () {
         $d.on("click", "a.delete-link", ondelete);
         $d.on("submit", "form", submit);
     }
-    $.get(hoturl_post("api/namedsearch"), function (data) {
+    $.get(hoturl("=api/namedsearch"), function (data) {
         if (data.ok)
             create(data.searches);
     });
@@ -9277,7 +9284,7 @@ handle_ui.on("js-assign-review", function (event) {
         value = self.checked ? -1 : 0;
     }
     data["pcs" + m[2]] = value;
-    $.post(hoturl_post("assign", {p: m[1], update: 1, ajax: 1}),
+    $.post(hoturl("=assign", {p: m[1], update: 1, ajax: 1}),
         data, function (rv) {
             input_set_default_value(self, value);
             minifeedback(self, rv);

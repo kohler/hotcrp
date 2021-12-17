@@ -210,7 +210,7 @@ class Search_Page {
     /** @param Qrequest $qreq */
     private function render_display_options($qreq) {
         echo '<div class="tld is-tla" id="tla-view" style="padding-bottom:1ex">',
-            Ht::form($this->conf->hoturl_post("search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
+            Ht::form($this->conf->hoturl("=search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
         foreach (["q", "qa", "qo", "qx", "qt", "t", "sort"] as $x) {
             if (isset($qreq[$x]) && ($x !== "q" || !isset($qreq->qa)))
                 echo Ht::hidden($x, $qreq[$x]);

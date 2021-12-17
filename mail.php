@@ -255,7 +255,7 @@ class MailSender {
     }
 
     private function echo_request_form($include_cb) {
-        echo Ht::form($this->conf->hoturl_post("mail"), ["id" => "mailform"]);
+        echo Ht::form($this->conf->hoturl("=mail"), ["id" => "mailform"]);
         foreach (["to", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit", "newrev_since"] as $x) {
             if (isset($this->qreq[$x]))
                 echo Ht::hidden($x, $this->qreq[$x]);
@@ -636,7 +636,7 @@ if (isset($Qreq->monreq)) {
     }
 }
 
-echo Ht::form($Conf->hoturl_post("mail", "check=1")),
+echo Ht::form($Conf->hoturl("=mail", "check=1")),
     Ht::hidden("defaultfn", ""),
     Ht::hidden_default_submit("default", 1), '
 

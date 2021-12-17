@@ -174,7 +174,7 @@ class ManualAssign_Page {
         $pl = new PaperList("reviewAssignment", $search, ["sort" => true], $this->qreq);
         $pl->apply_view_session();
         $pl->apply_view_qreq();
-        echo Ht::form($this->conf->hoturl_post("manualassign", ["reviewer" => $reviewer->email, "sort" => $this->qreq->sort]), ["class" => "assignpc ignore-diff"]),
+        echo Ht::form($this->conf->hoturl("=manualassign", ["reviewer" => $reviewer->email, "sort" => $this->qreq->sort]), ["class" => "assignpc ignore-diff"]),
             Ht::hidden("t", $this->qreq->t),
             Ht::hidden("q", $this->qreq->q),
             Ht::entry("____updates____", "", ["class" => "hidden ignore-diff"]);

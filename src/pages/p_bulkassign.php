@@ -118,7 +118,7 @@ class BulkAssign_Page {
 
         $atypes = $aset->assigned_types();
         $apids = $aset->numjoin_assigned_pids(" ");
-        echo Ht::form($this->conf->hoturl_post("bulkassign", [
+        echo Ht::form($this->conf->hoturl("=bulkassign", [
                 "saveassignment" => 1,
                 "assigntypes" => join(" ", $atypes),
                 "assignpids" => $apids
@@ -176,7 +176,8 @@ secondary review for submission #2:</p>
         $qreq->rev_round = (string) $conf->sanitize_round_name($qreq->rev_round);
 
         // redirect if save cancelled
-        if (isset($qreq->saveassignment) && isset($qreq->cancel)) {
+        if (isset($qreq->saveassignment)
+            && isset($qreq->cancel)) {
             unset($qreq->saveassignment);
             $conf->redirect_self($qreq); // should not return
             return;
@@ -241,7 +242,7 @@ Assignment methods:
 
 
         // Form
-        echo Ht::form($conf->hoturl_post("bulkassign", "upload=1"));
+        echo Ht::form($conf->hoturl("=bulkassign", "upload=1"));
 
         // Upload
         echo '<div class="f-i mt-3">',
@@ -306,7 +307,7 @@ hotcrp.foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.te
         echo Ht::submit("Prepare assignments", ["class" => "btn-primary"]),
             " &nbsp; <span class=\"hint\">You’ll be able to check the assignments before they are saved.</span>\n";
 
-        echo '<div class="mt-4"><a href="', $conf->hoturl_post("search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC review assignments</a></div>';
+        echo '<div class="mt-4"><a href="', $conf->hoturl("=search", "fn=get&amp;getfn=pcassignments&amp;t=manager&amp;q=&amp;p=all"), '">Download current PC review assignments</a></div>';
 
         echo "</form>\n\n";
 

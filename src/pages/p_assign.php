@@ -385,7 +385,7 @@ class Assign_Page {
             || ($rrow->reviewType !== REVIEW_REFUSAL
                 && $this->user->contactId > 0
                 && $rrow->requestedBy == $this->user->contactId)) {
-            echo Ht::form($this->conf->hoturl_post("assign", ["p" => $this->prow->paperId, "action" => "managerequest", "email" => $rrow->email, "round" => $rrow->reviewRound]), ["class" => "fx"]);
+            echo Ht::form($this->conf->hoturl("=assign", ["p" => $this->prow->paperId, "action" => "managerequest", "email" => $rrow->email, "round" => $rrow->reviewRound]), ["class" => "fx"]);
             if (!isset($rrow->contactId) || !$rrow->contactId) {
                 echo Ht::hidden("firstName", $rrow->firstName),
                     Ht::hidden("lastName", $rrow->lastName),
@@ -556,7 +556,7 @@ class Assign_Page {
             echo '<div class="pcard revcard">',
                 '<div class="revcard-head"><h2>PC assignments</h2></div>',
                 '<div class="revcard-body">',
-                Ht::form($this->conf->hoturl_post("assign", "p=$prow->paperId"), ["id" => "ass", "class" => "need-unload-protection"]);
+                Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), ["id" => "ass", "class" => "need-unload-protection"]);
             Ht::stash_script('hotcrp.highlight_form_children("#ass")');
 
             if ($this->conf->has_topics()) {
@@ -591,7 +591,7 @@ class Assign_Page {
             $req = "Propose an external review";
         }
         echo '<div class="pcard revcard">',
-            Ht::form($this->conf->hoturl_post("assign", "p=$prow->paperId"), ["novalidate" => true]),
+            Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), ["novalidate" => true]),
             '<div class="revcard-head">',
             "<h2>", $req, "</h2></div><div class=\"revcard-body\">";
 

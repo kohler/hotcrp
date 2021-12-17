@@ -177,7 +177,7 @@ class Revpref_ListAction extends ListAction {
                 $conf->warnMsg($aset->messages_div_html(true));
             }
 
-            echo Ht::form($conf->hoturl_post("reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "alert need-unload-protection"]),
+            echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "alert need-unload-protection"]),
                 Ht::hidden("fn", "applyuploadpref"),
                 Ht::hidden("file", $aset->make_acsv()->unparse()),
                 Ht::hidden("filename", $csv->filename());

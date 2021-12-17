@@ -96,7 +96,7 @@ if ($MergeError) {
 );
 }
 
-echo Ht::form($Conf->hoturl_post("mergeaccounts"));
+echo Ht::form($Conf->hoturl("=mergeaccounts"));
 
 // Try to prevent glasses interactions from screwing up merges
 echo Ht::hidden("actas", $Me->contactId);

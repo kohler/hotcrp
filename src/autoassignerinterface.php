@@ -210,7 +210,7 @@ class AutoassignerInterface {
         $urlarg["profile"] = $this->qreq->profile;
         $urlarg["XDEBUG_PROFILE"] = $this->qreq->XDEBUG_PROFILE;
         $urlarg["seed"] = $this->qreq->seed;
-        echo Ht::form($this->conf->hoturl_post("autoassign", $urlarg), $attr);
+        echo Ht::form($this->conf->hoturl("=autoassign", $urlarg), $attr);
         foreach (["t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_round", "method", "has_pap"] as $t) {
             if (isset($this->qreq[$t]))
                 echo Ht::hidden($t, $this->qreq[$t]);

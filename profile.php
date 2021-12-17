@@ -632,7 +632,7 @@ $form_params["t"] = $Qreq->t;
 if (isset($Qreq->ls)) {
     $form_params["ls"] = $Qreq->ls;
 }
-echo Ht::form($Conf->hoturl_post("profile", $form_params), [
+echo Ht::form($Conf->hoturl("=profile", $form_params), [
     "id" => "form-profile",
     "class" => "need-unload-protection",
     "data-user" => $newProfile ? null : $Acct->email
