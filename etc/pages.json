@@ -197,7 +197,7 @@
     {   "name": "assign", "render_php": "assign.php"   },
     {   "name": "autoassign", "render_function": "Autoassign_Page::go"   },
     {   "name": "bulkassign", "render_function": "BulkAssign_Page::go"   },
-    {   "name": "buzzer", "render_php": "buzzer.php"   },
+    {   "name": "buzzer", "render_function": "Buzzer_Page::go"   },
     {   "name": "checkupdates", "render_function": "CheckUpdates_Page::go"   },
     {   "name": "conflictassign", "render_function": "ConflictAssign_Page::go"   },
     {   "name": "deadlines", "render_function": "Deadlines_Page::go", "allow_disabled": true   },
