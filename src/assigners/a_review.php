@@ -274,7 +274,7 @@ class Review_Assigner extends Assigner {
             Conflict_Assigner::check_unconflicted($item, $state);
         } else if ($item->pre("_rtype") && !$item->post("_rtype") && $item->pre("_rmodified")) {
             $uname = $state->user_by_id($item["cid"])->name_h(NAME_E);
-            throw new Exception("{$uname} has already modified their review, so it cannot be unassigned.");
+            throw new Exception("{$uname} has already modified their review for #" . $item->pid() . ", so it cannot be unassigned.");
         }
         return new Review_Assigner($item, $state);
     }
