@@ -215,5 +215,5 @@
     {   "name": "scorechart", "render_function": "Scorechart_Page::go"   },
     {   "name": "search", "render_function": "Search_Page::go"   },
     {   "name": "settings", "render_function": "Settings_Page::go"   },
-    {   "name": "users", "render_php": "users.php", "allow_disabled": true   }
+    {   "name": "users", "render_function": "Users_Page::go", "allow_disabled": true   }
 ]

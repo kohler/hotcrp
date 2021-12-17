@@ -23,7 +23,10 @@ class ContactList {
     const FIELD_COLLABORATORS = 16;
     const FIELD_SCORE = 50;
 
-    public static $folds = array("topics", "aff", "tags", "collab");
+    /** @var list<string> */
+    public static $folds = ["topics", "aff", "tags", "collab"];
+    /** @var array<int,array{string,int,int}> */
+    public static $fields;
 
     /** @var Conf */
     public $conf;
@@ -69,8 +72,6 @@ class ContactList {
     private $_sort_data;
 
     function __construct(Contact $user, $sortable = true, $qreq = null) {
-        global $contactListFields;
-
         $this->conf = $user->conf;
         $this->user = $user;
         if (!$qreq || !($qreq instanceof Qrequest)) {
@@ -853,9 +854,35 @@ class ContactList {
         return $rows;
     }
 
-    function table_html($listname, $url, $listtitle = "", $foldsession = null) {
-        global $contactListFields;
+    /** @param int $fid
+     * @return ?array{string,int,int} */
+    static function contact_list_field($fid) {
+        if (self::$fields === null) {
+            self::$fields = [
+                ContactList::FIELD_SELECTOR => ['sel', 1, 0],
+                ContactList::FIELD_SELECTOR_ON => ['sel', 1, 0],
+                ContactList::FIELD_NAME => ['name', 1, 1],
+                ContactList::FIELD_EMAIL => ['email', 1, 1],
+                ContactList::FIELD_AFFILIATION => ['affiliation', 1, 1],
+                ContactList::FIELD_AFFILIATION_ROW => ['affrow', 4, 0],
+                ContactList::FIELD_LASTVISIT => ['lastvisit', 1, 1],
+                ContactList::FIELD_HIGHTOPICS => ['topics', 3, 0],
+                ContactList::FIELD_LOWTOPICS => ['topics', 3, 0],
+                ContactList::FIELD_REVIEWS => ['revstat', 1, 1],
+                ContactList::FIELD_REVIEW_RATINGS => ['revstat', 1, 1],
+                ContactList::FIELD_PAPERS => ['papers', 1, 1],
+                ContactList::FIELD_REVIEW_PAPERS => ['papers', 1, 1],
+                ContactList::FIELD_SCORE => ['uscores', 1, 1],
+                ContactList::FIELD_LEADS => ['revstat', 1, 1],
+                ContactList::FIELD_SHEPHERDS => ['revstat', 1, 1],
+                ContactList::FIELD_TAGS => ['tags', 5, 0],
+                ContactList::FIELD_COLLABORATORS => ['collab', 6, 0]
+            ];
+        }
+        return self::$fields[$fid] ?? null;
+    }
 
+    function table_html($listname, $url, $listtitle = "", $foldsession = null) {
         // PC tags
         $listquery = $listname;
         $this->qopt = array();
@@ -880,8 +907,8 @@ class ContactList {
             if ($this->selector($fid) === false) {
                 continue;
             }
-            if (!($fieldDef[$fid] = $contactListFields[$fid] ?? null)) {
-                $fieldDef[$fid] = $contactListFields[self::FIELD_SCORE];
+            if (!($fieldDef[$fid] = self::contact_list_field($fid))) {
+                $fieldDef[$fid] = self::contact_list_field(self::FIELD_SCORE);
             }
             $acceptable_fields[$fid] = true;
             if ($fieldDef[$fid][1] == 1) {
@@ -1101,26 +1128,3 @@ class ContactList {
     }
 
 }
-
-
-global $contactListFields;
-$contactListFields = [
-    ContactList::FIELD_SELECTOR => array('sel', 1, 0),
-    ContactList::FIELD_SELECTOR_ON => array('sel', 1, 0),
-    ContactList::FIELD_NAME => array('name', 1, 1),
-    ContactList::FIELD_EMAIL => array('email', 1, 1),
-    ContactList::FIELD_AFFILIATION => array('affiliation', 1, 1),
-    ContactList::FIELD_AFFILIATION_ROW => array('affrow', 4, 0),
-    ContactList::FIELD_LASTVISIT => array('lastvisit', 1, 1),
-    ContactList::FIELD_HIGHTOPICS => array('topics', 3, 0),
-    ContactList::FIELD_LOWTOPICS => array('topics', 3, 0),
-    ContactList::FIELD_REVIEWS => array('revstat', 1, 1),
-    ContactList::FIELD_REVIEW_RATINGS => array('revstat', 1, 1),
-    ContactList::FIELD_PAPERS => array('papers', 1, 1),
-    ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1),
-    ContactList::FIELD_SCORE => array('uscores', 1, 1),
-    ContactList::FIELD_LEADS => array('revstat', 1, 1),
-    ContactList::FIELD_SHEPHERDS => array('revstat', 1, 1),
-    ContactList::FIELD_TAGS => array('tags', 5, 0),
-    ContactList::FIELD_COLLABORATORS => array('collab', 6, 0)
-];
