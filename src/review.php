@@ -1289,8 +1289,8 @@ $blind\n";
         echo '<hr class="c">';
         echo "<table class=\"revoff\"><tr>
       <td><strong>Offline reviewing</strong> &nbsp;</td>
-      <td>Upload form: &nbsp; <input type=\"file\" name=\"uploadedFile\" accept=\"text/plain\" size=\"30\">
-      &nbsp; ", Ht::submit("uploadForm", "Go"), "</td>
+      <td>Upload form: &nbsp; <input type=\"file\" name=\"file\" accept=\"text/plain\" size=\"30\">
+      &nbsp; ", Ht::submit("upload", "Go"), "</td>
     </tr><tr>
       <td></td>
       <td><a href=\"$reviewDownloadLink\">Download form</a>

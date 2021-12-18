@@ -133,13 +133,13 @@ class Review_Page {
     }
 
     function handle_upload_form() {
-        if (!$this->qreq->has_file("uploadedFile")) {
+        if (!$this->qreq->has_file("file")) {
             Conf::msg_error("Select a review form to upload.");
             return;
         }
         $rv = ReviewValues::make_text($this->rf(),
-                $this->qreq->file_contents("uploadedFile"),
-                $this->qreq->file_filename("uploadedFile"));
+                $this->qreq->file_contents("file"),
+                $this->qreq->file_filename("file"));
         if ($rv->parse_text($this->qreq->override)
             && $rv->check_and_save($this->user, $this->prow, $this->rrow)) {
             $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
@@ -393,8 +393,8 @@ class Review_Page {
             $qreq->m = $qreq->mode;
         }
         if ($qreq->post && $qreq->default) {
-            if ($qreq->has_file("uploadedFile")) {
-                $qreq->uploadForm = 1;
+            if ($qreq->has_file("file")) {
+                $qreq->upload = 1;
             } else {
                 $qreq->update = 1;
             }
@@ -422,9 +422,9 @@ class Review_Page {
             $pp->handle_update();
         } else if ($qreq->adoptreview && $qreq->valid_post()) {
             $pp->handle_adopt();
-        } else if ($qreq->uploadForm && $qreq->valid_post()) {
+        } else if ($qreq->upload && $qreq->valid_post()) {
             $pp->handle_upload_form();
-        } else if ($qreq->downloadForm) {
+        } else if ($qreq->download || $qreq->downloadForm /* XXX */) {
             $pp->handle_download_form();
         } else if ($qreq->text) {
             $pp->handle_download_text();

@@ -74,7 +74,7 @@ class BulkAssign_Page {
             $aset->add_progress_handler($callback);
         }
         $aset->enable_papers($ssel->selection());
-        $aset->parse($this->qreq->file, $this->qreq->filename, $this->assignment_defaults());
+        $aset->parse($this->qreq->data, $this->qreq->filename, $this->assignment_defaults());
         return $aset->execute(true);
     }
 
@@ -84,11 +84,11 @@ class BulkAssign_Page {
         while (@ob_end_flush()) {
         }
 
-        if ($this->qreq->has_file("bulk")) {
-            $text = $this->qreq->file_contents("bulk");
-            $filename = $this->qreq->file_filename("bulk");
+        if ($this->qreq->has_file("file")) {
+            $text = $this->qreq->file_contents("file");
+            $filename = $this->qreq->file_filename("file");
         } else {
-            $text = $this->qreq->bulkentry;
+            $text = $this->qreq->data;
             $filename = "";
         }
         if ($text === false) {
@@ -125,13 +125,12 @@ class BulkAssign_Page {
             ])),
             Ht::hidden("default_action", $defaults["action"] ?? "guess"),
             Ht::hidden("rev_round", $defaults["round"]),
-            Ht::hidden("file", $text),
-            Ht::hidden("assignment_size_estimate", max($aset->assignment_count(), $aset->request_count())),
+            Ht::hidden("data", $text),
             Ht::hidden("filename", $filename),
+            Ht::hidden("assignment_size_estimate", max($aset->assignment_count(), $aset->request_count())),
             Ht::hidden("requestreview_notify", $this->qreq->requestreview_notify),
             Ht::hidden("requestreview_subject", $this->qreq->requestreview_subject),
-            Ht::hidden("requestreview_body", $this->qreq->requestreview_body),
-            Ht::hidden("bulkentry", $this->qreq->bulkentry),
+            Ht::hidden("requestreview_body", $this->qreq->requestreview_body);
 
         $aset->report_errors();
         $aset->echo_unparse_display();
@@ -186,7 +185,7 @@ secondary review for submission #2:</p>
         // perform quick assignments all at once
         if (isset($qreq->saveassignment)
             && $qreq->valid_post()
-            && isset($qreq->file)
+            && isset($qreq->data)
             && $qreq->assignment_size_estimate < 1000
             && $this->complete_assignment(null)) {
             $conf->redirect_self($qreq);
@@ -205,18 +204,19 @@ secondary review for submission #2:</p>
 
 
         // upload review form action
-        if (isset($qreq->bulkentry) && trim($qreq->bulkentry) === "Enter assignments") {
-            unset($qreq->bulkentry);
+        if (isset($qreq->data)
+            && trim($qreq->data) === "Enter assignments") {
+            unset($qreq->data);
         }
         if (isset($qreq->upload)
             && $qreq->valid_post()
-            && ($qreq->bulkentry || $qreq->has_file("bulk"))
+            && ($qreq->data || $qreq->has_file("file"))
             && $this->handle_upload()) {
             return;
         }
         if (isset($qreq->saveassignment)
             && $qreq->valid_post()
-            && isset($qreq->file)
+            && isset($qreq->data)
             && $qreq->assignment_size_estimate >= 1000) {
             $this->complete_assignment([$this, "keep_browser_alive"]);
             $this->finish_browser_alive();
@@ -246,12 +246,12 @@ Assignment methods:
 
         // Upload
         echo '<div class="f-i mt-3">',
-            Ht::textarea("bulkentry", (string) $qreq->bulkentry,
+            Ht::textarea("data", (string) $qreq->data,
                          ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments", "class" => "need-autogrow", "spellcheck" => "false"]),
             '</div>';
 
         echo '<div class="mb-3"><strong>OR</strong> &nbsp;',
-            '<input type="file" name="bulk" accept="text/plain,text/csv" size="30"></div>';
+            '<input type="file" name="file" accept="text/plain,text/csv" size="30"></div>';
 
         echo '<div id="foldoptions" class="mb-5 foldc fold2c fold3c"><label>',
             'Default action:&nbsp; ',
