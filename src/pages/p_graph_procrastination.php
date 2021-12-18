@@ -1,8 +1,8 @@
 <?php
-// src/pages/p_procrastinationgraph.php -- HotCRP procrastination graph drawing page
+// src/pages/p_graph_procrastination.php -- HotCRP procrastination graph drawing page
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-class ProcrastinationGraph_Page {
+class Graph_Procrastination_Page {
     static function go(Contact $user, Qrequest $qreq) {
         Graph_Page::echo_graph(false, null, []);
         $rt = new ReviewTimes($user);

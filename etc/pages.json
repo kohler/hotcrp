@@ -186,9 +186,9 @@
 
 
     {   "name": "graph", "render_function": "Graph_Page::go"   },
-    {   "name": "graph/formula", "render_function": "FormulaGraph_Page::go",
+    {   "name": "graph/formula", "render_function": "Graph_Formula_Page::go",
         "title": "Formula", "position": 20, "allow_if": "pc"   },
-    {   "name": "graph/procrastination", "render_function": "ProcrastinationGraph_Page::go",
+    {   "name": "graph/procrastination", "render_function": "Graph_Procrastination_Page::go",
         "title": "Procrastination", "position": 10, "allow_if": "pc"   },
     [   "graph/reviewerlameness", false, "graph/procrastination"    ],
 

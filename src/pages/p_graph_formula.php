@@ -1,8 +1,8 @@
 <?php
-// src/pages/p_formulagraph.php -- HotCRP review preference graph drawing page
+// src/pages/p_graph_formula.php -- HotCRP review preference graph drawing page
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-class FormulaGraph_Page {
+class Graph_Formula_Page {
     /** @var Conf */
     public $conf;
     /** @var Contact */
@@ -127,7 +127,7 @@ class FormulaGraph_Page {
     }
 
     static function go(Contact $user, Qrequest $qreq, $gx, $gj) {
-        (new FormulaGraph_Page($user, $qreq))->render($gj);
+        (new Graph_Formula_Page($user, $qreq))->render($gj);
     }
 
     function render($gj) {
