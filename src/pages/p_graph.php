@@ -30,13 +30,19 @@ class Graph_Page {
         return substr($gj->name, 6);
     }
 
-    /** @param GroupedExtensions $gx */
+    /** @param GroupedExtensions $gx
+     * @return false */
     static function go(Contact $user, Qrequest $qreq, $gx) {
+        $gtypes = $gx->members("graph");
+        if (empty($gtypes)) {
+            Multiconference::fail(403, ["title" => "Graph"], "There are no graphs you can view.");
+            return false;
+        }
+
         $gtype = $qreq->group ?? "";
         if ($gtype === "" && preg_match('/\A\/\w+\/*\z/', $qreq->path())) {
             $gtype = $qreq->path_component(0);
         }
-        $gtypes = $gx->members("graph");
         $gj = $gx->get("graph/{$gtype}");
         if ($gtype === "" && !empty($gtypes) && $qreq->is_get()) {
             $user->conf->redirect_self($qreq, ["group" => self::gj_group($gtypes[0])]);
@@ -45,32 +51,28 @@ class Graph_Page {
             $user->conf->redirect_self($qreq, ["group" => self::gj_group($gj)]);
             return false;
         }
+        if (!$gj) {
+            Multiconference::fail(403, ["title" => "Graph"], "No such graph.");
+            return false;
+        }
 
         // Header and body
         $user->conf->header("Graph", "graphbody", ["subtitle" => $gj ? htmlspecialchars($gj->title) : null]);
 
-        if (!empty($gtypes)) {
-            echo '<nav class="papmodes mb-5 clearfix"><ul>';
-            foreach ($gtypes as $gjx) {
-                echo '<li class="papmode', $gjx === $gj ? " active" : "", '">',
-                    Ht::link(htmlspecialchars($gjx->title),
-                             $user->conf->hoturl("graph", ["group" => self::gj_group($gjx)])),
-                    '</li>';
-            }
-            echo '</ul></nav>';
+        echo '<nav class="papmodes mb-5 clearfix"><ul>';
+        foreach ($gtypes as $gjx) {
+            echo '<li class="papmode', $gjx === $gj ? " active" : "", '">',
+                Ht::link(htmlspecialchars($gjx->title),
+                         $user->conf->hoturl("graph", ["group" => self::gj_group($gjx)])),
+                '</li>';
         }
+        echo '</ul></nav>';
 
-        if (empty($gtypes)) {
-            $user->conf->errorMsg("There are no graphs you can view.");
-        } else if ($gj) {
-            echo Ht::unstash(),
-                $user->conf->make_script_file("scripts/d3-hotcrp.min.js", true),
-                $user->conf->make_script_file("scripts/graph.js");
-            $gx->set_section_class(false);
-            $gx->render_group($gj->name, true);
-        } else {
-            $user->conf->errorMsg("No such graph.");
-        }
+        echo Ht::unstash(),
+            $user->conf->make_script_file("scripts/d3-hotcrp.min.js", true),
+            $user->conf->make_script_file("scripts/graph.js");
+        $gx->set_section_class(false);
+        $gx->render_group($gj->name, true);
 
         $user->conf->footer();
         return false;
