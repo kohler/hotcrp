@@ -37,9 +37,9 @@ function gx_go($user, $qreq, $nav) {
         $gx = $user->conf->page_partials($user);
         $pagej = $gx->get($nav->page);
         if (!$pagej || str_starts_with($pagej->name, "__")) {
-            header("HTTP/1.0 404 Not Found");
+            Multiconference::fail(404, "Page not found.");
         } else if ($user->is_disabled() && !($pagej->allow_disabled ?? false)) {
-            header("HTTP/1.0 403 Forbidden");
+            Multiconference::fail(403, "Your account is disabled.");
         } else if (isset($pagej->render_php)) {
             return $pagej->render_php;
         } else {

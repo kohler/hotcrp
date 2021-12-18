@@ -621,10 +621,10 @@ class Ht {
                 $status = "info";
             }
         }
-        if (substr($status, 0, 1) === "x") {
+        if (substr($status, 0, 1) === "x") { /* XXX */
             $status = substr($status, 1);
         }
-        if ($status === "merror") {
+        if ($status === "merror") { /* XXX */
             $status = "error";
         }
         $mx = "";

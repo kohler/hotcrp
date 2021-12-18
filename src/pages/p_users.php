@@ -486,8 +486,11 @@ class Users_Page {
 
         // check list type
         if (empty($up->limits)) {
-            $viewer->escape();
+            Multiconference::fail(403, ["title" => "Users"], "You can’t list users for this site.");
             return;
+        }
+        if (!isset($qreq->t) && $qreq->path_component(0)) {
+            $qreq->t = $qreq->path_component(0);
         }
         if (isset($qreq->t) && !isset($up->limits[$qreq->t])) {
             if (str_starts_with($qreq->t, "pc:")
@@ -506,7 +509,8 @@ class Users_Page {
             $qreq->t = key($up->limits);
         }
         if (!isset($up->limits[$qreq->t])) {
-            $viewer->conf->errorMsg("Unknown user collection {$qreq->t}.");
+            Multiconference::fail(403, ["title" => "Users"], "User list not found.");
+            return;
         }
 
         // handle request

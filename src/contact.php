@@ -1489,10 +1489,10 @@ class Contact {
             } else {
                 $this->conf->errorMsg("You must sign in to access that page.");
             }
+            $this->conf->redirect();
         } else {
-            $this->conf->errorMsg("You don’t have permission to access that page.");
+            Multiconference::fail(403, "Page inaccessible.");
         }
-        $this->conf->redirect();
     }
 
 
