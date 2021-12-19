@@ -313,6 +313,7 @@ src/pages/p_help.php
 src/pages/p_home.php
 src/pages/p_log.php
 src/pages/p_manualassign.php
+src/pages/p_mergeaccounts.php
 src/pages/p_offline.php
 src/pages/p_paper.php
 src/pages/p_review.php

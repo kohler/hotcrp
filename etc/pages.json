@@ -206,7 +206,7 @@
     {   "name": "log", "render_function": "Log_Page::go"   },
     {   "name": "mail", "render_php": "mail.php"   },
     {   "name": "manualassign", "render_function": "ManualAssign_Page::go"   },
-    {   "name": "mergeaccounts", "render_php": "mergeaccounts.php"   },
+    {   "name": "mergeaccounts", "render_function": "MergeAccounts_Page::go"   },
     {   "name": "offline", "render_function": "Offline_Page::go"   },
     {   "name": "paper", "render_function": "Paper_Page::go"   },
     {   "name": "profile", "render_php": "profile.php"   },
