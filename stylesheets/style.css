@@ -263,7 +263,8 @@ td.quicklinks, #tracker-connect {
 .ptitle:visited, .pnum:visited, .track:visited {
 	color: #660099;
 }
-a:hover, .btn-link:hover, .js-click-child:hover a.hover-child {
+a:hover, a.ptitle:hover, a.pnum:hover, a.track:hover,
+.btn-link:hover, .js-click-child:hover a.hover-child {
 	color: #c45500;
 }
 /* XXX remove .qq, .uu, .qx */
@@ -275,6 +276,7 @@ a.q, a.u, a.nn, a.mailto, a.btn, a.btn:hover,
 a.btn {
 	cursor: default;
 }
+a:active, a.ptitle:active, a.pnum:active, a.track:active,
 a.qq:active, a.uu:active,
 a.q:active, a.u:active, a.nn:active, a.mailto:active,
 a.attention, .btn-link:active {
