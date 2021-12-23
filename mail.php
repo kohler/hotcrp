@@ -4,7 +4,6 @@
 
 require_once("src/init.php");
 $Qreq || initialize_request();
-require_once("src/mailclasses.php");
 if (!$Me->is_manager() && !$Me->isPC) {
     $Me->escape();
 }

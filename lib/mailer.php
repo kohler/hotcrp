@@ -152,9 +152,9 @@ class MailPreparation {
 }
 
 class Mailer {
-    const EXPAND_BODY = 0;
-    const EXPAND_HEADER = 1;
-    const EXPAND_EMAIL = 2;
+    const CONTEXT_BODY = 0;
+    const CONTEXT_HEADER = 1;
+    const CONTEXT_EMAIL = 2;
 
     const CENSOR_NONE = 0;
     const CENSOR_DISPLAY = 1;
@@ -188,7 +188,8 @@ class Mailer {
 
     /** @var ?MailPreparation */
     protected $preparation;
-    protected $expansionType;
+    /** @var int */
+    protected $context = 0;
 
     /** @var array<string,true> */
     private $_unexpanded = [];
@@ -237,7 +238,7 @@ class Mailer {
             $this->infer_user_name($r, $contact);
         }
 
-        $flags = $this->expansionType === self::EXPAND_EMAIL ? NAME_MAILQUOTE : 0;
+        $flags = $this->context === self::CONTEXT_EMAIL ? NAME_MAILQUOTE : 0;
         $email = $r->email;
         if ($r->email !== "") {
             $email = $r->email;
@@ -251,7 +252,7 @@ class Mailer {
         } else if ($out === "CONTACT") {
             return Text::name($r->firstName, $r->lastName, $email, $flags | NAME_E);
         } else if ($out === "NAME") {
-            if ($this->expansionType !== self::EXPAND_EMAIL) {
+            if ($this->context !== self::CONTEXT_EMAIL) {
                 $flags |= NAME_P;
             }
             return Text::name($r->firstName, $r->lastName, $email, $flags);
@@ -275,18 +276,18 @@ class Mailer {
     }
 
     function kw_opt($args, $isbool) {
-        $hasinner = $this->expandvar("%$args%", true);
-        if ($hasinner && !$isbool) {
-            return $this->expandvar("%$args%", false);
+        $yes = $this->expandvar($args, true);
+        if ($yes && !$isbool) {
+            return $this->expandvar($args, false);
         } else {
-            return $hasinner;
+            return $yes;
         }
     }
 
     static function kw_urlenc($args, $isbool, $m) {
-        $hasinner = $m->expandvar("%$args%", true);
+        $hasinner = $m->expandvar($args, true);
         if ($hasinner && !$isbool) {
-            return urlencode($m->expandvar("%$args%", false));
+            return urlencode($m->expandvar($args, false));
         } else {
             return $hasinner;
         }
@@ -431,12 +432,15 @@ class Mailer {
         return $this->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
     }
 
-    function expandvar($what, $isbool = false) {
-        if (str_ends_with($what, ")%") && ($paren = strpos($what, "("))) {
-            $name = substr($what, 1, $paren - 1);
-            $args = substr($what, $paren + 1, strlen($what) - $paren - 3);
+    /** @param string $what
+     * @param bool $isbool
+     * @return null|bool|string */
+    function expandvar($what, $isbool) {
+        if (str_ends_with($what, ")") && ($paren = strpos($what, "("))) {
+            $name = substr($what, 0, $paren);
+            $args = substr($what, $paren + 1, strlen($what) - $paren - 2);
         } else {
-            $name = substr($what, 1, strlen($what) - 2);
+            $name = $what;
             $args = "";
         }
 
@@ -478,11 +482,13 @@ class Mailer {
                 $this->_unexpanded[$what] = true;
                 $this->unexpanded_warning_at($what);
             }
-            return $what;
+            return null;
         }
     }
 
 
+    /** @param list<string> &$ifstack
+     * @param string $text */
     private function _pushIf(&$ifstack, $text, $yes) {
         if ($yes !== false && $yes !== true && $yes !== null) {
             $yes = (bool) $yes;
@@ -494,6 +500,9 @@ class Mailer {
         }
     }
 
+    /** @param list<string> &$ifstack
+     * @param string &$text
+     * @return ?bool */
     private function _popIf(&$ifstack, &$text) {
         if (count($ifstack) == 0) {
             return null;
@@ -505,6 +514,8 @@ class Mailer {
         }
     }
 
+    /** @param list<string> &$ifstack
+     * @param string &$text */
     private function _handleIf(&$ifstack, &$text, $cond, $haselse) {
         assert($cond || $haselse);
         if ($haselse) {
@@ -516,35 +527,38 @@ class Mailer {
             $yes = true;
         }
         if ($yes && $cond) {
-            $yes = $this->expandvar("%" . substr($cond, 1, strlen($cond) - 2) . "%", true);
+            $yes = $this->expandvar(substr($cond, 1, strlen($cond) - 2), true);
         }
         $this->_pushIf($ifstack, $text, $yes);
         return $yes;
     }
 
-    private function _expandConditionals($rest) {
+
+    /** @param string $rest
+     * @return string */
+    private function _expand_conditionals($rest) {
         $text = "";
-        $ifstack = array();
+        $ifstack = [];
 
-        while (preg_match('/\A(.*?)%(IF|ELIF|ELSE?IF|ELSE|ENDIF)((?:\(#?[-a-zA-Z0-9!@_:.\/]+(?:\([-a-zA-Z0-9!@_:.\/]*+\))*\))?)%(.*)\z/s', $rest, $m)) {
+        while (preg_match('/\A(.*?)(%(IF|ELIF|ELSE?IF|ELSE|ENDIF)((?:\(#?[-a-zA-Z0-9!@_:.\/]+(?:\([-a-zA-Z0-9!@_:.\/]*+\))*\))?)%)(.*)\z/s', $rest, $m)) {
             $text .= $m[1];
-            $rest = $m[4];
+            $rest = $m[5];
 
-            if ($m[2] == "IF" && $m[3] != "") {
-                $yes = $this->_handleIf($ifstack, $text, $m[3], false);
-            } else if (($m[2] == "ELIF" || $m[2] == "ELSIF" || $m[2] == "ELSEIF")
-                       && $m[3] != "") {
-                $yes = $this->_handleIf($ifstack, $text, $m[3], true);
-            } else if ($m[2] == "ELSE" && $m[3] == "") {
+            if ($m[3] === "IF" && $m[4] !== "") {
+                $yes = $this->_handleIf($ifstack, $text, $m[4], false);
+            } else if (($m[3] === "ELIF" || $m[3] === "ELSIF" || $m[3] === "ELSEIF")
+                       && $m[4] !== "") {
+                $yes = $this->_handleIf($ifstack, $text, $m[4], true);
+            } else if ($m[3] == "ELSE" && $m[3] === "") {
                 $yes = $this->_handleIf($ifstack, $text, false, true);
-            } else if ($m[2] == "ENDIF" && $m[3] == "") {
+            } else if ($m[3] == "ENDIF" && $m[4] === "") {
                 $yes = $this->_popIf($ifstack, $text);
             } else {
                 $yes = null;
             }
 
             if ($yes === null) {
-                $text .= "%" . $m[2] . $m[3] . "%";
+                $text .= $m[2];
             }
         }
 
@@ -553,45 +567,43 @@ class Mailer {
 
     private function _lineexpand($info, $line, $indent) {
         $text = "";
-        while (preg_match('/^(.*?)(%#?[-a-zA-Z0-9!@_:.\/]+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
-            $text .= $m[1] . $this->expandvar($m[2], false);
-            $line = $m[3];
+        while (preg_match('/^(.*?)(%(#?[-a-zA-Z0-9!@_:.\/]+(?:|\([^\)]*\)))%)(.*)$/s', $line, $m)) {
+            if (($s = $this->expandvar($m[3], false)) !== null) {
+                $text .= $m[1] . $s;
+            } else {
+                $text .= $m[1] . $m[2];
+            }
+            $line = $m[4];
         }
         $text .= $line;
         return prefix_word_wrap($info, $text, $indent, $this->width, $this->flowed);
     }
 
+    /** @param string $text
+     * @param ?string $field
+     * @return string */
     function expand($text, $field = null) {
-        if (is_object($text) || is_array($text)) {
-            $r = [];
-            foreach ($text as $k => $t) {
-                if (in_array($k, self::$template_fields))
-                    $r[$k] = $this->expand($t, $k);
-            }
-            return $r;
-        }
-
         // leave early on empty string
-        if ($text == "") {
+        if ($text === "") {
             return "";
         }
 
         // width, expansion type based on field
-        $old_expansionType = $this->expansionType;
+        $old_context = $this->context;
         $old_width = $this->width;
         if (isset(self::$email_fields[$field])) {
-            $this->expansionType = self::EXPAND_EMAIL;
+            $this->context = self::CONTEXT_EMAIL;
             $this->width = 10000000;
         } else if ($field !== "body" && $field != "") {
-            $this->expansionType = self::EXPAND_HEADER;
+            $this->context = self::CONTEXT_HEADER;
             $this->width = 10000000;
         } else {
-            $this->expansionType = self::EXPAND_BODY;
+            $this->context = self::CONTEXT_BODY;
         }
 
         // expand out %IF% and %ELSE% and %ENDIF%.  Need to do this first,
         // or we get confused with wordwrapping.
-        $text = $this->_expandConditionals(cleannl($text));
+        $text = $this->_expand_conditionals(cleannl($text));
 
         // separate text into lines
         $lines = explode("\n", $text);
@@ -605,23 +617,24 @@ class Mailer {
             $line = rtrim($lines[$i]);
             if ($line == "") {
                 $text .= "\n";
-            } else if (preg_match('/\A%(?:REVIEWS|COMMENTS)(?:[(].*[)])?%\z/s', $line)) {
-                if (($m = $this->expandvar($line, false)) != "") {
+            } else if (preg_match('/\A%((?:REVIEWS|COMMENTS)(?:|\(.*\)))%\z/s', $line, $m)) {
+                if (($m = $this->expandvar($m[1], false)) != "") {
                     $text .= $m . "\n";
                 }
             } else if (strpos($line, "%") === false) {
                 $text .= prefix_word_wrap("", $line, 0, $this->width, $this->flowed);
             } else {
                 if ($line[0] === " " || $line[0] === "\t") {
-                    if (preg_match('/\A([ \t]*)(%\w+(?:|\([^\)]*\))%)(:.*)\z/s', $line, $m)
+                    if (preg_match('/\A([ \t]*)%(\w+(?:|\([^\)]*\)))%(:.*)\z/s', $line, $m)
                         && $this->expandvar($m[2], true)) {
-                        $line = $m[1] . $this->expandvar($m[2]) . $m[3];
+                        $line = $m[1] . $this->expandvar($m[2], false) . $m[3];
                     }
-                    if (preg_match('/\A([ \t]*.*?: )(%\w+(?:|\([^\)]*\))%|\S+)\s*\z/s', $line, $m)
+                    if (preg_match('/\A([ \t]*.*?: )(%(\w+(?:|\([^\)]*\)))%|\S+)\s*\z/s', $line, $m)
                         && ($tl = tab_width($m[1], true)) <= 20) {
-                        if (str_starts_with($m[2], "%OPT(")) {
-                            if (($yes = $this->expandvar($m[2], true))) {
-                                $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), $tl, $this->width, $this->flowed);
+                        if (str_starts_with($m[3] ?? "", "OPT(")) {
+                            $yes = $this->expandvar($m[3], true);
+                            if ($yes) {
+                                $text .= prefix_word_wrap($m[1], $this->expandvar($m[3], false), $tl, $this->width, $this->flowed);
                             } else if ($yes === null) {
                                 $text .= $line . "\n";
                             }
@@ -636,21 +649,31 @@ class Mailer {
         }
 
         // lose newlines on header expansion
-        if ($this->expansionType != self::EXPAND_BODY) {
+        if ($this->context != self::CONTEXT_BODY) {
             $text = rtrim(preg_replace('/[\r\n\f\x0B]+/', ' ', $text));
         }
 
-        $this->expansionType = $old_expansionType;
+        $this->context = $old_context;
         $this->width = $old_width;
         return $text;
     }
 
+    /** @param array|object $x
+     * @return array<string,string> */
+    function expand_all($x) {
+        $r = [];
+        foreach ((array) $x as $k => $t) {
+            if (in_array($k, self::$template_fields))
+                $r[$k] = $this->expand($t, $k);
+        }
+        return $r;
+    }
 
     /** @param string $name
      * @param bool $use_default
      * @return array{body:string,subject:string} */
     function expand_template($name, $use_default = false) {
-        return $this->expand($this->conf->mail_template($name, $use_default));
+        return $this->expand_all($this->conf->mail_template($name, $use_default));
     }
 
 
@@ -687,7 +710,7 @@ class Mailer {
 
         // expand the template
         $this->preparation = $prep;
-        $mail = $this->expand($template);
+        $mail = $this->expand_all($template);
         $this->preparation = null;
 
         $mail["to"] = $prep->to[0];
@@ -765,7 +788,7 @@ class Mailer {
 
     /** @param string $ref */
     function unexpanded_warning_at($ref) {
-        if (preg_match('/\A%(?:RESET|)PASSWORDLINK/', $ref)) {
+        if (preg_match('/\A(?:RESET|)PASSWORDLINK/', $ref)) {
             if ($this->conf->external_login()) {
                 $this->warning_at($ref, "This site does not use password links.");
             } else if ($this->censor === self::CENSOR_ALL) {

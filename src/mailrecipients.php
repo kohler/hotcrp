@@ -1,5 +1,5 @@
 <?php
-// mailclasses.php -- HotCRP mail tool
+// mailrecipients.php -- HotCRP mail tool
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class MailRecipients {
@@ -7,10 +7,15 @@ class MailRecipients {
     private $conf;
     /** @var Contact */
     private $user;
+    /** @var string */
     private $type;
+    /** @var array<string,string> */
     private $sel = [];
+    /** @var array<string,int> */
     private $selflags = [];
+    /** @var ?list<int> */
     private $papersel;
+    /** @var int */
     public $newrev_since = 0;
     public $error = false;
 
@@ -26,14 +31,18 @@ class MailRecipients {
         $this->selflags[$name] = $flags;
     }
 
-    function __construct($contact, $type, $papersel, $newrev_since) {
-        $this->conf = $contact->conf;
-        $this->user = $contact;
-        assert(!!$contact->isPC);
+    /** @param Contact $user
+     * @param string $type
+     * @param ?list<int> $papersel
+     * @param int $newrev_since */
+    function __construct($user, $type, $papersel, $newrev_since) {
+        $this->conf = $user->conf;
+        $this->user = $user;
+        assert(!!$user->isPC);
         $any_pcrev = $any_extrev = 0;
         $any_newpcrev = $any_lead = $any_shepherd = 0;
 
-        if ($contact->is_manager()) {
+        if ($user->is_manager()) {
             $hide = !$this->conf->has_any_submitted();
             $this->defsel("s", "Contact authors of submitted papers", $hide ? self::F_HIDE : 0);
             $this->defsel("unsub", "Contact authors of unsubmitted papers");
@@ -81,9 +90,9 @@ class MailRecipients {
 
             // XXX this exposes information about PC review assignments
             // for conflicted papers to the chair; not worth worrying about
-            if (!$contact->privChair) {
+            if (!$user->privChair) {
                 $pids = [];
-                $result = $this->conf->qe("select paperId from Paper where managerContactId=?", $contact->contactId);
+                $result = $this->conf->qe("select paperId from Paper where managerContactId=?", $user->contactId);
                 while (($row = $result->fetch_row())) {
                     $pids[] = (int) $row[0];
                 }
@@ -121,7 +130,7 @@ class MailRecipients {
         $this->defsel("myextrev", "Your requested reviewers", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
         $this->defsel("uncmyextrev", "Your requested reviewers with incomplete reviews", self::F_ANYPC | ($hide ? self::F_HIDE : 0));
 
-        if ($contact->is_manager()) {
+        if ($user->is_manager()) {
             $this->defsel("lead", "Discussion leads", $any_lead ? 0 : self::F_HIDE);
             $this->defsel("shepherd", "Shepherds", $any_shepherd ? 0 : self::F_HIDE);
         }
@@ -139,7 +148,7 @@ class MailRecipients {
             $this->defsel("pc_group_end", null, self::F_GROUP);
         }
 
-        if ($contact->privChair) {
+        if ($user->privChair) {
             $this->defsel("all", "Active users", self::F_NOPAPERS);
         }
 

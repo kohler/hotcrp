@@ -281,7 +281,7 @@ src/listactions/la_tag.php
 src/listsorter.php
 src/logentry.php
 src/logentryfilter.php
-src/mailclasses.php
+src/mailrecipients.php
 src/meetingtracker.php
 src/mergecontacts.php
 src/multiconference.php

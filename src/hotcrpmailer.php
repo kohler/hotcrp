@@ -121,7 +121,7 @@ class HotCRPMailer extends Mailer {
             && !$this->permuser->can_view_review_identity($this->row, $this->rrow)) {
             if ($isbool) {
                 return false;
-            } else if ($this->expansionType == self::EXPAND_EMAIL) {
+            } else if ($this->context == self::CONTEXT_EMAIL) {
                 return "<hidden>";
             } else {
                 return "Hidden for blind review";
@@ -426,7 +426,7 @@ class HotCRPMailer extends Mailer {
             return $this->expand_user($u, $uf->userx);
         } else if ($isbool)  {
             return false;
-        } else if ($this->expansionType == self::EXPAND_EMAIL
+        } else if ($this->context === self::CONTEXT_EMAIL
                    || $uf->userx === "EMAIL") {
             return "<none>";
         } else {
