@@ -2,22 +2,25 @@
 // mailrecipients.php -- HotCRP mail tool
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
-class MailRecipients {
+class MailRecipients extends MessageSet {
     /** @var Conf */
     private $conf;
     /** @var Contact */
     private $user;
     /** @var string */
     private $type;
+    /** @var ?list<int> */
+    private $paper_ids;
+    /** @var int */
+    public $newrev_since = 0;
+    /** @var ?array<int,int> */
+    private $_dcounts;
+    /** @var ?array{bool,bool,bool} */
+    private $_has_dt;
     /** @var array<string,string> */
     private $sel = [];
     /** @var array<string,int> */
     private $selflags = [];
-    /** @var ?list<int> */
-    private $papersel;
-    /** @var int */
-    public $newrev_since = 0;
-    public $error = false;
 
     const F_ANYPC = 1;
     const F_GROUP = 2;
@@ -31,13 +34,100 @@ class MailRecipients {
         $this->selflags[$name] = $flags;
     }
 
-    /** @param Contact $user
-     * @param string $type
-     * @param ?list<int> $papersel
-     * @param int $newrev_since */
-    function __construct($user, $type, $papersel, $newrev_since) {
+    /** @param Contact $user */
+    function __construct($user) {
+        assert(!!$user->isPC);
         $this->conf = $user->conf;
         $this->user = $user;
+    }
+
+    /** @param list<int> $paper_ids
+     * @return $this */
+    function set_paper_ids($paper_ids) {
+        $this->paper_ids = $paper_ids;
+        return $this;
+    }
+
+    /** @param ?string $newrev_since
+     * @return $this */
+    function set_newrev_since($newrev_since) {
+        $newrev_since = trim($newrev_since ?? "");
+        if ($newrev_since !== ""
+            && !preg_match('/\A(?:|n\/a|\(?all\)?|0)\z/i', $newrev_since)) {
+            $t = $this->conf->parse_time($newrev_since);
+            if ($t === false) {
+                $this->error_at("newrev_since", "Invalid date.");
+            } else {
+                $this->newrev_since = $t;
+                if ($t > Conf::$now) {
+                    $this->warning_at("newrev_since", "That time is in the future.");
+                }
+            }
+        } else {
+            $this->newrev_since = null;
+        }
+        return $this;
+    }
+
+    private function dcounts() {
+        if ($this->_dcounts === null) {
+            if ($this->user->allow_administer_all()) {
+                $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
+            } else if ($this->user->is_manager()) {
+                $psearch = new PaperSearch($this->user, ["q" => "", "t" => "alladmin"]);
+                $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 and paperId?a group by outcome", $psearch->paper_ids());
+            } else {
+                $result = null;
+            }
+            $this->_dcounts = [];
+            $this->_has_dt = [false, false, false];
+            while ($result && ($row = $result->fetch_row())) {
+                $d = (int) $row[0];
+                $this->_dcounts[$d] = (int) $row[1];
+                $dt = $d < 0 ? 0 : ($d === 0 ? 1 : 2);
+                $this->_has_dt[$dt] = true;
+            }
+            Dbl::free($result);
+        }
+    }
+
+    /** @param ?string $t
+     * @return ?string */
+    function canonical_recipients($t) {
+        if ($t === "somedec:yes" || $t === "somedec:no") {
+            $this->dcounts();
+            $wantyes = $t === "somedec:yes";
+            $dmaxcount = 0;
+            $dmaxname = "";
+            foreach ($this->_dcounts as $outcome => $n) {
+                if ($n > 0
+                    && ($wantyes ? $outcome > 0 : $outcome < 0)
+                    && ($dname = $this->conf->decision_name($outcome))) {
+                    if ($n > $dmaxcount
+                        || ($n === $dmaxcount && $this->conf->collator()->compare($dname, $dmaxname) < 0)) {
+                        $dmaxcount = $n;
+                        $dmaxname = $dname;
+                    }
+                }
+            }
+            if ($dmaxcount > 0) {
+                return "dec:{$dmaxname}";
+            } else {
+                return substr($t, 4);
+            }
+        } else if ($t === "myuncextrev") {
+            return "uncmyextrev";
+        } else {
+            return $t ?? "";
+        }
+    }
+
+    /** @param ?string $type
+     * @return $this */
+    function set_recipients($type) {
+        $user = $this->user;
+        $this->type = $this->canonical_recipients($type);
+
         assert(!!$user->isPC);
         $any_pcrev = $any_extrev = 0;
         $any_newpcrev = $any_lead = $any_shepherd = 0;
@@ -48,41 +138,17 @@ class MailRecipients {
             $this->defsel("unsub", "Contact authors of unsubmitted papers");
             $this->defsel("au", "All contact authors");
 
-            // map "somedec:no"/"somedec:yes" to real decisions
-            $result = $this->conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
-            $dec_pcount = [];
-            while (($row = $result->fetch_row())) {
-                $dec_pcount[(int) $row[0]] = (int) $row[1];
-            }
-            Dbl::free($result);
-            $dec_tcount = [0, 0, 0];
-            foreach ($dec_pcount as $dnum => $dcount) {
-                $dec_tcount[$dnum > 0 ? 2 : ($dnum < 0 ? 0 : 1)] += $dcount;
-            }
-            if ($type === "somedec:no" || $type === "somedec:yes") {
-                $dmaxcount = -1;
-                $wantno = $type[8] === "n";
-                foreach ($dec_pcount as $dnum => $dcount) {
-                    if (($wantno ? $dnum < 0 : $dnum > 0)
-                        && $dcount > $dmaxcount
-                        && ($dname = $this->conf->decision_name($dnum))) {
-                        $type = "dec:$dname";
-                        $dmaxcount = $dcount;
-                    }
-                }
-            }
-
+            $this->dcounts();
             $this->defsel("bydec_group", "Contact authors by decision", self::F_GROUP);
             foreach ($this->conf->decision_map() as $dnum => $dname) {
                 if ($dnum) {
-                    $k = "dec:$dname";
-                    $hide = !($dec_pcount[$dnum] ?? null);
+                    $hide = ($this->_dcounts[$dnum] ?? 0) === 0;
                     $this->defsel("dec:$dname", "Contact authors of " . htmlspecialchars($dname) . " papers", $hide ? self::F_HIDE : 0);
                 }
             }
-            $this->defsel("dec:yes", "Contact authors of accept-class papers", $dec_tcount[2] === 0 ? self::F_HIDE : 0);
-            $this->defsel("dec:no", "Contact authors of reject-class papers", $dec_tcount[0] === 0 ? self::F_HIDE : 0);
-            $this->defsel("dec:none", "Contact authors of undecided papers", $dec_tcount[1] === 0 || ($dec_tcount[2] === 0 && $dec_tcount[0] === 0) ? self::F_HIDE : 0);
+            $this->defsel("dec:yes", "Contact authors of accept-class papers", $this->_has_dt[2] ? 0 : self::F_HIDE);
+            $this->defsel("dec:no", "Contact authors of reject-class papers", $this->_has_dt[0] ? 0 : self::F_HIDE);
+            $this->defsel("dec:none", "Contact authors of undecided papers", $this->_has_dt[1] && ($this->_has_dt[0] || $this->_has_dt[2]) ? 0 : self::F_HIDE);
             $this->defsel("dec:any", "Contact authors of decided papers", self::F_HIDE);
             $this->defsel("bydec_group_end", null, self::F_GROUP);
 
@@ -155,27 +221,14 @@ class MailRecipients {
         if (isset($this->sel[$type])
             && !($this->selflags[$type] & self::F_GROUP)) {
             $this->type = $type;
-        } else if ($type == "myuncextrev" && isset($this->sel["uncmyextrev"])) {
-            $this->type = "uncmyextrev";
         } else {
             $this->type = key($this->sel);
-        }
-
-        $this->papersel = $papersel;
-
-        if ($this->type == "newpcrev") {
-            $t = trim((string) $newrev_since);
-            if (preg_match(',\A(?:|n/a|\(?all\)?|0)\z,i', $t)) {
-                $this->newrev_since = 0;
-            } else if (($this->newrev_since = $this->conf->parse_time($t)) !== false) {
-                if ($this->newrev_since > Conf::$now) {
-                    $this->conf->warnMsg("That time is in the future.");
-                }
-            } else {
-                Conf::msg_error("Invalid date.");
-                $this->error = true;
+            if ($type !== null && $type !== "") {
+                $this->error_at("to", "Invalid recipients.");
             }
         }
+
+        return $this;
     }
 
     function selectors() {
@@ -212,7 +265,7 @@ class MailRecipients {
             }
             $last = $n;
         }
-        return Ht::select("to", $sel, $this->type, ["id" => "to"]);
+        return Ht::select("to", $sel, $this->type, ["id" => "to", "class" => "uich js-mail-recipients"]);
     }
 
     /** @return string */
@@ -257,8 +310,8 @@ class MailRecipients {
         $joins = ["ContactInfo"];
 
         // paper limit
-        if ($this->need_papers() && isset($this->papersel)) {
-            $where[] = "Paper.paperId in (" . join(",", $this->papersel) . ")";
+        if ($this->need_papers() && isset($this->paper_ids)) {
+            $where[] = "Paper.paperId in (" . join(",", $this->paper_ids) . ")";
         }
 
         // paper type limit

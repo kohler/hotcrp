@@ -451,7 +451,7 @@ class Log_Page {
                 $act = $m[2];
             } else if (strpos($act, " mail ") !== false
                        && preg_match('/\A(Sending|Sent|Account was sent) mail #(\d+)(.*)\z/s', $act, $m)) {
-                $at = $m[1] . " <a href=\"" . $conf->hoturl("mail", "fromlog=$m[2]") . "\">mail #$m[2]</a>";
+                $at = $m[1] . " <a href=\"" . $conf->hoturl("mail", "mailid=$m[2]") . "\">mail #$m[2]</a>";
                 $act = $m[3];
             } else if (substr($act, 0, 3) === "Tag"
                        && preg_match('{\ATag:? ((?:[-+]#[^\s#]*(?:#[-+\d.]+|)(?: |\z))+)(.*)\z}s', $act, $m)) {

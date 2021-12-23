@@ -3651,6 +3651,25 @@ handle_ui.on("js-request-review-preview-email", function (event) {
     event.stopPropagation();
 });
 
+// mail
+handle_ui.on("change.js-mail-recipients", function () {
+    var plimit = this.closest("form").elements.plimit;
+    foldup.call(this, null, {f: !!plimit && !plimit.checked, n: 8});
+    var sopt = $(this).find("option[value=\'" + this.value + "\']");
+    foldup.call(this, null, {f: sopt.hasClass("mail-want-no-papers"), n: 9});
+    foldup.call(this, null, {f: !sopt.hasClass("mail-want-since"), n: 10});
+});
+
+handle_ui.on(".js-mail-populate-template", function () {
+    var i = -1, defv = input_default_value(this);
+    for (var j = 0; j !== this.options.length; ++j) {
+        if (this.options[j].value === defv)
+            i = j;
+    }
+    document.location = hoturl("mail", {template: this.value});
+    this.selectedIndex = i;
+});
+
 // autoassignment
 (function () {
 function make_pcsel_members(tag) {

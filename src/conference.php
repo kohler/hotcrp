@@ -374,8 +374,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 248) {
-            require_once("updateschema.php");
+        if ($this->sversion < 249) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;
@@ -5309,8 +5308,12 @@ class Conf {
         }
         return $this->_mail_template_map;
     }
-    function mail_template($name, $default_only = false) {
-        $uf = $this->xt_search_name($this->mail_template_map(), $name, null);
+    /** @param string $name
+     * @param bool $default_only
+     * @param ?Contact $user
+     * @return ?object */
+    function mail_template($name, $default_only = false, $user = null) {
+        $uf = $this->xt_search_name($this->mail_template_map(), $name, $user);
         if (!$uf || !Conf::xt_resolve_require($uf)) {
             return null;
         }

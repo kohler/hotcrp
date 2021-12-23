@@ -139,6 +139,7 @@ CREATE TABLE `Formula` (
 DROP TABLE IF EXISTS `MailLog`;
 CREATE TABLE `MailLog` (
   `mailId` int(11) NOT NULL AUTO_INCREMENT,
+  `contactId` int NOT NULL DEFAULT '0',
   `recipients` varbinary(200) NOT NULL,
   `q` varbinary(4096) DEFAULT NULL,
   `t` varbinary(200) DEFAULT NULL,
@@ -516,7 +517,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 248);
+insert into Settings (name, value) values ('allowPaperOption', 249);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

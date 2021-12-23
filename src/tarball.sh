@@ -282,6 +282,7 @@ src/listsorter.php
 src/logentry.php
 src/logentryfilter.php
 src/mailrecipients.php
+src/mailsender.php
 src/meetingtracker.php
 src/mergecontacts.php
 src/multiconference.php

@@ -18,10 +18,11 @@ class Mail_API {
                 $recipient[$k] = $qreq[$r];
             }
         }
-        $recipient = new Contact($recipient, $user->conf);
+        $recipient = empty($recipient) ? null : new Contact($recipient, $user->conf);
 
         $mailinfo = [
-            "prow" => $prow, "requester_contact" => $user,
+            "prow" => $prow,
+            "requester_contact" => $user,
             "censor" => Mailer::CENSOR_DISPLAY
         ];
         if (isset($qreq->reason)) {
@@ -44,16 +45,51 @@ class Mail_API {
             }
             return $j;
         } else if (isset($qreq->template)) {
-            $mt = $user->conf->mail_template($qreq->template);
-            if (!$mt
-                || (!$user->privChair && !($mt->allow_pc ?? false))) {
+            if (!($mt = $user->conf->mail_template($qreq->template, false, $user))) {
                 return new JsonResult(404, "No such template.");
             }
             $j["subject"] = $mailer->expand($mt->subject, "subject");
             $j["body"] = $mailer->expand($mt->body, "body");
+            if ($mt->default_recipients ?? null) {
+                $recip = new MailRecipients($user);
+                $j["recipients"] = $recip->canonical_recipients($mt->default_recipients);
+            }
+            if ($mt->default_search_type ?? null) {
+                $j["t"] = $mt->default_search_type;
+            }
             return $j;
         } else {
             return new JsonResult(400, "Parameter error.");
+        }
+    }
+
+    /** @param Contact $user
+     * @return bool */
+    static function can_view_maillog($user, $logrow) {
+        return $user->privChair || $user->contactId === (int) $logrow->contactId;
+    }
+
+    static function maillog(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+        if (!$qreq->mailid || !ctype_digit($qreq->mailid)) {
+            return new JsonResult(400, "Parameter error.");
+        } else if (!$user->privChair) {
+            return new JsonResult(403, "Permission error.");
+        } else if (($row = $user->conf->fetch_first_object("select * from MailLog where mailId=?", $qreq->mailid))) {
+            if (self::can_view_maillog($user, $row)) {
+                $j = ["ok" => true];
+                foreach (["recipients", "q", "t", "cc", "replyto", "subject"] as $field) {
+                    if ($row->$field !== null && $row->$field !== "")
+                        $j[$field] = $row->$field;
+                }
+                if ($row->emailBody !== null) {
+                    $j["body"] = $row->emailBody;
+                }
+                return $j;
+            } else {
+                return new JsonResult(403, "Permission error.");
+            }
+        } else {
+            return ["ok" => false, "error" => "Email not found."];
         }
     }
 }
