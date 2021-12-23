@@ -60,9 +60,9 @@ class MergeAccounts_Page {
 
         // determine old & new users
         if ($this->qreq->prefer) {
-            $merger = new MergeContacts($Me, $MiniMe);
+            $merger = new MergeContacts($this->user, $other);
         } else {
-            $merger = new MergeContacts($MiniMe, $Me);
+            $merger = new MergeContacts($other, $this->user);
         }
 
         // send mail at start of process
