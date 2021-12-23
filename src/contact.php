@@ -510,7 +510,7 @@ class Contact {
             $r = $conf->sort_by_last ? 0312 : 0321;
         } else if (($seen & 016) === 002) { // first -> first last email
             $r |= 032 << $shift;
-        } else if (($seen & 016) === 004) { // last -> first last email
+        } else if (($seen & 016) === 004) { // last -> last first email
             $r |= 031 << $shift;
         } else if (($seen & 010) === 0) { // always add email
             $r |= 03 << $shift;
