@@ -1427,7 +1427,7 @@ class Tagger {
             }
             $lbase = strtolower($base);
             if (($link = $this->link($tag))) {
-                $tx = '<a class="nn pw" href="' . $link . '"><u class="x">#'
+                $tx = '<a class="xo pw" href="' . $link . '"><u class="x">#'
                     . $base . '</u>' . substr($tag, strlen($base)) . '</a>';
             } else {
                 $tx = "#" . $tag;

@@ -201,7 +201,7 @@ class ManualAssign_Page {
         }
         echo Ht::hidden("forceShow", 1, ["id" => "showforce"]); // search API must override conflicts
         echo '<div class="entryi autosave-hidden hidden"><label></label><div class="entry">',
-            Ht::submit("update", "Save assignments", ["class" => "btn-primary btn big"]), '</div></div>';
+            Ht::submit("update", "Save assignments", ["class" => "btn-primary big"]), '</div></div>';
         echo '</div>';
 
         $pl->set_table_id_class("foldpl", "pltable-fullw");

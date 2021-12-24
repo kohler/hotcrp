@@ -4587,7 +4587,7 @@ class Conf {
         echo "<hr class=\"c\"></div>", // class='body'
             '<div id="footer">',
             $this->opt("extraFooter") ?? "",
-            '<a class="u" href="https://hotcrp.com/">HotCRP</a>';
+            '<a class="noq" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->opt("noFooterVersion")) {
             if (Contact::$main_user && Contact::$main_user->privChair) {
                 echo " v", HOTCRP_VERSION, " [";

@@ -2449,7 +2449,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     t += '</td><td class="tracker-pid">';
     if (paper.pid)
-        t += '<a class="u" href="'.concat(escape_html(url), '">#', paper.pid, '</a>');
+        t += '<a class="q" href="'.concat(escape_html(url), '">#', paper.pid, '</a>');
     t += '</td><td class="tracker-body"';
     if (idx >= 2 && (tr.allow_administer || tr.position_at))
         t += ' colspan="2"';
@@ -2461,7 +2461,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
             title = title.replace(/^(\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 50) + "…";
         else if (wwidth <= 768 && title.length > 50)
             title = title.replace(/^(\S+\s+\S+\s+\S+\s+\S+\s+\S+).*$/, "$1").substring(0, 75) + "…";
-        x.push('<a class="tracker-title u'.concat(f, '" href="', url, '">', text_to_html(title), '</a>'));
+        x.push('<a class="tracker-title q'.concat(f, '" href="', url, '">', text_to_html(title), '</a>'));
         if (paper.format)
             tracker_has_format = true;
     }
@@ -2484,7 +2484,7 @@ function tracker_html(tr) {
     var logo = escape_html(tr.logo || "☞");
     var logo_class = logo === "☞" ? "tracker-logo tracker-logo-fist" : "tracker-logo";
     if (tr.allow_administer)
-        t += '<a class="ui nn js-tracker need-tooltip '.concat(logo_class, '" aria-label="Tracker settings and status" href="">', logo, '</a>');
+        t += '<a class="ui qo js-tracker need-tooltip '.concat(logo_class, '" aria-label="Tracker settings and status" href="">', logo, '</a>');
     else
         t += '<div class="'.concat(logo_class, '">', logo, '</div>');
     var rows = [], i, wwidth = $(window).width();
@@ -4421,13 +4421,13 @@ function add_review(rrow) {
 
     // edit/text links
     if (rrow.folded) {
-        hc.push('<h2><a class="ui js-foldup nn" href="" data-fold-target="20"><span class="expander"><span class="in0 fx20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L8 15L15 1z" /></svg></span><span class="in1 fn20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span></span>', '</a></h2>');
+        hc.push('<h2><a class="qo ui js-foldup" href="" data-fold-target="20"><span class="expander"><span class="in0 fx20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L8 15L15 1z" /></svg></span><span class="in1 fn20"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span></span>', '</a></h2>');
     } else {
-        hc.push('<h2><a class="nn" href="' + hoturl_html("review", rlink) + '">', '</a></h2>');
+        hc.push('<h2><a class="qo" href="' + hoturl_html("review", rlink) + '">', '</a></h2>');
     }
     hc.push('<span class="revcard-header-name">' + rdesc + '</span>');
     if (rrow.editable && rrow.folded) {
-        hc.push('</a> <a class="nn" href="' + hoturl_html("review", rlink) + '"><span class="t-editor">✎</span>');
+        hc.push('</a> <a class="qo" href="' + hoturl_html("review", rlink) + '"><span class="t-editor">✎</span>');
     } else if (rrow.editable) {
         hc.push(' <span class="t-editor">✎</span>');
     }
@@ -4556,7 +4556,7 @@ function comment_identity_time(cj) {
     if (cj.response || cj.is_new) {
     } else if (cj.editable) {
         t.push('<div class="cmtnumid"><a href="#' + cj_cid(cj) +
-               '" class="nn ui hover-child cmteditor">');
+               '" class="qo ui hover-child cmteditor">');
         if (cj.ordinal) {
             t.push('<div class="cmtnum"><span class="cmtnumat">@</span><span class="cmtnumnum">' +
                cj.ordinal + '</span></div> ');
@@ -5054,7 +5054,7 @@ function render_cmt($c, cj, editing, msg) {
     } else if (cj.editable && !editing && cj.response) {
         var $h2 = $(chead).find("h2");
         if (!$h2.find("a").length) {
-            $h2.html('<a href="" class="nn ui cmteditor">' + $h2.html() + ' <span class="t-editor">✎</span></a>');
+            $h2.html('<a href="" class="qo ui cmteditor">' + $h2.html() + ' <span class="t-editor">✎</span></a>');
         }
     }
     t = comment_identity_time(cj);
@@ -8694,7 +8694,7 @@ return {
         var h = $(".btn-savepaper").first(),
             k = hasClass(f, "alert") ? "" : " hidden";
         $(".pslcard-nav").append('<div class="paper-alert mt-5' + k + '">'
-            + '<button class="ui btn btn-highlight btn-savepaper">'
+            + '<button class="ui btn-highlight btn-savepaper">'
             + h.html() + '</button></div>')
             .find(".btn-savepaper").click(function () {
                 $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
@@ -8722,7 +8722,7 @@ return {
         var h = $(".btn-savereview").first(),
             k = $("#form-review").hasClass("alert") ? "" : " hidden";
         $(".pslcard-nav").append('<div class="review-alert mt-5' + k + '">'
-            + '<button class="ui btn btn-highlight btn-savereview">'
+            + '<button class="ui btn-highlight btn-savereview">'
             + h.html() + '</button></div>')
             .find(".btn-savereview").click(function () {
                 $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
@@ -8886,17 +8886,17 @@ handle_ui.on("js-approve-review", function (event) {
     hc.push('<div class="btngrid">', '</div>');
     var subreviewClass = "";
     if (hasClass(self, "can-adopt")) {
-        hc.push('<button type="button" name="adoptsubmit" class="btn btn-primary big">Adopt and submit</button><p>Submit a copy of this review under your name. You can make changes afterwards.</p>');
-        hc.push('<button type="button" name="adoptdraft" class="btn big">Adopt as draft</button><p>Save a copy of this review as a draft review under your name.</p>');
+        hc.push('<button type="button" name="adoptsubmit" class="btn-primary big">Adopt and submit</button><p>Submit a copy of this review under your name. You can make changes afterwards.</p>');
+        hc.push('<button type="button" name="adoptdraft" class="big">Adopt as draft</button><p>Save a copy of this review as a draft review under your name.</p>');
     } else if (hasClass(self, "can-adopt-replace")) {
-        hc.push('<button type="button" name="adoptsubmit" class="btn btn-primary big">Adopt and submit</button><p>Replace your draft review with a copy of this review and submit it. You can make changes afterwards.</p>');
-        hc.push('<button type="button" name="adoptdraft" class="btn big">Adopt as draft</button><p>Replace your draft review with a copy of this review.</p>');
+        hc.push('<button type="button" name="adoptsubmit" class="btn-primary big">Adopt and submit</button><p>Replace your draft review with a copy of this review and submit it. You can make changes afterwards.</p>');
+        hc.push('<button type="button" name="adoptdraft" class="big">Adopt as draft</button><p>Replace your draft review with a copy of this review.</p>');
     } else {
         subreviewClass = " btn-primary";
     }
-    hc.push('<button type="button" name="approvesubreview" class="btn big' + subreviewClass + '">Approve subreview</button><p>Approve this review as a subreview. It will not be shown to authors and its scores will not be counted in statistics.</p>');
+    hc.push('<button type="button" name="approvesubreview" class="big' + subreviewClass + '">Approve subreview</button><p>Approve this review as a subreview. It will not be shown to authors and its scores will not be counted in statistics.</p>');
     if (hasClass(self, "can-approve-submit")) {
-        hc.push('<button type="button" name="submitreview" class="btn big">Submit as full review</button><p>Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics.</p>');
+        hc.push('<button type="button" name="submitreview" class="big">Submit as full review</button><p>Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics.</p>');
     }
     hc.pop();
     hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
@@ -10174,6 +10174,14 @@ $.fn.unautogrow = function () {
 })(jQuery);
 
 $(function () { $(".need-autogrow").autogrow(); });
+
+$(function () {
+    $("a.nn, a.qx, a.qq, a.u, a.uu, a.btn[href='']").each(function () {
+        var err = "a." + this.className.replace(/\s+/g, ".") + "[href=" + this.href + "]";
+        window.console && console.log(err);
+        log_jserror(err);
+    })
+});
 
 
 window.hotcrp = {

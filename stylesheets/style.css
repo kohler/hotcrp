@@ -257,46 +257,67 @@ td.quicklinks, #tracker-connect {
 
 
 /* generic horizontal styles */
-:link, :visited, .btn-link {
+/* links
+   * a.q: color inherit/link
+   * a.x: underline inherit/link
+   * a.noq: color inherit/inherit
+   * a.nou: underline inherit/inherit
+   * a.xo: a.noq + a.x
+   * a.qo: a.nou + a.q
+   * deprecated a.qx: color inherit/inherit, underline inherit/link (old a.xo)
+   * deprecated a.xx: color inherit/link, underline inherit/inherit */
+:link, :visited,
+.link, .btn-link, .btn-xlink {
 	color: #004daa;
 }
-.ptitle:visited, .pnum:visited, .track:visited {
+.track:visited, .ptitle:visited, .pnum:visited {
 	color: #660099;
 }
-a:hover, a.ptitle:hover, a.pnum:hover, a.track:hover,
-.btn-link:hover, .js-click-child:hover a.hover-child {
+a.q, a.noq, a.noq:hover, a.xo, a.xo:hover, a.qo,
+a.qx /* XXX */, a.qx:hover /* XXX */, a.xx /* XXX */,
+a.u /* XXX */, a.nn /* XXX */, a.mailto /* XXX */,
+a.btn, a.btn:hover,
+.is-error a, .is-warning a, .is-note a, .is-warning-note a, .is-urgent-note a,
+.btn-qlink, .btn-ulink {
+	color: inherit;
+}
+a:hover,
+a.track:hover, a.ptitle:hover, a.pnum:hover,
+.btn-link:hover, .btn-qlink:hover, .btn-xlink:hover,
+.js-click-child:hover a.hover-child,
+a:hover .pavfn {
 	color: #c45500;
 }
-/* XXX remove .qq, .uu, .qx */
-a.qq, a.uu, a.qx,
-a.q, a.u, a.nn, a.mailto, a.btn, a.btn:hover,
-.is-error a, .is-warning a, .is-note a, .is-warning-note a, .is-urgent-note a {
-	color: inherit;
+a:active,
+a.noq:active, a.xo:active,
+a.qx:active /* XXX */,
+a.track:active, a.ptitle:active, a.pnum:active,
+.btn-link:active, .btn-qlink:active, .btn-xlink:active,
+a.u:active /* XXX */, a.nn:active /* XXX */, a.mailto:active /* XXX */,
+a.attention {
+	color: red;
 }
 a.btn {
 	cursor: default;
 }
-a:active, a.ptitle:active, a.pnum:active, a.track:active,
-a.qq:active, a.uu:active,
-a.q:active, a.u:active, a.nn:active, a.mailto:active,
-a.attention, .btn-link:active {
-	color: red;
+.nou,
+a.q, a.x, a.qo, a.xo, a.btn, a.btn:hover,
+a.qx /* XXX */, a.xx /* XXX*/, a.xx:hover /* XXX */,
+.papmode.active > a, .papmode.active:hover > a.nou, .leftmenu-item > a,
+a.pnum, a.ptitle, a.mailto /* XXX */, u.x {
+	-webkit-text-decoration-line: inherit;
+	text-decoration-line: inherit;
 }
-a.qq, a.qx,
-a.q, a.x, a.xx, a.nn, a.btn,
-.papmode.active > a, .papmode.active:hover > a.noul, .leftmenu-item > a,
-a.pnum, a.ptitle, a.mailto, u.x, .noul {
-	-webkit-text-decoration-line: none;
-	text-decoration-line: none;
-}
-a.q:hover, a.qq:hover, a.x:hover,
+.ul,
+a.q:hover, a.x:hover, a.xo:hover, a.qx:hover /* XXX */,
 .papmode.active:hover > a, .leftmenu-item:hover > a,
-tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
+tr.pl:hover a.pnum, tr.pl:hover a.ptitle,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
 div.js-assignment-fold:hover a.js-assignment-fold,
 .js-click-child:hover a.hover-child,
-a.mailto:hover, a:hover u.x, .ul {
+a.mailto:hover /* XXX */,
+a:hover u.x {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
@@ -1193,16 +1214,15 @@ button:disabled, button:disabled:hover,
 	border-color: #c5c5c5;
 	background: rgba(222, 222, 222, 0.5);
 }
-button.btn-link {
-	text-decoration: underline;
+.btn-link, .btn-qlink, .btn-xlink,
+.btn-link:hover, .btn-qlink:hover, .btn-xlink:hover {
 	padding: 0;
 	border: 0 none;
 	background: initial;
 	cursor: pointer;
 }
-button.btn-link:hover {
-	border: 0 none;
-	background: initial;
+.btn-link, .btn-qlink {
+	text-decoration: underline;
 }
 .if-alert {
 	display: none;

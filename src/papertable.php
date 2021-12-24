@@ -183,7 +183,7 @@ class PaperTable {
                 if (($color = $prow->conf->tags()->color_classes($viewable_tags)))
                     $t .= ' ' . $color;
             }
-            $t .= '"><a class="q" href="' . $prow->hoturl()
+            $t .= '"><a class="xo" href="' . $prow->hoturl()
                 . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
                 . ' &nbsp; ';
 
@@ -1899,7 +1899,7 @@ class PaperTable {
     /** @return string */
     private function _mode_nav_link($text, $link, $image, $highlight) {
         return '<li class="papmode' . ($highlight ? " active" : "")
-            . '"><a href="' . $link . '" class="noul">'
+            . '"><a href="' . $link . '" class="nou">'
             . Ht::img($image, "[$text]", "papmodeimg")
             . "&nbsp;<u" . ($highlight ? ' class="x"' : "") . ">" . $text
             . "</u></a></li>";

@@ -1581,7 +1581,7 @@ topics. We use this information to help match papers to reviewers.</p>',
 
     private static function render_delete_action(UserStatus $us) {
         $tracks = self::user_paper_info($us->conf, $us->user->contactId);
-        $args = ["class" => "ui btn btn-danger"];
+        $args = ["class" => "ui btn-danger"];
         if (!empty($tracks->soleAuthor)) {
             $args["class"] .= " js-cannot-delete-user";
             $args["data-sole-author"] = self::render_paper_link($us->conf, $tracks->soleAuthor);
@@ -1615,10 +1615,10 @@ topics. We use this information to help match papers to reviewers.</p>',
             $us->gxt()->push_close_section('</div>');
             $us->gxt()->render_title("User administration");
             echo '<div class="btngrid">',
-                Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf btn relative", "disabled" => $us->user->disabled]), '<p></p>';
+                Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf relative", "disabled" => $us->user->disabled]), '<p></p>';
             if (!$us->is_auth_user()) {
                 echo Ht::button($us->user->disabled ? "Enable account" : "Disable account", [
-                    "class" => "ui js-disable-user btn " . ($us->user->disabled ? "btn-success" : "btn-danger")
+                    "class" => "ui js-disable-user " . ($us->user->disabled ? "btn-success" : "btn-danger")
                 ]), '<p class="pt-1 mb-0">Disabled accounts cannot sign in or view the site.</p>';
                 self::render_delete_action($us);
             }
