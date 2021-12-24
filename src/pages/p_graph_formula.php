@@ -31,11 +31,11 @@ class Graph_Formula_Page {
             . Ht::entry("q$i", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i", "spellcheck" => false, "autocomplete" => "off", "aria-label" => "Search"])
             . " <span class=\"pl-3\">Style:</span> &nbsp;"
             . Ht::select("s$i", ["default" => "default", "plain" => "plain", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"], $s !== "" ? $s : "by-tag")
-            . ' <span class="nb btnbox aumovebox ml-3"><a href="" class="ui btn row-order-ui moveup" tabindex="-1">'
+            . ' <span class="nb btnbox aumovebox ml-3"><button type="button" class="ui btn row-order-ui moveup" tabindex="-1">'
             . Icons::ui_triangle(0)
-            . '</a><a href="" class="ui btn row-order-ui movedown" tabindex="-1">'
+            . '</button><button type="button" class="ui btn row-order-ui movedown" tabindex="-1">'
             . Icons::ui_triangle(2)
-            . '</a><a href="" class="ui btn row-order-ui delete" tabindex="-1">✖</a></span></td></tr>';
+            . '</button><button type="button" class="ui btn row-order-ui delete" tabindex="-1">✖</button></span></td></tr>';
     }
 
     /** @param FormulaGraph $fg

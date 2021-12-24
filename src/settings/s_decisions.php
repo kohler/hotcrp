@@ -13,7 +13,7 @@ class Decisions_SettingParser extends SettingParser {
             $sv->feedback_at("dec_class_$suffix"),
             $sv->entry("dec_name_$suffix", ["data-submission-count" => $count]);
         if ($editable) {
-            echo '<a href="" class="fx ui js-settings-remove-decision-type ml-2 btn need-tooltip" aria-label="Delete decision" tabindex="-1">✖</a>';
+            echo Ht::button("✖", ["class" => "fx ui js-settings-remove-decision-type ml-2 need-tooltip", "aria-label" => "Delete decision", "tabindex" => "-1"]);
         }
         echo '<span class="ml-2 d-inline-block fx">';
         $class = $sv->curv("dec_class_$suffix");
