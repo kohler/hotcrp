@@ -2152,9 +2152,9 @@ class PaperSearch {
     /** @param string $str
      * @return ?SearchTerm */
     private function _search_expression($str) {
-        $stack = array();
+        $stack = [];
         '@phan-var list<SearchScope> $stack';
-        $defkwstack = array();
+        $defkwstack = [];
         $defkw = $next_defkw = null;
         $parens = 0;
         $curqe = null;

@@ -587,6 +587,30 @@ xassert(!$prep1->can_send());
 xassert(!$prep2->can_send());
 $Conf->set_opt("debugShowSensitiveEmail", true);
 
+// xt_check tests
+class XtCheckTester {
+    static $n = 0;
+    static function test() {
+        ++self::$n;
+        return true;
+    }
+}
+xassert($Conf->xt_check("allow"));
+xassert(!$Conf->xt_check("deny"));
+xassert($Conf->xt_check("!deny"));
+xassert(!$Conf->xt_check("! allow"));
+xassert($Conf->xt_check("!!allow"));
+xassert($Conf->xt_check("!!!deny"));
+xassert($Conf->xt_check("allow || deny"));
+xassert(!$Conf->xt_check("allow && deny"));
+xassert($Conf->xt_check("!(allow && deny)"));
+xassert($Conf->xt_check("!(allow && deny)"));
+xassert($Conf->xt_check("!opt.sendEmail"));
+xassert(!$Conf->xt_check("opt.sendEmail && XtCheckTester::test && allow"));
+xassert_eqq(XtCheckTester::$n, 0);
+xassert($Conf->xt_check("XtCheckTester::test && allow"));
+xassert_eqq(XtCheckTester::$n, 1);
+
 // NavigationState tests
 $ns = new NavigationState(["SERVER_PORT" => 80, "SCRIPT_FILENAME" => __FILE__,
                            "SCRIPT_NAME" => __FILE__, "REQUEST_URI" => "/fart/barf/?butt",

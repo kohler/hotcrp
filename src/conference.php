@@ -1113,57 +1113,152 @@ class Conf {
         $this->xt_context = $context;
         return $old;
     }
-    function xt_check($expr, $xt, Contact $user = null) {
-        foreach (is_array($expr) ? $expr : [$expr] as $e) {
-            assert(is_bool($e) || is_string($e));
-            $not = false;
-            if (is_string($e)
-                && strlen($e) > 0
-                && ($e[0] === "!" || $e[0] === "-")) {
-                $e = substr($e, 1);
-                $not = true;
+    /** @param string $s
+     * @param ?Contact $user
+     * @return bool */
+    function xt_check_string($s, $xt, $user) {
+        if ($s === "chair" || $s === "admin") {
+            return !$user || $user->privChair;
+        } else if ($s === "manager") {
+            return !$user || $user->is_manager();
+        } else if ($s === "pc") {
+            return !$user || $user->isPC;
+        } else if ($s === "reviewer") {
+            return !$user || $user->is_reviewer();
+        } else if ($s === "view_review") {
+            return !$user || $user->can_view_some_review();
+        } else if ($s === "lead" || $s === "shepherd") {
+            return $this->has_any_lead_or_shepherd();
+        } else if ($s === "empty") {
+            return $user && $user->is_empty();
+        } else if ($s === "allow" || $s === "true") {
+            return true;
+        } else if ($s === "deny" || $s === "false") {
+            return false;
+        } else if (strcspn($s, " !&|()") !== strlen($s)) {
+            $e = $this->xt_check_complex_string($s, $xt, $user, 0);
+            if ($e === null) {
+                throw new Error("xt_check syntax error in `$s`");
             }
-            if (!is_string($e)) {
-                $b = $e;
-            } else if ($e === "chair" || $e === "admin") {
-                $b = !$user || $user->privChair;
-            } else if ($e === "manager") {
-                $b = !$user || $user->is_manager();
-            } else if ($e === "pc") {
-                $b = !$user || $user->isPC;
-            } else if ($e === "reviewer") {
-                $b = !$user || $user->is_reviewer();
-            } else if ($e === "view_review") {
-                $b = !$user || $user->can_view_some_review();
-            } else if ($e === "lead" || $e === "shepherd") {
-                $b = $this->has_any_lead_or_shepherd();
-            } else if ($e === "empty") {
-                $b = $user && $user->is_empty();
-            } else if (strpos($e, "::") !== false) {
-                self::xt_resolve_require($xt);
-                $b = call_user_func($e, $xt, $user, $this);
-            } else if (str_starts_with($e, "opt.")) {
-                $b = !!$this->opt(substr($e, 4));
-            } else if (str_starts_with($e, "setting.")) {
-                $b = !!$this->setting(substr($e, 8));
-            } else if (str_starts_with($e, "conf.")) {
-                $f = substr($e, 5);
-                $b = !!$this->$f();
-            } else if (str_starts_with($e, "user.")) {
-                $f = substr($e, 5);
-                $b = !$user || $user->$f();
-            } else if ($this->xt_context
-                       && ($x = $this->xt_context->xt_check_element($e, $xt, $user, $this)) !== null) {
-                $b = $x;
+            return $e;
+        } else if (strpos($s, "::") !== false) {
+            self::xt_resolve_require($xt);
+            return call_user_func($s, $xt, $user, $this);
+        } else if (str_starts_with($s, "opt.")) {
+            return !!$this->opt(substr($s, 4));
+        } else if (str_starts_with($s, "setting.")) {
+            return !!$this->setting(substr($s, 8));
+        } else if (str_starts_with($s, "conf.")) {
+            $f = substr($s, 5);
+            return !!$this->$f();
+        } else if (str_starts_with($s, "user.")) {
+            $f = substr($s, 5);
+            return !$user || $user->$f();
+        } else if ($this->xt_context
+                   && ($x = $this->xt_context->xt_check_element($s, $xt, $user, $this)) !== null) {
+            return $x;
+        } else {
+            error_log("unknown xt_check $s");
+            return false;
+        }
+    }
+    /** @param string $s
+     * @param ?Contact $user
+     * @param int $prec
+     * @return ?bool */
+    function xt_check_complex_string($s, $xt, $user, $prec) {
+        $stk = [];
+        $p = 0;
+        $l = strlen($s);
+        $e = null;
+        $eval = true;
+        while ($p !== $l) {
+            $ch = $s[$p];
+            if ($ch === " ") {
+                ++$p;
+            } else if ($ch === "(" || $ch === "!") {
+                if ($e !== null) {
+                    return null;
+                }
+                $stk[] = [$ch === "(" ? 0 : 9, null, $eval];
+                ++$p;
+            } else if ($ch === "&" || $ch === "|") {
+                if ($e === null || $p + 1 === $l || $s[$p + 1] !== $ch) {
+                    return null;
+                }
+                $prec = $ch === "&" ? 2 : 1;
+                $e = self::xt_check_complex_resolve_stack($stk, $e, $prec);
+                $stk[] = [$prec, $e, $eval];
+                $eval = self::xt_check_complex_want_eval($stk);
+                $e = null;
+                $p += 2;
+            } else if ($ch === ")") {
+                if ($e === null) {
+                    return null;
+                }
+                $e = self::xt_check_complex_resolve_stack($stk, $e, 1);
+                if (empty($stk)) {
+                    return null;
+                }
+                array_pop($stk);
+                $eval = self::xt_check_complex_want_eval($stk);
+                ++$p;
             } else {
-                error_log("unknown xt_check $e");
-                $b = false;
-            }
-            if ($not ? $b : !$b) {
-                return false;
+                if ($e !== null) {
+                    return null;
+                }
+                $wl = strcspn($s, " !&|()", $p);
+                $e = $eval && self::xt_check_string(substr($s, $p, $wl), $xt, $user);
+                $p += $wl;
             }
         }
-        return true;
+        if (!empty($stk) && $e !== null) {
+            $e = self::xt_check_complex_resolve_stack($stk, $e, 1);
+        }
+        return empty($stk) ? $e : null;
+    }
+    /** @param list<array{int,?bool,bool}> &$stk
+     * @param bool $e
+     * @param int $prec
+     * @return bool */
+    static function xt_check_complex_resolve_stack(&$stk, $e, $prec) {
+        $n = count($stk) - 1;
+        while ($n >= 0 && $stk[$n][0] >= $prec) {
+            $se = array_pop($stk);
+            '@phan-var array{int,?bool,bool} $se';
+            --$n;
+            if ($se[0] === 9) {
+                $e = !$e;
+            } else if ($se[0] === 2) {
+                $e = $se[1] && $e;
+            } else {
+                $e = $se[1] || $e;
+            }
+        }
+        return $e;
+    }
+    /** @param list<array{int,?bool,bool}> $stk
+     * @return bool */
+    static function xt_check_complex_want_eval($stk) {
+        $n = count($stk);
+        $se = $n ? $stk[$n - 1] : null;
+        return !$se || ($se[2] && ($se[0] !== 1 || !$se[1]) && ($se[0] !== 2 || $se[1]));
+    }
+    /** @param list<string>|string|bool $expr
+     * @param ?Contact $user
+     * @return bool */
+    function xt_check($expr, $xt = null, $user = null) {
+        if (is_bool($expr)) {
+            return $expr;
+        } else if (is_string($expr)) {
+            return $this->xt_check_string($expr, $xt, $user);
+        } else {
+            foreach ($expr as $e) {
+                if (!(is_bool($e) ? $e : $this->xt_check_string($e, $xt, $user)))
+                    return false;
+            }
+            return true;
+        }
     }
     /** @param object $xt */
     function xt_allowed($xt, Contact $user = null) {
