@@ -8,13 +8,15 @@ class Topic_Fexpr extends Fexpr {
         parent::__construct("topic");
         if ($ff->modifier === false || $ff->modifier === true) {
             $this->match = true;
+            $this->set_format(Fexpr::FNUMERIC);
         } else if ($ff->modifier === [false]) {
             $this->match = false;
-            $this->_format = self::FBOOL;
+            $this->set_format(Fexpr::FBOOL);
         } else {
             $this->match = $ff->modifier;
-            if (count($this->match) === 1)
-                $this->_format = self::FBOOL;
+            if (count($this->match) === 1) {
+                $this->set_format(Fexpr::FBOOL);
+            }
         }
     }
     static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
@@ -43,7 +45,7 @@ class Topic_Fexpr extends Fexpr {
             return "count({$prow}->topic_list())";
         } else if ($this->match === false) {
             return "empty({$prow}->topic_list())";
-        } else if ($this->_format === self::FBOOL) {
+        } else if ($this->format() === Fexpr::FBOOL) {
             return "in_array({$this->match[0]},{$prow}->topic_list())";
         } else {
             return "count(array_intersect({$prow}->topic_list()," . json_encode($this->match) . '))';

@@ -13,11 +13,11 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
     function prepare(PaperList $pl, $visible) {
         if (!$this->formula->check($pl->user)
-            || !($this->formula->result_format() instanceof ReviewField)
+            || $this->formula->result_format() !== Fexpr::FREVIEWFIELD
             || !$pl->user->can_view_formula($this->formula)) {
             return false;
         }
-        $this->format_field = $this->formula->result_format();
+        $this->format_field = $this->formula->result_format_detail();
         $this->formula_function = $this->formula->compile_sortable_function();
         $this->indexes_function = null;
         if ($this->formula->indexed()) {
@@ -50,8 +50,8 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         if (!$formula->check($user)) {
             PaperColumn::column_error($user, "Formula error: " . $formula->error_html());
             return null;
-        } else if (!($formula->result_format() instanceof ReviewField)) {
-            PaperColumn::column_error($user, "Graphed formulas must return review fields.");
+        } else if ($formula->result_format() !== Fexpr::FREVIEWFIELD) {
+            PaperColumn::column_error($user, "Formula of type " . $formula->result_format_description() . " can’t be used in graphs, review field value expected");
             return null;
         } else {
             $cj = (array) $xfj;

@@ -8,7 +8,7 @@ class OptionPresent_Fexpr extends Fexpr {
     function __construct(PaperOption $option) {
         parent::__construct("optionpresent");
         $this->option = $option;
-        $this->_format = self::FBOOL;
+        $this->set_format(Fexpr::FBOOL);
     }
     function viewable_by(Contact $user) {
         return $user->can_view_some_option($this->option);

@@ -4,7 +4,7 @@
 
 class Decision_Fexpr extends Fexpr {
     function __construct() {
-        $this->_format = self::FDECISION;
+        $this->set_format(Fexpr::FDECISION);
     }
     function viewable_by(Contact $user) {
         return $user->can_view_some_decision();

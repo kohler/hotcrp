@@ -5,7 +5,7 @@
 class Reviewer_Fexpr extends Fexpr {
     function __construct() {
         parent::__construct("reviewer");
-        $this->_format = Fexpr::FREVIEWER;
+        $this->set_format(Fexpr::FREVIEWER);
     }
     function inferred_index() {
         return Fexpr::IDX_REVIEW;

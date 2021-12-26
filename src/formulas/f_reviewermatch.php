@@ -16,7 +16,7 @@ class ReviewerMatch_Fexpr extends Fexpr {
     function __construct(Contact $user, $arg) {
         parent::__construct("reviewermatch");
         $this->user = $user;
-        $this->_format = self::FBOOL;
+        $this->set_format(Fexpr::FBOOL);
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && $user->conf->pc_tag_exists($arg));
         $flags = ContactSearch::F_USER;

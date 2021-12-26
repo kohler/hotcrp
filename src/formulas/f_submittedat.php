@@ -5,7 +5,7 @@
 class SubmittedAt_Fexpr extends Fexpr {
     function __construct(FormulaCall $ff) {
         parent::__construct("submittedat");
-        $this->_format = $ff->kwdef->is_time ? self::FTIME : self::FDATE;
+        $this->set_format($ff->kwdef->is_time ? Fexpr::FTIME : Fexpr::FDATE);
     }
     function compile(FormulaCompiler $state) {
         return '(' . $state->_prow() . '->submitted_at() ? : null)';

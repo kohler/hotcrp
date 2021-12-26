@@ -77,12 +77,14 @@ class Formula_PaperColumn extends PaperColumn {
     function analyze(PaperList $pl) {
         $formulaf = $this->formula_function;
         $this->results = $this->override_results = [];
-        $isreal = $this->formula->result_format_is_real();
+        $isreal = $this->formula->result_format_is_numeric();
         $override_rows = [];
         foreach ($pl->rowset() as $row) {
             $v = $formulaf($row, null, $pl->user);
             $this->results[$row->paperId] = $v;
-            if ($isreal && !$this->real_format && is_float($v)
+            if ($isreal
+                && !$this->real_format
+                && is_float($v)
                 && round($v * 100) % 100 != 0) {
                 $this->real_format = "%.2f";
             }
@@ -97,7 +99,9 @@ class Formula_PaperColumn extends PaperColumn {
                 $vv = $formulaf($row, null, $pl->user);
                 if ($vv !== $this->results[$row->paperId]) {
                     $this->override_results[$row->paperId] = $vv;
-                    if ($isreal && !$this->real_format && is_float($vv)
+                    if ($isreal
+                        && !$this->real_format
+                        && is_float($vv)
                         && round($vv * 100) % 100 != 0) {
                         $this->real_format = "%.2f";
                     }
@@ -155,7 +159,7 @@ class Formula_PaperColumn extends PaperColumn {
     }
     function statistic_html(PaperList $pl, $stat) {
         if ($stat === ScoreInfo::SUM
-            && !$this->formula->result_format_is_real()) {
+            && !$this->formula->result_format_is_numeric()) {
             return "—";
         }
         $t = $this->unparse_statistic($this->statistics, $stat);

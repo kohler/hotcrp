@@ -4,7 +4,7 @@
 
 class ReviewRound_Fexpr extends Fexpr {
     function __construct() {
-        $this->_format = self::FROUND;
+        $this->set_format(Fexpr::FROUND);
     }
     function inferred_index() {
         return Fexpr::IDX_PC;

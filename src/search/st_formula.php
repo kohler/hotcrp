@@ -36,7 +36,7 @@ class Formula_SearchTerm extends SearchTerm {
     }
     static function parse_graph($word, SearchWord $sword, PaperSearch $srch) {
         if (($formula = self::read_formula($word, $sword->quoted, true, $srch))) {
-            return SearchTerm::make_float(["view" => [["graph($word)", "show"]]]);
+            return SearchTerm::make_float(["view" => ["show:graph($word)"]]);
         }
         return null;
     }

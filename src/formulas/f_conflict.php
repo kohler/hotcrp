@@ -6,7 +6,7 @@ class Conflict_Fexpr extends Fexpr {
     private $ispc;
     function __construct($ispc) {
         $this->ispc = is_object($ispc) ? $ispc->kwdef->is_pc : $ispc;
-        $this->_format = self::FBOOL;
+        $this->set_format(Fexpr::FBOOL);
     }
     function inferred_index() {
         return Fexpr::IDX_PC;

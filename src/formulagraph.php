@@ -284,7 +284,9 @@ class FormulaGraph extends MessageSet {
             } else if ($i === 0) {
                 $this->fx_type = $this->fx_type ? : $f->result_format();
                 $this->_x_tagvalue_bool = $this->fx_type === Fexpr::FTAGVALUE;
-            } else if ($f->result_format() !== $this->fx_type) {
+            } else if ($f->result_format() !== $this->fx_type
+                       || ($this->fx_type !== Fexpr::FREVIEWFIELD
+                           || $this->fxs[0]->result_format_detail() !== $f->result_format_detail())) {
                 $this->error_at("fx", "X axis error: Different formulas use different units");
                 $this->fx_type = 0;
             }
@@ -961,11 +963,12 @@ class FormulaGraph extends MessageSet {
             $named_ticks = array_map(function ($t) use ($tagger) {
                 return $tagger->unparse($t);
             }, array_keys($this->tags));
-        } else if ($format instanceof ReviewField) {
-            $n = count($format->options);
-            $ol = $format->option_letter ? chr($format->option_letter - $n) : null;
-            $ticks = ["score", $n, $ol, $format->option_class_prefix];
-            if ($format->option_letter && $isx) {
+        } else if ($format === Fexpr::FREVIEWFIELD) {
+            $field = $isx ? $this->fxs[0]->result_format_detail() : $this->fy->result_format_detail();
+            $n = count($field->options);
+            $ol = $field->option_letter ? chr($field->option_letter - $n) : null;
+            $ticks = ["score", $n, $ol, $field->option_class_prefix];
+            if ($field->option_letter && $isx) {
                 $j["flip"] = true;
             }
         } else {
