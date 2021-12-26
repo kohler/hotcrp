@@ -442,6 +442,7 @@ class Ht {
         return "<pre>" . htmlspecialchars($text) . "</pre>";
     }
 
+    /** @return string */
     static function pre_text_wrap($text) {
         if (is_array($text) && !is_associative_array($text)
             && array_reduce($text, function ($x, $s) { return $x && is_string($s); }, true)) {
@@ -452,6 +453,7 @@ class Ht {
         return "<pre style=\"white-space:pre-wrap\">" . htmlspecialchars($text) . "</pre>";
     }
 
+    /** @return string */
     static function pre_export($x) {
         return "<pre style=\"white-space:pre-wrap\">" . htmlspecialchars(var_export($x, true)) . "</pre>";
     }
@@ -469,6 +471,7 @@ class Ht {
             . self::extra($js) . " />";
     }
 
+    /** @return string */
     static private function make_link($html, $href, $js) {
         if ($js === null) {
             $js = [];
@@ -486,6 +489,7 @@ class Ht {
         return "<a" . self::extra($js) . ">" . $html . "</a>";
     }
 
+    /** @return string */
     static function link($html, $href, $js = null) {
         if ($js === null && is_array($href)) {
             return self::make_link($html, null, $href);
@@ -494,9 +498,10 @@ class Ht {
         }
     }
 
+    /** @param string $html
+     * @return string */
     static function link_urls($html) {
-        return preg_replace('@((?:https?|ftp)://(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;?!&])(["().,:;?!]*)(?=[\s<>&]|\z)@s',
-                            '<a href="$1" rel="noreferrer">$1</a>$2', $html);
+        return preg_replace('/((?:https?|ftp):\/\/(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;?!&])(["().,:;?!]*)(?=[\s<>&]|\z)/s', '<a href="$1" rel="noreferrer">$1</a>$2', $html);
     }
 
     /** @param string $text

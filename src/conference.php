@@ -5187,6 +5187,7 @@ class Conf {
             return false;
         }
     }
+    /** @return array<string,list<object>> */
     function mail_template_map() {
         if ($this->_mail_template_map === null) {
             $this->_mail_template_map = [];

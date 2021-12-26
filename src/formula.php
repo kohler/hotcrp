@@ -133,6 +133,8 @@ abstract class Fexpr implements JsonSerializable {
         }
     }
 
+    /** @param bool $ismath
+     * @return bool */
     function typecheck_arguments(Formula $formula, $ismath = false) {
         $ok = true;
         foreach ($this->args as $a) {
@@ -151,6 +153,7 @@ abstract class Fexpr implements JsonSerializable {
         return $ok;
     }
 
+    /** @return bool */
     function typecheck(Formula $formula) {
         return $this->typecheck_arguments($formula);
     }
@@ -177,6 +180,8 @@ abstract class Fexpr implements JsonSerializable {
         return true;
     }
 
+    /** @param string $t
+     * @return string */
     static function cast_bool($t) {
         return "($t !== null ? (bool) $t : null)";
     }
@@ -222,6 +227,8 @@ abstract class Fexpr implements JsonSerializable {
 class Constant_Fexpr extends Fexpr {
     /** @var int|float|string */
     private $x;
+    /** @param ?int $pos1
+     * @param ?int $pos2 */
     function __construct($x, $format = null, $pos1 = null, $pos2 = null) {
         $this->x = $x;
         $this->_format = $format;
@@ -1303,6 +1310,7 @@ class FormulaCompiler {
 }
 
 class FormulaParse {
+    /** @var ?Fexpr */
     public $fexpr;
     public $indexed;
     public $index_type;
@@ -1402,6 +1410,8 @@ class Formula implements JsonSerializable {
         return $formula;
     }
 
+    /** @param string $t
+     * @return int */
     static function span_maximal_formula($t) {
         return self::span_parens_until($t, ",;)]}");
     }
@@ -1531,6 +1541,9 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @param string $t
+     * @param string $span
+     * @return int */
     private static function span_parens_until($t, $span) {
         $pos = 0;
         $len = strlen($t);
@@ -1555,6 +1568,8 @@ class Formula implements JsonSerializable {
         return false;
     }
 
+    /** @param string &$t
+     * @return bool */
     private function _parse_function_args(FormulaCall $ff, &$t) {
         $argtype = $ff->kwdef->args;
         $needargs = $argtype !== "optional"
@@ -1610,13 +1625,19 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @param string $t
+     * @return array{string,string,string} */
     static private function _pop_argument($t) {
-        if (preg_match('/\s*((?:"[^"]*(?:"|\z)|[^\s()]*)*)(.*)\z/s', $t, $m) && $m[1] !== "")
+        if (preg_match('/\s*((?:"[^"]*(?:"|\z)|[^\s()]*)*)(.*)\z/s', $t, $m) && $m[1] !== "") {
             return $m;
-        else
+        } else {
             return [$t, "", $t];
+        }
     }
 
+    /** @param string &$t
+     * @param string $name
+     * @return ?Fexpr */
     private function _parse_function(&$t, $name, $kwdef) {
         $ff = new FormulaCall($this, $kwdef, $name);
         $args = $kwdef->args ?? false;
@@ -1692,6 +1713,7 @@ class Formula implements JsonSerializable {
         return $e ? : Constant_Fexpr::cerror($ff->pos1, $ff->pos2);
     }
 
+    /** @return ?Fexpr */
     static private function field_search_fexpr($fval) {
         $fn = null;
         for ($i = 0; $i < count($fval); $i += 2) {
@@ -1713,6 +1735,8 @@ class Formula implements JsonSerializable {
         return $fn;
     }
 
+    /** @param string $t
+     * @return ?Fexpr */
     private function _reviewer_base($t) {
         $t = strtolower($t);
         if (preg_match('/\A(?:r|re|rev|review)type\z/i', $t)) {
@@ -1728,6 +1752,9 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @param string &$t
+     * @param ?Fexpr $e0
+     * @return ?Fexpr */
     private function _reviewer_decoration(&$t, $e0) {
         $es = [];
         $rsm = new ReviewSearchMatcher;
@@ -1776,6 +1803,9 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @param int $pos1
+     * @param string &$t
+     * @return Fexpr */
     private function _parse_one_option($pos1, &$t, PaperOption $opt) {
         $fc = new FormulaCall($this, null, $opt->search_keyword());
         $fc->pos1 = $pos1;
@@ -1789,6 +1819,9 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @param int $pos1
+     * @param string &$t
+     * @return Fexpr */
     private function _parse_option($pos1, &$t) {
         if (!preg_match('/\A[A-Za-z0-9_.@]+/', $t, $m)) {
             $this->lerror($pos1, $pos1, "Submission field missing.");
@@ -1811,6 +1844,9 @@ class Formula implements JsonSerializable {
         return $this->_parse_one_option($pos1, $t, $opt);
     }
 
+    /** @param int $pos1
+     * @param string &$t
+     * @return Fexpr */
     private function _parse_field($pos1, &$t, $f) {
         $pos2 = -strlen($t);
         if ($f instanceof PaperOption) {
@@ -1838,6 +1874,10 @@ class Formula implements JsonSerializable {
         return Constant_Fexpr::cerror($pos1, $pos2);
     }
 
+    /** @param string &$t
+     * @param int $level
+     * @param bool $in_qc
+     * @return ?Fexpr */
     private function _parse_expr(&$t, $level, $in_qc) {
         if (($t = ltrim($t)) === "") {
             return null;
@@ -2065,6 +2105,9 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @param string &$t
+     * @param bool $in_qc
+     * @return ?Fexpr */
     private function _parse_ternary(&$t, $in_qc) {
         $pos1 = -strlen($t);
         $e = $this->_parse_expr($t, 0, $in_qc);
@@ -2092,6 +2135,10 @@ class Formula implements JsonSerializable {
     }
 
 
+    /** @param Contact $user
+     * @param string $expr
+     * @param int $sortable
+     * @return string */
     private static function compile_body($user, FormulaCompiler $state, $expr,
                                          $sortable) {
         $t = "";
@@ -2170,6 +2217,7 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @return bool */
     function support_combiner() {
         if ($this->_extractorf === null) {
             $this->check();
@@ -2228,6 +2276,8 @@ class Formula implements JsonSerializable {
             $t .= "T" . $tt;
         return $t;
     } */
+
+    /** @return string */
     function _unparse_duration($x) {
         $t = "";
         if ($x < 0) {
@@ -2245,6 +2295,7 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @return string|int|float */
     function unparse_html($x, $real_format = null) {
         if ($x === null || $x === false) {
             return "";
@@ -2273,6 +2324,7 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @return string|int|float */
     function unparse_text($x, $real_format) {
         if ($x === null) {
             return "";
@@ -2327,11 +2379,13 @@ class Formula implements JsonSerializable {
         }
     }
 
+    /** @return bool */
     function viewable_by(Contact $user) {
         return $this->check($this->user ?? $user)
             && $this->_parse->fexpr->viewable_by($user);
     }
 
+    /** @return string */
     function column_header() {
         return $this->name ? : $this->expression;
     }
@@ -2339,6 +2393,8 @@ class Formula implements JsonSerializable {
     function result_format() {
         return $this->check() ? $this->_format : null;
     }
+
+    /** @return ?bool */
     function result_format_is_real() {
         if (!$this->check()) {
             return null;
@@ -2372,7 +2428,7 @@ class Formula implements JsonSerializable {
     }
 
     #[\ReturnTypeWillChange]
-    /** @return array<string,string> */
+    /** @return array<string,mixed> */
     function jsonSerialize() {
         $j = [];
         if ($this->formulaId) {
