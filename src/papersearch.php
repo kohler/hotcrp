@@ -2121,14 +2121,14 @@ class PaperSearch {
     }
 
     static private function _shift_word(SearchSplitter $splitter, Conf $conf) {
-        $parens = false;
         if (($t = $splitter->shift_keyword()) !== "") {
             $kwx = $t[0] === '"' ? substr($t, 1, -2) : substr($t, 0, -1);
             $kwd = $conf->search_keyword($kwx);
-            $parens = $kwd && ($kwd->allow_parens ?? false);
+            if ($kwd && ($kwd->allow_parens ?? false)) {
+                return $t . $splitter->shift_balanced_parens();
+            }
         }
-        $x = $parens ? $splitter->shift_balanced_parens() : $splitter->shift("()");
-        return $t === "" ? $x : $t . $x;
+        return $t . $splitter->shift("()");
     }
 
     /** @param ?SearchTerm $curqe
@@ -2665,46 +2665,45 @@ class PaperSearch {
     /** @param iterable<string> $words
      * @return Generator<array{string,string,list<string>}> */
     static function view_generator($words) {
-        $action = $keyword = "";
-        $decorations = [];
         foreach ($words as $w) {
             $colon = strpos($w, ":");
             if ($colon === false
-                || !in_array(substr($w, 0, $colon), ["show", "sort", "edit", "as", "hide", "showsort", "editsort"])) {
+                || !in_array(substr($w, 0, $colon), ["show", "sort", "edit", "hide", "showsort", "editsort"])) {
                 $w = "show:" . $w;
                 $colon = 4;
             }
-            $a = substr($w, 0, $colon);
+
+            $action = substr($w, 0, $colon);
             $d = substr($w, $colon + 1);
-            if (str_starts_with($d, "[")) {
+            $keyword = null;
+            if (str_starts_with($d, "[")) { /* XXX backward compat */
                 $d = substr($d, 1, strlen($d) - (str_ends_with($d, "]") ? 2 : 1));
+            } else if (str_ends_with($d, "]")
+                       && ($lbrack = strrpos($d, "[")) !== false) {
+                $keyword = substr($d, 0, $lbrack);
+                $d = substr($d, $lbrack + 1, strlen($d) - $lbrack - 2);
             }
-            if ($a === "as" || in_array($d, ["reverse", "forward", "up", "down", "by", "row", "column"])) {
-                $decorations[] = $d;
-            } else {
+
+            $decorations = [];
+            if ($d !== "") {
+                $splitter = new SearchSplitter($d);
+                while ($splitter->skip_span(" \n\r\t\v\f,")) {
+                    $decorations[] = $splitter->shift_balanced_parens(" \n\r\t\v\f,");
+                }
+            }
+
+            $keyword = $keyword ?? array_shift($decorations) ?? "";
+            if ($keyword !== "") {
+                if ($keyword[0] === "-") {
+                    $keyword = substr($keyword, 1);
+                    array_unshift($decorations, "reverse");
+                } else if ($keyword[0] === "+") {
+                    $keyword = substr($keyword, 1);
+                }
                 if ($keyword !== "") {
                     yield [$action, $keyword, $decorations];
-                    $decorations = [];
-                }
-                $action = $a;
-                if (($k = SearchSplitter::split_balanced_parens($d))) {
-                    $keyword = $k[0];
-                    if (str_starts_with($keyword, "-")) {
-                        $keyword = substr($keyword, 1);
-                        $decorations[] = "reverse";
-                    } else if (str_starts_with($keyword, "+")) {
-                        $keyword = substr($keyword, 1);
-                    }
-                    if (count($k) > 1) {
-                        $decorations = array_merge($decorations, array_slice($k, 1));
-                    }
-                } else {
-                    $keyword = "";
                 }
             }
-        }
-        if ($keyword !== "") {
-            yield [$action, $keyword, $decorations];
         }
     }
 
@@ -2721,9 +2720,9 @@ class PaperSearch {
             $keyword = "\"" . $keyword . "\"";
         }
         if ($decorations) {
-            return $action . ":[" . $keyword . " " . join(" ", $decorations) . "]";
+            return "{$action}:{$keyword}[" . join(" ", $decorations) . "]";
         } else {
-            return $action . ":" . $keyword;
+            return "{$action}:{$keyword}";
         }
     }
 

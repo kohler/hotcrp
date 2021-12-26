@@ -167,9 +167,11 @@ assert_search_papers($user_shenker, "au:berkeley sort:[title]", "24 15 13 1 6");
 assert_search_papers($user_shenker, "au:berkeley sort:[title reverse]", "6 1 13 15 24");
 assert_search_papers($user_shenker, "au:berkeley sort:[title down]", "6 1 13 15 24");
 assert_search_papers($user_shenker, "au:berkeley sort:[title down forward]", "24 15 13 1 6");
+assert_search_papers($user_shenker, "au:berkeley sort:title[down forward]", "24 15 13 1 6");
+assert_search_papers($user_shenker, "au:berkeley sort:title[down,forward]", "24 15 13 1 6");
 assert_search_papers($user_shenker, "au:berkeley sort:[-title]", "6 1 13 15 24");
 assert_search_papers($user_shenker, "au:berkeley sort:-title", "6 1 13 15 24");
-assert_search_papers($user_shenker, "au:berkeley sort:title as:reverse", "6 1 13 15 24");
+assert_search_papers($user_shenker, "au:berkeley sort:title[reverse]", "6 1 13 15 24");
 
 $pl = new PaperList("empty", new PaperSearch($user_shenker, "editsort:#f"));
 xassert_eqq($pl->sort_etag(), "f");

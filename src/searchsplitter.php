@@ -68,10 +68,19 @@ class SearchSplitter {
         $this->set_span_and_pos(0);
         return $this->pos < $this->len;
     }
-    /** @return string */
-    function shift_balanced_parens() {
+    /** @param string $chars
+     * @return bool */
+    function skip_span($chars) {
+        while ($this->pos < $this->len && strpos($chars, $this->str[$this->pos]) !== false) {
+            ++$this->pos;
+        }
+        return $this->pos < $this->len;
+    }
+    /** @param ?string $endchars
+     * @return string */
+    function shift_balanced_parens($endchars = null) {
         $pos0 = $this->pos;
-        $pos1 = self::span_balanced_parens($this->str, $pos0);
+        $pos1 = self::span_balanced_parens($this->str, $pos0, $endchars);
         $this->set_span_and_pos($pos1 - $pos0);
         return substr($this->str, $pos0, $pos1 - $pos0);
     }
@@ -99,9 +108,9 @@ class SearchSplitter {
     }
     /** @param string $str
      * @param int $pos
-     * @param ?callable(string,int):bool $endf
+     * @param ?string $endchars
      * @return int */
-    static function span_balanced_parens($str, $pos = 0, $endf = null) {
+    static function span_balanced_parens($str, $pos = 0, $endchars = null) {
         $pstack = "";
         $plast = "";
         $quote = 0;
@@ -111,7 +120,7 @@ class SearchSplitter {
             // stop when done
             if ($plast === ""
                 && !$quote
-                && ($endf === null ? ctype_space($ch) : $endf($ch, $pos))) {
+                && ($endchars === null ? ctype_space($ch) : strpos($endchars, $ch) !== false)) {
                 break;
             }
             // translate “” -> "

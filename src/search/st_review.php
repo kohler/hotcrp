@@ -501,9 +501,7 @@ class Review_SearchTerm extends SearchTerm {
         $cs = [];
         $pos = 0;
         while ($pos < strlen($s)) {
-            $pos1 = SearchSplitter::span_balanced_parens($s, $pos, function ($ch, $pos) {
-                return $ch === ":";
-            });
+            $pos1 = SearchSplitter::span_balanced_parens($s, $pos, ":");
             $x = trim(substr($s, $pos, $pos1 - $pos));
             if ($x !== ""
                 && ctype_digit($x[strlen($x) - 1])

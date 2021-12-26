@@ -1612,9 +1612,7 @@ class Formula implements JsonSerializable {
         $pos = 0;
         $len = strlen($t);
         while ($pos !== $len && strpos($span, $t[$pos]) === false) {
-            $x = SearchSplitter::span_balanced_parens($t, $pos, function ($ch, $pos) use ($span) {
-                return strpos($span, $ch) !== false;
-            });
+            $x = SearchSplitter::span_balanced_parens($t, $pos, $span);
             $pos = max($pos + 1, $x);
         }
         return $pos;

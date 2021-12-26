@@ -276,10 +276,6 @@
         "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },
     {
-        "name": "as",
-        "parse_function": "Show_SearchTerm::parse", "allow_parens": true
-    },
-    {
         "name": "hide",
         "parse_function": "Show_SearchTerm::parse", "allow_parens": true
     },

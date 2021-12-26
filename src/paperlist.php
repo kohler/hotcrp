@@ -357,21 +357,21 @@ class PaperList implements XtContext {
         case "authorHome":
             return "id title status";
         case "reviewerHome":
-            return "id title revtype status [linkto finishreview]";
+            return "id title revtype status linkto[finishreview]";
         case "pl":
             return "sel id title revtype revstat status";
         case "reqrevs":
             return "id title revdelegation revstat status";
         case "reviewAssignment":
-            return "id title mypref topicscore desirability assignment potentialconflict topics reviewers [linkto assign]";
+            return "id title mypref topicscore desirability assignment potentialconflict topics reviewers linkto[assign]";
         case "conflictassign":
-            return "id title authors aufull potentialconflict [revtype basicheader] [editconf basicheader] [linkto assign]";
+            return "id title authors aufull potentialconflict revtype[basicheader] editconf[basicheader] linkto[assign]";
         case "pf":
-            return "sel id title topicscore revtype [editmypref topicscore]";
+            return "sel id title topicscore revtype editmypref[topicscore]";
         case "reviewers":
-            return "[sel selected] id title status [linkto assign]";
+            return "sel[selected] id title status linkto[assign]";
         case "reviewersSel":
-            return "sel id title status [linkto assign]";
+            return "sel id title status linkto[assign]";
         default:
             return "";
         }
@@ -655,14 +655,12 @@ class PaperList implements XtContext {
         $this->_prepare();
         $res = [];
         $nextpos = 1000000;
-        foreach ($this->_viewf as $k => $v) {
+        foreach ($this->_viewf as $name => $v) {
             if ($report_diff
                 ? ($v >= self::VIEW_SHOW) !== (($v & self::VIEW_REPORTSHOW) !== 0)
                 : $v >= self::VIEW_SHOW) {
-                $name = $k;
-                $pos = self::$view_fake[$k] ?? null;
+                $pos = self::$view_fake[$name] ?? null;
                 if ($pos === null) {
-                    list($name, $decorations) = self::parse_column($k);
                     $fs = $this->conf->paper_columns($name, $this->user);
                     if (count($fs) && isset($fs[0]->position)) {
                         $pos = $fs[0]->position;
@@ -677,7 +675,7 @@ class PaperList implements XtContext {
                 } else {
                     $kw = "hide";
                 }
-                $res[$key] = PaperSearch::unparse_view($kw, $name, $this->_view_decorations[$k] ?? null);
+                $res[$key] = PaperSearch::unparse_view($kw, $name, $this->_view_decorations[$name] ?? null);
             }
         }
         if (((($this->_viewf["anonau"] ?? 0) >= self::VIEW_SHOW && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
@@ -1031,29 +1029,15 @@ class PaperList implements XtContext {
         }
     }
 
-    /** @param string $str
-     * @return array{string,?list<string>} */
-    static private function parse_column($str) {
-        if (str_starts_with($str, "[")) {
-            $ws = SearchSplitter::split_balanced_parens(substr($str, 1, strlen($str) - (str_ends_with($str, "]") ? 2 : 1)));
-            return [$ws[0] ?? "?", count($ws) > 1 ? array_slice($ws, 1) : null];
-        } else {
-            return [$str, null];
-        }
-    }
-
-    /** @param string $str
+    /** @param string $name
      * @return list<PaperColumn> */
-    private function ensure_columns_by_name($str) {
-        list($name, $viewdecorations) = self::parse_column($str);
+    private function ensure_columns_by_name($name) {
         if (!array_key_exists($name, $this->_columns_by_name)) {
             $this->_current_find_column = $name;
             $nfs = [];
             foreach ($this->conf->paper_columns($name, $this->user) as $fdef) {
-                $decorations = $viewdecorations
-                    ?? $this->_view_decorations[$fdef->name]
-                    ?? $this->_view_decorations[$name]
-                    ?? [];
+                $decorations = $this->_view_decorations[$fdef->name]
+                    ?? $this->_view_decorations[$name] ?? [];
                 if ($fdef->name === $name) {
                     $nfs[] = PaperColumn::make($this->conf, $fdef, $decorations);
                 } else {
@@ -1073,13 +1057,7 @@ class PaperList implements XtContext {
     private function _expand_view_column($k) {
         if (!isset(self::$view_fake[$k])
             && ($this->_viewf[$k] ?? 0) >= self::VIEW_SHOW) {
-            $fs = $this->ensure_columns_by_name($k);
-            if (!$fs && $this->view_origin($k) >= self::VIEWORIGIN_EXPLICIT) {
-                foreach ($this->_column_errors_by_name[$k] ?? [] as $err) {
-                    $this->message_set()->error_at($k, "Can’t show " . htmlspecialchars($k) . ": " . $err);
-                }
-            }
-            return $fs;
+            return $this->ensure_columns_by_name($k);
         } else {
             return [];
         }

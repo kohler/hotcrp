@@ -140,9 +140,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             if ($tag === "") {
                 break;
             }
-            $span = SearchSplitter::span_balanced_parens($tag, 0, function ($ch, $pos) {
-                return ctype_space($ch) || $ch === "," || $ch === ";";
-            });
+            $span = SearchSplitter::span_balanced_parens($tag, 0, " \n\r\t\v\f,;");
             $ok = $this->apply1(substr($tag, 0, $span), $prow, $contact, $req, $state)
                 && $ok;
             $tag = substr($tag, $span);
