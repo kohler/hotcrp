@@ -284,6 +284,8 @@ class Authors_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        $fr->table->render_authors($fr, $this);
+        if ($fr->table) {
+            $fr->table->render_authors($fr, $this);
+        }
     }
 }

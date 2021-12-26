@@ -1639,7 +1639,7 @@ class Conf {
         if (($f = $this->review_form()->field($fid))) {
             return $f;
         } else {
-            throw new Exception("Unknown review field “{$fid}”");
+            throw new Exception("Unknown review field ‘{$fid}’");
         }
     }
 
@@ -5154,7 +5154,11 @@ class Conf {
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
         $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i");
         if (empty($ufs) || $ufs === [null]) {
-            PaperColumn::column_error($user, $nchecks === $this->_xt_checks ? "No matching field." : "You can’t view that field.", true);
+            if ($nchecks === $this->_xt_checks) {
+                PaperColumn::column_error($user, "Field ‘" . htmlspecialchars($name) . "’ not found");
+            } else {
+                PaperColumn::column_error($user, "Field ‘" . htmlspecialchars($name) . "’ permission error");
+            }
         }
         return array_values(array_filter($ufs, "Conf::xt_resolve_require"));
     }

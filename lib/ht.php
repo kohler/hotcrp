@@ -367,8 +367,9 @@ class Ht {
         $js = $js ?? [];
         self::apply_placeholder($value, $js);
         $type = $js["type"] ?? "text";
-        return '<input type="' . $type . '" name="' . $name . '" value="'
-            . htmlspecialchars($value) . '"' . self::extra($js) . ' />';
+        $vt = htmlspecialchars($value);
+        $jst = self::extra($js);
+        return "<input type=\"{$type}\" name=\"{$name}\" value=\"{$vt}\"{$jst}>";
     }
 
     /** @param string $name
@@ -388,8 +389,9 @@ class Ht {
     static function textarea($name, $value, $js = null) {
         $js = $js ?? [];
         self::apply_placeholder($value, $js);
-        return '<textarea name="' . $name . '"' . self::extra($js)
-            . '>' . htmlspecialchars($value) . '</textarea>';
+        $vt = htmlspecialchars($value);
+        $jst = self::extra($js);
+        return "<textarea name=\"{$name}\"{$jst}>{$vt}</textarea>";
     }
 
     static function actions($actions, $js = []) {
@@ -467,8 +469,9 @@ class Ht {
         if (self::$img_base && !preg_match(',\A(?:https?:/|/),i', $src)) {
             $src = self::$img_base . $src;
         }
-        return "<img src=\"" . $src . "\" alt=\"" . htmlspecialchars($alt) . "\""
-            . self::extra($js) . " />";
+        $altt = htmlspecialchars($alt);
+        $jst = self::extra($js);
+        return "<img src=\"{$src}\" alt=\"{$altt}\"{$jst}>";
     }
 
     /** @return string */
@@ -583,6 +586,59 @@ class Ht {
     /** @param string $s
      * @param int $pos1
      * @param int $pos2
+     * @param ?int $status
+     * @return string */
+    static function mark_substring($s, $pos1, $pos2, $status = 2) {
+        $pos2 = max($pos1, $pos2);
+        $nl0 = strrpos($s, "\n", strlen($s) - $pos1);
+        if ($nl0 !== false) {
+            $nl1 = strpos($s, "\n", $pos1);
+            $nl1 = $nl1 !== false ? $nl1 : strlen($s);
+            if ($nl1 >= $pos2) {
+                $s = substr($s, $nl0, $nl1 - $nl0);
+                $pos1 -= $nl0;
+                $pos2 -= $nl0;
+            }
+        }
+        if ($pos1 > 24 && strlen($s) > 64) {
+            $mp = $pos1 - 17;
+            while ($mp > 0
+                   && UnicodeHelper::utf8_glyphlen(substr($s, $mp, $pos1 - $mp)) < 17) {
+                --$mp;
+            }
+            $s = "…" . substr($s, $mp);
+            $pos1 -= $mp - 3; /* ellipsis character UTF-8 encoding is 3 bytes long */
+            $pos2 -= $mp - 3;
+        }
+        if ($pos2 - $pos1 > 12) {
+            $lpos = $pos2;
+            $llen = max(64 - $lpos, 12);
+        } else {
+            $lpos = $pos1;
+            $llen = max(64 - $lpos, 24);
+        }
+        if (strlen($s) > $lpos + $llen) {
+            $ml = $llen - 1;
+            while ($lpos + $ml < strlen($s)
+                   && UnicodeHelper::utf8_glyphlen(substr($s, $lpos, $ml)) < $llen - 1) {
+                ++$ml;
+            }
+            $s = substr($s, 0, $lpos + $ml) . "…";
+        }
+        $h0 = htmlspecialchars(substr($s, 0, $pos1));
+        $h1 = htmlspecialchars(substr($s, $pos1, $pos2 - $pos1));
+        $h2 = htmlspecialchars(substr($s, $pos2));
+        $k = $status === 2 ? "is-error" : "is-warning";
+        if ($pos2 > $pos1 + 2) {
+            return "{$h0}<span class=\"context-mark {$k}\">{$h1}</span>{$h2}";
+        } else {
+            return "{$h0}<span class=\"context-caret-mark {$k}\">{$h1}</span>{$h2}";
+        }
+    }
+
+    /** @param string $s
+     * @param int $pos1
+     * @param int $pos2
      * @param string $msg
      * @param ?int $status
      * @return string */
@@ -599,7 +655,7 @@ class Ht {
         }
         if ($pos2 > $pos1) {
             $t = htmlspecialchars(substr($s, 0, $pos1))
-                . '<span class="' . $klass . '">'
+                . "<span class=\"{$klass} context-mark\">"
                 . htmlspecialchars(substr($s, $pos1, $pos2 - $pos1))
                 . '</span>'
                 . htmlspecialchars(substr($s, $pos2));
@@ -636,9 +692,7 @@ class Ht {
         foreach (is_array($msg) ? $msg : [$msg] as $x) {
             if ($x !== "") {
                 if ($x[0] === "<"
-                    && (str_starts_with($x, "<p")
-                        || str_starts_with($x, "<div")
-                        || str_starts_with($x, "<form"))) {
+                    && preg_match('/\A<(?:p|div|form|ul|ol|dl)\b/i', $x)) {
                     $mx .= $x;
                 } else {
                     $mx .= "<p>{$x}</p>";

@@ -109,9 +109,9 @@ class Option_PaperColumnFactory {
             if ($opt->can_render(FieldRender::CFLIST)) {
                 return self::option_json($xfj, $opt);
             }
-            PaperColumn::column_error($user, "Option “" . htmlspecialchars($oname) . "” can’t be displayed.");
+            PaperColumn::column_error($user, "Submission field ‘" . htmlspecialchars($oname) . "’ can’t be displayed");
         } else if ($ocolon) {
-            PaperColumn::column_error($user, "No such option “" . htmlspecialchars($oname) . "”.");
+            PaperColumn::column_error($user, "Submission field ‘" . htmlspecialchars($oname) . "’ not found");
         }
         return null;
     }

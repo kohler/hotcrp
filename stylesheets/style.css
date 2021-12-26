@@ -731,7 +731,7 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .msg > p {
 	margin-bottom: 0.3em;
 }
-.msg > p:last-child {
+.msg > p:last-child, .msg > ul:last-child, .msg > ol:last-child, .msg > dl:last-child {
 	margin-bottom: 0;
 }
 .msg {
@@ -1756,6 +1756,31 @@ select.has-warning {
 	color: #333377;
 }
 
+.msg-context {
+	font-size: smaller;
+	margin-left: 3rem;
+}
+.context-mark {
+	text-decoration-line: underline;
+	text-decoration-style: wavy;
+	text-decoration-thickness: 2px;
+	text-underline-position: under;
+}
+.context-mark.short {
+	text-decoration-style: dashed;
+}
+.context-caret-mark {
+	position: relative;
+}
+.context-caret-mark::before {
+	content: "^";
+	position: absolute;
+	bottom: -1.85ex;
+	font-weight: bold;
+}
+.context-mark.context-caret-mark::before {
+	bottom: -2.5ex;
+}
 
 .helpside {
 	float: right;

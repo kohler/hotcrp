@@ -136,7 +136,7 @@ class Conflict_PaperColumn extends PaperColumn {
             }
         }
         if (empty($rs)) {
-            PaperColumn::column_error($user, "No PC member matches “" . htmlspecialchars($m[2]) . "”.");
+            PaperColumn::column_error($user, "PC member ‘" . htmlspecialchars($m[2]) . "’ not found");
         }
         return $rs;
     }
