@@ -1,8 +1,10 @@
 <?php
 // archiveinfo.php -- expand archive contents
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 class ArchiveInfo {
+    /** @param int $max_length
+     * @return false|list<string> */
     static function archive_listing(DocumentInfo $doc, $max_length = -1) {
         if (!($path = $doc->content_file())) {
             return false;
@@ -82,17 +84,21 @@ class ArchiveInfo {
         }
     }
 
+    /** @param list<string> $listing
+     * @return list<string> */
     static function clean_archive_listing($listing) {
-        $bad = preg_grep('@(?:\A|/)(?:\A__MACOSX|\._.*|\.DS_Store|\.svn|\.git|.*~\z|.*/\z|\A…\z)(?:/|\z)@', $listing);
+        $bad = preg_grep('/(?:\A|\/)(?:\A__MACOSX|\._.*|\.DS_Store|\.svn|\.git|.*~\z|.*\/\z|\A…\z)(?:\/|\z)/', $listing);
         if (!empty($bad)) {
             $listing = array_values(array_diff_key($listing, $bad));
-            if (preg_match('@[^/]\n@', join("\n", $bad) . "\n")) {
+            if (preg_match('/[^\/]\n/', join("\n", $bad) . "\n")) {
                 $listing[] = "…";
             }
         }
         return $listing;
     }
 
+    /** @param list<string> $listing
+     * @return list<string> */
     static function consolidate_archive_listing($listing) {
         $new_listing = [];
         $nlisting = count($listing);

@@ -101,7 +101,7 @@
     ["Ignored blank review forms %#s.", "Ignored blank review form %#s.", ["#$1=1"]],
     ["Ignored blank review forms %#s.", "Ignored blank review form.", ["$2"]],
 
-    ["Submissions %#Ns are totally hidden when viewing the site as another user.", "Submission %#Ns is totally hidden when viewing the site as another user.", ["#$1=1"]],
+    ["<0>Submissions %#Ns are totally hidden when viewing the site as another user.", "<0>Submission %#Ns is totally hidden when viewing the site as another user.", ["#$1=1"]],
 
     ["Skipped disabled accounts %#H.", "Skipped disabled account %#H.", ["#$1=1"]],
 

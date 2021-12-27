@@ -221,7 +221,7 @@ class Preference_PaperColumn extends PaperColumn {
             }
         }
         if (empty($rs)) {
-            PaperColumn::column_error($user, "PC member ‘" . htmlspecialchars($m[1]) . "’ not found");
+            PaperColumn::column_error($user, "<0>PC member ‘{$m[1]}’ not found");
         }
         return $rs;
     }

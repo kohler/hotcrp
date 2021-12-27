@@ -1530,7 +1530,7 @@ class PaperID_SearchTerm extends SearchTerm {
     }
     static function parse_pidcode($word, SearchWord $sword, PaperSearch $srch) {
         if (($ids = SessionList::decode_ids($word)) === null) {
-            $srch->lwarning($sword, "Invalid pidcode");
+            $srch->lwarning($sword, "<0>Invalid pidcode");
             return new False_SearchTerm;
         } else {
             $pt = new PaperID_SearchTerm;
@@ -1732,6 +1732,7 @@ class PaperSearch {
         $this->q = trim($options["q"] ?? "");
         $this->_default_sort = $options["sort"] ?? null;
         $this->_ms = new MessageSet;
+        $this->_ms->set_want_ftext(true);
 
         // reviewer
         if (($reviewer = $options["reviewer"] ?? null)) {
@@ -1864,9 +1865,9 @@ class PaperSearch {
     function problem_status() {
         return $this->_ms->problem_status();
     }
-    /** @return list<string> */
-    function problem_texts() {
-        return $this->_ms->problem_texts();
+    /** @return list<MessageItem> */
+    function message_list() {
+        return $this->_ms->message_list();
     }
 
     /** @param string $message
@@ -1894,7 +1895,7 @@ class PaperSearch {
             }
             $t[] = '<ul class="x">';
             foreach ($this->_ms->message_list() as $mi) {
-                $msg = $mi->message;
+                $msg = $mi->message_as(5);
                 if ($mi->status === MessageSet::INFO) {
                     $msg = "<div class=\"msg-context\">{$msg}</div>";
                 }
@@ -1956,7 +1957,7 @@ class PaperSearch {
             | (!$quoted && $this->user->isPC ? ContactSearch::F_TAG : 0);
         $cs = $this->_find_contact_search($type, $word);
         if ($cs->warn_html) {
-            $this->warning($cs->warn_html);
+            $this->warning("<5>{$cs->warn_html}");
         }
         return $cs;
     }
@@ -2046,7 +2047,7 @@ class PaperSearch {
                 return $qe;
             }
         }
-        $srch->lwarning($sword, "Unknown search ‘has:" . htmlspecialchars($word) . "’");
+        $srch->lwarning($sword, "<0>Unknown search ‘has:{$word}’");
         return new False_SearchTerm;
     }
 
@@ -2074,15 +2075,15 @@ class PaperSearch {
         $qe = null;
         ++self::$ss_recursion;
         if (!$srch->conf->setting_data("ss:$word")) {
-            $srch->lwarning($sword, "Saved search not found");
+            $srch->lwarning($sword, "<0>Saved search not found");
         } else if (self::$ss_recursion > 10) {
-            $srch->lwarning($sword, "Saved search defined in terms of itself");
+            $srch->lwarning($sword, "<0>Saved search defined in terms of itself");
         } else if (($nextq = $srch->_expand_saved_search($word))) {
             if (($qe = $srch->_search_expression($nextq))) {
                 $qe->set_strspan_owner($nextq);
             }
         } else {
-            $srch->lwarning($sword, "Saved search defined incorrectly");
+            $srch->lwarning($sword, "<0>Saved search defined incorrectly");
         }
         --self::$ss_recursion;
         return $qe ?? new False_SearchTerm;
@@ -2104,11 +2105,11 @@ class PaperSearch {
             }
         } else if ($keyword !== null) {
             $sword->pos2 = $sword->pos1 + strlen($keyword) + 1;
-            $this->lwarning($sword, "Unknown search ‘" . htmlspecialchars($lkeyword) . ":’");
+            $this->lwarning($sword, "<0>Unknown search ‘{$lkeyword}:’");
         } else if (!$scope->defkw_scope->defkw_error) {
             $sword->pos1 = $scope->defkw_scope->defkw_pos1;
             $sword->pos2 = $sword->pos1 + strlen($scope->defkw) + 1;
-            $this->lwarning($sword, "Unknown search ‘" . htmlspecialchars($lkeyword) . ":’");
+            $this->lwarning($sword, "<0>Unknown search ‘{$lkeyword}:’");
             $scope->defkw_scope->defkw_error = true;
         }
     }
@@ -2687,7 +2688,7 @@ class PaperSearch {
                    && $this->user->privChair
                    && ($ps = $this->_check_missing_papers($qe))
                    && $this->conf->fetch_ivalue("select exists (select * from Paper where paperId?a)", $ps)) {
-            $this->warning("Some incomplete or withdrawn submissions also match this search. " . Ht::link("Show all matching submissions", $this->conf->hoturl("search", ["t" => "all", "q" => $this->q])));
+            $this->warning("<5>Some incomplete or withdrawn submissions also match this search. " . Ht::link("Show all matching submissions", $this->conf->hoturl("search", ["t" => "all", "q" => $this->q])));
         }
 
         $this->user->set_overrides($old_overrides);

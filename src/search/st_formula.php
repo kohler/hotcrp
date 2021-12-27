@@ -23,7 +23,7 @@ class Formula_SearchTerm extends SearchTerm {
             $formula = new Formula($word, $is_graph ? Formula::ALLOW_INDEXED : 0);
         }
         if (!$formula->check($srch->user)) {
-            $srch->warning($formula->error_html());
+            $srch->warning($formula->error_html()); // XXX
             $formula = null;
         }
         return $formula;

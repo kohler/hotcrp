@@ -32,7 +32,7 @@ class Tag_Fexpr extends Fexpr {
             $tsm->add_check_tag(str_starts_with($tag, "_~") ? substr($tag, 1) : $tag, true);
             return new Tag_Fexpr($tag, $tsm, $ff->kwdef->is_value);
         } else {
-            $ff->lerror("Invalid tag ‘" . htmlspecialchars($ff->rawargs[0]) . "’");
+            $ff->lerror("<0>Invalid tag ‘{$ff->rawargs[0]}’");
             return null;
         }
     }

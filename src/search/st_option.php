@@ -67,11 +67,11 @@ abstract class Option_SearchTerm extends SearchTerm {
         $os = $srch->conf->abbrev_matcher()->findp($oname, Conf::MFLAG_OPTION);
         if (empty($os)) {
             if (($os2 = $srch->conf->abbrev_matcher()->find_all($oname, Conf::MFLAG_OPTION))) {
-                $ts = array_map(function ($o) { return "“" . htmlspecialchars($o->search_keyword()) . "”"; }, $os2);
-                $srch->lwarning($sword, "Submission field ‘" . htmlspecialchars($oname) . "’ is ambiguous");
-                $srch->message_set()->info_at(null, "Try " . commajoin($ts, " or ") . ", or use “" . htmlspecialchars($oname) . "*” if you mean to match them all.");
+                $ts = array_map(function ($o) { return "‘" . $o->search_keyword() . "’"; }, $os2);
+                $srch->lwarning($sword, "<0>Submission field ‘{$oname}’ is ambiguous");
+                $srch->message_set()->info_at(null, "<0>Try " . commajoin($ts, " or ") . ", or use ‘{$oname}*’ if you mean to match them all.");
             } else {
-                $srch->lwarning($sword, "Submission field ‘" . htmlspecialchars($oname) . "’ not found");
+                $srch->lwarning($sword, "Submission field ‘{$oname}’ not found");
             }
             return new False_SearchTerm;
         }
@@ -99,7 +99,7 @@ abstract class Option_SearchTerm extends SearchTerm {
             if (($st = $o->parse_search($sword, $srch))) {
                 $ts[] = $st;
             } else if ($nwarn === $srch->message_set()->message_count()) {
-                $srch->lwarning($sword, "Search not supported by submission field");
+                $srch->lwarning($sword, "<0>Search not supported by submission field");
             }
         }
         return SearchTerm::combine("or", $ts);

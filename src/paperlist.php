@@ -1068,7 +1068,7 @@ class PaperList implements XtContext {
             }
             if (empty($nfs) && $this->view_origin($name) >= self::VIEWORIGIN_EXPLICIT) {
                 if (empty($this->_finding_column_errors)) {
-                    $this->column_error("Field ‘" . htmlspecialchars($name) . "’ not found");
+                    $this->column_error("<0>Field ‘{$name}’ not found");
                 }
                 foreach ($this->_finding_column_errors as $mi) {
                     $this->message_set()->add($mi);

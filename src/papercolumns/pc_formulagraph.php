@@ -53,7 +53,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
             }
             return null;
         } else if ($formula->result_format() !== Fexpr::FREVIEWFIELD) {
-            PaperColumn::column_error($user, "Formula of type " . $formula->result_format_description() . " can’t be used in graphs, review field value expected");
+            PaperColumn::column_error($user, "<0>Formula of type " . $formula->result_format_description() . " can’t be used in graphs, review field value expected");
             return null;
         } else {
             $cj = (array) $xfj;

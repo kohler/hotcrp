@@ -23,6 +23,12 @@ class MessageItem implements JsonSerializable {
         $this->status = $status;
     }
 
+    /** @param int $format
+     * @return string */
+    function message_as($format) {
+        return Ftext::unparse_as($this->message, $format);
+    }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $x = [];
@@ -56,6 +62,8 @@ class MessageSet {
     private $problem_status;
     /** @var ?array<string,int> */
     private $pstatus_at;
+    /** @var bool */
+    private $want_ftext = false;
 
     const WARNING_NOTE = -4;
     const SUCCESS = -3;
@@ -99,6 +107,10 @@ class MessageSet {
     function clear_status_for_problem_at() {
         $this->pstatus_at = [];
     }
+    /** @param bool $wft */
+    function set_want_ftext($wft) {
+        $this->want_ftext = $wft;
+    }
 
     /** @param MessageItem $mi
      * @return int|false */
@@ -131,6 +143,9 @@ class MessageSet {
                     || $old_status < $mi->status
                     || $this->message_index($mi) === false)) {
                 $this->msgs[] = $mi;
+                if ($this->want_ftext && !Ftext::is_ftext($mi->message)) {
+                    error_log("not ftext: " . debug_string_backtrace());
+                }
             }
         }
     }

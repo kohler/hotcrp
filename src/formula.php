@@ -28,9 +28,10 @@ class FormulaCall {
         $this->text = $name;
         $this->kwdef = $kwdef;
     }
-    /** @return MessageItem */
-    function lerror($message_html) {
-        return $this->formula->lerror($this->pos1, $this->pos2, $message_html);
+    /** @param string $message
+     * @return MessageItem */
+    function lerror($message) {
+        return $this->formula->lerror($this->pos1, $this->pos2, $message);
     }
 }
 
@@ -1492,18 +1493,26 @@ class Formula implements JsonSerializable {
         $this->_parse = null;
     }
 
-    /** @return MessageItem */
-    function lerror($pos1, $pos2, $message_html) {
+    /** @param int $pos1
+     * @param int $pos2
+     * @param string $message
+     * @return MessageItem */
+    function lerror($pos1, $pos2, $message) {
+        if (!Ftext::is_ftext($message)) {
+            error_log("not ftext: " . debug_string_backtrace());
+        }
         $len = strlen($this->expression);
-        $mi = new MessageItem(null, $message_html, MessageSet::ERROR);
+        $mi = new MessageItem(null, $message, MessageSet::ERROR);
         $mi->pos1 = $len + $pos1;
         $mi->pos2 = $len + $pos2;
         $this->_lerrors[] = $mi;
         return $mi;
     }
 
-    function fexpr_lerror(Fexpr $expr, $message_html) {
-        return $this->lerror($expr->pos1, $expr->pos2, $message_html);
+    /** @param string $message
+     * @return MessageItem */
+    function fexpr_lerror(Fexpr $expr, $message) {
+        return $this->lerror($expr->pos1, $expr->pos2, $message);
     }
 
     /** @return FormulaParse */
@@ -1518,7 +1527,7 @@ class Formula implements JsonSerializable {
         $this->_bind = [];
         $t = $this->expression;
         if ((string) $t === "") {
-            $this->lerror(0, 0, "Empty formula");
+            $this->lerror(0, 0, "<0>Empty formula");
             $e = null;
         } else {
             ++$this->_depth;
@@ -1530,11 +1539,11 @@ class Formula implements JsonSerializable {
             || $t !== ""
             || !empty($this->_lerrors)) {
             if (empty($this->_lerrors)) {
-                $this->lerror(-strlen($t), 0, "Formula parse error");
+                $this->lerror(-strlen($t), 0, "<0>Formula parse error");
             }
         } else if (!$e->typecheck($this)) {
             if (empty($this->_lerrors)) {
-                $this->fexpr_lerror($e, "Formula type mismatch");
+                $this->fexpr_lerror($e, "<0>Formula type mismatch");
             }
         } else {
             $state = new FormulaCompiler($this->user);
@@ -1547,7 +1556,7 @@ class Formula implements JsonSerializable {
                 $e->compile($state);
             }
             if ($state->indexed && !$this->_allow_indexed) {
-                $this->fexpr_lerror($e, "Need an aggregate function like ‘sum’ or ‘max’");
+                $this->fexpr_lerror($e, "<0>Need an aggregate function like ‘sum’ or ‘max’");
             } else {
                 $fp->fexpr = $e;
                 $fp->indexed = !!$state->indexed;
@@ -1663,7 +1672,7 @@ class Formula implements JsonSerializable {
                 $t = ltrim($t);
                 if ($t !== "" && $t[0] !== ")" && $t[0] !== ",") {
                     if (!$warned) {
-                        $this->lerror(-strlen($t), -strlen($t), "Expected ‘,’ or ‘)’");
+                        $this->lerror(-strlen($t), -strlen($t), "<0>Expected ‘,’ or ‘)’");
                         $warned = true;
                     }
                     $t = substr($t, self::span_parens_until($t, "),"));
@@ -1671,7 +1680,7 @@ class Formula implements JsonSerializable {
                 $comma = true;
             }
             if ($t === "") {
-                $this->lerror(0, 0, "Missing ‘)’");
+                $this->lerror(0, 0, "<0>Missing ‘)’");
             } else {
                 $t = substr($t, 1);
             }
@@ -1722,11 +1731,11 @@ class Formula implements JsonSerializable {
 
         if ($args !== false) {
             if (!$this->_parse_function_args($ff, $t)) {
-                $this->lerror($pos1, -strlen($t), "Function ‘" . htmlspecialchars($name) . "’ requires arguments");
+                $this->lerror($pos1, -strlen($t), "<0>Function ‘{$name}’ requires arguments");
                 return Constant_Fexpr::cerror($pos1, -strlen($t));
             } else if ((is_int($args) && count($ff->args) !== $args)
                        || (is_array($args) && (count($ff->args) < $args[0] || count($ff->args) > $args[1]))) {
-                $m = "Wrong number of arguments for ‘" . htmlspecialchars($name) . "’";
+                $m = "<0>Wrong number of arguments for ‘{$name}’";
                 if (is_int($args)) {
                     $m .= " ($args expected)";
                 }
@@ -1745,12 +1754,12 @@ class Formula implements JsonSerializable {
                 $before = count($this->_lerrors);
                 $e = call_user_func($kwdef->function, $ff, $this);
                 if (!$e && count($this->_lerrors) === $before) {
-                    $this->lerror($ff->pos1, $ff->pos2, "Parse error");
+                    $this->lerror($ff->pos1, $ff->pos2, "<0>Parse error");
                 }
             }
         } else if (isset($kwdef->macro)) {
             if ($this->_depth > 20) {
-                $this->lerror($pos1, -strlen($t), "Circular macro definition");
+                $this->lerror($pos1, -strlen($t), "<0>Circular macro definition");
                 $e = null;
             } else {
                 ++$this->_depth;
@@ -1763,7 +1772,7 @@ class Formula implements JsonSerializable {
                 --$this->_depth;
                 if (!$e || $tt !== "") {
                     if (count($this->_lerrors) === $before) {
-                        $this->lerror($ff->pos1, $ff->pos2, "Parse error in macro");
+                        $this->lerror($ff->pos1, $ff->pos2, "<0>Parse error in macro");
                     }
                     $e = null;
                 }
@@ -1876,7 +1885,7 @@ class Formula implements JsonSerializable {
         if (($fex = $opt->parse_fexpr($fc, $t))) {
             return $fex;
         } else if (count($this->_lerrors) === $nerrors) {
-            $fc->lerror("Submission field ‘" . htmlspecialchars($opt->name) . "’ can’t be used in formulas");
+            $fc->lerror("<0>Submission field ‘{$opt->name}’ can’t be used in formulas");
             return Constant_Fexpr::cerror($fc->pos1, $fc->pos2);
         }
     }
@@ -1886,7 +1895,7 @@ class Formula implements JsonSerializable {
      * @return Fexpr */
     private function _parse_option($pos1, &$t) {
         if (!preg_match('/\A[A-Za-z0-9_.@]+/', $t, $m)) {
-            $this->lerror($pos1, $pos1, "Submission field missing");
+            $this->lerror($pos1, $pos1, "<0>Submission field missing");
             return Constant_Fexpr::cerror($pos1, $pos1);
         }
 
@@ -1895,10 +1904,10 @@ class Formula implements JsonSerializable {
         $opt = $this->conf->abbrev_matcher()->find1($oname, Conf::MFLAG_OPTION);
         if (!$opt) {
             if (($os2 = $this->conf->abbrev_matcher()->find_all($oname, Conf::MFLAG_OPTION))) {
-                $ts = array_map(function ($o) { return "‘" . htmlspecialchars($o->search_keyword()) . "’"; }, $os2);
-                $this->lerror($pos1, -strlen($t), "‘" . htmlspecialchars($oname) . "’ matches more than one submission field; try " . commajoin($ts, " or "));
+                $ts = array_map(function ($o) { return "‘" . $o->search_keyword() . "’"; }, $os2);
+                $this->lerror($pos1, -strlen($t), "<0>‘{$oname}’ matches more than one submission field; try " . commajoin($ts, " or "));
             } else {
-                $this->lerror($pos1, -strlen($t), "Submission field ‘" . htmlspecialchars($oname) . "’ not found");
+                $this->lerror($pos1, -strlen($t), "<0>Submission field ‘{$oname}’ not found");
             }
             return Constant_Fexpr::cerror($pos1, -strlen($t));
         }
@@ -1917,7 +1926,7 @@ class Formula implements JsonSerializable {
             if ($f->has_options) {
                 return $this->_reviewer_decoration($t, new Score_Fexpr($f));
             } else {
-                $this->lerror($pos1, $pos2, "Review field ‘" . htmlspecialchars($f->name) . "’ can’t be used in formulas");
+                $this->lerror($pos1, $pos2, "<0>Review field ‘{$f->name}’ can’t be used in formulas");
             }
         } else if ($f instanceof Formula) {
             if ($f->_depth === 0) {
@@ -1925,13 +1934,13 @@ class Formula implements JsonSerializable {
                 if ($fp->fexpr && $fp->fexpr->format() !== Fexpr::FERROR) {
                     return $fp->fexpr;
                 } else {
-                    $this->lerror($pos1, $pos2, "Formula definition contains an error");
+                    $this->lerror($pos1, $pos2, "<0>Formula definition contains an error");
                 }
             } else {
-                $this->lerror($pos1, $pos2, "Self-referential formula");
+                $this->lerror($pos1, $pos2, "<0>Self-referential formula");
             }
         } else {
-            $this->lerror($pos1, $pos2, "Field not found");
+            $this->lerror($pos1, $pos2, "<0>Field not found");
         }
         return Constant_Fexpr::cerror($pos1, $pos2);
     }
@@ -1954,7 +1963,7 @@ class Formula implements JsonSerializable {
             --$this->_depth;
             $t = ltrim($t);
             if ($t === "" || $t[0] !== ")") {
-                $this->lerror(-strlen($t), -strlen($t), "Missing ‘)’");
+                $this->lerror(-strlen($t), -strlen($t), "<0>Missing ‘)’");
                 $t = substr($t, self::span_parens_until($t, ")"));
             }
             if (!$e || $t === "") {
@@ -2024,7 +2033,7 @@ class Formula implements JsonSerializable {
             $var = $m[1];
             $varpos = -(strlen($m[1]) + strlen($m[2]) + strlen($m[3]));
             if (preg_match('/\A(?:null|true|false|let|and|or|not|in)\z/', $var)) {
-                $this->lerror($varpos, $varpos + strlen($m[1]), "Cannot redefine reserved word ‘{$var}’");
+                $this->lerror($varpos, $varpos + strlen($m[1]), "<0>Cannot redefine reserved word ‘{$var}’");
             }
             $vare = new VarDef_Fexpr($m[1]);
             $vare->set_landmark($varpos, $varpos + strlen($m[1]));
@@ -2037,7 +2046,7 @@ class Formula implements JsonSerializable {
                 $e2 = $this->_parse_ternary($t, $in_qc);
                 $this->_bind[$var] = $old_bind;
             } else {
-                $this->lerror(-strlen($t), -strlen($t), "Expected ‘in’");
+                $this->lerror(-strlen($t), -strlen($t), "<0>Expected ‘in’");
                 $e2 = null;
             }
             if ($e && $e2) {
@@ -2139,7 +2148,7 @@ class Formula implements JsonSerializable {
 
             if (!$e2) {
                 if ($e->format() !== Fexpr::FERROR) {
-                    $this->lerror(-strlen($t), -strlen($t), "Missing expression");
+                    $this->lerror(-strlen($t), -strlen($t), "<0>Missing expression");
                 }
                 $e = Constant_Fexpr::cerror();
             } else if ($opx === "<" || $opx === ">" || $opx === "<=" || $opx === ">=") {
@@ -2174,7 +2183,7 @@ class Formula implements JsonSerializable {
         $pos1 = -strlen($t);
         $e = $this->_parse_expr($t, 0, $in_qc);
         if (!$e && $this->_depth) {
-            $this->lerror($pos1, $pos1, "Expression expected");
+            $this->lerror($pos1, $pos1, "<0>Expression expected");
             return $e;
         } else if (!$e || ($t = ltrim($t)) === "" || $t[0] !== "?") {
             return $e;
@@ -2185,7 +2194,7 @@ class Formula implements JsonSerializable {
         $e2 = null;
         if (!$e1) {
         } else if (($t = ltrim($t)) === "" || $t[0] !== ":") {
-            $this->lerror(-strlen($t), -strlen($t), "Expected ‘:’");
+            $this->lerror(-strlen($t), -strlen($t), "<0>Expected ‘:’");
         } else {
             $t = substr($t, 1);
             $e2 = $this->_parse_ternary($t, $in_qc);
