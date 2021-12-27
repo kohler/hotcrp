@@ -51,7 +51,7 @@ class Comment_SearchTerm extends SearchTerm {
         $round = $user->conf->resp_round_number($m[2]);
         if ($round === false
             && $m[1] === ""
-            && preg_match('/\A(draft-?)(.*)\z/i', $m[2], $mm)) {
+            && preg_match('/\A(draft-?)(.*)\z/si', $m[2], $mm)) {
             $m[1] = $mm[1];
             $m[2] = $mm[2];
             $round = $user->conf->resp_round_number($m[2]);

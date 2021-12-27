@@ -51,7 +51,7 @@ abstract class Option_SearchTerm extends SearchTerm {
                 return self::make_present($srch->conf->options()->normal(), $srch->user);
             } else if (!$sword->quoted && strcasecmp($word, "none") === 0) {
                 return self::make_present($srch->conf->options()->normal(), $srch->user)->negate();
-            } else if (preg_match('/\A(.*?)(?::|(?=[#=!<>]|≠|≤|≥))(.*)\z/', $word, $m)) {
+            } else if (preg_match('/\A(.*?)(?::|(?=[#=!<>]|≠|≤|≥))(.*)\z/s', $word, $m)) {
                 $oname = $m[1];
                 $ocontent = $m[2];
             } else {

@@ -34,7 +34,7 @@ class Color_SearchTerm {
         if ($srch->user->isPC && $srch->conf->tags()->has_badges) {
             if ($word === "any" || $word === "none") {
                 $f = function ($t) { return !empty($t->badges); };
-            } else if (preg_match(',\A(black|' . join("|", $srch->conf->tags()->canonical_badges()) . ')\z,', $word)
+            } else if (preg_match('{\A(black|' . join("|", $srch->conf->tags()->canonical_badges()) . ')\z}s', $word)
                        && !$sword->quoted) {
                 $word = $word === "black" ? "normal" : $word;
                 $f = function ($t) use ($word) {
@@ -60,7 +60,7 @@ class Color_SearchTerm {
             if (strcasecmp($word, "any") == 0 || strcasecmp($word, "none") == 0) {
                 $xword = ":*:";
                 $f = function ($t) { return !empty($t->emoji); };
-            } else if (preg_match('{\A' . TAG_REGEX_NOTWIDDLE . '\z}', $word)) {
+            } else if (preg_match('{\A' . TAG_REGEX_NOTWIDDLE . '\z}s', $word)) {
                 if (!str_starts_with($xword, ":")) {
                     $xword = ":$xword";
                 }
@@ -72,7 +72,7 @@ class Color_SearchTerm {
                 if ($code !== false) {
                     $codes[] = $code;
                 } else if (strpos($xword, "*") !== false) {
-                    $re = "{\\A" . str_replace("\\*", ".*", preg_quote($xword)) . "\\z}";
+                    $re = "{\\A" . str_replace("\\*", ".*", preg_quote($xword)) . "\\z}s";
                     foreach ($srch->conf->emoji_code_map() as $key => $code) {
                         if (preg_match($re, $key))
                             $codes[] = $code;

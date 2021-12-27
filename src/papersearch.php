@@ -430,7 +430,7 @@ abstract class Op_SearchTerm extends SearchTerm {
     private static function strip_sort($vxs) {
         $res = [];
         foreach ($vxs as $vx) {
-            if (preg_match('/\A([a-z]*)sort(:.*)\z/', $vx[0], $m)) {
+            if (preg_match('/\A([a-z]*)sort(:.*)\z/s', $vx[0], $m)) {
                 if ($m[1] !== "") {
                     $res[] = [$m[1] . $m[2], $vx[1], $vx[2]];
                 }
@@ -1985,6 +1985,8 @@ class PaperSearch {
         return $scm->has_error() ? null : $scm->user_ids();
     }
 
+    /** @param string $word
+     * @param bool $quoted */
     static function decision_matchexpr(Conf $conf, $word, $quoted) {
         if (!$quoted) {
             if (strcasecmp($word, "yes") === 0) {
@@ -2020,6 +2022,7 @@ class PaperSearch {
         return ["outcome", self::decision_matchexpr($conf, $word, $quoted)];
     }
 
+    /** @return SearchTerm */
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
         $kword = $word;
         $kwdef = $srch->conf->search_keyword($kword, $srch->user);
@@ -2047,6 +2050,8 @@ class PaperSearch {
         return new False_SearchTerm;
     }
 
+    /** @param string $word
+     * @return ?string */
     private function _expand_saved_search($word) {
         $sj = $this->conf->setting_json("ss:$word");
         if ($sj && is_object($sj) && isset($sj->q)) {
@@ -2060,6 +2065,8 @@ class PaperSearch {
         }
     }
 
+    /** @param string $word
+     * @return ?SearchTerm */
     static function parse_saved_search($word, SearchWord $sword, PaperSearch $srch) {
         if (!$srch->user->isPC) {
             return null;
@@ -2114,18 +2121,19 @@ class PaperSearch {
         if ($ch !== ""
             && $defkw === ""
             && (ctype_digit($ch) || ($ch === "#" && ctype_digit((string) substr($word, 1, 1))))
-            && preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/', $word)) {
+            && preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/s', $word)) {
             return ["=", $word];
         } else if ($ch === "#"
                    && $defkw === "") {
             return ["#", substr($word, 1)];
-        } else if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]")((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/', $word, $m)) {
+        } else if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]")((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/s', $word, $m)) {
             return [$m[1], $m[2]];
         } else {
             return ["", $word];
         }
     }
 
+    /** @return list<string> */
     private function _qt_fields() {
         if ($this->_qt === "n") {
             return $this->user->can_view_some_authors() ? ["ti", "ab", "au"] : ["ti", "ab"];
@@ -2147,7 +2155,7 @@ class PaperSearch {
         if ($wordbrk[0] === "=") {
             // paper numbers
             $st = new PaperID_SearchTerm;
-            while (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\s*,?\s*(.*)\z/', $word, $m)) {
+            while (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
                 $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
                 $st->add_range(intval($m[1]), intval($m[2]));
                 $word = $m[3];
@@ -2203,6 +2211,8 @@ class PaperSearch {
         return SearchTerm::combine("or", $qt);
     }
 
+    /** @param string $str
+     * @return string */
     static function escape_word($str) {
         $pos = SearchSplitter::span_balanced_parens($str);
         if ($pos === strlen($str)) {
@@ -2212,6 +2222,7 @@ class PaperSearch {
         }
     }
 
+    /** @return ?SearchOperator */
     static private function _shift_keyword(SearchSplitter $splitter, $curqe) {
         if (!$splitter->match('/\G(?:[-+!()]|(?:AND|and|OR|or|NOT|not|XOR|xor|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $m)) {
             return null;
@@ -2229,6 +2240,7 @@ class PaperSearch {
         return $op;
     }
 
+    /** @return string */
     static private function _shift_word(SearchSplitter $splitter, Conf $conf) {
         if (($t = $splitter->shift_keyword()) !== "") {
             $kwx = $t[0] === '"' ? substr($t, 1, -2) : substr($t, 0, -1);
@@ -2279,7 +2291,7 @@ class PaperSearch {
                 }
                 // Search like "ti:(foo OR bar)" adds a default keyword.
                 if ($word[strlen($word) - 1] === ":"
-                    && preg_match('/\A(?:[-_.a-zA-Z0-9]+:|"[^"]+":)\z/', $word)
+                    && preg_match('/\A(?:[-_.a-zA-Z0-9]+:|"[^"]+":)\z/s', $word)
                     && $splitter->starts_with("(")) {
                     $next_defkw = [substr($word, 0, strlen($word) - 1), $pos1];
                 } else {

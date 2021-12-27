@@ -143,7 +143,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return null;
             }
         } else {
-            $re = '/\A' . str_replace('\*', '.*', preg_quote($word)) . '\z/i';
+            $re = '/\A' . str_replace('\*', '.*', preg_quote($word)) . '\z/is';
             $r = array_keys(preg_grep($re, $conf->defined_round_list()));
         }
         if ($neg) {
