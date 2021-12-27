@@ -8639,8 +8639,10 @@ function add_pslitem_header() {
         var xt = header_text(l),
             e = xt ? navsidebar.set(id, escape_html(xt), this.parentElement) : null;
         if (e) {
-            toggleClass(e.firstChild, "is-error", hasClass(this, "has-error"));
-            toggleClass(e.firstChild, "is-warning", hasClass(this, "has-warning"));
+            var ise = hasClass(this, "has-error"), isw = hasClass(this, "has-warning");
+            toggleClass(e.firstChild, "is-diagnostic", ise || isw);
+            toggleClass(e.firstChild, "is-error", ise);
+            toggleClass(e.firstChild, "is-warning", isw);
             toggleClass(e, "hidden", hasClass(this.parentElement, "hidden"));
         }
     }

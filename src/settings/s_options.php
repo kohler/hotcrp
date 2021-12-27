@@ -145,7 +145,7 @@ class Options_SettingRenderer {
             $sv->$method($field, "Search too complex for field condition. (Not all search keywords are supported for field conditions.)");
         }
         if ($ps->has_problem()) {
-            $sv->warning_at($field, join("<br>", $ps->problem_texts()));
+            $sv->warning_at($field, $ps->message_html());
         }
     }
     /** @return PaperOption */

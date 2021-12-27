@@ -191,12 +191,12 @@ class PaperValue implements JsonSerializable {
     }
     /** @param string $field
      * @param ?string $msg
-     * @param -4|-3|-2|-1|0|1|2|3 $status */
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status */
     function msg_at($field, $msg, $status) {
         $this->message_set()->msg_at($field, $msg, $status);
     }
     /** @param ?string $msg
-     * @param -4|-3|-2|-1|0|1|2|3 $status */
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status */
     function msg($msg, $status) {
         $this->message_set()->msg_at($this->option->field_key(), $msg, $status);
     }

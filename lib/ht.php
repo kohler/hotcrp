@@ -586,19 +586,17 @@ class Ht {
     /** @param string $s
      * @param int $pos1
      * @param int $pos2
-     * @param ?int $status
-     * @return string */
-    static function mark_substring($s, $pos1, $pos2, $status = 2) {
+     * @return array{string,int,int} */
+    static function make_mark_substring($s, $pos1, $pos2) {
         $pos2 = max($pos1, $pos2);
-        $nl0 = strrpos($s, "\n", strlen($s) - $pos1);
-        if ($nl0 !== false) {
-            $nl1 = strpos($s, "\n", $pos1);
-            $nl1 = $nl1 !== false ? $nl1 : strlen($s);
-            if ($nl1 >= $pos2) {
-                $s = substr($s, $nl0, $nl1 - $nl0);
-                $pos1 -= $nl0;
-                $pos2 -= $nl0;
-            }
+        if ($pos1 > 0
+            && ($nl = strrpos($s, "\n", $pos1 - strlen($s))) !== false) {
+            $s = substr($s, $nl + 1);
+            $pos1 -= $nl + 1;
+            $pos2 -= $nl + 1;
+        }
+        if (($nl = strpos($s, "\n", $pos2)) !== false) {
+            $s = substr($s, 0, $nl);
         }
         if ($pos1 > 24 && strlen($s) > 64) {
             $mp = $pos1 - 17;
@@ -625,6 +623,16 @@ class Ht {
             }
             $s = substr($s, 0, $lpos + $ml) . "…";
         }
+        return [$s, $pos1, $pos2];
+    }
+
+    /** @param string $s
+     * @param int $pos1
+     * @param int $pos2
+     * @param ?int $status
+     * @return string */
+    static function mark_substring($s, $pos1, $pos2, $status = 2) {
+        list($s, $pos1, $pos2) = self::make_mark_substring($s, $pos1, $pos2);
         $h0 = htmlspecialchars(substr($s, 0, $pos1));
         $h1 = htmlspecialchars(substr($s, $pos1, $pos2 - $pos1));
         $h2 = htmlspecialchars(substr($s, $pos2));
@@ -634,6 +642,20 @@ class Ht {
         } else {
             return "{$h0}<span class=\"context-caret-mark {$k}\">{$h1}</span>{$h2}";
         }
+    }
+
+    /** @param string $s
+     * @param int $pos1
+     * @param int $pos2
+     * @param string $indent
+     * @return string */
+    static function mark_substring_text($s, $pos1, $pos2, $indent = "") {
+        list($s, $pos1, $pos2) = self::make_mark_substring($s, $pos1, $pos2);
+        $i0 = str_repeat(" ", UnicodeHelper::utf8_glyphlen(substr($s, 0, $pos1)));
+        $gl1 = UnicodeHelper::utf8_glyphlen(substr($s, $pos1, $pos2 - $pos1));
+        $x = strtr($s, "\n", " ");
+        return "{$indent}{$x}\n{$indent}{$i0}^"
+            . str_repeat("~", max(0, $gl1 - 1)) . "\n";
     }
 
     /** @param string $s
@@ -668,6 +690,13 @@ class Ht {
     }
 
 
+    /** @param string $s
+     * @return bool */
+    static function is_block($s) {
+        return $s[0] === "<"
+            && preg_match('/\A<(?:p|div|form|ul|ol|dl|blockquote|hr)\b/i', $s);
+    }
+
     /** @param list<string>|string $msg
      * @param int|string $status */
     static function msg($msg, $status) {
@@ -691,8 +720,7 @@ class Ht {
         $mx = "";
         foreach (is_array($msg) ? $msg : [$msg] as $x) {
             if ($x !== "") {
-                if ($x[0] === "<"
-                    && preg_match('/\A<(?:p|div|form|ul|ol|dl)\b/i', $x)) {
+                if ($x[0] === "<" && Ht::is_block($x)) {
                     $mx .= $x;
                 } else {
                     $mx .= "<p>{$x}</p>";
@@ -741,11 +769,5 @@ class Ht {
      * @return string */
     static function feedback_html_at($field) {
         return self::$_msgset ? self::$_msgset->feedback_html_at($field) : "";
-    }
-    /** @param string $field
-     * @return string
-     * @deprecated */
-    static function render_feedback_at($field) {
-        return self::feedback_html_at($field);
     }
 }

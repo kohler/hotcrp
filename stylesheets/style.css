@@ -1664,12 +1664,25 @@ label.f-c, .f-i > label {
 	color: #555555;
 	font-size: 92%;
 }
-.feedback {
+.feedback, .feedback-group {
 	font-size: 92%;
 }
-.feedback, .field-d {
+.feedback-list {
+	margin: 0 0 0.3rem;
+	padding-left: 0 !important;
+	list-style-type: none;
+	font-size: 92%;
+}
+.feedback, .feedback-list, .field-d {
 	max-width: 720px;
 	margin-bottom: 0.3rem;
+}
+.feedback-list > li {
+	margin-bottom: 0.3rem;
+}
+.lentry .feedback + input.has-error,
+.lentry .feedback + input.has-warning {
+	margin-top: -0.3rem;
 }
 .f-h {
 	margin-top: 0.25rem;
@@ -1775,6 +1788,7 @@ select.has-warning {
 .context-caret-mark::before {
 	content: "^";
 	position: absolute;
+	left: -0.35em;
 	bottom: -1.85ex;
 	font-weight: bold;
 }
@@ -2955,12 +2969,12 @@ a.badge:active {
 	margin-top: 0.5rem;
 	font-style: italic;
 }
-.pslitem > .is-error:before, .feedback.is-error:before,
-.pslitem > .is-warning:before, .feedback.is-warning:before,
-.pslitem > .is-success:before, .feedback.is-success:before,
-.pslitem > .is-note:before, .feedback.is-note:before,
-.pslitem > .is-warning-note:before, .feedback.is-warning-note:before,
-.pslitem > .is-urgent-note:before, .feedback.is-urgent-note:before {
+.is-diagnostic.is-error:before, .feedback.is-error:before,
+.is-diagnostic.is-warning:before, .feedback.is-warning:before,
+.is-diagnostic.is-success:before, .feedback.is-success:before,
+.is-diagnostic.is-note:before, .feedback.is-note:before,
+.is-diagnostic.is-warning-note:before, .feedback.is-warning-note:before,
+.is-diagnostic.is-urgent-note:before, .feedback.is-urgent-note:before {
 	display: inline-block;
 	vertical-align: -0.1em;
 	padding-right: 0.2em;
@@ -2974,22 +2988,28 @@ a.badge:active {
 	width: 0.9em;
 	height: 0.9em;
 }
-.pslitem > .is-error:before, .feedback.is-error:before, .error-mark {
+.is-diagnostic.is-error:before, .feedback.is-error:before,
+.error-mark {
 	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle style='fill:none;stroke:%23e00;stroke-width:2.5px' cx='16' cy='16' r='14.5' /%3E%3Cpath d='M21.1 8.3L23.6 10.9L18.5 15.9L23.6 21L21.1 23.6L16 18.5L10.9 23.6L8.4 21L13.5 15.9L8.4 10.9L10.9 8.3L16 13.4Z' style='fill:%23e00' /%3E%3C/svg%3E");
 }
-.pslitem > .is-warning:before, .feedback.is-warning:before, .warning-mark {
+.is-diagnostic.is-warning:before, .feedback.is-warning:before,
+.warning-mark {
 	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle style='fill:none;stroke-width:2.5px;stroke:%23c07700' cx='16' cy='16' r='14.5' /%3E%3Ccircle style='fill:%23c07700' cx='16' cy='23' r='2.5' /%3E%3Cpolygon style='fill:%23c07700' points='15 19 13.5 6.5 18.5 6.5 17 19' /%3E%3C/svg%3E");
 }
-.feedback.is-success:before, .success-mark {
+.is-diagnostic.is-success:before, .feedback.is-success:before,
+.success-mark {
 	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle style='fill:none;stroke-width:2.5px;stroke:%2300bb00' cx='16' cy='16' r='14.5' /%3E%3Cpolygon style='fill:%2300bb00' points='6 18 8.5 15 13.5 20 22 8.5 25 11 14 25' /%3E%3C/svg%3E");
 }
-.feedback.is-note:before, .note-mark {
+.is-diagnostic.is-note:before, .feedback.is-note:before,
+.note-mark {
 	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14.5' fill='none' stroke-width='2.5' stroke='%23337'/%3E%3Cpath d='M7 17.8v-3.6l13.5.3L14 9l3-3 9 10-9 10-3-3 6.5-5.5z' fill='%23337'/%3E%3C/svg%3E");
 }
-.feedback.is-urgent-note:before, .urgent-note-mark {
+.is-diagnostic.is-urgent-note:before, .feedback.is-urgent-note:before,
+.urgent-note-mark {
 	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14.5' fill='none' stroke-width='2.5' stroke='%23e00'/%3E%3Cpath d='M7 17.8v-3.6l13.5.3L14 9l3-3 9 10-9 10-3-3 6.5-5.5z' fill='%23e00'/%3E%3C/svg%3E");
 }
-.feedback.is-warning-note:before, .warning-note-mark {
+.is-diagnostic.is-warning-note:before, .feedback.is-warning-note:before,
+.warning-note-mark {
 	content: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='14.5' fill='none' stroke-width='2.5' stroke='%23c07700'/%3E%3Cpath d='M7 17.8v-3.6l13.5.3L14 9l3-3 9 10-9 10-3-3 6.5-5.5z' fill='%23c07700'/%3E%3C/svg%3E");
 }
 

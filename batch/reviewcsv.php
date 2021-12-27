@@ -264,8 +264,8 @@ if (!in_array($t, PaperSearch::viewable_limits($fcsv->user, $t))) {
 }
 
 $search = new PaperSearch($fcsv->user, ["q" => join(" ", $arg["_"]), "t" => $t]);
-foreach ($search->problem_texts() as $w) {
-    fwrite(STDERR, "$w\n");
+if ($search->has_problem()) {
+    fwrite(STDERR, $search->message_text());
 }
 
 $pset = $Conf->paper_set(["paperId" => $search->paper_ids()]);

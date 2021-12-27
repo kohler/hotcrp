@@ -582,7 +582,7 @@ function maybe_user($email) {
     return Conf::$main->user_by_email($email);
 }
 
-function xassert_paper_status(PaperStatus $ps, $maxstatus = MessageSet::INFO) {
+function xassert_paper_status(PaperStatus $ps, $maxstatus = MessageSet::PLAIN) {
     if (!xassert($ps->problem_status() <= $maxstatus)) {
         foreach ($ps->problem_list() as $mx) {
             error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));
@@ -590,7 +590,7 @@ function xassert_paper_status(PaperStatus $ps, $maxstatus = MessageSet::INFO) {
     }
 }
 
-function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = MessageSet::INFO) {
+function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = MessageSet::PLAIN) {
     xassert($ps->save_status() !== 0);
     if ($ps->problem_status() > $maxstatus) {
         $asserted = false;

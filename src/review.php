@@ -1299,11 +1299,9 @@ $blind\n";
     </tr></table></div>\n";
 
         if (!empty($rrow->message_list)) {
-            echo '<div class="revcard-feedback">';
-            foreach ($rrow->message_list ?? [] as $mx) {
-                echo MessageSet::feedback_p_html($mx->message, $mx->status);
-            }
-            echo '</div>';
+            echo '<div class="revcard-feedback">',
+                MessageSet::feedback_html($rrow->message_list ?? []),
+                '</div>';
         }
 
         // review card
@@ -2563,7 +2561,7 @@ class ReviewValues extends MessageSet {
         if (count($pids) > 1) {
             $t = '<span class="has-hotlist" data-hotlist="p/s/' . join("+", $pids) . '">' . $t . '</span>';
         }
-        $this->msg_at(null, $t, self::INFO);
+        $this->msg_at(null, $t, MessageSet::PLAIN);
     }
 
     private function _single_approval_state() {

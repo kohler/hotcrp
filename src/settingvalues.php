@@ -1276,21 +1276,14 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $field
-     * @param ?string $classes
      * @return string */
-    function feedback_at($field, $classes = null) {
-        $t = "";
+    function feedback_at($field) {
         $fname = $field instanceof Si ? $field->name : $field;
-        foreach ($this->message_list_at($fname) as $mx) {
-            $class = $classes ? "feedback $classes" : "feedback";
-            $t .= '<div class="' . MessageSet::status_class($mx->status, $class, "is-") . '">' . $mx->message . "</div>";
-        }
-        return $t;
+        return $this->feedback_html_at($fname);
     }
-    /** @param string $field
-     * @param ?string $classes */
-    function echo_feedback_at($field, $classes = null) {
-        echo $this->feedback_at($field, $classes);
+    /** @param string $field */
+    function echo_feedback_at($field) {
+        echo $this->feedback_at($field);
     }
 
     /** @param ?array<string,mixed> $js

@@ -409,7 +409,7 @@ class PaperTable {
     }
     /** @param string $field
      * @param string $msg
-     * @param -4|-3|-2|-1|0|1|2|3 $status
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
         $this->edit_status = $this->edit_status ?? new MessageSet;
@@ -568,11 +568,7 @@ class PaperTable {
     /** @param string $field
      * @return string */
     function messages_at($field) {
-        $t = "";
-        foreach ($this->edit_status ? $this->edit_status->message_list_at($field) : [] as $mx) {
-            $t .= '<p class="' . MessageSet::status_class($mx->status, "feedback", "is-") . '">' . $mx->message . '</p>';
-        }
-        return $t;
+        return $this->edit_status ? $this->edit_status->feedback_html_at($field) : "";
     }
 
     /** @param PaperOption $opt
@@ -1683,7 +1679,7 @@ class PaperTable {
             } else {
                 $t = "This submission is under review and can’t be changed or withdrawn, but you can change its contacts.";
             }
-            $this->_main_message($t . $this->_deadline_override_message(), MessageSet::NOTE);
+            $this->_main_message($t . $this->_deadline_override_message(), MessageSet::MARKED_NOTE);
         }
     }
 
@@ -1697,7 +1693,7 @@ class PaperTable {
                    && !$this->prow->can_author_view_decision()) {
             $this->_main_message("The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 1);
         } else {
-            $this->_main_message("You aren’t a contact for this submission, but as an administrator you can still make changes.", MessageSet::NOTE);
+            $this->_main_message("You aren’t a contact for this submission, but as an administrator you can still make changes.", MessageSet::MARKED_NOTE);
         }
         if ($this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_edit_paper", $this->prow)
             && ($v = $this->conf->_i("submit"))) {
@@ -2682,9 +2678,9 @@ class PaperTable {
         // administrator?
         if (!$this->user->is_my_review($rrow)) {
             if ($this->user->is_owned_review($rrow)) {
-                $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but you can make changes since you requested it.", MessageSet::NOTE);
+                $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but you can make changes since you requested it.", MessageSet::MARKED_NOTE);
             } else if ($this->admin) {
-                $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but as an administrator you can still make changes.", MessageSet::NOTE);
+                $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but as an administrator you can still make changes.", MessageSet::MARKED_NOTE);
             }
         }
 
@@ -2714,7 +2710,7 @@ class PaperTable {
             } else {
                 $t = "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
             }
-            $rrow->message_list[] = new MessageItem(null, $t, MessageSet::NOTE);
+            $rrow->message_list[] = new MessageItem(null, $t, MessageSet::MARKED_NOTE);
         }
 
         return $editable;

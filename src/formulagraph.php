@@ -360,8 +360,8 @@ class FormulaGraph extends MessageSet {
         foreach ($psearch->paper_ids() as $pid) {
             $this->papermap[$pid][] = $qn;
         }
-        foreach ($psearch->problem_texts() as $w) {
-            $this->error_at($fieldname, $w);
+        if ($psearch->has_problem()) {
+            $this->error_at($fieldname, $psearch->message_html());
         }
         $this->searches[] = $q !== "" ? $psearch : null;
     }

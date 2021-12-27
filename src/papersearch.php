@@ -1865,10 +1865,6 @@ class PaperSearch {
     function problem_status() {
         return $this->_ms->problem_status();
     }
-    /** @return list<MessageItem> */
-    function message_list() {
-        return $this->_ms->message_list();
-    }
 
     /** @param string $message
      * @return MessageItem */
@@ -1888,26 +1884,20 @@ class PaperSearch {
 
     /** @return string */
     function message_html() {
-        if ($this->_ms->has_messages()) {
-            $t = [];
-            if ($this->_ms->has_problem()) {
-                $t[] = '<p>Search completed with warnings:</p>';
+        return MessageSet::feedback_html($this->_ms->message_list(), $this->q);
+    }
+
+    /** @return string */
+    function message_text() {
+        $t = "";
+        foreach ($this->_ms->message_list() as $mi) {
+            $t .= ($mi->status === MessageSet::INFORM ? "    " : "")
+                . $mi->message_as(0) . "\n";
+            if ($mi->pos1 || $mi->pos2) {
+                $t .= Ht::mark_substring_text($this->q, $mi->pos1, $mi->pos2, "    ");
             }
-            $t[] = '<ul class="x">';
-            foreach ($this->_ms->message_list() as $mi) {
-                $msg = $mi->message_as(5);
-                if ($mi->status === MessageSet::INFO) {
-                    $msg = "<div class=\"msg-context\">{$msg}</div>";
-                }
-                if ($mi->pos1 || $mi->pos2) {
-                    $msg .= "<div class=\"msg-context\">" . Ht::mark_substring($this->q, $mi->pos1, $mi->pos2, $mi->status) . "</div>";
-                }
-                $t[] = $msg;
-            }
-            return join("", $t) . "</ul>";
-        } else {
-            return "";
         }
+        return $t;
     }
 
     /** @return string */

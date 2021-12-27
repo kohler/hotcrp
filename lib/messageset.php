@@ -65,14 +65,20 @@ class MessageSet {
     /** @var bool */
     private $want_ftext = false;
 
+    const INFORM = -5;
     const WARNING_NOTE = -4;
     const SUCCESS = -3;
     const URGENT_NOTE = -2;
-    const NOTE = -1;
-    const INFO = 0;
+    const MARKED_NOTE = -1;
+    const PLAIN = 0;
     const WARNING = 1;
     const ERROR = 2;
     const ESTOP = 3;
+
+    /** @deprecated */
+    const INFO = 0;
+    /** @deprecated */
+    const NOTE = -2;
 
     function __construct() {
         $this->clear_messages();
@@ -164,7 +170,7 @@ class MessageSet {
 
     /** @param ?string $field
      * @param false|null|string $msg
-     * @param -4|-3|-2|-1|0|1|2|3 $status
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
         if ($field === false || $field === "") {
@@ -203,12 +209,6 @@ class MessageSet {
     function problem_at($field, $msg, $default_status = 1) {
         $status = $this->pstatus_at[$field] ?? $default_status ?? 1;
         return $this->msg_at($field, $msg, $status);
-    }
-    /** @param ?string $field
-     * @param false|null|string $msg
-     * @return MessageItem */
-    function info_at($field, $msg) {
-        return $this->msg_at($field, $msg, self::INFO);
     }
 
     /** @return bool */
@@ -306,7 +306,7 @@ class MessageSet {
             $sclass = "warning";
         } else if ($status === self::SUCCESS) {
             $sclass = "success";
-        } else if ($status === self::NOTE) {
+        } else if ($status === self::MARKED_NOTE) {
             $sclass = "note";
         } else if ($status === self::URGENT_NOTE) {
             $sclass = "urgent-note";
@@ -421,33 +421,33 @@ class MessageSet {
         return self::list_texts($this->message_list_at($field));
     }
 
-    /** @param string $message
-     * @param int $status
+    /** @param iterable<MessageItem> $message_list
+     * @param ?string $context
      * @return string */
-    static function feedback_p_html($message, $status) {
-        $k = self::status_class($status, "feedback", "is-");
-        return "<p class=\"{$k}\">{$message}</p>";
-    }
-    /** @param string $field
-     * @return string */
-    function feedback_html_at($field) {
-        $t = "";
-        foreach ($this->message_list_at($field) as $mx) {
-            $t .= self::feedback_p_html($mx->message, $mx->status);
+    static function feedback_html($message_list, $context = null) {
+        $t = [];
+        foreach ($message_list as $mx) {
+            if ($mx->status !== self::INFORM || empty($t)) {
+                $k = self::status_class($mx->status, "", "is-");
+                $t[] = "<li><div class=\"is-diagnostic {$k}\">" . $mx->message_as(5) . "</div>";
+            } else {
+                $t[count($t) - 1] = "<div class=\"msg-context\">" . $mx->message_as(5) . "</div>";
+            }
+            if (($mx->pos1 || $mx->pos2) && $context !== null) {
+                $t[] = "<div class=\"msg-context\">" . Ht::mark_substring($context, $mx->pos1, $mx->pos2, $mx->status) . "</div>";
+            }
+            $t[] = "</li>";
         }
-        return $t;
-    }
-    /** @param string $message
-     * @param int $status
-     * @return string
-     * @deprecated */
-    static function render_feedback_p($message, $status) {
-        return self::feedback_p_html($message, $status);
+        if (!empty($t)) {
+            return "<ul class=\"feedback-list\">" . join("", $t) . "</li></ul>";
+        } else {
+            return "";
+        }
     }
     /** @param string $field
-     * @return string
-     * @deprecated */
-    function render_feedback_at($field) {
-        return self::feedback_html_at($field);
+     * @param ?string $context
+     * @return string */
+    function feedback_html_at($field, $context = null) {
+        return self::feedback_html($this->message_list_at($field), $context);
     }
 }

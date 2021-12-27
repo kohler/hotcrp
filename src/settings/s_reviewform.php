@@ -151,7 +151,7 @@ class ReviewForm_SettingParser extends SettingParser {
     static function validate_condition(SettingValues $sv, $expr, $xpos, $is_error, ReviewForm_SettingParser $self, $gj) {
         $ps = new PaperSearch($sv->conf->root_user(), $expr);
         if ($ps->has_problem()) {
-            $sv->warning_at("rf_ecs_{$xpos}", join("<br>", $ps->problem_texts()));
+            $sv->warning_at("rf_ecs_{$xpos}", $ps->message_html());
             $sv->warning_at("rf_ec_{$xpos}");
         }
         $round_list = [];

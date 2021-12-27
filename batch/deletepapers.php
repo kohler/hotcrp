@@ -49,9 +49,7 @@ if (($pids = $search->paper_ids())) {
     }
     exit($ndeleted ? 0 : 1);
 } else if ($search->has_problem()) {
-    foreach ($search->problem_texts() as $text) {
-        fwrite(STDERR, htmlspecialchars_decode($text) . "\n");
-    }
+    fwrite(STDERR, $search->message_text());
     exit(1);
 } else {
     fwrite(STDERR, "No matching papers.\n");
