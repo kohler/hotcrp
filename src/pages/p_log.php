@@ -35,8 +35,8 @@ class Log_Page {
         $search = new PaperSearch($this->viewer, ["t" => "all", "q" => $query]);
         $search->set_allow_deleted(true);
         $pids = $search->paper_ids();
-        foreach ($search->problem_texts() as $w) {
-            Ht::warning_at($field, $w);
+        if ($search->has_messages()) {
+            Ht::warning_at($field, $search->message_html());
         }
         if (!empty($pids)) {
             $w = [];

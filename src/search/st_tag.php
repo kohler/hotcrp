@@ -76,7 +76,8 @@ class Tag_SearchTerm extends SearchTerm {
             if (!$negated && ($tagpat = $value->tag_patterns())) {
                 $term->set_float("tags", $tagpat);
                 if ($sword->kwdef->sorting) {
-                    $term->set_float("view", ["sort:" . ($revsort ? "-#" : "#") . $tagpat[0]]);
+                    $revanno = $revsort ? "-" : "";
+                    $term->add_view_anno("sort:{$revanno}#{$tagpat[0]}", $sword);
                 }
             }
             if (!$negated && $sword->kwdef->is_hash && $value->single_tag()) {
@@ -87,7 +88,7 @@ class Tag_SearchTerm extends SearchTerm {
 
         // return
         foreach ($value->error_texts() as $e) {
-            $srch->warning($e);
+            $srch->lwarning($sword, $e);
         }
         return SearchTerm::combine("or", $allterms)->negate_if($negated);
     }

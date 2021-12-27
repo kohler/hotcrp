@@ -12,7 +12,7 @@ class EditFinal_SearchTerm extends SearchTerm {
         } else if (strcasecmp($word, "no") === 0) {
             return (new EditFinal_SearchTerm)->negate();
         } else {
-            $srch->warning("Only “editfinal:yes” and “editfinal:no” allowed.");
+            $srch->lwarning($sword, "Only “editfinal:yes” and “editfinal:no” are allowed");
             return new False_SearchTerm;
         }
     }

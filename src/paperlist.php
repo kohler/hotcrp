@@ -230,10 +230,10 @@ class PaperList implements XtContext {
     private $_vcolumns = [];
     /** @var array<string,list<PaperColumn>> */
     private $_columns_by_name;
-    /** @var array<string,list<string>> */
-    private $_column_errors_by_name = [];
     /** @var ?string */
-    private $_current_find_column;
+    private $_finding_column;
+    /** @var ?list<MessageItem> */
+    private $_finding_column_errors;
 
     /** @var list<PaperColumn> */
     private $_sortcol = [];
@@ -268,8 +268,6 @@ class PaperList implements XtContext {
     public $count; // also exported to columns access: 1 more than row index
     /** @var ?array<string,bool> */
     private $_has;
-    /** @var ?MessageSet */
-    private $_ms;
 
     /** @var bool */
     static public $include_stash = true;
@@ -437,8 +435,7 @@ class PaperList implements XtContext {
 
     /** @return MessageSet */
     function message_set() {
-        $this->_ms = $this->_ms ?? new MessageSet;
-        return $this->_ms;
+        return $this->search->message_set();
     }
 
     /** @param string $name */
@@ -548,14 +545,17 @@ class PaperList implements XtContext {
 
     /** @param string $name
      * @param ?list<string> $decorations
-     * @param int $sort_subset */
-    private function _add_sorter($name, $decorations, $sort_subset) {
+     * @param int $sort_subset
+     * @param ?int $pos1
+     * @param ?int $pos2 */
+    private function _add_sorter($name, $decorations, $sort_subset, $pos1, $pos2) {
         assert(!$this->_sortcol_fixed);
         // Do not use ensure_columns_by_name(), because decorations for sorters
         // might differ.
         $old_context = $this->conf->xt_swap_context($this);
         $fs = $this->conf->paper_columns($name, $this->user);
         $this->conf->xt_swap_context($old_context);
+        $mi = null;
         if (count($fs) === 1) {
             $col = PaperColumn::make($this->conf, $fs[0], $decorations);
             if ($col->prepare($this, PaperColumn::PREP_SORT)
@@ -563,7 +563,7 @@ class PaperList implements XtContext {
                 $col->sort_subset = $sort_subset;
                 $this->_sortcol[] = $col;
             } else {
-                $this->search->warning("“" . htmlspecialchars($name) . "” cannot be sorted.");
+                $mi = $this->search->warning("‘" . htmlspecialchars($name) . "’ cannot be sorted");
             }
         } else if (empty($fs)) {
             if ($this->user->can_view_tags(null)
@@ -571,16 +571,20 @@ class PaperList implements XtContext {
                 && ($tag = $tagger->check($name))
                 && ($ps = new PaperSearch($this->user, ["q" => "#$tag", "t" => "vis"]))
                 && $ps->paper_ids()) {
-                $this->search->warning("“" . htmlspecialchars($name) . "” cannot be sorted. Did you mean “sort:#" . htmlspecialchars($name) . "”?");
+                $mi = $this->search->warning("‘" . htmlspecialchars($name) . "’ cannot be sorted; did you mean “sort:#" . htmlspecialchars($name) . "”?");
             } else {
-                $this->search->warning("“" . htmlspecialchars($name) . "” cannot be sorted.");
+                $mi = $this->search->warning("‘" . htmlspecialchars($name) . "’ cannot be sorted");
             }
         } else {
-            $this->search->warning("Sort “" . htmlspecialchars($name) . "” matches more than one field, ignoring.");
+            $mi = $this->search->warning("Sort ‘" . htmlspecialchars($name) . "’ is ambiguous");
+        }
+        if ($mi) {
+            $mi->pos1 = $pos1;
+            $mi->pos2 = $pos2;
         }
     }
 
-    /** @param list<string> $groups
+    /** @param list<string>|list<array{string,?int,?int,?int}> $groups
      * @param ?int $origin
      * @param int $sort_subset */
     private function set_view_list($groups, $origin, $sort_subset) {
@@ -591,7 +595,7 @@ class PaperList implements XtContext {
             }
             if (str_ends_with($akd[0], "sort")
                 && ($akd[1] !== "id" || !empty($akd[1]) || $this->_sortcol)) {
-                $this->_add_sorter($akd[1], $akd[2], $sort_subset);
+                $this->_add_sorter($akd[1], $akd[2], $sort_subset, $akd[3], $akd[4]);
             }
         }
     }
@@ -599,7 +603,7 @@ class PaperList implements XtContext {
     /** @param ?string $str
      * @param ?int $origin */
     function parse_view($str, $origin = null) {
-        if (($str ?? "") !== "") {
+        if ($str !== null && $str !== "") {
             $this->set_view_list(SearchSplitter::split_balanced_parens($str), $origin, -1);
         }
     }
@@ -607,7 +611,7 @@ class PaperList implements XtContext {
     /** @param int $sort_subset */
     private function apply_view_search(SearchTerm $qe, $sort_subset) {
         $nsort = count($this->_sortcol);
-        $this->set_view_list($qe->get_float("view") ?? [], null, $sort_subset);
+        $this->set_view_list($qe->view_anno(), null, $sort_subset);
         if ($nsort === count($this->_sortcol)
             && ($sortcol = $qe->default_sort_column(true, $this->search))
             && $sortcol->prepare($this, PaperColumn::PREP_SORT)) {
@@ -1020,12 +1024,27 @@ class PaperList implements XtContext {
     }
 
 
-    /** @param string $text
-     * @param bool $is_default */
-    function column_error($text, $is_default = false) {
-        if (($name = $this->_current_find_column)
-            && (!$is_default || empty($this->_column_errors_by_name[$name]))) {
-            $this->_column_errors_by_name[$name][] = $text;
+    /** @param string|MessageItem $message */
+    function column_error($message) {
+        if (($name = $this->_finding_column)
+            && $this->view_origin($name) >= self::VIEWORIGIN_EXPLICIT) {
+            if (is_string($message)) {
+                $mi = new MessageItem($name, $message, MessageSet::WARNING);
+            } else {
+                $mi = $message;
+            }
+            if (($pos = $this->search->term()->view_anno_pos($name))) {
+                if ($mi->pos1 !== null) {
+                    $mi->pos1 += $pos[1];
+                    $mi->pos2 += $pos[1];
+                } else {
+                    $mi->pos1 = $pos[0];
+                    $mi->pos2 = $pos[2];
+                }
+            } else {
+                $mi->pos1 = $mi->pos2 = null;
+            }
+            $this->_finding_column_errors[] = $mi;
         }
     }
 
@@ -1033,7 +1052,7 @@ class PaperList implements XtContext {
      * @return list<PaperColumn> */
     private function ensure_columns_by_name($name) {
         if (!array_key_exists($name, $this->_columns_by_name)) {
-            $this->_current_find_column = $name;
+            $this->_finding_column = $name;
             $nfs = [];
             foreach ($this->conf->paper_columns($name, $this->user) as $fdef) {
                 $decorations = $this->_view_decorations[$fdef->name]
@@ -1047,6 +1066,15 @@ class PaperList implements XtContext {
                     $nfs = array_merge($nfs, $this->_columns_by_name[$fdef->name]);
                 }
             }
+            if (empty($nfs) && $this->view_origin($name) >= self::VIEWORIGIN_EXPLICIT) {
+                if (empty($this->_finding_column_errors)) {
+                    $this->column_error("Field ‘" . htmlspecialchars($name) . "’ not found");
+                }
+                foreach ($this->_finding_column_errors as $mi) {
+                    $this->message_set()->add($mi);
+                }
+            }
+            $this->_finding_column = $this->_finding_column_errors = null;
             $this->_columns_by_name[$name] = $nfs;
         }
         return $this->_columns_by_name[$name];

@@ -592,7 +592,7 @@ class Review_SearchTerm extends SearchTerm {
         if (($qr = self::parse_components($rsm, self::split($sword->qword), 0, $srch))) {
             return $qr;
         } else {
-            $srch->warning($sword->source_html() . ": Invalid reviewer search.");
+            $srch->lwarning($sword, "Invalid reviewer search");
             return new False_SearchTerm;
         }
     }
@@ -603,14 +603,14 @@ class Review_SearchTerm extends SearchTerm {
         $components = self::split($sword->qword);
         if (empty($components)
             || ($round_list = ReviewSearchMatcher::parse_round($components[0], $srch->conf)) === null) {
-            $srch->warning($sword->source_html() . ": No such round.");
+            $srch->lwarning($sword, "Review round not found");
             return new False_SearchTerm;
         }
         $rsm->apply_round_list($round_list);
         if (($qr = self::parse_components($rsm, $components, 1, $srch))) {
             return $qr;
         } else {
-            $srch->warning($sword->source_html() . ": Invalid round search.");
+            $srch->lwarning($sword, "Invalid review round search");
             return new False_SearchTerm;
         }
     }
@@ -626,7 +626,7 @@ class Review_SearchTerm extends SearchTerm {
                 return $qr;
             }
         }
-        $srch->warning($sword->source_html() . ": Invalid rating search.");
+        $srch->lwarning($sword, "Invalid rating search");
         return new False_SearchTerm;
     }
 
@@ -679,7 +679,7 @@ class Review_SearchTerm extends SearchTerm {
     }
     private static function impossible_score_match(ReviewField $f, SearchWord $sword, PaperSearch $srch) {
         $r = $f->full_score_range();
-        $srch->warning($sword->source_html() . ": {$f->name_html} scores range from {$r[0]} to {$r[1]}.");
+        $srch->lwarning($sword, "{$f->name_html} scores range from {$r[0]} to {$r[1]}");
         return new False_SearchTerm;
     }
     /** @return int|false */

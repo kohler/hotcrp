@@ -258,11 +258,10 @@ class Search_Page {
             && $this->user->is_actas_user()) {
             $this->pl->message_set()->warning_at(null, $this->conf->_("Submissions %#Ns are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#$n"; }, array_keys($this->user->hidden_papers))));
         }
-        if ($search->has_problem()
-            || $this->pl->message_set()->has_messages()) {
-            echo '<div class="msgs-wide">';
-            $this->conf->warnMsg(array_merge($search->problem_texts(), $this->pl->message_set()->message_texts()), true);
-            echo '</div>';
+        if ($search->has_messages()) {
+            echo '<div class="msgs-wide">',
+                Ht::msg($search->message_html(), min($search->problem_status(), MessageSet::WARNING)),
+                '</div>';
         }
 
         echo "<div class=\"maintabsep\"></div>\n\n<div class=\"pltable-fullw-container\">";

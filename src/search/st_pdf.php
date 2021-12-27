@@ -51,7 +51,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
             $errf = $cf->known_fields(DTYPE_FINAL);
         }
         if (empty($errf)) {
-            $srch->warning($sword->source_html() . ": Format checking is not enabled.");
+            $srch->lwarning($sword, "Format checking is not enabled");
             return null;
         } else if ($lword === "good" || $lword === "ok") {
             return new PaperPDF_SearchTerm($srch, $dtype, true, false);
@@ -60,7 +60,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         } else if (in_array($lword, $errf) || $lword === "error") {
             return new PaperPDF_SearchTerm($srch, $dtype, true, true, $lword);
         } else {
-            $srch->warning($sword->source_html() . ": “" . htmlspecialchars($word) . "” is not a valid error type for format checking.");
+            $srch->lwarning($sword, "Format error not found");
             return null;
         }
     }
@@ -161,7 +161,7 @@ class Pages_SearchTerm extends SearchTerm {
         if ($cm->ok()) {
             return new Pages_SearchTerm($srch, new CountMatcher($word));
         } else {
-            $srch->warning($sword->source_html() . ": Expects a page number comparison.");
+            $srch->lwarning($sword, "Page number comparison expected");
             return null;
         }
     }

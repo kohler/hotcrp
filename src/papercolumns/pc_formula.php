@@ -226,7 +226,9 @@ class Formula_PaperColumnFactory {
                 return [Formula_PaperColumnFactory::make($ff, $xfj)];
             }
         } else if ($ff && $want_error) {
-            PaperColumn::column_error($user, $ff->error_html());
+            foreach ($ff->message_list() as $mi) {
+                PaperColumn::column_error($user, $mi);
+            }
         }
         return null;
     }

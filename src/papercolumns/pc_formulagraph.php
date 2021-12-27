@@ -48,7 +48,9 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     static function expand($name, Contact $user, $xfj, $m) {
         $formula = new Formula($m[1], Formula::ALLOW_INDEXED);
         if (!$formula->check($user)) {
-            PaperColumn::column_error($user, $formula->error_html());
+            foreach ($formula->message_list() as $mi) {
+                PaperColumn::column_error($user, $mi);
+            }
             return null;
         } else if ($formula->result_format() !== Fexpr::FREVIEWFIELD) {
             PaperColumn::column_error($user, "Formula of type " . $formula->result_format_description() . " can’t be used in graphs, review field value expected");

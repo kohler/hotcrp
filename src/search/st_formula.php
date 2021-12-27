@@ -23,7 +23,7 @@ class Formula_SearchTerm extends SearchTerm {
             $formula = new Formula($word, $is_graph ? Formula::ALLOW_INDEXED : 0);
         }
         if (!$formula->check($srch->user)) {
-            $srch->warning("Formula error: " . $formula->error_html());
+            $srch->warning($formula->error_html());
             $formula = null;
         }
         return $formula;
@@ -36,7 +36,7 @@ class Formula_SearchTerm extends SearchTerm {
     }
     static function parse_graph($word, SearchWord $sword, PaperSearch $srch) {
         if (($formula = self::read_formula($word, $sword->quoted, true, $srch))) {
-            return SearchTerm::make_float(["view" => ["show:graph($word)"]]);
+            return (new True_SearchTerm)->add_view_anno("show:graph($word)", $sword);
         }
         return null;
     }

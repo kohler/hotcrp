@@ -12,7 +12,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
         $fval = PaperSearch::status_field_matcher($srch->conf, $word, $sword->quoted);
         if (is_array($fval[1]) && empty($fval[1])) {
-            $srch->warning("“" . htmlspecialchars($word) . "” doesn’t match a decision or status.");
+            $srch->lwarning($sword, "Submission status ‘" . htmlspecialchars($word) . "’ not found");
             $fval[1][] = -10000000;
         }
         if ($fval[0] === "outcome") {
@@ -20,7 +20,7 @@ class PaperStatus_SearchTerm extends SearchTerm {
         } else {
             if ($srch->limit_submitted()
                 && ($fval[0] !== "timeSubmitted" || $fval[1] !== ">0")) {
-                $srch->warning($sword->source_html() . ": Matches nothing because this search is limited to submitted papers.");
+                $srch->lwarning($sword, "Matches nothing because this search is limited to completed submissions");
             }
             return new PaperStatus_SearchTerm($fval);
         }

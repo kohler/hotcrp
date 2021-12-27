@@ -39,12 +39,11 @@ class PaperColumn extends Column {
         }
         return $pc;
     }
-    /** @param string $msg
-     * @param bool $is_default */
-    static function column_error(Contact $user, $msg, $is_default = false) {
+    /** @param string|MessageItem $msg */
+    static function column_error(Contact $user, $msg) {
         $c = $user->conf->xt_context;
         if ($c instanceof PaperList) {
-            $c->column_error($msg, $is_default);
+            $c->column_error($msg);
         }
     }
 

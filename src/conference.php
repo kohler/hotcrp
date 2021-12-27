@@ -228,8 +228,6 @@ class Conf {
     /** @var ?XtContext */
     public $xt_context;
     public $_xt_allow_callback;
-    /** @var int */
-    private $_xt_checks = 0;
 
     /** @var ?array<string,list<object>> */
     private $_formula_functions;
@@ -1312,7 +1310,6 @@ class Conf {
                         error_log("{$this->dbname}: deprecated extension for `{$iname}`\n" . debug_string_backtrace());
                     }
                     if (!isset($xt->alias) || !is_string($xt->alias) || $noalias) {
-                        ++$this->_xt_checks;
                         if ($this->xt_checkf($xt, $user)) {
                             return $xt;
                         }
@@ -5150,16 +5147,8 @@ class Conf {
         if ($name === "" || $name[0] === "?") {
             return [];
         }
-        $nchecks = $this->_xt_checks;
         $uf = $this->xt_search_name($this->paper_column_map(), $name, $user);
         $ufs = $this->xt_search_factories($this->_paper_column_factories, $name, $user, $uf, "i");
-        if (empty($ufs) || $ufs === [null]) {
-            if ($nchecks === $this->_xt_checks) {
-                PaperColumn::column_error($user, "Field ‘" . htmlspecialchars($name) . "’ not found");
-            } else {
-                PaperColumn::column_error($user, "Field ‘" . htmlspecialchars($name) . "’ permission error");
-            }
-        }
         return array_values(array_filter($ufs, "Conf::xt_resolve_require"));
     }
 

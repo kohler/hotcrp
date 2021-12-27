@@ -21,7 +21,7 @@ class Perm_SearchTerm extends SearchTerm {
                    || strcasecmp($word, "author-write-final") === 0) {
             return new Perm_SearchTerm($srch->user, "author-write-final");
         } else {
-            $srch->warning("Unknown permission.");
+            $srch->lwarning($sword, "Permission not found");
             return new False_SearchTerm;
         }
     }
