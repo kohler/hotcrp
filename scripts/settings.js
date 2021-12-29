@@ -47,8 +47,8 @@ handle_ui.on("js-settings-show-property", function () {
 
 handle_ui.on("js-settings-sf-type", function (event) {
     var v = this.value;
-    $(this).closest(".settings-sf").find(".has-optvt-condition").each(function () {
-        toggleClass(this, "hidden", this.getAttribute("data-optvt-condition").split(" ").indexOf(v) < 0);
+    $(this).closest(".settings-sf").find(".has-type-condition").each(function () {
+        toggleClass(this, "hidden", this.getAttribute("data-type-condition").split(" ").indexOf(v) < 0);
     });
 });
 
@@ -96,14 +96,14 @@ function add_dialog() {
             samp = $$("settings-sform-samples").childNodes[opt.value | 0],
             h = $$("settings-sf-new").getAttribute("data-template"),
             next = 1, odiv;
-        while ($$("optn_" + next))
+        while ($$("sf_name_" + next))
             ++next;
         h = h.replace(/_0/g, "_" + next);
         odiv = $(h).appendTo("#settings-sform");
         odiv.find(".need-autogrow").autogrow();
         odiv.find(".need-tooltip").each(tooltip);
         odiv.find(".js-settings-sf-type").val(samp.getAttribute("data-name")).change();
-        $$("optn_" + next).focus();
+        $$("sf_name_" + next).focus();
         settings_sf_positions();
         $d.close();
         event.preventDefault();
@@ -426,9 +426,9 @@ tooltip.add_builder("settings-rf", function (info) {
 
 tooltip.add_builder("settings-sf", function (info) {
     var x = "#settings-sf-caption-choices";
-    if (/^optn/.test(this.name))
+    if (/^sf_name/.test(this.name))
         x = "#settings-sf-caption-name";
-    else if (/^optecs/.test(this.name))
+    else if (/^sf_presenceq/.test(this.name))
         x = "#settings-sf-caption-condition";
     return $.extend({anchor: "h", content: $(x).html(), className: "gray"}, info);
 });

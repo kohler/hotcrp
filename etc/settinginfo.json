@@ -246,6 +246,51 @@
         "type": "string", "storage": "dat.options"
     },
     {
+        "name": "sf_name", "internal": true, "extensible": "word",
+        "group": "subform",
+        "title": "Submission field name"
+    },
+    {
+        "name": "sf_type", "internal": true, "extensible": "word",
+        "group": "subform",
+        "title": "Submission field type", "title_pattern": "‘${req.sf_name_$}’ type"
+    },
+    {
+        "name": "sf_description", "internal": true, "extensible": "word",
+        "group": "subform",
+        "title": "Submission field description", "title_pattern": "‘${req.sf_name_$}’ description"
+    },
+    {
+        "name": "sf_options", "internal": true, "extensible": "word",
+        "group": "subform",
+        "title": "Submission field choices", "title_pattern": "‘${req.sf_name_$}’ choices"
+    },
+    {
+        "name": "sf_required", "internal": true, "extensible": "word",
+        "group": "subform",
+        "title": "Submission field requirement", "title_pattern": "‘${req.sf_name_$}’ requirement"
+    },
+    {
+        "name": "sf_display", "internal": true, "extensible": "word",
+        "group": "subform",
+        "title": "Submission field display", "title_pattern": "‘${req.sf_name_$}’ display"
+    },
+    {
+        "name": "sf_visibility", "internal": true, "extensible": "word",
+        "group": "subform",
+        "title": "Submission field visibility", "title_pattern": "‘${req.sf_name_$}’ visibility"
+    },
+    {
+        "name": "sf_presence", "internal": true, "extensible": "word",
+        "group": "subform",
+        "title": "Submission field presence", "title_pattern": "‘${req.sf_name_$}’ presence"
+    },
+    {
+        "name": "sf_presenceq", "internal": true, "extensible": "word",
+        "group": "subform",
+        "title": "Submission field presence condition", "title_pattern": "‘${req.sf_name_$}’ presence condition"
+    },
+    {
         "name": "options_version", "internal": true,
         "storage": "val.options"
     },
@@ -398,42 +443,42 @@
     {
         "name": "rf_name", "internal": true, "extensible": "word",
         "group": "reviewform",
-        "title": "Field name"
+        "title": "Review field name"
     },
     {
         "name": "rf_description", "internal": true, "extensible": "word",
         "group": "reviewform",
-        "title": "Field description", "title_pattern": "${req.rf_name_$} description"
+        "title": "Review field description", "title_pattern": "${req.rf_name_$} description"
     },
     {
         "name": "rf_options", "internal": true, "extensible": "word",
         "group": "reviewform",
-        "title": "Field choices", "title_pattern": "${req.rf_name_$} choices"
+        "title": "Review field choices", "title_pattern": "${req.rf_name_$} choices"
     },
     {
         "name": "rf_colors", "internal": true, "extensible": "word",
         "group": "reviewform",
-        "title": "Field colors", "title_pattern": "${req.rf_name_$} colors"
+        "title": "Review field colors", "title_pattern": "${req.rf_name_$} colors"
     },
     {
         "name": "rf_required", "internal": true, "extensible": "word",
         "group": "reviewform",
-        "title": "Field requirement", "title_pattern": "${req.rf_name_$} requirement"
+        "title": "Review field requirement", "title_pattern": "${req.rf_name_$} requirement"
     },
     {
         "name": "rf_visibility", "internal": true, "extensible": "word",
         "group": "reviewform",
-        "title": "Field visibility", "title_pattern": "${req.rf_name_$} visibility"
+        "title": "Review field visibility", "title_pattern": "${req.rf_name_$} visibility"
     },
     {
         "name": "rf_ec", "internal": true, "extensible": "word",
         "group": "reviewform",
-        "title": "Field presence", "title_pattern": "${req.rf_name_$} presence"
+        "title": "Review field presence", "title_pattern": "${req.rf_name_$} presence"
     },
     {
         "name": "rf_ecs", "internal": true, "extensible": "word",
         "group": "reviewform",
-        "title": "Field presence condition", "title_pattern": "${req.rf_name_$} presence condition"
+        "title": "Review field presence condition", "title_pattern": "${req.rf_name_$} presence condition"
     },
     {
         "name": "roundname", "internal": true, "extensible": true,
