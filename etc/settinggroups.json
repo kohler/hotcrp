@@ -1,155 +1,155 @@
 [
     {
-        "name": "basics", "position": 0, "title": "Basics"
+        "name": "basics", "order": 0, "title": "Basics"
     },
     {   "name": "info", "alias": "basics"   },
     {
-        "name": "basics/names", "position": 10,
+        "name": "basics/names", "order": 10,
         "render_function": "Basics_SettingParser::render_names",
         "title": "Conference information"
     },
     {
-        "name": "basics/site-contact", "position": 20,
+        "name": "basics/site-contact", "order": 20,
         "render_function": "SiteContact_SettingParser::render_site_contact",
         "title": "Site contact"
     },
     {
-        "name": "basics/email", "position": 30,
+        "name": "basics/email", "order": 30,
         "render_function": "Basics_SettingParser::render_email",
         "title": "Email configuration"
     },
 
     {
-        "name": "decisions", "position": 800, "title": "Decisions"
+        "name": "decisions", "order": 800, "title": "Decisions"
     },
     {   "name": "dec", "alias": "decisions"   },
     {   "name": "final", "alias": "decisions"   },
     {
-        "name": "decisions/responses", "position": 10,
+        "name": "decisions/responses", "order": 10,
         "title": "Responses",
         "render_function": "Responses_SettingParser::render"
     },
     {   "name": "responses", "alias": "decisions/responses"   },
     {
-        "name": "responses/properties/name", "position": 10,
+        "name": "responses/properties/name", "order": 10,
         "render_response_property_function": "Responses_SettingParser::render_name_property"
     },
     {
-        "name": "responses/properties/deadline", "position": 20,
+        "name": "responses/properties/deadline", "order": 20,
         "render_response_property_function": "Responses_SettingParser::render_deadline_property"
     },
     {
-        "name": "responses/properties/word-limit", "position": 30,
+        "name": "responses/properties/word-limit", "order": 30,
         "render_response_property_function": "Responses_SettingParser::render_wordlimit_property"
     },
     {
-        "name": "responses/properties/instructions", "position": 40,
+        "name": "responses/properties/instructions", "order": 40,
         "render_response_property_function": "Responses_SettingParser::render_instructions_property"
     },
     {
-        "name": "decisions/review-visibility", "position": 20,
+        "name": "decisions/review-visibility", "order": 20,
         "title": "Review visibility",
         "render_function": "ReviewVisibility_SettingParser::render"
     },
     {
-        "name": "__crosscheck/review-visibility", "position": 800,
+        "name": "__crosscheck/review-visibility", "order": 800,
         "crosscheck_function": "ReviewVisibility_SettingParser::crosscheck"
     },
     {
-        "name": "decisions/decision-visibility", "position": 25,
+        "name": "decisions/decision-visibility", "order": 25,
         "title": "Decision visibility",
         "render_function": "DecisionVisibility_SettingParser::render"
     },
     {
-        "name": "__crosscheck/decision-visibility", "position": 805,
+        "name": "__crosscheck/decision-visibility", "order": 805,
         "crosscheck_function": "DecisionVisibility_SettingParser::crosscheck"
     },
     {
-        "name": "decisions/decision-types", "position": 30,
+        "name": "decisions/decision-types", "order": 30,
         "title": "Decision types",
         "render_function": "Decisions_SettingParser::render"
     },
     {
-        "name": "decisions/final-versions", "position": 100,
+        "name": "decisions/final-versions", "order": 100,
         "title": "Final versions"
     },
     {
-        "name": "decisions/final-versions-body", "position": 105,
+        "name": "decisions/final-versions-body", "order": 105,
         "render_function": "FinalVersions_SettingParser::render"
     },
     {
-        "name": "__crosscheck/final-versions-body", "position": 810,
+        "name": "__crosscheck/final-versions-body", "order": 810,
         "crosscheck_function": "FinalVersions_SettingParser::crosscheck"
     },
 
     {
-        "name": "messages", "position": 200, "title": "Messages"
+        "name": "messages", "order": 200, "title": "Messages"
     },
     {   "name": "msg", "alias": "messages"   },
     {
-        "name": "messages/submissions", "position": 100,
+        "name": "messages/submissions", "order": 100,
         "render_function": "Messages_SettingRenderer::render_submissions"
     },
     {
-        "name": "messages/reviews", "position": 200,
+        "name": "messages/reviews", "order": 200,
         "render_function": "Messages_SettingRenderer::render_reviews"
     },
 
     {
-        "name": "reviewform", "position": 600, "title": "Review form",
+        "name": "reviewform", "order": 600, "title": "Review form",
         "render_function": "ReviewForm_SettingRenderer::render"
     },
     {   "name": "rfo", "alias": "reviewform"   },
     {
-        "name": "reviewfield/properties/description", "position": 20,
+        "name": "reviewfield/properties/description", "order": 20,
         "render_review_property_function": "ReviewForm_SettingRenderer::render_description_property",
         "parse_review_property_function": "ReviewForm_SettingParser::parse_description_property"
     },
     {
-        "name": "reviewfield/properties/options", "position": 50,
+        "name": "reviewfield/properties/options", "order": 50,
         "render_review_property_function": "ReviewForm_SettingRenderer::render_options_property",
         "parse_review_property_function": "ReviewForm_SettingParser::parse_options_property"
     },
     {
-        "name": "reviewfield/properties/presence", "position": 100,
+        "name": "reviewfield/properties/presence", "order": 100,
         "render_review_property_function": "ReviewForm_SettingRenderer::render_presence_property",
         "parse_review_property_function": "ReviewForm_SettingParser::parse_presence_property"
     },
     {
-        "name": "reviewfield/properties/required", "position": 101,
+        "name": "reviewfield/properties/required", "order": 101,
         "render_review_property_function": "ReviewForm_SettingRenderer::render_required_property"
     },
     {
-        "name": "reviewfield/properties/visibility", "position": 110,
+        "name": "reviewfield/properties/visibility", "order": 110,
         "render_review_property_function": "ReviewForm_SettingRenderer::render_visibility_property",
         "parse_review_property_function": "ReviewForm_SettingParser::parse_visibility_property"
     },
     {
-        "name": "reviewfield/properties/display", "position": 120,
+        "name": "reviewfield/properties/display", "order": 120,
         "render_review_property_function": "ReviewForm_SettingRenderer::render_display_property",
         "parse_review_property_function": "ReviewForm_SettingParser::parse_display_property"
     },
 
     {
-        "name": "reviews", "position": 500, "title": "Reviews"
+        "name": "reviews", "order": 500, "title": "Reviews"
     },
     {   "name": "rev", "alias": "reviews"   },
     {   "name": "review", "alias": "reviews"   },
     {
-        "name": "__crosscheck/reviews", "position": 500,
+        "name": "__crosscheck/reviews", "order": 500,
         "crosscheck_function": "Reviews_SettingRenderer::crosscheck"
     },
     {
-        "name": "reviews/deadlines", "position": 10,
+        "name": "reviews/deadlines", "order": 10,
         "render_function": "Reviews_SettingRenderer::render"
     },
     {
-        "name": "reviews/pc-reviews", "position": 20,
+        "name": "reviews/pc-reviews", "order": 20,
         "title": "PC reviews",
         "render_function": "Reviews_SettingRenderer::render_pc"
     },
     {
-        "name": "reviews/external", "position": 30,
+        "name": "reviews/external", "order": 30,
         "title": "External reviews",
         "render_function": "Reviews_SettingRenderer::render_external"
     },
@@ -157,87 +157,87 @@
     [   "reviews/external/requestmail", 15, "Reviews_SettingRenderer::render_extrev_requestmail"   ],
     [   "reviews/external/view", 20, "Reviews_SettingRenderer::render_extrev_view"   ],
     {
-        "name": "reviews/ratings", "position": 40,
+        "name": "reviews/ratings", "order": 40,
         "title": "Review ratings",
         "render_function": "Reviews_SettingRenderer::render_ratings"
     },
     {
-        "name": "submissions", "position": 300, "title": "Submissions"
+        "name": "submissions", "order": 300, "title": "Submissions"
     },
     {   "name": "sub", "alias": "submissions"   },
     {
-        "name": "__crosscheck/submissions", "position": 300,
+        "name": "__crosscheck/submissions", "order": 300,
         "crosscheck_function": "Submissions_SettingRenderer::crosscheck"
     },
     {
-        "name": "submissions/open", "position": 10,
+        "name": "submissions/open", "order": 10,
         "render_function": "Submissions_SettingRenderer::render_open"
     },
     {
-        "name": "submissions/deadlines", "position": 20,
+        "name": "submissions/deadlines", "order": 20,
         "render_function": "Submissions_SettingRenderer::render_deadlines"
     },
     {
-        "name": "submissions/updates", "position": 30,
+        "name": "submissions/updates", "order": 30,
         "render_function": "Submissions_SettingRenderer::render_updates"
     },
     {
-        "name": "submissions/blind", "position": 40,
+        "name": "submissions/blind", "order": 40,
         "render_function": "Submissions_SettingRenderer::render_blind",
         "title": "Reviewer visibility"
     },
     {
-        "name": "submissions/pcseeall", "position": 50,
+        "name": "submissions/pcseeall", "order": 50,
         "render_function": "Submissions_SettingRenderer::render_pcseeall"
     },
     {
-        "name": "subform", "position": 400, "title": "Submission form",
+        "name": "subform", "order": 400, "title": "Submission form",
         "render_function": "SubForm_SettingRenderer::render"
     },
     {
-        "name": "options", "group": "subform", "position": 440,
+        "name": "options", "group": "subform", "order": 440,
         "render_function": "Options_SettingRenderer::render"
     },
     {   "name": "opt", "alias": "options"   },
     {
-        "name": "__crosscheck/options", "position": 400,
+        "name": "__crosscheck/options", "order": 400,
         "crosscheck_function": "Options_SettingRenderer::crosscheck"
     },
     {
-        "name": "options/properties/type", "position": 10,
+        "name": "options/properties/type", "order": 10,
         "render_option_property_function": "Options_SettingRenderer::render_type_property"
     },
     {
-        "name": "options/properties/description", "position": 20,
+        "name": "options/properties/description", "order": 20,
         "render_option_property_function": "Options_SettingRenderer::render_description_property"
     },
     {
-        "name": "options/properties/presence", "position": 30,
+        "name": "options/properties/presence", "order": 30,
         "render_option_property_function": "Options_SettingRenderer::render_presence_property"
     },
     {
-        "name": "options/properties/required", "position": 31,
+        "name": "options/properties/required", "order": 31,
         "render_option_property_function": "Options_SettingRenderer::render_required_property"
     },
     {
-        "name": "options/properties/visibility", "position": 40,
+        "name": "options/properties/visibility", "order": 40,
         "render_option_property_function": "Options_SettingRenderer::render_visibility_property"
     },
     {
-        "name": "options/properties/display", "position": 50,
+        "name": "options/properties/display", "order": 50,
         "render_option_property_function": "Options_SettingRenderer::render_display_property"
     },
     {
-        "name": "topics", "group": "subform", "position": 480,
+        "name": "topics", "group": "subform", "order": 480,
         "render_function": "Topics_SettingRenderer::render"
     },
     {
-        "name": "tags", "position": 700,
+        "name": "tags", "order": 700,
         "title": "Tags &amp; tracks",
         "render_function": "Tags_SettingRenderer::render"
     },
     {
-        "name": "__crosscheck/tags", "position": 700,
+        "name": "__crosscheck/tags", "order": 700,
         "crosscheck_function": "Tags_SettingParser::crosscheck"
     },
     [   "tags/main/chair", 10, "Tags_SettingRenderer::render_tag_chair"   ],
@@ -247,29 +247,29 @@
     [   "tags/main/rank", 50, "Tags_SettingRenderer::render_tag_rank"   ],
     [   "tags/visibility/seeall", 10, "Tags_SettingRenderer::render_tag_seeall"   ],
     {
-        "name": "tagstyles", "group": "tags", "position": 720,
+        "name": "tagstyles", "group": "tags", "order": 720,
         "render_function": "Tags_SettingRenderer::render_styles"
     },
     {
-        "name": "tracks", "group": "tags", "position": 750,
+        "name": "tracks", "group": "tags", "order": 750,
         "render_function": "Tracks_SettingRenderer::render",
         "title": "Tracks", "hashid": "tracks"
     },
     {
-        "name": "__crosscheck/tracks", "position": 750,
+        "name": "__crosscheck/tracks", "order": 750,
         "crosscheck_function": "Tracks_SettingRenderer::crosscheck"
     },
     {
-        "name": "tracks/permissions/view", "position": 10,
+        "name": "tracks/permissions/view", "order": 10,
         "render_track_permission_function": "Tracks_SettingRenderer::render_view_permission",
         "default_unfolded": true
     },
     {
-        "name": "tracks/permissions/viewrev", "position": 30,
+        "name": "tracks/permissions/viewrev", "order": 30,
         "render_track_permission_function": "Tracks_SettingRenderer::render_viewrev_permission"
     },
     {
-        "name": "users", "position": 100,
+        "name": "users", "order": 100,
         "title": "Accounts",
         "render_function": "Users_SettingRenderer::render"
     }

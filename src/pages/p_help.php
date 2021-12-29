@@ -22,7 +22,7 @@ class Help_Page {
         $conf = $user->conf;
 
         $help_topics = new GroupedExtensions($user, [
-            '{"name":"topics","title":"Help topics","position":-1000000,"priority":1000000,"render_function":"Help_Page::show_help_topics"}',
+            '{"name":"topics","title":"Help topics","order":-1000000,"priority":1000000,"render_function":"Help_Page::show_help_topics"}',
             "etc/helptopics.json"
         ], $conf->opt("helpTopics"));
 

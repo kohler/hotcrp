@@ -170,7 +170,7 @@ function setup_initialize_database() {
 
     // No setup phase.
     $Conf->qe_raw("delete from Settings where name='setupPhase'");
-    $Conf->qe_raw("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"position\":1,\"display\":\"default\"}]'");
+    $Conf->qe_raw("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"order\":1,\"display\":\"default\"}]'");
     $Conf->load_settings();
 
     // Contactdb.

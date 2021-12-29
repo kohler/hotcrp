@@ -28,9 +28,9 @@ class Column {
     /** @var int */
     public $sort_subset = -1;
     /** @var null|int|float */
-    public $position;
+    public $order;
     /** @var ?int */
-    public $__subposition;
+    public $__source_order;
     /** @var bool */
     public $is_visible = false;
     /** @var bool */
@@ -62,11 +62,11 @@ class Column {
         if (isset($arg->completion)) {
             $this->completion = $arg->completion;
         }
-        if (isset($arg->position)) {
-            $this->position = $arg->position;
+        if (isset($arg->order) || isset($arg->position) /* XXX */) {
+            $this->order = $arg->order ?? $arg->position;
         }
-        if (isset($arg->__subposition)) {
-            $this->__subposition = $arg->__subposition;
+        if (isset($arg->__source_order)) {
+            $this->__source_order = $arg->__source_order;
         }
     }
 

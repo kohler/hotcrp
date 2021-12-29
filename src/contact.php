@@ -61,7 +61,7 @@ class Contact {
     /** @var ?int */
     private $_sortspec;
     /** @var ?int */
-    public $sort_position;
+    public $sort_order;
 
     /** @var ?string */
     private $collaborators;
@@ -1112,7 +1112,7 @@ class Contact {
         $pcm = $this->conf->pc_members();
         uksort($a, function ($a, $b) use ($pcm) {
             if (isset($pcm[$a]) && isset($pcm[$b])) {
-                return $pcm[$a]->sort_position - $pcm[$b]->sort_position;
+                return $pcm[$a]->sort_order - $pcm[$b]->sort_order;
             }
             $au = $pcm[$a] ?? $this->conf->cached_user_by_id($a);
             $bu = $pcm[$b] ?? $this->conf->cached_user_by_id($b);
@@ -3475,7 +3475,7 @@ class Contact {
     /** @param PaperOption $opt
      * @return 0|1|2 */
     function edit_option_state(PaperInfo $prow, $opt) {
-        if ($opt->form_position() === false
+        if ($opt->form_order() === false
             || !$opt->test_editable($prow)
             || ($opt->id > 0 && !$this->allow_view_option($prow, $opt))
             || ($opt->final && !$this->allow_edit_final_paper($prow))

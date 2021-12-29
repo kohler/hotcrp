@@ -649,7 +649,7 @@ foreach (array_keys($Conf->mail_template_map()) as $tname) {
         && ($Me->privChair || ($template->allow_pc ?? false)))
         $tmpl[] = $template;
 }
-usort($tmpl, "Conf::xt_position_compare");
+usort($tmpl, "Conf::xt_order_compare");
 foreach ($tmpl as $t) {
     $tmploptions[$t->name] = $t->title;
 }

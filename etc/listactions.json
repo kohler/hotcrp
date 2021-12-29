@@ -2,7 +2,7 @@
     {
         "name": "get",
         "render_function": "Get_ListAction::render", "title": "Download",
-        "position": 1
+        "order": 1
     },
     {
         "name": "__expand/get-document",
@@ -11,7 +11,7 @@
     {
         "name": "get/json", "get": true,
         "title": "Paper information/JSON",
-        "position": 10090,
+        "order": 10090,
         "allow_if": "manager",
         "function": "+GetJson_ListAction",
         "has_attachments": false
@@ -19,7 +19,7 @@
     {
         "name": "get/jsonattach", "get": true,
         "title": "Paper information/JSON with attachments",
-        "position": 10091,
+        "order": 10091,
         "allow_if": "manager",
         "function": "+GetJson_ListAction",
         "has_attachments": true
@@ -27,21 +27,21 @@
     {
         "name": "get/jsonrqc", "get": true,
         "title": "Paper information/JSON for reviewqualitycollector.org",
-        "position": 10092,
+        "order": 10092,
         "allow_if": "manager",
         "function": "+GetJsonRQC_ListAction"
     },
     {
         "name": "get/pcassignments", "get": true,
         "title": "Review assignments/PC assignments",
-        "position": 20099,
+        "order": 20099,
         "allow_if": "manager",
         "function": "+GetPcassignments_ListAction"
     },
     {
         "name": "get/revform", "get": true, "paper_optional": true,
         "title": "Review assignments/Your review forms",
-        "position": 20000,
+        "order": 20000,
         "allow_if": "reviewer",
         "function": "+GetReviewForms_ListAction",
         "zip": false, "all": false
@@ -49,7 +49,7 @@
     {
         "name": "get/revformz", "get": true, "paper_optional": true,
         "title": "Review assignments/Your review forms (zip)",
-        "position": 20001,
+        "order": 20001,
         "allow_if": "reviewer",
         "function": "+GetReviewForms_ListAction",
         "zip": true, "all": false
@@ -57,7 +57,7 @@
     {
         "name": "get/allrevform", "get": true, "paper_optional": true,
         "title": "Review assignments/All review forms",
-        "position": 20002,
+        "order": 20002,
         "allow_if": "manager",
         "function": "+GetReviewForms_ListAction",
         "zip": false, "all": true
@@ -65,7 +65,7 @@
     {
         "name": "get/allrevformz", "get": true, "paper_optional": true,
         "title": "Review assignments/All review forms (zip)",
-        "position": 20003,
+        "order": 20003,
         "allow_if": "manager",
         "function": "+GetReviewForms_ListAction",
         "zip": true, "all": true
@@ -73,7 +73,7 @@
     {
         "name": "get/revt", "get": true,
         "title": "Reviews/Reviews with paper info",
-        "position": 30050,
+        "order": 30050,
         "allow_if": "view_review",
         "function": "+GetReviews_ListAction",
         "zip": false, "abstract": true, "author_view": false
@@ -81,7 +81,7 @@
     {
         "name": "get/rev", "get": true,
         "title": "Reviews/Reviews (text)",
-        "position": 30100,
+        "order": 30100,
         "allow_if": "view_review",
         "function": "+GetReviews_ListAction",
         "zip": false, "abstract": false, "author_view": false
@@ -89,7 +89,7 @@
     {
         "name": "get/revz", "get": true,
         "title": "Reviews/Reviews (zip)",
-        "position": 30105,
+        "order": 30105,
         "allow_if": "view_review",
         "function": "+GetReviews_ListAction",
         "zip": true, "abstract": false, "author_view": false
@@ -97,7 +97,7 @@
     {
         "name": "get/revau", "get": true,
         "title": "Reviews/Reviews (text, author view)",
-        "position": 30200,
+        "order": 30200,
         "allow_if": ["view_review", "admin"],
         "function": "+GetReviews_ListAction",
         "zip": false, "abstract": false, "author_view": true
@@ -105,7 +105,7 @@
     {
         "name": "get/revauz", "get": true,
         "title": "Reviews/Reviews (zip, author view)",
-        "position": 30205,
+        "order": 30205,
         "allow_if": ["view_review", "admin"],
         "function": "+GetReviews_ListAction",
         "zip": true, "abstract": false, "author_view": true
@@ -113,14 +113,14 @@
     {
         "name": "get/revcsv", "get": true,
         "title": "Reviews/Reviews (CSV)",
-        "position": 30110,
+        "order": 30110,
         "allow_if": "view_review",
         "function": "+GetReviewCSV_ListAction"
     },
     {
         "name": "get/revaucsv", "get": true,
         "title": "Reviews/Reviews (CSV, author view)",
-        "position": 30210,
+        "order": 30210,
         "allow_if": ["view_review", "admin"],
         "function": "+GetReviewCSV_ListAction",
         "author_view": true
@@ -128,7 +128,7 @@
     {
         "name": "get/scores", "get": true,
         "title": "Reviews/Scores (CSV)",
-        "position": 30400,
+        "order": 30400,
         "allow_if": "view_review",
         "function": "+GetScores_ListAction"
     },
@@ -139,14 +139,14 @@
     },
     {
         "name": "get/lead", "get": true,
-        "title": "Reviews/Discussion leads (CSV)", "position": 30600,
+        "title": "Reviews/Discussion leads (CSV)", "order": 30600,
         "allow_if": "pc", "display_if": "lead",
         "function": "+GetLead_ListAction",
         "type": "lead"
     },
     {
         "name": "get/shepherd", "get": true,
-        "title": "Reviews/Shepherds (CSV)", "position": 30650,
+        "title": "Reviews/Shepherds (CSV)", "order": 30650,
         "allow_if": "pc", "display_if": "shepherd",
         "function": "+GetLead_ListAction",
         "type": "shepherd"
@@ -154,28 +154,28 @@
     {
         "name": "get/revpref", "get": true,
         "title": "Preference file",
-        "position": 1,
+        "order": 1,
         "allow_if": "pc", "display_if": "listreport:pf",
         "function": "+Revpref_ListAction"
     },
     {
         "name": "get/revprefx", "get": true,
         "title": "Preference file with abstracts",
-        "position": 2,
+        "order": 2,
         "allow_if": "pc", "display_if": "listreport:pf",
         "function": "+Revpref_ListAction"
     },
     {
         "name": "get/allrevpref", "get": true,
         "title": "Review assignments/PC review preferences",
-        "position": 20060,
+        "order": 20060,
         "allow_if": "manager",
         "function": "+GetAllRevpref_ListAction"
     },
     {
         "name": "get/checkformat", "get": true,
         "title": "Documents/Format check",
-        "position": 9999, "display_if": "listhas:paper",
+        "order": 9999, "display_if": "listhas:paper",
         "allow_if": "manager",
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetCheckFormat_ListAction"
@@ -183,80 +183,80 @@
     {
         "name": "get/abstract", "get": true,
         "title": "Paper information/Text with abstracts", "display_if": "listhas:abstract",
-        "position": 10000,
+        "order": 10000,
         "function": "+GetAbstracts_ListAction"
     },
     {
         "name": "get/abstract", "get": true,
         "title": "Paper information/Text", "display_if": "!listhas:abstract",
-        "position": 10000,
+        "order": 10000,
         "function": "+GetAbstracts_ListAction"
     },
     {
         "name": "get/authors", "get": true,
         "title": "Paper information/Authors",
-        "position": 10001, "display_if": "listhas:authors",
+        "order": 10001, "display_if": "listhas:authors",
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetAuthors_ListAction"
     },
     {
         "name": "get/topics", "get": true,
         "title": "Paper information/Topics", "display_if": "conf.has_topics",
-        "position": 10050,
+        "order": 10050,
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetTopics_ListAction"
     },
     {
         "name": "get/pcconf", "get": true,
         "title": "Paper information/PC conflicts",
-        "position": 10060,
+        "order": 10060,
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetPcconflicts_ListAction"
     },
     {
         "name": "get/csv", "get": true,
         "title": "Paper information/CSV",
-        "position": 10089,
+        "order": 10089,
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetCSV_ListAction"
     },
     {
         "name": "tag", "post": true,
         "render_function": "Tag_ListAction::render", "title": "Tag",
-        "position": 500,
+        "order": 500,
         "allow_if": "pc", "display_if": "!listreport:pf",
         "function": "+Tag_ListAction"
     },
     {
         "name": "assign", "post": true,
         "render_function": "Assign_ListAction::render", "title": "Assign",
-        "position": 700,
+        "order": 700,
         "allow_if": "manager", "display_if": "!listreport:pf",
         "function": "+Assign_ListAction"
     },
     {
         "name": "decide", "post": true,
         "render_function": "Decide_ListAction::render", "title": "Decide",
-        "position": 900,
+        "order": 900,
         "allow_if": "manager", "display_if": "!listreport:pf",
         "function": "+Decide_ListAction"
     },
     {
         "name": "mail",
         "render_function": "Mail_ListAction::render", "title": "Mail",
-        "position": 1000, "display_if": "!listreport:pf"
+        "order": 1000, "display_if": "!listreport:pf"
     },
     {
         "name": "mail/authors", "get": true,
         "title": "Contact authors",
-        "position": 10, "allow_if": "manager",
+        "order": 10, "allow_if": "manager",
         "function": "+Mail_ListAction",
         "mail_template": "authors"
     },
     {
         "name": "mail/reviewers", "get": true,
         "title": "Reviewers",
-        "position": 100, "allow_if": "manager",
+        "order": 100, "allow_if": "manager",
         "function": "+Mail_ListAction",
         "mail_template": "reviewers"
     },
@@ -265,7 +265,7 @@
         "render_function": "Revpref_ListAction::render_upload", "title": "Upload",
         "allow_if": "pc", "display_if": "listreport:pf",
         "function": "+Revpref_ListAction",
-        "position": 100
+        "order": 100
     },
     {
         "name": "uploadpref", "post": true,
@@ -280,6 +280,6 @@
         "render_function": "Revpref_ListAction::render_set", "title": "Set selected",
         "allow_if": "pc", "display_if": "listreport:pf",
         "function": "+Revpref_ListAction",
-        "position": 200
+        "order": 200
     }
 ]

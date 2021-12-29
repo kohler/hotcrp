@@ -22,7 +22,7 @@ class Si {
     /** @var ?list<string> */
     public $tags;
     /** @var null|int|float */
-    public $position;
+    public $order;
     /** @var null|false|string */
     public $hashid;
     /** @var ?string */
@@ -97,9 +97,9 @@ class Si {
         "json_values" => "is_array",
         "message_context_setting" => "is_string",
         "optional" => "is_bool",
+        "order" => "is_number",
         "parser_class" => "is_string",
         "placeholder" => "is_string",
-        "position" => "is_number",
         "size" => "is_int",
         "title" => "is_string",
         "title_pattern" => "is_string",
@@ -620,7 +620,7 @@ class Si {
             }
         }
 
-        uasort($sim, "Conf::xt_position_compare");
+        uasort($sim, "Conf::xt_order_compare");
         return $sim;
     }
 

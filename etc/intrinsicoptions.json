@@ -2,63 +2,63 @@
     {
         "name": "Title", "id": -1000,
         "json_key": "title",
-        "form_position": 10, "required": true,
+        "form_order": 10, "required": true,
         "type": "title", "include_empty": true,
         "function": "+Title_PaperOption"
     },
     {
         "name": "Submission version", "id": -1008, "final": true,
         "search_keyword": false, "json_key": false,
-        "form_position": false, "page_position": 1999, "className": "no-suggest",
+        "form_order": false, "page_order": 1999, "className": "no-suggest",
         "type": "intrinsic2", "include_empty": true,
         "function": "+SubmissionVersion_PaperOption"
     },
     {
         "name": "Abstract", "id": -1004,
         "json_key": "abstract",
-        "form_position": 2001, "page_expand": true,
+        "form_order": 2001, "page_expand": true,
         "type": "abstract", "include_empty": true,
         "function": "+Abstract_PaperOption"
     },
     {
         "name": "Authors", "id": -1001,
         "json_key": "authors",
-        "form_position": 3001, "required": true, "visibility": "nonblind",
+        "form_order": 3001, "required": true, "visibility": "nonblind",
         "type": "authors", "include_empty": true,
         "function": "+Authors_PaperOption"
     },
     {
         "name": "Submission anonymity", "id": -1002,
         "json_key": "nonblind",
-        "form_position": 3002, "page_position": false,
+        "form_order": 3002, "page_order": false,
         "type": "nonblind", "include_empty": true,
         "function": "+Nonblind_PaperOption"
     },
     {
         "name": "Contacts", "id": -1003,
         "json_key": "contacts",
-        "form_position": 3050, "page_position": false, "visibility": "conflict",
+        "form_order": 3050, "page_order": false, "visibility": "conflict",
         "type": "contacts", "include_empty": true,
         "function": "+Contacts_PaperOption"
     },
     {
         "name": "Topics", "id": -1005,
         "json_key": "topics",
-        "form_position": 3501, "page_group": "topics",
+        "form_order": 3501, "page_group": "topics",
         "type": "topics", "include_empty": true,
         "function": "+Topics_PaperOption"
     },
     {
         "name": "PC conflicts", "id": -1006,
         "json_key": "pc_conflicts",
-        "form_position": 5001, "page_position": false, "visibility": "nonblind",
+        "form_order": 5001, "page_order": false, "visibility": "nonblind",
         "type": "pc_conflicts", "include_empty": true,
         "function": "+PCConflicts_PaperOption"
     },
     {
         "name": "Collaborators", "id": -1007,
         "json_key": "collaborators",
-        "form_position": 5002, "visibility": "nonblind",
+        "form_order": 5002, "visibility": "nonblind",
         "type": "collaborators", "include_empty": true,
         "function": "+Collaborators_PaperOption"
     }

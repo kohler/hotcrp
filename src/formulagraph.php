@@ -814,7 +814,7 @@ class FormulaGraph extends MessageSet {
         $i = 0;
         $m = [];
         foreach ($this->reviewers as $c) {
-            $c->sort_position = ++$i;
+            $c->sort_order = ++$i;
             $m[$c->contactId] = $i;
         }
         $this->_valuemap_rewrite($axes, $m);
@@ -986,7 +986,7 @@ class FormulaGraph extends MessageSet {
                         $rd["color_classes"] = $colors;
                     }
                     $rd["id"] = $r->contactId;
-                    $x[$r->sort_position] = $rd;
+                    $x[$r->sort_order] = $rd;
                 }
                 $named_ticks = $x;
             } else if ($format === Fexpr::FDECISION) {

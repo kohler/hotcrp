@@ -21,7 +21,7 @@ class SessionList {
     /** @var ?int */
     private $nextid;
     /** @var null|false|int */
-    private $id_position;
+    private $id_index;
 
     /** @param string $listid
      * @param list<int> $ids
@@ -361,8 +361,8 @@ class SessionList {
         if ($this->curid !== $id) {
             $this->curid = $this->previd = $this->nextid = null;
         }
-        $this->id_position = $this->ids ? array_search($id, $this->ids) : false;
-        return $this->id_position !== false;
+        $this->id_index = $this->ids ? array_search($id, $this->ids) : false;
+        return $this->id_index !== false;
     }
 
     /** @param int $delta
@@ -373,7 +373,7 @@ class SessionList {
         } else if ($delta === 1 && $this->nextid !== null) {
             return $this->nextid;
         } else if (isset($this->curid) && $this->set_current_id($this->curid)) {
-            $pos = $this->id_position + $delta;
+            $pos = $this->id_index + $delta;
             if ($pos >= 0 && isset($this->ids[$pos])) {
                 return $this->ids[$pos];
             }

@@ -1,53 +1,53 @@
 [
-    {   "name": "main", "title": "Profile", "position": 100,
+    {   "name": "main", "title": "Profile", "order": 100,
         "unparse_json_function": "UserStatus::unparse_json_main",
         "request_function": "UserStatus::request_main",
         "parse_csv_function": "UserStatus::parse_csv_main",
         "save_early_function": "UserStatus::save_main"
     },
     {
-        "name": "__crosscheck/main", "position": 100,
+        "name": "__crosscheck/main", "order": 100,
         "crosscheck_function": "UserStatus::crosscheck_main"
     },
     {
-        "name": "main/main", "position": 1000,
+        "name": "main/main", "order": 1000,
         "render_function": "UserStatus::render_main"
     },
     {
-        "name": "main/country", "position": 3000,
+        "name": "main/country", "order": 3000,
         "render_function": "UserStatus::render_country"
     },
     {
-        "name": "main/roles", "position": 5000,
+        "name": "main/roles", "order": 5000,
         "render_function": "UserStatus::render_roles"
     },
     {
-        "name": "main/collaborators", "position": 6000,
+        "name": "main/collaborators", "order": 6000,
         "render_function": "UserStatus::render_collaborators"
     },
     {
-        "name": "main/topics", "position": 7000, "allow_if": "conf.has_topics",
+        "name": "main/topics", "order": 7000, "allow_if": "conf.has_topics",
         "render_function": "UserStatus::render_topics"
     },
     [   "main/tags", 8000, "UserStatus::render_tags"   ],
     [   "main/mainactions", 100000, "UserStatus::render_main_actions"   ],
     [   "main/actions", 1000000, "UserStatus::render_actions"   ],
-    {   "name": "topics", "position": 400,
+    {   "name": "topics", "order": 400,
         "save_function": "UserStatus::save_topics"   },
 
 
-    {   "name": "security", "title": "Security", "position": 200,
+    {   "name": "security", "title": "Security", "order": 200,
         "allow_if": "profile_security",
         "request_function": "UserStatus::request_security",
         "save_function": "UserStatus::save_security"   },
     [   "security/currentpassword", 10, "UserStatus::render_current_password"   ],
-    {   "name": "security/newpassword", "position": 100,
+    {   "name": "security/newpassword", "order": 100,
         "render_function": "UserStatus::render_new_password",
         "request_function": "UserStatus::request_new_password"   },
     [   "security/actions", 1000000, "UserStatus::render_actions"   ],
 
 
-    {   "name": "preferences", "title": "Preferences", "position": 300   },
+    {   "name": "preferences", "title": "Preferences", "order": 300   },
     [   "preferences/follow", 4000, "UserStatus::render_follow"   ],
     [   "preferences/actions", 1000000, "UserStatus::render_actions"   ],
 
@@ -55,18 +55,18 @@
     [   "__bulk/entry", 100, "UserStatus::render_bulk_entry"   ],
     [   "__bulk/actions", 1000, "UserStatus::render_bulk_actions"   ],
     [   "__bulk/help", 10000, "UserStatus::render_bulk_help"   ],
-    {   "name": "__bulk/help/f/email", "position": -100, "description_html": "Email"   },
-    {   "name": "__bulk/help/f/name", "position": -90, "description_html": "Name"   },
-    {   "name": "__bulk/help/f/first", "position": -85, "description_html": "First name (given name)"   },
-    {   "name": "__bulk/help/f/last", "position": -84, "description_html": "Last name (family name)"   },
-    {   "name": "__bulk/help/f/affiliation", "position": -81, "description_html": "Affiliation"   },
-    {   "name": "__bulk/help/f/roles", "position": -80, "description_html": "User roles: “<code>pc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, “<code>none</code>”"   },
-    {   "name": "__bulk/help/f/tags", "position": -70, "description_html": "PC tags (space-separated)"   },
-    {   "name": "__bulk/help/f/add_tags", "position": -65, "description_html": "PC tags to add"   },
-    {   "name": "__bulk/help/f/remove_tags", "position": -65, "description_html": "PC tags to remove"   },
+    {   "name": "__bulk/help/f/email", "order": -100, "description_html": "Email"   },
+    {   "name": "__bulk/help/f/name", "order": -90, "description_html": "Name"   },
+    {   "name": "__bulk/help/f/first", "order": -85, "description_html": "First name (given name)"   },
+    {   "name": "__bulk/help/f/last", "order": -84, "description_html": "Last name (family name)"   },
+    {   "name": "__bulk/help/f/affiliation", "order": -81, "description_html": "Affiliation"   },
+    {   "name": "__bulk/help/f/roles", "order": -80, "description_html": "User roles: “<code>pc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, “<code>none</code>”"   },
+    {   "name": "__bulk/help/f/tags", "order": -70, "description_html": "PC tags (space-separated)"   },
+    {   "name": "__bulk/help/f/add_tags", "order": -65, "description_html": "PC tags to add"   },
+    {   "name": "__bulk/help/f/remove_tags", "order": -65, "description_html": "PC tags to remove"   },
     {   "name": "__bulk/help/f/collaborators", "description_html": "Collaborators"   },
     {   "name": "__bulk/help/f/follow", "description_html": "Event notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”"   },
     {   "name": "__bulk/help/f/notify", "description_html": "Notify new accounts (default <code>yes</code>)"   },
-    {   "name": "__bulk/help/f/topics", "field": "topic:<TOPICNAME>", "description_html": "Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)", "allow_if": "conf.has_topics", "position": 1   },
-    {   "name": "__bulk/help/f/topic_override", "field": "topic_override", "description_html": "If “<code>no</code>”, then do not overwrite existing topic interests", "allow_if": "conf.has_topics", "position": 1.2   }
+    {   "name": "__bulk/help/f/topics", "field": "topic:<TOPICNAME>", "description_html": "Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)", "allow_if": "conf.has_topics", "order": 1   },
+    {   "name": "__bulk/help/f/topic_override", "field": "topic_override", "description_html": "If “<code>no</code>”, then do not overwrite existing topic interests", "allow_if": "conf.has_topics", "order": 1.2   }
 ]

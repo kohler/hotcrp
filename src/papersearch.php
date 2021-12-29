@@ -1411,7 +1411,7 @@ class PaperID_SearchTerm extends SearchTerm {
         return $l;
     }
     /** @return int|false */
-    function position($p) {
+    function index_of($p) {
         $i = $this->lower_bound($p);
         if ($i < count($this->r) && $p >= $this->r[$i][0]) {
             $d = $p - $this->r[$i][0];
@@ -1516,7 +1516,7 @@ class PaperID_SearchTerm extends SearchTerm {
         return $this->sql_predicate("Paper.paperId");
     }
     function test(PaperInfo $row, $rrow) {
-        return $this->position($row->paperId) !== false;
+        return $this->index_of($row->paperId) !== false;
     }
     function default_sort_column($top, PaperSearch $srch) {
         if ($top && !$this->in_order) {

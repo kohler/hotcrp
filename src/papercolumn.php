@@ -64,7 +64,7 @@ class PaperColumn extends Column {
         $j = [
             "name" => $this->name,
             "title" => $this->header($pl, false),
-            "position" => $this->position
+            "order" => $this->order
         ];
         if ($this->className !== "pl_" . $this->name) {
             $j["className"] = $this->className;

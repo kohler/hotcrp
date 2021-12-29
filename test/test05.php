@@ -92,7 +92,7 @@ xassert_eqq(bin2hex($paper2->sha1), "e04c778a0af702582bb0e9345fab6540acb28e45");
 // test new-style options storage
 $options = $Conf->setting_json("options");
 xassert(!array_filter((array) $options, function ($o) { return $o->id === 2; }));
-$options[] = (object) ["id" => 2, "name" => "Attachments", "abbr" => "attachments", "type" => "attachments", "position" => 2];
+$options[] = (object) ["id" => 2, "name" => "Attachments", "abbr" => "attachments", "type" => "attachments", "order" => 2];
 $Conf->save_setting("options", 1, json_encode($options));
 $Conf->invalidate_caches(["options" => true]);
 
@@ -858,7 +858,7 @@ xassert(!$cf_nec->run_attempted());
 // option name containing parentheses
 $options = $Conf->setting_json("options");
 xassert(!array_filter((array) $options, function ($o) { return $o->id === 3; }));
-$options[] = (object) ["id" => 3, "name" => "Supervisor(s)", "type" => "text", "position" => 3];
+$options[] = (object) ["id" => 3, "name" => "Supervisor(s)", "type" => "text", "order" => 3];
 $Conf->save_setting("options", 1, json_encode($options));
 $Conf->invalidate_caches(["options" => true]);
 

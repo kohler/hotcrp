@@ -340,9 +340,9 @@ class PaperTable {
         // other expansions
         $next_foldnum = 10;
         foreach ($this->prow->page_fields() as $o) {
-            if ($o->page_position() !== false
-                && $o->page_position() >= 1000
-                && $o->page_position() < 5000
+            if ($o->page_order() !== false
+                && $o->page_order() >= 1000
+                && $o->page_order() < 5000
                 && ($o->id <= 0 || $this->user->allow_view_option($this->prow, $o))
                 && $o->page_group !== null) {
                 if (strlen($o->page_group) > 1
@@ -1029,9 +1029,9 @@ class PaperTable {
         $fr = new FieldRender(FieldRender::CPAGE, $this->user);
         $fr->table = $this;
         foreach ($this->prow->page_fields() as $o) {
-            if ($o->page_position() === false
-                || $o->page_position() < 1000
-                || $o->page_position() >= 5000
+            if ($o->page_order() === false
+                || $o->page_order() < 1000
+                || $o->page_order() >= 5000
                 || ($vos = $this->user->view_option_state($this->prow, $o)) === 0) {
                 continue;
             }
@@ -1065,11 +1065,11 @@ class PaperTable {
             }
 
             // change column
-            if ($o1->page_position() >= 2000) {
-                if (!$lasto1 || $lasto1->page_position() < 2000) {
+            if ($o1->page_order() >= 2000) {
+                if (!$lasto1 || $lasto1->page_order() < 2000) {
                     echo '<div class="paperinfo"><div class="paperinfo-c">';
-                } else if ($o1->page_position() >= 3000
-                           && $lasto1->page_position() < 3000) {
+                } else if ($o1->page_order() >= 3000
+                           && $lasto1->page_order() < 3000) {
                     if ($in_paperinfo_i) {
                         echo '</div>'; // paperinfo-i
                         $in_paperinfo_i = false;
@@ -1161,7 +1161,7 @@ class PaperTable {
             if ($o1->page_group !== null && $this->allow_folds) {
                 echo '</div></div>';
             }
-            if ($o1->page_position() >= 2000
+            if ($o1->page_order() >= 2000
                 && $o1->page_expand) {
                 echo '</div>';
             }
@@ -1172,7 +1172,7 @@ class PaperTable {
         if ($in_paperinfo_i) {
             echo '</div>';
         }
-        if ($lasto1 && $lasto1->page_position() >= 2000) {
+        if ($lasto1 && $lasto1->page_order() >= 2000) {
             echo '</div></div>';
         }
     }
@@ -1248,7 +1248,7 @@ class PaperTable {
         foreach ($this->prow->pc_conflicts() as $id => $cflt) {
             if (Conflict::is_conflicted($cflt->conflictType)) {
                 $p = $pcm[$id];
-                $pcconf[$p->sort_position] = '<li class="odname">'
+                $pcconf[$p->sort_order] = '<li class="odname">'
                     . $this->user->reviewer_html_for($p) . '</li>';
             }
         }

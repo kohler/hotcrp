@@ -35,7 +35,7 @@ class GetAbstracts_ListAction extends ListAction {
         $fr = new FieldRender(FieldRender::CTEXT, $user);
         foreach ($user->conf->options()->page_fields($prow) as $o) {
             if (($o->id <= 0 || $user->allow_view_option($prow, $o))
-                && $o->page_position() !== false) {
+                && $o->page_order() !== false) {
                 $fr->clear();
                 if ($o->id === -1004) {
                     self::render_abstract($fr, $prow, $user, $o);

@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
 
 // JSON schema for settings["review_form"]:
-// {FIELD:{"name":NAME,"description":DESCRIPTION,"position":POSITION,
+// {FIELD:{"name":NAME,"description":DESCRIPTION,"order":ORDER,
 //         "display_space":ROWS,"visibility":VISIBILITY,
 //         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
 
@@ -143,9 +143,9 @@ class ReviewField implements JsonSerializable {
         if (is_string($vis) && isset(self::$view_score_map[$vis])) {
             $this->view_score = self::$view_score_map[$vis];
         }
-        if ($j->position ?? null) {
+        if ($j->order ?? $j->position ?? null) {
             $this->displayed = true;
-            $this->display_order = $j->position;
+            $this->display_order = $j->order ?? $j->position;
         } else {
             $this->displayed = false;
             $this->display_order = null;
@@ -231,7 +231,7 @@ class ReviewField implements JsonSerializable {
             $j->display_space = $this->display_space;
         }
         if ($this->displayed) {
-            $j->position = $this->display_order;
+            $j->order = $this->display_order;
         }
         $j->visibility = $this->unparse_visibility();
         if ($this->has_options) {
@@ -624,13 +624,13 @@ class ReviewForm implements JsonSerializable {
         // parse JSON
         if (!$rfj) {
             $rfj = json_decode('{
-"overAllMerit":{"name":"Overall merit","position":1,"visibility":"au",
+"overAllMerit":{"name":"Overall merit","order":1,"visibility":"au",
   "options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},
-"reviewerQualification":{"name":"Reviewer expertise","position":2,"visibility":"au",
+"reviewerQualification":{"name":"Reviewer expertise","order":2,"visibility":"au",
   "options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},
-"t01":{"name":"Paper summary","position":3,"visibility":"au"},
-"t02":{"name":"Comments to authors","position":4,"visibility":"au"},
-"t03":{"name":"Comments to PC","position":5,"visibility":"pc"}}');
+"t01":{"name":"Paper summary","order":3,"visibility":"au"},
+"t02":{"name":"Comments to authors","order":4,"visibility":"au"},
+"t03":{"name":"Comments to PC","order":5,"visibility":"pc"}}');
         }
 
         foreach ($rfj as $fid => $j) {

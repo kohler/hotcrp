@@ -23,7 +23,7 @@ class ReviewForm_SettingParser extends SettingParser {
             } else {
                 unset($fj->description);
             }
-        } else if (isset($fj->position)) {
+        } else if (isset($fj->order)) {
             $sv->error_at("rf_description_{$xpos}", $ch->last_error);
         }
     }
@@ -98,7 +98,7 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($sv->has_reqv("rf_options_{$xpos}")) {
             $ok = $self->parse_options_value($sv, $fj, $xpos);
         }
-        if ((!$ok || count($fj->options) < 2) && isset($fj->position)) {
+        if ((!$ok || count($fj->options) < 2) && isset($fj->order)) {
             $sv->error_at("rf_options_{$xpos}", "Invalid choices.");
             $self->mark_options_error($sv);
         }
@@ -211,16 +211,16 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         $this->source_html = htmlspecialchars($sn ? : "<Unnamed field>");
 
-        // initial field position
-        if ($sv->has_reqv("rf_position_{$xpos}")) {
-            $pos = cvtnum($sv->reqv("rf_position_{$xpos}"));
+        // initial field order
+        if ($sv->has_reqv("rf_order_{$xpos}")) {
+            $pos = cvtnum($sv->reqv("rf_order_{$xpos}"));
         } else {
-            $pos = $fj->position ?? -1;
+            $pos = $fj->order ?? -1;
         }
         if ($pos > 0) {
-            $fj->position = $pos;
+            $fj->order = $pos;
         } else {
-            unset($fj->position);
+            unset($fj->order);
         }
 
         // contents
@@ -231,14 +231,14 @@ class ReviewForm_SettingParser extends SettingParser {
             }
         }
 
-        if (isset($fj->position)
+        if (isset($fj->order)
             && $sn === ""
             && !isset($fj->description)
             && (!$f->has_options || empty($fj->options))) {
-            unset($fj->position);
+            unset($fj->order);
         }
 
-        if (isset($fj->position)) {
+        if (isset($fj->order)) {
             if ($sn === "") {
                 $sv->error_at("rf_name_{$xpos}", "Missing review field name.");
             } else if (isset($this->byname[strtolower($sn)])) {
@@ -268,7 +268,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         for ($i = 1; ; ++$i) {
             $fid = sprintf("s%02d", $i);
-            if ($sv->has_reqv("rf_name_{$fid}") || $sv->has_reqv("rf_position_{$fid}")) {
+            if ($sv->has_reqv("rf_name_{$fid}") || $sv->has_reqv("rf_order_{$fid}")) {
                 $fs[$fid] = true;
             } else if (strcmp($fid, $max_fields["s"]) > 0) {
                 break;
@@ -276,7 +276,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
         for ($i = 1; ; ++$i) {
             $fid = sprintf("t%02d", $i);
-            if ($sv->has_reqv("rf_name_{$fid}") || $sv->has_reqv("rf_position_{$fid}")) {
+            if ($sv->has_reqv("rf_name_{$fid}") || $sv->has_reqv("rf_order_{$fid}")) {
                 $fs[$fid] = true;
             } else if (strcmp($fid, $max_fields["t"]) > 0) {
                 break;
@@ -297,8 +297,8 @@ class ReviewForm_SettingParser extends SettingParser {
                 $xf = clone $f;
                 $xf->assign_json($fj);
                 $this->nrfj[] = $xf->unparse_json(2);
-            } else if ($sv->has_reqv("rf_position_{$fid}")
-                       && $sv->reqv("rf_position_{$fid}") > 0) {
+            } else if ($sv->has_reqv("rf_order_{$fid}")
+                       && $sv->reqv("rf_order_{$fid}") > 0) {
                 $sv->error_at("rf_name_{$fid}", "Too many review fields. You must delete some other fields before adding this one.");
             }
         }
@@ -653,7 +653,7 @@ class ReviewForm_SettingRenderer {
             Ht::button(Icons::ui_movearrow(2), ["id" => "rf_\$_movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
             Ht::button(Icons::ui_trash(), ["id" => "rf_\$_delete", "class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
-            Ht::hidden("rf_position_\$", "0", ["id" => "rf_position_\$", "class" => "rf-position"]),
+            Ht::hidden("rf_order_\$", "0", ["id" => "rf_order_\$", "class" => "rf-order"]),
             "</div></div>";
         echo '</template>';
 

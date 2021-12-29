@@ -275,7 +275,7 @@ class Conf {
     static private $_cdb = false;
 
     static public $no_invalidate_caches = false;
-    static public $next_xt_subposition = 0;
+    static public $next_xt_source_order = 0;
     static private $xt_require_resolved = [];
 
     const BLIND_NEVER = 0;          // these values are used in `msgs.json`
@@ -1049,11 +1049,28 @@ class Conf {
         $ap = self::xt_priority($xta);
         $bp = self::xt_priority($xtb);
         if ($ap == $bp) {
-            $ap = $xta ? $xta->__subposition ?? 0 : -PHP_INT_MAX;
-            $bp = $xtb ? $xtb->__subposition ?? 0 : -PHP_INT_MAX;
+            $ap = $xta ? $xta->__source_order ?? 0 : -PHP_INT_MAX;
+            $bp = $xtb ? $xtb->__source_order ?? 0 : -PHP_INT_MAX;
         }
         return $bp <=> $ap;
     }
+    static function xt_order_compare($xta, $xtb) {
+        $ap = $xta->order ?? 0;
+        $ap = $ap !== false ? $ap : PHP_INT_MAX;
+        $bp = $xtb->order ?? 0;
+        $bp = $bp !== false ? $bp : PHP_INT_MAX;
+        if ($ap == $bp) {
+            if (isset($xta->name)
+                && isset($xtb->name)
+                && ($namecmp = strcmp($xta->name, $xtb->name)) !== 0) {
+                return $namecmp;
+            }
+            $ap = $xta->__source_order ?? 0;
+            $bp = $xtb->__source_order ?? 0;
+        }
+        return $ap <=> $bp;
+    }
+    /** @deprecated */
     static function xt_position_compare($xta, $xtb) {
         $ap = $xta->position ?? 0;
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
@@ -1065,8 +1082,8 @@ class Conf {
                 && ($namecmp = strcmp($xta->name, $xtb->name)) !== 0) {
                 return $namecmp;
             }
-            $ap = $xta->__subposition ?? 0;
-            $bp = $xtb->__subposition ?? 0;
+            $ap = $xta->__source_order ?? 0;
+            $bp = $xtb->__source_order ?? 0;
         }
         return $ap <=> $bp;
     }
@@ -1300,7 +1317,7 @@ class Conf {
                 while ($i + 1 < $nlist && ($xt->merge ?? false)) {
                     ++$i;
                     $overlay = $xt;
-                    unset($overlay->merge, $overlay->__subposition);
+                    unset($overlay->merge, $overlay->__source_order);
                     $xt = $list[$i];
                     object_replace_recursive($xt, $overlay);
                     $overlay->priority = -PHP_INT_MAX;
@@ -2370,7 +2387,7 @@ class Conf {
             $this->_pc_members_cache = $this->_pc_chairs_cache = [];
             foreach ($this->_pc_user_cache as $u) {
                 if ($u->roles & Contact::ROLE_PC) {
-                    $u->sort_position = count($this->_pc_members_cache);
+                    $u->sort_order = count($this->_pc_members_cache);
                     $this->_pc_members_cache[$u->contactId] = $u;
                 }
                 if ($u->roles & Contact::ROLE_CHAIR) {

@@ -4,15 +4,15 @@
 
 class PaperIDOrder_PaperColumn extends PaperColumn {
     /** @var PaperID_SearchTerm */
-    private $order;
+    private $order_term;
     static private $type_uid = 1;
-    function __construct(Conf $conf, PaperID_SearchTerm $order) {
+    function __construct(Conf $conf, PaperID_SearchTerm $order_term) {
         parent::__construct($conf, (object) ["name" => "__numericorder" . (++self::$type_uid), "sort" => true]);
-        $this->order = $order;
+        $this->order_term = $order_term;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        $ap = $this->order->position($a->paperId);
-        $bp = $this->order->position($b->paperId);
+        $ap = $this->order_term->index_of($a->paperId);
+        $bp = $this->order_term->index_of($b->paperId);
         if ($ap !== false && $bp !== false) {
             return $ap <=> $bp;
         } else if ($ap !== false || $bp !== false) {

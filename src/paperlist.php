@@ -666,8 +666,8 @@ class PaperList implements XtContext {
                 $pos = self::$view_fake[$name] ?? null;
                 if ($pos === null) {
                     $fs = $this->conf->paper_columns($name, $this->user);
-                    if (count($fs) && isset($fs[0]->position)) {
-                        $pos = $fs[0]->position;
+                    if (count($fs) && isset($fs[0]->order)) {
+                        $pos = $fs[0]->order;
                         $name = $fs[0]->name;
                     } else {
                         $pos = $nextpos++;
@@ -1133,8 +1133,8 @@ class PaperList implements XtContext {
             }
         }
 
-        // sort by position
-        usort($this->_vcolumns, "Conf::xt_position_compare");
+        // sort by order
+        usort($this->_vcolumns, "Conf::xt_order_compare");
 
         // analyze rows and return
         foreach ($this->_vcolumns as $f) {
@@ -1862,7 +1862,7 @@ class PaperList implements XtContext {
         $skipcallout = 0;
         foreach ($this->_vcolumns as $fdef) {
             if (!$fdef->as_row) {
-                if ($fdef->position === null || $fdef->position >= 100) {
+                if ($fdef->order === null || $fdef->order >= 100) {
                     break;
                 } else {
                     ++$skipcallout;

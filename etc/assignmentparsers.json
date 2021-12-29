@@ -1,7 +1,7 @@
 [
     {
         "name": "none", "parser_class": "Null_AssignmentParser",
-        "position": false
+        "order": false
     },
     {   "name": "null", "alias": "none"   },
     {
@@ -15,7 +15,7 @@
         "review_type": null,
         "parameters": ["user", "review type", "[review round]"],
         "description": "Assign review",
-        "position": -1
+        "order": -1
     },
     {
         "name": "metareview", "parser_class": "Review_AssignmentParser",
@@ -79,7 +79,7 @@
     {
         "name": "clearlead", "parser_class": "Lead_AssignmentParser",
         "type": "lead", "remove": true,
-        "position": false, "parameters": []
+        "order": false, "parameters": []
     },
     {   "name": "nolead", "alias": "clearlead"   },
     {
@@ -91,7 +91,7 @@
     {
         "name": "clearshepherd", "parser_class": "Lead_AssignmentParser",
         "type": "shepherd", "remove": true,
-        "position": false, "parameters": []
+        "order": false, "parameters": []
     },
     {   "name": "noshepherd", "alias": "clearshepherd"   },
     {
@@ -105,7 +105,7 @@
     {
         "name": "clearadministrator", "parser_class": "Lead_AssignmentParser",
         "type": "manager", "remove": true,
-        "position": false, "parameters": []
+        "order": false, "parameters": []
     },
     {   "name": "clearmanager", "alias": "clearadministrator"   },
     {   "name": "clearadmin", "alias": "clearadministrator"   },
@@ -121,7 +121,7 @@
     {
         "name": "clearconflict", "parser_class": "Conflict_AssignmentParser",
         "remove": true, "iscontact": false,
-        "position": false, "parameters": ["user"]
+        "order": false, "parameters": ["user"]
     },
     {   "name": "noconflict", "alias": "clearconflict"   },
     {
@@ -182,7 +182,7 @@
     {
         "name": "cleardecision", "parser_class": "Decision_AssignmentParser",
         "remove": true,
-        "parameters": [], "group": "decision", "position": false
+        "parameters": [], "group": "decision", "order": false
     },
     {
         "name": "submit", "parser_class": "Status_AssignmentParser",
@@ -212,13 +212,13 @@
     },
     {
         "name": "unfollow", "parser_class": "Follow_AssignmentParser",
-        "parameters": ["user"], "default_follow": "no", "position": false,
+        "parameters": ["user"], "default_follow": "no", "order": false,
         "description": "Block review and comment notifications"
     },
     {   "name": "nofollow", "alias": "unfollow"   },
     {
         "name": "clearfollow", "parser_class": "Follow_AssignmentParser",
-        "parameters": ["user"], "default_follow": "clear", "position": false,
+        "parameters": ["user"], "default_follow": "clear", "order": false,
         "description": "Default notifications for reviews and comments"
     }
 ]

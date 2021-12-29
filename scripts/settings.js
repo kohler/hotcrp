@@ -343,7 +343,7 @@ function fill_order() {
         } else {
             pos = i++;
         }
-        $(n).find(".rf-position").val(pos);
+        $(n).find(".rf-order").val(pos);
     }
     form_highlight("#settingsform");
 }
@@ -377,7 +377,7 @@ function rf_fill($f, fid, fieldj, order) {
     $("#rf_" + fid + "_view").html("").append(rf_render_view(fieldj));
     $("#rf_" + fid + "_delete").attr("aria-label", "Delete from form");
     if (order) {
-        rf_fill_control("#rf_position_" + fid, fieldj.position || 0, order);
+        rf_fill_control("#rf_order_" + fid, fieldj.order || 0, order);
     }
     if (fieldj.search_keyword) {
         $("#rf_" + fid).attr("data-rf", fieldj.search_keyword);
@@ -508,7 +508,7 @@ function rf_move(event) {
     var isup = $(this).hasClass("moveup"),
         $f = $(this).closest(".settings-rf").detach(),
         fid = $f.attr("data-rfid"),
-        pos = $f.find(".rf-position").val() | 0,
+        pos = $f.find(".rf-order").val() | 0,
         $c = $("#settings-rform")[0], $n, i;
     for (i = 1, $n = $c.firstChild;
          $n && i < (isup ? pos - 1 : pos + 1);
@@ -570,12 +570,12 @@ function rf_append(fid, pos) {
 function rf_add(fid) {
     fieldorder.push(fid);
     original[fid] = original[fid] || {};
-    original[fid].position = fieldorder.length;
+    original[fid].order = fieldorder.length;
     rf_append(fid, fieldorder.length);
     var rf = document.getElementById("rf_" + fid);
     addClass(rf, "settings-rf-new");
     foldup.call(rf, null, {n: 2, f: false});
-    document.getElementById("rf_position_" + fid).setAttribute("data-default-value", "0");
+    document.getElementById("rf_order_" + fid).setAttribute("data-default-value", "0");
     form_highlight("#settingsform");
     return true;
 }
@@ -591,11 +591,11 @@ function rfs(data) {
     for (i in data.fields) {
         fid = data.fields[i].id || i;
         original[fid] = data.fields[i];
-        if (original[fid].position)
+        if (original[fid].order)
             fieldorder.push(fid);
     }
     fieldorder.sort(function (a, b) {
-        return original[a].position - original[b].position;
+        return original[a].order - original[b].order;
     });
 
     // construct form

@@ -16,7 +16,7 @@ class GetDocument_ListAction extends ListAction {
             "get" => true,
             "dtype" => $opt->id,
             "title" => "Documents/" . $opt->plural_title(),
-            "position" => $opt->page_position(),
+            "order" => $opt->page_order(),
             "display_if" => "listhas:" . $opt->field_key(),
             "function" => "+GetDocument_ListAction"
         ];

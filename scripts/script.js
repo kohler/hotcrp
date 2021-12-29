@@ -4506,7 +4506,7 @@ return {
             formj[f.uid] = f;
         }
         form_order = $.map(formj, function (v) { return v; });
-        form_order.sort(function (a, b) { return a.position - b.position; });
+        form_order.sort(function (a, b) { return a.order - b.order; });
     },
     add_review: add_review
 };
@@ -7404,7 +7404,7 @@ var self = false, fields = {}, field_order = [], aufull = {},
 
 function add_field(f) {
     var j = field_order.length;
-    while (j > 0 && f.position < field_order[j-1].position)
+    while (j > 0 && f.order < field_order[j-1].order)
         --j;
     field_order.splice(j, 0, f);
     fields[f.name] = f;

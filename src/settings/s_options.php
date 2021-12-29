@@ -23,7 +23,7 @@ class Options_SettingRenderer {
             && ($made_type = $sv->conf->option_type($optvt))) {
             $jtypes[$optvt] = $made_type;
         }
-        uasort($jtypes, "Conf::xt_position_compare");
+        uasort($jtypes, "Conf::xt_order_compare");
 
         $otypes = [];
         foreach ($jtypes as $uf) {
@@ -129,7 +129,7 @@ class Options_SettingRenderer {
             "name" => "Field name",
             "description" => "",
             "type" => "checkbox",
-            "position" => 1000,
+            "order" => 1000,
             "display" => "prominent",
             "json_key" => "__fake__"
         ]);
@@ -198,7 +198,7 @@ class Options_SettingRenderer {
         }
 
         if ($sv->has_reqv("optfp_$ipos")) {
-            $args->position = (int) $sv->reqv("optfp_$ipos");
+            $args->order = (int) $sv->reqv("optfp_$ipos");
         }
 
         if ($sv->has_reqv("sf_display_$ipos")) {
@@ -368,7 +368,7 @@ class Options_SettingRenderer {
         // render sample options
         echo '<div id="settings-sform-samples" class="hidden">';
         $jtypes = $sv->conf->option_type_map();
-        uasort($jtypes, "Conf::xt_position_compare");
+        uasort($jtypes, "Conf::xt_order_compare");
 
         $otypes = [];
         foreach ($jtypes as $uf) {
@@ -378,7 +378,7 @@ class Options_SettingRenderer {
                     "id" => 1000,
                     "name" => $uf->title ?? $uf->name,
                     "type" => $uf->type ?? $uf->name,
-                    "position" => 1,
+                    "order" => 1,
                     "display" => "prominent",
                     "json_key" => "__demo_{$uf->name}__"
                 ];
@@ -411,7 +411,7 @@ class Options_SettingRenderer {
             return;
         }
         $options = (array) json_decode($sv->newv("options"));
-        usort($options, function ($a, $b) { return $a->position <=> $b->position; });
+        usort($options, function ($a, $b) { return $a->order <=> $b->order; });
         if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))
             && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
             foreach ($options as $pos => $o) {

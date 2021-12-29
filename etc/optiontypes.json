@@ -4,59 +4,59 @@
         "display_if": false, "function": "+Separator_PaperOption"
     },
     {
-        "name": "checkbox", "title": "Checkbox", "position": 100,
+        "name": "checkbox", "title": "Checkbox", "order": 100,
         "function": "+Checkbox_PaperOption"
     },
     {
-        "name": "selector", "title": "Selector", "position": 200,
+        "name": "selector", "title": "Selector", "order": 200,
         "has_selector": true, "function": "+Selector_PaperOption",
         "sample": {"selector": ["Option 1", "Option 2", "Option 3"]}
     },
     {
-        "name": "radio", "title": "Radio buttons", "position": 300,
+        "name": "radio", "title": "Radio buttons", "order": 300,
         "has_selector": true, "function": "+Selector_PaperOption",
         "sample": {"selector": ["Option 1", "Option 2", "Option 3"]}
     },
     {
-        "name": "numeric", "title": "Whole number", "position": 400,
+        "name": "numeric", "title": "Whole number", "order": 400,
         "function": "+Numeric_PaperOption",
         "sample": {"value": 10}
     },
     {
-        "name": "realnumber", "title": "Decimal number", "position": 401,
+        "name": "realnumber", "title": "Decimal number", "order": 401,
         "function": "+RealNumber_PaperOption",
         "sample": {"value": -12.5}
     },
     {
-        "name": "text", "title": "Text", "position": 500,
+        "name": "text", "title": "Text", "order": 500,
         "function": "+Text_PaperOption",
         "sample": {"value": "Text entry"}
     },
     {
-        "name": "text:ds_5", "type": "text", "title": "Multiline text", "position": 550,
+        "name": "text:ds_5", "type": "text", "title": "Multiline text", "order": 550,
         "function": "+Text_PaperOption",
         "sample": {"display_space": 5, "value": "Long text entry"}
     },
     {
         "match": "text:ds_(\\d+)",
-        "title": "Multiline text", "position": 550,
+        "title": "Multiline text", "order": 550,
         "function": "+Text_PaperOption", "priority": -1,
         "expand_function": "Text_PaperOption::expand"
     },
     {
-        "name": "pdf", "title": "PDF", "position": 600,
+        "name": "pdf", "title": "PDF", "order": 600,
         "function": "+Document_PaperOption"
     },
     {
-        "name": "slides", "title": "Slides", "position": 610,
+        "name": "slides", "title": "Slides", "order": 610,
         "function": "+Document_PaperOption"
     },
     {
-        "name": "document", "title": "File upload", "position": 699,
+        "name": "document", "title": "File upload", "order": 699,
         "function": "+Document_PaperOption"
     },
     {
-        "name": "attachments", "title": "Attachments", "position": 700,
+        "name": "attachments", "title": "Attachments", "order": 700,
         "function": "+Attachments_PaperOption"
     }
 ]

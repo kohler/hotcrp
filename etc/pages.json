@@ -9,70 +9,70 @@
 
     {   "name": "home", "allow_disabled": true   },
     {
-        "name": "home/disabled", "position": 10,
+        "name": "home/disabled", "order": 10,
         "request_function": "Home_Page::disabled_request"
     },
     {
-        "name": "home/profile_redirect", "position": 100,
+        "name": "home/profile_redirect", "order": 100,
         "request_function": "Home_Page::profile_redirect_request"
     },
     {
-        "name": "home/admin", "position": 900, "allow_if": "chair",
+        "name": "home/admin", "order": 900, "allow_if": "chair",
         "allow_request_if": ["getpost", "req.clearbug req.clearnewpcrev"],
         "request_function": "AdminHome_Page::check_admin",
         "render_function": "AdminHome_Page::render"
     },
 
     {
-        "name": "home/head", "position": 1000,
+        "name": "home/head", "order": 1000,
         "render_function": "*Home_Page::render_head"
     },
     {
-        "name": "home/message", "position": 1100,
+        "name": "home/message", "order": 1100,
         "render_function": "*Home_Page::render_message"
     },
     {
-        "name": "home/welcome", "position": 1200, "allow_if": "!pc",
+        "name": "home/welcome", "order": 1200, "allow_if": "!pc",
         "render_function": "*Home_Page::render_welcome"
     },
     {
-        "name": "home/content", "position": 1500,
+        "name": "home/content", "order": 1500,
         "render_function": "Home_Page::render_content"
     },
 
     {
-        "name": "home/sidebar/admin", "position": 100, "allow_if": "manager",
+        "name": "home/sidebar/admin", "order": 100, "allow_if": "manager",
         "render_function": "Home_Page::render_admin_sidebar"
     },
     {
-        "name": "home/sidebar/admin/settings", "position": 10, "allow_if": "chair",
+        "name": "home/sidebar/admin/settings", "order": 10, "allow_if": "chair",
         "render_function": "Home_Page::render_admin_settings"
     },
     {
-        "name": "home/sidebar/admin/users", "position": 20, "allow_if": "manager",
+        "name": "home/sidebar/admin/users", "order": 20, "allow_if": "manager",
         "render_function": "Home_Page::render_admin_users"
     },
     {
-        "name": "home/sidebar/admin/assignments", "position": 30, "allow_if": "manager",
+        "name": "home/sidebar/admin/assignments", "order": 30, "allow_if": "manager",
         "render_function": "Home_Page::render_admin_assignments"
     },
     {
-        "name": "home/sidebar/admin/mail", "position": 40, "allow_if": "manager",
+        "name": "home/sidebar/admin/mail", "order": 40, "allow_if": "manager",
         "render_function": "Home_Page::render_admin_mail"
     },
     {
-        "name": "home/sidebar/admin/log", "position": 50, "allow_if": "manager",
+        "name": "home/sidebar/admin/log", "order": 50, "allow_if": "manager",
         "render_function": "Home_Page::render_admin_log"
     },
     {
-        "name": "home/sidebar/info", "position": 200,
+        "name": "home/sidebar/info", "order": 200,
         "render_function": "Home_Page::render_info_sidebar"
     },
     [   "home/sidebar/info/deadline", 10, "Home_Page::render_info_deadline"   ],
     [   "home/sidebar/info/pc", 20, "Home_Page::render_info_pc"   ],
     [   "home/sidebar/info/site", 30, "Home_Page::render_info_site"   ],
     {
-        "name": "home/sidebar/info/accepted", "position": 40,
+        "name": "home/sidebar/info/accepted", "order": 40,
         "allow_if": "conf.time_all_author_view_decision",
         "render_function": "Home_Page::render_info_accepted"
     },
@@ -80,30 +80,30 @@
 
     [   "home/main/signin", 3000, "*Home_Page::render_signin"   ],
     {
-        "name": "home/main/search", "position": 4000,
+        "name": "home/main/search", "order": 4000,
         "render_function": "*Home_Page::render_search"
     },
     {
-        "name": "home/main/review_requests", "position": 4500, "allow_if": "reviewer",
+        "name": "home/main/review_requests", "order": 4500, "allow_if": "reviewer",
         "render_function": "*Home_Page::render_review_requests"
     },
     {
-        "name": "home/main/reviews", "position": 5000, "allow_if": "reviewer",
+        "name": "home/main/reviews", "order": 5000, "allow_if": "reviewer",
         "render_function": "*Home_Page::render_reviews"
     },
     {
-        "name": "home/main/submissions", "position": 7000,
+        "name": "home/main/submissions", "order": 7000,
         "render_function": "*Home_Page::render_submissions"
     },
     {
-        "name": "home/main/review_tokens", "position": 10000,
+        "name": "home/main/review_tokens", "order": 10000,
         "render_function": "*Home_Page::render_review_tokens"
     },
 
 
     {   "name": "newaccount", "allow_disabled": true   },
     {
-        "name": "newaccount/request", "position": 100,
+        "name": "newaccount/request", "order": 100,
         "allow_request_if": "anypost",
         "request_function": "*Signin_Page::create_request"
     },
@@ -118,16 +118,16 @@
 
     {   "name": "signin", "allow_disabled": true   },
     {
-        "name": "signin/request", "position": 100,
+        "name": "signin/request", "order": 100,
         "allow_request_if": "anypost",
         "request_function": "Signin_Page::signin_request"
     },
     {
-        "name": "signin/request/basic", "position": 100,
+        "name": "signin/request/basic", "order": 100,
         "signin_function": "Signin_Page::signin_request_basic"
     },
     {
-        "name": "signin/request/success", "position": 100000,
+        "name": "signin/request/success", "order": 100000,
         "signin_function": "Signin_Page::signin_request_success"
     },
     [   "signin/head", 1000, "Signin_Page::render_signin_head"   ],
@@ -143,7 +143,7 @@
 
     {   "name": "signout", "allow_disabled": true   },
     {
-        "name": "signout/request", "position": 100,
+        "name": "signout/request", "order": 100,
         "allow_request_if": "anypost",
         "request_function": "Signin_Page::signout_request"
     },
@@ -153,7 +153,7 @@
 
     {   "name": "forgotpassword", "allow_disabled": true   },
     {
-        "name": "forgotpassword/request", "position": 100,
+        "name": "forgotpassword/request", "order": 100,
         "allow_request_if": "anypost",
         "request_function": "Signin_Page::forgot_request"
     },
@@ -163,14 +163,14 @@
     [   "forgotpassword/form/email", 20, "Signin_Page::render_forgot_form_email"   ],
     [   "forgotpassword/form/actions", 100, "*Signin_Page::render_forgot_form_actions"   ],
     {
-        "name": "forgotpassword/externallogin", "position": false,
+        "name": "forgotpassword/externallogin", "order": false,
         "render_function": "Signin_Page::forgot_externallogin_message"
     },
 
 
     {   "name": "resetpassword", "allow_disabled": true   },
     {
-        "name": "resetpassword/request", "position": 100,
+        "name": "resetpassword/request", "order": 100,
         "allow_any_request": true,
         "request_function": "*Signin_Page::reset_request"
     },
@@ -187,9 +187,9 @@
 
     {   "name": "graph", "render_function": "Graph_Page::go"   },
     {   "name": "graph/formula", "render_function": "Graph_Formula_Page::go",
-        "title": "Formula", "position": 20, "allow_if": "pc"   },
+        "title": "Formula", "order": 20, "allow_if": "pc"   },
     {   "name": "graph/procrastination", "render_function": "Graph_Procrastination_Page::go",
-        "title": "Procrastination", "position": 10, "allow_if": "pc"   },
+        "title": "Procrastination", "order": 10, "allow_if": "pc"   },
     [   "graph/reviewerlameness", false, "graph/procrastination"    ],
 
 

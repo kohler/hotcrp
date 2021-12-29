@@ -78,14 +78,14 @@
         "title": "External reviewer hard review deadline",
         "type": "ndate", "placeholder": "same as PC",
         "parser_class": "ReviewDeadline_SettingParser",
-        "require": "src/settings/s_reviews.php", "position": 1.1
+        "require": "src/settings/s_reviews.php", "order": 1.1
     },
     {
         "name": "extrev_roundtag",
         "group": "reviews",
         "title": "External assignment review round",
         "type": "tagselect", "parser_class": "RoundSelector_SettingParser",
-        "require": "src/settings/s_reviews.php", "position": 1
+        "require": "src/settings/s_reviews.php", "order": 1
     },
     {
         "name": "extrev_soft", "extensible": true,
@@ -93,7 +93,7 @@
         "title": "External reviewer soft review deadline",
         "type": "date", "placeholder": "same as PC",
         "parser_class": "ReviewDeadline_SettingParser",
-        "require": "src/settings/s_reviews.php", "position": 1
+        "require": "src/settings/s_reviews.php", "order": 1
     },
     {
         "name": "extrev_view",
@@ -218,7 +218,7 @@
         "group": "basics",
         "title": "Email of site contact", "storage": "opt.contactEmail",
         "type": "emailstring", "optional": true, "size": 40, "invalid_value": "you@example.com",
-        "parser_class": "SiteContact_SettingParser", "position": 1
+        "parser_class": "SiteContact_SettingParser", "order": 1
     },
     {
         "name": "site_contact_name",
@@ -346,7 +346,7 @@
         "title": "PC review hard deadline",
         "type": "ndate", "placeholder": "none",
         "parser_class": "ReviewDeadline_SettingParser",
-        "require": "src/settings/s_reviews.php", "position": 1.1
+        "require": "src/settings/s_reviews.php", "order": 1.1
     },
     {
         "name": "pcrev_soft", "extensible": true,
@@ -354,7 +354,7 @@
         "title": "PC review deadline",
         "type": "date", "placeholder": "none",
         "parser_class": "ReviewDeadline_SettingParser",
-        "require": "src/settings/s_reviews.php", "position": 1
+        "require": "src/settings/s_reviews.php", "order": 1
     },
     {
         "name": "resp_active",
@@ -432,7 +432,7 @@
         "group": "reviews",
         "title": "Assignment review round",
         "type": "tagselect", "parser_class": "RoundSelector_SettingParser",
-        "require": "src/settings/s_reviews.php", "position": 1
+        "require": "src/settings/s_reviews.php", "order": 1
     },
     {
         "name": "review_form",
@@ -640,13 +640,13 @@
         "name": "sub_reg",
         "group": "submissions",
         "title": "Submission registration deadline",
-        "type": "date", "position": 0
+        "type": "date", "order": 0
     },
     {
         "name": "sub_sub",
         "group": "submissions",
         "title": "Submission deadline",
-        "type": "date", "position": 1,
+        "type": "date", "order": 1,
         "parser_class": "Submissions_SettingParser"
     },
     {
@@ -687,7 +687,7 @@
         "name": "tag_rounds",
         "group": "reviews",
         "type": "taglist", "parser_class": "Round_SettingParser",
-        "require": "src/settings/s_reviews.php", "position": 0
+        "require": "src/settings/s_reviews.php", "order": 0
     },
     {
         "name": "tag_seeall",

@@ -259,8 +259,8 @@ class PaperOptionList implements IteratorAggregate {
     private $_nonpaper_am;
     private $_accumulator;
 
-    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"submission","form_position":1001,"type":"document"}';
-    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_position":1002,"type":"document"}';
+    const DTYPE_SUBMISSION_JSON = '{"id":0,"name":"paper","json_key":"submission","form_order":1001,"type":"document"}';
+    const DTYPE_FINAL_JSON = '{"id":-1,"name":"final","json_key":"final","form_order":1002,"type":"document"}';
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
@@ -532,21 +532,21 @@ class PaperOptionList implements IteratorAggregate {
     /** @return array<int,PaperOption>
      * @deprecated */
     function display_fields(PaperInfo $prow = null) {
-        $olist = $this->unsorted_field_list($prow, "page_position");
+        $olist = $this->unsorted_field_list($prow, "page_order");
         uasort($olist, "PaperOption::compare");
         return $olist;
     }
 
     /** @return array<int,PaperOption> */
     function form_fields(PaperInfo $prow = null) {
-        $olist = $this->unsorted_field_list($prow, "form_position");
+        $olist = $this->unsorted_field_list($prow, "form_order");
         uasort($olist, "PaperOption::form_compare");
         return $olist;
     }
 
     /** @return array<int,PaperOption> */
     function page_fields(PaperInfo $prow = null) {
-        $olist = $this->unsorted_field_list($prow, "page_position");
+        $olist = $this->unsorted_field_list($prow, "page_order");
         uasort($olist, "PaperOption::compare");
         return $olist;
     }
@@ -675,7 +675,7 @@ class PaperOption implements JsonSerializable {
     public $_search_keyword;
     public $description;
     public $description_format;
-    public $position;
+    public $order;
     /** @var bool
      * @readonly */
     public $nonpaper;
@@ -696,8 +696,8 @@ class PaperOption implements JsonSerializable {
     private $_visibility;
     public $page_expand;
     public $page_group;
-    private $form_position;
-    private $page_position;
+    private $form_order;
+    private $page_order;
     /** @var int */
     private $render_contexts;
     /** @var list<string> */
@@ -778,36 +778,36 @@ class PaperOption implements JsonSerializable {
             $this->_visibility = self::VIS_SUB;
         }
 
-        $p = $args->position ?? null;
-        if ((is_int($p) || is_float($p))
-            && ($this->id <= 0 || $p > 0)) {
-            $this->position = $p;
+        $order = $args->order ?? $args->position ?? null;
+        if ((is_int($order) || is_float($order))
+            && ($this->id <= 0 || $order > 0)) {
+            $this->order = $order;
         } else {
-            $this->position = 499;
+            $this->order = 499;
         }
 
-        $p = $args->form_position ?? null;
+        $p = $args->form_order ?? $args->form_position ?? null;
         if ($p === null) {
             $disp = $args->display ?? null;
             if ($disp === "submission") {
-                $p = 1100 + $this->position;
+                $p = 1100 + $this->order;
             } else if ($disp === "prominent") {
-                $p = 3100 + $this->position;
+                $p = 3100 + $this->order;
             } else {
-                $p = 3600 + $this->position;
+                $p = 3600 + $this->order;
             }
         }
-        $this->form_position = $p;
+        $this->form_order = $p;
 
         if (($args->display ?? null) === "none") {
             $p = false;
         }
-        $this->page_position = $args->page_position ?? $args->display_position ?? $p;
+        $this->page_order = $args->page_order ?? $args->page_position ?? $args->display_position ?? $p;
         $this->page_expand = !!($args->page_expand ?? false);
         $this->page_group = $args->page_group ?? null;
         if ($this->page_group === null
-            && $this->page_position >= 3500
-            && $this->page_position < 4000) {
+            && $this->page_order >= 3500
+            && $this->page_order < 4000) {
             $this->page_group = "topics";
         }
 
@@ -829,10 +829,10 @@ class PaperOption implements JsonSerializable {
                 $this->render_contexts &= ~FieldRender::CFSUGGEST;
             }
         }
-        if ($this->form_position === false) {
+        if ($this->form_order === false) {
             $this->render_contexts &= ~FieldRender::CFFORM;
         }
-        if ($this->page_position === false) {
+        if ($this->page_order === false) {
             $this->render_contexts &= ~FieldRender::CFPAGE;
         }
 
@@ -874,9 +874,9 @@ class PaperOption implements JsonSerializable {
     /** @param PaperOption $a
      * @param PaperOption $b */
     static function compare($a, $b) {
-        $ap = $a->page_position();
+        $ap = $a->page_order();
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
-        $bp = $b->page_position();
+        $bp = $b->page_order();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
         return $ap <=> $bp ? : (strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id);
     }
@@ -884,9 +884,9 @@ class PaperOption implements JsonSerializable {
     /** @param PaperOption $a
      * @param PaperOption $b */
     static function form_compare($a, $b) {
-        $ap = $a->form_position();
+        $ap = $a->form_order();
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
-        $bp = $b->form_position();
+        $bp = $b->form_order();
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
         return $ap <=> $bp ? : (strcasecmp($a->title, $b->title) ? : $a->id <=> $b->id);
     }
@@ -991,17 +991,22 @@ class PaperOption implements JsonSerializable {
     }
 
     /** @return int|float|false */
-    function form_position() {
-        return $this->form_position;
+    function form_order() {
+        return $this->form_order;
     }
     /** @return int|float|false */
-    function page_position() {
-        return $this->page_position;
+    function page_order() {
+        return $this->page_order;
     }
     /** @return int|float|false
      * @deprecated */
-    function display_position() {
-        return $this->page_position;
+    function form_position() {
+        return $this->form_order;
+    }
+    /** @return int|float|false
+     * @deprecated */
+    function page_position() {
+        return $this->page_order;
     }
     /** @return int */
     function visibility() {
@@ -1140,11 +1145,11 @@ class PaperOption implements JsonSerializable {
 
     /** @return string */
     function display_name() {
-        if ($this->page_position === false) {
+        if ($this->page_order === false) {
             return "none";
-        } else if ($this->page_position < 3000) {
+        } else if ($this->page_order < 3000) {
             return "submission";
-        } else if ($this->page_position < 3500) {
+        } else if ($this->page_order < 3500) {
             return "prominent";
         } else {
             return "topics";
@@ -1158,7 +1163,7 @@ class PaperOption implements JsonSerializable {
         if ($this->type !== null) {
             $j->type = $this->type;
         }
-        $j->position = (int) $this->position;
+        $j->order = (int) $this->order;
         if ($this->description !== null) {
             $j->description = $this->description;
         }
@@ -1861,7 +1866,7 @@ class Document_PaperOption extends PaperOption {
             } else if ($fr->for_page()) {
                 $fr->title = "";
                 $dif = 0;
-                if ($this->page_position() >= 2000) {
+                if ($this->page_order() >= 2000) {
                     $dif = DocumentInfo::L_SMALL;
                 }
                 $fr->set_html($d->link_html('<span class="pavfn">' . $this->title_html() . '</span>', $dif));
@@ -2134,7 +2139,7 @@ class Attachments_PaperOption extends PaperOption {
                 $linkname = htmlspecialchars($d->member_filename());
                 if ($fr->want_list()) {
                     $dif = DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE;
-                } else if ($this->page_position() >= 2000) {
+                } else if ($this->page_order() >= 2000) {
                     $dif = DocumentInfo::L_SMALL;
                 } else {
                     $dif = 0;
@@ -2155,7 +2160,7 @@ class Attachments_PaperOption extends PaperOption {
             } else {
                 $fr->set_html('<p class="od">' . join('</p><p class="od">', $ts) . '</p>');
             }
-            if ($fr->for_page() && $this->page_position() < 2000) {
+            if ($fr->for_page() && $this->page_order() < 2000) {
                 $fr->title = false;
                 $v = '<div class="pgsm';
                 if ($fr->table && $fr->user->view_option_state($ov->prow, $this) === 1) {
@@ -2192,7 +2197,7 @@ class Attachments_PaperOption extends PaperOption {
 class Unknown_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         $args->type = "__unknown" . $args->id . "__";
-        $args->form_position = $args->page_position = false;
+        $args->form_order = $args->page_order = false;
         parent::__construct($conf, $args, "hidden");
     }
 }

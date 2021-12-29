@@ -43,8 +43,8 @@ class GroupedExtensions implements XtContext {
                 return false;
             }
             $fj = (object) [
-                "name" => $fja[0], "position" => $fja[1],
-                "__subposition" => ++Conf::$next_xt_subposition
+                "name" => $fja[0], "order" => $fja[1],
+                "__source_order" => ++Conf::$next_xt_source_order
             ];
             if (strpos($fja[2], "::")) {
                 $fj->render_function = $fja[2];
@@ -197,14 +197,14 @@ class GroupedExtensions implements XtContext {
             if (($gj = $this->get_raw($subname))
                 && $gj->group === ($name === "" ? $gj->name : $name)
                 && $gj->name !== $name
-                && (!isset($gj->alias) || isset($gj->position))
-                && (!isset($gj->position) || $gj->position !== false)
+                && (!isset($gj->alias) || isset($gj->order))
+                && (!isset($gj->order) || $gj->order !== false)
                 && (!$require_key || isset($gj->alias) || isset($gj->$require_key))) {
                 $r[] = $gj;
                 $alias = $alias || isset($gj->alias);
             }
         }
-        usort($r, "Conf::xt_position_compare");
+        usort($r, "Conf::xt_order_compare");
         if ($alias && !empty($r)) {
             $rr = [];
             foreach ($r as $gj) {

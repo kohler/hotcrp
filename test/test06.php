@@ -211,7 +211,7 @@ assert_search_papers($user_chair, "has:revexp", "1");
 $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,
     "rf_name_s02" => "Reviewer expertise",
-    "rf_position_s02" => 0
+    "rf_order_s02" => 0
 ]);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
@@ -221,7 +221,7 @@ $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,
     "rf_name_s02" => "Reviewer expertise",
     "rf_options_s02" => "1. No familiarity\n2. Some familiarity\n3. Knowledgeable\n4. Expert",
-    "rf_position_s02" => 1.5
+    "rf_order_s02" => 1.5
 ]);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
@@ -259,28 +259,28 @@ assert_search_papers($user_chair, "compc:author", "");
 // Add extension fields
 $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,
-    "rf_name_s03" => "Score 3", "rf_options_s03" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s03" => 2.03,
-    "rf_name_s04" => "Score 4", "rf_options_s04" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s04" => 2.04,
-    "rf_name_s05" => "Score 5", "rf_options_s05" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s05" => 2.05,
-    "rf_name_s06" => "Score 6", "rf_options_s06" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s06" => 2.06,
-    "rf_name_s07" => "Score 7", "rf_options_s07" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s07" => 2.07,
-    "rf_name_s08" => "Score 8", "rf_options_s08" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s08" => 2.08,
-    "rf_name_s09" => "Score 9", "rf_options_s09" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s09" => 2.09,
-    "rf_name_s10" => "Score 10", "rf_options_s10" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s10" => 2.10,
-    "rf_name_s11" => "Score 11", "rf_options_s11" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s11" => 2.11,
-    "rf_name_s12" => "Score 12", "rf_options_s12" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s12" => 2.12,
-    "rf_name_s13" => "Score 13", "rf_options_s13" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s13" => 2.13,
-    "rf_name_s14" => "Score 14", "rf_options_s14" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s14" => 2.14,
-    "rf_name_s15" => "Score 15", "rf_options_s15" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s15" => 2.15,
-    "rf_name_s16" => "Score 16", "rf_options_s16" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_position_s16" => 2.16,
-    "rf_name_t04" => "Text 4", "rf_position_t04" => 5.04,
-    "rf_name_t05" => "Text 5", "rf_position_t05" => 5.05,
-    "rf_name_t06" => "Text 6", "rf_position_t06" => 5.06,
-    "rf_name_t07" => "Text 7", "rf_position_t07" => 5.07,
-    "rf_name_t08" => "Text 8", "rf_position_t08" => 5.08,
-    "rf_name_t09" => "Text 9", "rf_position_t09" => 5.09,
-    "rf_name_t10" => "Text 10", "rf_position_t10" => 5.10,
-    "rf_name_t11" => "Text 11", "rf_position_t11" => 5.11
+    "rf_name_s03" => "Score 3", "rf_options_s03" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s03" => 2.03,
+    "rf_name_s04" => "Score 4", "rf_options_s04" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s04" => 2.04,
+    "rf_name_s05" => "Score 5", "rf_options_s05" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s05" => 2.05,
+    "rf_name_s06" => "Score 6", "rf_options_s06" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s06" => 2.06,
+    "rf_name_s07" => "Score 7", "rf_options_s07" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s07" => 2.07,
+    "rf_name_s08" => "Score 8", "rf_options_s08" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s08" => 2.08,
+    "rf_name_s09" => "Score 9", "rf_options_s09" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s09" => 2.09,
+    "rf_name_s10" => "Score 10", "rf_options_s10" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s10" => 2.10,
+    "rf_name_s11" => "Score 11", "rf_options_s11" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s11" => 2.11,
+    "rf_name_s12" => "Score 12", "rf_options_s12" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s12" => 2.12,
+    "rf_name_s13" => "Score 13", "rf_options_s13" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s13" => 2.13,
+    "rf_name_s14" => "Score 14", "rf_options_s14" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s14" => 2.14,
+    "rf_name_s15" => "Score 15", "rf_options_s15" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s15" => 2.15,
+    "rf_name_s16" => "Score 16", "rf_options_s16" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf_order_s16" => 2.16,
+    "rf_name_t04" => "Text 4", "rf_order_t04" => 5.04,
+    "rf_name_t05" => "Text 5", "rf_order_t05" => 5.05,
+    "rf_name_t06" => "Text 6", "rf_order_t06" => 5.06,
+    "rf_name_t07" => "Text 7", "rf_order_t07" => 5.07,
+    "rf_name_t08" => "Text 8", "rf_order_t08" => 5.08,
+    "rf_name_t09" => "Text 9", "rf_order_t09" => 5.09,
+    "rf_name_t10" => "Text 10", "rf_order_t10" => 5.10,
+    "rf_name_t11" => "Text 11", "rf_order_t11" => 5.11
 ]);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
@@ -327,17 +327,17 @@ xassert_eqq((string) $rrow->s16, "3");
 // Remove some fields and truncate their options
 $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,
-    "rf_name_s15" => "Score 15", "rf_position_s15" => 0,
+    "rf_name_s15" => "Score 15", "rf_order_s15" => 0,
     "rf_name_s16" => "Score 16", "rf_options_s16" => "1. Yes\n2. No\nNo entry\n",
-    "rf_name_t10" => "Text 10", "rf_position_t10" => 0
+    "rf_name_t10" => "Text 10", "rf_order_t10" => 0
 ]);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,
-    "rf_name_s15" => "Score 15", "rf_options_s15" => "1. Yes\n2. No\nNo entry\n", "rf_position_s15" => 100,
-    "rf_name_t10" => "Text 10", "rf_position_t10" => 101
+    "rf_name_s15" => "Score 15", "rf_options_s15" => "1. Yes\n2. No\nNo entry\n", "rf_order_s15" => 100,
+    "rf_name_t10" => "Text 10", "rf_order_t10" => 101
 ]);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
@@ -649,7 +649,7 @@ $sv = SettingValues::make_request($user_chair, [
     "rf_name_t04" => "Questions for authors’ response",
     "rf_description_t04" => "Specific questions that could affect your accept/reject decision. Remember that the authors have limited space and must respond to all reviewers.",
     "rf_visibility_t04" => "au",
-    "rf_position_t04" => 5
+    "rf_order_t04" => 5
 ]);
 xassert($sv->execute());
 

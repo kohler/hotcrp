@@ -131,7 +131,7 @@ function expand_json_includes_callback($includelist, $callback) {
                 continue;
             }
             if (is_object($v)) {
-                $v->__subposition = ++Conf::$next_xt_subposition;
+                $v->__source_order = ++Conf::$next_xt_source_order;
             }
             if (!call_user_func($callback, $v, $k, $landmark)) {
                 error_log((Conf::$main ? Conf::$main->dbname . ": " : "") . "$landmark: Invalid expansion " . json_encode($v) . "\n" . debug_string_backtrace());
