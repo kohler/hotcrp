@@ -1505,6 +1505,7 @@ class Formula implements JsonSerializable {
         $mi = new MessageItem(null, $message, MessageSet::ERROR);
         $mi->pos1 = $len + $pos1;
         $mi->pos2 = $len + $pos2;
+        $mi->context = $this->expression;
         $this->_lerrors[] = $mi;
         return $mi;
     }

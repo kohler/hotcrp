@@ -13,6 +13,8 @@ class MessageItem implements JsonSerializable {
     public $pos1;
     /** @var ?int */
     public $pos2;
+    /** @var ?string */
+    public $context;
 
     /** @param ?string $field
      * @param string $message
@@ -433,8 +435,10 @@ class MessageSet {
             } else {
                 $t[count($t) - 1] = "<div class=\"msg-context\">" . $mx->message_as(5) . "</div>";
             }
-            if (($mx->pos1 || $mx->pos2) && $context !== null) {
-                $t[] = "<div class=\"msg-context\">" . Ht::mark_substring($context, $mx->pos1, $mx->pos2, $mx->status) . "</div>";
+            if (($mx->pos1 || $mx->pos2) && ($mx->context ?? $context) !== null) {
+                $t[] = "<div class=\"msg-context\">"
+                    . Ht::mark_substring($mx->context ?? $context, $mx->pos1, $mx->pos2, $mx->status)
+                    . "</div>";
             }
             $t[] = "</li>";
         }

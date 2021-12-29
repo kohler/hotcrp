@@ -1041,6 +1041,7 @@ class PaperList implements XtContext {
                     $mi->pos1 = $pos[0];
                     $mi->pos2 = $pos[2];
                 }
+                $mi->context = $this->search->q;
             } else {
                 $mi->pos1 = $mi->pos2 = null;
             }

@@ -1879,12 +1879,13 @@ class PaperSearch {
         $mi = $this->warning($message);
         $mi->pos1 = $sw->pos1;
         $mi->pos2 = $sw->pos2;
+        $mi->context = $this->q;
         return $mi;
     }
 
     /** @return string */
     function message_html() {
-        return MessageSet::feedback_html($this->_ms->message_list(), $this->q);
+        return MessageSet::feedback_html($this->_ms->message_list());
     }
 
     /** @return string */
