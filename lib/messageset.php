@@ -171,14 +171,14 @@ class MessageSet {
     }
 
     /** @param ?string $field
-     * @param false|null|string $msg
+     * @param ?string $msg
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
-        if ($field === false || $field === "") {
+        if ($field === false || $field === "") { /* XXX false backward compat */
             $field = null;
         }
-        if ($msg === null || $msg === false) {
+        if ($msg === null || $msg === false) { /* XXX false backward compat */
             $msg = "";
         }
         $mi = new MessageItem($field, $msg, $status);
@@ -187,25 +187,25 @@ class MessageSet {
     }
 
     /** @param ?string $field
-     * @param false|null|string $msg
+     * @param ?string $msg
      * @return MessageItem */
     function estop_at($field, $msg) {
         return $this->msg_at($field, $msg, self::ESTOP);
     }
     /** @param ?string $field
-     * @param false|null|string $msg
+     * @param ?string $msg
      * @return MessageItem */
     function error_at($field, $msg) {
         return $this->msg_at($field, $msg, self::ERROR);
     }
     /** @param ?string $field
-     * @param false|null|string $msg
+     * @param ?string $msg
      * @return MessageItem */
     function warning_at($field, $msg) {
         return $this->msg_at($field, $msg, self::WARNING);
     }
     /** @param ?string $field
-     * @param false|null|string $msg
+     * @param ?string $msg
      * @param null|0|1|2|3 $default_status
      * @return MessageItem */
     function problem_at($field, $msg, $default_status = 1) {

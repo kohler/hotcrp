@@ -887,72 +887,93 @@ class SettingValues extends MessageSet {
     function use_req() {
         return $this->has_error();
     }
-    /** @param Si|string|null|list<Si|string> $field
-     * @param string|null|false $html
-     * @return MessageItem */
-    function error_at($field, $html = null) {
+    /** @param null|string|Si $field
+     * @param MessageItem $mi */
+    function add_at($field, $mi) {
         if (is_array($field)) {
+            error_log("unexpected add_at with array " . json_encode($field) . " " . debug_string_backtrace());
             foreach ($field as $f) {
-                $mi = $this->error_at($f, $html);
+                $this->add_at($f, $mi);
             }
         } else {
             $fname = $field instanceof Si ? $field->name : $field;
-            $mi = parent::error_at($fname, $html);
+            if ($mi->field !== null && $mi->field !== $fname) {
+                $mi = clone $mi;
+            }
+            $mi->field = $fname;
+            parent::add($mi);
         }
-        return $mi ?? new MessageItem(null, "", MessageSet::ERROR);
+        return $mi;
     }
-    /** @param Si|string|null|list<Si|string> $field
-     * @param string|null|false $html
+    /** @param null|string|Si $field
+     * @param ?string $msg
      * @return MessageItem */
-    function warning_at($field, $html = null) {
-        if (is_array($field)) {
-            foreach ($field as $f) {
-                $mi = $this->warning_at($f, $html);
-            }
-        } else {
-            $fname = $field instanceof Si ? $field->name : $field;
-            $mi = parent::warning_at($fname, $html);
-        }
-        return $mi ?? new MessageItem(null, "", MessageSet::WARNING);
+    function error_at($field, $msg = null) {
+        $msg = $msg === null || $msg === false ? "" : $msg;
+        return $this->add_at($field, new MessageItem(null, $msg, MessageSet::ERROR));
     }
-    /** @param MessageItem $mx */
-    private function report_mx(&$msgs, &$lastmsg, $mx) {
-        $t = $mx->message;
-        if ($mx->status === MessageSet::WARNING) {
-            $t = "Warning: " . $t;
+    /** @param null|string|Si $field
+     * @param ?string $msg
+     * @return MessageItem */
+    function warning_at($field, $msg = null) {
+        $msg = $msg === null || $msg === false ? "" : $msg;
+        return $this->add_at($field, new MessageItem(null, $msg, MessageSet::WARNING));
+    }
+    /** @param MessageItem $mi
+     * @param list<string> $loc
+     * @return MessageItem */
+    static private function decorate_message_item($mi, $loc) {
+        if ($loc) {
+            $mi->message = "<5>" . join(", ", $loc) . ": " . $mi->message_as(5);
         }
-        $loc = null;
-        if ($mx->field
-            && ($si = Si::get($this->conf, $mx->field))
-            && ($loc = $si->title_html($this))) {
-            if ($si->hashid !== false) {
-                $loc = Ht::link($loc, $si->sv_hoturl($this));
+        return $mi;
+    }
+    /** @return \Generator<MessageItem> */
+    private function decorated_message_list() {
+        $lastmi = null;
+        $lastloc = [];
+        foreach ($this->message_list() as $mi) {
+            $mi = clone $mi;
+            if ($mi->status === MessageSet::WARNING) {
+                $mi->message = "<5>Warning: " . $mi->message_as(5);
+            }
+            $loc = null;
+            if ($mi->field
+                && ($si = Si::get($this->conf, $mi->field))) {
+                $loc = $si->title_html($this);
+                if ($loc && $si->hashid !== false) {
+                    $loc = Ht::link($loc, $si->sv_hoturl($this));
+                }
+            }
+            if ($lastmi && $lastmi->message !== $mi->message) {
+                yield self::decorate_message_item($lastmi, $lastloc);
+                $lastmi = null;
+            }
+            if (!$lastmi) {
+                $lastmi = $mi;
+                $lastloc = [];
+            }
+            if ($loc) {
+                $lastloc[] = $loc;
             }
         }
-        if ($lastmsg && $lastmsg[0] === $t) {
-            if ($lastmsg[1]) {
-                $loc = $loc ? $lastmsg[1] . ", " . $loc : $lastmsg[1];
-            }
-            $msgs[count($msgs) - 1] = $loc ? $loc . ": " . $t : $t;
-        } else {
-            $msgs[] = $loc ? $loc . ": " . $t : $t;
+        if ($lastmi) {
+            yield self::decorate_message_item($lastmi, $lastloc);
         }
-        $lastmsg = [$t, $loc];
     }
     function report($is_update = false) {
         $msgs = [];
         if ($is_update && $this->has_error()) {
-            $msgs[] = "Your changes were not saved. Please fix these errors and try again.";
+            $msgs[] = new MessageItem("", "Your changes were not saved. Please fix these errors and try again.", MessageSet::PLAIN);
         }
-        $lastmsg = null;
-        foreach ($this->message_list() as $mx) {
-            $this->report_mx($msgs, $lastmsg, $mx);
+        foreach ($this->decorated_message_list() as $mi) {
+            $msgs[] = $mi;
         }
         if (!empty($msgs)) {
             if ($this->has_error()) {
-                Conf::msg_error($msgs, true);
+                Conf::msg_error(MessageSet::feedback_html($msgs), true);
             } else {
-                Conf::msg_warning($msgs, true);
+                Conf::msg_warning(MessageSet::feedback_html($msgs), true);
             }
         }
     }

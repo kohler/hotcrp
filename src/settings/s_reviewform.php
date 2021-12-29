@@ -243,7 +243,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 $sv->error_at("rf_name_{$xpos}", "Missing review field name.");
             } else if (isset($this->byname[strtolower($sn)])) {
                 $sv->error_at("rf_name_{$xpos}", "Cannot reuse review field name “" . htmlspecialchars($sn) . "”.");
-                $sv->error_at("rf_name_" . $this->byname[strtolower($sn)], false);
+                $sv->error_at("rf_name_" . $this->byname[strtolower($sn)], "");
             } else if (ReviewField::clean_name($sn) !== $sn
                        && $sn !== $f->name
                        && !$sv->reqv("rf_forcename_{$xpos}")) {

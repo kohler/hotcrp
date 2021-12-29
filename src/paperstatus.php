@@ -199,7 +199,7 @@ class PaperStatus extends MessageSet {
             }
             $this->_cf->check_document($doc);
             if ($this->_cf->has_problem()) {
-                $this->msg_at($o->field_key(), false, $this->_cf->problem_status());
+                $this->msg_at($o->field_key(), null, $this->_cf->problem_status());
             }
         }
 
@@ -806,7 +806,7 @@ class PaperStatus extends MessageSet {
                 $key = "contacts";
             }
             $this->error_at($key, $this->_("Could not create an account for contact %s.", Text::nameo_h($au, NAME_E)));
-            $this->error_at("contacts", false);
+            $this->error_at("contacts", null);
         }
     }
 

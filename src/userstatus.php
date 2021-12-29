@@ -752,7 +752,7 @@ class UserStatus extends MessageSet {
             && $user->lastName === ""
             && ($user->contactId > 0 || !$cdbu || ($cdbu->firstName === "" && $cdbu->lastName === ""))) {
             $us->warning_at("firstName", "Please enter your name.");
-            $us->warning_at("lastName", false);
+            $us->warning_at("lastName", null);
         }
         if ($user->affiliation === ""
             && ($user->contactId > 0 || !$cdbu || $cdbu->affiliation === "")) {
