@@ -411,7 +411,11 @@ class Options_SettingRenderer {
             return;
         }
         $options = (array) json_decode($sv->newv("options"));
-        usort($options, function ($a, $b) { return $a->order <=> $b->order; });
+        usort($options, function ($a, $b) {
+            $ao = $a->order ?? $a->position; /* XXX backward compat */
+            $bo = $b->order ?? $b->position;
+            return $ao <=> $bo;
+        });
         if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))
             && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
             foreach ($options as $pos => $o) {
