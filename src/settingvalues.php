@@ -1225,12 +1225,14 @@ class SettingValues extends MessageSet {
         if (array_key_exists($s, $this->savedv)) {
             $v = $this->savedv[$s];
             if ($v !== null) {
-                $v = $v[$si->storage_type & Si::SI_DATA ? 1 : 0];
+                $vx = $v[$si->storage_type & Si::SI_DATA ? 1 : 0];
                 if ($si->storage_type & Si::SI_NEGATE) {
-                    $v = $v ? 0 : 1;
+                    $vx = $vx ? 0 : 1;
                 }
+                return $vx;
+            } else {
+                return $si->default_value;
             }
-            return $v;
         } else {
             return null;
         }
