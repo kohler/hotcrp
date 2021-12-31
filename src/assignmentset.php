@@ -1649,7 +1649,8 @@ class AssignmentSet {
 
     /** @param CsvParser|string|list<string> $text
      * @param string $filename
-     * @param ?array<string,mixed> $defaults */
+     * @param ?array<string,mixed> $defaults
+     * @return $this */
     function parse($text, $filename = "", $defaults = null) {
         assert(empty($this->assigners));
 
@@ -1667,7 +1668,7 @@ class AssignmentSet {
         $this->astate->defaults = $defaults ?? [];
 
         if (!$this->install_csv_header($csv)) {
-            return false;
+            return $this;
         }
 
         $has_landmark = $csv->has_column("landmark");
@@ -1745,6 +1746,7 @@ class AssignmentSet {
             call_user_func($progressf, $this, null);
         }
         $this->user->set_overrides($old_overrides);
+        return $this;
     }
 
     /** @return list<string> */

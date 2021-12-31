@@ -665,14 +665,17 @@ class SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         return false;
     }
+
     /** @return void */
     function parse_req(SettingValues $sv, Si $si) {
     }
+
     /** @return mixed */
     function unparse_json(SettingValues $sv, Si $si) {
         error_log("Si {$si->name} missing");
         return null;
     }
+
     /** @return void */
     function store_value(SettingValues $sv, Si $si) {
     }
@@ -754,11 +757,14 @@ class SettingValues extends MessageSet {
     /** @var associative-array<string,true> */
     private $invalidate_caches = [];
 
+    /** @var array<string,null|int|float|string> */
     public $req = [];
     public $req_files = [];
+    /** @var array<string,array{?int,?string}> */
     public $savedv = [];
     /** @var array<string,null|int|string> */
     private $explicit_oldv = [];
+    /** @var array<string,true> */
     private $hint_status = [];
     /** @var array<string,list<string>> */
     private $req_has_suffixes = [];
@@ -839,43 +845,51 @@ class SettingValues extends MessageSet {
         }
         return $this->_gxt;
     }
+
     /** @param string $g
      * @return ?string */
     function canonical_group($g) {
         return $this->gxt()->canonical_group(strtolower($g));
     }
+
     /** @param string $g
      * @return ?string */
     function group_title($g) {
         $gj = $this->gxt()->get($g);
         return $gj && $gj->name === $gj->group ? $gj->title : null;
     }
+
     /** @param string $g
      * @return ?string */
     function group_hashid($g) {
         $gj = $this->gxt()->get($g);
         return $gj && isset($gj->hashid) ? $gj->hashid : null;
     }
+
     /** @param string $g
      * @return list<object> */
     function group_members($g) {
         return $this->gxt()->members(strtolower($g));
     }
+
     function crosscheck() {
         foreach ($this->gxt()->members("__crosscheck", "crosscheck_function") as $gj) {
             $this->gxt()->call_function($gj->crosscheck_function, $gj);
         }
     }
+
     /** @param string $g
      * @param bool $top */
     function render_group($g, $top = false) {
         $this->gxt()->render_group($g, $top);
     }
+
     /** @param ?string $classes
      * @param ?string $id */
     function render_open_section($classes = null, $id = null) {
         $this->gxt()->render_open_section($classes, $id);
     }
+
     /** @param string $title
      * @param ?string $id */
     function render_section($title, $id = null) {
@@ -905,6 +919,7 @@ class SettingValues extends MessageSet {
         }
         return $mi;
     }
+
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
@@ -912,6 +927,7 @@ class SettingValues extends MessageSet {
         $msg = $msg === null || $msg === false ? "" : $msg;
         return $this->add_at($field, new MessageItem(null, $msg, MessageSet::ERROR));
     }
+
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
@@ -919,6 +935,7 @@ class SettingValues extends MessageSet {
         $msg = $msg === null || $msg === false ? "" : $msg;
         return $this->add_at($field, new MessageItem(null, $msg, MessageSet::WARNING));
     }
+
     /** @param MessageItem $mi
      * @param list<string> $loc
      * @return MessageItem */
@@ -928,6 +945,7 @@ class SettingValues extends MessageSet {
         }
         return $mi;
     }
+
     /** @return \Generator<MessageItem> */
     private function decorated_message_list() {
         $lastmi = null;
@@ -961,6 +979,8 @@ class SettingValues extends MessageSet {
             yield self::decorate_message_item($lastmi, $lastloc);
         }
     }
+
+    /** @param bool $is_update */
     function report($is_update = false) {
         $msgs = [];
         if ($is_update && $this->has_error()) {
@@ -977,6 +997,7 @@ class SettingValues extends MessageSet {
             }
         }
     }
+
     /** @return SettingParser */
     private function si_parser(Si $si) {
         $class = $si->parser_class;
@@ -995,7 +1016,7 @@ class SettingValues extends MessageSet {
         } else if ($c2 === null || $c2 === "") {
             return $c1;
         } else {
-            return $c1 . " " . $c2;
+            return "{$c1} {$c2}";
         }
     }
 
@@ -1018,6 +1039,7 @@ class SettingValues extends MessageSet {
         }
         return Ht::label($html, $name1, $label_js) . $post;
     }
+
     /** @param Si|string $name
      * @param ?array<string,mixed> $js
      * @return array<string,mixed> */
@@ -1071,11 +1093,13 @@ class SettingValues extends MessageSet {
     function set_canonical_page($page) {
         $this->canonical_page = $page;
     }
+
     /** @param string $name
      * @return bool */
     function editable($name) {
         return $this->si_editable($this->si($name));
     }
+
     /** @return bool */
     function si_editable(Si $si) {
         assert(!!$si->group);
@@ -1100,11 +1124,13 @@ class SettingValues extends MessageSet {
     function oldv($name) {
         return $this->si_oldv($this->si($name));
     }
+
     /** @param string $name
      * @param null|int|string $value */
     function set_oldv($name, $value) {
         $this->explicit_oldv[$name] = $value;
     }
+
     /** @return null|int|string */
     function si_oldv(Si $si) {
         if (array_key_exists($si->name, $this->explicit_oldv)
@@ -1137,6 +1163,7 @@ class SettingValues extends MessageSet {
     function has_reqv($name) {
         return array_key_exists($name, $this->req);
     }
+
     /** @param string $name */
     function reqv($name) {
         return $this->req[$name] ?? null;
@@ -1171,6 +1198,7 @@ class SettingValues extends MessageSet {
     function curv($name) {
         return $this->si_curv($this->si($name));
     }
+
     private function si_curv(Si $si) {
         if ($this->use_req() && $this->req_has_si($si)) {
             return $this->reqv($si->name);
@@ -1185,12 +1213,14 @@ class SettingValues extends MessageSet {
         $si = $this->si($name);
         return array_key_exists($si->storage(), $this->savedv);
     }
+
     /** @param string $name */
     function savedv($name) {
         $si = $this->si($name);
         assert($si->storage_type !== Si::SI_NONE);
         return $this->si_savedv($si->storage(), $si);
     }
+
     private function si_savedv($s, Si $si) {
         if (array_key_exists($s, $this->savedv)) {
             $v = $this->savedv[$s];
@@ -1223,6 +1253,7 @@ class SettingValues extends MessageSet {
         return !$this->canonical_page
             || $this->si_has_interest($this->si($name));
     }
+
     /** @return bool */
     function si_has_interest(Si $si) {
         return !$this->canonical_page
@@ -1274,6 +1305,7 @@ class SettingValues extends MessageSet {
             $this->savedv[$s] = [$value, null];
         }
     }
+
     /** @param string $name
      * @return bool */
     function update($name, $value) {
@@ -1284,6 +1316,7 @@ class SettingValues extends MessageSet {
             return false;
         }
     }
+
     /** @param ?string $name
      * @param callable() $func */
     function register_cleanup_function($name, $func) {
@@ -1302,6 +1335,7 @@ class SettingValues extends MessageSet {
         $fname = $field instanceof Si ? $field->name : $field;
         return $this->feedback_html_at($fname);
     }
+
     /** @param string $field */
     function echo_feedback_at($field) {
         echo $this->feedback_at($field);
@@ -1322,6 +1356,7 @@ class SettingValues extends MessageSet {
         }
         return $njs;
     }
+
     /** @param string $name
      * @param ?array<string,mixed> $js
      * @return void */
@@ -1331,11 +1366,13 @@ class SettingValues extends MessageSet {
         echo Ht::hidden("has_$name", 1),
             Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js));
     }
+
     /** @param string $name
      * @param string $text
      * @param ?array<string,mixed> $js
+     * @param string $hint
      * @return void */
-    function echo_checkbox($name, $text, $js = null, $hint = null) {
+    function echo_checkbox($name, $text, $js = null, $hint = "") {
         echo '<div class="', self::add_class("checki", $js["group_class"] ?? null),
             '"><span class="checkc">';
         $this->echo_checkbox_only($name, self::strip_group_js($js));
@@ -1348,6 +1385,7 @@ class SettingValues extends MessageSet {
             echo "</div>\n";
         }
     }
+
     /** @param string $name
      * @param array $varr
      * @param ?string $heading
@@ -1412,6 +1450,7 @@ class SettingValues extends MessageSet {
         }
         echo "</div>\n";
     }
+
     /** @param string $name
      * @param ?array<string,mixed> $js
      * @return string */
@@ -1437,13 +1476,20 @@ class SettingValues extends MessageSet {
         }
         return Ht::entry($name, $v, $this->sjs($si, $js)) . $t;
     }
+
     /** @param string $name
      * @return void */
     function echo_entry($name) {
         echo $this->entry($name);
     }
+
+    /** @param string $name
+     * @param string $description
+     * @param string $control
+     * @param ?array<string,mixed> $js
+     * @param string $hint */
     function echo_control_group($name, $description, $control,
-                                $js = null, $hint = null) {
+                                $js = null, $hint = "") {
         $si = $this->si($name);
         if (($horizontal = $js["horizontal"] ?? null) !== null) {
             unset($js["horizontal"]);
@@ -1477,14 +1523,17 @@ class SettingValues extends MessageSet {
             echo "</div>\n";
         }
     }
+
     /** @param string $name
      * @param ?array<string,mixed> $js
+     * @param string $hint
      * @return void */
-    function echo_entry_group($name, $description, $js = null, $hint = null) {
+    function echo_entry_group($name, $description, $js = null, $hint = "") {
         $this->echo_control_group($name, $description,
             $this->entry($name, self::strip_group_js($js)),
             $js, $hint);
     }
+
     /** @param string $name
      * @param ?array<string,mixed> $js
      * @return string */
@@ -1497,11 +1546,17 @@ class SettingValues extends MessageSet {
         }
         return Ht::select($name, $values, $v !== null ? $v : 0, $this->sjs($si, $js)) . $t;
     }
-    function echo_select_group($name, $values, $description, $js = null, $hint = null) {
+
+    /** @param string $name
+     * @param array $values
+     * @param string $description
+     * @param string $hint */
+    function echo_select_group($name, $values, $description, $js = null, $hint = "") {
         $this->echo_control_group($name, $description,
             $this->select($name, $values, self::strip_group_js($js)),
             $js, $hint);
     }
+
     /** @param string $name
      * @param ?array<string,mixed> $js
      * @return string */
@@ -1531,6 +1586,11 @@ class SettingValues extends MessageSet {
         }
         return Ht::textarea($name, $v, $this->sjs($si, $js)) . $t;
     }
+
+    /** @param string $name
+     * @param string $description
+     * @param string $hint
+     * @param string $xclass */
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
         if (str_starts_with($si->storage(), "msg.")) {
@@ -1547,12 +1607,24 @@ class SettingValues extends MessageSet {
             $this->textarea($name, ["class" => "fx"]),
             $hint, "</div>\n";
     }
+
+    /** @param string $name
+     * @param string $description
+     * @param string $hint */
     function echo_message($name, $description, $hint = "") {
         $this->echo_message_base($name, $description, $hint, "");
     }
+
+    /** @param string $name
+     * @param string $description
+     * @param string $hint */
     function echo_message_minor($name, $description, $hint = "") {
         $this->echo_message_base($name, $description, $hint, " n");
     }
+
+    /** @param string $name
+     * @param string $description
+     * @param string $hint */
     function echo_message_horizontal($name, $description, $hint = "") {
         $si = $this->si($name);
         if (str_starts_with($si->storage(), "msg.")) {
@@ -1585,8 +1657,9 @@ class SettingValues extends MessageSet {
         if (($d1 = $this->newv($name1))) {
             $d0 = $this->newv($name0);
             if (!$d0) {
-                if ($force_name0)
+                if ($force_name0) {
                     $this->save($name0, $d1);
+                }
             } else if ($d0 > $d1) {
                 $si1 = $this->si($name1);
                 $this->error_at($this->si($name0), "Must come before " . $this->setting_link($si1->title_html($this), $si1) . ".");

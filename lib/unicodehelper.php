@@ -45,6 +45,8 @@ class UnicodeHelper {
         }
     }
 
+    /** @param string $x
+     * @return string */
     static function deaccent($x) {
         if (self::$deaccent_map === null) {
             self::make_deaccent_map();

@@ -12,10 +12,12 @@ class GroupedExtensionsContext {
 class GroupedExtensions implements XtContext {
     private $_jall = [];
     private $_potential_members = [];
-    /** @var Conf */
-    private $conf;
-    /** @var Contact */
-    private $viewer;
+    /** @var Conf
+     * @readonly */
+    public $conf;
+    /** @var Contact
+     * @readonly */
+    public $viewer;
     public $root;
     private $_raw = [];
     private $_callables;
