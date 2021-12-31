@@ -1680,6 +1680,9 @@ label.f-c, .f-i > label {
 .feedback-list > li {
 	margin-bottom: 0.3rem;
 }
+.feedback-list > li:last-child {
+	margin-bottom: 0;
+}
 .lentry .feedback + input.has-error,
 .lentry .feedback + input.has-warning {
 	margin-top: -0.3rem;

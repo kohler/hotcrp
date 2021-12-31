@@ -82,15 +82,23 @@ class Decisions_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
         $dj = json_decode($sv->oldv("decisions")) ?? [];
 
+        // XXX old style, would be better to parse each setting separately
+        $suffixes = [];
+        foreach ($sv->req as $k => $v) {
+            if (str_starts_with($k, "dec_name_")) {
+                $suffixes[] = substr($k, 9);
+            }
+        }
+
         // parse request
-        foreach ($sv->req_suffixes("dec_name") as $suffix) {
-            $name = $sv->base_parse_req("dec_name$suffix");
-            if (str_starts_with($suffix, "_n")) {
+        foreach ($suffixes as $suffix) {
+            $name = $sv->base_parse_req("dec_name_$suffix");
+            if (str_starts_with($suffix, "n")) {
                 $did = "new";
-                $klass = $sv->reqv("dec_class$suffix") === "r" ? "r" : "a";
+                $klass = $sv->reqv("dec_class_$suffix") === "r" ? "r" : "a";
                 $i = count($dj);
             } else {
-                $did = str_starts_with($suffix, "_m") ? -(int) substr($suffix, 2) : (int) substr($suffix, 1);
+                $did = str_starts_with($suffix, "m") ? -(int) substr($suffix, 1) : (int) $suffix;
                 $klass = $did < 0 ? "r" : "a";
                 for ($i = 0; $i !== count($dj) && $dj[$i]->id !== $did; ++$i) {
                 }
@@ -102,9 +110,9 @@ class Decisions_SettingParser extends SettingParser {
                     array_splice($dj, $i, 1);
                 }
             } else if (($error = Conf::decision_name_error($name))) {
-                $sv->error_at("dec_name$suffix", htmlspecialchars($error));
+                $sv->error_at("dec_name_$suffix", htmlspecialchars($error));
             } else if ($i < count($dj)
-                       || $sv->reqv("dec_classconfirm$suffix")
+                       || $sv->reqv("dec_classconfirm_$suffix")
                        || ($klass === "a" && stripos($name, "reject") === false)
                        || ($klass === "r" && stripos($name, "accept") === false)) {
                 if ($i === count($dj)) {
@@ -116,7 +124,7 @@ class Decisions_SettingParser extends SettingParser {
             } else {
                 $n1 = $klass === "a" ? "An Accept" : "A Reject";
                 $n2 = $klass === "a" ? "reject" : "accept";
-                $sv->error_at("dec_class$suffix", "{$n1}-category decision should not typically have “{$n2}” in its name. Either change the decision name or category or check the “Confirm” box to save anyway.");
+                $sv->error_at("dec_class_$suffix", "{$n1}-category decision should not typically have “{$n2}” in its name. Either change the decision name or category or check the “Confirm” box to save anyway.");
             }
         }
 
@@ -125,8 +133,8 @@ class Decisions_SettingParser extends SettingParser {
         foreach ($dj as $d) {
             $n = strtolower($d->name);
             if (isset($revmap[$n])) {
-                $suffix = $d->suffix ?? ($d->id > 0 ? "_{$d->id}" : "_m" . -$d->id);
-                $sv->error_at("dec_name$suffix", "Decision name “" . htmlspecialchars($d->name) . "” cannot be reused.");
+                $suffix = $d->suffix ?? ($d->id > 0 ? $d->id : "m" . -$d->id);
+                $sv->error_at("dec_name_$suffix", "Decision name “" . htmlspecialchars($d->name) . "” cannot be reused.");
             } else {
                 $revmap[$n] = true;
             }

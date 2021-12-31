@@ -960,7 +960,9 @@ class PaperOption implements JsonSerializable {
                 }
             }
             foreach ($this->conf->options() as $o) {
-                if ($o->_readable_formid === null && $o->id > 0) {
+                if ($o->_readable_formid === null
+                    && $o->id > 0
+                    && $o->title) {
                     $s = self::make_readable_formid($o->title);
                     $o->_readable_formid = isset($used[$s]) ? $o->formid : $s;
                     $used[$o->_readable_formid] = true;

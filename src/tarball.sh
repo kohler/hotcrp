@@ -397,6 +397,7 @@ src/searchexample.php
 src/searchselection.php
 src/searchsplitter.php
 src/sessionlist.php
+src/settings/s_banal.php
 src/settings/s_basics.php
 src/settings/s_decisions.php
 src/settings/s_decisionvisibility.php
@@ -415,6 +416,7 @@ src/settings/s_topics.php
 src/settings/s_tracks.php
 src/settings/s_users.php
 src/settingvalues.php
+src/si.php
 src/siteloader.php
 src/tagrankparser.php
 src/tagsearchmatcher.php

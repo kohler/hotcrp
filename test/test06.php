@@ -162,6 +162,30 @@ xassert(!$tf->has_problem_at("reviewerEmail"));
 
 // Settings changes
 
+// Check settings aspects
+$siset = $Conf->si_set();
+$si = $Conf->si("sub_banal_data_0");
+xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
+xassert_eqq($si->storage_name(), "sub_banal");
+$si = $Conf->si("sub_banal_data_4");
+xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
+xassert_eqq($si->storage_name(), "sub_banal_4");
+$si = $Conf->si("sub_banal_m1");
+xassert_eqq($si->group, "decisions");
+
+// Check message defaults
+$sv = SettingValues::make_request($user_chair, []);
+$s = $sv->si_message_default($Conf->si("preference_instructions"));
+xassert(strpos($s, "review preference") !== false);
+xassert(strpos($s, "topic") === false);
+$sv = SettingValues::make_request($user_chair, [
+    "has_topics" => 1,
+    "topnew" => "Whatever\n"
+])->parse();
+$s = $sv->si_message_default($Conf->si("preference_instructions"));
+xassert(strpos($s, "review preference") !== false);
+xassert(strpos($s, "topic") !== false);
+
 // Add “no entry”
 $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,

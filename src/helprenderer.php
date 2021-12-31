@@ -126,7 +126,7 @@ class HelpRenderer extends Ht {
                 $pre = " (";
                 $post = ")";
             }
-            if (($si = Si::get($this->conf, $siname))) {
+            if (($si = $this->conf->si($siname))) {
                 $param = $si->hoturl_param();
             } else if (($g = $this->_sv->canonical_group($siname))) {
                 $param = ["group" => $g];

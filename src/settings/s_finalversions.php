@@ -16,7 +16,7 @@ class FinalVersions_SettingParser extends SettingParser {
         echo '</div><div class="form-g">';
         $sv->echo_message_minor("final_edit_message", "Instructions");
         echo '</div>';
-        BanalSettings::render("_m1", $sv);
+        Banal_SettingRenderer::render("m1", $sv);
         echo "</div></div></div>\n\n";
     }
 

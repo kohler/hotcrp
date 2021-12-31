@@ -112,6 +112,7 @@ class Topics_SettingParser extends SettingParser {
         }
         if (!$sv->has_error()
             && $sv->update("topics", json_encode_db($j))) {
+            $sv->save("has_topics", empty($j) ? null : 1);
             $sv->request_write_lock("TopicArea", "PaperTopic", "TopicInterest");
             $sv->request_store_value($si);
         }

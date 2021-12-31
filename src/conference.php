@@ -252,8 +252,8 @@ class Conf {
     private $_hook_factories;
     /** @var ?array<string,FileFilter> */
     public $_file_filters; // maintained externally
-    /** @var array<string,Si> */
-    public $_setting_info = []; // maintained externally
+    /** @var ?SettingInfoSet */
+    public $_setting_info; // maintained externally
     private $_mail_keyword_map;
     private $_mail_keyword_factories;
     private $_mail_template_map;
@@ -5428,5 +5428,20 @@ class Conf {
             $this->_page_partials = new GroupedExtensions($viewer, ["etc/pages.json"], $this->opt("pages"));
         }
         return $this->_page_partials;
+    }
+
+
+    // setting info
+
+    /** @return SettingInfoSet */
+    function si_set() {
+        $this->_setting_info = $this->_setting_info ?? new SettingInfoSet($this);
+        return $this->_setting_info;
+    }
+
+    /** @param string $name
+     * @return ?Si */
+    function si($name) {
+        return $this->si_set()->get($name);
     }
 }

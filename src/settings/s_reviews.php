@@ -37,26 +37,25 @@ class Reviews_SettingRenderer {
         echo '</div>';
 
         // deadlines
-        $entrysuf = $rnum ? "_$rnum" : "";
         if ($rnum === '$' && count($sv->conf->round_list())) {
-            $dlsuf = "_" . (count($sv->conf->round_list()) - 1);
+            $dlnum = count($sv->conf->round_list()) - 1;
         } else if ($rnum !== '$' && $rnum) {
-            $dlsuf = "_" . $rnum;
+            $dlnum = $rnum;
         } else {
-            $dlsuf = "";
+            $dlnum = 0;
         }
-        if ($sv->oldv("extrev_soft$dlsuf") === $sv->oldv("pcrev_soft$dlsuf")) {
-            $sv->set_oldv("extrev_soft$dlsuf", null);
+        if ($sv->oldv("extrev_soft_$dlnum") === $sv->oldv("pcrev_soft_$dlnum")) {
+            $sv->set_oldv("extrev_soft_$dlnum", null);
         }
-        if ($sv->oldv("extrev_hard$dlsuf") === $sv->oldv("pcrev_hard$dlsuf")) {
-            $sv->set_oldv("extrev_hard$dlsuf", null);
+        if ($sv->oldv("extrev_hard_$dlnum") === $sv->oldv("pcrev_hard_$dlnum")) {
+            $sv->set_oldv("extrev_hard_$dlnum", null);
         }
 
         echo '<div class="settings-2col" style="margin-left:3em">';
-        $sv->echo_entry_group("pcrev_soft$entrysuf", "PC deadline", ["horizontal" => true]);
-        $sv->echo_entry_group("pcrev_hard$entrysuf", "Hard deadline", ["horizontal" => true]);
-        $sv->echo_entry_group("extrev_soft$entrysuf", "External deadline", ["horizontal" => true]);
-        $sv->echo_entry_group("extrev_hard$entrysuf", "Hard deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("pcrev_soft_$dlnum", "PC deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("pcrev_hard_$dlnum", "Hard deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("extrev_soft_$dlnum", "External deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("extrev_hard_$dlnum", "Hard deadline", ["horizontal" => true]);
         echo "</div></div>\n";
     }
 
@@ -267,10 +266,9 @@ class Reviews_SettingRenderer {
     static function crosscheck(SettingValues $sv) {
         $errored = false;
         foreach ($sv->conf->round_list() as $i => $rname) {
-            $suf = $i ? "_$i" : "";
             foreach (Conf::$review_deadlines as $deadline) {
-                if ($sv->has_interest($deadline . $suf)
-                    && $sv->newv($deadline . $suf) > Conf::$now
+                if ($sv->has_interest("{$deadline}_{$i}")
+                    && $sv->newv("{$deadline}_{$i}") > Conf::$now
                     && $sv->newv("rev_open") <= 0
                     && !$errored) {
                     $sv->warning_at("rev_open", "A review deadline is set in the future, but reviews cannot be edited now. This is sometimes unintentional.");
@@ -280,13 +278,13 @@ class Reviews_SettingRenderer {
             }
         }
 
-        if (($sv->has_interest("au_seerev") || $sv->has_interest("pcrev_soft"))
+        if (($sv->has_interest("au_seerev") || $sv->has_interest("pcrev_soft_0"))
             && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
             && $sv->newv("au_seerev") != Conf::AUSEEREV_TAGS
-            && $sv->newv("pcrev_soft") > 0
-            && Conf::$now < $sv->newv("pcrev_soft")
+            && $sv->newv("pcrev_soft_0") > 0
+            && Conf::$now < $sv->newv("pcrev_soft_0")
             && !$sv->has_error()) {
-            $sv->warning_at(null, $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before the " . $sv->setting_link("review deadline", "pcrev_soft") . ". This is sometimes unintentional.");
+            $sv->warning_at(null, $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before the " . $sv->setting_link("review deadline", "pcrev_soft_0") . ". This is sometimes unintentional.");
         }
 
         if (($sv->has_interest("rev_blind") || $sv->has_interest("extrev_view"))
@@ -370,7 +368,7 @@ class Round_SettingParser extends SettingParser {
         foreach ($roundnames as $i => $n) {
             if ($n === ";") {
                 foreach (Conf::$review_deadlines as $dl) {
-                    $sv->save($dl . ($i ? "_$i" : ""), null);
+                    $sv->save("{$dl}_{$i}", null);
                 }
             }
         }
@@ -430,8 +428,10 @@ class RoundSelector_SettingParser extends SettingParser {
 class ReviewDeadline_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
         assert($sv->has_savedv("tag_rounds"));
+        assert($si->split_name !== null);
 
-        $rref = (int) substr($si->suffix(), 1);
+        $prefix = $si->split_name[0];
+        $rref = intval($si->split_name[1]);
         if ($sv->reqv("deleteround_$rref")) {
             // setting already deleted by tag_rounds parsing
             return;
@@ -452,13 +452,11 @@ class ReviewDeadline_SettingParser extends SettingParser {
             assert($rnum !== false);
             $rnum += 1;
         }
-        $prefix = $si->prefix();
-        $suffix = $rnum ? "_$rnum" : "";
 
         if (($v = $sv->base_parse_req($si)) !== null) {
-            $sv->save("{$prefix}{$suffix}", $v <= 0 ? null : $v);
-            if ($v > 0 && str_ends_with($prefix, "hard")) {
-                $sv->check_date_before(substr($prefix, 0, -4) . "soft{$suffix}", $si->name, true);
+            $sv->save("{$prefix}{$rnum}", $v <= 0 ? null : $v);
+            if ($v > 0 && str_ends_with($prefix, "hard_")) {
+                $sv->check_date_before(substr($prefix, 0, -5) . "soft_{$rnum}", $si->name, true);
             }
         }
     }
