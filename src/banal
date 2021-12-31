@@ -879,7 +879,7 @@ sub report_verbose ($) {
     print $doc->{fullpath}, "\n";
     if (p2h_font_bug ($doc)) {
         print STDERR $doc->{fullpath}, "\n";
-        print STDERR "$banal_filename: Error: pdftohtml encountered font problems...some info likely bogus.\n";
+        print STDERR "$banal_filename: Error: $pdftohtml encountered font problems...some info likely bogus.\n";
     }
     printf "Paper size: %.2fin x %.2fin\n",
         pdf2in($doc->{pagebb}->{width}),
@@ -935,12 +935,12 @@ sub report_stats ($) {
     my ($page) = $doc->{pages}->{1};
 
     if (p2h_serious_font_bug ($doc)) {
-        print STDERR "$banal_filename: Error: pdftohtml encountered font problems...skipping.\n";
+        print STDERR "$banal_filename: Error: $pdftohtml encountered font problems...skipping.\n";
         return;
     }
 
     if (p2h_font_bug ($doc)) {
-        print STDERR "$banal_filename: Warning: pdftohtml encountered font problems...some info likely bogus.\n";
+        print STDERR "$banal_filename: Warning: $pdftohtml encountered font problems...some info likely bogus.\n";
     }
 
     printf  "%s\t%.2fx%.2f\t%.2fx%.2f\t%.2fx%.2fx%.2fx%.2f\t%d\t%.1f\t%d\t%d\t%s\n",
@@ -1477,7 +1477,7 @@ sub banal_file ($) {
     $banal_filename = $doc->{filename};
 
     if (!parse_p2h_header ($doc)) {
-        print STDERR "$banal_filename: Error: No pdftohtml output...corrupted pdf file?\n";
+        print STDERR "$banal_filename: Error: No $pdftohtml output...corrupted pdf file?\n";
         return;
     }
 
