@@ -14,7 +14,7 @@ CREATE TABLE `ActionLog` (
   `action` varbinary(4096) NOT NULL,
   `data` varbinary(8192) DEFAULT NULL,
   PRIMARY KEY (`logId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -31,7 +31,7 @@ CREATE TABLE `Capability` (
   `salt` varbinary(255) NOT NULL,
   `data` varbinary(4096) DEFAULT NULL,
   PRIMARY KEY (`salt`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -52,21 +52,21 @@ CREATE TABLE `ContactInfo` (
   `phone` varbinary(64) DEFAULT NULL,
   `country` varbinary(256) DEFAULT NULL,
   `password` varbinary(2048) NOT NULL,
-  `passwordTime` bigint(11) NOT NULL DEFAULT '0',
-  `passwordUseTime` bigint(11) NOT NULL DEFAULT '0',
+  `passwordTime` bigint(11) NOT NULL DEFAULT 0,
+  `passwordUseTime` bigint(11) NOT NULL DEFAULT 0,
   `collaborators` varbinary(8192) DEFAULT NULL,
-  `updateTime` bigint(11) NOT NULL DEFAULT '0',
-  `lastLogin` bigint(11) NOT NULL DEFAULT '0',
-  `defaultWatch` int(11) NOT NULL DEFAULT '2',
-  `roles` tinyint(1) NOT NULL DEFAULT '0',
-  `disabled` tinyint(1) NOT NULL DEFAULT '0',
+  `updateTime` bigint(11) NOT NULL DEFAULT 0,
+  `lastLogin` bigint(11) NOT NULL DEFAULT 0,
+  `defaultWatch` int(11) NOT NULL DEFAULT 2,
+  `roles` tinyint(1) NOT NULL DEFAULT 0,
+  `disabled` tinyint(1) NOT NULL DEFAULT 0,
   `contactTags` varbinary(4096) DEFAULT NULL,
   `data` varbinary(32767) DEFAULT NULL,
-  `primaryContactId` int(11) NOT NULL DEFAULT '0',
+  `primaryContactId` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`contactId`),
   UNIQUE KEY `email` (`email`),
   KEY `roles` (`roles`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -82,7 +82,7 @@ CREATE TABLE `DeletedContactInfo` (
   `unaccentedName` varbinary(240) NOT NULL,
   `email` varchar(120) NOT NULL,
   `affiliation` varbinary(2048) NOT NULL DEFAULT ''
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -97,7 +97,7 @@ CREATE TABLE `DocumentLink` (
   `linkType` int(11) NOT NULL,
   `documentId` int(11) NOT NULL,
   PRIMARY KEY (`paperId`,`linkId`,`linkType`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -112,7 +112,7 @@ CREATE TABLE `FilteredDocument` (
   `outDocId` int(11) NOT NULL,
   `createdAt` bigint(11) NOT NULL,
   PRIMARY KEY (`inDocId`,`filterType`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -125,10 +125,50 @@ CREATE TABLE `Formula` (
   `formulaId` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL,
   `expression` varbinary(4096) NOT NULL,
-  `createdBy` int(11) NOT NULL DEFAULT '0',
-  `timeModified` bigint(11) NOT NULL DEFAULT '0',
+  `createdBy` int(11) NOT NULL DEFAULT 0,
+  `timeModified` bigint(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`formulaId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+--
+-- Table structure for table `Invitation`
+--
+
+DROP TABLE IF EXISTS `Invitation`;
+CREATE TABLE `Invitation` (
+  `invitationId` int(11) NOT NULL AUTO_INCREMENT,
+  `invitationType` int(11) NOT NULL,
+  `email` varchar(120) NOT NULL,
+  `firstName` varbinary(120) DEFAULT NULL,
+  `lastName` varbinary(120) DEFAULT NULL,
+  `affiliation` varbinary(2048) DEFAULT NULL,
+  `requestedBy` int(11) NOT NULL,
+  `timeRequested` bigint(11) NOT NULL DEFAULT 0,
+  `timeRequestNotified` bigint(11) NOT NULL DEFAULT 0,
+  `salt` varbinary(255) NOT NULL,
+  `data` varbinary(4096) DEFAULT NULL,
+  PRIMARY KEY (`invitationId`),
+  UNIQUE KEY `salt` (`salt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+--
+-- Table structure for table `InvitationLog`
+--
+
+DROP TABLE IF EXISTS `InvitationLog`;
+CREATE TABLE `InvitationLog` (
+  `logId` int(11) NOT NULL AUTO_INCREMENT,
+  `invitationId` int(11) NOT NULL,
+  `mailId` int(11) DEFAULT NULL,
+  `contactId` int(11) NOT NULL,
+  `action` int(11) NOT NULL,
+  `timestamp` bigint(11) NOT NULL,
+  PRIMARY KEY (`logId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -139,7 +179,7 @@ CREATE TABLE `Formula` (
 DROP TABLE IF EXISTS `MailLog`;
 CREATE TABLE `MailLog` (
   `mailId` int(11) NOT NULL AUTO_INCREMENT,
-  `contactId` int NOT NULL DEFAULT '0',
+  `contactId` int NOT NULL DEFAULT 0,
   `recipients` varbinary(200) NOT NULL,
   `q` varbinary(4096) DEFAULT NULL,
   `t` varbinary(200) DEFAULT NULL,
@@ -148,10 +188,10 @@ CREATE TABLE `MailLog` (
   `replyto` blob,
   `subject` blob,
   `emailBody` blob,
-  `fromNonChair` tinyint(1) NOT NULL DEFAULT '0',
-  `status` tinyint(1) NOT NULL DEFAULT '0',
+  `fromNonChair` tinyint(1) NOT NULL DEFAULT 0,
+  `status` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`mailId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -166,25 +206,25 @@ CREATE TABLE `Paper` (
   `authorInformation` varbinary(8192) DEFAULT NULL,
   `abstract` varbinary(16384) DEFAULT NULL,
   `collaborators` varbinary(8192) DEFAULT NULL,
-  `timeSubmitted` bigint(11) NOT NULL DEFAULT '0',
-  `timeWithdrawn` bigint(11) NOT NULL DEFAULT '0',
-  `timeFinalSubmitted` bigint(11) NOT NULL DEFAULT '0',
-  `timeModified` bigint(11) NOT NULL DEFAULT '0',
-  `paperStorageId` int(11) NOT NULL DEFAULT '0',
+  `timeSubmitted` bigint(11) NOT NULL DEFAULT 0,
+  `timeWithdrawn` bigint(11) NOT NULL DEFAULT 0,
+  `timeFinalSubmitted` bigint(11) NOT NULL DEFAULT 0,
+  `timeModified` bigint(11) NOT NULL DEFAULT 0,
+  `paperStorageId` int(11) NOT NULL DEFAULT 0,
   # `sha1` copied from PaperStorage to reduce joins
   `sha1` varbinary(64) NOT NULL DEFAULT '',
-  `finalPaperStorageId` int(11) NOT NULL DEFAULT '0',
-  `blind` tinyint(1) NOT NULL DEFAULT '1',
-  `outcome` tinyint(1) NOT NULL DEFAULT '0',
-  `leadContactId` int(11) NOT NULL DEFAULT '0',
-  `shepherdContactId` int(11) NOT NULL DEFAULT '0',
-  `managerContactId` int(11) NOT NULL DEFAULT '0',
-  `capVersion` int(1) NOT NULL DEFAULT '0',
+  `finalPaperStorageId` int(11) NOT NULL DEFAULT 0,
+  `blind` tinyint(1) NOT NULL DEFAULT 1,
+  `outcome` tinyint(1) NOT NULL DEFAULT 0,
+  `leadContactId` int(11) NOT NULL DEFAULT 0,
+  `shepherdContactId` int(11) NOT NULL DEFAULT 0,
+  `managerContactId` int(11) NOT NULL DEFAULT 0,
+  `capVersion` int(1) NOT NULL DEFAULT 0,
   # next 3 fields copied from PaperStorage to reduce joins
-  `size` int(11) NOT NULL DEFAULT '0',
+  `size` int(11) NOT NULL DEFAULT 0,
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
-  `timestamp` bigint(11) NOT NULL DEFAULT '0',
-  `pdfFormatStatus` bigint(11) NOT NULL DEFAULT '0',
+  `timestamp` bigint(11) NOT NULL DEFAULT 0,
+  `pdfFormatStatus` bigint(11) NOT NULL DEFAULT 0,
   `withdrawReason` varbinary(1024) DEFAULT NULL,
   `paperFormat` tinyint(1) DEFAULT NULL,
   `dataOverflow` longblob,
@@ -192,7 +232,7 @@ CREATE TABLE `Paper` (
   KEY `timeSubmitted` (`timeSubmitted`),
   KEY `leadContactId` (`leadContactId`),
   KEY `shepherdContactId` (`shepherdContactId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -206,22 +246,22 @@ CREATE TABLE `PaperComment` (
   `commentId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
   `timeModified` bigint(11) NOT NULL,
-  `timeNotified` bigint(11) NOT NULL DEFAULT '0',
-  `timeDisplayed` bigint(11) NOT NULL DEFAULT '0',
+  `timeNotified` bigint(11) NOT NULL DEFAULT 0,
+  `timeDisplayed` bigint(11) NOT NULL DEFAULT 0,
   `comment` varbinary(32767) DEFAULT NULL,
-  `commentType` int(11) NOT NULL DEFAULT '0',
+  `commentType` int(11) NOT NULL DEFAULT 0,
   `replyTo` int(11) NOT NULL,
-  `ordinal` int(11) NOT NULL DEFAULT '0',
-  `authorOrdinal` int(11) NOT NULL DEFAULT '0',
+  `ordinal` int(11) NOT NULL DEFAULT 0,
+  `authorOrdinal` int(11) NOT NULL DEFAULT 0,
   `commentTags` varbinary(1024) DEFAULT NULL,
-  `commentRound` int(11) NOT NULL DEFAULT '0',
+  `commentRound` int(11) NOT NULL DEFAULT 0,
   `commentFormat` tinyint(1) DEFAULT NULL,
   `commentOverflow` longblob,
   PRIMARY KEY (`paperId`,`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
   KEY `timeModifiedContact` (`timeModified`,`contactId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -233,10 +273,10 @@ DROP TABLE IF EXISTS `PaperConflict`;
 CREATE TABLE `PaperConflict` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `conflictType` tinyint(1) NOT NULL DEFAULT '0',
+  `conflictType` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`contactId`,`paperId`),
   KEY `paperId` (`paperId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -248,11 +288,11 @@ DROP TABLE IF EXISTS `PaperOption`;
 CREATE TABLE `PaperOption` (
   `paperId` int(11) NOT NULL,
   `optionId` int(11) NOT NULL,
-  `value` bigint(11) NOT NULL DEFAULT '0',
+  `value` bigint(11) NOT NULL DEFAULT 0,
   `data` varbinary(32767) DEFAULT NULL,
   `dataOverflow` longblob,
   PRIMARY KEY (`paperId`,`optionId`,`value`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -265,40 +305,40 @@ CREATE TABLE `PaperReview` (
   `paperId` int(11) NOT NULL,
   `reviewId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
-  `reviewToken` int(11) NOT NULL DEFAULT '0',
-  `reviewType` tinyint(1) NOT NULL DEFAULT '0',
-  `reviewRound` int(1) NOT NULL DEFAULT '0',
-  `requestedBy` int(11) NOT NULL DEFAULT '0',
-  `reviewBlind` tinyint(1) NOT NULL DEFAULT '1',
-  `reviewModified` bigint(1) NOT NULL DEFAULT '0',
+  `reviewToken` int(11) NOT NULL DEFAULT 0,
+  `reviewType` tinyint(1) NOT NULL DEFAULT 0,
+  `reviewRound` int(1) NOT NULL DEFAULT 0,
+  `requestedBy` int(11) NOT NULL DEFAULT 0,
+  `reviewBlind` tinyint(1) NOT NULL DEFAULT 1,
+  `reviewModified` bigint(1) NOT NULL DEFAULT 0,
   `reviewSubmitted` bigint(1) DEFAULT NULL,
   `reviewAuthorSeen` bigint(1) DEFAULT NULL,
-  `reviewOrdinal` int(1) NOT NULL DEFAULT '0',
-  `timeDisplayed` bigint(11) NOT NULL DEFAULT '0',
-  `timeApprovalRequested` bigint(11) NOT NULL DEFAULT '0',
-  `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT '1',
-  `reviewViewScore` tinyint(2) NOT NULL DEFAULT '-3',
+  `reviewOrdinal` int(1) NOT NULL DEFAULT 0,
+  `timeDisplayed` bigint(11) NOT NULL DEFAULT 0,
+  `timeApprovalRequested` bigint(11) NOT NULL DEFAULT 0,
+  `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT 1,
+  `reviewViewScore` tinyint(2) NOT NULL DEFAULT -3,
 
-  `timeRequested` bigint(11) NOT NULL DEFAULT '0',
-  `timeRequestNotified` bigint(11) NOT NULL DEFAULT '0',
+  `timeRequested` bigint(11) NOT NULL DEFAULT 0,
+  `timeRequestNotified` bigint(11) NOT NULL DEFAULT 0,
   `reviewAuthorModified` bigint(1) DEFAULT NULL,
   `reviewNotified` bigint(1) DEFAULT NULL,
-  `reviewAuthorNotified` bigint(11) NOT NULL DEFAULT '0',
-  `reviewEditVersion` int(1) NOT NULL DEFAULT '0',
+  `reviewAuthorNotified` bigint(11) NOT NULL DEFAULT 0,
+  `reviewEditVersion` int(1) NOT NULL DEFAULT 0,
   `reviewWordCount` int(11) DEFAULT NULL,
   `reviewFormat` tinyint(1) DEFAULT NULL,
 
-  `overAllMerit` tinyint(1) NOT NULL DEFAULT '0',
-  `reviewerQualification` tinyint(1) NOT NULL DEFAULT '0',
-  `novelty` tinyint(1) NOT NULL DEFAULT '0',
-  `technicalMerit` tinyint(1) NOT NULL DEFAULT '0',
-  `interestToCommunity` tinyint(1) NOT NULL DEFAULT '0',
-  `longevity` tinyint(1) NOT NULL DEFAULT '0',
-  `grammar` tinyint(1) NOT NULL DEFAULT '0',
-  `likelyPresentation` tinyint(1) NOT NULL DEFAULT '0',
-  `suitableForShort` tinyint(1) NOT NULL DEFAULT '0',
-  `potential` tinyint(4) NOT NULL DEFAULT '0',
-  `fixability` tinyint(4) NOT NULL DEFAULT '0',
+  `overAllMerit` tinyint(1) NOT NULL DEFAULT 0,
+  `reviewerQualification` tinyint(1) NOT NULL DEFAULT 0,
+  `novelty` tinyint(1) NOT NULL DEFAULT 0,
+  `technicalMerit` tinyint(1) NOT NULL DEFAULT 0,
+  `interestToCommunity` tinyint(1) NOT NULL DEFAULT 0,
+  `longevity` tinyint(1) NOT NULL DEFAULT 0,
+  `grammar` tinyint(1) NOT NULL DEFAULT 0,
+  `likelyPresentation` tinyint(1) NOT NULL DEFAULT 0,
+  `suitableForShort` tinyint(1) NOT NULL DEFAULT 0,
+  `potential` tinyint(4) NOT NULL DEFAULT 0,
+  `fixability` tinyint(4) NOT NULL DEFAULT 0,
 
   `tfields` longblob,
   `sfields` varbinary(2048) DEFAULT NULL,
@@ -310,7 +350,7 @@ CREATE TABLE `PaperReview` (
   KEY `reviewType` (`reviewType`),
   KEY `reviewRound` (`reviewRound`),
   KEY `requestedBy` (`requestedBy`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -322,10 +362,10 @@ DROP TABLE IF EXISTS `PaperReviewPreference`;
 CREATE TABLE `PaperReviewPreference` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `preference` int(4) NOT NULL DEFAULT '0',
+  `preference` int(4) NOT NULL DEFAULT 0,
   `expertise` int(4) DEFAULT NULL,
   PRIMARY KEY (`paperId`,`contactId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -342,7 +382,7 @@ CREATE TABLE `PaperReviewRefused` (
   `affiliation` varbinary(2048) DEFAULT NULL,
   `contactId` int(11) NOT NULL,
   `refusedReviewId` int(11) DEFAULT NULL,
-  `refusedReviewType` tinyint(1) NOT NULL DEFAULT '0',
+  `refusedReviewType` tinyint(1) NOT NULL DEFAULT 0,
   `reviewRound` int(1) DEFAULT NULL,
   `requestedBy` int(11) NOT NULL,
   `timeRequested` bigint(11) DEFAULT NULL,
@@ -351,7 +391,7 @@ CREATE TABLE `PaperReviewRefused` (
   `data` varbinary(8192) DEFAULT NULL,
   `reason` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`paperId`,`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -366,19 +406,19 @@ CREATE TABLE `PaperStorage` (
   `timestamp` bigint(11) NOT NULL,
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
   `paper` longblob,
-  `compression` tinyint(1) NOT NULL DEFAULT '0',
+  `compression` tinyint(1) NOT NULL DEFAULT 0,
   `sha1` varbinary(64) NOT NULL DEFAULT '',
   `crc32` binary(4) DEFAULT NULL,
-  `documentType` int(3) NOT NULL DEFAULT '0',
+  `documentType` int(3) NOT NULL DEFAULT 0,
   `filename` varbinary(255) DEFAULT NULL,
   `infoJson` varbinary(32768) DEFAULT NULL,
   `size` bigint(11) DEFAULT NULL,
   `filterType` int(3) DEFAULT NULL,
   `originalStorageId` int(11) DEFAULT NULL,
-  `inactive` tinyint(1) NOT NULL DEFAULT '0',
+  `inactive` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`paperId`,`paperStorageId`),
   UNIQUE KEY `paperStorageId` (`paperStorageId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -390,9 +430,9 @@ DROP TABLE IF EXISTS `PaperTag`;
 CREATE TABLE `PaperTag` (
   `paperId` int(11) NOT NULL,
   `tag` varchar(80) NOT NULL,		# case-insensitive; see TAG_MAXLEN in init.php
-  `tagIndex` float NOT NULL DEFAULT '0',
+  `tagIndex` float NOT NULL DEFAULT 0,
   PRIMARY KEY (`paperId`,`tag`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -404,12 +444,12 @@ DROP TABLE IF EXISTS `PaperTagAnno`;
 CREATE TABLE `PaperTagAnno` (
   `tag` varchar(80) NOT NULL,   # case-insensitive; see TAG_MAXLEN in init.php
   `annoId` int(11) NOT NULL,
-  `tagIndex` float NOT NULL DEFAULT '0',
+  `tagIndex` float NOT NULL DEFAULT 0,
   `heading` varbinary(8192) DEFAULT NULL,
   `annoFormat` tinyint(1) DEFAULT NULL,
   `infoJson` varbinary(32768) DEFAULT NULL,
   PRIMARY KEY (`tag`,`annoId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -422,7 +462,7 @@ CREATE TABLE `PaperTopic` (
   `paperId` int(11) NOT NULL,
   `topicId` int(11) NOT NULL,
   PRIMARY KEY (`paperId`,`topicId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -434,9 +474,9 @@ DROP TABLE IF EXISTS `PaperWatch`;
 CREATE TABLE `PaperWatch` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `watch` int(11) NOT NULL DEFAULT '0',
+  `watch` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`paperId`,`contactId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -449,9 +489,9 @@ CREATE TABLE `ReviewRating` (
   `paperId` int(11) NOT NULL,
   `reviewId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
-  `rating` tinyint(1) NOT NULL DEFAULT '0',
+  `rating` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`paperId`,`reviewId`,`contactId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -471,7 +511,7 @@ CREATE TABLE `ReviewRequest` (
   `timeRequested` bigint(11) NOT NULL,
   `reviewRound` int(1) DEFAULT NULL,
   PRIMARY KEY (`paperId`,`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -485,7 +525,7 @@ CREATE TABLE `Settings` (
   `value` bigint(11) NOT NULL,
   `data` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -498,7 +538,7 @@ CREATE TABLE `TopicArea` (
   `topicId` int(11) NOT NULL AUTO_INCREMENT,
   `topicName` varbinary(1024) DEFAULT NULL,
   PRIMARY KEY (`topicId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -512,12 +552,12 @@ CREATE TABLE `TopicInterest` (
   `topicId` int(11) NOT NULL,
   `interest` int(1) NOT NULL,
   PRIMARY KEY (`contactId`,`topicId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 249);
+insert into Settings (name, value) values ('allowPaperOption', 252);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

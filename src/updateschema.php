@@ -11,6 +11,24 @@ class UpdateSchema {
         $this->conf = $conf;
     }
 
+    private function v1_options_setting($options_data) {
+        $options_array = [];
+        foreach (get_object_vars($options_data) as $k => $v) {
+            if (is_object($v)
+                && isset($v->type)
+                && is_string($v->type)
+                && is_numeric($k)
+                && (!isset($v->id) || $v->id == $k)) {
+                $v->id = (int) $k;
+                $options_array[] = $v;
+            } else {
+                return false;
+            }
+        }
+        $this->conf->save_setting("options", 1, $options_array);
+        return $options_array;
+    }
+
     private function v65_create_review_form() {
         $result = $this->conf->ql("select * from ReviewFormField where fieldName!='outcome'");
         if (Dbl::is_error($result)) {
@@ -482,22 +500,18 @@ class UpdateSchema {
         return $ok;
     }
 
-    private function v1_options_setting($options_data) {
-        $options_array = [];
-        foreach (get_object_vars($options_data) as $k => $v) {
-            if (is_object($v)
-                && isset($v->type)
-                && is_string($v->type)
-                && is_numeric($k)
-                && (!isset($v->id) || $v->id == $k)) {
-                $v->id = (int) $k;
-                $options_array[] = $v;
-            } else {
-                return false;
-            }
+    private function v243_simplify_user_whitespace() {
+        $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
+        $regex = Dbl::utf8($this->conf->dblink, "'  |[\\n\\r\\t]'");
+        $result = $this->conf->ql_ok("select contactId, firstName, lastName, affiliation from ContactInfo where firstName regexp $regex or lastName regexp $regex or affiliation regexp $regex");
+        while (($row = $result->fetch_object())) {
+            $cleanf("update ContactInfo set firstName=?, lastName=?, affiliation=? where contactId=?",
+                [simplify_whitespace($row->firstName), simplify_whitespace($row->lastName),
+                 simplify_whitespace($row->affiliation), $row->contactId]);
         }
-        $this->conf->save_setting("options", 1, $options_array);
-        return $options_array;
+        $cleanf(true);
+        Dbl::free($result);
+        return true;
     }
 
     private function v248_options_setting($options_array) {
@@ -523,18 +537,38 @@ class UpdateSchema {
         return $options_array;
     }
 
-    private function v243_simplify_user_whitespace() {
-        $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
-        $regex = Dbl::utf8($this->conf->dblink, "'  |[\\n\\r\\t]'");
-        $result = $this->conf->ql_ok("select contactId, firstName, lastName, affiliation from ContactInfo where firstName regexp $regex or lastName regexp $regex or affiliation regexp $regex");
-        while (($row = $result->fetch_object())) {
-            $cleanf("update ContactInfo set firstName=?, lastName=?, affiliation=? where contactId=?",
-                [simplify_whitespace($row->firstName), simplify_whitespace($row->lastName),
-                 simplify_whitespace($row->affiliation), $row->contactId]);
+    private function v251_change_default_charset() {
+        foreach (["ActionLog", "Capability", "ContactInfo", "DeletedContactInfo",
+            "DocumentLink", "FilteredDocument", "Formula", "Invitation",
+            "InvitationLog", "MailLog", "Paper", "PaperComment",
+            "PaperConflict", "PaperOption", "PaperReview", "PaperReviewPreference",
+            "PaperReviewRefused", "PaperStorage", "PaperTag", "PaperTagAnno",
+            "PaperTopic", "PaperWatch", "ReviewRating", "ReviewRequest",
+            "Settings", "TopicArea", "TopicInterest"] as $t) {
+            if (!$this->conf->ql("alter table $t character set utf8mb4"))
+                return false;
         }
-        $cleanf(true);
-        Dbl::free($result);
         return true;
+    }
+
+    private function v252_change_column_default_charset() {
+        return $this->conf->ql("alter table ContactInfo
+                modify `email` varchar(120) CHARACTER SET utf8mb4 NOT NULL,
+                modify `preferredEmail` varchar(120) CHARACTER SET utf8mb4 DEFAULT NULL")
+            && $this->conf->ql("alter table DeletedContactInfo
+                modify `email` varchar(120) CHARACTER SET utf8mb4 NOT NULL")
+            && $this->conf->ql("alter table Formula
+                modify `name` varchar(200) CHARACTER SET utf8mb4 NOT NULL")
+            && $this->conf->ql("alter table Invitation
+                modify `email` varchar(120) CHARACTER SET utf8mb4 NOT NULL")
+            && $this->conf->ql("alter table PaperReviewRefused
+                modify `email` varchar(120) CHARACTER SET utf8mb4 NOT NULL")
+            && $this->conf->ql("alter table PaperTag
+                modify `tag` varchar(80) CHARACTER SET utf8mb4 NOT NULL")
+            && $this->conf->ql("alter table PaperTagAnno
+                modify `tag` varchar(80) CHARACTER SET utf8mb4 NOT NULL")
+            && $this->conf->ql("alter table ReviewRequest
+                modify `email` varchar(120) CHARACTER SET utf8mb4 NOT NULL");
     }
 
     function run() {
@@ -2079,6 +2113,43 @@ class UpdateSchema {
         if ($conf->sversion === 248
             && $conf->ql_ok("alter table MailLog add `contactId` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(249);
+        }
+        if ($conf->sversion === 249
+            && $conf->ql_ok("DROP TABLE IF EXISTS `Invitation`")
+            && $conf->ql_ok("CREATE TABLE `Invitation` (
+  `invitationId` int(11) NOT NULL AUTO_INCREMENT,
+  `invitationType` int(11) NOT NULL,
+  `email` varchar(120) NOT NULL,
+  `firstName` varbinary(120) DEFAULT NULL,
+  `lastName` varbinary(120) DEFAULT NULL,
+  `affiliation` varbinary(2048) DEFAULT NULL,
+  `requestedBy` int(11) NOT NULL,
+  `timeRequested` bigint(11) NOT NULL DEFAULT '0',
+  `timeRequestNotified` bigint(11) NOT NULL DEFAULT '0',
+  `salt` varbinary(255) NOT NULL,
+  `data` varbinary(4096) DEFAULT NULL,
+  PRIMARY KEY (`invitationId`),
+  UNIQUE KEY (`salt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8")
+            && $conf->ql_ok("DROP TABLE IF EXISTS `InvitationLog`")
+            && $conf->ql_ok("CREATE TABLE `InvitationLog` (
+  `logId` int(11) NOT NULL AUTO_INCREMENT,
+  `invitationId` int(11) NOT NULL,
+  `mailId` int(11) DEFAULT NULL,
+  `contactId` int(11) NOT NULL,
+  `action` int(11) NOT NULL,
+  `timestamp` bigint(11) NOT NULL,
+  PRIMARY KEY (`logId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
+            $conf->update_schema_version(250);
+        }
+        if ($conf->sversion === 250
+            && $this->v251_change_default_charset()) {
+            $conf->update_schema_version(251);
+        }
+        if ($conf->sversion === 251
+            && $this->v252_change_column_default_charset()) {
+            $conf->update_schema_version(252);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
