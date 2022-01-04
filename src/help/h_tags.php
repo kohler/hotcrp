@@ -42,7 +42,7 @@ case insensitive, so “#TAG” and “#tAg” are considered identical.</p>";
 <div class=\"pspcard\"><div class=\"psc has-fold foldc\"><div class=\"pst ui js-foldup\">",
     '<span class="psfn"><a href="" class="q ui js-foldup">',
     expander(null, 0), "Tags</a></span></div><div class=\"psv\">",
-    '<div class="fn">', $hth->search_link(null, "#earlyaccept", ["class" => "nn pw"]), '</div>',
+    '<div class="fn">', $hth->search_link(null, "#earlyaccept", ["class" => "qo pw"]), '</div>',
     '<div class="fx"><textarea cols="20" rows="4" name="tags" class="w-99 want-focus need-suggest tags">earlyaccept</textarea>',
     '<div class="aab flex-row-reverse mt-1"><div class="aabut">',
     Ht::button("Save", ["class" => "btn-primary ui js-foldup"]),

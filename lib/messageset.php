@@ -57,11 +57,11 @@ class MessageSet {
     /** @var bool */
     public $ignore_duplicates = false;
     /** @var array<string,int> */
-    private $errf;
+    private $errf = [];
     /** @var list<MessageItem> */
-    private $msgs;
+    private $msgs = [];
     /** @var int */
-    private $problem_status;
+    private $problem_status = 0;
     /** @var ?array<string,int> */
     private $pstatus_at;
     /** @var bool */
@@ -83,12 +83,13 @@ class MessageSet {
     const NOTE = -1;
 
     function __construct() {
-        $this->clear_messages();
     }
+
     function clear_messages() {
         $this->errf = $this->msgs = [];
         $this->problem_status = 0;
     }
+
     function clear() {
         $this->clear_messages();
     }
@@ -224,7 +225,7 @@ class MessageSet {
     }
     /** @return int */
     function message_count() {
-        return count($this->msgs ?? []);
+        return count($this->msgs);
     }
     /** @return int */
     function problem_status() {

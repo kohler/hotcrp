@@ -1238,7 +1238,7 @@ $blind\n";
 
         echo '<h2><span class="revcard-header-name">';
         if ($rrow->reviewId) {
-            echo '<a class="nn" href="',
+            echo '<a class="qo" href="',
                 $rrow->conf->hoturl("review", "{$reviewlink}{$forceShow}"),
                 '">Edit ', ($rrow->subject_to_approval() ? "Subreview" : "Review");
             if ($rrow->reviewOrdinal) {
@@ -1586,7 +1586,6 @@ class ReviewValues extends MessageSet {
     private $no_notify = false;
 
     function __construct(ReviewForm $rf, $options = []) {
-        parent::__construct();
         $this->rf = $rf;
         $this->conf = $rf->conf;
         foreach (["no_notify"] as $k) {

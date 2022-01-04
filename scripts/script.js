@@ -7520,7 +7520,7 @@ function compute_row_tagset(tagstr, editable) {
             else
                 q = "#" + tbase;
             if ((tagx & 2) || tindex != "0")
-                h = '<a class="nn nw" href="' + hoturl("search", {q: q}) + '"><u class="x">#' + tbase + '</u>#' + tindex + '</a>';
+                h = '<a class="qo nw" href="' + hoturl("search", {q: q}) + '"><u class="x">#' + tbase + '</u>#' + tindex + '</a>';
             else
                 h = '<a class="q nw" href="' + hoturl("search", {q: q}) + '">#' + tbase + '</a>';
             if (taghighlighter && taghighlighter.test(tbase))

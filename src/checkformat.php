@@ -48,7 +48,6 @@ class CheckFormat extends MessageSet {
 
     /** @param ?int $allow_run */
     function __construct(Conf $conf, $allow_run = null) {
-        parent::__construct();
         $this->allow_run = $allow_run ?? self::RUN_ALWAYS;
         $this->conf = $conf;
         if (self::$banal_args === null) {
