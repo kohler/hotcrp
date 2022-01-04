@@ -1726,7 +1726,7 @@ class PaperTable {
                 }
             }
         }
-        if ($this->edit_status->has_messages_at(":main")) {
+        if ($this->edit_status->has_message_at(":main")) {
             echo '<div class="pge">', $this->messages_at(":main"), '</div>';
         }
     }

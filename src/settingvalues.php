@@ -238,11 +238,11 @@ class SettingValues extends MessageSet {
     }
     /** @param null|string|Si $field
      * @param MessageItem $mi */
-    function add_at($field, $mi) {
+    function append_item_at($field, $mi) {
         if (is_array($field)) {
             error_log("unexpected add_at with array " . json_encode($field) . " " . debug_string_backtrace());
             foreach ($field as $f) {
-                $this->add_at($f, $mi);
+                $this->append_item_at($f, $mi);
             }
         } else {
             $fname = $field instanceof Si ? $field->name : $field;
@@ -250,7 +250,7 @@ class SettingValues extends MessageSet {
                 $mi = clone $mi;
             }
             $mi->field = $fname;
-            parent::add($mi);
+            parent::append_item($mi);
         }
         return $mi;
     }
@@ -260,7 +260,7 @@ class SettingValues extends MessageSet {
      * @return MessageItem */
     function error_at($field, $msg = null) {
         $msg = $msg === null || $msg === false ? "" : $msg;
-        return $this->add_at($field, new MessageItem(null, $msg, MessageSet::ERROR));
+        return $this->append_item_at($field, new MessageItem(null, $msg, MessageSet::ERROR));
     }
 
     /** @param null|string|Si $field
@@ -268,7 +268,7 @@ class SettingValues extends MessageSet {
      * @return MessageItem */
     function warning_at($field, $msg = null) {
         $msg = $msg === null || $msg === false ? "" : $msg;
-        return $this->add_at($field, new MessageItem(null, $msg, MessageSet::WARNING));
+        return $this->append_item_at($field, new MessageItem(null, $msg, MessageSet::WARNING));
     }
 
     /** @param MessageItem $mi

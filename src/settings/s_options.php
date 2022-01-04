@@ -140,15 +140,15 @@ class Options_SettingRenderer {
     static function validate_condition(SettingValues $sv, $expr, $field, $is_error) {
         $fieldx = preg_replace('/q(_[\d$]+)\z/', '$1', $field);
         $ps = new PaperSearch($sv->conf->root_user(), $expr);
+        foreach ($ps->message_list() as $mi) {
+            $sv->append_item_at($field, $mi);
+            $sv->msg_at($fieldx, "", $mi->status);
+        }
         $fake_prow = new PaperInfo(null, null, $sv->conf);
         if ($ps->term()->script_expression($fake_prow) === null) {
             $method = $is_error ? "error_at" : "warning_at";
             $sv->$method($field, "Search too complex for field condition. (Not all search keywords are supported for field conditions.)");
             $sv->$method($fieldx, "");
-        }
-        foreach ($ps->message_set()->message_list() as $mi) {
-            $sv->add_at($field, $mi);
-            $sv->msg_at($fieldx, "", $mi->status);
         }
     }
     /** @return PaperOption */

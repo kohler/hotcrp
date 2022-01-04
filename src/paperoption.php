@@ -184,9 +184,9 @@ class PaperValue implements JsonSerializable {
         return $this->_ms;
     }
     /** @param MessageSet $ms */
-    function copy_messages_to($ms) {
+    function append_messages_to($ms) {
         if ($this->_ms) {
-            $ms->add_set($this->_ms);
+            $ms->append_set($this->_ms);
         }
     }
     /** @param string $field

@@ -1072,7 +1072,7 @@ class PaperList implements XtContext {
                     $this->column_error("<0>Field ‘{$name}’ not found");
                 }
                 foreach ($this->_finding_column_errors as $mi) {
-                    $this->message_set()->add($mi);
+                    $this->message_set()->append_item($mi);
                 }
             }
             $this->_finding_column = $this->_finding_column_errors = null;

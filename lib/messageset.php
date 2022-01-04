@@ -80,7 +80,7 @@ class MessageSet {
     /** @deprecated */
     const INFO = 0;
     /** @deprecated */
-    const NOTE = -2;
+    const NOTE = -1;
 
     function __construct() {
         $this->clear_messages();
@@ -136,8 +136,9 @@ class MessageSet {
         return false;
     }
 
-    /** @param MessageItem $mi */
-    function add($mi) {
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    function append_item($mi) {
         if (!$this->ignore_msgs) {
             if ($mi->field !== null) {
                 $old_status = $this->errf[$mi->field] ?? -5;
@@ -156,13 +157,19 @@ class MessageSet {
                 }
             }
         }
+        return $mi;
+    }
+
+    /** @deprecated */
+    function add($mi) {
+        $this->append_item($mi);
     }
 
     /** @param MessageSet $ms */
-    function add_set($ms) {
+    function append_set($ms) {
         if (!$this->ignore_msgs) {
             foreach ($ms->msgs as $mi) {
-                $this->add($mi);
+                $this->append_item($mi);
             }
             foreach ($ms->errf as $field => $status) {
                 $this->errf[$field] = max($this->errf[$field] ?? 0, $status);
@@ -181,9 +188,7 @@ class MessageSet {
         if ($msg === null || $msg === false) { /* XXX false backward compat */
             $msg = "";
         }
-        $mi = new MessageItem($field, $msg, $status);
-        $this->add($mi);
-        return $mi;
+        return $this->append_item(new MessageItem($field, $msg, $status));
     }
 
     /** @param ?string $field
@@ -264,7 +269,7 @@ class MessageSet {
     }
     /** @param string $field
      * @return bool */
-    function has_messages_at($field) {
+    function has_message_at($field) {
         if (!empty($this->errf)) {
             if (isset($this->errf[$field])) {
                 foreach ($this->msgs as $mx) {
@@ -274,6 +279,10 @@ class MessageSet {
             }
         }
         return false;
+    }
+    /** @deprecated */
+    function has_messages_at($field) {
+        return $this->has_message_at($field);
     }
     /** @param string $field
      * @return bool */
@@ -448,10 +457,29 @@ class MessageSet {
             return "";
         }
     }
+
     /** @param string $field
      * @param ?string $context
      * @return string */
     function feedback_html_at($field, $context = null) {
         return self::feedback_html($this->message_list_at($field), $context);
+    }
+
+    /** @param iterable<MessageItem> $message_list
+     * @param ?string $context
+     * @return string */
+    static function feedback_text($message_list, $context = null) {
+        $t = [];
+        foreach ($message_list as $mi) {
+            if (!empty($t) && $mi->status === self::INFORM) {
+                $t[] = "    ";
+            }
+            $t[] = $mi->message_as(0);
+            $t[] = "\n";
+            if (($mi->pos1 || $mi->pos2) && ($mi->context ?? $context) !== null) {
+                $t[] = Ht::mark_substring_text($mi->context ?? $context, $mi->pos1, $mi->pos2, "    ");
+            }
+        }
+        return empty($t) ? "" : join("", $t);
     }
 }

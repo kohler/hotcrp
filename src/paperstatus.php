@@ -695,7 +695,7 @@ class PaperStatus extends MessageSet {
                     $ov = $this->_nnprow->force_option($opt);
                     $opt->value_check($ov, $this->user);
                 }
-                $ov->copy_messages_to($this);
+                $ov->append_messages_to($this);
             }
         }
         if (!empty($pj->_bad_options)) {

@@ -1639,7 +1639,7 @@ class SearchQueryInfo {
     }
 }
 
-class PaperSearch {
+class PaperSearch extends MessageSet {
     /** @var Conf
      * @readonly */
     public $conf;
@@ -1652,8 +1652,6 @@ class PaperSearch {
     /** @var string
      * @readonly */
     private $_qt;
-    /** @var ?MessageSet */
-    private $_ms;
 
     /** @var bool
      * @readonly */
@@ -1731,8 +1729,7 @@ class PaperSearch {
         // the query itself
         $this->q = trim($options["q"] ?? "");
         $this->_default_sort = $options["sort"] ?? null;
-        $this->_ms = new MessageSet;
-        $this->_ms->set_want_ftext(true);
+        $this->set_want_ftext(true);
 
         // reviewer
         if (($reviewer = $options["reviewer"] ?? null)) {
@@ -1851,25 +1848,13 @@ class PaperSearch {
 
     /** @return MessageSet */
     function message_set() {
-        return $this->_ms;
-    }
-    /** @return bool */
-    function has_messages() {
-        return $this->_ms->has_messages();
-    }
-    /** @return bool */
-    function has_problem() {
-        return $this->_ms->has_problem();
-    }
-    /** @return int */
-    function problem_status() {
-        return $this->_ms->problem_status();
+        return $this;
     }
 
     /** @param string $message
      * @return MessageItem */
     function warning($message) {
-        return $this->_ms->warning_at(null, $message);
+        return $this->warning_at(null, $message);
     }
 
     /** @param SearchWord $sw
@@ -1885,21 +1870,14 @@ class PaperSearch {
 
     /** @return string */
     function message_html() {
-        return MessageSet::feedback_html($this->_ms->message_list());
+        return MessageSet::feedback_html($this->message_list());
     }
 
     /** @return string */
     function message_text() {
-        $t = "";
-        foreach ($this->_ms->message_list() as $mi) {
-            $t .= ($mi->status === MessageSet::INFORM ? "    " : "")
-                . $mi->message_as(0) . "\n";
-            if ($mi->pos1 || $mi->pos2) {
-                $t .= Ht::mark_substring_text($this->q, $mi->pos1, $mi->pos2, "    ");
-            }
-        }
-        return $t;
+        return MessageSet::feedback_text($this->message_list());
     }
+
 
     /** @return string */
     function urlbase() {
@@ -2155,9 +2133,9 @@ class PaperSearch {
             return $st;
         } else if ($wordbrk[0] === "#") {
             // `#TAG`
-            $ignored = $this->_ms->swap_ignore_messages(true);
+            $ignored = $this->swap_ignore_messages(true);
             $qe = $this->_search_word("hashtag:{$wordbrk[1]}", $scope, $pos1, $pos2);
-            $this->_ms->swap_ignore_messages($ignored);
+            $this->swap_ignore_messages($ignored);
             if (!($qe instanceof False_SearchTerm)) {
                 return $qe;
             }
@@ -2168,9 +2146,9 @@ class PaperSearch {
                 $word = ltrim((string) substr($wordbrk[1], 1));
             } else {
                 // Allow searches like "ovemer>2"; parse as "ovemer:>2".
-                $ignored = $this->_ms->swap_ignore_messages(true);
+                $ignored = $this->swap_ignore_messages(true);
                 $qe = $this->_search_word("{$wordbrk[0]}:{$wordbrk[1]}", $scope, $pos1, $pos2);
-                $this->_ms->swap_ignore_messages($ignored);
+                $this->swap_ignore_messages($ignored);
                 if (!($qe instanceof False_SearchTerm)) {
                     return $qe;
                 }
@@ -2834,6 +2812,8 @@ class PaperSearch {
         return $r;
     }
 
+    /** @param callable(int):bool $callback
+     * @return void */
     function restrict_match($callback) {
         $m = [];
         foreach ($this->paper_ids() as $pid) {
