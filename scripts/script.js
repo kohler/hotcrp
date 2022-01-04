@@ -10178,7 +10178,7 @@ $.fn.unautogrow = function () {
 $(function () { $(".need-autogrow").autogrow(); });
 
 $(function () {
-    $("a.nn, a.qx, a.qq, a.u, a.uu, a.btn[href='']").each(function () {
+    $("a.nn, a.qx, a.qq, a.u, a.uu, a.xx, a.btn[href='']").each(function () {
         var err = "a." + this.className.replace(/\s+/g, ".") + "[href=" + this.href + "]";
         window.console && console.log(err);
         log_jserror(err);

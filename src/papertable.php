@@ -2380,7 +2380,7 @@ class PaperTable {
         if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
             && $this->mode !== "p") {
             $this->allreviewslink = true;
-            $t[] = '<a href="' . $prow->hoturl() . '" class="xx revlink">'
+            $t[] = '<a href="' . $prow->hoturl() . '" class="nou revlink">'
                 . Ht::img("view48.png", "[All reviews]", $dlimgjs) . "&nbsp;<u>All reviews</u></a>";
         }
 
@@ -2388,7 +2388,7 @@ class PaperTable {
         if ($this->mode !== "edit"
             && $prow->has_author($this->user)
             && !$this->user->can_administer($prow)) {
-            $t[] = '<a href="' . $prow->hoturl(["m" => "edit"]) . '" class="xx revlink">'
+            $t[] = '<a href="' . $prow->hoturl(["m" => "edit"]) . '" class="nou revlink">'
                 . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>Edit submission</strong></u></a>";
         }
 
@@ -2398,7 +2398,7 @@ class PaperTable {
             || !$prow) {
             /* no link */;
         } else if ($myrr) {
-            $a = '<a href="' . $prow->reviewurl(["r" => $myrr->unparse_ordinal_id()]) . '" class="xx revlink">';
+            $a = '<a href="' . $prow->reviewurl(["r" => $myrr->unparse_ordinal_id()]) . '" class="nou revlink">';
             if ($this->user->can_edit_review($prow, $myrr)) {
                 $x = $a . Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u></a>";
             } else {
@@ -2406,7 +2406,7 @@ class PaperTable {
             }
             $t[] = $x;
         } else if ($this->user->can_edit_review($prow, null)) {
-            $t[] = '<a href="' . $prow->reviewurl(["m" => "re"]) . '" class="xx revlink">'
+            $t[] = '<a href="' . $prow->reviewurl(["m" => "re"]) . '" class="nou revlink">'
                 . Ht::img("review48.png", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u></a>";
         }
 
@@ -2414,7 +2414,7 @@ class PaperTable {
         if ($this->mode !== "assign"
             && $this->mode !== "edit"
             && $this->user->can_request_review($prow, null, true)) {
-            $t[] = '<a href="' . $this->conf->hoturl("assign", "p=$prow->paperId") . '" class="xx revlink">'
+            $t[] = '<a href="' . $this->conf->hoturl("assign", "p=$prow->paperId") . '" class="nou revlink">'
                 . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->admin ? "Assign reviews" : "External reviews") . "</u></a>";
         }
 
@@ -2423,7 +2423,7 @@ class PaperTable {
         if (!$this->allreviewslink
             && !$nocmt
             && $this->user->can_comment($prow, null)) {
-            $t[] = '<a class="uic js-edit-comment xx revlink" href="#cnew">'
+            $t[] = '<a class="uic js-edit-comment nou revlink" href="#cnew">'
                 . Ht::img("comment48.png", "[Add comment]", $dlimgjs) . "&nbsp;<u>Add comment</u></a>";
             $any_comments = true;
         }
@@ -2447,7 +2447,7 @@ class PaperTable {
                     if ($cr->commentId) {
                         $what = $cr->commentType & CommentInfo::CT_DRAFT ? "Edit draft" : "Edit";
                     }
-                    $t[] = '<a class="uic js-edit-comment xx revlink" href="#' . $cid . '">'
+                    $t[] = '<a class="uic js-edit-comment nou revlink" href="#' . $cid . '">'
                         . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
                         . ($cflttype >= CONFLICT_AUTHOR ? '<u class="font-weight-bold">' : '<u>')
                         . $what . ($rrd->name == "1" ? "" : " $rrd->name") . ' response</u></a>';
@@ -2538,7 +2538,7 @@ class PaperTable {
             }
         }
         if (!empty($viewable)) {
-            $m[] = '<p class="sd mt-5"><a href="' . $this->prow->reviewurl(["m" => "r", "text" => 1]) . '" class="xx">'
+            $m[] = '<p class="sd mt-5"><a href="' . $this->prow->reviewurl(["m" => "r", "text" => 1]) . '" class="nou">'
                 . Ht::img("txt24.png", "[Text]", "dlimg")
                 . "&nbsp;<u>" . ucfirst(join(" and ", $viewable))
                 . " in plain text</u></a></p>";
@@ -2753,11 +2753,11 @@ class PaperTable {
         $t = [];
         $dlimgjs = ["class" => "dlimg", "width" => 24, "height" => 24];
         $title = count($this->viewable_rrows) > 1 ? "All reviews" : "Main";
-        $t[] = '<a href="' . $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]) .  '" class="xx revlink">'
+        $t[] = '<a href="' . $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]) .  '" class="nou revlink">'
             . Ht::img("view48.png", "[{$title}]", $dlimgjs) . "&nbsp;<u>{$title}</u></a>";
 
         if ($this->allow_admin && !$this->admin) {
-            $t[] = '<a href="' . $this->prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="revlink xx">'
+            $t[] = '<a href="' . $this->prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="nou revlink">'
                 . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a>";
         }
 
