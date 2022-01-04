@@ -1230,7 +1230,7 @@ $blind\n";
 
         // Links
         if ($rrow->reviewId) {
-            echo '<div class="float-right"><a href="' . $this->conf->hoturl("review", "{$reviewlink}&amp;text=1{$forceShow}") . '" class="xx">',
+            echo '<div class="float-right"><a href="' . $this->conf->hoturl("review", "{$reviewlink}&amp;text=1{$forceShow}") . '" class="nou">',
                 Ht::img("txt.png", "[Text]", "b"),
                 "&nbsp;<u>Plain text</u></a>",
                 "</div>";

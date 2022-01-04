@@ -2458,7 +2458,7 @@ class PaperTable {
 
         // override conflict
         if ($this->allow_admin && !$this->admin) {
-            $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="xx">'
+            $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="nou">'
                 . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing</span>";
         } else if ($this->user->privChair && !$this->allow_admin) {
             $x = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
