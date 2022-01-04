@@ -58,9 +58,9 @@ class Settings_Page {
         if ($this->sv->execute()) {
             $this->user->save_session("settings_highlight", $this->sv->message_field_map());
             if (!empty($this->sv->updated_fields())) {
-                $this->conf->confirmMsg("Changes saved.");
+                $this->conf->msg("Changes saved.", MessageSet::SUCCESS);
             } else {
-                $this->conf->warnMsg("No changes.");
+                $this->conf->msg("No changes.", MessageSet::PLAIN);
             }
             $this->sv->report();
             $this->conf->redirect_self($qreq);
@@ -74,7 +74,12 @@ class Settings_Page {
         $conf = $this->conf;
         $sv->crosscheck();
 
-        $conf->header("Settings", "settings", ["subtitle" => $sv->group_title($group), "title_div" => '<hr class="c">', "body_class" => "leftmenu"]);
+        $conf->header("Settings", "settings", [
+            "subtitle" => $sv->group_title($group),
+            "title_div" => '<hr class="c">',
+            "body_class" => "leftmenu",
+            "save_messages" => true
+        ]);
         echo Ht::unstash(), // clear out other script references
             $conf->make_script_file("scripts/settings.js"), "\n",
 
@@ -98,6 +103,7 @@ class Settings_Page {
             '<main class="leftmenu-content main-column">',
             '<h2 class="leftmenu">', $sv->group_title($group), '</h2>';
 
+        $conf->report_saved_messages();
         $sv->report(isset($qreq->update) && $qreq->valid_post());
         $sv->render_group(strtolower($group), true);
 

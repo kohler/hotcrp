@@ -3593,6 +3593,13 @@ class Conf {
     }
 
 
+    function report_saved_messages() {
+        foreach ($this->_save_msgs ?? [] as $m) {
+            $this->msg($m[0], $m[1]);
+        }
+        $this->_save_msgs = null;
+    }
+
     function transfer_messages_to_session() {
         if ($this->_save_msgs) {
             ensure_session();
@@ -4513,15 +4520,10 @@ class Conf {
         }
         if ($user && ($msgs = $user->session("msgs"))) {
             $user->save_session("msgs", null);
-            foreach ($msgs as $m) {
-                $this->msg($m[0], $m[1]);
-            }
+            $this->_save_msgs = array_merge($msgs, $this->_save_msgs ?? []);
         }
-        if ($this->_save_msgs) {
-            foreach ($this->_save_msgs as $m) {
-                $this->msg($m[0], $m[1]);
-            }
-            $this->_save_msgs = null;
+        if ($this->_save_msgs && !($extra["save_messages"] ?? false)) {
+            $this->report_saved_messages();
         }
         if (isset($_COOKIE["hotcrpmessage"])) {
             $message = json_decode(rawurldecode($_COOKIE["hotcrpmessage"]));
