@@ -1471,14 +1471,15 @@ class Conf {
                 $dmap = $j;
             }
             $dmap[0] = "Unspecified";
+            $collator = $this->collator();
             $this->_decisions = $dmap;
-            uksort($this->_decisions, function ($ka, $kb) use ($dmap) {
-                if ($ka == 0 || $kb == 0) {
-                    return $ka == 0 ? -1 : 1;
+            uksort($this->_decisions, function ($ka, $kb) use ($dmap, $collator) {
+                if ($ka === 0 || $kb === 0) {
+                    return $ka === 0 ? -1 : 1;
                 } else if (($ka > 0) !== ($kb > 0)) {
-                    return $ka > 0 ? 1 : -1;
+                    return $ka > 0 ? -1 : 1;
                 } else {
-                    return strcasecmp($dmap[$ka], $dmap[$kb]);
+                    return $collator->compare($dmap[$ka], $dmap[$kb]);
                 }
             });
         }
