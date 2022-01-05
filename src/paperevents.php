@@ -1,6 +1,6 @@
 <?php
 // paperevents.php -- HotCRP paper events
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class PaperEvent {
     /** @var PaperInfo */

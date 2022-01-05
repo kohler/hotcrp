@@ -1,6 +1,6 @@
 <?php
 // src/pages/checkupdates.php -- HotCRP update checker helper
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class CheckUpdates_Page {
     static function go(Contact $user, Qrequest $qreq) {

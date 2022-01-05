@@ -1,6 +1,6 @@
 <?php
 // test01.php -- HotCRP tests: permissions, assignments, search
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 declare(strict_types=1);
 require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));

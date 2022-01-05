@@ -1,6 +1,6 @@
 <?php
 // filer.php -- generic document helper class
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class HashAnalysis {
     /** @var string */

@@ -1,6 +1,6 @@
 <?php
 // formulas/f_timefield.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
 
 class TimeField_Fexpr extends Fexpr {
     private $field;

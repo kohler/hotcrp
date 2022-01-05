@@ -1,6 +1,6 @@
 <?php
 // checkinvariants.php -- HotCRP batch invariant checking script
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 require_once(dirname(__DIR__) . "/src/siteloader.php");
 

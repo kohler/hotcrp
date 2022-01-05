@@ -1,6 +1,6 @@
 <?php
 // init.php -- HotCRP initialization (test or site)
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 declare(strict_types=1);
 const HOTCRP_VERSION = "3.0b1";

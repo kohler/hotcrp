@@ -1,6 +1,6 @@
 <?php
 // archiveinfo.php -- expand archive contents
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ArchiveInfo {
     /** @param int $max_length

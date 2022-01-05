@@ -1,6 +1,6 @@
 <?php
 // reviewrefusalinfo.php -- HotCRP PaperReviewRefused objects
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewRefusalInfo {
     /** @var int */

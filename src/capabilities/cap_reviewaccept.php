@@ -1,6 +1,6 @@
 <?php
 // cap_reviewaccept.php -- HotCRP review-acceptor capability management
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewAccept_Capability {
     private static function make_review_acceptor($user, $at, $pid, $cid, $uf) {

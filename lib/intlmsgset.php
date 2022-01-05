@@ -1,6 +1,6 @@
 <?php
 // intlmsgset.php -- HotCRP helper functions for message i18n
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class IntlMsg {
     /** @var ?string */

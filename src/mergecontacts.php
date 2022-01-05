@@ -1,6 +1,6 @@
 <?php
 // mergecontacts.php -- HotCRP helper class for merging users
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class MergeContacts extends MessageSet {
     /** @var Conf */

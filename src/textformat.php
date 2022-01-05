@@ -1,6 +1,6 @@
 <?php
 // textformat.php -- HotCRP text format info class
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class TextFormat {
     public $format;

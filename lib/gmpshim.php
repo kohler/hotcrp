@@ -1,6 +1,6 @@
 <?php
 // gmpshim.php -- HotCRP GMP shim functions
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 /** @phan-file-suppress PhanRedefineFunctionInternal */
 
 const GMPSHIM_INT_SHIFT = (PHP_INT_SIZE >= 8 ? 6 : 5);

@@ -1,6 +1,6 @@
 <?php
 // logentryfilter.php -- HotCRP filter for action log entries
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class LogEntryFilter {
     /** @var Contact */

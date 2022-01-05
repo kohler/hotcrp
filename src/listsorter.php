@@ -1,6 +1,6 @@
 <?php
 // listsorter.php -- HotCRP list sorter information
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ListSorter {
     static private $score_sort_map = [

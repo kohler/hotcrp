@@ -1,6 +1,6 @@
 <?php
 // paperapi.php -- HotCRP paper-related API calls
-// Copyright (c) 2008-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class PaperApi {
     /** @return Contact */

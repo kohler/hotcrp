@@ -1,6 +1,6 @@
 <?php
 // api_paperpc.php -- HotCRP paper PC API
-// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class PaperPC_API {
     private static function run(Contact $user, Qrequest $qreq, PaperInfo $prow, $type) {

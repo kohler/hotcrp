@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_sitecontact.php -- HotCRP settings for site contact
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SiteContact_SettingParser extends SettingParser {
     private $updated = false;

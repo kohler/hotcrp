@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_decisions.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Decisions_SettingParser extends SettingParser {
     /** @param string $suffix

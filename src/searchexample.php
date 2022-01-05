@@ -1,6 +1,6 @@
 <?php
 // searchexample.php -- HotCRP helper class for search examples
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SearchExample {
     /** @var string */

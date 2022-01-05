@@ -1,6 +1,6 @@
 <?php
 // src/pages/p_reviewprefs.php -- HotCRP review preference global settings page
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewPrefs_Page {
     // Update preferences

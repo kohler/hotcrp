@@ -1,6 +1,6 @@
 <?php
 // api_comment.php -- HotCRP comment API call
-// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class Comment_API {
     /** @return ?CommentInfo */

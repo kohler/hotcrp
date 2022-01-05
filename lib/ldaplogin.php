@@ -1,6 +1,6 @@
 <?php
 // ldaplogin.php -- HotCRP helper function for LDAP login
-// Copyright (c) 2009-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
 
 class LDAPLogin {
     static function ldap_login_info(Conf $conf, Qrequest $qreq) {

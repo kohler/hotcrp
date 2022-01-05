@@ -1,6 +1,6 @@
 <?php
 // a_lead.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Lead_Assignable extends Assignable {
     /** @var ?int */

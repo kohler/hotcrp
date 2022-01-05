@@ -1,6 +1,6 @@
 <?php
 // formulas/f_decision.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
 
 class Decision_Fexpr extends Fexpr {
     function __construct() {

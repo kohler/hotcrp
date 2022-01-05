@@ -1,6 +1,6 @@
 <?php
 // src/pages/conflictassign.php -- HotCRP chair's conflict assignment page
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ConflictAssign_Page {
     /** @param Contact $user

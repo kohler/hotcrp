@@ -1,6 +1,6 @@
 <?php
 // capabilityinfo.php -- HotCRP capability management
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class CapabilityInfo {
     const RESETPASSWORD = 1;

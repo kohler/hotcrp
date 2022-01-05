@@ -1,6 +1,6 @@
 <?php
 // test/setup.php -- HotCRP helper file to initialize tests
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 require_once(preg_replace('/\/test\/[^\/]+/', '/src/siteloader.php', __FILE__));
 define("HOTCRP_OPTIONS", SiteLoader::find("test/options.php"));

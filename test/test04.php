@@ -1,6 +1,6 @@
 <?php
 // test04.php -- HotCRP user database tests
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 declare(strict_types=1);
 global $Opt;

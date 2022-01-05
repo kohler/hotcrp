@@ -1,6 +1,6 @@
 <?php
 // api_graphdata.php -- HotCRP formula graph API calls
-// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class GraphData_API {
     static function graphdata(Contact $user, Qrequest $qreq) {

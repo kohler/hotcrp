@@ -1,6 +1,6 @@
 <?php
 // o_nonblind.php -- HotCRP helper class for blindness selection intrinsic
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Nonblind_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {

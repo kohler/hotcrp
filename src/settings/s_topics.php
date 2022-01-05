@@ -1,6 +1,6 @@
 <?php
 // src/settings/s_topics.php -- HotCRP settings > submission form page
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Topics_SettingRenderer {
     static function render(SettingValues $sv) {

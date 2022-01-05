@@ -1,6 +1,6 @@
 <?php
 // contact.php -- HotCRP helper class representing system users
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 /** @property ?string $__isAuthor__
  * @property ?string $__hasReview__ */

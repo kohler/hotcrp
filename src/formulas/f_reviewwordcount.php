@@ -1,6 +1,6 @@
 <?php
 // formulas/f_reviewwordcount.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
 
 class ReviewWordCount_Fexpr extends Fexpr {
     function __construct() {

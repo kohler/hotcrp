@@ -1,6 +1,6 @@
 <?php
 // search/st_admin.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Admin_SearchTerm extends SearchTerm {
     /** @var Contact */

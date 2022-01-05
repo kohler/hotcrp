@@ -1,6 +1,6 @@
 <?php
 // search/st_optiontext.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class OptionText_SearchTerm extends Option_SearchTerm {
     /** @var string */

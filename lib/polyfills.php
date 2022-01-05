@@ -1,6 +1,6 @@
 <?php
 // polyfills.php -- HotCRP GMP shim functions
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 if (!function_exists("str_starts_with")) {
     /** @param string $haystack

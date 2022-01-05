@@ -1,6 +1,6 @@
 <?php
 // column.php -- HotCRP helper class for list content
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Column {
     /** @var string */

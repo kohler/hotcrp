@@ -1,6 +1,6 @@
 <?php
 // assignmentset.php -- HotCRP helper classes for assignments
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Assignable {
     /** @var string */

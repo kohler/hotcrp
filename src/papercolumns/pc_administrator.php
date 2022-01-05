@@ -1,6 +1,6 @@
 <?php
 // pc_administrator.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Administrator_PaperColumn extends PaperColumn {
     private $ianno;

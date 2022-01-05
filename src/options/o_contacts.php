@@ -1,6 +1,6 @@
 <?php
 // o_contacts.php -- HotCRP helper class for contacts intrinsic
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Contacts_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {

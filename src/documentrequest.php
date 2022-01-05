@@ -1,6 +1,6 @@
 <?php
 // documentrequest.php -- HotCRP document request parsing
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class DocumentRequest implements JsonSerializable {
     /** @var int */

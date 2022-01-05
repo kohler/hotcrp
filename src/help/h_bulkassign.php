@@ -1,6 +1,6 @@
 <?php
 // src/help/h_bulkassign.php -- HotCRP help functions
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class BulkAssign_HelpTopic {
     static function render(HelpRenderer $hth) {

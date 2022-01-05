@@ -1,6 +1,6 @@
 <?php
 // formulas/f_optionvalue.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
 
 class OptionValue_Fexpr extends Fexpr {
     /** @var PaperOption */

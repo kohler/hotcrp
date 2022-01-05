@@ -1,6 +1,6 @@
 <?php
 // documentfiletree.php -- document helper class for trees of HotCRP papers
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class DocumentFileTree implements JsonSerializable {
     public $treeid;

@@ -1,6 +1,6 @@
 <?php
 // s3result.php -- document helper class for HotCRP papers
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 /** @template T */
 abstract class S3Result {

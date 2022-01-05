@@ -1,6 +1,6 @@
 <?php
 // api_decision.php -- HotCRP decision API
-// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class Decision_API {
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {

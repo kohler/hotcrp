@@ -1,6 +1,6 @@
 <?php
 // o_submissionversion.php -- HotCRP helper class for submission version intrinsic
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SubmissionVersion_PaperOption extends PaperOption {
     function __construct($conf, $args) {

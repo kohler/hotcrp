@@ -1,6 +1,6 @@
 <?php
 // api_searchconfig.php -- HotCRP search configuration API calls
-// Copyright (c) 2008-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class SearchConfig_API {
     static function viewoptions(Contact $user, Qrequest $qreq) {

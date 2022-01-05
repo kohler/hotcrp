@@ -1,6 +1,6 @@
 <?php
 // listactions/la_revpref.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Revpref_ListAction extends ListAction {
     /** @var string */

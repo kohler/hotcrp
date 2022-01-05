@@ -1,6 +1,6 @@
 <?php
 // documenthashmatcher.php -- document helper class for HotCRP papers
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class DocumentHashMatcher {
     /** @var string */

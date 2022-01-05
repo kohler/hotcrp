@@ -1,6 +1,6 @@
 <?php
 // src/pages/p_help.php -- HotCRP help page
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Help_Page {
     /** @param HelpRenderer $hth */

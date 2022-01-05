@@ -1,6 +1,6 @@
 <?php
 // json.php -- HotCRP JSON function replacements (if PHP JSON not available)
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 /** @phan-file-suppress PhanRedefineFunction, PhanRedefineFunctionInternal, PhanRedefineClassInternal */
 
 const JSON_HOTCRP = 1;

@@ -1,6 +1,6 @@
 <?php
 // src/pages/p_bulkassign.php -- HotCRP bulk paper assignment page
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class BulkAssign_Page {
     /** @var Conf */

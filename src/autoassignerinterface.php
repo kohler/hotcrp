@@ -1,6 +1,6 @@
 <?php
 // autoassignerinterface.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class AutoassignerInterface {
     /** @var Conf */

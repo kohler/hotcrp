@@ -1,6 +1,6 @@
 <?php
 // abbreviationmatcher.php -- HotCRP abbreviation matcher helper class
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 // NEW MATCH PRIORITY (higher = more priority)
 // All matches are case-insensitive, ignore differences in accents, and ignore

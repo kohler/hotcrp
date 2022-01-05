@@ -1,6 +1,6 @@
 <?php
 // src/pages/deadlines.php -- HotCRP deadline reporting page
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Deadlines_Page {
     /** @param Conf $conf */

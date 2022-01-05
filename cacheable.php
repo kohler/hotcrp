@@ -1,5 +1,5 @@
 <?php
 // cacheable.php -- HotCRP delegation page
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 include("index.php");

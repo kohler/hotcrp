@@ -1,6 +1,6 @@
 #! /bin/sh
 ## runsql.sh -- HotCRP database shell
-## Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+## Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 export LC_ALL=C LC_CTYPE=C LC_COLLATE=C CONFNAME=
 if ! expr "$0" : '.*[/]' >/dev/null; then LIBDIR=./

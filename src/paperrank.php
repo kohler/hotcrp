@@ -1,6 +1,6 @@
 <?php
 // paperrank.php -- HotCRP helper functions for dealing with ranks
-// Copyright (c) 2009-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
 
 class PaperRank {
     /** @var Conf */

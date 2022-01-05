@@ -1,6 +1,6 @@
 <?php
 // api_error.php -- HotCRP error reporting API calls
-// Copyright (c) 2008-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class Error_API {
     static function jserror(Contact $user, Qrequest $qreq) {

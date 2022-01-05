@@ -1,6 +1,6 @@
 <?php
 // helpers.php -- HotCRP non-class helper functions
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 /** @return array
  * @deprecated */
