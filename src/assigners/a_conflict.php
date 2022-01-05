@@ -160,7 +160,7 @@ class Conflict_Assigner extends Assigner {
                     ++$ncontacts;
             }
             if ($ncontacts === 0) {
-                throw new Exception("Each submission must have at least one contact.");
+                throw new AssignmentError("<0>Each submission must have at least one contact.");
             }
         }
         return new Conflict_Assigner($item, $state);
@@ -171,20 +171,26 @@ class Conflict_Assigner extends Assigner {
         $cid = isset($item["cid"]) ? $item["cid"] : $item["_cid"];
         $cflt = $state->query(new Conflict_Assignable($pid, $cid));
         if ($cflt && Conflict::is_conflicted($cflt[0]->_ctype)) {
-            $uname = $state->user_by_id($cid)->name_h(NAME_E);
+            $uname = $state->user_by_id($cid)->name(NAME_E);
             if (isset($item["_override"])
                 && $state->user->can_administer($state->prow($pid))) {
-                $state->warning_near($item->landmark, "Overriding {$uname} conflict with #{$pid}.");
-            } else if (($state->flags & AssignmentState::FLAG_CSV_CONTEXT) !== 0
-                       && $state->user->allow_administer($state->prow($pid))) {
-                throw new Exception("{$uname} has a conflict with #{$pid}. Set an “override” column to “yes” to assign the " . $item["type"] . " anyway.");
+                $state->msg_near($item->landmark, "<0>Overriding {$uname} conflict with #{$pid}.", 1);
             } else {
-                throw new Exception("{$uname} has a conflict with #{$pid}.");
+                $state->msg_near($item->landmark, "<0>{$uname} has a conflict with #{$pid}.", 2);
+                if (($state->flags & AssignmentState::FLAG_CSV_CONTEXT) !== 0
+                    && $state->user->allow_administer($state->prow($pid))) {
+                    $state->msg_near($item->landmark, "<0>Set an “override” column to “yes” to assign the " . $item["type"] . " anyway.", MessageSet::INFORM);
+                }
+                throw new AssignmentError("");
             }
         } else if ($item->post("_rtype")
                    && ($u = $state->user_by_id($cid))
                    && ($potconf = $state->prow($pid)->potential_conflict_html($u))) {
-            $state->warning_near($item->landmark, $u->name_h(NAME_E) . " has a potential conflict with #{$pid}:<br>" . join("<br>", $potconf[1]));
+            $uname = $u->name(NAME_E);
+            $state->msg_near($item->landmark, "<0>{$uname} has a potential conflict with #{$pid}.", 1);
+            foreach ($potconf[1] as $confhtml) {
+                $state->msg_near($item->landmark, "<5>{$confhtml}", MessageSet::INFORM);
+            }
         }
     }
 

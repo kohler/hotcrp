@@ -147,7 +147,7 @@ function setup_assignments($assignments, Contact $user) {
     $assignset = new AssignmentSet($user, true);
     $assignset->parse($assignments);
     if (!$assignset->execute()) {
-        die_hard("* Failed to run assignments:\n" . join("\n", $assignset->message_texts(true)) . "\n");
+        die_hard("* Failed to run assignments:\n" . $assignset->full_feedback_text());
     }
 }
 
@@ -519,9 +519,7 @@ function xassert_assign($who, $what, $override = false) {
     $ok = $assignset->execute();
     xassert($ok);
     if (!$ok) {
-        foreach ($assignset->message_texts() as $line) {
-            fwrite(STDERR, "  $line\n");
-        }
+        fwrite(STDERR, preg_replace('/^/m', "  ", $assignset->full_feedback_text()));
     }
     return $ok;
 }

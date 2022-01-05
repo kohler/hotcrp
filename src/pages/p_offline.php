@@ -68,11 +68,13 @@ class Offline_Page {
         }
         $aset = $trp->parse_assignment_set($text, $filename);
         if ($aset->execute()) {
-            Conf::msg_confirm("Tags saved." . $aset->messages_div_html(true));
+            $aset->set_intro_msg("<0>Tags saved.", MessageSet::SUCCESS);
+            $this->conf->msg($aset->full_feedback_html(), MessageSet::SUCCESS);
             $this->conf->redirect_self($this->qreq);
             return true;
         } else {
-            Conf::msg_error("Changes not saved. Please fix these errors and try again." . $aset->messages_div_html(true));
+            $aset->set_intro_msg("<0>There were errors parsing the assignment. Changes not saved.", MessageSet::ERROR);
+            $this->conf->msg($aset->full_feedback_html(), 2);
             return false;
         }
     }

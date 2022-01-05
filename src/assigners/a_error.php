@@ -14,12 +14,15 @@ class Error_AssignmentParser extends UserlessAssignmentParser {
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         return true;
     }
-    function allow_user(PaperInfo $prow, Contact $cotact, $req, AssignmentState $state) {
+    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return true;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $m = $req["message"] ?? ($this->iswarning ? "Warning" : "Error");
-        $state->msg_near($state->landmark, htmlspecialchars($m), $this->iswarning ? 1 : 2);
+        if (!Ftext::is_ftext($m)) {
+            $m = "<0>{$m}";
+        }
+        $state->msg_near($state->landmark(), $m, $this->iswarning ? 1 : 2);
         return false;
     }
 }

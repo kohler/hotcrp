@@ -113,14 +113,15 @@ class Assign_Page {
             if ($this->qreq->ajax) {
                 json_exit($aset->json_result());
             } else {
-                $this->conf->confirmMsg("Assignments saved." . $aset->messages_div_html());
+                $aset->set_intro_msg("<0>Assignments saved.", MessageSet::SUCCESS);
+                $this->conf->msg($aset->full_feedback_html(), MessageSet::SUCCESS);
                 $this->conf->redirect_self($this->qreq);
             }
         } else {
             if ($this->qreq->ajax) {
                 json_exit($aset->json_result());
             } else {
-                $this->conf->errorMsg(join("<br />", $aset->messages_html()));
+                $this->conf->msg($aset->full_feedback_html(), 2);
             }
         }
     }

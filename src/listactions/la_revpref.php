@@ -106,13 +106,15 @@ class Revpref_ListAction extends ListAction {
             return $aset->json_result();
         } else if ($ok) {
             if ($aset->is_empty()) {
-                Conf::msg_warning("No changes.");
+                $aset->set_intro_msg("<0>No changes.", MessageSet::MARKED_NOTE);
+                $user->conf->msg($aset->full_feedback_html(), 1);
             } else {
-                Conf::msg_confirm("Preferences saved.");
+                $aset->set_intro_msg("<0>Preferences saved.", MessageSet::SUCCESS);
+                $user->conf->msg($aset->full_feedback_html(), MessageSet::SUCCESS);
             }
             return new Redirection($user->conf->site_referrer_url($qreq));
         } else {
-            Conf::msg_error($aset->messages_div_html());
+            $user->conf->msg($aset->full_feedback_html(), 2);
         }
     }
     /** @return CsvParser */
@@ -160,13 +162,14 @@ class Revpref_ListAction extends ListAction {
         if ($this->name === "applyuploadpref") {
             $aset->enable_papers($ssel->selection());
         }
-        $aset->parse($csv, $csv->filename());
+        $aset->parse($csv);
         if ($aset->is_empty()) {
             if ($aset->has_error()) {
-                $conf->warnMsg("Preferences unchanged, but you may want to fix these errors and try again:\n" . $aset->messages_div_html(true));
+                $aset->set_intro_msg("<0>There were errors parsing the preference assignment. Changes not saved.", 2);
             } else {
-                $conf->warnMsg("Preferences unchanged.\n" . $aset->messages_div_html(true));
+                $aset->set_intro_msg("<0>No changes.", MessageSet::MARKED_NOTE);
             }
+            $conf->msg($aset->full_feedback_html(), 1);
             return new Redirection($conf->site_referrer_url($qreq));
         } else if ($this->name === "applyuploadpref" || $this->name === "uploadpref") {
             $aset->execute(true);
@@ -174,7 +177,7 @@ class Revpref_ListAction extends ListAction {
         } else {
             $conf->header("Review preferences", "revpref");
             if ($aset->has_error()) {
-                $conf->warnMsg($aset->messages_div_html(true));
+                $conf->msg($aset->full_feedback_html(), 1);
             }
 
             echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "alert need-unload-protection"]),

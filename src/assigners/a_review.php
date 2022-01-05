@@ -179,7 +179,8 @@ class Review_AssignmentParser extends AssignmentParser {
         // PC reviews must be PC members
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->newtype >= REVIEW_PC && !$contact->is_pc_member()) {
-            return new AssignmentError($contact->name_h(NAME_E) . " is not a PC member and cannot be assigned a PC review.");
+            $uname = $contact->name(NAME_E);
+            return new AssignmentError("<0>{$uname} is not a PC member and cannot be assigned a PC review.");
         }
         // Conflict allowed if we're not going to assign a new review
         if ($this->rtype == 0
@@ -190,7 +191,8 @@ class Review_AssignmentParser extends AssignmentParser {
         // Check whether review assignments are acceptable
         if ($contact->is_pc_member()
             && !$contact->can_accept_review_assignment_ignore_conflict($prow)) {
-            return new AssignmentError($contact->name_h(NAME_E) . " cannot be assigned to review #{$prow->paperId}.");
+            $uname = $contact->name(NAME_E);
+            return new AssignmentError("<0>{$uname} cannot be assigned to review #{$prow->paperId}.");
         }
         // Conflicts are checked later
         return true;
@@ -273,8 +275,8 @@ class Review_Assigner extends Assigner {
         if (!$item->pre("_rtype") && $item->post("_rtype")) {
             Conflict_Assigner::check_unconflicted($item, $state);
         } else if ($item->pre("_rtype") && !$item->post("_rtype") && $item->pre("_rmodified")) {
-            $uname = $state->user_by_id($item["cid"])->name_h(NAME_E);
-            throw new Exception("{$uname} has already modified their review for #" . $item->pid() . ", so it cannot be unassigned.");
+            $uname = $state->user_by_id($item["cid"])->name(NAME_E);
+            throw new AssignmentError("<0>{$uname} has already modified their review for #" . $item->pid() . ", so it cannot be unassigned.");
         }
         return new Review_Assigner($item, $state);
     }

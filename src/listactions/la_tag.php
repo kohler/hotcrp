@@ -103,12 +103,14 @@ class Tag_ListAction extends ListAction {
                 $assignset->error($tagger->error_html());
             }
         }
-        if (($errors = $assignset->messages_div_html())) {
+        if (($errors = $assignset->has_message())) {
             if ($assignset->is_empty()) {
-                Conf::msg_error($errors);
+                $assignset->set_intro_msg("<0>There were errors parsing the tag assignment. Changes not saved.", 2);
+                $user->conf->msg($assignset->full_feedback_html(), 2);
             } else {
-                Conf::msg_warning("Some tag assignments were ignored:\n$errors");
-                $assignset->clear_errors();
+                $assignset->set_intro_msg("<0>Some tag assignments ignored because of errors.", MessageSet::MARKED_NOTE);
+                $user->conf->msg($assignset->full_feedback_html(), 1);
+                $assignset->message_set()->clear_messages();
             }
         }
         $success = $assignset->execute();
@@ -117,7 +119,7 @@ class Tag_ListAction extends ListAction {
             json_exit(["ok" => $success]);
         } else if ($success) {
             if (!$errors) {
-                $user->conf->confirmMsg("Tags saved.");
+                $user->conf->msg_success("<0>Tags saved.");
             }
             $args = ["atab" => "tag"] + $qreq->subset_as_array(["tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless"]);
             return new Redirection($user->conf->site_referrer_url($qreq, $args, Conf::HOTURL_RAW));

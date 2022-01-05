@@ -57,9 +57,9 @@ class Preference_AssignmentParser extends AssignmentParser {
             return false;
         } else if (!$state->user->can_edit_preference_for($user, $prow)) {
             if ($user->contactId !== $state->user->contactId) {
-                $m = "Can’t enter a preference for " . $user->name_h(NAME_E) . " on #{$prow->paperId}. ";
+                $m = "<5>Can’t enter a preference for " . $user->name_h(NAME_E) . " on #{$prow->paperId}. ";
             } else {
-                $m = "Can’t enter a preference on #{$prow->paperId}. ";
+                $m = "<5>Can’t enter a preference on #{$prow->paperId}. ";
             }
             return new AssignmentError($m . $state->user->perm_edit_preference_for($user, $prow)->unparse_html());
         } else {
@@ -113,26 +113,26 @@ class Preference_AssignmentParser extends AssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $pref = $req["preference"];
         if ($pref === null) {
-            return new AssignmentError("Missing preference.");
+            return new AssignmentError("<0>Missing preference.");
         }
         $ppref = self::parse($pref);
         if ($ppref === null) {
             if (preg_match('/([+-]?)\s*(\d+)\s*([xyz]?)/i', $pref, $m)) {
-                $msg = $state->conf->_("“%s” isn’t a valid preference. Did you mean “%s”?", htmlspecialchars($pref), $m[1] . $m[2] . strtoupper($m[3]));
+                $msg = $state->conf->_("<0>‘%s’ isn’t a valid preference. Did you mean ‘%s’?", $pref, $m[1] . $m[2] . strtoupper($m[3]));
             } else {
-                $msg = $state->conf->_("“%s” isn’t a valid preference.", htmlspecialchars($pref));
+                $msg = $state->conf->_("<0>‘%s’ isn’t a valid preference.", $pref);
             }
             $state->user_error($msg);
             return false;
         }
         if ($prow->timeWithdrawn > 0) {
-            $state->warning($prow->make_whynot(["withdrawn" => 1])->unparse_html());
+            $state->warning("<5>" . $prow->make_whynot(["withdrawn" => 1])->unparse_html());
         }
 
         $exp = $req["expertise"];
         if ($exp && ($exp = trim($exp)) !== "") {
             if (($pexp = self::parse($exp)) === null || $pexp[0]) {
-                return new AssignmentError("Invalid expertise “" . htmlspecialchars($exp) . "”.");
+                return new AssignmentError("<0>Invalid expertise ‘{$exp}’.");
             }
             $ppref[1] = $pexp[1];
         }
