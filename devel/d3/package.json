@@ -1,19 +1,20 @@
 {
   "name": "d3-hotcrp",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "scripts": {
     "prepare": "rollup -c"
   },
   "devDependencies": {
-    "d3-array": "2",
-    "d3-axis": "2",
-    "d3-quadtree": "2",
-    "d3-scale": "3",
-    "d3-selection": "2",
-    "d3-shape": "2",
+    "d3-array": "3",
+    "d3-axis": "3",
+    "d3-quadtree": "3",
+    "d3-scale": "4",
+    "d3-selection": "3",
+    "d3-shape": "3",
+    "@rollup/plugin-json": "4",
+    "@rollup/plugin-node-resolve": "13",
     "rollup": "2",
     "rollup-plugin-ascii": "0.0",
-    "rollup-plugin-node-resolve": "5",
     "rollup-plugin-terser": "7"
   }
 }
