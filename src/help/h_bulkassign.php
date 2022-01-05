@@ -112,7 +112,7 @@ value</code> field.</p>
 less than 10:</p>
 
 <pre class=\"entryexample\">paper,action,tag
-p#&lt;10,cleartag,p</pre>
+#p#&lt;10,cleartag,p</pre>
 
 <p>To add to a tag order, use action <code>nexttag</code>; to add to a gapless
 tag order, use <code>seqnexttag</code>. For example, this file creates a
