@@ -1,6 +1,6 @@
 <?php
 // paperlist.php -- HotCRP helper class for producing paper lists
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class PaperListTableRender {
     /** @var ?string */
@@ -563,7 +563,7 @@ class PaperList implements XtContext {
                 $col->sort_subset = $sort_subset;
                 $this->_sortcol[] = $col;
             } else {
-                $mi = $this->search->warning("‘" . htmlspecialchars($name) . "’ cannot be sorted");
+                $mi = $this->search->warning("<0>‘{$name}’ cannot be sorted");
             }
         } else if (empty($fs)) {
             if ($this->user->can_view_tags(null)
@@ -571,12 +571,12 @@ class PaperList implements XtContext {
                 && ($tag = $tagger->check($name))
                 && ($ps = new PaperSearch($this->user, ["q" => "#$tag", "t" => "vis"]))
                 && $ps->paper_ids()) {
-                $mi = $this->search->warning("‘" . htmlspecialchars($name) . "’ cannot be sorted; did you mean “sort:#" . htmlspecialchars($name) . "”?");
+                $mi = $this->search->warning("<0>‘{$name}’ cannot be sorted; did you mean “sort:#{$name}”?");
             } else {
-                $mi = $this->search->warning("‘" . htmlspecialchars($name) . "’ cannot be sorted");
+                $mi = $this->search->warning("<0>‘{$name}’ cannot be sorted");
             }
         } else {
-            $mi = $this->search->warning("Sort ‘" . htmlspecialchars($name) . "’ is ambiguous");
+            $mi = $this->search->warning("<0>Sort ‘{$name}’ is ambiguous");
         }
         if ($mi) {
             $mi->pos1 = $pos1;
@@ -1834,7 +1834,7 @@ class PaperList implements XtContext {
                 if (substr($url, 0, 5) == "search") {
                     $altqh = "<a href=\"" . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $altqh . "</a>";
                 }
-                return PaperListTableRender::make_error("No matches. Did you mean “{$altqh}”?");
+                return PaperListTableRender::make_error("No matches. Did you mean ‘{$altqh}’?");
             } else {
                 return PaperListTableRender::make_error("No matches");
             }

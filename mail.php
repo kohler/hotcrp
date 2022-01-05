@@ -1,6 +1,6 @@
 <?php
 // mail.php -- HotCRP mail tool
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 require_once("src/init.php");
 $Qreq || initialize_request();

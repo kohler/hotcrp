@@ -1,6 +1,6 @@
 <?php
 // src/pages/p_paper.php -- HotCRP paper view and edit page
-// Copyright (c) 2006-2021 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Paper_Page {
     /** @var Conf */

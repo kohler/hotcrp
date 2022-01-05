@@ -1,6 +1,6 @@
 <?php
 // messageset.php -- HotCRP sets of messages by fields
-// Copyright (c) 2006-2020 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class MessageItem implements JsonSerializable {
     /** @var ?string */
