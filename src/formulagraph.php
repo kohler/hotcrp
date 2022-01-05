@@ -943,7 +943,7 @@ class FormulaGraph extends MessageSet {
             $j["raw"] = true;
         } else if ($this->type & self::CDF) {
             $j["label"] = "CDF of $counttype";
-        } else if (!$this->fx_type) {
+        } else {
             $j["label"] = $this->fy->expression;
         }
 
