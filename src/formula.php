@@ -139,7 +139,7 @@ abstract class Fexpr implements JsonSerializable {
     }
     /** @return string */
     function disallowed_use_error() {
-        return "Expression of type " . htmlspecialchars($this->format_description()) . " can’t be used here";
+        return "<0>Expression of type " . $this->format_description() . " can’t be used here";
     }
 
     function typecheck_resolve_neighbors(Formula $formula) {
@@ -284,11 +284,11 @@ class Constant_Fexpr extends Fexpr {
         if ($this->format() === Fexpr::FREVTYPE
             && is_string($this->x)
             && !$this->_check_revtype()) {
-            $formula->fexpr_lerror($this, "Review type ‘" . htmlspecialchars($this->x) . "’ not found");
+            $formula->fexpr_lerror($this, "<0>Review type ‘{$this->x}’ not found");
             return false;
         } else if (!$this->has_format()) {
             $this->set_format(Fexpr::FERROR);
-            $formula->fexpr_lerror($this, "Term ‘" . htmlspecialchars($this->x) . "’ not found");
+            $formula->fexpr_lerror($this, "<0>Term ‘{$this->x}’ not found");
             return false;
         } else {
             return true;
@@ -772,7 +772,7 @@ class Aggregate_Fexpr extends Fexpr {
             if ($lt === 0 || ($lt & ($lt - 1)) === 0) {
                 $this->index_type = $lt;
             } else {
-                $formula->fexpr_lerror($this, "Ambiguous collection, specify ‘{$this->op}.pc’ or ‘{$this->op}.re’");
+                $formula->fexpr_lerror($this, "<0>Ambiguous collection, specify ‘{$this->op}.pc’ or ‘{$this->op}.re’");
                 $ok = false;
             }
         }
