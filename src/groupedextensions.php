@@ -157,7 +157,7 @@ class GroupedExtensions implements XtContext {
     function get_raw($name) {
         if (!array_key_exists($name, $this->_raw)) {
             $old_context = $this->conf->xt_swap_context($this);
-            if (($xt = $this->conf->xt_search_name($this->_jall, $name, $this->viewer, null, true))
+            if (($xt = $this->conf->xt_search_name($this->_jall, $name, $this->viewer, true))
                 && Conf::xt_enabled($xt)) {
                 $this->_raw[$name] = $xt;
             } else {

@@ -227,7 +227,10 @@ class Conf {
 
     /** @var ?XtContext */
     public $xt_context;
+    /** @var ?callable(object,?Contact):bool */
     public $_xt_allow_callback;
+    /** @var ?object */
+    private $_xt_last_match;
 
     /** @var ?array<string,list<object>> */
     private $_formula_functions;
@@ -1045,6 +1048,7 @@ class Conf {
         return $xt ? $xt->priority ?? 0 : -PHP_INT_MAX;
     }
     static function xt_priority_compare($xta, $xtb) {
+        // Return -1 if $xta is higher priority, 1 if $xtb is.
         $ap = self::xt_priority($xta);
         $bp = self::xt_priority($xtb);
         if ($ap == $bp) {
@@ -1274,12 +1278,14 @@ class Conf {
             return true;
         }
     }
-    /** @param object $xt */
+    /** @param object $xt
+     * @return bool */
     function xt_allowed($xt, Contact $user = null) {
         return $xt && (!isset($xt->allow_if)
                        || $this->xt_check($xt->allow_if, $xt, $user));
     }
-    /** @param object $xt */
+    /** @param object $xt
+     * @return list<string> */
     static function xt_allow_list($xt) {
         if ($xt && isset($xt->allow_if)) {
             return is_array($xt->allow_if) ? $xt->allow_if : [$xt->allow_if];
@@ -1288,7 +1294,8 @@ class Conf {
         }
     }
     /** @param object $xt
-     * @param ?Contact $user */
+     * @param ?Contact $user
+     * @return bool */
     function xt_checkf($xt, $user) {
         if ($this->_xt_allow_callback !== null) {
             return call_user_func($this->_xt_allow_callback, $xt, $user);
@@ -1299,8 +1306,11 @@ class Conf {
     }
     /** @param array<string,list<object>> $map
      * @param string $name
+     * @param ?Contact $user
+     * @param bool $noalias
      * @return ?object */
-    function xt_search_name($map, $name, $user, $found = null, $noalias = false) {
+    function xt_search_name($map, $name, $user, $noalias = false) {
+        $this->_xt_last_match = null;
         $iname = $name;
         for ($aliases = 0;
              $aliases < 5 && $name !== null && isset($map[$name]);
@@ -1321,30 +1331,32 @@ class Conf {
                     object_replace_recursive($xt, $overlay);
                     $overlay->priority = -PHP_INT_MAX;
                 }
-                if (self::xt_priority_compare($xt, $found) <= 0) {
-                    if (isset($xt->deprecated) && $xt->deprecated) {
-                        error_log("{$this->dbname}: deprecated extension for `{$iname}`\n" . debug_string_backtrace());
+                if (isset($xt->deprecated) && $xt->deprecated) {
+                    error_log("{$this->dbname}: deprecated extension for `{$iname}`\n" . debug_string_backtrace());
+                }
+                if (!isset($xt->alias) || !is_string($xt->alias) || $noalias) {
+                    $this->_xt_last_match = $xt;
+                    if ($this->xt_checkf($xt, $user)) {
+                        return $xt;
                     }
-                    if (!isset($xt->alias) || !is_string($xt->alias) || $noalias) {
-                        if ($this->xt_checkf($xt, $user)) {
-                            return $xt;
-                        }
-                    } else {
-                        $name = $xt->alias;
-                        break;
-                    }
+                } else {
+                    $name = $xt->alias;
+                    break;
                 }
             }
         }
-        return $found;
+        return null;
     }
     /** @param list<object> $factories
      * @param string $name
-     * @return non-empty-list<object> */
+     * @param ?Contact $user
+     * @param ?object $found
+     * @param string $reflags
+     * @return non-empty-list<?object> */
     function xt_search_factories($factories, $name, $user, $found = null, $reflags = "") {
         $xts = [$found];
         foreach ($factories as $fxt) {
-            if (self::xt_priority_compare($fxt, $xts[0]) > 0) {
+            if (self::xt_priority_compare($fxt, $found ?? $this->_xt_last_match) > 0) {
                 break;
             }
             if ($fxt->match === ".*") {
@@ -5206,6 +5218,7 @@ class Conf {
     }
     function option_type($name) {
         $uf = ($this->option_type_map())[$name] ?? null;
+        $this->_xt_last_match = null;
         $ufs = $this->xt_search_factories($this->_option_type_factories, $name, null, $uf, "i");
         return $ufs[0];
     }
@@ -5246,6 +5259,7 @@ class Conf {
     }
     function capability_handler($cap) {
         $this->capability_type_map();
+        $this->_xt_last_match = null;
         $ufs = $this->xt_search_factories($this->_capability_factories, $cap, null);
         return $ufs[0];
     }
