@@ -17,8 +17,9 @@ class Reviews_SettingRenderer {
         }
         $sv->set_oldv($rname, $nameval);
 
-        echo '<div class="mg js-settings-review-round" data-review-round-number="', $rnum, '"><div>',
-            $sv->label($rname, "Round"), ' &nbsp;',
+        echo '<div class="mg js-settings-review-round" data-review-round-number="', $rnum, '"><div>';
+        $sv->echo_feedback_at($rname);
+        echo $sv->label($rname, "Round"), ' &nbsp;',
             $sv->entry($rname);
         echo '<div class="d-inline-block" style="min-width:7em;margin-left:2em">';
         if ($rnum !== '$' && $review_count) {
@@ -449,11 +450,13 @@ class ReviewDeadline_SettingParser extends SettingParser {
             $rnum = 0;
         } else {
             $rnum = array_search(strtolower($name), $rounds);
-            assert($rnum !== false);
-            $rnum += 1;
+            if ($rnum !== false) {
+                ++$rnum;
+            }
         }
 
-        if (($v = $sv->base_parse_req($si)) !== null) {
+        if (($v = $sv->base_parse_req($si)) !== null
+            && $rnum !== false) {
             $sv->save("{$prefix}{$rnum}", $v <= 0 ? null : $v);
             if ($v > 0 && str_ends_with($prefix, "hard_")) {
                 $sv->check_date_before(substr($prefix, 0, -5) . "soft_{$rnum}", $si->name, true);

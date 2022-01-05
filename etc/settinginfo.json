@@ -427,7 +427,7 @@
     },
     {
         "name_pattern": "roundname_$", "internal": true, "group": "reviews",
-        "title": "Review round name",
+        "title": "Review round name", "hashid": "rounds",
         "type": "string", "size": 12, "placeholder": "unnamed"
     },
     {
