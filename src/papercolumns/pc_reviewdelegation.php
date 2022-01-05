@@ -35,7 +35,7 @@ class ReviewDelegation_PaperColumn extends PaperColumn {
                 if ($rrow->reviewOrdinal) {
                     $d = rtrim("#" . $rrow->unparse_ordinal_id() . " " . $d);
                 }
-                $d = $ranal->wrap_link($d, "uu nw");
+                $d = $ranal->wrap_link($d, "noq nw");
                 if ($rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
                     if ($rrow->reviewNeedsSubmit >= 0) {
                         $d = '<strong class="overdue">' . $d . '</strong>';
