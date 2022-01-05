@@ -287,8 +287,8 @@ class BatchSavePapers {
                     $this->tf->check_and_save($this->user, $prow, null);
                 }
             }
-            foreach ($this->tf->message_texts() as $te) {
-                fwrite(STDERR, $prefix . htmlspecialchars_decode($te) . "\n");
+            foreach ($this->tf->message_list() as $mi) {
+                fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
             }
             $this->tf->clear_messages();
         }

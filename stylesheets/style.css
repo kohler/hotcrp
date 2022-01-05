@@ -138,6 +138,7 @@ body.paper > #top {
 }
 .header-actas {
 	display: inline-block;
+	text-indent: 0;
 	position: fixed;
 	top: 9px;
 	right: 22em;
@@ -329,6 +330,7 @@ span.barsep {
 	background: url(../images/edit48.png) 0px 50% no-repeat;
 	background-size: 16px 16px;
 	display: inline-block;
+	text-indent: 0;
 	margin: -2px 0 -2px 0;
 	padding: 2px 0 2px 19px;
 }
@@ -363,6 +365,7 @@ label.checki {
 }
 .checkc {
 	display: inline-block;
+	text-indent: 0;
 	margin-left: -1.3125em;
 	width: 1.3125em;
 	white-space: nowrap;
@@ -782,6 +785,7 @@ span.hastitle {
 }
 .spinner {
 	display: inline-block;
+	text-indent: 0;
 	margin-left: 0.5em;
 	min-width: 1em;
 	min-height: 1em;
@@ -1038,15 +1042,16 @@ strong.overdue {
 /* buttons */
 span.expander {
 	display: inline-block;
+	text-indent: 0;
 	padding-right: 0.25em;
 	opacity: 0.65;
 	-webkit-text-decoration-line: none;
 	text-decoration-line: none;
-	text-indent: 0;
 }
 
 a.tbtn {
 	display: inline-block;
+	text-indent: 0;
 	padding: 2px 4px;
 	border-radius: 5px;
 	-webkit-text-decoration-line: none;
@@ -1072,6 +1077,7 @@ a.tbtn-here:hover {
 }
 a.closebtn {
 	display: inline-block;
+	text-indent: 0;
 	padding: 2px 4px;
 	margin-left: 0.75em;
 	-webkit-text-decoration-line: none;
@@ -1084,6 +1090,7 @@ a.closebtn {
 
 .select {
 	display: inline-block;
+	text-indent: 0;
 	position: relative;
 }
 .select > select, .select option {
@@ -1120,15 +1127,15 @@ button, .btn {
 	padding: 2px 7px 3px;
 }
 select, button, .btn, button.btn-t:hover {
+	display: inline-block;
+	text-indent: 0;
 	border-width: 1px;
 	border-style: solid;
 	border-color: #b5b5b5;
 	border-radius: 4px;
-	display: inline-block;
 	background: white;
 	background-image: linear-gradient(#fcfcfc, #f0f0f0);
 	white-space: nowrap;
-	text-indent: 0;
 }
 button.btn-t {
 	border-color: rgba(181, 181, 181, 0);
@@ -1345,11 +1352,13 @@ button > .licon, .btn > .licon {
 
 /* Ajax checks */
 .mf-text, .mf-absolute {
-	position: relative;
 	display: inline-block;
+	text-indent: 0;
+	position: relative;
 }
 .is-mf:after {
 	display: inline-block;
+	text-indent: 0;
 	font-size: smaller;
 	pointer-events: none;
 	padding-left: 0.25em;
@@ -1541,6 +1550,7 @@ th.settings-simplehead {
 }
 .settings-revrounds, .settings-reveditor {
 	display: inline-block;
+	text-indent: 0;
 	padding-left: 1em;
 }
 .settings-revdata, .settings-revhint {
@@ -1603,6 +1613,8 @@ th.settings-simplehead {
 	margin-top: 1.5rem !important;
 }
 .leftmenu-item.active {
+	display: inline-block;
+	text-indent: 0;
 	padding-top: 3px;
 	padding-bottom: 3px;
 	margin-left: -6px;
@@ -1611,7 +1623,6 @@ th.settings-simplehead {
 	border: 1px solid #f33360;
 	color: #f33360;
 	font-weight: bold;
-	display: inline-block;
 }
 .leftmenu-item-on > a {
 	display: table-cell;
@@ -1678,9 +1689,8 @@ label.f-c, .f-i > label {
 	margin-bottom: 0.3rem;
 }
 .feedback-list > li {
-	margin-bottom: 0.3rem;
-}
-.feedback-list > li:last-child {
+	margin-left: 1.5rem;
+	text-indent: -1.5rem;
 	margin-bottom: 0;
 }
 .lentry .feedback + input.has-error,
@@ -1908,15 +1918,15 @@ textarea[name=comment] {
 	padding-right: 0.5em;
 }
 .revrating-choice > button, .revrating-group > button {
-	border-radius: 4px;
 	display: inline-block;
+	text-indent: 0;
+	border-radius: 4px;
 	border: 1px solid rgba(223, 76, 76, 0.5);
 	background: transparent;
 	padding: 1px 6px 2px;
 	font-family: inherit;
 	font-size: 100%;
 	white-space: nowrap;
-	text-indent: 0;
 	color: inherit;
 }
 .revrating-active > button {
@@ -1940,6 +1950,7 @@ textarea[name=comment] {
 }
 .revrating-choice > .ct, .revrating-group > .ct {
 	display: inline-block;
+	text-indent: 0;
 	padding-left: 0.5em;
 	min-width: 2em;
 	font-weight: bold;
@@ -2114,6 +2125,7 @@ input.assignment-ui-radio {
 /* review type/assignment blocks */
 .rto {
 	display: inline-block;
+	text-indent: 0;
 	width: 0.78em;
 	height: 0.78em;
 	color: black;
@@ -2218,6 +2230,7 @@ td.rlscore {
 }
 .revlink {
 	display: inline-block;
+	text-indent: 0;
 	margin-right: 1.5em;
 }
 
@@ -2342,6 +2355,7 @@ td.pl_lastvisit, td.pl_logtime {
 }
 .pcrole {
 	display: inline-block;
+	text-indent: 0;
 	font-size: 69%;
 	line-height: 1;
 	padding: 2px 0.3em 3px;
@@ -2363,6 +2377,7 @@ span.hoveronly {
 }
 div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 	display: inline-block;
+	text-indent: 0;
 }
 
 /* paper list tables geometry */
@@ -2670,6 +2685,7 @@ hr.g, hr.mg, hr.ug {
 }
 .checki > .rev_num {
 	display: inline-block;
+	text-indent: 0;
 	min-width: 1em;
 }
 
@@ -2979,6 +2995,7 @@ a.badge:active {
 .is-diagnostic.is-warning-note:before, .feedback.is-warning-note:before,
 .is-diagnostic.is-urgent-note:before, .feedback.is-urgent-note:before {
 	display: inline-block;
+	text-indent: 0;
 	vertical-align: -0.1em;
 	padding-right: 0.2em;
 	width: 1.1em;
@@ -2987,6 +3004,7 @@ a.badge:active {
 .error-mark, .warning-mark, .success-mark, .note-mark,
 .urgent-note-mark, .warning-note-mark {
 	display: inline-block;
+	text-indent: 0;
 	vertical-align: -0.075em;
 	width: 0.9em;
 	height: 0.9em;

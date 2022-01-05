@@ -447,7 +447,7 @@ if (!$Qreq->valid_post()) {
     $UserStatus->request_group("");
     $saved_user = save_user($cj, $UserStatus, $newProfile ? null : $Acct);
     if (!$UserStatus->has_error()) {
-        if ($UserStatus->has_messages()) {
+        if ($UserStatus->has_message()) {
             $Conf->msg($UserStatus->message_texts(), $UserStatus->problem_status());
         }
         if ($UserStatus->created || $newProfile) {
@@ -731,7 +731,7 @@ if ($newProfile === 2) {
     echo '</h2>';
 }
 
-if ($UserStatus->has_messages()) {
+if ($UserStatus->has_message()) {
     $status = 0;
     $msgs = [];
     foreach ($UserStatus->message_list() as $m) {

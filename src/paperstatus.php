@@ -98,7 +98,7 @@ class PaperStatus extends MessageSet {
 
     function clear() {
         parent::clear();
-        $this->ignore_duplicates = true;
+        $this->set_ignore_duplicates(true);
         $this->prow = null;
         $this->diffs = [];
         $this->_paper_upd = $this->_paper_overflow_upd = [];
@@ -280,12 +280,16 @@ class PaperStatus extends MessageSet {
     }
 
 
+    /** @param ?string $msg
+     * @param int $status */
     function msg_at_option(PaperOption $o, $msg, $status) {
         $this->msg_at($o->field_key(), $msg, $status);
     }
+    /** @param ?string $msg */
     function error_at_option(PaperOption $o, $msg) {
         $this->error_at($o->field_key(), $msg);
     }
+    /** @param ?string $msg */
     function warning_at_option(PaperOption $o, $msg) {
         $this->warning_at($o->field_key(), $msg);
     }

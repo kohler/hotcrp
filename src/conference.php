@@ -4047,6 +4047,11 @@ class Conf {
     }
 
     /** @param string|list<string> $text */
+    static function msg_success($text) {
+        self::msg_on(self::$main, $text, "xconfirm");
+    }
+
+    /** @param string|list<string> $text */
     function errorMsg($text, $minimal = false) {
         self::msg_on($this, $text, $minimal ? "xmerror" : "merror");
         return false;

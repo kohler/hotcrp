@@ -46,7 +46,7 @@ class Graph_Formula_Page {
             $fg->add_query($queries[$i], $styles[$i], "q$i");
         }
 
-        if ($fg->has_messages()) {
+        if ($fg->has_message()) {
             echo Ht::msg($fg->message_texts(), $fg->problem_status());
         }
 

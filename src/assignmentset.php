@@ -507,7 +507,7 @@ class AssignmentState {
     }
 
     /** @return bool */
-    function has_messages() {
+    function has_message() {
         return !empty($this->msgs);
     }
     /** @return list<MessageItem> */
@@ -1102,8 +1102,8 @@ class AssignmentSet {
     }
 
     /** @return bool */
-    function has_messages() {
-        return $this->astate->has_messages();
+    function has_message() {
+        return $this->astate->has_message();
     }
     /** @return bool */
     function has_error() {
@@ -1189,9 +1189,9 @@ class AssignmentSet {
         return $es;
     }
     function report_errors() {
-        if ($this->astate->has_messages() && $this->has_error()) {
+        if ($this->astate->has_message() && $this->has_error()) {
             Conf::msg_error('Assignment errors: ' . $this->messages_div_html(true) . ' Please correct these errors and try again.');
-        } else if ($this->astate->has_messages()) {
+        } else if ($this->astate->has_message()) {
             Conf::msg_warning('Assignment warnings: ' . $this->messages_div_html(true));
         }
     }
@@ -1200,7 +1200,7 @@ class AssignmentSet {
         if ($this->has_error()) {
             $status = $this->astate->has_user_error ? 200 : 403;
             return new JsonResult($status, ["ok" => false, "message_list" => $this->message_list()]);
-        } else if ($this->astate->has_messages()) {
+        } else if ($this->astate->has_message()) {
             return new JsonResult(["ok" => true, "message_list" => $this->message_list()]);
         } else {
             return new JsonResult(["ok" => true]);
@@ -1900,7 +1900,7 @@ class AssignmentSet {
      * @return bool */
     function execute($verbose = false) {
         if ($this->has_error() || empty($this->assigners)) {
-            if ($verbose && $this->astate->has_messages()) {
+            if ($verbose && $this->astate->has_message()) {
                 $this->report_errors();
             } else if ($verbose) {
                 $this->conf->warnMsg("Nothing to assign.");

@@ -43,7 +43,7 @@ class Ftext {
     static function unparse_as($ftext, $want_format) {
         list($format, $s) = self::parse($ftext);
         if (($format ?? 0) === 5 && $want_format !== 5) {
-            return htmlspecialchars_decode(preg_replace_callback('/<(\/?)(a|b|i|u|strong|em|code|samp|pre|tt)(?=[>\s]).*?>/i',
+            return htmlspecialchars_decode(preg_replace_callback('/<(\/?)(a|b|i|u|strong|em|code|samp|pre|tt|span)(?=[>\s]).*?>/i',
                 function ($m) {
                     $tag = strtolower($m[2]);
                     if ($tag === "code" || $tag === "samp" || $tag === "tt") {

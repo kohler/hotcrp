@@ -681,16 +681,14 @@ $review18A = file_get_contents(SiteLoader::find("test/review18A.txt"));
 $tf = ReviewValues::make_text($Conf->review_form(), $review18A, "review18A.txt");
 xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_diot));
-$mx = $tf->summary_message_item();
-xassert_eqq($mx->status, MessageSet::SUCCESS);
-xassert_eqq(Text::html_to_text($mx->message), "Review #18A updated.");
+xassert_eqq($tf->summary_status(), MessageSet::SUCCESS);
+xassert_eqq($tf->full_feedback_text(), "Review #18A updated.\n");
 
 $tf = ReviewValues::make_text($Conf->review_form(), $review18A, "review18A.txt");
 xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_diot));
-$mx = $tf->summary_message_item();
-xassert_eqq($mx->status, MessageSet::WARNING);
-xassert_eqq(Text::html_to_text($mx->message), "Review #18A unchanged.");
+xassert_eqq($tf->summary_status(), MessageSet::WARNING);
+xassert_eqq($tf->full_feedback_text(), "Review #18A unchanged.\n");
 
 $rrow = fetch_review($paper18, $user_diot);
 xassert_eqq($rrow->t04, "This is the stuff I want to add for the authors’ response.\n");

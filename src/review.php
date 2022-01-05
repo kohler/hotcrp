@@ -1592,6 +1592,7 @@ class ReviewValues extends MessageSet {
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
         }
+        $this->set_want_ftext(true);
     }
 
     /** @return ReviewValues */
@@ -1605,34 +1606,30 @@ class ReviewValues extends MessageSet {
 
     /** @param int|string $field
      * @param string $msg
-     * @param int $status */
+     * @param int $status
+     * @return MessageItem */
     function rmsg($field, $msg, $status) {
-        $e = "";
+        if (is_int($field)) {
+            $lineno = $field;
+            $field = null;
+        } else if ($field) {
+            $lineno = $this->field_lineno[$field] ?? $this->lineno;
+        } else {
+            $lineno = $this->lineno;
+        }
+        $mi = $this->msg_at($field, $msg, $status);
         if ($this->filename) {
-            $e .= htmlspecialchars($this->filename);
-            if (is_int($field)) {
-                if ($field) {
-                    $e .= ":" . $field;
-                }
-                $field = null;
-            } else if ($field && isset($this->field_lineno[$field])) {
-                $e .= ":" . $this->field_lineno[$field];
-            } else {
-                $e .= ":" . $this->lineno;
-            }
+            $mi->landmark = "{$this->filename}:{$lineno}";
             if ($this->paperId) {
-                $e .= " (paper #" . $this->paperId . ")";
+                $mi->landmark .= " (paper #{$this->paperId})";
             }
         }
-        if ($e) {
-            $msg = '<span class="lineno">' . $e . ':</span> ' . $msg;
-        }
-        $this->msg_at($field, $msg, $status);
+        return $mi;
     }
 
     private function check_garbage() {
         if ($this->garbage_lineno) {
-            $this->rmsg($this->garbage_lineno, "Review form appears to begin with garbage; ignoring it.", self::WARNING);
+            $this->rmsg($this->garbage_lineno, "<0>Review form appears to begin with garbage; ignoring it.", self::WARNING);
         }
         $this->garbage_lineno = null;
     }
@@ -1671,7 +1668,8 @@ class ReviewValues extends MessageSet {
                 if (preg_match('/\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z/', $line, $m)
                     && $m[1] != $this->conf->short_name) {
                     $this->check_garbage();
-                    $this->rmsg("confid", "Ignoring review form, which appears to be for a different conference.<br>(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", self::ERROR);
+                    $this->rmsg("confid", "<0>Ignoring review form, which appears to be for a different conference.", self::ERROR);
+                    $this->rmsg("confid", "<5>(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", self::INFORM);
                     return false;
                 } else if (preg_match('/\A==\+== Begin Review/i', $line)) {
                     if ($nfields > 0)
@@ -1729,7 +1727,7 @@ class ReviewValues extends MessageSet {
                         $nfields++;
                     } else {
                         $this->check_garbage();
-                        $this->rmsg(null, "Review field “" . htmlentities($match[1]) . "” is not used for " . htmlspecialchars($this->conf->short_name) . " reviews.  Ignoring this section.", self::ERROR);
+                        $this->rmsg(null, "<0>Review field ‘{$match[1]}’ is not used for {$this->conf->short_name} reviews. Ignoring this section.", self::ERROR);
                     }
                     $mode = 1;
                 } else {
@@ -1756,7 +1754,7 @@ class ReviewValues extends MessageSet {
         }
 
         if ($nfields == 0 && $this->first_lineno == 1) {
-            $this->rmsg(null, "That didn’t appear to be a review form; I was not able to extract any information from it.  Please check its formatting and try again.", self::ERROR);
+            $this->rmsg(null, "<0>That didn’t appear to be a review form; I was not able to extract any information from it. Please check its formatting and try again.", self::ERROR);
         }
 
         $this->text = $text;
@@ -1778,7 +1776,7 @@ class ReviewValues extends MessageSet {
                    && ($pid = cvtint(trim($this->req["paperNumber"]), -1)) > 0) {
             $this->paperId = $pid;
         } else if ($nfields > 0) {
-            $this->rmsg("paperNumber", "This review form doesn’t report which paper number it is for.  Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
+            $this->rmsg("paperNumber", "<0>This review form doesn’t report which paper number it is for. Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
             $nfields = 0;
         }
 
@@ -1896,10 +1894,9 @@ class ReviewValues extends MessageSet {
         $this->req["adoptreview"] = $this->req["ready"] = 1;
     }
 
+    /** @param ?string $msg */
     private function reviewer_error($msg) {
-        if (!$msg) {
-            $msg = $this->conf->_("Can’t submit a review for %s.", htmlspecialchars($this->req["reviewerEmail"]));
-        }
+        $msg = $msg ?? $this->conf->_("<0>Can’t submit a review for %s.", $this->req["reviewerEmail"]);
         $this->rmsg("reviewerEmail", $msg, self::ERROR);
     }
 
@@ -1910,17 +1907,17 @@ class ReviewValues extends MessageSet {
         // look up paper
         if (!$prow) {
             if (!$this->paperId) {
-                $this->rmsg("paperNumber", "This review form doesn’t report which paper number it is for.  Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
+                $this->rmsg("paperNumber", "<0>This review form doesn’t report which paper number it is for.  Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
                 return false;
             }
             $prow = $user->paper_by_id($this->paperId);
             if (($whynot = $user->perm_view_paper($prow, false, $this->paperId))) {
-                $this->rmsg("paperNumber", $whynot->unparse_html(), self::ERROR);
+                $this->rmsg("paperNumber", "<5>" . $whynot->unparse_html(), self::ERROR);
                 return false;
             }
         }
         if ($this->paperId && $prow->paperId !== $this->paperId) {
-            $this->rmsg("paperNumber", "This review form is for paper #{$this->paperId}, not paper #{$prow->paperId}; did you mean to upload it here? I have ignored the form.", MessageSet::ERROR);
+            $this->rmsg("paperNumber", "<0>This review form is for paper #{$this->paperId}, not paper #{$prow->paperId}; did you mean to upload it here? I have ignored the form.", MessageSet::ERROR);
             return false;
         }
         $this->paperId = $prow->paperId;
@@ -1934,7 +1931,7 @@ class ReviewValues extends MessageSet {
         } else if (isset($this->req["reviewerEmail"])
                    && strcasecmp($this->req["reviewerEmail"], $user->email) != 0) {
             if (!($reviewer = $this->conf->user_by_email($this->req["reviewerEmail"]))) {
-                $this->reviewer_error($user->privChair ? $this->conf->_("No such user %s.", htmlspecialchars($this->req["reviewerEmail"])) : null);
+                $this->reviewer_error($user->privChair ? $this->conf->_("<0>No such user %s.", htmlspecialchars($this->req["reviewerEmail"])) : null);
                 return false;
             }
         }
@@ -1964,7 +1961,7 @@ class ReviewValues extends MessageSet {
             }
             $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, $extra);
             if (!$new_rrid) {
-                $this->rmsg(null, "Internal error while creating review.", self::ERROR);
+                $this->rmsg(null, "<0>Internal error while creating review.", self::ERROR);
                 return false;
             }
             $rrow = $prow->fresh_review_by_id($new_rrid);
@@ -1974,7 +1971,7 @@ class ReviewValues extends MessageSet {
         $whyNot = $user->perm_submit_review($prow, $rrow);
         if ($whyNot) {
             if ($user === $reviewer || $user->can_view_review_identity($prow, $rrow)) {
-                $this->rmsg(null, $whyNot->unparse_html(), self::ERROR);
+                $this->rmsg(null, "<5>" . $whyNot->unparse_html(), self::ERROR);
             } else {
                 $this->reviewer_error(null);
             }
@@ -1993,6 +1990,7 @@ class ReviewValues extends MessageSet {
         }
     }
 
+    /** @return array{int|string,int|string} */
     private function fvalues(ReviewField $f, ReviewInfo $rrow = null) {
         $fid = $f->id;
         $oldval = $rrow && isset($rrow->$fid) ? $rrow->$fid : "";
@@ -2006,6 +2004,7 @@ class ReviewValues extends MessageSet {
         }
     }
 
+    /** @return bool */
     private function fvalue_nonempty(ReviewField $f, $fval) {
         return $fval !== ""
             && ($fval !== 0
@@ -2026,7 +2025,7 @@ class ReviewValues extends MessageSet {
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if ($fval === false) {
-                $this->rmsg($fid, $this->conf->_("Bad %s value “%s”.", $f->name_html, htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->req[$fid], 100))), self::WARNING);
+                $this->rmsg($fid, $this->conf->_("<0>%s cannot be ‘%s’.", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
                 unset($this->req[$fid]);
                 $unready = true;
             } else {
@@ -2049,7 +2048,7 @@ class ReviewValues extends MessageSet {
 
         if ($missingfields && $submit && $anynonempty) {
             foreach ($missingfields as $f) {
-                $this->rmsg($f->id, $this->conf->_("%s: Entry required.", $f->name_html), self::WARNING);
+                $this->rmsg($f->id, $this->conf->_("<0>%s: Entry required.", $f->name), self::WARNING);
             }
         }
 
@@ -2060,19 +2059,20 @@ class ReviewValues extends MessageSet {
                 || !isset($this->req["reviewerLast"])
                 || strcasecmp($this->req["reviewerFirst"], $rrow->firstName) != 0
                 || strcasecmp($this->req["reviewerLast"], $rrow->lastName) != 0)) {
-            $name1h = Text::name_h($this->req["reviewerFirst"] ?? "", $this->req["reviewerLast"] ?? "", $this->req["reviewerEmail"], NAME_EB);
-            $name2h = Text::nameo_h($rrow, NAME_EB);
-            $msg = $this->conf->_("The review form was meant for %s, but this review belongs to %s. If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", $name1h, $name2h);
-            $this->rmsg("reviewerEmail", $msg, self::ERROR);
+            $name1 = Text::name($this->req["reviewerFirst"] ?? "", $this->req["reviewerLast"] ?? "", $this->req["reviewerEmail"], NAME_EB);
+            $name2 = Text::nameo($rrow, NAME_EB);
+            $this->rmsg("reviewerEmail", "<0>The review form was meant for {$name1}, but this review belongs to {$name2}.", self::ERROR);
+            $this->rmsg("reviewerEmail", "<5>If you want to upload the form anyway, remove the “<code class=\"nw\">==+== Reviewer</code>” line from the form.", self::INFORM);
         } else if ($rrow->reviewId
                    && $rrow->reviewEditVersion > ($this->req["version"] ?? 0)
                    && $anydiff
                    && $this->text !== null) {
-            $this->rmsg($this->first_lineno, "This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.  If you want to override your online edits, add a line “<code class=\"nw\">==+== Version " . $rrow->reviewEditVersion . "</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::ERROR);
+            $this->rmsg($this->first_lineno, "<0>This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.", self::ERROR);
+            $this->rmsg($this->first_lineno, "<5>If you want to override your online edits, add a line “<code class=\"nw\">==+== Version {$rrow->reviewEditVersion}</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::INFORM);
         } else if ($unready) {
             if ($submit && $anynonempty) {
                 $what = $this->req["adoptreview"] ?? null ? "approved" : "submitted";
-                $this->rmsg("ready", $this->conf->_("This review can’t be $what until entries are provided for all required fields."), self::WARNING);
+                $this->rmsg("ready", $this->conf->_("<0>This review can’t be $what until entries are provided for all required fields."), self::WARNING);
             }
             $this->req["ready"] = 0;
         }
@@ -2173,7 +2173,10 @@ class ReviewValues extends MessageSet {
 
         if (!$user->time_review($prow, $rrow)
             && (!isset($this->req["override"]) || !$admin)) {
-            $this->rmsg(null, 'The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for entering this review has passed.' . ($admin ? " Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""), self::ERROR);
+            $this->rmsg(null, '<5>The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for entering this review has passed.', self::ERROR);
+            if ($admin) {
+                $this->rmsg(null, '<0>Select the “Override deadlines” checkbox and try again if you really want to override the deadline.', self::INFORM);
+            }
             return false;
         }
 
@@ -2545,22 +2548,29 @@ class ReviewValues extends MessageSet {
         return true;
     }
 
-    private function _confirm_message($fmt, $info, $single = null) {
-        $pids = array();
+    /** @param int $status
+     * @param string $fmt
+     * @param list<string> $info */
+    private function _confirm_message($status, $fmt, $info, $single = null) {
+        $pids = [];
         foreach ($info as &$x) {
             if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
-                $x = "<a href=\"" . $this->conf->hoturl("paper", ["p" => $m[2], "#" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
+                $url = $this->conf->hoturl("paper", ["p" => $m[2], "#" => $m[3] ? "r$m[2]$m[3]" : null]);
+                $x = "<a href=\"{$url}\">{$x}</a>";
                 $pids[] = $m[2];
             }
         }
+        unset($x);
         if ($single === null) {
             $single = $this->text === null;
         }
         $t = $this->conf->_($fmt, $info, $single);
+        assert(str_starts_with($t, "<5>"));
         if (count($pids) > 1) {
-            $t = '<span class="has-hotlist" data-hotlist="p/s/' . join("+", $pids) . '">' . $t . '</span>';
+            $pids = join("+", $pids);
+            $t = "<5><span class=\"has-hotlist\" data-hotlist=\"p/s/{$pids}\">" . substr($t, 3) . "</span>";
         }
-        $this->msg_at(null, $t, MessageSet::PLAIN);
+        $this->msg_at(null, $t, $status);
     }
 
     private function _single_approval_state() {
@@ -2574,82 +2584,70 @@ class ReviewValues extends MessageSet {
     function finish() {
         $confirm = false;
         if ($this->submitted) {
-            $this->_confirm_message("Reviews %#s submitted.", $this->submitted);
+            $this->_confirm_message(MessageSet::SUCCESS, "<5>Reviews %#s submitted.", $this->submitted);
             $confirm = true;
         }
         if ($this->updated) {
-            $this->_confirm_message("Reviews %#s updated.", $this->updated);
+            $this->_confirm_message(MessageSet::SUCCESS, "<5>Reviews %#s updated.", $this->updated);
             $confirm = true;
         }
         if ($this->approval_requested) {
-            $this->_confirm_message("Reviews %#s submitted for approval.", $this->approval_requested);
+            $this->_confirm_message(MessageSet::SUCCESS, "<5>Reviews %#s submitted for approval.", $this->approval_requested);
             $confirm = true;
         }
         if ($this->approved) {
-            $this->_confirm_message("Reviews %#s approved.", $this->approved);
+            $this->_confirm_message(MessageSet::SUCCESS, "<5>Reviews %#s approved.", $this->approved);
             $confirm = true;
         }
         if ($this->saved_draft) {
-            $this->_confirm_message("Draft reviews for submissions %#s saved.", $this->saved_draft, $this->_single_approval_state());
+            $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Draft reviews for submissions %#s saved.", $this->saved_draft, $this->_single_approval_state());
         }
         if ($this->author_notified) {
-            $this->_confirm_message("Authors were notified about updated reviews %#s.", $this->author_notified);
+            $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Authors were notified about updated reviews %#s.", $this->author_notified);
         }
         $nunchanged = $this->unchanged ? count($this->unchanged) : 0;
         $nignoredBlank = $this->blank ? count($this->blank) : 0;
         if ($nunchanged + $nignoredBlank > 1
             || $this->text !== null
-            || !$this->has_messages()) {
+            || !$this->has_message()) {
             if ($this->unchanged) {
                 $single = null;
                 if ($this->unchanged == $this->unchanged_draft) {
                     $single = $this->_single_approval_state();
                 }
-                $this->_confirm_message("Reviews %#s unchanged.", $this->unchanged, $single);
+                $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Reviews %#s unchanged.", $this->unchanged, $single);
             }
             if ($this->blank) {
-                $this->_confirm_message("Ignored blank review forms %#s.", $this->blank);
+                $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Ignored blank review forms %#s.", $this->blank);
             }
         }
         $this->finished = $confirm ? 2 : 1;
     }
 
-    /** @return MessageItem */
-    function summary_message_item() {
-        if (!$this->finished) {
-            $this->finish();
-        }
-        if ($this->has_messages()) {
-            $t = "";
-            if ($this->text !== null) {
-                if ($this->has_error() && $this->has_warning()) {
-                    $t = $this->conf->_("There were errors and warnings while parsing the uploaded review file.");
-                } else if ($this->has_error()) {
-                    $t = $this->conf->_("There were errors while parsing the uploaded review file.");
-                } else if ($this->has_warning()) {
-                    $t = $this->conf->_("There were warnings while parsing the uploaded review file.");
-                }
-            }
-            $mx = ($t === "" ? "" : "<p class=\"mmm\">{$t}</p>")
-                . '<div class="parseerr"><p>'
-                . join("</p>\n<p>", $this->message_texts()) . '</p></div>';
-            if ($this->has_error() || $this->has_problem_at("ready")) {
-                return new MessageItem(null, $mx, 2);
-            } else if ($this->has_warning() || $this->finished == 1) {
-                return new MessageItem(null, $mx, 1);
-            } else {
-                return new MessageItem(null, $mx, MessageSet::SUCCESS);
-            }
+    /** @return int */
+    function summary_status() {
+        $this->finished || $this->finish();
+        if (!$this->has_message()) {
+            return MessageSet::PLAIN;
+        } else if ($this->has_error() || $this->has_problem_at("ready")) {
+            return MessageSet::ERROR;
+        } else if ($this->has_warning() || $this->finished === 1) {
+            return MessageSet::WARNING;
         } else {
-            return new MessageItem(null, "Nothing to do.", 0);
+            return MessageSet::SUCCESS;
         }
     }
 
     function report() {
+        $this->finished || $this->finish();
         if ($this->finished < 3) {
-            $mx = $this->summary_message_item();
-            if ($mx->status !== 0) {
-                $this->conf->msg($mx->message, $mx->status);
+            $mis = $this->message_list();
+            if ($this->text !== null && ($this->has_error() || $this->has_warning())) {
+                $errtype = $this->has_error() ? "errors" : "warnings";
+                array_unshift($mis, new MessageItem(null, $this->conf->_("<0>There were $errtype while parsing the uploaded review file."), MessageSet::INFORM));
+            }
+            if (($status = $this->summary_status()) !== MessageSet::PLAIN) {
+                $this->conf->msg(MessageSet::feedback_html($mis), $status);
             }
             $this->finished = 3;
         }
