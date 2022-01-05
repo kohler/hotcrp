@@ -81,15 +81,25 @@ class HelpRenderer extends Ht {
         $this->_rowidx = 1 - $this->_rowidx;
         return $t;
     }
+    /** @return string */
     function end_table() {
         return $this->_tabletype ? "" : "</tbody></table>\n";
     }
+    /** @param string $html
+     * @param string $page
+     * @param null|string|array $options
+     * @param array $js
+     * @return string */
     function hotlink($html, $page, $options = null, $js = []) {
         if (!isset($js["rel"])) {
             $js["rel"] = "nofollow";
         }
         return $this->conf->hotlink($html, $page, $options, $js);
     }
+    /** @param string $html
+     * @param string|array{q:string} $q
+     * @param array $js
+     * @return string */
     function search_link($html, $q = null, $js = []) {
         if ($q === null) {
             $q = $html;
@@ -99,6 +109,9 @@ class HelpRenderer extends Ht {
         }
         return $this->hotlink($html ? : htmlspecialchars($q["q"]), "search", $q, $js);
     }
+    /** @param string $html
+     * @param ?string $topic
+     * @return string */
     function help_link($html, $topic = null) {
         if ($topic === null) {
             $topic = $html;
@@ -114,6 +127,9 @@ class HelpRenderer extends Ht {
         }
         return $this->hotlink($html, "help", $topic);
     }
+    /** @param string $html
+     * @param ?string $siname
+     * @return string */
     function setting_link($html, $siname = null) {
         if ($this->user->privChair || $siname !== null) {
             $pre = $post = "";
@@ -136,14 +152,15 @@ class HelpRenderer extends Ht {
             }
             $t = $pre . '<a href="' . $this->conf->hoturl("settings", $param);
             if (!$this->user->privChair) {
-                $t .= '" class="u need-tooltip" aria-label="This link to a settings page only works for administrators.';
+                $t .= '" class="noq need-tooltip" aria-label="This link to a settings page only works for administrators.';
             }
             return $t . '" rel="nofollow">' . $html . '</a>' . $post;
         } else {
             return '';
         }
     }
-    /** @param string|array<string,string> $q */
+    /** @param string|array<string,string> $q
+     * @return string */
     function search_form($q, $size = 20) {
         if (is_string($q)) {
             $q = ["q" => $q];

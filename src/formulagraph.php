@@ -18,6 +18,7 @@ class Scatter_GraphData implements JsonSerializable {
         $this->y = $y;
         $this->id = $id;
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return [$this->x, $this->y, $this->id];
     }
@@ -85,6 +86,7 @@ class Bar_GraphData implements JsonSerializable {
         $this->style = $style;
         $this->query = $query;
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         if ($this->query) {
             return [$this->x, $this->y, $this->ids, $this->style, $this->query];
@@ -110,6 +112,7 @@ class CDF_GraphData implements JsonSerializable {
     function __construct($d) {
         $this->d = $d;
     }
+    #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $x = ["d" => $this->d];
         if ($this->className !== null) {
@@ -206,11 +209,14 @@ class FormulaGraph extends MessageSet {
     private $_x_tagvalue_bool;
     private $_y_tagvalue_bool;
 
+    /** @param ?string $gtype
+     * @param string $fx
+     * @param string $fy */
     function __construct(Contact $user, $gtype, $fx, $fy) {
         $this->conf = $user->conf;
         $this->user = $user;
 
-        $gtype = simplify_whitespace($gtype);
+        $gtype = simplify_whitespace($gtype ?? "");
         $fx = simplify_whitespace($fx);
         $fy = simplify_whitespace($fy);
 
