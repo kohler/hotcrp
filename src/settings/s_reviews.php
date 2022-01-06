@@ -38,25 +38,20 @@ class Reviews_SettingRenderer {
         echo '</div>';
 
         // deadlines
-        if ($rnum === '$' && count($sv->conf->round_list())) {
-            $dlnum = count($sv->conf->round_list()) - 1;
-        } else if ($rnum !== '$' && $rnum) {
-            $dlnum = $rnum;
-        } else {
-            $dlnum = 0;
-        }
-        if ($sv->oldv("extrev_soft_$dlnum") === $sv->oldv("pcrev_soft_$dlnum")) {
-            $sv->set_oldv("extrev_soft_$dlnum", null);
-        }
-        if ($sv->oldv("extrev_hard_$dlnum") === $sv->oldv("pcrev_hard_$dlnum")) {
-            $sv->set_oldv("extrev_hard_$dlnum", null);
+        if ($rnum !== '$') {
+            if ($sv->oldv("extrev_soft_$rnum") === $sv->oldv("pcrev_soft_$rnum")) {
+                $sv->set_oldv("extrev_soft_$rnum", null);
+            }
+            if ($sv->oldv("extrev_hard_$rnum") === $sv->oldv("pcrev_hard_$rnum")) {
+                $sv->set_oldv("extrev_hard_$rnum", null);
+            }
         }
 
         echo '<div class="settings-2col" style="margin-left:3em">';
-        $sv->echo_entry_group("pcrev_soft_$dlnum", "PC deadline", ["horizontal" => true]);
-        $sv->echo_entry_group("pcrev_hard_$dlnum", "Hard deadline", ["horizontal" => true]);
-        $sv->echo_entry_group("extrev_soft_$dlnum", "External deadline", ["horizontal" => true]);
-        $sv->echo_entry_group("extrev_hard_$dlnum", "Hard deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("pcrev_soft_$rnum", "PC deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("pcrev_hard_$rnum", "Hard deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("extrev_soft_$rnum", "External deadline", ["horizontal" => true]);
+        $sv->echo_entry_group("extrev_hard_$rnum", "Hard deadline", ["horizontal" => true]);
         echo "</div></div>\n";
     }
 
@@ -438,7 +433,7 @@ class ReviewDeadline_SettingParser extends SettingParser {
             return;
         }
 
-        $name = trim($sv->reqv("roundname_$rref"));
+        $name = trim($sv->reqv("roundname_$rref") ?? "");
         if (strcasecmp($name, "default") === 0
             || strcasecmp($name, "unnamed") === 0
             || strcasecmp($name, "n/a") === 0) {
