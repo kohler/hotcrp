@@ -242,7 +242,7 @@ class Log_Page {
             $dplaceholder = $this->conf->unparse_time_log((int) $this->first_timestamp);
         }
 
-        echo Ht::form(hoturl("log"), ["method" => "get", "id" => "searchform", "class" => "clearfix"]);
+        echo Ht::form($this->conf->hoturl("log"), ["method" => "get", "id" => "searchform", "class" => "clearfix"]);
         if ($this->qreq->forceShow) {
             echo Ht::hidden("forceShow", 1);
         }
@@ -279,7 +279,7 @@ class Log_Page {
                 if ($this->qreq[$x])
                     $urls[] = "$x=" . urlencode($this->qreq[$x]);
             }
-            $leg->set_log_url_base(hoturl("log", join("&amp;", $urls)));
+            $leg->set_log_url_base($this->conf->hoturl("log", join("&amp;", $urls)));
             echo "<table class=\"lognav\"><tr><td><div class=\"lognavdr\">";
             if ($page > 1) {
                 echo $leg->page_link_html(1, "<strong>Newest</strong>"), " &nbsp;|&nbsp;&nbsp;";

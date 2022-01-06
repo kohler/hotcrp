@@ -78,7 +78,8 @@ function hoturl_add_raw($url, $component) {
 
 /** @param string $page
  * @param null|string|array $param
- * @return string */
+ * @return string
+ * @deprecated */
 function hoturl($page, $param = null) {
     return Conf::$main->hoturl($page, $param);
 }
@@ -272,7 +273,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         $urlrest["p"] = $id;
     }
     return "<a id=\"quicklink-" . ($isprev ? "prev" : "next")
-        . "\" class=\"ulh pnum\" href=\"" . hoturl($baseUrl, $urlrest) . "\">"
+        . "\" class=\"ulh pnum\" href=\"" . Conf::$main->hoturl($baseUrl, $urlrest) . "\">"
         . ($isprev ? Icons::ui_linkarrow(3) : "")
         . $paperText
         . ($isprev ? "" : Icons::ui_linkarrow(1))
