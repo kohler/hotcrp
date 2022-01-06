@@ -93,7 +93,7 @@ class Search_Page {
 
         // Reviewers group
         if ($user->privChair) {
-            $this->checkbox_item(20, "pcconflicts", "PC conflicts");
+            $this->checkbox_item(20, "pcconf", "PC conflicts");
             $this->checkbox_item(20, "allpref", "Review preferences");
         }
         if ($user->can_view_some_review_identity()) {
