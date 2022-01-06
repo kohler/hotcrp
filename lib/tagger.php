@@ -922,7 +922,7 @@ class TagMap implements IteratorAggregate {
         $vt = $conf->setting_data("tag_vote") ?? "";
         foreach (Tagger::split_unpack($vt) as $ti) {
             $t = $map->add($ti[0]);
-            $t->allotment = ($ti[1] ? : 1.0);
+            $t->allotment = ($ti[1] ?? 1.0);
             $map->has_allotment = true;
             $t->votish = $map->has_votish = true;
             $t->automatic = $map->has_automatic = true;
@@ -1098,14 +1098,14 @@ class Tagger {
     }
 
     /** @param string $tag
-     * @return array{false|string,false|float} */
+     * @return array{false|string,?float} */
     static function unpack($tag) {
         if (!$tag) {
-            return [false, false];
+            return [false, null];
         } else if (!($pos = strpos($tag, "#")) && !($pos = strpos($tag, "="))) {
-            return [$tag, false];
+            return [$tag, null];
         } else if ($pos === strlen($tag) - 1) {
-            return [substr($tag, 0, $pos), false];
+            return [substr($tag, 0, $pos), null];
         } else {
             return [substr($tag, 0, $pos), (float) substr($tag, $pos + 1)];
         }
@@ -1119,7 +1119,7 @@ class Tagger {
     }
 
     /** @param string $taglist
-     * @return list<array{false|string,false|float}> */
+     * @return list<array{false|string,?float}> */
     static function split_unpack($taglist) {
         return array_map("Tagger::unpack", self::split($taglist));
     }

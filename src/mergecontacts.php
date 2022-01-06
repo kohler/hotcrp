@@ -159,11 +159,11 @@ class MergeContacts extends MessageSet {
         }
         $cj->tags = [];
         foreach (Tagger::split_unpack($this->newu->contactTags) as $ti) {
-            $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
+            $cj->tags[] = $ti[0] . "#" . ($ti[1] ?? 0);
         }
         foreach (Tagger::split_unpack($this->oldu->contactTags) as $ti) {
             if ($this->newu->tag_value($ti[0]) === null) {
-                $cj->tags[] = $ti[0] . "#" . ($ti[1] ? : 0);
+                $cj->tags[] = $ti[0] . "#" . ($ti[1] ?? 0);
             }
         }
         $us = new UserStatus($this->conf->root_user());
