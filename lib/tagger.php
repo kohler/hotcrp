@@ -870,24 +870,25 @@ class TagMap implements IteratorAggregate {
                 $tag = substr($tag, $twiddle);
             } else if (($p = $viewer->conf->cached_user_by_id($cid))) {
                 if ($flags & self::UNPARSE_TEXT) {
-                    return $hash . $p->email . substr($tag, $twiddle) . $suffix;
+                    $tag = substr($tag, $twiddle);
+                    return "{$hash}{$p->email}{$tag}{$suffix}";
                 }
+                $emailh = htmlspecialchars($p->email);
                 if (($cc = $p->viewable_color_classes($viewer))) {
-                    $prefix = $hash . "<span class=\"" . $cc
-                        . " taghh\">" . htmlspecialchars($p->email) . "</span>";
+                    $prefix = "{$hash}<span class=\"{$cc} taghh\">{$emailh}</span>";
                     $hash = "";
                 } else {
-                    $hash .= htmlspecialchars($p->email);
+                    $hash .= $emailh;
                 }
                 $tag = substr($tag, $twiddle);
             }
         }
         if (($flags & self::UNPARSE_TEXT)
             || !($cc = $this->styles($tag))) {
-            return $prefix . $hash . $tag . $suffix;
+            return "{$prefix}{$hash}{$tag}{$suffix}";
         } else {
-            return $prefix . "<span class=\""  . join(" ", $cc)
-                . " taghh\">" . $hash . $tag . $suffix . "</span>";
+            $ccs = join(" ", $cc);
+            return "{$prefix}<span class=\"{$ccs} taghh\">{$hash}{$tag}{$suffix}</span>";
         }
     }
 

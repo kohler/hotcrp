@@ -546,36 +546,11 @@ class UserStatus extends MessageSet {
         if (isset($cj->tags)) {
             $cj->tags = $this->make_tags_array($cj->tags, "tags");
         }
-        if (isset($cj->add_tags) || isset($cj->remove_tags)) {
-            // collect old tags as map by base
-            if (!isset($cj->tags) && $old_user) {
-                $cj->tags = preg_split('/[\s,;]+/', $old_user->contactTags);
-            } else if (!isset($cj->tags)) {
-                $cj->tags = [];
-            }
-            $old_tags = [];
-            foreach ($cj->tags as $t) {
-                if ($t !== "") {
-                    list($tag, $index) = Tagger::unpack($t);
-                    $old_tags[strtolower($tag)] = [$tag, $index];
-                }
-            }
-            // process removals, then additions
-            foreach ($this->make_tags_array($cj->remove_tags ?? null, "remove_tags") as $t) {
-                list($tag, $index) = Tagger::unpack($t);
-                if ($index !== false) {
-                    $ti = $old_tags[strtolower($tag)] ?? null;
-                    if (!$ti || $ti[1] != $index)
-                        continue;
-                }
-                unset($old_tags[strtolower($tag)]);
-            }
-            foreach ($this->make_tags_array($cj->add_tags ?? null, "add_tags") as $t) {
-                list($tag, $index) = Tagger::unpack($t);
-                $old_tags[strtolower($tag)] = [$tag, $index];
-            }
-            // collect results
-            $cj->tags = array_map(function ($ti) { return $ti[0] . "#" . (float) $ti[1]; }, $old_tags);
+        if (isset($cj->add_tags)) {
+            $cj->add_tags = $this->make_tags_array($cj->add_tags, "add_tags");
+        }
+        if (isset($cj->remove_tags)) {
+            $cj->remove_tags = $this->make_tags_array($cj->remove_tags, "add_tags");
         }
 
         // Topics
@@ -969,7 +944,8 @@ class UserStatus extends MessageSet {
 
         // Disabled
         if (isset($cj->disabled)) {
-            if ($user->set_prop("disabled", $cj->disabled)) {
+            $user->set_prop("disabled", $cj->disabled);
+            if ($user->prop_changed("disabled")) {
                 $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
             }
         }
@@ -986,25 +962,38 @@ class UserStatus extends MessageSet {
                 }
             }
             $w |= $user->defaultWatch & ~$wmask;
-            if ($user->set_prop("defaultWatch", $w)) {
+            $user->set_prop("defaultWatch", $w);
+            if ($user->prop_changed("defaultWatch")) {
                 $us->diffs["follow"] = true;
             }
         }
 
         // Tags
-        if (isset($cj->tags)
+        if ((isset($cj->tags) || isset($cj->add_tags) || isset($cj->remove_tags))
             && $us->viewer->privChair
             && (!$us->no_nonempty_pc || $user->contactTags === null)) {
-            $tags = [];
-            foreach ($cj->tags as $t) {
+            if (isset($cj->tags)) {
+                $user->set_prop("contactTags", null);
+            }
+            foreach ($cj->tags ?? [] as $t) {
                 list($tag, $value) = Tagger::unpack($t);
                 if (self::check_pc_tag($tag)) {
-                    $tags[$tag] = $tag . "#" . ($value ? : 0);
+                    $user->change_tag_prop($tag, $value ?? 0);
                 }
             }
-            ksort($tags);
-            $t = empty($tags) ? null : " " . join(" ", $tags);
-            if ($user->set_prop("contactTags", $t)) {
+            foreach ($cj->add_tags ?? [] as $t) {
+                list($tag, $value) = Tagger::unpack($t);
+                if (self::check_pc_tag($tag)) {
+                    $user->change_tag_prop($tag, $value ?? $user->tag_value($tag) ?? 0);
+                }
+            }
+            foreach ($cj->remove_tags ?? [] as $t) {
+                list($tag, $value) = Tagger::unpack($t);
+                if (self::check_pc_tag($tag)) {
+                    $user->change_tag_prop($tag, false);
+                }
+            }
+            if ($user->prop_changed("contactTags")) {
                 $us->diffs["tags"] = true;
             }
         }
@@ -1030,9 +1019,11 @@ class UserStatus extends MessageSet {
                   "city" => "address",
                   "state" => "address",
                   "zip" => "address"] as $prop => $diff) {
-            if (($v = $cj->$prop ?? null) !== null
-                && $user->set_prop($prop, $v, $only_empty)) {
-                $this->diffs[$diff] = true;
+            if (($v = $cj->$prop ?? null) !== null) {
+                $user->set_prop($prop, $v, $only_empty);
+                if ($user->prop_changed($prop)) {
+                    $this->diffs[$diff] = true;
+                }
             }
         }
     }
