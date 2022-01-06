@@ -68,10 +68,10 @@ class Assign_Page {
                 continue;
             }
 
-            if (isset($qreq["assrev{$prow->paperId}u{$cid}"])) {
-                $assignment = $qreq["assrev{$prow->paperId}u{$cid}"];
-            } else if (isset($qreq["pcs{$cid}"])) {
-                $assignment = $qreq["pcs{$cid}"];
+            if (isset($this->qreq["assrev{$prow->paperId}u{$cid}"])) {
+                $assignment = $this->qreq["assrev{$prow->paperId}u{$cid}"];
+            } else if (isset($this->qreq["pcs{$cid}"])) {
+                $assignment = $this->qreq["pcs{$cid}"];
             } else {
                 continue;
             }
