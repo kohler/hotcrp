@@ -1681,12 +1681,13 @@ label.f-c, .f-i > label {
 	margin-bottom: 0.3rem;
 }
 .feedback-list > li {
-	margin-left: 1.5rem;
-	text-indent: -1.5rem;
+	margin-bottom: 0.3rem;
+}
+.feedback-list > li:last-child {
 	margin-bottom: 0;
 }
-.lentry .feedback + input.has-error,
-.lentry .feedback + input.has-warning {
+.feedback-list + input.has-error,
+.feedback-list + input.has-warning {
 	margin-top: -0.3rem;
 }
 .f-h {

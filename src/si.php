@@ -226,28 +226,59 @@ class Si {
         return $s;
     }
 
-    /** @return ?string */
-    function title(SettingValues $sv = null) {
-        if ($this->title_pattern) {
-            $ok = true;
-            $title = preg_replace_callback('/\$\{.*?\}/', function ($m) use ($sv, &$ok) {
-                $x = substr($m[0], 2, strlen($m[0]) - 3);
-                $t = null;
-                if (str_starts_with($x, "req.") && $sv) {
-                    $t = $sv->reqv(substr($x, 4));
-                }
-                if ($t !== null && $t !== "") {
-                    return $t;
+    /** @param string $s
+     * @param ?SettingValues $sv
+     * @return ?string */
+    private function expand_pattern($s, $sv) {
+        $pos = 0;
+        $len = strlen($s);
+        while ($pos < $len
+               && ($dollar = strpos($s, "\$", $pos)) !== false) {
+            if ($dollar + 1 < $len
+                && $s[$dollar + 1] === "{") {
+                $rbrace = SearchSplitter::span_balanced_parens($s, $dollar + 2, "");
+                if ($rbrace < $len
+                    && $s[$rbrace] === "}"
+                    && ($r = $this->expand_pattern_call(substr($s, $dollar + 2, $rbrace - $dollar - 2), $sv)) !== null) {
+                    $s = substr($s, 0, $dollar) . $r . substr($s, $rbrace + 1);
+                    $pos = $dollar + strlen($r);
                 } else {
-                    $ok = false;
-                    return "";
+                    return null;
                 }
-            }, $this->title_pattern);
-            if ($ok) {
-                return $title;
+            } else if ($this->split_name) {
+                $s = substr($s, 0, $dollar) . $this->split_name[1] . substr($s, $dollar + 1);
+                $pos = $dollar + strlen($this->split_name[1]);
+            } else {
+                $pos = $dollar + 1;
             }
         }
-        return $this->title;
+        return $s;
+    }
+
+    /** @param string $call
+     * @param ?SettingValues $sv
+     * @return ?string */
+    private function expand_pattern_call($call, $sv) {
+        $r = null;
+        if (($f = $this->expand_pattern(trim($call), $sv)) !== null) {
+            if (str_starts_with($f, "req.") && $sv) {
+                $r = $sv->reqv(substr($f, 4));
+            } else if (str_starts_with($f, "uc ")) {
+                $r = ucfirst(trim(substr($f, 3)));
+            }
+        }
+        return $r;
+    }
+
+    /** @param ?SettingValues $sv
+     * @return ?string */
+    function title($sv = null) {
+        if ($this->title_pattern
+            && ($title = $this->expand_pattern($this->title_pattern, $sv)) !== null) {
+            return $title;
+        } else {
+            return $this->title;
+        }
     }
 
     /** @return ?string */

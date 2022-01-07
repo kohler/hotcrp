@@ -50,15 +50,15 @@ class Tags_SettingRenderer {
             $skip_colors = preg_split('/[\s|]+/', $sv->conf->opt("tagNoSettingsColors"));
         }
         $tag_color_data = $sv->conf->setting_data("tag_color") ?? "";
-        $tag_colors_rows = array();
+        $tag_colors_rows = [];
         foreach ($sv->conf->tags()->canonical_colors() as $k) {
             if (in_array($k, $skip_colors)) {
                 continue;
             }
-            preg_match_all("{(?:\\A|\\s)(\\S+)=$k(?=\\s|\\z)}", $tag_color_data, $m);
+            preg_match_all("/(?:\\A|\\s)(\\S+)=$k(?=\\s|\\z)/", $tag_color_data, $m);
             $sv->set_oldv("tag_color_$k", join(" ", $m[1] ?? []));
             $tag_colors_rows[] = "<tr class=\"{$k}tag\"><td class=\"remargin-left\"></td>"
-                . "<td class=\"pad taghl align-middle\">$k</td>"
+                . "<td class=\"pad taghl align-middle\"><label for=\"tag_color_{$k}\">{$k}</label></td>"
                 . "<td class=\"lentry\">"
                   . $sv->feedback_at("tag_color_$k")
                   . $sv->entry("tag_color_$k", ["class" => "need-suggest tags"])

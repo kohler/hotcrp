@@ -587,10 +587,14 @@
         "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
     },
     {
-        "name_pattern": "tag_color_$", "group": "tags",
-        "hashid": "colors-and-styles",
-        "title": "Tag colors", "title_pattern": "Tag color $",
-        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 40, "autogrow": true
+        "name": "tag_color", "group": "tags", "hashid": "colors-and-styles",
+        "title": "Tag colors",
+        "type": "taglist", "parser_class": "Tags_SettingParser"
+    },
+    {
+        "name_pattern": "tag_color_$", "group": "tags", "internal": true,
+        "title": "Tag colors", "title_pattern": "${uc $} tag color",
+        "type": "taglist", "size": 40, "autogrow": true
     },
     {
         "name": "tag_rank", "group": "tags",

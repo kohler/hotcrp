@@ -150,7 +150,7 @@ with similar PC conflicts, which can make the meeting run smoother.</p>";
 appear <span class=\"redtag tagbg\">red</span> in paper lists (for people
 who can see that tag).  Tag a paper “#~red” to make it red only on your display.
 Other styles are available; try “#bold”, “#italic”, “#big”, “#small”, and
-“#dim”. The ", $hth->setting_link("settings page", "tag_color_red"), " can associate other tags
+“#dim”. The ", $hth->setting_link("settings page", "tag_color"), " can associate other tags
 with colors so that, for example, “" . $hth->search_link("#reject") . "” papers appear
 gray.</p>\n";
     }

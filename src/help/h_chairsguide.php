@@ -14,7 +14,7 @@ class ChairsGuide_HelpTopic {
             echo "<li><p><strong>", $hth->setting_link("Set up PC member accounts", "users"),
 "</strong>. Many PCs are divided into classes, such as
   “heavy” and “light”, or “PC” and “ERC”. Mark these classes with user tags.
-  It’s also useful to configure ", $hth->setting_link("tag colors", "tag_color_red"),
+  It’s also useful to configure ", $hth->setting_link("tag colors", "tag_color"),
   " so that PC member names are displayed
   differently based on class (for instance, heavy PC member names might appear
   in <b>bold</b>).</p></li>\n";
