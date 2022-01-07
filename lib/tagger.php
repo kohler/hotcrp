@@ -1420,23 +1420,24 @@ class Tagger {
 
         // decorate with URL matches
         $dt = $this->conf->tags();
-        $tt = "";
+        $tt = [];
         foreach (preg_split('/\s+/', $tags) as $tag) {
             if (!($base = Tagger::base($tag))) {
                 continue;
             }
             $lbase = strtolower($base);
             if (($link = $this->link($tag))) {
-                $tx = '<a class="xo pw" href="' . $link . '"><u class="x">#'
-                    . $base . '</u>' . substr($tag, strlen($base)) . '</a>';
+                $tsuf = substr($tag, strlen($base));
+                $tx = "<a class=\"qo pw\" href=\"{$link}\"><u class=\"x\">#{$base}</u>{$tsuf}</a>";
             } else {
-                $tx = "#" . $tag;
+                $tx = "#{$tag}";
             }
             if (($cc = $dt->styles($base))) {
-                $tx = '<span class="' . join(" ", $cc) . ' taghh">' . $tx . '</span>';
+                $ccs = join(" ", $cc);
+                $tx = "<span class=\"{$ccs} taghh\">{$tx}</span>";
             }
-            $tt .= $tx . " ";
+            $tt[] = $tx;
         }
-        return rtrim($tt);
+        return join(" ", $tt);
     }
 }

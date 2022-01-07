@@ -4097,7 +4097,7 @@ return {
             linkmap && linkmap.set(elt, psli);
             observer && observer.observe(elt);
         }
-        psli.innerHTML = '<a href="#'.concat(id, '" class="x hover-child">', html, '</a>');
+        psli.innerHTML = '<a href="#'.concat(id, '" class="ulh hover-child">', html, '</a>');
         return psli;
     },
     remove: function (idelt) {
@@ -8714,9 +8714,9 @@ return {
         $(".pfe").each(add_pslitem_pfe);
         var h = $(".btn-savepaper").first(),
             k = hasClass(f, "alert") ? "" : " hidden";
-        $(".pslcard-nav").append('<div class="paper-alert mt-5' + k + '">'
-            + '<button class="ui btn-highlight btn-savepaper">'
-            + h.html() + '</button></div>')
+        $(".pslcard-nav").append('<div class="paper-alert mt-5'.concat(k,
+            '"><button class="ui btn-highlight btn-savepaper">', h.html(),
+            '</button></div>'))
             .find(".btn-savepaper").click(function () {
                 $("#form-paper .btn-savepaper").first().trigger({type: "click", sidebarTarget: this});
             });
@@ -8742,9 +8742,9 @@ return {
         }
         var h = $(".btn-savereview").first(),
             k = $("#form-review").hasClass("alert") ? "" : " hidden";
-        $(".pslcard-nav").append('<div class="review-alert mt-5' + k + '">'
-            + '<button class="ui btn-highlight btn-savereview">'
-            + h.html() + '</button></div>')
+        $(".pslcard-nav").append('<div class="review-alert mt-5'.concat(k,
+            '"><button class="ui btn-highlight btn-savereview">', h.html(),
+            '</button></div>'))
             .find(".btn-savereview").click(function () {
                 $("#form-review .btn-savereview").first().trigger({type: "click", sidebarTarget: this});
             });
@@ -9606,9 +9606,9 @@ $(function () {
             if ((ids = info.ids())
                 && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
                 if (pos > 0)
-                    $(this).prepend('<a id="quicklink-prev" class="x" href="' + hoturl_html("paper", {p: ids[pos - 1]}) + '">&lt; #' + ids[pos - 1] + '</a> ');
+                    $(this).prepend('<a id="quicklink-prev" class="ulh" href="'.concat(hoturl_html("paper", {p: ids[pos - 1]}), '">&lt; #', ids[pos - 1], '</a> '));
                 if (pos < ids.length - 1)
-                    $(this).append(' <a id="quicklink-next" class="x" href="' + hoturl_html("paper", {p: ids[pos + 1]}) + '">#' + ids[pos + 1] + ' &gt;</a>');
+                    $(this).append(' <a id="quicklink-next" class="ulh" href="'.concat(hoturl_html("paper", {p: ids[pos + 1]}), '">#', ids[pos + 1], ' &gt;</a>'));
             }
         });
     }
@@ -10197,7 +10197,7 @@ $.fn.unautogrow = function () {
 $(function () { $(".need-autogrow").autogrow(); });
 
 $(function () {
-    $("a.nn, a.qx, a.qq, a.u, a.uu, a.xx, a.btn[href='']").each(function () {
+    $("a.nn, a.mailto, .nou, a.x, a.xo, a.qx, a.qi, a.uli, a.qq, a.u, a.uu, a.xx, a.btn[href='']").each(function () {
         var err = "a." + this.className.replace(/\s+/g, ".") + "[href=" + this.href + "]";
         window.console && console.log(err);
         log_jserror(err);

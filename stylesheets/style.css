@@ -259,14 +259,12 @@ td.quicklinks, #tracker-connect {
 
 /* generic horizontal styles */
 /* links
-   * a.q: color inherit/link
-   * a.x: underline inherit/link
+   * a.qh: color inherit/link
    * a.noq: color inherit/inherit
-   * a.nou: underline inherit/inherit
-   * a.xo: a.noq + a.x
-   * a.qo: a.nou + a.q
-   * deprecated a.qx: color inherit/inherit, underline inherit/link (old a.xo)
-   * deprecated a.xx: color inherit/link, underline inherit/inherit */
+   * a.ulh: underline inherit/link
+   * a.noul: underline inherit/inherit
+   * a.q: color inherit/link + underline inherit/link (a.qh.ulh)
+   * a.qo: color inherit/link + underline inherit/inherit (a.qh.noul) */
 :link, :visited,
 .link, .btn-link, .btn-xlink {
 	color: #004daa;
@@ -274,10 +272,7 @@ td.quicklinks, #tracker-connect {
 .track:visited, .ptitle:visited, .pnum:visited {
 	color: #660099;
 }
-a.q, a.noq, a.noq:hover, a.xo, a.xo:hover, a.qo,
-a.qx /* XXX */, a.qx:hover /* XXX */, a.xx /* XXX */,
-a.u /* XXX */, a.nn /* XXX */, a.mailto /* XXX */,
-a.btn, a.btn:hover,
+a.qh, a.noq, a.noq:hover, a.q, a.qo, a.btn, a.btn:hover,
 .is-error a, .is-warning a, .is-note a, .is-warning-note a, .is-urgent-note a,
 .btn-qlink, .btn-ulink {
 	color: inherit;
@@ -290,34 +285,31 @@ a:hover .pavfn {
 	color: #c45500;
 }
 a:active,
-a.noq:active, a.xo:active,
-a.qx:active /* XXX */,
+a.noq:active,
 a.track:active, a.ptitle:active, a.pnum:active,
 .btn-link:active, .btn-qlink:active, .btn-xlink:active,
-a.u:active /* XXX */, a.nn:active /* XXX */, a.mailto:active /* XXX */,
 a.attention {
 	color: red;
 }
 a.btn {
 	cursor: default;
 }
-.nou,
-a.q, a.x, a.qo, a.xo, a.btn, a.btn:hover,
-a.qx /* XXX */, a.xx /* XXX*/, a.xx:hover /* XXX */,
-.papmode.active > a, .papmode.active:hover > a.nou, .leftmenu-item > a,
-a.pnum, a.ptitle, a.mailto /* XXX */, u.x {
+.nou, .nou:hover, /* XXX */
+.noul, .noul:hover,
+a.ulh, a.q, a.qo, a.btn, a.btn:hover,
+.papmode.active > a, .papmode.active:hover > a.noul, .leftmenu-item > a,
+a.pnum, a.ptitle, u.x {
 	-webkit-text-decoration-line: inherit;
 	text-decoration-line: inherit;
 }
 .ul,
-a.q:hover, a.x:hover, a.xo:hover, a.qx:hover /* XXX */,
+a.ulh:hover, a.q:hover,
 .papmode.active:hover > a, .leftmenu-item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle,
 div.js-foldup:hover a.js-foldup,
 div.js-aufoldup:hover a.js-aufoldup,
 div.js-assignment-fold:hover a.js-assignment-fold,
 .js-click-child:hover a.hover-child,
-a.mailto:hover /* XXX */,
 a:hover u.x {
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
@@ -348,7 +340,7 @@ span.nb {
 	display: inline-block; /* why? */
 	text-indent: 0;
 }
-.childfold, .js-foldup {
+.childfold, .js-foldup, :link label {
 	cursor: pointer;
 }
 .wait, body.wait input, body.wait button {

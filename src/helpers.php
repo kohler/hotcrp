@@ -268,7 +268,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         $urlrest["p"] = $id;
     }
     return "<a id=\"quicklink-" . ($isprev ? "prev" : "next")
-        . "\" class=\"x pnum\" href=\"" . hoturl($baseUrl, $urlrest) . "\">"
+        . "\" class=\"ulh pnum\" href=\"" . hoturl($baseUrl, $urlrest) . "\">"
         . ($isprev ? Icons::ui_linkarrow(3) : "")
         . $paperText
         . ($isprev ? "" : Icons::ui_linkarrow(1))
@@ -504,7 +504,7 @@ function actionBar($mode = null, $qreq = null) {
         if ($list->description) {
             $url = $list->full_site_relative_url();
             if ($url) {
-                $x .= '<a id="quicklink-list" class="x" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $list->description . "</a>";
+                $x .= '<a id="quicklink-list" class="ulh" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $list->description . "</a>";
             } else {
                 $x .= '<span id="quicklink-list">' . $list->description . '</span>';
             }

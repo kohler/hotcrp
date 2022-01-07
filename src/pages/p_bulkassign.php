@@ -146,7 +146,7 @@ class BulkAssign_Page {
 
     function render_instructions() {
         echo "<section class=\"mt-7\">
-<h3><a class=\"x\" href=\"", $this->conf->hoturl("help", ["t" => "bulkassign"]), "\">Instructions</a></h3>
+<h3><a class=\"ulh\" href=\"", $this->conf->hoturl("help", ["t" => "bulkassign"]), "\">Instructions</a></h3>
 
 <p class=\"w-text\">Upload a CSV (comma-separated value file) to prepare an assignment; HotCRP
 will display the consequences of the requested assignment for confirmation and

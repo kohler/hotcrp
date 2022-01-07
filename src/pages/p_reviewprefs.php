@@ -205,7 +205,8 @@ class ReviewPrefs_Page {
             && isset($qreq[$qreq->fn . "fn"])) {
             $qreq->fn .= "/" . $qreq[$qreq->fn . "fn"];
         }
-        if (!str_starts_with($qreq->fn, "get/")
+        if (isset($qreq->fn)
+            && !str_starts_with($qreq->fn, "get/")
             && !in_array($qreq->fn, ["uploadpref", "tryuploadpref", "applyuploadpref", "setpref", "saveprefs"])) {
             unset($qreq->fn);
         }

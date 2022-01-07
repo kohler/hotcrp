@@ -356,7 +356,7 @@ class Assign_Page {
         }
         if ((string) $rrowid->firstName !== ""
             || (string) $rrowid->lastName !== "") {
-            $fullname .= ' &lt;' . Ht::link(htmlspecialchars($rrowid->email), "mailto:" . $rrowid->email, ["class" => "mailto"]) . '&gt;';
+            $fullname .= ' &lt;' . Ht::link(htmlspecialchars($rrowid->email), "mailto:" . $rrowid->email, ["class" => "q"]) . '&gt;';
         }
 
         $namex = "<span class=\"fn\">{$name}</span><span class=\"fx\">{$fullname}</span>{$actas}";
@@ -654,7 +654,7 @@ class Assign_Page {
 
         echo '<div class="aab">',
             '<div class="aabut aabutsp">', Ht::submit("requestreview", "Request review", ["class" => "btn-primary"]), '</div>',
-            '<div class="aabut"><a class="ui x js-request-review-preview-email" href="">Preview request email</a></div>',
+            '<div class="aabut"><a class="ulh ui js-request-review-preview-email" href="">Preview request email</a></div>',
             "</div>\n\n";
 
         echo "</div></div></form></div></article>\n";

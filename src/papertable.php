@@ -183,7 +183,7 @@ class PaperTable {
                 if (($color = $prow->conf->tags()->color_classes($viewable_tags)))
                     $t .= ' ' . $color;
             }
-            $t .= '"><a class="xo" href="' . $prow->hoturl()
+            $t .= '"><a class="noq ulh" href="' . $prow->hoturl()
                 . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
                 . ' &nbsp; ';
 
@@ -745,7 +745,7 @@ class PaperTable {
         $fr->value .= "</div></div></div>";
         if ($extra) {
             $fr->value .= '<div class="fn6 fx7 longtext-fader"></div>'
-                . '<div class="fn6 fx7 longtext-expander"><a class="ui x js-foldup" href="" role="button" aria-expanded="false" data-fold-target="6">[more]</a></div>'
+                . '<div class="fn6 fx7 longtext-expander"><a class="ulh ui js-foldup" href="" role="button" aria-expanded="false" data-fold-target="6">[more]</a></div>'
                 . Ht::unstash_script("hotcrp.render_text_page()");
         }
     }
@@ -771,13 +771,14 @@ class PaperTable {
                 $n = $e = $t = "";
                 $n = trim(Text::highlight("$au->firstName $au->lastName", $highpreg));
                 if ($au->email !== "") {
-                    $e = Text::highlight($au->email, $highpreg);
-                    $e = '&lt;<a href="mailto:' . htmlspecialchars($au->email)
-                        . '" class="mailto">' . $e . '</a>&gt;';
+                    $s = Text::highlight($au->email, $highpreg);
+                    $ehtml = htmlspecialchars($au->email);
+                    $e = "&lt;<a href=\"mailto:{$ehtml}\" class=\"q\">{$s}</a>&gt;";
                 }
                 $t = ($n === "" ? $e : $n);
                 if ($au->affiliation !== "") {
-                    $t .= ' <span class="auaff">(' . Text::highlight($au->affiliation, $highpreg) . ')</span>';
+                    $s = Text::highlight($au->affiliation, $highpreg);
+                    $t .= " <span class=\"auaff\">({$s})</span>";
                 }
                 if ($n !== "" && $e !== "") {
                     $t .= " " . $e;
@@ -790,7 +791,7 @@ class PaperTable {
                     && $viewAs->privChair) {
                     $t .= " <a href=\""
                         . $this->conf->selfurl($this->qreq, ["actas" => $au->email])
-                        . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::nameo($au, NAME_P))) . "</a>";
+                        . "\">" . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($au, NAME_P)]) . "</a>";
                 }
                 $names[] = '<p class="odname">' . $t . '</p>';
             }
@@ -1271,7 +1272,7 @@ class PaperTable {
             return;
         }
         $value = $this->prow->$field;
-        $id = "$type {$this->prow->paperId}";
+        $id = "{$type}_{$this->prow->paperId}";
 
         $this->_papstripBegin($type, true, $editable ? ["class" => "ui-unfold js-unfold-pcselector js-unfold-focus need-paper-select-api"] : "");
         echo $this->papt($type, $editable ? Ht::label($name, $id) : $name,
@@ -1408,7 +1409,7 @@ class PaperTable {
     }
 
     function papstripOutcomeSelector() {
-        $id = "decision {$this->prow->paperId}";
+        $id = "decision_{$this->prow->paperId}";
         $this->_papstripBegin("decision", $this->qreq->atab !== "decision", ["class" => "need-paper-select-api js-unfold-focus"]);
         echo $this->papt("decision", Ht::label("Decision", $id),
                 ["type" => "ps", "fold" => "decision"]),
@@ -1895,7 +1896,7 @@ class PaperTable {
     /** @return string */
     private function _mode_nav_link($text, $link, $image, $highlight) {
         return '<li class="papmode' . ($highlight ? " active" : "")
-            . '"><a href="' . $link . '" class="nou">'
+            . '"><a href="' . $link . '" class="noul">'
             . Ht::img($image, "[$text]", "papmodeimg")
             . "&nbsp;<u" . ($highlight ? ' class="x"' : "") . ">" . $text
             . "</u></a></li>";
@@ -2380,7 +2381,7 @@ class PaperTable {
         if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
             && $this->mode !== "p") {
             $this->allreviewslink = true;
-            $t[] = '<a href="' . $prow->hoturl() . '" class="nou revlink">'
+            $t[] = '<a href="' . $prow->hoturl() . '" class="noul revlink">'
                 . Ht::img("view48.png", "[All reviews]", $dlimgjs) . "&nbsp;<u>All reviews</u></a>";
         }
 
@@ -2388,7 +2389,7 @@ class PaperTable {
         if ($this->mode !== "edit"
             && $prow->has_author($this->user)
             && !$this->user->can_administer($prow)) {
-            $t[] = '<a href="' . $prow->hoturl(["m" => "edit"]) . '" class="nou revlink">'
+            $t[] = '<a href="' . $prow->hoturl(["m" => "edit"]) . '" class="noul revlink">'
                 . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>Edit submission</strong></u></a>";
         }
 
@@ -2398,7 +2399,7 @@ class PaperTable {
             || !$prow) {
             /* no link */;
         } else if ($myrr) {
-            $a = '<a href="' . $prow->reviewurl(["r" => $myrr->unparse_ordinal_id()]) . '" class="nou revlink">';
+            $a = '<a href="' . $prow->reviewurl(["r" => $myrr->unparse_ordinal_id()]) . '" class="noul revlink">';
             if ($this->user->can_edit_review($prow, $myrr)) {
                 $x = $a . Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u></a>";
             } else {
@@ -2406,7 +2407,7 @@ class PaperTable {
             }
             $t[] = $x;
         } else if ($this->user->can_edit_review($prow, null)) {
-            $t[] = '<a href="' . $prow->reviewurl(["m" => "re"]) . '" class="nou revlink">'
+            $t[] = '<a href="' . $prow->reviewurl(["m" => "re"]) . '" class="noul revlink">'
                 . Ht::img("review48.png", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u></a>";
         }
 
@@ -2414,7 +2415,7 @@ class PaperTable {
         if ($this->mode !== "assign"
             && $this->mode !== "edit"
             && $this->user->can_request_review($prow, null, true)) {
-            $t[] = '<a href="' . $this->conf->hoturl("assign", "p=$prow->paperId") . '" class="nou revlink">'
+            $t[] = '<a href="' . $this->conf->hoturl("assign", "p=$prow->paperId") . '" class="noul revlink">'
                 . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->admin ? "Assign reviews" : "External reviews") . "</u></a>";
         }
 
@@ -2423,7 +2424,7 @@ class PaperTable {
         if (!$this->allreviewslink
             && !$nocmt
             && $this->user->can_comment($prow, null)) {
-            $t[] = '<a class="uic js-edit-comment nou revlink" href="#cnew">'
+            $t[] = '<a class="uic js-edit-comment noul revlink" href="#cnew">'
                 . Ht::img("comment48.png", "[Add comment]", $dlimgjs) . "&nbsp;<u>Add comment</u></a>";
             $any_comments = true;
         }
@@ -2447,7 +2448,7 @@ class PaperTable {
                     if ($cr->commentId) {
                         $what = $cr->commentType & CommentInfo::CT_DRAFT ? "Edit draft" : "Edit";
                     }
-                    $t[] = '<a class="uic js-edit-comment nou revlink" href="#' . $cid . '">'
+                    $t[] = '<a class="uic js-edit-comment noul revlink" href="#' . $cid . '">'
                         . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
                         . ($cflttype >= CONFLICT_AUTHOR ? '<u class="font-weight-bold">' : '<u>')
                         . $what . ($rrd->name == "1" ? "" : " $rrd->name") . ' response</u></a>';
@@ -2458,7 +2459,7 @@ class PaperTable {
 
         // override conflict
         if ($this->allow_admin && !$this->admin) {
-            $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="nou">'
+            $t[] = '<span class="revlink"><a href="' . $prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="noul">'
                 . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing</span>";
         } else if ($this->user->privChair && !$this->allow_admin) {
             $x = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
@@ -2538,7 +2539,7 @@ class PaperTable {
             }
         }
         if (!empty($viewable)) {
-            $m[] = '<p class="sd mt-5"><a href="' . $this->prow->reviewurl(["m" => "r", "text" => 1]) . '" class="nou">'
+            $m[] = '<p class="sd mt-5"><a href="' . $this->prow->reviewurl(["m" => "r", "text" => 1]) . '" class="noul">'
                 . Ht::img("txt24.png", "[Text]", "dlimg")
                 . "&nbsp;<u>" . ucfirst(join(" and ", $viewable))
                 . " in plain text</u></a></p>";
@@ -2753,11 +2754,11 @@ class PaperTable {
         $t = [];
         $dlimgjs = ["class" => "dlimg", "width" => 24, "height" => 24];
         $title = count($this->viewable_rrows) > 1 ? "All reviews" : "Main";
-        $t[] = '<a href="' . $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]) .  '" class="nou revlink">'
+        $t[] = '<a href="' . $this->prow->hoturl(["m" => $this->paper_page_prefers_edit_mode() ? "main" : null]) .  '" class="noul revlink">'
             . Ht::img("view48.png", "[{$title}]", $dlimgjs) . "&nbsp;<u>{$title}</u></a>";
 
         if ($this->allow_admin && !$this->admin) {
-            $t[] = '<a href="' . $this->prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="nou revlink">'
+            $t[] = '<a href="' . $this->prow->conf->selfurl($this->qreq, ["forceShow" => 1]) . '" class="noul revlink">'
                 . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a>";
         }
 

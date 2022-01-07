@@ -550,7 +550,7 @@ class ContactList {
             }
             $t = '<span class="taghl">' . $t . '</span>';
             if ($this->user->privChair) {
-                $t = "<a href=\"" . $this->conf->hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? ' class="q"' : "") . ">$t</a>";
+                $t = "<a href=\"" . $this->conf->hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? ' class="qh"' : "") . ">$t</a>";
             }
             if (($viewable = $row->viewable_tags($this->user))
                 && $this->conf->tags()->has_decoration) {
@@ -579,7 +579,7 @@ class ContactList {
                 if (strpos($row->email, "@") === false) {
                     return $e;
                 } else {
-                    return "<a href=\"mailto:$e\" class=\"mailto\">$e</a>";
+                    return "<a href=\"mailto:$e\" class=\"q\">$e</a>";
                 }
             } else {
                 return "";
