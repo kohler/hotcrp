@@ -114,9 +114,9 @@ class Options_SettingRenderer {
     }
 
     /** @return array<int,PaperOption> */
-    static function configurable_options(SettingValues $sv) {
+    static function configurable_options(Conf $conf) {
         $o = [];
-        foreach ($sv->conf->options() as $opt) {
+        foreach ($conf->options() as $opt) {
             if ($opt->configurable)
                 $o[$opt->id] = $opt;
         }
@@ -294,6 +294,7 @@ class Options_SettingRenderer {
         echo '<div class="fx2"><div class="', $sv->control_class("sf_name_$xpos", "f-i"), '">',
             $sv->feedback_at("sf_name_$xpos"),
             Ht::entry("sf_name_$xpos", $o->name, $sv->sjs("sf_name_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "sf_name_$xpos", "class" => "need-tooltip font-weight-bold", "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
+            Ht::hidden("has_sf_name_$xpos", 1),
             Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-sf-id", "data-default-value" => $o->id > 0 ? $o->id : ""]),
             Ht::hidden("optfp_$xpos", count($this->rendered_options), ["class" => "settings-sf-fp", "data-default-value" => count($this->rendered_options)]),
             '</div>';
@@ -359,7 +360,7 @@ class Options_SettingRenderer {
                 $self->render_option($sv, $o, $ipos);
             }
         }
-        $all_options = self::configurable_options($sv); // get our own iterator
+        $all_options = self::configurable_options($sv->conf); // get our own iterator
         foreach ($all_options as $o) {
             $self->render_option($sv, $o, null);
         }
@@ -466,13 +467,25 @@ class Options_SettingParser extends SettingParser {
         return Options_SettingRenderer::make_requested_option($sv, $io, $xpos);
     }
 
+    function set_oldv(SettingValues $sv, Si $si) {
+        if (str_starts_with($si->name, "sf_name_")) {
+            $n = intval(substr($si->name, 8));
+            $options = array_values(Options_SettingRenderer::configurable_options($sv->conf));
+            if ($n > 0 && $n <= count($options)) {
+                $sv->set_oldv($si->name, $options[$n - 1]->name);
+                return true;
+            }
+        }
+        return false;
+    }
+
     function parse_req(SettingValues $sv, Si $si) {
         if ($sv->has_reqv("options_version")
             && (int) $sv->reqv("options_version") !== (int) $sv->conf->setting("options")) {
             $sv->error_at("options", "You modified options settings in another tab. Please reload.");
         }
 
-        $new_opts = Options_SettingRenderer::configurable_options($sv);
+        $new_opts = Options_SettingRenderer::configurable_options($sv->conf);
 
         // consider option ids
         $optids = array_map(function ($o) { return $o->id; }, $new_opts);
@@ -509,7 +522,7 @@ class Options_SettingParser extends SettingParser {
 
     function unparse_json(SettingValues $sv, Si $si) {
         $oj = [];
-        foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
+        foreach (Options_SettingRenderer::configurable_options($sv->conf) as $o) {
             $oj[] = $o->jsonSerialize();
         }
         return $oj;
@@ -517,7 +530,7 @@ class Options_SettingParser extends SettingParser {
 
     function store_value(SettingValues $sv, Si $si) {
         $deleted_ids = [];
-        foreach (Options_SettingRenderer::configurable_options($sv) as $o) {
+        foreach (Options_SettingRenderer::configurable_options($sv->conf) as $o) {
             $newo = $this->stashed_options[$o->id] ?? null;
             if (!$newo
                 || ($newo->type !== $o->type

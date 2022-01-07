@@ -261,10 +261,10 @@ class Si {
     private function expand_pattern_call($call, $sv) {
         $r = null;
         if (($f = $this->expand_pattern(trim($call), $sv)) !== null) {
-            if (str_starts_with($f, "req.") && $sv) {
-                $r = $sv->reqv(substr($f, 4));
-            } else if (str_starts_with($f, "uc ")) {
+            if (str_starts_with($f, "uc ")) {
                 $r = ucfirst(trim(substr($f, 3)));
+            } else if (str_starts_with($f, "sv ")) {
+                $r = $sv->curv(trim(substr($f, 3)));
             }
         }
         return $r;
@@ -299,7 +299,7 @@ class Si {
 
     /** @return bool */
     function is_date() {
-        return str_ends_with($this->type, "date");
+        return $this->type && str_ends_with($this->type, "date");
     }
 
     /** @return array<string,string> */

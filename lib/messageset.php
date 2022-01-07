@@ -541,11 +541,11 @@ class MessageSet {
                     $s = "<span class=\"lineno\">{$lm}:</span> {$s}";
                 }
                 if ($mi->status !== self::INFORM || empty($t)) {
-                    $k = self::status_class($mi->status, "", "is-");
-                    $t[] = "<li><div class=\"is-diagnostic {$k}\">{$s}</div>";
+                    $k = self::status_class($mi->status, "is-diagnostic", "is-");
+                    $t[] = "<li><div class=\"{$k}\">{$s}</div>";
                 } else {
                     // overwrite last `</li>`
-                    $t[count($t) - 1] = "<div class=\"msg-context\">{$s}</div>";
+                    $t[count($t) - 1] = "<div class=\"msg-inform\">{$s}</div>";
                 }
                 if (($mi->pos1 || $mi->pos2) && $mi->context !== null) {
                     $t[] = "<div class=\"msg-context\">"

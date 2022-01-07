@@ -285,6 +285,15 @@ class ReviewForm_SettingParser extends SettingParser {
         return $fs;
     }
 
+    function set_oldv(SettingValues $sv, Si $si) {
+        if (str_starts_with($si->name, "rf_name_")
+            && ($f = $sv->conf->review_field(substr($si->name, 8)))) {
+            $sv->set_oldv($si->name, $f->name);
+            return true;
+        }
+        return false;
+    }
+
     function parse_req(SettingValues $sv, Si $si) {
         $this->nrfj = [];
         $this->byname = [];
@@ -635,6 +644,7 @@ class ReviewForm_SettingRenderer {
             '<div id="rf_$_view" class="settings-rf-view fn2 ui js-foldup"></div>',
             '<div id="rf_$_edit" class="settings-rf-edit fx2">',
             '<div class="entryi mb-3"><div class="entry">',
+            '<input name="has_rf_name_$" type="hidden" value="1">',
             '<input name="rf_name_$" id="rf_name_$" type="text" size="50" style="font-weight:bold" placeholder="Field name">',
             '</div></div>';
         $rfield = ReviewField::make_template($sv->conf, true);

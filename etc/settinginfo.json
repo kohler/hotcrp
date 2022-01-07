@@ -229,39 +229,40 @@
     },
     {
         "name_pattern": "sf_name_$", "internal": true, "group": "subform",
-        "title": "Submission field name"
+        "title": "Submission field name",
+        "parser_class": "Options_SettingParser"
     },
     {
         "name_pattern": "sf_type_$", "internal": true, "group": "subform",
-        "title": "Submission field type", "title_pattern": "‘${req.sf_name_$}’ type"
+        "title": "Submission field type", "title_pattern": "‘${sv sf_name_$}’ type"
     },
     {
         "name_pattern": "sf_description_$", "internal": true, "group": "subform",
-        "title": "Submission field description", "title_pattern": "‘${req.sf_name_$}’ description"
+        "title": "Submission field description", "title_pattern": "‘${sv sf_name_$}’ description"
     },
     {
         "name_pattern": "sf_options_$", "internal": true, "group": "subform",
-        "title": "Submission field choices", "title_pattern": "‘${req.sf_name_$}’ choices"
+        "title": "Submission field choices", "title_pattern": "‘${sv sf_name_$}’ choices"
     },
     {
         "name_pattern": "sf_required_$", "internal": true, "group": "subform",
-        "title": "Submission field requirement", "title_pattern": "‘${req.sf_name_$}’ requirement"
+        "title": "Submission field requirement", "title_pattern": "‘${sv sf_name_$}’ requirement"
     },
     {
         "name_pattern": "sf_display_$", "internal": true, "group": "subform",
-        "title": "Submission field display", "title_pattern": "‘${req.sf_name_$}’ display"
+        "title": "Submission field display", "title_pattern": "‘${sv sf_name_$}’ display"
     },
     {
         "name_pattern": "sf_visibility_$", "internal": true, "group": "subform",
-        "title": "Submission field visibility", "title_pattern": "‘${req.sf_name_$}’ visibility"
+        "title": "Submission field visibility", "title_pattern": "‘${sv sf_name_$}’ visibility"
     },
     {
         "name_pattern": "sf_presence_$", "internal": true, "group": "subform",
-        "title": "Submission field presence", "title_pattern": "‘${req.sf_name_$}’ presence"
+        "title": "Submission field presence", "title_pattern": "‘${sv sf_name_$}’ presence"
     },
     {
         "name_pattern": "sf_presenceq_$", "internal": true, "group": "subform",
-        "title": "Submission field presence condition", "title_pattern": "‘${req.sf_name_$}’ presence condition"
+        "title": "Submission field presence condition", "title_pattern": "‘${sv sf_name_$}’ presence condition"
     },
     {
         "name": "options_version", "internal": true,
@@ -395,35 +396,36 @@
     },
     {
         "name_pattern": "rf_name_$", "internal": true, "group": "reviewform",
-        "title": "Review field name"
+        "title": "Review field name",
+        "type": "string", "parser_class": "ReviewForm_SettingParser"
     },
     {
         "name_pattern": "rf_description_$", "internal": true, "group": "reviewform",
-        "title": "Review field description", "title_pattern": "${req.rf_name_$} description"
+        "title": "Review field description", "title_pattern": "‘${sv rf_name_$}’ description"
     },
     {
         "name_pattern": "rf_options_$", "internal": true, "group": "reviewform",
-        "title": "Review field choices", "title_pattern": "${req.rf_name_$} choices"
+        "title": "Review field choices", "title_pattern": "‘${sv rf_name_$}’ choices"
     },
     {
         "name_pattern": "rf_colors_$", "internal": true, "group": "reviewform",
-        "title": "Review field colors", "title_pattern": "${req.rf_name_$} colors"
+        "title": "Review field colors", "title_pattern": "‘${sv rf_name_$}’ colors"
     },
     {
         "name_pattern": "rf_required_$", "internal": true, "group": "reviewform",
-        "title": "Review field requirement", "title_pattern": "${req.rf_name_$} requirement"
+        "title": "Review field requirement", "title_pattern": "‘${sv rf_name_$}’ requirement"
     },
     {
         "name_pattern": "rf_visibility_$", "internal": true, "group": "reviewform",
-        "title": "Review field visibility", "title_pattern": "${req.rf_name_$} visibility"
+        "title": "Review field visibility", "title_pattern": "‘${sv rf_name_$}’ visibility"
     },
     {
         "name_pattern": "rf_ec_$", "internal": true, "group": "reviewform",
-        "title": "Review field presence", "title_pattern": "${req.rf_name_$} presence"
+        "title": "Review field presence", "title_pattern": "‘${sv rf_name_$}’ presence"
     },
     {
         "name_pattern": "rf_ecs_$", "internal": true, "group": "reviewform",
-        "title": "Review field presence condition", "title_pattern": "${req.rf_name_$} presence condition"
+        "title": "Review field presence condition", "title_pattern": "‘${sv rf_name_$}’ presence condition"
     },
     {
         "name_pattern": "roundname_$", "internal": true, "group": "reviews",

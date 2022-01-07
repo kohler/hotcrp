@@ -587,6 +587,8 @@ class ReviewForm implements JsonSerializable {
     public $fmap;      // all fields, whether or not displayed, key id
     /** @var array<string,ReviewField> */
     public $forder;    // displayed fields in display order, key id
+    /** @var array<string,ReviewField> */
+    private $by_short_id;
 
     static public $revtype_names = [
         "None", "External", "PC", "Secondary", "Primary", "Meta"
@@ -651,6 +653,9 @@ class ReviewForm implements JsonSerializable {
             if ($f->displayed) {
                 $f->display_order = ++$do;
                 $this->forder[$f->id] = $f;
+                if ($f->id !== $f->short_id) {
+                    $this->by_short_id[$f->short_id] = $f;
+                }
             }
         }
     }
@@ -658,7 +663,7 @@ class ReviewForm implements JsonSerializable {
     /** @param string $fid
      * @return ?ReviewField */
     function field($fid) {
-        return $this->forder[$fid] ?? null;
+        return $this->forder[$fid] ?? $this->by_short_id[$fid] ?? null;
     }
     /** @return array<string,ReviewField> */
     function all_fields() {

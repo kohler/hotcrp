@@ -636,7 +636,7 @@ class Ht {
         $h0 = htmlspecialchars(substr($s, 0, $pos1));
         $h1 = htmlspecialchars(substr($s, $pos1, $pos2 - $pos1));
         $h2 = htmlspecialchars(substr($s, $pos2));
-        $k = $status === 2 ? "is-error" : "is-warning";
+        $k = $status > 1 ? "is-error" : "is-warning";
         if ($pos2 > $pos1 + 2) {
             return "{$h0}<span class=\"context-mark {$k}\">{$h1}</span>{$h2}";
         } else {
