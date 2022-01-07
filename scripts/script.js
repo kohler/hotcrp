@@ -137,6 +137,37 @@ function lower_bound_index(a, v) {
     return l;
 }
 
+function string_utf8_index(str, index) {
+    var r = 0, m, n;
+    while (str && index > 0) {
+        m = str.match(/^([\x00-\x7F]*)([\u0080-\u07FF]*)([\u0800-\uD7FF\uE000-\uFFFF]*)((?:[\uD800-\uDBFF][\uDC00-\uDFFF])*)/);
+        if (!m)
+            break;
+        if (m[1].length) {
+            n = Math.min(index, m[1].length);
+            r += n;
+            index -= n;
+        }
+        if (m[2].length) {
+            n = Math.min(index, m[2].length * 2);
+            r += n / 2;
+            index -= n;
+        }
+        if (m[3].length) {
+            n = Math.min(index, m[3].length * 3);
+            r += n / 3;
+            index -= n;
+        }
+        if (m[4].length) {
+            n = Math.min(index, m[4].length * 2);
+            r += n / 2; // surrogate pairs
+            index -= n;
+        }
+        str = str.substring(m[0].length);
+    }
+    return r;
+}
+
 
 // promises
 function HPromise(executor) {
@@ -1148,7 +1179,8 @@ function render_class(c, format) {
 function render_with(context, renderer, text) {
     var renderf = renderer.render;
     if (renderer.render_inline
-        && window.getComputedStyle(context).display.startsWith("inline")) {
+        && (hasClass(context, "format-inline")
+            || window.getComputedStyle(context).display.startsWith("inline"))) {
         renderf = renderer.render_inline;
     }
     var html = renderf.call(context, text, context);
@@ -1187,8 +1219,12 @@ function on_page() {
     $(".need-format").each(into);
 }
 
-function ftext_onto(context, ftext) {
-    onto(context, "f", ftext);
+function ftext_onto(context, ftext, default_format) {
+    var ft = parse_ftext(ftext);
+    if (ft[0] === 0 && ft[1].length === ftext.length) {
+        ft[0] = default_format || 0;
+    }
+    onto(context, ft[0], ft[1]);
 }
 
 function add_format(renderer) {
@@ -1212,7 +1248,16 @@ function render0(text) {
     return text.replace(/\r\n?(?:\r\n?)+|\n\n+/g, "</p><p>");
 }
 
-add_format({format: 0, render: render0});
+function render0_inline(text) {
+    return link_urls(escape_html(text));
+}
+
+function render5(text) {
+    return text;
+}
+
+add_format({format: 0, render: render0, render_inline: render0_inline});
+add_format({format: 5, render: render5});
 $(on_page);
 
 return {
@@ -1243,6 +1288,72 @@ function render_xmsg(msg, status) {
     return '<div class="msg msg-' + status + '">' + msg + '</div>';
 }
 
+function append_feedback_to(elt, mi) {
+    var sklass, li, div;
+    if (mi.message != null && mi.message !== "") {
+        if (elt.tagName !== "UL")
+            throw new Error("bad append_feedback");
+        sklass = "";
+        if (mi.status != null && mi.status >= -4 && mi.status <= 3)
+            sklass = ["warning-note", "success", "urgent-note", "note", "", "warning", "error", "error"][mi.status + 4];
+        div = document.createElement("div");
+        if (mi.status !== -5 || !elt.firstChild) {
+            li = document.createElement("li");
+            elt.appendChild(li);
+            div.className = sklass ? "is-diagnostic format-inline is-" + sklass : "is-diagnostic format-inline";
+        } else {
+            li = elt.lastChild;
+            div.className = "msg-inform format-inline";
+        }
+        li.appendChild(div);
+        render_text.ftext_onto(div, mi.message, 5);
+    }
+    if (mi.context) {
+        div = document.createElement("div");
+        div.className = "msg-context";
+        var s = mi.context[0],
+            p1 = string_utf8_index(s, mi.context[1]),
+            p2 = string_utf8_index(s, mi.context[2]),
+            span = document.createElement("span");
+        sklass = mi.status > 1 ? "is-error" : "is-warning";
+        span.className = (p2 > p1 + 2 ? "context-mark " : "context-caret-mark ") +
+            (mi.status > 1 ? "is-error" : "is-warning");
+        span.append(s.substring(p1, p2));
+        div.append(s.substring(0, p1), span, s.substring(p2));
+        elt.lastChild.appendChild(div);
+    }
+}
+
+function append_feedback_near(elt, mi) {
+    if (mi.status === 1 && !hasClass(elt, "has-error"))
+        addClass(elt, "has-warning");
+    else if (mi.status >= 2) {
+        removeClass(elt, "has-warning");
+        addClass(elt, "has-error");
+    }
+    if (mi.message != null && mi.message !== "") {
+        var owner, c, ul;
+        if (hasClass(elt, "entryi"))
+            owner = elt.querySelector(".entry");
+        else if (hasClass(elt, "f-i") || hasClass(elt, "entry"))
+            owner = elt;
+        else
+            owner = null;
+        if (!owner)
+            return false;
+        c = owner.firstChild;
+        while (c && c.noteType === 1 && (c.tagName === "LABEL" || hasClass(c, "feedback")))
+            c = c.nextSibling;
+        if (!c || !hasClass(c, "feedback-list")) {
+            ul = document.createElement("ul");
+            ul.className = "feedback-list";
+            owner.insertBefore(ul, c);
+        }
+        append_feedback_to(ul || c, mi);
+    }
+    return true;
+}
+
 function render_feedback(msg, status) {
     if (typeof msg === "string")
         msg = msg === "" ? [] : [msg];
@@ -1255,32 +1366,6 @@ function render_feedback(msg, status) {
         t = t.concat('<li><div class="is-diagnostic', status ? " is-" : "", status, '">', msg[i], '</div></li>');
     }
     return t;
-}
-
-function render_feedback_near(msg, status, e) {
-    var x, c, m, $j;
-    if (typeof status === "number" && status >= -2 && status <= 3)
-        status = ["urgent-note", "note", "", "warning", "error", "error"][status + 2];
-    else
-        status = "note";
-    if (status === "warning" || status === "error")
-        addClass(e, "has-" + status);
-    if (hasClass(e, "entryi") && ($j = $(e).find(".entry")).length) {
-        e = $j[0];
-    } else if (!hasClass(e, "f-i")) {
-        return false;
-    }
-    c = e.firstChild;
-    while (c && c.nodeType === 1 && (c.tagName === "LABEL" || hasClass(c, "feedback")))
-        c = c.nextSibling;
-    if (!c || !hasClass(c, "feedback-list")) {
-        m = document.createElement("ul");
-        m.className = "feedback-list";
-        e.insertBefore(m, c);
-        c = m;
-    }
-    $(c).append(render_feedback(msg, status));
-    return true;
 }
 
 
@@ -2271,7 +2356,7 @@ function popup_skeleton(options) {
             mx = mlist[i];
             if (mx.field && (e = form[mx.field])) {
                 x = e.closest(".entryi, .f-i");
-                if (render_feedback_near(mx.message, mx.status, x || e)) {
+                if (append_feedback_near(x || e, mx)) {
                     continue;
                 }
             }
@@ -4007,30 +4092,31 @@ return row_order_ui;
 
 
 function minifeedback(e, rv) {
-    var t = "", status = 0, i, mx;
+    var ul = document.createElement("ul"), status = 0, i, mx;
+    ul.className = "feedback-list";
     if (rv && rv.message_list) {
         for (i = 0; i !== rv.message_list.length; ++i) {
             mx = rv.message_list[i];
-            t += render_feedback(mx.message, mx.status);
+            append_feedback_to(ul, rv.message_list[i]);
             status = Math.max(status, mx.status);
         }
     } else if (rv && rv.error) {
-        t = render_feedback(escape_html(rv.error), 2);
+        append_feedback_to(ul, {status: 2, message: "<5>" + rv.error});
         status = 2;
     }
-    if (t === "" && (!rv || !rv.ok)) {
+    if (!ul.firstChild && (!rv || !rv.ok)) {
         if (rv && (rv.error || rv.warning)) {
             log_jserror("rv has error/warning: " + JSON.stringify(rv));
         }
-        t = "Error";
+        append_feedback_to(ul, {status: 2, message: "Error"});
         status = 2;
     }
     removeClass(e, "has-error");
     removeClass(e, "has-warning");
     if (status > 0)
         addClass(e, status > 1 ? "has-error" : "has-warning");
-    if (t)
-        make_bubble(t, status > 1 ? "errorbubble" : "warningbubble").near(e).removeOn(e, "input change click hide" + (status > 1 ? "" : " focus blur"));
+    if (ul.firstChild)
+        make_bubble(ul, status > 1 ? "errorbubble" : "warningbubble").near(e).removeOn(e, "input change click hide" + (status > 1 ? "" : " focus blur"));
 
     var ce, checkish = e.tagName === "BUTTON" || e.tagName === "SELECT" || e.type === "checkbox" || e.type === "radio";
     if (checkish || hasClass(e, "mf-label")
@@ -4498,10 +4584,7 @@ function add_review(rrow) {
     hc.push_pop('<hr class="c">');
 
     if (rrow.message_list) {
-        hc.push('<div class="revcard-feedback fx20">', '</div>');
-        for (i = 0; i !== rrow.message_list.length; ++i)
-            hc.push(render_feedback(rrow.message_list[i].message, rrow.message_list[i].status));
-        hc.pop();
+        hc.push('<div class="revcard-feedback fx20"><ul class="feedback-list"></ul></div>');
     }
 
     // body
@@ -4521,6 +4604,12 @@ function add_review(rrow) {
         var fuid = this.closest(".rf").getAttribute("data-rf");
         render_text.onto(this, rrow.format, rrow[fuid]);
     });
+    if (rrow.message_list) {
+        var ul = $j.find(".revcard-feedback")[0].firstChild;
+        for (i = 0; i !== rrow.message_list.length; ++i) {
+            append_feedback_to(ul, rrow.message_list[i]);
+        }
+    }
     if (has_user_rating) {
         $j.find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
     }

@@ -622,20 +622,13 @@ function rfs(data) {
             }
         }
     }
-    for (i in data.errf || {}) {
-        elt = document.getElementById(i);
-        entryi = elt.closest(".entryi") || elt;
-        removeClass(entryi, "hidden");
-        addClass(entryi, "has-error");
-        foldup.call(entryi, null, {n: 2, f: false});
-    }
     for (i in data.message_list || []) {
         m = data.message_list[i];
         if (m.field
-            && m.message
             && (elt = document.getElementById(m.field))
-            && (entryi = elt.closest(".entry"))) {
-            $(render_feedback(m.message, m.status)).prependTo(entryi);
+            && (entryi = elt.closest(".entryi"))) {
+            append_feedback_near(entryi, m);
+            foldup.call(entryi, null, {n: 2, f: false});
         }
     }
     form_highlight("#settingsform");

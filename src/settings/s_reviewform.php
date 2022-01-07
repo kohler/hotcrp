@@ -689,7 +689,6 @@ class ReviewForm_SettingRenderer {
         $sj = [];
         $sj["fields"] = $rfj;
         $sj["samples"] = $samples;
-        $sj["errf"] = $sv->message_field_map();
         $sj["message_list"] = $sv->message_list();
         $sj["req"] = $req;
         $sj["stemplate"] = ReviewField::make_template($sv->conf, true)->unparse_json(1);

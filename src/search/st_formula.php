@@ -28,9 +28,9 @@ class Formula_SearchTerm extends SearchTerm {
             $formula = new Formula($word, $is_graph ? Formula::ALLOW_INDEXED : 0);
         }
         if (!$formula->check($srch->user)) {
-            $srch->lwarning($sword, "Invalid formula matches no submissions");
+            $srch->lwarning($sword, "<0>Invalid formula matches no submissions");
             foreach ($formula->message_list() as $mi) {
-                $mi = $srch->message_set()->append_item(clone $mi);
+                $mi = $srch->message_set()->append_item($mi->with_status(min($mi->status, MessageSet::WARNING)));
                 if ($mi->pos1 !== null) {
                     $mi->pos1 += $sword->pos1w;
                     $mi->pos2 += $sword->pos1w;

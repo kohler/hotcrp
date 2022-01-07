@@ -46,6 +46,18 @@ class MessageItem implements JsonSerializable {
         }
     }
 
+    /** @param int $status
+     * @return MessageItem */
+    function with_status($status) {
+        if ($this->status !== $status) {
+            $mi = clone $this;
+            $mi->status = $status;
+            return $mi;
+        } else {
+            return $this;
+        }
+    }
+
     /** @param string $text
      * @return MessageItem */
     function with_prefix($text) {
@@ -73,6 +85,9 @@ class MessageItem implements JsonSerializable {
             $x["message"] = $this->message;
         }
         $x["status"] = $this->status;
+        if ($this->context !== null && $this->pos1 !== null) {
+            $x["context"] = Ht::make_mark_substring($this->context, $this->pos1, $this->pos2);
+        }
         return (object) $x;
     }
 
