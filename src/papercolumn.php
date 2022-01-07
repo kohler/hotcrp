@@ -599,10 +599,10 @@ class Abstract_PaperColumn extends PaperColumn {
         $klass = strlen($t) > 190 ? "pl_longtext" : "pl_shorttext";
         if (!$highlight_count && ($format = $row->abstract_format())) {
             $pl->need_render = true;
-            $t = '<div class="' . $klass . ' need-format" data-format="'
-                . $format . '.plx">' . $t . '</div>';
+            $t = "<div class=\"{$klass} need-format\" data-format=\"{$format}\">{$t}</div>";
         } else {
-            $t = '<div class="' . $klass . ' format0">' . Ht::format0_html($t) . '</div>';
+            $t = Ht::format0_html($t);
+            $t = "<div class=\"{$klass} format0\">{$t}</div>";
         }
         return $t;
     }
