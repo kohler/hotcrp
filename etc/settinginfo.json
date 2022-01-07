@@ -593,7 +593,7 @@
     },
     {
         "name_pattern": "tag_color_$", "group": "tags", "internal": true,
-        "title": "Tag colors", "title_pattern": "${uc $} tag color",
+        "title": "Tag colors", "title_pattern": "${uc $} tags",
         "type": "taglist", "size": 40, "autogrow": true
     },
     {

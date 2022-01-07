@@ -236,6 +236,7 @@ class SettingValues extends MessageSet {
     function use_req() {
         return $this->has_error();
     }
+
     /** @param null|string|Si $field
      * @param MessageItem $mi */
     function append_item_at($field, $mi) {
@@ -258,17 +259,22 @@ class SettingValues extends MessageSet {
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
+    function msg_at($field, $msg, $status) {
+        return $this->append_item_at($field, new MessageItem(null, $msg ?? "", $status));
+    }
+
+    /** @param null|string|Si $field
+     * @param ?string $msg
+     * @return MessageItem */
     function error_at($field, $msg = null) {
-        $msg = $msg === null || $msg === false ? "" : $msg;
-        return $this->append_item_at($field, new MessageItem(null, $msg, MessageSet::ERROR));
+        return $this->msg_at($field, $msg, MessageSet::ERROR);
     }
 
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
     function warning_at($field, $msg = null) {
-        $msg = $msg === null || $msg === false ? "" : $msg;
-        return $this->append_item_at($field, new MessageItem(null, $msg, MessageSet::WARNING));
+        return $this->msg_at($field, $msg, MessageSet::WARNING);
     }
 
     /** @param MessageItem $mi
@@ -1019,14 +1025,15 @@ class SettingValues extends MessageSet {
     /** @param Si $si
      * @return string */
     function si_message_default($si) {
-        if ($si->default_message === null) {
+        $dm = $si->default_message;
+        if ($dm === null) {
             assert(str_starts_with($si->storage_name(), "msg."));
             $args = [substr($si->storage_name(), 4), ""];
-        } else if (is_string($si->default_message)) {
-            $args = [$si->default_message];
+        } else if (is_string($dm)) {
+            $args = [$dm];
         } else {
-            assert(is_array($si->default_message));
-            $args = $si->default_message;
+            assert(is_array($dm));
+            $args = $dm;
             array_splice($args, 1, 0, "");
         }
         $mid = $si->split_name ? $si->split_name[1] : "";

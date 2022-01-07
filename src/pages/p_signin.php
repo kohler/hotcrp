@@ -149,15 +149,16 @@ class Signin_Page {
 
     static function render_signin_form_email(Contact $user, Qrequest $qreq, $gx) {
         $is_external_login = $user->conf->external_login();
+        $email = $qreq->email ?? "";
         echo '<div class="', Ht::control_class("email", "f-i fx"), '">',
             Ht::label($is_external_login ? "Username" : "Email", "signin_email"),
             Ht::feedback_html_at("email"),
-            Ht::entry("email", (string) $qreq->email, [
+            Ht::entry("email", $email, [
                 "size" => 36, "id" => "signin_email", "class" => "fullw",
                 "autocomplete" => "username", "tabindex" => 1,
-                "type" => !$is_external_login && !str_ends_with($qreq->email, "@_.com") ? "email" : "text",
+                "type" => !$is_external_login && !str_ends_with($email, "@_.com") ? "email" : "text",
                 "autofocus" => Ht::problem_status_at("email")
-                    || !$qreq->email
+                    || $email === ""
                     || (!Ht::problem_status_at("password") && !$user->session("password_reset"))
             ]), '</div>';
     }
@@ -168,7 +169,7 @@ class Signin_Page {
         if (!$is_external_login) {
             echo '<div class="float-right"><a href="',
                 $user->conf->hoturl("forgotpassword"),
-                '" class="n x small uic js-href-add-email">Forgot your password?</a></div>';
+                '" class="n ulh small uic js-href-add-email">Forgot your password?</a></div>';
         }
         $password_reset = $user->session("password_reset");
         echo Ht::label("Password", "signin_password"),

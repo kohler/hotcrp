@@ -4,7 +4,7 @@
 
 class Ftext {
     /** @param ?string $s
-     * @return bool */
+     * @return int|false */
     static function is_ftext($s) {
         if ($s !== null
             && ($len = strlen($s)) >= 3
@@ -14,7 +14,7 @@ class Ftext {
                 ++$i;
             }
             if ($i !== 1 && $i !== $len && $s[$i] === ">") {
-                return true;
+                return $i + 1;
             }
         }
         return false;

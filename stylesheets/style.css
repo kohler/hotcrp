@@ -1778,6 +1778,7 @@ select.has-warning {
 .msg-context {
 	font-size: smaller;
 	margin-left: 3rem;
+	padding-bottom: 3px;
 }
 .context-mark {
 	text-decoration-line: underline;
