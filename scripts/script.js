@@ -10201,11 +10201,19 @@ $.fn.unautogrow = function () {
 $(function () { $(".need-autogrow").autogrow(); });
 
 $(function () {
+    var err = [], elt = [];
     $("a.nn, a.mailto, .nou, a.x, a.xo, a.qx, a.qi, a.uli, a.qq, a.u, a.uu, a.xx, a.btn[href='']").each(function () {
-        var err = "a." + this.className.replace(/\s+/g, ".") + "[href=" + this.href + "]";
-        window.console && console.log(err);
-        log_jserror(err);
-    })
+        err.push("a.".concat(this.className.replace(/\s+/g, "."), "[href=", this.href, "]"));
+        elt.push(this);
+    });
+    if (err.length > 0) {
+        if (window.console) {
+            for (var i = 0; i !== err.length; ++i) {
+                console.log(elt[i]);
+            }
+        }
+        log_jserror(err.join("\n"));
+    }
 });
 
 
