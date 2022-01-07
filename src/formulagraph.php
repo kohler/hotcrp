@@ -253,7 +253,7 @@ class FormulaGraph extends MessageSet {
         }
 
         $this->fy = new Formula($fy, Formula::ALLOW_INDEXED);
-        $this->fy->check($this->user);
+        $fy_ok = $this->fy->check($this->user);
         $this->_y_tagvalue_bool = $this->fy->result_format() === Fexpr::FTAGVALUE;
 
         // X axis expression(s)
@@ -286,32 +286,37 @@ class FormulaGraph extends MessageSet {
         }
         foreach ($this->fxs as $i => $f) {
             if (!$f->check($this->user)) {
-                $this->error_at("fx", "X axis formula error: " . $f->error_html());
+                foreach ($f->message_list() as $mi) {
+                    $this->append_item($mi->with_field("fx"));
+                }
             } else if ($i === 0) {
                 $this->fx_type = $this->fx_type ? : $f->result_format();
                 $this->_x_tagvalue_bool = $this->fx_type === Fexpr::FTAGVALUE;
             } else if ($f->result_format() !== $this->fx_type
                        || ($this->fx_type !== Fexpr::FREVIEWFIELD
                            || $this->fxs[0]->result_format_detail() !== $f->result_format_detail())) {
-                $this->error_at("fx", "X axis error: Different formulas use different units");
+                $this->error_at("fx", "<0>X axis formulas must all use the same units");
                 $this->fx_type = 0;
             }
         }
         $this->fx = count($this->fxs) === 1 ? $this->fxs[0] : null;
 
-        if ($this->fy->error_html()) {
-            $this->error_at("fy", "Y axis formula error: " . $this->fy->error_html());
+        if (!$fy_ok) {
+            foreach ($this->fy->message_list() as $mi) {
+                $this->append_item($mi->with_field("fy"));
+            }
         } else if ($this->type & self::BARCHART) {
             if ($this->fy->result_format() === Fexpr::FBOOL) {
                 $this->fy = new Formula("sum(" . $fy . ")", Formula::ALLOW_INDEXED);
                 $this->fy->check($this->user);
             } else if (!$this->fy->support_combiner()) {
-                $this->error_at("fy", "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.");
+                $this->error_at("fy", "<0>Y axis formula is unsuitable for bar charts");
+                $this->msg_at("fy", "<0>Try an aggregate function like ‘sum({$fy})’.", MessageSet::INFORM);
                 $this->fy = new Formula("sum(0)", Formula::ALLOW_INDEXED);
                 $this->fy->check($this->user);
             }
         } else if (($this->type & self::CDF) && $this->fx_type === Fexpr::FTAG) {
-            $this->error_at("fy", "CDFs by tag don’t make sense.");
+            $this->error_at("fy", "<0>CDFs by tag don’t make sense");
         }
     }
 
@@ -366,8 +371,8 @@ class FormulaGraph extends MessageSet {
         foreach ($psearch->paper_ids() as $pid) {
             $this->papermap[$pid][] = $qn;
         }
-        if ($psearch->has_problem()) {
-            $this->error_at($fieldname, $psearch->message_html());
+        foreach ($psearch->message_list() as $mi) {
+            $this->append_item($mi->with_field($fieldname));
         }
         $this->searches[] = $q !== "" ? $psearch : null;
     }
@@ -377,9 +382,10 @@ class FormulaGraph extends MessageSet {
         $xorder = simplify_whitespace($xorder);
         if ($xorder !== "") {
             $fxorder = new Formula($xorder, Formula::ALLOW_INDEXED);
-            $fxorder->check($this->user);
-            if ($fxorder->error_html()) {
-                $this->error_at("xorder", "X order formula error: " . $fxorder->error_html());
+            if (!$fxorder->check($this->user)) {
+                foreach ($fxorder->message_list() as $mi) {
+                    $this->append_item($mi->with_field("xorder"));
+                }
             } else {
                 $this->fxorder = $fxorder;
             }
@@ -1060,5 +1066,23 @@ class FormulaGraph extends MessageSet {
             $j["cdf_tooltip_position"] = true;
         }
         return $j;
+    }
+
+    /** @return list<MessageItem> */
+    function decorated_message_list() {
+        $mis = [];
+        foreach ($this->message_list() as $mi) {
+            if ($mi->field === "fx") {
+                $mi = $mi->with_prefix("X axis: ");
+            } else if ($mi->field === "fy") {
+                $mi = $mi->with_prefix("Y axis: ");
+            } else if ($mi->field === "xorder") {
+                $mi = $mi->with_prefix("Order: ");
+            } else if (str_starts_with($mi->field ?? "", "q")) {
+                $mi = $mi->with_prefix("Search: ");
+            }
+            $mis[] = $mi;
+        }
+        return $mis;
     }
 }

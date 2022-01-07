@@ -21,13 +21,16 @@ class Graph_Formula_Page {
     }
 
     /** @param int|string $i
+     * @param MessageSet $ms
+     * @param string $field
      * @return string */
-    private function formulas_qrow($i, $q, $s, $status) {
+    private function formulas_qrow($i, $q, $s, $ms, $field) {
         if ($q === "all") {
             $q = "";
         }
-        $klass = MessageSet::status_class($status, "need-suggest papersearch want-focus");
+        $klass = $ms->control_class($field, "need-suggest papersearch want-focus");
         return '<tr><td class="lentry">'
+            . $ms->feedback_html_at($field)
             . Ht::entry("q$i", $q, ["size" => 40, "placeholder" => "(All)", "class" => $klass, "id" => "q$i", "spellcheck" => false, "autocomplete" => "off", "aria-label" => "Search"])
             . " <span class=\"pl-3\">Style:</span> &nbsp;"
             . Ht::select("s$i", ["default" => "default", "plain" => "plain", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"], $s !== "" ? $s : "by-tag")
@@ -47,7 +50,7 @@ class Graph_Formula_Page {
         }
 
         if ($fg->has_message()) {
-            echo Ht::msg($fg->message_texts(), $fg->problem_status());
+            echo Ht::msg(MessageSet::feedback_html($fg->decorated_message_list()), $fg->problem_status());
         }
 
         $xhtml = htmlspecialchars($fg->fx_expression());
@@ -101,12 +104,14 @@ class Graph_Formula_Page {
         echo '<div class="f-mcol">',
             '<div class="', $fgm->control_class("fx", "f-i maxw-480"), '">',
             '<label for="x_entry">X axis</label>',
+            $fgm->feedback_html_at("fx"),
             Ht::entry("x", (string) $this->qreq->x, ["id" => "x_entry", "size" => 32, "class" => "w-99"]),
             '<div class="f-h"><a href="', $this->conf->hoturl("help", "t=formulas"), '">Formula</a> or “search”</div>',
             '</div>';
         // Y axis
         echo '<div class="', $fgm->control_class("fy", "f-i maxw-480"), '">',
             '<label for="y_entry">Y axis</label>',
+            $fgm->feedback_html_at("fy"),
             Ht::entry("y", (string) $this->qreq->y, ["id" => "y_entry", "size" => 32, "class" => "w-99"]),
             '<div class="f-h"><a href="', $this->conf->hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</div>',
             '</div>',
@@ -115,10 +120,9 @@ class Graph_Formula_Page {
         echo '<div class="', $fgm->control_class("q1", "f-i"), '">',
             '<label for="q1">Data sets</label>',
             '<table class="js-row-order"><tbody id="qcontainer" data-row-template="',
-            htmlspecialchars($this->formulas_qrow('$', "", "by-tag", 0)), '">';
+            htmlspecialchars($this->formulas_qrow('$', "", "by-tag", $fgm, "q\$")), '">';
         for ($i = 0; $i < count($styles); ++$i) {
-            echo $this->formulas_qrow($i + 1, $queries[$i], $styles[$i],
-                                      $fgm->problem_status_at("q$i"));
+            echo $this->formulas_qrow($i + 1, $queries[$i], $styles[$i], $fgm, "q$i");
         }
         echo "</tbody><tbody><tr><td>",
             Ht::button("Add data set", ["class" => "ui row-order-ui addrow"]),

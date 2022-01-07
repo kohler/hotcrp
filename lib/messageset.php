@@ -33,6 +33,36 @@ class MessageItem implements JsonSerializable {
         return Ftext::unparse_as($this->message, $format);
     }
 
+    /** @param ?string $field
+     * @return MessageItem */
+    function with_field($field) {
+        $field = $field === "" ? null : $field;
+        if ($this->field !== $field) {
+            $mi = clone $this;
+            $mi->field = $field;
+            return $mi;
+        } else {
+            return $this;
+        }
+    }
+
+    /** @param string $text
+     * @return MessageItem */
+    function with_prefix($text) {
+        if ($this->message !== "" && $text !== "") {
+            $mi = clone $this;
+            list($fmt, $s) = Ftext::parse($this->message);
+            if ($fmt !== null) {
+                $mi->message = "<{$fmt}>{$text}{$s}";
+            } else {
+                $mi->message = "{$text}{$s}";
+            }
+            return $mi;
+        } else {
+            return $this;
+        }
+    }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $x = [];
@@ -526,7 +556,7 @@ class MessageSet {
             }
         }
         if (!empty($t)) {
-            return "<ul class=\"feedback-list\">" . join("", $t) . "</li></ul>";
+            return "<ul class=\"feedback-list\">" . join("", $t) . "</ul>";
         } else {
             return "";
         }

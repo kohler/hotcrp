@@ -679,8 +679,10 @@ class Review_SearchTerm extends SearchTerm {
     }
     private static function impossible_score_match(ReviewField $f, SearchWord $sword, PaperSearch $srch) {
         $r = $f->full_score_range();
-        $srch->lwarning($sword, "<5>{$f->name_html} scores range from {$r[0]} to {$r[1]}");
-        return new False_SearchTerm;
+        $mi = $srch->lwarning($sword, "<0>{$f->name} scores range from {$r[0]} to {$r[1]}");
+        $ft = new False_SearchTerm;
+        $ft->set_float("score_warning", $mi);
+        return $ft;
     }
     /** @return int|false */
     private static function parse_score(ReviewField $f, $str) {
@@ -704,14 +706,17 @@ class Review_SearchTerm extends SearchTerm {
             $rsm->apply_relation_value(2, 0);
             $rsm->apply_score_field($f, 0, 0, 4);
         } else if (preg_match('/\A([=!<>]=?|≠|≤|≥|)\s*([A-Z]|\d+|none)\z/si', $word, $m)) {
+            $relation = CountMatcher::$opmap[$m[1]];
             if ($f->option_letter && !$srch->conf->opt("smartScoreCompare")) {
-                $m[1] = CountMatcher::flip_comparator($m[1]);
+                $relation = CountMatcher::flip_relation($relation);
             }
             $score = self::parse_score($f, $m[2]);
-            if ($score === false) {
+            if ($score === false
+                || ($score === 0 && $relation === 1)
+                || ($score === count($f->options) && $relation === 4)) {
                 return self::impossible_score_match($f, $sword, $srch);
             }
-            $rsm->apply_score_field($f, $score, 0, CountMatcher::$opmap[$m[1]]);
+            $rsm->apply_score_field($f, $score, 0, $relation);
         } else if (preg_match('/\A(\d+|[A-Z])\s*(|-|–|—|\.\.\.?|…)\s*(\d+|[A-Z])\s*\z/si', $word, $m)) {
             $score1 = self::parse_score($f, $m[1]);
             $score2 = self::parse_score($f, $m[3]);

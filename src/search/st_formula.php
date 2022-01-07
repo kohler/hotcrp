@@ -14,7 +14,12 @@ class Formula_SearchTerm extends SearchTerm {
         $this->formula = $formula;
         $this->function = $formula->compile_function();
     }
-    static private function read_formula($word, $quoted, $is_graph, PaperSearch $srch) {
+    /** @param string $word
+     * @param SearchWord $sword
+     * @param PaperSearch $srch
+     * @param bool $is_graph
+     * @return ?Formula */
+    static private function read_formula($word, $sword, $srch, $is_graph) {
         $formula = null;
         if (preg_match('/\A[^(){}\[\]]+\z/', $word)) {
             $formula = $srch->conf->find_named_formula($word);
@@ -23,19 +28,27 @@ class Formula_SearchTerm extends SearchTerm {
             $formula = new Formula($word, $is_graph ? Formula::ALLOW_INDEXED : 0);
         }
         if (!$formula->check($srch->user)) {
-            $srch->warning($formula->error_html()); // XXX
+            $srch->lwarning($sword, "Invalid formula matches no submissions");
+            foreach ($formula->message_list() as $mi) {
+                $mi = $srch->message_set()->append_item(clone $mi);
+                if ($mi->pos1 !== null) {
+                    $mi->pos1 += $sword->pos1w;
+                    $mi->pos2 += $sword->pos1w;
+                    $mi->context = $srch->q;
+                }
+            }
             $formula = null;
         }
         return $formula;
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
-        if (($formula = self::read_formula($word, $sword->quoted, false, $srch))) {
+        if (($formula = self::read_formula($word, $sword, $srch, false))) {
             return new Formula_SearchTerm($formula);
         }
         return new False_SearchTerm;
     }
     static function parse_graph($word, SearchWord $sword, PaperSearch $srch) {
-        if (($formula = self::read_formula($word, $sword->quoted, true, $srch))) {
+        if (($formula = self::read_formula($word, $sword, $srch, true))) {
             return (new True_SearchTerm)->add_view_anno("show:graph($word)", $sword);
         }
         return null;

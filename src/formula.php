@@ -1600,18 +1600,13 @@ class Formula implements JsonSerializable {
         return $this->_parse->lerrors ?? [];
     }
 
-    /** @return string */
+    /** @return string
+     * @deprecated */
     function error_html() {
         if ($this->check()) {
             return "";
         } else {
-            $x = ["<ul class=\"x\">"];
-            foreach ($this->_parse->lerrors as $mi) {
-                $x[] = "<li>Formula error: {$mi->message}<div class=\"msg-context\">"
-                    . Ht::mark_substring($this->expression, $mi->pos1, $mi->pos2) . "</div></li>";
-            }
-            $x[] = "</ul>";
-            return join("", $x);
+            return MessageSet::feedback_html($this->_parse->lerrors);
         }
     }
 

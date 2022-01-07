@@ -21,6 +21,8 @@ class SearchWord {
     /** @var ?int */
     public $pos1;
     /** @var ?int */
+    public $pos1w;
+    /** @var ?int */
     public $pos2;
     /** @param string $qword
      * @param string $source */
@@ -2007,6 +2009,7 @@ class PaperSearch extends MessageSet {
                 $sword2->kwexplicit = true;
                 $sword2->kwdef = $kwdef;
                 $sword2->pos1 = $sword->pos1;
+                $sword2->pos1w = $sword->pos1w;
                 $sword2->pos2 = $sword->pos2;
                 $qe = call_user_func($kwdef->parse_function, $kwdef->has, $sword2, $srch);
             } else {
@@ -2116,8 +2119,9 @@ class PaperSearch extends MessageSet {
      * @param SearchScope $scope
      * @param int $pos1
      * @param int $pos2
+     * @param int $dpos
      * @return ?SearchTerm */
-    private function _search_word($source, $scope, $pos1, $pos2) {
+    private function _search_word($source, $scope, $pos1, $pos2, $dpos) {
         $word = $source;
         $wordbrk = self::_search_word_breakdown($word, $scope->defkw ?? "");
         $keyword = null;
@@ -2134,7 +2138,7 @@ class PaperSearch extends MessageSet {
         } else if ($wordbrk[0] === "#") {
             // `#TAG`
             $ignored = $this->swap_ignore_messages(true);
-            $qe = $this->_search_word("hashtag:{$wordbrk[1]}", $scope, $pos1, $pos2);
+            $qe = $this->_search_word("hashtag:{$wordbrk[1]}", $scope, $pos1, $pos2, $dpos - 7);
             $this->swap_ignore_messages($ignored);
             if (!($qe instanceof False_SearchTerm)) {
                 return $qe;
@@ -2143,13 +2147,24 @@ class PaperSearch extends MessageSet {
             // `keyword:word` or (potentially) `keyword>word`
             if ($wordbrk[1][0] === ":") {
                 $keyword = $wordbrk[0];
-                $word = ltrim((string) substr($wordbrk[1], 1));
+                $word = $wordbrk[1];
+                $pos = 1;
+                while ($pos < strlen($word) && ctype_space($word[$pos])) {
+                    ++$pos;
+                }
+                $word = substr($word, $pos);
+                $dpos += strlen($keyword) + $pos;
             } else {
                 // Allow searches like "ovemer>2"; parse as "ovemer:>2".
                 $ignored = $this->swap_ignore_messages(true);
-                $qe = $this->_search_word("{$wordbrk[0]}:{$wordbrk[1]}", $scope, $pos1, $pos2);
+                $qe = $this->_search_word("{$wordbrk[0]}:{$wordbrk[1]}", $scope, $pos1, $pos2, $dpos - 1);
                 $this->swap_ignore_messages($ignored);
-                if (!($qe instanceof False_SearchTerm)) {
+                if ($qe instanceof False_SearchTerm) {
+                    if (($mi = $qe->get_float("score_warning"))) {
+                        $this->message_set()->append_item($mi);
+                        return $qe;
+                    }
+                } else {
                     return $qe;
                 }
             }
@@ -2162,6 +2177,7 @@ class PaperSearch extends MessageSet {
         $qt = [];
         $sword = new SearchWord($word, $source);
         $sword->pos1 = $pos1;
+        $sword->pos1w = $pos1 + $dpos;
         $sword->pos2 = $pos2;
         if ($keyword !== null || $scope->defkw !== null) {
             $this->_search_keyword($qt, $sword, $keyword, $scope);
@@ -2266,7 +2282,7 @@ class PaperSearch extends MessageSet {
                     $next_defkw = [substr($word, 0, strlen($word) - 1), $pos1];
                 } else {
                     // The heart of the matter.
-                    $curqe = $this->_search_word($word, $scope, $pos1, $pos2);
+                    $curqe = $this->_search_word($word, $scope, $pos1, $pos2, 0);
                     if (!$curqe->is_uninteresting()) {
                         $curqe->set_strspan($pos1, $pos2);
                     }

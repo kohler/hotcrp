@@ -1138,12 +1138,11 @@ function render_feedback(msg, status) {
         msg = msg === "" ? [] : [msg];
     if (msg.length === 0)
         return '';
-    if (typeof status === "number" && status >= -2 && status <= 3)
-        status = ["urgent-note", "note", "", "warning", "error", "error"][status + 2];
+    if (typeof status === "number" && status >= -3 && status <= 3)
+        status = ["success", "urgent-note", "note", "", "warning", "error", "error"][status + 3];
     var t = "", i;
     for (var i = 0; i !== msg.length; ++i) {
-        var tag = msg[i].indexOf('<p') < 0 ? 'p' : 'div';
-        t = t.concat('<', tag, ' class="feedback', status ? " is-" : "", status, '">', msg[i], '</', tag, '>');
+        t = t.concat('<li><div class="is-diagnostic', status ? " is-" : "", status, '">', msg[i], '</div></li>');
     }
     return t;
 }
@@ -1164,8 +1163,13 @@ function render_feedback_near(msg, status, e) {
     c = e.firstChild;
     while (c && c.nodeType === 1 && (c.tagName === "LABEL" || hasClass(c, "feedback")))
         c = c.nextSibling;
-    m = render_feedback(msg, status);
-    c ? $(c).before(m) : $(e).prepend(m);
+    if (!c || !hasClass(c, "feedback-list")) {
+        m = document.createElement("ul");
+        m.className = "feedback-list";
+        e.insertBefore(m, c);
+        c = m;
+    }
+    $(c).append(render_feedback(msg, status));
     return true;
 }
 
@@ -2150,7 +2154,7 @@ function popup_skeleton(options) {
         var form = $d.find("form")[0],
             dbody = $d.find(".popup-body"),
             messages = "", mx, i, e, x, mlist = data.message_list;
-        $d.find(".msg-error, .feedback").remove();
+        $d.find(".msg-error, .feedback, .feedback-list").remove();
         if (!mlist && data.error)
             mlist = [{message: escape_html(data.error), status: 2}];
         for (i in mlist || []) {

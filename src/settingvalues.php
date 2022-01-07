@@ -304,7 +304,8 @@ class SettingValues extends MessageSet {
                     $loc = Ht::link($loc, $si->sv_hoturl($this));
                 }
             }
-            if ($lastmi && $lastmi->message !== $mi->message) {
+            if ($lastmi
+                && ($lastmi->message !== $mi->message || $lastmi->pos1 !== null)) {
                 yield self::decorate_message_item($lastmi, $lastloc);
                 $lastmi = null;
             }
