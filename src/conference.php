@@ -2142,9 +2142,7 @@ class Conf {
      * @param ?string $text
      * @return int */
     function check_format($format, $text = null) {
-        if ($format === null) {
-            $format = $this->default_format;
-        }
+        $format = $format ?? $this->default_format;
         if ($format
             && $text !== null
             && ($f = $this->format_info($format))
@@ -4431,9 +4429,6 @@ class Conf {
         if ($user) {
             $my_deadlines = $user->my_deadlines($this->paper ? [$this->paper] : []);
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
-        }
-        if ($this->default_format) {
-            Ht::stash_script("hotcrp.set_default_format(" . $this->default_format . ")");
         }
 
         echo '<div id="top">';

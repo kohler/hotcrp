@@ -1118,6 +1118,116 @@ function hoturl_get_form(action) {
 }
 
 
+// text rendering
+window.render_text = (function ($) {
+var renderers = {};
+
+function parse_ftext(t) {
+    var fmt = 0, pos = 0;
+    while (true) {
+        var ch = t.charCodeAt(pos);
+        if (pos === 0 ? ch !== 60 : ch !== 62 && (ch < 48 || ch > 57)) {
+            return [0, t];
+        } else if (pos !== 0 && ch >= 48 && ch <= 57) {
+            fmt = 10 * fmt + ch - 48;
+        } else if (ch === 62) {
+            return pos === 1 ? [0, t] : [fmt, t.substring(pos + 1)];
+        }
+        ++pos;
+    }
+}
+
+function render_class(c, format) {
+    if (c) {
+        return c.replace(/(?:^|\s)(?:need-format|format\d+)(?=$|\s)/g, "").concat(" format", format).trimStart();
+    } else {
+        return "format" + format;
+    }
+}
+
+function render_with(context, renderer, text) {
+    var renderf = renderer.render;
+    if (renderer.render_inline
+        && window.getComputedStyle(context).display.startsWith("inline")) {
+        renderf = renderer.render_inline;
+    }
+    var html = renderf.call(context, text, context);
+    context.className = render_class(context.className, renderer.format);
+    context.innerHTML = html;
+}
+
+function onto(context, format, text) {
+    if (format === "f") {
+        var ft = parse_ftext(text);
+        format = ft[0];
+        text = ft[1];
+    }
+    try {
+        render_with(context, renderers[format] || renderers[0], text);
+    } catch (e) {
+        log_jserror("do_render format ".concat(format, ": ", e.toString()), e);
+        render_with(context, renderers[0], text);
+    }
+    $(context).trigger("renderText");
+}
+
+function into(context) {
+    if (typeof context === "number") { // jQuery.each
+        context = this;
+    }
+    var format = context.getAttribute("data-format"),
+        text = context.getAttribute("data-content");
+    if (text == null) {
+        text = context.textContent;
+    }
+    onto(context, format, text);
+}
+
+function on_page() {
+    $(".need-format").each(into);
+}
+
+function ftext_onto(context, ftext) {
+    onto(context, "f", ftext);
+}
+
+function add_format(renderer) {
+    if (renderer.format == null || renderer.format === "" || renderers[renderer.format]) {
+        throw new Error("bad or reused format");
+    }
+    renderers[renderer.format] = renderer;
+}
+
+function render0(text) {
+    var lines = text.split(/((?:\r\n?|\n)(?:[-+*][ \t]|\d+\.)?)/), ch;
+    for (var i = 1; i < lines.length; i += 2) {
+        if (lines[i - 1].length > 49
+            && lines[i].length <= 2
+            && (ch = lines[i + 1].charAt(0)) !== ""
+            && ch !== " "
+            && ch !== "\t")
+            lines[i] = " ";
+    }
+    text = "<p>" + link_urls(escape_html(lines.join(""))) + "</p>";
+    return text.replace(/\r\n?(?:\r\n?)+|\n\n+/g, "</p><p>");
+}
+
+add_format({format: 0, render: render0});
+$(on_page);
+
+return {
+    format: function (format) {
+        return renderers[format] || renderers[0];
+    },
+    add_format: add_format,
+    onto: onto,
+    into: into,
+    ftext_onto: ftext_onto,
+    on_page: on_page
+};
+})($);
+
+
 // render_xmsg
 function render_xmsg(msg, status) {
     if (typeof msg === "string")
@@ -3966,106 +4076,6 @@ function link_urls(t) {
 
 
 
-// text rendering
-window.render_text = (function ($) {
-function render0(text) {
-    var lines = text.split(/((?:\r\n?|\n)(?:[-+*][ \t]|\d+\.)?)/), ch;
-    for (var i = 1; i < lines.length; i += 2) {
-        if (lines[i - 1].length > 49
-            && lines[i].length <= 2
-            && (ch = lines[i + 1].charAt(0)) !== ""
-            && ch !== " "
-            && ch !== "\t")
-            lines[i] = " ";
-    }
-    text = "<p>" + link_urls(escape_html(lines.join(""))) + "</p>";
-    return text.replace(/\r\n?(?:\r\n?)+|\n\n+/g, "</p><p>");
-}
-
-var default_format = 0, renderers = {"0": {format: 0, render: render0}};
-
-function lookup(format) {
-    var r, p;
-    if (format && (r = renderers[format]))
-        return r;
-    if (format
-        && typeof format === "string"
-        && (p = format.indexOf(".")) > 0
-        && (r = renderers[format.substring(0, p)]))
-        return r;
-    if (format == null)
-        format = default_format;
-    return renderers[format] || renderers[0];
-}
-
-function do_render(format, is_inline, a) {
-    var r = lookup(format);
-    if (r.format)
-        try {
-            var f = (is_inline && r.render_inline) || r.render;
-            return {
-                format: r.formatClass || r.format,
-                content: f.apply(this, a)
-            };
-        } catch (e) {
-            log_jserror("do_render format " + r.format + ": " + e.toString(), e);
-        }
-    return {format: 0, content: render0(a[0])};
-}
-
-function render_text(format, text /* arguments... */) {
-    var a = [text], i;
-    for (i = 2; i < arguments.length; ++i)
-        a.push(arguments[i]);
-    return do_render.call(this, format, false, a);
-}
-
-function render_inline(format, text /* arguments... */) {
-    var a = [text], i;
-    for (i = 2; i < arguments.length; ++i)
-        a.push(arguments[i]);
-    return do_render.call(this, format, true, a);
-}
-
-function on() {
-    var $self = $(this), format = this.getAttribute("data-format"),
-        content = this.getAttribute("data-content") || $self.text(), args = null, f, i;
-    if ((i = format.indexOf(".")) > 0) {
-        var a = format.split(/\./);
-        format = a[0];
-        args = {};
-        for (i = 1; i < a.length; ++i)
-            args[a[i]] = true;
-    }
-    if (this.tagName == "DIV")
-        f = render_text.call(this, format, content, args);
-    else
-        f = render_inline.call(this, format, content, args);
-    var s = $.trim(this.className.replace(/(?:^| )(?:need-format|format\d+)(?= |$)/g, " "));
-    this.className = s + (s ? " format" : "format") + (f.format || 0);
-    $self.html(f.content).trigger("renderText", f);
-}
-
-$.extend(render_text, {
-    add_format: function (x) {
-        x.format && (renderers[x.format] = x);
-    },
-    format: function (format) {
-        return lookup(format);
-    },
-    set_default_format: function (format) {
-        default_format = format;
-    },
-    inline: render_inline,
-    on: on,
-    on_page: function () { $(".need-format").each(on); }
-});
-
-$(render_text.on_page);
-return render_text;
-})($);
-
-
 // left menus
 var navsidebar = (function () {
 var pslcard, observer, linkmap;
@@ -4268,9 +4278,7 @@ function render_review_body(rrow) {
         t += '</h3></div>';
 
         if (!f.options) {
-            x = render_text(rrow.format, rrow[f.uid], f.uid);
-            t += '<div class="revv revtext format' + (x.format || 0) + '">'
-                + x.content + '</div>';
+            t += '<div class="revv revtext"></div>';
         } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid]))) {
             t += '<p class="revv revscore"><span class="revscorenum">' +
                 f.score_info.unparse_revnum(x) + ' </span><span class="revscoredesc">' +
@@ -4509,6 +4517,10 @@ function add_review(rrow) {
 
     // complete render
     var $j = $(hc.render()).appendTo($(".pcontainer"));
+    $j.find(".revtext").each(function () {
+        var fuid = this.closest(".rf").getAttribute("data-rf");
+        render_text.onto(this, rrow.format, rrow[fuid]);
+    });
     if (has_user_rating) {
         $j.find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
     }
@@ -5147,25 +5159,24 @@ function render_cmt($c, cj, editing, msg) {
 }
 
 function render_cmt_text(format, value, response, textj, chead) {
-    var t = render_text(format, value), wlimit, wc,
-        fmt = "format" + (t.format || 0);
-    textj.addClass(fmt);
+    var wlimit, wc;
     if (response
         && resp_rounds[response]
         && (wlimit = resp_rounds[response].words) > 0) {
         wc = count_words(value);
-        if (wc > 0 && chead) {
-            chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
+        if (wc > 0) {
+            chead && chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
         }
         if (wc > wlimit) {
             chead && chead.find(".words").addClass("wordsover");
             wc = count_words_split(value, wlimit);
-            textj.addClass("has-overlong overlong-collapsed").removeClass(fmt).prepend('<div class="overlong-divider"><div class="overlong-allowed ' + fmt + '"></div><div class="overlong-mark"><div class="overlong-expander"><button class="ui js-overlong-expand" aria-expanded="false">Show full-length response</button></div></div></div><div class="overlong-content ' + fmt + '"></div>');
-            textj.find(".overlong-allowed").html(render_text(format, wc[0]).content);
+            textj.addClass("has-overlong overlong-collapsed").prepend('<div class="overlong-divider"><div class="overlong-allowed"></div><div class="overlong-mark"><div class="overlong-expander"><button class="ui js-overlong-expand" aria-expanded="false">Show full-length response</button></div></div></div><div class="overlong-content"></div>');
+            var e = textj.find(".overlong-allowed")[0];
+            render_text.onto(e, format, wc[0]);
             textj = textj.find(".overlong-content");
         }
     }
-    textj.html(t.content);
+    render_text.onto(textj[0], format, value);
 }
 
 handle_ui.on("js-submit-comment", function () {
@@ -5323,9 +5334,7 @@ function switch_preview(evt) {
     return false;
 }
 $(document).on("hotcrprenderpreview", function (evt, format, value, dest) {
-    var t = render_text(format, value);
-    dest.className = "format" + (t.format || 0);
-    dest.innerHTML = t.content;
+    render_text.onto(dest, format, value);
 });
 handle_ui.on("js-togglepreview", switch_preview);
 })($);
@@ -6307,7 +6316,7 @@ function tagannorow_fill(row, anno) {
         var legend = anno.legend === null ? "" : anno.legend;
         var $g = $(row).find(".plheading-group").attr({"data-format": anno.format || 0, "data-title": legend});
         $g.text(legend === "" ? legend : legend + " ");
-        anno.format && render_text.on.call($g[0]);
+        anno.format && render_text.into($g[0]);
         // `plheading-count` is taken care of in `searchbody_postreorder`
     }
 }
@@ -10243,7 +10252,7 @@ window.hotcrp = {
     render_text_page: render_text.on_page,
     replace_editable_field: edit_paper_ui.replace_field,
     scorechart: scorechart,
-    set_default_format: render_text.set_default_format,
+    set_default_format: function () {}, /* XXX */
     set_response_round: papercomment.set_resp_round,
     set_review_form: review_form.set_form,
     shortcut: shortcut

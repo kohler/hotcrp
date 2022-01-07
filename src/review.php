@@ -1448,10 +1448,7 @@ $blind\n";
                 $rj[$f->uid()] = $fval;
             }
         }
-        if (($fmt = $rrow->reviewFormat) === null) {
-            $fmt = $this->conf->default_format;
-        }
-        if ($fmt) {
+        if (($fmt = $rrow->reviewFormat ?? $this->conf->default_format)) {
             $rj["format"] = $fmt;
         }
 

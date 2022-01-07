@@ -25,6 +25,7 @@ class CommentInfo {
     public $commentTags;
     /** @var int */
     public $commentRound;
+    /** @var ?int */
     public $commentFormat;
     /** @var ?string */
     public $commentOverflow;
@@ -91,6 +92,9 @@ class CommentInfo {
             $this->commentType = (int) $this->commentType;
         }
         $this->commentRound = (int) $this->commentRound;
+        if ($this->commentFormat !== null) {
+            $this->commentFormat = (int) $this->commentFormat;
+        }
     }
 
     /** @param Dbl_Result $result
@@ -395,6 +399,7 @@ class CommentInfo {
             ];
         }
 
+        // blindness, draftness, authorness, format
         if ($this->commentType & self::CT_BLIND) {
             $cj->blind = true;
         }
@@ -407,6 +412,9 @@ class CommentInfo {
             $cj->by_author = true;
         } else if ($this->commentType & self::CT_BYSHEPHERD) {
             $cj->by_shepherd = true;
+        }
+        if (($fmt = $this->commentFormat ?? $this->conf->default_format)) {
+            $cj->format = $fmt;
         }
 
         // exit now if new-comment skeleton
@@ -476,15 +484,6 @@ class CommentInfo {
         } else {
             $cj->text = false;
             $cj->word_count = count_words($this->commentOverflow ?? $this->comment);
-        }
-
-        // format
-        $fmt = $this->commentFormat;
-        if ($fmt === null) {
-            $fmt = $this->conf->default_format;
-        }
-        if ($fmt) {
-            $cj->format = (int) $fmt;
         }
 
         // attachments
