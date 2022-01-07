@@ -207,6 +207,12 @@ class SettingValues extends MessageSet {
         return $this->gxt()->members(strtolower($g));
     }
 
+    /** @param string $g
+     * @return ?object */
+    function group_item($g) {
+        return $this->gxt()->get($g);
+    }
+
     function crosscheck() {
         foreach ($this->gxt()->members("__crosscheck", "crosscheck_function") as $gj) {
             $this->gxt()->call_function($gj->crosscheck_function, $gj);

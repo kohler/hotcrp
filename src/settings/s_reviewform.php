@@ -148,17 +148,21 @@ class ReviewForm_SettingParser extends SettingParser {
 
     /** @param string $expr
      * @param bool $is_error */
-    static function validate_condition(SettingValues $sv, $expr, $xpos, $is_error, ReviewForm_SettingParser $self, $gj) {
+    static function validate_condition(SettingValues $sv, $expr, $xpos, $is_error, $gj) {
         $ps = new PaperSearch($sv->conf->root_user(), $expr);
+        $ps->term();
         if ($ps->has_problem()) {
-            $sv->warning_at("rf_ecs_{$xpos}", $ps->message_html());
             $sv->warning_at("rf_ec_{$xpos}");
+            foreach ($ps->message_list() as $mi) {
+                $sv->append_item_at("rf_ecs_{$xpos}", $mi);
+            }
         }
         $round_list = [];
         $fn = $gj->validate_condition_term_function ?? "ReviewForm_SettingParser::validate_condition_term";
         if (!$fn($ps, $round_list)) {
             $method = $is_error ? "error_at" : "warning_at";
-            $sv->$method("rf_ecs_{$xpos}", "Unsupported search. (Stick to simple search keywords about reviews.)");
+            $sv->$method("rf_ecs_{$xpos}", "Invalid field condition search");
+            $sv->msg_at("rf_ecs_{$xpos}", "Review condition searches should stick to simple search keywords about reviews.", MessageSet::INFORM);
             $sv->$method("rf_ec_{$xpos}");
             return 0;
         } else if ($ps->term() instanceof True_SearchTerm) {
@@ -174,7 +178,7 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    static function parse_presence_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self, $gj) {
+    static function parse_presence_property(SettingValues $sv, $fj, $xpos, $self, $gj) {
         if ($sv->has_reqv("rf_ec_{$xpos}")) {
             $ec = $sv->reqv("rf_ec_{$xpos}");
             $ecs = $sv->reqv("rf_ecs_{$xpos}");
@@ -185,7 +189,7 @@ class ReviewForm_SettingParser extends SettingParser {
                     $fj->round_mask = 1 << $round;
                 }
             } else if ($ec === "custom" && $ecs !== "") {
-                $answer = self::validate_condition($sv, $ecs, $xpos, true, $self, $gj);
+                $answer = self::validate_condition($sv, $ecs, $xpos, true, $gj);
                 if (is_int($answer)) {
                     $fj->round_mask = $answer;
                 } else if ($answer !== false) {
@@ -499,6 +503,18 @@ class ReviewForm_SettingParser extends SettingParser {
             $sv->register_cleanup_function("compute_review_view_scores", function () use ($sv) {
                 $sv->conf->review_form()->compute_view_scores();
             });
+        }
+    }
+
+    static function crosscheck(SettingValues $sv) {
+        if ($sv->has_interest("review_form")) {
+            $gj = null;
+            foreach ($sv->conf->review_form()->all_fields() as $f) {
+                if (($q = $f->exists_if)
+                    && ($gj = $gj ?? $sv->group_item("reviewfield/properties/visibility"))) {
+                    self::validate_condition($sv, $q, $f->short_id, false, $gj);
+                }
+            }
         }
     }
 }

@@ -260,12 +260,13 @@ class Reviews_SettingRenderer {
     }
 
     static function crosscheck(SettingValues $sv) {
+        $conf = $sv->conf;
         $errored = false;
-        foreach ($sv->conf->round_list() as $i => $rname) {
+        foreach ($conf->round_list() as $i => $rname) {
             foreach (Conf::$review_deadlines as $deadline) {
                 if ($sv->has_interest("{$deadline}_{$i}")
-                    && $sv->newv("{$deadline}_{$i}") > Conf::$now
-                    && $sv->newv("rev_open") <= 0
+                    && $sv->curv("{$deadline}_{$i}") > Conf::$now
+                    && $sv->curv("rev_open") <= 0
                     && !$errored) {
                     $sv->warning_at("rev_open", "A review deadline is set in the future, but reviews cannot be edited now. This is sometimes unintentional.");
                     $errored = true;
@@ -275,24 +276,24 @@ class Reviews_SettingRenderer {
         }
 
         if (($sv->has_interest("au_seerev") || $sv->has_interest("pcrev_soft_0"))
-            && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
-            && $sv->newv("au_seerev") != Conf::AUSEEREV_TAGS
-            && $sv->newv("pcrev_soft_0") > 0
-            && Conf::$now < $sv->newv("pcrev_soft_0")
+            && $conf->setting("au_seerev") != Conf::AUSEEREV_NO
+            && $conf->setting("au_seerev") != Conf::AUSEEREV_TAGS
+            && $sv->curv("pcrev_soft_0") > 0
+            && Conf::$now < $sv->curv("pcrev_soft_0")
             && !$sv->has_error()) {
             $sv->warning_at(null, $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before the " . $sv->setting_link("review deadline", "pcrev_soft_0") . ". This is sometimes unintentional.");
         }
 
         if (($sv->has_interest("rev_blind") || $sv->has_interest("extrev_view"))
-            && $sv->newv("rev_blind") == Conf::BLIND_NEVER
-            && $sv->newv("extrev_view") == 1) {
+            && $conf->setting("rev_blind") == Conf::BLIND_NEVER
+            && $conf->setting("extrev_view") == 1) {
             $sv->warning_at("extrev_view", $sv->setting_link("Reviews aren’t blind", "rev_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "extrev_view") . ".");
         }
 
         if ($sv->has_interest("mailbody_requestreview")
-            && $sv->newv("mailbody_requestreview")
-            && (strpos($sv->newv("mailbody_requestreview"), "%LOGINURL%") !== false
-                || strpos($sv->newv("mailbody_requestreview"), "%LOGINURLPARTS%") !== false)) {
+            && $sv->curv("mailbody_requestreview")
+            && (strpos($sv->curv("mailbody_requestreview"), "%LOGINURL%") !== false
+                || strpos($sv->curv("mailbody_requestreview"), "%LOGINURLPARTS%") !== false)) {
             $sv->warning_at("mailbody_requestreview", "The <code>%LOGINURL%</code> and <code>%LOGINURLPARTS%</code> keywords should no longer be used in email templates.");
         }
     }

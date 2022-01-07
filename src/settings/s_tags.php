@@ -226,15 +226,15 @@ class Tags_SettingParser extends SettingParser {
             "tag_rank" => "ranking"
         ];
         foreach (array_keys($descriptions) as $n) {
-            foreach (Tagger::split_unpack($sv->newv($n)) as $ti) {
+            foreach (Tagger::split_unpack($sv->conf->setting_data($n) ?? "") as $ti) {
                 $lx = &$vs[strtolower($ti[0])];
                 $lx = $lx ?? [];
                 $lx[] = $n;
                 if (count($lx) === 2) {
-                    $sv->warning_at($lx[0], "Tag “" . htmlspecialchars($ti[0]) . "” is also used for " . $descriptions[$n] . ".");
+                    $sv->warning_at($lx[0], "Tag “" . htmlspecialchars($ti[0]) . "” is also used for " . $descriptions[$n]);
                 }
                 if (count($lx) > 1) {
-                    $sv->warning_at($n, "Tag “" . htmlspecialchars($ti[0]) . "” is also used for " . $descriptions[$lx[0]] . ".");
+                    $sv->warning_at($n, "Tag “" . htmlspecialchars($ti[0]) . "” is also used for " . $descriptions[$lx[0]]);
                 }
             }
         }

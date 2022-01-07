@@ -101,6 +101,10 @@
     },
     {   "name": "rfo", "alias": "reviewform"   },
     {
+        "name": "__crosscheck/review-form", "order": 800,
+        "crosscheck_function": "ReviewForm_SettingParser::crosscheck"
+    },
+    {
         "name": "reviewfield/properties/description", "order": 20,
         "render_review_property_function": "ReviewForm_SettingRenderer::render_description_property",
         "parse_review_property_function": "ReviewForm_SettingParser::parse_description_property"

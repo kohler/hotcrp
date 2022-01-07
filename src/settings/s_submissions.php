@@ -39,9 +39,9 @@ class Submissions_SettingRenderer {
     }
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sub_open")
-            && $sv->newv("sub_freeze") == 0
-            && $sv->newv("sub_open") > 0
-            && $sv->newv("sub_sub") <= 0)
+            && $sv->conf->setting("sub_freeze") == 0
+            && $sv->conf->setting("sub_open") > 0
+            && $sv->conf->setting("sub_sub") <= 0)
             $sv->warning_at(null, "Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You may want to either (1) specify a submission deadline, (2) select “Authors must freeze the final version of each submission”, or (3) manually turn off “Open site for submissions” at the proper time.");
     }
 }

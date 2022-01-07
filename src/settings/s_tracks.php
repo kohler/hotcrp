@@ -206,31 +206,33 @@ class Tracks_SettingRenderer {
     }
 
     static function crosscheck(SettingValues $sv) {
+        $conf = $sv->conf;
         if (($sv->has_interest("tracks") || $sv->has_interest("pcrev_any"))
-            && $sv->newv("tracks")) {
-            $tracks = json_decode($sv->newv("tracks"), true);
+            && $conf->has_tracks()) {
+            $tracks = (array) $conf->setting_json("tracks");
             $tracknum = 2;
             foreach ($tracks as $trackname => $t) {
                 $tnum = ($trackname === "_" ? 1 : $tracknum);
                 $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
-                $assrev = $t["assrev"] ?? null;
-                $unassrev = $t["unassrev"] ?? null;
-                if (($t["viewpdf"] ?? null)
-                    && $t["viewpdf"] !== $unassrev
+                $assrev = $t->assrev ?? null;
+                $unassrev = $t->unassrev ?? null;
+                if (($t->viewpdf ?? null)
+                    && $t->viewpdf !== $unassrev
                     && $unassrev !== "+none"
-                    && $t["viewpdf"] !== ($t["view"] ?? null)
-                    && $sv->newv("pcrev_any")) {
-                    $sv->warning_at("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see documents should restrict review self-assignment in the same way.");
+                    && $t->viewpdf !== ($t->view ?? null)
+                    && $conf->setting("pcrev_any")) {
+                    $sv->warning_at("unassrev_track$tnum", "$tdesc: A track that restricts who can see documents should generally restrict review self-assignment in the same way.");
                 }
                 if ($assrev
                     && $unassrev
                     && $unassrev !== "+none"
                     && $assrev !== $unassrev
-                    && $sv->newv("pcrev_any")) {
+                    && $conf->setting("pcrev_any")) {
                     $n = 0;
-                    foreach ($sv->conf->pc_members() as $pc)
+                    foreach ($conf->pc_members() as $pc) {
                         if ($pc->has_permission($assrev) && $pc->has_permission($unassrev))
                             ++$n;
+                    }
                     if ($n === 0) {
                         $sv->warning_at("assrev_track$tnum");
                         $sv->warning_at("unassrev_track$tnum", "$tdesc: No PC members match both review assignment permissions, so no PC members can self-assign reviews.");

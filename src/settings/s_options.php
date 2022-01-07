@@ -147,7 +147,8 @@ class Options_SettingRenderer {
         $fake_prow = new PaperInfo(null, null, $sv->conf);
         if ($ps->term()->script_expression($fake_prow) === null) {
             $method = $is_error ? "error_at" : "warning_at";
-            $sv->$method($field, "Search too complex for field condition. (Not all search keywords are supported for field conditions.)");
+            $sv->$method($field, "Search too complex for field condition");
+            $sv->msg_at($field, "Not all search keywords are supported for field conditions.", MessageSet::INFORM);
             $sv->$method($fieldx, "");
         }
     }
@@ -259,7 +260,8 @@ class Options_SettingRenderer {
             $sv->set_oldv("sf_required_$xpos", $io->required ? "1" : "0");
             $sv->set_oldv("sf_presence_$xpos", $io->exists_condition() ? "search" : ($io->final ? "final" : "all"));
             $sv->set_oldv("sf_presenceq_$xpos", $io->exists_condition());
-            $config_open = json_encode($io) !== json_encode($o);
+            $config_open = json_encode($io) !== json_encode($o)
+                || $sv->has_problem_at("sf_$xpos");
         } else {
             $config_open = true;
         }
@@ -408,27 +410,23 @@ class Options_SettingRenderer {
     }
 
     static function crosscheck(SettingValues $sv) {
-        if (!$sv->newv("options")) {
-            return;
-        }
-        $options = (array) json_decode($sv->newv("options"));
-        usort($options, function ($a, $b) {
-            $ao = $a->order ?? $a->position; /* XXX backward compat */
-            $bo = $b->order ?? $b->position;
-            return $ao <=> $bo;
-        });
+        $conf = $sv->conf;
+        $options = array_values(Options_SettingRenderer::configurable_options($conf));
         if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))
-            && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
+            && $conf->setting("sub_blind") == Conf::BLIND_ALWAYS) {
             foreach ($options as $pos => $o) {
-                if (($o->visibility ?? null) === "nonblind") {
-                    $sv->warning_at("sf_visibility_" . ($pos + 1), "The ‘" . htmlspecialchars($o->name) . "’ field is “hidden on blind submissions,” but all submissions are blind. You may want to change " . $sv->setting_link("Settings &gt; Submissions &gt; Blind submission", "sub_blind") . " to “Blind until review.”");
+                if ($o->visibility() === PaperOption::VIS_AUTHOR) {
+                    $field = "sf_visibility_" . ($pos + 1);
+                    $sv->warning_at($field, "<5>" . $sv->setting_link("All submissions are blind", "sub_blind") . ", so this field is always hidden");
+                    $sv->msg_at($field, "Would “hidden until review” visibility be better?", MessageSet::INFORM);
+                    $sv->warning_at("sf_" . ($pos + 1));
                 }
             }
         }
         if ($sv->has_interest("options")) {
             foreach ($options as $pos => $o) {
-                if ($o->exists_if ?? null) {
-                    self::validate_condition($sv, $o->exists_if, "sf_presenceq_" . ($pos + 1), false);
+                if (($q = $o->exists_condition())) {
+                    self::validate_condition($sv, $q, "sf_presenceq_" . ($pos + 1), false);
                 }
             }
         }

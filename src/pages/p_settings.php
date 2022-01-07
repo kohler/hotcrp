@@ -72,7 +72,6 @@ class Settings_Page {
     function render($group, $qreq) {
         $sv = $this->sv;
         $conf = $this->conf;
-        $sv->crosscheck();
 
         $conf->header("Settings", "settings", [
             "subtitle" => $sv->group_title($group),
@@ -132,6 +131,8 @@ class Settings_Page {
 
         if (isset($qreq->update) && $qreq->valid_post()) {
             $sp->handle_update($qreq);
+        } else {
+            $sv->crosscheck();
         }
 
         $sp->render($group, $qreq);

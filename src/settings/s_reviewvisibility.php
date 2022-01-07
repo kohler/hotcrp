@@ -34,24 +34,20 @@ class ReviewVisibility_SettingParser extends SettingParser {
     }
 
     static function crosscheck(SettingValues $sv) {
+        $conf = $sv->conf;
         if ($sv->has_interest("au_seerev")
-            && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
-            && !$sv->newv("tag_au_seerev")
+            && $conf->setting("au_seerev") == Conf::AUSEEREV_TAGS
+            && !$conf->setting("tag_au_seerev")
             && !$sv->has_error_at("tag_au_seerev")) {
             $sv->warning_at("tag_au_seerev", "You haven’t set any review visibility tags.");
         }
-
         if (($sv->has_interest("au_seerev") || $sv->has_interest("tag_chair"))
-            && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
-            && $sv->newv("tag_au_seerev")
+            && $conf->setting("au_seerev") == Conf::AUSEEREV_TAGS
+            && $conf->setting("tag_au_seerev")
             && !$sv->has_error_at("tag_au_seerev")) {
-            $ct = [];
-            foreach (Tagger::split_unpack($sv->newv("tag_chair")) as $ti) {
-                $ct[$ti[0]] = true;
-            }
-            foreach (explode(" ", $sv->newv("tag_au_seerev")) as $t) {
-                if ($t !== "" && !isset($ct[$t])) {
-                    $sv->warning_at("tag_au_seerev", "PC members can change the tag “" . htmlspecialchars($t) . "”, which affects whether authors can see reviews. Such tags should usually be " . $sv->setting_link("read-only", "tag_chair") . ".");
+            foreach ($conf->tag_au_seerev as $t) {
+                if (!$conf->tags()->is_chair($t)) {
+                    $sv->warning_at("tag_au_seerev", "<5>PC members can change the tag ‘" . htmlspecialchars($t) . "’, which affects whether authors can see reviews. Such tags should usually be " . $sv->setting_link("read-only", "tag_chair") . ".");
                     $sv->warning_at("tag_chair");
                 }
             }
