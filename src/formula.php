@@ -349,7 +349,7 @@ class Constant_Fexpr extends Fexpr {
         return new Constant_Fexpr("null", Fexpr::FERROR, $pos1, $pos2);
     }
     static function make_error_call(FormulaCall $ff) {
-        $ff->formula->lerror($ff->pos1, $ff->pos1 + strlen($ff->name), "Function ‘" . htmlspecialchars($ff->name) . "’ not found");
+        $ff->formula->lerror($ff->pos1, $ff->pos1 + strlen($ff->name), "<0>Function ‘{$ff->name}’ not found");
         return self::cerror($ff->pos1, $ff->pos2);
     }
     static function cnull() {
@@ -712,7 +712,7 @@ class Aggregate_Fexpr extends Fexpr {
             }
             return true;
         } else if (str_starts_with($arg, ".")) {
-            $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "Collection ‘" . htmlspecialchars(substr($arg, 1)) . "’ not found");
+            $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection ‘" . substr($arg, 1) . "’ not found");
             return true;
         } else {
             return false;
@@ -738,7 +738,7 @@ class Aggregate_Fexpr extends Fexpr {
             $arg_count = 2;
         }
         if (count($ff->args) !== $arg_count) {
-            $ff->lerror("Wrong number of arguments for " . htmlspecialchars($op) . " (expected {$arg_count})");
+            $ff->lerror("<0>Wrong number of arguments for {$op} (expected {$arg_count})");
             return null;
         }
         if ($op === "atminof" || $op === "atmaxof") {
