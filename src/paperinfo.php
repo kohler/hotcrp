@@ -1313,6 +1313,7 @@ class PaperInfo {
         return $tags;
     }
 
+    /** @param TagMessageReport $pj */
     private function _add_override_tag_info_json($pj, $viewable, $viewable_c, Contact $user) {
         $tagger = new Tagger($user);
         $pj->tags = Tagger::split($viewable);
@@ -1334,6 +1335,7 @@ class PaperInfo {
         }
     }
 
+    /** @param TagMessageReport $pj */
     function add_tag_info_json($pj, Contact $user) {
         $viewable = $this->sorted_viewable_tags($user);
         $tagger = new Tagger($user);

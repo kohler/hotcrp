@@ -419,6 +419,7 @@ src/settings/s_users.php
 src/settingvalues.php
 src/si.php
 src/siteloader.php
+src/tagmessagereport.php
 src/tagrankparser.php
 src/tagsearchmatcher.php
 src/textformat.php

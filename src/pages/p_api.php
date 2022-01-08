@@ -38,7 +38,8 @@ class API_Page {
             }
 
             if ($conf->paper && $user->can_view_tags($conf->paper)) {
-                $pj = (object) ["pid" => $conf->paper->paperId];
+                $pj = new TagMessageReport;
+                $pj->pid = $conf->paper->paperId;
                 $conf->paper->add_tag_info_json($pj, $user);
                 if (count((array) $pj) > 1) {
                     $j->p = [$conf->paper->paperId => $pj];

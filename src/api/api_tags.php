@@ -2,37 +2,17 @@
 // api/api_tags.php -- HotCRP tags API call
 // Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
-class TagMessagesResult implements JsonSerializable {
-    /** @var bool */
-    public $ok;
-    /** @var ?int */
-    public $pid;
-    /** @var list<MessageItem> */
-    public $message_list = [];
-
-    /** @param bool $ok */
-    function __construct($ok) {
-        $this->ok = $ok;
-    }
-
-    #[\ReturnTypeWillChange]
-    function jsonSerialize() {
-        $r = ["ok" => $this->ok];
-        $this->pid === null || ($r["pid"] = $this->pid);
-        $r["message_list"] = $this->message_list;
-        return $r;
-    }
-}
-
 class Tags_API {
     /** @param ?PaperInfo $prow
      * @param ?array<string,true> $interest
-     * @return TagMessagesResult */
+     * @return TagMessageReport */
     static function tagmessages(Contact $user, $prow, $interest) {
-        $tmr = new TagMessagesResult($user->can_view_tags($prow));
+        $tmr = new TagMessageReport;
+        $tmr->ok = $user->can_view_tags($prow);
         if ($prow) {
             $tmr->pid = $prow->paperId;
         }
+        $tmr->message_list = [];
         if ($tmr->ok
             && $prow
             && $user->can_administer($prow)
@@ -50,6 +30,7 @@ class Tags_API {
      * @param ?array<string,true> $interest */
     static private function allotment_tagmessages($user, $tmr, $interest) {
         $pfx = "{$user->contactId}~";
+        $allotments = [];
         foreach ($user->conf->tags()->filter("allotment") as $ltag => $t) {
             if ($interest === null || isset($interest["{$pfx}{$ltag}"])) {
                 $allotments["{$pfx}{$ltag}"] = [$t, 0.0];
@@ -76,7 +57,7 @@ class Tags_API {
             }
         }
     }
-    /** @param TagMessagesResult $tmr
+    /** @param TagMessageReport $tmr
      * @param ?array<string,true> $interest */
     static private function perm_tagmessages(Contact $user, PaperInfo $prow, $tmr, $interest) {
         foreach (Tagger::split_unpack($prow->sorted_editable_tags($user)) as $ti) {
@@ -93,7 +74,7 @@ class Tags_API {
 
     /** @param ?PaperInfo $prow */
     static function tagmessages_api(Contact $user, $qreq, $prow) {
-        return new JsonResult(self::tagmessages($user, $prow)->jsonSerialize());
+        return new JsonResult(self::tagmessages($user, $prow, null)->jsonSerialize());
     }
 
     /** @param list<MessageItem> $ms1
@@ -175,7 +156,7 @@ class Tags_API {
             $p = [];
             if ($pids) {
                 foreach ($user->paper_set(["paperId" => array_keys($pids)]) as $pr) {
-                    $p[$pr->paperId] = (object) [];
+                    $p[$pr->paperId] = new TagMessageReport;
                     $pr->add_tag_info_json($p[$pr->paperId], $user);
                 }
             }
