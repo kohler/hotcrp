@@ -1190,7 +1190,8 @@ function parse_ftext(t) {
 
 function render_class(c, format) {
     if (c) {
-        return c.replace(/(?:^|\s)(?:need-format|format\d+)(?=$|\s)/g, "").concat(" format", format).trimStart();
+        c = c.replace(/(?:^|\s)(?:need-format|format\d+)(?=$|\s)/g, "");
+        return c.concat(c ? " format" : "format", format);
     } else {
         return "format" + format;
     }
