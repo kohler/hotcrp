@@ -1145,34 +1145,34 @@ class Tagger {
         case 0:
             return null;
         case self::EEMPTY:
-            return "Tag missing.";
+            return "Tag missing";
         case self::EMULTIPLE:
-            return "Expected a single tag.";
+            return "Expected a single tag";
         case self::E2BIG:
-            return "Tag too long.";
+            return "Tag too long";
         case self::ALLOWSTAR:
-            return "Invalid tag{$t} (stars aren’t allowed here).";
+            return "Invalid tag{$t} (stars aren’t allowed here)";
         case self::NOCHAIR:
             if ($this->contact->privChair) {
-                return "Invalid tag{$t} (chair tags aren’t allowed here).";
+                return "Invalid tag{$t} (chair tags aren’t allowed here)";
             } else {
-                return "Invalid tag{$t} (tag reserved for chair).";
+                return "Invalid tag{$t} (tag reserved for chair)";
             }
         case self::NOPRIVATE:
-            return "Private tags aren’t allowed here.";
+            return "Private tags aren’t allowed here";
         case self::ALLOWCONTACTID:
             if ($verbose && ($twiddle = strpos($this->errtag ?? "", "~"))) {
-                return "Invalid tag{$t} (did you mean “#" . substr($this->errtag, $twiddle) . "”?).";
+                return "Invalid tag{$t} (did you mean “#" . substr($this->errtag, $twiddle) . "”?)";
             } else {
-                return "Invalid private tag.";
+                return "Invalid private tag";
             }
         case self::NOVALUE:
-            return "Tag values aren’t allowed here.";
+            return "Tag values aren’t allowed here";
         case self::ALLOWRESERVED:
-            return $verbose ? "Tag{$t} is reserved." : "Tag reserved.";
+            return $verbose ? "Tag{$t} is reserved" : "Tag reserved";
         case self::EINVAL:
         default:
-            return "Invalid tag{$t}.";
+            return "Invalid tag{$t}";
         }
     }
 

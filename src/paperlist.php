@@ -1034,7 +1034,8 @@ class PaperList implements XtContext {
             } else {
                 $mi = $message;
             }
-            if (($pos = $this->search->term()->view_anno_pos($name))) {
+            if (($pos = $this->search->term()->view_anno_pos($name))
+                && ($mi->status !== MessageSet::INFORM || empty($this->_finding_column_errors))) {
                 if ($mi->pos1 !== null) {
                     $mi->pos1 += $pos[1];
                     $mi->pos2 += $pos[1];
@@ -1129,10 +1130,17 @@ class PaperList implements XtContext {
             $this->_viewf[$k] = $viewf[$k];
             $f->is_visible = true;
             $f->has_content = false;
+            $this->_finding_column = $k;
             if ($f->prepare($this, PaperColumn::PREP_VISIBLE | $prep)) {
                 $this->_vcolumns[] = $f;
             }
         }
+
+        // report `prepare` errors
+        foreach ($this->_finding_column_errors ?? [] as $mi) {
+            $this->message_set()->append_item($mi);
+        }
+        $this->_finding_column_errors = null;
 
         // sort by order
         usort($this->_vcolumns, "Conf::xt_order_compare");

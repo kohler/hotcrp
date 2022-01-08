@@ -1741,6 +1741,11 @@ class AssignmentSet {
         return count($this->assigners);
     }
 
+    /** @return list<Assigner> */
+    function assignments() {
+        return $this->assigners;
+    }
+
     /** @return int */
     function request_count() {
         return $this->request_count;

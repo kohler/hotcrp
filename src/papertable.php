@@ -1316,18 +1316,6 @@ class PaperTable {
         $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || $this->qreq->atab === "manager");
     }
 
-    /** @param string $msg
-     * @param int $status */
-    private function echo_tag_report_message($msg, $status) {
-        echo '<p class="', MessageSet::status_class($status, "feedback", "is-"), '">';
-        if (preg_match('/\A(#' . TAG_REGEX . '?)(: .*)\z/s', $msg, $m)) {
-            echo Ht::link($m[1], $this->conf->hoturl("search", ["q" => $m[1]]), ["class" => "q"]), $m[2];
-        } else {
-            echo $msg;
-        }
-        echo '</p>';
-    }
-
     private function papstripTags() {
         if (!$this->prow->paperId || !$this->user->can_view_tags($this->prow)) {
             return;
@@ -1359,22 +1347,27 @@ class PaperTable {
             '<div class="psv">';
         if ($editable) {
             $treport = Tags_API::tagmessages($this->user, $this->prow);
+            $treport_warn = array_filter($treport->message_list, function ($mi) {
+                return $mi->status > 0;
+            });
 
             // uneditable
-            echo '<div class="fn want-tag-report-warnings">';
-            foreach ($treport->message_list as $tr) {
-                if ($tr->status > 0) {
-                    $this->echo_tag_report_message($tr->message, $tr->status);
-                }
+            if (empty($treport_warn)) {
+                echo '<ul class="fn want-tag-report-warnings feedback-list hidden"></ul>';
+            } else {
+                echo '<ul class="fn want-tag-report-warnings feedback-list">',
+                    MessageSet::feedback_html($treport_warn, MessageSet::ITEMS_ONLY), '</ul>';
             }
-            echo '</div><div class="fn js-tag-result">',
-                ($tx === "" ? "None" : $tx), '</div>';
 
-            echo '<div class="fx js-tag-editor"><div class="want-tag-report">';
-            foreach ($treport->message_list as $tr) {
-                $this->echo_tag_report_message($tr->message, $tr->status);
+            echo '<div class="fn js-tag-result">', $tx === "" ? "None" : $tx, '</div>';
+
+            echo '<div class="fx js-tag-editor">';
+            if (empty($treport->message_list)) {
+                echo '<ul class="want-tag-report feedback-list hidden"></ul>';
+            } else {
+                echo '<ul class="want-tag-report feedback-list">',
+                    MessageSet::feedback_html($treport->message_list, MessageSet::ITEMS_ONLY), '</ul>';
             }
-            echo "</div>";
             if ($is_sitewide) {
                 echo '<p class="feedback is-warning">You have a conflict with this submission, so you can only edit its ', Ht::link("site-wide tags", $this->conf->hoturl("settings", "group=tags#tag_sitewide")), '.';
                 if ($this->user->allow_administer($this->prow)) {

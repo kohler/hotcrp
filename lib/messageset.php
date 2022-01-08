@@ -116,6 +116,7 @@ class MessageSet {
     const WANT_FTEXT = 8;
     const DEFAULT_FTEXT_HTML = 16;
     const DEFAULT_FTEXT_TEXT = 32;
+    const ITEMS_ONLY = 64;
 
     const INFORM = -5;
     const WARNING_NOTE = -4;
@@ -545,8 +546,9 @@ class MessageSet {
 
 
     /** @param iterable<MessageItem> $message_list
+     * @param int $flags
      * @return string */
-    static function feedback_html($message_list) {
+    static function feedback_html($message_list, $flags = 0) {
         $t = [];
         foreach ($message_list as $mi) {
             if ($mi->message !== "") {
@@ -570,10 +572,12 @@ class MessageSet {
                 $t[] = "</li>";
             }
         }
-        if (!empty($t)) {
-            return "<ul class=\"feedback-list\">" . join("", $t) . "</ul>";
-        } else {
+        if (empty($t)) {
             return "";
+        } else if ($flags & self::ITEMS_ONLY) {
+            return join("", $t);
+        } else {
+            return "<ul class=\"feedback-list\">" . join("", $t) . "</ul>";
         }
     }
 

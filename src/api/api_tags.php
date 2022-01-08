@@ -2,84 +2,98 @@
 // api/api_tags.php -- HotCRP tags API call
 // Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
-class Tags_API {
-    /** @param ?PaperInfo $prow */
-    static function tagmessages(Contact $user, $prow) {
-        $ret = (object) ["ok" => $user->can_view_tags($prow)];
-        if ($prow) {
-            $ret->pid = $prow->paperId;
-        }
-        if ($ret->ok
-            && $prow
-            && (stripos($prow->all_tags_text(), "perm:") !== false
-                || $user->conf->tags()->has_allotment)) {
-            $ret->message_list = self::paper_tagmessages($user, $prow);
-        } else if ($ret->ok && !$prow) {
-            $ret->message_list = self::generic_tagmessages($user);
-        } else {
-            $ret->message_list = [];
-        }
-        return $ret;
+class TagMessagesResult implements JsonSerializable {
+    /** @var bool */
+    public $ok;
+    /** @var ?int */
+    public $pid;
+    /** @var list<MessageItem> */
+    public $message_list = [];
+
+    /** @param bool $ok */
+    function __construct($ok) {
+        $this->ok = $ok;
     }
-    static private function paper_tagmessages(Contact $user, PaperInfo $prow) {
-        $tagmap = $user->conf->tags();
-        $want_perm = $user->can_administer($prow);
-        $mypfx = $user->contactId . "~";
-        $rep = $vt = [];
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $r = ["ok" => $this->ok];
+        $this->pid === null || ($r["pid"] = $this->pid);
+        $r["message_list"] = $this->message_list;
+        return $r;
+    }
+}
+
+class Tags_API {
+    /** @param ?PaperInfo $prow
+     * @param ?array<string,true> $interest
+     * @return TagMessagesResult */
+    static function tagmessages(Contact $user, $prow, $interest) {
+        $tmr = new TagMessagesResult($user->can_view_tags($prow));
+        if ($prow) {
+            $tmr->pid = $prow->paperId;
+        }
+        if ($tmr->ok
+            && $prow
+            && $user->can_administer($prow)
+            && stripos($prow->all_tags_text(), " perm:") !== false) {
+            self::perm_tagmessages($user, $prow, $tmr, $interest);
+        }
+        if ($tmr->ok
+            && $user->conf->tags()->has_allotment) {
+            self::allotment_tagmessages($user, $tmr, $interest);
+        }
+        return $tmr;
+    }
+    /** @param Contact $user
+     * @param TagMessageReport $tmr
+     * @param ?array<string,true> $interest */
+    static private function allotment_tagmessages($user, $tmr, $interest) {
+        $pfx = "{$user->contactId}~";
+        foreach ($user->conf->tags()->filter("allotment") as $ltag => $t) {
+            if ($interest === null || isset($interest["{$pfx}{$ltag}"])) {
+                $allotments["{$pfx}{$ltag}"] = [$t, 0.0];
+            }
+        }
+        if (empty($allotments)) {
+            return;
+        }
+        $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag join Paper using (paperId) where timeSubmitted>0 and tag?a group by tag", array_keys($allotments));
+        while (($row = $result->fetch_row())) {
+            $allotments[strtolower($row[0])][1] = (float) $row[1];
+        }
+        Dbl::free($result);
+        $tagger = new Tagger($user);
+        foreach ($allotments as $tv) {
+            $t = $tv[0];
+            $link = $user->conf->hoturl("search", ["q" => "editsort:-#~{$t->tag}"]);
+            if ($tv[1] < $t->allotment) {
+                $nleft = $t->allotment - $tv[1];
+                $tmr->message_list[] = new MessageItem(null, "<5><a href=\"{$link}\">#~{$t->tag}</a>: " . plural($nleft, "vote") . " remaining", MessageSet::MARKED_NOTE);
+            } else if ($tv[1] > $t->allotment) {
+                $tmr->message_list[] = new MessageItem(null, "<5><a href=\"{$link}\">#~{$t->tag}</a>: Too many votes", 1);
+                $tmr->message_list[] = new MessageItem(null, "<0>Your vote total, {$tv[1]}, is over the allotment, {$t->allotment}.", MessageSet::INFORM);
+            }
+        }
+    }
+    /** @param TagMessagesResult $tmr
+     * @param ?array<string,true> $interest */
+    static private function perm_tagmessages(Contact $user, PaperInfo $prow, $tmr, $interest) {
         foreach (Tagger::split_unpack($prow->sorted_editable_tags($user)) as $ti) {
             if (strncasecmp($ti[0], "perm:", 5) === 0
-                && $want_perm) {
+                && ($interest === null || isset($interest[strtolower($ti[0])]))) {
                 if (!$prow->conf->is_known_perm_tag($ti[0])) {
-                    $rep[] = (object) ["status" => 1, "message" => "#{$ti[0]}: Unknown permission."];
+                    $tmr->message_list[] = new MessageItem(null, "<0>#{$ti[0]}: Unknown permission", 1);
                 } else if ($ti[1] != -1 && $ti[1] != 0) {
-                    $rep[] = (object) ["status" => 1, "message" => "#{$ti[0]}#{$ti[1]}: Permission tags should have value 0 (allow) or -1 (deny)."];
-                }
-            }
-            if (str_starts_with($ti[0], $mypfx)
-                && ($dt = $tagmap->check(substr($ti[0], strlen($mypfx))))
-                && $dt->allotment) {
-                $vt[strtolower($ti[0])] = $dt;
-            }
-        }
-        if (!empty($vt)) {
-            $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag join Paper using (paperId) where timeSubmitted>0 and tag?a group by tag", array_keys($vt));
-            while (($row = $result->fetch_row())) {
-                $dt = $vt[strtolower($row[0])];
-                if ((float) $row[1] > $dt->allotment) {
-                    $rep[] = (object) ["status" => 1, "message" => "#~{$dt->tag}: Your vote total ({$row[1]}) is over the allotment ({$dt->allotment}).", "search" => "editsort:-#~{$dt->tag}"];
-                }
-            }
-            Dbl::free($result);
-        }
-        return $rep;
-    }
-    static private function generic_tagmessages(Contact $user) {
-        $mypfx = $user->contactId . "~";
-        $rep = $vt = [];
-        foreach ($user->conf->tags()->filter("allotment") as $dt) {
-            $vt[$mypfx . strtolower($dt->tag)] = [$dt, 0.0];
-        }
-        if (!empty($vt)) {
-            $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag join Paper using (paperId) where timeSubmitted>0 and tag?a group by tag", array_keys($vt));
-            while (($row = $result->fetch_row())) {
-                $vt[$row[0]][1] = (float) $row[1];
-            }
-            Dbl::free($result);
-            foreach ($vt as $tv) {
-                $dt = $tv[0];
-                if ($tv[1] < $dt->allotment) {
-                    $rep[] = (object) ["status" => 0, "message" => "#~{$dt->tag}: " . ($dt->allotment - $tv[1]) . " of " . plural($dt->allotment, "vote") . " remaining.", "search" => "editsort:-#~{$dt->tag}"];
-                } else if ($tv[1] > $dt->allotment) {
-                    $rep[] = (object) ["status" => 1, "message" => "#~{$dt->tag}: Your vote total ({$tv[1]}) is over the allotment ({$dt->allotment}).", "search" => "editsort:-#~{$dt->tag}"];
+                    $tmr->message_list[] = new MessageItem(null, "<0>#{$ti[0]}#{$ti[1]}: Permission tag should have value 0 (allow) or -1 (deny)", 1);
                 }
             }
         }
-        return $rep;
     }
 
     /** @param ?PaperInfo $prow */
     static function tagmessages_api(Contact $user, $qreq, $prow) {
-        return new JsonResult((array) self::tagmessages($user, $prow));
+        return new JsonResult(self::tagmessages($user, $prow)->jsonSerialize());
     }
 
     /** @param list<MessageItem> $ms1
@@ -110,12 +124,14 @@ class Tags_API {
 
         // save tags using assigner
         $pids = [];
-        $x = array("paper,action,tag");
+        $x = ["paper,action,tag"];
+        $interestall = !$prow || isset($qreq->tags);
         if ($prow) {
             if (isset($qreq->tags)) {
                 $x[] = "$prow->paperId,tag,all#clear";
-                foreach (Tagger::split($qreq->tags) as $t)
+                foreach (Tagger::split($qreq->tags) as $t) {
                     $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
+                }
             }
             foreach (Tagger::split((string) $qreq->addtags) as $t) {
                 $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
@@ -142,7 +158,16 @@ class Tags_API {
         // exit
         if ($ok && $prow) {
             $prow->load_tags();
-            $taginfo = self::tagmessages($user, $prow);
+            if ($interestall) {
+                $interest = null;
+            } else {
+                $interest = [];
+                foreach ($assigner->assignments() as $ai) {
+                    if ($ai instanceof Tag_Assigner)
+                        $interest[strtolower($ai->tag)] = true;
+                }
+            }
+            $taginfo = self::tagmessages($user, $prow, $interest);
             $prow->add_tag_info_json($taginfo, $user);
             $taginfo->message_list = self::combine_message_lists($mlist, $taginfo->message_list);
             $jr = new JsonResult($taginfo);

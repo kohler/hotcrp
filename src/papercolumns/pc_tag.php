@@ -58,11 +58,14 @@ class Tag_PaperColumn extends PaperColumn {
         }
         if ($this->editable
             && !$pl->user->can_edit_tag_somewhere($this->etag)) {
-            $m = "You can’t edit tag #" . htmlspecialchars($this->dtag) . ".";
+            $pl->column_error("<0>Tag ‘#{$this->dtag}’ is read-only");
             if ($pl->conf->tags()->is_automatic($this->etag)) {
-                $m .= " That tag is set automatically.";
+                if ($pl->conf->tags()->is_votish($this->etag)) {
+                    $pl->column_error(new MessageItem(null, "<0>That tag is set automatically based on per-user votes. Did you mean to edit ‘#~{$this->dtag}’?", MessageSet::INFORM));
+                } else {
+                    $pl->column_error(new MessageItem(null, "<0>That tag is set automatically.", MessageSet::INFORM));
+                }
             }
-            $pl->message_set()->error_at($this->name, $m);
         }
         if ($this->editable
             && ($visible & PaperColumn::PREP_VISIBLE)

@@ -122,6 +122,16 @@ if (!Element.prototype.closest) {
         return $(this).closest(s)[0];
     };
 }
+if (!Element.prototype.replaceChildren) {
+    Element.prototype.replaceChildren = function () {
+        while (this.lastChild) {
+            this.removeChild(this.lastChild);
+        }
+        for (let i = 0; i !== arguments.length; ++i) {
+            this.append(arguments[i]);
+        }
+    };
+}
 
 
 function lower_bound_index(a, v) {
@@ -1288,6 +1298,14 @@ function render_xmsg(msg, status) {
     return '<div class="msg msg-' + status + '">' + msg + '</div>';
 }
 
+function message_list_status(ml) {
+    var i, status = 0;
+    for (i = 0; i !== (ml || []).length; ++i) {
+        status = Math.max(status, ml[i].status);
+    }
+    return status;
+}
+
 function append_feedback_to(elt, mi) {
     var sklass, li, div;
     if (mi.message != null && mi.message !== "") {
@@ -1352,20 +1370,6 @@ function append_feedback_near(elt, mi) {
         append_feedback_to(ul || c, mi);
     }
     return true;
-}
-
-function render_feedback(msg, status) {
-    if (typeof msg === "string")
-        msg = msg === "" ? [] : [msg];
-    if (msg.length === 0)
-        return '';
-    if (typeof status === "number" && status >= -3 && status <= 3)
-        status = ["success", "urgent-note", "note", "", "warning", "error", "error"][status + 3];
-    var t = "", i;
-    for (var i = 0; i !== msg.length; ++i) {
-        t = t.concat('<li><div class="is-diagnostic', status ? " is-" : "", status, '">', msg[i], '</div></li>');
-    }
-    return t;
 }
 
 
@@ -8474,19 +8478,18 @@ function prepare_paper_select() {
 }
 
 function render_tag_messages(message_list) {
-    var $me = $(this), t0 = '', t1 = '', i, m, t;
+    var $me = $(this), t0 = this.querySelector(".want-tag-report"),
+        t1 = this.querySelector(".want-tag-report-warnings"),
+        i, m, t;
+    t0.replaceChildren();
+    t1.replaceChildren();
     for (i = 0; i !== message_list.length; ++i) {
-        var tr = message_list[i];
-        if ((m = tr.message.match(/^(#[-+a-zA-Z0-9!@*_:.\/]*?)(: .*)$/))) {
-            t = render_feedback('<a href="' + hoturl_html("search", {q: m[1]}) + '" class="q">' + m[1] + '</a>' + m[2], tr.status);
-        } else {
-            t = render_feedback(tr.message, tr.status);
-        }
-        t0 += t;
-        tr.status > 0 && (t1 += t);
+        var mi = message_list[i];
+        append_feedback_to(t0, mi);
+        mi.status > 0 && append_feedback_to(t1, mi);
     }
-    $me.find(".want-tag-report").html(t0);
-    $me.find(".want-tag-report-warnings").html(t1);
+    toggleClass(t0, "hidden", !t0.firstChild);
+    toggleClass(t1, "hidden", !t1.firstChild);
 }
 
 function prepare_pstags() {
@@ -8554,7 +8557,7 @@ function save_pstags(evt) {
         success: function (data) {
             $f.find("input").prop("disabled", false);
             if (data.ok) {
-                if (!data.message_list || !data.message_list.length) {
+                if (message_list_status(data.message_list) < 2) {
                     foldup.call($f[0], null, {f: true});
                     minifeedback(f.elements.tags, {ok: true});
                 }
@@ -8565,7 +8568,7 @@ function save_pstags(evt) {
                 addClass(f.elements.tags, "has-error");
                 addClass(f.elements.save, "btn-highlight");
                 data.message_list = data.message_list || [];
-                data.message_list.push({message: "Your changes were not saved. Please correct these errors and try again.", status: 2});
+                data.message_list.unshift({message: "Your changes were not saved. Please correct these errors and try again.", status: -4});
             }
             if (data.message_list)
                 render_tag_messages.call($f[0], data.message_list);
