@@ -685,6 +685,7 @@ class Round_Fexpr extends Fexpr {
 }
 
 class Aggregate_Fexpr extends Fexpr {
+    /** @var int */
     public $index_type;
     function __construct($fn, array $values, int $index_type) {
         parent::__construct($fn, $values);
@@ -966,16 +967,22 @@ class Let_Fexpr extends Fexpr {
 }
 
 class VarDef_Fexpr extends Fexpr {
+    /** @var string */
     private $name;
+    /** @var string */
     public $ltemp;
+    /** @var ?int */
     public $_index_type;
+    /** @param string $name */
     function __construct($name) {
         parent::__construct("vardef");
         $this->name = $name;
     }
+    /** @return string */
     function name() {
         return $this->name;
     }
+    /** @return int */
     function inferred_index() {
         assert($this->_index_type !== null);
         return $this->_index_type;
@@ -1024,19 +1031,25 @@ class FormulaCompiler {
     public $gstmt;
     /** @var list<string> */
     public $lstmt;
+    /** @var int */
     public $index_type;
+    /** @var bool */
     public $indexed;
+    /** @var int */
     private $_lprefix;
+    /** @var int */
     private $_maxlprefix;
+    /** @var int */
     private $_lflags;
+    /** @var int */
     public $indent = 2;
     public $queryOptions = [];
-    public $tagrefs = null;
     private $_stack;
     /** @var ?FormulaCompiler */
     public $term_compiler;
-    /** @var ?list<Formula> */
+    /** @var ?list<string> */
     public $term_list;
+    /** @var bool */
     public $term_error = false;
 
     const LFLAG_RROW = 1;
@@ -1052,6 +1065,8 @@ class FormulaCompiler {
         $this->tagger = new Tagger($user);
         $this->clear();
     }
+
+    /** @return FormulaCompiler */
     static function make_combiner(Contact $user) {
         $fc = new FormulaCompiler($user);
         $fc->term_compiler = new FormulaCompiler($user);
@@ -1071,6 +1086,7 @@ class FormulaCompiler {
         $this->term_error = false;
     }
 
+    /** @return bool */
     function check_gvar($gvar) {
         if ($this->gvar[$gvar] ?? false) {
             return false;
@@ -1079,6 +1095,10 @@ class FormulaCompiler {
             return true;
         }
     }
+
+    /** @param string $name
+     * @param string $expr
+     * @return string */
     function define_gvar($name, $expr) {
         if (preg_match('/\A\$?(\d.*|.*[^A-Ya-z0-9_].*)\z/', $name, $m)) {
             $name = '$' . preg_replace_callback('/\A\d|[^A-Ya-z0-9_]/', function ($m) { return "Z" . dechex(ord($m[0])); }, $m[1]);
@@ -1092,12 +1112,15 @@ class FormulaCompiler {
         return $name;
     }
 
+    /** @return string */
     function _add_pc() {
         if ($this->check_gvar('$pc')) {
             $this->gstmt[] = "\$pc = \$contact->conf->pc_members();";
         }
         return '$pc';
     }
+
+    /** @return string */
     function _add_vreviews() {
         if ($this->check_gvar('$vreviews')) {
             $this->queryOptions["reviewSignatures"] = true;
@@ -1105,6 +1128,8 @@ class FormulaCompiler {
         }
         return '$vreviews';
     }
+
+    /** @return string */
     function _add_preferences() {
         $this->queryOptions["allReviewerPreference"] = true;
         if ($this->_lprefix) {
@@ -1118,6 +1143,8 @@ class FormulaCompiler {
             return '$preferences';
         }
     }
+
+    /** @return string */
     function _add_conflict_types() {
         if ($this->check_gvar('$conflict_types')) {
             $this->queryOptions["allConflictType"] = true;
@@ -1126,6 +1153,8 @@ class FormulaCompiler {
         }
         return '$conflict_types';
     }
+
+    /** @return string */
     function _add_tags() {
         if ($this->check_gvar('$tags')) {
             $this->queryOptions["tags"] = true;
@@ -1133,6 +1162,8 @@ class FormulaCompiler {
         }
         return '$tags';
     }
+
+    /** @return string */
     function _add_tag_pc() {
         if ($this->check_gvar('$tag_pc')) {
             $tags = $this->_add_tags();
@@ -1148,6 +1179,8 @@ class FormulaCompiler {
         }
         return '$tag_pc';
     }
+
+    /** @return string */
     function _add_option_value(PaperOption $o) {
         $n = '$ov_' . ($o->id < 0 ? "m" . -$o->id : $o->id);
         if ($this->check_gvar($n)) {
@@ -1156,6 +1189,8 @@ class FormulaCompiler {
         }
         return $n;
     }
+
+    /** @return string */
     function _add_now() {
         return 'Conf::$now';
     }
@@ -1173,12 +1208,15 @@ class FormulaCompiler {
         }
     }
 
+    /** @return string */
     function _prow() {
         if ($this->term_compiler) {
             $this->term_error = true;
         }
         return '$prow';
     }
+
+    /** @return string */
     function _rrow() {
         $this->indexed = true;
         if ($this->index_type === Fexpr::IDX_NONE) {
@@ -1190,6 +1228,9 @@ class FormulaCompiler {
             return "\$rrow_{$this->_lprefix}";
         }
     }
+
+    /** @param bool $submitted
+     * @return string */
     function _rrow_view_score_bound($submitted = false) {
         $rrow = $this->_rrow();
         $sfx = $submitted ? "s" : "";
@@ -1203,6 +1244,8 @@ class FormulaCompiler {
             return "\$rrow_vsb{$sfx}_{$this->_lprefix}";
         }
     }
+
+    /** @param string $fid */
     function _ensure_rrow_score($fid) {
         if (!isset($this->queryOptions["scores"])) {
             $this->queryOptions["scores"] = array();
@@ -1212,6 +1255,7 @@ class FormulaCompiler {
             $this->g0stmt[] = $this->_prow() . '->ensure_review_score("' . $fid . '");';
         }
     }
+
     function _ensure_review_word_counts() {
         $this->queryOptions["reviewWordCounts"] = true;
         if ($this->check_gvar('$ensure_reviewWordCounts')) {
@@ -1229,10 +1273,15 @@ class FormulaCompiler {
         $this->indent += 2;
         return $this->_lprefix;
     }
+
     private function _pop() {
         list($this->_lprefix, $this->lstmt, $this->index_type, $this->indexed, $this->_lflags) = array_pop($this->_stack);
         $this->indent -= 2;
     }
+
+    /** @param string $expr
+     * @param bool $always_var
+     * @return string */
     function _addltemp($expr = "null", $always_var = false) {
         if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr))
             return $expr;
@@ -1240,6 +1289,9 @@ class FormulaCompiler {
         $this->lstmt[] = "$tname = $expr;";
         return $tname;
     }
+
+    /** @param bool $isblock
+     * @return string */
     private function _join_lstmt($isblock) {
         $indent = "\n" . str_repeat(" ", $this->indent);
         $t = $isblock ? "{" . $indent : "";
@@ -1250,6 +1302,8 @@ class FormulaCompiler {
         return $t;
     }
 
+    /** @param int $index_types
+     * @return string */
     function loop_variable($index_types) {
         $g = array();
         if ($index_types === Fexpr::IDX_TAGPC) {
@@ -1363,9 +1417,10 @@ class FormulaCompiler {
 class FormulaParse {
     /** @var ?Fexpr */
     public $fexpr;
+    /** @var bool */
     public $indexed;
+    /** @var int */
     public $index_type;
-    public $tagrefs;
     /** @var list<MessageItem> */
     public $lerrors;
 }
@@ -1568,7 +1623,6 @@ class Formula implements JsonSerializable {
                 } else {
                     $fp->index_type = 0;
                 }
-                $fp->tagrefs = $state->tagrefs;
             }
         }
         $fp->lerrors = $this->_lerrors;
