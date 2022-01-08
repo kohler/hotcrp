@@ -41,6 +41,16 @@ if (typeof Object.assign !== "function") {
     });
 }
 
+if (!String.prototype.trimStart) {
+    Object.defineProperty(String.prototype, "trimStart", (function () {
+        var r = /^\s+/;
+        return {
+            value: function trimStart(s) {
+                return this.replace(r, "");
+            }, writable: true, configurable: true
+        }
+    })());
+}
 if (!String.prototype.startsWith) {
     Object.defineProperty(String.prototype, "startsWith", {
         value: function startsWith(search, pos) {
