@@ -43,7 +43,7 @@ class MailSender {
         $this->mailer_options = [
             "requester_contact" => $user,
             "cc" => $qreq->cc,
-            "reply-to" => $qreq->replyto
+            "reply-to" => $qreq["reply-to"]
         ];
     }
 
@@ -57,7 +57,7 @@ class MailSender {
         $result = $user->conf->qe("insert into MailLog set contactId=?,
             recipients=?, cc=?, replyto=?, subject=?, emailBody=?, q=?, t=?,
             fromNonChair=?, status=-1",
-            $user->contactId, (string) $qreq->to, $qreq->cc, $qreq->replyto,
+            $user->contactId, (string) $qreq->to, $qreq->cc, $qreq["reply-to"],
             $qreq->subject, $qreq->body, $qreq->q, $qreq->t,
             $user->privChair ? 0 : 1);
         $ms->echo_request_form(true);
@@ -75,10 +75,12 @@ class MailSender {
         $mailid = isset($qreq->mailid) && ctype_digit($qreq->mailid) ? intval($qreq->mailid) : -1;
         $result = $user->conf->qe("update MailLog set status=1 where mailId=? and status=-1", $mailid);
         if (!$result->affected_rows) {
-            return Conf::msg_error("That mail was already sent.");
+            Conf::msg_error("That mail was already sent.", true);
+        }  else {
+            $ms = new MailSender($user, $recip, 2, $qreq);
+            $ms->run();
+            return $ms;
         }
-        $ms = new MailSender($user, $recip, 2, $qreq);
-        $ms->run();
     }
 
     private function echo_actions($extra_class = "") {
@@ -98,7 +100,7 @@ class MailSender {
 
     private function echo_request_form($include_cb) {
         echo Ht::form($this->conf->hoturl("=mail"), ["id" => "mailform"]);
-        foreach (["to", "subject", "body", "cc", "replyto", "q", "t", "plimit", "newrev_since"] as $x) {
+        foreach (["to", "subject", "body", "cc", "reply-to", "q", "t", "plimit", "newrev_since"] as $x) {
             if (isset($this->qreq[$x]))
                 echo Ht::hidden($x, $this->qreq[$x]);
         }
@@ -188,8 +190,9 @@ class MailSender {
     }
 
     private static function fix_body($prep) {
-        if (preg_match('^\ADear (author|reviewer)\(s\)([,;!.\s].*)\z^s', $prep->body, $m))
+        if (preg_match('^\ADear (author|reviewer)\(s\)([,;!.\s].*)\z^s', $prep->body, $m)) {
             $prep->body = "Dear " . $m[1] . (count($prep->to) == 1 ? "" : "s") . $m[2];
+        }
     }
 
     /** @param HotCRPMailPreparation $prep
@@ -345,8 +348,9 @@ class MailSender {
         $nrows_done = 0;
         $nrows_total = $result->num_rows;
         $nwarnings = 0;
-        $preperrors = [];
+        $has_decoration = false;
         $revinform = ($this->recipients === "newpcrev" ? [] : null);
+
         while (($rowdata = $result->fetch_assoc())) {
             $row = new PaperInfo($rowdata, $this->user, $this->conf);
             $contact = new Contact($rowdata, $this->conf);
@@ -357,17 +361,15 @@ class MailSender {
             $mailer->reset($contact, $rest);
             $prep = $mailer->prepare($template, $rest);
 
-            if ($prep->errors) {
-                foreach ($prep->errors as $lcfield => $hline) {
-                    $reqfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
-                    Ht::error_at($reqfield);
-                    $emsg = "Malformed " . Mailer::$email_fields[$lcfield] . " field: " . $hline . " Put names in \"double quotes\" and email addresses in &lt;angle brackets&gt;, and separate destinations with commas.";
-                    if (!isset($preperrors[$emsg])) {
-                        Conf::msg_error($emsg);
-                    }
-                    $preperrors[$emsg] = true;
+            foreach ($prep->errors as $mi) {
+                $this->recip->append_item($mi);
+                if (!$has_decoration) {
+                    $this->recip->msg_at($mi->field, "<0>Put names in \"double quotes\" and email addresses in <angle brackets>, and separate destinations with commas.", MessageSet::INFORM);
+                    $has_decoration = true;
                 }
-            } else if ($this->process_prep($prep, $last_prep, $contact)) {
+            }
+
+            if (!$prep->errors && $this->process_prep($prep, $last_prep, $contact)) {
                 if ((!$this->user->privChair || $this->conf->opt("chairHidePasswords"))
                     && !$last_prep->censored_preparation
                     && $rest["censor"] === Mailer::CENSOR_NONE) {
@@ -406,13 +408,20 @@ class MailSender {
         $this->echo_mailinfo($nrows_done, $nrows_total);
 
         if ($this->mcount === 0) {
-            if (empty($preperrors)) {
-                Conf::msg_error("No users match “" . $this->recip->unparse() . "” for that search.");
+            if ($this->recip->has_message()) {
+                $this->recip->error_at(null, "No mail sent; please fix these errors and try again");
+            } else {
+                $this->recip->warning_at(null, "No mail sent: no users match this search");
             }
+            $this->conf->msg($this->recip->full_feedback_html(), $this->recip->problem_status());
             echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('mailform').action=" . json_encode_browser($this->conf->hoturl_raw("mail", "check=1", Conf::HOTURL_POST)));
             return false;
         }
 
+
+        if ($this->recip->has_message()) {
+            $this->conf->msg($this->recip->full_feedback_html(), $this->recip->problem_status());
+        }
         if (!$this->sending) {
             $this->echo_actions();
         } else {

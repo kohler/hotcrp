@@ -20,6 +20,7 @@ class MailPreparation {
     /** @var bool */
     public $sensitive = false;
     public $headers = [];
+    /** @var list<MessageItem> */
     public $errors = [];
     /** @var bool */
     public $unique_preparation = false;
@@ -735,14 +736,13 @@ class Mailer {
                 if (($hdr = $mimetext->encode_email_header($field . ": ", $text))) {
                     $prep->headers[$lcfield] = $hdr . $this->eol;
                 } else {
-                    $prep->errors[$lcfield] = $mimetext->unparse_error();
+                    $mimetext->mi->field = $lcfield;
+                    $mimetext->mi->landmark = "{$field} field";
+                    $prep->errors[] = $mimetext->mi;
                     $logmsg = "$lcfield: $text";
                     if (!in_array($logmsg, $this->_errors_reported)) {
                         error_log("mailer error on $logmsg");
                         $this->_errors_reported[] = $logmsg;
-                    }
-                    if (!($rest["no_error_quit"] ?? false)) {
-                        Conf::msg_error("Malformed $field field:" . $prep->errors[$lcfield]);
                     }
                 }
             }
@@ -751,6 +751,9 @@ class Mailer {
         $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8"
             . ($this->flowed ? "; format=flowed" : "") . $this->eol;
         $prep->sensitive = $this->sensitive;
+        if (!empty($prep->errors) && !($rest["no_error_quit"] ?? false)) {
+            Conf::msg_error(MessageSet::feedback_html($prep->errors), true);
+        }
     }
 
     /** @param list<MailPreparation> $preps */
@@ -805,18 +808,14 @@ class Mailer {
 class MimeText {
     /** @var string */
     public $in;
-    /** @var int|false */
-    public $errorpos;
-    /** @var int|false */
-    public $errorlen;
-    /** @var string|false */
-    public $errortext;
     /** @var string */
     public $out;
     /** @var int */
     public $linelen;
     /** @var string */
     public $eol;
+    /** @var ?MessageItem */
+    public $mi;
 
     /** @param string $eol */
     function __construct($eol = "\r\n") {
@@ -831,9 +830,7 @@ class MimeText {
         } else {
             $this->in = $str;
         }
-        $this->errorpos = false;
-        $this->errorlen = false;
-        $this->errortext = false;
+        $this->mi = null;
         $this->out = $header;
         $this->linelen = strlen($header);
     }
@@ -956,14 +953,16 @@ class MimeText {
                 $email = $m[1];
                 $str = $m[3];
             } else {
-                $this->errorpos = $inlen - strlen($str);
+                $this->mi = $mi = new MessageItem(null, "", MessageSet::ERROR);
+                $mi->pos1 = $inlen - strlen($str);
+                $mi->context = $this->in;
                 if (preg_match('/[\s<>@]/', $str)) {
-                    $this->errortext = "Invalid destination (possible quoting problem).";
+                    $mi->message = "Invalid destination (possible quoting problem)";
                 } else {
-                    preg_match('/\A[^\s,;]*/', $str, $m);
-                    $this->errortext = "Invalid email address.";
-                    $this->errorlen = strlen($m[0]);
+                    $mi->message = "Invalid email address";
                 }
+                preg_match('/\A[^\s,;]*/', $str, $m);
+                $mi->pos2 = $mi->pos1 + strlen($m[0]);
                 return false;
             }
 
@@ -971,12 +970,10 @@ class MimeText {
             if (!validate_email($email)
                 && $email !== "none"
                 && $email !== "hidden") {
-                if (strpos($email, "@") === false) {
-                    error_log("mailer is going to bail out on something it didn't previously $email");
-                }
-                $this->errorpos = $emailpos;
-                $this->errorlen = strlen($email);
-                $this->errortext = "Invalid email address.";
+                $this->mi = $mi = new MessageItem(null, "Invalid email address", MessageSet::ERROR);
+                $mi->pos1 = $emailpos;
+                $mi->pos2 = $emailpos + strlen($email);
+                $mi->context = $this->in;
                 return false;
             }
 
@@ -984,9 +981,10 @@ class MimeText {
             if ($str !== ""
                 && $str[0] !== ","
                 && $str[0] !== ";") {
-                if ($this->errorpos === false) {
-                    $this->errorpos = $inlen - strlen($str);
-                    $this->errortext = "Destinations should be separated with commas.";
+                if (!$this->mi) {
+                    $this->mi = $mi = new MessageItem(null, "Destinations must be separated with commas", MessageSet::ERROR);
+                    $mi->pos1 = $mi->pos2 = $inlen - strlen($str);
+                    $mi->context = $this->in;
                 }
                 if (!preg_match('/\A<?\s*([^\s>]*)/', $str, $m)
                     || !validate_email($m[1])) {
@@ -1040,17 +1038,6 @@ class MimeText {
         $this->reset($header, $str);
         $this->append($str, is_usascii($str) ? 0 : 1);
         return $this->out;
-    }
-
-    /** @return string|false */
-    function unparse_error() {
-        if ($this->errorpos !== false) {
-            return '<pre>'
-                . Ht::contextual_diagnostic($this->in, $this->errorpos, $this->errorpos + $this->errorlen, htmlspecialchars($this->errortext))
-                . '</pre>';
-        } else {
-            return false;
-        }
     }
 
 

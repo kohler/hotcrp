@@ -52,8 +52,6 @@ class Si {
     public $ifnonempty;
     /** @var null|string|list<string> */
     public $default_message;
-    /** @var ?string */
-    public $last_parse_error;
 
     /** @var array<string,bool> */
     static public $option_is_value = [];
@@ -329,9 +327,8 @@ class Si {
 
 
     /** @param ?string $reqv
-     * @return null|false|int|string */
-    function base_parse_reqv(SettingValues $sv, $reqv) {
-        $this->last_parse_error = null;
+     * @return null|int|string */
+    function base_parse_reqv($reqv, SettingValues $sv) {
         if ($reqv === null) {
             if ($this->type === "cdate" || $this->type === "checkbox") {
                 return 0;
@@ -367,15 +364,15 @@ class Si {
             } else if (($v = $this->conf->parse_time($v)) !== false) {
                 return $v;
             } else {
-                $this->last_parse_error = "Please enter a valid date.";
-                return false;
+                $sv->error_at($this, "Please enter a valid date");
+                return null;
             }
         } else if ($this->type === "grace") {
             if (($v = SettingParser::parse_interval($v)) !== false) {
                 return intval($v);
             } else {
-                $this->last_parse_error = "Please enter a valid grace period.";
-                return false;
+                $sv->error_at($this, "Please enter a valid grace period");
+                return null;
             }
         } else if ($this->type === "int" || $this->type === "zint") {
             if (preg_match("/\\A[-+]?[0-9]+\\z/", $v)) {
@@ -383,8 +380,8 @@ class Si {
             } else if ($v == "" && $this->placeholder !== null) {
                 return 0;
             } else {
-                $this->last_parse_error = "Please enter a valid whole number.";
-                return false;
+                $sv->error_at($this, "Please enter a whole number");
+                return null;
             }
         } else if ($this->type === "string") {
             // Avoid storing the default message in the database
@@ -409,8 +406,8 @@ class Si {
             if (($v = $tagger->check($v, $this->type === "tagbase" ? Tagger::NOVALUE : 0))) {
                 return $v;
             } else {
-                $this->last_parse_error = $tagger->error_html();
-                return false;
+                $sv->error_at($this, "<5>" . $tagger->error_html());
+                return null;
             }
         } else if ($this->type === "emailheader") {
             $mt = new MimeText;
@@ -418,8 +415,8 @@ class Si {
             if ($v !== false) {
                 return $v == "" ? "" : MimeText::decode_header($v);
             } else {
-                $this->last_parse_error = "Please enter a valid email destination list. " . $mt->unparse_error();
-                return false;
+                $sv->append_item_at($this, $mt->mi);
+                return null;
             }
         } else if ($this->type === "emailstring") {
             $v = trim($v);
@@ -428,8 +425,8 @@ class Si {
             } else if (validate_email($v) || $v === $sv->oldv($this->name)) {
                 return $v;
             } else {
-                $this->last_parse_error = "Please enter a valid email address.";
-                return false;
+                $sv->error_at($this, "Please enter a valid email address");
+                return null;
             }
         } else if ($this->type === "urlstring") {
             $v = trim($v);
@@ -437,8 +434,8 @@ class Si {
                 || preg_match('/\A(?:https?|ftp):\/\/\S+\z/', $v)) {
                 return $v;
             } else {
-                $this->last_parse_error = "Please enter a valid URL.";
-                return false;
+                $sv->error_at($this, "Please enter a valid URL");
+                return null;
             }
         } else if ($this->type === "htmlstring") {
             $ch = CleanHTML::basic();
@@ -448,16 +445,16 @@ class Si {
                     return "";
                 return $v;
             } else {
-                $this->last_parse_error = $ch->last_error;
-                return false;
+                $sv->error_at($this, "<5>{$ch->last_error}");
+                return null;
             }
         } else if ($this->type === "radio") {
             foreach ($this->values as $allowedv) {
                 if ((string) $allowedv === $v)
                     return $allowedv;
             }
-            $this->last_parse_error = "Please enter a valid choice.";
-            return false;
+            $sv->error_at($this, "Please enter a valid choice");
+            return null;
         } else {
             throw new Error("Don't know how to base_parse_reqv {$this->name}.");
         }

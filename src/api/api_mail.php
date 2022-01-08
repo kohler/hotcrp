@@ -77,9 +77,12 @@ class Mail_API {
         } else if (($row = $user->conf->fetch_first_object("select * from MailLog where mailId=?", $qreq->mailid))) {
             if (self::can_view_maillog($user, $row)) {
                 $j = ["ok" => true];
-                foreach (["recipients", "q", "t", "cc", "replyto", "subject"] as $field) {
+                foreach (["recipients", "q", "t", "cc", "subject"] as $field) {
                     if ($row->$field !== null && $row->$field !== "")
                         $j[$field] = $row->$field;
+                }
+                if ($row->replyto !== null) {
+                    $j["reply-to"] = $row->replyto;
                 }
                 if ($row->emailBody !== null) {
                     $j["body"] = $row->emailBody;

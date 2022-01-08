@@ -1063,13 +1063,7 @@ class SettingValues extends MessageSet {
      * @return null|int|string */
     function base_parse_req($si) {
         $si = is_string($si) ? $this->si($si) : $si;
-        $v = $si->base_parse_reqv($this, $this->reqv($si->name));
-        if ($v === false) {
-            $this->error_at($si, $si->last_parse_error);
-            return null;
-        } else {
-            return $v;
-        }
+        return $si->base_parse_reqv($this->reqv($si->name), $this);
     }
 
     private function execute_req(Si $si) {

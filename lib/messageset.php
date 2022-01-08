@@ -85,7 +85,7 @@ class MessageItem implements JsonSerializable {
             $x["message"] = $this->message;
         }
         $x["status"] = $this->status;
-        if ($this->context !== null && $this->pos1 !== null) {
+        if ($this->pos1 !== null && $this->context !== null) {
             $x["context"] = Ht::make_mark_substring($this->context, $this->pos1, $this->pos2);
         }
         return (object) $x;
@@ -564,7 +564,7 @@ class MessageSet {
                     // overwrite last `</li>`
                     $t[count($t) - 1] = "<div class=\"msg-inform\">{$s}</div>";
                 }
-                if (($mi->pos1 || $mi->pos2) && $mi->context !== null) {
+                if ($mi->pos1 !== null && $mi->context !== null) {
                     $t[] = "<div class=\"msg-context\">"
                         . Ht::mark_substring($mi->context, $mi->pos1, $mi->pos2, $mi->status)
                         . "</div>";
@@ -606,7 +606,7 @@ class MessageSet {
                 }
                 $t[] = $mi->message_as(0);
                 $t[] = "\n";
-                if (($mi->pos1 || $mi->pos2) && $mi->context !== null) {
+                if ($mi->pos1 !== null && $mi->context !== null) {
                     $t[] = Ht::mark_substring_text($mi->context, $mi->pos1, $mi->pos2, "    ");
                 }
             }

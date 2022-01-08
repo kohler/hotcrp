@@ -23,9 +23,12 @@ if (isset($Qreq->mailid)
     && !$Qreq->send) {
     $result = $Conf->qe_raw("select * from MailLog where mailId=" . $Qreq->mailid);
     if (($row = $result->fetch_object())) {
-        foreach (["recipients", "q", "t", "cc", "replyto", "subject"] as $field) {
+        foreach (["recipients", "q", "t", "cc", "subject"] as $field) {
             if (isset($row->$field) && !isset($Qreq[$field]))
                 $Qreq[$field] = $row->$field;
+        }
+        if (isset($row->replyto) && !isset($Qreq["reply-to"])) {
+            $Qreq["reply-to"] = $row->replyto;
         }
         if (isset($row->emailBody) && !isset($Qreq->body)) {
             $Qreq->body = $row->emailBody;
@@ -65,15 +68,15 @@ if (isset($Qreq->cc) && $Me->is_manager()) {
     $Qreq->cc = $Conf->opt("emailCc") ?? "";
 }
 
-if (isset($Qreq->replyto) && $Me->is_manager()) {
+if (isset($Qreq["reply-to"]) && $Me->is_manager()) {
     // XXX should only apply to papers you administer
-    $Qreq->replyto = simplify_whitespace($Qreq->replyto);
+    $Qreq["reply-to"] = simplify_whitespace($Qreq["reply-to"]);
 } else {
-    $Qreq->replyto = $Conf->opt("emailReplyTo") ?? "";
+    $Qreq["reply-to"] = $Conf->opt("emailReplyTo") ?? "";
 }
 
 global $mailer_options;
-$mailer_options = ["requester_contact" => $Me, "cc" => $Qreq->cc, "reply-to" => $Qreq->replyto];
+$mailer_options = ["requester_contact" => $Me, "cc" => $Qreq->cc, "reply-to" => $Qreq["reply-to"]];
 $null_mailer = new HotCRPMailer($Conf, null, array_merge(["width" => false], $mailer_options));
 
 // template options
@@ -318,12 +321,12 @@ echo "</td></tr>\n";
 if ($Me->is_manager()) {
     foreach (Mailer::$email_fields as $lcfield => $field)
         if ($lcfield !== "to" && $lcfield !== "bcc") {
-            $xfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
             echo "  <tr><td class=\"",
-                $recip->control_class($xfield, "mhnp nw"),
-                "\"><label for=\"$xfield\">$field:</label></td><td class=\"mhdp\">",
-                Ht::entry($xfield, $Qreq[$xfield], ["size" => 64, "class" => $recip->control_class($xfield, "text-monospace js-autosubmit"), "id" => $xfield, "data-submit-fn" => "false"]),
-                ($xfield == "replyto" ? "<hr class=\"g\">" : ""),
+                $recip->control_class($lcfield, "mhnp nw"),
+                "\"><label for=\"$lcfield\">$field:</label></td><td class=\"mhdp\">",
+                $recip->feedback_html_at($lcfield),
+                Ht::entry($lcfield, $Qreq[$lcfield], ["size" => 64, "class" => $recip->control_class($lcfield, "text-monospace js-autosubmit"), "id" => $lcfield, "data-submit-fn" => "false"]),
+                ($lcfield == "reply-to" ? "<hr class=\"g\">" : ""),
                 "</td></tr>\n\n";
         }
 }

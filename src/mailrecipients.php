@@ -39,6 +39,7 @@ class MailRecipients extends MessageSet {
         assert(!!$user->isPC);
         $this->conf = $user->conf;
         $this->user = $user;
+        $this->set_ignore_duplicates(true);
     }
 
     /** @param list<int> $paper_ids

@@ -42,14 +42,11 @@ if (typeof Object.assign !== "function") {
 }
 
 if (!String.prototype.trimStart) {
-    Object.defineProperty(String.prototype, "trimStart", (function () {
-        var r = /^\s+/;
-        return {
-            value: function trimStart(s) {
-                return this.replace(r, "");
-            }, writable: true, configurable: true
-        }
-    })());
+    Object.defineProperty(String.prototype, "trimStart", {
+        value: function () {
+            return this.replace(/^[\s\uFEFF\xA0]+/, '');
+        }, writable: true, configurable: true
+    });
 }
 if (!String.prototype.startsWith) {
     Object.defineProperty(String.prototype, "startsWith", {
