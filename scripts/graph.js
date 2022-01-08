@@ -810,11 +810,11 @@ function remap_scatter_data(data, rv, map) {
     }
 }
 
-var scatter_annulus = d3.arc()
+var scatter_annulus = d3 ? d3.arc()
     .innerRadius(function (d) { return d.r0 ? d.r0 - 0.5 : 0; })
     .outerRadius(function (d) { return d.r - 0.5; })
     .startAngle(0)
-    .endAngle(Math.PI * 2);
+    .endAngle(Math.PI * 2) : null;
 
 function scatter_transform(d) {
     return "translate(" + d[0] + "," + d[1] + ")";
@@ -1623,13 +1623,13 @@ handle_ui.on("js-hotgraph-highlight", function () {
 });
 
 var graphers = {
-    procrastination: {filter: true, callback: procrastination_filter},
-    scatter: {callback: graph_scatter},
-    cdf: {callback: graph_cdf},
-    "cumulative-count": {callback: graph_cdf},
-    bar: {callback: graph_bars},
-    "full-stack": {callback: graph_bars},
-    box: {callback: graph_boxplot}
+    procrastination: {filter: true, function: procrastination_filter},
+    scatter: {function: graph_scatter},
+    cdf: {function: graph_cdf},
+    "cumulative-count": {function: graph_cdf},
+    bar: {function: graph_bars},
+    "full-stack": {function: graph_bars},
+    box: {function: graph_boxplot}
 };
 
 return function (selector, args) {
@@ -1637,17 +1637,24 @@ return function (selector, args) {
         var g = graphers[args.type];
         if (!g)
             return null;
-        else if (g.filter)
-            args = g.callback(args);
+        else if (!d3) {
+            var $err = $('<div class="msg msg-error"></div>').appendTo(selector);
+            append_feedback_near($err[0], {message: "<0>Graphs are not supported on this browser", status: 2});
+            if (document.documentMode) {
+                append_feedback_near($err[0], {message: "<5>You appear to be using a version of Internet Explorer, which is no longer supported. <a href=\"https://browsehappy.com\">Edge, Firefox, Chrome, and Safari</a> are supported, among others.", status: -5});
+            }
+            return null;
+        } else if (g.filter)
+            args = g["function"](args);
         else {
             args = make_args(selector, args);
             var svg = d3.select(selector).append("svg")
                 .attr("width", args.width + args.left + args.right)
                 .attr("height", args.height + args.top + args.bottom)
               .append("g")
-                .attr("transform", "translate(" + args.left + "," + args.top + ")");
-            return g.callback.call(svg, selector, args);
+                .attr("transform", "translate(".concat(args.left, ",", args.top, ")"));
+            return g["function"].call(svg, selector, args);
         }
     }
 };
-})(jQuery, d3);
+})(jQuery, window.d3);

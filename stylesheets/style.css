@@ -1776,7 +1776,7 @@ select.has-warning {
 }
 
 .msg-context, .msg-inform {
-	margin-left: 3rem;
+	margin-left: 2rem;
 }
 .msg-context {
 	font-size: smaller;

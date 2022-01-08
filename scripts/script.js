@@ -1358,13 +1358,7 @@ function append_feedback_near(elt, mi) {
         addClass(elt, "has-error");
     }
     if (mi.message != null && mi.message !== "") {
-        var owner, c, ul;
-        if (hasClass(elt, "entryi"))
-            owner = elt.querySelector(".entry");
-        else if (hasClass(elt, "f-i") || hasClass(elt, "entry"))
-            owner = elt;
-        else
-            owner = null;
+        var c, ul, owner = hasClass(elt, "entryi") ? elt.querySelector(".entry") : elt;
         if (!owner)
             return false;
         c = owner.firstChild;
@@ -10327,6 +10321,11 @@ $(function () {
             }
         }
         log_jserror(err.join("\n"));
+    }
+    if (document.documentMode) {
+        var msg = $('<div class="msg msg-error"></div>').appendTo("#msgs-initial");
+        append_feedback_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
+        append_feedback_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5});
     }
 });
 
