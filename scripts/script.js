@@ -8868,12 +8868,17 @@ return {
 
 
 function tag_value(taglist, t) {
-    if (t.charAt(0) === "~" && t.charAt(1) !== "~")
+    if (t.charCodeAt(0) === 126 /* ~ */ && t.charCodeAt(1) !== 126)
         t = siteinfo.user.cid + t;
-    t += "#";
-    for (var i = 0; i !== taglist.length; ++i)
-        if (taglist[i].startsWith(t))
-            return +taglist[i].substr(t.length);
+    t = t.toLowerCase();
+    var tlen = t.length;
+    for (var i = 0; i !== taglist.length; ++i) {
+        var s = taglist[i];
+        if (s.length > tlen + 1
+            && s.charCodeAt(tlen) === 35 /* # */
+            && s.substring(0, tlen).toLowerCase() === t)
+            return +s.substring(tlen + 1);
+    }
     return null;
 }
 
