@@ -1346,7 +1346,7 @@ class PaperTable {
             ["type" => "ps", "fold" => $editable ? "tags" : false, "foldopen" => true]),
             '<div class="psv">';
         if ($editable) {
-            $treport = Tags_API::tagmessages($this->user, $this->prow);
+            $treport = Tags_API::tagmessages($this->user, $this->prow, null);
             $treport_warn = array_filter($treport->message_list, function ($mi) {
                 return $mi->status > 0;
             });
