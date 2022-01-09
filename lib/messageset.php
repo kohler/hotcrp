@@ -58,12 +58,27 @@ class MessageItem implements JsonSerializable {
         }
     }
 
+    /** @param string $message
+     * @return MessageItem */
+    function with_message($message) {
+        if ($this->message !== $message) {
+            $mi = clone $this;
+            $mi->message = $message;
+            return $mi;
+        } else {
+            return $this;
+        }
+    }
+
     /** @param string $text
      * @return MessageItem */
     function with_prefix($text) {
         if ($this->message !== "" && $text !== "") {
             $mi = clone $this;
             list($fmt, $s) = Ftext::parse($this->message);
+            if ($fmt === 5) {
+                $text = htmlspecialchars($text);
+            }
             if ($fmt !== null) {
                 $mi->message = "<{$fmt}>{$text}{$s}";
             } else {
@@ -116,7 +131,6 @@ class MessageSet {
     const WANT_FTEXT = 8;
     const DEFAULT_FTEXT_HTML = 16;
     const DEFAULT_FTEXT_TEXT = 32;
-    const ITEMS_ONLY = 64;
 
     const INFORM = -5;
     const WARNING_NOTE = -4;
@@ -201,9 +215,10 @@ class MessageSet {
         return false;
     }
 
-    /** @param MessageItem $mi
+    /** @param int $pos
+     * @param MessageItem $mi
      * @return MessageItem */
-    function append_item($mi) {
+    function splice_item($pos, $mi) {
         if (!($this->_ms_flags & self::IGNORE_MSGS)) {
             if ($mi->field !== null) {
                 $old_status = $this->errf[$mi->field] ?? -5;
@@ -216,8 +231,15 @@ class MessageSet {
                 && (!($this->_ms_flags & self::IGNORE_DUPS)
                     || $old_status < $mi->status
                     || $this->message_index($mi) === false)) {
-                $this->msgs[] = $mi;
+                if ($pos < 0 || $pos >= count($this->msgs)) {
+                    $this->msgs[] = $mi;
+                } else if ($pos === 0) {
+                    array_unshift($this->msgs, $mi);
+                } else {
+                    array_splice($this->msgs, $pos, 0, [$mi]);
+                }
                 if (($this->_ms_flags & self::WANT_FTEXT)
+                    && $mi->message !== ""
                     && !Ftext::is_ftext($mi->message)) {
                     error_log("not ftext: " . debug_string_backtrace());
                     if ($this->_ms_flags & self::DEFAULT_FTEXT_TEXT) {
@@ -231,9 +253,25 @@ class MessageSet {
         return $mi;
     }
 
-    /** @deprecated */
-    function add($mi) {
-        $this->append_item($mi);
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    function append_item($mi) {
+        return $this->splice_item(-1, $mi);
+    }
+
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    function prepend_item($mi) {
+        return $this->splice_item(0, $mi);
+    }
+
+    /** @param iterable<MessageItem> $message_list */
+    function append_list($message_list) {
+        if (!($this->_ms_flags & self::IGNORE_MSGS)) {
+            foreach ($message_list as $mi) {
+                $this->append_item($mi);
+            }
+        }
     }
 
     /** @param MessageSet $ms */
@@ -267,13 +305,11 @@ class MessageSet {
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
-        if ($field === false || $field === "") { /* XXX false backward compat */
+        assert($field !== false && $msg !== false);
+        if ($field === "") {
             $field = null;
         }
-        if ($msg === null || $msg === false) { /* XXX false backward compat */
-            $msg = "";
-        }
-        return $this->append_item(new MessageItem($field, $msg, $status));
+        return $this->append_item(new MessageItem($field, $msg ?? "", $status));
     }
 
     /** @param ?string $field
@@ -306,6 +342,21 @@ class MessageSet {
         return $this->msg_at($field, $msg, $status);
     }
 
+    /** @param int $pos
+     * @param ?string $msg
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
+     * @return MessageItem */
+    function splice_msg($pos, $msg, $status) {
+        return $this->splice_item($pos, new MessageItem(null, $msg, $status));
+    }
+
+    /** @param ?string $msg
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
+     * @return MessageItem */
+    function prepend_msg($msg, $status) {
+        return $this->splice_item(0, new MessageItem(null, $msg, $status));
+    }
+
     /** @param MessageItem $mi
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status */
     function change_item_status($mi, $status) {
@@ -321,11 +372,6 @@ class MessageSet {
     }
 
 
-    /** @return bool
-     * @deprecated */
-    function has_messages() {
-        return !empty($this->msgs);
-    }
     /** @return bool */
     function has_message() {
         return !empty($this->msgs);
@@ -349,16 +395,6 @@ class MessageSet {
     /** @return bool */
     function has_error() {
         return $this->problem_status >= self::ERROR;
-    }
-    /** @return bool */
-    function has_warning() {
-        if ($this->problem_status >= self::WARNING) {
-            foreach ($this->msgs as $mi) {
-                if ($mi->status === self::WARNING)
-                    return true;
-            }
-        }
-        return false;
     }
     /** @param int $msgcount
      * @return bool */
@@ -391,10 +427,6 @@ class MessageSet {
             }
         }
         return false;
-    }
-    /** @deprecated */
-    function has_messages_at($field) {
-        return $this->has_message_at($field);
     }
     /** @param string $field
      * @return bool */
@@ -546,10 +578,26 @@ class MessageSet {
 
 
     /** @param iterable<MessageItem> $message_list
-     * @param int $flags
-     * @return string */
-    static function feedback_html($message_list, $flags = 0) {
-        $t = [];
+     * @param callable(MessageItem):(MessageItem|list<MessageItem>) $function
+     * @return Generator<MessageItem> */
+    static function map($message_list, $function) {
+        foreach ($message_list as $mi) {
+            $mix = $function($mi) ?? $mi;
+            if (is_array($mix)) {
+                foreach ($mix as $nmi) {
+                    yield $nmi;
+                }
+            } else {
+                yield $mix;
+            }
+        }
+    }
+
+    /** @param iterable<MessageItem> $message_list
+     * @return list<string> */
+    static function feedback_html_items($message_list) {
+        $ts = [];
+        $t = "";
         foreach ($message_list as $mi) {
             if ($mi->message !== "") {
                 $s = $mi->message_as(5);
@@ -557,28 +605,32 @@ class MessageSet {
                     $lm = htmlspecialchars($mi->landmark);
                     $s = "<span class=\"lineno\">{$lm}:</span> {$s}";
                 }
-                if ($mi->status !== self::INFORM || empty($t)) {
+                if ($mi->status !== self::INFORM) {
+                    if ($t !== "") {
+                        $ts[] = $t;
+                    }
                     $k = self::status_class($mi->status, "is-diagnostic", "is-");
-                    $t[] = "<li><div class=\"{$k}\">{$s}</div>";
+                    $t = "<div class=\"{$k}\">{$s}</div>";
                 } else {
-                    // overwrite last `</li>`
-                    $t[count($t) - 1] = "<div class=\"msg-inform\">{$s}</div>";
+                    $t .= "<div class=\"msg-inform\">{$s}</div>";
                 }
                 if ($mi->pos1 !== null && $mi->context !== null) {
-                    $t[] = "<div class=\"msg-context\">"
-                        . Ht::mark_substring($mi->context, $mi->pos1, $mi->pos2, $mi->status)
-                        . "</div>";
+                    $mark = Ht::mark_substring($mi->context, $mi->pos1, $mi->pos2, $mi->status);
+                    $t .= "<div class=\"msg-context\">{$mark}</div>";
                 }
-                $t[] = "</li>";
             }
         }
-        if (empty($t)) {
-            return "";
-        } else if ($flags & self::ITEMS_ONLY) {
-            return join("", $t);
-        } else {
-            return "<ul class=\"feedback-list\">" . join("", $t) . "</ul>";
+        if ($t !== "") {
+            $ts[] = $t;
         }
+        return $ts;
+    }
+
+    /** @param iterable<MessageItem> $message_list
+     * @return string */
+    static function feedback_html($message_list) {
+        $t = join("</li><li>", self::feedback_html_items($message_list));
+        return $t !== "" ? "<ul class=\"feedback-list\"><li>{$t}</li></ul>" : "";
     }
 
     /** @param string $field

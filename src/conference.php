@@ -4014,6 +4014,12 @@ class Conf {
         self::msg_on($this, $text, $type);
     }
 
+    /** @param iterable<MessageItem>|MessageSet $message_list */
+    function feedback_msg($message_list) {
+        $ms = Ht::feedback_msg_content($message_list);
+        $ms[0] === "" || self::msg_on($this, $ms[0], $ms[1]);
+    }
+
     /** @param string|list<string> $text */
     function infoMsg($text, $minimal = false) {
         self::msg_on($this, $text, $minimal ? "xinfo" : "info");

@@ -1355,8 +1355,8 @@ class PaperTable {
             if (empty($treport_warn)) {
                 echo '<ul class="fn want-tag-report-warnings feedback-list hidden"></ul>';
             } else {
-                echo '<ul class="fn want-tag-report-warnings feedback-list">',
-                    MessageSet::feedback_html($treport_warn, MessageSet::ITEMS_ONLY), '</ul>';
+                echo '<ul class="fn want-tag-report-warnings feedback-list"><li>',
+                    join("</li><li>", MessageSet::feedback_html_items($treport_warn)), "</li></ul>";
             }
 
             echo '<div class="fn js-tag-result">', $tx === "" ? "None" : $tx, '</div>';
@@ -1365,8 +1365,8 @@ class PaperTable {
             if (empty($treport->message_list)) {
                 echo '<ul class="want-tag-report feedback-list hidden"></ul>';
             } else {
-                echo '<ul class="want-tag-report feedback-list">',
-                    MessageSet::feedback_html($treport->message_list, MessageSet::ITEMS_ONLY), '</ul>';
+                echo '<ul class="want-tag-report feedback-list"><li>',
+                    join("</li><li>", MessageSet::feedback_html_items($treport->message_list)), "</li></ul>";
             }
             if ($is_sitewide) {
                 echo '<p class="feedback is-warning">You have a conflict with this submission, so you can only edit its ', Ht::link("site-wide tags", $this->conf->hoturl("settings", "group=tags#tag_sitewide")), '.';

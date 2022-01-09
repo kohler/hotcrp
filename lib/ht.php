@@ -703,6 +703,38 @@ class Ht {
         }
     }
 
+    /** @param iterable<MessageItem>|MessageSet $message_list
+     * @return array{string,int} */
+    static function feedback_msg_content($message_list) {
+        if ($message_list instanceof MessageSet) {
+            $message_list = $message_list->message_list();
+        }
+        $status = 0;
+        $items = [];
+        foreach (MessageSet::feedback_html_items(MessageSet::map($message_list,
+            function ($mi) use (&$status) {
+                if ($mi->status === MessageSet::SUCCESS && $status <= 0) {
+                    $status = MessageSet::SUCCESS;
+                } else if ($mi->status >= 1) {
+                    $status = max($status, $mi->status);
+                }
+            })) as $item_html) {
+            $items[] = "<li>{$item_html}</li>";
+        }
+        if (empty($items)) {
+            return ["", 0];
+        } else {
+            return ["<ul class=\"feedback-list\">" . join("", $items) . "</ul>", $status];
+        }
+    }
+
+    /** @param iterable<MessageItem>|MessageSet $message_list
+     * @return string */
+    static function feedback_msg($message_list) {
+        $ms = self::feedback_msg_content($message_list);
+        return $ms[0] === "" ? "" : self::msg($ms[0], $ms[1]);
+    }
+
 
     /** @param string $field */
     static function control_class($field, $rest = "", $prefix = "has-") {

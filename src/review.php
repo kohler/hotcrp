@@ -2633,7 +2633,7 @@ class ReviewValues extends MessageSet {
             return MessageSet::PLAIN;
         } else if ($this->has_error() || $this->has_problem_at("ready")) {
             return MessageSet::ERROR;
-        } else if ($this->has_warning() || $this->finished === 1) {
+        } else if ($this->has_problem() || $this->finished === 1) {
             return MessageSet::WARNING;
         } else {
             return MessageSet::SUCCESS;
@@ -2644,7 +2644,7 @@ class ReviewValues extends MessageSet {
         $this->finished || $this->finish();
         if ($this->finished < 3) {
             $mis = $this->message_list();
-            if ($this->text !== null && ($this->has_error() || $this->has_warning())) {
+            if ($this->text !== null && $this->has_problem()) {
                 $errtype = $this->has_error() ? "errors" : "warnings";
                 array_unshift($mis, new MessageItem(null, $this->conf->_("<0>There were $errtype while parsing the uploaded review file."), MessageSet::INFORM));
             }
