@@ -55,6 +55,7 @@ class CheckFormat extends MessageSet {
             self::$banal_args = $z ? "-zoom=$z" : "";
         }
         $this->fcheckers["default"] = new Default_FormatChecker;
+        $this->set_want_ftext(true, 5);
     }
 
     function msg_fail($what) {
@@ -126,7 +127,8 @@ class CheckFormat extends MessageSet {
             $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
             $limit = $doc->conf->opt("banalLimit") ?? 8;
             if ($limit > 0 && $n > $limit) {
-                $this->msg_fail("Server too busy to check paper formats at the moment. This is a transient error; feel free to try again.");
+                $this->msg_fail("<0>Server too busy to check paper formats");
+                $this->msg_at("error", "This is a transient error; feel free to try again.", MessageSet::INFORM);
                 $this->run_flags |= $flags;
                 return null;
             }
@@ -142,14 +144,15 @@ class CheckFormat extends MessageSet {
                 $this->metadata_updates["banal"] = $bj;
                 $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
             } else {
-                $this->msg_fail(htmlspecialchars($doc->export_filename()) . " cannot be processed. The file may be corrupted or not in PDF format.");
+                $this->msg_fail("<0>" . $doc->export_filename() . " cannot be processed");
+                $this->msg_at("error", "The file may be corrupted or not in PDF format.", MessageSet::INFORM);
             }
 
             if ($limit > 0) {
                 $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
             }
         } else {
-            $this->msg_fail(htmlspecialchars($doc->export_filename()) . ": " . ($doc->error_html ?? "File cannot be loaded."));
+            $this->msg_fail("<5>" . htmlspecialchars($doc->export_filename()) . ": " . ($doc->error_html ?? "File cannot be loaded"));
             $flags &= ~CheckFormat::RUN_ALLOWED;
         }
 
@@ -200,7 +203,7 @@ class CheckFormat extends MessageSet {
             || !is_array($bj->pages)
             || !is_array($bj->papersize)
             || count($bj->papersize) != 2) {
-            $this->msg_fail("Analysis failure: no pages or paper size.");
+            $this->msg_fail("<0>Analysis failure: no pages or paper size");
             return;
         }
 
@@ -221,7 +224,7 @@ class CheckFormat extends MessageSet {
                 }
             }
             if (!$ok) {
-                $this->problem_at("papersize", "Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper") . ".", 2);
+                $this->problem_at("papersize", "<0>Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper"), 2);
             }
         }
 
@@ -230,7 +233,7 @@ class CheckFormat extends MessageSet {
             $pages = $this->npages;
             assert(is_int($pages));
             if ($pages < $spec->pagelimit[0]) {
-                $this->problem_at("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . $pages . ".", 1);
+                $this->problem_at("pagelimit", "<0>Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found {$pages}", 1);
             }
             if ($pages > $spec->pagelimit[1]
                 && $spec->unlimitedref
@@ -241,7 +244,7 @@ class CheckFormat extends MessageSet {
                 }
             }
             if ($pages > $spec->pagelimit[1]) {
-                $this->problem_at("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], $spec->unlimitedref ? "non-reference page" : "page") . ", found " . $pages . ".", 2);
+                $this->problem_at("pagelimit", "<0>Too many pages: the limit is " . plural($spec->pagelimit[1], $spec->unlimitedref ? "non-reference page" : "page") . ", found {$pages}", 2);
             }
         }
         $this->body_pages = count(array_filter($bj->pages, function ($pg) {
@@ -252,9 +255,9 @@ class CheckFormat extends MessageSet {
         if (($spec->columns || $spec->bodyfontsize || $spec->bodylineheight)
             && $this->body_pages < 0.5 * $this->npages) {
             if ($this->body_pages == 0) {
-                $this->warning_at(null, "Warning: No pages seemed to contain body text; results may be off.");
+                $this->warning_at(null, "<0>Warning: No pages seemed to contain body text; results may be off");
             } else {
-                $this->warning_at(null, "Warning: Only " . plural($this->body_pages, "page") . " seemed to contain body text; results may be off.");
+                $this->warning_at(null, "<0>Warning: Only " . plural($this->body_pages, "page") . " seemed to contain body text; results may be off");
             }
             $nd0_pages = count(array_filter($bj->pages, function ($pg) {
                 return (isset($pg->pagetype) && $pg->pagetype === "blank")
@@ -262,7 +265,8 @@ class CheckFormat extends MessageSet {
                     || (isset($pg->d) && $pg->d === 0);
             }));
             if ($nd0_pages == $this->npages) {
-                $this->problem_at("notext", "This document appears to contain no text. Perhaps the PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", 2);
+                $this->problem_at("notext", "<0>This document appears to contain no text", 2);
+                $this->msg_at("notext", "The PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
             }
         }
 
@@ -280,7 +284,7 @@ class CheckFormat extends MessageSet {
             }
             $maxpages = $spec->pagelimit ? $spec->pagelimit[1] : 0;
             if (count($px) > $maxpages * 0.75) {
-                $this->problem_at("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . self::page_message($px) . ".");
+                $this->problem_at("columns", "<0>Wrong number of columns: expected " . plural($spec->columns, "column") . self::page_message($px));
             }
         }
 
@@ -313,19 +317,19 @@ class CheckFormat extends MessageSet {
                     }
                 }
             if (!empty($px)) {
-                $this->problem_at("textblock", "Margins too small: text width exceeds "
+                $this->problem_at("textblock", "<0>Margins too small: text width exceeds "
                     . FormatSpec::unparse_dimen($spec->textblock[0]) . " by "
                     . (count($px) > 1 ? "up to " : "")
                     . ((int) (100 * $maxx / $spec->textblock[0] + .5) - 100)
-                    . "%" . self::page_message($px) . ".",
+                    . "%" . self::page_message($px),
                     $this->body_error_status($nbadx));
             }
             if (!empty($py)) {
-                $this->problem_at("textblock", "Margins too small: text height exceeds "
+                $this->problem_at("textblock", "<0>Margins too small: text height exceeds "
                     . FormatSpec::unparse_dimen($spec->textblock[1]) . " by "
                     . (count($py) > 1 ? "up to " : "")
                     . ((int) (100 * $maxy / $spec->textblock[1] + .5) - 100)
-                    . "%" . self::page_message($py) . ".",
+                    . "%" . self::page_message($py),
                     $this->body_error_status($nbady));
             }
         }
@@ -355,10 +359,10 @@ class CheckFormat extends MessageSet {
                 }
             }
             if (!empty($lopx)) {
-                $this->problem_at("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
+                $this->problem_at("bodyfontsize", "<0>Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx), $this->body_error_status($nbadsize));
             }
             if (!empty($hipx)) {
-                $this->problem_at("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
+                $this->problem_at("bodyfontsize", "<0>Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx));
             }
         }
 
@@ -387,10 +391,10 @@ class CheckFormat extends MessageSet {
                 }
             }
             if (!empty($lopx)) {
-                $this->problem_at("bodylineheight", "Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx) . ".", $this->body_error_status($nbadsize));
+                $this->problem_at("bodylineheight", "<0>Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt" . self::page_message($lopx), $this->body_error_status($nbadsize));
             }
             if (!empty($hipx)) {
-                $this->problem_at("bodylineheight", "Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx) . ".");
+                $this->problem_at("bodylineheight", "<0>Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt" . self::page_message($hipx));
             }
         }
     }
@@ -455,7 +459,7 @@ class CheckFormat extends MessageSet {
         $this->clear();
         $this->run_flags |= CheckFormat::RUN_STARTED;
         if ($doc->mimetype !== "application/pdf") {
-            $this->msg_fail("The format checker only works on PDF files.");
+            $this->msg_fail("<0>The format checker only works on PDF files");
             return;
         }
 
@@ -516,6 +520,17 @@ class CheckFormat extends MessageSet {
         return ($this->run_flags & CheckFormat::RUN_ATTEMPTED) !== 0;
     }
 
+    /** @return MessageItem */
+    function front_report_item() {
+        if ($this->has_error()) {
+            return new MessageItem(null, "<5>This document violates the submission format requirements", MessageSet::ERROR);
+        } else if ($this->has_problem()) {
+            return new MessageItem(null, "<0>This document may violate the submission format requirements", MessageSet::WARNING);
+        } else {
+            return new MessageItem(null, "<0>Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", MessageSet::SUCCESS);
+        }
+    }
+
     /** @return string */
     function document_report(DocumentInfo $doc) {
         $spec = $doc->conf->format_spec($doc->documentType);
@@ -564,25 +579,15 @@ class Default_FormatChecker implements FormatChecker {
         }
     }
 
-    /** @return ?string */
+    /** @return string */
     function report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {
-        $t = "";
-        if ($cf->has_problem()) {
-            $msgs = [];
-            foreach ($cf->problem_list() as $mx) {
-                $msgs[] = $mx->status > MessageSet::WARNING ? "<strong>{$mx->message}</strong>" : $mx->message;
-            }
-            if ($cf->has_error()) {
-                $status = "error";
-                $start = "This document violates the submission format requirements. The most serious errors are in <strong>bold</strong>.";
-            } else {
-                $status = "warning";
-                $start = "This document may violate the submission format requirements.";
-            }
-            $t .= Ht::msg("<p>$start</p>\n<ul><li>" . join("</li>\n<li>", $msgs) . "</li></ul>\n<p>Submissions that violate the requirements will not be considered. <strong>However,</strong> the automated format checker can misreport errors (for instance, it can miscalculate margins and text sizes for certain figures). If you are confident that the paper respects all format requirements, you may keep the current submission as is.</p>", $status);
-        } else {
-            $t .= Ht::msg("Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", "confirm");
+        $msgs = [$cf->front_report_item()];
+        if ($cf->has_error()) {
+            $msgs[0]->message = "<5><strong>" . $msgs[0]->message_as(5) . ".</strong> The most serious errors are marked with <span class=\"error-mark\"></span>.";
         }
-        return $t;
+        if ($cf->has_problem()) {
+            $msgs[] = new MessageItem(null, "<5>Submissions that violate the requirements will not be considered. However, some violation reports may be false positives (for instance, the checker can miscalculate margins and text sizes for figures). If you are confident that the current document respects all format requirements, keep it as is.", MessageSet::INFORM);
+        }
+        return Ht::feedback_msg(array_merge($msgs, iterator_to_array($cf->problem_list())));
     }
 }

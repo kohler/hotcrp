@@ -26,7 +26,7 @@ class GetCheckFormat_ListAction extends ListAction {
                     $messages = "";
                 } else {
                     $format = join(" ", $errf);
-                    $messages = join("\n", $cf->message_texts());
+                    $messages = rtrim($cf->full_feedback_text());
                 }
             } else {
                 $pages = "";

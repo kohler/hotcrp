@@ -1730,6 +1730,12 @@ h3.has-error,
 .is-urgent-note {
 	color: #ee0000;
 }
+.tooltip .is-error,
+.tooltip .is-warning,
+.tooltip .is-urgent-note,
+.tooltip .is-warning-note {
+	color: inherit;
+}
 .has-error input[type=text],
 .has-error input[type=email],
 .has-error input[type=password],
