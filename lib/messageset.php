@@ -396,19 +396,6 @@ class MessageSet {
     }
     /** @param string $field
      * @return bool */
-    function has_message_at($field) {
-        if (!empty($this->errf)) {
-            if (isset($this->errf[$field])) {
-                foreach ($this->msgs as $mi) {
-                    if ($mi->field === $field)
-                        return true;
-                }
-            }
-        }
-        return false;
-    }
-    /** @param string $field
-     * @return bool */
     function has_problem_at($field) {
         return $this->problem_status_at($field) >= self::WARNING;
     }
@@ -518,7 +505,8 @@ class MessageSet {
     function message_list() {
         return $this->msgs;
     }
-    /** @return list<string> */
+    /** @return list<string>
+     * @deprecated */
     function message_texts() {
         return self::list_texts($this->msgs);
     }
@@ -526,7 +514,8 @@ class MessageSet {
     function error_list() {
         return $this->min_status_list(self::ERROR);
     }
-    /** @return list<string> */
+    /** @return list<string>
+     * @deprecated */
     function error_texts() {
         return self::list_texts($this->error_list());
     }
@@ -534,7 +523,8 @@ class MessageSet {
     function problem_list() {
         return $this->min_status_list(self::WARNING);
     }
-    /** @return list<string> */
+    /** @return list<string>
+     * @deprecated */
     function problem_texts() {
         return self::list_texts($this->problem_list());
     }
@@ -550,7 +540,8 @@ class MessageSet {
         }
     }
     /** @param string $field
-     * @return list<string> */
+     * @return list<string>
+     * @deprecated */
     function message_texts_at($field) {
         return self::list_texts($this->message_list_at($field));
     }
