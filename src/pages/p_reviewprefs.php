@@ -22,18 +22,16 @@ class ReviewPrefs_Page {
             }
         }
         if ($csvg->is_empty()) {
-            Conf::msg_error("No reviewer preferences to update.");
+            $user->conf->feedback_msg([new MessageItem(null, "<0>No changes", MessageSet::MARKED_NOTE)]);
             return;
         }
 
         $aset = new AssignmentSet($user, true);
         $aset->parse($csvg->unparse());
-        if ($aset->execute()) {
-            Conf::msg_confirm("Preferences saved.");
-            $user->conf->redirect_self($qreq);
-        } else {
-            $user->conf->feedback_msg($aset->message_list());
-        }
+        $ok = $aset->execute();
+        $ok && $aset->prepend_msg("<0>Preferences saved", MessageSet::SUCCESS);
+        $user->conf->feedback_msg($aset->message_list());
+        $ok && $user->conf->redirect_self($qreq);
     }
 
     /** @param PaperList $pl
@@ -191,7 +189,7 @@ class ReviewPrefs_Page {
             }
         }
         if (!$correct_reviewer) {
-            Conf::msg_error("Reviewer " . htmlspecialchars($qreq->reviewer) . " is not on the PC.");
+            $conf->feedback_msg([new MessageItem(null, "<0>Requested reviewer ‘{$qreq->reviewer}’ is not on the PC", MessageSet::ERROR)]);
         }
 
         // cancel action
@@ -221,7 +219,7 @@ class ReviewPrefs_Page {
                 if ($correct_reviewer) {
                     self::save_preferences($user, $reviewer, $qreq);
                 } else {
-                    Conf::msg_error("Preferences not saved.");
+                    $conf->feedback_msg([new MessageItem(null, "<0>Changes not saved", MessageSet::ERROR)]);
                 }
             }
         } else if ($qreq->fn !== null) {
