@@ -33,41 +33,29 @@ class MessageItem implements JsonSerializable {
         return Ftext::unparse_as($this->message, $format);
     }
 
+    /** @param array{field?:?string,message?:string,status?:int,problem_status?:int} $updates
+     * @return MessageItem */
+    function replace($updates) {
+        $mi = clone $this;
+        if (array_key_exists("field", $updates)) {
+            $mi->field = $updates["field"] === "" ? null : $updates["field"];
+        }
+        if (array_key_exists("status", $updates)) {
+            $mi->status = $updates["status"];
+        } else if (array_key_exists("problem_status", $updates)
+                   && ($this->status === MessageSet::WARNING || $this->status === MessageSet::ERROR)) {
+            $mi->status = $updates["problem_status"];
+        }
+        if (array_key_exists("message", $updates)) {
+            $mi->message = $updates["message"];
+        }
+        return $mi;
+    }
+
     /** @param ?string $field
      * @return MessageItem */
     function with_field($field) {
-        $field = $field === "" ? null : $field;
-        if ($this->field !== $field) {
-            $mi = clone $this;
-            $mi->field = $field;
-            return $mi;
-        } else {
-            return $this;
-        }
-    }
-
-    /** @param int $status
-     * @return MessageItem */
-    function with_status($status) {
-        if ($this->status !== $status) {
-            $mi = clone $this;
-            $mi->status = $status;
-            return $mi;
-        } else {
-            return $this;
-        }
-    }
-
-    /** @param string $message
-     * @return MessageItem */
-    function with_message($message) {
-        if ($this->message !== $message) {
-            $mi = clone $this;
-            $mi->message = $message;
-            return $mi;
-        } else {
-            return $this;
-        }
+        return $this->replace(["field" => $field]);
     }
 
     /** @param string $text

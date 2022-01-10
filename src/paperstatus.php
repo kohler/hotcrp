@@ -309,7 +309,7 @@ class PaperStatus extends MessageSet {
                        && $mi->message !== ""
                        && ($o = $this->conf->options()->option_by_field_key($mi->field))) {
                 $link = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
-                $ms[] = $mi->with_message("<5>{$link}: " . $mi->message_as(5));
+                $ms[] = $mi->replace(["message" => "<5>{$link}: " . $mi->message_as(5)]);
             } else {
                 $ms[] = $mi;
             }

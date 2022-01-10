@@ -30,7 +30,7 @@ class Formula_SearchTerm extends SearchTerm {
         if (!$formula->check($srch->user)) {
             $srch->lwarning($sword, "<0>Invalid formula matches no submissions");
             foreach ($formula->message_list() as $mi) {
-                $mi = $srch->message_set()->append_item($mi->with_status(min($mi->status, MessageSet::WARNING)));
+                $mi = $srch->message_set()->append_item($mi->replace(["problem_status" => MessageSet::WARNING]));
                 if ($mi->pos1 !== null) {
                     $mi->pos1 += $sword->pos1w;
                     $mi->pos2 += $sword->pos1w;
