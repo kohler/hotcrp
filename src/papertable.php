@@ -1610,6 +1610,9 @@ class PaperTable {
             }
             $this->_main_message("<5>" . join(" ", $t), 0);
             if (($v = $this->conf->_i("submit"))) {
+                if (!Ftext::is_ftext($v)) {
+                    $v = "<5>$v";
+                }
                 $this->_main_message($v, 0);
             }
         }
@@ -1691,7 +1694,10 @@ class PaperTable {
         }
         if ($this->user->call_with_overrides($this->user->overrides() | Contact::OVERRIDE_TIME, "can_edit_paper", $this->prow)
             && ($v = $this->conf->_i("submit"))) {
-            $this->_main_message("<5>$v", 0);
+            if (!Ftext::is_ftext($v)) {
+                $v = "<5>$v";
+            }
+            $this->_main_message($v, 0);
         }
         if ($this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {

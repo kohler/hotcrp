@@ -192,7 +192,11 @@ class CheckFormat extends MessageSet {
     function check_banal_json($bj, FormatSpec $spec) {
         if ($bj && isset($bj->cfmsg) && is_array($bj->cfmsg)) {
             foreach ($bj->cfmsg as $m) {
-                $this->msg_at($m[0], $m[1], $m[2]);
+                if ($m[1] === "" || str_starts_with($m[1], "<")) {
+                    $this->msg_at($m[0], $m[1], $m[2]);
+                } else {
+                    $this->msg_at($m[0], "<0>$m[1]", $m[2]); // XXX backward compat
+                }
             }
             return;
         }
