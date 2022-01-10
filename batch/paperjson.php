@@ -29,7 +29,7 @@ if (!in_array($t, PaperSearch::viewable_limits($user, $t))) {
 $q = join(" ", $arg["_"]);
 $search = new PaperSearch($user, ["q" => $q, "t" => $t]);
 if ($search->has_problem()) {
-    fwrite(STDERR, $search->message_text());
+    fwrite(STDERR, $search->full_feedback_text());
 }
 
 $pj_first = [];

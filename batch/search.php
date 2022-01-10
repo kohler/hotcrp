@@ -36,7 +36,7 @@ foreach ($arg["f"] ?? [] as $f) {
 }
 list($header, $body) = $paperlist->text_csv();
 if ($search->has_problem()) {
-    fwrite(STDERR, $search->message_text());
+    fwrite(STDERR, $search->full_feedback_text());
 }
 if (!empty($body)) {
     $csv = new CsvGenerator;

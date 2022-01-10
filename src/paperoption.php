@@ -1572,14 +1572,14 @@ class Selector_PaperOption extends PaperOption {
     function parse_search(SearchWord $sword, PaperSearch $srch) {
         $vs = $this->selector_abbrev_matcher()->findp($sword->cword);
         if (empty($vs)) {
-            $pfx = htmlspecialchars($this->search_keyword()) . " (" . $this->title_html() . ")";
             if ($sword->cword === "") {
-                $srch->warning("$pfx search: Selector missing.");
+                $srch->lwarning($sword, "<0>Match required");
             } else if (($vs2 = $this->selector_abbrev_matcher()->find_all($sword->cword))) {
-                $ts = array_map(function ($x) { return "“" . htmlspecialchars($this->selector[$x - 1]) . "”"; }, $vs2);
-                $srch->warning("$pfx search: “" . htmlspecialchars($sword->cword) . "” matches more than one choice. Try " . commajoin($ts, " or ") . ", or use “" . htmlspecialchars($sword->cword) . "*” to match them all.");
+                $srch->lwarning($sword, "<0>‘{$sword->cword}’ is ambiguous for " . $this->title());
+                $ts = array_map(function ($x) { return "‘" . $this->selector[$x-1] . "’"; }, $vs2);
+                $srch->msg_at(null, "<0>Try " . commajoin($ts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.", MessageSet::INFORM);
             } else {
-                $srch->warning("$pfx search: No choice matches “" . htmlspecialchars($sword->cword) . "”.");
+                $srch->lwarning($sword, "<0>No choices match ‘{$sword->cword}’");
             }
             return null;
         } else if (in_array($sword->compar, ["", "=", "!="], true)) {

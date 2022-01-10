@@ -36,7 +36,7 @@ class Log_Page {
         $search->set_allow_deleted(true);
         $pids = $search->paper_ids();
         if ($search->has_problem()) {
-            Ht::warning_at($field, $search->message_html());
+            Ht::warning_at($field, $search->full_feedback_html());
         }
         if (!empty($pids)) {
             $w = [];

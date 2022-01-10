@@ -185,7 +185,8 @@ class Pages_SearchTerm extends SearchTerm {
             return $this->cm->test($np);
         } else if ($this->cf->need_recheck()) {
             if (!$this->cf_warn) {
-                $this->srch->warning("I haven’t finished analyzing the submitted PDFs. You may want to reload this page later for more precise results.");
+                $this->srch->warning("<0>Submitted PDFs have not been fully analyzed");
+                $this->srch->msg_at(null, "<0>Reloading this page later may give more precise results.", MessageSet::INFORM);
                 $this->cf_warn = true;
             }
             return true;

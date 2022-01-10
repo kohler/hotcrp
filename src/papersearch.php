@@ -1870,12 +1870,8 @@ class PaperSearch extends MessageSet {
         return $mi;
     }
 
-    /** @return string */
-    function message_html() {
-        return MessageSet::feedback_html($this->message_list());
-    }
-
-    /** @return string */
+    /** @return string
+     * @deprecated */
     function message_text() {
         return MessageSet::feedback_text($this->message_list());
     }
