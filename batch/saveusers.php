@@ -44,12 +44,10 @@ function save_contact(UserStatus $ustatus, $key, $cj, $arg) {
             fwrite(STDOUT, "{$acct->email}: Saved " . join(", ", array_keys($ustatus->diffs)) . ".\n");
         }
     } else {
-        foreach ($ustatus->error_texts() as $msg) {
-            fwrite(STDERR, $msg . "\n");
-            if (isset($arg["create-only"]) && $ustatus->has_error_at("email_inuse")) {
-                fwrite(STDERR, "(Use --modify to modify existing users.)\n");
-            }
+        if (isset($arg["create-only"]) && $ustatus->has_error_at("email_inuse")) {
+            $ustatus->msg_at("email_inuse", "Use `--modify` to modify existing users.", MessageSet::INFORM);
         }
+        fwrite(STDERR, $ustatus->full_feedback_text());
         $status = 1;
     }
 }

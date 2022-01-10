@@ -74,6 +74,7 @@ class UserStatus extends MessageSet {
             $this->set_user($viewer);
         }
         parent::__construct();
+        $this->set_want_ftext(true, 5);
     }
     function clear() {
         $this->clear_messages();
@@ -326,13 +327,13 @@ class UserStatus extends MessageSet {
         } else if (is_array($x)) {
             foreach ($x as $v) {
                 if (!is_string($v)) {
-                    $this->error_at($field, "Format error [$field]");
+                    $this->error_at($field, "<0>Format error [$field]");
                 } else if ($v !== "") {
                     $res[$lc ? strtolower($v) : $v] = true;
                 }
             }
         } else {
-            $this->error_at($field, "Format error [$field]");
+            $this->error_at($field, "<0>Format error [$field]");
         }
         return (object) $res;
     }
@@ -361,7 +362,7 @@ class UserStatus extends MessageSet {
         } else if (is_array($x)) {
             $t0 = $x;
         } else if ($x !== null) {
-            $this->error_at($key, "Format error [$key]");
+            $this->error_at($key, "<0>Format error [$key]");
         }
         $tagger = new Tagger($this->viewer);
         $t1 = array();
@@ -370,7 +371,7 @@ class UserStatus extends MessageSet {
                 if (($tx = $tagger->check($t, Tagger::NOPRIVATE))) {
                     $t1[] = $tx;
                 } else {
-                    $this->error_at($key, $tagger->error_html());
+                    $this->error_at($key, "<5>" . $tagger->error_html());
                 }
             }
         }
@@ -398,7 +399,7 @@ class UserStatus extends MessageSet {
                   "affiliation", "phone", "new_password",
                   "city", "state", "zip", "country"] as $k) {
             if (isset($cj->$k) && !is_string($cj->$k)) {
-                $this->error_at($k, "Format error [$k]");
+                $this->error_at($k, "<0>Format error [$k]");
                 unset($cj->$k);
             }
         }
@@ -408,12 +409,12 @@ class UserStatus extends MessageSet {
             if ($old_user) {
                 $cj->email = $old_user->email;
             } else {
-                $this->error_at("email", "Email is required.");
+                $this->error_at("email", "<0>Email required");
             }
         } else if (!$this->has_problem_at("email")
                    && !validate_email($cj->email)
                    && (!$old_user || $old_user->email !== $cj->email)) {
-            $this->error_at("email", "Invalid email address “" . htmlspecialchars($cj->email) . "”.");
+            $this->error_at("email", "<0>Invalid email address ‘{$cj->email}’");
         }
 
         // ID
@@ -428,7 +429,8 @@ class UserStatus extends MessageSet {
             && ($cj->email ?? false)
             && strtolower($old_user->email) !== strtolower($cj->email)
             && $this->conf->user_by_email($cj->email)) {
-            $this->error_at("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . $this->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+            $this->error_at("email", "<0>Email address ‘{$cj->email}’ already in use");
+            $this->msg_at("email", "<5>You may want to <a href=\"" . $this->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.", MessageSet::INFORM);
         }
 
         // Contactdb information
@@ -450,7 +452,7 @@ class UserStatus extends MessageSet {
             && $old_user
             && $old_user->data("locked")) {
             unset($cj->new_password);
-            $this->warning_at("password", "Ignoring request to change locked user’s password.");
+            $this->warning_at("password", "<0>Ignoring request to change locked user’s password");
         }
 
         // Preferred email
@@ -458,7 +460,7 @@ class UserStatus extends MessageSet {
             && !$this->has_problem_at("preferred_email")
             && !validate_email($cj->preferred_email)
             && (!$old_user || $old_user->preferredEmail !== $cj->preferred_email)) {
-            $this->error_at("preferred_email", "Invalid email address “" . htmlspecialchars($cj->preferred_email) . "”");
+            $this->error_at("preferred_email", "<0>Invalid email address ‘{$cj->preferred_email}’");
         }
 
         // Address
@@ -472,15 +474,15 @@ class UserStatus extends MessageSet {
             } else if (is_string($cj->addressLine2 ?? null)) {
                 $address[] = $cj->addressLine2;
             } else if (($cj->address2 ?? null) || ($cj->addressLine2 ?? null)) {
-                $this->error_at("address2", "Format error [address2]");
+                $this->error_at("address2", "<0>Format error [address2]");
             }
         } else if ($cj->address ?? null) {
-            $this->error_at("address", "Format error [address]");
+            $this->error_at("address", "<0>Format error [address]");
         }
         if ($address !== null) {
             foreach ($address as &$a) {
                 if (!is_string($a)) {
-                    $this->error_at("address", "Format error [address]");
+                    $this->error_at("address", "<0>Format error [address]");
                 } else {
                     $a = simplify_whitespace($a);
                 }
@@ -498,7 +500,7 @@ class UserStatus extends MessageSet {
         if (is_array($collaborators)) {
             foreach ($collaborators as $c) {
                 if (!is_string($c)) {
-                    $this->error_at("collaborators", "Format error [collaborators]");
+                    $this->error_at("collaborators", "<0>Format error [collaborators]");
                 }
             }
             $collaborators = $this->has_problem_at("collaborators") ? null : join("\n", $collaborators);
@@ -507,11 +509,11 @@ class UserStatus extends MessageSet {
             $old_collab = rtrim(cleannl($collaborators));
             $new_collab = AuthorMatcher::fix_collaborators($old_collab) ?? "";
             if ($old_collab !== $new_collab) {
-                $this->warning_at("collaborators", "Collaborators changed to follow our required format. You may want to look them over.");
+                $this->warning_at("collaborators", "<0>Collaborators changed to follow our required format; you may want to look them over");
             }
             $collaborators = $new_collab;
         } else if ($collaborators !== null) {
-            $this->error_at("collaborators", "Format error [collaborators]");
+            $this->error_at("collaborators", "<0>Format error [collaborators]");
         }
         if (isset($cj->collaborators)) {
             $cj->collaborators = $collaborators;
@@ -522,7 +524,7 @@ class UserStatus extends MessageSet {
             if (($x = friendly_boolean($cj->disabled)) !== null) {
                 $cj->disabled = $x;
             } else {
-                $this->error_at("disabled", "Format error [disabled]");
+                $this->error_at("disabled", "<0>Format error [disabled]");
             }
         }
 
@@ -623,7 +625,7 @@ class UserStatus extends MessageSet {
             } else if (is_numeric($v)) {
                 $v = (int) $v;
             } else {
-                $this->error_at("topics", "Format error [topic interest]");
+                $this->error_at("topics", "<0>Format error [topic interest]");
                 continue;
             }
             $topics[$k] = $v;
@@ -642,7 +644,7 @@ class UserStatus extends MessageSet {
                 if ($v === true) {
                     $ij[] = $k;
                 } else if ($v !== false && $v !== null) {
-                    $this->error_at("roles", "Format error [roles]");
+                    $this->error_at("roles", "<0>Format error [roles]");
                     return $old_roles;
                 }
             }
@@ -654,7 +656,7 @@ class UserStatus extends MessageSet {
             $ij = $j;
         } else {
             if ($j !== null) {
-                $this->error_at("roles", "Format error [roles]");
+                $this->error_at("roles", "<0>Format error [roles]");
             }
             return $old_roles;
         }
@@ -662,7 +664,7 @@ class UserStatus extends MessageSet {
         $add_roles = $remove_roles = 0;
         foreach ($ij as $v) {
             if (!is_string($v)) {
-                $this->error_at("roles", "Format error [roles]");
+                $this->error_at("roles", "<0>Format error [roles]");
                 return $old_roles;
             } else if ($v !== "") {
                 $action = null;
@@ -671,13 +673,13 @@ class UserStatus extends MessageSet {
                     $v = $m[2];
                 }
                 if ($v === "") {
-                    $this->error_at("roles", "Format error [roles]");
+                    $this->error_at("roles", "<0>Format error [roles]");
                     return $old_roles;
                 } else if (is_bool($action) && strcasecmp($v, "none") === 0) {
-                    $this->error_at("roles", "Format error near “none” [roles]");
+                    $this->error_at("roles", "<0>Format error near “none” [roles]");
                     return $old_roles;
                 } else if (is_bool($reset_roles) && is_bool($action) === $reset_roles) {
-                    $this->warning_at("roles", "Expected “" . ($reset_roles ? "" : "+") . htmlspecialchars($v) . "” in roles");
+                    $this->warning_at("roles", "<0>Expected ‘" . ($reset_roles ? "" : "+") . "{$v}’ in roles");
                 } else if ($reset_roles === null) {
                     $reset_roles = $action === null;
                 }
@@ -689,7 +691,7 @@ class UserStatus extends MessageSet {
                 } else if (strcasecmp($v, "sysadmin") === 0) {
                     $role = Contact::ROLE_ADMIN;
                 } else if (strcasecmp($v, "none") !== 0) {
-                    $this->warning_at("roles", "Unknown role “" . htmlspecialchars($v) . "”");
+                    $this->warning_at("roles", "<0>Unknown role ‘{$v}’");
                 }
                 if ($action !== false) {
                     $add_roles |= $role;
@@ -712,7 +714,7 @@ class UserStatus extends MessageSet {
     private function check_role_change($roles, $old_user) {
         if ($old_user->data("locked")
             && $old_user->roles !== $roles) {
-            $this->warning_at("roles", "Ignoring request to change privileges for locked account.");
+            $this->warning_at("roles", "<0>Ignoring request to change privileges for locked account");
             $roles = $old_user->roles;
         } else if ($this->no_deprivilege_self
                    && $this->viewer
@@ -721,7 +723,7 @@ class UserStatus extends MessageSet {
                    && ($old_user->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) !== 0
                    && ($roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) === 0) {
             $what = $old_user->roles & Contact::ROLE_CHAIR ? "chair" : "system administration";
-            $this->warning_at("roles", "You can’t drop your own $what privileges. Ask another administrator to do it for you.");
+            $this->warning_at("roles", "<0>You can’t drop your own $what privileges. Ask another administrator to do it for you");
             $roles |= $old_user->roles & Contact::ROLE_PCLIKE;
         }
         return $roles;
@@ -729,10 +731,10 @@ class UserStatus extends MessageSet {
 
     private function check_invariants($cj) {
         if (isset($cj->bad_follow) && !empty($cj->bad_follow)) {
-            $this->warning_at("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
+            $this->warning_at("follow", "<0>Unknown follow types ignored (" . commajoin($cj->bad_follow) . ")");
         }
         if (isset($cj->bad_topics) && !empty($cj->bad_topics)) {
-            $this->warning_at("topics", $this->conf->_("Unknown topics ignored (%#H).", $cj->bad_topics));
+            $this->warning_at("topics", $this->conf->_("<0>Unknown topics ignored (%#s)", $cj->bad_topics));
         }
     }
 
@@ -751,21 +753,23 @@ class UserStatus extends MessageSet {
         if ($user->firstName === ""
             && $user->lastName === ""
             && ($user->contactId > 0 || !$cdbu || ($cdbu->firstName === "" && $cdbu->lastName === ""))) {
-            $us->warning_at("firstName", "Please enter your name.");
+            $us->warning_at("firstName", "<0>Please enter your name");
             $us->warning_at("lastName", null);
         }
         if ($user->affiliation === ""
             && ($user->contactId > 0 || !$cdbu || $cdbu->affiliation === "")) {
-            $us->warning_at("affiliation", "Please enter your affiliation (use “None” or “Unaffiliated” if you have none).");
+            $us->warning_at("affiliation", "<0>Please enter your affiliation (use “None” or “Unaffiliated” if you have none)");
         }
         if ($user->is_pc_member()) {
             if ($user->collaborators() === "") {
-                $us->warning_at("collaborators", "Please enter your recent collaborators and other affiliations. This information can help detect conflicts of interest. Enter “None” if you have none.");
+                $us->warning_at("collaborators", "<0>Please enter your recent collaborators and other affiliations");
+                $us->msg_at("collaborators", "<0>This information can help detect conflicts of interest. Enter “None” if you have none.", MessageSet::INFORM);
             }
             if ($us->conf->has_topics()
                 && !$user->topic_interest_map()
                 && !$us->conf->opt("allowNoTopicInterests")) {
-                $us->warning_at("topics", "Please enter your topic interests. We use topic interests to improve the paper assignment process.");
+                $us->warning_at("topics", "<0>Please enter your topic interests");
+                $us->msg_at("topics", "<0>We use topic interests to improve the paper assignment process.", MessageSet::INFORM);
             }
         }
     }
@@ -787,12 +791,12 @@ class UserStatus extends MessageSet {
         if (isset($cj->id)
             && $cj->id !== "new"
             && (!is_int($cj->id) || $cj->id <= 0)) {
-            $this->error_at("id", "Format error [id]");
+            $this->error_at("id", "<0>Format error [id]");
             return false;
         }
         if (isset($cj->email)
             && !is_string($cj->email)) {
-            $this->error_at("email", "Format error [email]");
+            $this->error_at("email", "<0>Format error [email]");
             return false;
         }
 
@@ -832,16 +836,16 @@ class UserStatus extends MessageSet {
         // - check no_create and no_modify
         if ($this->no_create && !$old_user) {
             if (isset($cj->id) && $cj->id !== "new") {
-                $this->error_at("id", "Refusing to create user with ID {$cj->id}.");
+                $this->error_at("id", "<0>Refusing to create user with ID {$cj->id}");
             } else {
-                $this->error_at("email", "Refusing to create user with email " . htmlspecialchars($cj->email) . ".");
+                $this->error_at("email", "<0>Refusing to create user with email {$cj->email}");
             }
             return false;
         } else if (($this->no_modify || ($cj->id ?? null) === "new") && $old_user) {
             if (isset($cj->id) && $cj->id !== "new") {
-                $this->error_at("id", "Refusing to modify existing user with ID {$cj->id}.");
+                $this->error_at("id", "<0>Refusing to modify existing user with ID {$cj->id}");
             } else {
-                $this->error_at("email", "Refusing to modify existing user with email " . htmlspecialchars($cj->email) . ".");
+                $this->error_at("email", "<0>Refusing to modify existing user with email {$cj->email}");
             }
             return false;
         }
@@ -853,7 +857,7 @@ class UserStatus extends MessageSet {
             $cj->id = $old_user ? $old_user->contactId : "new";
         }
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
-            $this->error_at("id", "Saving user with different ID");
+            $this->error_at("id", "<0>Saving user with different ID");
             return false;
         }
         $this->normalize($cj, $user);
@@ -1178,7 +1182,8 @@ class UserStatus extends MessageSet {
                 $this->_req_security = $info["ok"];
             }
             if (!$this->_req_security) {
-                $this->error_at("oldpassword", "Incorrect current password. Changes to other security settings were ignored.");
+                $this->error_at("oldpassword", "<0>Incorrect current password");
+                $this->msg_at("oldpassword", "<0>Changes to other security settings were ignored.", MessageSet::INFORM);
             }
         }
         return $this->_req_security;
@@ -1193,11 +1198,11 @@ class UserStatus extends MessageSet {
         } else if ($us->has_req_security($qreq)
                    && $us->viewer->can_change_password($us->user)) {
             if ($pw !== $pw2) {
-                $us->error_at("password", "Those passwords do not match.");
+                $us->error_at("password", "<0>Those passwords do not match");
             } else if (strlen($pw) <= 5) {
-                $us->error_at("password", "Password too short.");
+                $us->error_at("password", "<0>Password too short");
             } else if (!Contact::valid_password($pw)) {
-                $us->error_at("password", "Invalid new password.");
+                $us->error_at("password", "<0>Invalid new password");
             } else {
                 $cj->new_password = $pw;
             }
@@ -1373,7 +1378,7 @@ class UserStatus extends MessageSet {
 
     static function render_current_password(UserStatus $us, Qrequest $qreq) {
         $original_ignore_msgs = $us->swap_ignore_messages(false);
-        $us->msg_at("oldpassword", "Enter your current password to make changes to security settings.", 1);
+        $us->msg_at("oldpassword", "<0>Enter your current password to make changes to security settings", 1);
         $us->swap_ignore_messages($original_ignore_msgs);
         echo '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',
             '<label for="oldpassword">',

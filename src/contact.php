@@ -2168,6 +2168,7 @@ class Contact {
     }
 
 
+    /** @return ?HotCRPMailPreparation */
     function send_mail($template, $rest = []) {
         $mailer = new HotCRPMailer($this->conf, $this, $rest);
         $prep = $mailer->prepare($template, $rest);
@@ -2175,8 +2176,10 @@ class Contact {
             $prep->send();
             return $prep;
         } else {
-            Conf::msg_error("Mail cannot be sent to " . htmlspecialchars($this->email) . " at this time.");
-            return false;
+            if (!($rest["quiet"] ?? false)) {
+                Conf::msg_error("Mail cannot be sent to " . htmlspecialchars($this->email) . " at this time.");
+            }
+            return null;
         }
     }
 

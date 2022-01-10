@@ -212,29 +212,35 @@ class Users_Page {
     private function handle_modify() {
         $modifyfn = $this->qreq->modifyfn;
         unset($this->qreq->fn, $this->qreq->modifyfn);
+        $ms = new MessageSet;
 
         if ($modifyfn === "disableaccount") {
             $j = UserActions::disable($this->viewer, $this->papersel);
-            $ok_message = "Accounts disabled.";
+            if ($j->disabled_users ?? false) {
+                $ms->msg_at(null, $this->conf->_("<0>Disabled accounts %#s", $j->disabled_users), MessageSet::SUCCESS);
+            }
         } else if ($modifyfn === "enableaccount") {
             $j = UserActions::enable($this->viewer, $this->papersel);
-            $ok_message = "Accounts enabled.";
+            if ($j->enabled_users ?? false) {
+                $ms->msg_at(null, $this->conf->_("<0>Enabled accounts %#s", $j->enabled_users), MessageSet::SUCCESS);
+            }
+            if ($j->activated_users ?? false) {
+                $ms->msg_at(null, $this->conf->_("<0>Activated accounts and sent mail to %#s", $j->activated_users), MessageSet::SUCCESS);
+            }
         } else if ($modifyfn === "sendaccount") {
             $j = UserActions::send_account_info($this->viewer, $this->papersel);
-            $ok_message = "Account information sent.";
+            if ($j->mailed_users ?? false) {
+                $ms->msg_at(null, $this->conf->_("<0>Sent account information mail to %#s", $j->mailed_users), MessageSet::SUCCESS);
+            }
+            if ($j->skipped_users ?? false) {
+                $ms->msg_at(null, $this->conf->_("<0>Skipped disabled accounts %#s", $j->skipped_users), MessageSet::WARNING_NOTE);
+            }
         } else {
             return false;
         }
 
-        if (($j->ok ?? false) && ($j->warnings ?? false)) {
-            $this->conf->warnMsg("<div>" . join('</div><div class="mt-2">', $j->warnings) . "</div>");
-        }
-        if (($j->ok ?? false)
-            && $ok_message
-            && ($modifyfn !== "sendaccount" || !($j->warnings ?? false))
-            && (!isset($j->users) || !empty($j->users))) {
-            $this->conf->confirmMsg($ok_message);
-        }
+        $ms->append_list($j->message_list ?? []);
+        $this->conf->feedback_msg($ms);
         $this->conf->redirect_self($this->qreq);
         return true;
     }
@@ -244,23 +250,26 @@ class Users_Page {
     private function handle_tags() {
         // check tags
         $tagger = new Tagger($this->viewer);
-        $t1 = $errors = [];
+        $t1 = [];
+        $ms = new MessageSet;
         foreach (preg_split('/[\s,;]+/', (string) $this->qreq->tag) as $t) {
             if ($t === "") {
                 /* nada */
             } else if (!($t = $tagger->check($t, Tagger::NOPRIVATE))) {
-                $errors[] = $tagger->error_html();
+                $ms->error_at(null, "<5>" . $tagger->error_html());
             } else if (Tagger::base($t) === "pc") {
-                $errors[] = "The “pc” user tag is set automatically for all PC members.";
+                $ms->error_at(null, "<0>The ‘pc’ user tag is reserved to identify PC members and cannot be set");
             } else {
                 $t1[] = $t;
             }
         }
-        if (!empty($errors)) {
-            Conf::msg_error(join("<br>", $errors));
+        if ($ms->has_error()) {
+            $ms->prepend_msg("<0>Changes not saved; please correct these errors and try again", MessageSet::ERROR);
+            $this->conf->feedback_msg($ms);
             return false;
         } else if (!count($t1)) {
-            $this->conf->warnMsg("Nothing to do.");
+            $ms->warning_at(null, "No changes");
+            $this->conf->feedback_msg($ms);
             return false;
         }
 
@@ -299,10 +308,12 @@ class Users_Page {
 
         // report
         if ($us->has_error()) {
-            Conf::msg_error($us->error_texts());
+            $ms->append_set($us);
+            $this->conf->feedback_msg($ms);
             return false;
         } else {
-            $this->conf->confirmMsg("Tags saved.");
+            $ms->prepend_msg("<0>User tag changes saved", MessageSet::SUCCESS);
+            $this->conf->feedback_msg($ms);
             unset($this->qreq->fn, $this->qreq->tagfn);
             $this->conf->redirect_self($this->qreq);
             return true;

@@ -25,7 +25,7 @@
     ["%s external review deadline", "External review deadline", ["!$1"]],
     ["%s external review hard deadline", "External review hard deadline", ["!$1"]],
 
-    ["Unknown topics ignored (%#H).", "Unknown topic ignored (%#H).", ["#$1=1"]],
+    ["<0>Unknown topics ignored (%#s)", "<0>Unknown topic ignored (%#s)", ["#$1=1"]],
     ["You must select at least %d topics.", "You must select at least 1 topic.", ["$1=1"]],
     ["You can select at most %d topics.", "You can select at most 1 topic.", ["$1=1"]],
     ["Unknown options ignored (%#H).", "Unknown option ignored (%#H).", ["#$1=1"]],
@@ -103,7 +103,13 @@
 
     ["<0>Submissions %#Ns are totally hidden when viewing the site as another user.", "<0>Submission %#Ns is totally hidden when viewing the site as another user.", ["#$1=1"]],
 
-    ["Skipped disabled accounts %#H.", "Skipped disabled account %#H.", ["#$1=1"]],
+    ["<0>Disabled accounts %#s", "<0>Disabled account %#s", ["#$1=1"]],
+    ["<0>Enabled accounts %#s", "<0>Enabled account %#s", ["#$1=1"]],
+    ["<0>Activated accounts and sent mail to %#s", "<0>Activated account and sent mail to %#s", ["#$1=1"]],
+    ["<0>Skipped disabled accounts %#s", "<0>Skipped disabled account %#s", ["#$1=1"]],
+    ["<5>Saved accounts %#s", "<5>Saved account %#s", ["#$1=1"]],
+    ["<5>Activated accounts and sent mail to %#s", "<5>Activated account and sent mail to %#s", ["#$1=1"]],
+    ["<5>No changes to accounts %#s", "<5>No changes to account %#s", ["#$1=1"]],
 
     ["eperm", "Permission error.", "You aren’t allowed to view submission #%2$d.", ["$1=view_paper"]],
     ["eperm", "Permission error.", "You aren’t allowed to view submission #%2$d’s documents.", ["$1=view_doc"]],

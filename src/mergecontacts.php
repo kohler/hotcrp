@@ -18,6 +18,7 @@ class MergeContacts extends MessageSet {
         $this->conf = $oldu->conf;
         $this->oldu = $oldu;
         $this->newu = $newu;
+        $this->set_want_ftext(true, 5);
     }
 
     private function add_error($msg) {
@@ -28,13 +29,13 @@ class MergeContacts extends MessageSet {
     private function q($q, ...$args) {
         $result = $this->conf->q_apply($q, $args);
         if ($result->errno) {
-            $this->add_error($this->conf->db_error_html(true));
+            $this->add_error("<5>" . $this->conf->db_error_html(true));
         }
     }
     private function qx($q, ...$args) {
         $result = Dbl::qx_apply($this->conf->dblink, $q, $args);
         if ($result->errno) {
-            $this->add_error($this->conf->db_error_html(true));
+            $this->add_error("<5>" . $this->conf->db_error_html(true));
         }
     }
     private function merge1($table, $idfield) {
@@ -173,7 +174,7 @@ class MergeContacts extends MessageSet {
             $this->conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?, affiliation=?", $this->oldu->contactId, $this->oldu->firstName, $this->oldu->lastName, $this->oldu->unaccentedName, $this->oldu->email, $this->oldu->affiliation);
             $result = $this->conf->q("delete from ContactInfo where contactId=?", $this->oldu->contactId);
             if ($result->errno) {
-                $this->add_error($this->conf->db_error_html(true));
+                $this->add_error("<5>" . $this->conf->db_error_html(true));
             }
         }
 
@@ -196,9 +197,7 @@ class MergeContacts extends MessageSet {
                 // old user in contactdb, new user in database
                 $user_status->save($this->basic_user_json(), $this->newu);
             }
-            foreach ($user_status->error_texts() as $e) {
-                $this->add_error($e);
-            }
+            $this->append_set($user_status);
         }
         return !$this->has_error();
     }

@@ -243,35 +243,29 @@ function save_user($cj, $ustatus, $acct) {
     // check email
     if (!$acct || strcasecmp($cj->email, $acct->email)) {
         if ($acct && $acct->data("locked")) {
-            $ustatus->error_at("email", "This account is locked, so you can’t change its email address.");
+            $ustatus->error_at("email", "<0>This account is locked, so you can’t change its email address.");
             return null;
         } else if (($new_acct = $ustatus->conf->user_by_email($cj->email))) {
             if (!$acct) {
                 $cj->id = $new_acct->contactId;
             } else {
-                $msg = "Email address “" . htmlspecialchars($cj->email) . "” is already in use.";
-                if ($ustatus->viewer->privChair) {
-                    $msg = str_replace("an account", "<a href=\"" . $ustatus->conf->hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
-                }
-                if ($acct) {
-                    $msg .= " You may want to <a href=\"" . $ustatus->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.";
-                }
-                $ustatus->error_at("email", $msg);
+                $ustatus->error_at("email", "<0>Email address ‘{$cj->email}’ is already in use");
+                $ustatus->msg_at("email", "<5>You may want to <a href=\"" . $ustatus->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.", MessageSet::INFORM);
                 return null;
             }
         } else if ($ustatus->conf->external_login()) {
             if ($cj->email === "") {
-                $ustatus->error_at("email", "Not a valid username.");
+                $ustatus->error_at("email", "<0>Username required");
                 return null;
             }
         } else if ($cj->email === "") {
-            $ustatus->error_at("email", "You must supply an email address.");
+            $ustatus->error_at("email", "<0>Email address required");
             return null;
         } else if (!validate_email($cj->email)) {
-            $ustatus->error_at("email", "“" . htmlspecialchars($cj->email) . "” is not a valid email address.");
+            $ustatus->error_at("email", "<0>Invalid email address ‘{$cj->email}’");
             return null;
         } else if ($acct && !$acct->has_account_here()) {
-            $ustatus->error_at("email", "Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
+            $ustatus->error_at("email", "<0>Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
             return null;
         }
         if ($acct && (!$ustatus->viewer->privChair || $acct === $ustatus->viewer)) {
@@ -309,7 +303,8 @@ function parseBulkFile(Contact $user, $text, $filename) {
     $conf = $user->conf;
     $text = cleannl(convert_to_utf8($text));
     $filename = $filename ? htmlspecialchars($filename) . ":" : "line ";
-    $success = $errors = $nochanges = $notified = [];
+    $ms = new MessageSet;
+    $success = $nochanges = $notified = [];
 
     if (!preg_match('/\A[^\r\n]*(?:,|\A)(?:user|email)(?:[,\r\n]|\z)/', $text)
         && !preg_match('/\A[^\r\n]*,[^\r\n]*,/', $text)) {
@@ -355,7 +350,8 @@ function parseBulkFile(Contact $user, $text, $filename) {
                 }
             }
             $csv->set_header($hdr);
-            $errors[] = '<span class="lineno">' . $csv->landmark_html() . ":</span> Header missing, assuming “<code>" . join(",", $hdr) . "</code>”";
+            $mi = $ms->warning_at(null, "<5>Header missing, assuming ‘<code>" . join(",", $hdr) . "</code>’");
+            $mi->landmark = $csv->landmark();
         }
     }
 
@@ -372,46 +368,42 @@ function parseBulkFile(Contact $user, $text, $filename) {
         $ustatus->parse_csv_group("", $cj, $line);
         $ustatus->notify = friendly_boolean($line["notify"]) ?? true;
         if (($saved_user = save_user($cj, $ustatus, null))) {
-            $x = "<a class=\"nb\" href=\"" . $conf->hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . $saved_user->name_h(NAME_E) . "</a>";
+            $url = $conf->hoturl("profile", "u=" . urlencode($saved_user->email));
+            $x = "<a class=\"nb\" href=\"{$url}\">" . $saved_user->name_h(NAME_E) . "</a>";
             if ($ustatus->notified) {
                 $notified[] = $x;
-            } else if (empty($ustatus->diffs)) {
-                $nochanges[] = $x;
-            } else {
                 $success[] = $x;
+            } else if (!empty($ustatus->diffs)) {
+                $success[] = $x;
+            } else {
+                $nochanges[] = $x;
             }
         }
-        foreach ($ustatus->problem_texts() as $e) {
-            $errors[] = '<span class="lineno">' . $csv->landmark_html() . ":</span> " . $e;
+        foreach ($ustatus->problem_list() as $mi) {
+            $mi->landmark = $csv->landmark();
+            $ms->append_item($mi);
         }
     }
 
     if (!empty($ustatus->unknown_topics)) {
-        $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin(array_keys($ustatus->unknown_topics))) . ").";
+        $ms->warning_at(null, $conf->_("<0>Unknown topics ignored (%#s)", array_keys($ustatus->unknown_topics)));
     }
-    $msgs = [];
-    if (!empty($notified)) {
-        $msgs[] = "<p class=\"bigod\">Saved " . plural($notified, "account") . " with confirmation email (" . commajoin($notified) . ").</p>";
-    }
+    $mpos = 0;
     if (!empty($success)) {
-        $msgs[] = "<p class=\"bigod\">Saved " . plural($success, "account") . " (" . commajoin($success) . ").</p>";
+        $ms->splice_item($mpos++, new MessageItem(null, $conf->_("<5>Saved accounts %#s", $success), MessageSet::SUCCESS));
+    } else if ($ms->has_error()) {
+        $ms->splice_item($mpos++, new MessageItem(null, $conf->_("<0>Changes not saved; please correct these errors and try again"), MessageSet::ERROR));
+    }
+    if (!empty($notified)) {
+        $ms->splice_item($mpos++, new MessageItem(null, $conf->_("<5>Activated accounts and sent mail to %#s", $notified), MessageSet::SUCCESS));
     }
     if (!empty($nochanges)) {
-        $msgs[] = "<p class=\"bigod\">No changes to " . plural($nochanges, "account") . " (" . commajoin($nochanges) . ").</p>";
+        $ms->splice_item($mpos++, new MessageItem(null, $conf->_("<5>No changes to accounts %#s", $nochanges), MessageSet::MARKED_NOTE));
+    } else if (!$ms->has_message()) {
+        $ms->splice_item($mpos++, new MessageItem(null, $conf->_("<0>No changes"), MessageSet::WARNING_NOTE));
     }
-    if (!empty($errors)) {
-        $msgs[] = "<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>";
-    }
-    if (empty($msgs)) {
-        $conf->warnMsg("No changes.");
-    } else if ((!empty($success) || !empty($notified)) && empty($errors)) {
-        $conf->confirmMsg(join("", $msgs));
-    } else if (empty($errors)) {
-        $conf->warnMsg(join("", $msgs));
-    } else {
-        $conf->errorMsg(join("", $msgs));
-    }
-    return empty($errors);
+    $conf->feedback_msg($ms);
+    return !$ms->has_error();
 }
 
 if (!$Qreq->valid_post()) {
@@ -447,9 +439,7 @@ if (!$Qreq->valid_post()) {
     $UserStatus->request_group("");
     $saved_user = save_user($cj, $UserStatus, $newProfile ? null : $Acct);
     if (!$UserStatus->has_error()) {
-        if ($UserStatus->has_message()) {
-            $Conf->msg($UserStatus->message_texts(), $UserStatus->problem_status());
-        }
+        $Conf->feedback_msg($UserStatus);
         if ($UserStatus->created || $newProfile) {
             $purl = $Conf->hoturl("profile", ["u" => $saved_user->email]);
             if ($UserStatus->created) {
@@ -731,14 +721,8 @@ if ($newProfile === 2) {
     echo '</h2>';
 }
 
-if ($UserStatus->has_message()) {
-    $status = 0;
-    $msgs = [];
-    foreach ($UserStatus->message_list() as $m) {
-        $status = max($m->status, $status);
-        $msgs[] = $m->message;
-    }
-    echo '<div class="msgs-wide">', Ht::msg($msgs, $status), "</div>\n";
+if (!$UserStatus->has_message()) {
+    echo '<div class="msgs-wide">', $Conf->feedback_msg($UserStatus), "</div>\n";
 }
 
 $UserStatus->set_context_args([$UserStatus, $Qreq]);

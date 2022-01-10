@@ -2297,7 +2297,7 @@ class Conf {
         }
         $this->_user_cache_missing = null;
         if (!empty($reqids)) {
-            $result = $this->qe("select " . $this->_cached_user_query() . " from ContactInfo where contactId?a", $reqids);
+            $result = $this->qe("select " . $this->cached_user_query() . " from ContactInfo where contactId?a", $reqids);
             while (($u = Contact::fetch($result, $this))) {
                 $this->_user_cache[$u->contactId] = $u;
             }
@@ -2351,9 +2351,10 @@ class Conf {
         return $this->_user_email_cache[$lemail];
     }
 
-    /** @return string */
-    private function _cached_user_query() {
-        if ($this->_pc_members_fully_loaded) {
+    /** @param ?bool $full
+     * @return string */
+    function cached_user_query($full = null) {
+        if ($full ?? $this->_pc_members_fully_loaded) {
             return "*";
         } else {
             return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled, primaryContactId, 1 _slice";
@@ -2364,7 +2365,7 @@ class Conf {
     /** @return array<int,Contact> */
     function pc_members() {
         if ($this->_pc_members_cache === null) {
-            $result = $this->qe("select " . $this->_cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
+            $result = $this->qe("select " . $this->cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
             $this->_pc_user_cache = $by_name_text = [];
             $expected_by_name_count = 0;
             while (($u = Contact::fetch($result, $this))) {

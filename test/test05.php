@@ -521,7 +521,7 @@ $ps->save_paper_json((object) [
 ]);
 xassert_paper_status($ps, MessageSet::WARNING);
 xassert($ps->has_problem());
-xassert_eqq($ps->feedback_text_at("topics"), "Unknown topic ignored (fartchitecture).\n");
+xassert_eqq($ps->feedback_text_at("topics"), "Unknown topic ignored (fartchitecture)\n");
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), []); // XXX should be unchanged
 
