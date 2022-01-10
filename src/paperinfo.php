@@ -2196,16 +2196,14 @@ class PaperInfo {
     }
 
     /** @param string $oid
-     * @return false|?ReviewInfo */
+     * @return ?ReviewInfo */
     function review_by_ordinal_id($oid) {
-        if (($n = $this->parse_ordinal_id($oid)) === false) {
-            return false;
+        if (($n = $this->parse_ordinal_id($oid)) === false || $n === 0) {
+            return null;
         } else if ($n < 0) {
             return $this->review_by_ordinal(-$n);
-        } else if ($n > 0) {
-            return $this->review_by_id($n);
         } else {
-            return null;
+            return $this->review_by_id($n);
         }
     }
 
@@ -2336,16 +2334,14 @@ class PaperInfo {
     }
 
     /** @param string $oid
-     * @return false|?ReviewInfo */
+     * @return ?ReviewInfo */
     function full_review_by_ordinal_id($oid) {
-        if (($n = $this->parse_ordinal_id($oid)) === false) {
-            return false;
+        if (($n = $this->parse_ordinal_id($oid)) === false || $n === 0) {
+            return null;
         } else if ($n < 0) {
             return $this->full_review_by_ordinal(-$n);
-        } else if ($n > 0) {
-            return $this->full_review_by_id($n);
         } else {
-            return null;
+            return $this->full_review_by_id($n);
         }
     }
 

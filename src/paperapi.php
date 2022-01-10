@@ -59,7 +59,7 @@ class PaperApi {
         $need_id = false;
         if (isset($qreq->r)) {
             $rrow = $prow->full_review_by_ordinal_id($qreq->r);
-            if ($rrow === false) {
+            if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
                 return new JsonResult(400, "Bad request.");
             }
             $rrows = $rrow ? [$rrow] : [];
@@ -92,8 +92,11 @@ class PaperApi {
     }
 
     static function reviewrating_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
-        if (!$qreq->r
-            || ($rrow = $prow->full_review_by_ordinal_id($qreq->r)) === false) {
+        if (!$qreq->r) {
+            return new JsonResult(400, "Bad request.");
+        }
+        $rrow = $prow->full_review_by_ordinal_id($qreq->r);
+        if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
             return new JsonResult(400, "Bad request.");
         } else if (!$user->can_view_review($prow, $rrow)) {
             return new JsonResult(403, "Permission error.");
@@ -128,8 +131,11 @@ class PaperApi {
 
     /** @param PaperInfo $prow */
     static function reviewround_api(Contact $user, $qreq, $prow) {
-        if (!$qreq->r
-            || ($rrow = $prow->full_review_by_ordinal_id($qreq->r)) === false) {
+        if (!$qreq->r) {
+            return new JsonResult(400, "Bad request.");
+        }
+        $rrow = $prow->full_review_by_ordinal_id($qreq->r);
+        if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
             return new JsonResult(400, "Bad request.");
         } else if (!$user->can_administer($prow)) {
             return new JsonResult(403, "Permission error.");
