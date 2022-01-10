@@ -48,10 +48,10 @@ class Search_API {
         $pl->parse_view($qreq->f, null);
         $response = $pl->table_html_json();
 
-        $j = ["ok" => !empty($response["fields"])] + $response;
-        foreach ($pl->message_set()->message_texts() as $m) {
-            $j["errors"][] = $m;
-        }
+        $j = [
+            "ok" => !empty($response["fields"]),
+            "message_list" => $pl->message_set()->message_list()
+        ] + $response;
         if ($j["ok"] && $qreq->session && $qreq->valid_token() && !$qreq->is_head()) {
             Session_API::setsession($user, $qreq->session);
         }
@@ -73,11 +73,10 @@ class Search_API {
         $pl = new PaperList("empty", $search);
         $pl->parse_view($qreq->f, null);
         $response = $pl->text_json();
-
-        $j = ["ok" => !empty($response), "data" => $response];
-        foreach ($pl->message_set()->message_texts() as $m) {
-            $j["errors"][] = $m;
-        }
-        return $j;
+        return [
+            "ok" => !empty($response),
+            "message_list" => $pl->message_set()->message_list(),
+            "data" => $response
+        ];
     }
 }

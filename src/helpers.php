@@ -109,8 +109,12 @@ class JsonResult implements JsonSerializable {
         } else if ($values === null) {
             $this->content = [];
         } else if (is_object($values)) {
-            assert(!($values instanceof JsonResult));
-            $this->content = (array) $values;
+            if ($values instanceof JsonSerializable) {
+                $this->content = (array) $values->jsonSerialize();
+            } else {
+                assert(!($values instanceof JsonResult));
+                $this->content = (array) $values;
+            }
         } else if (is_string($values)) {
             assert($this->status && $this->status > 299);
             $this->content = ["ok" => false, "error" => $values];

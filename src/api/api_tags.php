@@ -160,7 +160,7 @@ class Tags_API {
                     $pr->add_tag_info_json($p[$pr->paperId], $user);
                 }
             }
-            $jr = new JsonResult(["ok" => true, "p" => (object) $p]);
+            $jr = new JsonResult(["ok" => true, "p" => $p]);
         } else {
             $jr = new JsonResult(["ok" => false, "message_list" => $mlist]);
         }
