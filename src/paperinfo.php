@@ -2090,7 +2090,7 @@ class PaperInfo {
     }
 
     /** @return int|false */
-    private function parse_ordinal_id($oid) {
+    function parse_ordinal_id($oid) {
         if ($oid === "") {
             return 0;
         } else if (ctype_digit($oid)) {

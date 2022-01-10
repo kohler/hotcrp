@@ -358,10 +358,10 @@ class Paper_Page {
         }
 
         if (!$this->ps->diffs) {
-            $this->ps->prepend_msg($conf->_("No changes to submission #%d.", $this->prow->paperId), MessageSet::MARKED_NOTE);
+            $this->ps->prepend_msg($conf->_("<0>No changes to submission #%d.", $this->prow->paperId), MessageSet::MARKED_NOTE);
             $conf->msg($this->ps->full_feedback_html(), MessageSet::WARNING);
         } else if ($this->ps->execute_save()) {
-            $this->ps->prepend_msg($conf->_("Updated contacts for submission #%d.", $this->prow->paperId), MessageSet::SUCCESS);
+            $this->ps->prepend_msg($conf->_("<0>Updated contacts for submission #%d.", $this->prow->paperId), MessageSet::SUCCESS);
             $conf->msg($this->ps->full_feedback_html(), MessageSet::SUCCESS);
             $this->user->log_activity("Paper edited: contacts", $this->prow->paperId);
         }
