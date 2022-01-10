@@ -379,6 +379,8 @@ abstract class SearchTerm {
 }
 
 class False_SearchTerm extends SearchTerm {
+    /** @var ?MessageItem */
+    public $score_warning;
     function __construct() {
         parent::__construct("f");
     }
@@ -2156,8 +2158,8 @@ class PaperSearch extends MessageSet {
                 $qe = $this->_search_word("{$wordbrk[0]}:{$wordbrk[1]}", $scope, $pos1, $pos2, $dpos - 1);
                 $this->swap_ignore_messages($ignored);
                 if ($qe instanceof False_SearchTerm) {
-                    if (($mi = $qe->get_float("score_warning"))) {
-                        $this->message_set()->append_item($mi);
+                    if ($qe->score_warning) {
+                        $this->message_set()->append_item($qe->score_warning);
                         return $qe;
                     }
                 } else {

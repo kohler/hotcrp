@@ -681,7 +681,7 @@ class Review_SearchTerm extends SearchTerm {
         $r = $f->full_score_range();
         $mi = $srch->lwarning($sword, "<0>{$f->name} scores range from {$r[0]} to {$r[1]}");
         $ft = new False_SearchTerm;
-        $ft->set_float("score_warning", $mi);
+        $ft->score_warning = $mi;
         return $ft;
     }
     /** @return int|false */
