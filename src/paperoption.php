@@ -52,11 +52,11 @@ class PaperValue implements JsonSerializable {
         return $ov;
     }
     /** @param PaperInfo $prow
-     * @param string $error_html
+     * @param string $msg
      * @return PaperValue */
-    static function make_estop($prow, PaperOption $o, $error_html) {
+    static function make_estop($prow, PaperOption $o, $msg) {
         $ov = new PaperValue($prow, $o);
-        $ov->estop($error_html);
+        $ov->estop($msg);
         return $ov;
     }
     /** @param PaperInfo $prow
@@ -180,7 +180,10 @@ class PaperValue implements JsonSerializable {
 
     /** @return MessageSet */
     function message_set() {
-        $this->_ms = $this->_ms ?? new MessageSet;
+        if ($this->_ms === null) {
+            $this->_ms = new MessageSet;
+            $this->_ms->set_want_ftext(true, 5);
+        }
         return $this->_ms;
     }
     /** @param MessageSet $ms */
@@ -1122,7 +1125,7 @@ class PaperOption implements JsonSerializable {
         if ($this->test_required($ov->prow)
             && !$this->value_present($ov)
             && !$ov->prow->allow_absent()) {
-            $ov->error("Entry required.");
+            $ov->error("<0>Entry required");
         }
     }
     /** @return list<int> */
@@ -1235,7 +1238,7 @@ class PaperOption implements JsonSerializable {
         } else if ($j === null) {
             return null;
         } else {
-            return PaperValue::make_estop($prow, $this, "Expected string.");
+            return PaperValue::make_estop($prow, $this, "<0>Expected string");
         }
     }
     /** @param PaperValue $ov
@@ -1397,7 +1400,7 @@ class Checkbox_PaperOption extends PaperOption {
         if (is_bool($j) || $j === null) {
             return PaperValue::make($prow, $this, $j ? 1 : null);
         } else {
-            return PaperValue::make_estop($prow, $this, "Option should be “true” or “false”.");
+            return PaperValue::make_estop($prow, $this, "<0>Option should be ‘true’ or ‘false’");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1497,7 +1500,7 @@ class Selector_PaperOption extends PaperOption {
             } else if (($iv = array_search($v, $this->selector)) !== false) {
                 return PaperValue::make($prow, $this, $iv + 1);
             } else {
-                return PaperValue::make_estop($prow, $this, "Option doesn’t match any of the selectors.");
+                return PaperValue::make_estop($prow, $this, "<0>Option doesn’t match any of the selectors");
             }
         }
     }
@@ -1513,7 +1516,7 @@ class Selector_PaperOption extends PaperOption {
         if ($v !== false) {
             return PaperValue::make($prow, $this, $v + 1);
         } else {
-            return PaperValue::make_estop($prow, $this, "Option doesn’t match any of the selectors.");
+            return PaperValue::make_estop($prow, $this, "<0>Option doesn’t match any of the selectors");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1668,7 +1671,18 @@ class Document_PaperOption extends PaperOption {
             && !$this->conf->opt("noPapers")
             && ($ov->value ?? 0) <= 1
             && !$ov->prow->allow_absent()) {
-            $ov->msg($this->conf->_("Entry required to complete submission."), MessageSet::WARNING_NOTE);
+            $ov->msg($this->conf->_("<0>Entry required to complete submission"), MessageSet::WARNING_NOTE);
+        }
+        if (($ov->value ?? 0) > 1
+            && ($doc = $ov->document(0))
+            && $doc->mimetype === "application/pdf"
+            && ($spec = $this->conf->format_spec($this->id))
+            && !$spec->is_empty()) {
+            $cf = new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
+            $cf->check_document($doc);
+            if ($cf->has_problem() && $cf->check_ok()) {
+                $ov->message_set()->append_item($cf->front_report_item()->with_field($this->field_key()));
+            }
         }
     }
     function value_store(PaperValue $ov, PaperStatus $ps) {
@@ -1699,7 +1713,7 @@ class Document_PaperOption extends PaperOption {
             $ov = PaperValue::make($prow, $this, -1);
             $ov->set_anno("document", $doc);
             if (isset($doc->error_html)) {
-                $ov->error($doc->error_html);
+                $ov->error("<5>" . $doc->error_html);
             }
             return $ov;
         } else if ($qreq["{$fk}:remove"] || ($fk !== $fk2 && $qreq["{$fk2}:remove"])) {
@@ -1717,11 +1731,11 @@ class Document_PaperOption extends PaperOption {
             $ov = PaperValue::make($prow, $this, -1);
             $ov->set_anno("document", $j);
             if (isset($j->error_html)) {
-                $ov->error($j->error_html);
+                $ov->error("<5>" . $j->error_html);
             }
             return $ov;
         } else {
-            return PaperValue::make_estop($prow, $this, "Format error.");
+            return PaperValue::make_estop($prow, $this, "<0>Format error");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1791,15 +1805,12 @@ class Document_PaperOption extends PaperOption {
         // current version, if any
         $has_cf = false;
         if ($doc) {
-            if ($doc->mimetype === "application/pdf") {
-                if (!$pt->cf) {
-                    $pt->cf = new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
-                }
-                $spec = $this->conf->format_spec($this->id);
-                $has_cf = $spec && !$spec->is_empty();
-                if ($has_cf) {
-                    $pt->cf->check_document($doc);
-                }
+            if ($doc->mimetype === "application/pdf"
+                && ($spec = $this->conf->format_spec($this->id))
+                && !$spec->is_empty()) {
+                $has_cf = true;
+                $pt->cf = $pt->cf ?? new CheckFormat($this->conf, CheckFormat::RUN_NEVER);
+                $pt->cf->check_document($doc);
             }
 
             echo '<div class="document-file">',
@@ -2068,7 +2079,7 @@ class Attachments_PaperOption extends PaperOption {
         for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
             if (($doc = DocumentInfo::make_request($qreq, "{$this->formid}_new_$i", $prow->paperId, $this->id, $this->conf))) {
                 if (isset($doc->error_html)) {
-                    $ov->error($doc->error_html);
+                    $ov->error("<5>" . $doc->error_html);
                 }
                 $ov->push_anno("documents", $doc);
             }
@@ -2086,9 +2097,9 @@ class Attachments_PaperOption extends PaperOption {
             $ov->set_anno("documents", $ja);
             foreach ($ja as $docj) {
                 if (is_object($docj) && isset($docj->error_html)) {
-                    $ov->error($docj->error_html);
+                    $ov->error("<5>" . $docj->error_html);
                 } else if (!DocumentInfo::check_json_upload($docj)) {
-                    $ov->estop("Format error.");
+                    $ov->estop("<0>Format error");
                 }
             }
             return $ov;

@@ -44,12 +44,13 @@ class Contacts_PaperOption extends PaperOption {
             if (count($ov->value_list()) === 0
                 && $ov->prow->paperId > 0
                 && count($ov->prow->contacts()) > 0) {
-                $ov->error($this->conf->_("Each submission must have at least one contact."));
+                $ov->error($this->conf->_("<0>Each submission must have at least one contact"));
             }
             if (!$user->allow_administer($ov->prow)
                 && $ov->prow->conflict_type($user) >= CONFLICT_CONTACTAUTHOR
                 && self::ca_index($ov->anno("users"), $user->email) === false) {
-                $ov->error($this->conf->_("You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"));
+                $ov->error($this->conf->_("<0>You can’t remove yourself from the submission’s contacts"));
+                $ov->msg("<0>(Ask another contact to remove you.)", MessageSet::INFORM);
             }
         }
     }
@@ -86,9 +87,9 @@ class Contacts_PaperOption extends PaperOption {
                 $ca[] = $c;
             } else {
                 if ($c->email === "" || strcasecmp($c->email, "Email") === 0) {
-                    $ov->error("Email address required.");
+                    $ov->error("<0>Email address required");
                 } else {
-                    $ov->error("“" . htmlspecialchars($c->email) . "” is not a valid email address.");
+                    $ov->error("<0>Invalid email address ‘{$c->email}’");
                 }
                 if ($c->author_index) {
                     $ov->msg_at("contacts:{$c->author_index}", null, MessageSet::ERROR);

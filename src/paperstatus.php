@@ -86,6 +86,7 @@ class PaperStatus extends MessageSet {
         }
         $this->_on_document_import[] = [$this, "document_import_check_filename"];
         $this->clear();
+        $this->set_want_ftext(true, 5);
     }
 
     /** @return PaperStatus */
@@ -294,18 +295,23 @@ class PaperStatus extends MessageSet {
         $this->warning_at($o->field_key(), $msg);
     }
     function syntax_error_at($key, $value) {
-        $this->error_at($key, "Validation error [" . htmlspecialchars($key) . "]");
+        $this->error_at($key, "<0>Validation error [{$key}]");
         error_log($this->conf->dbname . ": PaperStatus: syntax error $key " . gettype($value));
     }
-    /** @return list<string> */
-    function landmarked_problem_texts() {
+    /** @return list<MessageItem> */
+    function decorated_message_list() {
         $ms = [];
-        foreach ($this->message_list() as $mx) {
-            if ($mx->message
-                && $mx->status >= MessageSet::WARNING
-                && !str_ends_with($mx->field ?? "", ":context")) {
-                $o = $mx->field ? $this->conf->options()->option_by_field_key($mx->field) : null;
-                $ms[] = ($o ? htmlspecialchars($o->edit_title()) . ": " : "") . $mx->message;
+        foreach ($this->message_list() as $mi) {
+            if (str_ends_with($mi->field ?? "", ":context")
+                || $mi->status === MessageSet::INFORM) {
+                // do not report in decorated list
+            } else if ($mi->field
+                       && $mi->message !== ""
+                       && ($o = $this->conf->options()->option_by_field_key($mi->field))) {
+                $link = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
+                $ms[] = $mi->with_message("<5>{$link}: " . $mi->message_as(5));
+            } else {
+                $ms[] = $mi;
             }
         }
         return $ms;
@@ -317,7 +323,7 @@ class PaperStatus extends MessageSet {
             && is_string($docj->content_file)
             && !($docj instanceof DocumentInfo)) {
             if (!$this->allow_any_content_file && preg_match(',\A/|(?:\A|/)\.\.(?:/|\z),', $docj->content_file)) {
-                $pstatus->error_at_option($o, "Bad content_file: only simple filenames allowed.");
+                $pstatus->error_at_option($o, "<0>Bad content_file: only simple filenames allowed");
                 return false;
             }
             if (($this->content_file_prefix ?? "") !== "") {
@@ -337,7 +343,7 @@ class PaperStatus extends MessageSet {
             $this->syntax_error_at($o->field_key(), $docj);
             return null;
         } else if (($docj->error ?? false) || ($docj->error_html ?? false)) {
-            $this->error_at_option($o, $docj->error_html ?? "Upload error.");
+            $this->error_at_option($o, "<5>" . ($docj->error_html ?? "Upload error"));
             return null;
         }
         assert(!isset($docj->filter));
@@ -403,7 +409,7 @@ class PaperStatus extends MessageSet {
             return $doc;
         } else {
             error_log($doc->error_html);
-            $this->error_at_option($o, $doc->error_html);
+            $this->error_at_option($o, "<5>{$doc->error_html}");
             return null;
         }
     }
@@ -438,13 +444,13 @@ class PaperStatus extends MessageSet {
             if (is_numeric($v)) {
                 $v = (float) $v;
                 if ($v < 0) {
-                    $this->error_at("status.$k", "Negative date");
+                    $this->error_at("status.$k", "<0>Negative date");
                     $v = null;
                 }
             } else if (is_string($v)) {
                 $v = $this->conf->parse_time($v, Conf::$now);
                 if ($v === false || $v < 0) {
-                    $this->error_at("status.$k", "Parse error in date");
+                    $this->error_at("status.$k", "<0>Parse error in date");
                     $v = null;
                 } else {
                     $v = (float) $v;
@@ -471,7 +477,7 @@ class PaperStatus extends MessageSet {
         $xstatus->draft = $xstatus->draft ?? !$xstatus->submitted;
         $xstatus->withdrawn = $xstatus->withdrawn ?? ($this->prow && $this->prow->timeWithdrawn != 0);
         if ($xstatus->submitted !== !$xstatus->draft) {
-            $this->error_at("status.draft", "Draft status conflicts with submitted status");
+            $this->error_at("status.draft", "<0>Draft status conflicts with submitted status");
         }
         $xpj->status = $xstatus;
 
@@ -493,7 +499,7 @@ class PaperStatus extends MessageSet {
             }
             if (!isset($xpj->decision)) {
                 if (is_string($idecision) || is_int($idecision)) {
-                    $this->warning_at("decision", "Unknown decision “{$idecision}”.");
+                    $this->warning_at("decision", "<0>Unknown decision ‘{$idecision}’");
                 } else {
                     $this->syntax_error_at("decision", $idecision);
                 }
@@ -703,7 +709,7 @@ class PaperStatus extends MessageSet {
             }
         }
         if (!empty($pj->_bad_options)) {
-            $this->warning_at("options", $this->_("Unknown options ignored (%#H).", $pj->_bad_options));
+            $this->warning_at("options", $this->_("<0>Unknown options ignored (%#s)", $pj->_bad_options));
         }
     }
 
@@ -809,7 +815,7 @@ class PaperStatus extends MessageSet {
             } else {
                 $key = "contacts";
             }
-            $this->error_at($key, $this->_("Could not create an account for contact %s.", Text::nameo_h($au, NAME_E)));
+            $this->error_at($key, $this->_("<0>Could not create an account for contact %s", Text::nameo_h($au, NAME_E)));
             $this->error_at("contacts", null);
         }
     }
@@ -1152,7 +1158,7 @@ class PaperStatus extends MessageSet {
             if ($this->user->can_edit_option($prow, $o)
                 && $o->test_required($prow)
                 && !$o->value_present($prow->force_option($o))) {
-                $this->error_at_option($o, "Entry required.");
+                $this->error_at_option($o, "<0>Entry required");
                 $required_failure = true;
             }
         }

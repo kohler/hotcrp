@@ -53,7 +53,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 }
             }
             if (!empty($pcs)) {
-                $ov->warning($this->conf->_("You may have missed conflicts of interest with %s. Please verify that all conflicts are correctly marked.", commajoin($pcs, "and")) . $this->conf->_(" Hover over “possible conflict” labels for more information."));
+                $ov->warning($this->conf->_("<5>You may have missed conflicts of interest with %#s. Please verify that all conflicts are correctly marked.", $pcs) . $this->conf->_(" Hover over “possible conflict” labels for more information."));
             }
         }
     }
@@ -124,18 +124,18 @@ class PCConflicts_PaperOption extends PaperOption {
                     $pc = $prow->conf->cached_user_by_id($pc->primaryContactId);
                 }
                 if (!$pc || !$pc->isPC) {
-                    $pv->msg("“" . htmlspecialchars($email) . "” is not a PC member’s email.", MessageSet::WARNING);
+                    $pv->msg("<0>Email address ‘{$email}’ does not match a PC member", MessageSet::WARNING);
                 }
                 $ct = $confset->parse_json($v);
                 if ($ct === false) {
-                    $pv->msg("“" . htmlspecialchars($v) . "” does not describe a conflict type.", MessageSet::WARNING);
+                    $pv->msg("<0>Invalid conflict type ‘{$v}’", MessageSet::WARNING);
                     $ct = Conflict::GENERAL;
                 }
                 if ($pc && $pc->isPC) {
                     $this->update_value_map($vm, $pc->contactId, $ct);
                 }
             } else {
-                return PaperValue::make_estop($prow, $this, "Validation error.");
+                return PaperValue::make_estop($prow, $this, "<0>Validation error");
             }
         }
         /** @phan-suppress-next-line PhanTypeMismatchArgument */

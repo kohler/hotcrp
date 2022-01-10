@@ -1701,7 +1701,7 @@ class PaperTable {
                     $fields[] = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
             }
             if (!empty($fields)) {
-                $this->_main_message($this->conf->_c("paper_edit", "Please fix %s before completing the submission.", commajoin($fields)), $this->edit_status->problem_status());
+                $this->_main_message($this->conf->_c("paper_edit", "Please check %s before completing the submission.", commajoin($fields)), $this->edit_status->problem_status());
             }
         }
     }

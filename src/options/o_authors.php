@@ -34,12 +34,12 @@ class Authors_PaperOption extends PaperOption {
             $nreal += $auth->is_empty() ? 0 : 1;
         }
         if ($nreal === 0 && !$ov->prow->allow_absent()) {
-            $ov->estop($this->conf->_("Entry required."));
+            $ov->estop($this->conf->_("<0>Entry required"));
             $ov->msg_at("authors:1", null, MessageSet::ERROR);
         }
         $max_authors = $this->conf->opt("maxAuthors");
         if ($max_authors > 0 && $nreal > $max_authors) {
-            $ov->estop($this->conf->_("Each submission can have at most %d authors.", $max_authors));
+            $ov->estop($this->conf->_("<0>A submission may have at most %d authors", $max_authors));
         }
 
         $msg1 = $msg2 = false;
@@ -55,21 +55,21 @@ class Authors_PaperOption extends PaperOption {
             } else if ($auth->email !== "" && !validate_email($auth->email)
                        && !$ov->prow->author_by_email($auth->email)) {
                 $ov->estop(null);
-                $ov->msg_at("authors:" . ($n + 1), $this->conf->_("“%s” is not a valid email address.", htmlspecialchars($auth->email)), MessageSet::ESTOP);
+                $ov->msg_at("authors:" . ($n + 1), "<0>Invalid email address ‘{$auth->email}’", MessageSet::ESTOP);
             }
         }
         if ($msg1) {
-            $ov->warning("You may have entered an email address in the wrong place. The first author field is for email, the second for name, and the third for affiliation.");
+            $ov->warning("<0>You may have entered an email address in the wrong place. The first author field is for email, the second for name, and the third for affiliation");
         }
         if ($msg2) {
-            $ov->warning("Please enter a name and optional email address for every author.");
+            $ov->warning("<0>Please enter a name and optional email address for every author");
         }
 
         if ($ov->value_count() === 2) {
             foreach (explode("\n", $ov->data_by_index(1)) as $email) {
                 if (!validate_email($email)
                     && $ov->prow->conflict_type_by_email($email) < CONFLICT_AUTHOR) {
-                    $ov->estop($this->conf->_("“%s” is not a valid email address.", htmlspecialchars($email)));
+                    $ov->estop("<0>Invalid email address ‘{$email}’");
                 }
             }
         }
@@ -160,7 +160,7 @@ class Authors_PaperOption extends PaperOption {
     }
     function parse_json(PaperInfo $prow, $j) {
         if (!is_array($j) || is_associative_array($j)) {
-            return PaperValue::make_estop($prow, $this, "Validation error.");
+            return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
         $v = $contact_lemail = [];
         foreach ($j as $i => $auj) {
@@ -171,7 +171,7 @@ class Authors_PaperOption extends PaperOption {
                 $auth = Author::make_string($auj);
                 $contact = null;
             } else {
-                return PaperValue::make_estop($prow, $this, "Validation error on author #" . ($i + 1) . ".");
+                return PaperValue::make_estop($prow, $this, "<0>Validation error on author #" . ($i + 1));
             }
             self::expand_author($auth, $prow);
             $v[] = $auth->unparse_tabbed();

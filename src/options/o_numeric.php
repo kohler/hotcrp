@@ -26,7 +26,7 @@ class Numeric_PaperOption extends PaperOption {
         } else if (preg_match('/\A(?:n\/?a|none|)\z/i', $v)) {
             $ov = PaperValue::make($prow, $this);
         } else {
-            $ov = PaperValue::make_estop($prow, $this, "Whole number expected.");
+            $ov = PaperValue::make_estop($prow, $this, "<0>Whole number required");
         }
         $ov->set_anno("request", $v);
         return $ov;
@@ -37,7 +37,7 @@ class Numeric_PaperOption extends PaperOption {
         } else if ($j === null || $j === false) {
             return PaperValue::make($prow, $this);
         } else {
-            return PaperValue::make_estop($prow, $this, "Whole number expected.");
+            return PaperValue::make_estop($prow, $this, "<0>Whole number required");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -63,7 +63,7 @@ class Numeric_PaperOption extends PaperOption {
     function search_examples(Contact $viewer, $context) {
         return [
             $this->has_search_example(),
-            new SearchExample($this->search_keyword() . ":<comparator>", "submission’s “%s” field is greater than 100", $this->title_html(), ">100")
+            new SearchExample($this->search_keyword() . ":<comparator>", "submission’s ‘%s’ field is greater than 100", $this->title_html(), ">100")
         ];
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {

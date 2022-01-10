@@ -178,14 +178,10 @@ class Paper_Page {
         if (!$prepared) {
             if ($is_new && $this->qreq->has_files()) {
                 // XXX save uploaded files
-                $this->ps->error_at(null, "<strong>Your uploaded files were ignored.</strong>");
+                $this->ps->prepend_msg("<5><strong>Your uploaded files were ignored.</strong>", 2);
             }
-            $t = $conf->_("Your changes were not saved. Please fix these errors and try again.");
-            $emsg = $this->ps->landmarked_problem_texts();
-            if (!empty($emsg)) {
-                $t = "<p>{$t}</p><ul><li>" . join("</li><li>", $emsg) . "</li></ul>";
-            }
-            Conf::msg_error($t);
+            $this->ps->prepend_msg("<0>Changes not saved; please correct these errors and try again", 2);
+            $conf->feedback_msg($this->ps);
             return;
         }
 
@@ -212,12 +208,10 @@ class Paper_Page {
         // actually update
         $this->ps->execute_save();
 
-        $warnmsgs = $this->ps->landmarked_problem_texts();
-        $webnotes = $warnmsgs ? " <ul><li>" . join("</li><li>", $warnmsgs) . "</li></ul>" : "";
-
         $new_prow = $conf->paper_by_id($this->ps->paperId, $this->user, ["topics" => true, "options" => true]);
         if (!$new_prow) {
-            $conf->msg($conf->_("Your submission was not saved. Please correct these errors and save again.") . $webnotes, "merror");
+            $this->ps->prepend_msg("<0>Submission not saved; please correct these errors and try again", MessageSet::ERROR);
+            $conf->feedback_msg($this->ps->decorated_message_list());
             return;
         }
         assert($this->user->can_view_paper($new_prow));
@@ -264,8 +258,9 @@ class Paper_Page {
         } else if ($new_prow->timeSubmitted > 0) {
             $notes[] = $conf->_("The submission is ready for review.");
             if ($conf->setting("sub_freeze") <= 0) {
+                $subnote = $this->ps->has_problem() ? " Please check these issues before completing the submission." : "";
                 $notes[] = $this->deadline_note("sub_update",
-                    "You have until %s to make further changes.", "");
+                    "You have until %s to make further changes.$subnote", "");
             }
         } else {
             if ($conf->setting("sub_freeze") > 0) {
@@ -286,18 +281,21 @@ class Paper_Page {
         $notes = join(" ", array_filter($notes, function ($n) { return $n !== ""; }));
 
         // HTML confirmation
+        $msgpos = 0;
         if (empty($this->ps->diffs)) {
-            $webmsg = $conf->_("No changes to submission #%d.", $new_prow->paperId);
+            $this->ps->splice_msg($msgpos++, $conf->_("<0>No changes to submission #%d", $new_prow->paperId), MessageSet::MARKED_NOTE);
         } else {
-            $webmsg = $conf->_("$actiontext submission #%d.", $new_prow->paperId);
+            $this->ps->splice_msg($msgpos++, $conf->_("<0>$actiontext submission #%d", $new_prow->paperId), MessageSet::SUCCESS);
         }
         if ($this->ps->has_error()) {
-            $webmsg .= " " . $conf->_("Please correct these issues and save again.");
+            $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again."), MessageSet::URGENT_NOTE);
+        } else {
+            $this->ps->msg_at(null, "", MessageSet::WARNING);
         }
-        if ($notes || $webnotes) {
-            $webmsg .= " " . $notes . $webnotes;
+        if ($notes) {
+            $this->ps->splice_msg($msgpos++, "<5>$notes", MessageSet::PLAIN);
         }
-        $conf->msg($webmsg, $new_prow->$submitkey > 0 ? "confirm" : "warning");
+        $conf->msg($this->ps->feedback_html($this->ps->decorated_message_list()), $new_prow->$submitkey > 0 ? MessageSet::SUCCESS : MessageSet::WARNING);
 
         // mail confirmation to all contact authors if changed
         if (!empty($this->ps->diffs)) {
@@ -349,20 +347,22 @@ class Paper_Page {
 
         if (!$this->user->can_administer($this->prow)
             && !$this->prow->has_author($this->user)) {
-            Conf::msg_error($this->prow->make_whynot(["permission" => "edit_contacts"])->unparse_html());
+            Conf::msg_error($this->prow->make_whynot(["permission" => "edit_contacts"])->unparse_html(), true);
             return;
         }
 
         $this->ps = new PaperStatus($this->conf, $this->user);
         if (!$this->ps->prepare_save_paper_web($this->qreq, $this->prow, "updatecontacts")) {
-            Conf::msg_error("<ul><li>" . join("</li><li>", $this->ps->message_texts()) . "</li></ul>");
+            $conf->feedback_msg($this->ps);
             return;
         }
 
         if (!$this->ps->diffs) {
-            Conf::msg_warning($conf->_("No changes to submission #%d.", $this->prow->paperId));
+            $this->ps->prepend_msg($conf->_("No changes to submission #%d.", $this->prow->paperId), MessageSet::MARKED_NOTE);
+            $conf->msg($this->ps->full_feedback_html(), MessageSet::WARNING);
         } else if ($this->ps->execute_save()) {
-            Conf::msg_confirm($conf->_("Updated contacts for submission #%d.", $this->prow->paperId));
+            $this->ps->prepend_msg($conf->_("Updated contacts for submission #%d.", $this->prow->paperId), MessageSet::SUCCESS);
+            $conf->msg($this->ps->full_feedback_html(), MessageSet::SUCCESS);
             $this->user->log_activity("Paper edited: contacts", $this->prow->paperId);
         }
 

@@ -39,11 +39,11 @@ class Topics_PaperOption extends PaperOption {
             if ($this->min_count > 0
                 && !$ov->prow->allow_absent()
                 && $ov->value_count() < $this->min_count) {
-                $ov->error($this->conf->_("You must select at least %d topics.", $this->min_count));
+                $ov->error($this->conf->_("<0>You must select at least %d topics", $this->min_count));
             }
             if ($this->max_count !== null
                 && $ov->value_count() > $this->max_count) {
-                $ov->error($this->conf->_("You can select at most %d topics.", $this->max_count));
+                $ov->error($this->conf->_("<0>You may select at most %d topics", $this->max_count));
             }
         }
     }

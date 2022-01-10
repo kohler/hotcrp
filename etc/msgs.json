@@ -11,8 +11,8 @@
     ["The average PC member has submitted %1$.1f reviews with %2$#As.", "The average PC member has submitted %1$.1f review with %2$#As.", ["$1=1"]],
     ["The average PC member has submitted %1$.1f reviews with %2$#As.", "The average PC member has submitted %1$.1f review.", ["$1=1", "!$3"]],
 
-    ["Each submission must have at least one author.", "Each submission must have an author.", ["$1=1"]],
-    ["Each submission can have at most %d authors.", "Each submission can have at most one author.", ["$1=1"]],
+    ["<0>Each submission must have at least one author", "<0>Each submission must have an author", ["$1=1"]],
+    ["<0>A submission may have at most %d authors", "<0>A submission may have at most one author", ["$1=1"]],
 
     ["You can’t register submission #%d yet.", "You can’t register submissions yet.", ["$1<0"]],
     ["You can’t register submission #%d until %s.", "You can’t register submissions until %2$s.", ["$1<0"]],
@@ -26,9 +26,9 @@
     ["%s external review hard deadline", "External review hard deadline", ["!$1"]],
 
     ["<0>Unknown topics ignored (%#s)", "<0>Unknown topic ignored (%#s)", ["#$1=1"]],
-    ["You must select at least %d topics.", "You must select at least 1 topic.", ["$1=1"]],
-    ["You can select at most %d topics.", "You can select at most 1 topic.", ["$1=1"]],
-    ["Unknown options ignored (%#H).", "Unknown option ignored (%#H).", ["#$1=1"]],
+    ["<0>You must select at least %d topics", "<0>You must select at least 1 topic", ["$1=1"]],
+    ["<0>You may select at most %d topics", "<0>You may select at most 1 topic", ["$1=1"]],
+    ["<0>Unknown options ignored (%#s)", "<0>Unknown option ignored (%#s)", ["#$1=1"]],
 
     ["field", "title", "Title"],
     ["field", "submission", "Submission"],
