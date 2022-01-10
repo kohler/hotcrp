@@ -409,19 +409,17 @@ class MailSender {
 
         if ($this->mcount === 0) {
             if ($this->recip->has_message()) {
-                $this->recip->error_at(null, "No mail sent; please fix these errors and try again");
+                $this->recip->prepend_msg("<0>Mail not sent; please fix these errors and try again", 2);
             } else {
                 $this->recip->warning_at(null, "No mail sent: no users match this search");
             }
-            $this->conf->msg($this->recip->full_feedback_html(), $this->recip->problem_status());
+            $this->conf->feedback_msg($this->recip);
             echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('mailform').action=" . json_encode_browser($this->conf->hoturl_raw("mail", "check=1", Conf::HOTURL_POST)));
             return false;
         }
 
 
-        if ($this->recip->has_message()) {
-            $this->conf->msg($this->recip->full_feedback_html(), $this->recip->problem_status());
-        }
+        $this->conf->feedback_msg($this->recip);
         if (!$this->sending) {
             $this->echo_actions();
         } else {

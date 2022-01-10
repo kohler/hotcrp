@@ -127,10 +127,9 @@ class MessageSet {
 
     const IGNORE_MSGS = 1;
     const IGNORE_DUPS = 2;
-    const HAS_INTRO = 4;
-    const WANT_FTEXT = 8;
+    const WANT_FTEXT = 4;
+    const DEFAULT_FTEXT_TEXT = 8;
     const DEFAULT_FTEXT_HTML = 16;
-    const DEFAULT_FTEXT_TEXT = 32;
 
     const INFORM = -5;
     const WARNING_NOTE = -4;
@@ -259,12 +258,6 @@ class MessageSet {
         return $this->splice_item(-1, $mi);
     }
 
-    /** @param MessageItem $mi
-     * @return MessageItem */
-    function prepend_item($mi) {
-        return $this->splice_item(0, $mi);
-    }
-
     /** @param iterable<MessageItem> $message_list */
     function append_list($message_list) {
         if (!($this->_ms_flags & self::IGNORE_MSGS)) {
@@ -284,20 +277,6 @@ class MessageSet {
                 $this->errf[$field] = max($this->errf[$field] ?? 0, $status);
             }
         }
-    }
-
-    /** @param string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return $this */
-    function set_intro_msg($msg, $status) {
-        $mi = new MessageItem(null, $msg, $status);
-        if ($this->_ms_flags & self::HAS_INTRO) {
-            $this->msgs[0] = $mi;
-        } else {
-            array_unshift($this->msgs, $mi);
-            $this->_ms_flags |= self::HAS_INTRO;
-        }
-        return $this;
     }
 
     /** @param ?string $field

@@ -103,24 +103,20 @@ class Tag_ListAction extends ListAction {
                 $assignset->error($tagger->error_html());
             }
         }
-        if (($errors = $assignset->has_message())) {
-            if ($assignset->is_empty()) {
-                $assignset->set_intro_msg("<0>There were errors parsing the tag assignment. Changes not saved.", 2);
-                $user->conf->msg($assignset->full_feedback_html(), 2);
-            } else {
-                $assignset->set_intro_msg("<0>Some tag assignments ignored because of errors.", MessageSet::MARKED_NOTE);
-                $user->conf->msg($assignset->full_feedback_html(), 1);
-                $assignset->message_set()->clear_messages();
-            }
+        if ($assignset->is_empty() && $assignset->has_message()) {
+            $assignset->prepend_msg("<0>Changes not saved due to errors", 2);
+        } else if ($assignset->is_empty()) {
+            $assignset->prepend_msg("<0>No changes", MessageSet::MARKED_NOTE);
+        } else if ($assignset->has_message()) {
+            $assignset->prepend_msg("<0>Some tag assignments ignored because of errors", MessageSet::MARKED_NOTE);
+        } else {
+            $assignset->prepend_msg("<0>Tag changes saved", MessageSet::SUCCESS);
         }
         $success = $assignset->execute();
-
         if ($qreq->ajax) {
-            json_exit(["ok" => $success]);
-        } else if ($success) {
-            if (!$errors) {
-                $user->conf->msg_success("<0>Tags saved.");
-            }
+            json_exit(["ok" => $success, "message_list" => $assignset->message_list()]);
+        } else {
+            $user->conf->feedback_msg($assignset->message_list());
             $args = ["atab" => "tag"] + $qreq->subset_as_array(["tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless"]);
             return new Redirection($user->conf->site_referrer_url($qreq, $args, Conf::HOTURL_RAW));
         }

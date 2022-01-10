@@ -1720,8 +1720,8 @@ class PaperTable {
                 }
             }
         }
-        if ($this->edit_status->has_message_at(":main")) {
-            echo '<div class="pge">', $this->messages_at(":main"), '</div>';
+        if (($t = $this->messages_at(":main")) !== "") {
+            echo '<div class="pge">', $t, '</div>';
         }
     }
 

@@ -136,7 +136,7 @@ xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_mgbaker));
 xassert_eqq(join(" ", $tf->unchanged), "#1A");
 xassert($tf->has_problem_at("overAllMerit"));
-xassert(strpos(join("\n", $tf->message_texts_at("overAllMerit")), "Entry required") !== false);
+xassert(strpos($tf->feedback_text_at("overAllMerit"), "Entry required") !== false);
 //error_log(var_export($tf->message_list(), true));
 
 // Different reviewer

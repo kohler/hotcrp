@@ -22,7 +22,7 @@ class Decide_ListAction extends ListAction {
         if ($aset->execute()) {
             return new Redirection($user->conf->site_referrer_url($qreq, ["atab" => "decide", "decision" => $qreq->decision], Conf::HOTURL_RAW));
         } else {
-            $user->conf->msg($aset->full_feedback_html(), 2);
+            $user->conf->feedback_msg($aset->message_list());
         }
     }
 }

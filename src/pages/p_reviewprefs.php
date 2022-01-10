@@ -32,7 +32,7 @@ class ReviewPrefs_Page {
             Conf::msg_confirm("Preferences saved.");
             $user->conf->redirect_self($qreq);
         } else {
-            Conf::msg_error($aset->full_feedback_html(), true);
+            $user->conf->feedback_msg($aset->message_list());
         }
     }
 

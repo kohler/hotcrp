@@ -109,20 +109,13 @@ class Assign_Page {
         $aset = new AssignmentSet($this->user, true);
         $aset->enable_papers($this->prow);
         $aset->parse(join("", $t));
-        if ($aset->execute()) {
-            if ($this->qreq->ajax) {
-                json_exit($aset->json_result());
-            } else {
-                $aset->set_intro_msg("<0>Assignments saved.", MessageSet::SUCCESS);
-                $this->conf->msg($aset->full_feedback_html(), MessageSet::SUCCESS);
-                $this->conf->redirect_self($this->qreq);
-            }
+        $ok = $aset->execute();
+        if ($this->qreq->ajax) {
+            json_exit($aset->json_result());
         } else {
-            if ($this->qreq->ajax) {
-                json_exit($aset->json_result());
-            } else {
-                $this->conf->msg($aset->full_feedback_html(), 2);
-            }
+            $ok && $aset->prepend_msg("<0>Assignments saved", MessageSet::SUCCESS);
+            $this->conf->feedback_msg($aset->message_list());
+            $ok && $this->conf->redirect_self($this->qreq);
         }
     }
 

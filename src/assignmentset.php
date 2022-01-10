@@ -1143,13 +1143,9 @@ class AssignmentSet {
     /** @param string $msg
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
      * @return $this */
-    function set_intro_msg($msg, $status) {
-        $this->astate->set_intro_msg($msg, $status);
+    function prepend_msg($msg, $status) {
+        $this->astate->prepend_msg($msg, $status);
         return $this;
-    }
-    /** @return string */
-    function full_feedback_html() {
-        return $this->astate->full_feedback_html();
     }
     /** @return string */
     function full_feedback_text() {
@@ -1158,9 +1154,9 @@ class AssignmentSet {
     function report_errors() {
         if ($this->astate->has_message()) {
             if ($this->astate->has_error()) {
-                $this->astate->set_intro_msg("<0>There were errors parsing the assignment. Changes not saved.", MessageSet::ERROR);
+                $this->astate->prepend_msg("<0>Changes not saved due to errors in the assignment", MessageSet::ERROR);
             }
-            $this->conf->msg($this->astate->full_feedback_html(), $this->astate->problem_status());
+            $this->conf->feedback_msg($this->astate->message_list());
         }
     }
     /** @return JsonResult */
@@ -1878,7 +1874,7 @@ class AssignmentSet {
             if ($verbose && $this->astate->has_message()) {
                 $this->report_errors();
             } else if ($verbose) {
-                $this->conf->msg("No changes.", 1);
+                $this->conf->feedback_msg([new MessageItem(null, "<0>No changes", 1)]);
             }
             return !$this->has_error(); // true means no errors
         }

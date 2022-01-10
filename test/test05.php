@@ -366,7 +366,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_web($qreq, null, "update");
 xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
-xassert_eq($ps->error_texts(), ["Entry required."]);
+xassert_eqq($ps->feedback_text($ps->error_list()), "Entry required.\n");
 
 $qreq = new Qrequest("POST", ["submitpaper" => 1, "title" => "", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
@@ -374,7 +374,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_web($qreq, null, "update");
 xassert($ps->has_error_at("title"));
 xassert_eqq(count($ps->error_fields()), 1);
-xassert_eq($ps->error_texts(), ["Entry required."]);
+xassert_eqq($ps->feedback_text($ps->error_list()), "Entry required.\n");
 
 $qreq = new Qrequest("POST", ["submitpaper" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com", "authors:affiliation_1" => "BBC", "has_submission" => "1"]);
 $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
@@ -382,7 +382,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_web($qreq, null, "update");
 xassert($ps->has_error_at("abstract"));
 xassert_eqq(count($ps->error_fields()), 1);
-xassert_eq($ps->error_texts(), ["Entry required."]);
+xassert_eqq($ps->feedback_text($ps->error_list()), "Entry required.\n");
 
 $Conf->set_opt("noAbstract", 1);
 $Conf->invalidate_caches(["options" => true]);
@@ -393,7 +393,7 @@ $ps = new PaperStatus($Conf, $user_estrin);
 $ps->prepare_save_paper_web($qreq, null, "update");
 xassert(!$ps->has_error_at("abstract"));
 xassert_eqq(count($ps->error_fields()), 0);
-xassert_eq($ps->error_texts(), []);
+xassert_eqq($ps->feedback_text($ps->error_list()), "");
 
 // abstract saving
 $nprow1 = $user_estrin->checked_paper_by_id($npid1);
@@ -521,7 +521,7 @@ $ps->save_paper_json((object) [
 ]);
 xassert_paper_status($ps, MessageSet::WARNING);
 xassert($ps->has_problem());
-xassert_eqq($ps->message_texts_at("topics"), ["Unknown topic ignored (fartchitecture)."]);
+xassert_eqq($ps->feedback_text_at("topics"), "Unknown topic ignored (fartchitecture).\n");
 $nprow1->invalidate_topics();
 xassert_eqq($nprow1->topic_list(), []); // XXX should be unchanged
 
@@ -656,11 +656,13 @@ $ps->save_paper_json((object) [
     "id" => $npid1, "contacts" => []
 ]);
 xassert($ps->has_problem());
-xassert_eqq($ps->message_texts_at("contacts"), ["Each submission must have at least one contact.", "You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"]);
+xassert_eqq($ps->feedback_text_at("contacts"), "Each submission must have at least one contact.
+You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)\n");
 
 $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_contacts" => 1, "contacts:email_1" => "estrin@usc.edu"]), $nprow1, "update");
 xassert($ps->has_problem());
-xassert_eqq($ps->message_texts_at("contacts"), ["Each submission must have at least one contact.", "You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)"]);
+xassert_eqq($ps->feedback_text_at("contacts"), "Each submission must have at least one contact.
+You can’t remove yourself from the submission’s contacts. (Ask another contact to remove you.)\n");
 
 $ps->save_paper_json((object) [
     "id" => $npid1, "contacts" => ["estrin@usc.edu"]
