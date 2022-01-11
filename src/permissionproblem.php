@@ -253,11 +253,14 @@ class PermissionProblem extends Exception
             $ms[] = $this->conf->_c("eperm", "Permission error.", "unknown", $paperId);
         }
         // finish it off
-        if (isset($this->_a["forceShow"]) && $format === 5
+        if (isset($this->_a["forceShow"])
+            && $format === 5
             && Navigation::page() !== "api") {
             $ms[] = $this->conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", $this->conf->selfurl($Qreq, ["forceShow" => 1]));
         }
-        if (!empty($ms) && isset($this->_a["listViewable"]) && $format === 5) {
+        if (!empty($ms)
+            && isset($this->_a["listViewable"])
+            && $format === 5) {
             $ms[] = $this->conf->_("<a href=\"%s\">List the submissions you can view</a>", $this->conf->hoturl("search", "q="));
         }
         return join(" ", $ms);

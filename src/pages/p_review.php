@@ -113,7 +113,7 @@ class Review_Page {
         $rv = new ReviewValues($this->rf());
         $rv->paperId = $this->prow->paperId;
         if (($whynot = $this->user->perm_submit_review($this->prow, $this->rrow))) {
-            $rv->msg_at(null, $whynot->unparse_html(), MessageSet::ERROR);
+            $rv->msg_at(null, "<5>" . $whynot->unparse_html(), MessageSet::ERROR);
         } else if ($rv->parse_qreq($this->qreq, $this->qreq->override)) {
             if (isset($this->qreq->approvesubreview)
                 && $this->rrow
@@ -145,7 +145,7 @@ class Review_Page {
             $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
         }
         if (!$rv->has_error() && $rv->parse_text($this->qreq->override)) {
-            $rv->msg_at(null, "Only the first review form in the file was parsed. " . Ht::link("Upload multiple-review files here.", $this->conf->hoturl("offline")), MessageSet::WARNING);
+            $rv->msg_at(null, "<5>Only the first review form in the file was parsed. " . Ht::link("Upload multiple-review files here.", $this->conf->hoturl("offline")), MessageSet::WARNING);
         }
         $rv->report();
         if (!$rv->has_error()) {
@@ -211,7 +211,7 @@ class Review_Page {
         $my_rrow = $this->prow->review_by_user($this->user);
         $my_rid = ($my_rrow ?? $this->rrow)->unparse_ordinal_id();
         if (($whynot = $this->user->perm_submit_review($this->prow, $my_rrow))) {
-            $rv->msg_at(null, $whynot->unparse_html(), MessageSet::ERROR);
+            $rv->msg_at(null, "<5>" . $whynot->unparse_html(), MessageSet::ERROR);
         } else if ($rv->parse_qreq($this->qreq, $this->qreq->override)) {
             $rv->set_ready($this->qreq->adoptsubmit);
             if ($rv->check_and_save($this->user, $this->prow, $my_rrow)) {
