@@ -532,14 +532,6 @@ class PaperOptionList implements IteratorAggregate {
         return $olist;
     }
 
-    /** @return array<int,PaperOption>
-     * @deprecated */
-    function display_fields(PaperInfo $prow = null) {
-        $olist = $this->unsorted_field_list($prow, "page_order");
-        uasort($olist, "PaperOption::compare");
-        return $olist;
-    }
-
     /** @return array<int,PaperOption> */
     function form_fields(PaperInfo $prow = null) {
         $olist = $this->unsorted_field_list($prow, "form_order");
@@ -1001,16 +993,6 @@ class PaperOption implements JsonSerializable {
     }
     /** @return int|float|false */
     function page_order() {
-        return $this->page_order;
-    }
-    /** @return int|float|false
-     * @deprecated */
-    function form_position() {
-        return $this->form_order;
-    }
-    /** @return int|float|false
-     * @deprecated */
-    function page_position() {
         return $this->page_order;
     }
     /** @return int */

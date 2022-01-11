@@ -2,17 +2,6 @@
 // helpers.php -- HotCRP non-class helper functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-/** @return array
- * @deprecated */
-function mkarray($value) {
-    if (is_array($value)) {
-        return $value;
-    } else {
-        return array($value);
-    }
-}
-
-
 // string helpers
 
 /** @param null|int|string $value

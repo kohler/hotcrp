@@ -457,22 +457,6 @@ class Navigation {
 </body></html>\n";
         exit();
     }
-
-    /** @param string $site_url
-     * @return void
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    static function redirect_site($site_url) {
-        self::redirect(self::site_absolute() . $site_url);
-    }
-
-    /** @param string $base_url
-     * @return void
-     * @deprecated
-     * @suppress PhanDeprecatedFunction */
-    static function redirect_base($base_url) {
-        self::redirect(self::base_absolute() . $base_url);
-    }
 }
 
 Navigation::analyze();

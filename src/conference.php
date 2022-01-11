@@ -824,13 +824,6 @@ class Conf {
 
     /** @param string $name
      * @param ?int $value
-     * @deprecated */
-    function __save_setting($name, $value, $data = null) {
-        return $this->save_setting($name, $value, $data);
-    }
-
-    /** @param string $name
-     * @param ?int $value
      * @return bool */
     function save_refresh_setting($name, $value, $data = null) {
         $change = $this->save_setting($name, $value, $data);
@@ -1061,23 +1054,6 @@ class Conf {
         $ap = $xta->order ?? 0;
         $ap = $ap !== false ? $ap : PHP_INT_MAX;
         $bp = $xtb->order ?? 0;
-        $bp = $bp !== false ? $bp : PHP_INT_MAX;
-        if ($ap == $bp) {
-            if (isset($xta->name)
-                && isset($xtb->name)
-                && ($namecmp = strcmp($xta->name, $xtb->name)) !== 0) {
-                return $namecmp;
-            }
-            $ap = $xta->__source_order ?? 0;
-            $bp = $xtb->__source_order ?? 0;
-        }
-        return $ap <=> $bp;
-    }
-    /** @deprecated */
-    static function xt_position_compare($xta, $xtb) {
-        $ap = $xta->position ?? 0;
-        $ap = $ap !== false ? $ap : PHP_INT_MAX;
-        $bp = $xtb->position ?? 0;
         $bp = $bp !== false ? $bp : PHP_INT_MAX;
         if ($ap == $bp) {
             if (isset($xta->name)
@@ -3492,23 +3468,6 @@ class Conf {
      * @return string */
     function hoturl_raw($page, $param = null, $flags = 0) {
         return $this->hoturl($page, $param, self::HOTURL_RAW | $flags);
-    }
-
-    /** @param string $page
-     * @param null|string|array $param
-     * @param int $flags
-     * @return string
-     * @deprecated */
-    function hoturl_absolute($page, $param = null, $flags = 0) {
-        return $this->hoturl($page, $param, self::HOTURL_ABSOLUTE | $flags);
-    }
-
-    /** @param string $page
-     * @param null|string|array $param
-     * @return string
-     * @deprecated */
-    function hoturl_site_relative_raw($page, $param = null) {
-        return $this->hoturl($page, $param, self::HOTURL_SITEREL | self::HOTURL_RAW);
     }
 
     /** @param string $page
