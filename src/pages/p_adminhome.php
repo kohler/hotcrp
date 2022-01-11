@@ -81,7 +81,7 @@ class AdminHome_Page {
             $assigntime = $conf->setting("pcrev_assigntime");
             $result = $conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1");
             if ($result->num_rows) {
-                $m[] = "PC review assignments have changed.&nbsp; <a href=\"" . $conf->hoturl("mail", "template=newpcrev") . "\">Send review assignment notifications</a> <span class=\"barsep\">·</span> <a href=\"" . $conf->hoturl("=index", "clearnewpcrev=$assigntime") . "\">Clear this message</a>";
+                $m[] = "PC review assignments have changed.&nbsp; <a href=\"" . $conf->hoturl("mail", "template=newpcrev") . "\">Send review assignment notifications</a> <span class=\"barsep\">·</span> <a href=\"" . $conf->hoturl("=index", "clearnewpcrev={$assigntime}") . "\">Clear this message</a>";
             } else {
                 $conf->save_setting("pcrev_informtime", $assigntime);
             }

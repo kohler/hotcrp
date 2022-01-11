@@ -18,7 +18,7 @@
     },
     {
         "name": "home/admin", "order": 900, "allow_if": "chair",
-        "allow_request_if": ["getpost", "req.clearbug req.clearnewpcrev"],
+        "allow_request_if": ["getpost", "req.clearbug || req.clearnewpcrev"],
         "request_function": "AdminHome_Page::check_admin",
         "render_function": "AdminHome_Page::render"
     },

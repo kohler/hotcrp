@@ -371,7 +371,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         } else if (str_starts_with($e, "req.")) {
             foreach (explode(" ", $e) as $w) {
                 if (str_starts_with($w, "req.")
-                    && property_exists($this, substr($w, 4))) {
+                    && $this->has(substr($w, 4))) {
                     return true;
                 }
             }
