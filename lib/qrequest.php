@@ -327,7 +327,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function checked_annex($name, $class) {
         $x = $this->_annexes[$name] ?? null;
         if (!$x || !($x instanceof $class)) {
-            throw new Exception("Bad annex $name.");
+            throw new Exception("Bad annex $name");
         }
         return $x;
     }
@@ -345,9 +345,6 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
     /** @return bool */
     function valid_post() {
-        if ($this->_post_ok && $this->_method !== "POST") {
-            error_log("Qrequest::valid_post() on {$this->_method}");
-        }
         return $this->_post_ok && $this->_method === "POST";
     }
     /** @return void */
