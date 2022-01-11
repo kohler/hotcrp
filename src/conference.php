@@ -1952,12 +1952,13 @@ class Conf {
     /** @param string $rname
      * @return string|false */
     static function round_name_error($rname) {
+        // Must return HTML-safe plaintext
         if ((string) $rname === "") {
-            return "Empty round name.";
+            return "Round name required";
         } else if (!preg_match('/\A[a-zA-Z](?:|[-_a-zA-Z0-9]*[a-zA-Z0-9])\z/', $rname)) {
-            return "Round names must start with a letter and contain only letters, numbers, and dashes.";
+            return "Round names must start with a letter and contain only letters, numbers, and dashes";
         } else if (preg_match('/\A(?:none|any|all|default|unnamed|.*response|response.*|draft.*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))\z/i', $rname)) {
-            return "Round name $rname is reserved.";
+            return "Round name ‘{$rname}’ is reserved";
         } else {
             return false;
         }

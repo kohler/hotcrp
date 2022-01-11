@@ -15,7 +15,7 @@ class Assign_ListAction extends ListAction {
                                 "zzz2" => null,
                                 "primaryreview" => "Primary review",
                                 "secondaryreview" => "Secondary review",
-                                "pcreview" => "Optional review",
+                                "optionalreview" => "Optional review",
                                 "clearreview" => "Clear review",
                                 "zzz3" => null,
                                 "lead" => "Discussion lead",
@@ -49,8 +49,8 @@ class Assign_ListAction extends ListAction {
         $mpc = CsvGenerator::quote($mpc);
 
         if (!in_array($mt, ["lead", "shepherd", "conflict", "clearconflict",
-                            "pcreview", "secondaryreview", "primaryreview",
-                            "clearreview"])) {
+                            "optionalreview", "pcreview" /* backward compat */,
+                            "secondaryreview", "primaryreview", "clearreview"])) {
             return "Unknown assignment type.";
         }
 

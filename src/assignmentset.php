@@ -902,7 +902,7 @@ class ReviewAssigner_Data {
     /** @var bool */
     public $creator = true;
     /** @var ?string */
-    public $error;
+    public $error_ftext;
     /** @return array{?string,?string,bool} */
     static function separate($key, $req, $state, $rtype) {
         $a0 = $a1 = trim((string) $req[$key]);
@@ -933,14 +933,14 @@ class ReviewAssigner_Data {
             && $tmatch) {
             if (strcasecmp($targ0, "none") === 0) {
                 $this->oldtype = 0;
-            } else if (($this->oldtype = ReviewInfo::parse_type($targ0)) === false) {
-                $this->error = "Invalid review type.";
+            } else if (($this->oldtype = ReviewInfo::parse_type($targ0, true)) === false) {
+                $this->error_ftext = "<0>Invalid review type ‘{$targ0}’";
             }
         }
         if ((string) $targ1 !== ""
             && $rtype != 0
-            && ($this->newtype = ReviewInfo::parse_type($targ1)) === false) {
-            $this->error = "Invalid review type.";
+            && ($this->newtype = ReviewInfo::parse_type($targ1, true)) === false) {
+            $this->error_ftext = "<0>Invalid review type ‘{$targ1}’";
         }
         if ($this->newtype === null) {
             $this->newtype = $rtype;
@@ -950,12 +950,12 @@ class ReviewAssigner_Data {
         if ((string) $rarg0 !== ""
             && $rmatch
             && ($this->oldround = $state->conf->sanitize_round_name($rarg0)) === false) {
-            $this->error = Conf::round_name_error($rarg0);
+            $this->error_ftext = "<0>" . Conf::round_name_error($rarg0);
         }
         if ((string) $rarg1 !== ""
             && $this->newtype != 0
             && ($this->newround = $state->conf->sanitize_round_name($rarg1)) === false) {
-            $this->error = Conf::round_name_error($rarg1);
+            $this->error_ftext = "<0>" . Conf::round_name_error($rarg1);
         }
         if ($rarg0 !== "" && $rarg1 !== null) {
             $this->explicitround = (string) $req["round"] !== "";

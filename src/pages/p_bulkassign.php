@@ -258,7 +258,7 @@ Assignment methods:
             Ht::select("default_action", ["guess" => "guess from input",
                                           "primary" => "assign primary reviews",
                                           "secondary" => "assign secondary reviews",
-                                          "pcreview" => "assign optional PC reviews",
+                                          "optionalreview" => "assign optional PC reviews",
                                           "metareview" => "assign metareviews",
                                           "review" => "assign external reviews",
                                           "conflict" => "assign PC conflicts",

@@ -35,13 +35,13 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         if ($rarg0 !== ""
             && strcasecmp($rarg0, "any") != 0
             && ($oldround = $state->conf->sanitize_round_name($rarg0)) === false) {
-            return new AssignmentError("<5>" . Conf::round_name_error($rarg0));
+            return new AssignmentError("<0>" . Conf::round_name_error($rarg0));
         }
         $targ0 = trim((string) $req["reviewtype"]);
         $oldtype = null;
         if ($targ0 !== ""
-            && ($oldtype = ReviewInfo::parse_type($targ0)) === false) {
-            return new AssignmentError("<0>Invalid review type.");
+            && ($oldtype = ReviewInfo::parse_type($targ0, true)) === false) {
+            return new AssignmentError("<0>Invalid review type ‘{$targ0}’");
         }
 
         // remove existing review

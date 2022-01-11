@@ -107,7 +107,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
      * @return bool */
     function apply_review_type($word) {
         if ($this->review_type === 0
-            && ($rt = ReviewInfo::parse_type($word))) {
+            && ($rt = ReviewInfo::parse_type($word, false))) {
             $this->review_type = $rt;
             $this->sensitivity |= self::HAS_RTYPE;
             return true;

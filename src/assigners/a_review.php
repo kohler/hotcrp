@@ -80,8 +80,12 @@ class Review_AssignmentParser extends AssignmentParser {
     private $rtype;
     function __construct(Conf $conf, $aj) {
         parent::__construct($aj->name);
-        if ($aj->review_type) {
-            $this->rtype = (int) ReviewInfo::parse_type($aj->review_type);
+        if ($aj->review_type === "none") {
+            $this->rtype = 0;
+        } else if ($aj->review_type) {
+            $rt = ReviewInfo::parse_type($aj->review_type, false);
+            assert($rt > 0);
+            $this->rtype = $rt;
         } else {
             $this->rtype = -1;
         }
@@ -199,8 +203,8 @@ class Review_AssignmentParser extends AssignmentParser {
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
-        if ($rdata->error) {
-            return new AssignmentError($rdata->error);
+        if ($rdata->error_ftext) {
+            return new AssignmentError($rdata->error_ftext);
         }
 
         $revmatch = new Review_Assignable($prow->paperId, $contact->contactId);

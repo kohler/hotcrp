@@ -220,20 +220,24 @@ class ReviewInfo implements JsonSerializable {
         "external" => REVIEW_EXTERNAL, "ext" => REVIEW_EXTERNAL
     ];
     static private $type_revmap = [
-        REVIEW_EXTERNAL => "review", REVIEW_PC => "pcreview",
+        REVIEW_EXTERNAL => "review", REVIEW_PC => "optional",
         REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary",
         REVIEW_META => "metareview"
     ];
 
     /** @param string $str
+     * @param bool $required
      * @return null|int|false */
-    static function parse_type($str) {
+    static function parse_type($str, $required) {
         $str = strtolower($str);
         if ($str === "review" || $str === "" || $str === "all" || $str === "any") {
             return null;
         }
-        if (str_ends_with($str, "review")) {
-            $str = substr($str, 0, $str[strlen($str) - 7] === "-" ? -7 : -6);
+        if (!$required && $str === "pc") {
+            return false;
+        }
+        if (($l = strlen($str)) > 6 && str_ends_with($str, "review")) {
+            $str = substr($str, 0, $l - ($str[$l - 6] === "-" ? 7 : 6));
         }
         return self::$type_map[$str] ?? false;
     }
