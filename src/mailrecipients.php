@@ -359,10 +359,10 @@ class MailRecipients extends MessageSet {
         }
 
         // build query
-        if ($this->type == "all") {
+        if ($this->type === "all") {
             $needpaper = $needconflict = $needreview = false;
             $where[] = "(ContactInfo.roles!=0 or lastLogin>0 or exists (select * from PaperConflict where contactId=ContactInfo.contactId) or exists (select * from PaperReview where contactId=ContactInfo.contactId and reviewType>0))";
-        } else if ($this->type == "pc" || substr($this->type, 0, 3) == "pc:") {
+        } else if ($this->type === "pc" || substr($this->type, 0, 3) === "pc:") {
             $needpaper = $needconflict = $needreview = false;
             $where[] = "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0";
             if ($this->type != "pc") {
@@ -374,7 +374,7 @@ class MailRecipients extends MessageSet {
             $joins[] = "join Paper";
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>0)";
             $where[] = "Paper.paperId=PaperReview.paperId";
-        } else if ($this->type == "lead" || $this->type == "shepherd") {
+        } else if ($this->type === "lead" || $this->type === "shepherd") {
             $needpaper = $needconflict = $needreview = true;
             $joins[] = "join Paper on (Paper.{$this->type}ContactId=ContactInfo.contactId)";
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>0)";
@@ -392,32 +392,32 @@ class MailRecipients extends MessageSet {
         // reviewer match
         if ($revmatch) {
             // Submission status
-            if ($revmatch[1] == "c") {
+            if ($revmatch[1] === "c") {
                 $where[] = "PaperReview.reviewSubmitted>0";
-            } else if ($revmatch[1] == "unc" || $revmatch[1] == "new") {
+            } else if ($revmatch[1] === "unc" || $revmatch[1] === "new") {
                 $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0 and Paper.timeSubmitted>0";
             }
-            if ($revmatch[1] == "new") {
+            if ($revmatch[1] === "new") {
                 $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
+                if ($this->newrev_since) {
+                    $where[] = "PaperReview.timeRequested>=$this->newrev_since";
+                }
             }
-            if ($revmatch[1] == "allc") {
+            if ($revmatch[1] === "allc") {
                 $joins[] = "left join (select contactId, max(if(reviewNeedsSubmit!=0 and timeSubmitted>0,1,0)) anyReviewNeedsSubmit from PaperReview join Paper on (Paper.paperId=PaperReview.paperId) group by contactId) AllReviews on (AllReviews.contactId=ContactInfo.contactId)";
                 $where[] = "AllReviews.anyReviewNeedsSubmit=0";
             }
-            if ($this->newrev_since) {
-                $where[] = "PaperReview.timeRequested>=$this->newrev_since";
-            }
             // Withdrawn papers may not count
-            if ($revmatch[1] == "") {
+            if ($revmatch[1] === "") {
                 $where[] = "(Paper.timeSubmitted>0 or PaperReview.reviewSubmitted>0)";
             }
             // Review type
-            if ($revmatch[2] == "myext") {
+            if ($revmatch[2] === "myext") {
                 $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
                 $where[] = "PaperReview.requestedBy=" . $this->user->contactId;
-            } else if ($revmatch[2] == "ext") {
+            } else if ($revmatch[2] === "ext") {
                 $where[] = "PaperReview.reviewType=" . REVIEW_EXTERNAL;
-            } else if ($revmatch[2] == "pc") {
+            } else if ($revmatch[2] === "pc") {
                 $where[] = "PaperReview.reviewType>" . REVIEW_EXTERNAL;
             }
         }

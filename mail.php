@@ -296,8 +296,9 @@ if (isset($Qreq->plimit)
 echo "</td></tr></table>\n";
 
 echo '<div class="fx10" style="margin-top:0.35em">';
-if (!$Qreq->newrev_since && ($t = $Conf->setting("pcrev_informtime")))
+if (!$Qreq->newrev_since && ($t = $Conf->setting("pcrev_informtime"))) {
     $Qreq->newrev_since = $Conf->parseableTime($t, true);
+}
 echo 'Assignments since:&nbsp; ',
     Ht::entry("newrev_since", $Qreq->newrev_since,
               ["placeholder" => "(all)", "size" => 30, "class" => "js-autosubmit", "data-submit-fn" => "recheck"]),
