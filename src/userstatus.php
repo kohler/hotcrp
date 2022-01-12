@@ -1422,7 +1422,6 @@ class UserStatus extends MessageSet {
     }
 
     static function render_follow(UserStatus $us, Qrequest $qreq) {
-        $us->render_section("Email notification");
         $reqwatch = $iwatch = $us->user->defaultWatch;
         foreach (self::$watch_keywords as $kw => $bit) {
             if ($qreq["has_watch$kw"] || $qreq["watch$kw"]) {

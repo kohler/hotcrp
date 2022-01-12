@@ -3,9 +3,7 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SubForm_SettingRenderer {
-    static function render(SettingValues $sv) {
-        $sv->render_section("Abstract and PDF");
-
+    static function render_abstract(SettingValues $sv) {
         echo '<div id="foldpdfupload" class="fold2o fold3o">';
         echo '<div class="f-i">',
             $sv->label("sub_noabstract", "Abstract requirement", ["class" => "n"]),
@@ -22,10 +20,10 @@ class SubForm_SettingRenderer {
             Banal_SettingRenderer::render("0", $sv);
             echo '</div>';
         }
-
         echo '</div>';
+    }
 
-        $sv->render_section("Conflicts and collaborators");
+    static function render_conflicts(SettingValues $sv) {
         echo '<div id="foldpcconf" class="form-g fold',
             ($sv->curv("sub_pcconf") ? "o" : "c"), "\">\n";
         $sv->echo_checkbox("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "uich js-foldup"]);

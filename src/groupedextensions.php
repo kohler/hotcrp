@@ -23,7 +23,7 @@ class GroupedExtensions implements XtContext {
     private $_callables;
     /** @var string|false */
     private $_section_class = "";
-    /** @var string|false */
+    /** @var string */
     private $_title_class = "";
     /** @var bool */
     private $_in_section = false;
@@ -273,7 +273,7 @@ class GroupedExtensions implements XtContext {
         $this->_section_class = $s;
         return $this;
     }
-    /** @param string|false $s
+    /** @param string $s
      * @return $this */
     function set_title_class($s) {
         $this->_title_class = $s;
@@ -363,7 +363,7 @@ class GroupedExtensions implements XtContext {
      * @param ?string $hashid */
     function render_section($title, $hashid = null) {
         $this->render_open_section();
-        if ($this->_title_class !== false && ($title !== "" && $title !== false)) {
+        if ($title !== "") {
             $this->render_title($title, $hashid);
         }
     }
@@ -373,11 +373,16 @@ class GroupedExtensions implements XtContext {
         if (is_string($gj) && !($gj = $this->get($gj))) {
             return null;
         }
-        if (($gj->section ?? null) !== false
-            && $this->_section_class !== false
-            && (isset($gj->title) || !$this->_in_section)
+        if ($this->_section_class !== false
             && $gj->group !== $gj->name) {
-            $this->render_section($gj->title ?? "", $gj->hashid ?? null);
+            $section = $gj->section ?? null;
+            $title = $gj->title ?? "";
+            $show_title = $gj->show_title ?? true;
+            if ($section
+                || ($section === null && $show_title && $title !== "")
+                || ($section === null && !$this->_in_section)) {
+                $this->render_section($show_title ? $title : "", $gj->hashid ?? null);
+            }
         }
         if (isset($gj->render_function)) {
             return $this->call_function($gj->render_function, $gj);

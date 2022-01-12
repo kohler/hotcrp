@@ -48,7 +48,10 @@
 
 
     {   "name": "preferences", "title": "Preferences", "order": 300   },
-    [   "preferences/follow", 4000, "UserStatus::render_follow"   ],
+    {
+        "name": "preferences/follow", "title": "Email notification", "order": 4000,
+        "render_function": "UserStatus::render_follow"
+    },
     [   "preferences/actions", 1000000, "UserStatus::render_actions"   ],
 
 

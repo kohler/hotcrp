@@ -337,7 +337,6 @@ class Options_SettingRenderer {
         $self = new Options_SettingRenderer;
         $self->pt = new PaperTable($sv->user, new Qrequest("GET"));
         $self->pt->edit_show_all_visibility = true;
-        $sv->render_section("Submission fields");
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_options", 1),
             Ht::hidden("options_version", (int) $sv->conf->setting("options")),

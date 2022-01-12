@@ -65,10 +65,9 @@ class Reviews_SettingRenderer {
                    Conf::BLIND_NEVER => "No, reviewer names are visible to authors",
                    Conf::BLIND_OPTIONAL => "Depends: reviewers decide whether to expose their names"],
             '<strong>Review anonymity:</strong> Are reviewer names hidden from authors?');
+    }
 
-
-        // Deadlines
-        $sv->render_section("Deadlines &amp; rounds", "rounds");
+    static function render_rounds(SettingValues $sv) {
         echo '<p>Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.</p>';
         echo '<p class="f-h">', $sv->type_hint("date"), '</p>';
 

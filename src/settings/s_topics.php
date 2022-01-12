@@ -16,7 +16,6 @@ class Topics_SettingRenderer {
         }
         Dbl::free($result);
 
-        $sv->render_section("Topics", "topics");
         echo "<p>Authors select the topics that apply to their submissions. PC members can indicate topics they’re interested in or search using the “topic:” keyword. Use a colon to create topic groups, as in “Systems: Correctness” and “Systems: Performance”.";
         if ($sv->conf->has_topics()) {
             echo " To delete an existing topic, remove its name.";
