@@ -1656,29 +1656,28 @@ class PaperSearch extends MessageSet {
     /** @var string
      * @readonly */
     private $_qt;
+    /** @var ?Contact
+     * @readonly */
+    private $_reviewer_user;
+
+    /** @var ?SearchTerm */
+    private $_qe;
+    /** @var Limit_SearchTerm
+     * @readonly */
+    private $_limit_qe;
+    /** @var bool */
+    private $_limit_explicit = false;
 
     /** @var bool
      * @readonly */
     public $expand_automatic = false;
     /** @var bool */
     private $_allow_deleted = false;
-
-    /** @var ?Contact */
-    private $_reviewer_user;
-    /** @var Limit_SearchTerm */
-    private $_limit_qe;
-    /** @var bool */
-    private $_limit_explicit = false;
-
     /** @var ?string */
     private $_urlbase;
-    /** @var ?string */
+    /** @var ?string
+     * @readonly */
     private $_default_sort; // XXX should be used more often
-
-    /** @var ?SearchTerm */
-    private $_qe;
-    /** @var ?ReviewInfo */
-    public $test_review;
 
     /** @var ?array<string,TextPregexes> */
     private $_match_preg;
@@ -1686,9 +1685,11 @@ class PaperSearch extends MessageSet {
     private $_match_preg_query;
     /** @var ?list<ContactSearch> */
     private $_contact_searches;
-
     /** @var list<int> */
     private $_matches;
+
+    /** @var ?ReviewInfo */
+    public $test_review;
 
     static public $search_type_names = [
         "a" => "Your submissions",
@@ -1775,6 +1776,15 @@ class PaperSearch extends MessageSet {
         $this->_limit_qe = Limit_SearchTerm::parse($limit, $lword, $this);
     }
 
+    private function clear_compilation() {
+        $this->clear_messages();
+        $this->_qe = null;
+        $this->_match_preg = null;
+        $this->_match_preg_query = null;
+        $this->_contact_searches = null;
+        $this->_matches = null;
+    }
+
     /** @param bool $x
      * @return $this */
     function set_allow_deleted($x) {
@@ -1807,7 +1817,7 @@ class PaperSearch extends MessageSet {
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
     function set_expand_automatic($x) {
-        assert($this->_qe === null);
+        $this->_qe === null || $this->clear_compilation();
         $this->expand_automatic = $x;
         return $this;
     }
