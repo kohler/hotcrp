@@ -1309,26 +1309,51 @@ function render_xmsg(msg, status) {
 function message_list_status(ml) {
     var i, status = 0;
     for (i = 0; i !== (ml || []).length; ++i) {
-        status = Math.max(status, ml[i].status);
+        if (ml[i].status === -3 && status === 0) {
+            status = -3;
+        } else if (ml[i].status >= 1 && ml[i].status > status) {
+            status = ml[i].status;
+        }
     }
     return status;
 }
 
-function append_feedback_to(elt, mi) {
+function render_message_list(ml) {
+    var i, status = message_list_status(ml),
+        div = document.createElement("div"),
+        ul = document.createElement("ul");
+    if (status === -3) {
+        div.className = "msg msg-success";
+    } else if (status >= 2) {
+        div.className = "msg msg-error";
+    } else if (status === 1) {
+        div.className = "msg msg-warning";
+    } else {
+        div.className = "msg msg-info";
+    }
+    ul.className = "feedback-list";
+    div.appendChild(ul);
+    for (i = 0; i !== (ml || []).length; ++i) {
+        append_feedback_to(ul, ml[i]);
+    }
+    return div;
+}
+
+function append_feedback_to(ul, mi) {
     var sklass, li, div;
     if (mi.message != null && mi.message !== "") {
-        if (elt.tagName !== "UL")
+        if (ul.tagName !== "UL")
             throw new Error("bad append_feedback");
         sklass = "";
         if (mi.status != null && mi.status >= -4 && mi.status <= 3)
             sklass = ["warning-note", "success", "urgent-note", "note", "", "warning", "error", "error"][mi.status + 4];
         div = document.createElement("div");
-        if (mi.status !== -5 || !elt.firstChild) {
+        if (mi.status !== -5 || !ul.firstChild) {
             li = document.createElement("li");
-            elt.appendChild(li);
+            ul.appendChild(li);
             div.className = sklass ? "is-diagnostic format-inline is-" + sklass : "is-diagnostic format-inline";
         } else {
-            li = elt.lastChild;
+            li = ul.lastChild;
             div.className = "msg-inform format-inline";
         }
         li.appendChild(div);
@@ -1346,7 +1371,7 @@ function append_feedback_to(elt, mi) {
             (mi.status > 1 ? "is-error" : "is-warning");
         span.append(s.substring(p1, p2));
         div.append(s.substring(0, p1), span, s.substring(p2));
-        elt.lastChild.appendChild(div);
+        ul.lastChild.appendChild(div);
     }
 }
 
@@ -1362,7 +1387,7 @@ function append_feedback_near(elt, mi) {
         if (!owner)
             return false;
         c = owner.firstChild;
-        while (c && c.noteType === 1 && (c.tagName === "LABEL" || hasClass(c, "feedback")))
+        while (c && c.nodeType === 1 && (c.tagName === "LABEL" || hasClass(c, "feedback")))
             c = c.nextSibling;
         if (!c || !hasClass(c, "feedback-list")) {
             ul = document.createElement("ul");
