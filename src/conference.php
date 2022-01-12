@@ -377,7 +377,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 252) {
+        if ($this->sversion < 253) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;

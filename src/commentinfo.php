@@ -37,6 +37,10 @@ class CommentInfo {
     public $commentFormat;
     /** @var ?string */
     public $commentOverflow;
+    /** @var ?string */
+    public $commentData;
+    /** @var ?object */
+    private $_jdata;
 
     /** @var ?string */
     public $firstName;
@@ -46,6 +50,10 @@ class CommentInfo {
     public $affiliation;
     /** @var ?string */
     public $email;
+    /** @var ?array<int,string> */
+    public $saved_mentions;
+    /** @var ?bool */
+    public $saved_mentions_missing;
 
     const CT_DRAFT = 1;
     const CT_BLIND = 2;
@@ -211,6 +219,34 @@ class CommentInfo {
             return $this->conf->obscure_time($this->timeModified);
         }
     }
+
+    /** @return object */
+    private function make_data() {
+        if ($this->_jdata === null) {
+            $this->_jdata = json_decode($this->commentData ?? "{}") ?? (object) [];
+        }
+        return $this->_jdata;
+    }
+
+    /** @param ?string $key
+     * @return mixed */
+    function data($key = null) {
+        $this->make_data();
+        return $key === null ? $this->_jdata : ($this->_jdata->$key ?? null);
+    }
+
+    /** @param string $key */
+    function set_data($key, $value) {
+        $this->make_data();
+        if ($value === null) {
+            unset($this->_jdata->$key);
+        } else {
+            $this->_jdata->$key = $value;
+        }
+        $s = json_encode($this->_jdata);
+        $this->commentData = $s === "{}" ? null : $s;
+    }
+
 
     /** @return ?string */
     function unparse_response_text() {
@@ -590,12 +626,15 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
     /** @param array $req
      * @return bool */
-    function save_comment($req, Contact $acting_contact) {
-        $contact = $acting_contact;
-        if (!$contact->contactId) {
-            $contact = $acting_contact->reviewer_capability_user($this->prow->paperId);
+    function save_comment($req, Contact $acting_user) {
+        $this->saved_mentions = [];
+        $this->saved_mentions_missing = false;
+
+        $user = $acting_user;
+        if (!$user->contactId) {
+            $user = $acting_user->reviewer_capability_user($this->prow->paperId);
         }
-        if (!$contact || !$contact->contactId) {
+        if (!$user || !$user->contactId) {
             error_log("Comment::save({$this->prow->paperId}): no such user");
             return false;
         }
@@ -613,7 +652,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $ctype |= self::CT_DRAFT;
             }
             $response_name = $this->conf->resp_round_name($this->commentRound);
-        } else if ($contact->act_author_view($this->prow)) {
+        } else if ($user->act_author_view($this->prow)) {
             $ctype = ($req_visibility ?? self::CT_AUTHOR) | self::CT_BYAUTHOR;
         } else {
             $ctype = $req_visibility ?? self::CT_REVIEWER;
@@ -625,7 +664,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
         if ($this->commentId
             ? $this->commentType & self::CT_BYSHEPHERD
-            : $contact->contactId == $this->prow->shepherdContactId) {
+            : $user->contactId == $this->prow->shepherdContactId) {
             $ctype |= self::CT_BYSHEPHERD;
         }
 
@@ -639,8 +678,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $expected_tags = $ctags;
         } else if (($req["tags"] ?? null)
                    && preg_match_all('/\S+/', (string) $req["tags"], $m)
-                   && !$contact->act_author_view($this->prow)) {
-            $tagger = new Tagger($contact);
+                   && !$user->act_author_view($this->prow)) {
+            $tagger = new Tagger($user);
             $ts = [];
             foreach ($m[0] as $tt) {
                 if (($tt = $tagger->check($tt))
@@ -689,7 +728,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         } else if (!$this->commentId) {
             $change = true;
             $qa = ["contactId, paperId, commentType, comment, commentOverflow, timeModified, replyTo"];
-            $qb = [$contact->contactId, $this->prow->paperId, $ctype, "?", "?", Conf::$now, 0];
+            $qb = [$user->contactId, $this->prow->paperId, $ctype, "?", "?", Conf::$now, 0];
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {
@@ -699,6 +738,11 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $qa[] = "commentTags";
                 $qb[] = "?";
                 $qv[] = $ctags;
+            }
+            if ($this->commentData !== null) {
+                $qa[] = "commentData";
+                $qb[] = "?";
+                $qv[] = $this->commentData;
             }
             if ($is_response) {
                 $qa[] = "commentRound";
@@ -736,13 +780,14 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 && $displayed) {
                 $qa .= ", timeDisplayed=" . Conf::$now;
             }
-            $q = "update PaperComment set timeModified=" . Conf::$now . $qa . ", commentType=$ctype, comment=?, commentOverflow=?, commentTags=? where commentId=$this->commentId";
+            $q = "update PaperComment set timeModified=" . Conf::$now . $qa . ", commentType=$ctype, comment=?, commentOverflow=?, commentTags=?, commentData=? where commentId=$this->commentId";
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {
                 array_push($qv, UnicodeHelper::utf8_prefix($text, 200), $text);
             }
             $qv[] = $ctags;
+            $qv[] = $this->commentData;
         }
 
         $result = $this->conf->qe_apply($q, $qv);
@@ -793,7 +838,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $log .= ": " . join(", ", $ch);
             }
         }
-        $acting_contact->log_activity_for($this->contactId ? : $contact->contactId, $log, $this->prow->paperId);
+        $acting_user->log_activity_for($this->contactId ? : $user->contactId, $log, $this->prow->paperId);
 
         // update automatic tags
         $this->conf->update_automatic_tags($this->prow, "comment");
@@ -803,30 +848,10 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $this->save_ordinal($cmtid, $ctype);
         }
 
-        // reload
+        // reload contents
         if ($text !== false) {
             $comments = $this->prow->fetch_comments("commentId=$cmtid");
             $this->merge(get_object_vars($comments[$cmtid]), $this->prow);
-            if ($this->timeNotified === $this->timeModified) {
-                if ($is_response && ($ctype & self::CT_DRAFT) !== 0) {
-                    $tmpl = "@responsedraftnotify";
-                } else if ($is_response) {
-                    $tmpl = "@responsenotify";
-                } else if (($ctype & self::CT_VISIBILITY) === self::CT_ADMINONLY) {
-                    $tmpl = "@admincommentnotify";
-                } else {
-                    $tmpl = "@commentnotify";
-                }
-                foreach ($this->followers() as $minic) {
-                    if ($minic->contactId !== $contact->contactId) {
-                        HotCRPMailer::send_to($minic, $tmpl, ["prow" => $this->prow, "comment_row" => $this]);
-                    }
-                }
-            }
-        } else {
-            $this->commentId = 0;
-            $this->comment = "";
-            $this->commentTags = null;
         }
 
         // document links
@@ -847,7 +872,114 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $this->prow->invalidate_linked_documents();
         }
 
+        // delete if appropriate
+        if ($text === false) {
+            $this->commentId = 0;
+            $this->comment = "";
+            $this->commentTags = $this->commentData = $this->_jdata = null;
+            return true;
+        }
+
+        // notify mentions and followers
+        $notified = [];
+        if ($displayed
+            && $this->commentId
+            && ($this->commentType & self::CT_VISIBILITY) > self::CT_ADMINONLY
+            && strpos($text, "@") !== false) {
+            $this->analyze_mentions($user);
+        }
+
+        $notify = false;
+        if ($this->timeNotified === $this->timeModified) {
+            if ($is_response && ($ctype & self::CT_DRAFT) !== 0) {
+                $tmpl = "@responsedraftnotify";
+            } else if ($is_response) {
+                $tmpl = "@responsenotify";
+            } else if (($ctype & self::CT_VISIBILITY) === self::CT_ADMINONLY) {
+                $tmpl = "@admincommentnotify";
+            } else {
+                $tmpl = "@commentnotify";
+            }
+            foreach ($this->followers() as $minic) {
+                if ($minic->contactId !== $user->contactId
+                    && !isset($this->saved_mentions[$minic->contactId])) {
+                    HotCRPMailer::send_to($minic, $tmpl, ["prow" => $this->prow, "comment_row" => $this]);
+                }
+            }
+        }
+
         return true;
+    }
+
+    /** @param Contact $user */
+    private function analyze_mentions($user) {
+        // obtain lists of users to search
+        $reviewer_list = [];
+        $this->prow->ensure_reviewer_names();
+        foreach ($this->prow->reviews_as_display() as $rrow) {
+            $viewid = $user->can_view_review_identity($this->prow, $rrow);
+            if ($rrow->reviewOrdinal) {
+                $au = new Author;
+                $au->lastName = "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
+                $au->contactId = $rrow->contactId;
+                if (!$viewid) {
+                    $au->author_index = -1;
+                }
+                $reviewer_list[] = $au;
+            }
+            if ($viewid
+                && (($this->commentType & self::CT_VISIBILITY) >= self::CT_REVIEWER
+                    || $rrow->reviewType >= REVIEW_PC)) {
+                $au = new Author($rrow);
+                $au->contactId = $rrow->contactId;
+                $reviewer_list[] = $au;
+            }
+        }
+        if ($user->can_view_comment_identity($this->prow, null)) {
+            // fuck privileged commentees
+        }
+
+        $pc_list = [];
+        if ($user->can_view_pc()) {
+            $pc_list = $this->conf->pc_members();
+        }
+
+        // enumerate desired mentions and save them
+        $desired_mentions = [];
+        $text = $this->commentOverflow ?? $this->comment;
+        foreach (MentionParser::parse($text, $reviewer_list, $pc_list) as $mpx) {
+            $named = $mpx[0] instanceof Contact || $mpx[0]->author_index !== -1;
+            $desired_mentions[] = [$mpx[0]->contactId, $mpx[1], $mpx[2], $named];
+            $this->conf->request_cached_user_by_id($mpx[0]->contactId);
+        }
+
+        $old_data = $this->commentData;
+        $this->set_data("mentions", empty($mentions) ? null : $mentions);
+        if ($this->commentData !== $old_data) {
+            $this->conf->qe("update CommentInfo set commentData=? where paperId=? and commentId=?", $this->commentData, $this->paperId, $this->commentId);
+        }
+
+        // go over mentions, send email
+        $mentions = [];
+        foreach ($desired_mentions as $mxm) {
+            if (($mentionee = $this->conf->cached_user_by_id($mxm[0]))
+                && $mentionee->can_view_comment($this->prow, $this)) {
+                $mentions[] = $mxm;
+                if (!isset($this->saved_mentions[$mxm[0]])) {
+                    HotCRPMailer::send_to($mentionee, "@mentionnotify", ["prow" => $this->prow, "comment_row" => $this]);
+                    $this->saved_mentions[$mxm[0]] = htmlspecialchars(substr($text, $mxm[1] + 1, $mxm[2] - $mxm[1] - 1));
+                }
+                if ($mxm[3]) {
+                    $this->saved_mentions[$mxm[0]] = $user->reviewer_html_for($mentionee);
+                }
+            }
+        }
+
+        // mark if notifications are missing
+        foreach ($desired_mentions as $mxm) {
+            if (!isset($this->saved_mentions[$mxm[0]]))
+                $this->saved_mentions_missing = true;
+        }
     }
 
     /** @return list<Contact> */

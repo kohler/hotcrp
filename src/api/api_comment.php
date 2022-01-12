@@ -155,6 +155,12 @@ class Comment_API {
             // generate save response
             if ($ok) {
                 $mis[] = self::save_success_message($xcrow);
+                if ($xcrow && $xcrow->saved_mentions) {
+                    $mis[] = new MessageItem(null, $user->conf->_("<5>Notified mentioned users %#s", array_values($xcrow->saved_mentions)), MessageSet::SUCCESS);
+                }
+                if ($xcrow && $xcrow->saved_mentions_missing) {
+                    $mis[] = new MessageItem(null, $user->conf->_("<0>Some users you mentioned cannot see this comment yet."), MessageSet::WARNING_NOTE);
+                }
             }
         }
 

@@ -663,18 +663,8 @@ class PaperInfo {
         return $prow;
     }
 
-    static function table_name() {
-        return "Paper";
-    }
-
-    static function id_column() {
-        return "paperId";
-    }
-
-    static function comment_table_name() {
-        return "PaperComment";
-    }
-
+    /** @param string $prefix
+     * @return string */
     static function my_review_permissions_sql($prefix = "") {
         return "group_concat({$prefix}reviewType, ' ', coalesce({$prefix}reviewSubmitted,0), ' ', reviewNeedsSubmit)";
     }

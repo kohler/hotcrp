@@ -256,7 +256,8 @@ CREATE TABLE `PaperComment` (
   `commentTags` varbinary(1024) DEFAULT NULL,
   `commentRound` int(11) NOT NULL DEFAULT 0,
   `commentFormat` tinyint(1) DEFAULT NULL,
-  `commentOverflow` longblob,
+  `commentOverflow` longblob DEFAULT NULL,
+  `commentData` varbinary(4096) DEFAULT NULL,
   PRIMARY KEY (`paperId`,`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
@@ -557,7 +558,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 252);
+insert into Settings (name, value) values ('allowPaperOption', 253);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

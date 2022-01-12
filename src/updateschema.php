@@ -2151,6 +2151,10 @@ class UpdateSchema {
             && $this->v252_change_column_default_charset()) {
             $conf->update_schema_version(252);
         }
+        if ($conf->sversion === 252
+            && $conf->ql_ok("alter table PaperComment add `commentData` varbinary(4096) DEFAULT NULL")) {
+            $conf->update_schema_version(253);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
