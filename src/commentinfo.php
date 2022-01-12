@@ -19,12 +19,17 @@ class CommentInfo {
     public $timeNotified;
     /** @var int */
     public $timeDisplayed;
+    /** @var ?string */
     public $comment;
     /** @var int */
     public $commentType;
+    /** @var int */
     public $replyTo;
+    /** @var int */
     public $ordinal;
+    /** @var int */
     public $authorOrdinal;
+    /** @var ?string */
     public $commentTags;
     /** @var int */
     public $commentRound;
@@ -97,6 +102,9 @@ class CommentInfo {
         } else {
             $this->commentType = (int) $this->commentType;
         }
+        $this->replyTo = (int) $this->replyTo;
+        $this->ordinal = (int) $this->ordinal;
+        $this->authorOrdinal = (int) $this->authorOrdinal;
         $this->commentRound = (int) $this->commentRound;
         if ($this->commentFormat !== null) {
             $this->commentFormat = (int) $this->commentFormat;
@@ -569,26 +577,20 @@ class CommentInfo {
     }
 
 
-    private function save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn) {
+    private function save_ordinal($cmtid, $ctype) {
         $okey = $ctype >= self::CT_AUTHOR ? "authorOrdinal" : "ordinal";
-        $q = "update $Table, (select coalesce(max($Table.$okey),0) maxOrdinal
-    from $LinkTable
-    left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn)
-    where $LinkTable.$LinkColumn={$this->prow->$LinkColumn}
-    group by $LinkTable.$LinkColumn) t
+        $q = "update PaperComment, (select coalesce(max(PaperComment.$okey),0) maxOrdinal
+    from Paper
+    left join PaperComment on (PaperComment.paperId=Paper.paperId)
+    where Paper.paperId={$this->prow->paperId}
+    group by Paper.paperId) t
 set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $this->conf->qe($q);
     }
 
-    /** @return bool */
-    function save($req, Contact $acting_contact) {
-        if (is_array($req)) {
-            $req = (object) $req;
-        }
-        $Table = $this->prow->comment_table_name();
-        $LinkTable = $this->prow->table_name();
-        $LinkColumn = $this->prow->id_column();
-
+    /** @param array $req
+     * @return bool */
+    function save_comment($req, Contact $acting_contact) {
         $contact = $acting_contact;
         if (!$contact->contactId) {
             $contact = $acting_contact->reviewer_capability_user($this->prow->paperId);
@@ -598,7 +600,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             return false;
         }
 
-        $req_visibility = self::$visibility_revmap[$req->visibility ?? ""] ?? null;
+        $req_visibility = self::$visibility_revmap[$req["visibility"] ?? ""] ?? null;
         if ($req_visibility === null && $this->commentId) {
             $req_visibility = $this->commentType & self::CT_VISIBILITY;
         }
@@ -607,7 +609,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $response_name = null;
         if ($is_response) {
             $ctype = self::CT_RESPONSE | self::CT_AUTHOR;
-            if (!($req->submit ?? null)) {
+            if (!($req["submit"] ?? null)) {
                 $ctype |= self::CT_DRAFT;
             }
             $response_name = $this->conf->resp_round_name($this->commentRound);
@@ -618,7 +620,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         }
         if ($is_response
             ? $this->prow->blind
-            : $this->conf->is_review_blind(!!($req->blind ?? null))) {
+            : $this->conf->is_review_blind(!!($req["blind"] ?? null))) {
             $ctype |= self::CT_BLIND;
         }
         if ($this->commentId
@@ -635,8 +637,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $ctags .= " {$response_name}response#0";
             }
             $expected_tags = $ctags;
-        } else if (($req->tags ?? null)
-                   && preg_match_all('/\S+/', (string) $req->tags, $m)
+        } else if (($req["tags"] ?? null)
+                   && preg_match_all('/\S+/', (string) $req["tags"], $m)
                    && !$contact->act_author_view($this->prow)) {
             $tagger = new Tagger($contact);
             $ts = [];
@@ -659,7 +661,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         // attachments
         $docids = $old_docids = [];
-        if (($docs = ($req->docs ?? null))) {
+        if (($docs = $req["docs"] ?? null)) {
             $ctype |= self::CT_HASDOC;
             $docids = array_map(function ($doc) { return $doc->paperStorageId; }, $docs);
         }
@@ -670,22 +672,24 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         // notifications
         $displayed = !($ctype & self::CT_DRAFT);
 
-        // query
-        if (($text = $req->text ?? null) !== false) {
+        // text
+        if (($text = $req["text"] ?? null) !== false) {
             $text = (string) $text;
         }
+
+        // query
         $q = "";
-        $qv = array();
+        $qv = [];
         if ($text === false) {
             if ($this->commentId) {
                 $change = true;
-                $q = "delete from $Table where commentId=$this->commentId";
+                $q = "delete from PaperComment where commentId=$this->commentId";
                 $docids = [];
             }
         } else if (!$this->commentId) {
             $change = true;
-            $qa = ["contactId, $LinkColumn, commentType, comment, commentOverflow, timeModified, replyTo"];
-            $qb = [$contact->contactId, $this->prow->$LinkColumn, $ctype, "?", "?", Conf::$now, 0];
+            $qa = ["contactId, paperId, commentType, comment, commentOverflow, timeModified, replyTo"];
+            $qb = [$contact->contactId, $this->prow->paperId, $ctype, "?", "?", Conf::$now, 0];
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {
@@ -704,13 +708,13 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $qa[] = "timeDisplayed, timeNotified";
                 $qb[] = Conf::$now . ", " . Conf::$now;
             }
-            $q = "insert into $Table (" . join(", ", $qa) . ") select " . join(", ", $qb) . "\n";
+            $q = "insert into PaperComment (" . join(", ", $qa) . ") select " . join(", ", $qb) . "\n";
             if ($is_response) {
                 // make sure there is exactly one response
-                $q .= " from (select $LinkTable.$LinkColumn, coalesce(commentId, 0) commentId
-                from $LinkTable
-                left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn and (commentType&" . self::CT_RESPONSE . ")!=0 and commentRound=$this->commentRound)
-                where $LinkTable.$LinkColumn={$this->prow->$LinkColumn} limit 1) t
+                $q .= " from (select Paper.paperId, coalesce(commentId, 0) commentId
+                from Paper
+                left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . self::CT_RESPONSE . ")!=0 and commentRound=$this->commentRound)
+                where Paper.paperId={$this->prow->paperId} limit 1) t
         where t.commentId=0";
             }
         } else {
@@ -732,7 +736,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 && $displayed) {
                 $qa .= ", timeDisplayed=" . Conf::$now;
             }
-            $q = "update $Table set timeModified=" . Conf::$now . $qa . ", commentType=$ctype, comment=?, commentOverflow=?, commentTags=? where commentId=$this->commentId";
+            $q = "update PaperComment set timeModified=" . Conf::$now . $qa . ", commentType=$ctype, comment=?, commentOverflow=?, commentTags=? where commentId=$this->commentId";
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {
@@ -789,14 +793,14 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $log .= ": " . join(", ", $ch);
             }
         }
-        $acting_contact->log_activity_for($this->contactId ? : $contact->contactId, $log, $this->prow->$LinkColumn);
+        $acting_contact->log_activity_for($this->contactId ? : $contact->contactId, $log, $this->prow->paperId);
 
         // update automatic tags
         $this->conf->update_automatic_tags($this->prow, "comment");
 
         // ordinal
         if ($text !== false && $this->ordinal_missing($ctype)) {
-            $this->save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn);
+            $this->save_ordinal($cmtid, $ctype);
         }
 
         // reload

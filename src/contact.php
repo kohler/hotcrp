@@ -1320,7 +1320,7 @@ class Contact {
         }
     }
 
-    /** @param ?string $key */
+    /** @param string $key */
     function set_data($key, $value) {
         $d = $this->make_data();
         if (($d->$key ?? null) !== $value) {

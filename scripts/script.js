@@ -5046,10 +5046,7 @@ function make_save_callback($c) {
                 form.action = hoturl("=paper", arg);
                 form.submit();
             }
-            var error = data.message || data.error;
-            if (!/^<div/.test(error))
-                error = render_xmsg(error, 2);
-            $c.find(".cmtmsg").html(error);
+            $c.find(".cmtmsg").html(render_message_list(data.message_list));
             $c.find("button, input[type=file]").prop("disabled", false);
             $c.find("input[name=draft]").remove();
             if (data.deleted) {
@@ -5069,9 +5066,12 @@ function make_save_callback($c) {
         }
         if (data.cmt) {
             save_change_id($c, cid, cj_cid(data.cmt));
-            render_cmt($c, data.cmt, editing_response, data.message || data.msg);
-        } else {
-            $c.closest(".cmtg").html(data.message || data.msg);
+            render_cmt($c, data.cmt, editing_response);
+        }
+        if (data.message_list) {
+            var $cg = $c.closest(".cmtg");
+            data.cmt || $cg.html('<div class="cmtmsg"></div>');
+            $cg.find(".cmtmsg").html(render_message_list(data.message_list));
         }
     };
 }
@@ -5161,7 +5161,7 @@ function submit_editor(evt) {
     save_editor(this, "submit");
 }
 
-function render_cmt($c, cj, editing, msg) {
+function render_cmt($c, cj, editing) {
     var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead, i,
         cid = cj_cid(cj);
     cmts[cid] = cj;
@@ -5222,11 +5222,7 @@ function render_cmt($c, cj, editing, msg) {
     hc.pop_collapse();
 
     // text
-    hc.push('<div class="cmtmsg">', '</div>');
-    if (msg) {
-        hc.push(msg);
-    }
-    hc.pop();
+    hc.push('<div class="cmtmsg"></div>');
     if (cj.response && cj.draft && cj.text) {
         hc.push('<p class="feedback is-warning">Reviewers can’t see this draft response.</p>');
     }

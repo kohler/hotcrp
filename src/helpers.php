@@ -107,7 +107,7 @@ class JsonResult implements JsonSerializable {
             }
         } else if (is_string($values)) {
             assert($this->status && $this->status > 299);
-            $this->content = ["ok" => false, "error" => $values];
+            $this->content = ["ok" => false, "error" => $values, "message_list" => ["message" => $values, "status" => 2]];
         } else {
             assert(is_associative_array($values));
             $this->content = $values;
@@ -123,13 +123,10 @@ class JsonResult implements JsonSerializable {
             return new JsonResult($jr);
         }
     }
-    function export_errors(Conf $conf = null) {
-        if (isset($this->content["error"])) {
+    function export_messages(Conf $conf) {
+        if (!isset($this->content["message_list"]) && isset($this->content["error"])) {
             Conf::msg_on($conf, $this->content["error"], 2);
         }
-    }
-    function export_messages(Conf $conf) {
-        $this->export_errors();
         foreach ($this->content["message_list"] ?? [] as $mx) {
             $ma = (array) $mx;
             if (is_string($ma["message"] ?? null) && $ma["message"] !== "") {
