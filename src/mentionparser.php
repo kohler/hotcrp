@@ -7,15 +7,15 @@ class MentionParser {
      * @param array<Contact|Author> ...$user_lists
      * @return \Generator<array{Contact|Author,int,int}> */
     static function parse($s, ...$user_lists) {
-        $len = strlen($s);
         $pos = 0;
+        $len = strlen($s);
         $isascii = null;
         while (($pos = strpos($s, "@", $pos)) !== false) {
             // check that the mention is isolated on the left
             if (($pos > 0
                  && !ctype_space($s[$pos - 1])
                  /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-                 && strpos("([-+,", $s[$pos - 1]) === false
+                 && strpos("([-+,;", $s[$pos - 1]) === false
                  && (/* not en- or em-dash */ $pos < 4
                      || $s[$pos - 3] !== "\xe2"
                      || $s[$pos - 2] !== "\x80"
@@ -54,12 +54,16 @@ class MentionParser {
                 $uset = [];
                 foreach ($user_lists as $strength => $ulist) {
                     foreach ($ulist as $u) {
-                        $fn = $u->firstName === "" ? "" : "{$u->firstName} ";
-                        $ln = $u->lastName === "" ? "" : "{$u->lastName} ";
-                        if ($fn === "" && $ln === "") {
+                        if ($u->firstName === "" && $u->lastName === "") {
                             continue;
                         }
-                        $ux = [$u, $fn . $ln, 0, strlen($fn === "" ? $ln : $fn), $strength];
+                        $fn = $u->firstName === "" ? "" : "{$u->firstName} ";
+                        $n = $fn . ($u->lastName === "" ? "" : "{$u->lastName} ");
+                        if (strpos($n, ".") !== false) {
+                            $fn = preg_replace('/\.\s*/', " ", $fn);
+                            $n = preg_replace('/\.\s*/', " ", $n);
+                        }
+                        $ux = [$u, $n, 0, strlen($fn === "" ? $n : $fn), $strength];
                         if (self::match_word($ux, $w, $collator)
                             && !self::matches_contain($uset, $u->contactId)) {
                             $uset[] = $ux;
@@ -120,15 +124,26 @@ class MentionParser {
                     $pos2 = $pos2 + strlen($m[0]);
                 }
 
+                // If we ended with no matches but there was one best match at some
+                // point, select that
+                if (count($uset) === 0 && $best_ux !== null) {
+                    $uset = [[$best_ux]];
+                    $pos2 = $best_pos2;
+                    $endpos = $best_endpos;
+                }
+
                 // Yield result if any
                 if (count($uset) === 1
                     && self::mention_ends_at($s, $endpos)) {
-                    yield [$uset[0][0], $pos, $endpos];
-                } else if (count($uset) === 0
-                           && $best_ux !== null
-                           && self::mention_ends_at($s, $best_endpos)) {
-                    yield [$best_ux, $pos, $best_endpos];
-                    $pos2 = $best_pos2;
+                    $ux = $uset[0][0];
+                    // Heuristic to include the period after an initial
+                    if ($endpos < $len
+                        && $s[$endpos] === "."
+                        && $endpos - $pos >= 2
+                        && strpos($ux->firstName . $ux->lastName, substr($s, $endpos - 1, 2)) !== false) {
+                        ++$endpos;
+                    }
+                    yield [$ux, $pos, $endpos];
                 }
 
                 $pos = $pos2;
@@ -145,9 +160,9 @@ class MentionParser {
      * @return bool */
     static function word_at($s, $pos, $isascii, &$m) {
         if ($isascii) {
-            return !!preg_match('/\G([A-Za-z](?:[A-Za-z0-9.]|-(?=[A-Za-z]))*)[ \t]*\r?\n?[ \t]*/', $s, $m, 0, $pos);
+            return !!preg_match('/\G([A-Za-z](?:[A-Za-z0-9]|-(?=[A-Za-z]))*)\.?[ \t]*\r?\n?[ \t]*/', $s, $m, 0, $pos);
         } else {
-            return !!preg_match('/\G(\pL(?:[\pL\pM\pN.]|-(?=\pL))*)[ \t]*\r?\n?[ \t]*/u', $s, $m, 0, $pos);
+            return !!preg_match('/\G(\pL(?:[\pL\pM\pN]|-(?=\pL))*)\.?[ \t]*\r?\n?[ \t]*/u', $s, $m, 0, $pos);
         }
     }
 
