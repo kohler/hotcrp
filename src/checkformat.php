@@ -145,7 +145,7 @@ class CheckFormat extends MessageSet {
                 $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
             } else {
                 $this->msg_fail("<0>" . $doc->export_filename() . " cannot be processed");
-                $this->msg_at("error", "The file may be corrupted or not in PDF format.", MessageSet::INFORM);
+                $this->msg_at("error", "<0>The file may be corrupted or not in PDF format.", MessageSet::INFORM);
             }
 
             if ($limit > 0) {
