@@ -52,7 +52,7 @@ class MentionParser {
 
                 // Match the first word
                 $uset = [];
-                foreach ($user_lists as $strength => $ulist) {
+                foreach ($user_lists as $listindex => $ulist) {
                     foreach ($ulist as $u) {
                         if ($u->firstName === "" && $u->lastName === "") {
                             continue;
@@ -63,7 +63,7 @@ class MentionParser {
                             $fn = preg_replace('/\.\s*/', " ", $fn);
                             $n = preg_replace('/\.\s*/', " ", $n);
                         }
-                        $ux = [$u, $n, 0, strlen($fn === "" ? $n : $fn), $strength];
+                        $ux = [$u, $n, 0, strlen($fn === "" ? $n : $fn), $listindex];
                         if (self::match_word($ux, $w, $collator)
                             && !self::matches_contain($uset, $u->contactId)) {
                             $uset[] = $ux;
@@ -179,7 +179,7 @@ class MentionParser {
         }
     }
 
-    /** @param array{Contact|Author,string,int,int} &$ux
+    /** @param array{Contact|Author,string,int,int,int} &$ux
      * @param string $w
      * @param Collator $collator
      * @return bool */
@@ -206,7 +206,7 @@ class MentionParser {
         return false;
     }
 
-    /** @param list<array{Contact|Author,string,int,int}> $uxs
+    /** @param list<array{Contact|Author,string,int,int,int}> $uxs
      * @param int $cid
      * @return bool */
     static private function matches_contain($uxs, $cid) {
