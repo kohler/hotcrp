@@ -13,8 +13,11 @@ class CommentInfo {
     public $paperId;
     /** @var int */
     public $contactId;
+    /** @var int */
     public $timeModified;
+    /** @var int */
     public $timeNotified;
+    /** @var int */
     public $timeDisplayed;
     public $comment;
     /** @var int */
@@ -86,6 +89,9 @@ class CommentInfo {
         $this->commentId = (int) $this->commentId;
         $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
+        $this->timeModified = (int) $this->timeModified;
+        $this->timeNotified = (int) $this->timeNotified;
+        $this->timeDisplayed = (int) $this->timeDisplayed;
         if ($this->commentType === null) {
             $this->commentType = self::CT_REVIEWER;
         } else {
@@ -192,7 +198,7 @@ class CommentInfo {
     /** @return int */
     function mtime(Contact $viewer) {
         if ($viewer->can_view_comment_time($this->prow, $this)) {
-            return (int) $this->timeModified;
+            return $this->timeModified;
         } else {
             return $this->conf->obscure_time($this->timeModified);
         }
@@ -470,7 +476,7 @@ class CommentInfo {
         }
         if ($this->timeModified > 0) {
             if ($idable_override) {
-                $cj->modified_at = (int) $this->timeModified;
+                $cj->modified_at = $this->timeModified;
             } else {
                 $cj->modified_at = $this->conf->obscure_time($this->timeModified);
                 $cj->modified_at_obscured = true;
@@ -797,7 +803,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         if ($text !== false) {
             $comments = $this->prow->fetch_comments("commentId=$cmtid");
             $this->merge(get_object_vars($comments[$cmtid]), $this->prow);
-            if ($this->timeNotified == $this->timeModified) {
+            if ($this->timeNotified === $this->timeModified) {
                 if ($is_response && ($ctype & self::CT_DRAFT) !== 0) {
                     $tmpl = "@responsedraftnotify";
                 } else if ($is_response) {

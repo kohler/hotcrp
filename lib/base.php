@@ -270,6 +270,18 @@ function validate_email($email) {
     return preg_match('/\A[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+\z/', $email);
 }
 
+/** @param string $s
+ * @param int $pos
+ * @return ?string */
+function validate_email_at($s, $pos) {
+    // Allow @_.com email addresses.  Simpler than RFC822 validation.
+    if (preg_match('/\G[-!#$%&\'*+.\/0-9=?A-Z^_`a-z{|}~]+@(?:_\.|(?:[-0-9A-Za-z]+\.)+)[0-9A-Za-z]+(?=\z|[-,.;:()\[\]{}\s]|–|—)/', $s, $m, 0, $pos)) {
+        return $m[0];
+    } else {
+        return null;
+    }
+}
+
 /** @param string $word
  * @return string */
 function mime_quote_string($word) {

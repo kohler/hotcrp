@@ -8094,11 +8094,10 @@ return function (classes, class_prefix) {
                               + '</pattern></defs></svg>');
     if (param.rule && window.btoa) {
         style || (style = $("<style></style>").appendTo("head")[0].sheet);
-        t = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size +
-            '" height="' + size + '">' + t + '</svg>';
-        t = 'background-image: url(data:image/svg+xml;base64,' + btoa(t) + ');';
-        x = "." + tags.join(".") + (class_prefix ? $.trim("." + class_prefix) : "");
-        style.insertRule(x + " { " + t + " }", 0);
+        t = '<svg xmlns="http://www.w3.org/2000/svg" width="'.concat(size, '" height="', size, '">', t, '</svg>');
+        x = ".".concat(tags.join("."), class_prefix ? $.trim("." + class_prefix) : "");
+        style.insertRule(x.concat(" { background-image: url(data:image/svg+xml;base64,",
+            btoa(t), '); }'), 0);
     }
     fmap[index] = fmap[canonical_index] = "url(#" + id + ")";
     return fmap[index];

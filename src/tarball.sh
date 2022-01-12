@@ -284,6 +284,7 @@ src/logentryfilter.php
 src/mailrecipients.php
 src/mailsender.php
 src/meetingtracker.php
+src/mentionparser.php
 src/mergecontacts.php
 src/multiconference.php
 src/options/o_abstract.php

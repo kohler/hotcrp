@@ -3645,7 +3645,7 @@ class Conf {
         return "group_concat(contactId,' ',preference,' ',coalesce(expertise,'.'))";
     }
 
-    /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
+    /** @param array{paperId?:list<int>|PaperID_SearchTerm,where?:string} $options
      * @return Dbl_Result */
     function paper_result($options, Contact $user = null) {
         // Options:
@@ -3852,7 +3852,7 @@ class Conf {
         if ($options["myConflicts"] ?? false) {
             $where[] = $cxid > 0 ? "PaperConflict.conflictType>" . CONFLICT_MAXUNCONFLICTED : "false";
         }
-        if ($options["where"] ?? false) {
+        if (isset($options["where"]) && $options["where"]) {
             $where[] = $options["where"];
         }
 

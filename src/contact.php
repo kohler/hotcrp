@@ -39,6 +39,8 @@ class Contact {
     public $lastName = "";
     /** @var string */
     public $unaccentedName = "";
+    /** @var ?bool */
+    public $name_usascii;
     /** @var string */
     public $affiliation = "";
     /** @var string */
@@ -1821,8 +1823,10 @@ class Contact {
             $this->set_prop("firstName", $reg->firstName ?? "", true);
             $this->set_prop("lastName", $reg->lastName ?? "", true);
             $this->set_prop("affiliation", $reg->affiliation ?? "", true);
-            $this->set_prop("phone", $reg->phone ?? "", true);
-            $this->set_prop("country", $reg->country ?? "", true);
+            if (!($reg instanceof Author)) {
+                $this->set_prop("phone", $reg->phone ?? "", true);
+                $this->set_prop("country", $reg->country ?? "", true);
+            }
         }
     }
 
