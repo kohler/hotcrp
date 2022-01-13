@@ -4286,31 +4286,27 @@ $(function () {
 
 // reviews
 handle_ui.on("js-review-tokens", function () {
-    var $d;
-    function submit(evt) {
-        $d.find(".msg").remove();
-        $.post(hoturl("=api/reviewtoken"), $d.find("form").serialize(),
-            function (data) {
-                if (data.ok) {
-                    $d.close();
-                    if (data.message) {
-                        document.cookie = "hotcrpmessage=" + encodeURIComponent(JSON.stringify(data.message));
-                        location.assign(location.href);
-                    }
-                } else {
-                    $d.find("h2").after(render_xmsg(data.error || "Internal error.", 2));
-                }
-            });
-        return false;
-    }
-    var hc = popup_skeleton();
+    var $d, hc = popup_skeleton();
+    hc = popup_skeleton();
     hc.push('<h2>Review tokens</h2>');
     hc.push('<p>Enter tokens to gain access to the corresponding reviews.</p>');
     hc.push('<input type="text" size="60" name="token" value="' + escape_html(this.getAttribute("data-review-tokens") || "") + '" placeholder="Review tokens">');
     hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save tokens</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     $d = hc.show();
-    $d.on("submit", "form", submit);
+    $d.on("submit", "form", function (evt) {
+        $d.find(".msg").remove();
+        $.post(hoturl("=api/reviewtoken"), $d.find("form").serialize(),
+            function (data) {
+                if (data.ok) {
+                    $d.close();
+                    location.assign(hoturl("index", {reviewtokenreport: 1}));
+                } else {
+                    $d.show_errors(data);
+                }
+            });
+        return false;
+    });
 });
 
 window.review_form = (function ($) {

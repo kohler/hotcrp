@@ -22,6 +22,11 @@
         "request_function": "AdminHome_Page::check_admin",
         "render_function": "AdminHome_Page::render"
     },
+    {
+        "name": "home/reviewtokenreport",
+        "allow_request_if": "req.reviewtokenreport",
+        "request_function": "Home_Page::reviewtokenreport_request"
+    },
 
     {
         "name": "home/head", "order": 1000,

@@ -27,6 +27,21 @@ class Home_Page {
         }
     }
 
+    static function reviewtokenreport_request(Contact $user, Qrequest $qreq) {
+        if (!$user->is_empty() && $qreq->reviewtokenreport) {
+            $ml = [];
+            if (!$user->review_tokens()) {
+                $ml[] = new MessageItem(null, "<0>Review tokens cleared", MessageSet::SUCCESS);
+            } else {
+                $result = $user->conf->qe("select reviewToken, paperId from PaperReview where reviewToken?a order by paperId", $user->review_tokens());
+                while (($row = $result->fetch_row())) {
+                    $ml[] = new MessageItem(null, "<5>Review token ‘" . htmlspecialchars(encode_token((int) $row[0])) . "’ lets you review " . Ht::link("submission #{$row[1]}", $user->conf->hoturl("paper", "p={$row[1]}")), MessageSet::SUCCESS);
+                }
+            }
+            $user->conf->feedback_msg($ml);
+        }
+    }
+
     static function profile_redirect_request(Contact $user, Qrequest $qreq) {
         if (!$user->is_empty() && $qreq->postlogin) {
             LoginHelper::check_postlogin($user, $qreq);
