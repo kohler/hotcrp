@@ -963,6 +963,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $mentions = [];
         foreach ($desired_mentions as $mxm) {
             if (($mentionee = $this->conf->cached_user_by_id($mxm[0]))
+                && !$mentionee->is_disabled()
                 && $mentionee->can_view_comment($this->prow, $this)) {
                 $mentions[] = $mxm;
                 if (!isset($this->saved_mentions[$mxm[0]])) {
