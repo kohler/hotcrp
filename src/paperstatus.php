@@ -948,7 +948,7 @@ class PaperStatus extends MessageSet {
         }
 
         if (($pj->error ?? null) || ($pj->error_html ?? null)) {
-            $this->error_at("error", $this->_("Refusing to save submission with error"));
+            $this->error_at("error", $this->_("<0>Refusing to save submission with error"));
             return false;
         }
 
@@ -958,7 +958,7 @@ class PaperStatus extends MessageSet {
             $this->prow = $this->conf->paper_by_id($paperid, $this->user, ["topics" => true, "options" => true]);
         }
         if ($this->prow && $paperid !== $this->prow->paperId) {
-            $this->error_at("pid", $this->_("Saving submission with different ID"));
+            $this->error_at("pid", $this->_("<0>Saving submission with different ID"));
             return false;
         }
         $this->_nnprow = $this->prow ?? PaperInfo::make_new($this->user);
@@ -1000,7 +1000,7 @@ class PaperStatus extends MessageSet {
                     || $this->_paper_upd["authorInformation"] === (new Author($this->user))->unparse_tabbed())
                 && empty($this->_topic_ins)
                 && empty($this->_option_ins)) {
-                $this->error_at(null, "Empty submission. Please fill out the submission fields and try again.");
+                $this->error_at(null, "<0>Empty submission. Please fill out the submission fields and try again");
                 $ok = false;
             }
         }
@@ -1224,7 +1224,7 @@ class PaperStatus extends MessageSet {
                     $this->conf->qe("unlock tables");
                 }
                 if (Dbl::is_error($result) || !$result->insert_id) {
-                    $this->error_at(null, $this->_("Could not create paper."));
+                    $this->error_at(null, $this->_("<0>Could not create paper"));
                     return false;
                 }
                 $this->paperId = (int) $result->insert_id;
