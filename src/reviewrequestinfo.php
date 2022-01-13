@@ -29,7 +29,7 @@ class ReviewRequestInfo {
     /** @var int */
     public $reviewType = REVIEW_REQUEST;
 
-    private function merge() {
+    private function incorporate() {
         $this->paperId = (int) $this->paperId;
         $this->requestedBy = (int) $this->requestedBy;
         if ($this->reviewRound !== null) {
@@ -44,8 +44,19 @@ class ReviewRequestInfo {
     /** @return ?ReviewRequestInfo */
     static function fetch($result) {
         if (($row = $result->fetch_object("ReviewRequestInfo"))) {
-            $row->merge();
+            $row->incorporate();
         }
         return $row;
+    }
+
+    /** @return Contact */
+    function make_user(Conf $conf) {
+        return new Contact($conf, [
+            "contactId" => $this->contactId,
+            "email" => $this->email,
+            "firstName" => $this->firstName,
+            "lastName" => $this->lastName,
+            "affiliation" => $this->affiliation
+        ]);
     }
 }

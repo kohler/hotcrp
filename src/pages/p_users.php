@@ -17,7 +17,7 @@ class Users_Page {
     function __construct(Contact $viewer, Qrequest $qreq) {
         $this->conf = $viewer->conf;
         if ($viewer->contactId && $viewer->is_disabled()) {
-            $viewer = new Contact(["email" => $viewer->email], $viewer->conf);
+            $viewer = new Contact($viewer->conf, ["email" => $viewer->email]);
         }
         $this->viewer = $viewer;
         $this->qreq = $qreq;

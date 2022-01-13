@@ -78,7 +78,12 @@ class RequestReview_API {
         $xreviewer = $reviewer
             ?? $user->conf->contactdb_user_by_email($email);
         if (!$xreviewer) {
-            $xreviewer = new Contact(["firstName" => $name_args->firstName, "lastName" => $name_args->lastName, "email" => $name_args->email, "affiliation" => $name_args->affiliation], $user->conf);
+            $xreviewer = new Contact($user->conf, [
+                "firstName" => $name_args->firstName,
+                "lastName" => $name_args->lastName,
+                "email" => $name_args->email,
+                "affiliation" => $name_args->affiliation
+            ]);
         }
         $potconflict = $prow->potential_conflict_html($xreviewer);
 

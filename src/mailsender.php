@@ -353,7 +353,7 @@ class MailSender {
 
         while (($rowdata = $result->fetch_assoc())) {
             $row = new PaperInfo($rowdata, $this->user, $this->conf);
-            $contact = new Contact($rowdata, $this->conf);
+            $contact = new Contact($this->conf, $rowdata);
             ++$nrows_done;
 
             $rest["prow"] = $prow = $row->paperId > 0 ? $row : null;

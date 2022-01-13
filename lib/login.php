@@ -68,7 +68,7 @@ class LoginHelper {
             }
         }
         return $conf->user_by_email($qreq->email)
-            ?? new Contact(["email" => $qreq->email], $conf);
+            ?? new Contact($conf, ["email" => $qreq->email]);
     }
 
     static function login_info(Conf $conf, Qrequest $qreq) {
@@ -283,7 +283,7 @@ class LoginHelper {
         } else if ($explicit) {
             kill_session();
         }
-        $user = new Contact(null, $user->conf);
+        $user = new Contact($user->conf);
         return $user->activate(null);
     }
 

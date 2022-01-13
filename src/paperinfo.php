@@ -569,14 +569,14 @@ class PaperInfo {
     /** @param ?array<string,null|string|int> $p
      * @param ?Contact $contact */
     function __construct($p = null, $contact = null, Conf $conf = null) {
-        $this->merge($p, $contact, $conf);
+        $this->incorporate($p, $contact, $conf);
     }
 
     /** @param ?array<string,null|string|int> $p
      * @param ?Contact $contact
      * @param ?Conf $conf
      * @suppress PhanAccessReadOnlyProperty */
-    private function merge($p, $contact, $conf) {
+    private function incorporate($p, $contact, $conf) {
         assert($contact === null ? $conf !== null : $contact instanceof Contact);
         $this->conf = $contact ? $contact->conf : $conf;
         if ($p) {
@@ -641,7 +641,7 @@ class PaperInfo {
     static function fetch($result, $contact, Conf $conf = null) {
         $prow = $result->fetch_object("PaperInfo", [null, $contact, $conf]);
         if ($prow && !is_int($prow->paperId)) {
-            $prow->merge(null, $contact, $conf);
+            $prow->incorporate(null, $contact, $conf);
         }
         return $prow;
     }
@@ -756,7 +756,7 @@ class PaperInfo {
     /** @return Contact */
     function author_view_user() {
         if (!$this->_author_view_user) {
-            $this->_author_view_user = new Contact(null, $this->conf);
+            $this->_author_view_user = new Contact($this->conf);
             $this->_author_view_user->set_capability("@av{$this->paperId}", true);
         }
         return $this->_author_view_user;

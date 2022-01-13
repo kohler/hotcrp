@@ -2183,7 +2183,8 @@ class Conf {
             $args = [
                 "fullName" => $this->opt("contactName"),
                 "email" => $this->opt("contactEmail"),
-                "isChair" => 1, "isPC" => 1, "is_site_contact" => 1,
+                "roles" => Contact::ROLE_PC | Contact::ROLE_CHAIR,
+                "is_site_contact" => 1,
                 "contactTags" => null
             ];
             if ((!$args["email"] || $args["email"] === "you@example.com")
@@ -2193,7 +2194,7 @@ class Conf {
                 $args["firstName"] = $row->firstName;
                 $args["lastName"] = $row->lastName;
             }
-            $this->_site_contact = new Contact($args, $this);
+            $this->_site_contact = new Contact($this, $args);
         }
         return $this->_site_contact;
     }
@@ -2201,11 +2202,12 @@ class Conf {
     /** @return Contact */
     function root_user() {
         if (!$this->_root_user) {
-            $this->_root_user = new Contact([
+            $this->_root_user = new Contact($this, [
                 "email" => "rootuser",
-                "isChair" => 1, "isPC" => 1, "is_site_contact" => 1,
+                "roles" => Contact::ROLE_PC | Contact::ROLE_CHAIR,
+                "is_site_contact" => 1,
                 "contactTags" => null
-            ], $this);
+            ]);
             $this->_root_user->set_overrides(Contact::OVERRIDE_CONFLICT);
         }
         return $this->_root_user;

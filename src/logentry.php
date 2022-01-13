@@ -249,7 +249,7 @@ class LogEntryGenerator {
         }
         if (!empty($this->need_users)) {
             foreach ($this->need_users as $cid => $x) {
-                $user = $this->users[$cid] = new Contact(["contactId" => $cid, "disabled" => 1], $this->conf);
+                $user = $this->users[$cid] = new Contact($this->conf, ["contactId" => $cid, "disabled" => 1]);
                 $user->disabled = "deleted";
             }
             $result = $this->conf->qe("select contactId, firstName, lastName, '' affiliation, email, 1 disabled from DeletedContactInfo where contactId?a", array_keys($this->need_users));

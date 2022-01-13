@@ -222,35 +222,32 @@ class Contact {
     ];
 
 
-    /** @param ?array<string,mixed> $user */
-    function __construct($user = null, Conf $conf = null) {
-        $this->conf = $conf ?? Conf::$main;
-        if ($user) {
-            $this->merge($user);
-        } else if ($this->contactId || $this->contactDbId) {
-            $this->db_load();
-        } else {
-            $this->contactXid = self::$next_xid--;
-        }
+    /** @param ?array<string,mixed> $values
+     * @param bool $dbload */
+    function __construct(Conf $conf, $values = null, $dbload = false) {
+        $this->conf = $conf;
+        $dbload && $this->fetch_incorporate();
+        $values && $this->merge($values);
+        $this->contactXid = $this->contactId ? : self::$next_xid--;
     }
 
-    /** @return ?Contact */
-    static function fetch($result, Conf $conf) {
-        $user = $result ? $result->fetch_object("Contact", [null, $conf]) : null;
-        '@phan-var ?Contact $user';
-        if ($user && !$user->conf) {
-            $user->conf = $conf;
-            $user->db_load();
+    /** @param ?array<string,mixed> $values
+     * @return ?Contact */
+    static function fetch($result, Conf $conf, $values = null) {
+        if (($user = $result->fetch_object("Contact", [$conf, $values, true]))) {
+            if (!$user->conf) {
+                $user->conf = $conf;
+                $user->fetch_incorporate();
+                $values && $user->merge($values);
+                $user->contactXid = $user->contactId ? : self::$next_xid--;
+            }
         }
         return $user;
     }
 
     /** @param array<string,mixed> $user */
     private function merge($user) {
-        if (is_object($user)) {
-            $user = (array) $user;
-        }
-        if ((!isset($user["dsn"]) || $user["dsn"] == $this->conf->dsn)
+        if ((!isset($user["dsn"]) || $user["dsn"] === $this->conf->dsn)
             && isset($user["contactId"])) {
             $this->contactId = (int) $user["contactId"];
         }
@@ -260,40 +257,29 @@ class Contact {
         if (isset($user["cdb_confid"])) {
             $this->cdb_confid = $user["cdb_confid"];
         }
-        $this->contactXid = $this->contactId ? : self::$next_xid--;
 
-        // handle slice properties
+        // name properties
         if (isset($user["firstName"]) && isset($user["lastName"])) {
             $this->firstName = (string) $user["firstName"];
             $this->lastName = (string) $user["lastName"];
-            $this->unaccentedName = isset($user["unaccentedName"])
-                ? $user["unaccentedName"]
-                : Text::name($this->firstName, $this->lastName, "", NAME_U);
+            $this->unaccentedName = $user["unaccentedName"]
+                ?? Text::name($this->firstName, $this->lastName, "", NAME_U);
         } else {
             $nameau = Author::make_keyed($user);
             $this->firstName = $nameau->firstName;
             $this->lastName = $nameau->lastName;
             $this->unaccentedName = $nameau->name(NAME_U);
         }
-
         $this->affiliation = simplify_whitespace((string) ($user["affiliation"] ?? ""));
         $this->email = simplify_whitespace((string) ($user["email"] ?? ""));
 
-        if (isset($user["is_site_contact"])) {
-            $this->is_site_contact = $user["is_site_contact"];
-        }
+        // role properties
         $roles = (int) ($user["roles"] ?? 0);
-        if ($user["isPC"] ?? false) {
-            $roles |= self::ROLE_PC;
-        }
-        if ($user["isAssistant"] ?? false) {
-            $roles |= self::ROLE_ADMIN;
-        }
-        if ($user["isChair"] ?? false) {
-            $roles |= self::ROLE_CHAIR;
-        }
         if ($roles !== 0) {
             $this->assign_roles($roles);
+        }
+        if (isset($user["is_site_contact"])) {
+            $this->is_site_contact = $user["is_site_contact"];
         }
 
         if (array_key_exists("contactTags", $user)) {
@@ -306,39 +292,16 @@ class Contact {
             $this->disabled = !!$user["disabled"];
         }
 
-        // handle other properties
-        foreach (self::$props as $prop => $shape) {
-            if (array_key_exists($prop, $user)
-                && ($shape & (self::PROP_SLICE | self::PROP_DATA)) === 0) {
-                $this->$prop = $user[$prop];
-                if ($this->$prop === null
-                    ? ($shape & self::PROP_NULL) === 0
-                    : (($shape & self::PROP_STRING) !== 0 && !is_string($this->$prop))
-                      || (($shape & self::PROP_INT) !== 0 && !is_int($this->$prop))
-                      || (($shape & self::PROP_BOOL) !== 0 && !is_bool($this->$prop))) {
-                    error_log("{$this->conf->dbname}: user {$this->email}: bad property $prop " . debug_string_backtrace());
-                }
-            }
-        }
-        if (isset($user["activity_at"])) {
-            $this->activity_at = (int) $user["activity_at"];
-        } else {
-            $this->activity_at = $this->lastLogin;
-        }
-        if (array_key_exists("data", $user)) {
-            $this->data = $user["data"];
-        }
         $this->_jdata = null;
         $this->_disabled = null;
         $this->_contactdb_user = false;
     }
 
-    private function db_load() {
+    private function fetch_incorporate() {
         $this->contactId = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
         $this->cdb_confid = (int) $this->cdb_confid;
         assert($this->contactId > 0 || ($this->contactId === 0 && $this->contactDbId > 0));
-        $this->contactXid = $this->contactId ? : self::$next_xid--;
 
         // handle slice properties
         if ($this->unaccentedName === "") {
@@ -390,9 +353,10 @@ class Contact {
     }
 
 
-    function unslice_using($x) {
+    function unslice_using($x, $all = false) {
+        $shapemask = self::PROP_LOCAL | self::PROP_DATA | ($all ? 0 : self::PROP_SLICE);
         foreach (self::$props as $prop => $shape) {
-            if (($shape & (self::PROP_LOCAL | self::PROP_SLICE | self::PROP_DATA)) === self::PROP_LOCAL) {
+            if (($shape & $shapemask) === self::PROP_LOCAL) {
                 $value = $x->$prop;
                 if ($value === null || ($shape & self::PROP_STRING) !== 0) {
                     $this->$prop = $value;
@@ -778,9 +742,9 @@ class Contact {
 
     /** @param int $overrides
      * @param string $method */
-    function call_with_overrides($overrides, $method /* , arguments... */) {
+    function call_with_overrides($overrides, $method, ...$args) {
         $old_overrides = $this->set_overrides($overrides);
-        $result = call_user_func_array([$this, $method], array_slice(func_get_args(), 2));
+        $result = call_user_func_array([$this, $method], $args);
         $this->_overrides = $old_overrides;
         return $result;
     }
@@ -790,7 +754,11 @@ class Contact {
         if (!$this->has_account_here()
             && ($u = Contact::create($this->conf, null, $this))) {
             $this->contactDbId = 0;
-            $this->merge(get_object_vars($u));
+            $this->contactId = $u->contactId;
+            $this->contactXid = $u->contactXid;
+            $this->unslice_using($u, true);
+            $this->unaccentedName = $u->unaccentedName;
+            $this->assign_roles($this->roles);
         }
     }
 
@@ -829,7 +797,7 @@ class Contact {
                 && $this->conf->contactdb()
                 && $this->has_email()
                 && !self::is_anonymous_email($this->email)) {
-                $u = $this->_contactdb_user = new Contact(["email" => $this->email, "cdb_confid" => -1]);
+                $u = $this->_contactdb_user = new Contact($this->conf, ["email" => $this->email, "cdb_confid" => -1]);
             }
             if ($u && $this->contactId > 0) {
                 $u->contactXid = $this->contactId;
@@ -885,7 +853,7 @@ class Contact {
         }
 
         $cdbur = $this->conf->contactdb_user_by_email($this->email);
-        $cdbux = $cdbur ?? new Contact(["email" => $this->email, "cdb_confid" => -1], $this->conf);
+        $cdbux = $cdbur ?? new Contact($this->conf, ["email" => $this->email, "cdb_confid" => -1]);
         foreach (self::$props as $prop => $shape) {
             if (($shape & self::PROP_CDB) !== 0
                 && ($shape & self::PROP_PASSWORD) === 0
@@ -1652,7 +1620,7 @@ class Contact {
                 && ($value !== null
                     || ($this->cdb_confid !== 0 ? $this->contactDbId : $this->contactId))) {
                 unset($this->_mod_undo[$prop]);
-                return;
+                $shape &= ~self::PROP_UPDATE;
             }
         }
         if (($shape & self::PROP_UPDATE) !== 0) {
@@ -1852,7 +1820,7 @@ class Contact {
 
         // look up existing accounts
         $valid_email = validate_email($reg->email);
-        $u = $conf->user_by_email($reg->email) ?? new Contact(["email" => $reg->email], $conf);
+        $u = $conf->user_by_email($reg->email) ?? new Contact($conf, ["email" => $reg->email]);
         if (($cdb = $conf->contactdb()) && $valid_email) {
             $cdbu = $conf->contactdb_user_by_email($reg->email);
         } else {
@@ -1874,7 +1842,7 @@ class Contact {
 
         // create or update contactdb user
         if ($cdb && $valid_email) {
-            $cdbu = $cdbu ?? new Contact(["email" => $reg->email, "cdb_confid" => -1], $conf);
+            $cdbu = $cdbu ?? new Contact($conf, ["email" => $reg->email, "cdb_confid" => -1]);
             $cdbu->import_prop($reg);
             if ($cdbu->save_prop()) {
                 $u->_contactdb_user = false;

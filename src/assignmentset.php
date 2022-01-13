@@ -568,7 +568,7 @@ class AssignerContacts {
     /** @return Contact */
     function none_user() {
         if (!$this->none_user) {
-            $this->none_user = new Contact(["contactId" => 0, "roles" => 0, "email" => ""], $this->conf);
+            $this->none_user = new Contact($this->conf, ["email" => "", "contactId" => 0, "roles" => 0]);
         }
         return $this->none_user;
     }
@@ -588,7 +588,7 @@ class AssignerContacts {
         $result = $this->conf->qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
         $c = Contact::fetch($result, $this->conf);
         if (!$c) {
-            $c = new Contact(["contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid"], $this->conf);
+            $c = new Contact($this->conf, ["email" => "unknown contact $cid", "contactId" => $cid, "roles" => 0]);
         }
         Dbl::free($result);
         return $this->store($c);
@@ -620,7 +620,7 @@ class AssignerContacts {
                 Dbl::free($result);
             }
             if (!$c) {
-                $cargs = ["contactId" => 0, "roles" => 0, "email" => $email];
+                $cargs = ["email" => $email, "roles" => 0, "contactId" => 0];
                 foreach (["firstName", "lastName", "affiliation"] as $k) {
                     if ($req && $req[$k])
                         $cargs[$k] = $req[$k];
@@ -631,7 +631,7 @@ class AssignerContacts {
                     $cargs["affiliation"] = "Unaffiliated";
                     $cargs["disabled"] = true;
                 }
-                $c = new Contact($cargs, $this->conf);
+                $c = new Contact($this->conf, $cargs);
             }
             $c->contactXid = $c->contactId = self::$next_fake_id--;
         }

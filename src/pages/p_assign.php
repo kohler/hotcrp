@@ -324,7 +324,7 @@ class Assign_Page {
         }
         if ($rrowid === null) {
             if ($rrow->reviewType === REVIEW_REQUEST) {
-                $rrowid = new Contact(get_object_vars($rrow), $this->conf);
+                $rrowid = $rrow->make_user($this->conf);
             } else {
                 $rrowid = $rrow;
             }

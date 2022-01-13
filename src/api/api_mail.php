@@ -18,7 +18,7 @@ class Mail_API {
                 $recipient[$k] = $qreq[$r];
             }
         }
-        $recipient = empty($recipient) ? null : new Contact($recipient, $user->conf);
+        $recipient = empty($recipient) ? null : new Contact($user->conf, $recipient);
 
         $mailinfo = [
             "prow" => $prow,

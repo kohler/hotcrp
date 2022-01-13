@@ -151,10 +151,10 @@ if ($Qreq->u === "me" || $Qreq->u === "self") {
     $Qreq->u = "me";
 } else if ($Me->privChair && ($Qreq->u || $Qreq->search)) {
     if ($Qreq->u === "new") {
-        $Acct = new Contact(null, $Conf);
+        $Acct = new Contact($Conf);
         $newProfile = 1;
     } else if ($Qreq->u === "bulk") {
-        $Acct = new Contact(null, $Conf);
+        $Acct = new Contact($Conf);
         $newProfile = 2;
     } else if (($id = cvtint($Qreq->u)) > 0) {
         $Acct = $Conf->user_by_id($id);
@@ -361,7 +361,7 @@ function parseBulkFile(Contact $user, $text, $filename) {
     $ustatus->add_csv_synonyms($csv);
 
     while (($line = $csv->next_row())) {
-        $ustatus->set_user(new Contact(null, $conf));
+        $ustatus->set_user(new Contact($conf));
         $ustatus->set_context_args([$ustatus]);
         $ustatus->clear_messages();
         $cj = (object) ["id" => null];

@@ -69,7 +69,7 @@ class UserStatus extends MessageSet {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         if ($viewer->is_root_user()) {
-            $this->set_user(new Contact(null, $this->conf));
+            $this->set_user(new Contact($this->conf));
         } else {
             $this->set_user($viewer);
         }

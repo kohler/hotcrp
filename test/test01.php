@@ -26,7 +26,7 @@ $user_mjh = $Conf->checked_user_by_email("mjh@isi.edu"); // pc
 $user_pdruschel = $Conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
 $user_randy = $Conf->checked_user_by_email("randy@cs.berkeley.edu"); // author
 $user_lixia = $Conf->checked_user_by_email("lixia@cs.ucla.edu"); // pc
-$user_nobody = new Contact;
+$user_nobody = new Contact($Conf);
 
 // users are different
 xassert($user_chair->contactId != $user_estrin->contactId);
@@ -95,7 +95,7 @@ check_paper1($paper1);
 check_paper1($user_estrin->checked_paper_by_id(1));
 
 // grant user capability to read paper 1, check it doesn't allow PC view
-$user_capability = new Contact;
+$user_capability = new Contact($Conf);
 xassert(!$user_capability->can_view_paper($paper1));
 $user_capability->apply_capability_text(AuthorView_Capability::make($paper1));
 xassert(!$user_capability->contactId);
@@ -1325,9 +1325,9 @@ xassert_eqq($paper16->sorted_searchable_tags($user_estrin), " 4~app#0 4~bar#0 ap
 ConfInvariants::test_all($Conf, "test01.php:D: ");
 
 // author view capabilities and multiple blank users
-$blank1 = new Contact(null, $Conf);
+$blank1 = new Contact($Conf);
 $blank1->set_capability("@av19", true);
-$blank2 = new Contact(null, $Conf);
+$blank2 = new Contact($Conf);
 $blank2->set_capability("@av16", true);
 xassert($blank1->can_view_paper($paper19));
 xassert(!$blank1->can_view_paper($paper16));

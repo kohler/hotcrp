@@ -1498,10 +1498,9 @@ class Formula implements JsonSerializable {
             $this->expression = $expr;
             $this->_allow_indexed = ($flags & self::ALLOW_INDEXED) !== 0;
         }
-        $this->merge();
     }
 
-    private function merge() {
+    private function fetch_incorporate() {
         $this->formulaId = (int) $this->formulaId;
     }
 
@@ -1510,9 +1509,7 @@ class Formula implements JsonSerializable {
     static function fetch(Conf $conf, $result) {
         if (($formula = $result->fetch_object("Formula"))) {
             $formula->conf = $conf;
-            if (!is_int($formula->formulaId)) {
-                $formula->merge();
-            }
+            $formula->fetch_incorporate();
         }
         return $formula;
     }

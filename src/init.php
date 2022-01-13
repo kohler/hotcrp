@@ -316,7 +316,7 @@ function initialize_request() {
     // look up and activate user
     $guser = $trueemail ? $conf->user_by_email($trueemail) : null;
     if (!$guser) {
-        $guser = new Contact($trueemail ? (object) ["email" => $trueemail] : null);
+        $guser = new Contact($conf, $trueemail ? ["email" => $trueemail] : null);
     }
     $guser = $guser->activate($qreq, true);
     Contact::set_main_user($guser);
