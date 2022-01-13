@@ -929,19 +929,18 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             }
             if ($viewid
                 && (($this->commentType & self::CT_VISIBILITY) >= self::CT_REVIEWER
-                    || $rrow->reviewType >= REVIEW_PC)) {
+                    || $rrow->reviewType >= REVIEW_PC)
+                && !$rrow->disablement) {
                 $au = new Author($rrow);
                 $au->contactId = $rrow->contactId;
                 $reviewer_list[] = $au;
             }
         }
-        if ($user->can_view_comment_identity($this->prow, null)) {
-            // fuck privileged commentees
-        }
+        // XXX todo: list previous commentees as well
 
         $pc_list = [];
         if ($user->can_view_pc()) {
-            $pc_list = $this->conf->pc_members();
+            $pc_list = $this->conf->enabled_pc_members();
         }
 
         // enumerate desired mentions and save them

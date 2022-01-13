@@ -265,6 +265,8 @@ class AutoassignerInterface {
         $this->autoassigner = new Autoassigner($this->conf, $this->ssel->selection());
         if ($this->qreq->pctyp === "sel") {
             $this->autoassigner->select_pc($this->pcsel);
+        } else if ($this->qreq->pctyp === "enabled") {
+            $this->autoassigner->select_pc(array_keys($this->conf->enabled_pc_members()));
         }
         if ($this->qreq->balance === "all") {
             $this->autoassigner->set_balance(Autoassigner::BALANCE_ALL);

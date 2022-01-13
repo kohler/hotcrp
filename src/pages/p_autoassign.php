@@ -66,8 +66,13 @@ class Autoassign_Page {
             }
         }
         if (!isset($qreq->pctyp)
-            || ($qreq->pctyp !== "all" && $qreq->pctyp !== "sel")) {
-            $qreq->pctyp = "all";
+            || ($qreq->pctyp !== "all" && $qreq->pctyp !== "enabled" && $qreq->pctyp !== "sel")) {
+            if ($this->conf->has_disabled_pc_members()
+                && count($this->conf->enabled_pc_members()) > 2) {
+                $qreq->pctyp = "enabled";
+            } else {
+                $qreq->pctyp = "all";
+            }
         }
 
         // rev_round
@@ -372,14 +377,24 @@ class Autoassign_Page {
             '<span class="checkc">', Ht::radio("pctyp", "all", $qreq->pctyp === "all"), '</span>',
             'Use entire PC</label></div>';
 
+        if ($qreq->pctyp === "enabled" || $this->conf->has_disabled_pc_members()) {
+            echo '<div class="js-radio-focus checki"><label>',
+                '<span class="checkc">', Ht::radio("pctyp", "enabled", $qreq->pctyp === "enabled"), '</span>',
+                'Use enabled PC members</label></div>';
+        }
+
         echo '<div class="js-radio-focus checki"><label>',
             '<span class="checkc">', Ht::radio("pctyp", "sel", $qreq->pctyp === "sel"), '</span>',
             'Use selected PC members:</label>',
             " &nbsp; (select ";
         $pctyp_sel = [["all", "all"], ["none", "none"]];
+        if ($this->conf->has_disabled_pc_members()) {
+            $pctyp_sel[] = ["enabled", "enabled"];
+        }
         $tagsjson = [];
         foreach ($conf->pc_members() as $pc) {
-            $tagsjson[$pc->contactId] = strtolower($pc->viewable_tags($this->user));
+            $tagsjson[$pc->contactId] = strtolower($pc->viewable_tags($this->user))
+                . ($pc->disablement ? "" : " enabled#0");
         }
         Ht::stash_script("var hotcrp_pc_tags=" . json_encode($tagsjson) . ";");
         foreach ($conf->viewable_user_tags($this->user) as $pctag) {

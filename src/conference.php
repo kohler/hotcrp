@@ -191,6 +191,8 @@ class Conf {
     /** @var bool */
     private $_pc_members_fully_loaded = false;
     /** @var bool */
+    private $_pc_members_all_enabled = true;
+    /** @var bool */
     private $_unslice = false;
     /** @var ?array<int,?Contact> */
     private $_user_cache;
@@ -2347,12 +2349,16 @@ class Conf {
         if ($this->_pc_members_cache === null) {
             $result = $this->qe("select " . $this->cached_user_query() . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
             $this->_pc_user_cache = $by_name_text = [];
+            $this->_pc_members_all_enabled = true;
             $expected_by_name_count = 0;
             while (($u = Contact::fetch($result, $this))) {
                 $this->_pc_user_cache[$u->contactId] = $u;
                 if (($name = $u->name()) !== "") {
                     $by_name_text[$name][] = $u;
                     $expected_by_name_count += 1;
+                }
+                if ($u->is_disabled()) {
+                    $this->_pc_members_all_enabled = false;
                 }
             }
             Dbl::free($result);
@@ -2415,6 +2421,31 @@ class Conf {
             $this->_pc_members_fully_loaded = true;
         }
         return $this->pc_members();
+    }
+
+    /** @return bool */
+    function has_disabled_pc_members() {
+        if ($this->_pc_members_cache === null) {
+            $this->pc_members();
+        }
+        return !$this->_pc_members_all_enabled;
+    }
+
+    /** @return array<int,Contact> */
+    function enabled_pc_members() {
+        if ($this->_pc_members_cache === null) {
+            $this->pc_members();
+        }
+        if ($this->_pc_members_all_enabled) {
+            return $this->_pc_members_cache;
+        } else {
+            $pcm = [];
+            foreach ($this->_pc_members_cache as $cid => $u) {
+                if (!$u->is_disabled())
+                    $pcm[$cid] = $u;
+            }
+            return $pcm;
+        }
     }
 
     /** @param int $cid
