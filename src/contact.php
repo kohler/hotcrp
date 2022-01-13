@@ -1009,9 +1009,12 @@ class Contact {
         if ($pfx === "r"
             && (isset($user->contactTags) || ($user->roles ?? 0) > 0)) {
             $dt = $this->conf->tags();
-            if (($user->contactTags !== null || ($user->roles > 0 && $dt->has_role_decoration))
-                && ($this->can_view_user_tags() || $user->contactId === $this->contactXid)
-                && ($viewable = $dt->censor(TagMap::CENSOR_VIEW, self::all_contact_tags_for($user), $this, null))) {
+            if (($user->contactTags !== null
+                 || ($user->roles > 0 && $dt->has_role_decoration)
+                 || $user->disablement !== 0)
+                && ($this->can_view_user_tags()
+                    || $user->contactId === $this->contactXid)
+                && ($viewable = $dt->censor(TagMap::CENSOR_VIEW, self::all_contact_tags_for($user, true), $this, null))) {
                 if (($colors = $dt->color_classes($viewable))) {
                     $n = '<span class="' . $colors . ' taghh">' . $n . '</span>';
                 }
@@ -1236,13 +1239,17 @@ class Contact {
     }
 
     /** @param Contact $x
+     * @param bool $want_disabled
      * @return string */
-    static function all_contact_tags_for($x) {
+    static function all_contact_tags_for($x, $want_disabled = false) {
+        $tags = $x->contactTags;
         if ($x->roles & self::ROLE_PC) {
-            return " pc#0{$x->contactTags}";
-        } else {
-            return $x->contactTags;
+            $tags = " pc#0{$tags}";
         }
+        if ($want_disabled && $x->disablement !== 0) {
+            $tags = "{$tags} dim#0";
+        }
+        return $tags;
     }
 
     /** @return string */
