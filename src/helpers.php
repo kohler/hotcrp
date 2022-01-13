@@ -107,7 +107,7 @@ class JsonResult implements JsonSerializable {
             }
         } else if (is_string($values)) {
             assert($this->status && $this->status > 299);
-            $this->content = ["ok" => false, "error" => $values, "message_list" => ["message" => $values, "status" => 2]];
+            $this->content = ["ok" => false, "error" => $values];
         } else {
             assert(is_associative_array($values));
             $this->content = $values;
@@ -124,17 +124,24 @@ class JsonResult implements JsonSerializable {
         }
     }
     function export_messages(Conf $conf) {
-        if (!isset($this->content["message_list"]) && isset($this->content["error"])) {
-            Conf::msg_on($conf, $this->content["error"], 2);
+        $ml = [];
+        foreach ($this->content["message_list"] ?? [] as $mi) {
+            if ($mi instanceof MessageItem) {
+                $ml[] = $mi;
+            } else {
+                error_log("message_list is not MessageItem: " . debug_string_backtrace());
+            }
         }
-        foreach ($this->content["message_list"] ?? [] as $mx) {
-            $ma = (array) $mx;
-            if (is_string($ma["message"] ?? null) && $ma["message"] !== "") {
-                Conf::msg_on($conf, $ma["message"], $ma["status"]);
-            }
-            if (is_string($ma["field"] ?? null)) {
-                Ht::message_set()->msg_at($ma["field"], $ma["message"] ?? null, $ma["status"]);
-            }
+        if (empty($ml) && isset($this->content["error"])) {
+            $ml[] = new MessageItem(null, "<0>" . $this->content["error"], 2);
+        }
+        if (empty($ml) && !($this->content["ok"] ?? ($this->status <= 299))) {
+            $ml[] = new MessageItem(null, "<0>Internal error", 2);
+        }
+        $conf->feedback_msg($ml);
+        foreach ($ml as $mi) {
+            if ($mi->field)
+                Ht::message_set()->append_item($mi);
         }
     }
     /** @param bool $validated */

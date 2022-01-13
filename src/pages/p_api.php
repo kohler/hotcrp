@@ -45,31 +45,20 @@ class API_Page {
                     $j->p = [$conf->paper->paperId => $pj];
                 }
             }
+
+            json_exit($j);
         } else {
             $uf = $conf->api($fn, $user, $qreq->method());
-            $j = $conf->call_api_on($uf, $fn, $user, $qreq, $conf->paper);
+            $jr = $conf->call_api_on($uf, $fn, $user, $qreq, $conf->paper);
             if ($uf
                 && $qreq->redirect
                 && ($uf->redirect ?? false)
                 && preg_match('/\A(?![a-z]+:|\/)./', $qreq->redirect)) {
-                $a = $j->content;
-                if (($x = $a["error"] ?? $a["error_html"] ?? null)) {
-                    // XXX some instances of `error` are not html!!!!!!
-                    $conf->msg($x, 2);
-                } else if (!($a["ok"] ?? false)) {
-                    $conf->msg("Internal error.", 2);
-                }
-                foreach ($a["message_list"] ?? [] as $mx) {
-                    $ma = (array) $mx;
-                    if (($ma["message"] ?? "") !== "") {
-                        $conf->msg($ma["message"], $ma["status"]);
-                    }
-                }
+                $jr->export_messages($conf);
                 $conf->redirect($conf->make_absolute_site($qreq->redirect));
             }
+            json_exit($jr);
         }
-
-        json_exit($j);
     }
 
     /** @param NavigationState $nav

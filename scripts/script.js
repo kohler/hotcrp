@@ -286,23 +286,36 @@ function log_jserror(errormsg, error, noconsole) {
     };
 })();
 
-function jqxhr_error_message(jqxhr, status, errormsg) {
+function jqxhr_error_ftext(jqxhr, status, errormsg) {
     if (status === "parsererror")
-        return "Internal error: bad response from server.";
+        return "<0>Internal error: bad response from server";
     else if (errormsg)
-        return errormsg.toString();
+        return "<0>" + errormsg.toString();
     else if (status === "timeout")
-        return "Connection timed out.";
+        return "<0>Connection timed out";
     else if (status)
-        return "Failed [" + status + "].";
+        return "<0>Failed [" + status + "]";
     else
-        return "Failed.";
+        return "<0>Failed";
 }
 
 var after_outstanding = (function () {
 var outstanding = 0, after = [];
 
-$(document).ajaxError(function (event, jqxhr, settings, httperror) {
+function check_message_list(data, options) {
+    if (typeof data === "object") {
+        if (data.message_list && !$.isArray(data.message_list)) {
+            log_jserror(options.url + ": bad message_list");
+            data.message_list = [{message: "<0>Internal error", status: 2}];
+        } else if (data.error && !data.message_list) {
+            data.message_list = [{message: "<0>" + data.error, status: 2}];
+        } else if (data.warning) {
+            log_jserror(options.url + ": `warning` obsolete");
+        }
+    }
+}
+
+$(document).ajaxError(function (event, jqxhr, options, httperror) {
     if (jqxhr.readyState != 4)
         return;
     var data;
@@ -312,8 +325,9 @@ $(document).ajaxError(function (event, jqxhr, settings, httperror) {
         } catch (e) {
         }
     }
-    if (jqxhr.status != 502) {
-        var msg = url_absolute(settings.url) + " API failure: ";
+    check_message_list(data, options);
+    if (jqxhr.status !== 502) {
+        var msg = url_absolute(options.url) + " API failure: ";
         if (siteinfo.user && siteinfo.user.email)
             msg += "user " + siteinfo.user.email + ", ";
         msg += jqxhr.status;
@@ -325,8 +339,8 @@ $(document).ajaxError(function (event, jqxhr, settings, httperror) {
     }
 });
 
-$(document).ajaxComplete(function (event, jqxhr, settings) {
-    if (settings.trackOutstanding && --outstanding === 0) {
+$(document).ajaxComplete(function (event, jqxhr, options) {
+    if (options.trackOutstanding && --outstanding === 0) {
         while (after.length)
             after.shift()();
     }
@@ -336,6 +350,7 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
     if (options.global === false)
         return;
     function onsuccess(data, status, errormsg) {
+        check_message_list(data, options);
         if (typeof data === "object"
             && data.sessioninfo
             && siteinfo.user.cid == data.sessioninfo.cid
@@ -366,8 +381,9 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
             || typeof rjson !== "object"
             || rjson.ok !== false)
             rjson = {ok: false};
-        if (!rjson.error) /* XXX */
-            rjson.error = jqxhr_error_message(jqxhr, status, errormsg);
+        check_message_list(rjson, options);
+        if (!rjson.message_list)
+            rjson.message_list = [{message: jqxhr_error_ftext(jqxhr, status, errormsg), status: 2}];
         for (i = 0; i !== success.length; ++i)
             success[i](rjson, jqxhr, status);
     }
@@ -1291,20 +1307,7 @@ return {
 })($);
 
 
-// render_xmsg
-function render_xmsg(msg, status) {
-    if (typeof msg === "string")
-        msg = msg === "" ? [] : [msg];
-    if (msg.length === 0)
-        return '';
-    else if (msg.length === 1)
-        msg = msg[0];
-    else
-        msg = '<p>' + msg.join('</p><p>') + '</p>';
-    if (status === 0 || status === 1 || status === 2)
-        status = ["info", "warning", "error"][status];
-    return '<div class="msg msg-' + status + '">' + msg + '</div>';
-}
+// message list functions
 
 function message_list_status(ml) {
     var i, status = 0;
@@ -2379,10 +2382,8 @@ function popup_skeleton(options) {
     function show_errors(data) {
         var form = $d.find("form")[0],
             dbody = $d.find(".popup-body"),
-            messages = "", mx, i, e, x, mlist = data.message_list;
+            i, mlist = data.message_list, gmlist = [], mx, e, x;
         $d.find(".msg-error, .feedback, .feedback-list").remove();
-        if (!mlist && data.error)
-            mlist = [{message: escape_html(data.error), status: 2}];
         for (i in mlist || []) {
             mx = mlist[i];
             if (mx.field && (e = form[mx.field])) {
@@ -2391,9 +2392,12 @@ function popup_skeleton(options) {
                     continue;
                 }
             }
-            messages += render_xmsg(mx.message, mx.status);
+            gmlist.push(mx);
         }
-        dbody.length ? dbody.prepend(messages) : $d.find("h2").after(messages);
+        if (gmlist.length) {
+            x = render_message_list(gmlist);
+            dbody.length ? dbody.prepend(x) : $d.find("h2").after(x);
+        }
         return $d;
     }
     function close() {
@@ -8168,7 +8172,7 @@ handle_ui.on("js-check-format", function () {
     if (this && "tagName" in this && this.tagName === "A")
         $self.addClass("hidden");
     var running = setTimeout(function () {
-        $cf.html(render_xmsg("Checking format (this can take a while)...", 0));
+        $cf.html(render_message_list([{message: "<0>Checking format (this can take a while)...", status: -1}]));
     }, 1000);
     $.ajax(hoturl("=api/formatcheck", {p: siteinfo.paperid}), {
         timeout: 20000, data: {

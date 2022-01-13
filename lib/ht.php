@@ -708,23 +708,13 @@ class Ht {
     static function feedback_msg_content($message_list) {
         if ($message_list instanceof MessageSet) {
             $message_list = $message_list->message_list();
+        } else if (!is_array($message_list)) {
+            $message_list = iterator_to_array($message_list);
         }
-        $status = 0;
-        $items = [];
-        foreach (MessageSet::feedback_html_items(MessageSet::map($message_list,
-            function ($mi) use (&$status) {
-                if ($mi->status === MessageSet::SUCCESS && $status <= 0) {
-                    $status = MessageSet::SUCCESS;
-                } else if ($mi->status >= 1) {
-                    $status = max($status, $mi->status);
-                }
-            })) as $item_html) {
-            $items[] = "<li>{$item_html}</li>";
-        }
-        if (empty($items)) {
-            return ["", 0];
+        if (($h = MessageSet::feedback_html($message_list)) !== "") {
+            return [$h, MessageSet::list_status($message_list)];
         } else {
-            return ["<ul class=\"feedback-list\">" . join("", $items) . "</ul>", $status];
+            return ["", 0];
         }
     }
 

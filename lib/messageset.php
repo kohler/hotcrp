@@ -552,6 +552,21 @@ class MessageSet {
     }
 
     /** @param iterable<MessageItem> $message_list
+     * @return int */
+    static function list_status($message_list) {
+        $status = 0;
+        foreach ($message_list as $mi) {
+            if ($mi->status === self::SUCCESS && $status === 0) {
+                $status = self::SUCCESS;
+            } else if ($mi->status > 0 && $mi->status > $status) {
+                $status = $mi->status;
+            }
+        }
+        return $status;
+    }
+
+
+    /** @param iterable<MessageItem> $message_list
      * @return list<string> */
     static function feedback_html_items($message_list) {
         $ts = [];
