@@ -28,20 +28,20 @@ class TagAnno_API {
             return MessageItem::make_error_json($tagger->error_html());
         }
         if (!$user->can_edit_tag_anno($tag)) {
-            return ["ok" => false, "error" => "Permission error."];
+            return ["ok" => false, "error" => "Permission error"];
         }
         $reqanno = json_decode($qreq->anno ?? "");
         if (!is_object($reqanno) && !is_array($reqanno)) {
-            return ["ok" => false, "error" => "Bad request."];
+            return ["ok" => false, "error" => "Bad request"];
         }
-        $q = $qv = $errors = $inserts = [];
+        $q = $qv = $ml = $inserts = [];
         $next_annoid = $user->conf->fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
         // parse updates
         foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $anno) {
             if (!is_object($anno)
                 || !isset($anno->annoid)
                 || (!is_int($anno->annoid) && !preg_match('/^n/', $anno->annoid))) {
-                return ["ok" => false, "error" => "Bad request."];
+                return ["ok" => false, "error" => "Bad request"];
             }
             if (isset($anno->deleted) && $anno->deleted) {
                 if (is_int($anno->annoid)) {
@@ -71,13 +71,13 @@ class TagAnno_API {
                     $q[] = "update PaperTagAnno set tagIndex=? where tag=? and annoId=?";
                     array_push($qv, floatval($tagval), $tag, $annoid);
                 } else {
-                    $errors[] = new MessageItem("tagval_{$anno->annoid}", "Tag value should be a number.", 2);
+                    $ml[] = new MessageItem("tagval_{$anno->annoid}", "Tag value should be a number", 2);
                 }
             }
         }
         // return error if any
-        if (!empty($errors)) {
-            return ["ok" => false, "message_list" => $errors];
+        if (!empty($ml)) {
+            return ["ok" => false, "message_list" => $ml];
         }
         // apply changes
         if (!empty($q)) {

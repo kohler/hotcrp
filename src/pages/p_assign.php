@@ -193,7 +193,7 @@ class Assign_Page {
             if ($this->user->allow_administer($this->prow)) {
                 $this->handle_pc_update();
             } else if ($this->qreq->ajax) {
-                json_exit(["ok" => false, "error" => "Only administrators can assign papers."]);
+                json_exit(["ok" => false, "error" => "Only administrators can assign reviews"]);
             }
         }
         if ((isset($qreq->requestreview) || isset($qreq->approvereview))

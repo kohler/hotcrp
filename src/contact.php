@@ -1459,11 +1459,11 @@ class Contact {
 
         if ($qreq->ajax) {
             if ($this->is_empty()) {
-                json_exit(["ok" => false, "error" => "You have been signed out.", "loggedout" => true]);
+                json_exit(["ok" => false, "error" => "You have been signed out", "loggedout" => true]);
             } else if (!$this->is_signed_in()) {
-                json_exit(["ok" => false, "error" => "You must sign in to access that function.", "loggedout" => true]);
+                json_exit(["ok" => false, "error" => "You must sign in to access that function", "loggedout" => true]);
             } else {
-                json_exit(["ok" => false, "error" => "You don’t have permission to access that page."]);
+                json_exit(["ok" => false, "error" => "You don’t have permission to access that page"]);
             }
         }
 

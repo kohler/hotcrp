@@ -188,9 +188,9 @@ function initialize_conf() {
 function initialize_user_redirect($nav, $uindex, $nusers) {
     if ($nav->page === "api") {
         if ($nusers === 0) {
-            json_exit(["ok" => false, "error" => "You have been signed out."]);
+            json_exit(["ok" => false, "error" => "You have been signed out"]);
         } else {
-            json_exit(["ok" => false, "error" => "Bad user specification."]);
+            json_exit(["ok" => false, "error" => "Bad user specification"]);
         }
     } else if ($_SERVER["REQUEST_METHOD"] === "GET") {
         $page = $nav->base_absolute();

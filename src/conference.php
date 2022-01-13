@@ -5099,22 +5099,22 @@ class Conf {
             && !$qreq->valid_token()
             && (!$uf || ($uf->post ?? false))
             && (!$uf || !($uf->allow_xss ?? false))) {
-            return new JsonResult(403, "Missing credentials.");
+            return new JsonResult(403, "Missing credentials");
         } else if ($user->is_disabled()
                    && (!$uf || !($uf->allow_disabled ?? false))) {
-            return new JsonResult(403, "Your account is disabled.");
+            return new JsonResult(403, "Your account is disabled");
         } else if (!$uf) {
             if ($this->has_api($fn, $user, null)) {
-                return new JsonResult(405, "Method not supported.");
+                return new JsonResult(405, "Method not supported");
             } else if ($this->has_api($fn, null, $qreq->method())) {
-                return new JsonResult(403, "Permission error.");
+                return new JsonResult(403, "Permission error");
             } else {
-                return new JsonResult(404, "Function not found.");
+                return new JsonResult(404, "Function not found");
             }
         } else if (!$prow && ($uf->paper ?? false)) {
             return self::paper_error_json_result($qreq->annex("paper_whynot"));
         } else if (!is_string($uf->function)) {
-            return new JsonResult(404, "Function not found.");
+            return new JsonResult(404, "Function not found");
         } else {
             ++JsonCompletion::$capturing;
             try {
@@ -5131,13 +5131,13 @@ class Conf {
         $result = ["ok" => false, "message_list" => []];
         if ($whynot) {
             $status = isset($whynot["noPaper"]) ? 404 : 403;
-            $m = $whynot->unparse_html();
+            $m = "<5>" . $whynot->unparse_html();
             if (isset($whynot["signin"])) {
                 $result["loggedout"] = true;
             }
         } else {
             $status = 400;
-            $m = "Bad request, missing submission.";
+            $m = "<0>Bad request, missing submission";
         }
         $result["message_list"][] = new MessageItem(null, $m, 2);
         return new JsonResult($status, $result);

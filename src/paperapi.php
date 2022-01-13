@@ -20,7 +20,7 @@ class PaperApi {
             }
             if (!$u) {
                 error_log("PaperApi::get_user: rejecting user {$x}, requested by {$user->email}");
-                json_exit(403, $user->isPC ? "No such user." : "Permission error.");
+                json_exit(403, $user->isPC ? "User not found" : "Permission error");
                 exit;
             }
         }
@@ -43,7 +43,7 @@ class PaperApi {
         $reviewer = self::get_reviewer($user, $qreq, $prow);
         $following = friendly_boolean($qreq->following);
         if ($following === null) {
-            return ["ok" => false, "error" => "Bad 'following'."];
+            return ["ok" => false, "error" => "Bad `following`"];
         }
         $bits = Contact::WATCH_REVIEW_EXPLICIT | ($following ? Contact::WATCH_REVIEW : 0);
         $user->conf->qe("insert into PaperWatch set paperId=?, contactId=?, watch=? on duplicate key update watch=(watch&~?)|?",

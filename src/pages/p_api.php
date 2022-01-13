@@ -91,7 +91,7 @@ class API_Page {
             } else {
                 http_response_code(404);
                 header("Content-Type: text/plain; charset=utf-8");
-                echo json_encode(["ok" => false, "error" => "API function missing."]);
+                echo json_encode(["ok" => false, "error" => "API function missing"]);
                 exit;
             }
         }

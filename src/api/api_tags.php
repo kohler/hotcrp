@@ -100,7 +100,7 @@ class Tags_API {
         if ($qreq->cancel) {
             return ["ok" => true];
         } else if ($prow && !$user->can_view_paper($prow)) {
-            return ["ok" => false, "error" => "No such paper."];
+            return ["ok" => false, "error" => "Paper not found"];
         }
 
         // save tags using assigner
@@ -173,7 +173,7 @@ class Tags_API {
             return MessageItem::make_error_json($tagger->error_html());
         }
         if (!$user->can_view_peruser_tag($prow, $tag)) {
-            return ["ok" => false, "error" => "Permission error."];
+            return ["ok" => false, "error" => "Permission error"];
         }
         $votemap = [];
         preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\S+)/i', $prow->all_tags_text(), $m);

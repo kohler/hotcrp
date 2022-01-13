@@ -6,7 +6,7 @@ class PaperPC_API {
     private static function run(Contact $user, Qrequest $qreq, PaperInfo $prow, $type) {
         if ($qreq->method() !== "GET") {
             if (!isset($qreq->$type)) {
-                return new JsonResult(400, ["ok" => false, "error" => "Missing parameter."]);
+                return new JsonResult(400, "Parameter error");
             }
             $aset = new AssignmentSet($user);
             $aset->enable_papers($prow);
@@ -18,7 +18,7 @@ class PaperPC_API {
         } else {
             $k = "can_view_$type";
             if (!$user->$k($prow)) {
-                return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
+                return new JsonResult(403, "Permission error");
             }
             $k = "{$type}ContactId";
             $cid = $prow->$k;
@@ -49,7 +49,7 @@ class PaperPC_API {
 
     static function pc_api(Contact $user, Qrequest $qreq) {
         if (!$user->can_view_pc()) {
-            return new JsonResult(403, ["ok" => false, "error" => "Permission error."]);
+            return new JsonResult(403, "Permission error");
         }
         $pc = $user->conf->hotcrp_pc_json($user);
         return ["ok" => true, "pc" => $pc];
