@@ -338,13 +338,7 @@ class SettingValues extends MessageSet {
         foreach ($this->decorated_message_list() as $mi) {
             $msgs[] = $mi;
         }
-        if (!empty($msgs)) {
-            if ($this->has_error()) {
-                Conf::msg_error(MessageSet::feedback_html($msgs), true);
-            } else {
-                Conf::msg_warning(MessageSet::feedback_html($msgs), true);
-            }
-        }
+        $this->conf->feedback_msg($msgs);
     }
 
     /** @return SettingParser */

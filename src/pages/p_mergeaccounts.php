@@ -26,35 +26,35 @@ class MergeAccounts_Page {
             return false;
         }
         if ($this->user->is_actas_user()) {
-            $this->conf->msg_error("You can’t merge accounts when acting as another user");
+            $this->conf->feedback_msg([new MessageItem(null, "<0>You can’t merge accounts when acting as another user", 2)]);
             return false;
         }
 
         $other = $this->conf->user_by_email($this->qreq->email)
             ?? $this->conf->contactdb_user_by_email($this->qreq->email);
         if (!$other) {
-            Ht::error_at("email", "No account for ‘" . htmlspecialchars($this->qreq->email) . "’. Please check the email address");
+            Ht::error_at("email", "<0>Account ‘{$this->qreq->email}’ not found; please check the email address");
             return false;
         }
         if (!$other->check_password($this->qreq->password)) {
-            Ht::error_at("password", "Incorrect password");
+            Ht::error_at("password", "<0>Incorrect password");
             return false;
         }
         if (!$this->user->contactId && !$other->contactId) {
-            $this->conf->msg_warning("Neither of those accounts has any data associated with this conference", true);
+            $this->conf->feedback_msg([new MessageItem(null, "<0>Neither of those accounts has any data associated with this conference", 1)]);
             return false;
         }
         if ($other->contactId && $other->contactId === $this->user->contactId) {
-            $this->conf->msg_confirm("Accounts already merged", true);
+            $this->conf->feedback_msg([new MessageItem(null, "<0>Accounts already merged", MessageSet::SUCCESS)]);
             $this->conf->redirect();
             return true;
         }
         if ($this->user->data("locked")) {
-            $this->conf->msg_error("Account ‘" . htmlspecialchars($this->user->email) . "’ is locked and cannot be merged", true);
+            $this->conf->feedback_msg([new MessageItem(null, "<0>Account ‘{$this->user->email}’ is locked and cannot be merged", 2)]);
             return false;
         }
         if ($other->data("locked")) {
-            Ht::error_at("email", "Account ‘" . htmlspecialchars($other->email) . "’ is locked and cannot be merged");
+            $this->conf->feedback_msg([new MessageItem(null, "<0>Account ‘{$other->email}’ is locked and cannot be merged", 2)]);
             return false;
         }
 
@@ -73,12 +73,12 @@ class MergeAccounts_Page {
         // actually merge users or change email
         $merger->run();
         if (!$merger->has_error()) {
-            $this->conf->msg_confirm("Merged account " . htmlspecialchars($merger->oldu->email) . ".");
+            $merger->prepend_msg("<0>Merged account {$merger->oldu->email}", MessageSet::SUCCESS);
             $merger->newu->log_activity("Account merged " . $merger->oldu->email);
         } else {
             $merger->newu->log_activity("Account merged " . $merger->oldu->email . " with errors");
-            $this->conf->feedback_msg($merger);
         }
+        $this->conf->feedback_msg($merger);
         $this->conf->redirect();
         return true;
     }
@@ -101,15 +101,15 @@ class MergeAccounts_Page {
         echo Ht::form($this->conf->hoturl("=mergeaccounts")),
             '<div class="', Ht::control_class("email", "f-i"), '">',
             Ht::label("Other email", "merge_email"),
+            Ht::feedback_html_at("email"),
             Ht::entry("email", (string) $this->qreq->email,
                       ["size" => 36, "id" => "merge_email", "autocomplete" => "username"]),
-            Ht::feedback_html_at("email"),
             '</div>
     <div class="', Ht::control_class("password", "f-i fx"), '">',
             Ht::label("Other password", "merge_password"),
+            Ht::feedback_html_at("password"),
             Ht::password("password", "",
                          ["size" => 36, "id" => "merge_password", "autocomplete" => "current-password"]),
-            Ht::feedback_html_at("password"),
         '</div>
     <div class="f-i">',
         '<div class="checki"><label><span class="checkc">',

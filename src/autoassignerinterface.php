@@ -350,7 +350,7 @@ class AutoassignerInterface {
 
         $assignments = $this->autoassigner->assignments();
         if (empty($assignments)) {
-            $w = '<div class="warning">Nothing to assign.</div>';
+            $w = Ht::feedback_msg([new MessageItem(null, "Assignment required no changes", MessageSet::WARNING_NOTE), new MessageItem(null, "", 1)]);
             if ($this->live) {
                 echo $w;
             } else {

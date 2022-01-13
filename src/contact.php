@@ -1476,11 +1476,11 @@ class Contact {
             }
             $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
             $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST, Conf::$now + 120];
+            $ml = [new MessageItem(null, "<0>You must sign in to access that page", 2)];
             if ($qreq->valid_token()) {
-                $this->conf->errorMsg("You must sign in to access that page. Your changes were not saved; after signing in, you may submit them again.");
-            } else {
-                $this->conf->errorMsg("You must sign in to access that page.");
+                $ml[] = new MessageItem(null, "<0>Your changes were not saved. After signing in, you may try to submit them again", MessageSet::INFORM);
             }
+            $this->conf->feedback_msg($ml);
             $this->conf->redirect();
         } else {
             Multiconference::fail(403, "Page inaccessible.");
