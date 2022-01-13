@@ -123,13 +123,8 @@ class Assign_Page {
         $result = RequestReview_API::requestreview($this->user, $this->qreq, $this->prow);
         $result = JsonResult::make($result);
         if ($result->content["ok"]) {
-            if ($result->content["action"] === "token") {
-                $this->conf->confirmMsg("Created a new anonymous review. The review token is " . $result->content["review_token"] . ".");
-            } else if ($result->content["action"] === "propose") {
-                $this->conf->warnMsg($result->content["message"]);
-            } else {
-                $this->conf->confirmMsg($result->content["message"]);
-            }
+            assert(is_array($result->content["message_list"]));
+            $this->conf->feedback_msg($result->content["message_list"]);
             $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null]);
         } else {
             $emx = null;
