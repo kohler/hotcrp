@@ -96,7 +96,7 @@ class User_API {
             $ustatus = new UserStatus($viewer);
             $ustatus->set_user($user);
             if ($ustatus->save((object) ["disabled" => $disabled], $user)) {
-                return new JsonResult(["ok" => true, "u" => $user->email, "disabled" => $user->disabled]);
+                return new JsonResult(["ok" => true, "u" => $user->email, "disabled" => $user->disablement !== 0]);
             } else {
                 return new JsonResult(400, ["ok" => false, "u" => $user->email]);
             }
@@ -106,7 +106,7 @@ class User_API {
     static function account_sendinfo(Contact $user, Contact $viewer) {
         if (!$viewer->privChair) {
             return new JsonResult(403, "Permission error.");
-        } else if (!$user->is_disabled()) {
+        } else if ($user->disablement === 0) {
             $user->send_mail("@accountinfo");
             return new JsonResult(["ok" => true, "u" => $user->email]);
         } else {

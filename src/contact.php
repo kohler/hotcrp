@@ -49,8 +49,11 @@ class Contact {
     public $roles = 0;
     /** @var ?string */
     public $contactTags;
-    /** @var bool|'deleted' */
+    /** @var bool
+     * @deprecated */
     public $disabled = false;
+    /** @var int */
+    public $disablement = 0;
     /** @var ?int */
     public $primaryContactId;
     /** @var bool */
@@ -90,8 +93,6 @@ class Contact {
     /** @var false|null|Contact */
     private $_contactdb_user = false;
 
-    /** @var ?bool */
-    private $_disabled;
     public $activity_at = false;
     private $lastLogin = 0;
     private $updateTime = 0;
@@ -183,6 +184,10 @@ class Contact {
     public $myReviewPermissions;
     public $paperId;
 
+    const DISABLEMENT_USER = 1;
+    const DISABLEMENT_ROLE = 2;
+    const DISABLEMENT_DELETED = 4;
+
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;
     const PROP_SLICE = 0x04;
@@ -246,7 +251,8 @@ class Contact {
         return $user;
     }
 
-    /** @param array<string,mixed> $user */
+    /** @param array<string,mixed> $user
+     * @suppress PhanDeprecatedProperty */
     private function merge($user) {
         if ((!isset($user["dsn"]) || $user["dsn"] === $this->conf->dsn)
             && isset($user["contactId"])) {
@@ -292,12 +298,16 @@ class Contact {
         if (isset($user["disabled"])) {
             $this->disabled = !!$user["disabled"];
         }
+        if ($user["is_deleted"] ?? false) {
+            $this->disablement |= self::DISABLEMENT_DELETED;
+        }
 
         $this->_jdata = null;
-        $this->_disabled = null;
         $this->_contactdb_user = false;
+        $this->set_disablement();
     }
 
+    /** @suppress PhanDeprecatedProperty */
     private function fetch_incorporate() {
         $this->contactId = (int) $this->contactId;
         $this->contactDbId = (int) $this->contactDbId;
@@ -344,8 +354,15 @@ class Contact {
         }
 
         $this->_jdata = null;
-        $this->_disabled = null;
         $this->_contactdb_user = false;
+        $this->set_disablement();
+    }
+
+    /** @suppress PhanDeprecatedProperty */
+    private function set_disablement() {
+        $this->disablement = ($this->disabled ? self::DISABLEMENT_USER : 0)
+            | (!$this->isPC && $this->conf->opt("disableNonPC") ? self::DISABLEMENT_ROLE : 0)
+            | ($this->disablement & self::DISABLEMENT_DELETED);
     }
 
     static function set_main_user(Contact $user = null) {
@@ -760,6 +777,7 @@ class Contact {
             $this->unslice_using($u, true);
             $this->unaccentedName = $u->unaccentedName;
             $this->assign_roles($this->roles);
+            $this->set_disablement();
         }
     }
 
@@ -915,17 +933,13 @@ class Contact {
 
     /** @return bool */
     function is_disabled() {
-        if ($this->_disabled === null) {
-            $this->_disabled = $this->disabled
-                || (!$this->isPC && $this->conf->opt("disableNonPC"));
-        }
-        return $this->_disabled;
+        return $this->disablement !== 0;
     }
 
     /** @return bool */
     function contactdb_disabled() {
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->disabled;
+        return $cdbu && $cdbu->disablement;
     }
 
     /** @param int $flags
@@ -1634,6 +1648,9 @@ class Contact {
             && in_array($prop, ["firstName", "lastName", "email", "affiliation"])) {
             $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
         }
+        if ($prop === "disabled") {
+            $this->set_disablement();
+        }
     }
 
     /** @param string $tag
@@ -1730,7 +1747,6 @@ class Contact {
         Dbl::free($result);
         if ($ok) {
             // invalidate caches
-            $this->_disabled = null;
             $this->_mod_undo = null;
         } else {
             error_log("{$this->conf->dbname}: save {$this->email} fails " . debug_string_backtrace());
@@ -1742,8 +1758,9 @@ class Contact {
         foreach ($this->_mod_undo as $prop => $value) {
             $this->$prop = $value;
         }
-        $this->_mod_undo = $this->_disabled = $this->_jdata = null;
+        $this->_mod_undo = $this->_jdata = null;
         $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
+        $this->set_disablement();
     }
 
 
@@ -1771,6 +1788,7 @@ class Contact {
         if ($old_roles !== $new_roles) {
             $this->conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
             $this->assign_roles($new_roles);
+            $this->set_disablement();
             $this->conf->invalidate_caches(["pc" => true]);
         }
         return $old_roles !== $new_roles;
@@ -1853,7 +1871,7 @@ class Contact {
         // create or update local user
         $u->import_prop($cdbu ?? $reg);
         if (!$u->contactId) {
-            if (($cdbu && $cdbu->disabled)
+            if (($cdbu && $cdbu->disablement)
                 || ($reg->disabled ?? false)) {
                 $u->set_prop("disabled", true);
             }
@@ -1882,7 +1900,7 @@ class Contact {
 
         // notify on creation
         if ($create) {
-            $type = $u->is_disabled() ? ", disabled" : "";
+            $type = $u->disablement ? ", disabled" : "";
             $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Account created" . $type);
         }
 

@@ -255,7 +255,7 @@ class UserStatus extends MessageSet {
             }
         }
 
-        if ($user->disabled) {
+        if ($user->disablement !== 0) {
             $cj->disabled = true;
         }
 
@@ -852,7 +852,7 @@ class UserStatus extends MessageSet {
         $this->check_invariants($cj);
         $actor = $this->viewer->is_root_user() ? null : $this->viewer;
         if ($old_user) {
-            $old_disabled = $user->disabled;
+            $old_disabled = $old_user->disablement !== 0;
         } else {
             $user = Contact::create($this->conf, $actor, $cj, Contact::SAVE_ROLES, $roles);
             $cj->email = $user->email; // adopt contactdb’s email capitalization
@@ -893,7 +893,8 @@ class UserStatus extends MessageSet {
             $cdb_user->save_prop();
             $user->contactdb_user(true);
         }
-        if ($roles !== $old_roles || $user->disabled !== $old_disabled) {
+        if ($roles !== $old_roles
+            || ($user->disablement !== 0) !== $old_disabled) {
             $user->contactdb_update();
         }
 
@@ -915,7 +916,7 @@ class UserStatus extends MessageSet {
         }
 
         // Notify of new accounts or new PC-ness
-        if ($this->notify && !$user->is_disabled()) {
+        if ($this->notify && $user->disablement === 0) {
             $eff_old_roles = $old_disabled ? 0 : $old_roles;
             if (!$old_activity_at
                 || (($eff_old_roles & Contact::ROLE_PCLIKE) === 0
@@ -1609,11 +1610,13 @@ topics. We use this information to help match papers to reviewers.</p>',
             echo '<div class="form-outline-section">';
             $us->gxt()->push_close_section('</div>');
             $us->gxt()->render_title("User administration");
+            $disablement = $us->user->disablement;
             echo '<div class="btngrid">',
-                Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf relative", "disabled" => $us->user->disabled]), '<p></p>';
-            if (!$us->is_auth_user()) {
-                echo Ht::button($us->user->disabled ? "Enable account" : "Disable account", [
-                    "class" => "ui js-disable-user " . ($us->user->disabled ? "btn-success" : "btn-danger")
+                Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf relative", "disabled" => $disablement !== 0]), '<p></p>';
+            if (!$us->is_auth_user()
+                && ($disablement & ~Contact::DISABLEMENT_USER) === 0) {
+                echo Ht::button($disablement ? "Enable account" : "Disable account", [
+                    "class" => "ui js-disable-user " . ($disablement ? "btn-success" : "btn-danger")
                 ]), '<p class="pt-1 mb-0">Disabled accounts cannot sign in or view the site.</p>';
                 self::render_delete_action($us);
             }

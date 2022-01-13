@@ -249,13 +249,11 @@ class LogEntryGenerator {
         }
         if (!empty($this->need_users)) {
             foreach ($this->need_users as $cid => $x) {
-                $user = $this->users[$cid] = new Contact($this->conf, ["contactId" => $cid, "disabled" => 1]);
-                $user->disabled = "deleted";
+                $user = $this->users[$cid] = new Contact($this->conf, ["contactId" => $cid, "disabled" => 1, "is_deleted" => 1]);
             }
             $result = $this->conf->qe("select contactId, firstName, lastName, '' affiliation, email, 1 disabled from DeletedContactInfo where contactId?a", array_keys($this->need_users));
-            while (($user = Contact::fetch($result, $this->conf))) {
+            while (($user = Contact::fetch($result, $this->conf, ["is_deleted" => 1]))) {
                 $this->users[$user->contactId] = $user;
-                $user->disabled = "deleted";
             }
             Dbl::free($result);
         }
