@@ -253,7 +253,7 @@ class RequestReview_API {
      * @param PaperInfo $prow
      * @return JsonResult */
     static function acceptreview($user, $qreq, $prow) {
-        if (!ctype_digit($qreq->r)) {
+        if (!ctype_digit($qreq->r ?? "X")) {
             return self::error_result(400, "r", "<0>Bad request");
         }
         $r = intval($qreq->r);
@@ -262,7 +262,7 @@ class RequestReview_API {
         }
 
         // maybe user can view paper because of a declined review
-        if (!$prow && ctype_digit($qreq->p)) {
+        if (!$prow && ctype_digit($qreq->p ?? "X")) {
             $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
             if ($xprow && $xprow->review_refusals_by_user($user)) {
                 $prow = $xprow;
@@ -315,7 +315,7 @@ class RequestReview_API {
      * @param PaperInfo $prow
      * @return JsonResult */
     static function declinereview($user, $qreq, $prow) {
-        if (!ctype_digit($qreq->r)) {
+        if (!ctype_digit($qreq->r ?? "X")) {
             return self::error_result(400, "r", "<0>Bad request");
         }
         $r = intval($qreq->r);
@@ -330,7 +330,7 @@ class RequestReview_API {
         }
 
         // maybe user can view paper because of a declined review
-        if (!$prow && ctype_digit($qreq->p)) {
+        if (!$prow && ctype_digit($qreq->p ?? "X")) {
             $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
             if ($xprow && $xprow->review_refusals_by_user($user)) {
                 $prow = $xprow;
@@ -412,7 +412,7 @@ class RequestReview_API {
      * @param PaperInfo $prow
      * @return JsonResult */
     static function claimreview($user, $qreq, $prow) {
-        if (!ctype_digit($qreq->r)) {
+        if (!ctype_digit($qreq->r ?? "X")) {
             return self::error_result(400, "r", "<0>Bad request");
         }
         $r = intval($qreq->r);
@@ -555,7 +555,7 @@ class RequestReview_API {
         }
 
         if (!$prow
-            && ctype_digit($qreq->p)
+            && ctype_digit($qreq->p ?? "X")
             && strcasecmp($email, $user->email) === 0) {
             $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
             if ($xprow && $xprow->review_refusals_by_user($user)) {
