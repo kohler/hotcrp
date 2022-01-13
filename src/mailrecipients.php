@@ -303,54 +303,75 @@ class MailRecipients extends MessageSet {
         }
     }
 
-    /** @param bool $paper_sensitive
-     * @return string|false */
-    function query($paper_sensitive) {
-        $cols = [];
-        $where = ["not disabled"];
-        $joins = ["ContactInfo"];
+    /** @return ?PaperInfoSet */
+    function paper_set() {
+        $options = ["allConflictType" => true];
 
-        // paper limit
-        if ($this->need_papers() && isset($this->paper_ids)) {
-            $where[] = "Paper.paperId in (" . join(",", $this->paper_ids) . ")";
-        }
-
-        // paper type limit
-        if ($this->type == "s") {
-            $where[] = "Paper.timeSubmitted>0";
-        } else if ($this->type == "unsub") {
-            $where[] = "Paper.timeSubmitted<=0 and Paper.timeWithdrawn<=0";
-        } else if ($this->type == "dec:any") {
-            $where[] = "Paper.timeSubmitted>0 and Paper.outcome!=0";
-        } else if ($this->type == "dec:none") {
-            $where[] = "Paper.timeSubmitted>0 and Paper.outcome=0";
-        } else if ($this->type == "dec:yes") {
-            $where[] = "Paper.timeSubmitted>0 and Paper.outcome>0";
-        } else if ($this->type == "dec:no") {
-            $where[] = "Paper.timeSubmitted>0 and Paper.outcome<0";
-        } else if (substr($this->type, 0, 4) == "dec:") {
-            $nw = count($where);
+        // basic limit
+        if ($this->type === "au") {
+            // all authors, no paper restriction
+        } else if ($this->type === "s") {
+            $options["finalized"] = true;
+        } else if ($this->type === "unsub") {
+            $options["unsub"] = $options["active"] = true;
+        } else if ($this->type === "dec:any") {
+            $options["finalized"] = $options["decided"] = true;
+        } else if ($this->type === "dec:none") {
+            $options["finalized"] = $options["undecided"] = true;
+        } else if ($this->type === "dec:yes") {
+            $options["finalized"] = $options["accepted"] = true;
+        } else if ($this->type === "dec:no") {
+            $options["finalized"] = $options["rejected"] = true;
+        } else if (substr($this->type, 0, 4) === "dec:") {
+            $options["finalized"] = true;
+            $options["where"] = "false";
             foreach ($this->conf->decision_map() as $dnum => $dname) {
-                if (strcasecmp($dname, substr($this->type, 4)) == 0) {
-                    $where[] = "Paper.timeSubmitted>0 and Paper.outcome=$dnum";
+                if (strcasecmp($dname, substr($this->type, 4)) === 0) {
+                    $options["where"] = "Paper.outcome={$dnum}";
                     break;
                 }
             }
-            if (count($where) == $nw) {
-                return false;
-            }
+        } else if ($this->type === "lead") {
+            $options["anyLead"] = $options["reviewSignatures"] = true;
+        } else if ($this->type === "shepherd") {
+            $options["anyShepherd"] = $options["reviewSignatures"] = true;
+        } else if (str_ends_with($this->type, "rev")) {
+            $options["reviewSignatures"] = true;
+        } else {
+            assert(!$this->need_papers());
+            return null;
         }
 
         // additional manager limit
+        $paper_ids = $this->paper_ids;
         if (!$this->user->privChair
             && !($this->selflags[$this->type] & self::F_ANYPC)) {
             if ($this->conf->check_any_admin_tracks($this->user)) {
                 $ps = new PaperSearch($this->user, ["q" => "", "t" => "admin"]);
-                $where[] = "Paper.paperId" . sql_in_int_list($ps->paper_ids());
+                if ($paper_ids === null) {
+                    $paper_ids = $ps->paper_ids();
+                } else {
+                    $paper_ids = array_values(array_intersect($paper_ids, $ps->paper_ids()));
+                }
             } else {
-                $where[] = "Paper.managerContactId=" . $this->user->contactId;
+                $options["myManaged"] = true;
             }
         }
+        if ($paper_ids !== null) {
+            $options["paperId"] = $paper_ids;
+        }
+
+        // load paper set
+        return $this->conf->paper_set($options, $this->user);
+    }
+
+    /** @param ?PaperInfoSet $paper_set
+     * @param bool $paper_sensitive
+     * @return string|false */
+    function query($paper_set, $paper_sensitive) {
+        $cols = [];
+        $where = ["not disabled"];
+        $joins = ["ContactInfo"];
 
         // reviewer limit
         if (!preg_match('/\A(new|unc|c|allc|)(pc|ext|myext|)rev\z/',
@@ -360,33 +381,32 @@ class MailRecipients extends MessageSet {
 
         // build query
         if ($this->type === "all") {
-            $needpaper = $needconflict = $needreview = false;
+            $needpaper = false;
             $where[] = "(ContactInfo.roles!=0 or lastLogin>0 or exists (select * from PaperConflict where contactId=ContactInfo.contactId) or exists (select * from PaperReview where contactId=ContactInfo.contactId and reviewType>0))";
         } else if ($this->type === "pc" || substr($this->type, 0, 3) === "pc:") {
-            $needpaper = $needconflict = $needreview = false;
+            $needpaper = false;
             $where[] = "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0";
             if ($this->type != "pc") {
                 $where[] = "ContactInfo.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($this->type, 3)) . "#%'");
             }
         } else if ($revmatch) {
-            $needpaper = $needreview = true;
-            $needconflict = false;
+            $needpaper = true;
             $joins[] = "join Paper";
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>0)";
             $where[] = "Paper.paperId=PaperReview.paperId";
         } else if ($this->type === "lead" || $this->type === "shepherd") {
-            $needpaper = $needconflict = $needreview = true;
+            $needpaper = true;
             $joins[] = "join Paper on (Paper.{$this->type}ContactId=ContactInfo.contactId)";
-            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>0)";
         } else {
-            $needpaper = $needconflict = true;
-            $needreview = false;
+            $needpaper = true;
             $joins[] = "join Paper";
+            $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
-            if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS) {
-                $joins[] = "left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)";
-                $cols[] = "PaperTags.paperTags";
-            }
+        }
+
+        assert(!!$paper_set === $needpaper);
+        if ($paper_set) {
+            $where[] = "Paper.paperId" . sql_in_int_list($paper_set->paper_ids());
         }
 
         // reviewer match
@@ -423,36 +443,14 @@ class MailRecipients extends MessageSet {
         }
 
         // query construction
-        $q = "select ContactInfo.contactId, firstName, lastName, email,
-            password, roles, contactTags, preferredEmail, "
-            . ($needconflict ? "PaperConflict.conflictType" : "0 as conflictType");
-        if ($needpaper) {
-            $q .= ", Paper.paperId, Paper.title, Paper.abstract,
-                Paper.authorInformation, Paper.outcome, Paper.blind,
-                Paper.timeSubmitted, Paper.timeWithdrawn,
-                Paper.shepherdContactId, Paper.capVersion,
-                Paper.managerContactId";
-        } else {
-            $q .= ", -1 as paperId";
-        }
-        if ($needreview) {
-            if (!$revmatch || $this->type === "rev") {
-                $q .= ", coalesce(" . PaperInfo::my_review_permissions_sql("PaperReview.") . ", '') myReviewPermissions";
-            } else {
-                $q .= ", coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview where PaperReview.paperId=Paper.paperId and PaperReview.contactId=ContactInfo.contactId group by paperId), '') myReviewPermissions";
-            }
-        } else {
-            $q .= ", '' myReviewPermissions";
-        }
-        if ($needconflict) {
-            $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=ContactInfo.contactId)";
-        }
-        $q .= "\nfrom " . join("\n", $joins) . "\nwhere "
-            . join("\n    and ", $where) . "\ngroup by ContactInfo.contactId";
-        if ($needpaper) {
-            $q .= ", Paper.paperId";
-        }
-        $q .= "\norder by ";
+        $q = "select ContactInfo.contactId, firstName, lastName, unaccentedName, affiliation,
+            email, roles, contactTags, disabled, primaryContactId, 1 _slice,
+            password, preferredEmail, "
+            . ($needpaper ? "Paper.paperId" : "-1") . " paperId
+            from " . join("\n", $joins)
+            . "\nwhere " . join("\n    and ", $where)
+            . "\ngroup by ContactInfo.contactId" . ($needpaper ? ", Paper.paperId" : "")
+            . "\norder by ";
         if (!$needpaper) {
             $q .= "email";
         } else if ($this->is_authors() || $paper_sensitive) {

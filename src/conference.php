@@ -2336,6 +2336,7 @@ class Conf {
         if ($full ?? $this->_pc_members_fully_loaded) {
             return "*";
         } else {
+            // see also MailRecipients
             return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled, primaryContactId, 1 _slice";
         }
     }
@@ -3827,8 +3828,18 @@ class Conf {
         if ($options["undecided"] ?? false) {
             $where[] = "outcome=0";
         }
+        if ($options["decided"] ?? false) {
+            $where[] = "outcome!=0";
+        }
         if ($options["myLead"] ?? false) {
             $where[] = "leadContactId=$cxid";
+        } else if ($options["anyLead"] ?? false) {
+            $where[] = "leadContactId!=0";
+        }
+        if ($options["myShepherd"] ?? false) {
+            $where[] = "shepherdContactId=$cxid";
+        } else if ($options["anyShepherd"] ?? false) {
+            $where[] = "shepherdContactId!=0";
         }
         if ($options["myManaged"] ?? false) {
             $where[] = "managerContactId=$cxid";

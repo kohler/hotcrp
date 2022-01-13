@@ -181,6 +181,7 @@ class Contact {
     // Per-paper DB information, usually null
     public $conflictType;
     public $myReviewPermissions;
+    public $paperId;
 
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;

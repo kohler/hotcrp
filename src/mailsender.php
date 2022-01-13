@@ -321,7 +321,8 @@ class MailSender {
         $prep = $mailer->prepare($template, $rest);
         $paper_sensitive = preg_match('/%[A-Z0-9]+[(%]/', $prep->subject . $prep->body);
 
-        $q = $this->recip->query($paper_sensitive);
+        $paper_set = $this->recip->paper_set();
+        $q = $this->recip->query($paper_set, $paper_sensitive);
         if (!$q) {
             return Conf::msg_error("Bad recipients value");
         }
@@ -351,12 +352,10 @@ class MailSender {
         $has_decoration = false;
         $revinform = ($this->recipients === "newpcrev" ? [] : null);
 
-        while (($rowdata = $result->fetch_assoc())) {
-            $row = new PaperInfo($rowdata, $this->user, $this->conf);
-            $contact = new Contact($this->conf, $rowdata);
+        while (($contact = Contact::fetch($result, $this->conf))) {
             ++$nrows_done;
 
-            $rest["prow"] = $prow = $row->paperId > 0 ? $row : null;
+            $rest["prow"] = $prow = $paper_set ? $paper_set->get((int) $contact->paperId) : null;
             $rest["newrev_since"] = $this->recip->newrev_since;
             $mailer->reset($contact, $rest);
             $prep = $mailer->prepare($template, $rest);
