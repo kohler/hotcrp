@@ -913,40 +913,10 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
     /** @param Contact $user */
     private function analyze_mentions($user) {
-        // obtain lists of users to search
-        $reviewer_list = [];
-        $this->prow->ensure_reviewer_names();
-        foreach ($this->prow->reviews_as_display() as $rrow) {
-            $viewid = $user->can_view_review_identity($this->prow, $rrow);
-            if ($rrow->reviewOrdinal) {
-                $au = new Author;
-                $au->lastName = "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
-                $au->contactId = $rrow->contactId;
-                if (!$viewid) {
-                    $au->author_index = -1;
-                }
-                $reviewer_list[] = $au;
-            }
-            if ($viewid
-                && (($this->commentType & self::CT_VISIBILITY) >= self::CT_REVIEWER
-                    || $rrow->reviewType >= REVIEW_PC)
-                && !$rrow->disablement) {
-                $au = new Author($rrow);
-                $au->contactId = $rrow->contactId;
-                $reviewer_list[] = $au;
-            }
-        }
-        // XXX todo: list previous commentees as well
-
-        $pc_list = [];
-        if ($user->can_view_pc()) {
-            $pc_list = $this->conf->enabled_pc_members();
-        }
-
         // enumerate desired mentions and save them
         $desired_mentions = [];
         $text = $this->commentOverflow ?? $this->comment;
-        foreach (MentionParser::parse($text, $reviewer_list, $pc_list) as $mpx) {
+        foreach (MentionParser::parse($text, ...Completion_API::mention_lists($user, $this->prow, $this->commentType & self::CT_VISIBILITY)) as $mpx) {
             $named = $mpx[0] instanceof Contact || $mpx[0]->author_index !== -1;
             $desired_mentions[] = [$mpx[0]->contactId, $mpx[1], $mpx[2], $named];
             $this->conf->request_cached_user_by_id($mpx[0]->contactId);

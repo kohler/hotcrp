@@ -3345,6 +3345,18 @@ class Contact {
     }
 
     /** @return bool */
+    function can_view_paper_ignore_conflict(PaperInfo $prow) {
+        if ($this->privChair
+            && !($this->dangerous_track_mask() & Track::BITS_VIEW)) {
+            return true;
+        } else {
+            $rights = $this->rights($prow);
+            return $rights->allow_pc_broad
+                && $this->conf->time_pc_view($prow, false);
+        }
+    }
+
+    /** @return bool */
     function can_view_document_history(PaperInfo $prow) {
         if ($this->privChair) {
             return true;
@@ -3622,6 +3634,7 @@ class Contact {
                 || $rights->review_status > 0
                 || $this->can_view_review($prow, $rrow);
         } else {
+            // this branch is ReviewRequestInfo or ReviewRefusalInfo
             return $this->can_view_review_identity($prow, $rrow);
         }
     }

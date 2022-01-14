@@ -159,7 +159,7 @@ class Comment_API {
                     $mis[] = new MessageItem(null, $user->conf->_("<5>Notified mentioned users %#s", array_values($xcrow->saved_mentions)), MessageSet::SUCCESS);
                 }
                 if ($xcrow && $xcrow->saved_mentions_missing) {
-                    $mis[] = new MessageItem(null, $user->conf->_("<0>Some users you mentioned cannot see this comment yet."), MessageSet::WARNING_NOTE);
+                    $mis[] = new MessageItem(null, $user->conf->_("<0>Some users mentioned in the comment cannot see the comment yet, so they were not notified."), MessageSet::WARNING_NOTE);
                 }
             }
         }

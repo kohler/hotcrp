@@ -89,7 +89,7 @@ if (!String.prototype.repeat) {
 
 var hasClass, addClass, removeClass, toggleClass, classList;
 if ("classList" in document.createElement("span")
-    && !/MSIE|rv:11\.0/.test(navigator.userAgent || "")) {
+    && !document.documentMode) {
     hasClass = function (e, k) {
         var l = e.classList;
         return l && l.contains(k);
@@ -828,9 +828,9 @@ function unparse_byte_size_binary(n) {
 
 var strnatcmp = (function () {
 try {
-    var collator = new Intl.Collator(undefined, {sensitivity: "case", numeric: true});
+    var collator = new Intl.Collator(undefined, {sensitivity: "case", numeric: true, ignorePunctuation: true});
     return function (a, b) {
-        var cmp = collator.compare(a.replace(/"/g, ""), b.replace(/"/g, ""));
+        var cmp = collator.compare(a, b);
         if (cmp === 0 && a !== b)
             cmp = a < b ? -1 : 1;
         return cmp;
@@ -4815,7 +4815,7 @@ function render_editing(hc, cj) {
         fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<a href="" class="ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</a>';
     }
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
-    hc.push_pop('<textarea name="text" class="w-text cmttext suggest-emoji need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
+    hc.push_pop('<textarea name="text" class="w-text cmttext suggest-emoji mentions need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
 
     hc.push('<div class="cmteditinfo fold2o fold3c">', '</div>');
 
@@ -4936,9 +4936,6 @@ function activate_editing($c, cj) {
         .on("keydown", keydown_editor)
         .on("hotcrprenderpreview", render_preview)
         .autogrow();
-    /*suggest($c.find("textarea")[0], comment_completion_q, {
-        filter_length: 1, decorate: true
-    });*/
 
     var vis = cj.visibility || hotcrp_status.myperm.default_comment_visibility;
     if (!vis)
@@ -5885,8 +5882,10 @@ function completion_item(c) {
     else if ($.isArray(c))
         return {s: c[0], d: c[1]};
     else {
-        if (!("s" in c) && "sm1" in c)
-            c = $.extend({s: c.sm1, filter_length: 1}, c);
+        if (!("s" in c) && "sm1" in c) {
+            c = $.extend({s: c.sm1, reqlen: 1}, c);
+            delete c.sm1;
+        }
         return c;
     }
 }
@@ -5900,21 +5899,18 @@ function completion_split(elt) {
 }
 
 function make_suggestions(precaret, postcaret, options) {
-    // The region around the caret is divided into four parts:
-    //     ... options.prefix precaret ^ postcaret options.suffix ...
-    // * `options.prefix`: Ignore completion items that don't start with this.
+    // The region around the caret is divided into three parts:
+    //     ... precaret ^ postcaret options.suffix ...
     // * `precaret`, `postcaret`: Only highlight completion items that start
-    //   with `prefix + precaret + postcaret`.
+    //   with `precaret + postcaret`.
     // * `options.suffix`: After successful completion, caret skips over this.
-    // `options.prefix + precaret + postcaret` is collectively called the match
-    // region.
+    // `precaret + postcaret` is collectively called the match region.
     //
     // Other options:
     // * `options.case_sensitive`: If truthy, match is case sensitive.
-    // * `options.filter_length`: Integer. Ignore completion items that don’t
-    //    match the first `prefix.length + filter_length` characters of
-    //    the match region.
-    // * `options.prepend`: Show this before each item.
+    // * `options.reqlen`: Integer. Ignore completion items that don’t
+    //    match the first `reqlen` characters of the match region.
+    // * `options.prefix`: Show this before each item.
     //
     // Completion items:
     // * `item.s`: Completion string -- mandatory.
@@ -5922,60 +5918,58 @@ function make_suggestions(precaret, postcaret, options) {
     // * `item.d`: Description text.
     // * `item.dh`: Description HTML.
     // * `item.r`: Replacement text (defaults to `item.s`).
-    // * `item.filter_length`: Integer. Ignore this item if it doesn’t match
-    //   the first `item.filter_length` characters of the match region.
+    // * `item.reqlen`: Integer. Ignore this item if it doesn’t match
+    //   the first `item.reqlen` characters of the match region.
     // Shorthand:
     // * A string `item` sets `item.s`.
     // * A two-element array `item` sets `item.s` and `item.d`, respectively.
-    // * A `item.sm1` component sets `item.s` and sets `item.filter_length = 1`.
+    // * A `item.sm1` component sets `item.s = item.sm1` and `item.reqlen = 1`.
 
     options = options || {};
 
-    var case_sensitive = options.case_sensitive;
-    var prefix = options.prefix || "";
-    var lregion = prefix + precaret + postcaret;
+    var case_sensitive = options.case_sensitive,
+        lregion = precaret + postcaret;
     lregion = case_sensitive ? lregion : lregion.toLowerCase();
     if (options.region_trimmer)
         lregion = lregion.replace(options.region_trimmer, "");
     if (options.case_sensitive_items != null)
         case_sensitive = options.case_sensitive_items;
-    var filter = null;
-    if ((prefix.length || options.filter_length) && lregion.length)
-        filter = lregion.substr(0, prefix.length + (options.filter_length || 0));
-    var lengths = [prefix.length + precaret.length, postcaret.length, (options.suffix || "").length];
+    if (options.reqlen > lregion.length)
+        return [];
+    var filter = options.reqlen ? lregion.substr(0, options.reqlen) : null,
+        lengths = [precaret.length, postcaret.length, (options.suffix || "").length];
 
     return function (tlist) {
-        var res = [], best = null, can_highlight = lregion.length > prefix.length,
-            titem, text, ltext, fl;
+        var res = [], best = null,
+            can_highlight = lregion.length >= (filter || "x").length,
+            titem, text, ltext, rl, last_text;
 
         for (var i = 0; i < tlist.length; ++i) {
-            titem = text = tlist[i];
-            fl = 0;
-            if (typeof text !== "string") {
-                text = titem.s || titem[0] || titem.sm1;
-                if (titem.filter_length != null)
-                    fl = titem.filter_length;
-                else if (titem.sm1)
-                    fl = 1;
-            }
+            titem = completion_item(tlist[i]);
+            text = titem.s;
             ltext = case_sensitive ? text : text.toLowerCase();
+            rl = titem.reqlen || 0;
 
             if ((filter === null
                  || ltext.substr(0, filter.length) === filter)
-                && (!fl
-                    || (lregion.length >= fl
-                        && ltext.substr(0, fl) === lregion.substr(0, fl)))) {
+                && (rl === 0
+                    || (lregion.length >= rl
+                        && ltext.substr(0, rl) === lregion.substr(0, rl)))
+                && (last_text === null || last_text !== text)) {
                 if (can_highlight
                     && ltext.substr(0, lregion.length) === lregion
-                    && (best === null || ltext.length === lregion.length)) {
+                    && (best === null
+                        || (titem.pri || 0) > (res[best].pri || 0)
+                        || ltext.length === lregion.length)) {
                     best = res.length;
                 }
                 res.push(titem);
+                last_text = text;
             }
         }
 
         if (res.length) {
-            return $.extend(options, {list: res, lengths: lengths, best: best});
+            return $.extend({list: res, lengths: lengths, best: best}, options);
         }
     };
 }
@@ -5996,7 +5990,6 @@ function suggest() {
 
     function render_item(titem, prepend) {
         var node = document.createElement("div");
-        titem = completion_item(titem);
         node.className = titem.no_space ? "suggestion s9nsp" : "suggestion";
         if (titem.r)
             node.setAttribute("data-replacement", titem.r);
@@ -6030,7 +6023,8 @@ function suggest() {
     function finish_display(cinfo) {
         if (!cinfo || !cinfo.list.length)
             return kill();
-        var caretpos = elt.selectionStart, precaretpos = caretpos - cinfo.lengths[0];
+        var caretpos = elt.selectionStart,
+            precaretpos = caretpos - cinfo.lengths[0];
         if (hiding && hiding === elt.value.substring(precaretpos, caretpos))
             return;
 
@@ -6065,7 +6059,7 @@ function suggest() {
             div = document.createElement("div");
             div.className = "suggesttable suggesttable" + (i + 1);
             for (i = 0; i !== clist.length; ++i)
-                div.appendChild(render_item(clist[i], cinfo.prepend));
+                div.appendChild(render_item(clist[i], cinfo.prefix));
             hintdiv.html(div);
         } else {
             div = hintdiv.content_node();
@@ -6076,10 +6070,15 @@ function suggest() {
         }
 
         var $elt = jQuery(elt),
-            shadow = textarea_shadow($elt, elt.tagName == "INPUT" ? 2000 : 0);
-        shadow.text(elt.value.substring(0, precaretpos))
+            shadow = textarea_shadow($elt, elt.tagName === "INPUT" ? 2000 : 0),
+            positionpos = precaretpos;
+        if (cinfo.prefix
+            && positionpos >= cinfo.prefix.length
+            && elt.value.substring(positionpos - cinfo.prefix.length, positionpos) === cinfo.prefix)
+            positionpos -= cinfo.prefix.length;
+        shadow.text(elt.value.substring(0, positionpos))
             .append("<span>&#x2060;</span>")
-            .append(document.createTextNode(elt.value.substring(precaretpos)));
+            .append(document.createTextNode(elt.value.substring(positionpos)));
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
         $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
         hintdiv.near($pos, elt);
@@ -6117,13 +6116,19 @@ function suggest() {
             text = n.textContent;
         }
 
-        var poss = hintdiv.self().data("autocompletePos");
-        var val = elt.value;
-        var startPos = poss[0];
-        var endPos = startPos + poss[1][0] + poss[1][1] + poss[1][2];
+        var poss = hintdiv.self().data("autocompletePos"),
+            val = elt.value,
+            startPos = poss[0],
+            endPos = startPos + poss[1][0] + poss[1][1] + poss[1][2],
+            space;
         if (poss[1][2])
             text += val.substring(endPos - poss[1][2], endPos);
-        var outPos = startPos + text.length + 1;
+        else if ((space = text.indexOf(" ")) > 0) {
+            // If user completes when caret is at e.g. `Jor|dan Peele`, skip over `Peele`
+            while (space < text.length && val.charCodeAt(endPos) === text.charCodeAt(space))
+                ++space, ++endPos;
+        }
+        var outPos = startPos + text.length + 1, space;
         if ((endPos === val.length || /\S/.test(val.charAt(endPos)))
             && !hasClass(complete_elt, "s9nsp"))
             text += " ";
@@ -6287,10 +6292,10 @@ suggest.add_builder("papersearch", function (elt) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagval:|tagvalue:))([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
-        return demand_load.tags().then(make_suggestions(m[2], n[1], {prepend: m[1]}));
-    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):)([^"\s()]*|"[^"]*)$/))) {
+        return demand_load.tags().then(make_suggestions(m[2], n[1], {prefix: m[1]}));
+    } else if (x && (m = x[0].match(/.*?\b(((?:has|ss|opt|dec|round|topic|style|color|show|hide):)[^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
-        return demand_load.search_completion().then(make_suggestions(m[2], n[1], {prefix: m[1]}));
+        return demand_load.search_completion().then(make_suggestions(m[1], n[1], {reqlen: m[2].length}));
     }
 });
 
@@ -6312,16 +6317,14 @@ suggest.add_builder("suggest-emoji", function (elt) {
     }
 });
 
-function comment_completion_q(elt) {
+suggest.add_builder("mentions", function (elt) {
     var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/.*?(?:^|[\s,;])@([-\w_.]*)$/))) {
-        n = x[1].match(/^([-\w_.]*)/);
-        return demand_load.mentions().then(make_suggestions(m[1], n[1]));
+    if (x && (m = x[0].match(/(?:^|[-+,;\s–—])@(|\p{L}(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*)$/u))) {
+        n = x[1].match(/^(?:[\p{L}\p{M}\p{N}]|[-.](?=\p{L}))*/u);
+        return demand_load.mentions().then(make_suggestions(m[1], n[0], {prefix: "@", reqlen: Math.min(2, m[1].length)}));
     } else
         return null;
-}
-
-
+});
 
 
 // review preferences

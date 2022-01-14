@@ -204,27 +204,70 @@ class Completion_API {
         return ["ok" => true, "searchcompletion" => self::search_completions($user, "")];
     }
 
+    /** @param Contact $user
+     * @param ?PaperInfo $prow
+     * @param int $cvis
+     * @return list<array<Contact|Author>> */
+    static function mention_lists($user, $prow, $cvis) {
+        $lists = [];
+        if ($prow && $user->can_view_review_assignment($prow, null)) {
+            $rlist = [];
+            $prow->ensure_reviewer_names();
+            foreach ($prow->reviews_as_display() as $rrow) {
+                $viewid = $user->can_view_review_identity($prow, $rrow);
+                if ($rrow->reviewOrdinal
+                    && $user->can_view_review($prow, $rrow)) {
+                    $au = new Author;
+                    $au->lastName = "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
+                    $au->contactId = $rrow->contactId;
+                    if (!$viewid) {
+                        $au->author_index = -1;
+                    }
+                    $rlist[] = $au;
+                }
+                if ($viewid
+                    && ($cvis >= CommentInfo::CT_REVIEWER || $rrow->reviewType >= REVIEW_PC)
+                    && !$rrow->disablement) {
+                    $au = new Author($rrow);
+                    $au->contactId = $rrow->contactId;
+                    $rlist[] = $au;
+                }
+            }
+            // XXX todo: list previous commentees in privileged position?
+            if (!empty($rlist)) {
+                $lists[] = $rlist;
+            }
+        }
+        if ($user->can_view_pc()) {
+            if (!$prow || !$user->conf->check_track_view_sensitivity()) {
+                $pclist = $user->conf->enabled_pc_members();
+            } else {
+                $pclist = [];
+                foreach ($user->conf->pc_members() as $p) {
+                    if ($p->disablement === 0 && $p->can_view_paper_ignore_conflict($prow))
+                        $pclist[] = $p;
+                }
+            }
+            if (!empty($pclist)) {
+                $lists[] = $pclist;
+            }
+        }
+        return $lists;
+    }
+
     /** @param Qrequest $qreq
      * @param ?PaperInfo $prow */
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
-        $compult = [];
-        if ($user->can_view_pc()) {
-            $pcmap = $user->conf->pc_completion_map();
-            foreach ($user->conf->pc_users() as $pc) {
-                if (!$pc->is_disabled()
-                    && (!$prow || $pc->can_view_new_comment_ignore_conflict($prow))) {
-                    $primary = true;
-                    foreach ($pc->completion_items() as $k => $level) {
-                        if (($pcmap[$k] ?? null) === $pc) {
-                            $skey = $primary ? "s" : "sm1";
-                            $compult[$k] = [$skey => $k, "d" => $pc->name()];
-                            $primary = false;
-                        }
-                    }
-                }
+        $comp = [];
+        $mlists = self::mention_lists($user, $prow, CommentInfo::CT_AUTHOR);
+        foreach ($mlists as $i => $mlist) {
+            $skey = $i ? "sm1" : "s";
+            $pr1 = $i === 0 && count($mlists) > 1;
+            foreach ($mlist as $au) {
+                $n = Text::name($au->firstName, $au->lastName, $au->email, NAME_P);
+                $comp[] = $pr1 ? [$skey => $n, "pri" => 1] : [$skey => $n];
             }
         }
-        ksort($compult);
-        return ["ok" => true, "mentioncompletion" => array_values($compult)];
+        return ["ok" => true, "mentioncompletion" => array_values($comp)];
     }
 }
