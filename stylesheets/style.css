@@ -1730,12 +1730,6 @@ h3.has-error,
 .is-urgent-note {
 	color: #ee0000;
 }
-.tooltip .is-error,
-.tooltip .is-warning,
-.tooltip .is-urgent-note,
-.tooltip .is-warning-note {
-	color: inherit;
-}
 .has-error input[type=text],
 .has-error input[type=email],
 .has-error input[type=password],
@@ -1779,6 +1773,17 @@ select.has-warning {
 }
 .is-note {
 	color: #333377;
+}
+.msg .is-note,
+.msg .is-urgent-note,
+.msg .is-warning-note,
+.tooltip .is-error,
+.tooltip .is-warning,
+.tooltip .is-note,
+.tooltip .is-success,
+.tooltip .is-urgent-note,
+.tooltip .is-warning-note {
+	color: inherit;
 }
 
 .msg-context, .msg-inform {
