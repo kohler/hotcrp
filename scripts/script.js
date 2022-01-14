@@ -4967,7 +4967,7 @@ function activate_editing($c, cj) {
         .on("change", visibility_change)
         .change();
 
-    var topic = cj.topic || hotcrp_status.myperm.default_comment_topic || "rev";
+    var topic = (cj.is_new ? cj.topic || hotcrp_status.myperm.default_comment_topic : cj.topic) || "rev";
     $(form.elements.topic).val(topic)
         .attr("data-default-value", topic)
         .on("change", visibility_change)
