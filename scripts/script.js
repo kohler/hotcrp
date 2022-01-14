@@ -3976,7 +3976,7 @@ handle_ui.on("js-pcsel-tag", pcsel_tag);
 
 handle_ui.on("badpairs", function () {
     if (this.value !== "none") {
-        var x = $$("badpairs");
+        var x = this.form.elements.badpairs;
         x.checked || x.click();
     }
 });
