@@ -4845,8 +4845,8 @@ function render_editing(hc, cj) {
             hc.push('<option value="au">Reviewer discussion</option>');
             hc.push_pop('<option value="admin">Administrators only</option>');
         }
-        hc.push('<span class="d-inline-block ml-2 mr-2">about</span>');
-        hc.push('<span class="select"><select id="' + cid + '-topic" name="topic">', '</select></span>');
+        hc.push('<span class="visibility-topic"><span class="d-inline-block ml-2 mr-2">about</span>');
+        hc.push('<span class="select"><select id="' + cid + '-topic" name="topic">', '</select></span></span>');
         hc.push('<option value="paper">submission</option>');
         hc.push_pop('<option value="rev" selected>reviews</option>');
         hc.push('<p class="visibility-hint f-h text-break-line"></p>');
@@ -4906,8 +4906,10 @@ function visibility_change() {
     var form = this.closest("form"),
         vis = form.elements.visibility,
         topic = form.elements.topic,
-        hint = vis.closest(".entryi").querySelector(".visibility-hint"),
-        blind = vis.closest(".entryi").querySelector(".visibility-au-blind");
+        entryi = vis.closest(".entryi"),
+        hint = entryi.querySelector(".visibility-hint"),
+        blind = entryi.querySelector(".visibility-au-blind"),
+        topicspan = entryi.querySelector(".visibility-topic");
     if (hint) {
         var m = [];
         if (vis.value === "au" && !form.elements.by_author) {
@@ -4922,14 +4924,14 @@ function visibility_change() {
         } else if (vis.value === "pc") {
             m.push('The comment will be hidden from authors and external reviewers.');
         }
-        if (topic && topic.value === "paper") {
-            m.push('The comment will be visible even to users who cannot see the reviews.');
+        if (topic && topic.value === "paper" && vis.value !== "admin") {
+            m.push('The comment will be visible independent of the reviews.');
         }
         hint.textContent = m.join("\n");
         toggleClass(hint, "hidden", m.length === 0);
+        topicspan && toggleClass(topicspan, "hidden", vis.value === "admin");
     }
-    if (blind)
-        toggleClass(blind, "hidden", vis.value !== "au");
+    blind && toggleClass(blind, "hidden", vis.value !== "au");
 }
 
 function ready_change() {
