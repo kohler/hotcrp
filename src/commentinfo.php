@@ -61,6 +61,7 @@ class CommentInfo {
     const CT_BYAUTHOR = 8;
     const CT_BYSHEPHERD = 16;
     const CT_HASDOC = 32;
+    const CT_TOPIC_PAPER = 64;
     const CT_ADMINONLY = 0x00000;
     const CT_PCONLY = 0x10000;
     const CT_REVIEWER = 0x20000;
@@ -82,6 +83,11 @@ class CommentInfo {
         "r" => 0x20000 /* CT_REVIEWER */,
         "au" => 0x30000 /* CT_AUTHOR */,
         "a" => 0x30000 /* CT_AUTHOR */
+    ];
+    /** @var array<string,int> */
+    static private $topic_revmap = [
+        "paper" => 64 /* CT_TOPIC_PAPER */,
+        "rev" => 0
     ];
 
 
@@ -463,6 +469,9 @@ class CommentInfo {
         } else if ($this->commentType & self::CT_BYSHEPHERD) {
             $cj->by_shepherd = true;
         }
+        if ($this->commentType & self::CT_TOPIC_PAPER) {
+            $cj->topic = "paper";
+        }
         if (($fmt = $this->commentFormat ?? $this->conf->default_format)) {
             $cj->format = $fmt;
         }
@@ -644,6 +653,11 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $req_visibility = $this->commentType & self::CT_VISIBILITY;
         }
 
+        $req_topic = self::$topic_revmap[$req["topic"] ?? ""] ?? null;
+        if ($req_topic === null && $this->commentId) {
+            $req_topic = $this->commentType & self::CT_TOPIC_PAPER;
+        }
+
         $is_response = !!($this->commentType & self::CT_RESPONSE);
         $response_name = null;
         if ($is_response) {
@@ -666,6 +680,9 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             ? $this->commentType & self::CT_BYSHEPHERD
             : $user->contactId == $this->prow->shepherdContactId) {
             $ctype |= self::CT_BYSHEPHERD;
+        }
+        if ($req_topic === self::CT_TOPIC_PAPER) {
+            $ctype |= self::CT_TOPIC_PAPER;
         }
 
         // tags

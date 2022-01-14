@@ -61,6 +61,7 @@ class Comment_API {
         $response = $xcrow->is_response();
         $req = [
             "visibility" => $qreq->visibility,
+            "topic" => $qreq->topic,
             "submit" => $response && !$qreq->draft,
             "text" => rtrim(cleannl((string) $qreq->text)),
             "blind" => $qreq->blind,

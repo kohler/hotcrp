@@ -4384,14 +4384,16 @@ class Contact {
                 && (($ctype & (CommentInfo::CT_BYAUTHOR | CommentInfo::CT_RESPONSE))
                     || ($ctype >= CommentInfo::CT_AUTHOR
                         && !($ctype & CommentInfo::CT_DRAFT)
-                        && $this->can_view_submitted_review_as_author($prow))))
+                        && (($ctype & CommentInfo::CT_TOPIC_PAPER)
+                            || $this->can_view_submitted_review_as_author($prow)))))
             || (!$rights->view_conflict_type
                 && (!($ctype & CommentInfo::CT_DRAFT)
                     || ($textless && ($ctype & CommentInfo::CT_RESPONSE)))
                 && ($rights->allow_pc
                     ? $ctype >= CommentInfo::CT_PCONLY
                     : $ctype >= CommentInfo::CT_REVIEWER)
-                && $this->can_view_review($prow, null)
+                && (($ctype & CommentInfo::CT_TOPIC_PAPER)
+                    || $this->can_view_review($prow, null))
                 && ($ctype >= CommentInfo::CT_AUTHOR
                     || $this->conf->setting("cmt_revid")
                     || $this->can_view_review_identity($prow, null)));
@@ -5091,6 +5093,17 @@ class Contact {
                 if ($this->isPC
                     && !$this->conf->time_some_external_reviewer_view_comment()) {
                     $perm->default_comment_visibility = "pc";
+                }
+                $found = false;
+                foreach ($prow->all_reviews() as $rrow) {
+                    if ($rrow->reviewStatus >= ReviewInfo::RS_DELIVERED
+                        && $this->can_view_review($prow, $rrow)) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    $perm->default_comment_topic = "paper";
                 }
                 if ($this->_review_tokens) {
                     $tokens = [];

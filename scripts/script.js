@@ -4845,6 +4845,10 @@ function render_editing(hc, cj) {
             hc.push('<option value="au">Reviewer discussion</option>');
             hc.push_pop('<option value="admin">Administrators only</option>');
         }
+        hc.push('<span class="d-inline-block ml-2 mr-2">about</span>');
+        hc.push('<span class="select"><select id="' + cid + '-topic" name="topic">', '</select></span>');
+        hc.push('<option value="paper">submission</option>');
+        hc.push_pop('<option value="rev" selected>reviews</option>');
         hc.push('<p class="visibility-hint f-h text-break-line"></p>');
         if (!cj.by_author && hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true) {
             hc.push('<div class="visibility-au-blind checki"><label><span class="checkc"><input type="checkbox" name="blind" value="1"></span>Anonymous to authors</label></div>');
@@ -4900,12 +4904,13 @@ function render_editing(hc, cj) {
 
 function visibility_change() {
     var form = this.closest("form"),
-        sel = form.elements.visibility,
-        hint = sel.closest(".entryi").querySelector(".visibility-hint"),
-        blind = sel.closest(".entryi").querySelector(".visibility-au-blind");
+        vis = form.elements.visibility,
+        topic = form.elements.topic,
+        hint = vis.closest(".entryi").querySelector(".visibility-hint"),
+        blind = vis.closest(".entryi").querySelector(".visibility-au-blind");
     if (hint) {
         var m = [];
-        if (sel.value === "au" && !form.elements.by_author) {
+        if (vis.value === "au" && !form.elements.by_author) {
             if (hotcrp_status.myperm.some_author_can_view_review) {
                 m.push('Authors will be notified immediately.');
             } else {
@@ -4914,14 +4919,17 @@ function visibility_change() {
             if (hotcrp_status.rev.blind === true) {
                 m.push('The comment will be anonymous to authors.');
             }
-        } else if (sel.value === "pc") {
+        } else if (vis.value === "pc") {
             m.push('The comment will be hidden from authors and external reviewers.');
+        }
+        if (topic && topic.value === "paper") {
+            m.push('The comment will be visible even to users who cannot see the reviews.');
         }
         hint.textContent = m.join("\n");
         toggleClass(hint, "hidden", m.length === 0);
     }
     if (blind)
-        toggleClass(blind, "hidden", sel.value !== "au");
+        toggleClass(blind, "hidden", vis.value !== "au");
 }
 
 function ready_change() {
@@ -4944,18 +4952,22 @@ function make_update_words(jq, wlimit) {
 }
 
 function activate_editing($c, cj) {
-    var elt, tags = [], i;
-    $c.find("textarea[name=text]").text(cj.text || "")
+    var elt, tags = [], i, form = $c.find("form")[0];
+    $(form.elements.text).text(cj.text || "")
         .on("keydown", keydown_editor)
         .on("hotcrprenderpreview", render_preview)
         .autogrow();
 
-    var vis = cj.visibility || hotcrp_status.myperm.default_comment_visibility;
-    if (!vis)
-        vis = cj.by_author ? "au" : "rev";
-    $c.find("select[name=visibility]")
-        .val(vis)
+    var vis = cj.visibility || hotcrp_status.myperm.default_comment_visibility
+        || (cj.by_author ? "au" : "rev");
+    $(form.elements.visibility).val(vis)
         .attr("data-default-value", vis)
+        .on("change", visibility_change)
+        .change();
+
+    var topic = cj.topic || hotcrp_status.myperm.default_comment_topic || "rev";
+    $(form.elements.topic).val(topic)
+        .attr("data-default-value", topic)
         .on("change", visibility_change)
         .change();
 
@@ -4965,7 +4977,7 @@ function activate_editing($c, cj) {
     if (tags.length) {
         fold($c.find(".cmteditinfo")[0], false, 3);
     }
-    $c.find("input[name=tags]").val(tags.join(" ")).autogrow();
+    $(form.elements.tags).val(tags.join(" ")).autogrow();
 
     if (cj.docs && cj.docs.length) {
         $c.find(".has-editable-attachments").removeClass("hidden").append('<div class="entry"></div>');
@@ -4974,18 +4986,20 @@ function activate_editing($c, cj) {
     }
 
     if (!cj.visibility || cj.blind) {
-        $c.find("input[name=blind]").prop("checked", true);
+        $(form.elements.blind).prop("checked", true);
     }
 
     if (cj.response) {
         if (resp_rounds[cj.response].words > 0)
             make_update_words($c, resp_rounds[cj.response].words);
-        var $ready = $c.find("input[name=ready]").on("click", ready_change);
+        var $ready = $(form.elements.ready).on("click", ready_change);
         ready_change.call($ready[0]);
     }
 
     if (cj.is_new) {
-        $c.find("select[name=visibility], input[name=blind]").addClass("ignore-diff");
+        form.elements.visibility && addClass(form.elements.visibility, "ignore-diff");
+        form.elements.topic && addClass(form.elements.topic, "ignore-diff");
+        form.elements.blind && addClass(form.elements.blind, "ignore-diff");
     }
 
     var $f = $c.find("form");
