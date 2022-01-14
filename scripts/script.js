@@ -4809,6 +4809,9 @@ function render_editing(hc, cj) {
     if (cj.review_token) {
         hc.push('<input type="hidden" name="review_token" value="' + escape_html(cj.review_token) + '">');
     }
+    if (cj.by_author) {
+        hc.push('<input type="hidden" name="by_author" value="1">');
+    }
     hc.push('<div class="f-i">', '</div>');
     var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
     if (fmt.has_preview) {
@@ -4817,45 +4820,35 @@ function render_editing(hc, cj) {
     fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
     hc.push_pop('<textarea name="text" class="w-text cmttext suggest-emoji mentions need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
 
-    hc.push('<div class="cmteditinfo fold2o fold3c">', '</div>');
+    hc.push('<div class="cmteditinfo fold3c">', '</div>');
 
     // attachments
     hc.push('<div class="entryi has-editable-attachments hidden" id="' + cid + '-attachments" data-document-prefix="cmtdoc"><label for="' + cid + '-attachments">Attachments</label></div>');
     btnbox.push('<button type="button" name="attach" class="btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="' + cid + '-attachments">' + $("#licon-attachment").html() + '</button>');
 
     // visibility
-    if (!cj.response && !cj.by_author) {
-        var au_option, au_description;
-        if (hotcrp_status.myperm.some_author_can_view_review) {
-            au_option = 'Visible to authors';
-            au_description = 'Authors will be notified immediately.';
+    if (!cj.response && (!cj.by_author || cj.by_author_visibility)) {
+        hc.push('<div class="entryi"><label for="' + cid + '-visibility">Visibility</label><div class="entry">', '</div></div>');
+        hc.push('<span class="select"><select id="' + cid + '-visibility" name="visibility">', '</select></span>');
+        if (!cj.by_author) {
+            var au_option;
+            if (hotcrp_status.myperm.some_author_can_view_review) {
+                au_option = 'Author discussion';
+            } else {
+                au_option = 'Author discussion*';
+            }
+            hc.push('<option value="au">' + au_option + '</option>');
+            hc.push('<option value="rev">Reviewer discussion</option>');
+            hc.push('<option value="pc">PC discussion</option>');
+            hc.push_pop('<option value="admin">Administrators only</option>');
         } else {
-            au_option = 'Eventually visible to authors';
-            au_description = 'Authors cannot view comments at the moment.';
+            hc.push('<option value="au">Reviewer discussion</option>');
+            hc.push_pop('<option value="admin">Administrators only</option>');
         }
-        if (hotcrp_status.rev.blind === true) {
-            au_option += ' (anonymous to authors)';
+        hc.push('<p class="visibility-hint f-h text-break-line"></p>');
+        if (!cj.by_author && hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true) {
+            hc.push('<div class="visibility-au-blind checki"><label><span class="checkc"><input type="checkbox" name="blind" value="1"></span>Anonymous to authors</label></div>');
         }
-
-        // visibility
-        hc.push('<div class="entryi"><label for="' + cid + '-visibility">Visibility</label><div class="entry">', '</div></div>');
-        hc.push('<span class="select"><select id="' + cid + '-visibility" name="visibility">', '</select></span>');
-        hc.push('<option value="au">' + au_option + '</option>');
-        hc.push('<option value="rev">Hidden from authors</option>');
-        hc.push('<option value="pc">Hidden from authors and external reviewers</option>');
-        hc.push_pop('<option value="admin">Administrators only</option>');
-        hc.push('<div class="fx2">', '</div>')
-        if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true) {
-            hc.push('<div class="checki"><label><span class="checkc"><input type="checkbox" name="blind" value="1"></span>Anonymous to authors</label></div>');
-        }
-        hc.push('<p class="f-h">', '</p>');
-        hc.push_pop(au_description);
-        hc.pop_n(2);
-    } else if (!cj.response && cj.by_author_visibility) {
-        hc.push('<div class="entryi"><label for="' + cid + '-visibility">Visibility</label><div class="entry">', '</div></div>');
-        hc.push('<span class="select"><select id="' + cid + '-visibility" name="visibility">', '</select></span>');
-        hc.push('<option value="au">Visible to reviewers</option>');
-        hc.push_pop('<option value="admin">Administrators only</option>');
         hc.pop();
     }
 
@@ -4906,9 +4899,29 @@ function render_editing(hc, cj) {
 }
 
 function visibility_change() {
-    var j = $(this).closest(".cmteditinfo"),
-        dofold = j.find("select[name=visibility]").val() != "au";
-    fold(j[0], dofold, 2);
+    var form = this.closest("form"),
+        sel = form.elements.visibility,
+        hint = sel.closest(".entryi").querySelector(".visibility-hint"),
+        blind = sel.closest(".entryi").querySelector(".visibility-au-blind");
+    if (hint) {
+        var m = [];
+        if (sel.value === "au" && !form.elements.by_author) {
+            if (hotcrp_status.myperm.some_author_can_view_review) {
+                m.push('Authors will be notified immediately.');
+            } else {
+                m.push('Authors cannot view comments at the moment.');
+            }
+            if (hotcrp_status.rev.blind === true) {
+                m.push('The comment will be anonymous to authors.');
+            }
+        } else if (sel.value === "pc") {
+            m.push('The comment will be hidden from authors and external reviewers.');
+        }
+        hint.textContent = m.join("\n");
+        toggleClass(hint, "hidden", m.length === 0);
+    }
+    if (blind)
+        toggleClass(blind, "hidden", sel.value !== "au");
 }
 
 function ready_change() {

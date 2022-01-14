@@ -336,6 +336,9 @@ span.sep {
 	white-space: pre-wrap;
 	overflow-wrap: break-word;
 }
+.text-break-line {
+	white-space: pre-line;
+}
 span.nb {
 	display: inline-block; /* why? */
 	text-indent: 0;
