@@ -6322,9 +6322,9 @@ suggest.add_builder("papersearch", function (elt) {
     if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagval:|tagvalue:))([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
         return demand_load.tags().then(make_suggestions(m[2], n[1], {prefix: m[1]}));
-    } else if (x && (m = x[0].match(/.*?\b(((?:has|ss|opt|dec|round|topic|style|color|show|hide):)[^"\s()]*|"[^"]*)$/))) {
+    } else if (x && (m = x[0].match(/.*?\b((?:has|ss|opt|dec|round|topic|style|color|show|hide):(?:[^"\s()]*|"[^"]*))$/))) {
         n = x[1].match(/^([^\s()]*)/);
-        return demand_load.search_completion().then(make_suggestions(m[1], n[1], {reqlen: m[2].length}));
+        return demand_load.search_completion().then(make_suggestions(m[1], n[1], {reqlen: m[1].indexOf(":") + 1}));
     }
 });
 
