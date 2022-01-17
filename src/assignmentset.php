@@ -1006,6 +1006,8 @@ class AssignmentSet {
     private $astate;
     /** @var array<string,list<int>> */
     private $searches = [];
+    /** @var array<string,list<MessageItem>> */
+    private $search_messages = [];
     /** @var string */
     private $search_type = "s";
     /** @var ?string */
@@ -1430,11 +1432,16 @@ class AssignmentSet {
             if (!isset($this->searches[$pfield])) {
                 $search = new PaperSearch($this->user, ["q" => $pfield, "t" => $this->search_type, "reviewer" => $this->astate->reviewer]);
                 $this->searches[$pfield] = $search->paper_ids();
-                if ($report_error && $search->has_problem()) {
-                    $this->error($search->full_feedback_html());
+                if ($search->has_problem()) {
+                    $this->search_messages[$pfield] = $search->message_list();
                 }
             }
             $npids = $this->searches[$pfield];
+            if ($report_error) {
+                foreach ($this->search_messages[$pfield] ?? [] as $mi) {
+                    $this->astate->append_item($mi->with_landmark($this->astate->landmark()));
+                }
+            }
             $val = 1;
         }
         if (empty($npids) && $report_error) {

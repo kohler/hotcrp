@@ -49,6 +49,9 @@ class MessageItem implements JsonSerializable {
         if (array_key_exists("message", $updates)) {
             $mi->message = $updates["message"];
         }
+        if (array_key_exists("landmark", $updates)) {
+            $mi->landmark = $updates["landmark"];
+        }
         return $mi;
     }
 
@@ -56,6 +59,12 @@ class MessageItem implements JsonSerializable {
      * @return MessageItem */
     function with_field($field) {
         return $this->replace(["field" => $field]);
+    }
+
+    /** @param ?string $landmark
+     * @return MessageItem */
+    function with_landmark($landmark) {
+        return $this->replace(["landmark" => $landmark]);
     }
 
     /** @param string $text
