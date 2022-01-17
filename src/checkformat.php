@@ -270,7 +270,7 @@ class CheckFormat extends MessageSet {
             }));
             if ($nd0_pages == $this->npages) {
                 $this->problem_at("notext", "<0>This document appears to contain no text", 2);
-                $this->msg_at("notext", "The PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
+                $this->msg_at("notext", "<0>The PDF software used renders pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
             }
         }
 

@@ -2027,7 +2027,7 @@ class PaperSearch extends MessageSet {
                 return $qe;
             }
         }
-        $srch->lwarning($sword, "<0>Unknown search ‘has:{$word}’");
+        $srch->lwarning($sword, "<0>Unknown search ‘has:{$word}’ won’t match anything");
         return new False_SearchTerm;
     }
 
@@ -2085,11 +2085,11 @@ class PaperSearch extends MessageSet {
             }
         } else if ($keyword !== null) {
             $sword->pos2 = $sword->pos1 + strlen($keyword) + 1;
-            $this->lwarning($sword, "<0>Unknown search ‘{$lkeyword}:’");
+            $this->lwarning($sword, "<0>Unknown search ‘{$lkeyword}:’ won’t match anything");
         } else if (!$scope->defkw_scope->defkw_error) {
             $sword->pos1 = $scope->defkw_scope->defkw_pos1;
             $sword->pos2 = $sword->pos1 + strlen($scope->defkw) + 1;
-            $this->lwarning($sword, "<0>Unknown search ‘{$lkeyword}:’");
+            $this->lwarning($sword, "<0>Unknown search ‘{$lkeyword}:’ won’t match anything");
             $scope->defkw_scope->defkw_error = true;
         }
     }

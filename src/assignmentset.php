@@ -809,7 +809,7 @@ abstract class AssignmentParser {
     abstract function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state);
 
     // Apply this action to `$state`. Return `true` iff the action succeeds.
-    // To indicate an error, call `$state->error($html)` and return `false`,
+    // To indicate an error, call `$state->error($ftext)` and return `false`,
     // or, equivalently, return an `AssignmentError`.
     /** @param CsvRow $req
      * @return bool|AssignmentError */
@@ -1171,8 +1171,8 @@ class AssignmentSet {
         }
     }
 
-    private static function req_user_html($req) {
-        return Text::name_h($req["firstName"], $req["lastName"], $req["email"], NAME_E);
+    private static function req_user_text($req) {
+        return Text::name($req["firstName"], $req["lastName"], $req["email"], NAME_E);
     }
 
     private static function apply_user_parts($req, $a) {
@@ -1278,10 +1278,11 @@ class AssignmentSet {
             if (count($ret->user_ids()) === 1) {
                 return $ret->users();
             } else if (count($ret->user_ids()) > 1) {
-                $this->error("“" . self::req_user_html($req) . "” matches more than one $cset_text, use a full email address to disambiguate.");
+                $this->error("<0>‘" . self::req_user_text($req) . "’ matches more than one {$cset_text}");
+                $this->astate->msg_near($this->astate->landmark(), "<0>Use a full email address to disambiguate.", MessageSet::INFORM);
                 return null;
             } else {
-                $this->error("No $cset_text matches “" . self::req_user_html($req) . "”.");
+                $this->error("<0>" . ucfirst($cset_text) . " ‘" . self::req_user_text($req) . "’ not found");
                 return null;
             }
         } else if ($email
@@ -1291,11 +1292,11 @@ class AssignmentSet {
             return [$u];
         } else {
             if (!$email) {
-                $this->error("Missing email address.");
+                $this->error("<0>Email address required");
             } else if (!validate_email($email)) {
-                $this->error("Email address “" . htmlspecialchars($email) . "” is invalid.");
+                $this->error("<0>Email address ‘{$email}’ invalid");
             } else {
-                $this->error("Could not create user.");
+                $this->error("<0>Could not create user");
             }
             return null;
         }
@@ -1369,10 +1370,10 @@ class AssignmentSet {
         }
 
         if (!$has_action && !($this->astate->defaults["action"] ?? null)) {
-            $this->error_near($csv->lineno(), "“action” column missing");
+            $this->error_near($csv->lineno(), "<0>“action” column required");
             return false;
         } else if (!$csv->has_column("paper")) {
-            $this->error_near($csv->lineno(), "“paper” column missing");
+            $this->error_near($csv->lineno(), "<0>“paper” column required");
             return false;
         } else {
             if (!isset($this->astate->defaults["action"])) {
@@ -1411,7 +1412,7 @@ class AssignmentSet {
         $pfield = trim($pfield);
         if ($pfield === "") {
             if ($report_error) {
-                $this->error("Missing paper.");
+                $this->error("<0>Paper required");
             }
             return 0;
         }
@@ -1466,7 +1467,7 @@ class AssignmentSet {
         } else if ($user === "missing") {
             $us = $aparser->expand_missing_user($prow, $req, $this->astate);
             if ($us === null) {
-                $this->astate->error("User required.");
+                $this->astate->error("<0>User required");
                 return null;
             }
         } else if (substr_compare($user, "anonymous", 0, 9) === 0) {
@@ -1475,7 +1476,7 @@ class AssignmentSet {
             $us = null;
         }
         if ($us === null) {
-            $this->astate->error("User “" . htmlspecialchars($user) . "” is not allowed here.");
+            $this->astate->error("<0>User ‘{$user}’ not allowed here");
         }
         return $us;
     }
@@ -1486,14 +1487,14 @@ class AssignmentSet {
         // check action
         if (!$aparser) {
             if ($req["action"]) {
-                $this->error("Unknown action “" . htmlspecialchars($req["action"]) . "”.");
+                $this->error("<0>Action ‘" . $req["action"] . "’ not found");
             } else {
-                $this->error("Missing action.");
+                $this->error("<0>Action missing");
             }
             return;
         } else if ($this->enabled_actions !== null
                    && !isset($this->enabled_actions[$aparser->type])) {
-            $this->error("Action " . htmlspecialchars($aparser->type) . " disabled.");
+            $this->error("<0>Action ‘{$aparser->type}’ not allowed");
             return;
         }
 
@@ -1571,7 +1572,7 @@ class AssignmentSet {
     private function apply_paper(PaperInfo $prow, $contacts, AssignmentParser $aparser, $req) {
         $allow = $aparser->allow_paper($prow, $this->astate);
         if ($allow !== true) {
-            $allow = $allow ? : new AssignmentError($prow->make_whynot(["administer" => true]));
+            $allow = $allow ? : new AssignmentError("<5>" . $prow->make_whynot(["administer" => true]));
             $this->astate->paper_error($allow->getMessage());
             return 0;
         }
@@ -1590,12 +1591,12 @@ class AssignmentSet {
             $err = $aparser->allow_user($prow, $contact, $req, $this->astate);
             if ($err !== true) {
                 if (!$err && !$contact->contactId) {
-                    $this->astate->error("<0>User “none” is not allowed here.");
+                    $this->astate->error("<0>User ‘none’ not allowed here");
                     return -1;
                 } else if (!$err) {
                     $uname = $contact->name(NAME_E);
                     $problem = $prow->has_conflict($contact) ? "has a conflict with" : "cannot be assigned to";
-                    $err = new AssignmentError("<0>{$uname} {$problem} #{$prow->paperId}.");
+                    $err = new AssignmentError("<0>{$uname} {$problem} #{$prow->paperId}");
                 }
                 $this->astate->paper_error($err->getMessage());
                 continue;
