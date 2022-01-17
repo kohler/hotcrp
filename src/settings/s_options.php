@@ -322,10 +322,10 @@ class Options_SettingRenderer {
         }
 
         echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
-            Ht::button(Icons::ui_movearrow(0), ["class" => "btn-licon ui js-settings-sf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
-            Ht::button(Icons::ui_movearrow(2), ["class" => "btn-licon ui js-settings-sf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
+            Ht::button(Icons::ui_use("movearrow0"), ["class" => "btn-licon ui js-settings-sf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
+            Ht::button(Icons::ui_use("movearrow2"), ["class" => "btn-licon ui js-settings-sf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
-            Ht::button(Icons::ui_trash(), ["class" => "btn-licon ui js-settings-sf-move delete need-tooltip", "aria-label" => "Delete", "data-option-exists" => $this->have_options[$o->id] ?? false]),
+            Ht::button(Icons::ui_use("trash"), ["class" => "btn-licon ui js-settings-sf-move delete need-tooltip", "aria-label" => "Delete", "data-option-exists" => $this->have_options[$o->id] ?? false]),
             "</div></div>\n",
             '</div>';
 
@@ -341,6 +341,8 @@ class Options_SettingRenderer {
             Ht::hidden("has_options", 1),
             Ht::hidden("options_version", (int) $sv->conf->setting("options")),
             "\n\n";
+        Icons::stash_defs("movearrow0", "movearrow2", "trash");
+        echo Ht::unstash();
 
         echo '<div id="settings-sform" class="c">';
         $iposl = [];
