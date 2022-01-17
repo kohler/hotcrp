@@ -394,7 +394,7 @@ function rf_delete() {
     } else {
         addClass(rf, "deleted");
         var $rfedit = $("#rf_" + fid + "_edit");
-        $rfedit.children().addClass("hidden", true);
+        $rfedit.children().addClass("hidden");
         var name = form.elements["rf_name_" + fid];
         $(name).prop("disabled", true).addClass("text-decoration-line-through");
         removeClass(name.closest(".entryi"), "hidden");
@@ -688,14 +688,31 @@ return rfs;
 
 
 handle_ui.on("js-settings-resp-round-new", function () {
-    var i, j;
-    for (i = 1; jQuery("#response_" + i).length; ++i)
-        /* do nothing */;
-    jQuery("#response_n").before("<div id=\"response_" + i + "\" class=\"form-g\"></div>");
-    j = jQuery("#response_" + i);
-    j.html(jQuery("#response_n").html().replace(/_n\"/g, "_" + i + "\""));
-    j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());
-    j.find(".need-suggest").each(suggest);
+    var i, $rx, $rt = $("#response_new"), t;
+    for (i = 1; jQuery("#response_" + i).length; ++i) {
+    }
+    $rt.before($rt.html().replace(/\$/g, i));
+    $rx = $("#response_" + i);
+    $rx.find("textarea").css({height: "auto"}).autogrow();
+    $rx.find(".need-suggest").each(suggest);
+    $rx.find(".need-tooltip").each(tooltip);
+    return false;
+});
+
+handle_ui.on("js-settings-resp-round-delete", function () {
+    var rr = this.closest(".settings-response");
+    if (hasClass(rr, "settings-rf-new")) {
+        rr.parentElement.removeChild(rf);
+    } else {
+        var fid = rr.getAttribute("data-resp-round");
+        addClass(rr, "deleted");
+        this.form.elements["response/" + fid + "/delete"].click();
+        $(rr).children().addClass("hidden");
+        var name = this.form.elements["response/" + fid + "/name"];
+        $(name).prop("disabled", true).addClass("text-decoration-line-through");
+        removeClass(name.closest(".entryi"), "hidden");
+        $(name).closest(".entry").append('<div class="mt-2"><em>This response round will be deleted.</em></div>');
+    }
     return false;
 });
 
