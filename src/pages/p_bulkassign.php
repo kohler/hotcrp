@@ -104,11 +104,8 @@ class BulkAssign_Page {
         $aset->parse($text, $filename, $defaults);
         $this->finish_browser_alive();
 
-        if ($aset->has_error()) {
+        if ($aset->has_error() || $aset->is_empty()) {
             $aset->report_errors();
-            return false;
-        } else if ($aset->is_empty()) {
-            $this->conf->warnMsg("That assignment file makes no changes.");
             return false;
         }
 

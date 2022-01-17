@@ -1159,6 +1159,8 @@ class AssignmentSet {
                 $this->astate->prepend_msg("<0>Changes not saved due to errors in the assignment", MessageSet::ERROR);
             }
             $this->conf->feedback_msg($this->astate->message_list());
+        } else if (empty($this->assigners)) {
+            $this->conf->feedback_msg([new MessageItem(null, "<0>No changes", 1)]);
         }
     }
     /** @return JsonResult */
@@ -1879,11 +1881,7 @@ class AssignmentSet {
      * @return bool */
     function execute($verbose = false) {
         if ($this->has_error() || empty($this->assigners)) {
-            if ($verbose && $this->astate->has_message()) {
-                $this->report_errors();
-            } else if ($verbose) {
-                $this->conf->feedback_msg([new MessageItem(null, "<0>No changes", 1)]);
-            }
+            $verbose && $this->report_errors();
             return !$this->has_error(); // true means no errors
         }
 
