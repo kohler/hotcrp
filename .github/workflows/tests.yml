@@ -36,7 +36,9 @@ jobs:
         extensions: mbstring, intl, mysqlnd
 
     - name: Install poppler
-      run: sudo apt-get install poppler-utils
+      run: |
+        sudo apt-get --fix-broken install
+        sudo apt-get install poppler-utils
 
     - name: Run tests
       run: sh test/check.sh
