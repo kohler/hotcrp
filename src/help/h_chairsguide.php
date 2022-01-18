@@ -206,7 +206,7 @@ administrator’s identity.</p>\n\n";
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
-            echo "<li><p><strong>", $hth->setting_link("Collect authors’ responses to the reviews (optional).", "resp_open_0"),
+            echo "<li><p><strong>", $hth->setting_link("Collect authors’ responses to the reviews (optional).", "response_active"),
   "</strong>  Authors’ responses (also called rebuttals) let authors correct reviewer misconceptions
   before decisions are made.  Responses are entered
   into the system as comments.  On the ", $hth->setting_link("decision settings page", "dec"),
