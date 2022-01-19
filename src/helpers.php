@@ -750,7 +750,7 @@ function decode_token($x, $format = "") {
 /** @param string $bytes
  * @return string */
 function base48_encode($bytes) {
-    $convtab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV";
+    $convtab = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXY";
     $bi = 0;
     $blen = strlen($bytes);
     $have = $w = 0;
@@ -775,6 +775,7 @@ function base48_encode($bytes) {
 /** @param string $text
  * @return string|false */
 function base48_decode($text) {
+    $revconvtab = "IJKLMNOP QRSTU VWXYZ[\\]^_       0123456789: ;<=>?@ABCDEFGH";
     $ti = 0;
     $tlen = strlen($text);
     $have = $w = 0;
@@ -783,11 +784,7 @@ function base48_decode($text) {
         $chunk = $idx = 0;
         while ($ti !== $tlen && $idx !== 2) {
             $ch = ord($text[$ti]);
-            if ($ch >= 97 && $ch <= 122) {
-                $n = $ch - 97;
-            } else if ($ch >= 65 && $ch <= 86) {
-                $n = $ch - 39;
-            } else {
+            if ($ch < 65 || $ch > 122 || ($n = ord($revconvtab[$ch - 65]) - 48) < 0) {
                 return false;
             }
             ++$ti;

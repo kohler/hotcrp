@@ -1648,7 +1648,7 @@ for ($i = 0; $i !== 1000; ++$i) {
     $n = mt_rand(0, 99);
     $b = $n === 0 ? "" : random_bytes($n);
     $t = base48_encode($b);
-    xassert(strspn($t, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV") === strlen($t));
+    xassert(strspn($t, "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXY") === strlen($t));
     xassert_eqq(base48_decode($t), $b);
 }
 
