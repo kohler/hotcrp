@@ -1412,7 +1412,7 @@ If you are willing to review this submission, you may enter your review
 on the conference site or complete a review form offline and upload it.
 
 Once you've decided, please accept or decline this review request using
-one of these links. You may also contact Lixia Zhang directly.
+one of these links.
 
       Accept: http://hotcrp.lcdf.org/test/review/17?cap={{}}&accept=1
      Decline: http://hotcrp.lcdf.org/test/review/17?cap={{}}&decline=1

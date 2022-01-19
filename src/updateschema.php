@@ -572,7 +572,7 @@ class UpdateSchema {
     }
 
     private function v256_tokenize_review_acceptors() {
-        $result = $this->conf->ql("select paperId, reviewId, contactId, `data`, reviewModified from PaperReview where `data` is not null union select paperId, refusedReviewId, contactId, `data`, timeRefused from PaperReviewRefused where `data` is not null");
+        $result = $this->conf->ql("select paperId, reviewId, contactId, `data`, reviewModified from PaperReview where `data` is not null union select paperId, refusedReviewId, contactId, `data`, timeRefused from PaperReviewRefused where `data` is not null and refusedReviewId is not null");
         $qv = [];
         while (($row = $result->fetch_row())) {
             if (($jdata = json_decode($row[3]))
