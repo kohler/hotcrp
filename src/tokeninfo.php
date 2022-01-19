@@ -52,6 +52,13 @@ class TokenInfo {
         return $this;
     }
 
+    /** @param string $pattern
+     * @return $this */
+    function set_token_pattern($pattern) {
+        $this->_token_pattern = $pattern;
+        return $this;
+    }
+
     /** @return $this */
     function set_user(Contact $user) {
         assert(($user->contactId > 0 && !$this->is_cdb) || $user->contactDbId > 0);
@@ -64,21 +71,14 @@ class TokenInfo {
     /** @param int $seconds
      * @return $this */
     function set_expires_after($seconds) {
-        $this->timeExpires = time() + $seconds;
-        return $this;
-    }
-
-    /** @param string $pattern
-     * @return $this */
-    function set_token_pattern($pattern) {
-        $this->_token_pattern = $pattern;
+        $this->timeExpires = Conf::$now + $seconds;
         return $this;
     }
 
     /** @param mysqli_result|Dbl_Result $result
      * @param bool $is_cdb
      * @return ?TokenInfo */
-    static function fetch($result, Conf $conf, $is_cdb) {
+    static function fetch($result, Conf $conf, $is_cdb = false) {
         if (($cap = $result->fetch_object("TokenInfo", [$conf]))) {
             $cap->conf = $conf;
             $cap->is_cdb = $is_cdb;
@@ -95,7 +95,7 @@ class TokenInfo {
     /** @param string $token
      * @param bool $is_cdb
      * @return ?TokenInfo */
-    static function find_any(Conf $conf, $token, $is_cdb = false) {
+    static function find_any($token, Conf $conf, $is_cdb = false) {
         if (strlen($token) >= 5
             && ($dblink = $is_cdb ? $conf->contactdb() : $conf->dblink)) {
             $result = Dbl::qe($dblink, "select * from Capability where salt=?", $token);
@@ -110,60 +110,20 @@ class TokenInfo {
     /** @param string $token
      * @param bool $is_cdb
      * @return ?TokenInfo */
-    static function find_active(Conf $conf, $token, $is_cdb = false) {
-        if (($cap = self::find_any($conf, $token, $is_cdb))
+    static function find_active($token, Conf $conf, $is_cdb = false) {
+        if (($cap = self::find_any($token, $conf, $is_cdb))
             && $cap->is_active()) {
+            error_log("found $token " . ($cap?1:0));
             return $cap;
         } else {
-            return null;
-        }
-    }
-
-    /** @param string $text
-     * @param ?int $type
-     * @param bool $allow_inactive
-     * @return ?TokenInfo
-     * @deprecated */
-    static function find(Conf $conf, $text, $type, $allow_inactive = false) {
-        if (strlen($text) < 5) {
-            return null;
-        } else if ($text[0] === "1" || $text[0] === "2") {
-            $prefix = $text[0];
-        } else if (str_starts_with($text, "U1")) {
-            $prefix = "U1";
-        } else {
-            $prefix = "";
-        }
-
-        $iscdb = $prefix === "U1" || $prefix === "2";
-        $dblink = $iscdb ? $conf->contactdb() : $conf->dblink;
-        if (!$dblink) {
-            return null;
-        }
-
-        $result = Dbl::qe($dblink, "select * from Capability where salt=?", $text);
-        if ($result->num_rows === 0 && $prefix !== "") { // XXX backward compat
-            $decoded = base64_decode(str_replace(["-a", "-b"], ["+", "/"], substr($text, strlen($prefix))));
-            if ($decoded !== false && strlen($decoded) >= 5) {
-                $result = Dbl::qe($dblink, "select * from Capability where salt=?", $decoded);
-            }
-        }
-
-        $cap = self::fetch($result, $conf, $iscdb);
-        Dbl::free($result);
-
-        if ($cap
-            && ($type === null || $cap->capabilityType === $type)
-            && ($allow_inactive || $cap->is_active())) {
-            return $cap;
-        } else {
+            error_log("not found $token " . ($cap?1:0));
             return null;
         }
     }
 
     /** @return bool */
     function is_active() {
-        return $this->timeExpires === 0 || $this->timeExpires > time();
+        return $this->timeExpires === 0 || $this->timeExpires > Conf::$now;
     }
 
     /** @return ?Contact */
@@ -187,13 +147,13 @@ class TokenInfo {
         }, $this->_token_pattern);
     }
 
-    /** @return string|false */
+    /** @return ?string */
     function create() {
         assert($this->capabilityType > 0);
         $this->contactId = $this->contactId ?? 0;
         $this->paperId = $this->paperId ?? 0;
         $this->otherId = $this->otherId ?? 0;
-        $this->timeCreated = $this->timeCreated ?? time();
+        $this->timeCreated = $this->timeCreated ?? Conf::$now;
         $this->timeExpires = $this->timeExpires ?? 0;
         $need_salt = !$this->salt;
         assert(!$need_salt || $this->_token_pattern);
@@ -209,7 +169,7 @@ class TokenInfo {
                 return $salt;
             }
         }
-        return false;
+        return null;
     }
 
     /** @return bool */

@@ -11,7 +11,7 @@ $Qreq || initialize_request();
 function change_email_by_capability(Contact $user, $qreq) {
     $conf = $user->conf;
     ensure_session();
-    $capdata = TokenInfo::find_active($conf, trim($qreq->changeemail));
+    $capdata = TokenInfo::find_active(trim($qreq->changeemail), $conf);
     $capcontent = null;
     if (!$capdata
         || !$capdata->contactId

@@ -227,6 +227,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_need_pid_sort = false;
     /** @var int */
     public $loaded_allprefs = 0;
+
     function __construct(PaperInfo $prow = null) {
         if ($prow) {
             $this->add($prow, true);
@@ -491,6 +492,8 @@ class PaperInfo {
     public $commentSkeletonInfo;
 
     // Not in database
+    /** @var ?PaperInfoSet */
+    public $_row_set;
     /** @var array<int,PaperContactInfo> */
     private $_contact_info = [];
     /** @var int */
@@ -545,6 +548,7 @@ class PaperInfo {
     private $_comment_skeleton_array;
     /** @var ?list<array{string,string}> */
     private $_potential_conflicts;
+    /** @var int */
     private $_potential_conflict_flags;
     /** @var ?list<ReviewRequestInfo> */
     private $_request_array;
@@ -554,8 +558,6 @@ class PaperInfo {
     private $_watch_array;
     /** @var ?Contact */
     private $_author_view_user;
-    /** @var ?PaperInfoSet */
-    public $_row_set;
     /** @var ?int */
     public $_sort_subset;
     /** @var ?bool */

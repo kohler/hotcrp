@@ -85,7 +85,7 @@ class Signin_Page {
     static private function _find_reset_token(Conf $conf, $token) {
         if ($token) {
             $is_cdb = str_starts_with($token, "2") /* XXX */ || str_starts_with($token, "hcpw1");
-            if (($cap = TokenInfo::find_active($conf, $token, $is_cdb))
+            if (($cap = TokenInfo::find_active($token, $conf, $is_cdb))
                 && $cap->capabilityType === TokenInfo::RESETPASSWORD) {
                 return $cap;
             }
