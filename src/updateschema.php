@@ -2155,6 +2155,13 @@ class UpdateSchema {
             && $conf->ql_ok("alter table PaperComment add `commentData` varbinary(4096) DEFAULT NULL")) {
             $conf->update_schema_version(253);
         }
+        if ($conf->sversion === 253
+            && $conf->ql_ok("alter table Capability add `timeCreated` bigint(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table Capability change `timeCreated` `timeCreated` bigint(11) NOT NULL")
+            && $conf->ql_ok("alter table Capability change `data` `data` varbinary(8192) DEFAULT NULL")
+            && $conf->ql_ok("alter table Capability add `otherId` int(11) NOT NULL DEFAULT 0")) {
+            $conf->update_schema_version(254);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

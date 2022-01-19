@@ -251,8 +251,10 @@ class Conf {
     /** @var ?array<string,list<object>> */
     private $_option_type_map;
     private $_option_type_factories;
-    private $_capability_factories;
-    private $_capability_types;
+    /** @var ?list<object> */
+    private $_token_factories;
+    /** @var ?array<int,object> */
+    private $_token_types;
     private $_hook_map;
     private $_hook_factories;
     /** @var ?array<string,FileFilter> */
@@ -379,7 +381,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 253) {
+        if ($this->sversion < 254) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;
@@ -397,7 +399,7 @@ class Conf {
 
         // GC old capabilities
         if (($this->settings["__capability_gc"] ?? 0) < Conf::$now - 86400) {
-            $this->clean_capabilities();
+            $this->clean_tokens();
         }
 
         $this->refresh_settings();
@@ -720,25 +722,6 @@ class Conf {
         if ($this === Conf::$main) {
             $this->refresh_globals();
         }
-    }
-
-    private function clean_capabilities() {
-        $ctmap = $this->capability_type_map();
-        $ct_cleanups = [];
-        foreach ($ctmap as $ctj) {
-            if ($ctj->cleanup_function ?? null)
-                $ct_cleanups[] = $ctj->type;
-        }
-        if (!empty($ct_cleanups)) {
-            $result = $this->ql("select * from Capability where timeExpires>0 and timeExpires<? and capabilityType?a", Conf::$now, $ct_cleanups);
-            while (($cap = CapabilityInfo::fetch($result, $this, false))) {
-                call_user_func($ctmap[$cap->capabilityType]->cleanup_function, $cap);
-            }
-            Dbl::free($result);
-        }
-        $this->ql("delete from Capability where timeExpires>0 and timeExpires<".Conf::$now);
-        $this->ql("insert into Settings set name='__capability_gc', value=? on duplicate key update value=?", Conf::$now, Conf::$now);
-        $this->settings["__capability_gc"] = Conf::$now;
     }
 
     function refresh_globals() {
@@ -1337,7 +1320,9 @@ class Conf {
             if (self::xt_priority_compare($fxt, $found ?? $this->_xt_last_match) > 0) {
                 break;
             }
-            if ($fxt->match === ".*") {
+            if (!isset($fxt->match)) {
+                continue;
+            } else if ($fxt->match === ".*") {
                 $m = [$name];
             } else if (!preg_match("\1\\A(?:{$fxt->match})\\z\1{$reflags}", $name, $m)) {
                 continue;
@@ -5222,44 +5207,79 @@ class Conf {
     }
 
 
-    // capability tokens
+    // tokens
 
-    function _add_capability_json($fj) {
-        $ok = false;
-        if (isset($fj->match) && is_string($fj->match)
-            && isset($fj->function) && is_string($fj->function)) {
-            $this->_capability_factories[] = $fj;
-            $ok = true;
+    function _add_token_json($fj) {
+        if ((isset($fj->match) && is_string($fj->match))
+            || (isset($fj->type) && is_int($fj->type))) {
+            $this->_token_factories[] = $fj;
+            return true;
+        } else {
+            return false;
         }
-        if (isset($fj->type) && is_int($fj->type)) {
-            self::xt_add($this->_capability_types, $fj->type, $fj);
-        }
-        return true;
     }
-    function capability_type_map() {
-        if ($this->_capability_factories === null) {
-            $this->_capability_factories = [];
-            $this->_capability_types = [];
-            expand_json_includes_callback(["etc/capabilityhandlers.json"], [$this, "_add_capability_json"]);
+
+    private function load_token_types() {
+        if ($this->_token_factories === null) {
+            $this->_token_factories = $this->_token_types = [];
+            expand_json_includes_callback(["etc/capabilityhandlers.json"], [$this, "_add_token_json"]);
             if (($olist = $this->opt("capabilityHandlers"))) {
-                expand_json_includes_callback($olist, [$this, "_add_capability_json"]);
+                expand_json_includes_callback($olist, [$this, "_add_token_json"]);
             }
-            usort($this->_capability_factories, "Conf::xt_priority_compare");
-            // option types are global (cannot be allowed per user)
-            $m = [];
-            foreach (array_keys($this->_capability_types) as $ct) {
-                if (($uf = $this->xt_search_name($this->_capability_types, $ct, null)))
-                    $m[$ct] = $uf;
-            }
-            $this->_capability_types = $m;
+            usort($this->_token_factories, "Conf::xt_priority_compare");
         }
-        return $this->_capability_types;
     }
-    function capability_handler($cap) {
-        $this->capability_type_map();
+
+    /** @param string $token
+     * @return ?object */
+    function token_handler($token) {
+        if ($this->_token_factories === null) {
+            $this->load_token_types();
+        }
         $this->_xt_last_match = null;
-        $ufs = $this->xt_search_factories($this->_capability_factories, $cap, null);
+        $ufs = $this->xt_search_factories($this->_token_factories, $token, null);
         return $ufs[0];
+    }
+
+    /** @param int $type
+     * @return ?object */
+    function token_type($type) {
+        if ($this->_token_factories === null) {
+            $this->load_token_types();
+        }
+        if (!array_key_exists($type, $this->_token_types)) {
+            $m = [];
+            foreach ($this->_token_factories as $tf) {
+                if (($tf->type ?? null) === $type)
+                    $m[$type][] = $tf;
+            }
+            /** @phan-suppress-next-line PhanTypeMismatchArgument */
+            $this->_token_types[$type] = $this->xt_search_name($m, $type, null);
+        }
+        return $this->_token_types[$type];
+    }
+
+    private function clean_tokens() {
+        if ($this->_token_factories === null) {
+            $this->load_token_types();
+        }
+        $ct_cleanups = [];
+        foreach ($this->_token_factories as $tf) {
+            if (isset($tf->type) && is_int($tf->type) && isset($tf->cleanup_function))
+                $ct_cleanups[$tf->type] = true;
+        }
+        if (!empty($ct_cleanups)) {
+            $result = $this->ql("select * from Capability where timeExpires>0 and timeExpires<? and capabilityType?a", Conf::$now, array_keys($ct_cleanups));
+            while (($tok = TokenInfo::fetch($result, $this, false))) {
+                if (($tf = $this->token_type($tok->capabilityType))
+                    && isset($tf->cleanup_function))
+                    call_user_func($tf->cleanup_function, $tok, $this);
+            }
+            Dbl::free($result);
+        }
+        $this->ql("delete from Capability where timeExpires>0 and timeExpires<".Conf::$now);
+        $this->ql("insert into Settings set name='__capability_gc', value=? on duplicate key update value=?", Conf::$now, Conf::$now);
+        $this->settings["__capability_gc"] = Conf::$now;
     }
 
 

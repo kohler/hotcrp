@@ -1444,9 +1444,27 @@ class Contact {
     /** @param string $text */
     function apply_capability_text($text) {
         // Add capabilities from arguments
-        foreach (preg_split('/\s+/', $text) as $s) {
-            if ($s !== "" && ($uf = $this->conf->capability_handler($s))) {
-                call_user_func($uf->function, $this, $uf, $s);
+        foreach (explode(" ", $text) as $s) {
+            if ($s !== "" && ($uf = $this->conf->token_handler($s))) {
+                call_user_func($uf->apply_function, $this, $uf, $s);
+            }
+        }
+    }
+
+    /** @param string $text
+     * @param bool $add */
+    function set_default_cap_param($text, $add) {
+        if ($this->is_activated()) {
+            Conf::$hoturl_defaults = Conf::$hoturl_defaults ?? [];
+            $cap = urldecode(Conf::$hoturl_defaults["cap"] ?? "");
+            $a = array_diff(explode(" ", $cap), [$text, ""]);
+            if ($add) {
+                $a[] = $text;
+            }
+            if (empty($a)) {
+                unset(Conf::$hoturl_defaults["cap"]);
+            } else {
+                Conf::$hoturl_defaults["cap"] = urlencode(join(" ", $a));
             }
         }
     }

@@ -174,7 +174,8 @@ class DocumentInfo implements JsonSerializable {
      * @return ?DocumentInfo */
     static function make_capability($token, $paperId, $documentType, Conf $conf) {
         if (!$token
-            || !($cap = CapabilityInfo::find($conf, $token, CapabilityInfo::UPLOAD))) {
+            || !($cap = TokenInfo::find_active($conf, $token))
+            || $cap->capabilityType !== TokenInfo::UPLOAD) {
             return null;
         }
         $capd = json_decode($cap->data);

@@ -4,17 +4,16 @@
 
 DROP TABLE IF EXISTS `Capability`;
 CREATE TABLE `Capability` (
-  `capabilityId` int(11) NOT NULL AUTO_INCREMENT,
   `capabilityType` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
+  `otherId` int(11) NOT NULL DEFAULT 0,
+  `timeCreated` bigint(11) NOT NULL,
   `timeExpires` int(11) NOT NULL,
   `salt` varbinary(255) NOT NULL,
-  `data` varbinary(4096) DEFAULT NULL,
-  PRIMARY KEY (`capabilityId`),
-  UNIQUE KEY `capabilityId` (`capabilityId`),
-  UNIQUE KEY `salt` (`salt`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  `data` varbinary(8192) DEFAULT NULL,
+  PRIMARY KEY (`salt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -27,7 +26,7 @@ CREATE TABLE `Conferences` (
   `confid` int(11) NOT NULL AUTO_INCREMENT,
   `dbname` varbinary(64) DEFAULT NULL,
   PRIMARY KEY (`confid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 --
@@ -51,7 +50,7 @@ CREATE TABLE `ContactInfo` (
   `updateTime` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`contactDbId`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 --
@@ -65,4 +64,4 @@ CREATE TABLE `Roles` (
   `roles` tinyint(1) NOT NULL DEFAULT '0',
   `activity_at` bigint(20) NOT NULL DEFAULT '0',
   PRIMARY KEY (`contactDbId`,`confid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

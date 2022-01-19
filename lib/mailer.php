@@ -422,12 +422,13 @@ class Mailer {
         $this->sensitive = true;
         $token = $this->censor ? "HIDDEN" : $this->preparation->reset_capability;
         if (!$token) {
-            $cdbu = $this->recipient->contactdb_user();
-            if (!$cdbu && $this->conf->contactdb()) {
-                error_log("{$this->conf->dbname}: {$this->recipient->email} creating local capability");
+            $capinfo = new TokenInfo($this->conf, TokenInfo::RESETPASSWORD);
+            if (($cdbu = $this->recipient->contactdb_user())) {
+                $capinfo->set_user($cdbu)->set_token_pattern("hcpw1[20]");
+            } else {
+                $capinfo->set_user($this->recipient)->set_token_pattern("hcpw0[20]");
             }
-            $capinfo = new CapabilityInfo($this->conf, !!$cdbu, CapabilityInfo::RESETPASSWORD);
-            $capinfo->set_user($this->recipient)->set_expires_after(259200);
+            $capinfo->set_expires_after(259200);
             $token = $capinfo->create();
         }
         return $this->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);

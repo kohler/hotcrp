@@ -25,7 +25,7 @@ class Buzzer_Page {
         }
         for ($i = 0; $i <= 1; ++$i) {
             if (!$kiosk_keys[$i]) {
-                $key = hotcrp_random_password();
+                $key = base48_encode(random_bytes(12));
                 $kiosks[$key] = (object) ["update_at" => Conf::$now, "show_papers" => !!$i];
                 $kiosk_keys[$i] = $kchange = $key;
             }
@@ -61,7 +61,7 @@ class Buzzer_Page {
         if (($key = $qreq->path_component(0))
             && ($kiosk = self::kiosk_lookup($conf, $key))) {
             $user->set_capability("@kiosk", $key);
-            CapabilityInfo::set_default_cap_param("kiosk-{$key}", true);
+            $user->set_default_cap_param("hckk{$key}", true);
         } else if (($key = $user->capability("@kiosk"))) {
             $kiosk = self::kiosk_lookup($conf, $key);
         }

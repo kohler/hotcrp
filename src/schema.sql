@@ -27,9 +27,11 @@ CREATE TABLE `Capability` (
   `capabilityType` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
+  `otherId` int(11) NOT NULL DEFAULT 0,
+  `timeCreated` bigint(11) NOT NULL,
   `timeExpires` bigint(11) NOT NULL,
   `salt` varbinary(255) NOT NULL,
-  `data` varbinary(4096) DEFAULT NULL,
+  `data` varbinary(8192) DEFAULT NULL,
   PRIMARY KEY (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -558,7 +560,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 253);
+insert into Settings (name, value) values ('allowPaperOption', 254);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- there are no submissions yet
 insert into Settings (name, value) values ('no_papersub', 1);

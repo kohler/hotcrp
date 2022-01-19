@@ -4,6 +4,7 @@
 
 class Signin_Page {
     public $_reset_cap;
+    /** @var ?TokenInfo */
     public $_reset_capdata;
     /** @var ?Contact */
     public $_reset_user;
@@ -79,10 +80,23 @@ class Signin_Page {
         }
     }
 
+    /** @param string $token
+     * @return ?TokenInfo */
+    static private function _find_reset_token(Conf $conf, $token) {
+        if ($token) {
+            $is_cdb = str_starts_with($token, "2") /* XXX */ || str_starts_with($token, "hcpw1");
+            if (($cap = TokenInfo::find_active($conf, $token, $is_cdb))
+                && $cap->capabilityType === TokenInfo::RESETPASSWORD) {
+                return $cap;
+            }
+        }
+        return null;
+    }
+
+    /** @param Qrequest $qreq */
     static private function _check_reset_code(Contact $user, $qreq) {
         $pw = trim($qreq->password);
-        if ($pw
-            && ($cap = CapabilityInfo::find($user->conf, $pw, CapabilityInfo::RESETPASSWORD))
+        if (($cap = self::_find_reset_token($user->conf, $pw))
             && ($capuser = $cap->user())
             && strcasecmp($capuser->email, trim($qreq->email)) === 0) {
             return $pw;
@@ -414,14 +428,14 @@ class Signin_Page {
             return;
         }
 
-        if ($qreq->resetcap === null
-            && preg_match('/\A\/(U?[12][-\w]+)(?:\/|\z)/', $qreq->path(), $m)) {
+        if ($qreq->resetcap === null /* [12] == XXX */
+            && preg_match('/\A\/(hcpw[01][a-zA-Z]+|[12][-\w]+)(?:\/|\z)/', $qreq->path(), $m)) {
             $qreq->resetcap = $m[1];
         }
 
         // set $this->_reset_cap
-        $resetcap = trim((string) $qreq->resetcap);
-        if (preg_match('/\A\/?(U?[12][-\w]+)\/?\z/', $resetcap, $m)) {
+        $resetcap = trim((string) $qreq->resetcap); /* [12] == XXX */
+        if (preg_match('/\A\/?(hcpw[01][a-zA-Z]+|[12][-\w]+)\/?\z/', $resetcap, $m)) {
             $this->_reset_cap = $m[1];
         } else if (strpos($resetcap, "@") !== false) {
             if ($qreq->valid_post()) {
@@ -437,7 +451,7 @@ class Signin_Page {
 
         // set $this->_reset_capdata and $this->_reset_user
         if ($this->_reset_cap) {
-            if (($capdata = CapabilityInfo::find($conf, $this->_reset_cap, CapabilityInfo::RESETPASSWORD))) {
+            if (($capdata = self::_find_reset_token($conf, $this->_reset_cap))) {
                 $this->_reset_capdata = $capdata;
                 $this->_reset_user = $capdata->user();
             } else {

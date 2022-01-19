@@ -46,9 +46,7 @@ class AuthorView_Capability {
             && ($uf->name === self::make($prow))
             && !$user->conf->opt("disableCapabilities")) {
             $user->set_capability("@av{$prow->paperId}", true);
-            if ($user->is_activated()) {
-                CapabilityInfo::set_default_cap_param($uf->name, true);
-            }
+            $user->set_default_cap_param($uf->name, true);
         }
     }
 }

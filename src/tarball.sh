@@ -201,7 +201,6 @@ src/autoassignerinterface.php
 src/banal
 src/capabilities/cap_authorview.php
 src/capabilities/cap_reviewaccept.php
-src/capabilityinfo.php
 src/checkformat.php
 src/commentinfo.php
 src/conference.php
@@ -424,6 +423,7 @@ src/tagmessagereport.php
 src/tagrankparser.php
 src/tagsearchmatcher.php
 src/textformat.php
+src/tokeninfo.php
 src/topicset.php
 src/updateschema.php
 src/useractions.php

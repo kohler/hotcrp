@@ -6,9 +6,7 @@ class ReviewAccept_Capability {
     private static function make_review_acceptor($user, $at, $pid, $cid, $uf) {
         if ($at && $at >= Conf::$now - 2592000) {
             $user->set_capability("@ra$pid", $cid);
-            if ($user->is_activated()) {
-                CapabilityInfo::set_default_cap_param($uf->name, true);
-            }
+            $user->set_default_cap_param($uf->name, true);
         } else if ($cid != $user->contactId) {
             $user->conf->warnMsg("The review link you followed has expired. Sign in to the site to view or edit reviews.");
         }

@@ -11,10 +11,11 @@ $Qreq || initialize_request();
 function change_email_by_capability(Contact $user, $qreq) {
     $conf = $user->conf;
     ensure_session();
-    $capdata = CapabilityInfo::find($conf, trim($qreq->changeemail), CapabilityInfo::CHANGEEMAIL);
+    $capdata = TokenInfo::find_active($conf, trim($qreq->changeemail));
     $capcontent = null;
     if (!$capdata
         || !$capdata->contactId
+        || $capdata->capabilityType !== TokenInfo::CHANGEEMAIL
         || !($capcontent = json_decode($capdata->data))
         || !is_object($capcontent)
         || !($capcontent->uemail ?? null)) {
@@ -272,8 +273,8 @@ function save_user($cj, $ustatus, $acct) {
             assert($acct->contactId > 0);
             $old_preferredEmail = $acct->preferredEmail;
             $acct->preferredEmail = $cj->email;
-            $capability = new CapabilityInfo($ustatus->conf, false, CapabilityInfo::CHANGEEMAIL);
-            $capability->set_user($acct)->set_expires_after(259200);
+            $capability = new TokenInfo($ustatus->conf, TokenInfo::CHANGEEMAIL);
+            $capability->set_user($acct)->set_token_pattern("hcce[20]")->set_expires_after(259200);
             $capability->data = json_encode_db(["oldemail" => $acct->email, "uemail" => $cj->email]);
             if (($token = $capability->create())) {
                 $rest = ["capability_token" => $token, "sensitive" => true];

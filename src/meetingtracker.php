@@ -396,7 +396,7 @@ class MeetingTracker {
                     $vistype = $vis[0];
                     $vis = ltrim(substr($vis, 1));
                 } else {
-                    $vistype = trim($qreq["tr{$i}-vistype"]);
+                    $vistype = trim($qreq["tr{$i}-vistype"] ?? "");
                 }
                 if ($vistype === "+" || $vistype === "-") {
                     if ($vis !== "" && str_starts_with($vis, "#")) {
@@ -433,7 +433,7 @@ class MeetingTracker {
                 }
             }
 
-            $p = trim($qreq["tr{$i}-p"]);
+            $p = trim($qreq["tr{$i}-p"] ?? "");
             if ($p !== "" && !ctype_digit($p)) {
                 $message_list[] = new MessageItem("tr{$i}-p", "Bad paper number.", 2);
             }
@@ -661,9 +661,7 @@ class MeetingTracker {
 
     static function apply_kiosk_capability(Contact $user, $uf) {
         $user->set_capability("@kiosk", $uf->match_data[1]);
-        if ($user->is_activated()) {
-            CapabilityInfo::set_default_cap_param($uf->name, true);
-        }
+        $user->set_default_cap_param($uf->name, true);
     }
 }
 
