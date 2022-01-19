@@ -194,6 +194,8 @@ class JsonCompletion extends Exception {
     public $result;
     /** @var int */
     static public $capturing = 0;
+    /** @var bool */
+    static public $allow_short_circuit = false;
     /** @param JsonResult $j */
     function __construct($j) {
         $this->result = $j;

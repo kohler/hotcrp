@@ -48,6 +48,7 @@ class API_Page {
 
             json_exit($j);
         } else {
+            JsonCompletion::$allow_short_circuit = true;
             $uf = $conf->api($fn, $user, $qreq->method());
             $jr = $conf->call_api_on($uf, $fn, $user, $qreq, $conf->paper);
             if ($uf
