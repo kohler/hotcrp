@@ -30,7 +30,7 @@ class PaperRequest {
 
     static function simple_qreq(Qrequest $qreq) {
         return ($qreq->is_get() || $qreq->is_head())
-            && !array_diff($qreq->keys(), ["p", "paperId", "m", "mode", "forceShow", "t", "q", "r", "reviewId", "cap", "actas"]);
+            && !array_diff($qreq->keys(), ["p", "paperId", "m", "mode", "forceShow", "t", "q", "r", "reviewId", "cap", "actas", "accept", "decline"]);
     }
 
     private function normalize(Conf $conf, Qrequest $qreq, $review) {
@@ -161,6 +161,7 @@ class PaperRequest {
             if ($user->has_email()) {
                 return PaperInfo::make_new($user);
             } else {
+                error_log("no such paper");
                 throw $this->signin_redirection($conf, $qreq, 0);
             }
         } else {
@@ -176,6 +177,7 @@ class PaperRequest {
                     && ($user->privChair
                         || (($rrow = $prow->review_by_ordinal_id($qreq->reviewId))
                             && $user->can_view_review_assignment($prow, $rrow)))) {
+                    error_log("reviewId set");
                     throw new Redirection($conf->selfurl($qreq, ["p" => $prow->paperId]));
                 } else {
                     throw new PermissionProblem($conf, ["missingId" => "paper"]);
@@ -184,6 +186,7 @@ class PaperRequest {
                 if ($user->has_email()) {
                     throw $whynot;
                 } else {
+                    error_log("cannot view paper");
                     throw $this->signin_redirection($conf, $qreq, $pid);
                 }
             }

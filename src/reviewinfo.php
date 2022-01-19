@@ -851,38 +851,6 @@ class ReviewInfo implements JsonSerializable {
         return $s === "{}" ? null : $s;
     }
 
-    function acceptor() {
-        if ($this->_data === null) {
-            $this->_load_data();
-        }
-        if (!isset($this->_data->acceptor)) {
-            $text = base48_encode(random_bytes(10));
-            $this->_data->acceptor = (object) ["text" => $text, "at" => Conf::$now];
-            $this->_save_data();
-        }
-        return $this->_data->acceptor;
-    }
-
-    /** @param string $text
-     * @return bool */
-    function acceptor_is($text) {
-        if ($this->_data === null) {
-            $this->_load_data();
-        }
-        return isset($this->_data->acceptor)
-            && $this->_data->acceptor->text === $text;
-    }
-
-    function delete_acceptor() {
-        if ($this->_data === null) {
-            $this->_load_data();
-        }
-        if (isset($this->_data->acceptor) && $this->_data->acceptor->at) {
-            $this->_data->acceptor->at = 0;
-            $this->_save_data();
-        }
-    }
-
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $j = ["confid" => $this->conf->dbname];

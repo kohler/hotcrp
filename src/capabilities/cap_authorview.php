@@ -32,7 +32,6 @@ class AuthorView_Capability {
                 $tok->set_token_pattern("hcav{$prow->paperId}[16]");
                 if ($tok->create()) {
                     $prow->_author_view_token = $tok;
-                    assert($tok->capabilityType === TokenInfo::AUTHORVIEW);
                 }
             }
         }
@@ -40,11 +39,16 @@ class AuthorView_Capability {
     }
 
     static function apply_author_view(Contact $user, $uf) {
-        if (($tok = TokenInfo::find_active($uf->name, $user->conf))
+        if (($tok = TokenInfo::find($uf->name, $user->conf))
+            && $tok->is_active()
             && $tok->capabilityType === TokenInfo::AUTHORVIEW
             && !$user->conf->opt("disableCapabilities")) {
             $user->set_capability("@av{$tok->paperId}", true);
             $user->set_default_cap_param($uf->name, true);
+            if ($tok->timeUsed < Conf::$now - 3600) {
+                $tok->timeUsed = Conf::$now;
+                $tok->update();
+            }
         }
     }
 

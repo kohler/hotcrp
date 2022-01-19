@@ -335,7 +335,7 @@
 			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
 			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"If you are willing to review this submission, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%\n\n",
-			"Once you've decided, please accept or decline this review request using one of these links. You may also contact %REQUESTERNAME% directly.\n\n",
+			"Once you've decided, please accept or decline this review request using one of these links.\n\n",
 			"      Accept: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&accept=1)%\n",
 			"     Decline: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&decline=1)%\n\n",
 			"%IF(NEEDPASSWORD)%",

@@ -36,6 +36,7 @@ class TokenInfo {
     const CHANGEEMAIL = 2;
     const UPLOAD = 3;
     const AUTHORVIEW = 4;
+    const REVIEWACCEPT = 5;
 
     /** @param ?int $capabilityType */
     function __construct(Conf $conf, $capabilityType = null) {
@@ -75,6 +76,13 @@ class TokenInfo {
 
     /** @param int $seconds
      * @return $this */
+    function set_invalid_after($seconds) {
+        $this->timeInvalid = Conf::$now + $seconds;
+        return $this;
+    }
+
+    /** @param int $seconds
+     * @return $this */
     function set_expires_after($seconds) {
         $this->timeExpires = Conf::$now + $seconds;
         return $this;
@@ -102,7 +110,7 @@ class TokenInfo {
     /** @param string $token
      * @param bool $is_cdb
      * @return ?TokenInfo */
-    static function find_any($token, Conf $conf, $is_cdb = false) {
+    static function find($token, Conf $conf, $is_cdb = false) {
         if (strlen($token) >= 5
             && ($dblink = $is_cdb ? $conf->contactdb() : $conf->dblink)) {
             $result = Dbl::qe($dblink, "select * from Capability where salt=?", $token);
@@ -116,9 +124,10 @@ class TokenInfo {
 
     /** @param string $token
      * @param bool $is_cdb
-     * @return ?TokenInfo */
+     * @return ?TokenInfo
+     * @deprecated */
     static function find_active($token, Conf $conf, $is_cdb = false) {
-        if (($cap = self::find_any($token, $conf, $is_cdb))
+        if (($cap = self::find($token, $conf, $is_cdb))
             && $cap->is_active()) {
             return $cap;
         } else {

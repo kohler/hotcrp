@@ -151,38 +151,50 @@ function setup_assignments($assignments, Contact $user) {
     }
 }
 
+class ProfileTimer {
+    /** @var array<string,float> */
+    public $times = [];
+    /** @var float */
+    public $last_time;
+
+    function __construct() {
+        $this->last_time = microtime(true);
+    }
+    /** @param string $name */
+    function mark($name) {
+        assert(!isset($this->times[$name]));
+        $t = microtime(true);
+        $this->times[$name] = $t - $this->last_time;
+        $this->last_time = $t;
+    }
+}
+
 function setup_initialize_database() {
     global $Conf, $Admin;
+    $timer = new ProfileTimer;
+
     // Initialize from an empty database.
-    if (!$Conf->dblink->multi_query(file_get_contents(SiteLoader::find("src/schema.sql")))) {
-        die_hard("* Can't reinitialize database.\n" . $Conf->dblink->error . "\n");
-    }
-    do {
-        if (($result = $Conf->dblink->store_result())) {
-            $result->free();
-        } else if ($Conf->dblink->errno) {
-            break;
-        }
-    } while ($Conf->dblink->more_results() && $Conf->dblink->next_result());
+    $schema = file_get_contents(SiteLoader::find("src/schema.sql"));
+    $mresult = Dbl::multi_q_raw($Conf->dblink, file_get_contents(SiteLoader::find("src/schema.sql")));
+    $mresult->free_all();
     if ($Conf->dblink->errno) {
         die_hard("* Error initializing database.\n" . $Conf->dblink->error . "\n");
     }
+    $timer->mark("schema");
 
     // No setup phase.
     $Conf->qe_raw("delete from Settings where name='setupPhase'");
     $Conf->qe_raw("insert into Settings set name='options', value=1, data='[{\"id\":1,\"name\":\"Calories\",\"abbr\":\"calories\",\"type\":\"numeric\",\"order\":1,\"display\":\"default\"}]'");
     $Conf->load_settings();
+    $timer->mark("settings");
 
     // Contactdb.
     if (($cdb = $Conf->contactdb())) {
-        if (!$cdb->multi_query(file_get_contents(SiteLoader::find("test/cdb-schema.sql")))) {
-            die_hard("* Can't reinitialize contact database.\n" . $cdb->error);
-        }
-        while ($cdb->more_results()) {
-            $cdb->next_result();
-        }
+        $mresult = Dbl::multi_q_raw($cdb, file_get_contents(SiteLoader::find("test/cdb-schema.sql")));
+        $mresult->free_all();
         $cdb->query("insert into Conferences set dbname='" . $cdb->real_escape_string($Conf->dbname) . "'");
     }
+    $timer->mark("contactdb");
 
     // Create initial administrator user.
     $Admin = Contact::create($Conf, null, ["email" => "chair@_.com", "name" => "Jane Chair"]);
@@ -205,6 +217,7 @@ function setup_initialize_database() {
             $ok = false;
         }
     }
+    $timer->mark("users");
     foreach ($json->papers as $p) {
         $ps = new PaperStatus($Conf);
         if (!$ps->save_paper_json($p)) {
@@ -219,8 +232,10 @@ function setup_initialize_database() {
     if (!$ok) {
         exit(1);
     }
+    $timer->mark("papers");
 
     setup_assignments($json->assignments_1, $Admin);
+    $timer->mark("assignment");
 }
 
 setup_initialize_database();

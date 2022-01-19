@@ -3,9 +3,10 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Signin_Page {
-    public $_reset_cap;
+    /** @var ?string */
+    public $_reset_tokstr;
     /** @var ?TokenInfo */
-    public $_reset_capdata;
+    public $_reset_token;
     /** @var ?Contact */
     public $_reset_user;
 
@@ -85,9 +86,10 @@ class Signin_Page {
     static private function _find_reset_token(Conf $conf, $token) {
         if ($token) {
             $is_cdb = str_starts_with($token, "2") /* XXX */ || str_starts_with($token, "hcpw1");
-            if (($cap = TokenInfo::find_active($token, $conf, $is_cdb))
-                && $cap->capabilityType === TokenInfo::RESETPASSWORD) {
-                return $cap;
+            if (($tok = TokenInfo::find($token, $conf, $is_cdb))
+                && $tok->is_active()
+                && $tok->capabilityType === TokenInfo::RESETPASSWORD) {
+                return $tok;
             }
         }
         return null;
@@ -433,10 +435,10 @@ class Signin_Page {
             $qreq->resetcap = $m[1];
         }
 
-        // set $this->_reset_cap
+        // set $this->_reset_tokstr
         $resetcap = trim((string) $qreq->resetcap); /* [12] == XXX */
         if (preg_match('/\A\/?(hcpw[01][a-zA-Z]+|[12][-\w]+)\/?\z/', $resetcap, $m)) {
-            $this->_reset_cap = $m[1];
+            $this->_reset_tokstr = $m[1];
         } else if (strpos($resetcap, "@") !== false) {
             if ($qreq->valid_post()) {
                 $nqreq = new Qrequest("POST", ["email" => $resetcap]);
@@ -449,11 +451,11 @@ class Signin_Page {
             }
         }
 
-        // set $this->_reset_capdata and $this->_reset_user
-        if ($this->_reset_cap) {
-            if (($capdata = self::_find_reset_token($conf, $this->_reset_cap))) {
-                $this->_reset_capdata = $capdata;
-                $this->_reset_user = $capdata->user();
+        // set $this->_reset_token and $this->_reset_user
+        if ($this->_reset_tokstr) {
+            if (($tok = self::_find_reset_token($conf, $this->_reset_tokstr))) {
+                $this->_reset_token = $tok;
+                $this->_reset_user = $tok->user();
             } else {
                 Ht::error_at("resetcap", "Unknown or expired password reset code. Please check that you entered the code correctly.");
             }
@@ -484,9 +486,9 @@ class Signin_Page {
                 $accthere = $conf->user_by_email($this->_reset_user->email)
                     ? : Contact::create($conf, null, $this->_reset_user);
                 $accthere->change_password($p1);
-                $accthere->log_activity("Password reset via " . substr($this->_reset_cap, 0, 8) . "...");
+                $accthere->log_activity("Password reset via " . substr($this->_reset_tokstr, 0, 8) . "...");
                 $conf->msg("Password changed. Use the new password to sign in below.", "xconfirm");
-                $this->_reset_capdata->delete();
+                $this->_reset_token->delete();
                 $user->save_session("password_reset", (object) [
                     "time" => Conf::$now,
                     "email" => $this->_reset_user->email,
@@ -495,7 +497,7 @@ class Signin_Page {
                 $conf->redirect_hoturl("signin");
             }
         } else if (!$this->_reset_user
-                   && $this->_reset_capdata) {
+                   && $this->_reset_token) {
             Ht::error_at("resetcap", "This password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
         }
     }
@@ -512,7 +514,7 @@ class Signin_Page {
             Ht::form($user->conf->hoturl("resetpassword"), ["class" => "compact-form"]),
             Ht::hidden("post", post_value());
         if ($this->_reset_user) {
-            echo Ht::hidden("resetcap", $this->_reset_cap);
+            echo Ht::hidden("resetcap", $this->_reset_tokstr);
             $gx->render_group("resetpassword/form");
         } else {
             $gx->render_group("forgotpassword/form");

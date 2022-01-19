@@ -2309,7 +2309,7 @@ class ReviewValues extends MessageSet {
         if ($rrow->reviewId
             && $diffinfo->nonempty()
             && isset($this->req["version"])
-            && ctype_digit($this->req["version"])
+            && (is_int($this->req["version"]) || ctype_digit($this->req["version"]))
             && $this->req["version"] > ($rrow->reviewEditVersion ?? 0)) {
             $qf[] = "reviewEditVersion=?";
             $qv[] = $this->req["version"] + 0;
@@ -2424,8 +2424,8 @@ class ReviewValues extends MessageSet {
             }
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
-            if ($user->is_signed_in()) {
-                $rrow->delete_acceptor();
+            if ($user->is_signed_in() && $user->contactId === $contactId) {
+                ReviewAccept_Capability::invalidate_for($rrow);
             }
         } else {
             array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");

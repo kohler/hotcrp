@@ -395,8 +395,8 @@ class RequestReview_API {
             // denied access
             if ($user->contactXid === $rrow->contactId
                 && $redirect_in === "1"
-                && ($acceptor = $rrow->acceptor())) {
-                $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r, "cap" => "ra{$rrow->reviewId}{$acceptor->text}"], Conf::HOTURL_SITEREL);
+                && ($tok = ReviewAccept_Capability::make($rrow, true))) {
+                $qreq->redirect = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r, "cap" => $tok->salt], Conf::HOTURL_SITEREL);
             }
         } else if (isset($qreq->reason)) {
             $prow->conf->qe("update PaperReviewRefused set reason=? where paperId=? and refusedReviewId=?", $reason, $prow->paperId, $rrid);

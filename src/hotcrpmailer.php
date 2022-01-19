@@ -449,12 +449,8 @@ class HotCRPMailer extends Mailer {
         }
     }
     function kw_reviewacceptor() {
-        if ($this->rrow && ($acc = $this->rrow->acceptor()->text)) {
-            if (ctype_digit($acc[0])) { // XXX backward compat
-                return $this->rrow->reviewId . "ra" . $acc;
-            } else {
-                return "ra" . $this->rrow->reviewId . $acc;
-            }
+        if ($this->rrow && ($tok = ReviewAccept_Capability::make($this->rrow, true))) {
+            return $tok->salt;
         } else {
             return false;
         }

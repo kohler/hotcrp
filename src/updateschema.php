@@ -571,6 +571,35 @@ class UpdateSchema {
                 modify `email` varchar(120) CHARACTER SET utf8mb4 NOT NULL");
     }
 
+    private function v256_tokenize_review_acceptors() {
+        $result = $this->conf->ql("select paperId, reviewId, contactId, `data`, reviewModified from PaperReview where `data` is not null union select paperId, refusedReviewId, contactId, `data`, timeRefused from PaperReviewRefused where `data` is not null");
+        $qv = [];
+        while (($row = $result->fetch_row())) {
+            if (($jdata = json_decode($row[3]))
+                && is_object($jdata)
+                && ($acceptor = $jdata->acceptor ?? null)
+                && is_object($acceptor)
+                && is_string($acceptor->text ?? null)) {
+                $at = $acceptor->at ?? 0;
+                $qv[] = [
+                    5 /* REVIEWACCEPT */, $row[2], $row[0], $row[1],
+                    $at,
+                    $row[4] > 1 ? $row[4] : 0,
+                    $at ? $at + 2592000 : Conf::$now - 2592000,
+                    $at ? $at + 5184000 : Conf::$now + 2592000,
+                    "hcra{$row[1]}{$acceptor->text}", null
+                ];
+            }
+        }
+        Dbl::free($result);
+        if (!empty($qv)) {
+            $result = $this->conf->ql("insert into Capability (capabilityType, contactId, paperId, otherId, timeCreated, timeUsed, timeInvalid, timeExpires, salt, data) values ?v", $qv);
+            return !Dbl::is_error($result);
+        } else {
+            return true;
+        }
+    }
+
     function run() {
         $conf = $this->conf;
 
@@ -2166,6 +2195,10 @@ class UpdateSchema {
             && $conf->ql_ok("alter table Capability add `timeInvalid` bigint(11) NOT NULL")
             && $conf->ql_ok("alter table Capability add `timeUsed` bigint(11) NOT NULL")) {
             $conf->update_schema_version(255);
+        }
+        if ($conf->sversion === 255
+            && $this->v256_tokenize_review_acceptors()) {
+            $conf->update_schema_version(256);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
