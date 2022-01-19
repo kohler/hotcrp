@@ -18,6 +18,10 @@ class TokenInfo {
     /** @var int */
     public $timeCreated;
     /** @var int */
+    public $timeUsed;
+    /** @var int */
+    public $timeInvalid;
+    /** @var int */
     public $timeExpires;
     /** @var string */
     public $salt;
@@ -31,6 +35,7 @@ class TokenInfo {
     const RESETPASSWORD = 1;
     const CHANGEEMAIL = 2;
     const UPLOAD = 3;
+    const AUTHORVIEW = 4;
 
     /** @param ?int $capabilityType */
     function __construct(Conf $conf, $capabilityType = null) {
@@ -87,6 +92,8 @@ class TokenInfo {
             $cap->paperId = (int) $cap->paperId;
             $cap->otherId = (int) $cap->otherId;
             $cap->timeCreated = (int) $cap->timeCreated;
+            $cap->timeUsed = (int) $cap->timeUsed;
+            $cap->timeInvalid = (int) $cap->timeInvalid;
             $cap->timeExpires = (int) $cap->timeExpires;
         }
         return $cap;
@@ -113,17 +120,16 @@ class TokenInfo {
     static function find_active($token, Conf $conf, $is_cdb = false) {
         if (($cap = self::find_any($token, $conf, $is_cdb))
             && $cap->is_active()) {
-            error_log("found $token " . ($cap?1:0));
             return $cap;
         } else {
-            error_log("not found $token " . ($cap?1:0));
             return null;
         }
     }
 
     /** @return bool */
     function is_active() {
-        return $this->timeExpires === 0 || $this->timeExpires > Conf::$now;
+        return ($this->timeExpires === 0 || $this->timeExpires > Conf::$now)
+            && ($this->timeInvalid === 0 || $this->timeInvalid > Conf::$now);
     }
 
     /** @return ?Contact */
@@ -154,16 +160,20 @@ class TokenInfo {
         $this->paperId = $this->paperId ?? 0;
         $this->otherId = $this->otherId ?? 0;
         $this->timeCreated = $this->timeCreated ?? Conf::$now;
+        $this->timeUsed = $this->timeUsed ?? 0;
+        $this->timeInvalid = $this->timeInvalid ?? 0;
         $this->timeExpires = $this->timeExpires ?? 0;
         $need_salt = !$this->salt;
         assert(!$need_salt || $this->_token_pattern);
         for ($tries = 0; $tries < ($need_salt ? 4 : 1); ++$tries) {
             $salt = $need_salt ? $this->instantiate_token() : $this->salt;
-            $result = Dbl::qe($this->dblink(), "insert into Capability
-                    set capabilityType=?, contactId=?, paperId=?, otherId=?,
-                    timeCreated=?, timeExpires=?, salt=?, data=?",
+            $result = Dbl::qe($this->dblink(), "insert into Capability set
+                    capabilityType=?, contactId=?, paperId=?, otherId=?,
+                    timeCreated=?, timeUsed=?, timeInvalid=?, timeExpires=?,
+                    salt=?, data=?",
                 $this->capabilityType, $this->contactId, $this->paperId, $this->otherId,
-                $this->timeCreated, $this->timeExpires, $salt, $this->data);
+                $this->timeCreated, $this->timeUsed, $this->timeInvalid, $this->timeExpires,
+                $salt, $this->data);
             if ($result->affected_rows > 0) {
                 $this->salt = $salt;
                 return $salt;
@@ -175,7 +185,11 @@ class TokenInfo {
     /** @return bool */
     function update() {
         assert($this->capabilityType > 0 && !!$this->salt);
-        $result = Dbl::qe($this->dblink(), "update Capability set timeExpires=?, data=? where salt=?", $this->timeExpires, $this->data, $this->salt);
+        $result = Dbl::qe($this->dblink(), "update Capability set
+                timeUsed=?, timeInvalid=?, timeExpires=?, data=?
+                where salt=?",
+            $this->timeUsed, $this->timeInvalid, $this->timeExpires, $this->data,
+            $this->salt);
         return !Dbl::is_error($result);
     }
 

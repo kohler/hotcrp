@@ -4,8 +4,53 @@
 
 class AuthorView_Capability {
     /** @param PaperInfo $prow
-     * @return string|false */
+     * @return ?string */
     static function make($prow) {
+        if ($prow->_author_view_token === null
+            && !$prow->conf->opt("disableCapabilities")) {
+            // load already-assigned tokens
+            $row_set = $prow->_row_set ?? new PaperInfoSet($prow);
+            if ($row_set->size() > 5) {
+                $lo = "hcav";
+                $hi = "hcaw";
+            } else {
+                $lo = "hcav{$prow->paperId}@";
+                $hi = "hcav{$prow->paperId}~";
+            }
+            $result = $prow->conf->qe("select * from Capability where salt>=? and salt<?", $lo, $hi);
+            while (($tok = TokenInfo::fetch($result, $prow->conf))) {
+                if (($xrow = $row_set->get($tok->paperId))
+                    && $tok->capabilityType === TokenInfo::AUTHORVIEW) {
+                    $xrow->_author_view_token = $tok;
+                }
+            }
+            Dbl::free($result);
+            // create new token
+            if (!$prow->_author_view_token || !$prow->_author_view_token->salt) {
+                $tok = new TokenInfo($prow->conf, TokenInfo::AUTHORVIEW);
+                $tok->paperId = $prow->paperId;
+                $tok->set_token_pattern("hcav{$prow->paperId}[16]");
+                if ($tok->create()) {
+                    $prow->_author_view_token = $tok;
+                    assert($tok->capabilityType === TokenInfo::AUTHORVIEW);
+                }
+            }
+        }
+        return $prow->_author_view_token ? $prow->_author_view_token->salt : null;
+    }
+
+    static function apply_author_view(Contact $user, $uf) {
+        if (($tok = TokenInfo::find_active($uf->name, $user->conf))
+            && $tok->capabilityType === TokenInfo::AUTHORVIEW
+            && !$user->conf->opt("disableCapabilities")) {
+            $user->set_capability("@av{$tok->paperId}", true);
+            $user->set_default_cap_param($uf->name, true);
+        }
+    }
+
+    /** @param PaperInfo $prow
+     * @return string|false */
+    static function make_old($prow) {
         // A capability has the following representation (. is concatenation):
         //    capFormat . paperId . capType . hashPrefix
         // capFormat -- Character denoting format (currently 0).
@@ -43,7 +88,7 @@ class AuthorView_Capability {
 
     static function apply_old_author_view(Contact $user, $uf) {
         if (($prow = $user->conf->paper_by_id((int) $uf->match_data[1]))
-            && ($uf->name === self::make($prow))
+            && ($uf->name === self::make_old($prow))
             && !$user->conf->opt("disableCapabilities")) {
             $user->set_capability("@av{$prow->paperId}", true);
             $user->set_default_cap_param($uf->name, true);

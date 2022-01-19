@@ -556,6 +556,8 @@ class PaperInfo {
     private $_refusal_array;
     /** @var ?array<int,int> */
     private $_watch_array;
+    /** @var ?TokenInfo */
+    public $_author_view_token;
     /** @var ?Contact */
     private $_author_view_user;
     /** @var ?int */

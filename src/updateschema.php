@@ -2162,6 +2162,11 @@ class UpdateSchema {
             && $conf->ql_ok("alter table Capability add `otherId` int(11) NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(254);
         }
+        if ($conf->sversion === 254
+            && $conf->ql_ok("alter table Capability add `timeInvalid` bigint(11) NOT NULL")
+            && $conf->ql_ok("alter table Capability add `timeUsed` bigint(11) NOT NULL")) {
+            $conf->update_schema_version(255);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
