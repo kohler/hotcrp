@@ -2424,9 +2424,6 @@ class ReviewValues extends MessageSet {
             }
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
-            if ($user->is_signed_in() && $user->contactId === $contactId) {
-                ReviewAccept_Capability::invalidate_for($rrow);
-            }
         } else {
             array_unshift($qf, "paperId=?", "contactId=?", "reviewType=?", "requestedBy=?", "reviewRound=?");
             array_unshift($qv, $prow->paperId, $user->contactId, REVIEW_PC, $user->contactId, $this->conf->assignment_round(false));
@@ -2449,6 +2446,11 @@ class ReviewValues extends MessageSet {
         // look up review ID
         if (!$reviewId) {
             return false;
+        }
+        if ($rrow->reviewId
+            && $user->is_signed_in()
+            && $user->contactId === $contactId) {
+            ReviewAccept_Capability::invalidate_for($rrow);
         }
         $this->req["reviewId"] = $reviewId;
         $this->reviewId = $reviewId;
