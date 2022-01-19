@@ -402,7 +402,7 @@ class Filer {
         if (($prefix = self::docstore_fixed_prefix($conf->docstore()))) {
             $tmpdir = $prefix . "tmp/";
             '@phan-var non-empty-string $tmpdir';
-            if (self::prepare_docstore($tmpdir, $tmpdir)) {
+            if (self::prepare_docstore($prefix, $tmpdir)) {
                 return $tmpdir;
             }
         }

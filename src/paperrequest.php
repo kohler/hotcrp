@@ -184,7 +184,6 @@ class PaperRequest {
                 if ($user->has_email()) {
                     throw $whynot;
                 } else {
-                    error_log("cannot view paper, " . Navigation::self());
                     throw $this->signin_redirection($conf, $qreq, $pid);
                 }
             }

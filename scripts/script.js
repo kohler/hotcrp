@@ -8373,9 +8373,9 @@ handle_ui.on("js-cancel-document", function (event) {
     $doc.find(".document-uploader").val("").change().trigger("hotcrp-change-document");
     if (hasClass(doce, "document-new-instance")) {
         var holder = doce.parentElement;
+        $doc.remove();
         if (!holder.firstChild && hasClass(holder.parentElement, "has-editable-attachments"))
             addClass(holder.parentElement, "hidden");
-        $doc.remove();
     } else {
         $doc.find(".document-upload").remove();
         $doc.find(".document-file, .document-stamps, .js-check-format, .document-format, .js-remove-document").removeClass("hidden");
