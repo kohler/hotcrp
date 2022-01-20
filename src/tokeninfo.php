@@ -51,8 +51,9 @@ class TokenInfo {
         return $this->is_cdb ? $this->conf->contactdb() : $this->conf->dblink;
     }
 
-    /** @return $this */
-    function set_contactdb() {
+    /** @param bool $is_cdb
+     * @return $this */
+    function set_contactdb($is_cdb) {
         assert(!$this->_user && !$this->contactId);
         $this->is_cdb = true;
         return $this;

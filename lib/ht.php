@@ -703,11 +703,13 @@ class Ht {
         }
     }
 
-    /** @param iterable<MessageItem>|MessageSet $message_list
+    /** @param MessageItem|iterable<MessageItem>|MessageSet $message_list
      * @return array{string,int} */
     static function feedback_msg_content($message_list) {
         if ($message_list instanceof MessageSet) {
             $message_list = $message_list->message_list();
+        } else if ($message_list instanceof MessageItem) {
+            $message_list = [$message_list];
         } else if (!is_array($message_list)) {
             $message_list = iterator_to_array($message_list);
         }
@@ -718,7 +720,7 @@ class Ht {
         }
     }
 
-    /** @param iterable<MessageItem>|MessageSet $message_list
+    /** @param MessageItem|iterable<MessageItem>|MessageSet $message_list
      * @return string */
     static function feedback_msg($message_list) {
         $ms = self::feedback_msg_content($message_list);

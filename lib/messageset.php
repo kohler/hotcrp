@@ -35,7 +35,7 @@ class MessageItem implements JsonSerializable {
 
     /** @param array{field?:?string,message?:string,status?:int,problem_status?:int} $updates
      * @return MessageItem */
-    function replace($updates) {
+    function with($updates) {
         $mi = clone $this;
         if (array_key_exists("field", $updates)) {
             $mi->field = $updates["field"] === "" ? null : $updates["field"];
@@ -55,16 +55,22 @@ class MessageItem implements JsonSerializable {
         return $mi;
     }
 
+    /** @deprecated
+     * @return MessageItem */
+    function replace($updates) {
+        return $this->with($updates);
+    }
+
     /** @param ?string $field
      * @return MessageItem */
     function with_field($field) {
-        return $this->replace(["field" => $field]);
+        return $this->with(["field" => $field]);
     }
 
     /** @param ?string $landmark
      * @return MessageItem */
     function with_landmark($landmark) {
-        return $this->replace(["landmark" => $landmark]);
+        return $this->with(["landmark" => $landmark]);
     }
 
     /** @param string $text
@@ -103,10 +109,22 @@ class MessageItem implements JsonSerializable {
         return (object) $x;
     }
 
-    /** @param ?string $message
+    /** @param ?string $msg
      * @return array{ok:false,message_list:list<MessageItem>} */
-    static function make_error_json($message) {
-        return ["ok" => false, "message_list" => [new MessageItem(null, $message ?? "", 2)]];
+    static function make_error_json($msg) {
+        return ["ok" => false, "message_list" => [new MessageItem(null, $msg ?? "", 2)]];
+    }
+
+    /** @param ?string $msg
+     * @return MessageItem */
+    static function error($msg) {
+        return new MessageItem(null, $msg, 2);
+    }
+
+    /** @param ?string $msg
+     * @return MessageItem */
+    static function inform($msg) {
+        return new MessageItem(null, $msg, MessageSet::INFORM);
     }
 }
 
@@ -316,6 +334,13 @@ class MessageSet {
     function problem_at($field, $msg, $default_status = 1) {
         $status = $this->pstatus_at[$field] ?? $default_status ?? 1;
         return $this->msg_at($field, $msg, $status);
+    }
+
+    /** @param ?string $field
+     * @param ?string $msg
+     * @return MessageItem */
+    function inform_at($field, $msg) {
+        return $this->msg_at($field, $msg, self::INFORM);
     }
 
     /** @param int $pos

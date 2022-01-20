@@ -29,8 +29,12 @@ class LoginHelper {
 
         // check HTTP auth
         if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
+            header("HTTP/1.0 401 Unauthorized");
             $conf->header("Error", "home");
-            Conf::msg_error("This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.");
+            $conf->feedback_msg([
+                MessageItem::error("<0>Authentication required"),
+                MessageItem::inform("<0>This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.")
+            ]);
             $conf->footer();
             exit;
         }
@@ -46,8 +50,12 @@ class LoginHelper {
         if ($info["ok"]) {
             $conf->redirect($info["redirect"] ?? "");
         } else {
+            header("HTTP/1.0 401 Unauthorized");
             $conf->header("Error", "home");
-            Conf::msg_error("This site is using HTTP authentication to manage its users, and you have provided incorrect authentication data.");
+            $conf->feedback_msg([
+                MessageItem::error("<0>Authentication error"),
+                MessageItem::inform("<0>This site is using HTTP authentication to manage its users. You have provided incorrect authentication data.")
+            ]);
             $conf->footer();
             exit;
         }
@@ -180,6 +188,7 @@ class LoginHelper {
         }
     }
 
+    /** @return bool */
     static private function check_setup_phase(Contact $user) {
         if ($user->conf->setting("setupPhase")) {
             $user->save_roles(Contact::ROLE_ADMIN, null);
@@ -193,7 +202,11 @@ class LoginHelper {
     static function check_postlogin(Contact $user, Qrequest $qreq) {
         // Check for the cookie
         if (!isset($_SESSION["testsession"]) || !$_SESSION["testsession"]) {
-            return $user->conf->msg("You appear to have disabled cookies in your browser. This site requires cookies to function.", "xmerror");
+            $user->conf->feedback_msg([
+                MessageItem::error("<0>Cookies required"),
+                MessageItem::inform("<0>You appear to have disabled cookies in your browser. This site requires cookies to function.")
+            ]);
+            return;
         }
         unset($_SESSION["testsession"]);
 

@@ -170,7 +170,7 @@ if (isset($papersel)
     && empty($papersel)
     && !isset($Qreq->recheck)
     && $recip->need_papers()) {
-    Conf::msg_error("No papers match that search.");
+    $Conf->error_msg("<0>No papers match that search");
     unset($papersel);
     unset($Qreq->check, $Qreq->send);
 }

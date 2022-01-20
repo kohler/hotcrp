@@ -26,7 +26,7 @@ class MergeAccounts_Page {
             return false;
         }
         if ($this->user->is_actas_user()) {
-            $this->conf->feedback_msg([new MessageItem(null, "<0>You can’t merge accounts when acting as another user", 2)]);
+            $this->conf->error_msg("<0>You can’t merge accounts when acting as another user");
             return false;
         }
 
@@ -41,7 +41,7 @@ class MergeAccounts_Page {
             return false;
         }
         if (!$this->user->contactId && !$other->contactId) {
-            $this->conf->feedback_msg([new MessageItem(null, "<0>Neither of those accounts has any data associated with this conference", 1)]);
+            $this->conf->warning_msg("<0>Neither of those accounts has any data associated with this conference");
             return false;
         }
         if ($other->contactId && $other->contactId === $this->user->contactId) {
@@ -50,11 +50,11 @@ class MergeAccounts_Page {
             return true;
         }
         if ($this->user->data("locked")) {
-            $this->conf->feedback_msg([new MessageItem(null, "<0>Account ‘{$this->user->email}’ is locked and cannot be merged", 2)]);
+            $this->conf->error_msg("<0>Account ‘{$this->user->email}’ is locked and cannot be merged");
             return false;
         }
         if ($other->data("locked")) {
-            $this->conf->feedback_msg([new MessageItem(null, "<0>Account ‘{$other->email}’ is locked and cannot be merged", 2)]);
+            $this->conf->error_msg("<0>Account ‘{$other->email}’ is locked and cannot be merged");
             return false;
         }
 

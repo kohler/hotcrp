@@ -753,7 +753,7 @@ class Mailer {
             . ($this->flowed ? "; format=flowed" : "") . $this->eol;
         $prep->sensitive = $this->sensitive;
         if (!empty($prep->errors) && !($rest["no_error_quit"] ?? false)) {
-            Conf::msg_error(MessageSet::feedback_html($prep->errors), true);
+            $this->conf->feedback_msg($prep->errors);
         }
     }
 
