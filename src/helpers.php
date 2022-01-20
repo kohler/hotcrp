@@ -202,8 +202,6 @@ class JsonCompletion extends Exception {
     }
 }
 
-class_alias("JsonCompletion", "JsonResultException");
-
 function json_exit($json, $arg2 = null) {
     global $Qreq;
     $json = JsonResult::make($json, $arg2);
