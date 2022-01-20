@@ -92,7 +92,7 @@ function cleannl($text) {
     }
     if (strpos($text, "\r") !== false) {
         $text = str_replace("\r\n", "\n", $text);
-        $text = strtr($text, "\r", "\n");
+        $text = str_replace("\r", "\n", $text);
     }
     if ($text !== "" && $text[strlen($text) - 1] !== "\n") {
         $text .= "\n";
@@ -334,14 +334,20 @@ function html_id_decode($text) {
 /** @param string $text
  * @return string */
 function base64url_encode($text) {
-    return rtrim(strtr(base64_encode($text), '+/', '-_'), '=');
+    return rtrim(str_replace(["+", "/"], ["-", "_"], base64_encode($text)), "=");
 }
 
 /** @param string $text
  * @return string */
 function base64url_decode($text) {
-    return base64_decode(strtr($text, '-_', '+/'));
+    return base64_decode(str_replace(["-", "_"], ["+", "/"], $text));
 }
+
+/** @param string $text
+ * @return bool */
+ function is_base64url_string($text) {
+    return preg_match('/\A[-_A-Za-z0-9]*\z/', $text);
+ }
 
 
 // JSON encoding helpers
