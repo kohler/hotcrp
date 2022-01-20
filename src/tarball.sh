@@ -65,6 +65,7 @@ mail.php
 manualassign.php
 mergeaccounts.php
 newaccount.php
+oauth.php
 offline.php
 paper.php
 profile.php
@@ -141,6 +142,7 @@ lib/ht.php
 lib/icons.php
 lib/intlmsgset.php
 lib/json.php
+lib/jwtparser.php
 lib/ldaplogin.php
 lib/login.php
 lib/mailer.php
@@ -315,6 +317,7 @@ src/pages/p_home.php
 src/pages/p_log.php
 src/pages/p_manualassign.php
 src/pages/p_mergeaccounts.php
+src/pages/p_oauth.php
 src/pages/p_offline.php
 src/pages/p_paper.php
 src/pages/p_review.php

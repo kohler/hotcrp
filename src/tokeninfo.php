@@ -37,6 +37,7 @@ class TokenInfo {
     const UPLOAD = 3;
     const AUTHORVIEW = 4;
     const REVIEWACCEPT = 5;
+    const OAUTHSIGNIN = 6;
 
     /** @param ?int $capabilityType */
     function __construct(Conf $conf, $capabilityType = null) {

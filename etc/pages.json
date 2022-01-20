@@ -212,6 +212,7 @@
     {   "name": "mail", "render_php": "mail.php"   },
     {   "name": "manualassign", "render_function": "ManualAssign_Page::go"   },
     {   "name": "mergeaccounts", "render_function": "MergeAccounts_Page::go"   },
+    {   "name": "oauth", "render_function": "OAuth_Page::go", "allow_disabled": true   },
     {   "name": "offline", "render_function": "Offline_Page::go"   },
     {   "name": "paper", "render_function": "Paper_Page::go"   },
     {   "name": "profile", "render_php": "profile.php"   },
