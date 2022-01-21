@@ -2153,7 +2153,7 @@ class Attachments_PaperOption extends PaperOption {
             } else if ($fr->want_list_row()) {
                 $fr->set_html(join("; ", $ts));
             } else {
-                $fr->set_html('<p class="od">' . join('</p><p class="od">', $ts) . '</p>');
+                $fr->set_html('<ul class="x"><li class="od">' . join('</li><li class="od">', $ts) . '</li></ul>');
             }
             if ($fr->for_page() && $this->page_order() < 2000) {
                 $fr->title = false;

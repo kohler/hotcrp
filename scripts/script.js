@@ -7380,14 +7380,17 @@ return paperlist_tag_ui;
 
 // archive expansion
 handle_ui.on("js-expand-archive", function (evt) {
-    var $j = $(evt ? evt.target : this).closest(".archive");
-    fold($j[0]);
-    if (!$j.find(".archiveexpansion").length) {
-        $j.append('<span class="archiveexpansion fx"></span>');
-        $.ajax(hoturl_add($j.find("a").filter(":not(.q)").attr("href"), "fn=consolidatedlisting"), {
+    var ar = (evt ? evt.target : this).closest(".archive"), ax;
+    fold(ar);
+    if (!ar.querySelector(".archiveexpansion")
+        && (ax = ar.querySelector("a:not(.ui)"))) {
+        var sp = document.createElement("span");
+        sp.className = "archiveexpansion fx";
+        ar.appendChild(sp);
+        $.ajax(hoturl_add(ax.href, "fn=consolidatedlisting"), {
             method: "GET", success: function (data) {
                 if (data.ok && data.result)
-                    $j.find(".archiveexpansion").text(" (" + data.result + ")");
+                    sp.textContent = " (" + data.result + ")";
             }
         });
     }

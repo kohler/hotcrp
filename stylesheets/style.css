@@ -3113,7 +3113,7 @@ a.badge:active {
 	font-size: smaller;
 	color: #555555;
 }
-.od, .odname, ul.x > li.odname {
+.od, .odname, ul.x > li.od, ul.x > li.odname {
 	margin: 0 0 0 1.5em;
 	text-indent: -1.5em;
 	list-style-type: none;

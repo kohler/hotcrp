@@ -977,7 +977,7 @@ class PaperTable {
             if ($fr->value === "") {
                 $fr->value = "<h3 class=\"pavfn\">{$title}</h3>";
             } else if ($fr->value[0] === "<"
-                       && preg_match('{\A((?:<(?:div|p).*?>)*)}', $fr->value, $cm)) {
+                       && preg_match('/\A((?:<(?:div|ul|ol|li).*?>)*)/', $fr->value, $cm)) {
                 $fr->value = "{$cm[1]}<h3 class=\"pavfn pavfnsp\">{$title}:</h3> "
                     . substr($fr->value, strlen($cm[1]));
             } else {
