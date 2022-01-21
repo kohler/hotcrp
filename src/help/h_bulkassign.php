@@ -175,7 +175,7 @@ a conflict type, such as “advisor” or “institutional”.</p>";
     }
 
     static function echo_actions(Contact $user, HelpRenderer $hth = null) {
-        $apge = new GroupedExtensions($user, "etc/assignmentparsers.json", $user->conf->opt("assignmentParsers"));
+        $apge = new ComponentSet($user, "etc/assignmentparsers.json", $user->conf->opt("assignmentParsers"));
         $apx = [];
         foreach ($apge->groups() as $ufg) {
             self::add_bulk_assignment_action($apx, $ufg, $hth);

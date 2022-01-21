@@ -13,6 +13,7 @@ class SiteLoader {
         "Fexpr" => "src/formula.php",
         "FormulaCall" => "src/formula.php",
         "FormatChecker" => "src/formatspec.php",
+        "GroupedExtensions" => "src/componentset.php", /* XXX backward compat */
         "HashAnalysis" => "lib/filer.php",
         "JsonSerializable" => "lib/json.php",
         "LogEntryGenerator" => "src/logentry.php",

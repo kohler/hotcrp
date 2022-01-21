@@ -9,12 +9,12 @@ class HelpRenderer extends Ht {
     public $user;
     private $_tabletype;
     private $_rowidx;
-    /** @var GroupedExtensions */
+    /** @var ComponentSet */
     private $_help_topics;
     private $_renderers = [];
     private $_sv;
     private $_h3ids;
-    function __construct(GroupedExtensions $help_topics, Contact $user) {
+    function __construct(ComponentSet $help_topics, Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_help_topics = $help_topics;

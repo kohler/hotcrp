@@ -30,7 +30,7 @@ class Graph_Page {
         return substr($gj->name, 6);
     }
 
-    /** @param GroupedExtensions $gx
+    /** @param ComponentSet $gx
      * @return false */
     static function go(Contact $user, Qrequest $qreq, $gx) {
         $gtypes = $gx->members("graph");

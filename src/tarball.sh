@@ -205,6 +205,7 @@ src/capabilities/cap_authorview.php
 src/capabilities/cap_reviewaccept.php
 src/checkformat.php
 src/commentinfo.php
+src/componentset.php
 src/conference.php
 src/confinvariants.php
 src/conflict.php
@@ -241,7 +242,6 @@ src/formulas/f_tag.php
 src/formulas/f_timefield.php
 src/formulas/f_topic.php
 src/formulas/f_topicscore.php
-src/groupedextensions.php
 src/help/h_bulkassign.php
 src/help/h_chairsguide.php
 src/help/h_formulas.php

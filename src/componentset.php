@@ -1,15 +1,15 @@
 <?php
-// src/groupedextensions.php -- HotCRP extensible groups
+// src/componentset.php -- HotCRP JSON-based component specifications
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class GroupedExtensionsContext {
+class ComponentContext {
     /** @var ?list<mixed> */
     public $args;
     /** @var ?list<callable> */
     public $cleanup;
 }
 
-class GroupedExtensions implements XtContext {
+class ComponentSet implements XtContext {
     private $_jall = [];
     private $_potential_members = [];
     /** @var Conf
@@ -29,9 +29,9 @@ class GroupedExtensions implements XtContext {
     private $_in_section = false;
     /** @var ?string */
     private $_section_closer;
-    /** @var GroupedExtensionsContext */
+    /** @var ComponentContext */
     private $_ctx;
-    /** @var list<GroupedExtensionsContext> */
+    /** @var list<ComponentContext> */
     private $_ctxstack;
     private $_annexes = [];
     /** @var list<callable(string,object,?Contact,Conf):(?bool)> */
@@ -95,7 +95,7 @@ class GroupedExtensions implements XtContext {
             if ($arg)
                 expand_json_includes_callback($arg, [$this, "add"]);
         }
-        $this->_ctx = new GroupedExtensionsContext;
+        $this->_ctx = new ComponentContext;
         $this->reset_context();
     }
     function reset_context() {
@@ -127,7 +127,7 @@ class GroupedExtensions implements XtContext {
         return null;
     }
 
-    /** @param callable(object,GroupedExtensions):bool $f */
+    /** @param callable(object,ComponentSet):bool $f */
     function apply_filter($f) {
         foreach ($this->_jall as &$jl) {
             $n = count($jl);
@@ -413,9 +413,13 @@ class GroupedExtensions implements XtContext {
         return $result;
     }
 
+    /** @param string $name
+     * @return bool */
     function has_annex($name) {
         return isset($this->_annexes[$name]);
     }
+    /** @param string $name
+     * @return mixed */
     function annex($name) {
         $x = null;
         if (array_key_exists($name, $this->_annexes)) {
@@ -423,7 +427,11 @@ class GroupedExtensions implements XtContext {
         }
         return $x;
     }
+    /** @param string $name
+     * @param mixed $x */
     function set_annex($name, $x) {
         $this->_annexes[$name] = $x;
     }
 }
+
+class_alias("ComponentSet", "GroupedExtensions"); /* XXX backward compat */

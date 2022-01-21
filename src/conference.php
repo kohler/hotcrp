@@ -264,7 +264,7 @@ class Conf {
     private $_mail_keyword_map;
     private $_mail_keyword_factories;
     private $_mail_template_map;
-    /** @var ?GroupedExtensions */
+    /** @var ?ComponentSet */
     private $_page_partials;
 
     /** @var ?PaperInfo */
@@ -5470,10 +5470,10 @@ class Conf {
 
     // pages
 
-    /** @return GroupedExtensions */
+    /** @return ComponentSet */
     function page_partials(Contact $viewer) {
         if (!$this->_page_partials || $this->_page_partials->viewer() !== $viewer) {
-            $this->_page_partials = new GroupedExtensions($viewer, ["etc/pages.json"], $this->opt("pages"));
+            $this->_page_partials = new ComponentSet($viewer, ["etc/pages.json"], $this->opt("pages"));
         }
         return $this->_page_partials;
     }

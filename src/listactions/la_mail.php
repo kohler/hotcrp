@@ -12,7 +12,7 @@ class Mail_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
         return $user->is_manager() && $qreq->page() !== "reviewprefs";
     }
-    static function render(PaperList $pl, Qrequest $qreq, GroupedExtensions $gex) {
+    static function render(PaperList $pl, Qrequest $qreq, ComponentSet $gex) {
         $sel_opt = ListAction::members_selector_options($gex, "mail");
         if (!empty($sel_opt)) {
             return Ht::select("mailfn", $sel_opt, $qreq->mailfn,

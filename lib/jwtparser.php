@@ -51,10 +51,10 @@ class JWTParser extends MessageSet {
     }
 
     /** @param string $v
-     * @param int $unused_bits
+     * @param int $num_unused_bits
      * @return string */
-    static function der_encode_bit_string($v, $unused_bits) {
-        return self::der_encode_tlv(3, chr($unused_bits) . $v);
+    static function der_encode_bit_string($v, $num_unused_bits) {
+        return self::der_encode_tlv(3, chr($num_unused_bits) . $v);
     }
 
     /** @param int $i
@@ -163,7 +163,6 @@ class JWTParser extends MessageSet {
 
     /** @param string $s
      * @param string $alg
-     * @param string $key
      * @param string $signature
      * @return bool */
     function verify($s, $alg, $signature) {
@@ -181,7 +180,7 @@ class JWTParser extends MessageSet {
     }
 
     /** @param string $s
-     * @return ?string */
+     * @return ?object */
     function validate($s) {
         $this->jose = $this->payload = null;
         if ($s === null || $s === "") {

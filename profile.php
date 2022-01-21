@@ -130,7 +130,7 @@ if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
 if (($p = $Qreq->path_component(0)) !== null) {
     if (in_array($p, ["", "me", "self", "new", "bulk"])
         || strpos($p, "@") !== false
-        || !$UserStatus->gxt()->canonical_group($p)) {
+        || !$UserStatus->cs()->canonical_group($p)) {
         if ($Qreq->u === null) {
             $Qreq->u = urldecode($p);
         }
@@ -531,7 +531,7 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->valid_post()) {
 $UserStatus->set_user($Acct);
 $UserStatus->set_context_args([$UserStatus]);
 if (!$newProfile
-    && ($g = $UserStatus->gxt()->canonical_group($Qreq->t ? : "main"))) {
+    && ($g = $UserStatus->cs()->canonical_group($Qreq->t ? : "main"))) {
     $profile_topic = $g;
 } else {
     $profile_topic = "main";
@@ -540,7 +540,7 @@ if ($Qreq->t && $Qreq->t !== $profile_topic && $Qreq->method() === "GET") {
     $Qreq->t = $profile_topic === "main" ? null : $profile_topic;
     $Conf->redirect_self($Qreq);
 }
-$UserStatus->gxt()->set_root($profile_topic);
+$UserStatus->cs()->set_root($profile_topic);
 
 // set session list
 if (!$newProfile
@@ -582,10 +582,10 @@ if (!$useRequest
 
 // set warnings about user json
 if (!$newProfile && !$useRequest) {
-    $UserStatus->gxt()->set_context_args([$UserStatus, $Acct]);
+    $UserStatus->cs()->set_context_args([$UserStatus, $Acct]);
     assert($UserStatus->user === $Acct);
-    foreach ($UserStatus->gxt()->members("__crosscheck", "crosscheck_function") as $gj) {
-        $UserStatus->gxt()->call_function($gj->crosscheck_function, $gj);
+    foreach ($UserStatus->cs()->members("__crosscheck", "crosscheck_function") as $gj) {
+        $UserStatus->cs()->call_function($gj->crosscheck_function, $gj);
     }
 }
 
@@ -655,7 +655,7 @@ if ($Me->privChair) {
 
 if (!$newProfile) {
     $first = $Me->privChair;
-    foreach ($UserStatus->gxt()->members("", "title") as $gj) {
+    foreach ($UserStatus->cs()->members("", "title") as $gj) {
         echo '<li class="leftmenu-item',
             ($gj->name === $profile_topic ? ' active' : ' ui js-click-child'),
             ($first ? ' leftmenu-item-gap4' : ''), '">';
@@ -715,7 +715,7 @@ if ($newProfile === 2) {
         if ($Me->contactId !== $Acct->contactId) {
             echo $Me->reviewer_html_for($Acct), ' ';
         }
-        echo htmlspecialchars($UserStatus->gxt()->get($profile_topic)->title);
+        echo htmlspecialchars($UserStatus->cs()->get($profile_topic)->title);
         if ($Acct->is_disabled()) {
             echo ' <span class="n dim">(disabled)</span>';
         }

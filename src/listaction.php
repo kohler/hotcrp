@@ -14,9 +14,9 @@ class ListAction {
     }
 
 
-    /** @return GroupedExtensions */
+    /** @return ComponentSet */
     static function grouped_extensions(Contact $user) {
-        $gex = new GroupedExtensions($user, ["etc/listactions.json"], $user->conf->opt("listActions"));
+        $gex = new ComponentSet($user, ["etc/listactions.json"], $user->conf->opt("listActions"));
         foreach ($gex->members("__expand") as $gj) {
             if (!isset($gj->allow_if) || $gex->allowed($gj->allow_if, $gj)) {
                 Conf::xt_resolve_require($gj);
@@ -26,7 +26,7 @@ class ListAction {
         return $gex;
     }
 
-    /** @param GroupedExtensions $gex
+    /** @param ComponentSet $gex
      * @param string $group
      * @return list */
     static function members_selector_options($gex, $group) {

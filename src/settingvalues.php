@@ -113,8 +113,8 @@ class SettingValues extends MessageSet {
     /** @var ?Mailer */
     private $null_mailer;
 
-    /** @var ?GroupedExtensions */
-    private $_gxt;
+    /** @var ?ComponentSet */
+    private $_cs;
 
     function __construct(Contact $user) {
         parent::__construct();
@@ -171,70 +171,70 @@ class SettingValues extends MessageSet {
     }
 
 
-    /** @return GroupedExtensions */
-    private function gxt() {
-        if ($this->_gxt === null) {
-            $this->_gxt = new GroupedExtensions($this->user, ["etc/settinggroups.json"], $this->conf->opt("settingGroups"));
-            $this->_gxt->set_title_class("form-h")->set_section_class("form-section")
+    /** @return ComponentSet */
+    private function cs() {
+        if ($this->_cs === null) {
+            $this->_cs = new ComponentSet($this->user, ["etc/settinggroups.json"], $this->conf->opt("settingGroups"));
+            $this->_cs->set_title_class("form-h")->set_section_class("form-section")
                 ->set_context_args([$this]);
         }
-        return $this->_gxt;
+        return $this->_cs;
     }
 
     /** @param string $g
      * @return ?string */
     function canonical_group($g) {
-        return $this->gxt()->canonical_group(strtolower($g));
+        return $this->cs()->canonical_group(strtolower($g));
     }
 
     /** @param string $g
      * @return ?string */
     function group_title($g) {
-        $gj = $this->gxt()->get($g);
+        $gj = $this->cs()->get($g);
         return $gj && $gj->name === $gj->group ? $gj->title : null;
     }
 
     /** @param string $g
      * @return ?string */
     function group_hashid($g) {
-        $gj = $this->gxt()->get($g);
+        $gj = $this->cs()->get($g);
         return $gj && isset($gj->hashid) ? $gj->hashid : null;
     }
 
     /** @param string $g
      * @return list<object> */
     function group_members($g) {
-        return $this->gxt()->members(strtolower($g));
+        return $this->cs()->members(strtolower($g));
     }
 
     /** @param string $g
      * @return ?object */
     function group_item($g) {
-        return $this->gxt()->get($g);
+        return $this->cs()->get($g);
     }
 
     function crosscheck() {
-        foreach ($this->gxt()->members("__crosscheck", "crosscheck_function") as $gj) {
-            $this->gxt()->call_function($gj->crosscheck_function, $gj);
+        foreach ($this->cs()->members("__crosscheck", "crosscheck_function") as $gj) {
+            $this->cs()->call_function($gj->crosscheck_function, $gj);
         }
     }
 
     /** @param string $g
      * @param bool $top */
     function render_group($g, $top = false) {
-        $this->gxt()->render_group($g, $top);
+        $this->cs()->render_group($g, $top);
     }
 
     /** @param ?string $classes
      * @param ?string $id */
     function render_open_section($classes = null, $id = null) {
-        $this->gxt()->render_open_section($classes, $id);
+        $this->cs()->render_open_section($classes, $id);
     }
 
     /** @param string $title
      * @param ?string $id */
     function render_section($title, $id = null) {
-        $this->gxt()->render_section($title, $id);
+        $this->cs()->render_section($title, $id);
     }
 
 

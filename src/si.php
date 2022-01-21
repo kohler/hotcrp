@@ -540,9 +540,9 @@ class Si {
 
 
 class SettingInfoSet {
-    /** @var GroupedExtensions
+    /** @var ComponentSet
      * @readonly */
-    private $gxt;
+    private $cs;
     /** @var array<string,Si> */
     private $map = [];
     /** @var array<string,list<object>> */
@@ -553,7 +553,7 @@ class SettingInfoSet {
     private $canonpage = ["none" => null];
 
     function __construct(Conf $conf) {
-        $this->gxt = new GroupedExtensions($conf->root_user(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
+        $this->cs = new ComponentSet($conf->root_user(), ["etc/settinggroups.json"], $conf->opt("settingGroups"));
         expand_json_includes_callback(["etc/settinginfo.json"], [$this, "_add_item"]);
         if (($olist = $conf->opt("settingInfo"))) {
             expand_json_includes_callback($olist, [$this, "_add_item"]);
@@ -611,18 +611,18 @@ class SettingInfoSet {
                 }
             }
             // create Si
-            $gxt = $this->gxt;
-            $jx = $gxt->conf->xt_search_name($this->xmap, $name, $gxt->viewer);
+            $cs = $this->cs;
+            $jx = $cs->conf->xt_search_name($this->xmap, $name, $cs->viewer);
             if ($jx) {
                 Conf::xt_resolve_require($jx);
                 if (($group = $jx->group ?? null)) {
                     if (!array_key_exists($group, $this->canonpage)) {
-                        $this->canonpage[$group] = $gxt->canonical_group($group) ?? $group;
+                        $this->canonpage[$group] = $cs->canonical_group($group) ?? $group;
                     }
                     $jx->group = $this->canonpage[$group];
                 }
             }
-            $this->map[$name] = $jx ? new Si($gxt->conf, $jx) : null;
+            $this->map[$name] = $jx ? new Si($cs->conf, $jx) : null;
         }
         return $this->map[$name];
     }

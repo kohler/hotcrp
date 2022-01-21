@@ -21,7 +21,7 @@ class GetDocument_ListAction extends ListAction {
             "function" => "+GetDocument_ListAction"
         ];
     }
-    static function expand2(GroupedExtensions $gex) {
+    static function expand2(ComponentSet $gex) {
         $user = $gex->viewer();
         foreach ($user->conf->options()->page_fields() as $o) {
             if ($o->has_document() && $user->can_view_some_option($o))

@@ -7,7 +7,7 @@ require_once("lib/navigation.php");
 /** @param Contact $user
  * @param Qrequest $qreq
  * @param string $group
- * @param GroupedExtensions $gx */
+ * @param ComponentSet $gx */
 function gx_call_requests($user, $qreq, $group, $gx) {
     $gx->add_xt_checker([$qreq, "xt_allow"]);
     $reqgj = [];

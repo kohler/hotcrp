@@ -43,11 +43,14 @@ class OAuthInstance {
 class OAuth_Page {
     /** @var Conf */
     public $conf;
+    /** @var Contact */
+    public $viewer;
     /** @var Qrequest */
     public $qreq;
 
-    function __construct(Conf $conf, Qrequest $qreq) {
-        $this->conf = $conf;
+    function __construct(Contact $viewer, Qrequest $qreq) {
+        $this->conf = $viewer->conf;
+        $this->viewer = $viewer;
         $this->qreq = $qreq;
     }
 
@@ -165,7 +168,7 @@ class OAuth_Page {
     }
 
     static function go(Contact $user, Qrequest $qreq) {
-        $oap = new OAuth_Page($user->conf, $qreq);
+        $oap = new OAuth_Page($user, $qreq);
         if (isset($qreq->state)) {
             $mi = $oap->response();
             if ($mi) {

@@ -33,8 +33,8 @@ class UserStatus extends MessageSet {
     public $notified;
     /** @var associative-array<string,true> */
     public $diffs = [];
-    /** @var ?GroupedExtensions */
-    private $_gxt;
+    /** @var ?ComponentSet */
+    private $_cs;
     /** @var ?bool */
     private $_req_security;
     /** @var ?array{string,string} */
@@ -86,9 +86,9 @@ class UserStatus extends MessageSet {
             $auth_user = Contact::$base_auth_user ?? $this->viewer;
             $this->is_auth_user = $auth_user->has_email()
                 && strcasecmp($auth_user->email, $user->email) === 0;
-            if ($this->_gxt) {
-                $this->_gxt->reset_context();
-                $this->initialize_gxt();
+            if ($this->_cs) {
+                $this->_cs->reset_context();
+                $this->initialize_cs();
             }
         }
     }
@@ -116,22 +116,27 @@ class UserStatus extends MessageSet {
         return $this->viewer->is_root_user() ? null : $this->viewer;
     }
 
-    /** @return GroupedExtensions */
-    function gxt() {
-        if ($this->_gxt === null) {
-            $this->_gxt = new GroupedExtensions($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
-            $this->_gxt->set_title_class("form-h")->set_section_class("form-section");
-            $this->_gxt->add_xt_checker([$this, "xt_allower"]);
-            $this->initialize_gxt();
+    /** @return ComponentSet */
+    function cs() {
+        if ($this->_cs === null) {
+            $this->_cs = new ComponentSet($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
+            $this->_cs->set_title_class("form-h")->set_section_class("form-section");
+            $this->_cs->add_xt_checker([$this, "xt_allower"]);
+            $this->initialize_cs();
         }
-        return $this->_gxt;
+        return $this->_cs;
     }
-    private function initialize_gxt() {
-        $this->_gxt->set_callable("UserStatus", $this);
+    private function initialize_cs() {
+        $this->_cs->set_callable("UserStatus", $this);
+    }
+    /** @return ComponentSet
+     * @deprecated */
+    function gxt() {
+        return $this->cs();
     }
     /** @param list<mixed> $args */
     function set_context_args($args) {
-        $this->gxt()->set_context_args($args);
+        $this->cs()->set_context_args($args);
     }
 
     /** @return bool */
@@ -303,7 +308,7 @@ class UserStatus extends MessageSet {
             if ($this->user->contactId > 0) {
                 $cj->id = $this->user->contactId;
             }
-            $gx = $this->gxt();
+            $gx = $this->cs();
             $gx->set_context_args([$this, $cj, $args]);
             foreach ($gx->members("", "unparse_json_function") as $gj) {
                 $gx->call_function($gj->unparse_json_function, $gj);
@@ -720,7 +725,7 @@ class UserStatus extends MessageSet {
 
 
     static function crosscheck_main(UserStatus $us) {
-        if ($us->gxt()->root() !== "main") {
+        if ($us->cs()->root() !== "main") {
             return;
         }
         $user = $us->user;
@@ -869,7 +874,7 @@ class UserStatus extends MessageSet {
         $cdb_user = $user->ensure_contactdb_user(true);
 
         // Early properties
-        $gx = $this->gxt();
+        $gx = $this->cs();
         $gx->set_context_args([$this, $user, $cj]);
         foreach ($gx->members("", "save_early_function") as $gj) {
             $gx->call_function($gj->save_early_function, $gj);
@@ -1284,7 +1289,7 @@ class UserStatus extends MessageSet {
 
     /** @param CsvRow $line */
     function parse_csv_group($g, $cj, $line) {
-        foreach ($this->gxt()->members(strtolower($g)) as $gj) {
+        foreach ($this->cs()->members(strtolower($g)) as $gj) {
             if (($cb = $gj->parse_csv_function ?? null)) {
                 Conf::xt_resolve_require($gj);
                 $cb($this, $cj, $line, $gj);
@@ -1500,7 +1505,7 @@ class UserStatus extends MessageSet {
             return;
         }
         $cd = $us->conf->_i("conflictdef");
-        $us->gxt()->render_open_section("w-text");
+        $us->cs()->render_open_section("w-text");
         echo '<h3 class="', $us->control_class("collaborators", "form-h"), '">Collaborators and other affiliations</h3>', "\n",
             "<p>List potential conflicts of interest one per line, using parentheses for affiliations and institutions. We may use this information when assigning reviews.<br>Examples: “Ping Yen Zhang (INRIA)”, “All (University College London)”</p>";
         if ($cd !== "" && preg_match('/<(?:p|div)[ >]/', $cd)) {
@@ -1520,8 +1525,8 @@ class UserStatus extends MessageSet {
             && !$us->viewer->privChair) {
             return;
         }
-        $us->gxt()->render_open_section("w-text fx1", "topicinterest");
-        $us->gxt()->render_title("Topic interests");
+        $us->cs()->render_open_section("w-text fx1", "topicinterest");
+        $us->cs()->render_title("Topic interests");
         echo '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
@@ -1563,8 +1568,8 @@ topics. We use this information to help match papers to reviewers.</p>',
             && (!$us->user->isPC || $itags === "")) {
             return;
         }
-        $us->gxt()->render_open_section("w-text fx2");
-        $us->gxt()->render_title("Tags");
+        $us->cs()->render_open_section("w-text fx2");
+        $us->cs()->render_title("Tags");
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("tags", "f-i"), '">',
                 Ht::entry("contactTags", $qreq->contactTags ?? $itags, ["size" => 60, "data-default-value" => $itags]),
@@ -1606,10 +1611,10 @@ topics. We use this information to help match papers to reviewers.</p>',
     static function render_main_actions(UserStatus $us, Qrequest $qreq) {
         if ($us->viewer->privChair
             && !$us->is_new_user()) {
-            $us->gxt()->render_open_section();
+            $us->cs()->render_open_section();
             echo '<div class="form-outline-section">';
-            $us->gxt()->push_close_section('</div>');
-            $us->gxt()->render_title("User administration");
+            $us->cs()->push_close_section('</div>');
+            $us->cs()->render_title("User administration");
             $disablement = $us->user->disablement;
             echo '<div class="btngrid">',
                 Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf relative", "disabled" => $disablement !== 0]), '<p></p>';
@@ -1628,10 +1633,10 @@ topics. We use this information to help match papers to reviewers.</p>',
         $buttons = [Ht::submit("save", $us->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
             Ht::submit("cancel", "Cancel", ["formnovalidate" => true])];
         if ($us->is_auth_self()
-            && $us->gxt()->root === "main") {
+            && $us->cs()->root === "main") {
             array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
         }
-        $us->gxt()->render_close_section();
+        $us->cs()->render_close_section();
         echo Ht::actions($buttons, ["class" => "aab aabig mt-7"]);
     }
 
@@ -1665,7 +1670,7 @@ John Adams,john@earbox.org,UC Berkeley,pc
             "\n<p>Or just enter an email address per line.</p>";
 
         $rows = [];
-        foreach ($us->gxt()->members("__bulk/help/f") as $gj) {
+        foreach ($us->cs()->members("__bulk/help/f") as $gj) {
             $t = '<tr><td class="pad">';
             if (isset($gj->field_html)) {
                 $t .= $gj->field_html;
@@ -1698,15 +1703,15 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 
     function render_group($g) {
-        $this->gxt()->render_group($g);
+        $this->cs()->render_group($g);
     }
 
     function render_section($title, $id = null) {
-        $this->gxt()->render_section($title, $id);
+        $this->cs()->render_section($title, $id);
     }
 
     function request_group($name) {
-        $gx = $this->gxt();
+        $gx = $this->cs();
         foreach ($gx->members($name, "request_function") as $gj) {
             if ($gx->allowed($gj->allow_request_if ?? null, $gj)) {
                 $gx->call_function($gj->request_function, $gj);
