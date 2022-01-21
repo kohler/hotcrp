@@ -990,10 +990,10 @@ xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
 assert_search_papers($user_mgbaker, "has:calories", "1 2 3 4 5");
 $sv = SettingValues::make_request($user_chair, [
     "has_options" => 1,
-    "sf_name_1" => "Fudge",
-    "optid_1" => 1,
-    "optfp_1" => 1,
-    "sf_type_1" => "numeric"
+    "sf__1__name" => "Fudge",
+    "sf__1__id" => 1,
+    "sf__1__order" => 1,
+    "sf__1__type" => "numeric"
 ]);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->updated_fields()), "options");
@@ -1001,10 +1001,10 @@ assert_search_papers($user_mgbaker, "has:fudge", "1 2 3 4 5");
 
 $sv = SettingValues::make_request($user_chair, [
     "has_options" => 1,
-    "sf_name_1" => "Fudge",
-    "optid_1" => 1,
-    "optfp_1" => 1,
-    "sf_type_1" => "checkbox"
+    "sf__1__name" => "Fudge",
+    "sf__1__id" => 1,
+    "sf__1__order" => 1,
+    "sf__1__type" => "checkbox"
 ]);
 xassert($sv->execute());
 xassert_eqq(join(" ", $sv->updated_fields()), "options");

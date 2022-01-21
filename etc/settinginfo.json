@@ -221,41 +221,41 @@
         "type": "string", "storage": "dat.options"
     },
     {
-        "name_pattern": "sf_name_$", "internal": true, "group": "subform",
+        "name_pattern": "sf__$__name", "internal": true, "group": "subform",
         "title": "Submission field name",
         "parser_class": "Options_SettingParser"
     },
     {
-        "name_pattern": "sf_type_$", "internal": true, "group": "subform",
-        "title": "Submission field type", "title_pattern": "‘${sv sf_name_$}’ type"
+        "name_pattern": "sf__$__type", "internal": true, "group": "subform",
+        "title": "Submission field type", "title_pattern": "‘${sv sf__$__name}’ type"
     },
     {
-        "name_pattern": "sf_description_$", "internal": true, "group": "subform",
-        "title": "Submission field description", "title_pattern": "‘${sv sf_name_$}’ description"
+        "name_pattern": "sf__$__description", "internal": true, "group": "subform",
+        "title": "Submission field description", "title_pattern": "‘${sv sf__$__name}’ description"
     },
     {
-        "name_pattern": "sf_options_$", "internal": true, "group": "subform",
-        "title": "Submission field choices", "title_pattern": "‘${sv sf_name_$}’ choices"
+        "name_pattern": "sf__$__choices", "internal": true, "group": "subform",
+        "title": "Submission field choices", "title_pattern": "‘${sv sf__$__name}’ choices"
     },
     {
-        "name_pattern": "sf_required_$", "internal": true, "group": "subform",
-        "title": "Submission field requirement", "title_pattern": "‘${sv sf_name_$}’ requirement"
+        "name_pattern": "sf__$__required", "internal": true, "group": "subform",
+        "title": "Submission field requirement", "title_pattern": "‘${sv sf__$__name}’ requirement"
     },
     {
-        "name_pattern": "sf_display_$", "internal": true, "group": "subform",
-        "title": "Submission field display", "title_pattern": "‘${sv sf_name_$}’ display"
+        "name_pattern": "sf__$__display", "internal": true, "group": "subform",
+        "title": "Submission field display", "title_pattern": "‘${sv sf__$__name}’ display"
     },
     {
-        "name_pattern": "sf_visibility_$", "internal": true, "group": "subform",
-        "title": "Submission field visibility", "title_pattern": "‘${sv sf_name_$}’ visibility"
+        "name_pattern": "sf__$__visibility", "internal": true, "group": "subform",
+        "title": "Submission field visibility", "title_pattern": "‘${sv sf__$__name}’ visibility"
     },
     {
-        "name_pattern": "sf_presence_$", "internal": true, "group": "subform",
-        "title": "Submission field presence", "title_pattern": "‘${sv sf_name_$}’ presence"
+        "name_pattern": "sf__$__presence", "internal": true, "group": "subform",
+        "title": "Submission field presence", "title_pattern": "‘${sv sf__$__name}’ presence"
     },
     {
-        "name_pattern": "sf_presenceq_$", "internal": true, "group": "subform",
-        "title": "Submission field presence condition", "title_pattern": "‘${sv sf_name_$}’ presence condition"
+        "name_pattern": "sf__$__condition", "internal": true, "group": "subform",
+        "title": "Submission field presence condition", "title_pattern": "‘${sv sf__$__name}’ presence condition"
     },
     {
         "name": "options_version", "internal": true,

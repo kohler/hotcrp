@@ -65,9 +65,9 @@ handle_ui.on("js-settings-sf-move", function (event) {
             form_highlight("#settingsform");
         } else {
             tooltip.erase.call(this);
-            $odiv.find(".settings-sf-fp").val("deleted").change();
+            $odiv.find(".settings-sf-order").val("deleted").change();
             $odiv.find(".f-i, .entryi").each(function () {
-                if (!$(this).find(".settings-sf-fp").length)
+                if (!$(this).find(".settings-sf-order").length)
                     $(this).remove();
             });
             $odiv.find("input[type=text]").prop("disabled", true).addClass("text-decoration-line-through");
@@ -96,14 +96,14 @@ function add_dialog() {
             samp = $$("settings-sform-samples").childNodes[opt.value | 0],
             h = $$("settings-sf-new").getAttribute("data-template"),
             next = 1, odiv;
-        while ($$("sf_name_" + next))
+        while ($$("sf__" + next + "__name"))
             ++next;
-        h = h.replace(/_0/g, "_" + next);
+        h = h.replace(/__0/g, "__" + next);
         odiv = $(h).appendTo("#settings-sform");
         odiv.find(".need-autogrow").autogrow();
         odiv.find(".need-tooltip").each(tooltip);
         odiv.find(".js-settings-sf-type").val(samp.getAttribute("data-name")).change();
-        $$("sf_name_" + next).focus();
+        $$("sf__" + next + "__name").focus();
         settings_sf_positions();
         $d.close();
         event.preventDefault();
@@ -136,8 +136,8 @@ function settings_sf_positions() {
     $(".settings-sf:first-child .moveup").prop("disabled", true);
     $(".settings-sf:last-child .movedown").prop("disabled", true);
     var index = 0;
-    $(".settings-sf-fp").each(function () {
-        if (this.value !== "deleted" && this.name !== "optfp_0") {
+    $(".settings-sf-order").each(function () {
+        if (this.value !== "deleted" && this.name !== "sf__0__order") {
             ++index;
             if (this.value != index)
                 $(this).val(index).change();
@@ -431,9 +431,9 @@ tooltip.add_builder("settings-rf", function (info) {
 
 tooltip.add_builder("settings-sf", function (info) {
     var x = "#settings-sf-caption-choices";
-    if (/^sf_name/.test(this.name))
+    if (/__name$/.test(this.name))
         x = "#settings-sf-caption-name";
-    else if (/^sf_presenceq/.test(this.name))
+    else if (/__condition$/.test(this.name))
         x = "#settings-sf-caption-condition";
     return $.extend({anchor: "h", content: $(x).html(), className: "gray"}, info);
 });

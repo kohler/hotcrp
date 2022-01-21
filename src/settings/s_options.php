@@ -33,11 +33,11 @@ class Options_SettingRenderer {
                 $otypes[$uf->name] = $uf->title ?? $uf->name;
         }
 
-        echo '<div class="', $sv->control_class("sf_type_$xpos", "entryi"),
-            '">', $sv->label("sf_type_$xpos", "Type"),
-            '<div class="entry">',
-            $sv->feedback_at("sf_type_$xpos"),
-            Ht::select("sf_type_$xpos", $otypes, $optvt, $sv->sjs("sf_type_$xpos", ["class" => "uich js-settings-sf-type", "id" => "sf_type_$xpos"])),
+        $id = "sf__{$xpos}__type";
+        echo '<div class="', $sv->control_class($id, "entryi"),
+            '">', $sv->label($id, "Type"),
+            '<div class="entry">', $sv->feedback_at($id),
+            Ht::select($id, $otypes, $optvt, $sv->sjs($id, ["class" => "uich js-settings-sf-type", "id" => $id])),
             "</div></div>\n";
 
         if ($o instanceof Selector_PaperOption) {
@@ -52,35 +52,35 @@ class Options_SettingRenderer {
             $rows = 3;
             $value = "";
         }
-        echo '<div class="', $sv->control_class("sf_options_$xpos", "entryi has-optvt-condition$k"),
-            '" data-optvt-condition="selector radio">', $sv->label("sf_options_$xpos", "Choices"),
-            '<div class="entry">',
-            $sv->feedback_at("sf_options_$xpos"),
-            Ht::textarea("sf_options_$xpos", $value, $sv->sjs("sf_options_$xpos", ["rows" => $rows, "cols" => 50, "id" => "sf_options_$xpos", "class" => "w-entry-text need-autogrow need-tooltip", "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus"])),
+        $id = "sf__{$xpos}__choices";
+        echo '<div class="', $sv->control_class($id, "entryi has-optvt-condition$k"),
+            '" data-optvt-condition="selector radio">', $sv->label($id, "Choices"),
+            '<div class="entry">', $sv->feedback_at($id),
+            Ht::textarea($id, $value, $sv->sjs($id, ["rows" => $rows, "cols" => 50, "id" => $id, "class" => "w-entry-text need-autogrow need-tooltip", "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus"])),
             "</div></div>\n";
     }
     static function render_description_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        echo '<div class="', $sv->control_class("sf_description_$xpos", "entryi is-property-description"),
-            '">', $sv->label("sf_description_$xpos", "Description"),
-            '<div class="entry">',
-            $sv->feedback_at("sf_description_$xpos"),
-            Ht::textarea("sf_description_$xpos", $o->description, $sv->sjs("sf_description_$xpos", ["rows" => 2, "cols" => 80, "id" => "sf_description_$xpos", "class" => "w-entry-text settings-sf-description need-autogrow"])),
+        $id = "sf__{$xpos}__description";
+        echo '<div class="', $sv->control_class($id, "entryi is-property-description"),
+            '">', $sv->label($id, "Description"),
+            '<div class="entry">', $sv->feedback_at($id),
+            Ht::textarea($id, $o->description, $sv->sjs($id, ["rows" => 2, "cols" => 80, "id" => $id, "class" => "w-entry-text settings-sf-description need-autogrow"])),
             '</div></div>';
     }
     static function render_presence_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        echo '<div class="', $sv->control_class("sf_presence_$xpos", "entryi is-property-editing"),
-            '">', $sv->label("sf_presence_$xpos", "Present on"),
-            '<div class="entry">',
-            $sv->feedback_at("sf_presence_$xpos"),
-            Ht::select("sf_presence_$xpos", ["all" => "All submissions", "final" => "Final versions only"], $o->final ? "final" : "all", $sv->sjs("sf_presence_$xpos", ["id" => "sf_presence_$xpos"])),
+        $id = "sf__{$xpos}__presence";
+        echo '<div class="', $sv->control_class($id, "entryi is-property-editing"),
+            '">', $sv->label($id, "Present on"),
+            '<div class="entry">', $sv->feedback_at($id),
+            Ht::select($id, ["all" => "All submissions", "final" => "Final versions only"], $o->final ? "final" : "all", $sv->sjs($id, ["id" => $id])),
             "</div></div>";
     }
     static function render_required_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        echo '<div class="', $sv->control_class("sf_required_$xpos", "entryi is-property-editing"),
-            '">', $sv->label("sf_required_$xpos", "Required"),
-            '<div class="entry">',
-            $sv->feedback_at("sf_required_$xpos"),
-            Ht::select("sf_required_$xpos", ["0" => "No", "1" => "Yes"], $o->required ? "1" : "0", $sv->sjs("sf_required_$xpos", ["id" => "sf_required_$xpos"])),
+        $id = "sf__{$xpos}__required";
+        echo '<div class="', $sv->control_class($id, "entryi is-property-editing"),
+            '">', $sv->label($id, "Required"),
+            '<div class="entry">', $sv->feedback_at($id),
+            Ht::select($id, ["0" => "No", "1" => "Yes"], $o->required ? "1" : "0", $sv->sjs($id, ["id" => $id])),
             "</div></div>";
     }
     static function render_visibility_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
@@ -92,24 +92,24 @@ class Options_SettingRenderer {
         }
         $options["review"] = "Hidden until review";
         $options["admin"] = "Hidden from reviewers";
-        echo '<div class="', $sv->control_class("sf_visibility_$xpos", "entryi is-property-visibility short has-fold fold" . ($vis === "review" ? "o" : "c")),
-            '" data-fold-values="review">', $sv->label("sf_visibility_$xpos", "Visibility"),
-            '<div class="entry">',
-            $sv->feedback_at("sf_visibility_$xpos"),
-            Ht::select("sf_visibility_$xpos", $options, $vis, $sv->sjs("sf_visibility_$xpos", ["id" => "sf_visibility_$xpos", "class" => "settings-sf-visibility uich js-foldup"])),
+        $id = "sf__{$xpos}__visibility";
+        echo '<div class="', $sv->control_class($id, "entryi is-property-visibility short has-fold fold" . ($vis === "review" ? "o" : "c")),
+            '" data-fold-values="review">', $sv->label($id, "Visibility"),
+            '<div class="entry">', $sv->feedback_at($id),
+            Ht::select($id, $options, $vis, $sv->sjs($id, ["id" => $id, "class" => "settings-sf-visibility uich js-foldup"])),
             '<div class="hint fx">The field will be visible to reviewers who have submitted a review, and to PC members who can see all reviews.</div>',
             '</div></div>';
     }
     static function render_display_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
-        echo '<div class="', $sv->control_class("sf_display_$xpos", "entryi is-property-display short"),
-            '">', $sv->label("sf_display_$xpos", "Display"),
-            '<div class="entry">',
-            $sv->feedback_at("sf_display_$xpos"),
-            Ht::select("sf_display_$xpos", ["prominent" => "Normal",
-                                       "topics" => "Grouped with topics",
-                                       "submission" => "Near submission"],
+        $id = "sf__{$xpos}__display";
+        echo '<div class="', $sv->control_class($id, "entryi is-property-display short"),
+            '">', $sv->label($id, "Display"),
+            '<div class="entry">', $sv->feedback_at($id),
+            Ht::select($id, ["prominent" => "Normal",
+                             "topics" => "Grouped with topics",
+                             "submission" => "Near submission"],
                        $o->display_name(),
-                       $sv->sjs("sf_display_$xpos", ["id" => "sf_display_$xpos", "class" => "settings-sf-display"])),
+                       $sv->sjs($id, ["id" => $id, "class" => "settings-sf-display"])),
             "</div></div>";
     }
 
@@ -135,21 +135,21 @@ class Options_SettingRenderer {
         ]);
     }
     /** @param string $expr
-     * @param string $field
+     * @param int $pos
      * @param bool $is_error */
-    static function validate_condition(SettingValues $sv, $expr, $field, $is_error) {
-        $fieldx = preg_replace('/q(_[\d$]+)\z/', '$1', $field);
+    static function validate_condition(SettingValues $sv, $expr, $pos, $is_error) {
+        $id = "sf__{$pos}__condition";
         $ps = new PaperSearch($sv->conf->root_user(), $expr);
         foreach ($ps->message_list() as $mi) {
-            $sv->append_item_at($field, $mi);
-            $sv->msg_at($fieldx, "", $mi->status);
+            $sv->append_item_at($id, $mi);
+            $sv->msg_at("sf__{$pos}__presence", "", $mi->status);
         }
         $fake_prow = new PaperInfo(null, null, $sv->conf);
         if ($ps->term()->script_expression($fake_prow) === null) {
             $method = $is_error ? "error_at" : "warning_at";
-            $sv->$method($field, "Search too complex for field condition");
-            $sv->msg_at($field, "Not all search keywords are supported for field conditions.", MessageSet::INFORM);
-            $sv->$method($fieldx, "");
+            $sv->$method($id, "<0>Search too complex for field condition");
+            $sv->inform_at($id, "<0>Not all search keywords are supported for field conditions.");
+            $sv->$method("sf__{$pos}__presence", "");
         }
     }
     /** @return PaperOption */
@@ -162,18 +162,19 @@ class Options_SettingRenderer {
         $args = $io->jsonSerialize();
         $args->json_key = $io->id > 0 ? null : "__fake__";
 
-        if ($sv->has_reqv("sf_name_$ipos")) {
-            $name = simplify_whitespace($sv->reqv("sf_name_$ipos") ?? "");
+        if ($sv->has_reqv("sf__{$ipos}__name")) {
+            $name = simplify_whitespace($sv->reqv("sf__{$ipos}__name") ?? "");
             if ($name === "" || strcasecmp($name, "Field name") === 0) {
-                $sv->error_at("sf_name_$ipos", "Submission field name required.");
+                $sv->error_at("sf__{$ipos}__name", "<0>Entry required");
             } if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name)) {
-                $sv->error_at("sf_name_$ipos", "Field name “" . htmlspecialchars($name) . "” is reserved. Please pick another name.");
+                $sv->error_at("sf__{$ipos}__name", "<0>Field name ‘{$name}’ is reserved");
+                $sv->inform_at("sf__{$ipos}__name", "Please pick another name.");
             }
             $args->name = $name;
         }
 
-        if ($sv->has_reqv("sf_type_$ipos")) {
-            $vt = $sv->reqv("sf_type_$ipos");
+        if ($sv->has_reqv("sf__{$ipos}__type")) {
+            $vt = $sv->reqv("sf__{$ipos}__type");
             if (($pos = strpos($vt, ":")) !== false) {
                 $args->type = substr($vt, 0, $pos);
                 if (preg_match('/:ds_(\d+)/', $vt, $m)) {
@@ -184,54 +185,54 @@ class Options_SettingRenderer {
             }
         }
 
-        if ($sv->has_reqv("sf_description_$ipos")) {
+        if ($sv->has_reqv("sf__{$ipos}__description")) {
             $ch = CleanHTML::basic();
-            if (($t = $ch->clean($sv->reqv("sf_description_$ipos"))) !== false) {
+            if (($t = $ch->clean($sv->reqv("sf__{$ipos}__description"))) !== false) {
                 $args->description = $t;
             } else {
-                $sv->error_at("sf_description_$ipos", $ch->last_error);
-                $args->description = $sv->reqv("sf_description_$ipos");
+                $sv->error_at("sf__{$ipos}__description", "<5>" . $ch->last_error);
+                $args->description = $sv->reqv("sf__{$ipos}__description");
             }
         }
 
-        if ($sv->has_reqv("sf_visibility_$ipos")) {
-            $args->visibility = $sv->reqv("sf_visibility_$ipos");
+        if ($sv->has_reqv("sf__{$ipos}__visibility")) {
+            $args->visibility = $sv->reqv("sf__{$ipos}__visibility");
         }
 
-        if ($sv->has_reqv("optfp_$ipos")) {
-            $args->order = (int) $sv->reqv("optfp_$ipos");
+        if ($sv->has_reqv("sf__{$ipos}__order")) {
+            $args->order = (int) $sv->reqv("sf__{$ipos}__order");
         }
 
-        if ($sv->has_reqv("sf_display_$ipos")) {
-            $args->display = $sv->reqv("sf_display_$ipos");
+        if ($sv->has_reqv("sf__{$ipos}__display")) {
+            $args->display = $sv->reqv("sf__{$ipos}__display");
         }
 
-        if ($sv->has_reqv("sf_required_$ipos")) {
-            $args->required = $sv->reqv("sf_required_$ipos") == "1";
+        if ($sv->has_reqv("sf__{$ipos}__required")) {
+            $args->required = $sv->reqv("sf__{$ipos}__required") == "1";
         }
 
-        if ($sv->has_reqv("sf_presence_$ipos")) {
-            $ec = $sv->reqv("sf_presence_$ipos");
+        if ($sv->has_reqv("sf__{$ipos}__presence")) {
+            $ec = $sv->reqv("sf__{$ipos}__presence");
             $args->final = $ec === "final";
-            $ecs = $ec === "search" ? simplify_whitespace($sv->reqv("sf_presenceq_$ipos")) : "";
+            $ecs = $ec === "search" ? simplify_whitespace($sv->reqv("sf__{$ipos}__condition")) : "";
             if ($ecs === "" || $ecs === "(All)") {
                 unset($args->exists_if);
             } else if ($ecs !== null) {
-                self::validate_condition($sv, $ecs, "sf_presenceq_$ipos", $ecs !== $args->exists_if);
+                self::validate_condition($sv, $ecs, $ipos, $ecs !== $args->exists_if);
                 $args->exists_if = $ecs;
             }
         }
 
-        if ($sv->has_reqv("sf_options_$ipos")) {
+        if ($sv->has_reqv("sf__{$ipos}__choices")) {
             $args->selector = [];
-            foreach (explode("\n", trim(cleannl($sv->reqv("sf_options_$ipos")))) as $t) {
+            foreach (explode("\n", trim(cleannl($sv->reqv("sf__{$ipos}__choices")))) as $t) {
                 if ($t !== "")
                     $args->selector[] = $t;
             }
             if (empty($args->selector)
                 && ($jtype = $sv->conf->option_type($args->type))
                 && ($jtype->has_selector ?? false)) {
-                $sv->error_at("sf_options_$ipos", "Choices missing: enter one choice per line.");
+                $sv->error_at("sf__{$ipos}__choices", "<0>Entry required (one choice per line)");
             }
         }
 
@@ -252,16 +253,16 @@ class Options_SettingRenderer {
         $sv->swap_ignore_messages($old_ignore);
 
         if ($io) {
-            $sv->set_oldv("sf_name_$xpos", $io->name);
-            $sv->set_oldv("sf_description_$xpos", $io->description);
-            $sv->set_oldv("sf_type_$xpos", $io->type);
-            $sv->set_oldv("sf_visibility_$xpos", $io->unparse_visibility());
-            $sv->set_oldv("sf_display_$xpos", $io->display_name());
-            $sv->set_oldv("sf_required_$xpos", $io->required ? "1" : "0");
-            $sv->set_oldv("sf_presence_$xpos", $io->exists_condition() ? "search" : ($io->final ? "final" : "all"));
-            $sv->set_oldv("sf_presenceq_$xpos", $io->exists_condition());
+            $sv->set_oldv("sf__{$xpos}__name", $io->name);
+            $sv->set_oldv("sf__{$xpos}__description", $io->description);
+            $sv->set_oldv("sf__{$xpos}__type", $io->type);
+            $sv->set_oldv("sf__{$xpos}__visibility", $io->unparse_visibility());
+            $sv->set_oldv("sf__{$xpos}__display", $io->display_name());
+            $sv->set_oldv("sf__{$xpos}__required", $io->required ? "1" : "0");
+            $sv->set_oldv("sf__{$xpos}__presence", $io->exists_condition() ? "search" : ($io->final ? "final" : "all"));
+            $sv->set_oldv("sf__{$xpos}__condition", $io->exists_condition());
             $config_open = json_encode($io) !== json_encode($o)
-                || $sv->has_problem_at("sf_$xpos");
+                || $sv->has_problem_at("sf__{$xpos}");
         } else {
             $config_open = true;
         }
@@ -293,12 +294,12 @@ class Options_SettingRenderer {
         }
 
         // field configuration
-        echo '<div class="fx2"><div class="', $sv->control_class("sf_name_$xpos", "f-i"), '">',
-            $sv->feedback_at("sf_name_$xpos"),
-            Ht::entry("sf_name_$xpos", $o->name, $sv->sjs("sf_name_$xpos", ["placeholder" => "Field name", "size" => 50, "id" => "sf_name_$xpos", "class" => "need-tooltip font-weight-bold", "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
-            Ht::hidden("has_sf_name_$xpos", 1),
-            Ht::hidden("optid_$xpos", $o->id > 0 ? $o->id : "new", ["class" => "settings-sf-id", "data-default-value" => $o->id > 0 ? $o->id : ""]),
-            Ht::hidden("optfp_$xpos", count($this->rendered_options), ["class" => "settings-sf-fp", "data-default-value" => count($this->rendered_options)]),
+        echo '<div class="fx2"><div class="', $sv->control_class("sf__{$xpos}__name", "f-i"), '">',
+            $sv->feedback_at("sf__{$xpos}__name"),
+            Ht::entry("sf__{$xpos}__name", $o->name, $sv->sjs("sf__{$xpos}__name", ["placeholder" => "Field name", "size" => 50, "id" => "sf__{$xpos}__name", "class" => "need-tooltip font-weight-bold", "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus", "aria-label" => "Field name"])),
+            Ht::hidden("has_sf__{$xpos}__name", 1),
+            Ht::hidden("sf__{$xpos}__id", $o->id > 0 ? $o->id : "new", ["class" => "settings-sf-id", "data-default-value" => $o->id > 0 ? $o->id : ""]),
+            Ht::hidden("sf__{$xpos}__order", count($this->rendered_options), ["class" => "settings-sf-order", "data-default-value" => count($this->rendered_options)]),
             '</div>';
 
         Ht::stash_html('<div id="settings-sf-caption-name" class="hidden"><p>Field names should be short and memorable (they are used as search keywords).</p></div>', 'settings-sf-caption-name');
@@ -347,17 +348,17 @@ class Options_SettingRenderer {
         echo '<div id="settings-sform" class="c">';
         $iposl = [];
         if ($sv->use_req()) {
-            for ($ipos = 1; $sv->has_reqv("optid_$ipos"); ++$ipos) {
+            for ($ipos = 1; $sv->has_reqv("sf__{$ipos}__id"); ++$ipos) {
                 $iposl[] = $ipos;
             }
             usort($iposl, function ($a, $b) use ($sv) {
-                return (int) $sv->reqv("optfp_$a") <=> (int) $sv->reqv("optfp_$b") ? : $a <=> $b;
+                return (int) $sv->reqv("sf__{$a}__order") <=> (int) $sv->reqv("sf__{$b}__order") ? : $a <=> $b;
             });
         }
         $self->rendered_options = [];
         $self->max_xpos = 0;
         foreach ($iposl as $ipos) {
-            $id = $sv->reqv("optid_$ipos");
+            $id = $sv->reqv("sf__{$ipos}__id");
             $o = $id === "new" ? null : $sv->conf->option_by_id((int) $id);
             if ($id === "new" || $o) {
                 $self->render_option($sv, $o, $ipos);
@@ -417,17 +418,17 @@ class Options_SettingRenderer {
             && $conf->setting("sub_blind") == Conf::BLIND_ALWAYS) {
             foreach ($options as $pos => $o) {
                 if ($o->visibility() === PaperOption::VIS_AUTHOR) {
-                    $field = "sf_visibility_" . ($pos + 1);
+                    $field = "sf__" . ($pos + 1) . "__visibility";
                     $sv->warning_at($field, "<5>" . $sv->setting_link("All submissions are blind", "sub_blind") . ", so this field is always hidden");
-                    $sv->msg_at($field, "Would “hidden until review” visibility be better?", MessageSet::INFORM);
-                    $sv->warning_at("sf_" . ($pos + 1));
+                    $sv->inform_at($field, "<0>Would “hidden until review” visibility be better?");
+                    $sv->warning_at("sf__" . ($pos + 1));
                 }
             }
         }
         if ($sv->has_interest("options")) {
             foreach ($options as $pos => $o) {
                 if (($q = $o->exists_condition())) {
-                    self::validate_condition($sv, $q, "sf_presenceq_" . ($pos + 1), false);
+                    self::validate_condition($sv, $q, $pos + 1, false);
                 }
             }
         }
@@ -442,7 +443,7 @@ class Options_SettingParser extends SettingParser {
     private $fake_prow;
 
     function option_request_to_json(SettingValues $sv, $xpos) {
-        $idname = $sv->reqv("optid_$xpos") ?? "new";
+        $idname = $sv->reqv("sf__{$xpos}__id") ?? "new";
         if ($idname === "new") {
             if (!$this->next_optionid) {
                 $this->known_optionids = [];
@@ -467,11 +468,10 @@ class Options_SettingParser extends SettingParser {
     }
 
     function set_oldv(SettingValues $sv, Si $si) {
-        if (str_starts_with($si->name, "sf_name_")) {
-            $n = intval(substr($si->name, 8));
+        if (preg_match('/\Asf__(\d*)__name\z/', $si->name, $m)) {
             $options = array_values(Options_SettingRenderer::configurable_options($sv->conf));
-            if ($n > 0 && $n <= count($options)) {
-                $sv->set_oldv($si->name, $options[$n - 1]->name);
+            if ($m[1] >= 1 && $m[1] <= count($options)) {
+                $sv->set_oldv($si->name, $options[intval($m[1]) - 1]->name);
                 return true;
             }
         }
@@ -481,23 +481,23 @@ class Options_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
         if ($sv->has_reqv("options_version")
             && (int) $sv->reqv("options_version") !== (int) $sv->conf->setting("options")) {
-            $sv->error_at("options", "You modified options settings in another tab. Please reload.");
+            $sv->error_at("options", "<0>You modified options settings in another tab. Please reload.");
         }
 
         $new_opts = Options_SettingRenderer::configurable_options($sv->conf);
 
         // consider option ids
         $optids = array_map(function ($o) { return $o->id; }, $new_opts);
-        for ($i = 1; $sv->has_reqv("optid_$i"); ++$i) {
-            $optids[] = intval($sv->reqv("optid_$i"));
+        for ($i = 1; $sv->has_reqv("sf__{$i}__id"); ++$i) {
+            $optids[] = intval($sv->reqv("sf__{$i}__id"));
         }
         $optids[] = 0;
         $this->req_optionid = max($optids) + 1;
 
         // convert request to JSON
-        for ($i = 1; $sv->has_reqv("optid_$i"); ++$i) {
-            if ($sv->reqv("optfp_$i") === "deleted") {
-                unset($new_opts[cvtint($sv->reqv("optid_$i"))]);
+        for ($i = 1; $sv->has_reqv("sf__{$i}__id"); ++$i) {
+            if ($sv->reqv("sf__{$i}__order") === "deleted") {
+                unset($new_opts[cvtint($sv->reqv("sf__{$i}__id"))]);
             } else if (($o = $this->option_request_to_json($sv, $i))) {
                 $new_opts[$o->id] = $o;
             }
