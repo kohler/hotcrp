@@ -13,31 +13,31 @@ class ReviewForm_SettingParser extends SettingParser {
     public $source_html;
 
     static function parse_description_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
-        if (!$sv->has_reqv("rf_description_{$xpos}")) {
+        if (!$sv->has_reqv("rf__{$xpos}__description")) {
             return;
         }
         $ch = CleanHTML::basic();
-        if (($x = $ch->clean($sv->reqv("rf_description_{$xpos}"))) !== false) {
+        if (($x = $ch->clean($sv->reqv("rf__{$xpos}__description"))) !== false) {
             if ($x !== "") {
                 $fj->description = trim($x);
             } else {
                 unset($fj->description);
             }
         } else if (isset($fj->order)) {
-            $sv->error_at("rf_description_{$xpos}", $ch->last_error);
+            $sv->error_at("rf__{$xpos}__description", $ch->last_error);
         }
     }
 
     function parse_options_value(SettingValues $sv, $fj, $xpos) {
-        $text = cleannl($sv->reqv("rf_options_{$xpos}"));
+        $text = cleannl($sv->reqv("rf__{$xpos}__choices"));
         $letters = ($text && ord($text[0]) >= 65 && ord($text[0]) <= 90);
         $expect = ($letters ? "[A-Z]" : "[1-9][0-9]*");
 
         $opts = array();
         $lowonum = 10000;
         $required = true;
-        if ($sv->reqv("has_rf_required_{$xpos}")) {
-            $required = !!$sv->reqv("rf_required_{$xpos}");
+        if ($sv->reqv("has_rf__{$xpos}__required")) {
+            $required = !!$sv->reqv("rf__{$xpos}__required");
         }
 
         foreach (explode("\n", $text) as $line) {
@@ -95,30 +95,30 @@ class ReviewForm_SettingParser extends SettingParser {
             return;
         }
         $ok = true;
-        if ($sv->has_reqv("rf_options_{$xpos}")) {
+        if ($sv->has_reqv("rf__{$xpos}__choices")) {
             $ok = $self->parse_options_value($sv, $fj, $xpos);
         }
         if ((!$ok || count($fj->options) < 2) && isset($fj->order)) {
-            $sv->error_at("rf_options_{$xpos}", "Invalid choices.");
+            $sv->error_at("rf__{$xpos}__choices", "Invalid choices.");
             $self->mark_options_error($sv);
         }
     }
 
     static function parse_display_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
-        if (!$self->field->has_options || !$sv->has_reqv("rf_colors_{$xpos}")) {
+        if (!$self->field->has_options || !$sv->has_reqv("rf__{$xpos}__colors")) {
             return;
         }
         $prefixes = ["sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr"];
-        $pindex = array_search($sv->reqv("rf_colors_{$xpos}"), $prefixes) ? : 0;
-        if ($sv->reqv("rf_colorsflipped_{$xpos}")) {
+        $pindex = array_search($sv->reqv("rf__{$xpos}__colors"), $prefixes) ? : 0;
+        if ($sv->reqv("rf__{$xpos}__colorsflipped")) {
             $pindex ^= 1;
         }
         $fj->option_class_prefix = $prefixes[$pindex];
     }
 
     static function parse_visibility_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
-        if ($sv->has_reqv("rf_visibility_{$xpos}")) {
-            $fj->visibility = $sv->reqv("rf_visibility_{$xpos}");
+        if ($sv->has_reqv("rf__{$xpos}__visibility")) {
+            $fj->visibility = $sv->reqv("rf__{$xpos}__visibility");
         }
     }
 
@@ -152,18 +152,18 @@ class ReviewForm_SettingParser extends SettingParser {
         $ps = new PaperSearch($sv->conf->root_user(), $expr);
         $ps->term();
         if ($ps->has_problem()) {
-            $sv->warning_at("rf_ec_{$xpos}");
+            $sv->warning_at("rf__{$xpos}__presence");
             foreach ($ps->message_list() as $mi) {
-                $sv->append_item_at("rf_ecs_{$xpos}", $mi);
+                $sv->append_item_at("rf__{$xpos}__condition", $mi);
             }
         }
         $round_list = [];
         $fn = $gj->validate_condition_term_function ?? "ReviewForm_SettingParser::validate_condition_term";
         if (!$fn($ps, $round_list)) {
             $method = $is_error ? "error_at" : "warning_at";
-            $sv->$method("rf_ecs_{$xpos}", "Invalid field condition search");
-            $sv->msg_at("rf_ecs_{$xpos}", "Review condition searches should stick to simple search keywords about reviews.", MessageSet::INFORM);
-            $sv->$method("rf_ec_{$xpos}");
+            $sv->$method("rf__{$xpos}__condition", "Invalid field condition search");
+            $sv->inform_at("rf__{$xpos}__condition", "Review condition searches should stick to simple search keywords about reviews.");
+            $sv->$method("rf__{$xpos}__presence");
             return 0;
         } else if ($ps->term() instanceof True_SearchTerm) {
             return 0;
@@ -179,9 +179,9 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     static function parse_presence_property(SettingValues $sv, $fj, $xpos, $self, $gj) {
-        if ($sv->has_reqv("rf_ec_{$xpos}")) {
-            $ec = $sv->reqv("rf_ec_{$xpos}");
-            $ecs = $sv->reqv("rf_ecs_{$xpos}");
+        if ($sv->has_reqv("rf__{$xpos}__presence")) {
+            $ec = $sv->reqv("rf__{$xpos}__presence");
+            $ecs = $sv->reqv("rf__{$xpos}__condition");
             $fj->round_mask = 0;
             unset($fj->exists_if);
             if (str_starts_with($ec, "round:")) {
@@ -205,8 +205,8 @@ class ReviewForm_SettingParser extends SettingParser {
 
         // field name
         $sn = $fj->name;
-        if ($sv->has_reqv("rf_name_{$xpos}")) {
-            $sn = simplify_whitespace($sv->reqv("rf_name_{$xpos}"));
+        if ($sv->has_reqv("rf__{$xpos}__name")) {
+            $sn = simplify_whitespace($sv->reqv("rf__{$xpos}__name"));
         }
         if (in_array($sn, ["<None>", "<New field>", "Field name", ""], true)) {
             $sn = "";
@@ -216,8 +216,8 @@ class ReviewForm_SettingParser extends SettingParser {
         $this->source_html = htmlspecialchars($sn ? : "<Unnamed field>");
 
         // initial field order
-        if ($sv->has_reqv("rf_order_{$xpos}")) {
-            $pos = cvtnum($sv->reqv("rf_order_{$xpos}"));
+        if ($sv->has_reqv("rf__{$xpos}__order")) {
+            $pos = cvtnum($sv->reqv("rf__{$xpos}__order"));
         } else {
             $pos = $fj->order ?? -1;
         }
@@ -244,15 +244,16 @@ class ReviewForm_SettingParser extends SettingParser {
 
         if (isset($fj->order)) {
             if ($sn === "") {
-                $sv->error_at("rf_name_{$xpos}", "Missing review field name.");
+                $sv->error_at("rf__{$xpos}__name", "<0>Entry required");
             } else if (isset($this->byname[strtolower($sn)])) {
-                $sv->error_at("rf_name_{$xpos}", "Cannot reuse review field name “" . htmlspecialchars($sn) . "”.");
-                $sv->error_at("rf_name_" . $this->byname[strtolower($sn)], "");
+                $sv->error_at("rf__{$xpos}__name", "<0>Reused field name ‘{$sn}’");
+                $sv->error_at("rf__" . $this->byname[strtolower($sn)] . "__name", "");
             } else if (ReviewField::clean_name($sn) !== $sn
                        && $sn !== $f->name
-                       && !$sv->reqv("rf_forcename_{$xpos}")) {
+                       && !$sv->reqv("rf__{$xpos}__nameforce")) {
                 $lparen = strrpos($sn, "(");
-                $sv->error_at("rf_name_{$xpos}", "Don’t include “" . htmlspecialchars(substr($sn, $lparen)) . "” in the review field name. Visibility descriptions are added automatically.");
+                $sv->error_at("rf__{$xpos}__name", "<0>Please remove ‘" . substr($sn, $lparen) . "’ from the field name");
+                $sv->inform_at("rf__{$xpos}__name", "<0>Visibility descriptions are added automatically.");
             } else {
                 $this->byname[strtolower($sn)] = $xpos;
             }
@@ -261,37 +262,9 @@ class ReviewForm_SettingParser extends SettingParser {
         return $fj;
     }
 
-    static function requested_fields(SettingValues $sv) {
-        $fs = [];
-        $max_fields = ["s" => "s00", "t" => "t00"];
-        foreach ($sv->conf->all_review_fields() as $f) {
-            $fs[$f->short_id] = true;
-            if (strcmp($f->short_id, $max_fields[$f->short_id[0]]) > 0) {
-                $max_fields[$f->short_id[0]] = $f->short_id;
-            }
-        }
-        for ($i = 1; ; ++$i) {
-            $fid = sprintf("s%02d", $i);
-            if ($sv->has_reqv("rf_name_{$fid}") || $sv->has_reqv("rf_order_{$fid}")) {
-                $fs[$fid] = true;
-            } else if (strcmp($fid, $max_fields["s"]) > 0) {
-                break;
-            }
-        }
-        for ($i = 1; ; ++$i) {
-            $fid = sprintf("t%02d", $i);
-            if ($sv->has_reqv("rf_name_{$fid}") || $sv->has_reqv("rf_order_{$fid}")) {
-                $fs[$fid] = true;
-            } else if (strcmp($fid, $max_fields["t"]) > 0) {
-                break;
-            }
-        }
-        return $fs;
-    }
-
     function set_oldv(SettingValues $sv, Si $si) {
-        if (str_starts_with($si->name, "rf_name_")
-            && ($f = $sv->conf->review_field(substr($si->name, 8)))) {
+        if (preg_match('/\Arf__(\d+)__name\z/', $si->name, $m)
+            && ($f = (array_values($sv->conf->all_review_fields()))[intval($m[1])] ?? null)) {
             $sv->set_oldv($si->name, $f->name);
             return true;
         }
@@ -301,19 +274,29 @@ class ReviewForm_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
         $this->nrfj = [];
         $this->byname = [];
+        $byfid = [];
 
         $rf = $sv->conf->review_form();
-        foreach (self::requested_fields($sv) as $fid => $x) {
-            if (($finfo = ReviewInfo::field_info($fid))) {
+        for ($i = 1; $sv->has_reqv("rf__{$i}__id"); ++$i) {
+            $fid = $sv->reqv("rf__{$i}__id");
+            if ($sv->has_reqv("rf__{$i}__delete")) {
+                // skip
+            } else if (preg_match('/\A[st]\d\d\z/', $fid)
+                       && !isset($byfid[$fid])
+                       && ($finfo = ReviewInfo::field_info($fid))) {
                 $f = $rf->fmap[$finfo->id] ?? new ReviewField($sv->conf, $finfo);
-                $fj = $this->populate_field($sv, $f, $fid);
+                $fj = $this->populate_field($sv, $f, $i);
                 $xf = clone $f;
                 $xf->assign_json($fj);
                 $this->nrfj[] = $xf->unparse_json(2);
-            } else if ($sv->has_reqv("rf_order_{$fid}")
-                       && $sv->reqv("rf_order_{$fid}") > 0) {
-                $sv->error_at("rf_name_{$fid}", "Too many review fields. You must delete some other fields before adding this one.");
+            } else {
+                $sv->error_at("rf__{$i}__name", "Internal error (bad field ID)");
             }
+            $byfid[$fid] = true;
+        }
+        foreach ($rf->all_fields() as $f) {
+            if (!isset($byfid[$f->short_id]))
+                $this->nrfj[] = $f->unparse_json(2);
         }
 
         if ($sv->update("review_form", json_encode_db($this->nrfj))) {
@@ -521,11 +504,11 @@ class ReviewForm_SettingParser extends SettingParser {
 
 class ReviewForm_SettingRenderer {
     static function render_description_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
-        echo '<div class="', $sv->control_class("rf_description_{$xpos}", "entryi is-property-description"),
-            '">', $sv->label("rf_description_{$xpos}", "Description"),
+        echo '<div class="', $sv->control_class("rf__{$xpos}__description", "entryi is-property-description"),
+            '">', $sv->label("rf__{$xpos}__description", "Description"),
             '<div class="entry">',
-            $sv->feedback_at("rf_description_{$xpos}"),
-            Ht::textarea("rf_description_{$xpos}", $f->description ?? "", ["id" => "rf_description_{$xpos}", "rows" => 2, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus"]),
+            $sv->feedback_at("rf__{$xpos}__description"),
+            Ht::textarea("rf__{$xpos}__description", $f->description ?? "", ["id" => "rf__{$xpos}__description", "rows" => 2, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus"]),
             '</div></div>';
     }
 
@@ -533,11 +516,11 @@ class ReviewForm_SettingRenderer {
         if (!$f->has_options) {
             return;
         }
-        echo '<div class="', $sv->control_class("rf_options_{$xpos}", "entryi is-property-options"),
-            '">', $sv->label("rf_options_{$xpos}", "Choices"),
+        echo '<div class="', $sv->control_class("rf__{$xpos}__choices", "entryi is-property-options"),
+            '">', $sv->label("rf__{$xpos}__choices", "Choices"),
             '<div class="entry">',
-            $sv->feedback_at("rf_options_{$xpos}"),
-            Ht::textarea("rf_options_{$xpos}", "" /* XXX */, ["id" => "rf_options_{$xpos}", "rows" => 6, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus"]),
+            $sv->feedback_at("rf__{$xpos}__choices"),
+            Ht::textarea("rf__{$xpos}__choices", "" /* XXX */, ["id" => "rf__{$xpos}__choices", "rows" => 6, "class" => "w-entry-text need-tooltip", "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus"]),
             '</div></div>';
     }
 
@@ -545,12 +528,12 @@ class ReviewForm_SettingRenderer {
         if (!$f->has_options) {
             return;
         }
-        echo '<div class="', $sv->control_class("rf_required_{$xpos}", "entryi is-property-options"),
-            '">', $sv->label("rf_required_{$xpos}", "Required"),
+        echo '<div class="', $sv->control_class("rf__{$xpos}__required", "entryi is-property-options"),
+            '">', $sv->label("rf__{$xpos}__required", "Required"),
             '<div class="entry">',
-            $sv->feedback_at("rf_required_{$xpos}"),
-            Ht::select("rf_required_{$xpos}", ["0" => "No", "1" => "Yes"], $f->required ? "1" : "0", ["id" => "rf_required_{$xpos}"]),
-            Ht::hidden("has_rf_required_{$xpos}", "1"),
+            $sv->feedback_at("rf__{$xpos}__required"),
+            Ht::select("rf__{$xpos}__required", ["0" => "No", "1" => "Yes"], $f->required ? "1" : "0", ["id" => "rf__{$xpos}__required"]),
+            Ht::hidden("has_rf__{$xpos}__required", "1"),
             '</div></div>';
     }
 
@@ -558,26 +541,26 @@ class ReviewForm_SettingRenderer {
         if (!$f->has_options) {
             return;
         }
-        echo '<div class="', $sv->control_class("rf_colors_{$xpos}", "entryi is-property-options"),
-            '">', $sv->label("rf_colors_{$xpos}", "Colors"),
+        echo '<div class="', $sv->control_class("rf__{$xpos}__colors", "entryi is-property-options"),
+            '">', $sv->label("rf__{$xpos}__colors", "Colors"),
             '<div class="entry">',
-            $sv->feedback_at("rf_colors_{$xpos}"),
-            Ht::select("rf_colors_{$xpos}", [], "", ["id" => "rf_colors_{$xpos}"]),
-            Ht::hidden("rf_colorsflipped_{$xpos}", "", ["id" => "rf_colorsflipped_{$xpos}"]),
+            $sv->feedback_at("rf__{$xpos}__colors"),
+            Ht::select("rf__{$xpos}__colors", [], "", ["id" => "rf__{$xpos}__colors", "class" => "rf-colors"]),
+            Ht::hidden("rf__{$xpos}__colorsflipped", "", ["id" => "rf__{$xpos}__colorsflipped"]),
             '</div></div>';
     }
 
     static function render_visibility_property(SettingValues $sv, ReviewField $f, $xpos, $self, $gj) {
-        echo '<div class="', $sv->control_class("rf_visibility_{$xpos}", "entryi is-property-visibility"),
-            '">', $sv->label("rf_visibility_{$xpos}", "Visibility"),
+        echo '<div class="', $sv->control_class("rf__{$xpos}__visibility", "entryi is-property-visibility"),
+            '">', $sv->label("rf__{$xpos}__visibility", "Visibility"),
             '<div class="entry">',
-            $sv->feedback_at("rf_visibility_{$xpos}"),
-            Ht::select("rf_visibility_{$xpos}", [
+            $sv->feedback_at("rf__{$xpos}__visibility"),
+            Ht::select("rf__{$xpos}__visibility", [
                 "au" => "Visible to authors",
                 "pc" => "Hidden from authors",
                 "audec" => "Hidden from authors until decision",
                 "admin" => "Administrators only"
-            ], $f->unparse_visibility(), ["id" => "rf_visibility_{$xpos}"]),
+            ], $f->unparse_visibility(), ["id" => "rf__{$xpos}__visibility"]),
             '</div></div>';
     }
 
@@ -599,15 +582,15 @@ class ReviewForm_SettingRenderer {
         Ht::stash_html('<div id="settings-rf-caption-ecs" class="hidden">'
             . ($gj->caption_html ?? '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>')
             . '</div>', "settings-rf-caption-ecs");
-        echo '<div class="', $sv->control_class("rf_ec_{$xpos}", "entryi is-property-editing has-fold fold" . ($ecs === "custom" ? "o" : "c")),
-            '" data-fold-values="custom">', $sv->label("rf_ec_{$xpos}", "Present on"),
+        echo '<div class="', $sv->control_class("rf__{$xpos}__presence", "entryi is-property-editing has-fold fold" . ($ecs === "custom" ? "o" : "c")),
+            '" data-fold-values="custom">', $sv->label("rf__{$xpos}__presence", "Present on"),
             '<div class="entry">',
-            $sv->feedback_at("rf_ec_{$xpos}"),
-            $sv->feedback_at("rf_ecs_{$xpos}"),
-            Ht::select("rf_ec_{$xpos}", $ecsel, $ecv, ["id" => "rf_ec_{$xpos}", "class" => "uich js-foldup"]),
+            $sv->feedback_at("rf__{$xpos}__presence"),
+            $sv->feedback_at("rf__{$xpos}__condition"),
+            Ht::select("rf__{$xpos}__presence", $ecsel, $ecv, ["id" => "rf__{$xpos}__presence", "class" => "uich js-foldup"]),
             ' &nbsp;',
-            Ht::entry("rf_ecs_{$xpos}", $ecs,
-                      $sv->sjs("rf_ecs_{$xpos}", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus", "size" => 30, "spellcheck" => false])),
+            Ht::entry("rf__{$xpos}__condition", $ecs,
+                      $sv->sjs("rf__{$xpos}__condition", ["class" => "papersearch fx need-autogrow need-tooltip", "placeholder" => "Search", "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus", "size" => 30, "spellcheck" => false])),
             '</div></div>';
     }
 
@@ -623,8 +606,7 @@ class ReviewForm_SettingRenderer {
         $req = [];
         if ($sv->use_req()) {
             foreach ($sv->req as $k => $v) {
-                if (str_starts_with($k, "rf_")
-                    && ($colon = strrpos($k, "_", 3)) > 2)
+                if (str_starts_with($k, "rf__"))
                     $req[$k] = $v;
             }
         }
@@ -652,16 +634,16 @@ class ReviewForm_SettingRenderer {
             echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';
         }
         $renderer = new ReviewForm_SettingRenderer;
-        echo '<template id="rf_template" class="hidden">';
-        echo '<div id="rf_$" class="settings-rf f-contain has-fold fold2c" data-rfid="$">',
+        echo '<template id="rf__template" class="hidden">';
+        echo '<div id="rf__$" class="settings-rf f-contain has-fold fold2c">',
             '<a href="" class="q ui js-settings-field-unfold">',
             expander(null, 2, "Edit field"),
             '</a>',
-            '<div id="rf_$_view" class="settings-rf-view fn2 ui js-foldup"></div>',
-            '<div id="rf_$_edit" class="settings-rf-edit fx2">',
+            '<div id="rf__$__view" class="settings-rf-view fn2 ui js-foldup"></div>',
+            '<div id="rf__$__edit" class="settings-rf-edit fx2">',
             '<div class="entryi mb-3"><div class="entry">',
-            '<input name="has_rf_name_$" type="hidden" value="1">',
-            '<input name="rf_name_$" id="rf_name_$" type="text" size="50" style="font-weight:bold" placeholder="Field name">',
+            '<input name="has_rf__$__name" type="hidden" value="1">',
+            '<input name="rf__$__name" id="rf__$__name" type="text" size="50" class="font-weight-bold" placeholder="Field name">',
             '</div></div>';
         $rfield = ReviewField::make_template($sv->conf, true);
         foreach ($sv->group_members("reviewfield/properties") as $gj) {
@@ -675,11 +657,12 @@ class ReviewForm_SettingRenderer {
         }
 
         echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
-            Ht::button(Icons::ui_movearrow(0), ["id" => "rf_\$_moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
-            Ht::button(Icons::ui_movearrow(2), ["id" => "rf_\$_movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
+            Ht::button(Icons::ui_movearrow(0), ["id" => "rf__\$__moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
+            Ht::button(Icons::ui_movearrow(2), ["id" => "rf__\$__movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
-            Ht::button(Icons::ui_trash(), ["id" => "rf_\$_delete", "class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
-            Ht::hidden("rf_order_\$", "0", ["id" => "rf_order_\$", "class" => "rf-order"]),
+            Ht::button(Icons::ui_trash(), ["id" => "rf__\$__delete", "class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
+            Ht::hidden("rf__\$__order", "0", ["id" => "rf__\$__order", "class" => "rf-order"]),
+            Ht::hidden("rf__\$__id", "", ["id" => "rf__\$__id", "class" => "rf-id"]),
             "</div></div>";
         echo '</template>';
 

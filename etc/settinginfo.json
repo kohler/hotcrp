@@ -395,37 +395,37 @@
         "type": "string"
     },
     {
-        "name_pattern": "rf_name_$", "internal": true, "group": "reviewform",
+        "name_pattern": "rf__$__name", "internal": true, "group": "reviewform",
         "title": "Review field name",
         "type": "string", "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf_description_$", "internal": true, "group": "reviewform",
-        "title": "Review field description", "title_pattern": "‘${sv rf_name_$}’ description"
+        "name_pattern": "rf__$__description", "internal": true, "group": "reviewform",
+        "title": "Review field description", "title_pattern": "‘${sv rf__$__name}’ description"
     },
     {
-        "name_pattern": "rf_options_$", "internal": true, "group": "reviewform",
-        "title": "Review field choices", "title_pattern": "‘${sv rf_name_$}’ choices"
+        "name_pattern": "rf__$__choices", "internal": true, "group": "reviewform",
+        "title": "Review field choices", "title_pattern": "‘${sv rf__$__name}’ choices"
     },
     {
-        "name_pattern": "rf_colors_$", "internal": true, "group": "reviewform",
-        "title": "Review field colors", "title_pattern": "‘${sv rf_name_$}’ colors"
+        "name_pattern": "rf__$__colors", "internal": true, "group": "reviewform",
+        "title": "Review field colors", "title_pattern": "‘${sv rf__$__name}’ colors"
     },
     {
-        "name_pattern": "rf_required_$", "internal": true, "group": "reviewform",
-        "title": "Review field requirement", "title_pattern": "‘${sv rf_name_$}’ requirement"
+        "name_pattern": "rf__$__required", "internal": true, "group": "reviewform",
+        "title": "Review field requirement", "title_pattern": "‘${sv rf__$__name}’ requirement"
     },
     {
-        "name_pattern": "rf_visibility_$", "internal": true, "group": "reviewform",
-        "title": "Review field visibility", "title_pattern": "‘${sv rf_name_$}’ visibility"
+        "name_pattern": "rf__$__visibility", "internal": true, "group": "reviewform",
+        "title": "Review field visibility", "title_pattern": "‘${sv rf__$__name}’ visibility"
     },
     {
-        "name_pattern": "rf_ec_$", "internal": true, "group": "reviewform",
-        "title": "Review field presence", "title_pattern": "‘${sv rf_name_$}’ presence"
+        "name_pattern": "rf__$__presence", "internal": true, "group": "reviewform",
+        "title": "Review field presence", "title_pattern": "‘${sv rf__$__name}’ presence"
     },
     {
-        "name_pattern": "rf_ecs_$", "internal": true, "group": "reviewform",
-        "title": "Review field presence condition", "title_pattern": "‘${sv rf_name_$}’ presence condition"
+        "name_pattern": "rf__$__condition", "internal": true, "group": "reviewform",
+        "title": "Review field presence condition", "title_pattern": "‘${sv rf__$__name}’ presence condition"
     },
     {
         "name_pattern": "roundname_$", "internal": true, "group": "reviews",

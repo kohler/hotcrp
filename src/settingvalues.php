@@ -283,6 +283,13 @@ class SettingValues extends MessageSet {
         return $this->msg_at($field, $msg, MessageSet::WARNING);
     }
 
+    /** @param null|string|Si $field
+     * @param ?string $msg
+     * @return MessageItem */
+    function inform_at($field, $msg = null) {
+        return $this->msg_at($field, $msg, MessageSet::INFORM);
+    }
+
     /** @param MessageItem $mi
      * @param list<string> $loc
      * @param ?MessageItem $prevmi

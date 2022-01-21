@@ -310,7 +310,7 @@ function check_message_list(data, options) {
         } else if (data.error && !data.message_list) {
             data.message_list = [{message: "<0>" + data.error, status: 2}];
         } else if (data.warning) {
-            log_jserror(options.url + ": `warning` obsolete");
+            log_jserror(options.url + ": `warning` obsolete"); // XXX backward compat
         }
     }
 }

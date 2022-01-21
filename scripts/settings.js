@@ -298,7 +298,7 @@ return function () {
 
 
 window.review_form_settings = (function () {
-var fieldorder, original, samples, stemplate, ttemplate,
+var fieldorder = [], original, samples, stemplate, ttemplate,
     colors = ["sv", "Red to green", "svr", "Green to red",
               "sv-blpu", "Blue to purple", "sv-publ", "Purple to blue",
               "sv-viridis", "Purple to yellow", "sv-viridisr", "Yellow to purple"];
@@ -336,69 +336,74 @@ function option_class_prefix(fieldj) {
 }
 
 function fill_order() {
-    var i, c = $("#settings-rform")[0], n, pos;
-    for (i = 1, n = c.firstChild; n; n = n.nextSibling) {
-        if (hasClass(n, "deleted")) {
-            pos = 0;
-        } else {
-            pos = i++;
-        }
-        $(n).find(".rf-order").val(pos);
+    var i = 0, n, pos,
+        form = document.getElementById("settingsform"),
+        c = document.getElementById("settings-rform");
+    for (n = c.firstChild; n; n = n.nextSibling) {
+        pos = hasClass(n, "deleted") ? 0 : ++i;
+        form.elements[n.id + "__order"].value = pos;
     }
     form_highlight("#settingsform");
 }
 
-function rf_fill_control(sel, value, order) {
-    var $j = $(sel).val(value);
-    order && $j.attr("data-default-value", value);
+function rf_fill_control(form, name, value, setdefault) {
+    var elt = form.elements[name];
+    elt && $(elt).val(value);
+    elt && setdefault && elt.setAttribute("data-default-value", value);
 }
 
-function rf_fill($f, fid, fieldj, order) {
+function rf_fill(pos, fieldj, setdefault) {
+    var form = document.getElementById("settingsform"),
+        rfid = "rf__" + pos + "__",
+        fid = form.elements[rfid + "id"].value;
     fieldj = fieldj || original[fid] || {};
-    rf_fill_control("#rf_name_" + fid, fieldj.name || "", order);
-    rf_fill_control("#rf_description_" + fid, fieldj.description || "", order);
-    rf_fill_control("#rf_visibility_" + fid, fieldj.visibility || "pc", order);
-    rf_fill_control("#rf_options_" + fid, options_to_text(fieldj), order);
-    rf_fill_control("#rf_required_" + fid, fieldj.required ? "1" : "0", order);
-    rf_fill_control("#rf_colorsflipped_" + fid, fieldj.option_letter ? "1" : "", order);
-    rf_fill_control("#rf_colors_" + fid, option_class_prefix(fieldj), order);
+    rf_fill_control(form, rfid + "name", fieldj.name || "", setdefault);
+    rf_fill_control(form, rfid + "description", fieldj.description || "", setdefault);
+    rf_fill_control(form, rfid + "visibility", fieldj.visibility || "pc", setdefault);
+    rf_fill_control(form, rfid + "choices", options_to_text(fieldj), setdefault);
+    rf_fill_control(form, rfid + "required", fieldj.required ? "1" : "0", setdefault);
+    rf_fill_control(form, rfid + "colorsflipped", fieldj.option_letter ? "1" : "", setdefault);
+    rf_fill_control(form, rfid + "colors", option_class_prefix(fieldj), setdefault);
     var ec, ecs = fieldj.exists_if != null ? fieldj.exists_if : "";
     if (ecs === "" || ecs.toLowerCase() === "all") {
         ec = "all";
-    } else if (/^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(ecs)
-               && $("#rf_ec_" + fid + " > option[value=\"" + ecs + "\"]").length) {
-        ec = ecs;
     } else {
         ec = "custom";
+        if (/^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(ecs)) {
+            var ecelt = form.elements[rfid + "presence"];
+            if (ecelt.querySelector("option[value=\"" + ecs + "\"]"))
+                ec = ecs;
+        }
     }
-    rf_fill_control("#rf_ec_" + fid, ec, order);
-    rf_fill_control("#rf_ecs_" + fid, ecs, order);
-    $("#rf_" + fid + " textarea").trigger("change");
-    $("#rf_" + fid + "_view").html("").append(rf_render_view(fieldj));
-    $("#rf_" + fid + "_delete").attr("aria-label", "Delete from form");
-    if (order) {
-        rf_fill_control("#rf_order_" + fid, fieldj.order || 0, order);
+    rf_fill_control(form, rfid + "presence", ec, setdefault);
+    rf_fill_control(form, rfid + "condition", ecs, setdefault);
+    rf_fill_control(form, rfid + "id", fid, true);
+    $("#" + rfid + " textarea").trigger("change");
+    $("#" + rfid + "view").html("").append(rf_render_view(fieldj));
+    $("#" + rfid + "delete").attr("aria-label", "Delete from form");
+    if (setdefault) {
+        rf_fill_control(form, rfid + "order", fieldj.order || 0, setdefault);
     }
     if (fieldj.search_keyword) {
-        $("#rf_" + fid).attr("data-rf", fieldj.search_keyword);
+        $("#rf__" + pos).attr("data-rf", fieldj.search_keyword);
     }
     return false;
 }
 
 function rf_delete() {
     var rf = this.closest(".settings-rf"),
-        fid = rf.getAttribute("data-rfid"),
         form = rf.closest("form");
+    addClass(rf, "deleted");
     if (hasClass(rf, "settings-rf-new")) {
-        rf.parentElement.removeChild(rf);
+        addClass(rf, "hidden");
+        $(rf).find("input, select, textarea").addClass("ignore-diff");
     } else {
-        addClass(rf, "deleted");
-        var $rfedit = $("#rf_" + fid + "_edit");
+        var $rfedit = $("#" + rf.id + "__edit");
         $rfedit.children().addClass("hidden");
-        var name = form.elements["rf_name_" + fid];
+        var name = form.elements[rf.id + "__name"];
         $(name).prop("disabled", true).addClass("text-decoration-line-through");
         removeClass(name.closest(".entryi"), "hidden");
-        $rfedit.append('<div class="f-i"><em id="rf_'.concat(fid, '_removemsg">This field will be deleted from the review form.</em></div>'));
+        $rfedit.append('<div class="f-i"><em id="'.concat(rf.id, '__removemsg">This field will be deleted from the review form.</em></div>'));
         if (rf.hasAttribute("data-rf")) {
             var search = {q: "has:" + rf.getAttribute("data-rf"), t: "all", forceShow: 1};
             $.get(hoturl("api/search", search), null, function (v) {
@@ -409,7 +414,7 @@ function rf_delete() {
                     t = "This field will be deleted from the review form. No reviews have used the field.";
                 else
                     t = "This field will be deleted from the review form and possibly from some reviews.";
-                $("#rf_" + fid + "_removemsg").html(t);
+                $("#" + rf.id + "__removemsg").html(t);
             });
         }
         foldup.call(rf, event, {n: 2, f: false});
@@ -418,7 +423,7 @@ function rf_delete() {
 }
 
 tooltip.add_builder("settings-rf", function (info) {
-    var m = this.name.match(/^rf_(.*)_[a-z]\d+$/);
+    var m = this.name.match(/^rf__\d+__(.*)$/);
     return $.extend({
         anchor: "w", content: $("#settings-rf-caption-" + m[1]).html(), className: "gray"
     }, info);
@@ -507,130 +512,104 @@ function rf_render_view(fieldj) {
 function rf_move(event) {
     var isup = $(this).hasClass("moveup"),
         $f = $(this).closest(".settings-rf").detach(),
-        fid = $f.attr("data-rfid"),
         pos = $f.find(".rf-order").val() | 0,
         $c = $("#settings-rform")[0], $n, i;
     for (i = 1, $n = $c.firstChild;
          $n && i < (isup ? pos - 1 : pos + 1);
-         ++i, $n = $n.nextSibling)
-        /* nada */;
+         ++i, $n = $n.nextSibling) {
+    }
     $c.insertBefore($f[0], $n);
     fill_order();
 }
 
-function rf_append(fid, pos) {
-    var $f = $("#rf_" + fid), i, $j, $tmpl = $("#rf_template");
-
-    if ($f.length) {
-        $f.detach().show().appendTo("#settings-rform");
-        fill_order();
-        return;
+function rf_append(fid) {
+    var pos = fieldorder.length + 1, $f, i, $j, $tmpl = $("#rf__template");
+    if (document.getElementById("rf__" + pos + "__id")
+        || !/^[st]\d\d$/.test(fid)
+        || fieldorder.indexOf(fid) >= 0) {
+        throw new Error("rf_append error on " + fid + " " + (document.getElementById("rf__" + pos + "__id") ? "1 " : "0 ") + fieldorder.join(","));
     }
-
-    $f = $($tmpl.html().replace(/\$/g, fid));
-
-    if (fid.charAt(0) === "s") {
-        $j = $f.find("select[name^=\"rf_colors_\"]");
+    fieldorder.push(fid);
+    var has_options = fid.charAt(0) === "s";
+    original[fid] = original[fid] || Object.assign({}, has_options ? stemplate : ttemplate, {id: fid});
+    $f = $($tmpl.html().replace(/\$/g, pos));
+    if (has_options) {
+        $j = $f.find("select.rf-colors");
         for (i = 0; i < colors.length; i += 2)
             $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
     } else
         $f.find(".is-property-options").remove();
-
-    var rnames = [];
-    for (i in hotcrp_status.revs || {})
-        rnames.push(i);
-    if (rnames.length > 1) {
-        var v, j, text;
-        $j = $f.find("select[name$=\"rounds\"]");
-        for (i = 0; i < (1 << rnames.length) - 1;
-             i = next_lexicographic_permutation(i, rnames.length)) {
-            text = [];
-            for (j = 0; j < rnames.length; ++j)
-                if (i & (1 << j))
-                    text.push(rnames[j]);
-            if (!text.length)
-                $j.append("<option value=\"all\">All rounds</option>");
-            else if (text.length == 1)
-                $j.append("<option value=\"" + text[0] + "\">" + text[0] + " only</option>");
-            else
-                $j.append("<option value=\"" + text.join(" ") + "\">" + commajoin(text) + "</option>");
-        }
-    } else {
-        $f.find(".reviewrow_rounds").remove();
-    }
-
     $f.find(".js-settings-rf-delete").on("click", rf_delete);
     $f.find(".js-settings-rf-move").on("click", rf_move);
+    $f.find(".rf-id").val(fid);
     $f.appendTo("#settings-rform");
-
-    rf_fill($f, fid, original[fid], true);
+    rf_fill(pos, original[fid], true);
     $f.find(".need-tooltip").each(tooltip);
 }
 
 function rf_add(fid) {
-    fieldorder.push(fid);
-    original[fid] = original[fid] || {};
-    original[fid].order = fieldorder.length;
-    rf_append(fid, fieldorder.length);
-    var rf = document.getElementById("rf_" + fid);
+    var pos = fieldorder.length + 1;
+    rf_append(fid);
+    var rf = document.getElementById("rf__" + pos);
     addClass(rf, "settings-rf-new");
     foldup.call(rf, null, {n: 2, f: false});
-    document.getElementById("rf_order_" + fid).setAttribute("data-default-value", "0");
+    var ordere = document.getElementById("rf__" + pos + "__order");
+    ordere.setAttribute("data-default-value", "0");
+    ordere.value = pos;
     form_highlight("#settingsform");
     return true;
 }
 
 function rfs(data) {
-    var i, fid, $j, m, elt, entryi;
+    var i, fid, forder, mi, e, entryi;
     original = {};
     samples = data.samples;
     stemplate = data.stemplate;
     ttemplate = data.ttemplate;
 
-    fieldorder = [];
+    // construct form for original fields
+    forder = [];
     for (i in data.fields) {
         fid = data.fields[i].id || i;
         original[fid] = data.fields[i];
         if (original[fid].order)
-            fieldorder.push(fid);
+            forder.push(fid);
     }
-    fieldorder.sort(function (a, b) {
+    forder.sort(function (a, b) {
         return original[a].order - original[b].order;
     });
-
-    // construct form
-    for (i = 0; i !== fieldorder.length; ++i) {
-        rf_append(fieldorder[i], i + 1);
+    while (fieldorder.length < forder.length) {
+        rf_append(forder[fieldorder.length]);
     }
+
+    // amend form for new fields
+    while ((data.req || {})["rf__" + (fieldorder.length + 1) + "__id"]) {
+        rf_add(data.req["rf__" + (fieldorder.length + 1) + "__id"]);
+    }
+
+    // highlight errors, apply request
+    for (i in data.req || {}) {
+        if (/^rf__\d+__/.test(i)
+            && (e = document.getElementById(i))
+            && !text_eq($(e).val(), data.req[i])) {
+            $(e).val(data.req[i]);
+            foldup.call(e, null, {n: 2, f: false});
+        }
+    }
+    for (i in data.message_list || []) {
+        mi = data.message_list[i];
+        if (mi.field
+            && (e = document.getElementById(mi.field))
+            && (entryi = e.closest(".entryi"))) {
+            append_feedback_near(entryi, mi);
+            foldup.call(entryi, null, {n: 2, f: false});
+        }
+    }
+
     $("#settings-rform").on("unfold", ".settings-rf", function (evt, opts) {
         $(this).find("textarea").css("height", "auto").autogrow();
         $(this).find("input[type=text]").autogrow();
     });
-
-    // highlight errors, apply request
-    for (i in data.req || {}) {
-        m = i.match(/^rf_(?:[a-z]*_|)([st]\d+)$/);
-        if (m) {
-            $j = $("#" + i);
-            if (!$j[0]) {
-                rf_add(m[1]);
-                $j = $("#" + i);
-            }
-            if ($j[0] && !text_eq($j.val(), data.req[i])) {
-                $j.val(data.req[i]);
-                foldup.call($j[0], null, {n: 2, f: false});
-            }
-        }
-    }
-    for (i in data.message_list || []) {
-        m = data.message_list[i];
-        if (m.field
-            && (elt = document.getElementById(m.field))
-            && (entryi = elt.closest(".entryi"))) {
-            append_feedback_near(entryi, m);
-            foldup.call(entryi, null, {n: 2, f: false});
-        }
-    }
     form_highlight("#settingsform");
 };
 
@@ -656,8 +635,8 @@ function add_dialog() {
         rf_add(fid);
         if (sample.is_example)
             sample = Object.assign({}, sample, {name: ""});
-        rf_fill($("#rf_" + fid), fid, sample, false);
-        $("#rf_name_" + fid)[0].focus();
+        rf_fill(fieldorder.length, sample, false);
+        document.getElementById("rf__" + fieldorder.length + "__name").focus();
         $d.close();
         event.preventDefault();
     }
