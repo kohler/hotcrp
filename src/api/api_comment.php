@@ -9,21 +9,21 @@ class Comment_API {
         reset($cmts);
         return empty($cmts) ? null : current($cmts);
     }
-    /** @return ?CommentInfo */
+    /** @param int $round
+     * @return ?CommentInfo */
     static private function find_response($round, PaperInfo $prow) {
-        return $round === false ? null : self::find_comment("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0 and commentRound=" . (int) $round, $prow);
+        return self::find_comment("(commentType&" . CommentInfo::CT_RESPONSE . ")!=0 and commentRound={$round}", $prow);
     }
     /** @return MessageItem */
     static private function save_success_message(CommentInfo $xcrow) {
         $action = $xcrow->commentId ? "saved" : "deleted";
-        if (!$xcrow->is_response()) {
-            $cname = "Comment";
-        } else {
-            $cname = $xcrow->conf->resp_round_text($xcrow->commentRound);
-            $cname = $cname ? "$cname response" : "Response";
+        if (($rrd = $xcrow->resp_round())) {
+            $cname = $rrd->unnamed ? "Response" : "{$rrd->name} response";
             if ($xcrow->commentId && !($xcrow->commentType & CommentInfo::CT_DRAFT)) {
                 $action = "submitted";
             }
+        } else {
+            $cname = "Comment";
         }
         return new MessageItem(null, "<0>{$cname} {$action}", MessageSet::SUCCESS);
     }
@@ -32,13 +32,13 @@ class Comment_API {
      * @return array{?CommentInfo,int} */
     static function run_post(Contact $user, Qrequest $qreq, PaperInfo $prow, $crow, &$mis) {
         // check response
-        $round = false;
+        $rrd = null;
         if ($qreq->response) {
-            $round = $prow->conf->resp_round_number($qreq->response);
-            if ($round === false) {
+            $rrd = $prow->conf->resp_round($qreq->response);
+            if (!$rrd) {
                 $mis[] = new MessageItem(null, "<0>No such response round", MessageSet::ERROR);
                 return [null, 404];
-            } else if ($crow && (!$crow->is_response() || $crow->commentRound != $round)) {
+            } else if ($crow && (!$crow->is_response() || $crow->commentRound != $rrd->number)) {
                 $mis[] = new MessageItem(null, "<0>Improper response", MessageSet::ERROR);
                 return [null, 400];
             }
@@ -50,10 +50,10 @@ class Comment_API {
         // create skeleton
         if ($crow) {
             $xcrow = $crow;
-        } else if ($round === false) {
-            $xcrow = new CommentInfo(null, $prow);
+        } else if (!$rrd) {
+            $xcrow = new CommentInfo($prow);
         } else {
-            $xcrow = CommentInfo::make_response_template($round, $prow);
+            $xcrow = CommentInfo::make_response_template($rrd, $prow);
         }
 
         // request skeleton
@@ -180,12 +180,12 @@ class Comment_API {
         } else {
             $rname = false;
         }
-        $round = $rname === false ? false : $prow->conf->resp_round_number($rname);
-        if ($rname !== false && $round === false) {
+        $rrd = $rname === false ? null : $prow->conf->resp_round($rname);
+        if ($rname !== false && !$rrd) {
             $mis[] = new MessageItem(null, "<0>No such response round", MessageSet::ERROR);
             return null;
         }
-        $rcrow = self::find_response($round, $prow);
+        $rcrow = $rrd ? self::find_response($rrd->number, $prow) : null;
 
         if (ctype_digit($qreq->c)) {
             $crow = self::find_comment("commentId=" . intval($qreq->c), $prow);
@@ -198,7 +198,7 @@ class Comment_API {
             } else {
                 $mis[] = new MessageItem("deleted", "<0>The response you were editing has been deleted. Submit again to create a new response", MessageSet::ERROR);
             }
-        } else if ($round !== false) {
+        } else if ($rrd) {
             if ($rcrow && $user->can_view_comment($prow, $rcrow, true)) {
                 return $rcrow;
             } else {

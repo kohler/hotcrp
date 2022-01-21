@@ -34,55 +34,6 @@ class Track {
     }
 }
 
-class ResponseRound {
-    /** @var string */
-    public $name;
-    /** @var int */
-    public $number;
-    /** @var int */
-    public $open;
-    /** @var ?int */
-    public $done;
-    /** @var int */
-    public $grace;
-    /** @var ?int */
-    public $words;
-    /** @var ?PaperSearch */
-    public $search;
-    /** @return bool */
-    function relevant(Contact $user, PaperInfo $prow = null) {
-        if (($prow ? $user->allow_administer($prow) : $user->is_manager())
-            && ($this->done || $this->search || $this->name !== "1")) {
-            return true;
-        } else if ($user->isPC) {
-            return $this->open > 0;
-        } else {
-            return $this->open > 0
-                && $this->open < Conf::$now
-                && (!$this->search || $this->search->filter($prow ? [$prow] : $user->authored_papers()));
-        }
-    }
-    /** @param bool $with_grace
-     * @return bool */
-    function time_allowed($with_grace) {
-        if ($this->open === null || $this->open <= 0 || $this->open > Conf::$now) {
-            return false;
-        } else if ($this->done === null || $this->done <= 0) {
-            return true;
-        } else {
-            return $this->done + ($with_grace ? $this->grace : 0) >= Conf::$now;
-        }
-    }
-    /** @return string */
-    function instructions(Conf $conf) {
-        $m = $conf->_ci("resp_instrux", "resp_instrux_$this->number", null, $this->words);
-        if ($m === "") {
-            $m = $conf->_ci("resp_instrux", "resp_instrux", null, $this->words);
-        }
-        return $m;
-    }
-}
-
 interface XtContext {
     /** @param string $str
      * @param object $xt
@@ -2020,18 +1971,18 @@ class Conf {
         if ($this->_resp_rounds === null) {
             $this->_resp_rounds = [];
             $x = $this->settingTexts["resp_rounds"] ?? "1";
+            $active = ($this->settings["resp_active"] ?? 0) > 0;
             foreach (explode(" ", $x) as $i => $rname) {
                 $r = new ResponseRound;
                 $r->number = $i;
+                $r->unnamed = $rname === "1";
                 $r->name = $rname;
                 $isuf = $i ? "_$i" : "";
-                $r->done = $this->settings["resp_done$isuf"] ?? null;
+                $r->active = $active;
+                $r->done = $this->settings["resp_done$isuf"] ?? 0;
                 $r->grace = $this->settings["resp_grace$isuf"] ?? 0;
-                if (isset($this->settings["resp_open$isuf"])) {
-                    $r->open = $this->settings["resp_open$isuf"];
-                } else if ($r->done && $r->done + $r->grace >= self::$now) {
-                    $r->open = 1;
-                }
+                $r->open = $this->settings["resp_open$isuf"]
+                    ?? ($r->done && $r->done + $r->grace >= self::$now ? 1 : 0);
                 $r->words = $this->settings["resp_words$isuf"] ?? 500;
                 if (($s = $this->settingTexts["resp_search$isuf"] ?? null)) {
                     $r->search = new PaperSearch($this->root_user(), $s);
@@ -2042,20 +1993,6 @@ class Conf {
         return $this->_resp_rounds;
     }
 
-    /** @param int $rnum
-     * @return string */
-    function resp_round_name($rnum) {
-        $rrd = ($this->resp_rounds())[$rnum] ?? null;
-        return $rrd ? $rrd->name : "1";
-    }
-
-    /** @param int $rnum
-     * @return string */
-    function resp_round_text($rnum) {
-        $rrd = ($this->resp_rounds())[$rnum] ?? null;
-        return $rrd && $rrd->name !== "1" ? $rrd->name : "";
-    }
-
     /** @param string $rname
      * @return string|false */
     static function resp_round_name_error($rname) {
@@ -2063,21 +2000,21 @@ class Conf {
     }
 
     /** @param string $rname
-     * @return int|false */
-    function resp_round_number($rname) {
+     * @return ?ResponseRound */
+    function resp_round($rname) {
+        $rrds = $this->resp_rounds();
         if (!$rname
             || $rname === 1
             || $rname === "1"
             || $rname === true
             || strcasecmp($rname, "none") === 0) {
-            return 0;
+            return $rrds[0];
         }
-        foreach ($this->resp_rounds() as $rrd) {
-            if (strcasecmp($rname, $rrd->name) === 0) {
-                return $rrd->number;
-            }
+        foreach ($rrds as $rrd) {
+            if (strcasecmp($rname, $rrd->name) === 0)
+                return $rrd;
         }
-        return false;
+        return null;
     }
 
 

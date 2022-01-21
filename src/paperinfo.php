@@ -1121,7 +1121,8 @@ class PaperInfo {
             return true;
         } else if ($this->conf->any_response_open) {
             foreach ($this->conf->resp_rounds() as $rrd) {
-                if ($rrd->time_allowed(true) && $rrd->search->filter([$this])) {
+                if ($rrd->time_allowed(true)
+                    && (!$rrd->search || $rrd->search->test($this))) {
                     return true;
                 }
             }
@@ -2748,11 +2749,12 @@ class PaperInfo {
             preg_match_all('/(\d+);(\d+);(\d+);(\d+);([^|]*)/',
                            $this->commentSkeletonInfo, $ms, PREG_SET_ORDER);
             foreach ($ms as $m) {
-                $c = new CommentInfo([
-                        "commentId" => $m[1], "contactId" => $m[2],
-                        "commentType" => $m[3], "commentRound" => $m[4],
-                        "commentTags" => $m[5]
-                    ], $this, $this->conf);
+                $c = new CommentInfo($this);
+                $c->commentId = (int) $m[1];
+                $c->contactId = (int) $m[2];
+                $c->commentType = (int) $m[3];
+                $c->commentRound = (int) $m[4];
+                $c->commentTags = $m[5];
                 $this->_comment_skeleton_array[$c->commentId] = $c;
             }
         }

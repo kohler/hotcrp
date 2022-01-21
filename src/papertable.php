@@ -2423,8 +2423,8 @@ class PaperTable {
         if (!$this->allreviewslink
             && !$nocmt
             && $this->user->can_comment($prow, null)) {
-            $t[] = '<a class="uic js-edit-comment noul revlink" href="#cnew">'
-                . Ht::img("comment48.png", "[Add comment]", $dlimgjs) . "&nbsp;<u>Add comment</u></a>";
+            $img = Ht::img("comment48.png", "[Add comment]", $dlimgjs);
+            $t[] = "<a class=\"uic js-edit-comment noul revlink\" href=\"#cnew\">{$img} <u>Add comment</u></a>";
             $any_comments = true;
         }
 
@@ -2440,17 +2440,18 @@ class PaperTable {
                         $cr = $crow;
                     }
                 }
-                $cr = $cr ? : CommentInfo::make_response_template($rrd->number, $prow);
+                $cr = $cr ? : CommentInfo::make_response_template($rrd, $prow);
                 if ($this->user->can_respond($prow, $cr)) {
-                    $cid = $this->conf->resp_round_text($rrd->number) . "response";
-                    $what = "Add";
+                    $cid = $rrd->tag_name();
                     if ($cr->commentId) {
                         $what = $cr->commentType & CommentInfo::CT_DRAFT ? "Edit draft" : "Edit";
+                    } else {
+                        $what = "Add";
                     }
-                    $t[] = '<a class="uic js-edit-comment noul revlink" href="#' . $cid . '">'
-                        . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
-                        . ($cflttype >= CONFLICT_AUTHOR ? '<u class="font-weight-bold">' : '<u>')
-                        . $what . ($rrd->name == "1" ? "" : " $rrd->name") . ' response</u></a>';
+                    $title_prefix = $rrd->unnamed ? "" : "{$rrd->name} ";
+                    $img = Ht::img("comment48.png", "[{$what} response]", $dlimgjs);
+                    $uk = $cflttype >= CONFLICT_AUTHOR ? ' class="font-weight-bold"' : '';
+                    $t[] = "<a class=\"uic js-edit-comment noul revlink\" href=\"#{$cid}\">{$img} <u{$uk}>{$what} {$title_prefix}response</u></a>";
                     $any_comments = true;
                 }
             }
@@ -2595,16 +2596,18 @@ class PaperTable {
         if ($comments) {
             $cs = [];
             if ($this->user->can_comment($this->prow, null)) {
-                $commentType = $this->prow->has_author($this->user) ? CommentInfo::CT_BYAUTHOR : 0;
-                $cs[] = new CommentInfo(["commentType" => $commentType], $this->prow);
+                $crow = new CommentInfo($this->prow);
+                $crow->commentType = $this->prow->has_author($this->user) ? CommentInfo::CT_BYAUTHOR : 0;
+                $cs[] = $crow;
             }
             if ($this->admin || $this->prow->has_author($this->user)) {
                 foreach ($this->conf->resp_rounds() as $rrd) {
                     if (!$this->has_response($rrd->number)
                         && $rrd->relevant($this->user, $this->prow)) {
-                        $crow = CommentInfo::make_response_template($rrd->number, $this->prow);
-                        if ($this->user->can_respond($this->prow, $crow))
+                        $crow = CommentInfo::make_response_template($rrd, $this->prow);
+                        if ($this->user->can_respond($this->prow, $crow)) {
                             $cs[] = $crow;
+                        }
                     }
                 }
             }

@@ -1,0 +1,70 @@
+<?php
+// responseround.php -- HotCRP helper class for response rounds
+// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+
+class ResponseRound {
+    /** @var bool */
+    public $unnamed;
+    /** @var string */
+    public $name;
+    /** @var int */
+    public $number;
+    /** @var bool */
+    public $active;
+    /** @var int */
+    public $open;
+    /** @var int */
+    public $done;
+    /** @var int */
+    public $grace;
+    /** @var int */
+    public $words;
+    /** @var ?PaperSearch */
+    public $search;
+
+    /** @param bool $with_grace
+     * @return bool */
+    function time_allowed($with_grace) {
+        return $this->active
+            && $this->open > 0
+            && $this->open <= Conf::$now
+            && ($this->done <= 0
+                || $this->done + ($with_grace ? $this->grace : 0) >= Conf::$now);
+    }
+
+    /** @param bool $with_grace
+     * @return bool */
+    function can_author_respond(PaperInfo $prow, $with_grace) {
+        return $this->time_allowed($with_grace)
+            && (!$this->search || $this->search->test($prow));
+    }
+
+    /** @return bool */
+    function relevant(Contact $user, PaperInfo $prow = null) {
+        if (($prow ? $user->allow_administer($prow) : $user->is_manager())
+            && ($this->done || $this->search || $this->name !== "1")) {
+            return true;
+        } else if ($user->isPC) {
+            return $this->open > 0;
+        } else {
+            return $this->active
+                && $this->open > 0
+                && $this->open < Conf::$now
+                && (!$this->search || $this->search->filter($prow ? [$prow] : $user->authored_papers()));
+        }
+    }
+
+    /** @return string */
+    function tag_name() {
+        return $this->name === "1" ? "response" : $this->name . "response";
+    }
+
+    /** @return string */
+    function instructions(Conf $conf) {
+        $m = $conf->_ci("resp_instrux", "resp_instrux_$this->number", null, $this->words);
+        if ($m === "") {
+            $m = $conf->_ci("resp_instrux", "resp_instrux", null, $this->words);
+        }
+        return $m;
+    }
+}

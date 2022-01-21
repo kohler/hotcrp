@@ -362,6 +362,7 @@ src/paperstatus.php
 src/papertable.php
 src/paperrank.php
 src/permissionproblem.php
+src/responseround.php
 src/review.php
 src/reviewdiffinfo.php
 src/reviewinfo.php

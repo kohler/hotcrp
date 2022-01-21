@@ -3,36 +3,38 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class CommentInfo {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var PaperInfo */
+    /** @var PaperInfo
+     * @readonly */
     public $prow;
     /** @var int */
     public $commentId = 0;
     /** @var int */
-    public $paperId;
+    public $paperId = 0;
     /** @var int */
-    public $contactId;
+    public $contactId = 0;
     /** @var int */
-    public $timeModified;
+    public $timeModified = 0;
     /** @var int */
-    public $timeNotified;
+    public $timeNotified = 0;
     /** @var int */
-    public $timeDisplayed;
+    public $timeDisplayed = 0;
     /** @var ?string */
     public $comment;
     /** @var int */
-    public $commentType;
+    public $commentType = 0;
     /** @var int */
-    public $replyTo;
+    public $replyTo = 0;
     /** @var int */
-    public $ordinal;
+    public $ordinal = 0;
     /** @var int */
-    public $authorOrdinal;
+    public $authorOrdinal = 0;
     /** @var ?string */
     public $commentTags;
     /** @var int */
-    public $commentRound;
+    public $commentRound = 0;
     /** @var ?int */
     public $commentFormat;
     /** @var ?string */
@@ -91,20 +93,18 @@ class CommentInfo {
     ];
 
 
-    /** @param ?array $x */
-    function __construct($x, PaperInfo $prow = null, Conf $conf = null) {
-        $this->merge($x, $prow, $conf);
+    function __construct(PaperInfo $prow = null, Conf $conf = null) {
+        assert(($prow || $conf) && (!$prow || !$conf || $prow->conf === $conf));
+        if ($prow) {
+            $this->conf = $prow->conf;
+            $this->prow = $prow;
+            $this->paperId = $this->paperId ? : $prow->paperId;
+        } else {
+            $this->conf = $conf;
+        }
     }
 
-    private function merge($x, PaperInfo $prow = null, Conf $conf = null) {
-        assert(($prow || $conf) && (!$prow || !$conf || $prow->conf === $conf));
-        $this->conf = $prow ? $prow->conf : $conf;
-        $this->prow = $prow;
-        if ($x) {
-            foreach ($x as $k => $v) {
-                $this->$k = $v;
-            }
-        }
+    private function fetch_incorporate() {
         $this->commentId = (int) $this->commentId;
         $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
@@ -128,30 +128,34 @@ class CommentInfo {
     /** @param Dbl_Result $result
      * @return ?CommentInfo */
     static function fetch($result, PaperInfo $prow = null, Conf $conf = null) {
-        $cinfo = $result->fetch_object("CommentInfo", [null, $prow, $conf]);
-        if ($cinfo && !is_int($cinfo->commentId)) {
-            $cinfo->merge(null, $prow, $conf);
+        $cinfo = $result->fetch_object("CommentInfo", [$prow, $conf]);
+        if ($cinfo) {
+            $cinfo->fetch_incorporate();
         }
         return $cinfo;
     }
 
-    /** @param int $round
+    /** @param ResponseRound $rrd
      * @return CommentInfo */
-    static function make_response_template($round, PaperInfo $prow) {
-        return new CommentInfo(["commentType" => self::CT_RESPONSE, "commentRound" => $round], $prow);
+    static function make_response_template($rrd, PaperInfo $prow) {
+        $cinfo = new CommentInfo($prow);
+        $cinfo->commentType = self::CT_RESPONSE;
+        $cinfo->commentRound = $rrd->number;
+        return $cinfo;
     }
 
     function set_prow(PaperInfo $prow) {
         assert(!$this->prow && $this->paperId === $prow->paperId && $this->conf === $prow->conf);
+        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
         $this->prow = $prow;
     }
 
 
-    /** @param ?PaperInfo $prow */
+    /** @param PaperInfo $prow */
     static function echo_script($prow) {
         if (Ht::mark_stash("papercomment")) {
             $t = [];
-            $crow = new CommentInfo(null, $prow, $prow->conf);
+            $crow = new CommentInfo($prow);
             $crow->commentType = self::CT_RESPONSE;
             foreach ($prow->conf->resp_rounds() as $rrd) {
                 $j = ["words" => $rrd->words];
@@ -177,6 +181,16 @@ class CommentInfo {
     /** @return bool */
     function is_response() {
         return ($this->commentType & self::CT_RESPONSE) !== 0;
+    }
+
+    /** @return ?ResponseRound */
+    function resp_round() {
+        if ($this->commentType & self::CT_RESPONSE) {
+            $rrds = $this->conf->resp_rounds();
+            return $rrds[$this->commentRound] ?? $rrds[0];
+        } else {
+            return null;
+        }
     }
 
     /** @param int $ctype
@@ -211,7 +225,7 @@ class CommentInfo {
         if (self::commenttype_needs_ordinal($this->commentType) && $o) {
             return ($is_author ? "cA" : "c") . $o;
         } else if ($this->commentType & self::CT_RESPONSE) {
-            return $this->conf->resp_round_text($this->commentRound) . "response";
+            return $this->resp_round()->tag_name();
         } else {
             return "cx" . $this->commentId;
         }
@@ -256,9 +270,8 @@ class CommentInfo {
 
     /** @return ?string */
     function unparse_response_text() {
-        if ($this->commentType & self::CT_RESPONSE) {
-            $rname = $this->conf->resp_round_name($this->commentRound);
-            $t = $rname == "1" ? "Response" : "$rname Response";
+        if (($rrd = $this->resp_round())) {
+            $t = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
             if ($this->commentType & self::CT_DRAFT) {
                 $t = "Draft $t";
             }
@@ -439,6 +452,9 @@ class CommentInfo {
             return null;
         }
 
+        $rrd = $this->resp_round();
+        assert(!$rrd === !($this->commentType & self::CT_RESPONSE));
+
         if ($this->commentId) {
             $cj = (object) [
                 "pid" => $this->prow->paperId,
@@ -463,7 +479,7 @@ class CommentInfo {
             $cj->draft = true;
         }
         if ($this->commentType & self::CT_RESPONSE) {
-            $cj->response = $this->conf->resp_round_name($this->commentRound);
+            $cj->response = $rrd->name;
         } else if ($this->commentType & self::CT_BYAUTHOR) {
             $cj->by_author = true;
         } else if ($this->commentType & self::CT_BYSHEPHERD) {
@@ -556,15 +572,9 @@ class CommentInfo {
     /** @param int $flags
      * @return string */
     function unparse_text(Contact $contact, $flags = 0) {
-        if ($this->commentType & self::CT_RESPONSE) {
-            $rrd = ($this->conf->resp_rounds())[$this->commentRound] ?? null;
-            if ($rrd && $rrd->name !== "1") {
-                $x = "{$rrd->name} Response";
-            } else {
-                $x = "Response";
-            }
+        if (($rrd = $this->resp_round())) {
+            $x = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
         } else {
-            $rrd = null;
             $ordinal = $this->unparse_ordinal();
             $x = "Comment" . ($ordinal ? " @$ordinal" : "");
         }
@@ -665,7 +675,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             if (!($req["submit"] ?? null)) {
                 $ctype |= self::CT_DRAFT;
             }
-            $response_name = $this->conf->resp_round_name($this->commentRound);
+            $response_name = $this->resp_round()->name;
         } else if ($user->act_author_view($this->prow)) {
             $ctype = ($req_visibility ?? self::CT_AUTHOR) | self::CT_BYAUTHOR;
         } else {
@@ -867,8 +877,14 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
 
         // reload contents
         if ($text !== false) {
-            $comments = $this->prow->fetch_comments("commentId=$cmtid");
-            $this->merge(get_object_vars($comments[$cmtid]), $this->prow);
+            if (($cobject = $this->conf->fetch_first_object(PaperInfo::fetch_comment_query() . " where paperId={$this->prow->paperId} and commentId={$cmtid}"))) {
+                foreach (get_object_vars($cobject) as $k => $v) {
+                    $this->$k = $v;
+                }
+                $this->fetch_incorporate();
+            } else {
+                return false;
+            }
         }
 
         // document links

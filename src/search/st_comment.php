@@ -15,6 +15,7 @@ class Comment_SearchTerm extends SearchTerm {
     private $type_value = 0;
     /** @var bool */
     private $only_author = false;
+    /** @var ?int */
     private $commentRound;
 
     /** @param ?TagSearchMatcher $tags */
@@ -48,15 +49,15 @@ class Comment_SearchTerm extends SearchTerm {
         ];
     }
     static function response_factory($keyword, Contact $user, $kwfj, $m) {
-        $round = $user->conf->resp_round_number($m[2]);
-        if ($round === false
+        $rrd = $user->conf->resp_round($m[2]);
+        if (!$rrd
             && $m[1] === ""
             && preg_match('/\A(draft-?)(.*)\z/si', $m[2], $mm)) {
             $m[1] = $mm[1];
             $m[2] = $mm[2];
-            $round = $user->conf->resp_round_number($m[2]);
+            $rrd = $user->conf->resp_round($m[2]);
         }
-        if ($round === false || ($m[1] && $m[3])) {
+        if (!$rrd || ($m[1] && $m[3])) {
             return null;
         }
         return (object) [
@@ -64,7 +65,7 @@ class Comment_SearchTerm extends SearchTerm {
             "parse_function" => "Comment_SearchTerm::parse",
             "response" => true,
             "comment" => false,
-            "round" => $round,
+            "round" => $rrd->number,
             "draft" => $m[1] || $m[3],
             "only_author" => false,
             "has" => ">0"

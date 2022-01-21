@@ -426,19 +426,20 @@ class Paper_Page {
             // restore comment across logout bounce
             if ($this->qreq->editcomment) {
                 $cid = $this->qreq->c;
-                $preferred_resp_round = false;
+                $preferred_resp_round = null;
                 if (($x = $this->qreq->response)) {
-                    $preferred_resp_round = $this->conf->resp_round_number($x);
+                    $preferred_resp_round = $this->conf->resp_round($x);
                 }
-                if ($preferred_resp_round === false) {
-                    $preferred_resp_round = $this->user->preferred_resp_round_number($this->prow);
+                if ($preferred_resp_round === null) {
+                    $preferred_resp_round = $this->user->preferred_resp_round($this->prow);
                 }
                 $j = null;
                 foreach ($this->prow->viewable_comments($this->user) as $crow) {
                     if ($crow->commentId == $cid
                         || ($cid === null
                             && ($crow->commentType & CommentInfo::CT_RESPONSE) != 0
-                            && $crow->commentRound === $preferred_resp_round))
+                            && $preferred_resp_round
+                            && $crow->commentRound === $preferred_resp_round->number))
                         $j = $crow->unparse_json($this->user);
                 }
                 if (!$j) {
@@ -446,8 +447,8 @@ class Paper_Page {
                     if ($this->user->act_author_view($this->prow)) {
                         $j->by_author = true;
                     }
-                    if ($preferred_resp_round !== false) {
-                        $j->response = $this->conf->resp_round_name($preferred_resp_round);
+                    if ($preferred_resp_round) {
+                        $j->response = $preferred_resp_round->name;
                     }
                 }
                 if (($x = $this->qreq->text) !== null) {

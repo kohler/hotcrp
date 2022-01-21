@@ -4377,16 +4377,16 @@ class Contact {
         return $this->can_comment($prow, $crow, true);
     }
 
-    /** @return int|false */
-    function preferred_resp_round_number(PaperInfo $prow) {
+    /** @return ?ResponseRound */
+    function preferred_resp_round(PaperInfo $prow) {
         $rights = $this->rights($prow);
         if ($rights->conflictType >= CONFLICT_AUTHOR) {
             foreach ($prow->conf->resp_rounds() as $rrd) {
                 if ($rrd->time_allowed(true))
-                    return $rrd->number;
+                    return $rrd;
             }
         }
-        return false;
+        return null;
     }
 
     /** @param ?CommentInfo $crow
@@ -4973,7 +4973,7 @@ class Contact {
             && ($this->isPC || $this->is_author())) {
             $dlresps = [];
             foreach ($this->relevant_resp_rounds() as $rrd) {
-                $dlresp = (object) ["open" => $rrd->open, "done" => +$rrd->done];
+                $dlresp = (object) ["open" => $rrd->open, "done" => $rrd->done];
                 $dlresps[$rrd->name] = $dlresp;
                 if ($rrd->grace) {
                     array_push($graces, $dlresp, $rrd->grace, ["done"]);
@@ -5087,7 +5087,7 @@ class Contact {
                 }
                 if (isset($dl->resps)) {
                     foreach ($this->conf->resp_rounds() as $rrd) {
-                        $crow = CommentInfo::make_response_template($rrd->number, $prow);
+                        $crow = CommentInfo::make_response_template($rrd, $prow);
                         $v = false;
                         if ($this->can_respond($prow, $crow, true)) {
                             $v = true;

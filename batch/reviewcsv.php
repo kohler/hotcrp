@@ -187,8 +187,8 @@ class FieldCSVOutput {
     function add_comment($prow, $crow, $x) {
         $x["review"] = $crow->unparse_html_id();
         $x["email"] = $crow->email;
-        if ($crow->commentType & CommentInfo::CT_RESPONSE) {
-            $x["round"] = $prow->conf->resp_round_text($crow->commentRound);
+        if (($rrd = $crow->resp_round())) {
+            $x["round"] = $rrd->unnamed ? "" : $rrd->name;
         }
         $rs = $crow->commentType & CommentInfo::CT_DRAFT ? "draft " : "";
         if ($crow->commentType & CommentInfo::CT_RESPONSE) {
