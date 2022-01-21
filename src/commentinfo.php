@@ -469,6 +469,11 @@ class CommentInfo {
                 "is_new" => true,
                 "editable" => true
             ];
+            if ($rrd
+                && ($this->prow->timeSubmitted <= 0
+                    || !$rrd->can_author_respond($this->prow, true))) {
+                $cj->author_editable = false;
+            }
         }
 
         // blindness, draftness, authorness, format

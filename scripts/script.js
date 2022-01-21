@@ -5344,13 +5344,16 @@ function add(cj, editing) {
                 $c = $('<div id="ccactions" class="pcard cmtcard"><div class="cmtcard-body"><div class="aab aabig"></div></div></div>').appendTo(".pcontainer");
             }
             if (!$c.find("a[href='#" + cid + "']").length) {
-                t = '<div class="aabut"><a href="#' + cid + '" class="btn uic js-edit-comment">Add ';
-                if (cj.response) {
-                    t += (cj.response == "1" ? "" : cj.response + " ") + "response";
-                } else {
-                    t += "comment";
+                var rname = cj.response && (cj.response == "1" ? "response" : cj.response + " response"),
+                    $b = $('<div class="aabut"><a href="#'.concat(cid, '" class="uic js-edit-comment btn">Add ', rname || "comment", '</a></div>'));
+                if (cj.response && cj.author_editable === false) {
+                    if (!$c.hasClass("has-fold")) {
+                        $c.addClass("has-fold foldc");
+                        $c.find(".aabig").append('<div class="aabut fn"><a class="ui js-foldup ulh need-tooltip" aria-label="Show more comment options" href="">…</a></div>');
+                    }
+                    $b.addClass("fx").append('<div class="hint">(admin only)</div>');
                 }
-                $c.find(".aabig").append(t + '</a></div>');
+                $b.appendTo($c.find(".aabig"));
             }
             cmts[cid] = cj;
             return;
