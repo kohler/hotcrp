@@ -65,8 +65,7 @@ class Responses_SettingParser extends SettingParser {
         echo '<div class="form-g">';
         $sv->echo_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
         Icons::stash_defs("trash");
-        echo Ht::unstash();
-        echo '<div class="if-response-active',
+        echo Ht::unstash(), '<div class="if-response-active',
             $sv->curv("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_responses", 1);
 

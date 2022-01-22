@@ -24,7 +24,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 unset($fj->description);
             }
         } else if (isset($fj->order)) {
-            $sv->error_at("rf__{$xpos}__description", $ch->last_error);
+            $sv->error_at("rf__{$xpos}__description", "<5>" . $ch->last_error);
         }
     }
 
@@ -83,7 +83,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     function mark_options_error(SettingValues $sv) {
         if (!$this->_option_error_printed) {
-            $sv->error_at(null, "Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
+            $sv->error_at(null, "<5>Score fields must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>");
             $this->_option_error_printed = true;
@@ -99,7 +99,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $ok = $self->parse_options_value($sv, $fj, $xpos);
         }
         if ((!$ok || count($fj->options) < 2) && isset($fj->order)) {
-            $sv->error_at("rf__{$xpos}__choices", "Invalid choices.");
+            $sv->error_at("rf__{$xpos}__choices", "<0>Invalid choices");
             $self->mark_options_error($sv);
         }
     }
@@ -160,8 +160,8 @@ class ReviewForm_SettingParser extends SettingParser {
         $fn = $gj->validate_condition_term_function ?? "ReviewForm_SettingParser::validate_condition_term";
         if (!$fn($ps, $round_list)) {
             $method = $is_error ? "error_at" : "warning_at";
-            $sv->$method("rf__{$xpos}__condition", "Invalid field condition search");
-            $sv->inform_at("rf__{$xpos}__condition", "Review condition searches should stick to simple search keywords about reviews.");
+            $sv->$method("rf__{$xpos}__condition", "<0>Invalid field condition search");
+            $sv->inform_at("rf__{$xpos}__condition", "<0>Review condition searches should stick to simple search keywords about reviews.");
             $sv->$method("rf__{$xpos}__presence");
             return 0;
         } else if ($ps->term() instanceof True_SearchTerm) {
@@ -289,7 +289,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 $xf->assign_json($fj);
                 $this->nrfj[] = $xf->unparse_json(2);
             } else {
-                $sv->error_at("rf__{$i}__name", "Internal error (bad field ID)");
+                $sv->error_at("rf__{$i}__name", "<0>Internal error (bad field ID)");
             }
             $byfid[$fid] = true;
         }
@@ -466,7 +466,8 @@ class ReviewForm_SettingParser extends SettingParser {
             $updates = $this->clear_nonexisting_options($clear_options, $sv->conf);
             if (!empty($updates)) {
                 sort($updates);
-                $sv->warning_at(null, "Your changes invalidated some existing review scores. The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $updates) . ".");
+                $sv->warning_at(null, "<0>Your changes invalidated some review scores");
+                $sv->inform_at(null, "<0>The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $updates) . ".");
             }
         }
         // assign review ordinals if necessary

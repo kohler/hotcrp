@@ -274,13 +274,13 @@ class Options_SettingRenderer {
         if ($io) {
             echo '<div class="settings-sf-view fn2 ui js-foldup">';
             if ($io->exists_condition()) {
-                $this->pt->msg_at($io->formid, "Present on submissions matching “" . htmlspecialchars($io->exists_condition()) . "”", MessageSet::WARNING_NOTE);
+                $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $io->exists_condition() . "’", MessageSet::WARNING_NOTE);
             }
             if ($io->final) {
-                $this->pt->msg_at($io->formid, "Present on final versions", MessageSet::WARNING_NOTE);
+                $this->pt->msg_at($io->formid, "<0>Present on final versions", MessageSet::WARNING_NOTE);
             }
             if ($io->editable_condition()) {
-                $this->pt->msg_at($io->formid, "Editable on submisisons matching “" . htmlspecialchars($io->editable_condition()) . "”", MessageSet::WARNING_NOTE);
+                $this->pt->msg_at($io->formid, "<0>Editable on submisisons matching ‘" . $io->editable_condition() . "’", MessageSet::WARNING_NOTE);
             }
             $ei = $io->editable_condition();
             $xi = $io->exists_condition();
