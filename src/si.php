@@ -377,11 +377,11 @@ class Si {
                 $sv->error_at($this, "Please enter a valid grace period");
                 return null;
             }
-        } else if ($this->type === "int" || $this->type === "zint") {
+        } else if ($this->type === "int") {
             if (preg_match("/\\A[-+]?[0-9]+\\z/", $v)) {
                 return intval($v);
-            } else if ($v == "" && $this->placeholder !== null) {
-                return 0;
+            } else if ($v == "" && $this->default_value !== null) {
+                return $this->default_value;
             } else {
                 $sv->error_at($this, "Please enter a whole number");
                 return null;
@@ -493,6 +493,12 @@ class Si {
             } else {
                 return sprintf("%d:%02d", intval($v / 60), $v % 60);
             }
+        } else if ($this->type === "int") {
+            if ($this->default_value !== null && $v == $this->default_value) {
+                return "";
+            } else {
+                return (string) $v;
+            }
         } else {
             return (string) $v;
         }
@@ -516,8 +522,6 @@ class Si {
                 return false;
             }
         } else if ($this->type === "int") {
-            return $v > 0 ? (int) $v : false;
-        } else if ($this->type === "zint") {
             return (int) $v;
         } else if ($this->type === "string"
                    || $this->type === "simplestring"

@@ -999,8 +999,8 @@ class SettingValues extends MessageSet {
                 }
             } else if ($d0 > $d1) {
                 $si1 = $this->si($name1);
-                $this->error_at($this->si($name0), "Must come before " . $this->setting_link($si1->title_html($this), $si1) . ".");
-                $this->error_at($si1);
+                $this->error_at($name0, "<5>Must come before " . $this->setting_link($si1->title_html($this), $si1));
+                $this->error_at($name1);
                 return false;
             }
         }
@@ -1075,8 +1075,7 @@ class SettingValues extends MessageSet {
                    && ($v = $this->base_parse_req($si)) !== null) {
             if (is_int($v)
                 && $v <= 0
-                && $si->type !== "radio"
-                && $si->type !== "zint") {
+                && $si->type !== "radio") {
                 $v = null;
             }
             $this->save($si->name, $v);
@@ -1242,9 +1241,8 @@ class SettingValues extends MessageSet {
                 $this->set_req($si->name, $v === false ? "none" : $v);
                 return;
             }
-        } else if ($si->type === "int"
-                   || $si->type === "zint") {
-            if (is_int($v) || ($si->type === "int" && $v === false)) {
+        } else if ($si->type === "int") {
+            if (is_int($v) || $v === false) {
                 $this->set_req($si->name, (string) $v);
                 return;
             }

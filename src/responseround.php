@@ -21,6 +21,10 @@ class ResponseRound {
     public $words;
     /** @var ?PaperSearch */
     public $search;
+    /** @var ?string */
+    public $instructions;
+    /** @var ?int */
+    public $setting_status; // used in settings
 
     /** @param bool $with_grace
      * @return bool */

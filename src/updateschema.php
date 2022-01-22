@@ -600,6 +600,35 @@ class UpdateSchema {
         }
     }
 
+    private function v257_update_response_settings() {
+        $jrl = [];
+        $need = false;
+        $resp_rounds = $this->conf->setting_data("resp_rounds") ?? "1";
+        foreach (explode(" ", $resp_rounds) as $i => $rname) {
+            $jr = [];
+            $rname !== "1" && ($jr["name"] = $rname);
+            $isuf = $i ? "_{$i}" : "";
+            $open = $this->conf->setting("resp_open{$isuf}") ?? 0;
+            $open > 0 && ($jr["open"] = $open);
+            $done = $this->conf->setting("resp_done{$isuf}") ?? 0;
+            $done > 0 && ($jr["done"] = $done);
+            $grace = $this->conf->setting("resp_grace{$isuf}") ?? 0;
+            $grace > 0 && ($jr["grace"] = $grace);
+            $words = $this->conf->setting("resp_words{$isuf}") ?? 500;
+            $words !== 500 && ($jr["words"] = $words);
+            $search = $this->conf->setting_data("resp_search{$isuf}");
+            $search !== null && ($jr["condition"] = $search);
+            $instrux = $this->conf->setting_data("msg.resp_instrux_{$i}");
+            $instrux !== null && ($jr["instructions"] = $instrux);
+            $jrl[] = $jr;
+            $need = $need || !empty($jr);
+        }
+        if ($need) {
+            $this->conf->save_setting("responses", 1, json_encode_db($jrl));
+        }
+        return true;
+    }
+
     function run() {
         $conf = $this->conf;
 
@@ -2199,6 +2228,10 @@ class UpdateSchema {
         if ($conf->sversion === 255
             && $this->v256_tokenize_review_acceptors()) {
             $conf->update_schema_version(256);
+        }
+        if ($conf->sversion === 256
+            && $this->v257_update_response_settings()) {
+            $conf->update_schema_version(257);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

@@ -319,48 +319,55 @@
         "type": "checkbox", "storage": "resp_active"
     },
     {
-        "name": "response_rounds",
-        "group": "responses", "hashid": false,
+        "name": "responses", "group": "responses",
         "parser_class": "Responses_SettingParser",
-        "type": "string", "storage": "resp_rounds"
+        "type": "string"
     },
     {
-        "name_pattern": "response/$/done", "group": "responses",
-        "title": "Response hard deadline",
-        "type": "date", "storage": "resp_done_$"
+        "name_pattern": "response__$__done", "group": "responses",
+        "title": "Response hard deadline", "type": "date", "internal": true,
+        "title_pattern": "${sv response__$__title} hard deadline"
     },
     {
-        "name_pattern": "response/$/grace", "group": "responses",
-        "title": "Response grace period",
-        "type": "grace", "storage": "resp_grace_$"
+        "name_pattern": "response__$__grace", "group": "responses",
+        "title": "Response grace period", "type": "grace", "internal": true,
+        "title_pattern": "${sv response__$__title} grace period"
     },
     {
-        "name_pattern": "response/$/open", "group": "responses",
-        "title": "Response start time",
-        "type": "date", "storage": "resp_open_$"
+        "name_pattern": "response__$__open", "group": "responses",
+        "title": "Response start time", "type": "date", "internal": true,
+        "title_pattern": "${sv response__$__title} start time"
     },
     {
-        "name_pattern": "response/$/instructions", "group": "responses",
-        "title": "Authors’ response instructions",
-        "type": "htmlstring", "size": 3, "storage": "msg.resp_instrux_$",
-        "default_message": ["resp_instrux", "response/$/words"]
+        "name_pattern": "response__$__instructions", "group": "responses",
+        "title": "Response instructions", "internal": true,
+        "type": "htmlstring", "size": 3,
+        "default_message": ["resp_instrux", "response__$__words"],
+        "title_pattern": "${sv response__$__title} instructions"
     },
     {
-        "name_pattern": "response/$/name", "internal": true, "group": "responses",
+        "name_pattern": "response__$__name", "group": "responses",
         "title": "Response name", "placeholder": "Response name",
+        "internal": true, "parser_class": "Responses_SettingParser",
         "type": "tag", "size": 20
     },
     {
-        "name_pattern": "response/$/search", "group": "responses",
-        "title": "Response search",
-        "type": "string", "size": 40, "placeholder": "(All)", "storage": "dat.resp_search_$"
+        "name_pattern": "response__$__title", "group": "responses",
+        "internal": true, "parser_class": "Responses_SettingParser"
     },
     {
-        "name_pattern": "response/$/words", "group": "responses",
-        "title": "Response word limit",
-        "type": "zint", "size": 5, "placeholder": "none", "default_value": 500,
-        "storage": "resp_word_$"
+        "name_pattern": "response__$__condition", "group": "responses",
+        "title": "Response condition", "internal": true,
+        "type": "string", "size": 40, "placeholder": "(All)",
+        "title_pattern": "${sv response__$__title} condition"
     },
+    {
+        "name_pattern": "response__$__words", "group": "responses",
+        "title": "Response word limit", "internal": true,
+        "type": "int", "size": 5, "placeholder": "none", "default_value": 0,
+        "title_pattern": "${sv response__$__title} word limit"
+    },
+    {   "name_pattern": "response__$__id", "internal": true   },
     {
         "name": "rev_blind", "group": "reviews",
         "title": "Review anonymity",
@@ -636,11 +643,6 @@
     {   "name": "extrev_soft_0", "merge": true, "storage": "extrev_soft"   },
     {   "name": "pcrev_hard_0", "merge": true, "storage": "pcrev_hard"   },
     {   "name": "pcrev_soft_0", "merge": true, "storage": "pcrev_soft"   },
-    {   "name": "response/0/done", "merge": true, "storage": "resp_done"   },
-    {   "name": "response/0/grace", "merge": true, "storage": "resp_grace"   },
-    {   "name": "response/0/open", "merge": true, "storage": "resp_open"   },
-    {   "name": "response/0/search", "merge": true, "storage": "resp_search"   },
-    {   "name": "response/0/words", "merge": true, "storage": "resp_words"   },
     {   "name": "sub_banal_val_0", "merge": true, "storage": "val.sub_banal", "group": "subform"   },
     {   "name": "sub_banal_data_0", "merge": true, "storage": "dat.sub_banal"   },
     {   "name": "sub_banal_opt_0", "merge": true, "storage": "opt.sub_banal"   },

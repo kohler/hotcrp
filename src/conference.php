@@ -332,7 +332,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 256) {
+        if ($this->sversion < 257) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;
@@ -1969,28 +1969,63 @@ class Conf {
     /** @return list<ResponseRound> */
     function resp_rounds() {
         if ($this->_resp_rounds === null) {
-            $this->_resp_rounds = [];
-            $x = $this->settingTexts["resp_rounds"] ?? "1";
-            $active = ($this->settings["resp_active"] ?? 0) > 0;
-            foreach (explode(" ", $x) as $i => $rname) {
-                $r = new ResponseRound;
-                $r->number = $i;
-                $r->unnamed = $rname === "1";
-                $r->name = $rname;
-                $isuf = $i ? "_$i" : "";
-                $r->active = $active;
-                $r->done = $this->settings["resp_done$isuf"] ?? 0;
-                $r->grace = $this->settings["resp_grace$isuf"] ?? 0;
-                $r->open = $this->settings["resp_open$isuf"]
-                    ?? ($r->done && $r->done + $r->grace >= self::$now ? 1 : 0);
-                $r->words = $this->settings["resp_words$isuf"] ?? 500;
-                if (($s = $this->settingTexts["resp_search$isuf"] ?? null)) {
-                    $r->search = new PaperSearch($this->root_user(), $s);
-                }
-                $this->_resp_rounds[] = $r;
+            if ($this->sversion >= 257) {
+                $this->_resp_rounds = $this->_new_resp_rounds();
+            } else {
+                $this->_resp_rounds = $this->_old_resp_rounds();
             }
         }
         return $this->_resp_rounds;
+    }
+
+    /** @return list<ResponseRound> */
+    private function _new_resp_rounds() {
+        $rrds = [];
+        $active = ($this->settings["resp_active"] ?? 0) > 0;
+        $jresp = json_decode($this->settingTexts["responses"] ?? "[{}]");
+        foreach ($jresp ?? [(object) []] as $i => $rrj) {
+            $r = new ResponseRound;
+            $r->number = $i;
+            $r->unnamed = $i === 0 && !isset($rrj->name);
+            $r->name = $rrj->name ?? "1";
+            $r->active = $active;
+            $r->done = $rrj->done ?? 0;
+            $r->grace = $rrj->grace ?? 0;
+            $r->open = $rrj->open ?? ($r->done && $r->done + $r->grace >= self::$now ? 1 : 0);
+            $r->words = $rrj->words ?? 500;
+            if (isset($rrj->condition)) {
+                $r->search = new PaperSearch($this->root_user(), $rrj->condition);
+            }
+            $r->instructions = $rrj->instructions ?? null;
+            $rrds[] = $r;
+        }
+        return $rrds;
+    }
+
+    /** @return list<ResponseRound> */
+    private function _old_resp_rounds() {
+        $rrds = [];
+        $x = $this->settingTexts["resp_rounds"] ?? "1";
+        $active = ($this->settings["resp_active"] ?? 0) > 0;
+        foreach (explode(" ", $x) as $i => $rname) {
+            $r = new ResponseRound;
+            $r->number = $i;
+            $r->unnamed = $rname === "1";
+            $r->name = $rname;
+            $isuf = $i ? "_{$i}" : "";
+            $r->active = $active;
+            $r->done = $this->settings["resp_done{$isuf}"] ?? 0;
+            $r->grace = $this->settings["resp_grace{$isuf}"] ?? 0;
+            $r->open = $this->settings["resp_open{$isuf}"]
+                ?? ($r->done && $r->done + $r->grace >= self::$now ? 1 : 0);
+            $r->words = $this->settings["resp_words{$isuf}"] ?? 500;
+            if (($s = $this->settingTexts["resp_search{$isuf}"] ?? null)) {
+                $r->search = new PaperSearch($this->root_user(), $s);
+            }
+            $r->instructions = $this->settingTexts["msg.resp_instrux_{$i}"] ?? null;
+            $rrds[] = $r;
+        }
+        return $rrds;
     }
 
     /** @param string $rname

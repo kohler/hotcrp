@@ -668,11 +668,11 @@ return rfs;
 
 
 handle_ui.on("js-settings-resp-round-new", function () {
-    var i, $rx, $rt = $("#response_new"), t;
-    for (i = 1; jQuery("#response_" + i).length; ++i) {
+    var i, $rx, $rt = $("#response__new"), t;
+    for (i = 1; jQuery("#response__" + i).length; ++i) {
     }
-    $rt.before($rt.html().replace(/\$/g, i));
-    $rx = $("#response_" + i);
+    $rt.before($rt.html().replace(/__\$/g, "__" + i));
+    $rx = $("#response__" + i);
     $rx.find("textarea").css({height: "auto"}).autogrow();
     $rx.find(".need-suggest").each(suggest);
     $rx.find(".need-tooltip").each(tooltip);
@@ -681,18 +681,14 @@ handle_ui.on("js-settings-resp-round-new", function () {
 
 handle_ui.on("js-settings-resp-round-delete", function () {
     var rr = this.closest(".settings-response");
-    if (hasClass(rr, "settings-rf-new")) {
-        rr.parentElement.removeChild(rf);
-    } else {
-        var fid = rr.getAttribute("data-resp-round");
-        addClass(rr, "deleted");
-        this.form.elements["response/" + fid + "/delete"].click();
-        $(rr).children().addClass("hidden");
-        var name = this.form.elements["response/" + fid + "/name"];
-        $(name).prop("disabled", true).addClass("text-decoration-line-through");
-        removeClass(name.closest(".entryi"), "hidden");
-        $(name).closest(".entry").append('<div class="mt-2"><em>This response round will be deleted.</em></div>');
-    }
+    addClass(rr, "deleted");
+    this.form.elements[rr.id + "__delete"].click();
+    $(rr).children().addClass("hidden");
+    var name = this.form.elements[rr.id + "__name"];
+    $(name).prop("disabled", true).addClass("text-decoration-line-through");
+    removeClass(name.closest(".entryi"), "hidden");
+    $(name).closest(".entry").append('<div class="mt-2"><em>This response round will be deleted.</em></div>');
+    hasClass(rr, "settings-response-new") && addClass(rr, "hidden");
     return false;
 });
 
