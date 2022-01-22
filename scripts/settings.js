@@ -178,35 +178,37 @@ handle_ui.on("js-settings-banal-pagelimit", function (evt) {
 
 
 handle_ui.on("js-settings-add-decision-type", function (event) {
-    var $t = $("#settings-decision-types"), next = 1;
-    while ($t.find("input[name=dec_name_n" + next + "]").length)
-        ++next;
+    var form = this.form, ctr = 1;
+    while (form.elements["decision__" + ctr + "__id"])
+        ++ctr;
     $("#settings-decision-type-notes").removeClass("hidden");
-    var h = $("#settings-new-decision-type").html().replace(/_\$/g, "_n" + next),
-        $r = $(h).appendTo($t);
+    var h = $("#settings-new-decision-type").html().replace(/__\$/g, "__" + ctr),
+        $r = $(h).appendTo("#settings-decision-types");
     $r.find("input[type=text]").autogrow();
-    $r.find("input[name=dec_name_n" + next + "]")[0].focus();
+    form.elements["decision__" + ctr + "__delete"].value = "";
+    form.elements["decision__" + ctr + "__name"].focus();
+    form_highlight(form);
 });
 
 handle_ui.on("js-settings-remove-decision-type", function (event) {
-    var $r = $(this).closest(".is-decision-type"),
-        ne = $r.find("input[name^=dec_name]")[0],
+    var row = this.closest(".settings-decision"),
+        ne = this.form.elements[row.id + "__name"],
         sc = ne.getAttribute("data-submission-count")|0;
-    if (ne.name.startsWith("dec_name_n")) {
-        $r.remove();
-        if (!$("#settings-decision-types .is-new-decision-type").length)
+    this.form.elements[row.id + "__delete"].value = "1";
+    if (hasClass(row, "settings-decision-new")) {
+        addClass(row, "hidden");
+        $(row).find("input").addClass("ignore-diff");
+        if (!$("#settings-decision-types .settings-decision-new:not(.hidden)").length)
             $("#settings-decision-type-notes").addClass("hidden");
     } else {
-        foldup.call(ne, {f: true});
-        addClass(ne, "hidden");
-        ne.value = "";
-        $(ne).after('<span class="text-decoration-line-through">'.concat(escape_html(ne.defaultValue), '</span>'));
+        $(ne).prop("disabled", true).addClass("text-decoration-line-through");
+        this.disabled = true;
         var t = '<div class="f-i"><em>This decision will be removed';
         if (sc)
             t = t.concat(' and <a href="', hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, 'submission'), '</a> set to undecided');
-        $r.after(t + '.</em></div>');
-        form_highlight($r.closest("form"));
+        $(row).after(t + '.</em></div>');
     }
+    form_highlight(this.form);
 });
 
 handle_ui.on("js-settings-new-autosearch", function (event) {
@@ -391,8 +393,7 @@ function rf_fill(pos, fieldj, setdefault) {
 }
 
 function rf_delete() {
-    var rf = this.closest(".settings-rf"),
-        form = rf.closest("form");
+    var rf = this.closest(".settings-rf"), form = this.form;
     addClass(rf, "deleted");
     if (hasClass(rf, "settings-rf-new")) {
         addClass(rf, "hidden");

@@ -43,17 +43,16 @@
         "type": "string", "parser_class": "Decisions_SettingParser"
     },
     {
-        "name_pattern": "dec_name_$", "internal": true, "group": "decisions",
+        "name_pattern": "decision__$__name", "internal": true, "group": "decisions",
         "title": "Decision name",
         "type": "simplestring", "size": 35, "placeholder": "Decision name"
     },
     {
-        "name_pattern": "dec_class_$", "internal": true, "group": "decisions",
+        "name_pattern": "decision__$__category", "internal": true, "group": "decisions",
         "title": "Decision category"
     },
-    {
-        "name_pattern": "dec_classconfirm_$", "internal": true, "group": "decisions"
-    },
+    {   "name_pattern": "decision__$__categoryforce", "internal": true, "group": "decisions"   },
+    {   "name_pattern": "decision__$__id", "internal": true, "group": "decisions"   },
     {
         "name": "extrev_chairreq", "group": "reviews",
         "json_name": "review_external_request",
