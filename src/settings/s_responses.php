@@ -86,7 +86,8 @@ class Responses_SettingParser extends SettingParser {
             $sv->set_oldv("response__{$ctr}__grace", $rrd->grace ?? 0);
             $sv->set_oldv("response__{$ctr}__words", $rrd->words ?? 500);
             $sv->set_oldv("response__{$ctr}__condition", $rrd->search ? $rrd->search->q : "");
-            $sv->set_oldv("response__{$ctr}__instructions", $rrd->instructions);
+            $instruxsi = $sv->si("response__{$ctr}__instructions");
+            $sv->set_oldv($instruxsi->name, $rrd->instructions ?? $sv->si_message_default($instruxsi));
             self::render_one($sv, $ctr, false);
             ++$ctr;
         }
