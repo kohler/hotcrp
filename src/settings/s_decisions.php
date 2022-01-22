@@ -162,7 +162,7 @@ class Decisions_SettingParser extends SettingParser {
 
     function store_value(SettingValues $sv, Si $si) {
         $curmap = $sv->conf->decision_map();
-        $newmap = [];
+        $newmap = [0 => "Unspecified"];
         foreach (json_decode($sv->newv("decisions")) as $d) {
             if (($did = $d->id) === "new") {
                 $did = $delta = ($d->category === "r" ? -1 : 1);
@@ -174,8 +174,10 @@ class Decisions_SettingParser extends SettingParser {
         }
         $sv->save("outcome_map", json_encode_db($newmap));
         $dels = array_diff_key($curmap, $newmap);
-        if (!empty($dels)) {
+        if (!empty($dels)
+            && ($pids = Dbl::fetch_first_columns($sv->conf->dblink, "select paperId from Paper where outcome?a", array_keys($dels)))) {
             $sv->conf->qe("update Paper set outcome=0 where outcome?a", array_keys($dels));
+            $sv->user->log_activity("Set decision: Unspecified", $pids);
         }
     }
 }
