@@ -930,7 +930,7 @@ class SettingValues extends MessageSet {
      * @param string $xclass */
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
-        if (str_starts_with($si->storage_name(), "msg.")) {
+        if ($si->default_message) {
             $si->default_value = $this->si_message_default($si);
         }
         $current = $this->curv($name);
@@ -964,7 +964,7 @@ class SettingValues extends MessageSet {
      * @param string $hint */
     function echo_message_horizontal($name, $description, $hint = "") {
         $si = $this->si($name);
-        if (str_starts_with($si->storage_name(), "msg.")) {
+        if ($si->default_message) {
             $si->default_value = $this->si_message_default($si);
         }
         $current = $this->curv($name);
@@ -1034,17 +1034,14 @@ class SettingValues extends MessageSet {
     /** @param Si $si
      * @return string */
     function si_message_default($si) {
-        $dm = $si->default_message;
-        if ($dm === null) {
-            assert(str_starts_with($si->storage_name(), "msg."));
-            $args = [substr($si->storage_name(), 4), ""];
-        } else if (is_string($dm)) {
-            $args = [$dm];
+        if (is_string($si->default_message)) {
+            $args = [$si->default_message];
         } else {
-            assert(is_array($dm));
-            $args = $dm;
+            assert(is_array($si->default_message));
+            $args = $si->default_message;
             array_splice($args, 1, 0, "");
         }
+        '@phan-var-force non-empty-list<string> $args';
         $mid = $si->split_name ? $si->split_name[1] : "";
         for ($i = 2; $i < count($args); ++$i) {
             $args[$i] = $this->newv(str_replace("\$", $mid, $args[$i]));

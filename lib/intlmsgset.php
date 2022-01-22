@@ -268,6 +268,13 @@ class IntlMsgSet {
     }
 
     /** @param string $id
+     * @return bool */
+    function has_override($id) {
+        $im = $this->ims[$id] ?? null;
+        return $im && $im->priority === self::PRIO_OVERRIDE;
+    }
+
+    /** @param string $id
      * @param string $otext */
     function add_override($id, $otext) {
         $im = $this->ims[$id] ?? null;

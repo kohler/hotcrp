@@ -4831,10 +4831,6 @@ class Conf {
             if (($mlist = $this->opt("messageOverrides"))) {
                 expand_json_includes_callback($mlist, [$this->_ims, "addj"]);
             }
-            foreach ($this->settingTexts as $k => $v) {
-                if (str_starts_with($k, "msg."))
-                    $this->_ims->add_override(substr($k, 4), $v);
-            }
         }
         return $this->_ims;
     }
@@ -4855,6 +4851,10 @@ class Conf {
     /** @param string $id
      * @return string */
     function _i($id, ...$args) {
+        $ims = $this->ims();
+        if (isset($this->settingTexts["msg.{$id}"]) && !$ims->has_override($id)) {
+            $ims->add_override($id, $this->settingTexts["msg.{$id}"]);
+        }
         return $this->ims()->_i($id, ...$args);
     }
 
@@ -4862,6 +4862,10 @@ class Conf {
      * @param string $id
      * @return string */
     function _ci($context, $id, ...$args) {
+        $ims = $this->ims();
+        if (isset($this->settingTexts["msg.{$id}"]) && !$ims->has_override($id)) {
+            $ims->add_override($id, $this->settingTexts["msg.{$id}"]);
+        }
         return $this->ims()->_ci($context, $id, ...$args);
     }
 

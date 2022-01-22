@@ -158,18 +158,21 @@ class Si {
 
         $s = $this->storage ?? $this->name;
         $dot = strpos($s, ".");
-        if ($dot === 3 && substr($s, 0, 3) === "opt") {
+        if ($dot === 3 && str_starts_with($s, "opt")) {
             $this->storage_type = self::SI_DATA | self::SI_OPT;
-        } else if ($dot === 3 && substr($s, 0, 3) === "ova") {
+        } else if ($dot === 3 && str_starts_with($s, "ova")) {
             $this->storage_type = self::SI_VALUE | self::SI_OPT;
             $this->storage = "opt." . substr($s, 4);
-        } else if ($dot === 3 && substr($s, 0, 3) === "val") {
+        } else if ($dot === 3 && str_starts_with($s, "val")) {
             $this->storage_type = self::SI_VALUE | self::SI_SLICE;
             $this->storage = substr($s, 4);
-        } else if ($dot === 3 && substr($s, 0, 3) === "dat") {
+        } else if ($dot === 3 && str_starts_with($s, "dat")) {
             $this->storage_type = self::SI_DATA | self::SI_SLICE;
             $this->storage = substr($s, 4);
-        } else if ($dot === 6 && substr($s, 0, 6) === "negval") {
+        } else if ($dot === 3 && str_starts_with($s, "msg")) {
+            $this->storage_type = self::SI_DATA;
+            $this->default_message = $this->default_message ?? substr($s, 4);
+        } else if ($dot === 6 && str_starts_with($s, "negval")) {
             $this->storage_type = self::SI_VALUE | self::SI_SLICE | self::SI_NEGATE;
             $this->storage = substr($s, 7);
         } else if ($this->storage === "none") {
@@ -440,10 +443,11 @@ class Si {
         } else if ($this->type === "htmlstring") {
             $ch = CleanHTML::basic();
             if (($v = $ch->clean($v)) !== false) {
-                if (str_starts_with($this->storage_name(), "msg.")
-                    && $v === $sv->si_message_default($this))
+                if ($this->default_message && $v === $sv->si_message_default($this)) {
                     return "";
-                return $v;
+                } else {
+                    return $v;
+                }
             } else {
                 $sv->error_at($this, "<5>{$ch->last_error}");
                 return null;

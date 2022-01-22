@@ -1865,6 +1865,18 @@ class PaperSearch extends MessageSet {
         return $this;
     }
 
+    /** @return bool */
+    function has_problem() {
+        $this->_qe || $this->term();
+        return parent::has_problem();
+    }
+
+    /** @return list<MessageItem> */
+    function message_list() {
+        $this->_qe || $this->term();
+        return parent::message_list();
+    }
+
     /** @param string $message
      * @return MessageItem */
     function warning($message) {

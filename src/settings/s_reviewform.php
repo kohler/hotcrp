@@ -150,7 +150,6 @@ class ReviewForm_SettingParser extends SettingParser {
      * @param bool $is_error */
     static function validate_condition(SettingValues $sv, $expr, $xpos, $is_error, $gj) {
         $ps = new PaperSearch($sv->conf->root_user(), $expr);
-        $ps->term();
         if ($ps->has_problem()) {
             $sv->warning_at("rf__{$xpos}__presence");
             foreach ($ps->message_list() as $mi) {
@@ -246,7 +245,7 @@ class ReviewForm_SettingParser extends SettingParser {
             if ($sn === "") {
                 $sv->error_at("rf__{$xpos}__name", "<0>Entry required");
             } else if (isset($this->byname[strtolower($sn)])) {
-                $sv->error_at("rf__{$xpos}__name", "<0>Reused field name ‘{$sn}’");
+                $sv->error_at("rf__{$xpos}__name", "<0>Duplicate field name ‘{$sn}’");
                 $sv->error_at("rf__" . $this->byname[strtolower($sn)] . "__name", "");
             } else if (ReviewField::clean_name($sn) !== $sn
                        && $sn !== $f->name

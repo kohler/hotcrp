@@ -56,14 +56,18 @@ class ResponseRound {
 
     /** @return string */
     function tag_name() {
-        return $this->name === "1" ? "response" : $this->name . "response";
+        return $this->unnamed ? "response" : $this->name . "response";
     }
 
     /** @return string */
     function instructions(Conf $conf) {
-        $m = $conf->_ci("resp_instrux", "resp_instrux_$this->number", null, $this->words);
+        $ims = $conf->ims();
+        if ($this->instructions !== null && !$ims->has_override("resp_instrux_{$this->number}")) {
+            $ims->add_override("resp_instrux_{$this->number}", $this->instructions);
+        }
+        $m = $ims->_ci("resp_instrux", "resp_instrux_{$this->number}", null, $this->words);
         if ($m === "") {
-            $m = $conf->_ci("resp_instrux", "resp_instrux", null, $this->words);
+            $m = $ims->_ci("resp_instrux", "resp_instrux", null, $this->words);
         }
         return $m;
     }
