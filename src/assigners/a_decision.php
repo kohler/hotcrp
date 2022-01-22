@@ -60,9 +60,9 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
                 if (count($dec) === 1) {
                     $dec = $dec[0];
                 } else if (empty($dec)) {
-                    return new AssignmentError("<0>No decisions match ‘" . $req["decision"] . "’.");
+                    return new AssignmentError("<0>No decisions match ‘" . $req["decision"] . "’");
                 } else {
-                    return new AssignmentError("<0>More than one decision matches ‘" . $req["decision"] . "’.");
+                    return new AssignmentError("<0>More than one decision matches ‘" . $req["decision"]);
                 }
             } else {
                 $removepred = function ($item) use ($matchexpr) {
@@ -70,7 +70,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
                 };
             }
         } else if (!$this->remove) {
-            return new AssignmentError("<0>Decision missing.");
+            return new AssignmentError("<0>Decision required");
         }
         $state->remove_if(new Decision_Assignable($prow->paperId), $removepred);
         if (!$this->remove && $dec) {

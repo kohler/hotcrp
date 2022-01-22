@@ -392,12 +392,12 @@ function parseBulkFile(Contact $user, $text, $filename) {
     }
     $mpos = 0;
     if (!empty($success)) {
-        $ms->splice_item($mpos++, new MessageItem(null, $conf->_("<5>Saved accounts %#s", $success), MessageSet::SUCCESS));
+        $ms->splice_item($mpos++, MessageItem::success($conf->_("<5>Saved accounts %#s", $success)));
     } else if ($ms->has_error()) {
-        $ms->splice_item($mpos++, new MessageItem(null, $conf->_("<0>Changes not saved; please correct these errors and try again"), MessageSet::ERROR));
+        $ms->splice_item($mpos++, MessageItem::error($conf->_("<0>Changes not saved; please correct these errors and try again")));
     }
     if (!empty($notified)) {
-        $ms->splice_item($mpos++, new MessageItem(null, $conf->_("<5>Activated accounts and sent mail to %#s", $notified), MessageSet::SUCCESS));
+        $ms->splice_item($mpos++, MessageItem::success($conf->_("<5>Activated accounts and sent mail to %#s", $notified)));
     }
     if (!empty($nochanges)) {
         $ms->splice_item($mpos++, new MessageItem(null, $conf->_("<5>No changes to accounts %#s", $nochanges), MessageSet::MARKED_NOTE));

@@ -63,7 +63,7 @@ class RequestReview_API {
                 $ml[] = new MessageItem("email", "<5>They offered this reason: “" . htmlspecialchars($refusal->reason) . "”", MessageSet::INFORM);
             }
             if ($user->allow_administer($prow)) {
-                $ml[] = new MessageItem("override", null, 2);
+                $ml[] = new MessageItem("override", "", 2);
             }
             return new JsonResult(400, ["ok" => false, "message_list" => $ml]);
         }
@@ -175,7 +175,7 @@ class RequestReview_API {
             $row = $aset_csv->row(0);
             assert(isset($row["review_token"]));
             $token = $row["review_token"];
-            $mi = new MessageItem(null, "<0>Created anonymous review with review token ‘{$token}’", MessageSet::SUCCESS);
+            $mi = MessageItem::success("<0>Created anonymous review with review token ‘{$token}’");
             return new JsonResult(["ok" => true, "action" => "token", "review_token" => $token, "message_list" => [$mi]]);
         } else {
             return new JsonResult(400, ["ok" => false, "message_list" => $aset->message_list()]);
@@ -304,7 +304,7 @@ class RequestReview_API {
 
         $message_list = [];
         if ($qreq->verbose) {
-            $message_list[] = new MessageItem(null, "Thank you for confirming your intention to finish this review.", MessageSet::SUCCESS);
+            $message_list[] = MessageItem::success("<0>Thank you for confirming your intention to finish this review.");
         }
 
         return new JsonResult(["ok" => true, "action" => "accept", "message_list" => $message_list]);

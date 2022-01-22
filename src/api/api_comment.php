@@ -25,7 +25,7 @@ class Comment_API {
         } else {
             $cname = "Comment";
         }
-        return new MessageItem(null, "<0>{$cname} {$action}", MessageSet::SUCCESS);
+        return MessageItem::success("<0>{$cname} {$action}");
     }
     /** @param ?CommentInfo $crow
      * @param list<MessageItem> &$mis
@@ -36,14 +36,14 @@ class Comment_API {
         if ($qreq->response) {
             $rrd = $prow->conf->resp_round($qreq->response);
             if (!$rrd) {
-                $mis[] = new MessageItem(null, "<0>No such response round", MessageSet::ERROR);
+                $mis[] = MessageItem::error("<0>No such response round");
                 return [null, 404];
             } else if ($crow && (!$crow->is_response() || $crow->commentRound != $rrd->number)) {
-                $mis[] = new MessageItem(null, "<0>Improper response", MessageSet::ERROR);
+                $mis[] = MessageItem::error("<0>Improper response");
                 return [null, 400];
             }
         } else if ($crow && $crow->is_response()) {
-            $mis[] = new MessageItem(null, "<0>Improper response", MessageSet::ERROR);
+            $mis[] = MessageItem::error("<0>Improper response");
             return [null, 400];
         }
 
@@ -93,7 +93,7 @@ class Comment_API {
                     $req["docs"][] = $doc;
                     $changed = true;
                 } else {
-                    $mis[] = new MessageItem(null, "Error uploading attachment", 2);
+                    $mis[] = MessageItem::error("<0>Error uploading attachment");
                     $ok = false;
                     break;
                 }
@@ -105,7 +105,7 @@ class Comment_API {
             && $req["text"] === ""
             && empty($req["docs"])) {
             if (!$qreq->delete && (!$xcrow->commentId || !isset($qreq->text))) {
-                $mis[] = new MessageItem(null, "Comment text required", 2);
+                $mis[] = MessageItem::error("<0>Comment text required");
                 $ok = false;
             } else {
                 $qreq->delete = true;
@@ -116,7 +116,7 @@ class Comment_API {
         // check permission, other errors
         $whyNot = $user->perm_comment($prow, $xcrow, true);
         if ($whyNot && ($changed || !$user->can_finalize_comment($prow, $xcrow))) {
-            $mis[] = new MessageItem(null, "<5>" . $whyNot->unparse_html(), 2);
+            $mis[] = MessageItem::error("<5>" . $whyNot->unparse_html());
             return [null, 403];
         }
 
@@ -149,7 +149,7 @@ class Comment_API {
                     $xcrow = $ocrow;
                     $ok = true;
                 } else {
-                    $mis[] = new MessageItem(null, "A response was entered concurrently by another user; reload to see it", 2);
+                    $mis[] = MessageItem::error("A response was entered concurrently by another user; reload to see it");
                 }
             }
 
@@ -157,7 +157,7 @@ class Comment_API {
             if ($ok) {
                 $mis[] = self::save_success_message($xcrow);
                 if ($xcrow && $xcrow->saved_mentions) {
-                    $mis[] = new MessageItem(null, $user->conf->_("<5>Notified mentioned users %#s", array_values($xcrow->saved_mentions)), MessageSet::SUCCESS);
+                    $mis[] = MessageItem::success($user->conf->_("<5>Notified mentioned users %#s", array_values($xcrow->saved_mentions)));
                 }
                 if ($xcrow && $xcrow->saved_mentions_missing) {
                     $mis[] = new MessageItem(null, $user->conf->_("<0>Some users mentioned in the comment cannot see the comment yet, so they were not notified."), MessageSet::WARNING_NOTE);

@@ -58,9 +58,9 @@ class Settings_Page {
         if ($this->sv->execute()) {
             $this->user->save_session("settings_highlight", $this->sv->message_field_map());
             if (!empty($this->sv->updated_fields())) {
-                $this->conf->msg("Changes saved.", MessageSet::SUCCESS);
+                $this->conf->feedback_msg(MessageItem::success("Changes saved"));
             } else {
-                $this->conf->msg("No changes.", MessageSet::PLAIN);
+                $this->conf->feedback_msg(new MessageItem(null, "No changes", MessageSet::MARKED_NOTE));
             }
             $this->sv->report();
             $this->conf->redirect_self($qreq);

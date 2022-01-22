@@ -123,6 +123,12 @@ class MessageItem implements JsonSerializable {
 
     /** @param ?string $msg
      * @return MessageItem */
+    static function success($msg) {
+        return new MessageItem(null, $msg, MessageSet::SUCCESS);
+    }
+
+    /** @param ?string $msg
+     * @return MessageItem */
     static function inform($msg) {
         return new MessageItem(null, $msg, MessageSet::INFORM);
     }
@@ -341,6 +347,12 @@ class MessageSet {
      * @return MessageItem */
     function inform_at($field, $msg) {
         return $this->msg_at($field, $msg, self::INFORM);
+    }
+
+    /** @param ?string $msg
+     * @return MessageItem */
+    function success($msg) {
+        return $this->msg_at(null, $msg, self::SUCCESS);
     }
 
     /** @param int $pos
