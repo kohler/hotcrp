@@ -13,7 +13,7 @@ class Decisions_SettingParser extends SettingParser {
             $sv->feedback_at("decision__{$ctr}__category"),
             Ht::hidden("decision__{$ctr}__id", $isnew ? "new" : $sv->curv("decision__{$ctr}__id")),
             Ht::hidden("decision__{$ctr}__delete", "", ["data-default-value" => $isnew ? "1" : ""]),
-            $sv->entry("decision__{$ctr}__name", ["data-submission-count" => $count]);
+            $sv->entry("decision__{$ctr}__name", ["data-submission-count" => $count, "class" => $isnew ? "uii js-settings-new-decision-name" : ""]);
         Icons::stash_defs("trash");
         echo Ht::unstash();
         if ($editable) {

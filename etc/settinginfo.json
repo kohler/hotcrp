@@ -39,7 +39,7 @@
     },
     {
         "name": "decisions", "group": "decisions",
-        "hashid": "decision-types",
+        "hashid": "decision-types", "storage": "none",
         "type": "string", "parser_class": "Decisions_SettingParser"
     },
     {

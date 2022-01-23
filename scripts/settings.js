@@ -692,6 +692,17 @@ handle_ui.on("js-settings-resp-round-delete", function () {
     return false;
 });
 
+handle_ui.on("js-settings-new-decision-name", function () {
+    var d = this.closest(".settings-decision");
+    if (/accept/i.test(this.value)) {
+        this.form.elements[d.id + "__category"].selectedIndex = 0;
+    } else if (/reject/i.test(this.value)) {
+        this.form.elements[d.id + "__category"].selectedIndex = 1;
+    } else if (/revis/i.test(this.value)) {
+        this.form.elements[d.id + "__category"].selectedIndex = 0;
+    }
+});
+
 
 hotcrp.settings = {
     review_form: review_form_settings,
