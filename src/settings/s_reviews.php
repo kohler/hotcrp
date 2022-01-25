@@ -382,6 +382,7 @@ class Round_SettingParser extends SettingParser {
             $sv->request_write_lock("PaperReview", "ReviewRequest", "PaperReviewRefused");
             $sv->request_store_value($si);
         }
+        return true;
     }
 
     function store_value(SettingValues $sv, Si $si) {
@@ -414,6 +415,7 @@ class RoundSelector_SettingParser extends SettingParser {
         } else {
             $sv->error_at($si->name, $err . " ($lname)");
         }
+        return true;
     }
 
     function unparse_json(SettingValues $sv, Si $si) {
@@ -430,7 +432,7 @@ class ReviewDeadline_SettingParser extends SettingParser {
         $rref = intval($si->split_name[1]);
         if ($sv->reqv("deleteround_$rref")) {
             // setting already deleted by tag_rounds parsing
-            return;
+            return true;
         }
 
         $name = trim($sv->reqv("roundname_$rref") ?? "");
@@ -457,6 +459,7 @@ class ReviewDeadline_SettingParser extends SettingParser {
                 $sv->check_date_before(substr($prefix, 0, -5) . "soft_{$rnum}", $si->name, true);
             }
         }
+        return true;
     }
 
     function unparse_json(SettingValues $sv, Si $si) {

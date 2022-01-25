@@ -19,6 +19,7 @@ class SiteContact_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
         $sv->save($si->name, $sv->base_parse_req($si));
         $sv->request_store_value($si);
+        return true;
     }
 
     function store_value(SettingValues $sv, Si $si) {

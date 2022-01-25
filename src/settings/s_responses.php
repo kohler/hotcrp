@@ -156,7 +156,7 @@ class Responses_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
         if ($si->name !== "responses"
             || !$sv->newv("response_active")) {
-            return;
+            return true;
         }
 
         $rrds = [];
@@ -210,6 +210,7 @@ class Responses_SettingParser extends SettingParser {
             $sv->request_write_lock("PaperComment");
             $sv->request_store_value($si);
         }
+        return true;
     }
 
     function store_value(SettingValues $sv, Si $si) {

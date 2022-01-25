@@ -517,6 +517,7 @@ class Options_SettingParser extends SettingParser {
                 $sv->request_store_value($si);
             }
         }
+        return true;
     }
 
     function unparse_json(SettingValues $sv, Si $si) {

@@ -24,6 +24,7 @@ class Basics_SettingParser extends SettingParser {
                 Dbl::ql($conf->contactdb(), "update Conferences set shortName=?, longName=? where dbName=?", $conf->short_name, $conf->long_name, $conf->dbname);
             });
         }
+        return true;
     }
 
     function unparse_json(SettingValues $sv, Si $si) {

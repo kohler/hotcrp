@@ -8,8 +8,9 @@ class SettingParser {
         return false;
     }
 
-    /** @return void */
+    /** @return bool */
     function parse_req(SettingValues $sv, Si $si) {
+        return true;
     }
 
     /** @return mixed */

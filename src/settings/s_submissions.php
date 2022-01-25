@@ -54,6 +54,7 @@ class Submissions_SettingParser extends SettingParser {
             $sv->check_date_before("sub_reg", "sub_sub", true);
             $sv->save("sub_update", $v <= 0 ? null : $v);
         }
+        return true;
     }
     function unparse_json(SettingValues $sv, Si $si) {
         return $si->base_unparse_json($sv->newv($si->name));

@@ -170,6 +170,7 @@ class Tags_SettingParser extends SettingParser {
             $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             $sv->update("tag_au_seerev", join(" ", $ts));
         }
+        return true;
     }
 
     function unparse_json(SettingValues $sv, Si $si) {

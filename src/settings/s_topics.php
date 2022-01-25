@@ -115,6 +115,7 @@ class Topics_SettingParser extends SettingParser {
             $sv->request_write_lock("TopicArea", "PaperTopic", "TopicInterest");
             $sv->request_store_value($si);
         }
+        return true;
     }
 
     function unparse_json(SettingValues $sv, Si $si) {

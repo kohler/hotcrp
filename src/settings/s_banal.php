@@ -38,6 +38,7 @@ class Banal_SettingParser extends SettingParser {
         assert($si->split_name !== null);
         assert($si->split_name[0] === "sub_banal_");
         self::parse($si->split_name[1], $sv, true);
+        return true;
     }
 
     /** @return string */
