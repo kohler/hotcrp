@@ -38,11 +38,11 @@ class Tracks_SettingRenderer {
                                         $gj = null) {
         $track_ctl = "{$type}_track$tnum";
         $tag_ctl = "{$type}_tag_track$tnum";
-        $reqv = self::unparse_perm($trackinfo->req[$type] ?? "", $type);
+        $reqstr = self::unparse_perm($trackinfo->req[$type] ?? "", $type);
         $curv = self::unparse_perm($trackinfo->cur[$type] ?? "", $type);
         $defclass = Track::permission_required(Track::$map[$type]) ? "none" : "";
         $unfolded = $curv[0] !== $defclass
-            || $reqv[0] !== $defclass
+            || $reqstr[0] !== $defclass
             || (empty($trackinfo->unfolded) && $gj && ($gj->default_unfolded ?? false))
             || $sv->problem_status_at($track_ctl);
         self::$nperm_rendered_folded += !$unfolded;
@@ -65,15 +65,15 @@ class Tracks_SettingRenderer {
         }
 
         echo '<div class="', $sv->control_class($track_ctl, "entryi wide"),
-            ' has-fold fold', ($reqv[0] == "" || $reqv[0] === "none" ? "c" : "o"),
+            ' has-fold fold', ($reqstr[0] == "" || $reqstr[0] === "none" ? "c" : "o"),
             ($unfolded ? "" : " fx3"),
             '" data-fold-values="+ -">',
             $sv->label([$track_ctl, $tag_ctl], $question, $ljs),
             '<div class="entry">',
-            Ht::select($track_ctl, $permts, $reqv[0],
+            Ht::select($track_ctl, $permts, $reqstr[0],
                        $sv->sjs($track_ctl, ["class" => "uich js-foldup", "data-default-value" => $curv[0], "disabled" => $trackinfo->readonly])),
             " &nbsp;",
-            Ht::entry($tag_ctl, $reqv[1],
+            Ht::entry($tag_ctl, $reqstr[1],
                       $sv->sjs($tag_ctl, ["class" => "fx need-suggest pc-tags", "placeholder" => "(tag)", "data-default-value" => $curv[1], "readonly" => $trackinfo->readonly]));
         $sv->echo_feedback_at($track_ctl);
         $sv->echo_feedback_at($tag_ctl);
@@ -112,13 +112,13 @@ class Tracks_SettingRenderer {
         if ($sv->use_req()) {
             $tinfo->req = [];
             foreach (Track::$map as $type => $perm) {
-                $tclass = $sv->reqv("{$type}_track$tnum") ?? "";
+                $tclass = $sv->reqstr("{$type}_track$tnum") ?? "";
                 if ($tclass === "none") {
                     if (!Track::permission_required($perm)) {
                         $tinfo->req[$type] = "+none";
                     }
                 } else if ($tclass !== "") {
-                    $tinfo->req[$type] = $tclass . ($sv->reqv("{$type}_tag_track$tnum") ?? "");
+                    $tinfo->req[$type] = $tclass . ($sv->reqstr("{$type}_tag_track$tnum") ?? "");
                 }
             }
         }
@@ -135,7 +135,7 @@ class Tracks_SettingRenderer {
         $trackinfo = self::get_trackinfo($sv, $trackname, $tnum);
         $req_trackname = $trackname;
         if ($sv->use_req()) {
-            $req_trackname = $sv->reqv("name_track$tnum") ?? "";
+            $req_trackname = $sv->reqstr("name_track$tnum") ?? "";
         }
 
         // Print track entry
@@ -191,7 +191,7 @@ class Tracks_SettingRenderer {
         }
         $tnum = 2;
         while ($tnum < count($track_names) + 2
-               || ($sv->use_req() && $sv->has_reqv("name_track$tnum"))) {
+               || ($sv->use_req() && $sv->has_req("name_track$tnum"))) {
             self::do_track($sv, $track_names[$tnum - 2] ?? "", $tnum);
             ++$tnum;
         }
@@ -245,12 +245,12 @@ class Tracks_SettingRenderer {
 }
 
 class Tracks_SettingParser extends SettingParser {
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         $tagger = new Tagger($sv->user);
         $tracks = (object) array();
         $missing_tags = false;
-        for ($i = 1; $sv->has_reqv("name_track$i"); ++$i) {
-            $trackname = trim($sv->reqv("name_track$i"));
+        for ($i = 1; $sv->has_req("name_track$i"); ++$i) {
+            $trackname = trim($sv->reqstr("name_track$i"));
             $ok = true;
             if ($trackname === "" || $trackname === "(tag)") {
                 continue;
@@ -267,8 +267,8 @@ class Tracks_SettingParser extends SettingParser {
             }
             $t = (object) array();
             foreach (Track::$map as $type => $perm) {
-                $ttype = $sv->reqv("{$type}_track$i");
-                $ttag = trim($sv->reqv("{$type}_tag_track$i") ?? "");
+                $ttype = $sv->reqstr("{$type}_track$i");
+                $ttag = trim($sv->reqstr("{$type}_tag_track$i") ?? "");
                 if ($ttype === "+" && strcasecmp($ttag, "none") === 0) {
                     $ttype = "none";
                 }
@@ -299,7 +299,7 @@ class Tracks_SettingParser extends SettingParser {
                 $tracks->$trackname = $t;
             }
         }
-        $sv->save("tracks", count((array) $tracks) ? json_encode_db($tracks) : null);
+        $sv->save("tracks", count((array) $tracks) ? json_encode_db($tracks) : "");
         return true;
     }
 }

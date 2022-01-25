@@ -53,7 +53,9 @@ class TagInfo {
     public $colors;
     /** @var bool */
     public $basic_color = false;
+    /** @var ?list<string> */
     public $badges;
+    /** @var ?list<string> */
     public $emoji;
     /** @var ?string */
     public $autosearch;
@@ -89,6 +91,7 @@ class TagInfo {
                 $this->$property = array_unique(array_merge($this->$property ?? [], $t->$property));
         }
     }
+    /** @return string */
     function tag_regex() {
         $t = preg_quote($this->tag);
         if ($this->pattern) {
@@ -1356,22 +1359,23 @@ class Tagger {
         if ($dt->has_badges
             && preg_match_all($dt->badge_regex(), $tags, $m, PREG_SET_ORDER)) {
             foreach ($m as $mx) {
-                if (($t = $dt->check($mx[1])) && $t->badges !== null) {
-                    $klass = ' class="badge ' . $t->badges[0] . 'badge"';
+                if (($t = $dt->check($mx[1])) && $t->badges) {
+                    /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
+                    $klass = " class=\"badge {$t->badges[0]}badge\"";
                     $tag = $this->unparse(trim($mx[0]));
                     if ($type === self::DECOR_PAPER && ($link = $this->link($tag))) {
-                        $b = '<a href="' . $link . '"' . $klass . '>#' . $tag . '</a>';
+                        $b = "<a href=\"{$link}\"{$klass}>#{$tag}</a>";
                     } else {
                         if ($type !== self::DECOR_USER) {
-                            $tag = '#' . $tag;
+                            $tag = "#{$tag}";
                         }
-                        $b = '<span' . $klass . '>' . $tag . '</span>';
+                        $b = "<span{$klass}>{$tag}</span>";
                     }
                     $x .= ' ' . $b;
                 }
             }
         }
-        return $x === "" ? "" : '<span class="tagdecoration">' . $x . '</span>';
+        return $x === "" ? "" : "<span class=\"tagdecoration\">{$x}</span>";
     }
 
     /** @param string $tag

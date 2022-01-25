@@ -11,7 +11,7 @@ class Decisions_SettingParser extends SettingParser {
         echo '<div id="decision__', $ctr, '" class="has-fold foldo settings-decision mb-2', $isnew ? ' settings-decision-new' : '', '">',
             $sv->feedback_at("decision__{$ctr}__name"),
             $sv->feedback_at("decision__{$ctr}__category"),
-            Ht::hidden("decision__{$ctr}__id", $isnew ? "new" : $sv->curv("decision__{$ctr}__id")),
+            Ht::hidden("decision__{$ctr}__id", $isnew ? "new" : $sv->vstr("decision__{$ctr}__id")),
             Ht::hidden("decision__{$ctr}__delete", "", ["data-default-value" => $isnew ? "1" : ""]),
             $sv->entry("decision__{$ctr}__name", ["data-submission-count" => $count, "class" => $isnew ? "uii js-settings-new-decision-name" : ""]);
         Icons::stash_defs("trash");
@@ -20,7 +20,7 @@ class Decisions_SettingParser extends SettingParser {
             echo Ht::button(Icons::ui_use("trash"), ["class" => "fx ui js-settings-remove-decision-type ml-2 need-tooltip", "aria-label" => "Delete decision", "tabindex" => "-1"]);
         }
         echo '<span class="ml-2 d-inline-block fx">';
-        $class = $sv->curv("decision__{$ctr}__category");
+        $class = $sv->vstr("decision__{$ctr}__category");
         if ($isnew) {
             echo Ht::select("decision__{$ctr}__category",
                     ["a" => "Accept category", "r" => "Reject category"], $class,
@@ -60,7 +60,7 @@ class Decisions_SettingParser extends SettingParser {
                 ++$ctr;
             }
         }
-        while ($sv->use_req() && $sv->has_reqv("decision__{$ctr}__id")) {
+        while ($sv->use_req() && $sv->has_req("decision__{$ctr}__id")) {
             self::render_decrow($sv, $ctr, true, 0);
             ++$ctr;
         }
@@ -89,21 +89,21 @@ class Decisions_SettingParser extends SettingParser {
      * @param int $ctr
      * @param list<object> &$dj */
     private function parse_req_row($sv, $ctr, &$dj) {
-        $did = $sv->reqv("decision__{$ctr}__id");
+        $did = $sv->reqstr("decision__{$ctr}__id");
         for ($idx = 0; $idx !== count($dj) && (string) $dj[$idx]->id !== $did; ++$idx) {
         }
-        if ($sv->reqv("decision__{$ctr}__delete")) {
+        if ($sv->reqstr("decision__{$ctr}__delete")) {
             if ($idx < count($dj)) {
                 array_splice($dj, $idx, 1);
             }
             return;
-        } else if (!$sv->has_reqv("decision__{$ctr}__name")) {
+        } else if (!$sv->has_req("decision__{$ctr}__name")) {
             return;
         }
 
         $dname = $sv->base_parse_req("decision__{$ctr}__name");
         $dx = $dj[$idx] ?? (object) [
-            "id" => "new", "accept" => $sv->reqv("decision__{$ctr}__category") === "a", "name" => $dname
+            "id" => "new", "accept" => $sv->reqstr("decision__{$ctr}__category") === "a", "name" => $dname
         ];
         $dx->ctr = $ctr;
         if ($dname === "") {
@@ -112,7 +112,7 @@ class Decisions_SettingParser extends SettingParser {
             // ok
         } else if (($error = Conf::decision_name_error($dname))) {
             $sv->error_at("decision__{$ctr}__name", "<0>{$error}");
-        } else if (!$sv->reqv("decision__{$ctr}__categoryforce")
+        } else if (!$sv->reqstr("decision__{$ctr}__categoryforce")
                    && stripos($dname, $dx->accept ? "reject" : "accept") !== false) {
             $n1 = $dx->accept ? "An Accept" : "A Reject";
             $n2 = $dx->accept ? "reject" : "accept";
@@ -132,9 +132,9 @@ class Decisions_SettingParser extends SettingParser {
         }
     }
 
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         $dj = json_decode($sv->oldv("decisions")) ?? [];
-        for ($ctr = 1; $sv->has_reqv("decision__{$ctr}__id"); ++$ctr) {
+        for ($ctr = 1; $sv->has_req("decision__{$ctr}__id"); ++$ctr) {
             $this->parse_req_row($sv, $ctr, $dj);
         }
 

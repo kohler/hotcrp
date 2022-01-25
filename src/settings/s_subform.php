@@ -24,8 +24,7 @@ class SubForm_SettingRenderer {
     }
 
     static function render_conflicts(SettingValues $sv) {
-        echo '<div id="foldpcconf" class="form-g fold',
-            ($sv->curv("sub_pcconf") ? "o" : "c"), "\">\n";
+        echo '<div id="foldpcconf" class="form-g fold', $sv->vstr("sub_pcconf") ? "o" : "c", "\">\n";
         $sv->echo_checkbox("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "uich js-foldup"]);
         $cflt = array();
         $confset = $sv->conf->conflict_types();

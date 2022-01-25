@@ -2,7 +2,7 @@
 // src/settings/s_messages.php -- HotCRP settings > messages page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class Messages_SettingRenderer {
+class Messages_SettingParser extends SettingParser {
     static function render_submissions(SettingValues $sv) {
         $sv->echo_message("home_message", "Home page message");
         $sv->echo_message("submission_terms", "Clickthrough submission terms",

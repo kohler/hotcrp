@@ -26,9 +26,9 @@ class Responses_SettingParser extends SettingParser {
     }
 
     static function render_deadline_property(SettingValues $sv, $ctr) {
-        if ($sv->curv("response__{$ctr}__open") === 1
-            && ($x = $sv->curv("response__{$ctr}__done"))) {
-            $sv->conf->settings["response__{$ctr}__open"] = $x - 7 * 86400;
+        if ($sv->vstr("response__{$ctr}__open") == 1
+            && ($x = $sv->vstr("response__{$ctr}__done"))) {
+            $sv->conf->settings["response__{$ctr}__open"] = intval($x) - 7 * 86400;
         }
         $sv->echo_entry_group("response__{$ctr}__open", "Start time", ["horizontal" => true]);
         $sv->echo_entry_group("response__{$ctr}__done", "Hard deadline", ["horizontal" => true]);
@@ -46,7 +46,7 @@ class Responses_SettingParser extends SettingParser {
     static function render_one(SettingValues $sv, $ctr, $isnew) {
         echo '<div id="response__', $ctr, '" class="form-g settings-response',
             $isnew ? " settings-response-new" : "", '">',
-            Ht::hidden("response__{$ctr}__id", $isnew ? "new" : $sv->curv("response__{$ctr}__id")),
+            Ht::hidden("response__{$ctr}__id", $isnew ? "new" : $sv->vstr("response__{$ctr}__id")),
             Ht::checkbox("response__{$ctr}__delete", "1", false, ["class" => "hidden"]);
         foreach ($sv->group_members("responses/properties") as $gj) {
             if (isset($gj->render_response_property_function)) {
@@ -63,7 +63,7 @@ class Responses_SettingParser extends SettingParser {
         $sv->echo_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
         Icons::stash_defs("trash");
         echo Ht::unstash(), '<div class="if-response-active',
-            $sv->curv("response_active") ? "" : " hidden",
+            $sv->vstr("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_responses", 1);
 
         // Old values
@@ -83,13 +83,13 @@ class Responses_SettingParser extends SettingParser {
             $sv->set_oldv("response__{$ctr}__words", $rrd->words ?? 500);
             $sv->set_oldv("response__{$ctr}__condition", $rrd->search ? $rrd->search->q : "");
             $instruxsi = $sv->si("response__{$ctr}__instructions");
-            $sv->set_oldv($instruxsi->name, $rrd->instructions ?? $sv->si_message_default($instruxsi));
+            $sv->set_oldv($instruxsi->name, $rrd->instructions ?? $instruxsi->default_value($sv));
             self::render_one($sv, $ctr, false);
             ++$ctr;
         }
 
         // New values
-        while ($sv->use_req() && $sv->has_reqv("response__{$ctr}__id")) {
+        while ($sv->use_req() && $sv->has_req("response__{$ctr}__id")) {
             self::render_one($sv, $ctr, true);
             ++$ctr;
         }
@@ -107,8 +107,8 @@ class Responses_SettingParser extends SettingParser {
     }
 
     private function parse_req_one(SettingValues $sv, ResponseRound $rrd, $ctr) {
-        if ($sv->has_reqv("response__{$ctr}__name")) {
-            $rrd->name = trim($sv->reqv("response__{$ctr}__name"));
+        if ($sv->has_req("response__{$ctr}__name")) {
+            $rrd->name = trim($sv->reqstr("response__{$ctr}__name"));
         }
         $lname = strtolower($rrd->name ?? "");
         if (in_array($lname, ["1", "unnamed", "none", ""], true)) {
@@ -150,7 +150,7 @@ class Responses_SettingParser extends SettingParser {
         $sv->check_date_before("response__{$ctr}__open", "response__{$ctr}__done", false);
     }
 
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         if ($si->name !== "responses"
             || !$sv->newv("response_active")) {
             return true;
@@ -161,10 +161,10 @@ class Responses_SettingParser extends SettingParser {
             $rrds[] = clone $rrd;
         }
 
-        for ($ctr = 1; $sv->has_reqv("response__{$ctr}__id"); ++$ctr) {
-            $id = $sv->reqv("response__{$ctr}__id");
+        for ($ctr = 1; $sv->has_req("response__{$ctr}__id"); ++$ctr) {
+            $id = $sv->reqstr("response__{$ctr}__id");
             $rrd = $rrds[$id] ?? new ResponseRound;
-            if ($sv->reqv("response__{$ctr}__delete")) {
+            if ($sv->reqstr("response__{$ctr}__delete")) {
                 $rrd->setting_status = -1;
                 if ($rrd->number) {
                     $this->round_transform[] = "when {$rrd->number} then 0";
@@ -202,7 +202,7 @@ class Responses_SettingParser extends SettingParser {
         }
 
         $jrt = json_encode_db($jrl);
-        if ($sv->update("responses", $jrt === "[{}]" ? null : $jrt)
+        if ($sv->update("responses", $jrt === "[{}]" ? "" : $jrt)
             && !empty($this->round_transform)) {
             $sv->request_write_lock("PaperComment");
             $sv->request_store_value($si);

@@ -14,10 +14,9 @@ class Basics_SettingParser extends SettingParser {
         $sv->echo_entry_group("email_default_reply_to", null);
     }
 
-    function parse_req(SettingValues $sv, Si $si) {
-        $v = $sv->base_parse_req($si);
-        if ($v !== null
-            && $sv->update($si->name, $v === "" ? null : $v)
+    function apply_req(SettingValues $sv, Si $si) {
+        if (($v = $sv->base_parse_req($si)) !== null
+            && $sv->update($si->name, $v)
             && $sv->conf->contactdb()) {
             $sv->register_cleanup_function("update_shortName", function () use ($sv) {
                 $conf = $sv->conf;

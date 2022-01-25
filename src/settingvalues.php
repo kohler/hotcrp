@@ -8,6 +8,12 @@ class SettingParser {
     }
 
     /** @return bool */
+    function apply_req(SettingValues $sv, Si $si) {
+        return $this->parse_req($sv, $si);
+    }
+
+    /** @return bool
+     * @deprecated */
     function parse_req(SettingValues $sv, Si $si) {
         return true;
     }
@@ -81,8 +87,28 @@ class SettingValues extends MessageSet {
     /** @var bool */
     private $all_perm;
 
+    /** @var array<string,?string> */
+    public $req = [];
+    public $req_files = [];
+    /** @var bool */
+    private $_req_parsed = false;
+    /** @var list<Si> */
+    private $_req_si;
+
+    /** @var array<string,true> */
+    private $_hint_status = [];
+    /** @var ?Mailer */
+    private $_null_mailer;
+    /** @var ?Tagger */
+    private $_tagger;
+
     /** @var associative-array<string,SettingParser> */
     private $_parsers = [];
+    /** @var array<string,null|int|string> */
+    private $_explicit_oldv = [];
+
+    /** @var array<string,array{?int,?string}> */
+    private $_savedv = [];
     /** @var list<Si> */
     private $_saved_si = [];
     /** @var list<array{?string,callable()}> */
@@ -94,25 +120,12 @@ class SettingValues extends MessageSet {
     /** @var associative-array<string,true> */
     private $_invalidate_caches = [];
 
-    /** @var array<string,null|int|float|string> */
-    public $req = [];
-    public $req_files = [];
-    /** @var bool */
-    private $_req_parsed = false;
-    /** @var array<string,array{?int,?string}> */
-    private $_savedv = [];
-    /** @var array<string,null|int|string> */
-    private $_explicit_oldv = [];
-    /** @var array<string,true> */
-    private $_hint_status = [];
-    /** @var ?Mailer */
-    private $_null_mailer;
-
     /** @var ?ComponentSet */
     private $_cs;
 
     function __construct(Contact $user) {
         parent::__construct();
+        $this->set_want_ftext(true, 5);
         $this->conf = $user->conf;
         $this->user = $user;
         $this->all_perm = $user->privChair;
@@ -232,11 +245,6 @@ class SettingValues extends MessageSet {
         $this->cs()->render_section($title, $id);
     }
 
-
-    /** @return bool */
-    function use_req() {
-        return $this->has_error();
-    }
 
     /** @param null|string|Si $field
      * @param MessageItem $mi */
@@ -365,6 +373,7 @@ class SettingValues extends MessageSet {
         }
     }
 
+    /** @return string */
     function label($name, $html, $label_js = []) {
         $name1 = is_array($name) ? $name[0] : $name;
         if (($label_js["class"] ?? null) === false
@@ -511,39 +520,58 @@ class SettingValues extends MessageSet {
     }
 
 
+    /** @return bool */
+    function use_req() {
+        return $this->has_error();
+    }
+
     /** @param string $name
      * @return bool */
-    function has_reqv($name) {
+    function has_req($name) {
         return array_key_exists($name, $this->req);
     }
 
     /** @param string $name */
+    function reqstr($name) {
+        return $this->req[$name] ?? null;
+    }
+
+    /** @param string $name
+     * @return bool
+     * @deprecated */
+    function has_reqv($name) {
+        return array_key_exists($name, $this->req);
+    }
+
+    /** @param string $name
+     * @deprecated */
     function reqv($name) {
         return $this->req[$name] ?? null;
     }
 
-    private function req_has_si(Si $si) {
-        if (!$si->parser_class
-            && $si->type !== "cdate"
-            && $si->type !== "checkbox") {
-            return array_key_exists($si->name, $this->req);
+
+    /** @param string $name
+     * @return string */
+    function vstr($name) {
+        return $this->si_vstr($this->si($name));
+    }
+
+    /** @return string */
+    private function si_vstr(Si $si) {
+        if ($this->use_req() && array_key_exists($si->name, $this->req)) {
+            return $this->req[$si->name];
         } else {
-            return !!($this->req["has_{$si->name}"] ?? null);
+            $v = $this->si_oldv($si);
+            return $si->base_unparse_reqv($v);
         }
     }
 
-    /** @param string $name */
+    /** @param string $name
+     * @deprecated */
     function curv($name) {
-        return $this->si_curv($this->si($name));
+        return $this->si_vstr($this->si($name));
     }
 
-    private function si_curv(Si $si) {
-        if ($this->use_req() && $this->req_has_si($si)) {
-            return $this->reqv($si->name);
-        } else {
-            return $this->si_oldv($si);
-        }
-    }
 
     /** @param string $name
      * @return bool */
@@ -576,6 +604,7 @@ class SettingValues extends MessageSet {
         }
     }
 
+
     /** @param string $name */
     function newv($name) {
         $si = $this->si($name);
@@ -586,6 +615,7 @@ class SettingValues extends MessageSet {
             return $this->si_oldv($si);
         }
     }
+
 
     /** @param string $name
      * @return bool */
@@ -601,72 +631,6 @@ class SettingValues extends MessageSet {
             || $si->group === $this->canonical_page
             || (isset($si->tags) && in_array($this->canonical_page, $si->tags))
             || array_key_exists($si->storage_name(), $this->_savedv);
-    }
-
-    /** @param string $name
-     * @return void */
-    function save($name, $value) {
-        $si = $this->si($name);
-        if (!$si || $si->storage_type === Si::SI_NONE) {
-            error_log("setting $name: no setting or cannot save value");
-            return;
-        }
-        if ($value !== null
-            && ($si->storage_type & Si::SI_DATA ? !is_string($value) : !is_int($value))) {
-            error_log(caller_landmark() . ": setting $name: invalid value " . var_export($value, true));
-            return;
-        }
-        $s = $si->storage_name();
-        if ($value === $si->default_value
-            || ($value === "" && ($si->storage_type & Si::SI_DATA))) {
-            $value = null;
-        }
-        if ($si->storage_type & Si::SI_NEGATE) {
-            $value = $value ? 0 : 1;
-        }
-        if ($si->storage_type & Si::SI_SLICE) {
-            if (!isset($this->_savedv[$s])) {
-                if (!array_key_exists($s, $this->_savedv)) {
-                    $this->_savedv[$s] = [$this->conf->setting($s) ?? 0, $this->conf->setting_data($s)];
-                } else {
-                    $this->_savedv[$s] = [0, null];
-                }
-            }
-            $idx = $si->storage_type & Si::SI_DATA ? 1 : 0;
-            $this->_savedv[$s][$idx] = $value;
-            if ($this->_savedv[$s][0] === 0 && $this->_savedv[$s][1] === null) {
-                $this->_savedv[$s] = null;
-            }
-        } else if ($value === null) {
-            $this->_savedv[$s] = null;
-        } else if ($si->storage_type & Si::SI_DATA) {
-            $this->_savedv[$s] = [1, $value];
-        } else {
-            $this->_savedv[$s] = [$value, null];
-        }
-    }
-
-    /** @param string $name
-     * @return bool */
-    function update($name, $value) {
-        if ($value !== $this->oldv($name)) {
-            $this->save($name, $value);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /** @param ?string $name
-     * @param callable() $func */
-    function register_cleanup_function($name, $func) {
-        if ($name !== null) {
-            foreach ($this->_cleanup_callbacks as $cb) {
-                if ($cb[0] === $name)
-                    return;
-            }
-        }
-        $this->_cleanup_callbacks[] = [$name, $func];
     }
 
     /** @param string $field
@@ -702,9 +666,8 @@ class SettingValues extends MessageSet {
      * @return void */
     function echo_checkbox_only($name, $js = null) {
         $js["id"] = $name;
-        $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, $js));
+            Ht::checkbox($name, 1, !!$this->vstr($name), $this->sjs($name, $js));
     }
 
     /** @param string $name
@@ -732,7 +695,7 @@ class SettingValues extends MessageSet {
      * @param string|array $rest
      * @return void */
     function echo_radio_table($name, $varr, $heading = null, $rest = []) {
-        $x = $this->curv($name);
+        $x = $this->vstr($name);
         if ($x === null || !isset($varr[$x])) {
             $x = 0;
         }
@@ -796,11 +759,8 @@ class SettingValues extends MessageSet {
      * @return string */
     function entry($name, $js = null) {
         $si = $this->si($name);
-        $v = $this->si_curv($si);
+        $v = $this->si_vstr($si);
         $t = "";
-        if (!$this->use_req() || !$this->si_has_interest($si)) {
-            $v = $si->base_unparse_reqv($v);
-        }
         $js = $js ?? [];
         if ($si->size && !isset($js["size"])) {
             $js["size"] = $si->size;
@@ -879,7 +839,7 @@ class SettingValues extends MessageSet {
      * @return string */
     function select($name, $values, $js = null) {
         $si = $this->si($name);
-        $v = $this->si_curv($si);
+        $v = $this->si_vstr($si);
         $t = "";
         if ($si->parser_class) {
             $t = Ht::hidden("has_$name", 1);
@@ -902,7 +862,7 @@ class SettingValues extends MessageSet {
      * @return string */
     function textarea($name, $js = null) {
         $si = $this->si($name);
-        $v = $this->si_curv($si);
+        $v = $this->si_vstr($si);
         $t = "";
         $rows = 10;
         if ($si->size) {
@@ -933,13 +893,10 @@ class SettingValues extends MessageSet {
      * @param string $xclass */
     private function echo_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
-        if ($si->default_message) {
-            $si->default_value = $this->si_message_default($si);
-        }
-        $current = $this->curv($name);
+        $current = $this->si_vstr($si);
         $description = '<a class="ui q js-foldup" href="">'
             . expander(null, 0) . $description . '</a>';
-        echo '<div class="f-i has-fold fold', ($current == $si->default_value ? "c" : "o"), '">',
+        echo '<div class="f-i has-fold fold', ($current == $si->default_value($this) ? "c" : "o"), '">',
             '<div class="f-c', $xclass, ' ui js-foldup">',
             $this->label($name, $description),
             ' <span class="n fx">(HTML allowed)</span></div>',
@@ -967,11 +924,8 @@ class SettingValues extends MessageSet {
      * @param string $hint */
     function echo_message_horizontal($name, $description, $hint = "") {
         $si = $this->si($name);
-        if ($si->default_message) {
-            $si->default_value = $this->si_message_default($si);
-        }
-        $current = $this->curv($name);
-        if ($current !== $si->default_value) {
+        $current = $this->si_vstr($si);
+        if ($current !== $si->default_value($this)) {
             echo '<div class="entryi">',
                 $this->label($name, $description), '<div>';
             $close = "";
@@ -1034,22 +988,10 @@ class SettingValues extends MessageSet {
         return $this->_null_mailer->expand_template($name, $use_default);
     }
 
-    /** @param Si $si
-     * @return string */
-    function si_message_default($si) {
-        if (is_string($si->default_message)) {
-            $args = [$si->default_message];
-        } else {
-            assert(is_array($si->default_message));
-            $args = $si->default_message;
-            array_splice($args, 1, 0, "");
-        }
-        '@phan-var-force non-empty-list<string> $args';
-        $mid = $si->split_name ? $si->split_name[1] : "";
-        for ($i = 2; $i < count($args); ++$i) {
-            $args[$i] = $this->newv(str_replace("\$", $mid, $args[$i]));
-        }
-        return $this->conf->ims()->default_itext(...$args);
+    /** @return Tagger */
+    function tagger() {
+        $this->_tagger = $this->_tagger ?? new Tagger($this->user);
+        return $this->_tagger;
     }
 
     /** @param string|Si $si
@@ -1060,32 +1002,114 @@ class SettingValues extends MessageSet {
     }
 
 
+    /** @param string $name
+     * @return void */
+    function save($name, $value) {
+        if ($value === null) {
+            error_log("setting {$name}: setting value to null: " . debug_string_backtrace());
+        }
+        $si = $this->si($name);
+        if (!$si || $si->storage_type === Si::SI_NONE) {
+            error_log("setting $name: no setting or cannot save value");
+            return;
+        }
+        if (is_bool($value)) {
+            $value = $value ? 1 : 0;
+        }
+        if ($si->storage_type & Si::SI_NEGATE) {
+            $value = $value ? 0 : 1;
+        }
+        if ($value !== null
+            && ($si->storage_type & Si::SI_DATA ? !is_string($value) : !is_int($value))) {
+            error_log(caller_landmark() . ": setting $name: invalid value " . var_export($value, true));
+            return;
+        }
+        $s = $si->storage_name();
+        if ($si->value_nullable($value, $this)) {
+            $value = null;
+        }
+        if ($si->storage_type & Si::SI_SLICE) {
+            if (!isset($this->_savedv[$s])) {
+                if (!array_key_exists($s, $this->_savedv)) {
+                    $this->_savedv[$s] = [$this->conf->setting($s) ?? 0, $this->conf->setting_data($s)];
+                } else {
+                    $this->_savedv[$s] = [0, null];
+                }
+            }
+            if ($si->storage_type & Si::SI_DATA) {
+                $this->_savedv[$s][1] = $value;
+            } else {
+                $this->_savedv[$s][0] = $value ?? 0;
+            }
+            if ($this->_savedv[$s][0] === 0 && $this->_savedv[$s][1] === null) {
+                $this->_savedv[$s] = null;
+            }
+        } else if ($value === null) {
+            $this->_savedv[$s] = null;
+        } else if ($si->storage_type & Si::SI_DATA) {
+            $this->_savedv[$s] = [1, $value];
+        } else {
+            $this->_savedv[$s] = [$value, null];
+        }
+        if ($si->ifnonempty) {
+            $this->save($si->ifnonempty, isset($this->_savedv[$s]));
+        }
+    }
+
+    /** @param string $name
+     * @return bool */
+    function update($name, $value) {
+        if ($value !== $this->oldv($name)) {
+            $this->save($name, $value);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     /** @param string|Si $si
      * @return null|int|string */
     function base_parse_req($si) {
         $si = is_string($si) ? $this->si($si) : $si;
-        return $si->base_parse_reqv($this->reqv($si->name), $this);
+        return $si->parse_valstr($this->reqstr($si->name), $this);
     }
 
-    private function execute_req(Si $si) {
-        if ($si->internal
-            || $si->disabled
-            || !$this->si_editable($si)) {
-            /* ignore changes to disabled/internal settings */
-        } else if ($si->parser_class) {
-            $this->si_parser($si)->parse_req($this, $si);
-        } else if ($si->storage_type !== Si::SI_NONE
-                   && ($v = $this->base_parse_req($si)) !== null) {
-            if (is_int($v)
-                && $v <= 0
-                && $si->type !== "radio") {
-                $v = null;
-            }
-            $this->save($si->name, $v);
-            if ($si->ifnonempty) {
-                $this->save($si->ifnonempty, $v === null || $v === "" ? null : 1);
+    /** @param Si $si */
+    private function apply_req($si) {
+        if (!$si->internal
+            && !$si->disabled
+            && $this->si_editable($si)
+            && (!$si->parser_class
+                || $this->si_parser($si)->apply_req($this, $si) === false)
+            && $si->storage_type !== Si::SI_NONE
+            && ($value = $si->parse_valstr($this->reqstr($si->name), $this)) !== null) {
+            $this->save($si->name, $value);
+        }
+    }
+
+    /** @return $this */
+    function parse() {
+        assert(!$this->_req_parsed);
+        $this->_req_parsed = true;
+
+        // find requested settings
+        $siset = $this->conf->si_set();
+        $this->_req_si = [];
+        foreach ($this->req as $k => $v) {
+            if (!str_starts_with($k, "has_")
+                && ($si = $siset->get($k))
+                && $this->has_req($si->name)) {
+                $this->_req_si[] = $si;
             }
         }
+        usort($this->_req_si, "Conf::xt_order_compare");
+
+        // parse and validate settings
+        foreach ($this->_req_si as $si) {
+            $this->apply_req($si);
+        }
+
+        return $this;
     }
 
     /** @param string ...$tables */
@@ -1107,37 +1131,23 @@ class SettingValues extends MessageSet {
         $this->_saved_si[] = $si;
     }
 
-    /** @return $this */
-    function parse() {
-        assert(!$this->_req_parsed);
-
-        // find requested settings
-        $siset = $this->conf->si_set();
-        $reqsi = [];
-        foreach ($this->req as $k => $v) {
-            if (str_starts_with($k, "has_")) {
-                $si = $siset->get(substr($k, 4));
-            } else {
-                $si = $siset->get($k);
-            }
-            if ($si && $this->req_has_si($si)) {
-                $reqsi[$si->name] = $si;
+    /** @param ?string $name
+     * @param callable() $func */
+    function register_cleanup_function($name, $func) {
+        if ($name !== null) {
+            foreach ($this->_cleanup_callbacks as $cb) {
+                if ($cb[0] === $name)
+                    return;
             }
         }
-        uasort($reqsi, "Conf::xt_order_compare");
-
-        // parse and validate settings
-        foreach ($reqsi as $si) {
-            $this->execute_req($si);
-        }
-
-        $this->_req_parsed = true;
-        return $this;
+        $this->_cleanup_callbacks[] = [$name, $func];
     }
 
     /** @return bool */
     function execute() {
-        $this->_req_parsed || $this->parse();
+        if (!$this->_req_parsed) {
+            $this->parse();
+        }
 
         // obtain locks
         $this->request_read_lock("ContactInfo");
@@ -1154,7 +1164,7 @@ class SettingValues extends MessageSet {
             $this->conf->save_logs(true);
 
             // load db settings, pre-crosscheck
-            $dbsettings = array();
+            $dbsettings = [];
             $result = $this->conf->qe("select name, value, data from Settings");
             while (($row = $result->fetch_row())) {
                 $dbsettings[$row[0]] = $row;
@@ -1166,7 +1176,7 @@ class SettingValues extends MessageSet {
                 $this->si_parser($si)->store_value($this, $si);
             }
 
-            $dv = $av = array();
+            $dv = $av = [];
             foreach ($this->_savedv as $n => $v) {
                 if (substr($n, 0, 4) === "opt.") {
                     $okey = substr($n, 4);

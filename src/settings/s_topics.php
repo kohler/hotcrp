@@ -34,8 +34,8 @@ class Topics_SettingRenderer {
             }
             echo '</tr></thead><tbody>';
             foreach ($sv->conf->topic_set() as $tid => $tname) {
-                if ($sv->use_req() && $sv->has_reqv("top$tid")) {
-                    $tname = $sv->reqv("top$tid");
+                if ($sv->use_req() && $sv->has_req("top$tid")) {
+                    $tname = $sv->reqstr("top$tid");
                 }
                 echo '<tr><td class="lentry">',
                     Ht::entry("top$tid", $tname, ["size" => 80, "class" => "need-autogrow wide" . ($sv->has_problem_at("top$tid") ? " has-error" : ""), "aria-label" => "Topic name"]),
@@ -52,7 +52,7 @@ class Topics_SettingRenderer {
         }
 
         echo '<div class="mg"><label for="topnew"><strong>New topics</strong></label> (enter one per line)<br>',
-            Ht::textarea("topnew", $sv->use_req() ? $sv->reqv("topnew") : "", array("cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("topnew") ? "has-error " : "") . "need-autogrow", "id" => "topnew")), "</div>";
+            Ht::textarea("topnew", $sv->use_req() ? $sv->reqstr("topnew") : "", array("cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("topnew") ? "has-error " : "") . "need-autogrow", "id" => "topnew")), "</div>";
     }
 }
 
@@ -79,11 +79,11 @@ class Topics_SettingParser extends SettingParser {
         $sv->set_oldv("topics", json_encode_db($this->unparse_current_json($sv->conf)));
     }
 
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         $j = json_decode($sv->oldv("topics")) ?? [];
         for ($i = 0; $i !== count($j); ) {
             $tid = $j[$i]->id;
-            if (($x = $sv->reqv("top$tid")) !== null) {
+            if (($x = $sv->reqstr("top$tid")) !== null) {
                 $t = $this->check_topic($x);
                 if ($t === false) {
                     $sv->error_at("top$tid", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
@@ -98,8 +98,8 @@ class Topics_SettingParser extends SettingParser {
                 ++$i;
             }
         }
-        if ($sv->has_reqv("topnew")) {
-            foreach (explode("\n", $sv->reqv("topnew")) as $x) {
+        if ($sv->has_req("topnew")) {
+            foreach (explode("\n", $sv->reqstr("topnew")) as $x) {
                 $t = $this->check_topic($x);
                 if ($t === false) {
                     $sv->error_at("topnew", "Topic name “" . htmlspecialchars(trim($x)) . "” is reserved. Please choose another name.");
@@ -110,7 +110,7 @@ class Topics_SettingParser extends SettingParser {
         }
         if (!$sv->has_error()
             && $sv->update("topics", json_encode_db($j))) {
-            $sv->save("has_topics", empty($j) ? null : 1);
+            $sv->save("has_topics", !empty($j));
             $sv->request_write_lock("TopicArea", "PaperTopic", "TopicInterest");
             $sv->request_store_value($si);
         }
@@ -151,7 +151,7 @@ class Topics_SettingParser extends SettingParser {
         }
         if (!empty($newt1) || !empty($newt1) || !empty($oldm) || !empty($changet)) {
             $has_topics = $sv->conf->fetch_ivalue("select exists (select * from TopicArea)");
-            $sv->save("has_topics", $has_topics ? 1 : null);
+            $sv->save("has_topics", !!$has_topics);
             $sv->mark_diff("topics");
             $sv->mark_invalidate_caches(["autosearch" => true]);
         }

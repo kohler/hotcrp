@@ -28,7 +28,6 @@ class Tags_SettingRenderer {
     }
     static function render(SettingValues $sv) {
         // Tags
-        $tagmap = $sv->conf->tags();
         echo '<div class="form-g">';
         $sv->render_group("tags/main");
         echo "</div>\n";
@@ -83,10 +82,11 @@ class Tags_SettingParser extends SettingParser {
         $this->sv = $sv;
         $this->tagger = new Tagger($sv->user);
     }
+    /** @deprecated */
     static function parse_list(Tagger $tagger, SettingValues $sv, Si $si,
                                $checkf, $min_idx) {
         $ts = array();
-        foreach (preg_split('/[\s,;]+/', $sv->reqv($si->name)) as $t) {
+        foreach (preg_split('/[\s,;]+/', $sv->reqstr($si->name)) as $t) {
             if ($t !== "" && ($tx = $tagger->check($t, $checkf))) {
                 list($tag, $idx) = Tagger::unpack($tx);
                 if ($min_idx) {
@@ -99,15 +99,12 @@ class Tags_SettingParser extends SettingParser {
         }
         return array_values($ts);
     }
-    function my_parse_list(Si $si, $checkf, $min_idx) {
-        return self::parse_list($this->tagger, $this->sv, $si, $checkf, $min_idx);
-    }
 
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->name === "tag_chair") {
             $ts = array_filter($sv->conf->tags()->filter("chair"), function ($t) {
                 return !str_starts_with($t->tag, "~~")
-                    && $t->tag !== "perm:*";
+                    && !str_starts_with($t->tag, "perm:");
             });
             $sv->set_oldv("tag_chair", Tags_SettingRenderer::render_tags($ts));
         } else if ($si->name === "tag_sitewide") {
@@ -125,47 +122,39 @@ class Tags_SettingParser extends SettingParser {
         }
     }
 
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         assert($this->sv === $sv);
-
-        if ($si->name === "tag_chair") {
-            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
-            $sv->update($si->name, join(" ", $ts));
-        } else if ($si->name === "tag_sitewide") {
-            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
-            $sv->update($si->name, join(" ", $ts));
-        } else if ($si->name === "tag_vote") {
-            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
-            if ($sv->update("tag_vote", join(" ", $ts))) {
+        if ($si->name === "tag_vote") {
+            if (($v = $sv->base_parse_req($si)) !== null
+                && $sv->update("tag_vote", $v)) {
                 $sv->request_write_lock("PaperTag");
                 $sv->request_store_value($si);
             }
         } else if ($si->name === "tag_approval") {
-            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            if ($sv->update("tag_approval", join(" ", $ts))) {
+            if (($v = $sv->base_parse_req($si)) !== null
+                && $sv->update("tag_approval", $v)) {
                 $sv->request_write_lock("PaperTag");
                 $sv->request_store_value($si);
             }
         } else if ($si->name === "tag_rank") {
-            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            if (count($ts) > 1) {
-                $sv->error_at("tag_rank", "Multiple ranking tags are not supported yet.");
-            } else {
-                $sv->update("tag_rank", join(" ", $ts));
+            if (($v = $sv->base_parse_req($si)) !== null
+                && strpos($v, " ") === false) {
+                $sv->save("tag_rank", $v);
+            } else if ($v !== null) {
+                $sv->error_at("tag_rank", "<0>Multiple ranking tags are not supported");
             }
         } else if ($si->name === "tag_color") {
             $ts = [];
             foreach ($sv->conf->tags()->canonical_colors() as $k) {
-                if ($sv->has_reqv("tag_color_$k")) {
-                    foreach ($this->my_parse_list($sv->si("tag_color_$k"), Tagger::NOPRIVATE | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t) {
-                        $ts[] = $t . "=" . $k;
-                    }
+                if ($sv->has_req("tag_color_$k")
+                    && ($v = $sv->base_parse_req("tag_color_{$k}")) !== null
+                    && $v !== "") {
+                    $ts[] = preg_replace('/(?=\z| )/', "={$k}", $v);
                 }
             }
-            $sv->update("tag_color", join(" ", $ts));
-        } else if ($si->name === "tag_au_seerev") {
-            $ts = $this->my_parse_list($si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            $sv->update("tag_au_seerev", join(" ", $ts));
+            $sv->save("tag_color", join(" ", $ts));
+        } else {
+            return false;
         }
         return true;
     }

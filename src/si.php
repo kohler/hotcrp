@@ -12,6 +12,15 @@ class Si {
     public $split_name;
     /** @var string */
     public $json_name;
+    /** @var ?string
+     * @readonly */
+    public $type;
+    /** @var ?string
+     * @readonly */
+    public $subtype;
+    /** @var ?Sitype
+     * @readonly */
+    private $_tclass;
     /** @var string */
     private $title;
     /** @var ?string */
@@ -24,8 +33,6 @@ class Si {
     public $order;
     /** @var null|false|string */
     public $hashid;
-    /** @var ?string */
-    public $type;
     /** @var bool */
     public $internal = false;
     /** @var int */
@@ -53,7 +60,7 @@ class Si {
     /** @var null|string|list<string> */
     public $default_message;
 
-    /** @var array<string,bool> */
+    /** @var associative-array<string,bool> */
     static public $option_is_value = [];
 
     const SI_NONE = 0;
@@ -62,19 +69,6 @@ class Si {
     const SI_SLICE = 4;
     const SI_OPT = 8;
     const SI_NEGATE = 16;
-
-    static private $type_storage = [
-        "emailheader" => self::SI_DATA,
-        "emailstring" => self::SI_DATA,
-        "htmlstring" => self::SI_DATA,
-        "simplestring" => self::SI_DATA,
-        "string" => self::SI_DATA,
-        "tag" => self::SI_DATA,
-        "tagbase" => self::SI_DATA,
-        "taglist" => self::SI_DATA,
-        "tagselect" => self::SI_DATA,
-        "urlstring" => self::SI_DATA
-    ];
 
     static private $key_storage = [
         "autogrow" => "is_bool",
@@ -89,6 +83,7 @@ class Si {
         "parser_class" => "is_string",
         "placeholder" => "is_string",
         "size" => "is_int",
+        "subtype" => "is_string",
         "title" => "is_string",
         "title_pattern" => "is_string",
         "tags" => "is_string_list",
@@ -97,10 +92,12 @@ class Si {
     ];
 
     private function store($key, $j, $jkey, $typecheck) {
-        if (isset($j->$jkey) && call_user_func($typecheck, $j->$jkey)) {
-            $this->$key = $j->$jkey;
-        } else if (isset($j->$jkey)) {
-            trigger_error("setting {$j->name}.$jkey format error");
+        if (isset($j->$jkey)) {
+            if (call_user_func($typecheck, $j->$jkey)) {
+                $this->$key = $j->$jkey;
+            } else {
+                trigger_error("setting {$j->name}.$jkey format error");
+            }
         }
     }
 
@@ -155,6 +152,9 @@ class Si {
         } else if ((!$this->type && !$this->internal) || $this->type === "none") {
             trigger_error("setting {$j->name}.type missing");
         }
+        if (($this->_tclass = Sitype::get($conf, $this->type, $this->subtype))) {
+            $this->_tclass->initialize_si($this);
+        }
 
         $s = $this->storage ?? $this->name;
         $dot = strpos($s, ".");
@@ -177,8 +177,8 @@ class Si {
             $this->storage = substr($s, 7);
         } else if ($this->storage === "none") {
             $this->storage_type = self::SI_NONE;
-        } else if (isset(self::$type_storage[$this->type])) {
-            $this->storage_type = self::$type_storage[$this->type];
+        } else if ($this->_tclass) {
+            $this->storage_type = $this->_tclass->storage_type();
         } else {
             $this->storage_type = self::SI_VALUE;
         }
@@ -191,15 +191,6 @@ class Si {
             if (self::$option_is_value[$oname] != $is_value) {
                 error_log("$oname: conflicting option_is_value");
             }
-        }
-
-        // defaults for size, placeholder
-        if ($this->type && str_ends_with($this->type, "date")) {
-            $this->size = $this->size ?? 32;
-            $this->placeholder = $this->placeholder ?? "N/A";
-        } else if ($this->type === "grace") {
-            $this->size = $this->size ?? 15;
-            $this->placeholder = $this->placeholder ?? "none";
         }
 
         // resolve extension
@@ -265,7 +256,7 @@ class Si {
             if (str_starts_with($f, "uc ")) {
                 $r = ucfirst(trim(substr($f, 3)));
             } else if (str_starts_with($f, "sv ")) {
-                $r = $sv->curv(trim(substr($f, 3)));
+                $r = $sv->vstr(trim(substr($f, 3)));
             }
         }
         return $r;
@@ -298,7 +289,8 @@ class Si {
     }
 
 
-    /** @return bool */
+    /** @return bool
+     * @deprecated */
     function is_date() {
         return $this->type && str_ends_with($this->type, "date");
     }
@@ -328,177 +320,58 @@ class Si {
         }
     }
 
+    /** @param SettingValues $sv */
+    function default_value($sv) {
+        if ($this->default_message) {
+            $dm = $this->default_message;
+            $id = is_string($dm) ? $dm : $dm[0];
+            $mid = $this->split_name ? $this->split_name[1] : "\$";
+            $args = [];
+            foreach (is_string($dm) ? [] : array_slice($dm, 1) as $arg) {
+                $args[] = $sv->newv(str_replace("\$", $mid, $arg));
+            }
+            $this->default_value = $this->conf->ims()->default_itext($id, "", ...$args);
+        }
+        return $this->default_value;
+    }
+
+    /** @param mixed $v
+     * @param SettingValues $sv
+     * @return bool */
+    function value_nullable($v, $sv) {
+        return $v === $this->default_value($sv)
+            || ($v === "" && ($this->storage_type & Si::SI_DATA) !== 0)
+            || ($this->_tclass && $this->_tclass->nullable($v, $this, $sv));
+    }
+
+    /** @param ?string $valstr
+     * @return null|int|string
+     * @deprecated */
+    function base_parse_reqv($valstr, SettingValues $sv) {
+        return $this->parse_valstr($valstr, $sv);
+    }
 
     /** @param ?string $reqv
      * @return null|int|string */
-    function base_parse_reqv($reqv, SettingValues $sv) {
+    function parse_valstr($reqv, SettingValues $sv) {
         if ($reqv === null) {
-            if ($this->type === "cdate" || $this->type === "checkbox") {
-                return 0;
-            } else {
-                return null;
+            return $this->_tclass ? $this->_tclass->parse_null_valstr($this) : null;
+        } else if ($this->_tclass) {
+            $v = trim($reqv);
+            if ($this->placeholder === $v || $this->invalid_value === $v) {
+                $v = "";
             }
-        }
-
-        $v = trim($reqv);
-        if (($this->placeholder !== null && $this->placeholder === $v)
-            || ($this->invalid_value && $this->invalid_value === $v)) {
-            $v = "";
-        }
-
-        if ($this->type === "checkbox") {
-            return $v != "" ? 1 : 0;
-        } else if ($this->type === "cdate") {
-            if ($v != "") {
-                $v = $sv->si_oldv($this);
-                return $v > 0 ? $v : Conf::$now;
-            } else {
-                return 0;
-            }
-        } else if ($this->type === "date" || $this->type === "ndate") {
-            if ($v === ""
-                || $v === "0"
-                || strcasecmp($v, "N/A") === 0
-                || strcasecmp($v, "same as PC") === 0
-                || ($this->type !== "ndate" && strcasecmp($v, "none") === 0)) {
-                return -1;
-            } else if (strcasecmp($v, "none") === 0) {
-                return 0;
-            } else if (($v = $this->conf->parse_time($v)) !== false) {
-                return $v;
-            } else {
-                $sv->error_at($this, "Please enter a valid date");
-                return null;
-            }
-        } else if ($this->type === "grace") {
-            if (($v = SettingParser::parse_interval($v)) !== false) {
-                return intval($v);
-            } else {
-                $sv->error_at($this, "Please enter a valid grace period");
-                return null;
-            }
-        } else if ($this->type === "int") {
-            if (preg_match("/\\A[-+]?[0-9]+\\z/", $v)) {
-                return intval($v);
-            } else if ($v == "" && $this->default_value !== null) {
-                return $this->default_value;
-            } else {
-                $sv->error_at($this, "Please enter a whole number");
-                return null;
-            }
-        } else if ($this->type === "string") {
-            // Avoid storing the default message in the database
-            if (substr($this->name, 0, 9) == "mailbody_") {
-                $t = $sv->expand_mail_template(substr($this->name, 9), true);
-                $v = cleannl($v);
-                if ($t["body"] === $v) {
-                    return "";
-                }
-            }
-            return $v;
-        } else if ($this->type === "simplestring") {
-            return simplify_whitespace($v);
-        } else if ($this->type === "tag"
-                   || $this->type === "tagbase"
-                   || $this->type === "tagselect") {
-            $v = trim($v);
-            if ($v === "" && $this->optional) {
-                return "";
-            }
-            $tagger = new Tagger($sv->user);
-            if (($v = $tagger->check($v, $this->type === "tagbase" ? Tagger::NOVALUE : 0))) {
-                return $v;
-            } else {
-                $sv->error_at($this, "<5>" . $tagger->error_html());
-                return null;
-            }
-        } else if ($this->type === "emailheader") {
-            $mt = new MimeText;
-            $v = $mt->encode_email_header("", $v);
-            if ($v !== false) {
-                return $v == "" ? "" : MimeText::decode_header($v);
-            } else {
-                $sv->append_item_at($this, $mt->mi);
-                return null;
-            }
-        } else if ($this->type === "emailstring") {
-            $v = trim($v);
-            if ($v === "" && $this->optional) {
-                return "";
-            } else if (validate_email($v) || $v === $sv->oldv($this->name)) {
-                return $v;
-            } else {
-                $sv->error_at($this, "Please enter a valid email address");
-                return null;
-            }
-        } else if ($this->type === "urlstring") {
-            $v = trim($v);
-            if (($v === "" && $this->optional)
-                || preg_match('/\A(?:https?|ftp):\/\/\S+\z/', $v)) {
-                return $v;
-            } else {
-                $sv->error_at($this, "Please enter a valid URL");
-                return null;
-            }
-        } else if ($this->type === "htmlstring") {
-            $ch = CleanHTML::basic();
-            if (($v = $ch->clean($v)) !== false) {
-                if ($this->default_message && $v === $sv->si_message_default($this)) {
-                    return "";
-                } else {
-                    return $v;
-                }
-            } else {
-                $sv->error_at($this, "<5>{$ch->last_error}");
-                return null;
-            }
-        } else if ($this->type === "radio") {
-            foreach ($this->values as $allowedv) {
-                if ((string) $allowedv === $v)
-                    return $allowedv;
-            }
-            $sv->error_at($this, "Please enter a valid choice");
-            return null;
+            return $this->_tclass->parse_valstr($v, $this, $sv);
         } else {
-            throw new Error("Don't know how to base_parse_reqv {$this->name}.");
+            throw new Error("Don't know how to parse_valstr {$this->name}.");
         }
     }
 
     /** @param null|int|string $v
      * @return string */
     function base_unparse_reqv($v) {
-        if ($this->type === "cdate" || $this->type === "checkbox") {
-            return $v ? "1" : "";
-        } else if ($this->is_date()) {
-            if ($v === null) {
-                return "";
-            } else if ($this->placeholder !== "N/A"
-                       && $this->placeholder !== "none"
-                       && $v === 0) {
-                return "none";
-            } else if ($v <= 0) {
-                return "";
-            } else if ($v === 1) {
-                return "now";
-            } else {
-                return $this->conf->parseableTime($v, true);
-            }
-        } else if ($this->type === "grace") {
-            if ($v === null || $v <= 0 || !is_numeric($v)) {
-                return "none";
-            } else if ($v % 3600 === 0) {
-                return ($v / 3600) . " hr";
-            } else if ($v % 60 === 0) {
-                return ($v / 60) . " min";
-            } else {
-                return sprintf("%d:%02d", intval($v / 60), $v % 60);
-            }
-        } else if ($this->type === "int") {
-            if ($this->default_value !== null && $v == $this->default_value) {
-                return "";
-            } else {
-                return (string) $v;
-            }
+        if ($this->_tclass) {
+            return $this->_tclass->unparse_valstr($v, $this);
         } else {
             return (string) $v;
         }

@@ -9,7 +9,7 @@ class Reviews_SettingRenderer {
     private static function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
         $rname = "roundname_$rnum";
         if ($sv->use_req() && $rnum !== '$') {
-            $nameval = (string) $sv->reqv($rname);
+            $nameval = (string) $sv->reqstr($rname);
         }
         $rname_si = $sv->si($rname);
         if ($nameval === "(new round)" || $rnum === '$') {
@@ -73,8 +73,8 @@ class Reviews_SettingRenderer {
 
         $rounds = $sv->conf->round_list();
         if ($sv->use_req()) {
-            for ($i = 1; $sv->has_reqv("roundname_$i"); ++$i)
-                $rounds[$i] = $sv->reqv("deleteround_$i") ? ";" : trim($sv->reqv("roundname_$i"));
+            for ($i = 1; $sv->has_req("roundname_$i"); ++$i)
+                $rounds[$i] = $sv->reqstr("deleteround_$i") ? ";" : trim($sv->reqstr("roundname_$i"));
         }
 
         // prepare round selector
@@ -84,9 +84,9 @@ class Reviews_SettingRenderer {
 
         // does round 0 exist?
         $print_round0 = true;
-        if ($sv->curv("rev_roundtag") !== ""
-            && $sv->curv("extrev_roundtag") !== ""
-            && (!$sv->use_req() || $sv->has_reqv("roundname_0"))
+        if ($sv->vstr("rev_roundtag") !== ""
+            && $sv->vstr("extrev_roundtag") !== ""
+            && (!$sv->use_req() || $sv->has_req("roundname_0"))
             && !$sv->conf->round0_defined()) {
             $print_round0 = false;
         }
@@ -139,10 +139,10 @@ class Reviews_SettingRenderer {
         $extselector = array_merge(["default" => "(same as PC)"], $selector);
         echo '<div id="round_container" style="margin-top:1em', (count($selector) == 1 ? ';display:none' : ''), '">',
             $sv->label("rev_roundtag", "New PC reviews use round&nbsp; "),
-            Ht::select("rev_roundtag", $selector, $sv->curv("rev_roundtag"), $sv->sjs("rev_roundtag")),
+            Ht::select("rev_roundtag", $selector, $sv->vstr("rev_roundtag"), $sv->sjs("rev_roundtag")),
             ' <span class="barsep">·</span> ',
             $sv->label("extrev_roundtag", "New external reviews use round&nbsp; "),
-            Ht::select("extrev_roundtag", $extselector, $sv->curv("extrev_roundtag"), $sv->sjs("extrev_roundtag")),
+            Ht::select("extrev_roundtag", $extselector, $sv->vstr("extrev_roundtag"), $sv->sjs("extrev_roundtag")),
             '</div>';
     }
 
@@ -210,7 +210,7 @@ class Reviews_SettingRenderer {
     }
     static function render_extrev_editdelegate(SettingValues $sv) {
         echo '<div id="foldpcrev_editdelegate" class="form-g has-fold',
-            $sv->curv("extrev_chairreq") >= 0 ? ' fold1o' : ' fold1c',
+            $sv->vstr("extrev_chairreq") >= 0 ? ' fold1o' : ' fold1c',
             '" data-fold1-values="0 1 2">';
         $sv->echo_radio_table("extrev_chairreq", [-1 => "No",
                 1 => "Yes, but administrators must approve all requests",
@@ -264,8 +264,8 @@ class Reviews_SettingRenderer {
         foreach ($conf->round_list() as $i => $rname) {
             foreach (Conf::$review_deadlines as $deadline) {
                 if ($sv->has_interest("{$deadline}_{$i}")
-                    && $sv->curv("{$deadline}_{$i}") > Conf::$now
-                    && $sv->curv("rev_open") <= 0
+                    && $sv->vstr("{$deadline}_{$i}") > Conf::$now
+                    && $sv->vstr("rev_open") <= 0
                     && !$errored) {
                     $sv->warning_at("rev_open", "A review deadline is set in the future, but reviews cannot be edited now. This is sometimes unintentional.");
                     $errored = true;
@@ -277,8 +277,8 @@ class Reviews_SettingRenderer {
         if (($sv->has_interest("au_seerev") || $sv->has_interest("pcrev_soft_0"))
             && $conf->setting("au_seerev") != Conf::AUSEEREV_NO
             && $conf->setting("au_seerev") != Conf::AUSEEREV_TAGS
-            && $sv->curv("pcrev_soft_0") > 0
-            && Conf::$now < $sv->curv("pcrev_soft_0")
+            && $sv->vstr("pcrev_soft_0") > 0
+            && Conf::$now < $sv->vstr("pcrev_soft_0")
             && !$sv->has_error()) {
             $sv->warning_at(null, $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before the " . $sv->setting_link("review deadline", "pcrev_soft_0") . ". This is sometimes unintentional.");
         }
@@ -290,9 +290,9 @@ class Reviews_SettingRenderer {
         }
 
         if ($sv->has_interest("mailbody_requestreview")
-            && $sv->curv("mailbody_requestreview")
-            && (strpos($sv->curv("mailbody_requestreview"), "%LOGINURL%") !== false
-                || strpos($sv->curv("mailbody_requestreview"), "%LOGINURLPARTS%") !== false)) {
+            && $sv->vstr("mailbody_requestreview")
+            && (strpos($sv->vstr("mailbody_requestreview"), "%LOGINURL%") !== false
+                || strpos($sv->vstr("mailbody_requestreview"), "%LOGINURLPARTS%") !== false)) {
             $sv->warning_at("mailbody_requestreview", "The <code>%LOGINURL%</code> and <code>%LOGINURLPARTS%</code> keywords should no longer be used in email templates.");
         }
     }
@@ -308,8 +308,8 @@ class Round_SettingParser extends SettingParser {
 
         // count number of requested rounds
         $nreqround = 1;
-        while ($sv->has_reqv("roundname_$nreqround")
-               || $sv->has_reqv("deleteround_$nreqround")) {
+        while ($sv->has_req("roundname_$nreqround")
+               || $sv->has_req("deleteround_$nreqround")) {
             ++$nreqround;
         }
 
@@ -317,11 +317,11 @@ class Round_SettingParser extends SettingParser {
         $roundnames = array_fill(0, $nreqround, ";");
         $roundlnames = [];
         for ($i = 0; $i < $nreqround; ++$i) {
-            if ($sv->reqv("deleteround_$i")) {
+            if ($sv->reqstr("deleteround_$i")) {
                 if ($i !== 0) {
                     $this->rev_round_changes[$i] = 0;
                 }
-            } else if (($name = $sv->reqv("roundname_$i")) !== null) {
+            } else if (($name = $sv->reqstr("roundname_$i")) !== null) {
                 $name = trim($name);
                 $lname = strtolower($name);
                 if ($lname === "unnamed" || $lname === "default" || $lname === "n/a") {
@@ -364,7 +364,7 @@ class Round_SettingParser extends SettingParser {
         foreach ($roundnames as $i => $n) {
             if ($n === ";") {
                 foreach (Conf::$review_deadlines as $dl) {
-                    $sv->save("{$dl}_{$i}", null);
+                    $sv->save("{$dl}_{$i}", 0);
                 }
             }
         }
@@ -401,15 +401,15 @@ class Round_SettingParser extends SettingParser {
 
 class RoundSelector_SettingParser extends SettingParser {
     function parse_req(SettingValues $sv, Si $si) {
-        $name = trim($sv->reqv($si->name));
+        $name = trim($sv->reqstr($si->name));
         $lname = strtolower($name);
         if ($lname === "(new round)" || $lname === "n/a") {
             $name = $lname = "default";
         }
         if ($lname === "default") {
-            $sv->save($si->name, null);
+            $sv->save($si->name, "");
         } else if ($lname === "" || $lname === "unnamed") {
-            $sv->save($si->name, $si->name === "rev_roundtag" ? null : "unnamed");
+            $sv->save($si->name, $si->name === "rev_roundtag" ? "" : "unnamed");
         } else if (!($err = Conf::round_name_error($lname))) {
             $sv->save($si->name, $name);
         } else {
@@ -426,12 +426,12 @@ class ReviewDeadline_SettingParser extends SettingParser {
 
         $prefix = $si->split_name[0];
         $rref = intval($si->split_name[1]);
-        if ($sv->reqv("deleteround_$rref")) {
+        if ($sv->reqstr("deleteround_$rref")) {
             // setting already deleted by tag_rounds parsing
             return true;
         }
 
-        $name = trim($sv->reqv("roundname_$rref") ?? "");
+        $name = trim($sv->reqstr("roundname_$rref") ?? "");
         if (strcasecmp($name, "default") === 0
             || strcasecmp($name, "unnamed") === 0
             || strcasecmp($name, "n/a") === 0) {
@@ -450,11 +450,11 @@ class ReviewDeadline_SettingParser extends SettingParser {
 
         if (($v = $sv->base_parse_req($si)) !== null
             && $rnum !== false) {
-            $sv->save("{$prefix}{$rnum}", $v <= 0 ? null : $v);
+            error_log("parse {$si->name} => {$v}");
+            $sv->save("{$prefix}{$rnum}", $v);
             if ($v > 0 && str_ends_with($prefix, "hard_")) {
                 $sv->check_date_before(substr($prefix, 0, -5) . "soft_{$rnum}", $si->name, true);
             }
         }
-        return true;
     }
 }

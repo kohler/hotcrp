@@ -36,11 +36,11 @@
     {   "name": "msg", "alias": "messages"   },
     {
         "name": "messages/submissions", "order": 100,
-        "render_function": "Messages_SettingRenderer::render_submissions"
+        "render_function": "Messages_SettingParser::render_submissions"
     },
     {
         "name": "messages/reviews", "order": 200,
-        "render_function": "Messages_SettingRenderer::render_reviews"
+        "render_function": "Messages_SettingParser::render_reviews"
     },
 
 

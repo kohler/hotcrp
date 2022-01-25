@@ -12,8 +12,8 @@ class Banal_SettingRenderer {
             $sv->set_oldv("sub_banal_{$k}_{$suffix}", $cfs->unparse_key($k));
         }
 
-        $open = $sv->curv("sub_banal_val_{$suffix}") > 0;
-        $uropen = !in_array($sv->curv("sub_banal_pagelimit_{$suffix}"), ["", "any", "N/A"]);
+        $open = $sv->vstr("sub_banal_val_{$suffix}") > 0;
+        $uropen = !in_array($sv->vstr("sub_banal_pagelimit_{$suffix}"), ["", "any", "N/A"]);
         $editable = $sv->editable("sub_banal_{$suffix}");
         echo Ht::hidden("has_sub_banal_{$suffix}", 1);
         $sv->echo_checkbox("sub_banal_val_{$suffix}", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
@@ -34,7 +34,7 @@ class Banal_SettingRenderer {
 }
 
 class Banal_SettingParser extends SettingParser {
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         assert($si->split_name !== null);
         assert($si->split_name[0] === "sub_banal_");
         self::parse($si->split_name[1], $sv, true);
@@ -92,7 +92,7 @@ class Banal_SettingParser extends SettingParser {
         //    >0: time setting was last changed
         // data: setting
 
-        if (!$sv->reqv("sub_banal_val_{$suffix}")) {
+        if (!$sv->reqstr("sub_banal_val_{$suffix}")) {
             $fs = new FormatSpec($sv->newv("sub_banal_opt_{$suffix}"));
             $sv->save("sub_banal_val_{$suffix}", $fs->is_banal_empty() ? 0 : -1);
             return false;
@@ -103,7 +103,7 @@ class Banal_SettingParser extends SettingParser {
         $cfs = new FormatSpec($sv->oldv("sub_banal_data_{$suffix}"));
         $old_unparse = $cfs->unparse_banal();
         $cfs->papersize = [];
-        if (($s = trim($sv->reqv("sub_banal_papersize_{$suffix}") ?? "")) !== ""
+        if (($s = trim($sv->reqstr("sub_banal_papersize_{$suffix}") ?? "")) !== ""
             && strcasecmp($s, "any") !== 0
             && strcasecmp($s, "N/A") !== 0) {
             $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
@@ -120,7 +120,7 @@ class Banal_SettingParser extends SettingParser {
         }
 
         $cfs->pagelimit = null;
-        if (($s = trim($sv->reqv("sub_banal_pagelimit_{$suffix}") ?? "")) !== ""
+        if (($s = trim($sv->reqstr("sub_banal_pagelimit_{$suffix}") ?? "")) !== ""
             && strcasecmp($s, "N/A") !== 0) {
             if (($sx = cvtint($s, -1)) > 0) {
                 $cfs->pagelimit = [0, $sx];
@@ -135,12 +135,12 @@ class Banal_SettingParser extends SettingParser {
 
         $cfs->unlimitedref = null;
         if ($cfs->pagelimit
-            && trim($sv->reqv("sub_banal_unlimitedref_{$suffix}") ?? "") !== "") {
+            && trim($sv->reqstr("sub_banal_unlimitedref_{$suffix}") ?? "") !== "") {
             $cfs->unlimitedref = true;
         }
 
         $cfs->columns = 0;
-        if (($s = trim($sv->reqv("sub_banal_columns_{$suffix}") ?? "")) !== ""
+        if (($s = trim($sv->reqstr("sub_banal_columns_{$suffix}") ?? "")) !== ""
             && strcasecmp($s, "any") !== 0
             && strcasecmp($s, "N/A") !== 0) {
             if (($sx = cvtint($s, -1)) >= 0)
@@ -152,7 +152,7 @@ class Banal_SettingParser extends SettingParser {
         }
 
         $cfs->textblock = null;
-        if (($s = trim($sv->reqv("sub_banal_textblock_{$suffix}") ?? "")) !== ""
+        if (($s = trim($sv->reqstr("sub_banal_textblock_{$suffix}") ?? "")) !== ""
             && strcasecmp($s, "any") !== 0
             && strcasecmp($s, "N/A") !== 0) {
             // change margin specifications into text block measurements
@@ -197,7 +197,7 @@ class Banal_SettingParser extends SettingParser {
         }
 
         $cfs->bodyfontsize = null;
-        if (($s = trim($sv->reqv("sub_banal_bodyfontsize_{$suffix}") ?? "")) !== ""
+        if (($s = trim($sv->reqstr("sub_banal_bodyfontsize_{$suffix}") ?? "")) !== ""
             && strcasecmp($s, "any") !== 0
             && strcasecmp($s, "N/A") !== 0) {
             $cfs->bodyfontsize = FormatSpec::parse_range($s);
@@ -208,7 +208,7 @@ class Banal_SettingParser extends SettingParser {
         }
 
         $cfs->bodylineheight = null;
-        if (($s = trim($sv->reqv("sub_banal_bodylineheight_{$suffix}") ?? "")) !== ""
+        if (($s = trim($sv->reqstr("sub_banal_bodylineheight_{$suffix}") ?? "")) !== ""
             && strcasecmp($s, "any") !== 0
             && strcasecmp($s, "N/A") !== 0) {
             $cfs->bodylineheight = FormatSpec::parse_range($s);
@@ -232,7 +232,7 @@ class Banal_SettingParser extends SettingParser {
             $unparse = "";
         }
         $sv->save("sub_banal_data_{$suffix}", $unparse);
-        if ($unparse === "" && $sv->reqv("sub_banal_val_{$suffix}")) {
+        if ($unparse === "" && $sv->reqstr("sub_banal_val_{$suffix}")) {
             $sv->warning_at("sub_banal_val_{$suffix}", "The format checker does nothing unless at least one constraint is enabled.");
         }
         if ($old_unparse !== $unparse || $sv->oldv("sub_banal_val_{$suffix}") <= 0) {
@@ -243,7 +243,7 @@ class Banal_SettingParser extends SettingParser {
 
         if ($suffix === "0"
             && !$sv->oldv("sub_banal_val_m1")
-            && !$sv->has_reqv("sub_banal_m1")) {
+            && !$sv->has_req("sub_banal_m1")) {
             $m1spec = new FormatSpec($sv->oldv("sub_banal_opt_m1"));
             if ($m1spec->is_banal_empty()) {
                 $sv->save("sub_banal_data_m1", $unparse);

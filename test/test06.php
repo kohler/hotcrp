@@ -175,14 +175,14 @@ xassert_eqq($si->group, "decisions");
 
 // Check message defaults
 $sv = SettingValues::make_request($user_chair, []);
-$s = $sv->si_message_default($Conf->si("preference_instructions"));
+$s = $Conf->si("preference_instructions")->default_value($sv);
 xassert(strpos($s, "review preference") !== false);
 xassert(strpos($s, "topic") === false);
 $sv = SettingValues::make_request($user_chair, [
     "has_topics" => 1,
     "topnew" => "Whatever\n"
 ])->parse();
-$s = $sv->si_message_default($Conf->si("preference_instructions"));
+$s = $Conf->si("preference_instructions")->default_value($sv);
 xassert(strpos($s, "review preference") !== false);
 xassert(strpos($s, "topic") !== false);
 

@@ -13,11 +13,11 @@ class ReviewForm_SettingParser extends SettingParser {
     public $source_html;
 
     static function parse_description_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
-        if (!$sv->has_reqv("rf__{$xpos}__description")) {
+        if (!$sv->has_req("rf__{$xpos}__description")) {
             return;
         }
         $ch = CleanHTML::basic();
-        if (($x = $ch->clean($sv->reqv("rf__{$xpos}__description"))) !== false) {
+        if (($x = $ch->clean($sv->reqstr("rf__{$xpos}__description"))) !== false) {
             if ($x !== "") {
                 $fj->description = trim($x);
             } else {
@@ -29,15 +29,15 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     function parse_options_value(SettingValues $sv, $fj, $xpos) {
-        $text = cleannl($sv->reqv("rf__{$xpos}__choices"));
+        $text = cleannl($sv->reqstr("rf__{$xpos}__choices"));
         $letters = ($text && ord($text[0]) >= 65 && ord($text[0]) <= 90);
         $expect = ($letters ? "[A-Z]" : "[1-9][0-9]*");
 
         $opts = array();
         $lowonum = 10000;
         $required = true;
-        if ($sv->reqv("has_rf__{$xpos}__required")) {
-            $required = !!$sv->reqv("rf__{$xpos}__required");
+        if ($sv->reqstr("has_rf__{$xpos}__required")) {
+            $required = !!$sv->reqstr("rf__{$xpos}__required");
         }
 
         foreach (explode("\n", $text) as $line) {
@@ -95,7 +95,7 @@ class ReviewForm_SettingParser extends SettingParser {
             return;
         }
         $ok = true;
-        if ($sv->has_reqv("rf__{$xpos}__choices")) {
+        if ($sv->has_req("rf__{$xpos}__choices")) {
             $ok = $self->parse_options_value($sv, $fj, $xpos);
         }
         if ((!$ok || count($fj->options) < 2) && isset($fj->order)) {
@@ -105,20 +105,20 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     static function parse_display_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
-        if (!$self->field->has_options || !$sv->has_reqv("rf__{$xpos}__colors")) {
+        if (!$self->field->has_options || !$sv->has_req("rf__{$xpos}__colors")) {
             return;
         }
         $prefixes = ["sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr"];
-        $pindex = array_search($sv->reqv("rf__{$xpos}__colors"), $prefixes) ? : 0;
-        if ($sv->reqv("rf__{$xpos}__colorsflipped")) {
+        $pindex = array_search($sv->reqstr("rf__{$xpos}__colors"), $prefixes) ? : 0;
+        if ($sv->reqstr("rf__{$xpos}__colorsflipped")) {
             $pindex ^= 1;
         }
         $fj->option_class_prefix = $prefixes[$pindex];
     }
 
     static function parse_visibility_property(SettingValues $sv, $fj, $xpos, ReviewForm_SettingParser $self) {
-        if ($sv->has_reqv("rf__{$xpos}__visibility")) {
-            $fj->visibility = $sv->reqv("rf__{$xpos}__visibility");
+        if ($sv->has_req("rf__{$xpos}__visibility")) {
+            $fj->visibility = $sv->reqstr("rf__{$xpos}__visibility");
         }
     }
 
@@ -178,9 +178,9 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     static function parse_presence_property(SettingValues $sv, $fj, $xpos, $self, $gj) {
-        if ($sv->has_reqv("rf__{$xpos}__presence")) {
-            $ec = $sv->reqv("rf__{$xpos}__presence");
-            $ecs = $sv->reqv("rf__{$xpos}__condition");
+        if ($sv->has_req("rf__{$xpos}__presence")) {
+            $ec = $sv->reqstr("rf__{$xpos}__presence");
+            $ecs = $sv->reqstr("rf__{$xpos}__condition");
             $fj->round_mask = 0;
             unset($fj->exists_if);
             if (str_starts_with($ec, "round:")) {
@@ -204,8 +204,8 @@ class ReviewForm_SettingParser extends SettingParser {
 
         // field name
         $sn = $fj->name;
-        if ($sv->has_reqv("rf__{$xpos}__name")) {
-            $sn = simplify_whitespace($sv->reqv("rf__{$xpos}__name"));
+        if ($sv->has_req("rf__{$xpos}__name")) {
+            $sn = simplify_whitespace($sv->reqstr("rf__{$xpos}__name"));
         }
         if (in_array($sn, ["<None>", "<New field>", "Field name", ""], true)) {
             $sn = "";
@@ -215,8 +215,8 @@ class ReviewForm_SettingParser extends SettingParser {
         $this->source_html = htmlspecialchars($sn ? : "<Unnamed field>");
 
         // initial field order
-        if ($sv->has_reqv("rf__{$xpos}__order")) {
-            $pos = cvtnum($sv->reqv("rf__{$xpos}__order"));
+        if ($sv->has_req("rf__{$xpos}__order")) {
+            $pos = cvtnum($sv->reqstr("rf__{$xpos}__order"));
         } else {
             $pos = $fj->order ?? -1;
         }
@@ -249,7 +249,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 $sv->error_at("rf__" . $this->byname[strtolower($sn)] . "__name", "");
             } else if (ReviewField::clean_name($sn) !== $sn
                        && $sn !== $f->name
-                       && !$sv->reqv("rf__{$xpos}__nameforce")) {
+                       && !$sv->reqstr("rf__{$xpos}__nameforce")) {
                 $lparen = strrpos($sn, "(");
                 $sv->error_at("rf__{$xpos}__name", "<0>Please remove ‘" . substr($sn, $lparen) . "’ from the field name");
                 $sv->inform_at("rf__{$xpos}__name", "<0>Visibility descriptions are added automatically.");
@@ -268,15 +268,15 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         $this->nrfj = [];
         $this->byname = [];
         $byfid = [];
 
         $rf = $sv->conf->review_form();
-        for ($i = 1; $sv->has_reqv("rf__{$i}__id"); ++$i) {
-            $fid = $sv->reqv("rf__{$i}__id");
-            if ($sv->has_reqv("rf__{$i}__delete")) {
+        for ($i = 1; $sv->has_req("rf__{$i}__id"); ++$i) {
+            $fid = $sv->reqstr("rf__{$i}__id");
+            if ($sv->has_req("rf__{$i}__delete")) {
                 // skip
             } else if (preg_match('/\A[st]\d\d\z/', $fid)
                        && !isset($byfid[$fid])

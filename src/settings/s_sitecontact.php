@@ -15,7 +15,7 @@ class SiteContact_SettingParser extends SettingParser {
         $sv->set_oldv($si->name, $si->name === "site_contact_email" ? $user->email : $user->name());
     }
 
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         $sv->save($si->name, $sv->base_parse_req($si));
         $sv->request_store_value($si);
         return true;
@@ -32,8 +32,8 @@ class SiteContact_SettingParser extends SettingParser {
                 && ($newname === "" || $newname === $defuser->name())
                 && !isset($sv->conf->opt_override["contactName"])
                 && !isset($sv->conf->opt_override["contactEmail"])) {
-                $sv->save("site_contact_email", null);
-                $sv->save("site_contact_name", null);
+                $sv->save("site_contact_email", "");
+                $sv->save("site_contact_name", "");
             }
         }
     }

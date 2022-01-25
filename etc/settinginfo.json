@@ -64,7 +64,7 @@
     {
         "name_pattern": "extrev_hard_$", "group": "reviews",
         "title": "External reviewer hard review deadline",
-        "type": "ndate", "placeholder": "same as PC",
+        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
         "parser_class": "ReviewDeadline_SettingParser",
         "require": "src/settings/s_reviews.php", "order": 1.1
     },
@@ -77,7 +77,7 @@
     {
         "name_pattern": "extrev_soft_$", "group": "reviews",
         "title": "External reviewer soft review deadline",
-        "type": "date", "placeholder": "same as PC",
+        "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
         "parser_class": "ReviewDeadline_SettingParser",
         "require": "src/settings/s_reviews.php", "order": 1
     },
@@ -170,28 +170,27 @@
         "type": "htmlstring", "size": 5, "storage": "msg.submit"
     },
     {
-        "name": "next_optionid", "internal": true,
-        "group": "subform"
+        "name": "next_optionid", "internal": true, "type": "nonnegint"
     },
     {
-        "name": "review_terms_exist", "internal": true,
+        "name": "review_terms_exist", "internal": true, "type": "checkbox",
         "storage": "ova.clickthrough_review"
     },
     {
-        "name": "submission_terms_exist", "internal": true,
+        "name": "submission_terms_exist", "internal": true, "type": "checkbox",
         "storage": "ova.clickthrough_submit"
     },
     {
         "name": "conference_url",
         "group": "basics",
         "title": "Conference URL", "storage": "opt.conferenceSite",
-        "type": "urlstring", "optional": true, "size": 70, "placeholder": "N/A"
+        "type": "url", "optional": true, "size": 70, "placeholder": "N/A"
     },
     {
         "name": "site_contact_email",
         "group": "basics",
         "title": "Email of site contact", "storage": "opt.contactEmail",
-        "type": "emailstring", "optional": true, "size": 40, "invalid_value": "you@example.com",
+        "type": "email", "optional": true, "size": 40, "invalid_value": "you@example.com",
         "parser_class": "SiteContact_SettingParser", "order": 1
     },
     {
@@ -302,7 +301,7 @@
     {
         "name_pattern": "pcrev_hard_$", "group": "reviews",
         "title": "PC review hard deadline",
-        "type": "ndate", "placeholder": "none",
+        "type": "date", "placeholder": "none",
         "parser_class": "ReviewDeadline_SettingParser",
         "require": "src/settings/s_reviews.php", "order": 1.1
     },
@@ -442,7 +441,7 @@
         "name": "seedec", "group": "decisions",
         "title": "Decision visibility",
         "type": "radio",
-        "values": [0, 1, 2, 3],
+        "values": [0, 1, 2, 3], "default_value": 0,
         "json_values": ["no", "pc", "yes", "unconflicted-pc"],
         "require": "src/settings/s_decisions.php"
     },
@@ -519,7 +518,7 @@
         "name": "sub_freeze", "group": "submissions",
         "title": "Submitters can update until the deadline",
         "type": "radio",
-        "values": [0, 1],
+        "values": [0, 1], "default_value": 0,
         "json_values": [true, false]
     },
     {
@@ -580,19 +579,19 @@
         "name": "sub_update", "internal": true
     },
     {
-        "name": "tag_approval", "group": "tags",
-        "title": "Approval voting tags",
-        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
+        "name": "tag_approval", "group": "tags", "title": "Approval voting tags",
+        "type": "taglist", "size": 50, "autogrow": true,
+        "parser_class": "Tags_SettingParser"
     },
     {
-        "name": "tag_au_seerev", "group": "decisions",
-        "title": "Review visibility tags",
-        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 24
+        "name": "tag_au_seerev", "group": "decisions", "title": "Review visibility tags",
+        "type": "taglist", "size": 24,
+        "parser_class": "Tags_SettingParser"
     },
     {
-        "name": "tag_chair", "group": "tags",
-        "title": "Read-only tags",
-        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
+        "name": "tag_chair", "group": "tags", "title": "Read-only tags",
+        "type": "taglist", "subtype": "wildcard", "size": 50, "autogrow": true,
+        "parser_class": "Tags_SettingParser"
     },
     {
         "name": "tag_color", "group": "tags", "hashid": "colors-and-styles",
@@ -602,7 +601,7 @@
     {
         "name_pattern": "tag_color_$", "group": "tags", "internal": true,
         "title": "Tag colors", "title_pattern": "${uc $} tags",
-        "type": "taglist", "size": 40, "autogrow": true
+        "type": "taglist", "subtype": "wildcard_chair", "size": 40, "autogrow": true
     },
     {
         "name": "tag_rank", "group": "tags",
@@ -620,14 +619,14 @@
         "type": "checkbox"
     },
     {
-        "name": "tag_sitewide", "group": "tags",
-        "title": "Site-wide tags",
-        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
+        "name": "tag_sitewide", "group": "tags", "title": "Site-wide tags",
+        "type": "taglist", "subtype": "wildcard", "size": 50, "autogrow": true,
+        "parser_class": "Tags_SettingParser"
     },
     {
-        "name": "tag_vote", "group": "tags",
-        "title": "Allotment voting tags",
-        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
+        "name": "tag_vote", "group": "tags", "title": "Allotment voting tags",
+        "type": "taglist", "subtype": "allotment", "size": 50, "autogrow": true,
+        "parser_class": "Tags_SettingParser"
     },
     {
         "name": "topics", "group": "subform",

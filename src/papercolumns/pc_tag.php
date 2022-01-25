@@ -52,8 +52,9 @@ class Tag_PaperColumn extends PaperColumn {
         if ($this->etag[0] == ":"
             && !$this->is_value
             && ($dt = $pl->user->conf->tags()->check($this->dtag))
-            && $dt->emoji !== null
+            && isset($dt->emoji)
             && count($dt->emoji) === 1) {
+            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
             $this->emoji = $dt->emoji[0];
         }
         if ($this->editable

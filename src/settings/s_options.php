@@ -162,8 +162,8 @@ class Options_SettingRenderer {
         $args = $io->jsonSerialize();
         $args->json_key = $io->id > 0 ? null : "__fake__";
 
-        if ($sv->has_reqv("sf__{$ipos}__name")) {
-            $name = simplify_whitespace($sv->reqv("sf__{$ipos}__name") ?? "");
+        if ($sv->has_req("sf__{$ipos}__name")) {
+            $name = simplify_whitespace($sv->reqstr("sf__{$ipos}__name") ?? "");
             if ($name === "" || strcasecmp($name, "Field name") === 0) {
                 $sv->error_at("sf__{$ipos}__name", "<0>Entry required");
             } if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name)) {
@@ -173,8 +173,8 @@ class Options_SettingRenderer {
             $args->name = $name;
         }
 
-        if ($sv->has_reqv("sf__{$ipos}__type")) {
-            $vt = $sv->reqv("sf__{$ipos}__type");
+        if ($sv->has_req("sf__{$ipos}__type")) {
+            $vt = $sv->reqstr("sf__{$ipos}__type");
             if (($pos = strpos($vt, ":")) !== false) {
                 $args->type = substr($vt, 0, $pos);
                 if (preg_match('/:ds_(\d+)/', $vt, $m)) {
@@ -185,36 +185,36 @@ class Options_SettingRenderer {
             }
         }
 
-        if ($sv->has_reqv("sf__{$ipos}__description")) {
+        if ($sv->has_req("sf__{$ipos}__description")) {
             $ch = CleanHTML::basic();
-            if (($t = $ch->clean($sv->reqv("sf__{$ipos}__description"))) !== false) {
+            if (($t = $ch->clean($sv->reqstr("sf__{$ipos}__description"))) !== false) {
                 $args->description = $t;
             } else {
                 $sv->error_at("sf__{$ipos}__description", "<5>" . $ch->last_error);
-                $args->description = $sv->reqv("sf__{$ipos}__description");
+                $args->description = $sv->reqstr("sf__{$ipos}__description");
             }
         }
 
-        if ($sv->has_reqv("sf__{$ipos}__visibility")) {
-            $args->visibility = $sv->reqv("sf__{$ipos}__visibility");
+        if ($sv->has_req("sf__{$ipos}__visibility")) {
+            $args->visibility = $sv->reqstr("sf__{$ipos}__visibility");
         }
 
-        if ($sv->has_reqv("sf__{$ipos}__order")) {
-            $args->order = (int) $sv->reqv("sf__{$ipos}__order");
+        if ($sv->has_req("sf__{$ipos}__order")) {
+            $args->order = (int) $sv->reqstr("sf__{$ipos}__order");
         }
 
-        if ($sv->has_reqv("sf__{$ipos}__display")) {
-            $args->display = $sv->reqv("sf__{$ipos}__display");
+        if ($sv->has_req("sf__{$ipos}__display")) {
+            $args->display = $sv->reqstr("sf__{$ipos}__display");
         }
 
-        if ($sv->has_reqv("sf__{$ipos}__required")) {
-            $args->required = $sv->reqv("sf__{$ipos}__required") == "1";
+        if ($sv->has_req("sf__{$ipos}__required")) {
+            $args->required = $sv->reqstr("sf__{$ipos}__required") == "1";
         }
 
-        if ($sv->has_reqv("sf__{$ipos}__presence")) {
-            $ec = $sv->reqv("sf__{$ipos}__presence");
+        if ($sv->has_req("sf__{$ipos}__presence")) {
+            $ec = $sv->reqstr("sf__{$ipos}__presence");
             $args->final = $ec === "final";
-            $ecs = $ec === "search" ? simplify_whitespace($sv->reqv("sf__{$ipos}__condition")) : "";
+            $ecs = $ec === "search" ? simplify_whitespace($sv->reqstr("sf__{$ipos}__condition")) : "";
             if ($ecs === "" || $ecs === "(All)") {
                 unset($args->exists_if);
             } else if ($ecs !== null) {
@@ -223,9 +223,9 @@ class Options_SettingRenderer {
             }
         }
 
-        if ($sv->has_reqv("sf__{$ipos}__choices")) {
+        if ($sv->has_req("sf__{$ipos}__choices")) {
             $args->selector = [];
-            foreach (explode("\n", trim(cleannl($sv->reqv("sf__{$ipos}__choices")))) as $t) {
+            foreach (explode("\n", trim(cleannl($sv->reqstr("sf__{$ipos}__choices")))) as $t) {
                 if ($t !== "")
                     $args->selector[] = $t;
             }
@@ -348,17 +348,17 @@ class Options_SettingRenderer {
         echo '<div id="settings-sform" class="c">';
         $iposl = [];
         if ($sv->use_req()) {
-            for ($ipos = 1; $sv->has_reqv("sf__{$ipos}__id"); ++$ipos) {
+            for ($ipos = 1; $sv->has_req("sf__{$ipos}__id"); ++$ipos) {
                 $iposl[] = $ipos;
             }
             usort($iposl, function ($a, $b) use ($sv) {
-                return (int) $sv->reqv("sf__{$a}__order") <=> (int) $sv->reqv("sf__{$b}__order") ? : $a <=> $b;
+                return (int) $sv->reqstr("sf__{$a}__order") <=> (int) $sv->reqstr("sf__{$b}__order") ? : $a <=> $b;
             });
         }
         $self->rendered_options = [];
         $self->max_xpos = 0;
         foreach ($iposl as $ipos) {
-            $id = $sv->reqv("sf__{$ipos}__id");
+            $id = $sv->reqstr("sf__{$ipos}__id");
             $o = $id === "new" ? null : $sv->conf->option_by_id((int) $id);
             if ($id === "new" || $o) {
                 $self->render_option($sv, $o, $ipos);
@@ -436,14 +436,16 @@ class Options_SettingRenderer {
 }
 
 class Options_SettingParser extends SettingParser {
+    /** @var ?associative-array<int,true> */
     private $known_optionids;
+    /** @var ?int */
     private $next_optionid;
     private $req_optionid;
     private $stashed_options = false;
     private $fake_prow;
 
     function option_request_to_json(SettingValues $sv, $xpos) {
-        $idname = $sv->reqv("sf__{$xpos}__id") ?? "new";
+        $idname = $sv->reqstr("sf__{$xpos}__id") ?? "new";
         if ($idname === "new") {
             if (!$this->next_optionid) {
                 $this->known_optionids = [];
@@ -476,9 +478,9 @@ class Options_SettingParser extends SettingParser {
         }
     }
 
-    function parse_req(SettingValues $sv, Si $si) {
-        if ($sv->has_reqv("options_version")
-            && (int) $sv->reqv("options_version") !== (int) $sv->conf->setting("options")) {
+    function apply_req(SettingValues $sv, Si $si) {
+        if ($sv->has_req("options_version")
+            && (int) $sv->reqstr("options_version") !== (int) $sv->conf->setting("options")) {
             $sv->error_at("options", "<0>You modified options settings in another tab. Please reload.");
         }
 
@@ -486,16 +488,16 @@ class Options_SettingParser extends SettingParser {
 
         // consider option ids
         $optids = array_map(function ($o) { return $o->id; }, $new_opts);
-        for ($i = 1; $sv->has_reqv("sf__{$i}__id"); ++$i) {
-            $optids[] = intval($sv->reqv("sf__{$i}__id"));
+        for ($i = 1; $sv->has_req("sf__{$i}__id"); ++$i) {
+            $optids[] = intval($sv->reqstr("sf__{$i}__id"));
         }
         $optids[] = 0;
         $this->req_optionid = max($optids) + 1;
 
         // convert request to JSON
-        for ($i = 1; $sv->has_reqv("sf__{$i}__id"); ++$i) {
-            if ($sv->reqv("sf__{$i}__order") === "deleted") {
-                unset($new_opts[cvtint($sv->reqv("sf__{$i}__id"))]);
+        for ($i = 1; $sv->has_req("sf__{$i}__id"); ++$i) {
+            if ($sv->reqstr("sf__{$i}__order") === "deleted") {
+                unset($new_opts[cvtint($sv->reqstr("sf__{$i}__id"))]);
             } else if (($o = $this->option_request_to_json($sv, $i))) {
                 $new_opts[$o->id] = $o;
             }
@@ -508,8 +510,7 @@ class Options_SettingParser extends SettingParser {
             foreach ($new_opts as $o) {
                 $newj[] = $o->jsonSerialize();
             }
-            $sv->save("next_optionid", null);
-            if ($sv->update("options", empty($newj) ? null : json_encode_db($newj))) {
+            if ($sv->update("options", empty($newj) ? "" : json_encode_db($newj))) {
                 $sv->update("options_version", (int) $sv->conf->setting("options") + 1);
                 $sv->request_write_lock("PaperOption");
                 $sv->request_store_value($si);

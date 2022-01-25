@@ -4,11 +4,11 @@
 
 class DecisionVisibility_SettingParser extends SettingParser {
     static function render(SettingValues $sv) {
-        $extrev_view = $sv->curv("extrev_view");
+        $extrev_view = $sv->vstr("extrev_view");
         $Rtext = $extrev_view ? "Reviewers" : "PC reviewers";
         $rtext = $extrev_view ? "reviewers" : "PC reviewers";
-        $accept_auview = !$sv->curv("seedec_hideau")
-            && $sv->curv("sub_blind") != Conf::BLIND_NEVER;
+        $accept_auview = !$sv->vstr("seedec_hideau")
+            && $sv->vstr("sub_blind") != Conf::BLIND_NEVER;
         $sv->echo_radio_table("seedec", [Conf::SEEDEC_ADMIN => "Only administrators",
                 Conf::SEEDEC_NCREV => "$Rtext and non-conflicted PC members",
                 Conf::SEEDEC_REV => "$Rtext and <em>all</em> PC members",
