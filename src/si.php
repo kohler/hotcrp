@@ -503,47 +503,6 @@ class Si {
             return (string) $v;
         }
     }
-
-    /** @param null|int|string $v
-     * @return mixed */
-    function base_unparse_json($v) {
-        if ($this->type === "checkbox" || $this->type === "cdate") {
-            return !!$v;
-        } else if ($this->type === "date" || $this->type === "ndate") {
-            if ($v > 0) {
-                return $this->conf->parseableTime($v, true);
-            } else {
-                return false;
-            }
-        } else if ($this->type === "grace") {
-            if ($v > 0) {
-                return $this->base_unparse_reqv($v);
-            } else {
-                return false;
-            }
-        } else if ($this->type === "int") {
-            return (int) $v;
-        } else if ($this->type === "string"
-                   || $this->type === "simplestring"
-                   || $this->type === "tag"
-                   || $this->type === "tagbase"
-                   || $this->type === "tagselect"
-                   || $this->type === "emailheader"
-                   || $this->type === "emailstring"
-                   || $this->type === "urlstring"
-                   || $this->type === "htmlstring") {
-            return (string) $v !== "" ? $v : false;
-        } else if ($this->type === "radio") {
-            $pos = array_search($v, $this->values);
-            if ($pos !== false && $this->json_values && isset($this->json_values[$pos])) {
-                return $this->json_values[$pos];
-            } else {
-                return $v;
-            }
-        } else {
-            return $v;
-        }
-    }
 }
 
 

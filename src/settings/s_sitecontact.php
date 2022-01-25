@@ -13,7 +13,6 @@ class SiteContact_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         $user = $sv->conf->site_contact();
         $sv->set_oldv($si->name, $si->name === "site_contact_email" ? $user->email : $user->name());
-        return true;
     }
 
     function parse_req(SettingValues $sv, Si $si) {
@@ -37,9 +36,5 @@ class SiteContact_SettingParser extends SettingParser {
                 $sv->save("site_contact_name", null);
             }
         }
-    }
-
-    function unparse_json(SettingValues $sv, Si $si) {
-        return $si->base_unparse_reqv($sv->newv($si->name));
     }
 }

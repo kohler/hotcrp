@@ -122,10 +122,7 @@ class Tags_SettingParser extends SettingParser {
             $sv->set_oldv("tag_vote", join(" ", $x));
         } else if ($si->name === "tag_rank") {
             $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank") ?? "");
-        } else {
-            return false;
         }
-        return true;
     }
 
     function parse_req(SettingValues $sv, Si $si) {
@@ -171,10 +168,6 @@ class Tags_SettingParser extends SettingParser {
             $sv->update("tag_au_seerev", join(" ", $ts));
         }
         return true;
-    }
-
-    function unparse_json(SettingValues $sv, Si $si) {
-        return $sv->newv($si->name);
     }
 
     function store_value(SettingValues $sv, Si $si) {

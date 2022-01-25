@@ -472,10 +472,8 @@ class Options_SettingParser extends SettingParser {
             $options = array_values(Options_SettingRenderer::configurable_options($sv->conf));
             if ($m[1] >= 1 && $m[1] <= count($options)) {
                 $sv->set_oldv($si->name, $options[intval($m[1]) - 1]->name);
-                return true;
             }
         }
-        return false;
     }
 
     function parse_req(SettingValues $sv, Si $si) {
@@ -518,14 +516,6 @@ class Options_SettingParser extends SettingParser {
             }
         }
         return true;
-    }
-
-    function unparse_json(SettingValues $sv, Si $si) {
-        $oj = [];
-        foreach (Options_SettingRenderer::configurable_options($sv->conf) as $o) {
-            $oj[] = $o->jsonSerialize();
-        }
-        return $oj;
     }
 
     function store_value(SettingValues $sv, Si $si) {

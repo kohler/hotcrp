@@ -77,7 +77,6 @@ class Topics_SettingParser extends SettingParser {
 
     function set_oldv(SettingValues $sv, Si $si) {
         $sv->set_oldv("topics", json_encode_db($this->unparse_current_json($sv->conf)));
-        return true;
     }
 
     function parse_req(SettingValues $sv, Si $si) {
@@ -116,10 +115,6 @@ class Topics_SettingParser extends SettingParser {
             $sv->request_store_value($si);
         }
         return true;
-    }
-
-    function unparse_json(SettingValues $sv, Si $si) {
-        return json_decode($sv->newv("topics"));
     }
 
     function store_value(SettingValues $sv, Si $si) {

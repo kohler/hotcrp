@@ -265,9 +265,7 @@ class ReviewForm_SettingParser extends SettingParser {
         if (preg_match('/\Arf__(\d+)__name\z/', $si->name, $m)
             && ($f = (array_values($sv->conf->all_review_fields()))[intval($m[1])] ?? null)) {
             $sv->set_oldv($si->name, $f->name);
-            return true;
         }
-        return false;
     }
 
     function parse_req(SettingValues $sv, Si $si) {
@@ -303,14 +301,6 @@ class ReviewForm_SettingParser extends SettingParser {
             $sv->request_store_value($si);
         }
         return true;
-    }
-
-    function unparse_json(SettingValues $sv, Si $si) {
-        $fj = [];
-        foreach ($sv->conf->all_review_fields() as $f) {
-            $fj[] = $f->unparse_json(2);
-        }
-        return $fj;
     }
 
     private function clear_existing_fields($fields, Conf $conf) {

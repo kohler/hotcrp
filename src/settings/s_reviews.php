@@ -417,10 +417,6 @@ class RoundSelector_SettingParser extends SettingParser {
         }
         return true;
     }
-
-    function unparse_json(SettingValues $sv, Si $si) {
-        return $si->base_unparse_json($sv->newv($si->name));
-    }
 }
 
 class ReviewDeadline_SettingParser extends SettingParser {
@@ -460,9 +456,5 @@ class ReviewDeadline_SettingParser extends SettingParser {
             }
         }
         return true;
-    }
-
-    function unparse_json(SettingValues $sv, Si $si) {
-        return $si->base_unparse_json($sv->newv($si->name));
     }
 }

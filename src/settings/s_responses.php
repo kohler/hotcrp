@@ -12,13 +12,10 @@ class Responses_SettingParser extends SettingParser {
         if (preg_match('/\Aresponse__(\d+)__title\z/', $si->name, $m)) {
             $x = $sv->oldv("response__{$m[1]}__name");
             $sv->set_oldv($si->name, $x ? "‘{$x}’ response" : "Response");
-            return true;
         } else if (preg_match('/\Aresponse__(\d+)__name\z/', $si->name, $m)
                    && ($rrd = ($sv->conf->resp_rounds())[intval($m[1]) - 1] ?? null)) {
             $sv->set_oldv($si->name, $rrd->unnamed ? "" : $rrd->name);
-            return true;
         }
-        return false;
     }
 
     static function render_name_property(SettingValues $sv, $ctr) {

@@ -83,7 +83,6 @@ class Decisions_SettingParser extends SettingParser {
                 $j[] = ["id" => $did, "accept" => $did > 0, "name" => $name];
         }
         $sv->set_oldv("decisions", json_encode_db($j));
-        return true;
     }
 
     /** @param SettingValues $sv
@@ -170,10 +169,6 @@ class Decisions_SettingParser extends SettingParser {
             $sv->request_store_value($si);
         }
         return true;
-    }
-
-    function unparse_json(SettingValues $sv, Si $si) {
-        return json_decode($sv->oldv("decisions"));
     }
 
     function store_value(SettingValues $sv, Si $si) {
