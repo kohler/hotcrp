@@ -68,8 +68,9 @@ class Settings_Page {
     }
 
     /** @param string $group
-     * @param Qrequest $qreq */
-    function render($group, $qreq) {
+     * @param Qrequest $qreq
+     * @param bool $is_update */
+    function render($group, $qreq, $is_update) {
         $sv = $this->sv;
         $conf = $this->conf;
 
@@ -102,8 +103,14 @@ class Settings_Page {
             '<main class="leftmenu-content main-column">',
             '<h2 class="leftmenu">', $sv->group_title($group), '</h2>';
 
-        $conf->report_saved_messages();
-        $sv->report(isset($qreq->update) && $qreq->valid_post());
+        if (!$is_update) {
+            $sv->crosscheck();
+        }
+        if ($conf->report_saved_messages() < 1 || $is_update) {
+            // XXX this is janky (if there are any warnings saved in the session,
+            // don't crosscheck) but reduces duplicate warnings
+            $sv->report($is_update);
+        }
         $sv->render_group(strtolower($group), true);
 
         echo '<div class="aab aabig mt-7">',
@@ -131,10 +138,9 @@ class Settings_Page {
 
         if (isset($qreq->update) && $qreq->valid_post()) {
             $sp->handle_update($qreq);
+            $sp->render($group, $qreq, true);
         } else {
-            $sv->crosscheck();
+            $sp->render($group, $qreq, false);
         }
-
-        $sp->render($group, $qreq);
     }
 }

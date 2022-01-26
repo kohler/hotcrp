@@ -3555,11 +3555,17 @@ class Conf {
     }
 
 
+    /** @return int */
     function report_saved_messages() {
+        $max_status = 0;
         foreach ($this->_save_msgs ?? [] as $m) {
             $this->msg($m[0], $m[1]);
+            if (is_int($m[1])) {
+                $max_status = max($max_status, $m[1]);
+            }
         }
         $this->_save_msgs = null;
+        return $max_status;
     }
 
     function transfer_messages_to_session() {
