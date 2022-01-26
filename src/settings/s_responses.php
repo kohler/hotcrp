@@ -213,4 +213,16 @@ class Responses_SettingParser extends SettingParser {
     function store_value(SettingValues $sv, Si $si) {
         $sv->conf->qe("update PaperComment set commentRound=case " . join(" ", $this->round_transform) . " else commentRound end where (commentType&" . CommentInfo::CT_RESPONSE . ")!=0");
     }
+
+    static function crosscheck(SettingValues $sv) {
+        if ($sv->has_interest("responses")) {
+            foreach ($sv->conf->resp_rounds() as $i => $rrd) {
+                if ($rrd->search) {
+                    foreach ($rrd->search->message_list() as $mi) {
+                        $sv->append_item_at("response__" . ($i + 1) . "__condition", $mi);
+                    }
+                }
+            }
+        }
+    }
 }

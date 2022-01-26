@@ -176,7 +176,7 @@
     },
     {   "name": "rfo", "alias": "reviewform"   },
     {
-        "name": "__crosscheck/review-form", "order": 800,
+        "name": "__crosscheck/review-form", "order": 600,
         "crosscheck_function": "ReviewForm_SettingParser::crosscheck"
     },
     {
@@ -279,6 +279,10 @@
     {
         "name": "responses/properties/instructions", "order": 40,
         "render_response_property_function": "Responses_SettingParser::render_instructions_property"
+    },
+    {
+        "name": "__crosscheck/responses", "order": 800,
+        "crosscheck_function": "Responses_SettingParser::crosscheck"
     },
     {
         "name": "decisions/review-visibility", "order": 20,

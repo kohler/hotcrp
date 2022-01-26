@@ -36,7 +36,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $opts = array();
         $lowonum = 10000;
         $required = true;
-        if ($sv->reqstr("has_rf__{$xpos}__required")) {
+        if ($sv->has_req("rf__{$xpos}__required")) {
             $required = !!$sv->reqstr("rf__{$xpos}__required");
         }
 
@@ -524,7 +524,6 @@ class ReviewForm_SettingRenderer {
             '<div class="entry">',
             $sv->feedback_at("rf__{$xpos}__required"),
             Ht::select("rf__{$xpos}__required", ["0" => "No", "1" => "Yes"], $f->required ? "1" : "0", ["id" => "rf__{$xpos}__required"]),
-            Ht::hidden("has_rf__{$xpos}__required", "1"),
             '</div></div>';
     }
 
@@ -633,7 +632,6 @@ class ReviewForm_SettingRenderer {
             '<div id="rf__$__view" class="settings-rf-view fn2 ui js-foldup"></div>',
             '<div id="rf__$__edit" class="settings-rf-edit fx2">',
             '<div class="entryi mb-3"><div class="entry">',
-            '<input name="has_rf__$__name" type="hidden" value="1">',
             '<input name="rf__$__name" id="rf__$__name" type="text" size="50" class="font-weight-bold" placeholder="Field name">',
             '</div></div>';
         $rfield = ReviewField::make_template($sv->conf, true);
