@@ -221,7 +221,7 @@ class Tracks_SettingRenderer {
                     && $unassrev !== "+none"
                     && $t->viewpdf !== ($t->view ?? null)
                     && $conf->setting("pcrev_any")) {
-                    $sv->warning_at("unassrev_track$tnum", "$tdesc: A track that restricts who can see documents should generally restrict review self-assignment in the same way.");
+                    $sv->warning_at("unassrev_track$tnum", "<0>$tdesc: A track that restricts who can see documents should generally restrict review self-assignment in the same way.");
                 }
                 if ($assrev
                     && $unassrev
@@ -235,7 +235,7 @@ class Tracks_SettingRenderer {
                     }
                     if ($n === 0) {
                         $sv->warning_at("assrev_track$tnum");
-                        $sv->warning_at("unassrev_track$tnum", "$tdesc: No PC members match both review assignment permissions, so no PC members can self-assign reviews.");
+                        $sv->warning_at("unassrev_track$tnum", "<0>$tdesc: No PC members match both review assignment permissions, so no PC members can self-assign reviews.");
                     }
                 }
                 $tracknum += ($trackname === "_" ? 0 : 1);
@@ -258,9 +258,9 @@ class Tracks_SettingParser extends SettingParser {
             $trackname = $tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE);
             if (!$trackname || ($trackname === "_" && $i !== 1)) {
                 if ($trackname !== "_") {
-                    $sv->error_at("name_track$i", $tagger->error_html());
+                    $sv->error_at("name_track$i", "<5>" . $tagger->error_html());
                 } else {
-                    $sv->error_at("name_track$i", "Track name “_” is reserved.");
+                    $sv->error_at("name_track$i", "<0>Track name “_” is reserved");
                 }
                 $sv->error_at("tracks");
                 $ok = false;
@@ -274,13 +274,13 @@ class Tracks_SettingParser extends SettingParser {
                 }
                 if ($ttype === "+" || $ttype === "-") {
                     if ($ttag === "" || $ttag === "(tag)") {
-                        $sv->error_at("{$type}_track$i", "Tag missing for track setting.");
+                        $sv->error_at("{$type}_track$i", "<0>Tag missing for track setting");
                         $sv->error_at("{$type}_tag_track$i");
                         $sv->error_at("tracks");
                     } else if (($ttag = $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))) {
                         $t->$type = $ttype . $ttag;
                     } else {
-                        $sv->error_at("{$type}_track$i", "Track permission tag: " . $tagger->error_html());
+                        $sv->error_at("{$type}_track$i", "<5>Track permission tag: " . $tagger->error_html());
                         $sv->error_at("{$type}_tag_track$i");
                         $sv->error_at("tracks");
                     }

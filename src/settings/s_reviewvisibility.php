@@ -39,7 +39,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             && $conf->setting("au_seerev") == Conf::AUSEEREV_TAGS
             && !$conf->setting("tag_au_seerev")
             && !$sv->has_error_at("tag_au_seerev")) {
-            $sv->warning_at("tag_au_seerev", "You haven’t set any review visibility tags.");
+            $sv->warning_at("tag_au_seerev", "<0>You haven’t set any review visibility tags.");
         }
         if (($sv->has_interest("au_seerev") || $sv->has_interest("tag_chair"))
             && $conf->setting("au_seerev") == Conf::AUSEEREV_TAGS

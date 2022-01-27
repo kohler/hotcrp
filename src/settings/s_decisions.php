@@ -117,7 +117,7 @@ class Decisions_SettingParser extends SettingParser {
             $n1 = $dx->accept ? "An Accept" : "A Reject";
             $n2 = $dx->accept ? "reject" : "accept";
             $sv->error_at("decision__{$ctr}__category", "<0>{$n1}-category decision has “{$n2}” in its name");
-            $sv->inform_at("decision__{$ctr}__category", "Either change the decision name or category or check the “Confirm” box to save anyway.");
+            $sv->inform_at("decision__{$ctr}__category", "<0>Either change the decision name or category or check the “Confirm” box to save anyway.");
         } else if ($dx->id !== "new") {
             $dj[$idx]->name = $dname;
         } else {

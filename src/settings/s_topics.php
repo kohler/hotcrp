@@ -86,7 +86,7 @@ class Topics_SettingParser extends SettingParser {
             if (($x = $sv->reqstr("top$tid")) !== null) {
                 $t = $this->check_topic($x);
                 if ($t === false) {
-                    $sv->error_at("top$tid", "Topic name “" . htmlspecialchars($x) . "” is reserved. Please choose another name.");
+                    $sv->error_at("top$tid", "<0>Topic name “{$x}” is reserved. Please choose another name.");
                     ++$i;
                 } else if ($t === "") {
                     array_splice($j, $i, 1);
@@ -102,7 +102,7 @@ class Topics_SettingParser extends SettingParser {
             foreach (explode("\n", $sv->reqstr("topnew")) as $x) {
                 $t = $this->check_topic($x);
                 if ($t === false) {
-                    $sv->error_at("topnew", "Topic name “" . htmlspecialchars(trim($x)) . "” is reserved. Please choose another name.");
+                    $sv->error_at("topnew", "<0>Topic name “" . trim($x) . "” is reserved. Please choose another name.");
                 } else if ($t !== "") {
                     $j[] = (object) ["name" => $t];
                 }

@@ -168,7 +168,7 @@ class Options_SettingRenderer {
                 $sv->error_at("sf__{$ipos}__name", "<0>Entry required");
             } if (preg_match('/\A(?:paper|submission|final|none|any|all|true|false|opt(?:ion)?[-:_ ]?\d+)\z/i', $name)) {
                 $sv->error_at("sf__{$ipos}__name", "<0>Field name ‘{$name}’ is reserved");
-                $sv->inform_at("sf__{$ipos}__name", "Please pick another name.");
+                $sv->inform_at("sf__{$ipos}__name", "<0>Please pick another name.");
             }
             $args->name = $name;
         }

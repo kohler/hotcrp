@@ -267,7 +267,7 @@ class Reviews_SettingRenderer {
                     && $sv->vstr("{$deadline}_{$i}") > Conf::$now
                     && $sv->vstr("rev_open") <= 0
                     && !$errored) {
-                    $sv->warning_at("rev_open", "A review deadline is set in the future, but reviews cannot be edited now. This is sometimes unintentional.");
+                    $sv->warning_at("rev_open", "<0>A review deadline is set in the future, but reviews cannot be edited now. This is sometimes unintentional.");
                     $errored = true;
                     break;
                 }
@@ -280,20 +280,20 @@ class Reviews_SettingRenderer {
             && $sv->vstr("pcrev_soft_0") > 0
             && Conf::$now < $sv->vstr("pcrev_soft_0")
             && !$sv->has_error()) {
-            $sv->warning_at(null, $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before the " . $sv->setting_link("review deadline", "pcrev_soft_0") . ". This is sometimes unintentional.");
+            $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews and comments", "au_seerev") . " although it is before the " . $sv->setting_link("review deadline", "pcrev_soft_0") . ". This is sometimes unintentional.");
         }
 
         if (($sv->has_interest("rev_blind") || $sv->has_interest("extrev_view"))
             && $conf->setting("rev_blind") == Conf::BLIND_NEVER
             && $conf->setting("extrev_view") == 1) {
-            $sv->warning_at("extrev_view", $sv->setting_link("Reviews aren’t blind", "rev_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "extrev_view") . ".");
+            $sv->warning_at("extrev_view", "<5>" . $sv->setting_link("Reviews aren’t blind", "rev_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "extrev_view") . ".");
         }
 
         if ($sv->has_interest("mailbody_requestreview")
             && $sv->vstr("mailbody_requestreview")
             && (strpos($sv->vstr("mailbody_requestreview"), "%LOGINURL%") !== false
                 || strpos($sv->vstr("mailbody_requestreview"), "%LOGINURLPARTS%") !== false)) {
-            $sv->warning_at("mailbody_requestreview", "The <code>%LOGINURL%</code> and <code>%LOGINURLPARTS%</code> keywords should no longer be used in email templates.");
+            $sv->warning_at("mailbody_requestreview", "<5>The <code>%LOGINURL%</code> and <code>%LOGINURLPARTS%</code> keywords should no longer be used in email templates.");
         }
     }
 }
@@ -328,11 +328,11 @@ class Round_SettingParser extends SettingParser {
                     $name = $lname = "";
                 }
                 if (isset($roundlnames[$lname])) {
-                    $sv->error_at("roundname_$i", "Round names must be distinct. Use bulk assignment to change existing reviews’ rounds.");
+                    $sv->error_at("roundname_$i", "<0>Round names must be distinct. Use bulk assignment to change existing reviews’ rounds.");
                     $sv->error_at("roundname_" . $roundlnames[$lname]);
                 } else if ($name !== ""
                            && ($rerror = Conf::round_name_error($name))) {
-                    $sv->error_at("roundname_$i", $rerror);
+                    $sv->error_at("roundname_$i", "<0>{$rerror}");
                 } else {
                     $roundnames[$i] = $name;
                     $roundlnames[$lname] = $i;

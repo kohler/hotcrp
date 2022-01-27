@@ -74,9 +74,9 @@ class Banal_SettingParser extends SettingParser {
                 $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
             }
             $errors .= "<tr><td>Check:&nbsp;</td><td>" . $cf->full_feedback_html() . "</td></tr>";
-            $sv->warning_at(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldupbutton(0, "Checker output") . $errors . "</table></div></div>");
+            $sv->warning_at(null, "<5>Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldupbutton(0, "Checker output") . $errors . "</table></div></div>");
             if (($s1 == "warning" || $s1 == "error") && $e1_papersize) {
-                $sv->warning_at(null, "(Try setting <code>\$Opt[\"banalZoom\"]</code> to 1.)");
+                $sv->warning_at(null, "<5>(Try setting <code>\$Opt[\"banalZoom\"]</code> to 1.)");
             }
         }
     }
@@ -111,7 +111,7 @@ class Banal_SettingParser extends SettingParser {
                 if ($ss !== "" && ($d = FormatSpec::parse_dimen2($ss))) {
                     $cfs->papersize[] = $d;
                 } else if ($ss !== "") {
-                    $sv->error_at("sub_banal_papersize_{$suffix}", "Invalid paper size.");
+                    $sv->error_at("sub_banal_papersize_{$suffix}", "<0>Invalid paper size");
                     $problem = true;
                     $sout = null;
                     break;
@@ -128,7 +128,7 @@ class Banal_SettingParser extends SettingParser {
                        && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2]) {
                 $cfs->pagelimit = [+$m[1], +$m[2]];
             } else {
-                $sv->error_at("sub_banal_pagelimit_{$suffix}", "Requires a whole number greater than 0, or a page range such as <code>2-4</code>.");
+                $sv->error_at("sub_banal_pagelimit_{$suffix}", "<5>Requires a whole number greater than 0, or a page range such as <code>2-4</code>");
                 $problem = true;
             }
         }
@@ -146,7 +146,7 @@ class Banal_SettingParser extends SettingParser {
             if (($sx = cvtint($s, -1)) >= 0)
                 $cfs->columns = $sx;
             else {
-                $sv->error_at("sub_banal_columns_{$suffix}", "Requires a whole number.");
+                $sv->error_at("sub_banal_columns_{$suffix}", "<0>Requires a whole number");
                 $problem = true;
             }
         }
@@ -159,7 +159,7 @@ class Banal_SettingParser extends SettingParser {
             if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
                 $s = $m[1];
                 if (!$cfs->papersize || count($cfs->papersize) !== 1) {
-                    $sv->error_at("sub_banal_papersize_{$suffix}", "You must specify a paper size as well as margins.");
+                    $sv->error_at("sub_banal_papersize_{$suffix}", "<0>You must specify a paper size as well as margins");
                     $sv->error_at("sub_banal_textblock_{$suffix}");
                     $problem = true;
                 } else {
@@ -172,7 +172,7 @@ class Banal_SettingParser extends SettingParser {
                     }
                     if (!($m = FormatSpec::parse_dimen($s))
                         || (is_array($m) && count($m) > 4)) {
-                        $sv->error_at("sub_banal_textblock_{$suffix}", "Invalid margin definition.");
+                        $sv->error_at("sub_banal_textblock_{$suffix}", "<0>Invalid margin definition");
                         $problem = true;
                         $s = "";
                     } else if (!is_array($m)) {
@@ -191,7 +191,7 @@ class Banal_SettingParser extends SettingParser {
             if ($s && ($s = FormatSpec::parse_dimen2($s))) {
                 $cfs->textblock = $s;
             } else {
-                $sv->error_at("sub_banal_textblock_{$suffix}", "Invalid text block definition.");
+                $sv->error_at("sub_banal_textblock_{$suffix}", "<0>Invalid text block definition");
                 $problem = true;
             }
         }
@@ -202,7 +202,7 @@ class Banal_SettingParser extends SettingParser {
             && strcasecmp($s, "N/A") !== 0) {
             $cfs->bodyfontsize = FormatSpec::parse_range($s);
             if (!$cfs->bodyfontsize) {
-                $sv->error_at("sub_banal_bodyfontsize_{$suffix}", "Requires a number greater than 0.");
+                $sv->error_at("sub_banal_bodyfontsize_{$suffix}", "<0>Requires a number greater than 0");
                 $problem = true;
             }
         }
@@ -213,7 +213,7 @@ class Banal_SettingParser extends SettingParser {
             && strcasecmp($s, "N/A") !== 0) {
             $cfs->bodylineheight = FormatSpec::parse_range($s);
             if (!$cfs->bodylineheight) {
-                $sv->error_at("sub_banal_bodylineheight_{$suffix}", "Requires a number greater than 0.");
+                $sv->error_at("sub_banal_bodylineheight_{$suffix}", "<0>Requires a number greater than 0");
                 $problem = true;
             }
         }
@@ -233,7 +233,7 @@ class Banal_SettingParser extends SettingParser {
         }
         $sv->save("sub_banal_data_{$suffix}", $unparse);
         if ($unparse === "" && $sv->reqstr("sub_banal_val_{$suffix}")) {
-            $sv->warning_at("sub_banal_val_{$suffix}", "The format checker does nothing unless at least one constraint is enabled.");
+            $sv->warning_at("sub_banal_val_{$suffix}", "<0>The format checker does nothing unless at least one constraint is enabled");
         }
         if ($old_unparse !== $unparse || $sv->oldv("sub_banal_val_{$suffix}") <= 0) {
             $sv->save("sub_banal_val_{$suffix}", $unparse !== "" ? Conf::$now : 0);
