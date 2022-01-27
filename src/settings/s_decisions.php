@@ -133,19 +133,19 @@ class Decisions_SettingParser extends SettingParser {
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        $dj = json_decode($sv->oldv("decisions")) ?? [];
+        $djs = json_decode($sv->oldv("decisions")) ?? [];
         for ($ctr = 1; $sv->has_req("decision__{$ctr}__id"); ++$ctr) {
-            $this->parse_req_row($sv, $ctr, $dj);
+            $this->parse_req_row($sv, $ctr, $djs);
         }
 
         // check for name reuse
-        for ($i = 0; $i !== count($dj); ++$i) {
+        for ($i = 0; $i !== count($djs); ++$i) {
             for ($j = 0; $j !== $i; ++$j) {
-                if (strcasecmp($dj[$i]->name, $dj[$j]->name) === 0
-                    && ($ctr = $dj[$i]->ctr ?? $dj[$j]->ctr ?? null) !== null) {
-                    $sv->error_at("decision__{$ctr}__name", "<0>Decision name ‘" . $dj[$i]->name . "’ reused");
-                    if (isset($dj[$j]->ctr)) {
-                        $sv->error_at("decision__" . $dj[$j]->ctr . "__name", "");
+                if (strcasecmp($djs[$i]->name, $djs[$j]->name) === 0
+                    && ($ctr = $djs[$i]->ctr ?? $djs[$j]->ctr ?? null) !== null) {
+                    $sv->error_at("decision__{$ctr}__name", "<0>Decision name ‘" . $djs[$i]->name . "’ reused");
+                    if (isset($djs[$j]->ctr)) {
+                        $sv->error_at("decision__" . $djs[$j]->ctr . "__name");
                     }
                     break;
                 }
@@ -154,17 +154,18 @@ class Decisions_SettingParser extends SettingParser {
 
         // sort and save
         $collator = $sv->conf->collator();
-        usort($dj, function ($a, $b) use ($collator) {
+        usort($djs, function ($a, $b) use ($collator) {
             if ($a->accept !== $b->accept) {
                 return $a->accept ? -1 : 1;
             } else {
                 return $collator->compare($a->name, $b->name);
             }
         });
-        foreach ($dj as $dx) {
-            unset($dx->ctr);
+        $dm = [];
+        foreach ($djs as $dj) {
+            $dm[$dj->id] = $dj->name;
         }
-        if ($sv->update("decisions", json_encode_db($dj))) {
+        if ($sv->update("outcome_map", json_encode_db($dm))) {
             $sv->request_write_lock("Paper");
             $sv->request_store_value($si);
         }
@@ -173,11 +174,8 @@ class Decisions_SettingParser extends SettingParser {
 
     function store_value(SettingValues $sv, Si $si) {
         $curmap = $sv->conf->decision_map();
-        $newmap = [0 => "Unspecified"];
-        foreach (json_decode($sv->newv("decisions")) as $d) {
-            $newmap[$d->id] = $d->name;
-        }
-        $sv->save("outcome_map", json_encode_db($newmap));
+        $newmap = json_decode($sv->newv("outcome_map"), true);
+        $newmap[0] = "Unspecified";
         $dels = array_diff_key($curmap, $newmap);
         if (!empty($dels)
             && ($pids = Dbl::fetch_first_columns($sv->conf->dblink, "select paperId from Paper where outcome?a", array_keys($dels)))) {
