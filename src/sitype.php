@@ -20,7 +20,8 @@ class Sitype {
         "tag" => "Tag_Sitype",
         "tagbase" => "Tag_Sitype",
         "taglist" => "TagList_Sitype",
-        "tagselect" => "Tag_Sitype"
+        "tagselect" => "Tag_Sitype",
+        "url" => "Url_Sitype"
     ];
     /** @var associative-array<string,?Sitype> */
     static private $type_class = [];
