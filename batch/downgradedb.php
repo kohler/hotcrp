@@ -266,7 +266,7 @@ $Conf->qe("CREATE TABLE `ReviewFormOptions` (
 $got_fields = [];
 foreach ($Conf->review_form()->all_fields() as $f) {
     $Conf->qe("insert into ReviewFormField values (?,?,?,?,?,?,?)",
-              $f->id, $f->name, $f->description, $f->display_order,
+              $f->id, $f->name, $f->description, $f->order,
               (int) $f->display_space,
               $f->view_score >= VIEWSCORE_AUTHORDEC ? 1 : 0,
               $f->option_letter ? : 0);

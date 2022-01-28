@@ -423,9 +423,9 @@ class ReviewForm_SettingParser extends SettingParser {
         $reset_wordcount = $assign_ordinal = $reset_view_score = false;
         foreach ($nform->all_fields() as $nf) {
             $of = $oform->fmap[$nf->id] ?? null;
-            if ($nf->displayed && (!$of || !$of->displayed)) {
+            if ($nf->order && (!$of || !$of->order)) {
                 $clear_fields[] = $nf;
-            } else if ($nf->displayed
+            } else if ($nf->order
                        && $nf->has_options
                        && count($nf->options) < count($of->options)) {
                 $clear_options[] = $nf;
@@ -435,14 +435,14 @@ class ReviewForm_SettingParser extends SettingParser {
                 $reset_wordcount = true;
             }
             if ($of
-                && $of->displayed
-                && $nf->displayed
+                && $of->order
+                && $nf->order
                 && $of->view_score != $nf->view_score) {
                 $reset_view_score = true;
             }
             if ($of
-                && $of->displayed
-                && $nf->displayed
+                && $of->order
+                && $nf->order
                 && $of->view_score < VIEWSCORE_AUTHORDEC
                 && $nf->view_score >= VIEWSCORE_AUTHORDEC) {
                 $assign_ordinal = true;

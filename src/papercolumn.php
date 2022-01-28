@@ -935,7 +935,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         }
         $vsbound = $user->permissive_view_score_bound();
         return array_filter($fs, function ($f) use ($vsbound) {
-            return $f && $f->has_options && $f->displayed && $f->view_score > $vsbound;
+            return $f && $f->has_options && $f->order && $f->view_score > $vsbound;
         });
     }
     static function expand($name, Contact $user, $xfj, $m) {
@@ -956,7 +956,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $cs = array_map(function ($f) {
             return $f->search_keyword();
         }, array_filter($user->conf->all_review_fields(), function ($f) use ($vsbound) {
-            return $f->has_options && $f->displayed && $f->view_score > $vsbound;
+            return $f->has_options && $f->order && $f->view_score > $vsbound;
         }));
         if (!empty($cs)) {
             array_unshift($cs, "scores");

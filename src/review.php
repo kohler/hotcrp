@@ -69,9 +69,13 @@ class ReviewField implements JsonSerializable {
     public $display_space;
     /** @var int */
     public $view_score;
-    /** @var bool */
+    /** @var bool
+     * @deprecated */
     public $displayed = false;
     /** @var ?int */
+    public $order;
+    /** @var ?int
+     * @deprecated */
     public $display_order;
     /** @var string */
     public $option_class_prefix = "sv";
@@ -143,13 +147,15 @@ class ReviewField implements JsonSerializable {
         if (is_string($vis) && isset(self::$view_score_map[$vis])) {
             $this->view_score = self::$view_score_map[$vis];
         }
-        if ($j->order ?? $j->position ?? null) {
-            $this->displayed = true;
-            $this->display_order = $j->order ?? $j->position;
+        if (($j->order ?? $j->position ?? null) > 0) {
+            $this->order = $j->order ?? $j->position;
         } else {
-            $this->displayed = false;
-            $this->display_order = null;
+            $this->order = null;
         }
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
+        $this->display_order = $this->order;
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
+        $this->displayed = $this->order > 0;
         $this->round_mask = $j->round_mask ?? 0;
         if ($this->exists_if !== ($j->exists_if ?? null)) {
             $this->exists_if = $j->exists_if ?? null;
@@ -206,12 +212,16 @@ class ReviewField implements JsonSerializable {
 
     /** @return string */
     function unparse_round_mask() {
-        $rs = [];
-        foreach ($this->conf->round_list() as $i => $rname) {
-            if ($this->round_mask & (1 << $i))
-                $rs[] = $i ? "round:{$rname}" : "round:unnamed";
+        if ($this->round_mask) {
+            $rs = [];
+            foreach ($this->conf->round_list() as $i => $rname) {
+                if ($this->round_mask & (1 << $i))
+                    $rs[] = $i ? "round:{$rname}" : "round:unnamed";
+            }
+            return join(" OR ", $rs);
+        } else {
+            return "";
         }
-        return join(" OR ", $rs);
     }
 
     /** @param 0|1|2 $for_settings
@@ -230,8 +240,8 @@ class ReviewField implements JsonSerializable {
         if (!$this->has_options && $this->display_space > 3) {
             $j->display_space = $this->display_space;
         }
-        if ($this->displayed) {
-            $j->order = $this->display_order;
+        if ($this->order) {
+            $j->order = $this->order;
         }
         $j->visibility = $this->unparse_visibility();
         if ($this->has_options) {
@@ -289,7 +299,7 @@ class ReviewField implements JsonSerializable {
 
     /** @return bool */
     function include_word_count() {
-        return $this->displayed
+        return $this->order
             && !$this->has_options
             && $this->view_score >= VIEWSCORE_AUTHORDEC;
     }
@@ -575,7 +585,18 @@ class ReviewField implements JsonSerializable {
             echo Ht::textarea($this->id, (string) $fv, $opt);
         }
     }
+
+    static function order_compare($a, $b) {
+        if (!$a->order !== !$b->order) {
+            return $a->order ? -1 : 1;
+        } else if ($a->order !== $b->order) {
+            return $a->order < $b->order ? -1 : 1;
+        } else {
+            return strcmp($a->short_id ?? $a->id, $b->short_id ?? $b->id);
+        }
+    }
 }
+
 
 class ReviewForm implements JsonSerializable {
     const NOTIFICATION_DELAY = 10800;
@@ -608,16 +629,6 @@ class ReviewForm implements JsonSerializable {
 
     static private $review_author_seen = null;
 
-    static function fmap_compare($a, $b) {
-        if ($a->displayed !== $b->displayed) {
-            return $a->displayed ? -1 : 1;
-        } else if ($a->displayed && $a->display_order !== $b->display_order) {
-            return $a->display_order < $b->display_order ? -1 : 1;
-        } else {
-            return strcmp($a->id, $b->id);
-        }
-    }
-
     /** @param null|array|object $rfj */
     function __construct(Conf $conf, $rfj) {
         $this->conf = $conf;
@@ -645,13 +656,13 @@ class ReviewForm implements JsonSerializable {
                 $f->assign_json($j);
             }
         }
-        uasort($this->fmap, "ReviewForm::fmap_compare");
+        uasort($this->fmap, "ReviewField::order_compare");
 
         // assign field order
         $do = 0;
         foreach ($this->fmap as $f) {
-            if ($f->displayed) {
-                $f->display_order = ++$do;
+            if ($f->order) {
+                $f->order = ++$do;
                 $this->forder[$f->id] = $f;
                 if ($f->id !== $f->short_id) {
                     $this->by_short_id[$f->short_id] = $f;
@@ -715,7 +726,7 @@ class ReviewForm implements JsonSerializable {
     /** @return ?ReviewField */
     function default_highlighted_score() {
         $f = $this->fmap["overAllMerit"] ?? null;
-        if ($f && $f->displayed && $f->view_score >= VIEWSCORE_PC) {
+        if ($f && $f->order && $f->view_score >= VIEWSCORE_PC) {
             return $f;
         }
         foreach ($this->forder as $f) {
@@ -749,11 +760,11 @@ class ReviewForm implements JsonSerializable {
     #[\ReturnTypeWillChange]
     /** @return list<object> */
     function jsonSerialize() {
-        $fmap = [];
+        $rj = [];
         foreach ($this->fmap as $f) {
-            $fmap[] = $f->unparse_json(2);
+            $rj[] = $f->unparse_json(2);
         }
-        return $fmap;
+        return $rj;
     }
 
 
@@ -981,15 +992,12 @@ $blind\n";
             }
         }
 
-        $i = 0;
         $numericMessage = 0;
         $format_description = "";
         if (($fi = $this->format_info($rrow))) {
             $format_description = $fi->description_text();
         }
         foreach ($this->forder as $fid => $f) {
-            $i++; // XXX remove $i
-            assert($i === $f->display_order);
             if ($f->view_score <= $revViewScore
                 || ($prow->paperId > 0 && !$f->test_exists($rrow))) {
                 continue;
