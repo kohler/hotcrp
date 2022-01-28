@@ -35,9 +35,8 @@ class Banal_SettingRenderer {
 
 class Banal_SettingParser extends SettingParser {
     function apply_req(SettingValues $sv, Si $si) {
-        assert($si->split_name !== null);
-        assert($si->split_name[0] === "sub_banal_");
-        self::parse($si->split_name[1], $sv, true);
+        assert($si->part0 === "sub_banal_");
+        self::parse($si->part1, $sv, true);
         return true;
     }
 

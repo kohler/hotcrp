@@ -8,8 +8,12 @@ class Si {
     public $conf;
     /** @var string */
     public $name;
-    /** @var ?array{string,string,string} */
-    public $split_name;
+    /** @var ?string */
+    public $part0;
+    /** @var ?string */
+    public $part1;
+    /** @var ?string */
+    public $part2;
     /** @var string */
     public $json_name;
     /** @var ?string
@@ -39,9 +43,11 @@ class Si {
     public $storage_type;
     /** @var ?string */
     private $storage;
-    /** @var bool */
-    public $optional = false;
+    /** @var ?bool */
+    public $required;
+    /** @var list */
     public $values;
+    /** @var list */
     public $json_values;
     /** @var ?int */
     public $size;
@@ -51,7 +57,6 @@ class Si {
     public $parser_class;
     /** @var bool */
     public $disabled = false;
-    public $invalid_value;
     public $default_value;
     /** @var ?bool */
     public $autogrow;
@@ -69,6 +74,7 @@ class Si {
     const SI_SLICE = 4;
     const SI_OPT = 8;
     const SI_NEGATE = 16;
+    const SI_COMPONENT = 32;
 
     static private $key_storage = [
         "autogrow" => "is_bool",
@@ -76,12 +82,11 @@ class Si {
         "group" => "is_string",
         "ifnonempty" => "is_string",
         "internal" => "is_bool",
-        "invalid_value" => "is_string",
         "json_values" => "is_array",
-        "optional" => "is_bool",
         "order" => "is_number",
         "parser_class" => "is_string",
         "placeholder" => "is_string",
+        "required" => "is_bool",
         "size" => "is_int",
         "subtype" => "is_string",
         "title" => "is_string",
@@ -108,8 +113,11 @@ class Si {
             && ($j->json_name === false || is_string($j->json_name))) {
             $this->json_name = $j->json_name;
         }
-        if (isset($j->split_name)) {
-            $this->store("split_name", $j, "split_name", "is_string_list");
+        if (isset($j->parts)) {
+            assert(is_string_list($j->parts) && count($j->parts) === 3);
+            $this->part0 = $j->parts[0];
+            $this->part1 = $j->parts[1];
+            $this->part2 = $j->parts[2];
         }
         foreach ((array) $j as $k => $v) {
             if (isset(self::$key_storage[$k])) {
@@ -172,6 +180,10 @@ class Si {
         } else if ($dot === 3 && str_starts_with($s, "msg")) {
             $this->storage_type = self::SI_DATA;
             $this->default_message = $this->default_message ?? substr($s, 4);
+        } else if ($dot === 3 && str_starts_with($s, "cmp")) {
+            assert($this->part0 !== null);
+            $this->storage_type = self::SI_COMPONENT;
+            $this->storage = substr($s, 4);
         } else if ($dot === 6 && str_starts_with($s, "negval")) {
             $this->storage_type = self::SI_VALUE | self::SI_SLICE | self::SI_NEGATE;
             $this->storage = substr($s, 7);
@@ -194,7 +206,7 @@ class Si {
         }
 
         // resolve extension
-        if (isset($this->split_name)) {
+        if ($this->part0 !== null) {
             $this->storage = $this->_expand_split($this->storage);
             $this->hashid = $this->_expand_split($this->hashid);
         }
@@ -208,8 +220,8 @@ class Si {
             $p = 0;
             while (($p = strpos($s, "\$", $p)) !== false) {
                 if ($p === strlen($s) - 1 || $s[$p + 1] !== "{") {
-                    $s = substr($s, 0, $p) . $this->split_name[1] . substr($s, $p + 1);
-                    $p += strlen($this->split_name[1]);
+                    $s = substr($s, 0, $p) . $this->part1 . substr($s, $p + 1);
+                    $p += strlen($this->part1);
                 } else {
                     ++$p;
                 }
@@ -237,9 +249,9 @@ class Si {
                 } else {
                     return null;
                 }
-            } else if ($this->split_name) {
-                $s = substr($s, 0, $dollar) . $this->split_name[1] . substr($s, $dollar + 1);
-                $pos = $dollar + strlen($this->split_name[1]);
+            } else if ($this->part1 !== null) {
+                $s = substr($s, 0, $dollar) . $this->part1 . substr($s, $dollar + 1);
+                $pos = $dollar + strlen($this->part1);
             } else {
                 $pos = $dollar + 1;
             }
@@ -282,17 +294,9 @@ class Si {
         }
     }
 
-
     /** @return string */
     function storage_name() {
         return $this->storage ?? $this->name;
-    }
-
-
-    /** @return bool
-     * @deprecated */
-    function is_date() {
-        return $this->type && str_ends_with($this->type, "date");
     }
 
     /** @return array<string,string> */
@@ -325,7 +329,7 @@ class Si {
         if ($this->default_message) {
             $dm = $this->default_message;
             $id = is_string($dm) ? $dm : $dm[0];
-            $mid = $this->split_name ? $this->split_name[1] : "\$";
+            $mid = $this->part1 !== null ? $this->part1 : "\$";
             $args = [];
             foreach (is_string($dm) ? [] : array_slice($dm, 1) as $arg) {
                 $args[] = $sv->newv(str_replace("\$", $mid, $arg));
@@ -358,7 +362,7 @@ class Si {
             return $this->_tclass ? $this->_tclass->parse_null_valstr($this) : null;
         } else if ($this->_tclass) {
             $v = trim($reqv);
-            if ($this->placeholder === $v || $this->invalid_value === $v) {
+            if ($this->placeholder === $v) {
                 $v = "";
             }
             return $this->_tclass->parse_valstr($v, $this, $sv);
@@ -437,14 +441,12 @@ class SettingInfoSet {
                     for ($j = 0; $j !== count($list); $j += 2) {
                         $slen = strlen($list[$j]);
                         if ($plen + $slen < $nlen
-                            && str_ends_with($name, $list[$j])) {
+                            && str_ends_with($name, $list[$j])
+                            && ($part1 = substr($name, $plen, $nlen - $plen - $slen)) !== ""
+                            && strpos($part1, "__") === false) {
                             $jx = clone $list[$j + 1];
                             $jx->name = $name;
-                            $jx->split_name = [
-                                $this->xlist[$i],
-                                substr($name, $plen, $nlen - $slen - $plen),
-                                $list[$j]
-                            ];
+                            $jx->parts = [$this->xlist[$i], $part1, $list[$j]];
                             $this->xmap[$name][] = $jx;
                         }
                     }

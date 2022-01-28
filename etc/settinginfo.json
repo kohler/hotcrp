@@ -184,20 +184,20 @@
         "name": "conference_url",
         "group": "basics",
         "title": "Conference URL", "storage": "opt.conferenceSite",
-        "type": "url", "optional": true, "size": 70, "placeholder": "N/A"
+        "type": "url", "required": false, "size": 70, "placeholder": "N/A"
     },
     {
         "name": "site_contact_email",
         "group": "basics",
         "title": "Email of site contact", "storage": "opt.contactEmail",
-        "type": "email", "optional": true, "size": 40, "invalid_value": "you@example.com",
+        "type": "email", "required": false, "size": 40,
         "parser_class": "SiteContact_SettingParser", "order": 1
     },
     {
         "name": "site_contact_name",
         "group": "basics",
         "title": "Name of site contact", "storage": "opt.contactName",
-        "type": "simplestring", "size": 50, "invalid_value": "Your Name",
+        "type": "simplestring", "size": 50,
         "parser_class": "SiteContact_SettingParser", "placeholder": "(none)"
     },
     {

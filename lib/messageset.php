@@ -64,13 +64,13 @@ class MessageItem implements JsonSerializable {
     /** @param ?string $field
      * @return MessageItem */
     function with_field($field) {
-        return $this->with(["field" => $field]);
+        return $this->field === $field ? $this : $this->with(["field" => $field]);
     }
 
     /** @param ?string $landmark
      * @return MessageItem */
     function with_landmark($landmark) {
-        return $this->with(["landmark" => $landmark]);
+        return $this->landmark === $landmark ? $this : $this->with(["landmark" => $landmark]);
     }
 
     /** @param string $text
@@ -277,6 +277,13 @@ class MessageSet {
      * @return MessageItem */
     function append_item($mi) {
         return $this->splice_item(-1, $mi);
+    }
+
+    /** @param ?string $field
+     * @param MessageItem $mi
+     * @return MessageItem */
+    function append_item_at($field, $mi) {
+        return $this->splice_item(-1, $mi->with_field($field));
     }
 
     /** @param iterable<MessageItem> $message_list */

@@ -450,7 +450,7 @@ class PaperTable {
             echo ' hidden';
         }
         if ($opt->exists_condition()) {
-            echo ' want-fieldchange has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode($opt->exists_script_expression($this->prow)));
+            echo ' want-fieldchange has-edit-condition" data-edit-condition="', htmlspecialchars(json_encode_browser($opt->exists_script_expression($this->prow)));
             Ht::stash_script('$(hotcrp.paper_edit_conditions)', 'edit_condition');
         }
         echo '"><h3 class="', $this->control_class($opt->formid, "pfehead");

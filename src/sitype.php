@@ -10,6 +10,7 @@ class Sitype {
         "date" => "Date_Sitype",
         "email" => "Email_Sitype",
         "emailheader" => "EmailHeader_Sitype",
+        "float" => "Float_Sitype",
         "grace" => "Grace_Sitype",
         "htmlstring" => "Html_Sitype",
         "int" => "Nonnegint_Sitype", /* XXX */
@@ -98,7 +99,7 @@ class Radio_Sitype extends Sitype {
             if ((string) $allowedv === $vstr)
                 return $allowedv;
         }
-        $sv->error_at($si, "Please enter a valid choice");
+        $sv->error_at($si, "<0>Please enter a valid choice");
         return null;
     }
     function unparse_valstr($v, Si $si) {
@@ -116,7 +117,7 @@ class Cdate_Sitype extends Sitype {
     }
     function parse_valstr($vstr, Si $si, SettingValues $sv) {
         if ($vstr !== "") {
-            $curv = $sv->si_oldv($si);
+            $curv = $sv->oldv($si);
             return $curv > 0 ? $curv : Conf::$now;
         } else {
             return 0;
@@ -147,7 +148,7 @@ class Date_Sitype extends Sitype {
         } else if (($t = $sv->conf->parse_time($vstr)) !== false) {
             return $t;
         } else {
-            $sv->error_at($si, "Please enter a valid date");
+            $sv->error_at($si, "<0>Please enter a valid date");
             return null;
         }
     }
@@ -177,7 +178,7 @@ class Grace_Sitype extends Sitype {
         if (($v = SettingParser::parse_interval($vstr)) !== false) {
             return intval($v);
         } else {
-            $sv->error_at($si, "Please enter a valid grace period");
+            $sv->error_at($si, "<0>Please enter a valid grace period");
             return null;
         }
     }
@@ -206,7 +207,24 @@ class Nonnegint_Sitype extends Sitype {
         } else if ($vstr === "" && $si->default_value !== null) {
             return $si->default_value;
         } else {
-            $sv->error_at($si, "Please enter a nonnegative whole number");
+            $sv->error_at($si, "<0>Please enter a nonnegative whole number");
+            return null;
+        }
+    }
+}
+
+class Float_Sitype extends Sitype {
+    function initialize_si(Si $si) {
+        $si->size = $si->size ?? 15;
+        $si->placeholder = $si->placeholder ?? "none";
+    }
+    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+        if (is_numeric($vstr)) {
+            return floatval($vstr);
+        } else if ($vstr === "" && $si->default_value !== null) {
+            return $si->default_value;
+        } else {
+            $sv->error_at($si, "<0>Please enter a number");
             return null;
         }
     }
@@ -219,7 +237,13 @@ class String_Sitype extends Sitype {
         $this->simple = $name === "simplestring";
     }
     function parse_valstr($vstr, Si $si, SettingValues $sv) {
-        return $this->simple ? simplify_whitespace($vstr) : cleannl($vstr);
+        $s = $this->simple ? simplify_whitespace($vstr) : cleannl($vstr);
+        if ($s === "" && $si->required === true) {
+            $sv->error_at($si, "<0>Entry required");
+            return null;
+        } else {
+            return $s;
+        }
     }
     function nullable($v, Si $si, SettingValues $sv) {
         return $v === ""
@@ -231,11 +255,14 @@ class String_Sitype extends Sitype {
 class Url_Sitype extends Sitype {
     use Data_Sitype;
     function parse_valstr($vstr, Si $si, SettingValues $sv) {
-        if (($vstr === "" && $si->optional)
+        if (($vstr === "" && $si->required === false)
             || preg_match('/\A(?:https?|ftp):\/\/\S+\z/', $vstr)) {
             return $vstr;
+        } else if ($vstr === "") {
+            $sv->error_at($si, "<0>Entry required");
+            return null;
         } else {
-            $sv->error_at($si, "Please enter a valid URL");
+            $sv->error_at($si, "<0>Valid web address required");
             return null;
         }
     }
@@ -244,12 +271,15 @@ class Url_Sitype extends Sitype {
 class Email_Sitype extends Sitype {
     use Data_Sitype;
     function parse_valstr($vstr, Si $si, SettingValues $sv) {
-        if (($vstr === "" && $si->optional)
+        if (($vstr === "" && $si->required === false)
             || validate_email($vstr)
             || $vstr === $sv->oldv($si->name)) {
             return $vstr;
+        } else if ($vstr === "") {
+            $sv->error_at($si, "<0>Entry required");
+            return null;
         } else {
-            $sv->error_at($si, "Please enter a valid email address");
+            $sv->error_at($si, "<0>Valid email address required");
             return null;
         }
     }
@@ -290,7 +320,7 @@ class Tag_Sitype extends Sitype {
         $this->flags = $name === "tagbase" ? Tagger::NOVALUE : 0;
     }
     function parse_valstr($vstr, Si $si, SettingValues $sv) {
-        if ($vstr === "" && $si->optional) {
+        if ($vstr === "" && $si->required === false) {
             return "";
         } else if (($t = $sv->tagger()->check($vstr, $this->flags))) {
             return $t;

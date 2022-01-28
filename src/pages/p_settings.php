@@ -68,9 +68,8 @@ class Settings_Page {
     }
 
     /** @param string $group
-     * @param Qrequest $qreq
-     * @param bool $is_update */
-    function render($group, $qreq, $is_update) {
+     * @param Qrequest $qreq */
+    function render($group, $qreq) {
         $sv = $this->sv;
         $conf = $this->conf;
 
@@ -103,13 +102,13 @@ class Settings_Page {
             '<main class="leftmenu-content main-column">',
             '<h2 class="leftmenu">', $sv->group_title($group), '</h2>';
 
-        if (!$is_update) {
+        if (!$sv->use_req()) {
             $sv->crosscheck();
         }
-        if ($conf->report_saved_messages() < 1 || $is_update) {
+        if ($conf->report_saved_messages() < 1 || $sv->use_req()) {
             // XXX this is janky (if there are any warnings saved in the session,
             // don't crosscheck) but reduces duplicate warnings
-            $sv->report($is_update);
+            $sv->report();
         }
         $sv->render_group(strtolower($group), true);
 
@@ -128,6 +127,7 @@ class Settings_Page {
         }
 
         $sv = SettingValues::make_request($user, $qreq);
+        $sv->set_use_req(isset($qreq->update) && $qreq->valid_post());
         $sv->session_highlight();
         if (!$sv->viewable_by_user()) {
             $user->escape();
@@ -136,11 +136,11 @@ class Settings_Page {
         $sp = new Settings_Page($sv, $user);
         $_SESSION["sg"] = $group = $qreq->group = $sp->choose_setting_group($qreq);
 
-        if (isset($qreq->update) && $qreq->valid_post()) {
+        if ($sv->use_req()) {
             $sp->handle_update($qreq);
-            $sp->render($group, $qreq, true);
+            $sp->render($group, $qreq);
         } else {
-            $sp->render($group, $qreq, false);
+            $sp->render($group, $qreq);
         }
     }
 }

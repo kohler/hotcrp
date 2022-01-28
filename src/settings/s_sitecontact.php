@@ -10,13 +10,21 @@ class SiteContact_SettingParser extends SettingParser {
         $sv->echo_entry_group("site_contact_email", null, null, "The site contact is the contact point for users if something goes wrong. It defaults to the chair.");
     }
 
+    /** @param ?string $v
+     * @param Si $si */
+    static private function cleanstr($v, $si) {
+        $iv = $si->name === "site_contact_email" ? "you@example.com" : "Your Name";
+        return $v !== $iv ? $v : "";
+    }
+
     function set_oldv(SettingValues $sv, Si $si) {
         $user = $sv->conf->site_contact();
-        $sv->set_oldv($si->name, $si->name === "site_contact_email" ? $user->email : $user->name());
+        $s = $si->name === "site_contact_email" ? $user->email : $user->name();
+        $sv->set_oldv($si->name, self::cleanstr($s, $si));
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        $sv->save($si->name, $sv->base_parse_req($si));
+        $sv->save($si, self::cleanstr($sv->base_parse_req($si), $si));
         $sv->request_store_value($si);
         return true;
     }
@@ -26,14 +34,14 @@ class SiteContact_SettingParser extends SettingParser {
             $this->updated = true;
             $defuser = $sv->conf->default_site_contact();
             $newemail = $sv->newv("site_contact_email") ?? "";
+            $ooemail = $sv->conf->opt_override["contactEmail"] ?? "";
             $newname = $sv->newv("site_contact_name") ?? "";
             if ($defuser
                 && ($newemail === "" || $newemail === $defuser->email)
                 && ($newname === "" || $newname === $defuser->name())
-                && !isset($sv->conf->opt_override["contactName"])
-                && !isset($sv->conf->opt_override["contactEmail"])) {
-                $sv->save("site_contact_email", "");
-                $sv->save("site_contact_name", "");
+                && ($ooemail === "" || $ooemail === $defuser->email || $ooemail === "you@example.com")) {
+                $sv->unsave("site_contact_email");
+                $sv->unsave("site_contact_name");
             }
         }
     }

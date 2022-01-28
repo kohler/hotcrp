@@ -407,11 +407,11 @@ class RoundSelector_SettingParser extends SettingParser {
             $name = $lname = "default";
         }
         if ($lname === "default") {
-            $sv->save($si->name, "");
+            $sv->save($si, "");
         } else if ($lname === "" || $lname === "unnamed") {
-            $sv->save($si->name, $si->name === "rev_roundtag" ? "" : "unnamed");
+            $sv->save($si, $si->name === "rev_roundtag" ? "" : "unnamed");
         } else if (!($err = Conf::round_name_error($lname))) {
-            $sv->save($si->name, $name);
+            $sv->save($si, $name);
         } else {
             $sv->error_at($si->name, $err . " ($lname)");
         }
@@ -422,10 +422,9 @@ class RoundSelector_SettingParser extends SettingParser {
 class ReviewDeadline_SettingParser extends SettingParser {
     function apply_req(SettingValues $sv, Si $si) {
         assert($sv->has_savedv("tag_rounds"));
-        assert($si->split_name !== null);
+        assert($si->part0 !== null);
 
-        $prefix = $si->split_name[0];
-        $rref = intval($si->split_name[1]);
+        $rref = intval($si->part1);
         if ($sv->reqstr("deleteround_$rref")) {
             // setting already deleted by tag_rounds parsing
             return true;
@@ -451,9 +450,9 @@ class ReviewDeadline_SettingParser extends SettingParser {
         if (($v = $sv->base_parse_req($si)) !== null
             && $rnum !== false) {
             error_log("parse {$si->name} => {$v}");
-            $sv->save("{$prefix}{$rnum}", $v);
-            if ($v > 0 && str_ends_with($prefix, "hard_")) {
-                $sv->check_date_before(substr($prefix, 0, -5) . "soft_{$rnum}", $si->name, true);
+            $sv->save("{$si->part0}{$rnum}", $v);
+            if ($v > 0 && str_ends_with($si->part0, "hard_")) {
+                $sv->check_date_before(substr($si->part0, 0, -5) . "soft_{$rnum}", $si->name, true);
             }
         }
     }
