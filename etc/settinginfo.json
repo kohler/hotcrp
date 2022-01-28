@@ -37,22 +37,33 @@
         "title": "Anonymous PC discussion",
         "type": "checkbox"
     },
+
     {
         "name": "decisions", "group": "decisions",
         "hashid": "decision-types", "storage": "none",
         "type": "string", "parser_class": "Decisions_SettingParser"
     },
     {
-        "name_pattern": "decision__$__name", "internal": true, "group": "decisions",
-        "title": "Decision name",
-        "type": "simplestring", "size": 35, "placeholder": "Decision name"
+        "name": "outcome_map", "internal": true, "group": "decisions",
+        "storage": "dat.outcome_map"
     },
     {
-        "name_pattern": "decision__$__category", "internal": true, "group": "decisions",
-        "title": "Decision category"
+        "name_pattern": "decision__$", "group": "decisions",
+        "type": "object", "storage": "none", "parser_class": "Decisions_SettingParser"
     },
-    {   "name_pattern": "decision__$__categoryforce", "internal": true, "group": "decisions"   },
-    {   "name_pattern": "decision__$__id", "internal": true, "group": "decisions"   },
+    {   "name_pattern": "decision__$__id", "internal": true   },
+    {
+        "name_pattern": "decision__$__name", "group": "decisions",
+        "title": "Decision name",
+        "type": "simplestring", "size": 35, "placeholder": "Decision name",
+        "required": true, "storage": "cmp.name"
+    },
+    {
+        "name_pattern": "decision__$__category", "group": "decisions",
+        "title": "Decision category", "type": "radio", "values": ["a", "r"],
+        "storage": "cmp.category"
+    },
+
     {
         "name": "extrev_chairreq", "group": "reviews",
         "json_name": "review_external_request",
@@ -107,10 +118,6 @@
         "name": "final_soft", "group": "final",
         "title": "Final version upload deadline",
         "type": "date"
-    },
-    {
-        "name": "has_topics", "internal": true,
-        "type": "checkbox"
     },
     {
         "name": "lead_seerev",
@@ -219,50 +226,70 @@
         "type": "string", "storage": "dat.options"
     },
     {
-        "name_pattern": "sf__$__name", "internal": true, "group": "subform",
-        "title": "Submission field name",
-        "parser_class": "Options_SettingParser"
-    },
-    {
-        "name_pattern": "sf__$__type", "internal": true, "group": "subform",
-        "title": "Submission field type", "title_pattern": "‘${sv sf__$__name}’ type"
-    },
-    {
-        "name_pattern": "sf__$__description", "internal": true, "group": "subform",
-        "title": "Submission field description", "title_pattern": "‘${sv sf__$__name}’ description"
-    },
-    {
-        "name_pattern": "sf__$__choices", "internal": true, "group": "subform",
-        "title": "Submission field choices", "title_pattern": "‘${sv sf__$__name}’ choices"
-    },
-    {
-        "name_pattern": "sf__$__required", "internal": true, "group": "subform",
-        "title": "Submission field requirement", "title_pattern": "‘${sv sf__$__name}’ requirement"
-    },
-    {
-        "name_pattern": "sf__$__display", "internal": true, "group": "subform",
-        "title": "Submission field display", "title_pattern": "‘${sv sf__$__name}’ display"
-    },
-    {
-        "name_pattern": "sf__$__visibility", "internal": true, "group": "subform",
-        "title": "Submission field visibility", "title_pattern": "‘${sv sf__$__name}’ visibility"
-    },
-    {
-        "name_pattern": "sf__$__presence", "internal": true, "group": "subform",
-        "title": "Submission field presence", "title_pattern": "‘${sv sf__$__name}’ presence"
-    },
-    {
-        "name_pattern": "sf__$__condition", "internal": true, "group": "subform",
-        "title": "Submission field presence condition", "title_pattern": "‘${sv sf__$__name}’ presence condition"
-    },
-    {
         "name": "options_version", "internal": true,
         "storage": "val.options"
     },
+
     {
-        "name": "outcome_map", "internal": true, "group": "decisions",
-        "storage": "dat.outcome_map"
+        "name_pattern": "sf__$", "group": "subform",
+        "type": "object", "storage": "none", "parser_class": "Options_SettingParser"
     },
+    {   "name_pattern": "sf__$__id", "internal": true   },
+    {
+        "name_pattern": "sf__$__order", "group": "subform",
+        "title": "Submission field order", "title_pattern": "‘${sv sf__$__name}’ order",
+        "type": "float", "storage": "cmp.order"
+    },
+    {
+        "name_pattern": "sf__$__name", "group": "subform",
+        "title": "Submission field name",
+        "type": "simplestring", "required": true, "storage": "cmp.name",
+        "placeholder": "Field name", "size": 50, "parser_class": "Options_SettingParser"
+    },
+    {
+        "name_pattern": "sf__$__type", "group": "subform",
+        "title": "Submission field type", "title_pattern": "‘${sv sf__$__name}’ type",
+        "type": "simplestring", "storage": "cmp.type", "parser_class": "Options_SettingParser"
+    },
+    {
+        "name_pattern": "sf__$__description", "group": "subform",
+        "title": "Submission field description", "title_pattern": "‘${sv sf__$__name}’ description",
+        "type": "htmlstring", "size": 2, "autogrow": true,
+        "storage": "cmp.description"
+    },
+    {
+        "name_pattern": "sf__$__choices", "group": "subform",
+        "title": "Submission field choices", "title_pattern": "‘${sv sf__$__name}’ choices",
+        "type": "string", "size": 3, "autogrow": true,
+        "storage": "cmp.selector", "parser_class": "Options_SettingParser"
+    },
+    {
+        "name_pattern": "sf__$__required", "group": "subform",
+        "title": "Submission field requirement", "title_pattern": "‘${sv sf__$__name}’ requirement",
+        "type": "radio", "values": [0, 1], "storage": "cmp.required"
+    },
+    {
+        "name_pattern": "sf__$__display", "group": "subform",
+        "title": "Submission field display", "title_pattern": "‘${sv sf__$__name}’ display",
+        "type": "radio", "values": ["prominent", "topics", "submission"], "storage": "cmp.display"
+    },
+    {
+        "name_pattern": "sf__$__visibility", "group": "subform",
+        "title": "Submission field visibility", "title_pattern": "‘${sv sf__$__name}’ visibility",
+        "type": "radio", "values": ["all", "nonblind", "conflict", "review", "admin"], "storage": "cmp.visibility"
+    },
+    {
+        "name_pattern": "sf__$__presence", "group": "subform",
+        "title": "Submission field presence", "title_pattern": "‘${sv sf__$__name}’ presence",
+        "type": "radio", "values": ["all", "final", "custom"], "storage": "cmp.presence"
+    },
+    {
+        "name_pattern": "sf__$__condition", "group": "subform",
+        "title": "Submission field presence condition", "title_pattern": "‘${sv sf__$__name}’ presence condition",
+        "type": "simplestring", "size": 30, "placeholder": "Search", "storage": "cmp.exists_if",
+        "parser_class": "SubFieldCondition_SettingParser"
+    },
+
     {
         "name": "pc_seeall", "group": "sub",
         "title": "PC can see incomplete submissions",
@@ -317,56 +344,68 @@
         "title": "Collect authors’ responses",
         "type": "checkbox", "storage": "resp_active"
     },
+
     {
         "name": "responses", "group": "responses",
         "parser_class": "Responses_SettingParser",
         "type": "string"
     },
     {
-        "name_pattern": "response__$__done", "group": "responses",
-        "title": "Response hard deadline", "type": "date", "internal": true,
-        "title_pattern": "${sv response__$__title} hard deadline"
+        "name_pattern": "response__$", "group": "responses",
+        "type": "object", "storage": "none", "parser_class": "Responses_SettingParser"
     },
-    {
-        "name_pattern": "response__$__grace", "group": "responses",
-        "title": "Response grace period", "type": "grace", "internal": true,
-        "title_pattern": "${sv response__$__title} grace period"
-    },
-    {
-        "name_pattern": "response__$__open", "group": "responses",
-        "title": "Response start time", "type": "date", "internal": true,
-        "title_pattern": "${sv response__$__title} start time"
-    },
-    {
-        "name_pattern": "response__$__instructions", "group": "responses",
-        "title": "Response instructions", "internal": true,
-        "type": "htmlstring", "size": 3,
-        "default_message": ["resp_instrux", "response__$__words"],
-        "title_pattern": "${sv response__$__title} instructions"
-    },
+    {   "name_pattern": "response__$__id", "internal": true   },
     {
         "name_pattern": "response__$__name", "group": "responses",
         "title": "Response name", "placeholder": "Response name",
-        "internal": true, "parser_class": "Responses_SettingParser",
-        "type": "tag", "size": 20
+        "type": "tag", "size": 20,
+        "storage": "cmp.name", "parser_class": "Responses_SettingParser"
     },
     {
         "name_pattern": "response__$__title", "group": "responses",
         "internal": true, "parser_class": "Responses_SettingParser"
     },
     {
+        "name_pattern": "response__$__open", "group": "responses",
+        "title": "Response start time", "type": "date",
+        "title_pattern": "${sv response__$__title} start time",
+        "storage": "cmp.open"
+    },
+    {
+        "name_pattern": "response__$__done", "group": "responses",
+        "title": "Response hard deadline", "type": "date",
+        "title_pattern": "${sv response__$__title} hard deadline",
+        "storage": "cmp.done"
+    },
+    {
+        "name_pattern": "response__$__grace", "group": "responses",
+        "title": "Response grace period", "type": "grace",
+        "title_pattern": "${sv response__$__title} grace period",
+        "storage": "cmp.grace"
+    },
+    {
         "name_pattern": "response__$__condition", "group": "responses",
-        "title": "Response condition", "internal": true,
+        "title": "Response condition",
         "type": "string", "size": 40, "placeholder": "(All)",
-        "title_pattern": "${sv response__$__title} condition"
+        "title_pattern": "${sv response__$__title} condition",
+        "storage": "cmp.condition", "parser_class": "Responses_SettingParser"
     },
     {
         "name_pattern": "response__$__words", "group": "responses",
-        "title": "Response word limit", "internal": true,
+        "title": "Response word limit",
         "type": "int", "size": 5, "placeholder": "none", "default_value": 0,
-        "title_pattern": "${sv response__$__title} word limit"
+        "title_pattern": "${sv response__$__title} word limit",
+        "storage": "cmp.words"
     },
-    {   "name_pattern": "response__$__id", "internal": true   },
+    {
+        "name_pattern": "response__$__instructions", "group": "responses",
+        "title": "Response instructions",
+        "type": "htmlstring", "size": 3,
+        "default_message": ["resp_instrux", "response__$__words"],
+        "title_pattern": "${sv response__$__title} instructions",
+        "storage": "cmp.instructions", "parser_class": "Responses_SettingParser"
+    },
+
     {
         "name": "rev_blind", "group": "reviews",
         "title": "Review anonymity",
@@ -393,6 +432,7 @@
         "type": "tagselect", "parser_class": "RoundSelector_SettingParser", "default": "",
         "require": "src/settings/s_reviews.php", "order": 1
     },
+
     {
         "name": "review_form", "group": "reviewform",
         "hashid": false,
@@ -400,38 +440,67 @@
         "type": "string"
     },
     {
-        "name_pattern": "rf__$__name", "internal": true, "group": "reviewform",
+        "name_pattern": "rf__$", "group": "reviewform",
+        "type": "object", "storage": "none", "parser_class": "ReviewForm_SettingParser"
+    },
+    {   "name_pattern": "rf__$__id", "internal": true   },
+    {
+        "name_pattern": "rf__$__name", "group": "reviewform",
         "title": "Review field name",
-        "type": "string", "parser_class": "ReviewForm_SettingParser"
+        "type": "simplestring", "required": true, "storage": "cmp.name",
+        "placeholder": "Field name", "size": 50, "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf__$__description", "internal": true, "group": "reviewform",
-        "title": "Review field description", "title_pattern": "‘${sv rf__$__name}’ description"
+        "name_pattern": "rf__$__description", "group": "reviewform",
+        "title": "Review field description", "title_pattern": "‘${sv rf__$__name}’ description",
+        "type": "htmlstring", "size": 2, "autogrow": true,
+        "storage": "cmp.description"
     },
     {
-        "name_pattern": "rf__$__choices", "internal": true, "group": "reviewform",
-        "title": "Review field choices", "title_pattern": "‘${sv rf__$__name}’ choices"
+        "name_pattern": "rf__$__choices", "group": "reviewform",
+        "title": "Review field choices", "title_pattern": "‘${sv rf__$__name}’ choices",
+        "type": "string", "size": 3, "autogrow": true,
+        "parser_class": "ReviewForm_SettingParser", "storage": "cmp.options"
     },
     {
-        "name_pattern": "rf__$__colors", "internal": true, "group": "reviewform",
-        "title": "Review field colors", "title_pattern": "‘${sv rf__$__name}’ colors"
+        "name_pattern": "rf__$__option_letter", "group": "reviewform", "internal": true,
+        "storage": "cmp.option_letter"
     },
     {
-        "name_pattern": "rf__$__required", "internal": true, "group": "reviewform",
-        "title": "Review field requirement", "title_pattern": "‘${sv rf__$__name}’ requirement"
+        "name_pattern": "rf__$__colors", "group": "reviewform",
+        "title": "Review field colors", "title_pattern": "‘${sv rf__$__name}’ colors",
+        "type": "radio", "values": ["sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr"],
+        "storage": "cmp.option_class_prefix", "parser_class": "ReviewForm_SettingParser"
     },
     {
-        "name_pattern": "rf__$__visibility", "internal": true, "group": "reviewform",
-        "title": "Review field visibility", "title_pattern": "‘${sv rf__$__name}’ visibility"
+        "name_pattern": "rf__$__order", "group": "reviewform",
+        "title": "Review field order", "title_pattern": "‘${sv rf__$__name}’ order",
+        "type": "float", "storage": "cmp.order"
     },
     {
-        "name_pattern": "rf__$__presence", "internal": true, "group": "reviewform",
-        "title": "Review field presence", "title_pattern": "‘${sv rf__$__name}’ presence"
+        "name_pattern": "rf__$__required", "group": "reviewform",
+        "title": "Review field requirement", "title_pattern": "‘${sv rf__$__name}’ requirement",
+        "type": "radio", "values": [0, 1], "storage": "cmp.required"
     },
     {
-        "name_pattern": "rf__$__condition", "internal": true, "group": "reviewform",
-        "title": "Review field presence condition", "title_pattern": "‘${sv rf__$__name}’ presence condition"
+        "name_pattern": "rf__$__visibility", "group": "reviewform",
+        "title": "Review field visibility", "title_pattern": "‘${sv rf__$__name}’ visibility",
+        "type": "radio", "values": ["au", "pc", "audec", "admin"],
+        "storage": "cmp.visibility"
     },
+    {
+        "name_pattern": "rf__$__presence", "group": "reviewform",
+        "title": "Review field presence", "title_pattern": "‘${sv rf__$__name}’ presence",
+        "type": "radio", "values": ["all", "custom"], "storage": "cmp.presence",
+        "parser_class": "ReviewForm_SettingParser"
+    },
+    {
+        "name_pattern": "rf__$__condition", "group": "reviewform",
+        "title": "Review field presence condition", "title_pattern": "‘${sv rf__$__name}’ presence condition",
+        "type": "simplestring", "size": 30, "placeholder": "Search", "storage": "cmp.exists_if",
+        "parser_class": "ReviewFieldCondition_SettingParser"
+    },
+
     {
         "name_pattern": "roundname_$", "internal": true, "group": "reviews",
         "title": "Review round name", "hashid": "rounds",
@@ -628,10 +697,27 @@
         "type": "taglist", "subtype": "allotment", "size": 50, "autogrow": true,
         "parser_class": "Tags_SettingParser"
     },
+
     {
         "name": "topics", "group": "subform",
         "type": "string", "parser_class": "Topics_SettingParser"
     },
+    {   "name": "has_topics", "internal": true, "type": "checkbox"   },
+    {
+        "name_pattern": "topic__$", "group": "subform",
+        "type": "object", "storage": "none", "parser_class": "Topics_SettingParser"
+    },
+    {   "name_pattern": "topic__$__id", "internal": true   },
+    {
+        "name_pattern": "topic__$__name", "group": "subform",
+        "title": "Topic name",
+        "type": "simplestring", "size": 80, "autogrow": true, "storage": "cmp.name"
+    },
+    {
+        "name": "topic__newlist", "title": "New topics", "group": "subform",
+        "type": "string", "order": -1, "parser_class": "Topics_SettingParser"
+    },
+
     {
         "name": "tracks", "group": "tracks",
         "parser_class": "Tracks_SettingParser",

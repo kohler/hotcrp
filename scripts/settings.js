@@ -1,17 +1,6 @@
 // settings.js -- HotCRP JavaScript library for settings
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-function next_lexicographic_permutation(i, size) {
-    var y = (i & -i) || 1, c = i + y, highbit = 1 << size;
-    i = (((i ^ c) >> 2) / y) | c;
-    if (i >= highbit) {
-        i = ((i & (highbit - 1)) << 2) | 3;
-        if (i >= highbit)
-            i = false;
-    }
-    return i;
-}
-
 handle_ui.on("js-settings-resp-active", function (event) {
     $(".if-response-active").toggleClass("hidden", !this.checked);
 });
@@ -43,7 +32,61 @@ handle_ui.on("js-settings-show-property", function () {
 });
 
 
+function settings_delete(elt, message) {
+    var form = elt.closest("form");
+    addClass(elt, "deleted");
+    if (!form.elements[elt.id + "__delete"]) {
+        var deleter = hidden_input(elt.id + "__delete", "1");
+        deleter.setAttribute("data-default-value", "");
+        form.appendChild(deleter);
+    }
+    if (hasClass(elt, "is-new")) {
+        addClass(elt, "hidden");
+        $(elt).find("input, select, textarea").addClass("ignore-diff");
+        return false;
+    } else {
+        var edit = document.getElementById(elt.id + "__edit") || elt;
+        if (edit) {
+            $(edit).children().addClass("hidden");
+            $(edit).append('<div class="f-i"><em id="'.concat(elt.id, '__delete_message">', message, '</em></div>'));
+        }
+        var name = form.elements[elt.id + "__name"];
+        if (name) {
+            name.disabled = true;
+            addClass(name, "text-decoration-line-through");
+            removeClass(name.closest(".entryi"), "hidden");
+        }
+        return true;
+    }
+}
+
+function settings_field_unfold() {
+    var ch = this.parentElement.firstChild;
+    for (; ch; ch = ch.nextSibling) {
+        if (ch !== this && hasClass(ch, "fold2o") && !form_differs(ch))
+            fold(ch, true, 2);
+    }
+    $(this).find("textarea").css("height", "auto").autogrow();
+    $(this).find("input[type=text]").autogrow();
+}
+
+
+// BEGIN SUBMISSION FIELD SETTINGS
 (function () {
+
+function settings_sf_order() {
+    var i = 0, n, pos,
+        form = document.getElementById("settingsform"),
+        c = document.getElementById("settings-sform");
+    $(c).find(".moveup, .movedown").prop("disabled", false);
+    $(c).find(".settings-sf:first-child .moveup").prop("disabled", true);
+    $(c).find(".settings-sf:last-child .movedown").prop("disabled", true);
+    for (n = c.firstChild; n; n = n.nextSibling) {
+        pos = hasClass(n, "deleted") ? 0 : ++i;
+        form.elements[n.id + "__order"].value = pos;
+    }
+    form_highlight("#settingsform");
+}
 
 handle_ui.on("js-settings-sf-type", function (event) {
     var v = this.value;
@@ -53,58 +96,47 @@ handle_ui.on("js-settings-sf-type", function (event) {
 });
 
 handle_ui.on("js-settings-sf-move", function (event) {
-    var odiv = $(this).closest(".settings-sf")[0];
-    if (hasClass(this, "moveup") && odiv.previousSibling)
-        odiv.parentNode.insertBefore(odiv, odiv.previousSibling);
-    else if (hasClass(this, "movedown") && odiv.nextSibling)
-        odiv.parentNode.insertBefore(odiv, odiv.nextSibling.nextSibling);
-    else if (hasClass(this, "delete")) {
-        var $odiv = $(odiv), x;
-        if ($odiv.find(".settings-sf-id").val() === "new") {
-            $odiv.remove();
-            form_highlight("#settingsform");
-        } else {
-            tooltip.erase.call(this);
-            $odiv.find(".settings-sf-order").val("deleted").change();
-            $odiv.find(".f-i, .entryi").each(function () {
-                if (!$(this).find(".settings-sf-order").length)
-                    $(this).remove();
-            });
-            $odiv.find("input[type=text]").prop("disabled", true).addClass("text-decoration-line-through");
-            if ((x = this.getAttribute("data-option-exists")))
-                $odiv.append('<div class="f-i"><em>This field will be deleted from the submission form and from ' + plural(x, 'submission') + '.</em></div>');
-            else
-                $odiv.append('<div class="f-i"><em>This field will be deleted from the submission form. It is not used on any submissions.</em></div>');
-        }
+    var sf = this.closest(".settings-sf");
+    if (hasClass(this, "moveup") && sf.previousSibling) {
+        sf.parentNode.insertBefore(sf, sf.previousSibling);
+    } else if (hasClass(this, "movedown") && sf.nextSibling) {
+        sf.parentNode.insertBefore(sf, sf.nextSibling.nextSibling);
+    } else if (hasClass(this, "delete")) {
+        var msg;
+        if ((x = this.getAttribute("data-sf-exists")))
+            msg = 'This field will be deleted from the submission form and from ' + plural(x, 'submission') + '.';
+        else
+            msg = 'This field will be deleted from the submission form. It is not used on any submissions.';
+        settings_delete(sf, msg);
+        foldup.call(sf, event, {n: 2, f: false});
     }
-    settings_sf_positions();
+    settings_sf_order();
 });
 
 
 function add_dialog() {
-    var $d, sel;
+    var $d, sel, samps = $$("settings-sf-samples").content.childNodes;
     function cur_option() {
         return sel.options[sel.selectedIndex] || sel.options[0];
     }
     function render_template() {
-        var opt = cur_option(),
-            samp = $$("settings-sform-samples").childNodes[opt.value | 0];
-        $d.find(".settings-sf-template-view").html($(samp).html());
+        var opt = cur_option();
+        $d.find(".settings-sf-template-view").html(samps[opt.value | 0].cloneNode(true));
     }
     function submit(event) {
         var opt = cur_option(),
-            samp = $$("settings-sform-samples").childNodes[opt.value | 0],
-            h = $$("settings-sf-new").getAttribute("data-template"),
+            samp = samps[opt.value | 0],
+            h = $$("settings-sf-new").innerHTML,
             next = 1, odiv;
         while ($$("sf__" + next + "__name"))
             ++next;
-        h = h.replace(/__0/g, "__" + next);
-        odiv = $(h).appendTo("#settings-sform");
+        h = h.replace(/__\$/g, "__" + next);
+        odiv = $(h).removeClass("hidden").appendTo("#settings-sform");
         odiv.find(".need-autogrow").autogrow();
         odiv.find(".need-tooltip").each(tooltip);
         odiv.find(".js-settings-sf-type").val(samp.getAttribute("data-name")).change();
         $$("sf__" + next + "__name").focus();
-        settings_sf_positions();
+        settings_sf_order();
         $d.close();
         event.preventDefault();
     }
@@ -113,9 +145,9 @@ function add_dialog() {
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<select name="sf_template" class="w-99 want-focus" size="5">', '</select>');
-        $("#settings-sform-samples").children().each(function (i) {
-            hc.push('<option value="'.concat(i, i ? '">' : '" selected>', escape_html(this.getAttribute("data-title")), '</option>'));
-        });
+        for (i = 0; samps[i]; ++i) {
+            hc.push('<option value="'.concat(i, i ? '">' : '" selected>', escape_html(samps[i].getAttribute("data-title")), '</option>'));
+        }
         hc.pop();
         hc.push('<div class="settings-sf-template-view mt-4" style="width:500px;max-width:90%;min-height:10em"></div>');
         hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',
@@ -131,39 +163,30 @@ function add_dialog() {
 
 handle_ui.on("js-settings-sf-add", add_dialog);
 
-function settings_sf_positions() {
-    $(".settings-sf .moveup, .settings-sf .movedown").prop("disabled", false);
-    $(".settings-sf:first-child .moveup").prop("disabled", true);
-    $(".settings-sf:last-child .movedown").prop("disabled", true);
-    var index = 0;
-    $(".settings-sf-order").each(function () {
-        if (this.value !== "deleted" && this.name !== "sf__0__order") {
-            ++index;
-            if (this.value != index)
-                $(this).val(index).change();
-        }
+$(document).on("hotcrpsettingssf", ".settings-sf", function (evt) {
+    var view = document.getElementById(this.id + "__view"),
+        edit = document.getElementById(this.id + "__edit");
+    $(view).find("input, select, textarea, button").each(function () {
+        this.removeAttribute("name"); // do not submit with form
+        if (this.type === "checkbox" || this.type === "radio" || this.type === "button")
+            this.disabled = true;
+        else if (this.type !== "select")
+            this.readonly = true;
+        removeClass(this, "ui");
     });
-}
-
-$(function () {
-    if ($(".settings-sf").length) {
-        $(".settings-sf-view").find("input, select, textarea, button").each(function () {
-            this.removeAttribute("name"); // do not submit with form
-            if (this.type === "checkbox" || this.type === "radio" || this.type === "button")
-                this.disabled = true;
-            else if (this.type !== "select")
-                this.readonly = true;
-            removeClass(this, "ui");
-        });
-        $("#settings-sform").on("unfold", ".settings-sf", function (evt, opts) {
-            $(this).find("textarea").css("height", "auto").autogrow();
-            $(this).find("input[type=text]").autogrow();
-        });
-        settings_sf_positions();
+    if (edit
+        && !form_differs(edit)
+        && !$(edit).find(".is-warning, .is-error, .has-warning, .has-error").length) {
+        fold(this, true, 2);
     }
+    removeClass(this, "hidden");
+    settings_sf_order();
 });
 
+$(document).on("unfold", ".settings-sf", settings_field_unfold);
+
 })();
+// END SUBMISSION FIELD SETTINGS
 
 
 handle_ui.on("js-settings-banal-pagelimit", function (evt) {
@@ -177,7 +200,7 @@ handle_ui.on("js-settings-banal-pagelimit", function (evt) {
 });
 
 
-handle_ui.on("js-settings-add-decision-type", function (event) {
+handle_ui.on("js-settings-decision-add", function (event) {
     var form = this.form, ctr = 1;
     while (form.elements["decision__" + ctr + "__id"])
         ++ctr;
@@ -185,29 +208,17 @@ handle_ui.on("js-settings-add-decision-type", function (event) {
     var h = $("#settings-new-decision-type").html().replace(/__\$/g, "__" + ctr),
         $r = $(h).appendTo("#settings-decision-types");
     $r.find("input[type=text]").autogrow();
-    form.elements["decision__" + ctr + "__delete"].value = "";
     form.elements["decision__" + ctr + "__name"].focus();
     form_highlight(form);
 });
 
-handle_ui.on("js-settings-remove-decision-type", function (event) {
-    var row = this.closest(".settings-decision"),
-        ne = this.form.elements[row.id + "__name"],
+handle_ui.on("js-settings-decision-delete", function (event) {
+    var dec = this.closest(".settings-decision"),
+        ne = this.form.elements[dec.id + "__name"],
         sc = ne.getAttribute("data-submission-count")|0;
-    this.form.elements[row.id + "__delete"].value = "1";
-    if (hasClass(row, "settings-decision-new")) {
-        addClass(row, "hidden");
-        $(row).find("input").addClass("ignore-diff");
-        if (!$("#settings-decision-types .settings-decision-new:not(.hidden)").length)
-            $("#settings-decision-type-notes").addClass("hidden");
-    } else {
-        $(ne).prop("disabled", true).addClass("text-decoration-line-through");
-        this.disabled = true;
-        var t = '<div class="f-i"><em>This decision will be removed';
-        if (sc)
-            t = t.concat(' and <a href="', hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, 'submission'), '</a> set to undecided');
-        $(row).after(t + '.</em></div>');
-    }
+    settings_delete(dec, "This decision will be removed"
+        + (sc ? ' and <a href="'.concat(hoturl_html("search", {q: "dec:\"" + ne.defaultValue + "\""}), '" target="_blank">', plural(sc, "submission"), '</a> set to undecided') : '')
+        + '.');
     form_highlight(this.form);
 });
 
@@ -228,7 +239,7 @@ handle_ui.on("js-settings-delete-autosearch", function (event) {
     $(odiv).find("input[type=text]").prop("disabled", true).addClass("text-decoration-line-through");
 });
 
-handle_ui.on("js-settings-add-track", function () {
+handle_ui.on("js-settings-track-add", function () {
     for (var i = 1; jQuery("#trackgroup" + i).length; ++i)
         /* do nothing */;
     $("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\" class=\"mg has-fold fold3o\"></div>");
@@ -238,7 +249,7 @@ handle_ui.on("js-settings-add-track", function () {
     $j.find("input[name^=name]").focus();
 });
 
-handle_ui.on("js-settings-copy-topics", function () {
+handle_ui.on("js-settings-topics-copy", function () {
     var topics = [];
     $(this).closest(".has-copy-topics").find("[name^=top]").each(function () {
         topics.push(escape_html(this.value));
@@ -337,10 +348,13 @@ function option_class_prefix(fieldj) {
     return sv;
 }
 
-function fill_order() {
+function rf_order() {
     var i = 0, n, pos,
         form = document.getElementById("settingsform"),
         c = document.getElementById("settings-rform");
+    $(c).find(".moveup, .movedown").prop("disabled", false);
+    $(c).find(".settings-rf:first-child .moveup").prop("disabled", true);
+    $(c).find(".settings-rf:last-child .movedown").prop("disabled", true);
     for (n = c.firstChild; n; n = n.nextSibling) {
         pos = hasClass(n, "deleted") ? 0 : ++i;
         form.elements[n.id + "__order"].value = pos;
@@ -364,7 +378,7 @@ function rf_fill(pos, fieldj, setdefault) {
     rf_fill_control(form, rfid + "visibility", fieldj.visibility || "pc", setdefault);
     rf_fill_control(form, rfid + "choices", options_to_text(fieldj), setdefault);
     rf_fill_control(form, rfid + "required", fieldj.required ? "1" : "0", setdefault);
-    rf_fill_control(form, rfid + "colorsflipped", fieldj.option_letter ? "1" : "", setdefault);
+    rf_fill_control(form, rfid + "colors_flipped", fieldj.option_letter ? "1" : "", setdefault);
     rf_fill_control(form, rfid + "colors", option_class_prefix(fieldj), setdefault);
     var ec, ecs = fieldj.exists_if != null ? fieldj.exists_if : "";
     if (ecs === "" || ecs.toLowerCase() === "all") {
@@ -381,7 +395,7 @@ function rf_fill(pos, fieldj, setdefault) {
     rf_fill_control(form, rfid + "condition", ecs, setdefault);
     rf_fill_control(form, rfid + "id", fid, true);
     $("#" + rfid + " textarea").trigger("change");
-    $("#" + rfid + "view").html("").append(rf_render_view(fieldj));
+    $("#" + rfid + "view").html(rf_render_view(fieldj));
     $("#" + rfid + "delete").attr("aria-label", "Delete from form");
     if (setdefault) {
         rf_fill_control(form, rfid + "order", fieldj.order || 0, setdefault);
@@ -393,18 +407,8 @@ function rf_fill(pos, fieldj, setdefault) {
 }
 
 function rf_delete() {
-    var rf = this.closest(".settings-rf"), form = this.form;
-    addClass(rf, "deleted");
-    if (hasClass(rf, "settings-rf-new")) {
-        addClass(rf, "hidden");
-        $(rf).find("input, select, textarea").addClass("ignore-diff");
-    } else {
-        var $rfedit = $("#" + rf.id + "__edit");
-        $rfedit.children().addClass("hidden");
-        var name = form.elements[rf.id + "__name"];
-        $(name).prop("disabled", true).addClass("text-decoration-line-through");
-        removeClass(name.closest(".entryi"), "hidden");
-        $rfedit.append('<div class="f-i"><em id="'.concat(rf.id, '__removemsg">This field will be deleted from the review form.</em></div>'));
+    var rf = this.closest(".settings-rf");
+    if (settings_delete(rf, "This field will be deleted from the review form.")) {
         if (rf.hasAttribute("data-rf")) {
             var search = {q: "has:" + rf.getAttribute("data-rf"), t: "all", forceShow: 1};
             $.get(hoturl("api/search", search), null, function (v) {
@@ -415,12 +419,12 @@ function rf_delete() {
                     t = "This field will be deleted from the review form. No reviews have used the field.";
                 else
                     t = "This field will be deleted from the review form and possibly from some reviews.";
-                $("#" + rf.id + "__removemsg").html(t);
+                $("#" + rf.id + "__delete_message").html(t);
             });
         }
         foldup.call(rf, event, {n: 2, f: false});
     }
-    fill_order();
+    rf_order();
 }
 
 tooltip.add_builder("settings-rf", function (info) {
@@ -477,7 +481,6 @@ function rf_visibility_text(visibility) {
 
 function rf_render_view(fieldj) {
     var hc = new HtmlCollector;
-    hc.push('<div>', '</div>');
 
     hc.push('<h3 class="rfehead">', '</h3>');
     hc.push('<label class="revfn'.concat(fieldj.required ? " field-required" : "", '">', escape_html(fieldj.name || "<unnamed>"), '</label>'));
@@ -505,9 +508,9 @@ function rf_render_view(fieldj) {
             hc.push('<label class="checki g"><span class="checkc"><input type="radio" disabled></span>No entry</label>');
         }
     } else
-        hc.push('<textarea class="w-text" rows="' + Math.max(fieldj.display_space || 0, 3) + '" disabled>(Text field)</textarea>');
+        hc.push('<textarea class="w-text" rows="' + Math.max(fieldj.display_space || 0, 3) + '" disabled>Text field</textarea>');
 
-    return $(hc.render());
+    return hc.render();
 }
 
 function rf_move(event) {
@@ -520,7 +523,7 @@ function rf_move(event) {
          ++i, $n = $n.nextSibling) {
     }
     $c.insertBefore($f[0], $n);
-    fill_order();
+    rf_order();
 }
 
 function rf_append(fid) {
@@ -552,7 +555,7 @@ function rf_add(fid) {
     var pos = fieldorder.length + 1;
     rf_append(fid);
     var rf = document.getElementById("rf__" + pos);
-    addClass(rf, "settings-rf-new");
+    addClass(rf, "is-new");
     foldup.call(rf, null, {n: 2, f: false});
     var ordere = document.getElementById("rf__" + pos + "__order");
     ordere.setAttribute("data-default-value", "0");
@@ -607,10 +610,8 @@ function rfs(data) {
         }
     }
 
-    $("#settings-rform").on("unfold", ".settings-rf", function (evt, opts) {
-        $(this).find("textarea").css("height", "auto").autogrow();
-        $(this).find("input[type=text]").autogrow();
-    });
+    $("#settings-rform").on("unfold", ".settings-rf", settings_field_unfold);
+    rf_order();
     form_highlight("#settingsform");
 };
 
@@ -667,7 +668,7 @@ return rfs;
 })();
 
 
-handle_ui.on("js-settings-resp-round-new", function () {
+handle_ui.on("js-settings-response-new", function () {
     var i, $rx, $rt = $("#response__new"), t;
     for (i = 1; jQuery("#response__" + i).length; ++i) {
     }
@@ -679,20 +680,14 @@ handle_ui.on("js-settings-resp-round-new", function () {
     return false;
 });
 
-handle_ui.on("js-settings-resp-round-delete", function () {
+handle_ui.on("js-settings-response-delete", function () {
     var rr = this.closest(".settings-response");
-    addClass(rr, "deleted");
-    this.form.elements[rr.id + "__delete"].click();
-    $(rr).children().addClass("hidden");
-    var name = this.form.elements[rr.id + "__name"];
-    $(name).prop("disabled", true).addClass("text-decoration-line-through");
-    removeClass(name.closest(".entryi"), "hidden");
-    $(name).closest(".entry").append('<div class="mt-2"><em>This response round will be deleted.</em></div>');
-    hasClass(rr, "settings-response-new") && addClass(rr, "hidden");
+    settings_delete(rr, "This response will be deleted.");
+    form_highlight(this.form);
     return false;
 });
 
-handle_ui.on("js-settings-new-decision-name", function () {
+handle_ui.on("js-settings-decision-new-name", function () {
     var d = this.closest(".settings-decision");
     if (/accept/i.test(this.value)) {
         this.form.elements[d.id + "__category"].selectedIndex = 0;

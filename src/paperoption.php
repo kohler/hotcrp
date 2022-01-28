@@ -1181,10 +1181,6 @@ class PaperOption implements JsonSerializable {
         return $j;
     }
 
-    function change_type(PaperOption $o, $upgrade, $change_values) {
-        return false;
-    }
-
     /** @return ?PaperValue */
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return null;
@@ -1459,10 +1455,6 @@ class Selector_PaperOption extends PaperOption {
         return $j;
     }
 
-    function change_type(PaperOption $o, $upgrade, $change_values) {
-        return $o instanceof Selector_PaperOption;
-    }
-
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
@@ -1609,10 +1601,6 @@ class Document_PaperOption extends PaperOption {
         } else {
             return null;
         }
-    }
-
-    function change_type(PaperOption $o, $upgrade, $change_values) {
-        return $o instanceof Document_PaperOption;
     }
 
     function value_force(PaperValue $ov) {
@@ -1929,10 +1917,6 @@ class Text_PaperOption extends PaperOption {
         return $x !== "" ? $x : null;
     }
 
-    function change_type(PaperOption $o, $upgrade, $change_values) {
-        return $o instanceof Text_PaperOption;
-    }
-
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return $this->parse_json_string($prow, convert_to_utf8($qreq[$this->formid]));
     }
@@ -2187,7 +2171,7 @@ class Attachments_PaperOption extends PaperOption {
 
 class Unknown_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
-        $args->type = "__unknown" . $args->id . "__";
+        $args->type = "none";
         $args->form_order = $args->page_order = false;
         parent::__construct($conf, $args, "hidden");
     }

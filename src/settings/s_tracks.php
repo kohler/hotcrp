@@ -201,7 +201,7 @@ class Tracks_SettingRenderer {
         self::do_cross_track($sv);
 
         if ($sv->editable("tracks")) {
-            echo Ht::button("Add track", ["class" => "ui js-settings-add-track", "id" => "settings_track_add"]);
+            echo Ht::button("Add track", ["class" => "ui js-settings-track-add", "id" => "settings_track_add"]);
         }
     }
 

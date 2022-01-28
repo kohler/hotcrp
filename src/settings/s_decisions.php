@@ -3,21 +3,45 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Decisions_SettingParser extends SettingParser {
+    function set_oldv(SettingValues $sv, Si $si) {
+        assert($si->part0 === "decision__" && $si->part2 === "");
+        $did = $sv->vstr("{$si->name}__id") ?? "new";
+        if (is_numeric($did)
+            && ($dnum = intval($did)) !== 0
+            && ($dname = ($sv->conf->decision_map())[$dnum] ?? null)) {
+            $v = (object) ["id" => $dnum, "name" => $dname, "category" => $dnum > 0 ? "a" : "r"];
+        } else {
+            $v = (object) ["id" => null, "name" => "", "category" => "a"];
+        }
+        $sv->set_oldv($si, $v);
+    }
+
+    function set_object_list_ids(SettingValues $sv, Si $si) {
+        $dmap = $sv->conf->decision_map();
+        unset($dmap[0]);
+        $sv->map_object_list_ids($dmap, "decision");
+    }
+
     /** @param int|'$' $ctr
-     * @param bool $isnew
-     * @param int $count */
-    static private function render_decrow(SettingValues $sv, $ctr, $isnew, $count) {
+     * @param array<int> $countmap */
+    static private function render_decrow(SettingValues $sv, $ctr, $countmap) {
+        $did = $sv->vstr("decision__{$ctr}__id");
+        $isnew = $did === "" || $did === "new";
+        $count = $countmap[$did] ?? 0;
         $editable = $sv->editable("decisions");
-        echo '<div id="decision__', $ctr, '" class="has-fold foldo settings-decision mb-2', $isnew ? ' settings-decision-new' : '', '">',
+        echo '<div id="decision__', $ctr, '" class="has-fold foldo settings-decision',
+            $isnew ? ' is-new' : '', '"><div class="entryi">',
             $sv->feedback_at("decision__{$ctr}__name"),
             $sv->feedback_at("decision__{$ctr}__category"),
-            Ht::hidden("decision__{$ctr}__id", $isnew ? "new" : $sv->vstr("decision__{$ctr}__id")),
-            Ht::hidden("decision__{$ctr}__delete", "", ["data-default-value" => $isnew ? "1" : ""]),
-            $sv->entry("decision__{$ctr}__name", ["data-submission-count" => $count, "class" => $isnew ? "uii js-settings-new-decision-name" : ""]);
+            Ht::hidden("decision__{$ctr}__id", $isnew ? "new" : $did, ["data-default-value" => $isnew ? "" : null]),
+            $sv->entry("decision__{$ctr}__name", ["data-submission-count" => $count, "class" => $isnew ? "uii js-settings-decision-new-name" : ""]);
+        if ($sv->reqstr("decision__{$ctr}__delete")) {
+            echo Ht::hidden("decision__{$ctr}__delete", "1", ["data-default-value" => ""]);
+        }
         Icons::stash_defs("trash");
         echo Ht::unstash();
         if ($editable) {
-            echo Ht::button(Icons::ui_use("trash"), ["class" => "fx ui js-settings-remove-decision-type ml-2 need-tooltip", "aria-label" => "Delete decision", "tabindex" => "-1"]);
+            echo Ht::button(Icons::ui_use("trash"), ["class" => "fx ui js-settings-decision-delete ml-2 need-tooltip", "name" => "decision__{$ctr}__deleter", "aria-label" => "Delete decision", "tabindex" => "-1"]);
         }
         echo '<span class="ml-2 d-inline-block fx">';
         $class = $sv->vstr("decision__{$ctr}__category");
@@ -25,18 +49,18 @@ class Decisions_SettingParser extends SettingParser {
             echo Ht::select("decision__{$ctr}__category",
                     ["a" => "Accept category", "r" => "Reject category"], $class,
                     $sv->sjs("decision__{$ctr}__category", ["data-default-value" => "a"]));
-            if ($sv->has_error_at("decision__{$ctr}__category")) {
-                echo '<label class="d-inline-block checki ml-2"><span class="checkc">',
-                    Ht::checkbox("decision__{$ctr}__categoryforce", 1, false),
-                    '</span><span class="is-error">Confirm</span></label>';
-            }
         } else {
-            echo $class === "a" ? "Accept category" : "Reject category";
+            echo $class === "a" ? "<span class=\"pstat_decyes\">Accept</span> category" : "<span class=\"pstat_decno\">Reject</span> category";
             if ($count) {
                 echo ", ", plural($count, "submission");
             }
         }
-        echo "</span></div>";
+        if ($sv->has_error_at("decision__{$ctr}__category")) {
+            echo '<label class="d-inline-block checki ml-2"><span class="checkc">',
+                Ht::checkbox("decision__{$ctr}__name_force", 1, false),
+                '</span><span class="is-error">Confirm</span></label>';
+        }
+        echo "</span></div></div>";
     }
 
     static function render(SettingValues $sv) {
@@ -50,113 +74,78 @@ class Decisions_SettingParser extends SettingParser {
         echo '<div class="form-g">',
             Ht::hidden("has_decisions", 1),
             '<div id="settings-decision-types">';
-        $ctr = 1;
-        foreach ($sv->conf->decision_map() as $did => $v) {
-            if ($did !== 0) {
-                $sv->set_oldv("decision__{$ctr}__name", $v);
-                $sv->set_oldv("decision__{$ctr}__category", $did > 0 ? "a" : "r");
-                $sv->set_oldv("decision__{$ctr}__id", $did);
-                self::render_decrow($sv, $ctr, false, $decs_pcount[$did] ?? 0);
-                ++$ctr;
-            }
+        foreach ($sv->object_list_counters("decision") as $ctr) {
+            self::render_decrow($sv, $ctr, $decs_pcount);
         }
-        while ($sv->use_req() && $sv->has_req("decision__{$ctr}__id")) {
-            self::render_decrow($sv, $ctr, true, 0);
-            ++$ctr;
+        echo '</div>';
+        foreach ($sv->use_req() ? $sv->object_list_counters("decision") : [] as $ctr) {
+            if ($sv->reqstr("decision__{$ctr}__delete"))
+                echo Ht::unstash_script("\$(\"#settingsform\")[0].elements.decision__{$ctr}__deleter.click()");
         }
-        echo '</div><div id="settings-decision-type-notes" class="hidden">',
+        echo '<div id="settings-decision-type-notes" class="hidden">',
             '<div class="hint">Examples: “Accepted as short paper”, “Early reject”</div></div>';
         if ($sv->editable("decisions")) {
             echo '<template id="settings-new-decision-type" class="hidden">';
-            self::render_decrow($sv, '$', true, 0);
+            self::render_decrow($sv, '$', $decs_pcount);
             echo '</template><div class="mg">',
-                Ht::button("Add decision type", ["class" => "ui js-settings-add-decision-type"]),
+                Ht::button("Add decision type", ["class" => "ui js-settings-decision-add"]),
                 '</div>';
         }
         echo "</div>\n";
     }
 
-    function set_oldv(SettingValues $sv, Si $si) {
-        $j = [];
-        foreach ($sv->conf->decision_map() as $did => $name) {
-            if ($did)
-                $j[] = ["id" => $did, "accept" => $did > 0, "name" => $name];
-        }
-        $sv->set_oldv("decisions", json_encode_db($j));
-    }
-
     /** @param SettingValues $sv
-     * @param int $ctr
-     * @param list<object> &$dj */
-    private function parse_req_row($sv, $ctr, &$dj) {
-        $did = $sv->reqstr("decision__{$ctr}__id");
-        for ($idx = 0; $idx !== count($dj) && (string) $dj[$idx]->id !== $did; ++$idx) {
-        }
-        if ($sv->reqstr("decision__{$ctr}__delete")) {
-            if ($idx < count($dj)) {
-                array_splice($dj, $idx, 1);
+     * @param object $dsr
+     * @param int $ctr */
+    private function _check_req_name($sv, $dsr, $ctr) {
+        if ($dsr->id === null || $dsr->name !== $sv->conf->decision_name($dsr->id)) {
+            if (($error = Conf::decision_name_error($dsr->name))) {
+                $sv->error_at("decision__{$ctr}__name", "<0>{$error}");
             }
-            return;
-        } else if (!$sv->has_req("decision__{$ctr}__name")) {
-            return;
-        }
-
-        $dname = $sv->base_parse_req("decision__{$ctr}__name");
-        $dx = $dj[$idx] ?? (object) [
-            "id" => "new", "accept" => $sv->reqstr("decision__{$ctr}__category") === "a", "name" => $dname
-        ];
-        $dx->ctr = $ctr;
-        if ($dname === "") {
-            $sv->error_at("decision__{$ctr}__name", "<0>Entry required");
-        } else if ($dx->id !== "new" && $dx->name === $dname) {
-            // ok
-        } else if (($error = Conf::decision_name_error($dname))) {
-            $sv->error_at("decision__{$ctr}__name", "<0>{$error}");
-        } else if (!$sv->reqstr("decision__{$ctr}__categoryforce")
-                   && stripos($dname, $dx->accept ? "reject" : "accept") !== false) {
-            $n1 = $dx->accept ? "An Accept" : "A Reject";
-            $n2 = $dx->accept ? "reject" : "accept";
-            $sv->error_at("decision__{$ctr}__category", "<0>{$n1}-category decision has “{$n2}” in its name");
-            $sv->inform_at("decision__{$ctr}__category", "<0>Either change the decision name or category or check the “Confirm” box to save anyway.");
-        } else if ($dx->id !== "new") {
-            $dj[$idx]->name = $dname;
-        } else {
-            $dx->id = $dx->accept ? 1 : -1;
-            for ($j = 0; $j !== count($dj); ++$j) {
-                if ($dj[$j]->id === $dx->id) {
-                    $dx->id += $dx->accept ? 1 : -1;
-                    $j = -1;
-                }
+            if (!$sv->reqstr("decision__{$ctr}__name_force")
+                && stripos($dsr->name, $dsr->category === "a" ? "reject" : "accept") !== false) {
+                $n1 = $dsr->category === "a" ? "An Accept" : "A Reject";
+                $n2 = $dsr->category === "a" ? "reject" : "accept";
+                $sv->error_at("decision__{$ctr}__name", "<0>{$n1}-category decision has “{$n2}” in its name");
+                $sv->inform_at("decision__{$ctr}__name", "<0>Either change the decision name or category or check the “Confirm” box to save anyway.");
+                $sv->error_at("decision__{$ctr}__category");
             }
-            $dj[] = $dx;
         }
+        $sv->error_if_duplicate_component("decision__", $ctr, "__name", "Decision name");
     }
 
     function apply_req(SettingValues $sv, Si $si) {
-        $djs = json_decode($sv->oldv("decisions")) ?? [];
-        for ($ctr = 1; $sv->has_req("decision__{$ctr}__id"); ++$ctr) {
-            $this->parse_req_row($sv, $ctr, $djs);
+        if ($si->name !== "decisions") {
+            return false;
         }
 
-        // check for name reuse
-        for ($i = 0; $i !== count($djs); ++$i) {
-            for ($j = 0; $j !== $i; ++$j) {
-                if (strcasecmp($djs[$i]->name, $djs[$j]->name) === 0
-                    && ($ctr = $djs[$i]->ctr ?? $djs[$j]->ctr ?? null) !== null) {
-                    $sv->error_at("decision__{$ctr}__name", "<0>Decision name ‘" . $djs[$i]->name . "’ reused");
-                    if (isset($djs[$j]->ctr)) {
-                        $sv->error_at("decision__" . $djs[$j]->ctr . "__name");
-                    }
-                    break;
+        $djs = [];
+        $hasid = [];
+        foreach ($sv->object_list_counters("decision") as $ctr) {
+            $dsr = $sv->parse_components("decision__{$ctr}");
+            if (!$sv->reqstr("decision__{$ctr}__delete")) {
+                $this->_check_req_name($sv, $dsr, $ctr);
+                $djs[] = $dsr;
+                $hasid[$dsr->id ?? ""] = true;
+            }
+        }
+
+        // name reuse, new ids
+        foreach ($djs as $dj) {
+            if ($dj->id === null) {
+                $idstep = $dj->id = $dj->category === "a" ? 1 : -1;
+                while (isset($hasid[$dj->id])) {
+                    $dj->id += $idstep;
                 }
+                $hasid[$dj->id] = true;
             }
         }
 
         // sort and save
         $collator = $sv->conf->collator();
         usort($djs, function ($a, $b) use ($collator) {
-            if ($a->accept !== $b->accept) {
-                return $a->accept ? -1 : 1;
+            if ($a->category !== $b->category) {
+                return $a->category === "a" ? -1 : 1;
             } else {
                 return $collator->compare($a->name, $b->name);
             }

@@ -91,41 +91,57 @@
     {
         "name": "options", "group": "subform", "order": 440,
         "title": "Submission fields",
-        "render_function": "Options_SettingRenderer::render"
+        "render_function": "*Options_SettingRenderer::render"
     },
     {   "name": "opt", "alias": "options"   },
     {
-        "name": "__crosscheck/options", "order": 400,
-        "crosscheck_function": "Options_SettingRenderer::crosscheck"
+        "name": "__crosscheck/submissionfields", "order": 400,
+        "crosscheck_function": "Options_SettingParser::crosscheck"
     },
     {
-        "name": "options/properties/type", "order": 10,
-        "render_option_property_function": "Options_SettingRenderer::render_type_property"
+        "name": "__crosscheck/submissionfieldconditions", "order": 600,
+        "crosscheck_function": "SubFieldCondition_SettingParser::crosscheck"
     },
     {
-        "name": "options/properties/description", "order": 20,
-        "render_option_property_function": "Options_SettingRenderer::render_description_property"
+        "name": "submissionfield/properties/name", "order": 1,
+        "render_function": "*Options_SettingRenderer::render_name"
     },
     {
-        "name": "options/properties/presence", "order": 30,
-        "render_option_property_function": "Options_SettingRenderer::render_presence_property"
+        "name": "submissionfield/properties/type", "order": 10,
+        "render_function": "*Options_SettingRenderer::render_type"
     },
     {
-        "name": "options/properties/required", "order": 31,
-        "render_option_property_function": "Options_SettingRenderer::render_required_property"
+        "name": "submissionfield/properties/description", "order": 20,
+        "render_function": "*Options_SettingRenderer::render_description"
     },
     {
-        "name": "options/properties/visibility", "order": 40,
-        "render_option_property_function": "Options_SettingRenderer::render_visibility_property"
+        "name": "submissionfield/properties/choices", "order": 25,
+        "render_function": "*Options_SettingRenderer::render_choices"
     },
     {
-        "name": "options/properties/display", "order": 50,
-        "render_option_property_function": "Options_SettingRenderer::render_display_property"
+        "name": "submissionfield/properties/presence", "order": 30,
+        "render_function": "*Options_SettingRenderer::render_presence"
+    },
+    {
+        "name": "submissionfield/properties/required", "order": 31,
+        "render_function": "*Options_SettingRenderer::render_required"
+    },
+    {
+        "name": "submissionfield/properties/visibility", "order": 40,
+        "render_function": "*Options_SettingRenderer::render_visibility"
+    },
+    {
+        "name": "submissionfield/properties/display", "order": 50,
+        "render_function": "*Options_SettingRenderer::render_display"
+    },
+    {
+        "name": "submissionfield/properties/actions", "order": 10000,
+        "render_function": "*Options_SettingRenderer::render_actions"
     },
     {
         "name": "topics", "group": "subform", "order": 480,
         "title": "Topics", "hashid": "topics",
-        "render_function": "Topics_SettingRenderer::render"
+        "render_function": "Topics_SettingParser::render"
     },
 
 
@@ -176,37 +192,36 @@
     },
     {   "name": "rfo", "alias": "reviewform"   },
     {
-        "name": "__crosscheck/review-form", "order": 600,
-        "crosscheck_function": "ReviewForm_SettingParser::crosscheck"
+        "name": "__crosscheck/reviewfieldconditions", "order": 600,
+        "crosscheck_function": "ReviewFieldCondition_SettingParser::crosscheck"
     },
     {
         "name": "reviewfield/properties/description", "order": 20,
-        "render_review_property_function": "ReviewForm_SettingRenderer::render_description_property",
-        "parse_review_property_function": "ReviewForm_SettingParser::parse_description_property"
+        "render_function": "ReviewForm_SettingRenderer::render_description"
     },
     {
         "name": "reviewfield/properties/options", "order": 50,
-        "render_review_property_function": "ReviewForm_SettingRenderer::render_options_property",
-        "parse_review_property_function": "ReviewForm_SettingParser::parse_options_property"
+        "render_function": "ReviewForm_SettingRenderer::render_options"
     },
     {
         "name": "reviewfield/properties/presence", "order": 100,
-        "render_review_property_function": "ReviewForm_SettingRenderer::render_presence_property",
-        "parse_review_property_function": "ReviewForm_SettingParser::parse_presence_property"
+        "render_function": "ReviewForm_SettingRenderer::render_presence"
     },
     {
         "name": "reviewfield/properties/required", "order": 101,
-        "render_review_property_function": "ReviewForm_SettingRenderer::render_required_property"
+        "render_function": "ReviewForm_SettingRenderer::render_required"
     },
     {
         "name": "reviewfield/properties/visibility", "order": 110,
-        "render_review_property_function": "ReviewForm_SettingRenderer::render_visibility_property",
-        "parse_review_property_function": "ReviewForm_SettingParser::parse_visibility_property"
+        "render_function": "ReviewForm_SettingRenderer::render_visibility"
     },
     {
         "name": "reviewfield/properties/display", "order": 120,
-        "render_review_property_function": "ReviewForm_SettingRenderer::render_display_property",
-        "parse_review_property_function": "ReviewForm_SettingParser::parse_display_property"
+        "render_function": "ReviewForm_SettingRenderer::render_display"
+    },
+    {
+        "name": "reviewfield/properties/actions", "order": 10000,
+        "render_function": "ReviewForm_SettingRenderer::render_actions"
     },
 
 

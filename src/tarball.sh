@@ -410,12 +410,14 @@ src/settings/s_finalversions.php
 src/settings/s_messages.php
 src/settings/s_options.php
 src/settings/s_responses.php
+src/settings/s_reviewfieldcondition.php
 src/settings/s_reviewform.php
 src/settings/s_reviews.php
 src/settings/s_reviewvisibility.php
 src/settings/s_sitecontact.php
-src/settings/s_submissions.php
+src/settings/s_subfieldcondition.php
 src/settings/s_subform.php
+src/settings/s_submissions.php
 src/settings/s_tags.php
 src/settings/s_topics.php
 src/settings/s_tracks.php

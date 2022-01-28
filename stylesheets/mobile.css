@@ -25,6 +25,10 @@ body.paper {
 .paperinfo-c {
 	padding-right: 0;
 }
+.settings-rf.fold2c, .settings-sf.fold2c {
+	width: auto;
+	min-width: initial;
+}
 }
 @media screen and (max-width: 768px) {
 html {

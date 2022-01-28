@@ -1416,7 +1416,7 @@ table.key-value {
 
 
 /* Other types of captions and entries */
-table.paper, table.settings {
+table.paper {
 	width: 100%;
 	position: relative;
 }
@@ -1510,11 +1510,29 @@ th.settings-simplehead {
 	margin-top: 0;
 	margin-bottom: 0;
 }
-.settings-rf {
-	margin-bottom: 2em;
-}
-.settings-sf {
+.settings-rf, .settings-sf {
+	margin-top: 2em;
 	margin-bottom: 3em;
+}
+.settings-sf.fold2c, .settings-rf.fold2c {
+	border: 1px solid silver;
+	border-radius: 5px;
+	margin-top: 16px;
+	margin-bottom: 1.5em;
+	padding: 8px 12px;
+	background-color: #f9fbfb;
+	width: fit-content;
+	min-width: 800px;
+}
+.settings-sf.fold2c:hover, .settings-rf.fold2c:hover {
+	border-color: #a5a5a5;
+	background-color: #ecf2f4;
+}
+.settings-sf-view > .pfe {
+	margin-bottom: 0;
+}
+.settings-rf-view > .rfehead {
+	margin-top: 0;
 }
 .form-g, .form-g-5 {
 	margin-bottom: 2.25em;
@@ -1527,9 +1545,6 @@ th.settings-simplehead {
 }
 .form-g + .form-nearby {
 	margin-top: -1em;
-}
-.settings-rf, .settings-sf {
-	margin-left: 1.2em;
 }
 .js-settings-field-unfold {
 	float: left;

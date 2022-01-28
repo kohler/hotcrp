@@ -218,6 +218,7 @@ class ReviewField implements JsonSerializable {
                 if ($this->round_mask & (1 << $i))
                     $rs[] = $i ? "round:{$rname}" : "round:unnamed";
             }
+            natcasesort($rs);
             return join(" OR ", $rs);
         } else {
             return "";
