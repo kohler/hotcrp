@@ -1181,15 +1181,18 @@ class UserStatus extends MessageSet {
     function has_req_security() {
         if ($this->_req_security === null) {
             $this->_req_security = false;
-            if ($this->allow_security()
-                && isset($this->qreq->oldpassword)
-                && trim($this->qreq->oldpassword) !== "") {
+            if (!$this->allow_security()) {
+                $this->error_at(null, "<0>Changes to security settings not allowed");
+            } else if (trim($this->qreq->oldpassword ?? "") === "") {
+                $this->error_at("oldpassword", "<0>Entry required");
+            } else {
                 $info = $this->viewer->check_password_info(trim($this->qreq->oldpassword ?? ""));
-                $this->_req_security = $info["ok"];
+                if (!($this->_req_security = $info["ok"])) {
+                    $this->error_at("oldpassword", "<0>Incorrect password");
+                }
             }
             if (!$this->_req_security) {
-                $this->error_at("oldpassword", "<0>Incorrect current password");
-                $this->msg_at("oldpassword", "<0>Changes to other security settings were ignored.", MessageSet::INFORM);
+                $this->inform_at("oldpassword", "<0>Changes to security settings were ignored.");
             }
         }
         return $this->_req_security;
