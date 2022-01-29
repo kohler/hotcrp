@@ -440,8 +440,11 @@ if (!$Qreq->valid_post()) {
     }
     $UserStatus->request_group("");
     $saved_user = save_user($cj, $UserStatus, $newProfile ? null : $Acct);
+    if ($UserStatus->has_error()) {
+        $UserStatus->prepend_msg("Your changes were not saved. Please fix the highlighted errors and try again", 2);
+    }
+    $Conf->feedback_msg($UserStatus);
     if (!$UserStatus->has_error()) {
-        $Conf->feedback_msg($UserStatus);
         if ($UserStatus->created || $newProfile) {
             $purl = $Conf->hoturl("profile", ["u" => $saved_user->email]);
             if ($UserStatus->created) {

@@ -376,7 +376,7 @@ class UserStatus extends MessageSet {
                 if (($tx = $tagger->check($t, Tagger::NOPRIVATE))) {
                     $t1[] = $tx;
                 } else {
-                    $this->error_at($key, "<5>" . $tagger->error_html());
+                    $this->error_at($key, "<5>" . $tagger->error_html(true));
                 }
             }
         }
@@ -756,11 +756,11 @@ class UserStatus extends MessageSet {
 
 
     /** @param object $cj
-     * @param ?Contact $old_user */
+     * @param ?Contact $old_user
+     * @return ?Contact */
     function save($cj, $old_user = null) {
         assert(is_object($cj));
         assert(!$old_user || (!$this->no_create && !$this->no_modify));
-        $msgcount = $this->message_count();
         $this->diffs = [];
         $this->created = $this->notified = false;
 
@@ -772,12 +772,12 @@ class UserStatus extends MessageSet {
             && $cj->id !== "new"
             && (!is_int($cj->id) || $cj->id <= 0)) {
             $this->error_at("id", "<0>Format error [id]");
-            return false;
+            return null;
         }
         if (isset($cj->email)
             && !is_string($cj->email)) {
             $this->error_at("email", "<0>Format error [email]");
-            return false;
+            return null;
         }
 
         // obtain old users in this conference and contactdb
@@ -820,14 +820,14 @@ class UserStatus extends MessageSet {
             } else {
                 $this->error_at("email", "<0>Refusing to create user with email {$cj->email}");
             }
-            return false;
+            return null;
         } else if (($this->no_modify || ($cj->id ?? null) === "new") && $old_user) {
             if (isset($cj->id) && $cj->id !== "new") {
                 $this->error_at("id", "<0>Refusing to modify existing user with ID {$cj->id}");
             } else {
                 $this->error_at("email", "<0>Refusing to modify existing user with email {$cj->email}");
             }
-            return false;
+            return null;
         }
 
         $user = $old_user ?? $old_cdb_user;
@@ -838,7 +838,7 @@ class UserStatus extends MessageSet {
         }
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
             $this->error_at("id", "<0>Saving user with different ID");
-            return false;
+            return null;
         }
         $this->normalize($cj, $user);
         $roles = $old_roles = $old_user ? $old_user->roles : 0;
@@ -848,8 +848,8 @@ class UserStatus extends MessageSet {
                 $roles = $this->check_role_change($roles, $old_user);
             }
         }
-        if ($this->has_error_since($msgcount)) {
-            return false;
+        if ($this->has_error()) {
+            return null;
         }
         // At this point, we will save a user.
 
@@ -864,7 +864,7 @@ class UserStatus extends MessageSet {
             $old_disabled = true;
         }
         if (!$user) {
-            return false;
+            return null;
         }
 
         // initialize
@@ -881,7 +881,7 @@ class UserStatus extends MessageSet {
         }
         if (($user->prop_changed() || $this->created)
             && !$user->save_prop()) {
-            return false;
+            return null;
         }
 
         // Roles
@@ -1196,6 +1196,7 @@ class UserStatus extends MessageSet {
                    && $us->viewer->can_change_password($us->user)) {
             if ($pw !== $pw2) {
                 $us->error_at("password", "<0>Those passwords do not match");
+                $us->error_at("upassword2");
             } else if (strlen($pw) <= 5) {
                 $us->error_at("password", "<0>Password too short");
             } else if (!Contact::valid_password($pw)) {
@@ -1303,6 +1304,7 @@ class UserStatus extends MessageSet {
         $msfield = self::$web_to_message_map[$field] ?? $field;
         echo '<div class="', $this->control_class($msfield, $class), '">',
             ($field ? Ht::label($caption, $field) : "<div class=\"f-c\">{$caption}</div>"),
+            $this->feedback_html_at($field),
             $entry, "</div>";
     }
 
@@ -1401,10 +1403,13 @@ class UserStatus extends MessageSet {
             }
             echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
                 '<label for="upassword">New password</label>',
+                $us->feedback_html_at("password"),
+                $us->feedback_html_at("upassword"),
                 Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password want-focus"]),
                 '</div>',
-                '<div class="', $us->control_class("password", "f-i w-text"), '">',
+                '<div class="', $us->control_class("upassword2", "f-i w-text"), '">',
                 '<label for="upassword2">Repeat new password</label>',
+                $us->feedback_html_at("upassword2"),
                 Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password"]),
                 '</div>', $open ? '' : '</div>', '</div>';
         }
@@ -1513,7 +1518,8 @@ class UserStatus extends MessageSet {
         } else {
             echo '<p>', $cd, '</p>';
         }
-        echo '<textarea name="collaborators" rows="5" cols="80" class="',
+        echo $us->feedback_html_at("collaborators"),
+            '<textarea name="collaborators" rows="5" cols="80" class="',
             $us->control_class("collaborators", "need-autogrow"),
             "\" data-default-value=\"", htmlspecialchars($us->user->collaborators()), "\">",
             htmlspecialchars($qreq->collaborators ?? $us->user->collaborators()),
@@ -1530,6 +1536,7 @@ class UserStatus extends MessageSet {
         echo '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
+            $us->feedback_html_at("ti"),
             '  <table class="table-striped"><thead>
     <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest"></th><th class="ti_interest"></th><th class="ti_interest"></th><th class="ti_interest">High</th></tr>
     <tr><td></td><th class="topic-2"></th><th class="topic-1"></th><th class="topic0"></th><th class="topic1"></th><th class="topic2"></th></tr></thead><tbody>', "\n";
@@ -1572,6 +1579,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         $us->cs()->render_title("Tags");
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("tags", "f-i"), '">',
+                $us->feedback_html_at("tags"),
                 Ht::entry("contactTags", $qreq->contactTags ?? $itags, ["size" => 60, "data-default-value" => $itags]),
                 "</div>
   <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p>\n";

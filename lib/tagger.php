@@ -1144,7 +1144,7 @@ class Tagger {
     /** @param bool $verbose
      * @return ?string */
     function error_html($verbose = false) {
-        $t = $verbose ? " “" . htmlspecialchars($this->errtag ?? "") . "”" : "";
+        $t = $verbose ? " ‘" . htmlspecialchars($this->errtag ?? "") . "’" : "";
         switch ($this->errcode) {
         case 0:
             return null;
@@ -1166,7 +1166,7 @@ class Tagger {
             return "Private tags aren’t allowed here";
         case self::ALLOWCONTACTID:
             if ($verbose && ($twiddle = strpos($this->errtag ?? "", "~"))) {
-                return "Invalid tag{$t} (did you mean “#" . substr($this->errtag, $twiddle) . "”?)";
+                return "Invalid tag{$t} (did you mean ‘#" . substr($this->errtag, $twiddle) . "’?)";
             } else {
                 return "Invalid private tag";
             }

@@ -315,21 +315,21 @@ class MessageSet {
     /** @param ?string $field
      * @param ?string $msg
      * @return MessageItem */
-    function estop_at($field, $msg) {
+    function estop_at($field, $msg = null) {
         return $this->msg_at($field, $msg, self::ESTOP);
     }
 
     /** @param ?string $field
      * @param ?string $msg
      * @return MessageItem */
-    function error_at($field, $msg) {
+    function error_at($field, $msg = null) {
         return $this->msg_at($field, $msg, self::ERROR);
     }
 
     /** @param ?string $field
      * @param ?string $msg
      * @return MessageItem */
-    function warning_at($field, $msg) {
+    function warning_at($field, $msg = null) {
         return $this->msg_at($field, $msg, self::WARNING);
     }
 
@@ -337,7 +337,7 @@ class MessageSet {
      * @param ?string $msg
      * @param null|0|1|2|3 $default_status
      * @return MessageItem */
-    function problem_at($field, $msg, $default_status = 1) {
+    function problem_at($field, $msg = null, $default_status = 1) {
         $status = $this->pstatus_at[$field] ?? $default_status ?? 1;
         return $this->msg_at($field, $msg, $status);
     }
