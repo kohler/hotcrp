@@ -24,7 +24,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
         if ($sv->has_interest("seedec")
             && $conf->setting("seedec") === Conf::SEEDEC_ALL
             && $conf->setting("au_seerev") === Conf::AUSEEREV_NO) {
-            $sv->warning_at(null, "Authors can " . $sv->setting_link("see decisions", "seedec") . ", but " . $sv->setting_link("not reviews", "au_seerev") . ". This is sometimes unintentional.");
+            $sv->warning_at(null, "<5>Authors can " . $sv->setting_link("see decisions", "seedec") . ", but " . $sv->setting_link("not reviews", "au_seerev") . ". This is sometimes unintentional.");
         }
 
         if (($sv->has_interest("seedec") || $sv->has_interest("sub_sub"))
@@ -32,7 +32,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
             && $conf->setting("sub_sub") > Conf::$now
             && $conf->setting("seedec") !== Conf::SEEDEC_ALL
             && $conf->fetch_value("select paperId from Paper where outcome<0 limit 1") > 0) {
-            $sv->warning_at(null, "Updates will not be allowed for rejected submissions. As a result, authors can discover information about decisions that would otherwise be hidden.");
+            $sv->warning_at(null, "<0>Updates will not be allowed for rejected submissions. As a result, authors can discover information about decisions that would otherwise be hidden.");
         }
 
         if ($sv->has_interest("au_seerev")
@@ -40,10 +40,10 @@ class DecisionVisibility_SettingParser extends SettingParser {
             && !array_filter($conf->review_form()->all_fields(), function ($f) {
                 return $f->view_score >= VIEWSCORE_AUTHORDEC;
             })) {
-            $sv->warning_at(null, $sv->setting_link("Authors can see reviews", "au_seerev")
+            $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews", "au_seerev")
                 . ", but the reviews have no author-visible fields. This is sometimes unintentional; you may want to update "
                 . $sv->setting_link("the review form", "review_form") . ".");
-            $sv->warning_at("au_seerev", "");
+            $sv->warning_at("au_seerev");
         } else if ($sv->has_interest("au_seerev")
                    && $conf->setting("au_seerev") !== Conf::AUSEEREV_NO
                    && $conf->setting("seedec") !== Conf::SEEDEC_ALL
@@ -53,7 +53,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
                    && array_filter($conf->review_form()->all_fields(), function ($f) {
                        return $f->view_score >= VIEWSCORE_AUTHORDEC;
                    })) {
-            $sv->warning_at(null, $sv->setting_link("Authors can see reviews", "au_seerev")
+            $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews", "au_seerev")
                 . ", but since " . $sv->setting_link("they cannot see decisions", "seedec")
                 . ", the reviews have no author-visible fields. This is sometimes unintentional; you may want to update "
                 . $sv->setting_link("the review form", "review_form") . ".");

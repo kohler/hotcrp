@@ -82,23 +82,6 @@ class Tags_SettingParser extends SettingParser {
         $this->sv = $sv;
         $this->tagger = new Tagger($sv->user);
     }
-    /** @deprecated */
-    static function parse_list(Tagger $tagger, SettingValues $sv, Si $si,
-                               $checkf, $min_idx) {
-        $ts = array();
-        foreach (preg_split('/[\s,;]+/', $sv->reqstr($si->name)) as $t) {
-            if ($t !== "" && ($tx = $tagger->check($t, $checkf))) {
-                list($tag, $idx) = Tagger::unpack($tx);
-                if ($min_idx) {
-                    $tx = $tag . "#" . max($min_idx, (float) $idx);
-                }
-                $ts[$tag] = $tx;
-            } else if ($t !== "") {
-                $sv->error_at($si, $tagger->error_html(true));
-            }
-        }
-        return array_values($ts);
-    }
 
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->name === "tag_chair") {
@@ -183,7 +166,7 @@ class Tags_SettingParser extends SettingParser {
             if (!empty($removals)) {
                 $result = $sv->conf->qe_raw("delete from PaperTag where tagIndex<0 and left(tag,1)!='~' and (" . join(" or ", $removals) . ")");
                 if ($result->affected_rows) {
-                    $sv->warning_at($si->name, "Removed negative votes.");
+                    $sv->warning_at($si->name, "<0>Removed negative votes");
                 }
             }
 
@@ -211,10 +194,10 @@ class Tags_SettingParser extends SettingParser {
                 $lx = $lx ?? [];
                 $lx[] = $n;
                 if (count($lx) === 2) {
-                    $sv->warning_at($lx[0], "Tag “" . htmlspecialchars($ti[0]) . "” is also used for " . $descriptions[$n]);
+                    $sv->warning_at($lx[0], "<0>Tag ‘{$ti[0]}’ is also used for " . $descriptions[$n]);
                 }
                 if (count($lx) > 1) {
-                    $sv->warning_at($n, "Tag “" . htmlspecialchars($ti[0]) . "” is also used for " . $descriptions[$lx[0]]);
+                    $sv->warning_at($n, "<0>Tag ‘{$ti[0]}’ is also used for " . $descriptions[$lx[0]]);
                 }
             }
         }
