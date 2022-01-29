@@ -9,13 +9,7 @@ class SettingParser {
 
     /** @return bool */
     function apply_req(SettingValues $sv, Si $si) {
-        return $this->parse_req($sv, $si);
-    }
-
-    /** @return bool
-     * @deprecated */
-    function parse_req(SettingValues $sv, Si $si) {
-        return true;
+        return false;
     }
 
     /** @return void */

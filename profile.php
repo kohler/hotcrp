@@ -367,10 +367,11 @@ function parseBulkFile(Contact $user, $text, $filename) {
         $ustatus->set_user(new Contact($conf));
         $ustatus->set_context_args([$ustatus]);
         $ustatus->clear_messages();
-        $cj = (object) ["id" => null];
-        $ustatus->parse_csv_group("", $cj, $line);
+        $ustatus->jval = (object) ["id" => null];
+        $ustatus->csvreq = $line;
+        $ustatus->parse_csv_group("");
         $ustatus->notify = friendly_boolean($line["notify"]) ?? true;
-        if (($saved_user = save_user($cj, $ustatus, null))) {
+        if (($saved_user = save_user($ustatus->jval, $ustatus, null))) {
             $url = $conf->hoturl("profile", "u=" . urlencode($saved_user->email));
             $x = "<a class=\"nb\" href=\"{$url}\">" . $saved_user->name_h(NAME_E) . "</a>";
             if ($ustatus->notified) {
@@ -434,6 +435,7 @@ if (!$Qreq->valid_post()) {
     $UserStatus->set_user($Acct);
     $UserStatus->set_context_args([$UserStatus, $cj, $Qreq]);
     $UserStatus->qreq = $Qreq;
+    $UserStatus->jval = $cj;
     $UserStatus->no_deprivilege_self = true;
     if ($newProfile) {
         $UserStatus->no_nonempty_profile = true;
@@ -441,9 +443,9 @@ if (!$Qreq->valid_post()) {
         $UserStatus->notify = true;
     }
     $UserStatus->request_group("");
-    $saved_user = save_user($cj, $UserStatus, $newProfile ? null : $Acct);
+    $saved_user = save_user($UserStatus->jval, $UserStatus, $newProfile ? null : $Acct);
     if ($UserStatus->has_error()) {
-        $UserStatus->prepend_msg("Your changes were not saved. Please fix the highlighted errors and try again", 2);
+        $UserStatus->prepend_msg("<0>Your changes were not saved. Please fix the highlighted errors and try again", 2);
     }
     $Conf->feedback_msg($UserStatus);
     if (!$UserStatus->has_error()) {
@@ -479,8 +481,8 @@ if (!$Qreq->valid_post()) {
             $xcj = [];
             if ($newProfile) {
                 foreach (["pctype", "ass", "contactTags"] as $k) {
-                    if (isset($cj->$k))
-                        $xcj[$k] = $cj->$k;
+                    if (isset($UserStatus->jval->$k))
+                        $xcj[$k] = $UserStatus->jval->$k;
                 }
             }
             if ($UserStatus->has_problem()) {

@@ -99,9 +99,10 @@ if (isset($arg["u"])) {
     while (($line = $csv->next_row())) {
         $ustatus->set_user(new Contact($Conf));
         $ustatus->clear_messages();
-        $cj = (object) ["id" => null];
-        $ustatus->parse_csv_group("", $cj, $line);
-        save_contact($ustatus, null, $cj, $arg);
+        $ustatus->csvreq = $line;
+        $ustatus->jval = (object) ["id" => null];
+        $ustatus->parse_csv_group("");
+        save_contact($ustatus, null, $ustatus->jval, $arg);
     }
 } else {
     $content = json_decode($content);

@@ -29,8 +29,13 @@ class UserStatus extends MessageSet {
     /** @var ?array<string,true> */
     public $unknown_topics = null;
 
-    /** @var ?Qrequest */
+    /** @var Qrequest */
     public $qreq;
+    /** @var CsvRow */
+    public $csvreq;
+    /** @var object */
+    public $jval;
+
     /** @var ?bool */
     private $_req_security;
     /** @var ?array{string,string} */
@@ -252,8 +257,9 @@ class UserStatus extends MessageSet {
         }
     }
 
-    static function unparse_json_main(UserStatus $us, $cj, $args) {
+    static function unparse_json_main(UserStatus $us) {
         $user = $us->user;
+        $cj = $us->jval;
 
         // keys that might come from user or contactdb
         foreach (["email", "firstName", "lastName", "affiliation",
@@ -307,18 +313,17 @@ class UserStatus extends MessageSet {
         }
     }
 
-    function user_json($args = []) {
+    function user_json() {
         if ($this->user) {
-            $cj = (object) [];
+            $this->jval = (object) [];
             if ($this->user->contactId > 0) {
-                $cj->id = $this->user->contactId;
+                $this->jval->id = $this->user->contactId;
             }
-            $gx = $this->cs();
-            $gx->set_context_args([$this, $cj, $args]);
-            foreach ($gx->members("", "unparse_json_function") as $gj) {
-                $gx->call_function($gj->unparse_json_function, $gj);
+            $cs = $this->cs();
+            foreach ($cs->members("", "unparse_json_function") as $gj) {
+                $cs->call_function($gj->unparse_json_function, $gj);
             }
-            return $cj;
+            return $this->jval;
         } else {
             return null;
         }
@@ -673,7 +678,8 @@ class UserStatus extends MessageSet {
                     $role = Contact::ROLE_PC;
                 } else if (strcasecmp($v, "chair") === 0) {
                     $role = Contact::ROLE_CHAIR;
-                } else if (strcasecmp($v, "sysadmin") === 0) {
+                } else if (strcasecmp($v, "sysadmin") === 0
+                           || strcasecmp($v, "admin") === 0) {
                     $role = Contact::ROLE_ADMIN;
                 } else if (strcasecmp($v, "none") !== 0) {
                     $this->warning_at("roles", "<0>Unknown role ‘{$v}’");
@@ -881,6 +887,7 @@ class UserStatus extends MessageSet {
         // Early properties
         $gx = $this->cs();
         $gx->set_context_args([$this, $user, $cj]);
+        $this->jval = $cj;
         foreach ($gx->members("", "save_early_function") as $gj) {
             $gx->call_function($gj->save_early_function, $gj);
         }
@@ -947,6 +954,10 @@ class UserStatus extends MessageSet {
 
 
     static function save_main(UserStatus $us, Contact $user, $cj) {
+        assert($cj === $us->jval && $user === $us->user);
+        $user = $us->user;
+        $cj = $us->jval;
+
         // Profile properties
         $us->set_profile_prop($user, $cj, $us->only_update_empty($user));
         if (($cdbu = $user->contactdb_user())) {
@@ -1040,7 +1051,10 @@ class UserStatus extends MessageSet {
     }
 
     static function save_topics(UserStatus $us, Contact $user, $cj) {
-        if (!isset($cj->topics) || !$user->conf->has_topics()) {
+        assert($cj === $us->jval && $user === $us->user);
+        $user = $us->user;
+        if (!isset($us->jval->topics)
+            || !$user->conf->has_topics()) {
             return;
         }
         $ti = $us->created ? [] : $user->topic_interest_map();
@@ -1049,7 +1063,7 @@ class UserStatus extends MessageSet {
         }
         $tv = [];
         $diff = false;
-        foreach ($cj->topics as $k => $v) {
+        foreach ($us->jval->topics as $k => $v) {
             if ($v) {
                 $tv[] = [$user->contactId, $k, $v];
             }
@@ -1059,7 +1073,7 @@ class UserStatus extends MessageSet {
         }
         if ($diff || empty($tv)) {
             if (empty($tv)) {
-                foreach ($cj->topics as $k => $v) {
+                foreach ($us->jval->topics as $k => $v) {
                     $tv[] = [$user->contactId, $k, 0];
                     break;
                 }
@@ -1074,7 +1088,10 @@ class UserStatus extends MessageSet {
     }
 
 
-    static function request_main(UserStatus $us, $cj, Qrequest $qreq, $uf) {
+    static function request_main(UserStatus $us) {
+        $qreq = $us->qreq;
+        $cj = $us->jval;
+
         // email
         if (!$us->conf->external_login()) {
             if (isset($qreq->uemail) || $us->user->is_empty()) {
@@ -1164,23 +1181,23 @@ class UserStatus extends MessageSet {
     }
 
 
-    static function request_security(UserStatus $us, $cj, Qrequest $qreq, $uf) {
+    static function request_security(UserStatus $us) {
         if ($us->allow_security()) {
-            if (trim($qreq->oldpassword ?? "") !== "") {
-                $us->has_req_security($qreq);
+            if (trim($us->qreq->oldpassword ?? "") !== "") {
+                $us->has_req_security();
             }
             $us->request_group("security");
         }
     }
 
     /** @return bool */
-    function has_req_security(Qrequest $qreq) {
+    function has_req_security() {
         if ($this->_req_security === null) {
             $this->_req_security = false;
             if ($this->allow_security()
-                && isset($qreq->oldpassword)
-                && trim($qreq->oldpassword) !== "") {
-                $info = $this->viewer->check_password_info(trim((string) $qreq->oldpassword));
+                && isset($this->qreq->oldpassword)
+                && trim($this->qreq->oldpassword) !== "") {
+                $info = $this->viewer->check_password_info(trim($this->qreq->oldpassword ?? ""));
                 $this->_req_security = $info["ok"];
             }
             if (!$this->_req_security) {
@@ -1191,13 +1208,13 @@ class UserStatus extends MessageSet {
         return $this->_req_security;
     }
 
-    static function request_new_password(UserStatus $us, $cj, Qrequest $qreq, $uf) {
-        $pw = trim((string) $qreq->upassword);
-        $pw2 = trim((string) $qreq->upassword2);
-        $us->_req_passwords = [(string) $qreq->upassword, (string) $qreq->upassword2];
+    static function request_new_password(UserStatus $us) {
+        $pw = trim($us->qreq->upassword ?? "");
+        $pw2 = trim($us->qreq->upassword2 ?? "");
+        $us->_req_passwords = [$us->qreq->upassword ?? "", $us->qreq->upassword2 ?? ""];
         if ($pw === "" && $pw2 === "") {
             // do nothing
-        } else if ($us->has_req_security($qreq)
+        } else if ($us->has_req_security()
                    && $us->viewer->can_change_password($us->user)) {
             if ($pw !== $pw2) {
                 $us->error_at("password", "<0>Those passwords do not match");
@@ -1207,14 +1224,14 @@ class UserStatus extends MessageSet {
             } else if (!Contact::valid_password($pw)) {
                 $us->error_at("password", "<0>Invalid new password");
             } else {
-                $cj->new_password = $pw;
+                $us->jval->new_password = $pw;
             }
         }
     }
 
-    static function save_security(UserStatus $us, Contact $user, $cj) {
-        if (isset($cj->new_password)) {
-            $user->change_password($cj->new_password);
+    static function save_security(UserStatus $us) {
+        if (isset($us->jval->new_password)) {
+            $us->user->change_password($us->jval->new_password);
             $us->diffs["password"] = true;
         }
     }
@@ -1243,8 +1260,10 @@ class UserStatus extends MessageSet {
         ["disabled"]
     ];
 
-    /** @param CsvRow $line */
-    static function parse_csv_main(UserStatus $us, $cj, $line, $uf) {
+    static function parse_csv_main(UserStatus $us) {
+        $line = $us->csvreq;
+        $cj = $us->jval;
+
         // set keys
         foreach (self::$csv_keys as $ks) {
             if (($v = trim((string) $line[$ks[0]])) !== "") {
@@ -1293,13 +1312,10 @@ class UserStatus extends MessageSet {
         }
     }
 
-    /** @param CsvRow $line */
-    function parse_csv_group($g, $cj, $line) {
-        foreach ($this->cs()->members(strtolower($g)) as $gj) {
-            if (($cb = $gj->parse_csv_function ?? null)) {
-                Conf::xt_resolve_require($gj);
-                $cb($this, $cj, $line, $gj);
-            }
+    /** @param string $name */
+    function parse_csv_group($name) {
+        foreach ($this->cs()->members($name, "parse_csv_function") as $gj) {
+            $this->cs()->call_function($gj->parse_csv_function, $gj);
         }
     }
 
@@ -1340,10 +1356,9 @@ class UserStatus extends MessageSet {
         return "";
     }
 
-    static function render_main(UserStatus $us, Qrequest $qreq = null) {
-        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
-        $qreq = $us->qreq ?? $qreq;
+    static function render_main(UserStatus $us) {
         $user = $us->user;
+        $qreq = $us->qreq;
         $actas = "";
         if ($user !== $us->viewer
             && $user->email !== ""
@@ -1422,10 +1437,8 @@ class UserStatus extends MessageSet {
         }
     }
 
-    static function render_country(UserStatus $us, Qrequest $qreq = null) {
-        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
-        $qreq = $us->qreq ?? $qreq;
-        $t = Countries::selector("country", $qreq->country ?? $us->user->country(), ["id" => "country", "data-default-value" => $us->user->country(), "autocomplete" => $us->autocomplete("country")]) . $us->global_profile_difference("country");
+    static function render_country(UserStatus $us) {
+        $t = Countries::selector("country", $us->qreq->country ?? $us->user->country(), ["id" => "country", "data-default-value" => $us->user->country(), "autocomplete" => $us->autocomplete("country")]) . $us->global_profile_difference("country");
         $us->render_field("country", "Country/region", $t);
     }
 
@@ -1441,9 +1454,8 @@ class UserStatus extends MessageSet {
             '</span>', $us->conf->_($wlabel), "</label>\n";
     }
 
-    static function render_follow(UserStatus $us, Qrequest $qreq = null) {
-        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
-        $qreq = $us->qreq ?? $qreq;
+    static function render_follow(UserStatus $us) {
+        $qreq = $us->qreq;
         $reqwatch = $iwatch = $us->user->defaultWatch;
         foreach (self::$watch_keywords as $kw => $bit) {
             if ($qreq["has_watch$kw"] || $qreq["watch$kw"]) {
@@ -1478,12 +1490,10 @@ class UserStatus extends MessageSet {
         echo "</div>\n";
     }
 
-    static function render_roles(UserStatus $us, Qrequest $qreq = null) {
+    static function render_roles(UserStatus $us) {
         if (!$us->viewer->privChair) {
             return;
         }
-        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
-        $qreq = $us->qreq ?? $qreq;
         $us->render_section("Roles", "roles");
         echo "<table class=\"w-text\"><tr><td class=\"nw\">\n";
         if (($us->user->roles & Contact::ROLE_CHAIR) !== 0) {
@@ -1493,8 +1503,9 @@ class UserStatus extends MessageSet {
         } else {
             $pcrole = $cpcrole = "none";
         }
-        if (isset($qreq->pctype) && in_array($qreq->pctype, ["chair", "pc", "none"])) {
-            $pcrole = $qreq->pctype;
+        if (isset($us->qreq->pctype)
+            && in_array($us->qreq->pctype, ["chair", "pc", "none"])) {
+            $pcrole = $us->qreq->pctype;
         }
         foreach (["chair" => "PC chair", "pc" => "PC member",
                   "none" => "Not on the PC"] as $k => $v) {
@@ -1506,8 +1517,8 @@ class UserStatus extends MessageSet {
 
         echo "</td><td><span class=\"sep\"></span></td><td>";
         $is_ass = $cis_ass = ($us->user->roles & Contact::ROLE_ADMIN) !== 0;
-        if (isset($qreq->pctype)) {
-            $is_ass = isset($qreq->ass);
+        if (isset($us->qreq->pctype)) {
+            $is_ass = isset($us->qreq->ass);
         }
         echo '<div class="checki"><label><span class="checkc">',
             Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "uich js-profile-role"]),
@@ -1515,11 +1526,9 @@ class UserStatus extends MessageSet {
             '<p class="f-h">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</p></div></td></tr></table>', "\n";
     }
 
-    static function render_collaborators(UserStatus $us, Qrequest $qreq = null) {
-        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
-        $qreq = $us->qreq ?? $qreq;
+    static function render_collaborators(UserStatus $us) {
         if (!$us->user->isPC
-            && !$qreq->collaborators
+            && !$us->qreq->collaborators
             && !$us->user->collaborators()
             && !$us->viewer->privChair) {
             return;
@@ -1537,13 +1546,11 @@ class UserStatus extends MessageSet {
             '<textarea name="collaborators" rows="5" cols="80" class="',
             $us->control_class("collaborators", "need-autogrow"),
             "\" data-default-value=\"", htmlspecialchars($us->user->collaborators()), "\">",
-            htmlspecialchars($qreq->collaborators ?? $us->user->collaborators()),
+            htmlspecialchars($us->qreq->collaborators ?? $us->user->collaborators()),
             "</textarea>\n";
     }
 
-    static function render_topics(UserStatus $us, Qrequest $qreq = null) {
-        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
-        $qreq = $us->qreq ?? $qreq;
+    static function render_topics(UserStatus $us) {
         if (!$us->user->isPC
             && !$us->viewer->privChair) {
             return;
@@ -1572,7 +1579,7 @@ topics. We use this information to help match papers to reviewers.</p>',
                 }
                 echo "      <tr><td class=\"{$tic}\">{$n}</td>";
                 $ival = $tmap[$tid] ?? 0;
-                $reqval = isset($qreq["ti$tid"]) ? (int) $qreq["ti$tid"] : $ival;
+                $reqval = isset($us->qreq["ti$tid"]) ? (int) $us->qreq["ti$tid"] : $ival;
                 for ($j = -2; $j <= 2; ++$j) {
                     $ichecked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
                     $reqchecked = $reqval >= $ibound[$j+2] && $reqval < $ibound[$j+3];
@@ -1584,9 +1591,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo "    </tbody></table>\n";
     }
 
-    static function render_tags(UserStatus $us, Qrequest $qreq = null) {
-        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
-        $qreq = $us->qreq ?? $qreq;
+    static function render_tags(UserStatus $us) {
         $user = $us->user;
         $tagger = new Tagger($us->viewer);
         $itags = $tagger->unparse($user->viewable_tags($us->viewer));
@@ -1599,7 +1604,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("tags", "f-i"), '">',
                 $us->feedback_html_at("tags"),
-                Ht::entry("contactTags", $qreq->contactTags ?? $itags, ["size" => 60, "data-default-value" => $itags]),
+                Ht::entry("contactTags", $us->qreq->contactTags ?? $itags, ["size" => 60, "data-default-value" => $itags]),
                 "</div>
   <p class=\"f-h\">Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href=\"", $us->conf->hoturl("settings", "group=tags"), "\">tag colors</a> to highlight subgroups in review lists.</p>\n";
         } else {
@@ -1669,10 +1674,8 @@ topics. We use this information to help match papers to reviewers.</p>',
 
 
 
-    static function render_bulk_entry(UserStatus $us, Qrequest $qreq = null) {
-        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
-        $qreq = $us->qreq ?? $qreq;
-        echo Ht::textarea("bulkentry", $qreq->bulkentry, [
+    static function render_bulk_entry(UserStatus $us) {
+        echo Ht::textarea("bulkentry", $us->qreq->bulkentry, [
             "rows" => 1, "cols" => 80,
             "placeholder" => "Enter users one per line",
             "class" => "want-focus need-autogrow",
@@ -1731,14 +1734,18 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 
 
-    function render_group($g) {
-        $this->cs()->render_group($g);
+    /** @param string $name */
+    function render_group($name) {
+        $this->cs()->render_group($name);
     }
 
+    /** @param string $title
+     * @param ?string $id */
     function render_section($title, $id = null) {
         $this->cs()->render_section($title, $id);
     }
 
+    /** @param string $name */
     function request_group($name) {
         $gx = $this->cs();
         foreach ($gx->members($name, "request_function") as $gj) {
