@@ -161,6 +161,9 @@ class Options_SettingRenderer {
 
         $args = $io->jsonSerialize();
         $args->json_key = $io->id > 0 ? null : "__fake__";
+        if (($args->exists_if ?? null) === false) {
+            $args->exists_if = "NONE";
+        }
 
         if ($sv->has_req("sf__{$ipos}__name")) {
             $name = simplify_whitespace($sv->reqstr("sf__{$ipos}__name") ?? "");
@@ -218,7 +221,7 @@ class Options_SettingRenderer {
             if ($ecs === "" || $ecs === "(All)") {
                 unset($args->exists_if);
             } else if ($ecs !== null) {
-                self::validate_condition($sv, $ecs, $ipos, $ecs !== $args->exists_if);
+                self::validate_condition($sv, $ecs, $ipos, $ecs !== ($args->exists_if ?? null));
                 $args->exists_if = $ecs;
             }
         }

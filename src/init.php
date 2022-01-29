@@ -261,8 +261,6 @@ function initialize_request() {
         $l = strlen($qreq->post);
         if ($l >= 8 && $qreq->post === substr($sid, strlen($sid) > 16 ? 8 : 0, $l)) {
             $qreq->approve_token();
-        } else if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            error_log("{$conf->dbname}: bad post={$qreq->post}, cookie={$sid}, url=" . $_SERVER["REQUEST_URI"]);
         }
     }
     ensure_session(ENSURE_SESSION_ALLOW_EMPTY);
