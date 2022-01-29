@@ -13,6 +13,7 @@ class UserStatus extends MessageSet {
     public $user;
     /** @var bool */
     public $is_auth_user;
+
     /** @var bool */
     public $notify = false;
     /** @var bool */
@@ -27,18 +28,22 @@ class UserStatus extends MessageSet {
     public $no_modify = false;
     /** @var ?array<string,true> */
     public $unknown_topics = null;
+
+    /** @var ?Qrequest */
+    public $qreq;
+    /** @var ?bool */
+    private $_req_security;
+    /** @var ?array{string,string} */
+    private $_req_passwords;
     /** @var bool */
     public $created;
     /** @var bool */
     public $notified;
     /** @var associative-array<string,true> */
     public $diffs = [];
+
     /** @var ?ComponentSet */
     private $_cs;
-    /** @var ?bool */
-    private $_req_security;
-    /** @var ?array{string,string} */
-    private $_req_passwords;
 
     public static $watch_keywords = [
         "allregister" => Contact::WATCH_PAPER_REGISTER_ALL,
@@ -1335,7 +1340,9 @@ class UserStatus extends MessageSet {
         return "";
     }
 
-    static function render_main(UserStatus $us, Qrequest $qreq) {
+    static function render_main(UserStatus $us, Qrequest $qreq = null) {
+        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
+        $qreq = $us->qreq ?? $qreq;
         $user = $us->user;
         $actas = "";
         if ($user !== $us->viewer
@@ -1375,7 +1382,7 @@ class UserStatus extends MessageSet {
         $us->render_field("affiliation", "Affiliation", $t);
     }
 
-    static function render_current_password(UserStatus $us, Qrequest $qreq) {
+    static function render_current_password(UserStatus $us) {
         $original_ignore_msgs = $us->swap_ignore_messages(false);
         $us->msg_at("oldpassword", "<0>Enter your current password to make changes to security settings", 1);
         $us->swap_ignore_messages($original_ignore_msgs);
@@ -1389,7 +1396,7 @@ class UserStatus extends MessageSet {
             '</div>';
     }
 
-    static function render_new_password(UserStatus $us, Qrequest $qreq) {
+    static function render_new_password(UserStatus $us) {
         if ($us->viewer->can_change_password($us->user)) {
             $us->render_section("Change password");
             $pws = $us->_req_passwords ?? ["", ""];
@@ -1415,7 +1422,9 @@ class UserStatus extends MessageSet {
         }
     }
 
-    static function render_country(UserStatus $us, Qrequest $qreq) {
+    static function render_country(UserStatus $us, Qrequest $qreq = null) {
+        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
+        $qreq = $us->qreq ?? $qreq;
         $t = Countries::selector("country", $qreq->country ?? $us->user->country(), ["id" => "country", "data-default-value" => $us->user->country(), "autocomplete" => $us->autocomplete("country")]) . $us->global_profile_difference("country");
         $us->render_field("country", "Country/region", $t);
     }
@@ -1432,7 +1441,9 @@ class UserStatus extends MessageSet {
             '</span>', $us->conf->_($wlabel), "</label>\n";
     }
 
-    static function render_follow(UserStatus $us, Qrequest $qreq) {
+    static function render_follow(UserStatus $us, Qrequest $qreq = null) {
+        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
+        $qreq = $us->qreq ?? $qreq;
         $reqwatch = $iwatch = $us->user->defaultWatch;
         foreach (self::$watch_keywords as $kw => $bit) {
             if ($qreq["has_watch$kw"] || $qreq["watch$kw"]) {
@@ -1467,10 +1478,12 @@ class UserStatus extends MessageSet {
         echo "</div>\n";
     }
 
-    static function render_roles(UserStatus $us, Qrequest $qreq) {
+    static function render_roles(UserStatus $us, Qrequest $qreq = null) {
         if (!$us->viewer->privChair) {
             return;
         }
+        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
+        $qreq = $us->qreq ?? $qreq;
         $us->render_section("Roles", "roles");
         echo "<table class=\"w-text\"><tr><td class=\"nw\">\n";
         if (($us->user->roles & Contact::ROLE_CHAIR) !== 0) {
@@ -1502,7 +1515,9 @@ class UserStatus extends MessageSet {
             '<p class="f-h">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</p></div></td></tr></table>', "\n";
     }
 
-    static function render_collaborators(UserStatus $us, Qrequest $qreq) {
+    static function render_collaborators(UserStatus $us, Qrequest $qreq = null) {
+        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
+        $qreq = $us->qreq ?? $qreq;
         if (!$us->user->isPC
             && !$qreq->collaborators
             && !$us->user->collaborators()
@@ -1526,7 +1541,9 @@ class UserStatus extends MessageSet {
             "</textarea>\n";
     }
 
-    static function render_topics(UserStatus $us, Qrequest $qreq) {
+    static function render_topics(UserStatus $us, Qrequest $qreq = null) {
+        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
+        $qreq = $us->qreq ?? $qreq;
         if (!$us->user->isPC
             && !$us->viewer->privChair) {
             return;
@@ -1567,7 +1584,9 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo "    </tbody></table>\n";
     }
 
-    static function render_tags(UserStatus $us, Qrequest $qreq) {
+    static function render_tags(UserStatus $us, Qrequest $qreq = null) {
+        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
+        $qreq = $us->qreq ?? $qreq;
         $user = $us->user;
         $tagger = new Tagger($us->viewer);
         $itags = $tagger->unparse($user->viewable_tags($us->viewer));
@@ -1616,7 +1635,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo Ht::button("Delete account", $args), '<p class="pt-1"></p>';
     }
 
-    static function render_main_actions(UserStatus $us, Qrequest $qreq) {
+    static function render_main_actions(UserStatus $us) {
         if ($us->viewer->privChair
             && !$us->is_new_user()) {
             $us->cs()->render_open_section();
@@ -1637,7 +1656,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         }
     }
 
-    static function render_actions(UserStatus $us, Qrequest $qreq) {
+    static function render_actions(UserStatus $us) {
         $buttons = [Ht::submit("save", $us->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
             Ht::submit("cancel", "Cancel", ["formnovalidate" => true])];
         if ($us->is_auth_self()
@@ -1650,7 +1669,9 @@ topics. We use this information to help match papers to reviewers.</p>',
 
 
 
-    static function render_bulk_entry(UserStatus $us, Qrequest $qreq) {
+    static function render_bulk_entry(UserStatus $us, Qrequest $qreq = null) {
+        assert($us->qreq && (!$qreq || $qreq === $us->qreq));
+        $qreq = $us->qreq ?? $qreq;
         echo Ht::textarea("bulkentry", $qreq->bulkentry, [
             "rows" => 1, "cols" => 80,
             "placeholder" => "Enter users one per line",
@@ -1661,7 +1682,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             '<input type="file" name="bulk" size="30"></div>';
     }
 
-    static function render_bulk_actions(UserStatus $us, Qrequest $qreq) {
+    static function render_bulk_actions(UserStatus $us) {
         echo '<div class="aab aabig">',
             '<div class="aabut">', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>',
             '</div>';

@@ -123,6 +123,7 @@ $newProfile = 0;
 $UserStatus = new UserStatus($Me);
 $UserStatus->set_user($Me);
 $UserStatus->set_context_args([$UserStatus]);
+$UserStatus->qreq = $Qreq;
 
 if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
     $Qreq->u = $Qreq->user ? : $Qreq->contact;
@@ -432,6 +433,7 @@ if (!$Qreq->valid_post()) {
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->set_user($Acct);
     $UserStatus->set_context_args([$UserStatus, $cj, $Qreq]);
+    $UserStatus->qreq = $Qreq;
     $UserStatus->no_deprivilege_self = true;
     if ($newProfile) {
         $UserStatus->no_nonempty_profile = true;
@@ -731,6 +733,7 @@ if (!$UserStatus->has_message()) {
 }
 
 $UserStatus->set_context_args([$UserStatus, $Qreq]);
+$UserStatus->qreq = $Qreq;
 $UserStatus->render_group($newProfile === 2 ? "__bulk" : $profile_topic);
 
 if ($newProfile !== 2) {
