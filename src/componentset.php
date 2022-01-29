@@ -252,13 +252,15 @@ class ComponentSet implements XtContext {
         $this->_callables[$name] = $callable;
         return $this;
     }
-    function call_function($cb, $gj) {
+    /** @param ?object $gj
+     * @param callable $cb */
+    function call_function($gj, $cb, ...$args) {
         Conf::xt_resolve_require($gj);
         if (is_string($cb) && $cb[0] === "*") {
             $colons = strpos($cb, ":");
             $cb = [$this->callable(substr($cb, 1, $colons - 1)), substr($cb, $colons + 2)];
         }
-        return $cb(...$this->_ctx->args, ...[$gj]);
+        return $cb(...$this->_ctx->args, ...$args);
     }
 
     /** @param ?string $root
@@ -310,7 +312,7 @@ class ComponentSet implements XtContext {
             if (is_string($cleaner) && ($gj = $this->get($cleaner))) {
                 $this->render($gj);
             } else if (is_callable($cleaner)) {
-                $this->call_function($cleaner, null);
+                $this->call_function(null, $cleaner);
             }
         }
         $this->_ctx = array_pop($this->_ctxstack);
@@ -385,9 +387,7 @@ class ComponentSet implements XtContext {
             }
         }
         if (isset($gj->render_function)) {
-            return $this->call_function($gj->render_function, $gj);
-        } else if (isset($gj->render_callback)) { /* XXX */
-            return $this->call_function($gj->render_callback, $gj);
+            return $this->call_function($gj, $gj->render_function, $gj);
         } else if (isset($gj->render_html)) {
             echo $gj->render_html;
             return null;

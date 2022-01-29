@@ -137,16 +137,7 @@ class UserStatus extends MessageSet {
         return $this->_cs;
     }
     private function initialize_cs() {
-        $this->_cs->set_callable("UserStatus", $this);
-    }
-    /** @return ComponentSet
-     * @deprecated */
-    function gxt() {
-        return $this->cs();
-    }
-    /** @param list<mixed> $args */
-    function set_context_args($args) {
-        $this->cs()->set_context_args($args);
+        $this->_cs->set_callable("UserStatus", $this)->set_context_args([$this]);
     }
 
     /** @return bool */
@@ -321,7 +312,7 @@ class UserStatus extends MessageSet {
             }
             $cs = $this->cs();
             foreach ($cs->members("", "unparse_json_function") as $gj) {
-                $cs->call_function($gj->unparse_json_function, $gj);
+                $cs->call_function($gj, $gj->unparse_json_function, $gj);
             }
             return $this->jval;
         } else {
@@ -886,10 +877,9 @@ class UserStatus extends MessageSet {
 
         // Early properties
         $gx = $this->cs();
-        $gx->set_context_args([$this, $user, $cj]);
         $this->jval = $cj;
         foreach ($gx->members("", "save_early_function") as $gj) {
-            $gx->call_function($gj->save_early_function, $gj);
+            $gx->call_function($gj, $gj->save_early_function, $gj);
         }
         if (($user->prop_changed() || $this->created)
             && !$user->save_prop()) {
@@ -917,7 +907,7 @@ class UserStatus extends MessageSet {
 
         // Main properties
         foreach ($gx->members("", "save_function") as $gj) {
-            $gx->call_function($gj->save_function, $gj);
+            $gx->call_function($gj, $gj->save_function, $gj);
         }
 
         // Clean up
@@ -953,15 +943,14 @@ class UserStatus extends MessageSet {
     }
 
 
-    static function save_main(UserStatus $us, Contact $user, $cj) {
-        assert($cj === $us->jval && $user === $us->user);
+    static function save_main(UserStatus $us) {
         $user = $us->user;
         $cj = $us->jval;
 
         // Profile properties
-        $us->set_profile_prop($user, $cj, $us->only_update_empty($user));
+        $us->set_profile_prop($user, $us->only_update_empty($user));
         if (($cdbu = $user->contactdb_user())) {
-            $us->set_profile_prop($cdbu, $cj, $us->only_update_empty($cdbu));
+            $us->set_profile_prop($cdbu, $us->only_update_empty($cdbu));
         }
 
         // Disabled
@@ -1030,7 +1019,7 @@ class UserStatus extends MessageSet {
         }
     }
 
-    private function set_profile_prop(Contact $user, $cj, $only_empty) {
+    private function set_profile_prop(Contact $user, $only_empty) {
         foreach (["firstName" => "name",
                   "lastName" => "name",
                   "affiliation" => "affiliation",
@@ -1041,7 +1030,7 @@ class UserStatus extends MessageSet {
                   "city" => "address",
                   "state" => "address",
                   "zip" => "address"] as $prop => $diff) {
-            if (($v = $cj->$prop ?? null) !== null) {
+            if (($v = $this->jval->$prop ?? null) !== null) {
                 $user->set_prop($prop, $v, $only_empty);
                 if ($user->prop_changed($prop)) {
                     $this->diffs[$diff] = true;
@@ -1050,14 +1039,12 @@ class UserStatus extends MessageSet {
         }
     }
 
-    static function save_topics(UserStatus $us, Contact $user, $cj) {
-        assert($cj === $us->jval && $user === $us->user);
-        $user = $us->user;
+    static function save_topics(UserStatus $us) {
         if (!isset($us->jval->topics)
-            || !$user->conf->has_topics()) {
+            || !$us->conf->has_topics()) {
             return;
         }
-        $ti = $us->created ? [] : $user->topic_interest_map();
+        $ti = $us->created ? [] : $us->user->topic_interest_map();
         if ($us->no_nonempty_pc && !empty($ti)) {
             return;
         }
@@ -1065,7 +1052,7 @@ class UserStatus extends MessageSet {
         $diff = false;
         foreach ($us->jval->topics as $k => $v) {
             if ($v) {
-                $tv[] = [$user->contactId, $k, $v];
+                $tv[] = [$us->user->contactId, $k, $v];
             }
             if ($v !== ($ti[$k] ?? 0)) {
                 $diff = true;
@@ -1074,13 +1061,13 @@ class UserStatus extends MessageSet {
         if ($diff || empty($tv)) {
             if (empty($tv)) {
                 foreach ($us->jval->topics as $k => $v) {
-                    $tv[] = [$user->contactId, $k, 0];
+                    $tv[] = [$us->user->contactId, $k, 0];
                     break;
                 }
             }
-            $user->conf->qe("delete from TopicInterest where contactId=?", $user->contactId);
-            $user->conf->qe("insert into TopicInterest (contactId,topicId,interest) values ?v", $tv);
-            $user->invalidate_topic_interests();
+            $us->conf->qe("delete from TopicInterest where contactId=?", $us->user->contactId);
+            $us->conf->qe("insert into TopicInterest (contactId,topicId,interest) values ?v", $tv);
+            $us->user->invalidate_topic_interests();
         }
         if ($diff) {
             $us->diffs["topics"] = true;
@@ -1315,7 +1302,7 @@ class UserStatus extends MessageSet {
     /** @param string $name */
     function parse_csv_group($name) {
         foreach ($this->cs()->members($name, "parse_csv_function") as $gj) {
-            $this->cs()->call_function($gj->parse_csv_function, $gj);
+            $this->cs()->call_function($gj, $gj->parse_csv_function, $gj);
         }
     }
 
@@ -1747,10 +1734,10 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
     /** @param string $name */
     function request_group($name) {
-        $gx = $this->cs();
-        foreach ($gx->members($name, "request_function") as $gj) {
-            if ($gx->allowed($gj->allow_request_if ?? null, $gj)) {
-                $gx->call_function($gj->request_function, $gj);
+        $cs = $this->cs();
+        foreach ($cs->members($name, "request_function") as $gj) {
+            if ($cs->allowed($gj->allow_request_if ?? null, $gj)) {
+                $cs->call_function($gj, $gj->request_function, $gj);
             }
         }
     }

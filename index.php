@@ -23,7 +23,7 @@ function gx_call_requests($user, $qreq, $group, $gx) {
         $user->conf->msg($user->conf->_i("badpost"), 2);
     }
     foreach ($reqgj as $gj) {
-        if ($gx->call_function($gj->request_function, $gj) === false) {
+        if ($gx->call_function($gj, $gj->request_function, $gj) === false) {
             break;
         }
     }

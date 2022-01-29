@@ -217,7 +217,7 @@ class SettingValues extends MessageSet {
 
     function crosscheck() {
         foreach ($this->cs()->members("__crosscheck", "crosscheck_function") as $gj) {
-            $this->cs()->call_function($gj->crosscheck_function, $gj);
+            $this->cs()->call_function($gj, $gj->crosscheck_function, $gj);
         }
     }
 

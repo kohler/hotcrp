@@ -122,7 +122,6 @@ if (!$Me->is_signed_in()) {
 $newProfile = 0;
 $UserStatus = new UserStatus($Me);
 $UserStatus->set_user($Me);
-$UserStatus->set_context_args([$UserStatus]);
 $UserStatus->qreq = $Qreq;
 
 if ($Qreq->u === null && ($Qreq->user || $Qreq->contact)) {
@@ -365,7 +364,6 @@ function parseBulkFile(Contact $user, $text, $filename) {
 
     while (($line = $csv->next_row())) {
         $ustatus->set_user(new Contact($conf));
-        $ustatus->set_context_args([$ustatus]);
         $ustatus->clear_messages();
         $ustatus->jval = (object) ["id" => null];
         $ustatus->csvreq = $line;
@@ -433,7 +431,6 @@ if (!$Qreq->valid_post()) {
     assert($Acct->is_empty() === !!$newProfile);
     $cj = (object) ["id" => $Acct->has_account_here() ? $Acct->contactId : "new"];
     $UserStatus->set_user($Acct);
-    $UserStatus->set_context_args([$UserStatus, $cj, $Qreq]);
     $UserStatus->qreq = $Qreq;
     $UserStatus->jval = $cj;
     $UserStatus->no_deprivilege_self = true;
@@ -536,7 +533,6 @@ if (isset($Qreq->delete) && !Dbl::has_error() && $Qreq->valid_post()) {
 
 // canonicalize topic
 $UserStatus->set_user($Acct);
-$UserStatus->set_context_args([$UserStatus]);
 if (!$newProfile
     && ($g = $UserStatus->cs()->canonical_group($Qreq->t ? : "main"))) {
     $profile_topic = $g;
@@ -589,10 +585,9 @@ if (!$useRequest
 
 // set warnings about user json
 if (!$newProfile && !$useRequest) {
-    $UserStatus->cs()->set_context_args([$UserStatus, $Acct]);
     assert($UserStatus->user === $Acct);
     foreach ($UserStatus->cs()->members("__crosscheck", "crosscheck_function") as $gj) {
-        $UserStatus->cs()->call_function($gj->crosscheck_function, $gj);
+        $UserStatus->cs()->call_function($gj, $gj->crosscheck_function, $gj);
     }
 }
 
@@ -734,7 +729,6 @@ if (!$UserStatus->has_message()) {
     echo '<div class="msgs-wide">', $Conf->feedback_msg($UserStatus), "</div>\n";
 }
 
-$UserStatus->set_context_args([$UserStatus, $Qreq]);
 $UserStatus->qreq = $Qreq;
 $UserStatus->render_group($newProfile === 2 ? "__bulk" : $profile_topic);
 
