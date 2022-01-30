@@ -33,15 +33,9 @@
         "sample": {"value": "Text entry"}
     },
     {
-        "name": "text:ds_5", "type": "text", "title": "Multiline text", "order": 550,
+        "name": "mtext", "title": "Multiline text", "order": 550,
         "function": "+Text_PaperOption",
         "sample": {"display_space": 5, "value": "Long text entry"}
-    },
-    {
-        "match": "text:ds_(\\d+)",
-        "title": "Multiline text", "order": 550,
-        "function": "+Text_PaperOption", "priority": -1,
-        "expand_function": "Text_PaperOption::expand"
     },
     {
         "name": "pdf", "title": "PDF", "order": 600,

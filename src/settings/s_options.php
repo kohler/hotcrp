@@ -14,8 +14,8 @@ class Options_SettingRenderer {
 
     static function render_type_property(SettingValues $sv, PaperOption $o, $xpos, $self, $gj) {
         $optvt = $o->type;
-        if ($o instanceof Text_PaperOption && $o->display_space > 3) {
-            $optvt .= ":ds_" . $o->display_space;
+        if ($o instanceof Text_PaperOption && $o->display_space > 3 && $o->type === "text") {
+            $optvt = "mtext";
         }
 
         $jtypes = $sv->conf->option_type_map();
@@ -177,15 +177,7 @@ class Options_SettingRenderer {
         }
 
         if ($sv->has_req("sf__{$ipos}__type")) {
-            $vt = $sv->reqstr("sf__{$ipos}__type");
-            if (($pos = strpos($vt, ":")) !== false) {
-                $args->type = substr($vt, 0, $pos);
-                if (preg_match('/:ds_(\d+)/', $vt, $m)) {
-                    $args->display_space = (int) $m[1];
-                }
-            } else {
-                $args->type = $vt;
-            }
+            $args->type = $sv->reqstr("sf__{$ipos}__type");
         }
 
         if ($sv->has_req("sf__{$ipos}__description")) {
@@ -384,8 +376,8 @@ class Options_SettingRenderer {
                 || $sv->conf->xt_check($uf->display_if, $uf, $sv->user)) {
                 $args = [
                     "id" => 1000,
-                    "name" => $uf->title ?? $uf->name,
-                    "type" => $uf->type ?? $uf->name,
+                    "name" => $uf->title,
+                    "type" => $uf->name,
                     "order" => 1,
                     "display" => "prominent",
                     "json_key" => "__demo_{$uf->name}__"

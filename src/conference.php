@@ -201,7 +201,6 @@ class Conf {
     private $_paper_column_factories;
     /** @var ?array<string,list<object>> */
     private $_option_type_map;
-    private $_option_type_factories;
     /** @var ?list<object> */
     private $_token_factories;
     /** @var ?array<int,object> */
@@ -5162,26 +5161,23 @@ class Conf {
     // option types
 
     function _add_option_type_json($fj) {
-        $cb = isset($fj->function) && is_string($fj->function);
-        if (isset($fj->name) && is_string($fj->name) && $cb) {
+        if (isset($fj->name) && is_string($fj->name)
+            && isset($fj->function) && is_string($fj->function)) {
             return self::xt_add($this->_option_type_map, $fj->name, $fj);
-        } else if (is_string($fj->match) && (isset($fj->expand_function) ? is_string($fj->expand_function) : $cb)) {
-            $this->_option_type_factories[] = $fj;
-            return true;
         } else {
             return false;
         }
     }
+
+    /** @return array<string,object> */
     function option_type_map() {
         if ($this->_option_type_map === null) {
             require_once("paperoption.php");
-            $this->_option_type_map = $this->_option_type_factories = [];
+            $this->_option_type_map = [];
             expand_json_includes_callback(["etc/optiontypes.json"], [$this, "_add_option_type_json"]);
             if (($olist = $this->opt("optionTypes"))) {
                 expand_json_includes_callback($olist, [$this, "_add_option_type_json"]);
             }
-            usort($this->_option_type_factories, "Conf::xt_priority_compare");
-            // option types are global (cannot be allowed per user)
             $m = [];
             foreach (array_keys($this->_option_type_map) as $name) {
                 if (($uf = $this->xt_search_name($this->_option_type_map, $name, null)))
@@ -5191,11 +5187,10 @@ class Conf {
         }
         return $this->_option_type_map;
     }
+
+    /** @return ?object */
     function option_type($name) {
-        $uf = ($this->option_type_map())[$name] ?? null;
-        $this->_xt_last_match = null;
-        $ufs = $this->xt_search_factories($this->_option_type_factories, $name, null, $uf, "i");
-        return $ufs[0];
+        return ($this->option_type_map())[$name] ?? null;
     }
 
 

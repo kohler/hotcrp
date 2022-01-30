@@ -722,6 +722,7 @@ class PaperOption implements JsonSerializable {
         "numeric" => "+Numeric_PaperOption",
         "realnumber" => "+RealNumber_PaperOption",
         "text" => "+Text_PaperOption",
+        "mtext" => "+Text_PaperOption",
         "pdf" => "+Document_PaperOption",
         "slides" => "+Document_PaperOption",
         "video" => "+Document_PaperOption",
@@ -850,7 +851,7 @@ class PaperOption implements JsonSerializable {
     static function make(Conf $conf, $args) {
         assert(is_object($args));
         Conf::xt_resolve_require($args);
-        $fn = $args->function ?? $args->callback ?? null; /* XXX */
+        $fn = $args->function ?? null;
         if (!$fn) {
             $fn = self::$callback_map[$args->type ?? ""] ?? null;
         }
@@ -1903,20 +1904,13 @@ class Document_PaperOption extends PaperOption {
 }
 
 class Text_PaperOption extends PaperOption {
+    /** @var int */
     public $display_space;
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args, "prefer-row pl_text");
-        $this->display_space = $args->display_space ?? 0;
-    }
-
-    static function expand($name, Contact $user, $fxt, $m) {
-        $xt = clone $fxt;
-        unset($xt->match);
-        $xt->name = $name;
-        $xt->display_space = +$m[1];
-        $xt->title = "Multiline text ({$m[1]} lines)";
-        return $xt;
+        $bspace = $this->type === "mtext" ? 5 : 0;
+        $this->display_space = $args->display_space ?? $bspace;
     }
 
     function value_present(PaperValue $ov) {
@@ -1935,6 +1929,10 @@ class Text_PaperOption extends PaperOption {
     function value_unparse_json(PaperValue $ov, PaperStatus $ps) {
         $x = $ov->data();
         return $x !== "" ? $x : null;
+    }
+
+    function change_type(PaperOption $o, $upgrade, $change_values) {
+        return $o instanceof Text_PaperOption;
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
@@ -1975,7 +1973,7 @@ class Text_PaperOption extends PaperOption {
 
     function jsonSerialize() {
         $j = parent::jsonSerialize();
-        if ($this->display_space) {
+        if ($this->display_space !== ($this->type === "mtext" ? 5 : 0)) {
             $j->display_space = $this->display_space;
         }
         return $j;
