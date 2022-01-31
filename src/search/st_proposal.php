@@ -12,11 +12,12 @@ class ReviewRequestSearchMatcher extends ContactCountMatcher {
     }
 
     function apply_round($word, Conf $conf) {
-        if (($round = $conf->round_number($word, false)) === false) {
+        if (($round = $conf->round_number($word, false)) !== null) {
+            $this->round[] = $round;
+            return true;
+        } else {
             return false;
         }
-        $this->round[] = $round;
-        return true;
     }
     function apply_comparison($word) {
         $a = CountMatcher::unpack_search_comparison($word);

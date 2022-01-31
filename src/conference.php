@@ -1910,7 +1910,7 @@ class Conf {
 
     /** @param string $rname
      * @param bool $add
-     * @return int|false */
+     * @return ?int */
     function round_number($rname, $add) {
         if (!$rname || !strcasecmp($rname, "none") || !strcasecmp($rname, "unnamed")) {
             return 0;
@@ -1927,7 +1927,7 @@ class Conf {
             $this->refresh_round_settings();
             return $this->round_number($rname, false);
         } else {
-            return false;
+            return null;
         }
     }
 

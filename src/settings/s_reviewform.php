@@ -184,7 +184,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $fj->round_mask = 0;
             unset($fj->exists_if);
             if (str_starts_with($ec, "round:")) {
-                if (($round = $sv->conf->round_number(substr($ec, 6), false)) !== false) {
+                if (($round = $sv->conf->round_number(substr($ec, 6), false)) !== null) {
                     $fj->round_mask = 1 << $round;
                 }
             } else if ($ec === "custom" && $ecs !== "") {

@@ -802,7 +802,7 @@ Contact::update_rights();
 xassert_eqq($Conf->setting_data("tag_rounds"), "R1 R2 R3");
 xassert_eqq($Conf->round_number("R1", false), 1);
 xassert_eqq($Conf->round_number("R1", true), 1);
-xassert_eqq($Conf->round_number("R5", false), false);
+xassert_eqq($Conf->round_number("R5", false), null);
 xassert_eqq($Conf->round_number("R5", true), 4);
 xassert_eqq($Conf->setting_data("tag_rounds"), "R1 R2 R3 R5");
 
