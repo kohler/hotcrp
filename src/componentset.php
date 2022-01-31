@@ -237,6 +237,9 @@ class ComponentSet implements XtContext {
             return true;
         }
     }
+    /** @template T
+     * @param class-string<T> $name
+     * @return ?T */
     function callable($name) {
         if (!isset($this->_callables[$name]) && $this->_ctx->args !== null) {
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */

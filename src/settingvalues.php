@@ -617,15 +617,16 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $prefix
-     * @param int $ctr
+     * @param null|int|string $ctr
      * @param string $suffix
-     * @param string $error_prefix
-     * @return bool */
+     * @param string $error_prefix */
     function error_if_duplicate_component($prefix, $ctr, $suffix, $error_prefix) {
-        $v = $this->vstr("{$prefix}{$ctr}{$suffix}");
-        if (($ctr1 = $this->component_search($prefix, $suffix, $v, $ctr + 1))) {
-            $this->error_at("{$prefix}{$ctr}{$suffix}", "<0>{$error_prefix} ‘{$v}’ is not unique");
-            $this->error_at("{$prefix}{$ctr1}{$suffix}");
+        if ($ctr === null || (is_string($ctr) && !ctype_digit($ctr))) {
+            $v = $this->vstr("{$prefix}{$ctr}{$suffix}");
+            if (($ctr1 = $this->component_search($prefix, $suffix, $v, (int) $ctr + 1))) {
+                $this->error_at("{$prefix}{$ctr}{$suffix}", "<0>{$error_prefix} ‘{$v}’ is not unique");
+                $this->error_at("{$prefix}{$ctr1}{$suffix}");
+            }
         }
     }
 

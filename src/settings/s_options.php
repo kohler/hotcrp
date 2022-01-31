@@ -293,7 +293,9 @@ class Options_SettingParser extends SettingParser {
         if ($f instanceof Selector_PaperOption
             && ($opts = $f->selector_options())) {
             $j->selector = join("\n", $opts) . "\n";
-        } else if ($f->type === "text" && $f->display_space > 3) {
+        } else if ($f->type === "text"
+                   && $f instanceof Text_PaperOption
+                   && $f->display_space > 3) {
             $j->type = "mtext";
         }
         return $j;
