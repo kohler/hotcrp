@@ -27,6 +27,7 @@ const DTYPE_SUBMISSION = 0;
 const DTYPE_FINAL = -1;
 const DTYPE_COMMENT = -2;
 const DTYPE_EXPORT = -3;
+const DTYPE_INVALID = -4;
 
 const VIEWSCORE_EMPTY = -3;         // score no one can see; see also reviewViewScore
 const VIEWSCORE_ADMINONLY = -2;

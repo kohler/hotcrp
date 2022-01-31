@@ -374,9 +374,9 @@ class UpdateSchema {
         while (($doc = DocumentInfo::fetch($result, $this->conf))) {
             $hash = $doc->content_binary_hash();
             $cleanf("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", [$hash, $doc->paperId, $doc->paperStorageId]);
-            if ($doc->documentType == DTYPE_SUBMISSION) {
+            if ($doc->documentType == 0 /* DTYPE_SUBMISSION */) {
                 $cleanf("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", [$hash, $doc->paperId, $doc->paperStorageId]);
-            } else if ($doc->documentType == DTYPE_FINAL) {
+            } else if ($doc->documentType == -1 /* DTYPE_FINAL */) {
                 $cleanf("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", [$hash, $doc->paperId, $doc->paperStorageId]);
             }
         }

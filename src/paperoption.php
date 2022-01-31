@@ -668,6 +668,7 @@ class PaperOption implements JsonSerializable {
     private $_json_key;
     /** @var null|string|false */
     public $_search_keyword;
+    /** @var string */
     public $description;
     public $description_format;
     public $order;
@@ -734,10 +735,7 @@ class PaperOption implements JsonSerializable {
      * @param string $default_className */
     function __construct(Conf $conf, $args, $default_className = "") {
         assert(is_object($args));
-        assert($args->id > 0 || isset($args->json_key));
-        if (!is_object($args)) {
-            $args = (object) $args;
-        }
+        assert($args->id > 0 || $args->id === -4 || isset($args->json_key));
         $this->conf = $conf;
         $this->id = (int) $args->id;
         $this->name = $args->name ?? null;
@@ -751,7 +749,7 @@ class PaperOption implements JsonSerializable {
         $this->_search_keyword = $args->search_keyword ?? $this->_json_key;
         $this->formid = $this->id > 0 ? "opt{$this->id}" : $this->_json_key;
 
-        $this->description = $args->description ?? null;
+        $this->description = $args->description ?? "";
         $this->description_format = $args->description_format ?? null;
         $this->nonpaper = ($args->nonpaper ?? false) === true;
         $this->required = !!($args->required ?? false);
@@ -834,12 +832,12 @@ class PaperOption implements JsonSerializable {
 
         $x = property_exists($args, "exists_if") ? $args->exists_if : ($args->edit_condition ?? null);
         // XXX edit_condition backward compat
-        if ($x !== null && $x !== true) {
+        if ($x !== null && $x !== "" && $x !== true) {
             $this->set_exists_condition($x);
         }
 
         $x = $args->editable_if ?? null;
-        if ($x !== null && $x !== true) {
+        if ($x !== null && $x !== "" && $x !== true) {
             $this->set_editable_condition($x);
         }
 
@@ -1152,7 +1150,7 @@ class PaperOption implements JsonSerializable {
             $j->type = $this->type;
         }
         $j->order = (int) $this->order;
-        if ($this->description !== null) {
+        if ($this->description !== "") {
             $j->description = $this->description;
         }
         if ($this->description_format !== null) {

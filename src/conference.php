@@ -4334,15 +4334,17 @@ class Conf {
             }
         }
 
-        $pid = $extra["paperId"] ?? null;
-        $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
-        if (!$pid && $this->paper) {
+        $pid = $extra["paperId"] ?? 0;
+        if (!is_int($pid)) {
+            $pid = $pid && ctype_digit($pid) ? intval($pid) : 0;
+        }
+        if ($pid > 0 && $this->paper) {
             $pid = $this->paper->paperId;
         }
-        if ($pid) {
+        if ($pid > 0) {
             $siteinfo["paperid"] = $pid;
         }
-        if ($pid && $user && $user->is_admin_force()) {
+        if ($pid > 0 && $user && $user->is_admin_force()) {
             $siteinfo["want_override_conflict"] = true;
         }
 
@@ -5188,7 +5190,8 @@ class Conf {
         return $this->_option_type_map;
     }
 
-    /** @return ?object */
+    /** @param string $name
+     * @return ?object */
     function option_type($name) {
         return ($this->option_type_map())[$name] ?? null;
     }
