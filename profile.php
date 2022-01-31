@@ -21,17 +21,17 @@ function change_email_by_capability(Contact $user, $qreq) {
         || !is_object($capcontent)
         || !($capcontent->uemail ?? null)) {
         if (trim($qreq->changeemail) !== "1") {
-            Ht::error_at("changeemail", "That email change code has expired, or you didn’t enter it correctly.");
+            Ht::error_at("changeemail", "<0>That email change code has expired, or you didn’t enter it correctly.");
         }
         $capdata = false;
     }
 
     $Acct = null;
     if ($capdata && !($Acct = $conf->user_by_id($capdata->contactId))) {
-        Ht::error_at("changeemail", "The account associated with that email change code no longer exists.");
+        Ht::error_at("changeemail", "<0>The account associated with that email change code no longer exists.");
     }
     if ($Acct && strcasecmp($Acct->email, $capcontent->oldemail) !== 0) {
-        Ht::error_at("changeemail", "You have changed your email address since creating that email change code.");
+        Ht::error_at("changeemail", "<0>You have changed your email address since creating that email change code.");
         $Acct = null;
     }
 
@@ -238,14 +238,14 @@ function save_user($cj, $ustatus, $acct) {
     // check for missing fields
     UserStatus::normalize_name($cj);
     if (!$acct && !isset($cj->email)) {
-        $ustatus->error_at("email", "Email address required.");
+        $ustatus->error_at("email", "<0>Email address required");
         return null;
     }
 
     // check email
     if (!$acct || strcasecmp($cj->email, $acct->email)) {
         if ($acct && $acct->data("locked")) {
-            $ustatus->error_at("email", "<0>This account is locked, so you can’t change its email address.");
+            $ustatus->error_at("email", "<0>This account is locked, so you can’t change its email address");
             return null;
         } else if (($new_acct = $ustatus->conf->user_by_email($cj->email))) {
             if (!$acct) {
@@ -607,7 +607,7 @@ if (($prdj = $Me->session("profile_redirect"))) {
     foreach ($prdj as $k => $v) {
         if ($k === "warning_fields") {
             foreach ($v as $k) {
-                $UserStatus->warning_at($k, null);
+                $UserStatus->warning_at($k);
             }
         } else {
             $Qreq->$k = $v;
