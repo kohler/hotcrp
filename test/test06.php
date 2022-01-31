@@ -787,6 +787,42 @@ xassert($user_external->can_view_review_identity($paper17, $rrow17m));
 xassert($user_external->can_view_review_identity($paper17, $rrow17h));
 xassert($user_external->can_view_review_identity($paper17, $rrow17x));
 
+// check round_number(..., true) works
+xassert_eqq($Conf->setting_data("tag_rounds"), "R1 R2 R3");
+xassert_eqq($Conf->round_number("R1", false), 1);
+xassert_eqq($Conf->round_number("R1", true), 1);
+xassert_eqq($Conf->round_number("R5", false), null);
+xassert_eqq($Conf->round_number("R5", true), 4);
+xassert_eqq($Conf->setting_data("tag_rounds"), "R1 R2 R3 R5");
+
+// check the settings page works for round tags
+xassert_eqq($Conf->assignment_round(false), 0);
+xassert_eqq($Conf->assignment_round(true), 0);
+$sv = SettingValues::make_request($user_chair, [
+    "extrev_roundtag" => "R1"
+]);
+xassert($sv->execute());
+xassert_eqq($Conf->assignment_round(false), 0);
+xassert_eqq($Conf->assignment_round(true), 1);
+$sv = SettingValues::make_request($user_chair, [
+    "rev_roundtag" => "R3",
+    "extrev_roundtag" => "unnamed"
+]);
+xassert($sv->execute());
+xassert_eqq($Conf->assignment_round(false), 3);
+xassert_eqq($Conf->assignment_round(true), 0);
+$sv = SettingValues::make_request($user_chair, [
+    "extrev_roundtag" => "default"
+]);
+xassert($sv->execute());
+xassert_eqq($Conf->assignment_round(false), 3);
+xassert_eqq($Conf->assignment_round(true), 3);
+xassert_eqq($Conf->setting("extrev_roundtag"), null);
+$sv = SettingValues::make_request($user_chair, [
+    "rev_roundtag" => "unnamed"
+]);
+xassert($sv->execute());
+
 function save_round_settings($map) {
     global $Conf;
     $settings = [];
@@ -797,14 +833,6 @@ function save_round_settings($map) {
 }
 save_round_settings(["R1" => ["extrev_view" => 0]]);
 Contact::update_rights();
-
-// check round_number(..., true) works
-xassert_eqq($Conf->setting_data("tag_rounds"), "R1 R2 R3");
-xassert_eqq($Conf->round_number("R1", false), 1);
-xassert_eqq($Conf->round_number("R1", true), 1);
-xassert_eqq($Conf->round_number("R5", false), null);
-xassert_eqq($Conf->round_number("R5", true), 4);
-xassert_eqq($Conf->setting_data("tag_rounds"), "R1 R2 R3 R5");
 
 xassert($user_mgbaker->can_view_review($paper17, $rrow17m));
 xassert($user_mgbaker->can_view_review($paper17, $rrow17h));
