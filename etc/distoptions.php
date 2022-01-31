@@ -215,5 +215,3 @@ $Opt["smartScoreCompare"] = true;
 //                   paper format checker).
 //   banalLimit      Limit on number of parallel paper format checker
 //                   executions. Defaults to 8.
-//   zipCommand      Set to the path to the `zip` executable. Defaults to
-//                   `zip`.
