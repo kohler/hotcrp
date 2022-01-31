@@ -390,7 +390,7 @@
     {
         "name": "rev_roundtag", "group": "reviews",
         "title": "Assignment review round",
-        "type": "tagselect", "parser_class": "RoundSelector_SettingParser",
+        "type": "tagselect", "parser_class": "RoundSelector_SettingParser", "default": "",
         "require": "src/settings/s_reviews.php", "order": 1
     },
     {

@@ -822,6 +822,10 @@ $sv = SettingValues::make_request($user_chair, [
     "rev_roundtag" => "unnamed"
 ]);
 xassert($sv->execute());
+xassert_eqq($Conf->assignment_round(false), 0);
+xassert_eqq($Conf->assignment_round(true), 0);
+xassert_eqq($Conf->setting("rev_roundtag"), null);
+xassert_eqq($Conf->setting_data("rev_roundtag"), null);
 
 function save_round_settings($map) {
     global $Conf;

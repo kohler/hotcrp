@@ -302,7 +302,7 @@ class Reviews_SettingRenderer {
 class Round_SettingParser extends SettingParser {
     private $rev_round_changes = array();
 
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         assert($si->name === "tag_rounds");
         $this->rev_round_changes = [];
 
@@ -400,7 +400,7 @@ class Round_SettingParser extends SettingParser {
 }
 
 class RoundSelector_SettingParser extends SettingParser {
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         $name = trim($sv->reqstr($si->name));
         $lname = strtolower($name);
         if ($lname === "(new round)" || $lname === "n/a") {
@@ -420,7 +420,7 @@ class RoundSelector_SettingParser extends SettingParser {
 }
 
 class ReviewDeadline_SettingParser extends SettingParser {
-    function parse_req(SettingValues $sv, Si $si) {
+    function apply_req(SettingValues $sv, Si $si) {
         assert($sv->has_savedv("tag_rounds"));
         assert($si->split_name !== null);
 
