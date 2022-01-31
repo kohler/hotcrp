@@ -71,7 +71,7 @@
     {
         "name": "extrev_roundtag", "group": "reviews",
         "title": "External assignment review round",
-        "type": "tagselect", "parser_class": "RoundSelector_SettingParser",
+        "type": "tagselect", "parser_class": "RoundSelector_SettingParser", "default_value": "default",
         "require": "src/settings/s_reviews.php", "order": 1
     },
     {
