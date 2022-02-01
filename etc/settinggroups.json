@@ -200,8 +200,8 @@
         "render_function": "ReviewForm_SettingRenderer::render_description"
     },
     {
-        "name": "reviewfield/properties/options", "order": 50,
-        "render_function": "ReviewForm_SettingRenderer::render_options"
+        "name": "reviewfield/properties/choices", "order": 50,
+        "render_function": "ReviewForm_SettingRenderer::render_choices"
     },
     {
         "name": "reviewfield/properties/presence", "order": 100,

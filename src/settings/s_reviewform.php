@@ -42,7 +42,7 @@ class ReviewForm_SettingParser extends SettingParser {
             "required" => $f->required,
             "exists_if" => $exists_if,
             "presence" => $presence,
-            "option_class_prefix" => $f->option_class_prefix,
+            "scheme" => $f->scheme,
             "options" => [],
             "option_letter" => null
         ];
@@ -153,14 +153,6 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    private function _apply_req_colors(SettingValues $sv, Si $si) {
-        if (($pos = array_search($sv->reqstr($si->name), $si->values)) !== false
-            && $sv->reqstr("{$si->part0}{$si->part1}__colors_flipped")) {
-            $sv->set_req($si->name, $si->values[$pos ^ 1]);
-        }
-        return false;
-    }
-
     /** @param object $rfj */
     private function _fix_req_condition(SettingValues $sv, $rfj) {
         $q = "";
@@ -190,6 +182,7 @@ class ReviewForm_SettingParser extends SettingParser {
             if (!$sv->reqstr("rf__{$ctr}__delete")
                 && ($finfo = ReviewInfo::field_info($rfj->id))) {
                 $this->_fix_req_condition($sv, $rfj);
+                $rfj->order = $rfj->order ?? 1000000;
                 $nrfj[] = $rfj;
             }
         }
@@ -197,6 +190,7 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($sv->update("review_form", json_encode_db($this->_new_form))) {
             $sv->request_write_lock("PaperReview");
             $sv->request_store_value($si);
+            $sv->mark_invalidate_caches(["rf" => true]);
         }
         return true;
     }
@@ -219,8 +213,6 @@ class ReviewForm_SettingParser extends SettingParser {
             } else if ($si->part2 === "__presence") {
                 $si->values = array_keys(self::presence_options($sv->conf));
                 return false;
-            } else if ($si->part2 === "__colors") {
-                return $finfo->has_options && $this->_apply_req_colors($sv, $si);
             } else if ($si->part2 === "__name") {
                 return $this->_apply_req_name($sv, $si);
             }
@@ -405,7 +397,15 @@ class ReviewForm_SettingParser extends SettingParser {
 }
 
 class ReviewForm_SettingRenderer {
+    static function stash_description_caption() {
+        Ht::stash_html('<div id="settings-rf-caption-description" class="hidden">'
+            . '<p>Enter an HTML description for the review form.
+Include any guidance you’d like to provide for reviewers.
+Note that complex HTML will not appear on offline review forms.</p></div>', 'settings-rf-caption-description');
+    }
+
     static function render_description(SettingValues $sv) {
+        self::stash_description_caption();
         $sv->echo_textarea_group("rf__\$__description", "Description", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
@@ -413,7 +413,18 @@ class ReviewForm_SettingRenderer {
         ]);
     }
 
-    static function render_options(SettingValues $sv) {
+    static function stash_choices_caption() {
+        Ht::stash_html('<div id="settings-rf-caption-choices" class="hidden">'
+            . '<p>Enter one choice per line, numbered starting from 1 (higher numbers are better). For example:</p>
+<pre class="entryexample">1. Reject
+2. Weak reject
+3. Weak accept
+4. Accept</pre>
+<p>Or use consecutive capital letters (lower letters are better).</p></div>', 'settings-rf-caption-choices');
+    }
+
+    static function render_choices(SettingValues $sv) {
+        self::stash_choices_caption();
         $sv->echo_textarea_group("rf__\$__choices", "Choices", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
@@ -429,9 +440,9 @@ class ReviewForm_SettingRenderer {
 
     static function render_display(SettingValues $sv) {
         $sv->echo_select_group("rf__\$__colors", "Colors", [], [
-            "horizontal" => true, "group_class" => "is-property-options", "class" => "rf-colors"
+            "horizontal" => true, "group_class" => "is-property-options", "class" => "uich rf-colors",
+            "control_after" => '<span class="d-inline-block ml-2 rf-colors-example"></span>'
         ]);
-        echo Ht::hidden("rf__\$__colors_flipped", "", ["id" => "rf__\$__colors_flipped"]);
     }
 
     static function render_visibility(SettingValues $sv) {
@@ -479,18 +490,6 @@ class ReviewForm_SettingRenderer {
     }
 
     static function render(SettingValues $sv) {
-        Ht::stash_html('<div id="settings-rf-caption-description" class="hidden">'
-            . '<p>Enter an HTML description for the review form.
-Include any guidance you’d like to provide for reviewers.
-Note that complex HTML will not appear on offline review forms.</p></div>'
-            . '<div id="settings-rf-caption-options" class="hidden">'
-            . '<p>Enter one choice per line, numbered starting from 1 (higher numbers are better). For example:</p>
-<pre class="entryexample">1. Reject
-2. Weak reject
-3. Weak accept
-4. Accept</pre>
-<p>Or use consecutive capital letters (lower letters are better).</p></div>');
-
         echo Ht::hidden("has_review_form", 1);
         if (!$sv->conf->time_some_author_view_review()) {
             echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';

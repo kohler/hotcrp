@@ -4334,7 +4334,7 @@ tooltip.add_builder("rf-score", function (info) {
 });
 
 tooltip.add_builder("rf-description", function (info) {
-    var rv = $(this).closest(".rv");
+    var rv = $(this).closest(".rf");
     if (rv.length) {
         var fieldj = formj[rv.data("rf")];
         if (fieldj && (fieldj.description || fieldj.options)) {
@@ -4358,7 +4358,7 @@ tooltip.add_builder("rf-description", function (info) {
 });
 
 function score_header_tooltips($j) {
-    $j.find(".rv .revfn").attr("data-tooltip-info", "rf-description")
+    $j.find(".rf .revfn").attr("data-tooltip-info", "rf-description")
         .each(tooltip);
 }
 
@@ -4657,7 +4657,7 @@ return {
             f.uid = f.uid || i;
             f.name_html = escape_html(f.name);
             if (f.options)
-                f.score_info = make_score_info(f.options.length, f.option_letter, f.option_class_prefix);
+                f.score_info = make_score_info(f.options.length, f.option_letter, f.scheme || f.option_class_prefix);
             formj[f.uid] = f;
         }
         form_order = $.map(formj, function (v) { return v; });
@@ -9914,14 +9914,26 @@ $(function () {
 
 // score information
 var make_score_info = (function ($) {
-var sccolor = {}, info = {};
+var scheme_info = {
+    sv: [0, 9], svr: [1, 9, "sv"], blpu: [0, 9], publ: [1, 9, "blpu"],
+    orbu: [0, 9], buor: [1, 9, "orbu"], viridis: [0, 9], viridisr: [1, 9, "viridis"],
+    pkrd: [0, 9], rdpk: [1, 9, "pkrd"], catx: [2, 10], none: [2, 1]
+}, sccolor = {}, info = {};
 
-function make_fm(n) {
-    if (n <= 1)
-        return function (i) { return 1; };
-    else {
-        n = 1 / (n - 1);
-        return function (i) { return (+i - 1) * n; };
+function make_fm9(n, max, rev, categorical) {
+    if (n <= 1 || max <= 1) {
+        return function (i) { return rev ? max : 1; };
+    } else if (categorical) {
+        return function (i) {
+            var x = Math.round(+i - 1) % max;
+            return rev ? max - x : x + 1;
+        };
+    } else {
+        var f = (max - 1) / (n - 1);
+        return function (i) {
+            var x = Math.max(Math.min(Math.round((+i - 1) * f), max - 1), 0);
+            return rev ? max - x : x + 1;
+        };
     }
 }
 
@@ -9979,25 +9991,33 @@ function make_value_order(n, c) {
     return o;
 }
 
+function rgb_array_for(svx) {
+    if (!sccolor[svx]) {
+        var sp = document.createElement("span"), st, m;
+        sp.className = "svb hidden " + svx;
+        document.body.appendChild(sp);
+        sccolor[svx] = [0, 0, 0];
+        st = window.getComputedStyle(sp).color;
+        if (st && (m = /^\s*rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)[\s,)]/.exec(st)))
+            sccolor[svx] = [+m[1], +m[2], +m[3]];
+        document.body.removeChild(sp);
+    }
+    return sccolor[svx];
+}
+
 function make_info(n, c, sv) {
-    var fm = make_fm(n), unparse;
-    function fm9(val) {
-        return Math.max(Math.min(Math.floor(fm(val) * 8.99) + 1, 9), 1);
-    }
+    var unparse = c ? make_letter_unparser(n, c) : numeric_unparser,
+        sci = scheme_info[sv],
+        fm9 = make_fm9(n, sci[1], !sci[2] !== !c, (sci[0] & 2) !== 0),
+        svk = sci[2] || sv;
+    if (svk !== "sv")
+        svk = "sv-" + svk;
     function rgb_array(val) {
-        var svx = sv + fm9(val);
-        if (!sccolor[svx]) {
-            var j = $('<span class="svb hidden ' + svx + '"></span>').appendTo(document.body), m;
-            sccolor[svx] = [0, 0, 0];
-            if ((m = /^\s*rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)[\s,)]/.exec(j.css("color"))))
-                sccolor[svx] = [+m[1], +m[2], +m[3]];
-            j.remove();
-        }
-        return sccolor[svx];
+        return rgb_array_for(svk + fm9(val));
     }
-    unparse = c ? make_letter_unparser(n, c) : numeric_unparser;
     return {
-        fm: fm,
+        categorical: (sci[0] & 2) !== 0,
+        max: sci[1],
         rgb_array: rgb_array,
         rgb: function (val) {
             var x = rgb_array(val);
@@ -10006,30 +10026,35 @@ function make_info(n, c, sv) {
         unparse: unparse,
         unparse_html: function (val) {
             if (val >= 0.95 && val <= n + 0.05)
-                return '<span class="sv ' + sv + fm9(val) + '">' +
-                    unparse(val) + '</span>';
+                return '<span class="sv '.concat(svk, fm9(val), '">', unparse(val), '</span>');
             else
                 return numeric_unparser(val);
         },
         unparse_revnum: function (val) {
             if (val >= 1 && val <= n)
-                return '<strong class="rev_num sv ' + sv + fm9(val) + '">' +
-                    unparse(val) + '.</strong>';
+                return '<strong class="rev_num sv '.concat(svk, fm9(val), '">', unparse(val), '.</strong>');
             else
                 return '(???)';
         },
         parse: c ? make_letter_parser(n, c) : numeric_parser,
-        value_order: function () { return make_value_order(n, c); },
-        className: function (val) { return sv + fm9(val); }
+        value_order: function () {
+            return make_value_order(n, c);
+        },
+        className: function (val) {
+            return svk + fm9(val);
+        }
     };
 }
 
 return function (n, c, sv) {
     if (typeof c === "string")
         c = c.charCodeAt(0);
-    var name = n + "/" + (c || "") + "/" + (sv || "sv");
+    if (sv && sv.startsWith("sv-"))
+        sv = sv.substring(3);
+    sv = sv && scheme_info[sv] ? sv : "sv";
+    var name = "".concat(n, "/", c || "", "/", sv);
     if (!info[name])
-        info[name] = make_info(n, c || "", sv || "sv");
+        info[name] = make_info(n, c || "", sv);
     return info[name];
 };
 })(jQuery);

@@ -629,6 +629,82 @@ class UpdateSchema {
         return true;
     }
 
+    /** @param string $review_form_data
+     * @return ?string */
+    function v258_review_form_setting($review_form_data) {
+        $rfj = json_decode($review_form_data);
+        if (!is_array($rfj) && !is_object($rfj)) {
+            error_log("{$this->conf->dbname}: review_form not JSON");
+            return null;
+        }
+        if (is_object($rfj)) {
+            foreach ((array) $rfj as $key => $fj) {
+                if (!isset($fj->id))
+                    $fj->id = $key;
+            }
+            $rfj = array_values((array) $rfj);
+        }
+        foreach ($rfj as $fj) {
+            if (!($rfi = ReviewInfo::field_info($fj->id))) {
+                error_log("{$this->conf->dbname}: review_form.{$fj->id} not found");
+                return null;
+            }
+            $fj->id = $rfi->short_id;
+            if (!isset($fj->visibility) && isset($fj->view_score)) {
+                if ($fj->view_score === -2) {
+                    $fj->visibility = "secret";
+                } else if ($fj->view_score === -1) {
+                    $fj->visibility = "admin";
+                } else if ($fj->view_score === 0) {
+                    $fj->visibility = "pc";
+                } else if ($fj->view_score === 1 || $fj->view_score === "author") {
+                    $fj->visibility = "au";
+                } else if ($fj->view_score === "authordec") {
+                    $fj->visibility = "audec";
+                } else if (in_array($fj->view_score, ["secret", "admin", "pc", "audec", "au"])) {
+                    $fj->visibility = $fj->view_score;
+                } else {
+                    error_log("{$this->conf->dbname}: review_form.{$fj->id}.view_score not found");
+                    return null;
+                }
+            }
+            unset($fj->view_score);
+            if ($rfi->has_options && !isset($fj->scheme)) {
+                $sv = $fj->option_class_prefix ?? "sv";
+                if (str_starts_with($sv, "sv-")) {
+                    $sv = substr($sv, 3);
+                }
+                if (isset($fj->option_letter)) {
+                    $svs = ["sv", "svr", "blpu", "publ", "viridis", "viridisr"];
+                    if (($i = array_search($sv, $svs)) !== false) {
+                        $sv = $svs[$i ^ 1];
+                    } else {
+                        error_log("{$this->conf->dbname}: review_form.{$fj->id}.option_class_prefix not found");
+                    }
+                }
+                if ($sv !== "sv") {
+                    $fj->scheme = $sv;
+                }
+            }
+            unset($fj->option_class_prefix);
+            if ($rfi->has_options && !isset($fj->required) && isset($fj->allow_empty)) {
+                $fj->required = !$fj->allow_empty;
+            }
+            unset($fj->allow_empty);
+            if (!isset($fj->order) && isset($fj->position)) {
+                $fj->order = $fj->position;
+            }
+            unset($fj->position);
+            if (($fj->round_mask ?? null) === 0) {
+                unset($fj->round_mask);
+            }
+            if (($fj->options ?? null) === []) {
+                unset($fj->options);
+            }
+        }
+        return json_encode_db($rfj);
+    }
+
     function run() {
         $conf = $this->conf;
 
@@ -637,11 +713,13 @@ class UpdateSchema {
         if (function_exists("date_default_timezone_set") && $conf->opt("timezone")) {
             date_default_timezone_set($conf->opt("timezone"));
         }
+
+        // obtain lock on settings, reload them in case of concurrent operation
         while (($result = $conf->ql_ok("insert into Settings set name='__schema_lock', value=1 on duplicate key update value=1"))
                && $result->affected_rows == 0) {
             time_nanosleep(0, 200000000);
         }
-        $conf->update_schema_version(null);
+        $conf->__load_settings();
         $old_conf_g = Conf::$main;
         Conf::$main = $conf;
 
@@ -655,6 +733,15 @@ class UpdateSchema {
         }
         if (is_array($options_data) && $conf->sversion <= 247) {
             $options_data = $this->v248_options_setting($options_data);
+        }
+
+        // update `review_form`
+        if ($conf->sversion <= 257
+            && !$conf->setting("__review_form_v258")
+            && ($rfd = $conf->setting_data("review_form"))
+            && ($nrfd = $this->v258_review_form_setting($rfd)) !== null) {
+            $conf->save_setting("__review_form_v258", 1, $rfd);
+            $conf->save_setting("review_form", 1, $nrfd);
         }
 
         if ($conf->sversion === 6
@@ -2232,6 +2319,9 @@ class UpdateSchema {
         if ($conf->sversion === 256
             && $this->v257_update_response_settings()) {
             $conf->update_schema_version(257);
+        }
+        if ($conf->sversion === 257) {
+            $conf->update_schema_version(258);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

@@ -184,7 +184,7 @@ class Options_SettingRenderer {
             $this->render_one_option_view($this->io, $ctr);
         }
 
-        echo '<div id="sf__', $ctr, '__edit" class="fx2">',
+        echo '<div id="sf__', $ctr, '__edit" class="settings-sf-edit fx2">',
             Ht::hidden("sf__{$ctr}__id", $this->io ? $this->io->id : "new", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
             Ht::hidden("sf__{$ctr}__order", $ctr, ["class" => "settings-sf-order", "data-default-value" => $this->io ? $this->io->order : ""]);
         $sv->render_group("submissionfield/properties");
@@ -241,7 +241,7 @@ class Options_SettingRenderer {
                 $o = PaperOption::make($sv->conf, (object) $args);
                 $ov = $o->parse_json($this->pt->prow, $args["value"] ?? null)
                     ?? PaperValue::make($this->pt->prow, $o);
-                echo '<div class="settings-sf-view" data-name="', htmlspecialchars($uf->name), '" data-title="', htmlspecialchars($uf->title), '">';
+                echo '<div data-name="', htmlspecialchars($uf->name), '" data-title="', htmlspecialchars($uf->title), '">';
                 $o->echo_web_edit($this->pt, $ov, $ov);
                 echo '</div>';
             }
@@ -445,6 +445,7 @@ class Options_SettingParser extends SettingParser {
         if ($sv->update("options", empty($nsfj) ? "" : json_encode_db($nsfj))) {
             $sv->update("options_version", (int) $sv->conf->setting("options") + 1);
             $sv->request_store_value($si);
+            $sv->mark_invalidate_caches(["options" => true]);
             if (!empty($this->_delete_optionids) || !empty($this->_conversions)) {
                 $sv->request_write_lock("PaperOption");
             }

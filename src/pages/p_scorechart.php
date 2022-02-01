@@ -2,7 +2,7 @@
 // src/pages/scorechart.php -- HotCRP chart generator
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-// Generates a PNG image of a bar chat.
+// Generates a PNG image of a bar chart.
 // Arguments are passed in as v; s is graph style.
 // Don't forget to change the width and height calculations in
 // ReviewField::unparse_graph if you change the width and height here.

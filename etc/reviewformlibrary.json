@@ -40,7 +40,8 @@
         ],
         "required": true,
         "option_letter": "A",
-        "visibility": "au"
+        "visibility": "au",
+        "scheme": "svr"
     },
     {
         "selector": "Overall merit (1–5, percentage rankings)",
@@ -89,7 +90,8 @@
         ],
         "required": true,
         "option_letter": "X",
-        "visibility": "au"
+        "visibility": "au",
+        "scheme": "svr"
     },
     {
         "selector": "Paper summary",

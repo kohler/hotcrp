@@ -302,7 +302,7 @@ class Conf {
     // Initialization functions
     //
 
-    function load_settings() {
+    function __load_settings() {
         // load settings from database
         $this->settings = [];
         $this->settingTexts = [];
@@ -329,9 +329,12 @@ class Conf {
         }
         Dbl::free($result);
 
-        // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 257) {
+    }
+
+    function load_settings() {
+        $this->__load_settings();
+        if ($this->sversion < 258) {
             $old_nerrors = Dbl::$nerrors;
             (new UpdateSchema($this))->run();
             Dbl::$nerrors = $old_nerrors;

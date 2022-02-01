@@ -313,8 +313,11 @@ return function () {
 window.review_form_settings = (function () {
 var fieldorder = [], original, samples, stemplate, ttemplate,
     colors = ["sv", "Red to green", "svr", "Green to red",
-              "sv-blpu", "Blue to purple", "sv-publ", "Purple to blue",
-              "sv-viridis", "Purple to yellow", "sv-viridisr", "Yellow to purple"];
+              "blpu", "Blue to purple", "publ", "Purple to blue",
+              "rdpk", "Red to pink", "pkrd", "Pink to red",
+              "viridisr", "Yellow to purple", "viridis", "Purple to yellow",
+              "orbu", "Orange to blue", "buor", "Blue to orange",
+              "catx", "Category10", "none", "None"];
 
 function get_fid(elt) {
     return elt.id.replace(/^.*_/, "");
@@ -341,13 +344,6 @@ function options_to_text(fieldj) {
     return t.join("\n");
 }
 
-function option_class_prefix(fieldj) {
-    var sv = fieldj.option_class_prefix || "sv";
-    if (fieldj.option_letter)
-        sv = colors[(colors.indexOf(sv) || 0) ^ 2];
-    return sv;
-}
-
 function rf_order() {
     var i = 0, n, pos,
         form = document.getElementById("settingsform"),
@@ -368,6 +364,24 @@ function rf_fill_control(form, name, value, setdefault) {
     elt && setdefault && elt.setAttribute("data-default-value", value);
 }
 
+function rf_color() {
+    var c = this, sv = $(this).val(), i, scanal = make_score_info(9, false, sv);
+    hasClass(c.parentElement, "select") && (c = c.parentElement);
+    while (c && !hasClass(c, "rf-colors-example")) {
+        c = c.nextSibling;
+    }
+    for (i = 1; i <= scanal.max && c; ++i) {
+        if (c.children.length < i)
+            $(c).append('<svg width="0.5em" height="0.75em" viewBox="0 0 1 1"><path d="M0 0h1v1h-1z" fill="currentColor" /></svg>');
+        c.children[i - 1].setAttribute("class", scanal.className(i));
+    }
+    while (c && i <= c.children.length) {
+        c.removeChild(c.lastChild);
+    }
+}
+
+handle_ui.on("change.rf-colors", rf_color);
+
 function rf_fill(pos, fieldj, setdefault) {
     var form = document.getElementById("settingsform"),
         rfid = "rf__" + pos + "__",
@@ -378,8 +392,12 @@ function rf_fill(pos, fieldj, setdefault) {
     rf_fill_control(form, rfid + "visibility", fieldj.visibility || "pc", setdefault);
     rf_fill_control(form, rfid + "choices", options_to_text(fieldj), setdefault);
     rf_fill_control(form, rfid + "required", fieldj.required ? "1" : "0", setdefault);
-    rf_fill_control(form, rfid + "colors_flipped", fieldj.option_letter ? "1" : "", setdefault);
-    rf_fill_control(form, rfid + "colors", option_class_prefix(fieldj), setdefault);
+    var colors = form.elements[rfid + "colors"];
+    if (colors) {
+        fieldj.scheme = fieldj.scheme || "sv";
+        rf_fill_control(form, rfid + "colors", fieldj.scheme, setdefault);
+        rf_color.call(colors);
+    }
     var ec, ecs = fieldj.exists_if != null ? fieldj.exists_if : "";
     if (ecs === "" || ecs.toLowerCase() === "all") {
         ec = "all";
@@ -444,19 +462,10 @@ tooltip.add_builder("settings-sf", function (info) {
 });
 
 function option_value_html(fieldj, value) {
-    var t, n;
     if (!value || value < 0)
         return ["", "No entry"];
-    t = '<strong class="rev_num sv';
-    if (value <= fieldj.options.length) {
-        if (fieldj.options.length > 1)
-            n = Math.floor((value - 1) * 8 / (fieldj.options.length - 1) + 1.5);
-        else
-            n = 1;
-        t += " " + (fieldj.option_class_prefix || "sv") + n;
-    }
-    return [t + '">' + unparse_option(fieldj, value) + '.</strong>',
-            escape_html(fieldj.options[value - 1] || "Unknown")];
+    else
+        return [make_score_info(fieldj.options.length, fieldj.option_letter, fieldj.scheme).unparse_revnum(value), escape_html(fieldj.options[value - 1] || "Unknown")];
 }
 
 handle_ui.on("js-settings-field-unfold", function (event) {

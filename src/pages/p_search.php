@@ -485,7 +485,7 @@ class Search_Page {
         }
         if ($user->privChair
             && !isset($qreq->forceShow)
-            && preg_match('/\b(show:|)force\b/', $user->session("pldisplay"))) {
+            && preg_match('/\b(show:|)force\b/', $user->session("pldisplay") ?? "")) {
             $qreq->forceShow = 1;
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }

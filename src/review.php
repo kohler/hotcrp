@@ -69,16 +69,10 @@ class ReviewField implements JsonSerializable {
     public $display_space;
     /** @var int */
     public $view_score;
-    /** @var bool
-     * @deprecated */
-    public $displayed = false;
     /** @var ?int */
     public $order;
-    /** @var ?int
-     * @deprecated */
-    public $display_order;
     /** @var string */
-    public $option_class_prefix = "sv";
+    public $scheme = "sv";
     /** @var int */
     public $round_mask = 0;
     /** @var ?string */
@@ -111,6 +105,17 @@ class ReviewField implements JsonSerializable {
         VIEWSCORE_AUTHOR => "au"
     ];
 
+    // colors
+    /** @var array<string,list> */
+    static public $scheme_info = [
+        "sv" => [0, 9, "svr"], "svr" => [1, 9, "sv"],
+        "blpu" => [0, 9, "publ"], "publ" => [1, 9, "blpu"],
+        "rdpk" => [1, 9, "pkrd"], "pkrd" => [0, 9, "rdpk"],
+        "viridisr" => [1, 9, "viridis"], "viridis" => [0, 9, "viridisr"],
+        "orbu" => [0, 9, "buor"], "buor" => [1, 9, "orbu"],
+        "catx" => [2, 10, null], "none" => [2, 1, null]
+    ];
+
     function __construct(Conf $conf, ReviewFieldInfo $finfo) {
         $this->id = $finfo->id;
         $this->short_id = $finfo->short_id;
@@ -137,7 +142,7 @@ class ReviewField implements JsonSerializable {
             $this->display_space = 3;
         }
         $vis = $j->visibility ?? null;
-        if ($vis === null) {
+        if ($vis === null /* XXX backward compat */) {
             $vis = $j->view_score ?? null;
             if (is_int($vis)) {
                 $vis = self::$view_score_upgrade_map[$vis];
@@ -147,15 +152,10 @@ class ReviewField implements JsonSerializable {
         if (is_string($vis) && isset(self::$view_score_map[$vis])) {
             $this->view_score = self::$view_score_map[$vis];
         }
-        if (($j->order ?? $j->position ?? null) > 0) {
-            $this->order = $j->order ?? $j->position;
-        } else {
-            $this->order = null;
+        $this->order = $j->order ?? $j->position /* XXX */ ?? null;
+        if ($this->order !== null && $this->order < 0) {
+            $this->order = 0;
         }
-        /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $this->display_order = $this->order;
-        /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $this->displayed = $this->order > 0;
         $this->round_mask = $j->round_mask ?? 0;
         if ($this->exists_if !== ($j->exists_if ?? null)) {
             $this->exists_if = $j->exists_if ?? null;
@@ -182,12 +182,21 @@ class ReviewField implements JsonSerializable {
                     $this->options[$i + 1] = $n;
                 }
             }
-            if (($p = $j->option_class_prefix ?? null)) {
-                $this->option_class_prefix = $p;
+            if (isset($j->scheme)) {
+                $this->scheme = $j->scheme;
+            } else if (isset($j->option_class_prefix) /* XXX backward compat */) {
+                $p = $j->option_class_prefix;
+                if (str_starts_with($p, "sv-")) {
+                    $p = substr($p, 3);
+                }
+                if ($this->option_letter && isset(self::$scheme_info[$p])) {
+                    $p = self::$scheme_info[$p][2] ?? $p;
+                }
+                $this->scheme = $p;
             }
             if (isset($j->required)) {
                 $this->required = !!$j->required;
-            } else if (isset($j->allow_empty)) {
+            } else if (isset($j->allow_empty) /* XXX backward compat */) {
                 $this->required = !$j->allow_empty;
             } else {
                 $this->required = true;
@@ -251,8 +260,8 @@ class ReviewField implements JsonSerializable {
                 $j->options = array_reverse($j->options);
                 $j->option_letter = chr($this->option_letter - count($j->options));
             }
-            if ($this->option_class_prefix !== "sv") {
-                $j->option_class_prefix = $this->option_class_prefix;
+            if ($this->scheme !== "sv") {
+                $j->scheme = $this->scheme;
             }
             $j->required = $this->required;
         } else if ($this->required) {
@@ -379,12 +388,25 @@ class ReviewField implements JsonSerializable {
     }
 
     function value_class($value) {
-        if (count($this->options) > 1) {
-            $n = (int) (($value - 1) * 8.0 / (count($this->options) - 1) + 1.5);
+        $info = self::$scheme_info[$this->scheme];
+        if (count($this->options) <= 1) {
+            $n = 0;
+        } else if ($info[0] & 2) {
+            $n = (int) round($value - 1) % $info[1];
         } else {
-            $n = 1;
+            $n = (int) round(($value - 1) * ($info[1] - 1) / (count($this->options) - 1));
         }
-        return "sv " . $this->option_class_prefix . $n;
+        $sclass = $info[0] & 1 ? $info[2] : $this->scheme;
+        if (!($info[0] & 1) !== !$this->option_letter) {
+            $n = $info[1] - $n;
+        } else {
+            $n += 1;
+        }
+        if ($sclass === "sv") {
+            return "sv sv{$n}";
+        } else {
+            return "sv sv-{$sclass}{$n}";
+        }
     }
 
     /** @param int|float|string $value
@@ -461,8 +483,8 @@ class ReviewField implements JsonSerializable {
         if ($this->option_letter) {
             $args .= "&amp;c=" . chr($this->option_letter - 1);
         }
-        if ($this->option_class_prefix !== "sv") {
-            $args .= "&amp;sv=" . urlencode($this->option_class_prefix);
+        if ($this->scheme !== "sv") {
+            $args .= "&amp;sv=" . urlencode($this->scheme);
         }
 
         if ($style == 1) {
@@ -637,14 +659,7 @@ class ReviewForm implements JsonSerializable {
 
         // parse JSON
         if (!$rfj) {
-            $rfj = json_decode('{
-"overAllMerit":{"name":"Overall merit","order":1,"visibility":"au",
-  "options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},
-"reviewerQualification":{"name":"Reviewer expertise","order":2,"visibility":"au",
-  "options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},
-"t01":{"name":"Paper summary","order":3,"visibility":"au"},
-"t02":{"name":"Comments to authors","order":4,"visibility":"au"},
-"t03":{"name":"Comments to PC","order":5,"visibility":"pc"}}');
+            $rfj = json_decode('[{"id":"s01","name":"Overall merit","order":1,"visibility":"au","options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},{"id":"s02","name":"Reviewer expertise","order":2,"visibility":"au","options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},{"id":"t01","name":"Paper summary","order":3,"visibility":"au"},{"id":"t02","name":"Comments to authors","order":4,"visibility":"au"},{"id":"t03","name":"Comments to PC","order":5,"visibility":"pc"}]');
         }
 
         foreach ($rfj as $fid => $j) {

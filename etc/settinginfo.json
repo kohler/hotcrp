@@ -469,8 +469,8 @@
     {
         "name_pattern": "rf__$__colors", "group": "reviewform",
         "title": "Review field colors", "title_pattern": "‘${sv rf__$__name}’ colors",
-        "type": "radio", "values": ["sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr"],
-        "storage": "cmp.option_class_prefix", "parser_class": "ReviewForm_SettingParser"
+        "type": "radio", "values": ["sv", "svr", "blpu", "publ", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "catx", "none"],
+        "storage": "cmp.scheme"
     },
     {
         "name_pattern": "rf__$__order", "group": "reviewform",
