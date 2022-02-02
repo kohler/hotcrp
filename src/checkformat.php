@@ -62,6 +62,35 @@ class CheckFormat extends MessageSet {
         $this->error_at("error", $what);
     }
 
+    /** @param string $cmd
+     * @param string $dir
+     * @param array<string,string> $env
+     * @return array{int,string,string} */
+    static function run_command_safely($cmd, $dir, $env) {
+        $descriptors = [["file", "/dev/null", "r"], ["pipe", "w"], ["pipe", "w"]];
+        $pipes = null;
+        $proc = proc_open($cmd, $descriptors, $pipes, $dir, $env);
+        stream_set_blocking($pipes[1], false);
+        stream_set_blocking($pipes[2], false);
+        $stdout = $stderr = "";
+        while (!feof($pipes[1]) || !feof($pipes[2])) {
+            $x = fread($pipes[1], 32768);
+            $y = fread($pipes[2], 32768);
+            $stdout .= $x;
+            $stderr .= $y;
+            if ($x === false || $y === false) {
+                break;
+            }
+            $r = [$pipes[1], $pipes[2]];
+            $w = $e = [];
+            stream_select($r, $w, $e, 5);
+        }
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $status = proc_close($proc);
+        return [$status, $stdout, $stderr];
+    }
+
     function run_banal($filename) {
         $env = ["PATH" => getenv("PATH")];
         if (($pdftohtml = $this->conf->opt("pdftohtml"))) {
@@ -72,16 +101,9 @@ class CheckFormat extends MessageSet {
             $banal_run .= self::$banal_args . " ";
         }
         $banal_run .= escapeshellarg($filename);
-        $pipes = null;
         $tstart = microtime(true);
-        $banal_proc = proc_open($banal_run, [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes, SiteLoader::$root, $env);
-        // read stderr first -- if there are warnings, we must or banal might
-        // block forever!
-        $this->banal_stderr = stream_get_contents($pipes[2]);
-        $this->banal_stdout = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        $this->banal_status = proc_close($banal_proc);
+        list($this->banal_status, $this->banal_stdout, $this->banal_stderr) =
+            self::run_command_safely($banal_run, SiteLoader::$root, $env);
         ++self::$runcount;
         $banal_time = microtime(true) - $tstart;
         self::$runtime += $banal_time;
@@ -448,7 +470,7 @@ class CheckFormat extends MessageSet {
     private function truncate_banal_json($bj, FormatSpec $spec) {
         $bj = clone $bj;
         $bj->npages = count($bj->pages);
-        $bj->pages = array_slice($bj->pages, 0, 40);
+        $bj->pages = array_slice($bj->pages, 0, 50);
         $bj->cfmsg = [];
         foreach ($this->message_list() as $mx) {
             $bj->cfmsg[] = [$mx->field, $mx->message, $mx->status];
