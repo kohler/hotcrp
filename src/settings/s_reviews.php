@@ -449,7 +449,6 @@ class ReviewDeadline_SettingParser extends SettingParser {
 
         if (($v = $sv->base_parse_req($si)) !== null
             && $rnum !== false) {
-            error_log("parse {$si->name} => {$v}");
             $sv->save("{$si->part0}{$rnum}", $v);
             if ($v > 0 && str_ends_with($si->part0, "hard_")) {
                 $sv->check_date_before(substr($si->part0, 0, -5) . "soft_{$rnum}", $si->name, true);
