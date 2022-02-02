@@ -67,6 +67,7 @@ class ReviewInfo implements JsonSerializable {
     public $sfields;
     /** @var ?string */
     private $data;
+    /** @var ?object */
     private $_data;
 
     // scores
@@ -148,20 +149,23 @@ class ReviewInfo implements JsonSerializable {
     const RS_ADOPTED = 4;
     const RS_COMPLETED = 5;
 
-    /** @var array<non-empty-string,non-empty-string> */
+    /** @var array<non-empty-string,non-empty-string>
+     * @readonly */
     static public $text_field_map = [
         "paperSummary" => "t01", "commentsToAuthor" => "t02",
         "commentsToPC" => "t03", "commentsToAddress" => "t04",
         "weaknessOfPaper" => "t05", "strengthOfPaper" => "t06",
         "textField7" => "t07", "textField8" => "t08"
     ];
-    /** @var list<?non-empty-string> */
+    /** @var list<?non-empty-string>
+     * @readonly */
     static private $new_text_fields = [
         null, "paperSummary", "commentsToAuthor", "commentsToPC",
         "commentsToAddress", "weaknessOfPaper", "strengthOfPaper",
         "textField7", "textField8"
     ];
-    /** @var array<non-empty-string,non-empty-string> */
+    /** @var array<non-empty-string,non-empty-string>
+     * @readonly */
     static private $score_field_map = [
         "overAllMerit" => "s01", "reviewerQualification" => "s02",
         "novelty" => "s03", "technicalMerit" => "s04",
@@ -170,7 +174,8 @@ class ReviewInfo implements JsonSerializable {
         "potential" => "s10", "fixability" => "s11"
     ];
     // see also Signature properties in PaperInfo
-    /** @var list<?non-empty-string> */
+    /** @var list<?non-empty-string>
+     * @readonly */
     static private $new_score_fields = [
         null, "overAllMerit", "reviewerQualification", "novelty",
         "technicalMerit", "interestToCommunity", "longevity", "grammar",
@@ -371,17 +376,6 @@ class ReviewInfo implements JsonSerializable {
 
         if ($this->roles !== null) {
             $this->roles = (int) $this->roles;
-        }
-    }
-
-    function upgrade_sversion() {
-        if ($this->conf->sversion < 175) {
-            foreach (self::$text_field_map as $kmain => $kjson) {
-                if (property_exists($this, $kmain) && !isset($this->$kjson)) {
-                    $this->$kjson = $this->$kmain;
-                    unset($this->$kmain);
-                }
-            }
         }
     }
 

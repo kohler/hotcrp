@@ -224,10 +224,11 @@ class UpdateSchema {
     }
 
     private function v111_transfer_country() {
-        $result = $this->conf->ql("select * from ContactInfo where `data` is not null and `data`!='{}'");
-        while (($c = Contact::fetch($result, $this->conf))) {
-            if (($country = $c->data("country"))) {
-                $this->conf->ql("update ContactInfo set country=? where contactId=?", $country, $c->contactId);
+        $result = $this->conf->ql("select contactId, data from ContactInfo where `data` is not null and `data`!='{}'");
+        while (($x = $result->fetch_object())) {
+            $d = json_decode($x->data);
+            if ($d && isset($d->country) && $d->country !== "") {
+                $this->conf->ql("update ContactInfo set country=? where contactId=?", $d->country, $x->contactId);
             }
         }
         return true;
@@ -293,35 +294,25 @@ class UpdateSchema {
     private function v175_paper_review_null_main_fields() {
         $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
         $result = $this->conf->ql("select * from PaperReview");
-        while (($row = ReviewInfo::fetch($result, null, $this->conf))) {
-            $row->upgrade_sversion();
-            $data = $row->unparse_tfields();
-            if ($data !== null) {
-                $cleanf("update PaperReview set `tfields`=? where paperId=? and reviewId=?", [$data, $row->paperId, $row->reviewId]);
+        while (($row = $result->fetch_assoc())) {
+            $tfields = json_decode($row["tfields"] ?? "{}", true);
+            foreach ($row as $k => $v) {
+                if ($v !== null) {
+                    $k = ReviewInfo::$text_field_map[$k] ?? $k;
+                    if (strlen($k) === 3
+                        && $k[0] === "t"
+                        && ctype_digit(substr($k, 1))
+                        && !isset($tfields[$k])) {
+                        $tfields[$k] = $v;
+                    }
+                }
+            }
+            if (!empty($tfields)) {
+                $cleanf("update PaperReview set `tfields`=? where paperId=? and reviewId=?", [json_encode_db($tfields), $row["paperId"], $row["reviewId"]]);
             }
         }
         Dbl::free($result);
         $cleanf(true);
-
-        $rid = [];
-        $result = $this->conf->ql("select * from PaperReview");
-        while (($rrow = ReviewInfo::fetch($result, null, $this->conf))) {
-            $tfields = $rrow->tfields ? json_decode($rrow->tfields, true) : [];
-            $any = false;
-            foreach (ReviewInfo::$text_field_map as $kmain => $kjson) {
-                $mainval = (string) ($rrow->$kmain ?? "");
-                $jsonval = (string) ($tfields[$kjson] ?? "");
-                if ($mainval !== $jsonval) {
-                    error_log("{$this->conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: {$kmain} ["
-                        . simplify_whitespace(UnicodeHelper::utf8_abbreviate($mainval === "" ? "EMPTY" : $mainval, 20))
-                        . "] != tf/{$kjson} ["
-                        . simplify_whitespace(UnicodeHelper::utf8_abbreviate($jsonval === "" ? "EMPTY" : $jsonval, 20))
-                        . "]");
-                    return false;
-                }
-            }
-        }
-        Dbl::free($result);
         $kf = array_map(function ($k) { return "$k=null"; }, array_keys(ReviewInfo::$text_field_map));
         return $this->conf->ql_ok("update PaperReview set " . join(", ", $kf));
     }
@@ -333,7 +324,7 @@ class UpdateSchema {
             return false;
         }
         $result = $this->conf->ql("select * from PaperReview where " . join(" or ", $kf));
-        $rrow = ReviewInfo::fetch($result, null, $this->conf);
+        $rrow = $result->fetch_object();
         Dbl::free($result);
         if ($rrow) {
             error_log("{$this->conf->dbname}: #{$rrow->paperId}/{$rrow->reviewId}: nonnull main field cancels schema upgrade");
@@ -372,6 +363,7 @@ class UpdateSchema {
         $result = $this->conf->ql("select * from PaperStorage where sha1='' and paper is not null and paper!='' and paperStorageId>1");
         $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
         while (($doc = DocumentInfo::fetch($result, $this->conf))) {
+            /* XXX relies on DocumentInfo understanding v191 schema */
             $hash = $doc->content_binary_hash();
             $cleanf("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", [$hash, $doc->paperId, $doc->paperStorageId]);
             if ($doc->documentType == 0 /* DTYPE_SUBMISSION */) {

@@ -629,7 +629,8 @@ class ReviewForm implements JsonSerializable {
     public $conf;
     /** @var array<string,ReviewField> */
     public $fmap;      // all fields, whether or not displayed, key id
-    /** @var array<string,ReviewField> */
+    /** @var array<string,ReviewField>
+     * @readonly */
     public $forder;    // displayed fields in display order, key id
     /** @var array<string,ReviewField> */
     private $by_short_id;
