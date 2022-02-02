@@ -1561,6 +1561,7 @@ class SearchQueryInfo {
     public $depth = 0;
     private $_has_my_review = false;
     private $_has_review_signatures = false;
+    /** @var list<ReviewField> */
     private $_review_scores;
 
     function __construct(PaperSearch $srch) {
@@ -1622,12 +1623,15 @@ class SearchQueryInfo {
             }
         }
     }
-    function add_score_columns($fid) {
+    /** @param ReviewField $f */
+    function add_score_column($f) {
+        if (is_string($f)) {
+            error_log("add_score_column error: " . debug_string_backtrace());
+            $f = $this->srch->conf->review_field($f);
+        }
         $this->add_review_signature_columns();
-        if (($f = $this->srch->conf->review_field($fid))
-            && $f->main_storage
-            && (!$this->_review_scores || !in_array($fid, $this->_review_scores))) {
-            $this->_review_scores[] = $fid;
+        if ($f && $f->main_storage && !in_array($f, $this->_review_scores ?? [])) {
+            $this->_review_scores[] = $f;
         }
     }
     function add_review_word_count_columns() {
@@ -2607,7 +2611,7 @@ class PaperSearch extends MessageSet {
             $sqi->add_review_signature_columns();
         }
         foreach ($sqi->query_options["scores"] ?? [] as $f) {
-            $sqi->add_score_columns($f);
+            $sqi->add_score_column($f);
         }
         if ($sqi->query_options["reviewWordCounts"] ?? false) {
             $sqi->add_review_word_count_columns();

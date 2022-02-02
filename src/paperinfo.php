@@ -536,8 +536,10 @@ class PaperInfo {
     private $_review_array;
     /** @var int */
     private $_review_array_version = 0;
-    /** @var array<string,bool> */
-    private $_reviews_have = [];
+    /** @var int */
+    private $_reviews_flags = 0;
+    /** @var ?list<?bool> */
+    private $_reviews_have;
     /** @var ?list<ReviewInfo> */
     private $_full_review;
     /** @var ?string */
@@ -566,6 +568,11 @@ class PaperInfo {
     private $_allow_absent;
     /** @var ?int */
     private $_pause_mark_inactive_documents;
+
+    const REVIEW_HAS_FULL = 1;
+    const REVIEW_HAS_NAMES = 2;
+    const REVIEW_HAS_LASTLOGIN = 4;
+    const REVIEW_HAS_WORDCOUNT = 8;
 
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
     static private $next_uid = 0;
@@ -706,8 +713,9 @@ class PaperInfo {
     private function check_rights_version() {
         if ($this->_rights_version !== Contact::$rights_version) {
             if ($this->_rights_version) {
-                $this->_contact_info = $this->_reviews_have = [];
-                $this->reviewSignatures = $this->_review_array = $this->allConflictType = $this->_conflict_array = null;
+                $this->_reviews_flags = 0;
+                $this->_contact_info = [];
+                $this->reviewSignatures = $this->_review_array = $this->allConflictType = $this->_conflict_array = $this->_reviews_have = null;
                 ++$this->_review_array_version;
             }
             $this->_rights_version = Contact::$rights_version;
@@ -2044,7 +2052,9 @@ class PaperInfo {
         if ($this->reviewSignatures !== null
             && $this->_review_array === null
             && !$always) {
-            $this->_review_array = $this->_reviews_have = [];
+            $this->_review_array = [];
+            $this->_reviews_flags = 0;
+            $this->_reviews_have = null;
             if ($this->reviewSignatures !== "") {
                 foreach (explode(",", $this->reviewSignatures) as $rs) {
                     $rrow = ReviewInfo::make_signature($this, $rs);
@@ -2059,11 +2069,12 @@ class PaperInfo {
         } else {
             $row_set = new PaperInfoSet($this);
         }
-        $had = [];
+        $had = 0;
         foreach ($row_set as $prow) {
             $prow->_review_array = [];
-            $had += $prow->_reviews_have;
-            $prow->_reviews_have = ["full" => true];
+            $prow->_reviews_have = null;
+            $had |= $prow->_reviews_flags;
+            $prow->_reviews_flags = self::REVIEW_HAS_FULL;
         }
 
         $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
@@ -2073,7 +2084,7 @@ class PaperInfo {
         Dbl::free($result);
 
         $this->ensure_reviewer_names_set($row_set);
-        if (isset($had["lastLogin"])) {
+        if ($had & self::REVIEW_HAS_LASTLOGIN) {
             $this->ensure_reviewer_last_login_set($row_set);
         }
     }
@@ -2264,7 +2275,7 @@ class PaperInfo {
     /** @return ?ReviewInfo */
     function full_review_by_id($id) {
         if ($this->_full_review_key === null
-            && !isset($this->_reviews_have["full"])) {
+            && !($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
             $this->_full_review_key = "r$id";
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId=? and reviewId=?", $this->paperId, $id);
             $rrow = ReviewInfo::fetch($result, $this, $this->conf);
@@ -2284,7 +2295,7 @@ class PaperInfo {
     function full_reviews_by_user($contact) {
         $cid = self::contact_to_cid($contact);
         if ($this->_full_review_key === null
-            && !isset($this->_reviews_have["full"])) {
+            && !($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
             $row_set = $this->_row_set ?? new PaperInfoSet($this);
             foreach ($row_set as $prow) {
                 $prow->_full_review = [];
@@ -2307,7 +2318,7 @@ class PaperInfo {
     /** @return ?ReviewInfo */
     function full_review_by_ordinal($ordinal) {
         if ($this->_full_review_key === null
-            && !isset($this->_reviews_have["full"])) {
+            && !($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
             $this->_full_review_key = "o$ordinal";
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->query_ratings() . " ratingSignature from PaperReview where paperId=? and reviewOrdinal=?", $this->paperId, $ordinal);
             $rrow = ReviewInfo::fetch($result, $this, $this->conf);
@@ -2397,7 +2408,7 @@ class PaperInfo {
     }
 
     function ensure_full_reviews() {
-        if (!isset($this->_reviews_have["full"])) {
+        if (!($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
             $this->load_reviews(true);
         }
     }
@@ -2409,7 +2420,7 @@ class PaperInfo {
             }
         }
         foreach ($row_set as $prow) {
-            $prow->_reviews_have["names"] = true;
+            $prow->_reviews_flags |= self::REVIEW_HAS_NAMES;
             $names = [];
             foreach ($prow->all_reviews() as $rrow) {
                 if (($u = $this->conf->cached_user_by_id($rrow->contactId))) {
@@ -2422,7 +2433,7 @@ class PaperInfo {
     function ensure_reviewer_names() {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
-            && !isset($this->_reviews_have["names"])) {
+            && !($this->_reviews_flags & self::REVIEW_HAS_NAMES)) {
             $this->ensure_reviewer_names_set($this->_row_set ?? new PaperInfoSet($this));
         }
     }
@@ -2430,7 +2441,7 @@ class PaperInfo {
     private function ensure_reviewer_last_login_set($row_set) {
         $users = [];
         foreach ($row_set as $prow) {
-            $prow->_reviews_have["lastLogin"] = true;
+            $prow->_reviews_flags |= self::REVIEW_HAS_LASTLOGIN;
             foreach ($prow->all_reviews() as $rrow) {
                 $users[$rrow->contactId] = true;
             }
@@ -2449,11 +2460,12 @@ class PaperInfo {
     function ensure_reviewer_last_login() {
         $this->ensure_reviews();
         if (!empty($this->_review_array)
-            && !isset($this->_reviews_have["lastLogin"])) {
+            && !($this->_reviews_flags & self::REVIEW_HAS_LASTLOGIN)) {
             $this->ensure_reviewer_last_login_set($this->_row_set ?? new PaperInfoSet($this));
         }
     }
 
+    /** @param string $fid */
     private function load_review_fields($fid, $maybe_null = false) {
         $k = $fid . "Signature";
         $row_set = $this->_row_set ?? new PaperInfoSet($this);
@@ -2469,33 +2481,49 @@ class PaperInfo {
         Dbl::free($result);
     }
 
-    /** @param string|ReviewField $field */
-    function ensure_review_score($field) {
-        $fid = is_object($field) ? $field->id : $field;
-        if (!isset($this->_reviews_have[$fid])
-            && !isset($this->_reviews_have["full"])) {
-            $rfi = is_object($field) ? $field : ReviewInfo::field_info($fid);
-            if (!$rfi) {
-                $this->_reviews_have[$fid] = false;
-            } else if (!$rfi->main_storage) {
+    /** @param int $order */
+    function ensure_review_field_order($order) {
+        if (!($this->_reviews_flags & self::REVIEW_HAS_FULL)
+            && ($this->_reviews_have[$order] ?? null) === null) {
+            $rform = $this->conf->review_form();
+            if ($this->_reviews_have === null) {
+                $this->_reviews_have = $rform->order_array(null);
+            }
+            $f = $rform->field_by_order($order);
+            if (!$f) {
+                $this->_reviews_have[$order] = false;
+            } else if (!$f->main_storage) {
                 $this->ensure_full_reviews();
             } else {
-                $this->_reviews_have[$fid] = true;
-                $k = $rfi->main_storage . "Signature";
+                $this->_reviews_have[$order] = true;
+                $k = $f->main_storage . "Signature";
                 if ($this->$k === null) {
-                    $this->load_review_fields($rfi->main_storage);
+                    $this->load_review_fields($f->main_storage);
                 }
                 $x = explode(",", $this->$k);
                 foreach ($this->reviews_as_list() as $i => $rrow) {
-                    $rrow->$fid = (int) $x[$i];
+                    $rrow->{$f->id} = (int) $x[$i];
                 }
             }
         }
     }
 
-    /** @param string $fid */
-    function _mark_has_score($fid) {
-        $this->_reviews_have[$fid] = true;
+    /** @param string|ReviewField $field */
+    function ensure_review_score($field) {
+        if (!($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
+            $f = is_string($field) ? $this->conf->review_field($field) : $field;
+            if ($f && $f->order) {
+                $this->ensure_review_field_order($f->order);
+            }
+        }
+    }
+
+    /** @param int $order */
+    function _mark_has_review_field_order($order) {
+        if ($this->_reviews_have === null) {
+            $this->_reviews_have = $this->conf->review_form()->order_array(null);
+        }
+        $this->_reviews_have[$order] = true;
     }
 
     private function _update_review_word_counts($rids) {
@@ -2519,8 +2547,8 @@ class PaperInfo {
     }
 
     function ensure_review_word_counts() {
-        if (!isset($this->_reviews_have["reviewWordCount"])) {
-            $this->_reviews_have["reviewWordCount"] = true;
+        if (!($this->_reviews_flags & self::REVIEW_HAS_WORDCOUNT)) {
+            $this->_reviews_flags |= self::REVIEW_HAS_WORDCOUNT;
             if ($this->reviewWordCountSignature === null) {
                 $this->load_review_fields("reviewWordCount", true);
             }

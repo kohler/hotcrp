@@ -414,12 +414,10 @@ class ReviewField implements JsonSerializable {
      * @param ?string $real_format
      * @return ?string */
     function unparse_value($value, $flags = 0, $real_format = null) {
-        if (is_object($value)) {
-            $value = $value->{$this->id} ?? null;
-        }
+        assert(!is_object($value));
         if (!$this->has_options) {
             if ($flags & self::VALUE_TRIM) {
-                $value = rtrim($value);
+                $value = rtrim($value ?? "");
             }
             return $value;
         }
@@ -622,30 +620,42 @@ class ReviewField implements JsonSerializable {
 
 
 class ReviewForm implements JsonSerializable {
-    const NOTIFICATION_DELAY = 10800;
-
     /** @var Conf
      * @readonly */
     public $conf;
-    /** @var array<string,ReviewField> */
-    public $fmap;      // all fields, whether or not displayed, key id
     /** @var array<string,ReviewField>
      * @readonly */
     public $forder;    // displayed fields in display order, key id
+    /** @var array<string,ReviewField>
+     * @readonly */
+    public $fmap;      // all fields, whether or not displayed, key id
     /** @var array<string,ReviewField> */
-    private $by_short_id;
+    private $_by_short_id;
+    /** @var int
+     * @readonly */
+    private $_order_bound; // more than the max `ReviewField::$order`
 
+    const NOTIFICATION_DELAY = 10800;
+
+    /** @var list<string>
+     * @readonly */
     static public $revtype_names = [
         "None", "External", "PC", "Secondary", "Primary", "Meta"
     ];
+    /** @var list<string>
+     * @readonly */
     static public $revtype_names_lc = [
         "none", "external", "PC", "secondary", "primary", "meta"
     ];
+    /** @var array<int,string>
+     * @readonly */
     static public $revtype_names_full = [
         -3 => "Refused", -2 => "Author", -1 => "Conflict",
         0 => "No review", 1 => "External review", 2 => "PC review",
         3 => "Secondary review", 4 => "Primary review", 5 => "Metareview"
     ];
+    /** @var array<int,string>
+     * @readonly */
     static public $revtype_icon_text = [
         -3 => "−" /* &minus; */, -2 => "A", -1 => "C",
         1 => "E", 2 => "P", 3 => "2", 4 => "1", 5 => "M"
@@ -682,32 +692,45 @@ class ReviewForm implements JsonSerializable {
                 $f->order = ++$do;
                 $this->forder[$f->id] = $f;
                 if ($f->id !== $f->short_id) {
-                    $this->by_short_id[$f->short_id] = $f;
+                    $this->_by_short_id[$f->short_id] = $f;
                 }
             }
         }
+        $this->_order_bound = $do + 1;
+    }
+
+    /** @template T
+     * @param T $value
+     * @return list<T> */
+    function order_array($value) {
+        return array_fill(0, $this->_order_bound, $value);
     }
 
     /** @param string $fid
      * @return ?ReviewField */
     function field($fid) {
-        return $this->forder[$fid] ?? $this->by_short_id[$fid] ?? null;
+        return $this->forder[$fid] ?? $this->_by_short_id[$fid] ?? null;
+    }
+    /** @param int $order
+     * @return ?ReviewField */
+    function field_by_order($order) {
+        return (array_values($this->forder))[$order - 1] ?? null;
     }
     /** @return array<string,ReviewField> */
     function all_fields() {
         return $this->forder;
     }
     /** @param int $bound
-     * @return array<string,ReviewField> */
+     * @return list<ReviewField> */
     function bound_viewable_fields($bound) {
         $fs = [];
-        foreach ($this->forder as $fid => $f) {
+        foreach ($this->forder as $f) {
             if ($f->view_score > $bound)
-                $fs[$fid] = $f;
+                $fs[] = $f;
         }
         return $fs;
     }
-    /** @return array<string,ReviewField> */
+    /** @return list<ReviewField> */
     function viewable_fields(Contact $user) {
         return $this->bound_viewable_fields($user->permissive_view_score_bound());
     }
@@ -800,14 +823,14 @@ class ReviewForm implements JsonSerializable {
             $format_description = $fi->description_preview_html();
         }
         echo '<div class="rve">';
-        foreach ($rrow->viewable_fields($contact) as $fid => $f) {
+        foreach ($rrow->viewable_fields($contact) as $f) {
             $rval = "";
             if ($rrow) {
-                $rval = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_STRING);
+                $rval = $f->unparse_value($rrow->{$f->id} ?? null, ReviewField::VALUE_STRING);
             }
             $fval = $rval;
-            if ($rvalues && isset($rvalues->req[$fid])) {
-                $fval = $rvalues->req[$fid];
+            if ($rvalues && isset($rvalues->req[$f->id])) {
+                $fval = $rvalues->req[$f->id];
             }
             if ($f->has_options) {
                 $fval = $f->normalize_option_value($fval);
@@ -815,7 +838,7 @@ class ReviewForm implements JsonSerializable {
             }
 
             echo '<div class="rf rfe" data-rf="', $f->uid(), '"><h3 class="',
-                $rvalues ? $rvalues->control_class($fid, "rfehead") : "rfehead";
+                $rvalues ? $rvalues->control_class($f->id, "rfehead") : "rfehead";
             if ($f->has_options) {
                 echo '" id="', $f->id;
             }
@@ -864,7 +887,7 @@ class ReviewForm implements JsonSerializable {
     /** @return int */
     function nonempty_view_score(ReviewInfo $rrow) {
         $view_score = VIEWSCORE_EMPTY;
-        foreach ($this->forder as $fid => $f) {
+        foreach ($this->forder as $f) {
             if ($rrow->has_nonempty_field($f)) {
                 $view_score = max($view_score, $f->view_score);
             }
@@ -875,9 +898,9 @@ class ReviewForm implements JsonSerializable {
     /** @return int */
     function word_count(ReviewInfo $rrow) {
         $wc = 0;
-        foreach ($this->forder as $fid => $f) {
+        foreach ($this->forder as $f) {
             if ($f->include_word_count() && $rrow->has_nonempty_field($f)) {
-                $wc += count_words($rrow->$fid);
+                $wc += count_words($rrow->{$f->id});
             }
         }
         return $wc;
@@ -886,11 +909,11 @@ class ReviewForm implements JsonSerializable {
     /** @return ?int */
     function full_word_count(ReviewInfo $rrow) {
         $wc = null;
-        foreach ($this->forder as $fid => $f) {
+        foreach ($this->forder as $f) {
             if (!$f->has_options && $f->test_exists($rrow)) {
                 $wc = $wc ?? 0;
-                if (!$f->value_empty($rrow->$fid ?? null)) {
-                    $wc += count_words($rrow->$fid);
+                if (!$f->value_empty($rrow->{$f->id} ?? null)) {
+                    $wc += count_words($rrow->{$f->id});
                 }
             }
         }
@@ -1118,10 +1141,10 @@ $blind\n";
             $x[] = "* Updated: " . $this->conf->unparse_time($time) . "\n";
         }
 
-        foreach ($rrow->viewable_fields($contact) as $fid => $f) {
+        foreach ($rrow->viewable_fields($contact) as $f) {
             $fval = "";
-            if (isset($rrow->$fid)) {
-                $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
+            if (isset($rrow->{$f->id})) {
+                $fval = $f->unparse_value($rrow->{$f->id}, ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
             }
             if ($fval == "") {
                 continue;
@@ -1468,10 +1491,10 @@ $blind\n";
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        foreach ($rrow->viewable_fields($viewer) as $fid => $f) {
+        foreach ($rrow->viewable_fields($viewer) as $f) {
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
-                $fval = $rrow->$fid ?? null;
+                $fval = $rrow->{$f->id} ?? null;
                 if ($f->has_options) {
                     $fval = $f->unparse_value((int) $fval);
                 }
@@ -1517,10 +1540,10 @@ $blind\n";
         } else {
             $xbarsep = "";
         }
-        foreach ($rrow->viewable_fields($contact) as $fid => $f) {
-            if ($f->has_options && !$f->value_empty($rrow->$fid ?? null)) {
+        foreach ($rrow->viewable_fields($contact) as $f) {
+            if ($f->has_options && !$f->value_empty($rrow->{$f->id} ?? null)) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
-                    . $f->unparse_value((int) $rrow->$fid, ReviewField::VALUE_SC);
+                    . $f->unparse_value((int) $rrow->{$f->id}, ReviewField::VALUE_SC);
                 $xbarsep = $barsep;
             }
         }
@@ -2207,23 +2230,10 @@ class ReviewValues extends MessageSet {
             return false;
         }
 
-        // initialize tfields/sfields with old values from review
-        // (in case of partial request)
-        $sfields = $tfields = [];
-        foreach ($this->rf->forder as $fid => $f) {
-            if ($f->json_storage && !$f->value_empty($rrow->$fid ?? null)) {
-                if ($f->has_options) {
-                    $sfields[$f->json_storage] = (int) $rrow->$fid;
-                } else {
-                    $tfields[$f->json_storage] = $rrow->$fid;
-                }
-            }
-        }
-
         $qf = $qv = [];
-        $set_sfields = $set_tfields = [];
         $view_score = VIEWSCORE_EMPTY;
         $diffinfo = new ReviewDiffInfo($prow, $rrow);
+        $fchanges = [[], []];
         $wc = 0;
         foreach ($this->rf->all_fields() as $fid => $f) {
             if (!$f->test_exists($rrow)) {
@@ -2252,21 +2262,7 @@ class ReviewValues extends MessageSet {
                     $qv[] = $fval;
                 }
                 if ($f->json_storage) {
-                    if ($f->has_options) {
-                        if ($fval != 0) {
-                            $sfields[$f->json_storage] = $fval;
-                        } else {
-                            unset($sfields[$f->json_storage]);
-                        }
-                        $set_sfields[$fid] = true;
-                    } else {
-                        if ($fval !== "") {
-                            $tfields[$f->json_storage] = $fval;
-                        } else {
-                            unset($tfields[$f->json_storage]);
-                        }
-                        $set_tfields[$fid] = true;
-                    }
+                    $fchanges[$f->has_options ? 0 : 1][] = [$f, $fval];
                 }
             }
             if ($f->include_word_count()) {
@@ -2276,11 +2272,27 @@ class ReviewValues extends MessageSet {
                 $view_score = max($view_score, $f->view_score);
             }
         }
-        if (!empty($set_sfields)) {
+        if (!empty($fchanges[0])) {
+            $sfields = json_decode($rrow->sfields ?? "{}", true) ?? [];
+            foreach ($fchanges[0] as $fv) {
+                if ($fv[1] != 0) {
+                    $sfields[$fv[0]->json_storage] = $fv[1];
+                } else {
+                    unset($sfields[$fv[0]->json_storage]);
+                }
+            }
             $qf[] = "sfields=?";
             $qv[] = $sfields ? json_encode_db($sfields) : null;
         }
-        if (!empty($set_tfields)) {
+        if (!empty($fchanges[1])) {
+            $tfields = json_decode($rrow->tfields ?? "{}", true) ?? [];
+            foreach ($fchanges[1] as $fv) {
+                if ($fv[1] !== "") {
+                    $tfields[$fv[0]->json_storage] = $fv[1];
+                } else {
+                    unset($tfields[$fv[0]->json_storage]);
+                }
+            }
             $qf[] = "tfields=?";
             $qv[] = $tfields ? json_encode_db($tfields) : null;
         }
@@ -2499,13 +2511,14 @@ class ReviewValues extends MessageSet {
             if ($rrow->reviewId && !$newsubmit && $diffinfo->fields()) {
                 $log_actions[] = "edited";
             }
-            $log_fields = array_map(function ($f) use ($new_rrow) {
+            $log_fields = [];
+            foreach ($diffinfo->fields() as $f) {
                 if ($f->has_options) {
-                    return $f->search_keyword() . ":" . $f->unparse_value($new_rrow);
+                    $log_fields[] = $f->search_keyword() . ":" . $f->unparse_value($new_rrow->{$f->id} ?? null);
                 } else {
-                    return $f->search_keyword();
+                    $log_fields[] = $f->search_keyword();
                 }
-            }, $diffinfo->fields());
+            }
             if (($wc = $this->rf->full_word_count($new_rrow)) !== null) {
                 $log_fields[] = plural($wc, "word");
             }

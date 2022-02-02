@@ -362,7 +362,7 @@ class Autoassigner {
             $scoredir = substr($scoreinfo, 0, 1) === "-" ? -1 : 1;
         }
 
-        $set = $this->conf->paper_set(["paperId" => $this->papersel, "allConflictType" => true, "reviewSignatures" => true, "scores" => $score ? [$score] : []]);
+        $set = $this->conf->paper_set(["paperId" => $this->papersel, "allConflictType" => true, "reviewSignatures" => true, "scores" => $score ? [$all_fields[$score]] : []]);
 
         $scorearr = [];
         foreach ($set as $prow) {

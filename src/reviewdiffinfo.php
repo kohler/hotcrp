@@ -9,8 +9,11 @@ class ReviewDiffInfo {
     public $prow;
     /** @var ReviewInfo */
     public $rrow;
+    /** @var list<ReviewField> */
     private $fields = [];
+    /** @var list<null|int|string> */
     private $newv = [];
+    /** @var int */
     public $view_score = VIEWSCORE_EMPTY;
     public $notify = false;
     public $notify_author = false;
@@ -22,11 +25,14 @@ class ReviewDiffInfo {
         $this->prow = $prow;
         $this->rrow = $rrow;
     }
+    /** @param ReviewField $f
+     * @param null|int|string $newv */
     function add_field($f, $newv) {
         $this->fields[] = $f;
         $this->newv[] = $newv;
         $this->add_view_score($f->view_score);
     }
+    /** @param int $view_score */
     function add_view_score($view_score) {
         if ($view_score > $this->view_score) {
             if ($view_score === VIEWSCORE_AUTHORDEC
@@ -36,9 +42,11 @@ class ReviewDiffInfo {
             $this->view_score = $view_score;
         }
     }
+    /** @return bool */
     function nonempty() {
         return $this->view_score > VIEWSCORE_EMPTY;
     }
+    /** @return list<ReviewField> */
     function fields() {
         return $this->fields;
     }

@@ -279,7 +279,7 @@ class ReviewInfo implements JsonSerializable {
         return $rrow;
     }
 
-    private function merge(PaperInfo $prow = null, Conf $conf = null) {
+    private function incorporate(PaperInfo $prow = null, Conf $conf = null) {
         $this->conf = $conf ?? $prow->conf;
         $this->prow = $prow;
         $this->paperId = (int) $this->paperId;
@@ -386,23 +386,28 @@ class ReviewInfo implements JsonSerializable {
         '@phan-var ?ReviewInfo $rrow';
         if ($rrow) {
             $prow = $prowx instanceof PaperInfoSet ? $prowx->get((int) $rrow->paperId) : $prowx;
-            $rrow->merge($prow, $conf);
+            $rrow->incorporate($prow, $conf);
         }
         return $rrow;
     }
 
+    /** @param ?list<ReviewField> $scores
+     * @return string */
     static function review_signature_sql(Conf $conf, $scores = null) {
         $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit, ' ', r.reviewViewScore";
-        foreach ($scores ?? [] as $fid) {
-            if (($f = $conf->review_field($fid)) && $f->main_storage)
-                $t .= ", ' " . $f->short_id . "=', " . $f->id;
+        foreach ($scores ?? [] as $f) {
+            if ($f->order && $f->main_storage)
+                $t .= ", ' {$f->order}=', {$f->main_storage}";
         }
         return "group_concat($t order by r.reviewId)";
     }
 
-    /** @return ReviewInfo */
+    /** @param string $signature
+     * @return ReviewInfo */
     static function make_signature(PaperInfo $prow, $signature) {
         $rrow = new ReviewInfo;
+        $rrow->conf = $prow->conf;
+        $rrow->prow = $prow;
         $rrow->paperId = $prow->paperId;
         $vals = explode(" ", $signature);
         $rrow->reviewId = (int) $vals[0];
@@ -420,14 +425,17 @@ class ReviewInfo implements JsonSerializable {
         $rrow->timeApprovalRequested = (int) $vals[12];
         $rrow->reviewNeedsSubmit = (int) $vals[13];
         $rrow->reviewViewScore = (int) $vals[14];
-        for ($i = 15; isset($vals[$i]); ++$i) {
-            $eq = strpos($vals[$i], "=");
-            $f = self::field_info(substr($vals[$i], 0, $eq));
-            $fid = $f->id;
-            $rrow->$fid = (int) substr($vals[$i], $eq + 1);
-            $prow->_mark_has_score($fid);
+        $rrow->reviewStatus = $rrow->compute_review_status();
+        if (isset($vals[15])) {
+            $rform = $prow->conf->review_form();
+            for ($i = 15; isset($vals[$i]); ++$i) {
+                $eq = strpos($vals[$i], "=");
+                $order = intval(substr($vals[$i], 0, $eq));
+                $f = $rform->field_by_order($order);
+                $rrow->{$f->id} = (int) substr($vals[$i], $eq + 1);
+                $prow->_mark_has_review_field_order($order);
+            }
         }
-        $rrow->merge($prow, $prow->conf);
         return $rrow;
     }
 
@@ -591,6 +599,13 @@ class ReviewInfo implements JsonSerializable {
             && (!$f->has_options || (int) $x !== 0);
     }
 
+    /** @param string|ReviewField $field
+     * @return null|int|string */
+    function fval($field) {
+        $f = is_string($field) ? $this->conf->review_field($field) : $field;
+        return $this->{$f->id} ?? null;
+    }
+
     /** @return array<string,ReviewField> */
     function viewable_fields(Contact $user) {
         $bound = $user->view_score_bound($this->prow, $this);
@@ -663,38 +678,6 @@ class ReviewInfo implements JsonSerializable {
             }
         }
         return Text::match_pregexes($reg, $data, $this->$field_deaccent);
-    }
-
-    function unparse_sfields() {
-        $data = [];
-        foreach (get_object_vars($this) as $k => $v) {
-            if (strlen($k) === 3
-                && $k[0] === "s"
-                && (int) $v !== 0
-                && ($n = cvtint(substr($k, 1))) >= self::MIN_SFIELD)
-                $data[$k] = (int) $v;
-        }
-        return empty($data) ? null : json_encode_db($data);
-    }
-
-    function unparse_tfields() {
-        $data = [];
-        foreach (get_object_vars($this) as $k => $v) {
-            if (strlen($k) === 3
-                && $k[0] === "t"
-                && $v !== null
-                && $v !== "")
-                $data[$k] = $v;
-        }
-        if (empty($data)) {
-            return null;
-        } else {
-            $json = json_encode_db($data);
-            if ($json === null) {
-                error_log("{$this->conf->dbname}: review #{$this->paperId}/{$this->reviewId}: text fields cannot be converted to JSON");
-            }
-            return $json;
-        }
     }
 
 

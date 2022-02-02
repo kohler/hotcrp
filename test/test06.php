@@ -116,7 +116,7 @@ xassert($tf->check_and_save($user_mgbaker));
 
 assert_search_papers($user_chair, "ovemer:4", "1");
 $rrow = fetch_review($paper1, $user_mgbaker);
-xassert_eqq($rrow->t03, "  This is a test of leading whitespace\n\n  It should be preserved\nAnd defended\n");
+xassert_eqq($rrow->fval("t03"), "  This is a test of leading whitespace\n\n  It should be preserved\nAnd defended\n");
 
 // Catch different-conference form
 $tf = ReviewValues::make_text($Conf->review_form(), preg_replace('/Testconf I/', 'Testconf IIII', $review1A), "review1A-1.txt");
@@ -268,11 +268,11 @@ save_review(1, $user_mgbaker, [
     "ready" => true
 ]);
 $rrow = fetch_review($paper1, $user_mgbaker);
-xassert_eqq((string) $rrow->overAllMerit, "2");
-xassert_eqq((string) $rrow->reviewerQualification, "1");
-xassert_eqq((string) $rrow->t01, "This is the summary\n");
-xassert_eqq((string) $rrow->t02, "Comments for äuthor\n");
-xassert_eqq((string) $rrow->t03, "Comments for PC\n");
+xassert_eqq((string) $rrow->fval("s01"), "2");
+xassert_eqq((string) $rrow->fval("s02"), "1");
+xassert_eqq((string) $rrow->fval("t01"), "This is the summary\n");
+xassert_eqq((string) $rrow->fval("t02"), "Comments for äuthor\n");
+xassert_eqq((string) $rrow->fval("t03"), "Comments for PC\n");
 //error_log($Conf->setting_data("review_form"));
 
 assert_search_papers($user_chair, "has:papsum", "1");
@@ -351,7 +351,7 @@ assert_search_papers($user_chair, "has:tex10", "1");
 assert_search_papers($user_chair, "has:tex11", "");
 
 $rrow = fetch_review($paper1, $user_mgbaker);
-xassert_eqq((string) $rrow->s16, "3");
+xassert_eqq((string) $rrow->fval("s16"), "3");
 
 // Remove some fields and truncate their options
 $sv = SettingValues::make_request($user_chair, [
@@ -372,9 +372,9 @@ xassert($sv->execute());
 xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
 $rrow = fetch_review($paper1, $user_mgbaker);
-xassert(!isset($rrow->s16) || (string) $rrow->s16 === "0");
-xassert(!isset($rrow->s15) || (string) $rrow->s15 === "0");
-xassert(!isset($rrow->t10) || $rrow->t10 === "");
+xassert($rrow->fval("s15") === null || (string) $rrow->fval("s15") === "0");
+xassert($rrow->fval("s16") === null || (string) $rrow->fval("s16") === "0");
+xassert($rrow->fval("t10") === null || (string) $rrow->fval("t10") === "");
 
 assert_search_papers($user_chair, "has:sco3", "1");
 assert_search_papers($user_chair, "has:sco4", "1");
@@ -603,10 +603,10 @@ xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary",
 xassert($tf->check_and_save($user_mgbaker, $paper17));
 
 $rrow17m = fetch_review($paper17, $user_mgbaker);
-xassert_eq($rrow17m->overAllMerit, 2);
-xassert_eq($rrow17m->reviewerQualification, 1);
-xassert_eqq($rrow17m->t01, "No summary\n");
-xassert_eqq($rrow17m->t02, "No comments\n");
+xassert_eq($rrow17m->fval("s01"), 2);
+xassert_eq($rrow17m->fval("s02"), 1);
+xassert_eqq($rrow17m->fval("t01"), "No summary\n");
+xassert_eqq($rrow17m->fval("t02"), "No comments\n");
 xassert_eqq($rrow17m->reviewOrdinal, 1);
 xassert($rrow17m->reviewSubmitted > 0);
 
@@ -642,17 +642,17 @@ xassert_eqq(ReviewDiffInfo::unparse_patch($rd->make_patch(1)),
             '{"s01":3,"t01":"There definitely is a summary in this position."}');
 
 $rrow18d2 = clone $rrow18d;
-xassert_eq($rrow18d2->overAllMerit, 2);
-xassert_eq($rrow18d2->reviewerQualification, 1);
-xassert_eqq($rrow18d2->t01, "No summary\n");
+xassert_eq($rrow18d2->fval("s01"), 2);
+xassert_eq($rrow18d2->fval("s02"), 1);
+xassert_eqq($rrow18d2->fval("t01"), "No summary\n");
 ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch(1));
-xassert_eq($rrow18d2->overAllMerit, 3);
-xassert_eq($rrow18d2->reviewerQualification, 1);
-xassert_eqq($rrow18d2->t01, "There definitely is a summary in this position.");
+xassert_eq($rrow18d2->fval("s01"), 3);
+xassert_eq($rrow18d2->fval("s02"), 1);
+xassert_eqq($rrow18d2->fval("t01"), "There definitely is a summary in this position.");
 ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch());
-xassert_eq($rrow18d2->overAllMerit, 2);
-xassert_eq($rrow18d2->reviewerQualification, 1);
-xassert_eqq($rrow18d2->t01, "No summary\n");
+xassert_eq($rrow18d2->fval("s01"), 2);
+xassert_eq($rrow18d2->fval("s02"), 1);
+xassert_eqq($rrow18d2->fval("t01"), "No summary\n");
 
 $tf = new ReviewValues($Conf->review_form());
 xassert($tf->parse_json(["papsum" =>
@@ -664,18 +664,18 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 xassert($tf->check_and_save($user_diot, $paper18));
 
 $rrow18d = fetch_review($paper18, $user_diot);
-$gettysburg = $rrow18d->t01;
+$gettysburg = $rrow18d->fval("t01");
 $gettysburg2 = str_replace("by the people", "near the people", $gettysburg);
 
 $rd = new ReviewDiffInfo($paper18, $rrow18d);
 $rd->add_field($Conf->find_review_field("papsum"), $gettysburg2);
 
 $rrow18d2 = clone $rrow18d;
-xassert_eqq($rrow18d2->t01, $gettysburg);
+xassert_eqq($rrow18d2->fval("t01"), $gettysburg);
 ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch(1));
-xassert_eqq($rrow18d2->t01, $gettysburg2);
+xassert_eqq($rrow18d2->fval("t01"), $gettysburg2);
 ReviewDiffInfo::apply_patch($rrow18d2, $rd->make_patch());
-xassert_eqq($rrow18d2->t01, $gettysburg);
+xassert_eqq($rrow18d2->fval("t01"), $gettysburg);
 
 // offline review parsing for UTF-8 review questions
 $sv = SettingValues::make_request($user_chair, [
@@ -702,7 +702,7 @@ xassert_eqq($tf->summary_status(), MessageSet::WARNING);
 xassert_eqq($tf->full_feedback_text(), "Review #18A unchanged.\n");
 
 $rrow = fetch_review($paper18, $user_diot);
-xassert_eqq($rrow->t04, "This is the stuff I want to add for the authors’ response.\n");
+xassert_eqq($rrow->fval("t04"), "This is the stuff I want to add for the authors’ response.\n");
 
 $review18A2 = str_replace("This is the stuff", "That was the stuff",
     str_replace("authors’ response\n", "authors' response\n", $review18A));
@@ -711,7 +711,7 @@ xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_diot));
 
 $rrow = fetch_review($paper18, $user_diot);
-xassert_eqq($rrow->t04, "That was the stuff I want to add for the authors’ response.\n");
+xassert_eqq($rrow->fval("t04"), "That was the stuff I want to add for the authors’ response.\n");
 
 $sv = SettingValues::make_request($user_chair, [
     "has_review_form" => 1,
@@ -728,7 +728,7 @@ xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_diot));
 
 $rrow = fetch_review($paper18, $user_diot);
-xassert_eqq($rrow->t04, "Whence the stuff I want to add for the authors’ response.\n");
+xassert_eqq($rrow->fval("t04"), "Whence the stuff I want to add for the authors’ response.\n");
 
 $review18A4 = file_get_contents(SiteLoader::find("test/review18A-4.txt"));
 $tf = ReviewValues::make_text($Conf->review_form(), $review18A4, "review18A-4.txt");
@@ -736,8 +736,8 @@ xassert($tf->parse_text(false));
 xassert($tf->check_and_save($user_diot));
 
 $rrow = fetch_review($paper18, $user_diot);
-xassert(str_ends_with($rrow->t01, "\n==+== Want to make sure this works\n"));
-xassert_eqq($rrow->t04, "Whitherto the stuff I want to add for the authors’ response.\n");
+xassert(str_ends_with($rrow->fval("t01"), "\n==+== Want to make sure this works\n"));
+xassert_eqq($rrow->fval("t04"), "Whitherto the stuff I want to add for the authors’ response.\n");
 
 // check some review visibility policies
 $user_external = Contact::create($Conf, null, ["email" => "external@_.com", "name" => "External Reviewer"]);

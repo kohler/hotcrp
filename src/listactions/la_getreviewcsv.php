@@ -58,8 +58,8 @@ class GetReviewCSV_ListAction extends ListAction {
         if ($has_id) {
             array_push($selection, "reviewername", "email");
         }
-        foreach ($rf->all_fields() as $fid => $f) {
-            if (isset($fields[$fid]))
+        foreach ($rf->all_fields() as $f) {
+            if (isset($fields[$f->id]))
                 $selection[] = $f->name;
         }
         if (!empty($pids)) {

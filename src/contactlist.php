@@ -34,16 +34,15 @@ class ContactList {
     public $user;
     /** @var Qrequest */
     public $qreq;
-    var $showHeader = true;
-    var $sortField = null;
+    /** @var null|int|string */
+    private $sortField;
     var $reverseSort;
     var $sortable;
     var $count;
     var $any;
     private $tagger;
-    public $scoreMax;
     private $limit;
-    public $have_folds = array();
+    public $have_folds = [];
     private $qopt = [];
     var $contactLinkArgs;
     /** @var PaperInfoSet */
@@ -62,7 +61,7 @@ class ContactList {
     private $_lead_data;
     /** @var array<int,int> */
     private $_shepherd_data;
-    /** @var array<string,array<int,list<int>>> */
+    /** @var list<array<int,list<int>>> */
     private $_score_data;
     /** @var array<int,array{int,int}> */
     private $_rating_data;
@@ -140,11 +139,7 @@ class ContactList {
                 return false;
             }
             $this->qopt["reviews"] = true;
-            if (!isset($this->qopt["scores"])) {
-                $this->qopt["scores"] = array();
-            }
-            $this->qopt["scores"][] = $f->id;
-            $this->scoreMax[$f->id] = count($f->options);
+            $this->qopt["scores"][] = $f;
         }
         return true;
     }
@@ -265,14 +260,12 @@ class ContactList {
             break;
         default:
             if (($f = $this->conf->review_field($this->sortField))) {
-                $fieldId = $this->sortField;
-                $scoreMax = $this->scoreMax[$fieldId];
                 $scoresort = $this->user->session("ulscoresort", "A");
                 if (!in_array($scoresort, ["A", "V", "D"], true)) {
                     $scoresort = "A";
                 }
                 foreach ($rows as $row) {
-                    $scores = $this->_score_data[$fieldId][$row->contactId] ?? [];
+                    $scores = $this->_score_data[$f->order][$row->contactId] ?? [];
                     $scoreinfo = new ScoreInfo($scores, true);
                     $this->_sort_data[$row->contactId] =
                         [$scoreinfo->sort_data($scoresort), $scoreinfo->mean()];
@@ -340,8 +333,9 @@ class ContactList {
     }
 
     /** @param PaperInfo $prow
-     * @param ReviewInfo $rrow */
-    private function collect_review_data($prow, $rrow, $repapers, $review_limit, $scores) {
+     * @param ReviewInfo $rrow
+     * @param list<array{string,int}> $forders */
+    private function collect_review_data($prow, $rrow, $repapers, $review_limit, $forders) {
         $cid = $rrow->contactId;
         if ($repapers) {
             $this->_re_data[$cid][] = $rrow->paperId;
@@ -363,9 +357,9 @@ class ContactList {
             $this->_rect_data[$cid][0] += 1;
             $this->_rect_data[$cid][1] += 1;
             if ($this->user->can_view_review($prow, $rrow)) {
-                foreach ($scores as $s) {
-                    if ($rrow->$s) {
-                        $this->_score_data[$s][$cid][] = (int) $rrow->$s;
+                foreach ($forders as $sp) {
+                    if ($rrow->{$sp[0]}) {
+                        $this->_score_data[$sp[1]][$cid][] = (int) $rrow->{$sp[0]};
                     }
                 }
             }
@@ -465,17 +459,18 @@ class ContactList {
             if ($repapers) {
                 $this->_re_data = $this->_reord_data = [];
             }
-            $scores = $this->qopt["scores"] ?? [];
-            foreach ($scores as $s) {
-                $this->_score_data[$s] = [];
+            $forders = [];
+            foreach ($this->qopt["scores"] ?? [] as $f) {
+                $forders[] = [$f->main_storage, $f->order];
             }
+            $this->_score_data = $this->conf->review_form()->order_array([]);
             foreach ($prows as $prow) {
                 if ($this->user->can_view_review_assignment($prow, null)
                     && $this->user->can_view_review_identity($prow, null)) {
                     foreach ($prow->all_reviews() as $rrow) {
                         if ($this->user->can_view_review_assignment($prow, $rrow)
                             && $this->user->can_view_review_identity($prow, $rrow)) {
-                            $this->collect_review_data($prow, $rrow, $repapers, $review_limit, $scores);
+                            $this->collect_review_data($prow, $rrow, $repapers, $review_limit, $forders);
                         }
                     }
                 }
@@ -717,12 +712,11 @@ class ContactList {
                 return "";
             }
         default:
-            $f = $this->conf->review_field($fieldId);
-            if ($f
+            if (($f = $this->conf->review_field($fieldId))
                 && (($row->roles & Contact::ROLE_PC)
                     || $this->user->privChair
                     || $this->limit === "req")
-                && ($scores = $this->_score_data[$fieldId][$row->contactId] ?? [])) {
+                && ($scores = $this->_score_data[$f->order][$row->contactId] ?? [])) {
                 return $f->unparse_graph($scores, 2, 0);
             } else {
                 return "";
@@ -748,7 +742,6 @@ class ContactList {
                 if ($f->has_options && strpos($uldisplay, " {$f->id} ") !== false)
                     array_push($a, $f->id);
             }
-            $this->scoreMax = [];
         }
         return $a;
     }
@@ -1044,45 +1037,43 @@ class ContactList {
         }
         $x .= "\">\n";
 
-        if ($this->showHeader) {
-            $x .= "  <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">\n";
-            $ord = 0;
+        $x .= "  <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">\n";
+        $ord = 0;
 
-            if ($this->sortable && $url) {
-                $sortUrl = $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-                $q = '<a class="pl_sort" rel="nofollow" href="' . $sortUrl;
-                foreach ($fieldDef as $fieldId => $fdef) {
-                    if ($fdef[1] != 1) {
-                        continue;
-                    } else if (!isset($anyData[$fieldId])) {
-                        $x .= "    <th class=\"pl plh pl_$fdef[0]\"></th>\n";
-                        continue;
-                    }
-                    $x .= "    <th class=\"pl plh pl_$fdef[0]\">";
-                    $ftext = $this->header($fieldId, $ord++);
-                    if ($fieldId == $this->sortField) {
-                        $x .= '<a class="pl_sort pl_sorting' . ($this->reverseSort ? "_rev" : "_fwd") . '" rel="nofollow" href="' . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . '">' . $ftext . "</a>";
-                    } else if ($fdef[2]) {
-                        $x .= $q . $fieldId . "\">" . $ftext . "</a>";
-                    } else {
-                        $x .= $ftext;
-                    }
-                    $x .= "</th>\n";
+        if ($this->sortable && $url) {
+            $sortUrl = $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+            $q = '<a class="pl_sort" rel="nofollow" href="' . $sortUrl;
+            foreach ($fieldDef as $fieldId => $fdef) {
+                if ($fdef[1] != 1) {
+                    continue;
+                } else if (!isset($anyData[$fieldId])) {
+                    $x .= "    <th class=\"pl plh pl_$fdef[0]\"></th>\n";
+                    continue;
                 }
-
-            } else {
-                foreach ($fieldDef as $fieldId => $fdef) {
-                    if ($fdef[1] == 1 && isset($anyData[$fieldId])) {
-                        $x .= "    <th class=\"pl plh pl_$fdef[0]\">"
-                            . $this->header($fieldId, $ord++) . "</th>\n";
-                    } else if ($fdef[1] == 1) {
-                        $x .= "    <th class=\"pl plh pl_$fdef[0]\"></th>\n";
-                    }
+                $x .= "    <th class=\"pl plh pl_$fdef[0]\">";
+                $ftext = $this->header($fieldId, $ord++);
+                if ($fieldId == $this->sortField) {
+                    $x .= '<a class="pl_sort pl_sorting' . ($this->reverseSort ? "_rev" : "_fwd") . '" rel="nofollow" href="' . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . '">' . $ftext . "</a>";
+                } else if ($fdef[2]) {
+                    $x .= $q . $fieldId . "\">" . $ftext . "</a>";
+                } else {
+                    $x .= $ftext;
                 }
+                $x .= "</th>\n";
             }
 
-            $x .= "  </tr></thead>\n";
+        } else {
+            foreach ($fieldDef as $fieldId => $fdef) {
+                if ($fdef[1] == 1 && isset($anyData[$fieldId])) {
+                    $x .= "    <th class=\"pl plh pl_$fdef[0]\">"
+                        . $this->header($fieldId, $ord++) . "</th>\n";
+                } else if ($fdef[1] == 1) {
+                    $x .= "    <th class=\"pl plh pl_$fdef[0]\"></th>\n";
+                }
+            }
         }
+
+        $x .= "  </tr></thead>\n";
 
         reset($fieldDef);
         if (key($fieldDef) == self::FIELD_SELECTOR) {

@@ -28,7 +28,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         if ($this->show_user && $this->contact->affiliation) {
             $t .= " (" . htmlspecialchars($this->contact->affiliation) . ")";
         }
-        return $is_text ? $t : "<strong>$t</strong>";
+        return $is_text ? $t : "<strong>{$t}</strong>";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         $this->nonempty = false;

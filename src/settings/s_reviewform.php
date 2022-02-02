@@ -223,7 +223,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function _clear_existing_fields($fields, Conf $conf) {
         // clear fields from main storage
-        $clear_sfields = $clear_tfields = [];
+        $clear_jfields = [];
         foreach ($fields as $f) {
             if ($f->main_storage) {
                 if ($f->has_options) {
@@ -233,40 +233,37 @@ class ReviewForm_SettingParser extends SettingParser {
                 }
             }
             if ($f->json_storage) {
-                if ($f->has_options) {
-                    $clear_sfields[] = $f;
-                } else {
-                    $clear_tfields[] = $f;
-                }
+                $clear_jfields[] = $f;
             }
         }
-        if (!$clear_sfields && !$clear_tfields) {
+        if (empty($clear_jfields)) {
             return;
         }
 
         // clear fields from json storage
         $clearf = Dbl::make_multi_qe_stager($conf->dblink);
-        $result = $conf->qe("select * from PaperReview where sfields is not null or tfields is not null");
-        while (($rrow = ReviewInfo::fetch($result, null, $conf))) {
-            $cleared = false;
-            foreach ($clear_sfields as $f) {
-                if (isset($rrow->{$f->id})) {
-                    unset($rrow->{$f->id}, $rrow->{$f->short_id});
-                    $cleared = true;
+        $result = $conf->qe("select paperId, reviewId, sfields, tfields from PaperReview where sfields is not null or tfields is not null");
+        while (($rrow = $result->fetch_object())) {
+            $sfields = json_decode($rrow->sfields ?? "{}", true) ?? [];
+            $tfields = json_decode($rrow->tfields ?? "{}", true) ?? [];
+            $update = 0;
+            foreach ($clear_jfields as $f) {
+                if ($f->has_options && isset($sfields[$f->json_storage])) {
+                    unset($sfields[$f->json_storage]);
+                    $update |= 1;
+                } else if (!$f->has_options && isset($tfields[$f->json_storage])) {
+                    unset($tfields[$f->json_storage]);
+                    $update |= 2;
                 }
             }
-            if ($cleared) {
-                $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId]);
-            }
-            $cleared = false;
-            foreach ($clear_tfields as $f) {
-                if (isset($rrow->{$f->id})) {
-                    unset($rrow->{$f->id}, $rrow->{$f->short_id});
-                    $cleared = true;
-                }
-            }
-            if ($cleared) {
-                $clearf("update PaperReview set tfields=? where paperId=? and reviewId=?", [$rrow->unparse_tfields(), $rrow->paperId, $rrow->reviewId]);
+            $stext = empty($sfields) ? null : json_encode_db($sfields);
+            $ttext = empty($tfields) ? null : json_encode_db($tfields);
+            if ($update === 3) {
+                $clearf("update PaperReview set sfields=?, tfields=? where paperId=? and reviewId=?", [$stext, $ttext, $rrow->paperId, $rrow->reviewId]);
+            } else if ($update === 2) {
+                $clearf("update PaperReview set tfields=? where paperId=? and reviewId=?", [$ttext, $rrow->paperId, $rrow->reviewId]);
+            } else if ($update === 1) {
+                $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$stext, $rrow->paperId, $rrow->reviewId]);
             }
         }
         $clearf(null);
@@ -291,17 +288,19 @@ class ReviewForm_SettingParser extends SettingParser {
         if ($clear_sfields) {
             // clear options from json storage
             $clearf = Dbl::make_multi_qe_stager($conf->dblink);
-            $result = $conf->qe("select * from PaperReview where sfields is not null");
-            while (($rrow = ReviewInfo::fetch($result, null, $conf))) {
-                $cleared = false;
+            $result = $conf->qe("select paperId, reviewId, sfields from PaperReview where sfields is not null");
+            while (($rrow = $result->fetch_object())) {
+                $sfields = json_decode($rrow->sfields, true) ?? [];
+                $update = false;
                 foreach ($clear_sfields as $f) {
-                    if (isset($rrow->{$f->id}) && $rrow->{$f->id} > count($f->options)) {
-                        unset($rrow->{$f->id}, $rrow->{$f->short_id});
-                        $cleared = $updates[$f->name] = true;
+                    if (($sfields[$f->json_storage] ?? 0) > count($f->options)) {
+                        unset($sfields[$f->json_storage]);
+                        $update = $updates[$f->name] = true;
                     }
                 }
-                if ($cleared) {
-                    $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$rrow->unparse_sfields(), $rrow->paperId, $rrow->reviewId]);
+                if ($update) {
+                    $stext = empty($sfields) ? null : json_encode_db($sfields);
+                    $clearf("update PaperReview set sfields=? where paperId=? and reviewId=?", [$stext, $rrow->paperId, $rrow->reviewId]);
                 }
             }
             $clearf(null);
@@ -373,7 +372,7 @@ class ReviewForm_SettingParser extends SettingParser {
             if (!empty($updates)) {
                 sort($updates);
                 $sv->warning_at(null, "<0>Your changes invalidated some review scores");
-                $sv->inform_at(null, "<0>The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $updates) . ".");
+                $sv->inform_at(null, "<0>The invalid " . commajoin($updates) . " scores were reset to “No entry”.");
             }
         }
         // assign review ordinals if necessary

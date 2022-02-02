@@ -43,10 +43,12 @@ class FieldCSVOutput {
     public $no_header = false;
     public $no_score = false;
     public $no_text = false;
+    /** @var string */
+    public $t;
     /** @var ?int */
     public $format;
-    /** @var associative-array<string,true> */
-    public $rfseen = [];
+    /** @var list<bool> */
+    public $rfseen;
     /** @var list<string> */
     public $header;
     /** @var list<array> */
@@ -60,6 +62,7 @@ class FieldCSVOutput {
         $this->user = $conf->root_user();
         $this->fr = new FieldRender(FieldRender::CFLIST | FieldRender::CFCSV | FieldRender::CFHTML, $this->user);
         $this->csv = new CsvGenerator;
+        $this->rfseen = $conf->review_form()->order_array(false);
     }
 
     function parse_arg($arg) {
@@ -97,6 +100,11 @@ class FieldCSVOutput {
                 fwrite(STDERR, "batch/reviewcsv.php: ‘--format’ should be an integer.\n");
                 exit(1);
             }
+        }
+        $this->t = $arg["t"] ?? "s";
+        if (!in_array($this->t, PaperSearch::viewable_limits($this->user, $this->t))) {
+            fwrite(STDERR, "batch/reviewcsv.php: No search collection ‘{$this->t}’.\n");
+            exit(1);
         }
     }
 
@@ -215,11 +223,11 @@ class FieldCSVOutput {
         $x["submitted_at"] = $rrow->reviewSubmitted;
         $x["status"] = $rrow->status_description();
         $x["format"] = $rrow->reviewFormat ?? $prow->conf->default_format;
-        foreach ($rrow->viewable_fields($this->user) as $fid => $f) {
+        foreach ($rrow->viewable_fields($this->user) as $f) {
             if ($f->has_options ? $this->no_score : $this->no_text) {
                 continue;
             }
-            $fv = $f->unparse_value($rrow->$fid ?? null, ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
+            $fv = $f->unparse_value($rrow->{$f->id} ?? null, ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
             if ($fv === "") {
                 // ignore
             } else if ($this->narrow) {
@@ -227,7 +235,7 @@ class FieldCSVOutput {
                 $x["data"] = $fv;
                 $this->add_row($x);
             } else {
-                $this->rfseen[$fid] = true;
+                $this->rfseen[$f->order] = true;
                 $x[$f->name] = $fv;
             }
         }
@@ -238,8 +246,8 @@ class FieldCSVOutput {
 
     function output($stream) {
         if (!empty($this->output) && !$this->narrow) {
-            foreach ($this->conf->all_review_fields() as $fid => $f) {
-                if (isset($this->rfseen[$fid])) {
+            foreach ($this->conf->all_review_fields() as $f) {
+                if ($this->rfseen[$f->order]) {
                     $this->header[] = $f->name;
                 }
             }
@@ -251,50 +259,47 @@ class FieldCSVOutput {
 
         @fwrite($stream, $this->csv->unparse());
     }
-}
 
-$fcsv = new FieldCSVOutput($Conf);
-$fcsv->parse_arg($arg);
-$fcsv->prepare($arg);
+    /** @param string $q */
+    function run($q) {
+        $search = new PaperSearch($this->user, ["q" => $q, "t" => $this->t]);
+        if ($search->has_problem()) {
+            fwrite(STDERR, $search->full_feedback_text());
+        }
 
-$t = $arg["t"] ?? "s";
-if (!in_array($t, PaperSearch::viewable_limits($fcsv->user, $t))) {
-    fwrite(STDERR, "batch/reviewcsv.php: No search collection ‘{$t}’.\n");
-    exit(1);
-}
-
-$search = new PaperSearch($fcsv->user, ["q" => join(" ", $arg["_"]), "t" => $t]);
-if ($search->has_problem()) {
-    fwrite(STDERR, $search->full_feedback_text());
-}
-
-$pset = $Conf->paper_set(["paperId" => $search->paper_ids()]);
-foreach ($search->sorted_paper_ids() as $pid) {
-    $prow = $pset[$pid];
-    $prow->ensure_full_reviews();
-    $prow->ensure_reviewer_names();
-    $px = [
-        "sitename" => $Conf->opt("confid"),
-        "siteclass" => $Conf->opt("siteclass"),
-        "pid" => $prow->paperId
-    ];
-    if ($fcsv->fields) {
-        $fcsv->add_fields($prow, $px);
-    }
-    foreach ($fcsv->comments ? $prow->viewable_reviews_and_comments($fcsv->user) : $prow->reviews_by_display() as $xrow) {
-        if ($xrow instanceof CommentInfo) {
-            if ($fcsv->comments
-                && ($fcsv->all_status || !($xrow->commentType & CommentInfo::CT_DRAFT))) {
-                $fcsv->add_comment($prow, $xrow, $px);
+        $pset = $this->conf->paper_set(["paperId" => $search->paper_ids()]);
+        foreach ($search->sorted_paper_ids() as $pid) {
+            $prow = $pset[$pid];
+            $prow->ensure_full_reviews();
+            $prow->ensure_reviewer_names();
+            $px = [
+                "sitename" => $this->conf->opt("confid"),
+                "siteclass" => $this->conf->opt("siteclass"),
+                "pid" => $prow->paperId
+            ];
+            if ($this->fields) {
+                $this->add_fields($prow, $px);
             }
-        } else if ($xrow instanceof ReviewInfo) {
-            if ($fcsv->reviews
-                && $xrow->reviewStatus >= ReviewInfo::RS_DRAFTED
-                && ($fcsv->all_status || $xrow->reviewStatus >= ReviewInfo::RS_COMPLETED)) {
-                $fcsv->add_review($prow, $xrow, $px);
+            foreach ($this->comments ? $prow->viewable_reviews_and_comments($this->user) : $prow->reviews_as_display() as $xrow) {
+                if ($xrow instanceof CommentInfo) {
+                    if ($this->comments
+                        && ($this->all_status || !($xrow->commentType & CommentInfo::CT_DRAFT))) {
+                        $this->add_comment($prow, $xrow, $px);
+                    }
+                } else if ($xrow instanceof ReviewInfo) {
+                    if ($this->reviews
+                        && $xrow->reviewStatus >= ReviewInfo::RS_DRAFTED
+                        && ($this->all_status || $xrow->reviewStatus >= ReviewInfo::RS_COMPLETED)) {
+                        $this->add_review($prow, $xrow, $px);
+                    }
+                }
             }
         }
     }
 }
 
+$fcsv = new FieldCSVOutput($Conf);
+$fcsv->parse_arg($arg);
+$fcsv->prepare($arg);
+$fcsv->run(join(" ", $arg["_"]));
 $fcsv->output(STDOUT);

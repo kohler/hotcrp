@@ -407,26 +407,29 @@ class Users_Page {
         }
         echo "</td>";
 
-        if (isset($pl->scoreMax)) {
+        $viewable_fields = [];
+        $revViewScore = $this->viewer->permissive_view_score_bound();
+        foreach ($this->conf->all_review_fields() as $f) {
+            if ($f->view_score > $revViewScore
+                && $f->has_options
+                && $f->main_storage)
+                $viewable_fields[] = $f;
+        }
+        if (!empty($viewable_fields)) {
             echo '<td class="pad">';
-            $revViewScore = $this->viewer->permissive_view_score_bound();
             $uldisplay = ContactList::uldisplay($this->viewer);
-            foreach ($this->conf->all_review_fields() as $f) {
-                if ($f->view_score > $revViewScore
-                    && $f->has_options
-                    && $f->main_storage) {
-                    $checked = strpos($uldisplay, $f->id) !== false;
-                    echo Ht::checkbox("show{$f->id}", 1, $checked),
-                        "&nbsp;", Ht::label($f->name_html),
-                        Ht::hidden("has_show{$f->id}", 1), "<br />";
-                }
+            foreach ($viewable_fields as $f) {
+                $checked = strpos($uldisplay, $f->id) !== false;
+                echo Ht::checkbox("show{$f->id}", 1, $checked),
+                    "&nbsp;", Ht::label($f->name_html),
+                    Ht::hidden("has_show{$f->id}", 1), "<br />";
             }
             echo "</td>";
         }
 
         echo "<td>", Ht::submit("redisplay", "Redisplay"), "</td></tr>\n";
 
-        if (isset($pl->scoreMax)) {
+        if (!empty($viewable_fields)) {
             $ss = [];
             foreach (ListSorter::score_sort_selector_options() as $k => $v) {
                 if (in_array($k, ["average", "variance", "maxmin"]))

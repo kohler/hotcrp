@@ -402,11 +402,11 @@ class ReviewStatus_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($done, $started) = $this->data($row, $pl->user);
-        return "<b>$done</b>" . ($done == $started ? "" : "/$started");
+        return "<b>{$done}</b>" . ($done == $started ? "" : "/{$started}");
     }
     function text(PaperList $pl, PaperInfo $row) {
         list($done, $started) = $this->data($row, $pl->user);
-        return $done . ($done == $started ? "" : "/$started");
+        return $done . ($done == $started ? "" : "/{$started}");
     }
 }
 
@@ -899,8 +899,8 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         if ($this->format_field->view_score <= $bound) {
             return false;
         }
-        if ($visible) {
-            $pl->qopts["scores"][$this->score] = true;
+        if ($visible && !in_array($this->format_field, $pl->qopts["scores"] ?? [])) {
+            $pl->qopts["scores"][] = $this->format_field;
         }
         parent::prepare($pl, $visible);
         return true;

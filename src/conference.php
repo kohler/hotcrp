@@ -3664,7 +3664,7 @@ class Conf {
         //   "minimal"          Only include minimal paper fields
         //   "topics"
         //   "options"
-        //   "scores" => array(fields to score)
+        //   "scores" => list<ReviewField>
         //   "assignments"
         //   "where" => $sql    SQL 'where' clause
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)

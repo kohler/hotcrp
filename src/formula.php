@@ -921,7 +921,7 @@ class Score_Fexpr extends Fexpr {
             return "null";
         }
         $fid = $field->id;
-        $state->_ensure_rrow_score($fid);
+        $state->_ensure_rrow_score($field);
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound(true);
         return "({$field->view_score} > $rrow_vsb && ({$rrow}->$fid ?? 0) ? (int) {$rrow}->$fid : null)";
@@ -1024,6 +1024,7 @@ class FormulaCompiler {
     public $user;
     /** @var Tagger */
     public $tagger;
+    /** @var array<string,string> */
     private $gvar;
     /** @var list<string> */
     private $g0stmt;
@@ -1086,7 +1087,8 @@ class FormulaCompiler {
         $this->term_error = false;
     }
 
-    /** @return bool */
+    /** @param string $gvar
+     * @return bool */
     function check_gvar($gvar) {
         if ($this->gvar[$gvar] ?? false) {
             return false;
@@ -1245,14 +1247,13 @@ class FormulaCompiler {
         }
     }
 
-    /** @param string $fid */
-    function _ensure_rrow_score($fid) {
-        if (!isset($this->queryOptions["scores"])) {
-            $this->queryOptions["scores"] = array();
+    /** @param ReviewField $f */
+    function _ensure_rrow_score($f) {
+        if (!in_array($f, $this->queryOptions["scores"] ?? [])) {
+            $this->queryOptions["scores"][] = $f;
         }
-        $this->queryOptions["scores"][$fid] = $fid;
-        if ($this->check_gvar('$ensure_score_' . $fid)) {
-            $this->g0stmt[] = $this->_prow() . '->ensure_review_score("' . $fid . '");';
+        if ($this->check_gvar('$ensure_score_' . $f->id)) {
+            $this->g0stmt[] = $this->_prow() . '->ensure_review_score("' . $f->id . '");';
         }
     }
 
@@ -1263,6 +1264,7 @@ class FormulaCompiler {
         }
     }
 
+    /** @return int */
     private function _push() {
         $this->_stack[] = [$this->_lprefix, $this->lstmt, $this->index_type, $this->indexed, $this->_lflags];
         $this->_lprefix = ++$this->_maxlprefix;
