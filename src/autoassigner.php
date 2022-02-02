@@ -355,28 +355,30 @@ class Autoassigner {
         $all_fields = $this->conf->all_review_fields();
         $score = null;
         $scoredir = 1;
+        $scoreorder = 0;
         if ((substr($scoreinfo, 0, 1) === "-"
              || substr($scoreinfo, 0, 1) === "+")
             && isset($all_fields[substr($scoreinfo, 1)])) {
             $score = substr($scoreinfo, 1);
             $scoredir = substr($scoreinfo, 0, 1) === "-" ? -1 : 1;
+            $scoreorder = $all_fields[substr($scoreinfo, 1)]->order;
         }
 
         $set = $this->conf->paper_set(["paperId" => $this->papersel, "allConflictType" => true, "reviewSignatures" => true, "scores" => $score ? [$all_fields[$score]] : []]);
 
         $scorearr = [];
         foreach ($set as $prow) {
-            if ($score) {
-                $prow->ensure_review_score($score);
+            if ($scoreorder) {
+                $prow->ensure_review_field_order($scoreorder);
             }
             foreach ($this->acs as $cid => $ac) {
                 if ($prow->has_conflict($cid)
                     || !($rrow = $prow->review_by_user($cid))
                     || ($scoreinfo !== "xa" && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)
-                    || ($score && !$rrow->$score)) {
+                    || ($scoreorder && !$rrow->fields[$scoreorder])) {
                     $scorearr[$prow->paperId][$cid] = -1;
                 } else {
-                    $s = $score ? $rrow->$score : 1;
+                    $s = $score ? $rrow->fields[$scoreorder] : 1;
                     if ($scoredir == -1) {
                         $s = 1000 - $s;
                     }

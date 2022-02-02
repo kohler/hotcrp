@@ -492,9 +492,10 @@ save_review(1, $user_mgbaker, [
     "ready" => true
 ]);
 
-$rrow = fetch_review($paper1, $user_mgbaker);
-xassert(!$rrow->sfields);
-xassert(!$rrow->tfields);
+$rrow = $Conf->fetch_first_object("select * from PaperReview where paperId=1 and contactId=?", $user_mgbaker->contactId);
+xassert(!!$rrow);
+xassert($rrow->sfields === null);
+xassert($rrow->tfields === null);
 
 save_review(1, $user_mgbaker, [
     "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",

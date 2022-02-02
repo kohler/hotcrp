@@ -920,11 +920,10 @@ class Score_Fexpr extends Fexpr {
         if ($field->view_score <= $state->user->permissive_view_score_bound()) {
             return "null";
         }
-        $fid = $field->id;
         $state->_ensure_rrow_score($field);
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound(true);
-        return "({$field->view_score} > $rrow_vsb && ({$rrow}->$fid ?? 0) ? (int) {$rrow}->$fid : null)";
+        return "({$field->view_score} > {$rrow_vsb} ? ({$rrow}->fields[{$field->order}] ? : null) : null)";
     }
 }
 
@@ -1253,7 +1252,7 @@ class FormulaCompiler {
             $this->queryOptions["scores"][] = $f;
         }
         if ($this->check_gvar('$ensure_score_' . $f->id)) {
-            $this->g0stmt[] = $this->_prow() . '->ensure_review_score("' . $f->id . '");';
+            $this->g0stmt[] = $this->_prow() . '->ensure_review_field_order(' . $f->order . ');';
         }
     }
 

@@ -331,7 +331,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             || $this->rate_bits !== null) {
             $prow->ensure_full_reviews();
         } else if ($this->rfield) {
-            $prow->ensure_review_score($this->rfield);
+            $prow->ensure_review_field_order($this->rfield->order);
         }
         $this->rfield_scorex = $this->rfield_scoret === 16 ? 0 : 3;
         $this->rate_fail = false;
@@ -416,8 +416,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             if ($this->rfield->view_score <= $user->view_score_bound($prow, $rrow)) {
                 return false;
             }
-            $fid = $this->rfield->id;
-            $val = $rrow->$fid ?? null;
+            $val = $rrow->fields[$this->rfield->order];
             if ($this->rfield->has_options) {
                 if ($this->rfield_scoret >= 8) {
                     if (!$val || $this->rfield_scorex < 0) {
@@ -443,7 +442,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 if ((string) $val === "") {
                     return false;
                 } else if ($this->rfield_text !== true) {
-                    if (!$rrow->field_match_pregexes($this->rfield_text, $fid))
+                    if (!$rrow->field_match_pregexes($this->rfield_text, $this->rfield->order))
                         return false;
                 }
             }

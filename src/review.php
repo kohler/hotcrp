@@ -826,7 +826,7 @@ class ReviewForm implements JsonSerializable {
         foreach ($rrow->viewable_fields($contact) as $f) {
             $rval = "";
             if ($rrow) {
-                $rval = $f->unparse_value($rrow->{$f->id} ?? null, ReviewField::VALUE_STRING);
+                $rval = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING);
             }
             $fval = $rval;
             if ($rvalues && isset($rvalues->req[$f->id])) {
@@ -900,7 +900,7 @@ class ReviewForm implements JsonSerializable {
         $wc = 0;
         foreach ($this->forder as $f) {
             if ($f->include_word_count() && $rrow->has_nonempty_field($f)) {
-                $wc += count_words($rrow->{$f->id});
+                $wc += count_words($rrow->fields[$f->order]);
             }
         }
         return $wc;
@@ -912,8 +912,8 @@ class ReviewForm implements JsonSerializable {
         foreach ($this->forder as $f) {
             if (!$f->has_options && $f->test_exists($rrow)) {
                 $wc = $wc ?? 0;
-                if (!$f->value_empty($rrow->{$f->id} ?? null)) {
-                    $wc += count_words($rrow->{$f->id});
+                if (!$f->value_empty($rrow->fields[$f->order])) {
+                    $wc += count_words($rrow->fields[$f->order]);
                 }
             }
         }
@@ -1046,8 +1046,8 @@ $blind\n";
             $fval = "";
             if ($req && isset($req[$fid])) {
                 $fval = rtrim($req[$fid]);
-            } else if (isset($rrow->$fid)) {
-                $fval = $f->unparse_value($rrow->$fid, ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
+            } else if (isset($rrow->fields[$f->order])) {
+                $fval = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
             }
             if ($f->has_options && isset($f->options[$fval])) {
                 $fval = "$fval. " . $f->options[$fval];
@@ -1143,8 +1143,8 @@ $blind\n";
 
         foreach ($rrow->viewable_fields($contact) as $f) {
             $fval = "";
-            if (isset($rrow->{$f->id})) {
-                $fval = $f->unparse_value($rrow->{$f->id}, ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
+            if (isset($rrow->fields[$f->order])) {
+                $fval = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_STRING | ReviewField::VALUE_TRIM);
             }
             if ($fval == "") {
                 continue;
@@ -1494,7 +1494,7 @@ $blind\n";
         foreach ($rrow->viewable_fields($viewer) as $f) {
             if ($f->view_score > VIEWSCORE_REVIEWERONLY
                 || !($flags & self::RJ_NO_REVIEWERONLY)) {
-                $fval = $rrow->{$f->id} ?? null;
+                $fval = $rrow->fields[$f->order];
                 if ($f->has_options) {
                     $fval = $f->unparse_value((int) $fval);
                 }
@@ -1541,9 +1541,9 @@ $blind\n";
             $xbarsep = "";
         }
         foreach ($rrow->viewable_fields($contact) as $f) {
-            if ($f->has_options && !$f->value_empty($rrow->{$f->id} ?? null)) {
+            if ($f->has_options && !$f->value_empty($rrow->fields[$f->order])) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
-                    . $f->unparse_value((int) $rrow->{$f->id}, ReviewField::VALUE_SC);
+                    . $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_SC);
                 $xbarsep = $barsep;
             }
         }
@@ -2040,15 +2040,16 @@ class ReviewValues extends MessageSet {
         }
     }
 
-    /** @return array{int|string,int|string} */
-    private function fvalues(ReviewField $f, ReviewInfo $rrow = null) {
-        $fid = $f->id;
-        $oldval = $rrow && isset($rrow->$fid) ? $rrow->$fid : "";
+    /** @param ReviewField $f
+     * @param ReviewInfo $rrow
+     * @return array{int|string,int|string} */
+    private function fvalues($f, $rrow) {
+        $oldval = isset($rrow->fields[$f->order]) ? $rrow->fields[$f->order] : "";
         if ($f->has_options) {
             $oldval = (int) $oldval;
         }
-        if (isset($this->req[$fid])) {
-            return [$oldval, $f->parse_value($this->req[$fid])];
+        if (isset($this->req[$f->id])) {
+            return [$oldval, $f->parse_value($this->req[$f->id])];
         } else {
             return [$oldval, $oldval];
         }
@@ -2273,7 +2274,7 @@ class ReviewValues extends MessageSet {
             }
         }
         if (!empty($fchanges[0])) {
-            $sfields = json_decode($rrow->sfields ?? "{}", true) ?? [];
+            $sfields = $rrow->fstorage(true);
             foreach ($fchanges[0] as $fv) {
                 if ($fv[1] != 0) {
                     $sfields[$fv[0]->json_storage] = $fv[1];
@@ -2285,7 +2286,7 @@ class ReviewValues extends MessageSet {
             $qv[] = $sfields ? json_encode_db($sfields) : null;
         }
         if (!empty($fchanges[1])) {
-            $tfields = json_decode($rrow->tfields ?? "{}", true) ?? [];
+            $tfields = $rrow->fstorage(false);
             foreach ($fchanges[1] as $fv) {
                 if ($fv[1] !== "") {
                     $tfields[$fv[0]->json_storage] = $fv[1];
@@ -2514,7 +2515,7 @@ class ReviewValues extends MessageSet {
             $log_fields = [];
             foreach ($diffinfo->fields() as $f) {
                 if ($f->has_options) {
-                    $log_fields[] = $f->search_keyword() . ":" . $f->unparse_value($new_rrow->{$f->id} ?? null);
+                    $log_fields[] = $f->search_keyword() . ":" . $f->unparse_value($new_rrow->fields[$f->order]);
                 } else {
                     $log_fields[] = $f->search_keyword();
                 }

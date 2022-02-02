@@ -887,12 +887,10 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
 }
 
 class Score_PaperColumn extends ScoreGraph_PaperColumn {
-    public $score;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->format_field = $conf->checked_review_field($cj->review_field_id);
-        $this->score = $this->format_field->id;
     }
     function prepare(PaperList $pl, $visible) {
         $bound = $pl->user->permissive_view_score_bound($pl->search->limit_author());
@@ -907,16 +905,16 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
     }
     /** return array<int,int> */
     function score_values(PaperList $pl, PaperInfo $row) {
-        $fid = $this->format_field->id;
-        $row->ensure_review_score($this->format_field);
+        $f = $this->format_field;
+        $row->ensure_review_field_order($f->order);
         $scores = [];
-        $vs = $this->format_field->view_score;
+        $vs = $f->view_score;
         foreach ($row->viewable_reviews_as_display($pl->user) as $rrow) {
             if ($rrow->reviewSubmitted
-                && isset($rrow->$fid)
-                && $rrow->$fid
-                && ($vs >= VIEWSCORE_PC || $vs > $pl->user->view_score_bound($row, $rrow)))
-                $scores[$rrow->contactId] = $rrow->$fid;
+                && $rrow->fields[$f->order]
+                && ($f->view_score >= VIEWSCORE_PC
+                    || $f->view_score > $pl->user->view_score_bound($row, $rrow)))
+                $scores[$rrow->contactId] = $rrow->fields[$f->order];
         }
         return $scores;
     }

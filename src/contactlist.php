@@ -334,7 +334,7 @@ class ContactList {
 
     /** @param PaperInfo $prow
      * @param ReviewInfo $rrow
-     * @param list<array{string,int}> $forders */
+     * @param list<int> $forders */
     private function collect_review_data($prow, $rrow, $repapers, $review_limit, $forders) {
         $cid = $rrow->contactId;
         if ($repapers) {
@@ -357,9 +357,9 @@ class ContactList {
             $this->_rect_data[$cid][0] += 1;
             $this->_rect_data[$cid][1] += 1;
             if ($this->user->can_view_review($prow, $rrow)) {
-                foreach ($forders as $sp) {
-                    if ($rrow->{$sp[0]}) {
-                        $this->_score_data[$sp[1]][$cid][] = (int) $rrow->{$sp[0]};
+                foreach ($forders as $i) {
+                    if ($rrow->fields[$i]) {
+                        $this->_score_data[$i][$cid][] = $rrow->fields[$i];
                     }
                 }
             }
@@ -461,7 +461,7 @@ class ContactList {
             }
             $forders = [];
             foreach ($this->qopt["scores"] ?? [] as $f) {
-                $forders[] = [$f->main_storage, $f->order];
+                $forders[] = $f->order;
             }
             $this->_score_data = $this->conf->review_form()->order_array([]);
             foreach ($prows as $prow) {

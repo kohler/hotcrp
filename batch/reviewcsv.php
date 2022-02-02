@@ -227,7 +227,7 @@ class FieldCSVOutput {
             if ($f->has_options ? $this->no_score : $this->no_text) {
                 continue;
             }
-            $fv = $f->unparse_value($rrow->{$f->id} ?? null, ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
+            $fv = $f->unparse_value($rrow->fields[$f->order], ReviewField::VALUE_TRIM | ReviewField::VALUE_STRING);
             if ($fv === "") {
                 // ignore
             } else if ($this->narrow) {

@@ -67,7 +67,7 @@ class ReviewDiffInfo {
         $patch = [];
         foreach ($this->fields as $i => $f) {
             $sn = $f->short_id;
-            $v = [$this->rrow->{$f->id}, $this->newv[$i]];
+            $v = [$this->rrow->fields[$f->order], $this->newv[$i]];
             if ($f->has_options) {
                 $v[$dir] = (int) $v[$dir];
             } else if (self::$use_xdiff) {
@@ -129,6 +129,7 @@ class ReviewDiffInfo {
     }
     static function apply_patch(ReviewInfo $rrow, $patch) {
         self::check_xdiff();
+        $rform = $rrow->conf->review_form();
         $ok = true;
         foreach ($patch as $n => $v) {
             if (str_ends_with($n, ":x")
@@ -136,9 +137,10 @@ class ReviewDiffInfo {
                 && self::$has_xpatch
                 && ($fi = ReviewInfo::field_info(substr($n, 0, -2)))
                 && !$fi->has_options) {
-                $rrow->{$fi->id} = xdiff_string_bpatch($rrow->{$fi->id}, $v);
+                $oldv = $rrow->finfoval($fi);
+                $rrow->set_finfoval($fi, xdiff_string_bpatch($oldv, $v));
             } else if (($fi = ReviewInfo::field_info($n))) {
-                $rrow->{$fi->id} = (string) $v;
+                $rrow->set_finfoval($fi, $v);
             } else {
                 $ok = false;
             }

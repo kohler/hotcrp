@@ -29,7 +29,7 @@ class GetScores_ListAction extends ListAction {
                         $b = $a;
                         foreach ($rrow->viewable_fields($user) as $f) {
                             if ($f->has_options) {
-                                $v = $rrow->{$f->id} ?? null;
+                                $v = $rrow->fields[$f->order];
                                 if ($v || !$f->required) {
                                     $b[$f->search_keyword()] = $f->unparse_value($v);
                                     $any_scores[$f->search_keyword()] = $this_scores = true;

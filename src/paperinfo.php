@@ -2502,13 +2502,14 @@ class PaperInfo {
                 }
                 $x = explode(",", $this->$k);
                 foreach ($this->reviews_as_list() as $i => $rrow) {
-                    $rrow->{$f->id} = (int) $x[$i];
+                    $rrow->fields[$order] = (int) $x[$i];
                 }
             }
         }
     }
 
-    /** @param string|ReviewField $field */
+    /** @param string|ReviewField $field
+     * @deprecated */
     function ensure_review_score($field) {
         if (!($this->_reviews_flags & self::REVIEW_HAS_FULL)) {
             $f = is_string($field) ? $this->conf->review_field($field) : $field;
