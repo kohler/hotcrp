@@ -592,8 +592,17 @@ sub calc_doc_text_region ($) {
         $mint = $tbb->{top} if !defined($mint) || $mint > $tbb->{top};
     }
 
-    my ($rmarg) = $doc->{pagebb}->{width} - ($maxw + $minl);
-    my ($bmarg) = $doc->{pagebb}->{height} - ($maxh + $mint);
+    my ($rmarg, $bmarg);
+    if (defined($maxw) && defined($minl)) {
+        $rmarg = $doc->{pagebb}->{width} - ($maxw + $minl);
+    } else {
+        $rmarg = $minl = $maxw = 0;
+    }
+    if (defined($maxh) && defined($mint)) {
+        $bmarg = $doc->{pagebb}->{height} - ($maxh + $mint);
+    } else {
+        $bmarg = $mint = $maxh = 0;
+    }
     if ($rmarg < 0) {
         print STDERR "r MARGIN\n";
     }
@@ -725,7 +734,7 @@ sub calc_doc_columns ($) {
 sub p2h_font_bug ($) {
     my ($doc) = @_;
 
-    return 1 if ($doc->{bodyfont_pt} <= 0);
+    return 1 if !defined($doc->{bodyfont_pt}) || $doc->{bodyfont_pt} <= 0;
     return 0;
 }
 
@@ -801,14 +810,20 @@ sub report_json ($) {
     my($mr, $mb) = (modevalkey($dx->{mr}), modevalkey($dx->{mb}));
 
     my ($doc_ps) = sprintf "\"papersize\": [%.0f,%.0f]", $ph, $pw;
-    my ($doc_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $mt, $mr, $mb, $ml;
-    my ($doc_bfs);
+    my ($doc_margin);
+    if (defined($mt) && defined($mr)) {
+        $doc_margin = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $mt, $mr, $mb, $ml;
+    } else {
+        $doc_margin = "\"margin\": [0,0,0,0]";
+    }
+    my ($doc_bfs, $doc_l);
     if (p2h_font_bug($doc)) {
         $doc_bfs = "\"bodyfontsize\": null";
+        $doc_l = "\"leading\": null";
     } else {
         $doc_bfs = sprintf "\"bodyfontsize\": %g", $doc->{bodyfont_pt};
+        $doc_l = sprintf "\"leading\": %g", $doc->{lead_pt};
     }
-    my ($doc_l) = sprintf "\"leading\": %g", $doc->{lead_pt};
     my ($doc_c) = sprintf "\"columns\": %d", $doc->{ncols};
     print "  $doc_ps,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n";
     printf "  \"nummargin\": %.0f,\n", $nummargin if $nummargin < 10000;
