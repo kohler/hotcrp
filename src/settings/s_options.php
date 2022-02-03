@@ -271,6 +271,8 @@ class Options_SettingParser extends SettingParser {
     private $_conversions = [];
     /** @var array<int,PaperOption> */
     private $_new_options = [];
+    /** @var list<array{int,string}> */
+    private $_choice_renumberings = [];
 
     /** @param PaperOption $f
      * @return object */
@@ -291,8 +293,8 @@ class Options_SettingParser extends SettingParser {
             "selector" => ""
         ];
         if ($f instanceof Selector_PaperOption
-            && ($opts = $f->selector_options())) {
-            $j->selector = join("\n", $opts) . "\n";
+            && ($choices = $f->selector_options())) {
+            $j->selector = join("\n", $choices) . "\n";
         } else if ($f->type === "text"
                    && $f instanceof Text_PaperOption
                    && $f->display_space > 3) {
@@ -376,17 +378,43 @@ class Options_SettingParser extends SettingParser {
     /** @return bool */
     private function _apply_req_choices(SettingValues $sv, Si $si) {
         $selector = [];
-        foreach (explode("\n", trim(cleannl($sv->reqstr($si->name)))) as $t) {
+        $cleanreq = cleannl($sv->reqstr($si->name));
+        foreach (explode("\n", $cleanreq) as $t) {
             if ($t !== "")
-                $selector[] = $t;
+                $selector[] = simplify_whitespace($t);
         }
-        if (empty($selector)
-            && ($jtype = $sv->conf->option_type($sv->vstr("sf__{$si->part1}__type")))
+        if (($jtype = $sv->conf->option_type($sv->vstr("sf__{$si->part1}__type")))
             && ($jtype->has_selector ?? false)) {
-            $sv->error_at($si, "<0>Entry required (one choice per line)");
+            if (empty($selector)) {
+                $sv->error_at($si, "<0>Entry required (one choice per line)");
+            } else {
+                $collator = $sv->conf->collator();
+                for ($i = 0; $i !== count($selector); ++$i) {
+                    for ($j = $i + 1; $j !== count($selector); ++$j) {
+                        if ($collator->compare($selector[$i], $selector[$j]) === 0) {
+                            $sv->error_at($si, "<0>Choice ‘{$selector[$i]}’ is duplicated");
+                        }
+                    }
+                }
+                if (($of = $sv->oldv($si->part0 . $si->part1))
+                    && $of->type !== "none"
+                    && $of->selector !== $cleanreq) {
+                    $this->_check_choices_renumbering($sv, $si, $selector, $of);
+                }
+            }
         }
         $sv->save($si, $selector);
         return true;
+    }
+
+    private function _check_choices_renumbering(SettingValues $sv, Si $si, $selector, $of) {
+        $sqlmap = [];
+        foreach ($sv->unambiguous_renumbering(explode("\n", trim($of->selector)), $selector) as $i => $j) {
+            $sqlmap[] = "when " . ($i+1) . " then " . ($j+1);
+        }
+        if (count($sqlmap)) {
+            $this->_choice_renumberings[] = [$of->id, "case value " . join(" ", $sqlmap) . " else value end"];
+        }
     }
 
     /** @param object $sfj */
@@ -446,7 +474,9 @@ class Options_SettingParser extends SettingParser {
             $sv->update("options_version", (int) $sv->conf->setting("options") + 1);
             $sv->request_store_value($si);
             $sv->mark_invalidate_caches(["options" => true]);
-            if (!empty($this->_delete_optionids) || !empty($this->_conversions)) {
+            if (!empty($this->_delete_optionids)
+                || !empty($this->_conversions)
+                || !empty($this->_choice_renumberings)) {
                 $sv->request_write_lock("PaperOption");
             }
         }
@@ -473,6 +503,9 @@ class Options_SettingParser extends SettingParser {
         }
         foreach ($this->_conversions as $conv) {
             call_user_func($conv[0], $this->_new_options[$conv[1]->id], $conv[1]);
+        }
+        foreach ($this->_choice_renumberings as $idcase) {
+            $sv->conf->qe("update PaperOption set value={$idcase[1]} where optionId={$idcase[0]}");
         }
         $sv->mark_invalidate_caches(["autosearch" => true]);
     }

@@ -630,6 +630,51 @@ class SettingValues extends MessageSet {
         }
     }
 
+    /** @param list<string> $list1
+     * @param list<string> $list2
+     * @return array<int,int> */
+    function unambiguous_renumbering($list1, $list2) {
+        $collator = $this->conf->collator();
+        $nlist2 = count($list2);
+        $map1 = array_fill(0, count($list1), []);
+        $map2c = array_fill(0, $nlist2, 0);
+        $n2unique = 0;
+        for ($i = 0; $i !== count($list1); ++$i) {
+            for ($j = 0; $j !== $nlist2; ++$j) {
+                if ($collator->compare($list1[$i], $list2[$j]) === 0) {
+                    $map1[$i][] = $j;
+                    ++$map2c[$j];
+                    if ($map2c[$j] === 1) {
+                        ++$n2unique;
+                    } else if ($map2c[$j] === 2) {
+                        --$n2unique;
+                    }
+                }
+            }
+        }
+        $state = [];
+        foreach ($map1 as $i => $jlist) {
+            if (count($jlist) === 1 && $map2c[$jlist[0]] === 1) {
+                $state[] = 1; // has a unique mapping
+            } else if (empty($jlist) && $n2unique === $nlist2) {
+                $state[] = -1; // should be deleted
+            } else {
+                $state[] = 0;
+            }
+        }
+        $map = [];
+        foreach ($map1 as $i => $jlist) {
+            if ($state[$i] === 1
+                && ($jlist[0] >= count($list1) || $state[$jlist[0]] !== 0)
+                && $i !== $jlist[0]) {
+                $map[$i] = $jlist[0];
+            } else if ($state[$i] === -1 || $i >= $nlist2) {
+                $map[$i] = -1;
+            }
+        }
+        return $map;
+    }
+
 
     /** @param string|Si $id
      * @return bool */
