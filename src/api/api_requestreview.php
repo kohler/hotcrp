@@ -300,6 +300,15 @@ class RequestReview_API {
                 where paperId=? and reviewId=? and reviewModified<=0",
                 Conf::$now, $prow->paperId, $rrow->reviewId);
             $user->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} accepted", $prow);
+
+            // send mail to requesters
+            // XXX delay this mail by a couple minutes
+            if ($rrow->requestedBy > 0
+                && ($requser = $user->conf->user_by_id($rrow->requestedBy))) {
+                HotCRPMailer::send_to($requser, "@acceptreviewrequest", [
+                    "prow" => $prow, "reviewer_contact" => $rrow
+                ]);
+            }
         }
 
         $message_list = [];
@@ -380,6 +389,7 @@ class RequestReview_API {
                 $prow->conf->update_rev_tokens_setting(-1);
             }
             $prow->conf->update_automatic_tags($prow, "review");
+            $user->log_activity_for($rrow->contactId, "Review $rrow->reviewId declined", $prow);
 
             // send mail to requesters
             // XXX delay this mail by a couple minutes
@@ -389,7 +399,6 @@ class RequestReview_API {
                     "prow" => $prow, "reviewer_contact" => $rrow, "reason" => $reason
                 ]);
             }
-            $user->log_activity_for($rrow->contactId, "Review $rrow->reviewId declined", $prow);
 
             // maybe add capability to URL; otherwise user will immediately be
             // denied access

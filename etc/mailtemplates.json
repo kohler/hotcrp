@@ -391,8 +391,21 @@
 	},
 
 	{
+		"name": "acceptreviewrequest",
+		"subject": "[%CONFSHORTNAME%] Accepted review request for submission #%NUMBER%",
+		"body": [
+			"Dear %NAME%,\n\n",
+			"%REVIEWERCONTACT% has confirmed their intention to complete the review you requested of %CONFNAME% submission #%NUMBER%.\n%IF(REASON)%\nThey gave the following reason: %REASON%\n%ENDIF%\n",
+			"       Title: %TITLE%\n",
+			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
+			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"%SIGNATURE%\n"
+		]
+	},
+
+	{
 		"name": "declinereviewrequest",
-		"subject": "[%CONFSHORTNAME%] Review request for submission #%NUMBER% declined",
+		"subject": "[%CONFSHORTNAME%] Declined review request for submission #%NUMBER%",
 		"body": [
 			"Dear %NAME%,\n\n",
 			"%REVIEWERCONTACT% cannot complete the review you requested of %CONFNAME% submission #%NUMBER%. You may want to find an alternate reviewer.\n%IF(REASON)%\nThey gave the following reason: %REASON%\n%ENDIF%\n",
