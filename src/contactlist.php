@@ -25,8 +25,6 @@ class ContactList {
 
     /** @var list<string> */
     public static $folds = ["topics", "aff", "tags", "collab"];
-    /** @var array<int,array{string,int,int}> */
-    public static $fields;
 
     /** @var Conf */
     public $conf;
@@ -34,10 +32,10 @@ class ContactList {
     public $user;
     /** @var Qrequest */
     public $qreq;
-    /** @var null|int|string */
+    /** @var ?int */
     private $sortField;
     /** @var bool */
-    private $reverseSort;
+    private $reverseSort = false;
     /** @var bool */
     private $sortable;
     /** @var int */
@@ -84,24 +82,100 @@ class ContactList {
         }
         $this->qreq = $qreq;
 
-        $s = ($sortable ? (string) $this->qreq->sort : "");
-        $x = (strlen($s) ? $s[strlen($s)-1] : "");
-        $this->reverseSort = ($x == "R");
-        if ($x == "R" || $x == "N") {
-            $s = substr($s, 0, strlen($s) - 1);
-        }
-        if ($s !== "") {
-            $this->sortField = $s;
-        }
-        $this->sortable = $sortable;
-
         $this->tagger = new Tagger($this->user);
-
         foreach ($this->conf->review_form()->viewable_fields($this->user) as $f) {
             if ($f->has_options)
                 $this->_rfields[] = $f;
         }
+
+        if (($this->sortable = $sortable)
+            && ($s = $this->qreq->sort ?? "") !== "") {
+            if (str_ends_with($s, "R")) {
+                $this->reverseSort = true;
+                $s = substr($s, 0, strlen($s) - 1);
+            } else if (str_ends_with($s, "N")) {
+                $s = substr($s, 0, strlen($s) - 1);
+            } else if (str_starts_with($s, "-")) {
+                $this->reverseSort = true;
+                $s = substr($s, 1);
+            }
+            if (($fs = $this->_fieldspec($s))) {
+                $this->sortField = $fs[3];
+            }
+        }
     }
+
+    /** @param int|string $fieldId
+     * @return array{string,int,int,int,string} */
+    private function _fieldspec($fieldId) {
+        switch ($fieldId) {
+        case self::FIELD_SELECTOR:
+        case "sel":
+            return ["sel", 1, 0, self::FIELD_SELECTOR, "sel"];
+        case self::FIELD_SELECTOR_ON:
+        case "selon":
+            return ["sel", 1, 0, self::FIELD_SELECTOR, "selon"];
+        case self::FIELD_NAME:
+        case "name":
+            return ['name', 1, 1, self::FIELD_NAME, "name"];
+        case self::FIELD_EMAIL:
+        case "email":
+            return ['email', 1, 1, self::FIELD_EMAIL, "email"];
+        case self::FIELD_AFFILIATION:
+        case "aff":
+            return ['affiliation', 1, 1, self::FIELD_AFFILIATION, "aff"];
+        case self::FIELD_AFFILIATION_ROW:
+        case "affrow":
+            return ['affrow', 4, 0, self::FIELD_AFFILIATION_ROW, "affrow"];
+        case self::FIELD_LASTVISIT:
+        case "lastvisit":
+            return ['lastvisit', 1, 1, self::FIELD_LASTVISIT, "lastvisit"];
+        case self::FIELD_HIGHTOPICS:
+        case "topicshi":
+            return ['topics', 3, 0, self::FIELD_HIGHTOPICS, "topicshi"];
+        case self::FIELD_LOWTOPICS:
+        case "topicslo":
+            return ['topics', 3, 0, self::FIELD_LOWTOPICS, "topicslo"];
+        case self::FIELD_REVIEWS:
+        case "reviews":
+            return ['revstat', 1, 1, self::FIELD_REVIEWS, "reviews"];
+        case self::FIELD_REVIEW_RATINGS:
+        case "revratings":
+            return ['revstat', 1, 1, self::FIELD_REVIEW_RATINGS, "revratings"];
+        case self::FIELD_PAPERS:
+        case "papers":
+            return ['papers', 1, 1, self::FIELD_PAPERS, "papers"];
+        case self::FIELD_REVIEW_PAPERS:
+        case "repapers":
+            return ['papers', 1, 1, self::FIELD_REVIEW_PAPERS, "repapers"];
+        case self::FIELD_LEADS:
+        case "lead":
+            return ['revstat', 1, 1, self::FIELD_LEADS, "lead"];
+        case self::FIELD_SHEPHERDS:
+        case "shepherd":
+            return ['revstat', 1, 1, self::FIELD_SHEPHERDS, "shepherd"];
+        case self::FIELD_TAGS:
+        case "tags":
+            return ['tags', 5, 0, self::FIELD_TAGS, "tags"];
+        case self::FIELD_COLLABORATORS:
+        case "collab":
+            return ['collab', 6, 0, self::FIELD_COLLABORATORS, "collab"];
+        default:
+            if (is_int($fieldId)
+                && $fieldId >= self::FIELD_SCORE
+                && $fieldId < self::FIELD_SCORE + count($this->_rfields)) {
+                return ["uscores", 1, 1, $fieldId, $this->_rfields[$fieldId - self::FIELD_SCORE]->uid()];
+            } else if (is_string($fieldId)
+                       && ($f = $this->conf->review_field($fieldId) ?? $this->conf->find_review_field($fieldId))
+                       && ($p = array_search($f, $this->_rfields)) !== false) {
+                return ["uscores", 1, 1, self::FIELD_SCORE + $p, $f->uid()];
+            } else {
+                return null;
+            }
+        }
+    }
+
+
 
     /** @param int $fieldId */
     function selector($fieldId) {
@@ -275,19 +349,18 @@ class ContactList {
             usort($rows, [$this, "_sort_reviewed_papers"]);
             break;
         default:
-            if (($f = $this->conf->review_field($this->sortField))) {
-                $scoresort = $this->user->session("ulscoresort", "A");
-                if (!in_array($scoresort, ["A", "V", "D"], true)) {
-                    $scoresort = "A";
-                }
-                foreach ($rows as $row) {
-                    $scores = $this->_score_data[$f->order][$row->contactId] ?? [];
-                    $scoreinfo = new ScoreInfo($scores, true);
-                    $this->_sort_data[$row->contactId] =
-                        [$scoreinfo->sort_data($scoresort), $scoreinfo->mean()];
-                }
-                usort($rows, [$this, "_sort_scores"]);
+            $f = $this->_rfields[$this->sortField - self::FIELD_SCORE];
+            $scoresort = $this->user->session("ulscoresort", "A");
+            if (!in_array($scoresort, ["A", "V", "D"], true)) {
+                $scoresort = "A";
             }
+            foreach ($rows as $row) {
+                $scores = $this->_score_data[$f->order][$row->contactId] ?? [];
+                $scoreinfo = new ScoreInfo($scores, true);
+                $this->_sort_data[$row->contactId] =
+                    [$scoreinfo->sort_data($scoresort), $scoreinfo->mean()];
+            }
+            usort($rows, [$this, "_sort_scores"]);
             break;
         }
         if ($this->reverseSort) {
@@ -870,34 +943,6 @@ class ContactList {
         return $rows;
     }
 
-    /** @param int $fid
-     * @return ?array{string,int,int} */
-    static function contact_list_field($fid) {
-        if (self::$fields === null) {
-            self::$fields = [
-                ContactList::FIELD_SELECTOR => ['sel', 1, 0],
-                ContactList::FIELD_SELECTOR_ON => ['sel', 1, 0],
-                ContactList::FIELD_NAME => ['name', 1, 1],
-                ContactList::FIELD_EMAIL => ['email', 1, 1],
-                ContactList::FIELD_AFFILIATION => ['affiliation', 1, 1],
-                ContactList::FIELD_AFFILIATION_ROW => ['affrow', 4, 0],
-                ContactList::FIELD_LASTVISIT => ['lastvisit', 1, 1],
-                ContactList::FIELD_HIGHTOPICS => ['topics', 3, 0],
-                ContactList::FIELD_LOWTOPICS => ['topics', 3, 0],
-                ContactList::FIELD_REVIEWS => ['revstat', 1, 1],
-                ContactList::FIELD_REVIEW_RATINGS => ['revstat', 1, 1],
-                ContactList::FIELD_PAPERS => ['papers', 1, 1],
-                ContactList::FIELD_REVIEW_PAPERS => ['papers', 1, 1],
-                ContactList::FIELD_SCORE => ['uscores', 1, 1],
-                ContactList::FIELD_LEADS => ['revstat', 1, 1],
-                ContactList::FIELD_SHEPHERDS => ['revstat', 1, 1],
-                ContactList::FIELD_TAGS => ['tags', 5, 0],
-                ContactList::FIELD_COLLABORATORS => ['collab', 6, 0]
-            ];
-        }
-        return self::$fields[$fid] ?? null;
-    }
-
     function table_html($listname, $url, $listtitle = "", $foldsession = null) {
         // PC tags
         $listquery = $listname;
@@ -920,15 +965,12 @@ class ContactList {
         $this->any = (object) array("sel" => false);
         $ncol = 0;
         foreach ($baseFieldId as $fid) {
-            if ($this->selector($fid) === false) {
-                continue;
-            }
-            if (!($fieldDef[$fid] = self::contact_list_field($fid))) {
-                $fieldDef[$fid] = self::contact_list_field(self::FIELD_SCORE);
-            }
-            $acceptable_fields[$fid] = true;
-            if ($fieldDef[$fid][1] == 1) {
-                $ncol++;
+            if ($this->selector($fid) !== false) {
+                $acceptable_fields[$fid] = true;
+                $fieldDef[$fid] = $this->_fieldspec($fid);
+                if ($fieldDef[$fid][1] === 1) {
+                    ++$ncol;
+                }
             }
         }
 
@@ -1074,11 +1116,13 @@ class ContactList {
                     continue;
                 }
                 $x .= "    <th class=\"pl plh pl_$fdef[0]\">";
-                $ftext = $this->header($fieldId, $ord++);
-                if ($fieldId == $this->sortField) {
-                    $x .= '<a class="pl_sort pl_sorting' . ($this->reverseSort ? "_rev" : "_fwd") . '" rel="nofollow" href="' . $sortUrl . $fieldId . ($this->reverseSort ? "N" : "R") . '">' . $ftext . "</a>";
+                $ftext = $this->header($fieldId, ++$ord);
+                if ($fieldId === $this->sortField) {
+                    $rev = $this->reverseSort ? "" : "-";
+                    $x .= '<a class="pl_sort pl_sorting' . ($this->reverseSort ? "_rev" : "_fwd")
+                        . "\" rel=\"nofollow\" href=\"{$sortUrl}{$rev}{$fdef[4]}\">{$ftext}</a>";
                 } else if ($fdef[2]) {
-                    $x .= $q . $fieldId . "\">" . $ftext . "</a>";
+                    $x .= "{$q}{$fdef[4]}\">{$ftext}</a>";
                 } else {
                     $x .= $ftext;
                 }
