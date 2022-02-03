@@ -328,8 +328,8 @@ class Users_Page {
             $sv[] = "uldisplay.$key=" . ($this->qreq->get("show$key") ? 0 : 1);
         }
         foreach ($this->conf->all_review_fields() as $f) {
-            if ($this->qreq["has_show{$f->id}"])
-                $sv[] = "uldisplay.{$f->id}=" . ($this->qreq->get("show{$f->id}") ? 0 : 1);
+            if ($this->qreq["has_show{$f->short_id}"])
+                $sv[] = "uldisplay.{$f->short_id}=" . ($this->qreq["show{$f->short_id}"] ? 0 : 1);
         }
         if (isset($this->qreq->scoresort)) {
             $sv[] = "ulscoresort=" . ListSorter::canonical_short_score_sort($this->qreq->scoresort);
@@ -419,10 +419,11 @@ class Users_Page {
             echo '<td class="pad">';
             $uldisplay = ContactList::uldisplay($this->viewer);
             foreach ($viewable_fields as $f) {
-                $checked = strpos($uldisplay, $f->id) !== false;
-                echo Ht::checkbox("show{$f->id}", 1, $checked),
+                $checked = strpos($uldisplay, " {$f->short_id} ") !== false
+                    || strpos($uldisplay, " {$f->id} ") !== false;
+                echo Ht::checkbox("show{$f->short_id}", 1, $checked),
                     "&nbsp;", Ht::label($f->name_html),
-                    Ht::hidden("has_show{$f->id}", 1), "<br />";
+                    Ht::hidden("has_show{$f->short_id}", 1), "<br />";
             }
             echo "</td>";
         }

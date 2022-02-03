@@ -66,16 +66,7 @@ class Session_API {
                 self::change_display($user, substr($m[1], 0, 2), [substr($m[2], 1) => $unfold]);
             } else if ($m[1] === "uldisplay"
                        && preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2])) {
-                $x = $user->session($m[1]);
-                if ($x === null || strpos($x, " ") === false) {
-                    $x = " tags overAllMerit ";
-                }
-                $v = substr($m[2], 1);
-                $x = str_replace(" $v ", " ", $x) . ($unfold ? "$v " : "");
-                if ($x === " tags overAllMerit " || $x === " overAllMerit tags ") {
-                    $x = null;
-                }
-                $user->save_session($m[1], $x);
+                self::change_uldisplay($user, [substr($m[2], 1) => $unfold]);
             } else if (substr($m[1], 0, 4) === "fold" && $m[2] === "") {
                 $user->save_session($m[1], $unfold ? 0 : null);
             } else {
@@ -85,6 +76,8 @@ class Session_API {
         return self::session_result($user, !$error);
     }
 
+    /** @param string $report
+     * @param array<string,bool> $settings */
     static function change_display(Contact $user, $report, $settings) {
         $search = new PaperSearch($user, "NONE");
         $pl = new PaperList($report, $search, ["sort" => true]);
@@ -95,5 +88,38 @@ class Session_API {
         }
         $vd = array_filter($pl->unparse_view(true), function ($x) { return !str_starts_with($x, "sort:"); });
         $user->save_session("{$report}display", join(" ", $vd));
+    }
+
+    /** @param array<string,bool> $settings */
+    static private function change_uldisplay(Contact $user, $settings) {
+        $curl = explode(" ", trim(ContactList::uldisplay($user)));
+        foreach ($settings as $name => $setting) {
+            if (($f = $user->conf->review_field($name))) {
+                $terms = [$f->short_id, $f->id];
+            } else {
+                $terms = [$name];
+            }
+            foreach ($terms as $i => $term) {
+                $p = array_search($term, $curl, true);
+                if ($i === 0 && $setting && $p === false) {
+                    $curl[] = $term;
+                }
+                while (($i !== 0 || !$setting) && $p !== false) {
+                    array_splice($curl, $p, 1);
+                    $p = array_search($term, $curl, true);
+                }
+            }
+        }
+
+        $defaultl = explode(" ", trim(ContactList::uldisplay($user, true)));
+        sort($defaultl);
+        sort($curl);
+        if ($curl === $defaultl) {
+            $user->save_session("uldisplay", null);
+        } else if ($curl === [] || $curl === [""]) {
+            $user->save_session("uldisplay", " ");
+        } else {
+            $user->save_session("uldisplay", " " . join(" ", $curl) . " ");
+        }
     }
 }

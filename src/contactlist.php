@@ -36,15 +36,19 @@ class ContactList {
     public $qreq;
     /** @var null|int|string */
     private $sortField;
-    var $reverseSort;
-    var $sortable;
-    var $count;
-    var $any;
+    /** @var bool */
+    private $reverseSort;
+    /** @var bool */
+    private $sortable;
+    /** @var int */
+    private $count;
+    /** @var object */
+    public $any;
+    /** @var Tagger */
     private $tagger;
     private $limit;
     public $have_folds = [];
     private $qopt = [];
-    var $contactLinkArgs;
     /** @var PaperInfoSet */
     private $_rowset;
     /** @var array<int,list<int>> */
@@ -61,6 +65,8 @@ class ContactList {
     private $_lead_data;
     /** @var array<int,int> */
     private $_shepherd_data;
+    /** @var list<ReviewField> */
+    private $_rfields = [];
     /** @var list<array<int,list<int>>> */
     private $_score_data;
     /** @var array<int,array{int,int}> */
@@ -90,56 +96,66 @@ class ContactList {
         $this->sortable = $sortable;
 
         $this->tagger = new Tagger($this->user);
-        $this->contactLinkArgs = "";
+
+        foreach ($this->conf->review_form()->viewable_fields($this->user) as $f) {
+            if ($f->has_options)
+                $this->_rfields[] = $f;
+        }
     }
 
-    /** @param int|string $fieldId */
+    /** @param int $fieldId */
     function selector($fieldId) {
         if (!$this->user->isPC
-            && $fieldId != self::FIELD_NAME
-            && $fieldId != self::FIELD_AFFILIATION
-            && $fieldId != self::FIELD_AFFILIATION_ROW) {
+            && $fieldId !== self::FIELD_NAME
+            && $fieldId !== self::FIELD_AFFILIATION
+            && $fieldId !== self::FIELD_AFFILIATION_ROW) {
             return false;
+        } else if (in_array($fieldId, [self::FIELD_NAME, self::FIELD_SELECTOR, self::FIELD_SELECTOR_ON, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT], true)) {
+            return true;
         }
-        if ($fieldId == self::FIELD_HIGHTOPICS || $fieldId == self::FIELD_LOWTOPICS) {
+        switch ($fieldId) {
+        case self::FIELD_HIGHTOPICS:
+        case self::FIELD_LOWTOPICS:
             $this->have_folds["topics"] = $this->qopt["topics"] = true;
-        }
-        if ($fieldId == self::FIELD_REVIEWS) {
+            break;
+        case self::FIELD_REVIEWS:
             $this->qopt["reviews"] = true;
-        }
-        if ($fieldId == self::FIELD_LEADS) {
+            break;
+        case self::FIELD_LEADS:
             $this->qopt["papers"] = $this->qopt["leads"] = true;
-        }
-        if ($fieldId == self::FIELD_SHEPHERDS) {
+            break;
+        case self::FIELD_SHEPHERDS:
             $this->qopt["papers"] = $this->qopt["shepherds"] = true;
-        }
-        if ($fieldId == self::FIELD_REVIEW_RATINGS) {
+            break;
+        case self::FIELD_REVIEW_RATINGS:
             if ($this->conf->setting("rev_ratings") == REV_RATINGS_NONE) {
                 return false;
             }
             $this->qopt["revratings"] = $this->qopt["reviews"] = true;
-        }
-        if ($fieldId == self::FIELD_PAPERS) {
+            break;
+        case self::FIELD_PAPERS:
             $this->qopt["papers"] = $this->limit;
-        }
-        if ($fieldId == self::FIELD_REVIEW_PAPERS) {
+            break;
+        case self::FIELD_REVIEW_PAPERS:
             $this->qopt["repapers"] = $this->qopt["reviews"] = true;
-        }
-        if ($fieldId == self::FIELD_AFFILIATION_ROW) {
+            break;
+        case self::FIELD_AFFILIATION_ROW:
             $this->have_folds["aff"] = true;
-        }
-        if ($fieldId == self::FIELD_TAGS) {
+            break;
+        case self::FIELD_TAGS:
             $this->have_folds["tags"] = true;
-        }
-        if ($fieldId == self::FIELD_COLLABORATORS) {
+            break;
+        case self::FIELD_COLLABORATORS:
             $this->have_folds["collab"] = true;
-        }
-        if (($f = $this->conf->review_field($fieldId))) {
-            if (!$f->has_options || !$this->user->can_view_some_review_field($f)) {
+            break;
+        default:
+            $f = $this->_rfields[$fieldId - self::FIELD_SCORE];
+            if (!$this->user->can_view_some_review_field($f)) {
                 return false;
             }
             $this->qopt["reviews"] = true;
             $this->qopt["scores"][] = $f;
+            break;
         }
         return true;
     }
@@ -281,6 +297,8 @@ class ContactList {
         }
     }
 
+    /** @param int $fieldId
+     * @return string */
     function header($fieldId, $ordinal, $row = null) {
         switch ($fieldId) {
         case self::FIELD_NAME:
@@ -324,11 +342,8 @@ class ContactList {
         case self::FIELD_COLLABORATORS:
             return "Collaborators";
         default:
-            if (($f = $this->conf->review_field($fieldId))) {
-                return $f->web_abbreviation();
-            } else {
-                return "&lt;$fieldId&gt;?";
-            }
+            $f = $this->_rfields[$fieldId - self::FIELD_SCORE];
+            return $f->web_abbreviation();
         }
     }
 
@@ -536,6 +551,9 @@ class ContactList {
         $this->user->set_overrides($overrides);
     }
 
+    /** @param int $fieldId
+     * @param Contact $row
+     * @return string */
     function content($fieldId, $row) {
         switch ($fieldId) {
         case self::FIELD_NAME:
@@ -545,7 +563,7 @@ class ContactList {
             }
             $t = '<span class="taghl">' . $t . '</span>';
             if ($this->user->privChair) {
-                $t = "<a href=\"" . $this->conf->hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->is_disabled() ? ' class="qh"' : "") . ">$t</a>";
+                $t = "<a href=\"" . $this->conf->hoturl("profile", "u=" . urlencode($row->email)) . "\"" . ($row->is_disabled() ? ' class="qh"' : "") . ">$t</a>";
             }
             if (($viewable = $row->viewable_tags($this->user))
                 && $this->conf->tags()->has_decoration) {
@@ -712,63 +730,68 @@ class ContactList {
                 return "";
             }
         default:
-            if (($f = $this->conf->review_field($fieldId))
-                && (($row->roles & Contact::ROLE_PC)
-                    || $this->user->privChair
-                    || $this->limit === "req")
-                && ($scores = $this->_score_data[$f->order][$row->contactId] ?? [])) {
-                return $f->unparse_graph($scores, 2, 0);
-            } else {
-                return "";
+            if (($row->roles & Contact::ROLE_PC)
+                || $this->user->privChair
+                || $this->limit === "req") {
+                $f = $this->_rfields[$fieldId - self::FIELD_SCORE];
+                if (($scores = $this->_score_data[$f->order][$row->contactId] ?? [])) {
+                    return $f->unparse_graph($scores, 2, 0);
+                }
             }
+            return "";
         }
     }
 
-    static function uldisplay(Contact $user) {
-        $uldisplay = $user->session("uldisplay");
-        if ($uldisplay === null) {
+    /** @return string */
+    static function uldisplay(Contact $user, $no_session = false) {
+        if ($no_session || ($uldisplay = $user->session("uldisplay")) === null) {
             $uldisplay = " tags ";
             foreach ($user->conf->review_form()->highlighted_main_scores() as $rf) {
-                $uldisplay .= "{$rf->id} ";
+                $uldisplay .= "{$rf->short_id} ";
             }
         }
         return $uldisplay;
     }
 
+    /** @param list<int> $a
+     * @return list<int> */
     private function addScores($a) {
         if ($this->user->isPC) {
             $uldisplay = self::uldisplay($this->user);
-            foreach ($this->conf->all_review_fields() as $f) {
-                if ($f->has_options && strpos($uldisplay, " {$f->id} ") !== false)
-                    array_push($a, $f->id);
+            foreach ($this->_rfields as $i => $f) {
+                if (strpos($uldisplay, " {$f->id} ") !== false
+                    || strpos($uldisplay, " {$f->short_id} ") !== false)
+                    $a[] = self::FIELD_SCORE + $i;
             }
         }
         return $a;
     }
 
+    /** @return list<int> */
     function listFields($listname) {
+        $this->limit = $listname;
         switch ($listname) {
         case "pc":
         case "admin":
         case "pcadmin":
-            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS));
+            return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_LEADS, self::FIELD_SHEPHERDS]);
         case "pcadminx":
-            return array($listname, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS);
-          case "re":
-            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS));
-          case "ext":
-          case "extsub":
-            return $this->addScores(array($listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
-          case "req":
-            return $this->addScores(array("req", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS));
-          case "au":
-          case "aurej":
-          case "auuns":
-          case "auacc":
-            return [$listname, self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_COLLABORATORS];
-          case "all":
-            return ["all", self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_REVIEWS, self::FIELD_COLLABORATORS];
-          default:
+            return [self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS];
+        case "re":
+            return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS]);
+        case "ext":
+        case "extsub":
+            return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS]);
+        case "req":
+            return $this->addScores([self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_COLLABORATORS, self::FIELD_HIGHTOPICS, self::FIELD_LOWTOPICS, self::FIELD_REVIEWS, self::FIELD_REVIEW_RATINGS, self::FIELD_REVIEW_PAPERS]);
+        case "au":
+        case "aurej":
+        case "auuns":
+        case "auacc":
+            return [self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_COLLABORATORS];
+        case "all":
+            return [self::FIELD_SELECTOR, self::FIELD_NAME, self::FIELD_EMAIL, self::FIELD_AFFILIATION_ROW, self::FIELD_LASTVISIT, self::FIELD_TAGS, self::FIELD_PAPERS, self::FIELD_REVIEWS, self::FIELD_COLLABORATORS];
+        default:
             return null;
         }
     }
@@ -885,11 +908,11 @@ class ContactList {
         }
 
         // get paper list
-        if (!($baseFieldId = $this->listFields($listquery))) {
+        $baseFieldId = $this->listFields($listquery);
+        if (!$baseFieldId) {
             Conf::msg_error("There is no people list query named “" . htmlspecialchars($listquery) . "”.");
             return null;
         }
-        $this->limit = array_shift($baseFieldId);
 
         // get field array
         $fieldDef = [];
