@@ -235,6 +235,13 @@ class ReviewField implements JsonSerializable {
         }
     }
 
+    /** @return list<string> */
+    function unparse_json_options() {
+        assert($this->has_options);
+        $options = array_values($this->options ?? []);
+        return $this->option_letter ? array_reverse($options) : $options;
+    }
+
     /** @param 0|1|2 $for_settings
      * @return object */
     function unparse_json($for_settings) {
@@ -256,9 +263,8 @@ class ReviewField implements JsonSerializable {
         }
         $j->visibility = $this->unparse_visibility();
         if ($this->has_options) {
-            $j->options = array_values($this->options ?? []);
+            $j->options = $this->unparse_json_options();
             if ($this->option_letter) {
-                $j->options = array_reverse($j->options);
                 $j->option_letter = chr($this->option_letter - count($j->options));
             }
             if ($this->scheme !== "sv") {

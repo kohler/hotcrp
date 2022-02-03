@@ -269,33 +269,43 @@ class ReviewForm_SettingParser extends SettingParser {
         $clearf(null);
     }
 
-    private function _clear_nonexisting_options($fields, Conf $conf) {
-        $updates = [];
-
-        // clear options from main storage
-        $clear_sfields = [];
-        foreach ($fields as $f) {
-            if ($f->main_storage) {
-                $result = $conf->qe("update PaperReview set {$f->main_storage}=0 where {$f->main_storage}>" . count($f->options));
-                if ($result && $result->affected_rows > 0)
-                    $updates[$f->name] = true;
+    private function _renumber_choices($renumberings, Conf $conf) {
+        // main storage first
+        $jrenumberings = [];
+        $maincases = [];
+        foreach ($renumberings as $fmap) {
+            if ($fmap[0]->main_storage) {
+                $case = ["{$fmap[0]->main_storage}=case {$fmap[0]->main_storage}"];
+                foreach ($fmap[1] as $i => $j) {
+                    $case[] = "when {$i} then {$j}";
+                }
+                $case[] = "else {$fmap[0]->main_storage} end";
+                $maincases[] = join(" ", $case);
             }
-            if ($f->json_storage) {
-                $clear_sfields[] = $f;
+            if ($fmap[0]->json_storage) {
+                $jrenumberings[] = $fmap;
             }
         }
+        if (!empty($maincases)) {
+            $conf->qe("update PaperReview set " . join(", ", $maincases));
+        }
 
-        if ($clear_sfields) {
-            // clear options from json storage
+        // json storage second
+        if (!empty($jrenumberings)) {
             $clearf = Dbl::make_multi_qe_stager($conf->dblink);
             $result = $conf->qe("select paperId, reviewId, sfields from PaperReview where sfields is not null");
             while (($rrow = $result->fetch_object())) {
                 $sfields = json_decode($rrow->sfields, true) ?? [];
                 $update = false;
-                foreach ($clear_sfields as $f) {
-                    if (($sfields[$f->json_storage] ?? 0) > count($f->options)) {
-                        unset($sfields[$f->json_storage]);
-                        $update = $updates[$f->name] = true;
+                foreach ($jrenumberings as $fmap) {
+                    if (($v = $sfields[$fmap[0]->json_storage] ?? null) > 0
+                        && ($v1 = $fmap[1][$v] ?? $v) !== $v) {
+                        if ($v1) {
+                            $sfields[$fmap[0]->json_storage] = $v1;
+                        } else {
+                            unset($sfields[$fmap[0]->json_storage]);
+                        }
+                        $update = true;
                     }
                 }
                 if ($update) {
@@ -305,8 +315,6 @@ class ReviewForm_SettingParser extends SettingParser {
             }
             $clearf(null);
         }
-
-        return array_keys($updates);
     }
 
     static private function _compute_review_ordinals(Conf $conf) {
@@ -338,16 +346,22 @@ class ReviewForm_SettingParser extends SettingParser {
     function store_value(SettingValues $sv, Si $si) {
         $oform = $sv->conf->review_form();
         $nform = $this->_new_form;
-        $clear_fields = $clear_options = [];
+        $clear_fields = [];
+        $renumber_choices = [];
         $reset_wordcount = $assign_ordinal = $reset_view_score = false;
         foreach ($nform->all_fields() as $nf) {
             assert($nf->order > 0);
             $of = $oform->fmap[$nf->id] ?? null;
             if (!$of || !$of->order) {
                 $clear_fields[] = $nf;
-            } else if ($nf->has_options
-                       && count($nf->options) < count($of->options)) {
-                $clear_options[] = $nf;
+            } else if ($nf->has_options) {
+                $map = [];
+                foreach ($sv->unambiguous_renumbering($of->unparse_json_options(), $nf->unparse_json_options()) as $i => $j) {
+                    $map[$i + 1] = $j + 1;
+                }
+                if (!empty($map)) {
+                    $renumber_choices[] = [$nf, $map];
+                }
             }
             if ($of && $of->include_word_count() !== $nf->include_word_count()) {
                 $reset_wordcount = true;
@@ -366,14 +380,9 @@ class ReviewForm_SettingParser extends SettingParser {
         if (!empty($clear_fields)) {
             $this->_clear_existing_fields($clear_fields, $sv->conf);
         }
-        // ensure no review has a nonexisting option
-        if (!empty($clear_options)) {
-            $updates = $this->_clear_nonexisting_options($clear_options, $sv->conf);
-            if (!empty($updates)) {
-                sort($updates);
-                $sv->warning_at(null, "<0>Your changes invalidated some review scores");
-                $sv->inform_at(null, "<0>The invalid " . commajoin($updates) . " scores were reset to “No entry”.");
-            }
+        // renumber existing review scores
+        if (!empty($renumber_choices)) {
+            $this->_renumber_choices($renumber_choices, $sv->conf);
         }
         // assign review ordinals if necessary
         if ($assign_ordinal) {
