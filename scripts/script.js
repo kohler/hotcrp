@@ -9917,7 +9917,8 @@ var make_score_info = (function ($) {
 var scheme_info = {
     sv: [0, 9], svr: [1, 9, "sv"], blpu: [0, 9], publ: [1, 9, "blpu"],
     orbu: [0, 9], buor: [1, 9, "orbu"], viridis: [0, 9], viridisr: [1, 9, "viridis"],
-    pkrd: [0, 9], rdpk: [1, 9, "pkrd"], catx: [2, 10], none: [2, 1]
+    pkrd: [0, 9], rdpk: [1, 9, "pkrd"], turbo: [0, 9], turbor: [1, 9, "turbo"],
+    catx: [2, 10], none: [2, 1]
 }, sccolor = {}, info = {};
 
 function make_fm9(n, max, rev, categorical) {

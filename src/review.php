@@ -113,6 +113,7 @@ class ReviewField implements JsonSerializable {
         "rdpk" => [1, 9, "pkrd"], "pkrd" => [0, 9, "rdpk"],
         "viridisr" => [1, 9, "viridis"], "viridis" => [0, 9, "viridisr"],
         "orbu" => [0, 9, "buor"], "buor" => [1, 9, "orbu"],
+        "turbo" => [0, 9, "turbor"], "turbor" => [1, 9, "turbo"],
         "catx" => [2, 10, null], "none" => [2, 1, null]
     ];
 

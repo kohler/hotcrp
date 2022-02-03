@@ -4383,6 +4383,18 @@ div.sc {
 .sv-pkrd7 { color: #b93435; }
 .sv-pkrd8 { color: #b33023; }
 .sv-pkrd9 { color: #ac2c11; }
+.sv-turbo1 { color: #23171b; }
+.sv-turbo2 { color: #4569ee; }
+.sv-turbo3 { color: #26bce1; }
+.sv-turbo4 { color: #3ff393; }
+.sv-turbo5 { color: #6be619; }
+.sv-turbo6 { color: #ecd12e; }
+.sv-turbo7 { color: #ff821d; }
+.sv-turbo8 { color: #cb2f0d; }
+.sv-turbo9 { color: #900c00; }
+.dark .sv-turbo1 { color: #944c62; }
+.dark .sv-turbo5 { color: #95fb51; } /* actual turbo color */
+.dark .sv-turbo9 { color: #cc1100; }
 .sv-none1 { color: inherit; }
 
 .sc_sum {

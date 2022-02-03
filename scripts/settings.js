@@ -317,6 +317,7 @@ var fieldorder = [], original, samples, stemplate, ttemplate,
               "rdpk", "Red to pink", "pkrd", "Pink to red",
               "viridisr", "Yellow to purple", "viridis", "Purple to yellow",
               "orbu", "Orange to blue", "buor", "Blue to orange",
+              "turbo", "Turbo", "turbor", "Turbo reversed",
               "catx", "Category10", "none", "None"];
 
 function get_fid(elt) {
