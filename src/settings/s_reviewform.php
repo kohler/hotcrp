@@ -269,6 +269,7 @@ class ReviewForm_SettingParser extends SettingParser {
         $clearf(null);
     }
 
+    /** @param list<array{ReviewField,array<int,int>}> $renumberings */
     private function _renumber_choices($renumberings, Conf $conf) {
         // main storage first
         $jrenumberings = [];

@@ -80,7 +80,7 @@ class ReviewInfo implements JsonSerializable {
     private $_deaccent_fields;
 
     // scores
-    // These scores are loaded from the database, but exposed only in `fields`:
+    // These scores are loaded from the database, but exposed only in `fields`
     private $overAllMerit;
     private $reviewerQualification;
     private $novelty;
@@ -92,7 +92,7 @@ class ReviewInfo implements JsonSerializable {
     private $suitableForShort;
     private $potential;
     private $fixability;
-    // These scores are private to prevent access: (XXX backward compat)
+    // These scores are private to prevent access (XXX backward compat)
     private $s01;
     private $t01;
     private $t02;
@@ -140,13 +140,6 @@ class ReviewInfo implements JsonSerializable {
         "commentsToPC" => "t03", "commentsToAddress" => "t04",
         "weaknessOfPaper" => "t05", "strengthOfPaper" => "t06",
         "textField7" => "t07", "textField8" => "t08"
-    ];
-    /** @var list<?non-empty-string>
-     * @readonly */
-    static private $new_text_fields = [
-        null, "paperSummary", "commentsToAuthor", "commentsToPC",
-        "commentsToAddress", "weaknessOfPaper", "strengthOfPaper",
-        "textField7", "textField8"
     ];
     /** @var array<non-empty-string,non-empty-string>
      * @readonly */

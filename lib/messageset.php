@@ -427,6 +427,11 @@ class MessageSet {
     }
 
     /** @param string $field
+     * @return bool */
+    function has_message_at($field) {
+        return isset($this->errf[$field]);
+    }
+    /** @param string $field
      * @return int */
     function problem_status_at($field) {
         if ($this->problem_status >= self::WARNING) {
@@ -438,12 +443,14 @@ class MessageSet {
     /** @param string $field
      * @return bool */
     function has_problem_at($field) {
-        return $this->problem_status_at($field) >= self::WARNING;
+        return $this->problem_status >= self::WARNING
+            && ($this->errf[$field] ?? 0) >= self::WARNING;
     }
     /** @param string $field
      * @return bool */
     function has_error_at($field) {
-        return $this->problem_status_at($field) >= self::ERROR;
+        return $this->problem_status >= self::ERROR
+            && ($this->errf[$field] ?? 0) >= self::ERROR;
     }
 
     /** @param list<string> $fields
