@@ -1349,7 +1349,7 @@ $blind\n";
         echo '<hr class="c">';
         echo "<table class=\"revoff\"><tr>
       <td><strong>Offline reviewing</strong> &nbsp;</td>
-      <td>Upload form: &nbsp; <input type=\"file\" name=\"file\" accept=\"text/plain\" size=\"30\">
+      <td>Upload form: &nbsp; <input class=\"ignore-diff\" type=\"file\" name=\"file\" accept=\"text/plain\" size=\"30\">
       &nbsp; ", Ht::submit("upload", "Go"), "</td>
     </tr><tr>
       <td></td>
