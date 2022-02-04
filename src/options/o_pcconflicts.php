@@ -101,11 +101,11 @@ class PCConflicts_PaperOption extends PaperOption {
                 if (is_string($x)) {
                     $ja[strtolower($x)] = true;
                 } else {
-                    return PaperValue::make_estop($prow, $this, "Validation error.");
+                    return PaperValue::make_estop($prow, $this, "<0>Validation error");
                 }
             }
         } else {
-            return PaperValue::make_estop($prow, $this, "Validation error.");
+            return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
 
         $vm = self::paper_value_map($prow);

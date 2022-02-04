@@ -110,7 +110,7 @@ class Topics_PaperOption extends PaperOption {
             $j = [];
         }
         if (!is_array($j) || $bad) {
-            return PaperValue::make_estop($prow, $this, "Validation error.");
+            return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
 
         $topicset = $prow->conf->topic_set();
@@ -123,7 +123,7 @@ class Topics_PaperOption extends PaperOption {
                     $bad_topics[] = $tk;
                 }
             } else if (!is_string($tk)) {
-                return PaperValue::make_estop($prow, $this, "Validation error.");
+                return PaperValue::make_estop($prow, $this, "<0>Validation error");
             } else if (($tk = trim($tk)) !== "") {
                 $tid = array_search($tk, $topicset->as_array(), true);
                 if ($tid !== false) {

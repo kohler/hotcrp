@@ -37,7 +37,7 @@ class RealNumber_PaperOption extends PaperOption {
         } else if (preg_match('/\A(?:n\/?a|none|)\z/i', $v)) {
             $ov = PaperValue::make($prow, $this);
         } else {
-            $ov = PaperValue::make_estop($prow, $this, "Whole number expected.");
+            $ov = PaperValue::make_estop($prow, $this, "<0>Number required");
         }
         $ov->set_anno("request", $v);
         return $ov;
@@ -50,7 +50,7 @@ class RealNumber_PaperOption extends PaperOption {
         } else if ($j === null || $j === false) {
             return PaperValue::make($prow, $this);
         } else {
-            return PaperValue::make_estop($prow, $this, "Whole number expected.");
+            return PaperValue::make_estop($prow, $this, "<0>Number required");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {

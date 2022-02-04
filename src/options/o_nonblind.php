@@ -27,7 +27,7 @@ class Nonblind_PaperOption extends PaperOption {
         if (is_bool($j) || $j === null) {
             return PaperValue::make($prow, $this, $j ? 1 : null);
         } else {
-            return PaperValue::make_estop($prow, $this, "Option should be “true” or “false”.");
+            return PaperValue::make_estop($prow, $this, "<0>Option should be ‘true’ or ‘false’");
         }
     }
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {

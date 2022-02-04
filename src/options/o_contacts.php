@@ -144,7 +144,7 @@ class Contacts_PaperOption extends PaperOption {
                         $new_ca[] = Author::make_keyed($a);
                     }
                 } else {
-                    return PaperValue::make_estop($prow, $this, "Validation error.");
+                    return PaperValue::make_estop($prow, $this, "<0>Validation error");
                 }
             }
         } else if (is_array($j)) {
@@ -157,7 +157,7 @@ class Contacts_PaperOption extends PaperOption {
                 } else if (is_object($v) && isset($v->email)) {
                     $email = $v->email;
                 } else {
-                    return PaperValue::make_estop($prow, $this, "Validation error.");
+                    return PaperValue::make_estop($prow, $this, "<0>Validation error");
                 }
                 if (self::ca_index($ca, $email) !== false) {
                     // double mention -- do nothing
@@ -170,7 +170,7 @@ class Contacts_PaperOption extends PaperOption {
                 }
             }
         } else {
-            return PaperValue::make_estop($prow, $this, "Validation error.");
+            return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
         self::apply_new_users($ov, $new_ca, $ca);
         return $ov;
