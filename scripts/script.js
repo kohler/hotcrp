@@ -1501,6 +1501,7 @@ function input_set_default_value(elt, val) {
     var cb = input_is_checkboxlike(elt), upd, j;
     if (cb) {
         elt.removeAttribute("data-default-checked");
+        elt.checked = elt.checked; // set dirty checkedness flag
         elt.defaultChecked = val != null && val != "";
     } else {
         elt.removeAttribute("data-default-value");

@@ -4900,7 +4900,7 @@ class Conf {
         if (isset($this->settingTexts["msg.{$id}"]) && !$ims->has_override($id)) {
             $ims->add_override($id, $this->settingTexts["msg.{$id}"]);
         }
-        return $this->ims()->_i($id, ...$args);
+        return $ims->_i($id, ...$args);
     }
 
     /** @param string $context
@@ -4911,7 +4911,7 @@ class Conf {
         if (isset($this->settingTexts["msg.{$id}"]) && !$ims->has_override($id)) {
             $ims->add_override($id, $this->settingTexts["msg.{$id}"]);
         }
-        return $this->ims()->_ci($context, $id, ...$args);
+        return $ims->_ci($context, $id, ...$args);
     }
 
     /** @param string $s

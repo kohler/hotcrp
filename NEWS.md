@@ -1,6 +1,80 @@
 HotCRP NEWS
 ===========
 
+## Version 3.0b2
+
+* Upgrade notes
+
+    * Search change: Search for `re:me:R1`, not `re:me round:R1`.
+    * PHP 8.0 is supported.
+    * If you’re upgrading a very old installation, make sure your options
+      are in `conf/options.php`, not `conf/options.inc`.
+
+* More overhaul of HotCRP’s internals. More pages are rendered through
+  accumulated partials configured in JSON. Remove global variables. Better
+  behavior on HEAD methods. Introduce “formatted texts” for messages; these
+  are strings that start with either `<0>`, meaning what follows is plaintext,
+  or `<5>`, meaning what follows is HTML.
+
+* Better appearance for many error messages.
+
+* Home
+
+    * Report to the PC any scores that are selected by default.
+    * Highlight when viewing the site as another user.
+    * Add back-end support for OAuth signin.
+
+* Submissions
+
+    * Support fields that become visible when reviews are visible.
+    * Support real-number submission fields.
+    * Improve format checker robustness.
+
+* Search
+
+    * Add `re:user:R1` (remove `re:user round:R1`).
+    * Add `rate:good:user` (remove `re:user rate:good`).
+    * Add `proposal:user`.
+
+* Reviews
+
+    * Add support for review fields that appear only on subsets of reviews.
+    * More color schemes for options.
+    * Improve accept/decline workflow; send mail on accept as well as decline.
+    * Support assigning reviews to draft papers.
+
+* Comments
+
+    * Support `@mentions` in comments.
+    * Support comment topic, namely “submission” or “review”. Comments about a
+      submission are visible to users who can see the submission, whether or
+      not they can see the reviews.
+
+* Meeting tracker
+
+    * IDs of conflicted papers are hidden from a user’s tracker by default.
+
+* Profile
+
+    * Better user experience for bulk update.
+    * Send user notifications more reliably.
+    * Add UI for disabling a user on their profile page.
+
+* Action log
+
+    * Include review unsubmission.
+    * Include decision settings.
+
+* Settings
+
+    * Better display of submission and review fields.
+    * Internal overhaul.
+    * Reordering choices in a submission or review field should update existing
+      submissions (or reviews) accordingly.
+
+* Many other bug fixes, tests, and improvements.
+
+
 ## Version 3.0b1 - 12.Nov.2020
 
 * Upgrade notes
@@ -89,9 +163,9 @@ HotCRP NEWS
 
 * Search
 
-    * Support `[column decorator]` syntax, as in `sort:[lead last]` (sort by
-      lead last name) or `show:[allpref topics]` (include topic scores in the
-      preference list) or `show:[lead column]` (show the lead as a column, not
+    * Support `column[decorator]` syntax, as in `sort:lead[last]` (sort by
+      lead last name) or `show:allpref[topics]` (include topic scores in the
+      preference list) or `show:lead[column]` (show the lead as a column, not
       a row).
     * Support loading entire fields on demand, rather than requiring fields be
       partially rendered to Javascript even when not shown.
@@ -111,10 +185,11 @@ HotCRP NEWS
       indexed user’s `#~foo` tag. Use this functionality to compute allotment
       votes and approval votes.
     * Formulas support `let VAR = VAL in BODY`.
-    * Support a `#perm:` namespace. Tag a paper `#perm:author-read-review#1`
-      and that paper’s authors can read its reviews, regardless of other
-      settings; tag it `#perm:author-read-review#-1` and authors *cannot* read
-      reviews. Also `#perm:author-write`.
+    * EXPERIMENTAL: Support a `#perm:` namespace. Tag a paper
+      `#perm:author-read-review#1` and that paper’s authors can read its
+      reviews, regardless of other settings; tag it
+      `#perm:author-read-review#-1` and authors *cannot* read reviews. Also
+      `#perm:author-write`.
 
 * Formula graphs
 
