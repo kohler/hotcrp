@@ -208,7 +208,7 @@ if (isset($Qreq->monreq)) {
     } else {
         echo "<h2>Requested reviews</h2>\n\n";
         $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
-        $plist->echo_table_html();
+        $plist->print_table_html();
         echo '<div class="info">';
         if ($plist->has("need_review")) {
             echo "Some of your requested external reviewers have not completed their reviews.  To send them an email reminder, check the text below and then select &ldquo;Prepare mail.&rdquo;  You’ll get a chance to review the emails and select specific reviewers to remind.";
@@ -288,7 +288,7 @@ if (isset($Qreq->plimit)
         echo "\">No papers match that search.";
     } else {
         echo " g\">";
-        $plist->echo_table_html();
+        $plist->print_table_html();
     }
     echo '</div>', Ht::hidden("prevt", $Qreq->t),
         Ht::hidden("prevq", $Qreq->q);
@@ -363,8 +363,7 @@ if ($Me->privChair) {
 
 
 echo '<div class="aa c">',
-    Ht::submit("Prepare mail", ["class" => "btn-primary"]), ' &nbsp; <span class="hint">You’ll be able to review the mails before they are sent.</span>
-</div>
+    Ht::submit("Prepare mail", ["class" => "btn-primary"]), ' &nbsp; <span class="hint">You’ll be able to review the mails before they are sent.</span></div>
 ';
 
 function echo_mail_keyword_help() {

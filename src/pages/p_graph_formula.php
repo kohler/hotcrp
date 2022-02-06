@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_graph_formula.php -- HotCRP review preference graph drawing page
+// pages/p_graph_formula.php -- HotCRP review preference graph drawing page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Graph_Formula_Page {
@@ -44,7 +44,7 @@ class Graph_Formula_Page {
     /** @param FormulaGraph $fg
      * @param list<string> $queries
      * @param list<string> $styles */
-    private function render_graph($fg, $queries, $styles) {
+    private function print_graph($fg, $queries, $styles) {
         for ($i = 0; $i < count($queries); ++$i) {
             $fg->add_query($queries[$i], $styles[$i], "q$i");
         }
@@ -80,7 +80,7 @@ class Graph_Formula_Page {
             $attr["data-graph-fx"] = $fg->fx->expression;
             $attr["data-graph-fy"] = $fg->fy->expression;
         }
-        Graph_Page::echo_graph($highlightable, $h2, $attr);
+        Graph_Page::print_graph($highlightable, $h2, $attr);
 
         echo Ht::unstash(), Ht::script_open(),
             '$(function () { hotcrp.graph("#hotgraph", ',
@@ -91,7 +91,7 @@ class Graph_Formula_Page {
     /** @param MessageSet $fgm
      * @param list<string> $queries
      * @param list<string> $styles */
-    private function render_ui($fgm, $queries, $styles) {
+    private function print_ui($fgm, $queries, $styles) {
         echo Ht::form($this->conf->hoturl("graph", "group=formula"), ["method" => "get"]);
         /*echo '<div>',
             Ht::button(Icons::ui_graph_scatter(), ["class" => "btn-t"]),
@@ -131,10 +131,10 @@ class Graph_Formula_Page {
     }
 
     static function go(Contact $user, Qrequest $qreq, $gx, $gj) {
-        (new Graph_Formula_Page($user, $qreq))->render($gj);
+        (new Graph_Formula_Page($user, $qreq))->print($gj);
     }
 
-    function render($gj) {
+    function print($gj) {
         // parse arguments
         $qreq = $this->qreq;
         if (!isset($qreq->x) || !isset($qreq->y)) {
@@ -158,10 +158,10 @@ class Graph_Formula_Page {
             if ($qreq->xorder) {
                 $fg->set_xorder($qreq->xorder);
             }
-            $this->render_graph($fg, $queries, $styles);
-            $this->render_ui($fg, $queries, $styles);
+            $this->print_graph($fg, $queries, $styles);
+            $this->print_ui($fg, $queries, $styles);
         } else {
-            $this->render_ui(new MessageSet, $queries, $styles);
+            $this->print_ui(new MessageSet, $queries, $styles);
         }
     }
 }

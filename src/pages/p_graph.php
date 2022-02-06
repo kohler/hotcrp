@@ -1,12 +1,12 @@
 <?php
-// src/pages/p_graph.php -- HotCRP review preference graph drawing page
+// pages/p_graph.php -- HotCRP review preference graph drawing page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Graph_Page {
     /** @param bool $searchable
      * @param ?string $h2
      * @param array $attr */
-    static function echo_graph($searchable, $h2, $attr) {
+    static function print_graph($searchable, $h2, $attr) {
         echo '<div class="has-hotgraph" style="max-width:960px;margin-bottom:4em">';
         if ($searchable) {
             echo Ht::entry("q", "", ["placeholder" => "Find on graph", "class" => "uii js-hotgraph-highlight papersearch float-right need-autogrow need-suggest", "spellcheck" => false]);
@@ -72,7 +72,7 @@ class Graph_Page {
             $user->conf->make_script_file("scripts/d3-hotcrp.min.js", true),
             $user->conf->make_script_file("scripts/graph.js");
         $gx->set_section_class(false);
-        $gx->render_group($gj->name, true);
+        $gx->print_group($gj->name, true);
 
         $user->conf->footer();
         return false;

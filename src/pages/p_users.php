@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_users.php -- HotCRP people listing/editing page
+// pages/p_users.php -- HotCRP people listing/editing page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Users_Page {
@@ -373,7 +373,7 @@ class Users_Page {
         }
     }
 
-    private function render_query_form(ContactList $pl) {
+    private function print_query_form(ContactList $pl) {
         echo '<table id="contactsform">
 <tr><td><div class="tlx"><div class="tld is-tla active" id="tla-default">';
 
@@ -453,7 +453,7 @@ class Users_Page {
     }
 
 
-    private function render() {
+    private function print() {
         if ($this->qreq->t === "pc") {
             $title = "Program committee";
         } else if (str_starts_with($this->qreq->t, "#")) {
@@ -471,7 +471,7 @@ class Users_Page {
 
         echo '<hr class="g">';
         if (count($this->limits) > 1) {
-            $this->render_query_form($pl);
+            $this->print_query_form($pl);
         }
 
         if ($this->viewer->privChair && $this->qreq->t == "pc") {
@@ -541,6 +541,6 @@ class Users_Page {
         }
 
         // render
-        $up->render();
+        $up->print();
     }
 }

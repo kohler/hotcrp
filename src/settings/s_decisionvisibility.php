@@ -1,15 +1,15 @@
 <?php
-// src/settings/s_decisionvisibility.php -- HotCRP settings > decisions page
+// settings/s_decisionvisibility.php -- HotCRP settings > decisions page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class DecisionVisibility_SettingParser extends SettingParser {
-    static function render(SettingValues $sv) {
+    static function print(SettingValues $sv) {
         $extrev_view = $sv->vstr("extrev_view");
         $Rtext = $extrev_view ? "Reviewers" : "PC reviewers";
         $rtext = $extrev_view ? "reviewers" : "PC reviewers";
         $accept_auview = !$sv->vstr("seedec_hideau")
             && $sv->vstr("sub_blind") != Conf::BLIND_NEVER;
-        $sv->echo_radio_table("seedec", [Conf::SEEDEC_ADMIN => "Only administrators",
+        $sv->print_radio_table("seedec", [Conf::SEEDEC_ADMIN => "Only administrators",
                 Conf::SEEDEC_NCREV => "$Rtext and non-conflicted PC members",
                 Conf::SEEDEC_REV => "$Rtext and <em>all</em> PC members",
                 Conf::SEEDEC_ALL => "<b>Authors</b>, $rtext, and all PC members<span class=\"fx fn2\"> (and reviewers can see accepted submissions’ author lists)</span>"

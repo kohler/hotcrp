@@ -1,9 +1,9 @@
 <?php
-// src/help/h_votetags.php -- HotCRP help functions
+// help/h_votetags.php -- HotCRP help functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class VoteTags_HelpTopic {
-    static function render(HelpRenderer $hth) {
+    static function print(HelpRenderer $hth) {
         $votetag = $hth->example_tag("allotment");
         echo "<p>Some conferences have PC members vote for papers. In
 <em>allotment voting</em>, each PC member is assigned a vote allotment to

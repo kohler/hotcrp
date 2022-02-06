@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_adminhome.php -- HotCRP home page fragments for administrators
+// pages/p_adminhome.php -- HotCRP home page fragments for administrators
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class AdminHome_Page {
@@ -20,7 +20,7 @@ class AdminHome_Page {
             $user->conf->redirect_self($qreq);
         }
     }
-    static function render(Contact $user) {
+    static function print(Contact $user) {
         $conf = $user->conf;
         $ml = [];
         if (preg_match("/^(?:[1-5]\\.)/", phpversion())) {

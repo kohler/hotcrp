@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_tags.php -- HotCRP settings > tags page
+// settings/s_tags.php -- HotCRP settings > tags page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Tags_SettingRenderer {
@@ -9,39 +9,39 @@ class Tags_SettingRenderer {
         });
         return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
     }
-    static function render_tag_chair(SettingValues $sv) {
-        $sv->echo_entry_group("tag_chair", null, ["class" => "need-suggest tags"], "PC members can see these tags, but only administrators can change them.");
+    static function print_tag_chair(SettingValues $sv) {
+        $sv->print_entry_group("tag_chair", null, ["class" => "need-suggest tags"], "PC members can see these tags, but only administrators can change them.");
     }
-    static function render_tag_sitewide(SettingValues $sv) {
+    static function print_tag_sitewide(SettingValues $sv) {
         if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager()) {
-            $sv->echo_entry_group("tag_sitewide", null, ["class" => "need-suggest tags"], "Administrators can see and change these tags for every submission.");
+            $sv->print_entry_group("tag_sitewide", null, ["class" => "need-suggest tags"], "Administrators can see and change these tags for every submission.");
         }
     }
-    static function render_tag_approval(SettingValues $sv) {
-        $sv->echo_entry_group("tag_approval", null, ["class" => "need-suggest tags"], "<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>");
+    static function print_tag_approval(SettingValues $sv) {
+        $sv->print_entry_group("tag_approval", null, ["class" => "need-suggest tags"], "<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>");
     }
-    static function render_tag_vote(SettingValues $sv) {
-        $sv->echo_entry_group("tag_vote", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)");
+    static function print_tag_vote(SettingValues $sv) {
+        $sv->print_entry_group("tag_vote", null, ["class" => "need-suggest tags"], "“vote#10” declares an allotment of 10 votes per PC member. (<a href=\"" . $sv->conf->hoturl("help", "t=votetags") . "\">Help</a>)");
     }
-    static function render_tag_rank(SettingValues $sv) {
-        $sv->echo_entry_group("tag_rank", null, null, 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)');
+    static function print_tag_rank(SettingValues $sv) {
+        $sv->print_entry_group("tag_rank", null, null, 'The <a href="' . $sv->conf->hoturl("offline") . '">offline reviewing page</a> will expose support for uploading rankings by this tag. (<a href="' . $sv->conf->hoturl("help", "t=ranking") . '">Help</a>)');
     }
-    static function render(SettingValues $sv) {
+    static function print(SettingValues $sv) {
         // Tags
         echo '<div class="form-g">';
-        $sv->render_group("tags/main");
+        $sv->print_group("tags/main");
         echo "</div>\n";
 
         echo '<div class="form-g">';
-        $sv->render_group("tags/visibility");
+        $sv->print_group("tags/visibility");
         echo "</div>\n";
     }
-    static function render_tag_seeall(SettingValues $sv) {
+    static function print_tag_seeall(SettingValues $sv) {
         echo '<div class="form-g-2">';
-        $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
+        $sv->print_checkbox('tag_seeall', "PC can see tags for conflicted submissions");
         echo '</div>';
     }
-    static function render_styles(SettingValues $sv) {
+    static function print_styles(SettingValues $sv) {
         $skip_colors = [];
         if ($sv->conf->opt("tagNoSettingsColors")) {
             $skip_colors = preg_split('/[\s|]+/', $sv->conf->opt("tagNoSettingsColors"));

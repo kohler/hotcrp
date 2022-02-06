@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_subfieldcondition.php -- HotCRP submission field conditions
+// settings/s_subfieldcondition.php -- HotCRP submission field conditions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SubFieldCondition_SettingParser extends SettingParser {

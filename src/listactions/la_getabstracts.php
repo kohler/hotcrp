@@ -4,10 +4,18 @@
 
 class GetAbstracts_ListAction extends ListAction {
     const WIDTH = 96;
+    /** @param FieldRender $fr
+     * @param PaperInfo $prow
+     * @param Contact $user
+     * @param PaperOption $o */
     private static function render_abstract($fr, $prow, $user, $o) {
         $fr->value = $prow->abstract_text();
         $fr->value_format = $prow->abstract_format();
     }
+    /** @param FieldRender $fr
+     * @param PaperInfo $prow
+     * @param Contact $user
+     * @param PaperOption $o */
     private static function render_authors($fr, $prow, $user, $o) {
         if ($user->can_view_authors($prow)
             && ($alist = $prow->author_list())) {
@@ -19,6 +27,10 @@ class GetAbstracts_ListAction extends ListAction {
             }
         }
     }
+    /** @param FieldRender $fr
+     * @param PaperInfo $prow
+     * @param Contact $user
+     * @param PaperOption $o */
     private static function render_topics($fr, $prow, $user, $o) {
         if (($tlist = $prow->topic_map())) {
             $fr->title = $o->title(count($tlist));

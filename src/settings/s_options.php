@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_options.php -- HotCRP settings > submission form page
+// settings/s_options.php -- HotCRP settings > submission form page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Options_SettingRenderer {
@@ -37,18 +37,18 @@ class Options_SettingRenderer {
     }
 
 
-    function render_name(SettingValues $sv) {
+    function print_name(SettingValues $sv) {
         echo '<div class="', $sv->control_class("sf__{$this->ctr}__name", "entryi mb-3"), '">',
             '<div class="entry">',
             $sv->feedback_at("sf__{$this->ctr}__name");
-        $sv->echo_entry("sf__{$this->ctr}__name", [
+        $sv->print_entry("sf__{$this->ctr}__name", [
             "class" => "need-tooltip font-weight-bold", "aria-label" => "Field name",
             "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus"
         ]);
         echo '</div></div>';
     }
 
-    function render_type(SettingValues $sv) {
+    function print_type(SettingValues $sv) {
         $curt = $sv->oldv("sf__{$this->ctr}__type");
         $jtypes = $sv->conf->option_type_map();
         uasort($jtypes, "Conf::xt_order_compare");
@@ -66,21 +66,21 @@ class Options_SettingRenderer {
         }
 
         if (count($otypes) === 1) {
-            $sv->echo_control_group("sf__{$this->ctr}__type", "Type",
+            $sv->print_control_group("sf__{$this->ctr}__type", "Type",
                 Ht::hidden("sf__{$this->ctr}__type", $curt) . $otypes[$curt], [
                 "horizontal" => true
             ]);
         } else {
-            $sv->echo_select_group("sf__{$this->ctr}__type", "Type", $otypes, [
+            $sv->print_select_group("sf__{$this->ctr}__type", "Type", $otypes, [
                 "horizontal" => true, "class" => "uich js-settings-sf-type"
             ]);
         }
     }
 
-    function render_choices(SettingValues $sv) {
+    function print_choices(SettingValues $sv) {
         $type = $sv->vstr("sf__{$this->ctr}__type");
         $wanted = ["selector", "radio"];
-        $sv->echo_textarea_group("sf__{$this->ctr}__choices", "Choices", [
+        $sv->print_textarea_group("sf__{$this->ctr}__choices", "Choices", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus",
             "group_class" => "has-type-condition" . (in_array($type, $wanted) ? "" : " hidden"),
@@ -88,31 +88,31 @@ class Options_SettingRenderer {
         ]);
     }
 
-    function render_description(SettingValues $sv) {
-        $sv->echo_textarea_group("sf__{$this->ctr}__description", "Description", [
+    function print_description(SettingValues $sv) {
+        $sv->print_textarea_group("sf__{$this->ctr}__description", "Description", [
             "horizontal" => true, "class" => "w-entry-text settings-sf-description need-tooltip",
             "data-tooltip-info" => "settings-sf", "data-tooltip-type" => "focus",
             "group_class" => "is-property-description"
         ]);
     }
 
-    function render_presence(SettingValues $sv) {
-        $sv->echo_select_group("sf__{$this->ctr}__presence", "Present on", [
+    function print_presence(SettingValues $sv) {
+        $sv->print_select_group("sf__{$this->ctr}__presence", "Present on", [
             "all" => "All submissions", "final" => "Final versions only"
         ], [
             "horizontal" => true, "group_class" => "is-property-editing"
         ]);
     }
 
-    function render_required(SettingValues $sv) {
-        $sv->echo_select_group("sf__{$this->ctr}__required", "Required", [
+    function print_required(SettingValues $sv) {
+        $sv->print_select_group("sf__{$this->ctr}__required", "Required", [
             "0" => "No", "1" => "Yes"
         ], [
             "horizontal" => true, "group_class" => "is-property-editing"
         ]);
     }
 
-    function render_visibility(SettingValues $sv) {
+    function print_visibility(SettingValues $sv) {
         $options = [
             "all" => "Visible to reviewers",
             "nonblind" => "Hidden on blind submissions",
@@ -123,7 +123,7 @@ class Options_SettingRenderer {
         if ($sv->oldv("sf__{$this->ctr}__visibility") !== "conflict") {
             unset($options["conflict"]);
         }
-        $sv->echo_select_group("sf__{$this->ctr}__visibility", "Visibility", $options, [
+        $sv->print_select_group("sf__{$this->ctr}__visibility", "Visibility", $options, [
             "horizontal" => true, "group_class" => "is-property-visibility", "group_open" => true,
             "class" => "settings-sf-visibility", "fold_values" => ["review"]
         ]);
@@ -131,15 +131,15 @@ class Options_SettingRenderer {
             '</div></div>';
     }
 
-    function render_display(SettingValues $sv) {
-        $sv->echo_select_group("sf__{$this->ctr}__display", "Display", [
+    function print_display(SettingValues $sv) {
+        $sv->print_select_group("sf__{$this->ctr}__display", "Display", [
             "prominent" => "Normal", "topics" => "Grouped with topics", "submission" => "Near submission"
         ], [
             "horizontal" => true, "group_class" => "is-property-display", "class" => "settings-sf-display"
         ]);
     }
 
-    function render_actions(SettingValues $sv) {
+    function print_actions(SettingValues $sv) {
         echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
             Ht::button(Icons::ui_use("movearrow0"), ["class" => "btn-licon ui js-settings-sf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_use("movearrow2"), ["class" => "btn-licon ui js-settings-sf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
@@ -149,7 +149,7 @@ class Options_SettingRenderer {
     }
 
 
-    private function render_one_option_view(PaperOption $io, $ctr) {
+    private function print_one_option_view(PaperOption $io, $ctr) {
         echo '<div id="sf__', $ctr, '__view" class="settings-sf-view fn2 ui js-foldup">';
         if ($io->exists_condition()) {
             $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $io->exists_condition() . "’", MessageSet::WARNING_NOTE);
@@ -165,13 +165,13 @@ class Options_SettingRenderer {
         $io->set_editable_condition(true);
         $io->set_exists_condition(true);
         $ov = $this->pt->prow->force_option($io);
-        $io->echo_web_edit($this->pt, $ov, $ov);
+        $io->print_web_edit($this->pt, $ov, $ov);
         $io->set_editable_condition($ei);
         $io->set_exists_condition($xi);
         echo '</div>';
     }
 
-    private function render_one_option(SettingValues $sv, $ctr) {
+    private function print_one_option(SettingValues $sv, $ctr) {
         $this->ctr = $ctr;
         $fid = $sv->reqstr("sf__{$ctr}__id");
         $this->io = is_numeric($fid) ? $sv->conf->option_by_id(intval($fid)) : null;
@@ -181,27 +181,27 @@ class Options_SettingRenderer {
             'has-fold fold2o hidden">';
 
         if ($this->io) {
-            $this->render_one_option_view($this->io, $ctr);
+            $this->print_one_option_view($this->io, $ctr);
         }
 
         echo '<div id="sf__', $ctr, '__edit" class="settings-sf-edit fx2">',
             Ht::hidden("sf__{$ctr}__id", $this->io ? $this->io->id : "new", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
             Ht::hidden("sf__{$ctr}__order", $ctr, ["class" => "settings-sf-order", "data-default-value" => $this->io ? $this->io->order : ""]);
-        $sv->render_group("submissionfield/properties");
+        $sv->print_group("submissionfield/properties");
         echo '</div>';
 
-        $this->render_js_trigger($ctr);
+        $this->print_js_trigger($ctr);
         echo '</div>';
     }
 
-    private function render_js_trigger($ctr) {
+    private function print_js_trigger($ctr) {
         if ($this->_last_ctr !== null && $this->_last_ctr !== "\$") {
             echo Ht::unstash_script('$("#sf__' . $this->_last_ctr . '").trigger("hotcrpsettingssf")');
         }
         $this->_last_ctr = $ctr;
     }
 
-    function render(SettingValues $sv) {
+    function print(SettingValues $sv) {
         echo "<hr class=\"g\">\n",
             Ht::hidden("has_options", 1),
             Ht::hidden("options_version", (int) $sv->conf->setting("options")),
@@ -213,10 +213,10 @@ class Options_SettingRenderer {
 
         echo '<div id="settings-sform" class="c">';
         foreach ($sv->object_list_counters("sf") as $ctr) {
-            $this->render_one_option($sv, $ctr);
+            $this->print_one_option($sv, $ctr);
         }
         echo "</div>";
-        $this->render_js_trigger(null);
+        $this->print_js_trigger(null);
 
         // render sample options
         echo '<template id="settings-sf-samples" class="hidden">';
@@ -242,7 +242,7 @@ class Options_SettingRenderer {
                 $ov = $o->parse_json($this->pt->prow, $args["value"] ?? null)
                     ?? PaperValue::make($this->pt->prow, $o);
                 echo '<div data-name="', htmlspecialchars($uf->name), '" data-title="', htmlspecialchars($uf->title), '">';
-                $o->echo_web_edit($this->pt, $ov, $ov);
+                $o->print_web_edit($this->pt, $ov, $ov);
                 echo '</div>';
             }
         }
@@ -250,7 +250,7 @@ class Options_SettingRenderer {
 
         // render new options
         echo '<template id="settings-sf-new" class="hidden">';
-        $this->render_one_option($sv, '$');
+        $this->print_one_option($sv, '$');
         echo '</template>';
 
         echo '<div class="mt-5">',

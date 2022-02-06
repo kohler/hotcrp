@@ -247,7 +247,7 @@ class Authors_PaperOption extends PaperOption {
             . $pt->messages_at("authors:affiliation_$n")
             . '</td></tr>';
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $sb = $this->conf->submission_blindness();
         $title = $pt->edit_title_html($this);
         if ($sb === Conf::BLIND_ALWAYS) {
@@ -255,7 +255,7 @@ class Authors_PaperOption extends PaperOption {
         } else if ($sb === Conf::BLIND_UNTILREVIEW) {
             $title .= ' <span class="n">(blind until review)</span>';
         }
-        $pt->echo_editable_option_papt($this, $title, ["id" => "authors"]);
+        $pt->print_editable_option_papt($this, $title, ["id" => "authors"]);
         $readonly = !$this->test_editable($ov->prow);
 
         $max_authors = (int) $this->conf->opt("maxAuthors");

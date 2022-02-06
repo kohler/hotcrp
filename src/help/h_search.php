@@ -1,9 +1,9 @@
 <?php
-// src/help/h_search.php -- HotCRP help functions
+// help/h_search.php -- HotCRP help functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Search_HelpTopic {
-    static function render(HelpRenderer $hth) {
+    static function print(HelpRenderer $hth) {
         echo "<p>All HotCRP lists are obtained through flexible
 search. Some hints for PC members and chairs:</p>
 

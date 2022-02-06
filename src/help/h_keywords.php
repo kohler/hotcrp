@@ -1,9 +1,9 @@
 <?php
-// src/help/h_keywords.php -- HotCRP help functions
+// help/h_keywords.php -- HotCRP help functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Keywords_HelpTopic {
-    static function render(HelpRenderer $hth) {
+    static function print(HelpRenderer $hth) {
         // how to report author searches?
         if ($hth->conf->submission_blindness() === Conf::BLIND_NEVER) {
             $aunote = "";
@@ -14,7 +14,7 @@ class Keywords_HelpTopic {
         }
 
         // does a reviewer tag exist?
-        $retag = $hth->meaningful_pc_tag() ? : "";
+        $retag = $hth->meaningful_pc_tag() ?? "";
 
         echo $hth->table(true);
         echo $hth->tgroup("Basics");
@@ -112,8 +112,9 @@ class Keywords_HelpTopic {
         echo $hth->tgroup("Reviews");
         echo $hth->search_trow("re:me", "you are a reviewer");
         echo $hth->search_trow("re:fdabek", "“fdabek” in reviewer name/email");
-        if ($retag)
+        if ($retag) {
             echo $hth->search_trow("re:#$retag", "has a reviewer tagged “#" . $retag . "”");
+        }
         echo $hth->search_trow("re:4", "four reviewers (assigned and/or completed)");
         if ($retag) {
             echo $hth->search_trow("re:#$retag>1", "at least two reviewers (assigned and/or completed) tagged “#" . $retag . "”");

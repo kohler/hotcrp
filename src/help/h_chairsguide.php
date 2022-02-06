@@ -1,13 +1,13 @@
 <?php
-// src/help/h_chairsguide.php -- HotCRP help functions
+// help/h_chairsguide.php -- HotCRP help functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ChairsGuide_HelpTopic {
-    static function render_presubmission(HelpRenderer $hth, $gj) {
+    static function print_presubmission(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("Submission time");
             echo "<p>Follow these steps to prepare to accept submissions.</p>\n\n<ol>\n";
-            $hth->render_group("chair/presubmission");
+            $hth->print_group("chair/presubmission");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
@@ -80,11 +80,11 @@ form also can include:</p>
         }
     }
 
-    static function render_assignments(HelpRenderer $hth, $gj) {
+    static function print_assignments(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("Assignments");
             echo "<p>After the submission deadline has passed:</p>\n<ol>\n";
-            $hth->render_group("chair/assignments");
+            $hth->print_group("chair/assignments");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
@@ -162,7 +162,7 @@ form also can include:</p>
         }
     }
 
-    static function render_chair_conflicts(HelpRenderer $hth) {
+    static function print_chair_conflicts(HelpRenderer $hth) {
         echo $hth->subhead("Chair conflicts");
         echo "<p>Chairs and system administrators can access any information stored in the
 conference system, including reviewer identities for conflicted papers.
@@ -198,11 +198,11 @@ review tokens; then even web server access logs store only the
 administrator’s identity.</p>\n\n";
     }
 
-    static function render_premeeting(HelpRenderer $hth, $gj) {
+    static function print_premeeting(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("Before the meeting");
             echo "<ol>\n";
-            $hth->render_group("chair/premeeting");
+            $hth->print_group("chair/premeeting");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
@@ -258,11 +258,11 @@ administrator’s identity.</p>\n\n";
     }
 
 
-    static function render_atmeeting(HelpRenderer $hth, $gj) {
+    static function print_atmeeting(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("At the meeting");
             echo "<ol>\n";
-            $hth->render_group("chair/atmeeting");
+            $hth->print_group("chair/atmeeting");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
@@ -296,11 +296,11 @@ administrator’s identity.</p>\n\n";
         }
     }
 
-    static function render_postmeeting(HelpRenderer $hth, $gj) {
+    static function print_postmeeting(HelpRenderer $hth, $gj) {
         if ($gj->itemid === -1) {
             echo $hth->subhead("After the meeting");
             echo "<ol>\n";
-            $hth->render_group("chair/postmeeting");
+            $hth->print_group("chair/postmeeting");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {

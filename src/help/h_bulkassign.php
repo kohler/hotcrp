@@ -1,9 +1,9 @@
 <?php
-// src/help/h_bulkassign.php -- HotCRP help functions
+// help/h_bulkassign.php -- HotCRP help functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class BulkAssign_HelpTopic {
-    static function render(HelpRenderer $hth) {
+    static function print(HelpRenderer $hth) {
         echo "
 <p>The ", $hth->hotlink("bulk assignments page", "bulkassign"), " offers
 fine-grained control over review assignments, tags, leads, shepherds, and many
@@ -40,7 +40,7 @@ example, if a file clears and then recreates a existing review assignment,
 HotCRP will leave the existing assignment alone.</p>";
 
         echo $hth->subhead("Action overview");
-        self::echo_actions($hth->user, $hth);
+        self::print_actions($hth->user, $hth);
         echo '<p><em>Notes:</em> The <code>paper</code> parameter
 can be a paper number, like “1”, or a search, like
 “re:jhala #good”. Instead of a <code>user</code> parameter, you can
@@ -49,10 +49,10 @@ supply <code>email</code>, <code>name</code>,
 fields can contain a tag value, using “tag#value” syntax, or the value
 can be supplied separately.</p>';
 
-        $hth->render_group("bulkassignactions");
+        $hth->print_group("bulkassignactions");
     }
 
-    static function render_action_review(HelpRenderer $hth) {
+    static function print_action_review(HelpRenderer $hth) {
         echo "<p>The <code>review</code> action assigns reviews. The
 <code>review type</code> field sets the review type; it can be
 <code>primary</code>, <code>secondary</code>, <code>pcreview</code> (optional
@@ -99,7 +99,7 @@ all,review,all,primary,R1:R2</pre>
 the corresponding review types.</p>";
     }
 
-    static function render_action_tag($hth) {
+    static function print_action_tag($hth) {
         echo "<p>The <code>tag</code> action controls ",
             $hth->help_link("tags", "tags") . ". The <code>tag</code>
 field names the tag to add; it can contain a ",
@@ -128,14 +128,14 @@ all,cleartag,p
 6,nexttag,p</pre>";
     }
 
-    static function render_action_follow(HelpRenderer $hth) {
+    static function print_action_follow(HelpRenderer $hth) {
         echo "<p>The <code>following</code> field can be “yes” (to receive
 email notifications on updates to reviews and comments), “no” (to block
 notifications), or “default” (to revert to the default, which is based
 on the user’s site preferences).</p>";
     }
 
-    static function render_action_conflict(HelpRenderer $hth) {
+    static function print_action_conflict(HelpRenderer $hth) {
         echo "<p>The <code>conflict type</code> field can be “yes”, “no”, or
 a conflict type, such as “advisor” or “institutional”.</p>";
     }
@@ -174,7 +174,7 @@ a conflict type, such as “advisor” or “institutional”.</p>";
         }
     }
 
-    static function echo_actions(Contact $user, HelpRenderer $hth = null) {
+    static function print_actions(Contact $user, HelpRenderer $hth = null) {
         $apge = new ComponentSet($user, "etc/assignmentparsers.json", $user->conf->opt("assignmentParsers"));
         $apx = [];
         foreach ($apge->groups() as $ufg) {

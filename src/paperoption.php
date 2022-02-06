@@ -1220,17 +1220,24 @@ class PaperOption implements JsonSerializable {
     }
     /** @param PaperValue $ov
      * @param PaperValue $reqov */
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
+        /** @phan-suppress-next-line PhanDeprecatedFunction */
+        $this->echo_web_edit($pt, $ov, $reqov);
+    }
+    /** @param PaperValue $ov
+     * @param PaperValue $reqov
+     * @deprecated */
     function echo_web_edit(PaperTable $pt, $ov, $reqov) {
     }
     /** @param PaperValue $ov
      * @param PaperValue $reqov */
-    function echo_web_edit_text(PaperTable $pt, $ov, $reqov, $extra = []) {
+    function print_web_edit_text(PaperTable $pt, $ov, $reqov, $extra = []) {
         $default_value = null;
         if ($ov->data() !== $reqov->data()
             && trim($ov->data()) !== trim(cleannl((string) $reqov->data()))) {
             $default_value = $ov->data() ?? "";
         }
-        $pt->echo_editable_option_papt($this);
+        $pt->print_editable_option_papt($this);
         echo '<div class="papev">';
         if (($fi = $ov->prow->edit_format())
             && !($extra["no_format_description"] ?? false)) {
@@ -1253,7 +1260,7 @@ class PaperOption implements JsonSerializable {
         ob_start();
         $pt = new PaperTable($user, new Qrequest("POST"), $prow);
         $ov = $prow->force_option($this);
-        $this->echo_web_edit($pt, $ov, $ov);
+        $this->print_web_edit($pt, $ov, $ov);
         return ob_get_clean();
     }
 
@@ -1348,7 +1355,7 @@ class Separator_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args, "only-form");
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         echo '<div class="pf pfe pf-separator">';
         if (($h = $pt->edit_title_html($this))) {
             echo '<h3 class="pfehead">', $h, '</h3>';
@@ -1380,13 +1387,13 @@ class Checkbox_PaperOption extends PaperOption {
             return PaperValue::make_estop($prow, $this, "<0>Option should be ‘true’ or ‘false’");
         }
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $cb = Ht::checkbox($this->formid, 1, !!$reqov->value, [
             "id" => $this->readable_formid(),
             "data-default-checked" => !!$ov->value,
             "disabled" => !$this->test_editable($ov->prow)
         ]);
-        $pt->echo_editable_option_papt($this,
+        $pt->print_editable_option_papt($this,
             '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
             ["for" => "checkbox", "tclass" => "ui js-click-child"]);
         echo "</div>\n\n";
@@ -1492,8 +1499,8 @@ class Selector_PaperOption extends PaperOption {
             return PaperValue::make_estop($prow, $this, "<0>Option doesn’t match any of the selectors");
         }
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $pt->echo_editable_option_papt($this, null,
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
+        $pt->print_editable_option_papt($this, null,
             $this->type === "selector"
             ? ["for" => $this->readable_formid()]
             : ["id" => $this->readable_formid(), "for" => false]);
@@ -1707,7 +1714,7 @@ class Document_PaperOption extends PaperOption {
             return PaperValue::make_estop($prow, $this, "<0>Format error");
         }
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
             $noPapers = $this->conf->opt("noPapers");
         } else {
@@ -1753,7 +1760,7 @@ class Document_PaperOption extends PaperOption {
         if (!empty($msgs)) {
             $heading .= ' <span class="n">(' . join(", ", $msgs) . ')</span>';
         }
-        $pt->echo_editable_option_papt($this, $heading, ["for" => $doc ? false : "{$fk}:upload", "id" => $this->readable_formid()]);
+        $pt->print_editable_option_papt($this, $heading, ["for" => $doc ? false : "{$fk}:upload", "id" => $this->readable_formid()]);
 
         echo '<div class="papev has-document" data-dtype="', $this->id,
             '" data-document-name="', $fk, '"';
@@ -1923,8 +1930,8 @@ class Text_PaperOption extends PaperOption {
     function parse_json(PaperInfo $prow, $j) {
         return $this->parse_json_string($prow, $j);
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $this->echo_web_edit_text($pt, $ov, $reqov, ["rows" => $this->display_space]);
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
+        $this->print_web_edit_text($pt, $ov, $reqov, ["rows" => $this->display_space]);
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
@@ -2067,14 +2074,14 @@ class Attachments_PaperOption extends PaperOption {
             return $ov;
         }
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXX does not consider $reqov
         $max_size = $this->max_size ?? $this->conf->opt("uploadMaxFilesize") ?? ini_get_bytes("upload_max_filesize") / 1.024;
         $title = $this->title_html();
         if ($max_size > 0) {
             $title .= ' <span class="n">(max ' . unparse_byte_size($max_size) . ' per file)</span>';
         }
-        $pt->echo_editable_option_papt($this, $title, ["id" => $this->readable_formid(), "for" => false]);
+        $pt->print_editable_option_papt($this, $title, ["id" => $this->readable_formid(), "for" => false]);
         echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dtype="', $this->id, '" id="', $this->formid, ':attachments"';
         if ($max_size > 0) {
             echo ' data-document-max-size="', (int) $max_size, '"';

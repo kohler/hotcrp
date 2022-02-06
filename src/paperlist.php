@@ -81,7 +81,7 @@ class PaperListTableRender {
     function heading_separator_row() {
         return "  <tr class=\"plheading\"><td class=\"plheading-separator\" colspan=\"{$this->ncol}\"></td></tr>\n";
     }
-    function echo_tbody_rows() {
+    function print_tbody_rows() {
         foreach ($this->rows as $r) {
             echo $r;
         }
@@ -2040,14 +2040,14 @@ class PaperList implements XtContext {
         return $rstate;
     }
 
-    function echo_table_html() {
+    function print_table_html() {
         $render = $this->table_render();
         if (!$render->error) {
             echo $render->table_start,
                 self::$include_stash ? Ht::unstash() : "",
                 $render->thead ?? "",
                 $render->tbody_start();
-            $render->echo_tbody_rows();
+            $render->print_tbody_rows();
             echo $render->tbody_end(),
                 $render->tfoot ?? "",
                 "</table>";
@@ -2055,11 +2055,15 @@ class PaperList implements XtContext {
             echo $render->error;
         }
     }
+    /** @deprecated */
+    function echo_table_html() {
+        $this->print_table_html();
+    }
 
     /** @return string */
     function table_html() {
         ob_start();
-        $this->echo_table_html();
+        $this->print_table_html();
         return ob_get_clean();
     }
 

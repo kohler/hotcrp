@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_bulkassign.php -- HotCRP bulk paper assignment page
+// pages/p_bulkassign.php -- HotCRP bulk paper assignment page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class BulkAssign_Page {
@@ -130,7 +130,7 @@ class BulkAssign_Page {
             Ht::hidden("requestreview_body", $this->qreq->requestreview_body);
 
         $aset->report_errors();
-        $aset->echo_unparse_display();
+        $aset->print_unparse_display();
 
         echo Ht::actions([
             Ht::submit("Apply changes", ["class" => "btn-success"]),
@@ -141,7 +141,7 @@ class BulkAssign_Page {
         return true;
     }
 
-    function render_instructions() {
+    function print_instructions() {
         echo "<section class=\"mt-7\">
 <h3><a class=\"ulh\" href=\"", $this->conf->hoturl("help", ["t" => "bulkassign"]), "\">Instructions</a></h3>
 
@@ -150,7 +150,7 @@ will display the consequences of the requested assignment for confirmation and
 approval. The <code>action</code> field determines the assignment to be
 performed. Supported actions include:</p>";
 
-        BulkAssign_HelpTopic::echo_actions($this->user);
+        BulkAssign_HelpTopic::print_actions($this->user);
 
         echo "<p class=\"w-text\">For example, this file clears existing R1 review assignments for papers
 tagged #redo, then assigns two primary reviews for submission #1 and one
@@ -166,7 +166,7 @@ secondary review for submission #2:</p>
 </section>\n";
     }
 
-    function render() {
+    function print() {
         $conf = $this->conf;
         $qreq = $this->qreq;
         $qreq->rev_round = (string) $conf->sanitize_round_name($qreq->rev_round);
@@ -308,7 +308,7 @@ hotcrp.foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.te
 
         echo "</form>\n\n";
 
-        $this->render_instructions();
+        $this->print_instructions();
 
         Ht::stash_script('$("#tsel").trigger("change")');
         $conf->footer();
@@ -319,7 +319,7 @@ hotcrp.foldup.call(this,null,{f:!/^(?:primary|secondary|(?:pc|meta)?review)$/.te
             if ($qreq->valid_post()) {
                 header("X-Accel-Buffering: no"); // NGINX: do not buffer this output
             }
-            (new BulkAssign_Page($user, $qreq))->render();
+            (new BulkAssign_Page($user, $qreq))->print();
         } else {
             $user->escape();
         }

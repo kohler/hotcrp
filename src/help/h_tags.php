@@ -1,5 +1,5 @@
 <?php
-// src/help/h_tags.php -- HotCRP help functions
+// help/h_tags.php -- HotCRP help functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Tags_HelpTopic {
@@ -16,7 +16,7 @@ class Tags_HelpTopic {
         $this->hth = $hth;
     }
 
-    function render_intro() {
+    function print_intro() {
         $conflictmsg = "";
         if ($this->user->isPC && !$this->conf->tag_seeall) {
             $conflictmsg = " and conflicted PC members";
@@ -33,7 +33,7 @@ with two twiddles, such as “#~~tag”, are visible only to PC chairs. Tags are
 case insensitive, so “#TAG” and “#tAg” are considered identical.</p>";
     }
 
-    function render_finding() {
+    function print_finding() {
         $hth = $this->hth;
         echo $hth->subhead("Find tags", "find");
         echo "<p>A paper’s tags are shown like this on the paper page:</p>
@@ -71,7 +71,7 @@ as a column.</p>
         echo "</p>";
     }
 
-    function render_changing() {
+    function print_changing() {
         $hth = $this->hth;
         echo $hth->subhead("Change tags", "change");
         echo "
@@ -105,7 +105,7 @@ most tags, certain tags may be changed only by administrators",
     $this->hth->current_tag_list("chair"), ".", $this->hth->setting_link("tag_chair"), "</p>";
     }
 
-    function render_values() {
+    function print_values() {
         $hth = $this->hth;
         echo $hth->subhead("Tag values and discussion orders", "values");
         echo "<p>Tags can have numeric values, as in “#tagname#100”. The
@@ -142,7 +142,7 @@ has special support for creating discussion orders. It tries to group papers
 with similar PC conflicts, which can make the meeting run smoother.</p>";
     }
 
-    function render_colors() {
+    function print_colors() {
         $hth = $this->hth;
         echo $hth->subhead("Colors", "colors");
         echo "<p>Tags “red”, “orange”, “yellow”, “green”, “blue”, “purple”, “gray”, and
@@ -155,13 +155,13 @@ with colors so that, for example, “" . $hth->search_link("#reject") . "” pap
 gray.</p>\n";
     }
 
-    function render_examples() {
+    function print_examples() {
         echo $this->hth->subhead("Examples");
         echo "<p>Here are some common ways tags are used.</p>\n";
-        $this->hth->render_group("tagexamples");
+        $this->hth->print_group("tagexamples");
     }
 
-    function render_example_r1reject() {
+    function print_example_r1reject() {
         echo "<p><strong>Skip low-ranked submissions.</strong> Mark
 low-ranked submissions with tag “#r1reject”, then ask the PC to " .
 $this->hth->search_link("search for “#r1reject”", "#r1reject") . ". PC members
@@ -171,21 +171,21 @@ the “#r1reject” tag chair-only so an evil PC member couldn’t add it to a
 high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
     }
 
-    function render_example_controversial() {
+    function print_example_controversial() {
         echo "<p><strong>Mark controversial papers that would benefit from additional review.</strong>
  PC members could add the “#controversial” tag when the current reviewers disagree.
  A ", $this->hth->hotlink("search", "search", ["q" => "#controversial"]),
     " shows where the PC thinks more review is needed.</p>\n";
     }
 
-    function render_example_pcpaper() {
+    function print_example_pcpaper() {
         echo "<p><strong>Mark PC-authored papers for extra scrutiny.</strong>
  First, ", $this->hth->hotlink("search for PC members’ last names in author fields", "search", "t=s&amp;qt=au"), ".
  Check for accidental matches and select the papers with PC members as authors, then use the action area below the search list to add the tag “#pcpaper”.
  A ", $this->hth->hotlink("search", "search", "t=s&amp;q=-%23pcpaper"), " shows papers without PC authors.</p>\n";
     }
 
-    function render_example_allotment() {
+    function print_example_allotment() {
         $vt = $this->hth->example_tag("allotment");
         echo "<p><strong>Vote for papers.</strong>
  The chair can define tags used for allotment voting", $this->hth->current_tag_list("allotment"), ".",
@@ -197,7 +197,7 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
     "”. (", $this->hth->help_link("votetags"), ")</p>\n";
     }
 
-    function render_example_rank() {
+    function print_example_rank() {
         echo "<p><strong>Rank papers.</strong>
  Each PC member can set tags indicating their preference ranking for papers.
  For instance, a PC member’s favorite paper would get tag “#~rank#1”, the next favorite “#~rank#2”, and so forth.
@@ -205,7 +205,7 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
  (", $this->hth->help_link("ranking"), ")</p>\n";
     }
 
-    function render_example_discuss() {
+    function print_example_discuss() {
         echo "<p><strong>Define a discussion order.</strong>
 Publishing the order lets PC members prepare to discuss upcoming papers.
 Define an ordered tag such as “#discuss”, then ask the PC to ", $this->hth->search_link("search for “order:#discuss”", "order:#discuss"), ".
@@ -216,7 +216,7 @@ The PC can now see the order and use quick links to go from paper to paper.";
         echo "</p>\n";
     }
 
-    function render_example_decisions() {
+    function print_example_decisions() {
         echo "<p><strong>Mark tentative decisions during the PC meeting</strong> using
 “#accept” and “#reject” tags, or mark more granular decisions with tags like “#revisit”
 or “#exciting” or “#boring”. After the meeting, use ", $this->hth->search_link("Search", "#accept"),

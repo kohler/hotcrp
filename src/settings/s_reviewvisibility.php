@@ -1,9 +1,9 @@
 <?php
-// src/settings/s_reviewvisibility.php -- HotCRP settings > decisions page
+// settings/s_reviewvisibility.php -- HotCRP settings > decisions page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewVisibility_SettingParser extends SettingParser {
-    static function render(SettingValues $sv) {
+    static function print(SettingValues $sv) {
         $opts = [Conf::AUSEEREV_NO => "No, unless authors can edit responses",
                  Conf::AUSEEREV_YES => "Yes"];
         $opts[Conf::AUSEEREV_TAGS] = '<div class="d-inline-flex flex-wrap">'
@@ -24,12 +24,12 @@ class ReviewVisibility_SettingParser extends SettingParser {
         }
         $hint .= '</div>';
 
-        $sv->echo_radio_table("au_seerev", $opts,
+        $sv->print_radio_table("au_seerev", $opts,
             'Can <strong>authors see reviews and author-visible comments</strong> for their submissions?' . $hint);
         echo Ht::hidden("has_tag_au_seerev", 1);
 
         echo '<div class="form-g has-fold fold', $sv->vstr("cmt_author") ? "o" : "c", '">';
-        $sv->echo_checkbox("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers when reviews are visible", ["class" => "uich js-foldup", "hint_class" => "fx"], "Reviewers’ comments will be identified by “Reviewer A”, “Reviewer B”, etc.");
+        $sv->print_checkbox("cmt_author", "Authors can <strong>exchange comments</strong> with reviewers when reviews are visible", ["class" => "uich js-foldup", "hint_class" => "fx"], "Reviewers’ comments will be identified by “Reviewer A”, “Reviewer B”, etc.");
         echo "</div>\n";
     }
 

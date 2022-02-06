@@ -157,7 +157,7 @@ class PaperTable {
 
     /** @param ?PaperTable $paperTable
      * @param Qrequest $qreq */
-    static function echo_header($paperTable, $id, $action_mode, $qreq) {
+    static function print_header($paperTable, $id, $action_mode, $qreq) {
         $conf = $paperTable ? $paperTable->conf : Conf::$main;
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
@@ -439,7 +439,7 @@ class PaperTable {
 
     /** @param ?string $heading
      * @return void */
-    function echo_editable_option_papt(PaperOption $opt, $heading = null, $rest = []) {
+    function print_editable_option_papt(PaperOption $opt, $heading = null, $rest = []) {
         if (!isset($rest["for"])) {
             $for = $opt->readable_formid();
         } else {
@@ -478,8 +478,15 @@ class PaperTable {
             }
         }
         echo '</h3>';
-        $this->echo_field_hint($opt, $rest["context_args"] ?? null);
+        $this->print_field_hint($opt, $rest["context_args"] ?? null);
         echo Ht::hidden("has_{$opt->formid}", 1);
+    }
+
+    /** @param ?string $heading
+     * @return void
+     * @deprecated */
+    function echo_editable_option_papt(PaperOption $opt, $heading = null, $rest = []) {
+        $this->print_editable_option_papt($opt, $heading, $rest);
     }
 
     /** @param array<string,int|string> $extra
@@ -573,7 +580,7 @@ class PaperTable {
 
     /** @param PaperOption $opt
      * @param ?list<mixed> $context_args */
-    function echo_field_hint($opt, $context_args = null) {
+    function print_field_hint($opt, $context_args = null) {
         echo $this->messages_at($opt->formid);
         $fr = new FieldRender(FieldRender::CFHTML);
         $fr->value_format = 5;
@@ -689,7 +696,7 @@ class PaperTable {
         }
     }
 
-    private function echo_editable_complete() {
+    private function print_editable_complete() {
         if ($this->allow_edit_final) {
             echo Ht::hidden("submitpaper", 1);
             return;
@@ -1021,7 +1028,7 @@ class PaperTable {
         return htmlspecialchars($this->conf->_c("field_group", $renders[$first]->option->page_group, commajoin($group_names), commajoin($group_types)));
     }
 
-    private function _echo_normal_body() {
+    private function _print_normal_body() {
         $status_info = $this->user->paper_status_info($this->prow);
         echo '<p class="pgsm"><span class="pstat ', $status_info[0], '">',
             htmlspecialchars($status_info[1]), "</span></p>";
@@ -1712,7 +1719,7 @@ class PaperTable {
         }
     }
 
-    private function _echo_edit_messages($include_required) {
+    private function _print_edit_messages($include_required) {
         if (!$this->prow->paperId) {
             $this->_edit_message_new_paper();
         } else {
@@ -1829,7 +1836,7 @@ class PaperTable {
         return $buttons;
     }
 
-    private function echo_actions() {
+    private function print_actions() {
         if ($this->admin) {
             $v = (string) $this->qreq->emailNote;
             echo '<div class="checki"><label><span class="checkc">', Ht::checkbox("doemail", 1, true, ["class" => "ignore-diff"]), "</span>",
@@ -1935,7 +1942,7 @@ class PaperTable {
         }
     }
 
-    static private function _echo_clickthrough($ctype) {
+    static private function _print_clickthrough($ctype) {
         $data = Conf::$main->_i("clickthrough_$ctype");
         $buttons = [Ht::submit("Agree", ["class" => "btnbig btn-success ui js-clickthrough"])];
         echo Ht::form("", ["class" => "ui"]), '<div>', $data,
@@ -1945,13 +1952,13 @@ class PaperTable {
             Ht::actions($buttons, ["class" => "aab aabig aabr"]), "</div></form>";
     }
 
-    static function echo_review_clickthrough() {
+    static function print_review_clickthrough() {
         echo '<div class="pcard revcard js-clickthrough-terms"><div class="revcard-head"><h2>Reviewing terms</h2></div><div class="revcard-body">', Ht::msg("You must agree to these terms before you can save reviews.", 2);
-        self::_echo_clickthrough("review");
+        self::_print_clickthrough("review");
         echo "</div></div>";
     }
 
-    private function _echo_editable_form() {
+    private function _print_editable_form() {
         $form_url = [
             "p" => $this->prow->paperId ? : "new", "m" => "edit"
         ];
@@ -1977,8 +1984,8 @@ class PaperTable {
         Ht::stash_script('$(hotcrp.load_editable_paper)');
     }
 
-    private function _echo_editable_body() {
-        $this->_echo_editable_form();
+    private function _print_editable_body() {
+        $this->_print_editable_form();
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
         echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">',
             $this->conf->_($this->prow->paperId ? "Edit Submission" : "New Submission"),
@@ -1991,7 +1998,7 @@ class PaperTable {
             }
         ));
 
-        $this->_echo_edit_messages(true);
+        $this->_print_edit_messages(true);
 
         if (!$this->quit) {
             foreach ($this->edit_fields as $o) {
@@ -2001,19 +2008,19 @@ class PaperTable {
                     && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
                     $reqov = $x;
                 }
-                $o->echo_web_edit($this, $ov, $reqov);
+                $o->print_web_edit($this, $ov, $reqov);
             }
 
             // Submit button
-            $this->echo_editable_complete();
-            $this->echo_actions();
+            $this->print_editable_complete();
+            $this->print_actions();
         }
 
         echo "</div></form>";
         $this->user->set_overrides($overrides);
     }
 
-    function echo_paper_info() {
+    function print_paper_info() {
         if ($this->prow->paperId) {
             $this->_papstrip();
         }
@@ -2055,22 +2062,22 @@ class PaperTable {
                     '<div class="js-clickthrough-terms">',
                     '<h2>Submission terms</h2>',
                     Ht::msg("You must agree to these terms to register a submission.", 2);
-                self::_echo_clickthrough("submit");
+                self::_print_clickthrough("submit");
                 echo '</div><div class="need-clickthrough-show hidden">';
             } else {
                 echo '<div id="foldpaper">';
             }
-            $this->_echo_editable_body();
+            $this->_print_editable_body();
             echo ($need_clickthrough ? "</div>" : ""), '</div>';
         } else {
             $this->echoDivEnter();
-            $this->_echo_normal_body();
+            $this->_print_normal_body();
             echo '</div>';
 
             if ($this->mode === "edit") {
                 echo '</div></div><div class="pcard notecard"><div class="papcard-body">';
-                $this->_echo_edit_messages(false);
-                $this->_echo_editable_form();
+                $this->_print_edit_messages(false);
+                $this->_print_editable_form();
                 $o = $this->conf->option_by_id(PaperOption::CONTACTSID);
                 assert($o instanceof Contacts_PaperOption);
                 $ov = $reqov = $this->prow->force_option($o);
@@ -2079,8 +2086,8 @@ class PaperTable {
                     && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
                     $reqov = $x;
                 }
-                $o->echo_web_edit($this, $ov, $reqov);
-                $this->echo_actions();
+                $o->print_web_edit($this, $ov, $reqov);
+                $this->print_actions();
                 echo "</form>";
             }
         }
@@ -2466,7 +2473,7 @@ class PaperTable {
         }
 
         if ($any_comments) {
-            CommentInfo::echo_script($prow);
+            CommentInfo::print_script($prow);
         }
 
         $aut = "";
@@ -2546,7 +2553,7 @@ class PaperTable {
         }
 
         if (!$this->_review_overview_card(true, '<p>There are no reviews or comments for you to view.</p>', $m)) {
-            $this->echo_rc($this->viewable_rrows, $this->include_comments());
+            $this->print_rc($this->viewable_rrows, $this->include_comments());
         }
     }
 
@@ -2561,7 +2568,7 @@ class PaperTable {
 
     /** @param list<ReviewInfo> $rrows
      * @param bool $comments */
-    function echo_rc($rrows, $comments) {
+    function print_rc($rrows, $comments) {
         $rcs = [];
         $any_submitted = false;
         foreach ($rrows as $rrow) {
@@ -2618,15 +2625,15 @@ class PaperTable {
         }
 
         if ($ncmt) {
-            CommentInfo::echo_script($this->prow);
+            CommentInfo::print_script($this->prow);
         }
         if ($s !== "") {
             echo Ht::unstash_script($s);
         }
     }
 
-    function echo_comments() {
-        $this->echo_rc([], $this->include_comments());
+    function print_comments() {
+        $this->print_rc([], $this->include_comments());
     }
 
     function paptabEndWithoutReviews() {
@@ -2719,7 +2726,7 @@ class PaperTable {
         return $editable;
     }
 
-    function echo_review_form() {
+    function print_review_form() {
         // notecard messages
         $msgs = [];
         if ($this->editrrow && !$this->user->is_signed_in()) {
@@ -2743,15 +2750,15 @@ class PaperTable {
         }
         if ($editable) {
             if (!$this->user->can_clickthrough("review", $this->prow)) {
-                self::echo_review_clickthrough();
+                self::print_review_clickthrough();
             }
-            $this->conf->review_form()->echo_form($this->prow, $this->editrrow, $this->user, $this->review_values);
+            $this->conf->review_form()->print_form($this->prow, $this->editrrow, $this->user, $this->review_values);
         } else {
-            $this->echo_rc([$this->editrrow], false);
+            $this->print_rc([$this->editrrow], false);
         }
     }
 
-    function echo_main_link() {
+    function print_main_link() {
         // intended for pages like review editing where we need a link back
         $t = [];
         $dlimgjs = ["class" => "dlimg", "width" => 24, "height" => 24];

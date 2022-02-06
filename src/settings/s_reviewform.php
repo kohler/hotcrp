@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_reviewform.php -- HotCRP review form definition page
+// settings/s_reviewform.php -- HotCRP review form definition page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewForm_SettingParser extends SettingParser {
@@ -413,9 +413,9 @@ Include any guidance you’d like to provide for reviewers.
 Note that complex HTML will not appear on offline review forms.</p></div>', 'settings-rf-caption-description');
     }
 
-    static function render_description(SettingValues $sv) {
+    static function print_description(SettingValues $sv) {
         self::stash_description_caption();
-        $sv->echo_textarea_group("rf__\$__description", "Description", [
+        $sv->print_textarea_group("rf__\$__description", "Description", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
             "group_class" => "is-property-description"
@@ -432,30 +432,30 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 <p>Or use consecutive capital letters (lower letters are better).</p></div>', 'settings-rf-caption-choices');
     }
 
-    static function render_choices(SettingValues $sv) {
+    static function print_choices(SettingValues $sv) {
         self::stash_choices_caption();
-        $sv->echo_textarea_group("rf__\$__choices", "Choices", [
+        $sv->print_textarea_group("rf__\$__choices", "Choices", [
             "horizontal" => true, "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
             "group_class" => "is-property-options"
         ]);
     }
 
-    static function render_required(SettingValues $sv) {
-        $sv->echo_select_group("rf__\$__required", "Required", ["0" => "No", "1" => "Yes"], [
+    static function print_required(SettingValues $sv) {
+        $sv->print_select_group("rf__\$__required", "Required", ["0" => "No", "1" => "Yes"], [
             "horizontal" => true, "group_class" => "is-property-options"
         ]);
     }
 
-    static function render_display(SettingValues $sv) {
-        $sv->echo_select_group("rf__\$__colors", "Colors", [], [
+    static function print_display(SettingValues $sv) {
+        $sv->print_select_group("rf__\$__colors", "Colors", [], [
             "horizontal" => true, "group_class" => "is-property-options", "class" => "uich rf-colors",
             "control_after" => '<span class="d-inline-block ml-2 rf-colors-example"></span>'
         ]);
     }
 
-    static function render_visibility(SettingValues $sv) {
-        $sv->echo_select_group("rf__\$__visibility", "Visibility", [
+    static function print_visibility(SettingValues $sv) {
+        $sv->print_select_group("rf__\$__visibility", "Visibility", [
             "au" => "Visible to authors",
             "pc" => "Hidden from authors",
             "audec" => "Hidden from authors until decision",
@@ -465,24 +465,24 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
         ]);
     }
 
-    static function render_presence(SettingValues $sv) {
+    static function print_presence(SettingValues $sv) {
         Ht::stash_html('<div id="settings-rf-caption-condition" class="hidden">'
             . '<p>The field will be present only on reviews that match this search. Not all searches are supported. Examples:</p><dl><dt>round:R1 OR round:R2</dt><dd>present on reviews in round R1 or R2</dd><dt>re:ext</dt><dd>present on external reviews</dd></dl>'
             . '</div>', "settings-rf-caption-condition");
-        $sv->echo_select_group("rf__\$__presence", "Present on",
+        $sv->print_select_group("rf__\$__presence", "Present on",
             ReviewForm_SettingParser::presence_options($sv->conf), [
                 "horizontal" => true, "group_class" => "is-property-editing",
                 "fold_values" => ["custom"], "group_open" => true
             ]);
         echo ' &nbsp;';
-        $sv->echo_entry("rf__\$__condition", [
+        $sv->print_entry("rf__\$__condition", [
             "class" => "papersearch fx need-tooltip", "spellcheck" => false,
             "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus"
         ]);
         echo "</div></div>\n";
     }
 
-    static function render_actions(SettingValues $sv) {
+    static function print_actions(SettingValues $sv) {
         echo '<div class="f-i entryi"><label></label><div class="btnp entry"><span class="btnbox">',
             Ht::button(Icons::ui_movearrow(0), ["id" => "rf__\$__moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
             Ht::button(Icons::ui_movearrow(2), ["id" => "rf__\$__movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
@@ -493,12 +493,12 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             "</div></div>";
     }
 
-    private function echo_property_button($property, $icon, $label) {
+    private function print_property_button($property, $icon, $label) {
         $all_open = false;
         echo Ht::button($icon, ["class" => "btn-licon ui js-settings-show-property need-tooltip" . ($all_open ? " btn-disabled" : ""), "aria-label" => $label, "data-property" => $property]);
     }
 
-    static function render(SettingValues $sv) {
+    static function print(SettingValues $sv) {
         echo Ht::hidden("has_review_form", 1);
         if (!$sv->conf->time_some_author_view_review()) {
             echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';
@@ -510,7 +510,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             '<div class="entryi mb-3"><div class="entry">',
             '<input name="rf__$__name" id="rf__$__name" type="text" size="50" class="font-weight-bold" placeholder="Field name">',
             '</div></div>';
-        $sv->render_group("reviewfield/properties");
+        $sv->print_group("reviewfield/properties");
         echo '</template>';
 
         echo "<div id=\"settings-rform\"></div>",

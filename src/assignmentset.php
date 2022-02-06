@@ -1859,8 +1859,8 @@ class AssignmentSet {
         return $pc;
     }
 
-    function echo_unparse_display() {
-        Assignment_PaperColumn::echo_unparse_display($this->unparse_paper_column());
+    function print_unparse_display() {
+        Assignment_PaperColumn::print_unparse_display($this->unparse_paper_column());
     }
 
     /** @return AssignmentCsv */
@@ -2023,13 +2023,13 @@ class Assignment_PaperColumn extends PaperColumn {
         return $t;
     }
 
-    static function echo_unparse_display(Assignment_PaperColumn $pc) {
+    static function print_unparse_display(Assignment_PaperColumn $pc) {
         $search = new PaperSearch($pc->user, ["q" => $pc->search_query, "t" => "viewable", "reviewer" => $pc->reviewer]);
         $plist = new PaperList("reviewers", $search);
         $plist->add_column("autoassignment", $pc);
         $plist->set_table_id_class("foldpl", "pltable-fullw");
         $plist->set_table_decor(PaperList::DECOR_HEADER);
-        $plist->echo_table_html();
+        $plist->print_table_html();
 
         if (count(array_intersect_key($pc->change_counts->bypc, $pc->conf->pc_members()))) {
             $summary = [];

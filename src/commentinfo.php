@@ -152,7 +152,7 @@ class CommentInfo {
 
 
     /** @param PaperInfo $prow */
-    static function echo_script($prow) {
+    static function print_script($prow) {
         if (Ht::mark_stash("papercomment")) {
             $t = [];
             $crow = new CommentInfo($prow);

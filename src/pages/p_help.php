@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_help.php -- HotCRP help page
+// pages/p_help.php -- HotCRP help page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Help_Page {
@@ -22,7 +22,7 @@ class Help_Page {
         $conf = $user->conf;
 
         $help_topics = new ComponentSet($user, [
-            '{"name":"topics","title":"Help topics","order":-1000000,"priority":1000000,"render_function":"Help_Page::show_help_topics"}',
+            '{"name":"topics","title":"Help topics","order":-1000000,"priority":1000000,"print_function":"Help_Page::show_help_topics"}',
             "etc/helptopics.json"
         ], $conf->opt("helpTopics"));
 
@@ -68,7 +68,7 @@ class Help_Page {
         echo "</ul></nav></div>\n",
             '<main id="helpcontent" class="leftmenu-content main-column">',
             '<h2 class="leftmenu">', $topicj->title, '</h2>';
-        $hth->render_group($topic, true);
+        $hth->print_group($topic, true);
         echo "</main>\n";
 
         $conf->footer();

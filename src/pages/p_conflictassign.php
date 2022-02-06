@@ -1,5 +1,5 @@
 <?php
-// src/pages/conflictassign.php -- HotCRP chair's conflict assignment page
+// pages/conflictassign.php -- HotCRP chair's conflict assignment page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ConflictAssign_Page {
@@ -81,7 +81,7 @@ class ConflictAssign_Page {
                     $t .= " <span class=\"auaff\">(" . htmlspecialchars($pc->affiliation) . ")</span>";
                 }
                 echo $tr->heading_row($t, ["no_titlecol" => true]);
-                $tr->echo_tbody_rows();
+                $tr->print_tbody_rows();
                 $any = true;
             }
         }

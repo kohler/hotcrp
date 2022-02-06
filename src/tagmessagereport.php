@@ -1,5 +1,5 @@
 <?php
-// src/tagmessagereport.php -- HotCRP tags API class
+// tagmessagereport.php -- HotCRP tags API class
 // Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class TagMessageReport implements JsonSerializable {

@@ -1,5 +1,5 @@
 <?php
-// src/pages/checkupdates.php -- HotCRP update checker helper
+// pages/checkupdates.php -- HotCRP update checker helper
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class CheckUpdates_Page {

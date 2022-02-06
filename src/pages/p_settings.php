@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_settings.php -- HotCRP chair-only conference settings management page
+// pages/p_settings.php -- HotCRP chair-only conference settings management page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Settings_Page {
@@ -69,7 +69,7 @@ class Settings_Page {
 
     /** @param string $group
      * @param Qrequest $qreq */
-    function render($group, $qreq) {
+    function print($group, $qreq) {
         $sv = $this->sv;
         $conf = $this->conf;
 
@@ -110,7 +110,7 @@ class Settings_Page {
             // don't crosscheck) but reduces duplicate warnings
             $sv->report();
         }
-        $sv->render_group(strtolower($group), true);
+        $sv->print_group(strtolower($group), true);
 
         echo '<div class="aab aabig mt-7">',
             '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn-primary"]), '</div>',
@@ -138,9 +138,7 @@ class Settings_Page {
 
         if ($sv->use_req()) {
             $sp->handle_update($qreq);
-            $sp->render($group, $qreq);
-        } else {
-            $sp->render($group, $qreq);
         }
+        $sp->print($group, $qreq);
     }
 }

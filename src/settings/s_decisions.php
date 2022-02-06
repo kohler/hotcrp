@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_decisions.php -- HotCRP settings > decisions page
+// settings/s_decisions.php -- HotCRP settings > decisions page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Decisions_SettingParser extends SettingParser {
@@ -24,7 +24,7 @@ class Decisions_SettingParser extends SettingParser {
 
     /** @param int|'$' $ctr
      * @param array<int> $countmap */
-    static private function render_decrow(SettingValues $sv, $ctr, $countmap) {
+    static private function print_decrow(SettingValues $sv, $ctr, $countmap) {
         $did = $sv->vstr("decision__{$ctr}__id");
         $isnew = $did === "" || $did === "new";
         $count = $countmap[$did] ?? 0;
@@ -63,7 +63,7 @@ class Decisions_SettingParser extends SettingParser {
         echo "</span></div></div>";
     }
 
-    static function render(SettingValues $sv) {
+    static function print(SettingValues $sv) {
         // count papers per decision
         $decs_pcount = [];
         $result = $sv->conf->qe_raw("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
@@ -75,7 +75,7 @@ class Decisions_SettingParser extends SettingParser {
             Ht::hidden("has_decisions", 1),
             '<div id="settings-decision-types">';
         foreach ($sv->object_list_counters("decision") as $ctr) {
-            self::render_decrow($sv, $ctr, $decs_pcount);
+            self::print_decrow($sv, $ctr, $decs_pcount);
         }
         echo '</div>';
         foreach ($sv->use_req() ? $sv->object_list_counters("decision") : [] as $ctr) {
@@ -86,7 +86,7 @@ class Decisions_SettingParser extends SettingParser {
             '<div class="hint">Examples: “Accepted as short paper”, “Early reject”</div></div>';
         if ($sv->editable("decisions")) {
             echo '<template id="settings-new-decision-type" class="hidden">';
-            self::render_decrow($sv, '$', $decs_pcount);
+            self::print_decrow($sv, '$', $decs_pcount);
             echo '</template><div class="mg">',
                 Ht::button("Add decision type", ["class" => "ui js-settings-decision-add"]),
                 '</div>';

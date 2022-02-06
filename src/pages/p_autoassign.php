@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_autoassign.php -- HotCRP automatic paper assignment page
+// pages/p_autoassign.php -- HotCRP automatic paper assignment page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Autoassign_Page {
@@ -171,7 +171,7 @@ class Autoassign_Page {
     }
 
 
-    private function echo_radio_row($name, $value, $text, $extra = []) {
+    private function print_radio_row($name, $value, $text, $extra = []) {
         $this->qreq[$name] = $this->qreq[$name] ?? $value;
         $checked = $this->qreq[$name] === $value;
         $extra["id"] = "{$name}_{$value}";
@@ -184,18 +184,18 @@ class Autoassign_Page {
             $text, '</label>', $is_open ? "" : "</div>\n";
     }
 
-    private function render_review_actions() {
+    private function print_review_actions() {
         $qreq = $this->qreq;
         echo '<div class="form-g">';
 
-        $this->echo_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
+        $this->print_radio_row("a", "rev", "Ensure each selected paper has <i>at least</i>", ["open" => true]);
         echo "&nbsp; ",
             Ht::entry("revct", $qreq->revct ?? 1,
                       ["size" => 3, "class" => Ht::control_class("revct", "js-autosubmit")]), "&nbsp; ",
             Ht::select("revtype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $qreq->revtype),
             "&nbsp; review(s)</div>\n";
 
-        $this->echo_radio_row("a", "revadd", "Assign", ["open" => true]);
+        $this->print_radio_row("a", "revadd", "Assign", ["open" => true]);
         echo "&nbsp; ",
             Ht::entry("revaddct", $qreq->revaddct ?? 1,
                       ["size" => 3, "class" => Ht::control_class("revaddct", "js-autosubmit")]),
@@ -203,7 +203,7 @@ class Autoassign_Page {
             Ht::select("revaddtype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview"], $qreq->revaddtype),
             "&nbsp; review(s) per selected paper</div>\n";
 
-        $this->echo_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
+        $this->print_radio_row("a", "revpc", "Assign each PC member", ["open" => true]);
         echo "&nbsp; ",
             Ht::entry("revpcct", $qreq->revpcct ?? 1,
                       ["size" => 3, "class" => Ht::control_class("revpcct", "js-autosubmit")]),
@@ -232,27 +232,27 @@ class Autoassign_Page {
         echo "</div>"; // .form-g
     }
 
-    private function render_conflict_actions() {
+    private function print_conflict_actions() {
         echo '<div class="form-g">';
-        $this->echo_radio_row("a", "prefconflict", "Assign conflicts when PC members have review preferences of &minus;100 or less", ["divclass" => "mt-3"]);
-        $this->echo_radio_row("a", "clear", "Clear all &nbsp;", ["open" => true]);
+        $this->print_radio_row("a", "prefconflict", "Assign conflicts when PC members have review preferences of &minus;100 or less", ["divclass" => "mt-3"]);
+        $this->print_radio_row("a", "clear", "Clear all &nbsp;", ["open" => true]);
         echo Ht::select("cleartype", [REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", REVIEW_META => "metareview", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"], $this->qreq->cleartype),
             " &nbsp;assignments for selected papers and PC members</div></div>\n";
     }
 
-    private function render_lead_actions() {
+    private function print_lead_actions() {
         $scoreselector = $this->scoreselector_options();
         echo '<div class="form-g">';
-        $this->echo_radio_row("a", "lead", "Assign discussion lead from reviewers, preferring&nbsp; ", ["open" => true, "divclass" => "mt-3"]);
+        $this->print_radio_row("a", "lead", "Assign discussion lead from reviewers, preferring&nbsp; ", ["open" => true, "divclass" => "mt-3"]);
         echo Ht::select("leadscore", $scoreselector, $this->qreq->leadscore), "</div>\n";
 
-        $this->echo_radio_row("a", "shepherd", "Assign shepherd from reviewers, preferring&nbsp; ", ["open" => true]);
+        $this->print_radio_row("a", "shepherd", "Assign shepherd from reviewers, preferring&nbsp; ", ["open" => true]);
         echo Ht::select("shepherdscore", $scoreselector, $this->qreq->shepherdscore), "</div></div>\n";
     }
 
-    private function render_discussion_actions() {
+    private function print_discussion_actions() {
         echo '<div class="form-g">';
-        $this->echo_radio_row("a", "discorder", "Create discussion order in tag #", ["open" => true, "divclass" => "mt-3"]);
+        $this->print_radio_row("a", "discorder", "Create discussion order in tag #", ["open" => true, "divclass" => "mt-3"]);
         echo Ht::entry("discordertag", $this->qreq->discordertag ?? "discuss",
                        ["size" => 12, "class" => Ht::control_class("discordertag", "js-autosubmit")]),
             ", grouping papers with similar PC conflicts</div></div>";
@@ -263,7 +263,7 @@ class Autoassign_Page {
             ["class" => "need-pcselector uich badpairs", "data-pcselector-selected" => $this->qreq["bp$which$i"], "data-pcselector-options" => "[\"(PC member)\",\"*\"]", "data-default-value" => $this->qreq["bp$which$i"]]);
     }
 
-    private function render_bad_pairs() {
+    private function print_bad_pairs() {
         echo '<div class="g"></div><div class="relative"><table id="bptable"><tbody>', "\n";
         for ($i = 1; $i == 1 || isset($this->qreq["bpa$i"]); ++$i) {
             echo '    <tr><td class="entry nw">';
@@ -285,7 +285,7 @@ class Autoassign_Page {
         $this->conf->stash_hotcrp_pc($this->user);
     }
 
-    private function render() {
+    private function print() {
         // start page
         $conf = $this->conf;
         $qreq = $this->qreq;
@@ -302,7 +302,7 @@ class Autoassign_Page {
         if (isset($qreq->a) && isset($qreq->pctyp) && $qreq->valid_post()) {
             if (isset($qreq->assignment) && isset($qreq->showassignment)) {
                 $ai = new AutoassignerInterface($this->user, $qreq, $this->ssel);
-                $ai->echo_result();
+                $ai->print_result();
                 return;
             } else if (isset($qreq->assign)) {
                 $ai = new AutoassignerInterface($this->user, $qreq, $this->ssel);
@@ -353,7 +353,7 @@ class Autoassign_Page {
                 echo "<br><span class=\"hint\">Assignments will apply to the selected papers.</span>";
             }
             echo '<div class="g"></div>';
-            $plist->echo_table_html();
+            $plist->print_table_html();
             echo Ht::hidden("prevt", $qreq->t), Ht::hidden("prevq", $qreq->q),
                 Ht::hidden("has_pap", 1);
         }
@@ -363,10 +363,10 @@ class Autoassign_Page {
         // action
         echo '<div class="form-section">',
             '<h3 class="', Ht::control_class("ass", "form-h", "is-"), "\">Action</h3>\n";
-        $this->render_review_actions();
-        $this->render_conflict_actions();
-        $this->render_lead_actions();
-        $this->render_discussion_actions();
+        $this->print_review_actions();
+        $this->print_conflict_actions();
+        $this->print_lead_actions();
+        $this->print_discussion_actions();
         echo "</div>\n\n";
 
 
@@ -427,20 +427,20 @@ class Autoassign_Page {
 
 
         // bad pairs
-        $this->render_bad_pairs();
+        $this->print_bad_pairs();
 
 
         // load balancing
         echo '<div class="form-section"><h3 class="form-h">Load balancing</h3>';
-        $this->echo_radio_row("balance", "new", "New assignments—spread new assignments equally among selected PC members");
-        $this->echo_radio_row("balance", "all", "All assignments—spread assignments so that selected PC members have roughly equal overall load");
+        $this->print_radio_row("balance", "new", "New assignments—spread new assignments equally among selected PC members");
+        $this->print_radio_row("balance", "all", "All assignments—spread assignments so that selected PC members have roughly equal overall load");
         echo '</div>';
 
 
         // method
         echo '<div class="form-section"><h3 class="form-h">Assignment method</h3>';
-        $this->echo_radio_row("method", "mcmf", "Globally optimal assignment");
-        $this->echo_radio_row("method", "random", "Random good assignment");
+        $this->print_radio_row("method", "mcmf", "Globally optimal assignment");
+        $this->print_radio_row("method", "random", "Random good assignment");
 
         if ($conf->opt("autoassignReviewGadget") === "expertise") {
             echo "<div><strong>Costs:</strong> ";
@@ -481,7 +481,7 @@ class Autoassign_Page {
         }
 
         // main
-        $this->render();
+        $this->print();
     }
 
     static function go(Contact $user, Qrequest $qreq) {

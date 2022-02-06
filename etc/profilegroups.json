@@ -11,27 +11,27 @@
     },
     {
         "name": "main/main", "order": 1000,
-        "render_function": "UserStatus::render_main"
+        "print_function": "UserStatus::print_main"
     },
     {
         "name": "main/country", "order": 3000,
-        "render_function": "UserStatus::render_country"
+        "print_function": "UserStatus::print_country"
     },
     {
         "name": "main/roles", "order": 5000,
-        "render_function": "UserStatus::render_roles"
+        "print_function": "UserStatus::print_roles"
     },
     {
         "name": "main/collaborators", "order": 6000,
-        "render_function": "UserStatus::render_collaborators"
+        "print_function": "UserStatus::print_collaborators"
     },
     {
         "name": "main/topics", "order": 7000, "allow_if": "conf.has_topics",
-        "render_function": "UserStatus::render_topics"
+        "print_function": "UserStatus::print_topics"
     },
-    [   "main/tags", 8000, "UserStatus::render_tags"   ],
-    [   "main/mainactions", 100000, "UserStatus::render_main_actions"   ],
-    [   "main/actions", 1000000, "UserStatus::render_actions"   ],
+    [   "main/tags", 8000, "UserStatus::print_tags"   ],
+    [   "main/mainactions", 100000, "UserStatus::print_main_actions"   ],
+    [   "main/actions", 1000000, "UserStatus::print_actions"   ],
     {   "name": "topics", "order": 400,
         "save_function": "UserStatus::save_topics"   },
 
@@ -40,24 +40,24 @@
         "allow_if": "profile_security",
         "request_function": "UserStatus::request_security",
         "save_function": "UserStatus::save_security"   },
-    [   "security/currentpassword", 10, "UserStatus::render_current_password"   ],
+    [   "security/currentpassword", 10, "UserStatus::print_current_password"   ],
     {   "name": "security/newpassword", "order": 100,
-        "render_function": "UserStatus::render_new_password",
+        "print_function": "UserStatus::print_new_password",
         "request_function": "UserStatus::request_new_password"   },
-    [   "security/actions", 1000000, "UserStatus::render_actions"   ],
+    [   "security/actions", 1000000, "UserStatus::print_actions"   ],
 
 
     {   "name": "preferences", "title": "Preferences", "order": 300   },
     {
         "name": "preferences/follow", "title": "Email notification", "order": 4000,
-        "render_function": "UserStatus::render_follow"
+        "print_function": "UserStatus::print_follow"
     },
-    [   "preferences/actions", 1000000, "UserStatus::render_actions"   ],
+    [   "preferences/actions", 1000000, "UserStatus::print_actions"   ],
 
 
-    [   "__bulk/entry", 100, "UserStatus::render_bulk_entry"   ],
-    [   "__bulk/actions", 1000, "UserStatus::render_bulk_actions"   ],
-    [   "__bulk/help", 10000, "UserStatus::render_bulk_help"   ],
+    [   "__bulk/entry", 100, "UserStatus::print_bulk_entry"   ],
+    [   "__bulk/actions", 1000, "UserStatus::print_bulk_actions"   ],
+    [   "__bulk/help", 10000, "UserStatus::print_bulk_help"   ],
     {   "name": "__bulk/help/f/email", "order": -100, "description_html": "Email"   },
     {   "name": "__bulk/help/f/name", "order": -90, "description_html": "Name"   },
     {   "name": "__bulk/help/f/first", "order": -85, "description_html": "First name (given name)"   },

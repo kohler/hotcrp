@@ -38,9 +38,9 @@ class Abstract_PaperOption extends PaperOption {
     function parse_json(PaperInfo $prow, $j) {
         return $this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_TRIM);
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         if ((int) $this->conf->opt("noAbstract") !== 1) {
-            $this->echo_web_edit_text($pt, $ov, $reqov, ["rows" => 5]);
+            $this->print_web_edit_text($pt, $ov, $reqov, ["rows" => 5]);
         }
     }
     function render(FieldRender $fr, PaperValue $ov) {

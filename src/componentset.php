@@ -1,5 +1,5 @@
 <?php
-// src/componentset.php -- HotCRP JSON-based component specifications
+// componentset.php -- HotCRP JSON-based component specifications
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ComponentContext {
@@ -49,7 +49,7 @@ class ComponentSet implements XtContext {
                 "__source_order" => ++Conf::$next_xt_source_order
             ];
             if (strpos($fja[2], "::")) {
-                $fj->render_function = $fja[2];
+                $fj->print_function = $fja[2];
             } else {
                 $fj->alias = $fja[2];
             }
@@ -298,22 +298,18 @@ class ComponentSet implements XtContext {
         return $this->_ctx->args[$i] ?? null;
     }
 
-    function start_render() {
+    private function start_print() {
         $this->_ctxstack[] = $this->_ctx;
         $this->_ctx = clone $this->_ctx;
         $this->_ctx->cleanup = null;
     }
-    function push_render_cleanup($cleaner) {
-        assert(!empty($this->_ctxstack));
-        $this->_ctx->cleanup[] = $cleaner;
-    }
-    function end_render() {
+    private function end_print() {
         assert(!empty($this->_ctxstack));
         $cleanup = $this->_ctx->cleanup ?? [];
         for ($i = count($cleanup) - 1; $i >= 0; --$i) {
             $cleaner = $cleanup[$i];
             if (is_string($cleaner) && ($gj = $this->get($cleaner))) {
-                $this->render($gj);
+                $this->print($gj);
             } else if (is_callable($cleaner)) {
                 $this->call_function(null, $cleaner);
             }
@@ -321,10 +317,15 @@ class ComponentSet implements XtContext {
         $this->_ctx = array_pop($this->_ctxstack);
     }
 
+    function push_print_cleanup($cleaner) {
+        assert(!empty($this->_ctxstack));
+        $this->_ctx->cleanup[] = $cleaner;
+    }
+
     /** @param ?string $classes
      * @param ?string $id */
-    function render_open_section($classes = null, $id = null) {
-        $this->render_close_section();
+    function print_open_section($classes = null, $id = null) {
+        $this->print_close_section();
         if ($this->_section_class !== false
             && ($this->_section_class !== "" || ($classes ?? "") !== "")) {
             $klasses = trim("{$this->_section_class} " . ($classes ?? ""));
@@ -345,7 +346,7 @@ class ComponentSet implements XtContext {
     function push_close_section($html) {
         $this->_section_closer = $html . ($this->_section_closer ?? "");
     }
-    function render_close_section() {
+    function print_close_section() {
         if ($this->_in_section) {
             echo $this->_section_closer ?? "";
             $this->_section_closer = null;
@@ -354,7 +355,7 @@ class ComponentSet implements XtContext {
     }
     /** @param string $title
      * @param ?string $hashid */
-    function render_title($title, $hashid = null) {
+    function print_title($title, $hashid = null) {
         echo '<h3';
         if ($this->_title_class) {
             echo ' class="', $this->_title_class, '"';
@@ -366,15 +367,15 @@ class ComponentSet implements XtContext {
     }
     /** @param string $title
      * @param ?string $hashid */
-    function render_section($title, $hashid = null) {
-        $this->render_open_section();
+    function print_section($title, $hashid = null) {
+        $this->print_open_section();
         if ($title !== "") {
-            $this->render_title($title, $hashid);
+            $this->print_title($title, $hashid);
         }
     }
 
     /** @param string|object $gj */
-    function render($gj) {
+    function print($gj) {
         if (is_string($gj) && !($gj = $this->get($gj))) {
             return null;
         }
@@ -386,13 +387,15 @@ class ComponentSet implements XtContext {
             if ($section
                 || ($section === null && $show_title && $title !== "")
                 || ($section === null && !$this->_in_section)) {
-                $this->render_section($show_title ? $title : "", $gj->hashid ?? null);
+                $this->print_section($show_title ? $title : "", $gj->hashid ?? null);
             }
         }
-        if (isset($gj->render_function)) {
+        if (isset($gj->print_function)) {
+            return $this->call_function($gj, $gj->print_function, $gj);
+        } else if (isset($gj->render_function)) {
             return $this->call_function($gj, $gj->render_function, $gj);
-        } else if (isset($gj->render_html)) {
-            echo $gj->render_html;
+        } else if (isset($gj->html_content)) {
+            echo $gj->html_content;
             return null;
         } else {
             return null;
@@ -400,20 +403,58 @@ class ComponentSet implements XtContext {
     }
     /** @param string $name
      * @param bool $top */
-    function render_group($name, $top = false) {
-        $this->start_render();
+    function print_group($name, $top = false) {
+        $this->start_print();
         $result = null;
         if ($top && ($gj = $this->get($name))) {
-            $result = $this->render($gj);
+            $result = $this->print($gj);
         }
         foreach ($this->members($name) as $gj) {
             if ($result !== false) {
-                $result = $this->render($gj);
+                $result = $this->print($gj);
             }
         }
-        $this->end_render();
-        $top && $this->render_close_section();
+        $this->end_print();
+        $top && $this->print_close_section();
         return $result;
+    }
+
+    /** @deprecated */
+    function push_render_cleanup($cleaner) {
+        $this->push_print_cleanup($cleaner);
+    }
+    /** @param ?string $classes
+     * @param ?string $id
+     * @deprecated */
+    function render_open_section($classes = null, $id = null) {
+        $this->print_open_section($classes, $id);
+    }
+    /** @deprecated */
+    function render_close_section() {
+        $this->print_close_section();
+    }
+    /** @param string $title
+     * @param ?string $hashid
+     * @deprecated */
+    function render_title($title, $hashid = null) {
+        $this->print_title($title, $hashid);
+    }
+    /** @param string $title
+     * @param ?string $hashid
+     * @deprecated */
+    function render_section($title, $hashid = null) {
+        $this->print_section($title, $hashid);
+    }
+    /** @param string|object $gj
+     * @deprecated */
+    function render($gj) {
+        return $this->print($gj);
+    }
+    /** @param string $name
+     * @param bool $top
+     * @deprecated */
+    function render_group($name, $top = false) {
+        return $this->print_group($name, $top);
     }
 
     /** @param string $name

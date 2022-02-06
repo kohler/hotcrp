@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_tracks.php -- HotCRP settings > tracks page
+// settings/s_tracks.php -- HotCRP settings > tracks page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class TrackSettingInfo {
@@ -75,8 +75,8 @@ class Tracks_SettingRenderer {
             " &nbsp;",
             Ht::entry($tag_ctl, $reqstr[1],
                       $sv->sjs($tag_ctl, ["class" => "fx need-suggest pc-tags", "placeholder" => "(tag)", "data-default-value" => $curv[1], "readonly" => $trackinfo->readonly]));
-        $sv->echo_feedback_at($track_ctl);
-        $sv->echo_feedback_at($tag_ctl);
+        $sv->print_feedback_at($track_ctl);
+        $sv->print_feedback_at($tag_ctl);
         if ($hint) {
             $klass = "f-h";
             if (str_starts_with($hint, '<div class="fx">')
@@ -177,7 +177,7 @@ class Tracks_SettingRenderer {
         echo "</div>\n\n";
     }
 
-    static function render(SettingValues $sv) {
+    static function print(SettingValues $sv) {
         echo "<p>Tracks control the PC members allowed to view or review different sets of submissions. <span class=\"nw\">(<a href=\"" . $sv->conf->hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
             Ht::hidden("has_tracks", 1),
             "<div class=\"smg\"></div>\n";

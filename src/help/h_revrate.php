@@ -1,9 +1,9 @@
 <?php
-// src/help/h_revrate.php -- HotCRP help functions
+// help/h_revrate.php -- HotCRP help functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class RevRate_HelpTopic {
-    static function render(HelpRenderer $hth) {
+    static function print(HelpRenderer $hth) {
         $what = "PC members";
         if ($hth->conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
             $what = "PC members and external reviewers";

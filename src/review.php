@@ -581,7 +581,7 @@ class ReviewField implements JsonSerializable {
     /** @param int $num
      * @param int $fv
      * @param int $reqv */
-    private function echo_option($num, $fv, $reqv) {
+    private function print_option($num, $fv, $reqv) {
         $opt = ["id" => "{$this->id}_{$num}"];
         if ($fv !== $reqv) {
             $opt["data-default-checked"] = $reqv === $num;
@@ -597,13 +597,13 @@ class ReviewField implements JsonSerializable {
         echo '</label>';
     }
 
-    function echo_web_edit(ReviewForm $rf, $fv, $reqv) {
+    function print_web_edit(ReviewForm $rf, $fv, $reqv) {
         if ($this->has_options) {
             foreach ($this->options as $num => $text) {
-                $this->echo_option($num, $fv, $reqv);
+                $this->print_option($num, $fv, $reqv);
             }
             if (!$this->required) {
-                $this->echo_option(0, $fv, $reqv);
+                $this->print_option(0, $fv, $reqv);
             }
         } else {
             $opt = ["class" => "w-text need-autogrow need-suggest suggest-emoji", "rows" => $this->display_space, "cols" => 60, "spellcheck" => true, "id" => $this->id];
@@ -885,7 +885,7 @@ class ReviewForm implements JsonSerializable {
             if (!$f->has_options) {
                 echo $format_description;
             }
-            $f->echo_web_edit($this, $fval, $rval);
+            $f->print_web_edit($this, $fval, $rval);
             echo "</div></div>\n";
         }
         echo "</div>\n";
@@ -1170,7 +1170,7 @@ $blind\n";
         return join("", $x);
     }
 
-    private function _echo_accept_decline(PaperInfo $prow, $rrow, Contact $user,
+    private function _print_accept_decline(PaperInfo $prow, $rrow, Contact $user,
                                           $reviewPostLink) {
         if ($rrow
             && $rrow->reviewId
@@ -1191,7 +1191,7 @@ $blind\n";
         }
     }
 
-    private function _echo_review_actions($prow, $rrow, $user, $reviewPostLink) {
+    private function _print_review_actions($prow, $rrow, $user, $reviewPostLink) {
         $buttons = [];
 
         $submitted = $rrow && $rrow->reviewStatus === ReviewInfo::RS_COMPLETED;
@@ -1241,11 +1241,11 @@ $blind\n";
                 $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
             }
         } else if (!$submitted) {
-            // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
+            // NB see `PaperTable::_print_clickthrough` data-clickthrough-enable
             $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
             $buttons[] = Ht::submit("savedraft", "Save draft", ["class" => "btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
         } else {
-            // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
+            // NB see `PaperTable::_print_clickthrough` data-clickthrough-enable
             $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
         }
         $buttons[] = Ht::submit("cancel", "Cancel");
@@ -1261,7 +1261,7 @@ $blind\n";
         echo Ht::actions($buttons, ["class" => "aab aabig"]);
     }
 
-    function echo_form(PaperInfo $prow, ReviewInfo $rrow_in = null, Contact $viewer,
+    function print_form(PaperInfo $prow, ReviewInfo $rrow_in = null, Contact $viewer,
                        ReviewValues $rvalues = null) {
         $rrow = $rrow_in ?? ReviewInfo::make_blank($prow, $viewer);
         self::check_review_author_seen($prow, $rrow, $viewer);
@@ -1368,7 +1368,7 @@ $blind\n";
         echo '<div class="revcard-form">';
         $allow_admin = $viewer->allow_administer($prow);
         if ($viewer->time_review($prow, $rrow) || $allow_admin) {
-            $this->_echo_accept_decline($prow, $rrow, $viewer, $reviewPostLink);
+            $this->_print_accept_decline($prow, $rrow, $viewer, $reviewPostLink);
         }
 
         // blind?
@@ -1395,7 +1395,7 @@ $blind\n";
                 && !$allow_admin) {
                 echo '<div class="feedback is-warning mb-2">Only administrators can remove or unsubmit the review at this point.</div>';
             }
-            $this->_echo_review_actions($prow, $rrow, $viewer, $reviewPostLink);
+            $this->_print_review_actions($prow, $rrow, $viewer, $reviewPostLink);
         }
 
         echo "</div></form></div>\n\n";

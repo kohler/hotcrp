@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_api.php -- HotCRP JSON API access page
+// pages/p_api.php -- HotCRP JSON API access page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class API_Page {

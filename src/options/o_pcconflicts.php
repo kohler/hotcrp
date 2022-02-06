@@ -142,7 +142,7 @@ class PCConflicts_PaperOption extends PaperOption {
         $pv->set_value_data(array_keys($vm), array_values($vm));
         return $pv;
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         assert(!!$this->conf->setting("sub_pcconf"));
         $admin = $pt->user->can_administer($ov->prow);
         if (!$this->conf->setting("sub_pcconf")
@@ -180,7 +180,7 @@ class PCConflicts_PaperOption extends PaperOption {
             }
         }
 
-        $pt->echo_editable_option_papt($this, null, ["id" => $this->formid]);
+        $pt->print_editable_option_papt($this, null, ["id" => $this->formid]);
         echo '<div class="papev"><ul class="pc-ctable">';
         $readonly = !$this->test_editable($ov->prow);
 

@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_review.php -- HotCRP paper review display/edit page
+// pages/p_review.php -- HotCRP paper review display/edit page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Review_Page {
@@ -31,12 +31,12 @@ class Review_Page {
         return $this->conf->review_form();
     }
 
-    function echo_header() {
-        PaperTable::echo_header($this->pt, "review", $this->qreq->m, $this->qreq);
+    function print_header() {
+        PaperTable::print_header($this->pt, "review", $this->qreq->m, $this->qreq);
     }
 
     function error_exit($msg) {
-        $this->echo_header();
+        $this->print_header();
         Ht::stash_script("hotcrp.shortcut().add()");
         $msg && Conf::msg_error($msg);
         $this->conf->footer();
@@ -304,7 +304,7 @@ class Review_Page {
         throw new PageCompletion;
     }
 
-    function render_decline_message($capuid) {
+    function print_decline_message($capuid) {
         $ref = $this->prow->review_refusals_by_user_id($capuid);
         if ($ref && $ref[0] && $ref[0]->refusedReviewId) {
             $rrid = $ref[0]->refusedReviewId;
@@ -323,7 +323,7 @@ class Review_Page {
         }
     }
 
-    function render_accept_other_message($capuid) {
+    function print_accept_other_message($capuid) {
         if (($u = $this->conf->cached_user_by_id($capuid))) {
             if (PaperRequest::simple_qreq($this->qreq)
                 && ($i = $this->user->session_user_index($u->email)) >= 0) {
@@ -350,7 +350,7 @@ class Review_Page {
         }
     }
 
-    function render() {
+    function print() {
         $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
         $pt->resolve_review(!!$this->rrow);
         $pt->resolve_comments();
@@ -365,19 +365,19 @@ class Review_Page {
         }
 
         // paper table
-        $this->echo_header();
-        $pt->echo_paper_info();
+        $this->print_header();
+        $pt->print_paper_info();
 
         if (!$this->user->can_view_review($this->prow, $this->rrow)
             && !$this->user->can_edit_review($this->prow, $this->rrow)) {
             $pt->paptabEndWithReviewMessage();
         } else {
             if ($pt->mode === "re" || $this->rrow) {
-                $pt->echo_review_form();
-                $pt->echo_main_link();
+                $pt->print_review_form();
+                $pt->print_main_link();
             } else if ($this->rrow) {
-                $pt->echo_rc([$this->rrow], false);
-                $pt->echo_main_link();
+                $pt->print_rc([$this->rrow], false);
+                $pt->print_main_link();
             } else {
                 $pt->paptabEndWithReviewsAndComments();
             }
@@ -440,14 +440,14 @@ class Review_Page {
         if ($capuid) {
             if (!$pp->rrow
                 && $pp->prow->review_refusals_by_user_id($capuid)) {
-                $pp->render_decline_message($capuid);
+                $pp->print_decline_message($capuid);
             } else if ($pp->rrow
                        && $capuid === $pp->rrow->contactId
                        && $capuid !== $user->contactXid) {
-                $pp->render_accept_other_message($capuid);
+                $pp->print_accept_other_message($capuid);
             }
         }
 
-        $pp->render();
+        $pp->print();
     }
 }

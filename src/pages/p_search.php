@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_search.php -- HotCRP paper search page
+// pages/p_search.php -- HotCRP paper search page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Search_Page {
@@ -181,7 +181,7 @@ class Search_Page {
 
     /** @param bool $always
      * @return bool */
-    private function render_saved_searches($always) {
+    private function print_saved_searches($always) {
         $ss = $this->conf->named_searches();
         if (($show = !empty($ss) || $always)) {
             echo '<div class="tld is-tla" id="tla-saved-searches">';
@@ -208,7 +208,7 @@ class Search_Page {
     }
 
     /** @param Qrequest $qreq */
-    private function render_display_options($qreq) {
+    private function print_display_options($qreq) {
         echo '<div class="tld is-tla" id="tla-view" style="padding-bottom:1ex">',
             Ht::form($this->conf->hoturl("=search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
         foreach (["q", "qa", "qo", "qx", "qt", "t", "sort"] as $x) {
@@ -250,7 +250,7 @@ class Search_Page {
 
     /** @param Qrequest $qreq
      * @param list<string> $limits */
-    private function render_list($pl_text, $qreq, $limits) {
+    private function print_list($pl_text, $qreq, $limits) {
         $search = $this->pl->search;
 
         if ($this->user->has_hidden_papers()
@@ -298,7 +298,7 @@ class Search_Page {
     }
 
     /** @param Qrequest $qreq */
-    function render($qreq) {
+    function print($qreq) {
         $user = $this->user;
         $this->conf->header("Search", "search");
         echo Ht::unstash(); // need the JS right away
@@ -376,11 +376,11 @@ class Search_Page {
             '</div></form></div>';
 
         // Saved searches tab
-        $has_ss = $user->isPC && $this->render_saved_searches($pl_text !== null);
+        $has_ss = $user->isPC && $this->print_saved_searches($pl_text !== null);
 
         // Display options tab
         if (!$this->pl->is_empty()) {
-            $this->render_display_options($qreq);
+            $this->print_display_options($qreq);
         }
 
         echo "</div>";
@@ -403,7 +403,7 @@ class Search_Page {
 
         // Paper body
         if ($pl_text !== null) {
-            $this->render_list($pl_text, $qreq, $limits);
+            $this->print_list($pl_text, $qreq, $limits);
         } else {
             echo '<hr class="g">';
         }
@@ -492,6 +492,6 @@ class Search_Page {
 
         // display
         $sp = new Search_Page($user, $ssel);
-        $sp->render($qreq);
+        $sp->print($qreq);
     }
 }

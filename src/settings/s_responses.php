@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_responses.php -- HotCRP settings > decisions page
+// settings/s_responses.php -- HotCRP settings > decisions page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Responses_SettingParser extends SettingParser {
@@ -37,7 +37,7 @@ class Responses_SettingParser extends SettingParser {
     }
 
     static function render_name_property(SettingValues $sv, $ctr) {
-        $sv->echo_entry_group("response__{$ctr}__name", "Response name", [
+        $sv->print_entry_group("response__{$ctr}__name", "Response name", [
             "horizontal" => true,
             "control_after" => Ht::button(Icons::ui_use("trash"), ["class" => "ui js-settings-response-delete ml-2 need-tooltip", "aria-label" => "Delete response", "tabindex" => "-1"])
         ]);
@@ -48,20 +48,20 @@ class Responses_SettingParser extends SettingParser {
             && ($x = $sv->vstr("response__{$ctr}__done"))) {
             $sv->conf->settings["response__{$ctr}__open"] = intval($x) - 7 * 86400;
         }
-        $sv->echo_entry_group("response__{$ctr}__open", "Start time", ["horizontal" => true]);
-        $sv->echo_entry_group("response__{$ctr}__done", "Hard deadline", ["horizontal" => true]);
-        $sv->echo_entry_group("response__{$ctr}__grace", "Grace period", ["horizontal" => true]);
+        $sv->print_entry_group("response__{$ctr}__open", "Start time", ["horizontal" => true]);
+        $sv->print_entry_group("response__{$ctr}__done", "Hard deadline", ["horizontal" => true]);
+        $sv->print_entry_group("response__{$ctr}__grace", "Grace period", ["horizontal" => true]);
     }
 
     static function render_wordlimit_property(SettingValues $sv, $ctr) {
-        $sv->echo_entry_group("response__{$ctr}__words", "Word limit", ["horizontal" => true], $ctr > 1 ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
+        $sv->print_entry_group("response__{$ctr}__words", "Word limit", ["horizontal" => true], $ctr > 1 ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
     }
 
     static function render_instructions_property(SettingValues $sv, $ctr) {
-        $sv->echo_message_horizontal("response__{$ctr}__instructions", "Instructions");
+        $sv->print_message_horizontal("response__{$ctr}__instructions", "Instructions");
     }
 
-    static function render_one(SettingValues $sv, $ctr) {
+    static function print_one(SettingValues $sv, $ctr) {
         $id = $sv->vstr("response__{$ctr}__id") ?? "new";
         echo '<div id="response__', $ctr, '" class="form-g settings-response',
             $id === "new" ? " is-new" : "", '">',
@@ -78,21 +78,21 @@ class Responses_SettingParser extends SettingParser {
         echo '</div>';
     }
 
-    static function render(SettingValues $sv) {
+    static function print(SettingValues $sv) {
         // Authors' response
         echo '<div class="form-g">';
-        $sv->echo_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
+        $sv->print_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
         Icons::stash_defs("trash");
         echo Ht::unstash(), '<div class="if-response-active',
             $sv->vstr("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_responses", 1);
 
         foreach ($sv->object_list_counters("response") as $ctr) {
-            self::render_one($sv, $ctr);
+            self::print_one($sv, $ctr);
         }
 
         echo '<template id="response__new" class="hidden">';
-        self::render_one($sv, '$');
+        self::print_one($sv, '$');
         echo '</template>';
         if ($sv->editable("response__0__name")) {
             echo '<div class="form-g">',

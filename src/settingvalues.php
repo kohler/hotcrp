@@ -239,20 +239,39 @@ class SettingValues extends MessageSet {
 
     /** @param string $g
      * @param bool $top */
-    function render_group($g, $top = false) {
-        $this->cs()->render_group($g, $top);
+    function print_group($g, $top = false) {
+        $this->cs()->print_group($g, $top);
     }
 
     /** @param ?string $classes
      * @param ?string $id */
-    function render_open_section($classes = null, $id = null) {
-        $this->cs()->render_open_section($classes, $id);
+    function print_open_section($classes = null, $id = null) {
+        $this->cs()->print_open_section($classes, $id);
     }
 
     /** @param string $title
      * @param ?string $id */
+    function print_section($title, $id = null) {
+        $this->cs()->print_section($title, $id);
+    }
+
+    /** @param string $g
+     * @param bool $top
+     * @deprecated */
+    function render_group($g, $top = false) {
+        $this->print_group($g, $top);
+    }
+    /** @param ?string $classes
+     * @param ?string $id
+     * @deprecated */
+    function render_open_section($classes = null, $id = null) {
+        $this->print_open_section($classes, $id);
+    }
+    /** @param string $title
+     * @param ?string $id
+     * @deprecated */
     function render_section($title, $id = null) {
-        $this->cs()->render_section($title, $id);
+        $this->print_section($title, $id);
     }
 
 
@@ -749,7 +768,7 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $field */
-    function echo_feedback_at($field) {
+    function print_feedback_at($field) {
         echo $this->feedback_at($field);
     }
 
@@ -831,7 +850,7 @@ class SettingValues extends MessageSet {
     /** @param string|Si $id
      * @param string $class
      * @param ?array<string,mixed> $js */
-    function echo_group_open($id, $class, $js = null) {
+    function print_group_open($id, $class, $js = null) {
         $si = is_string($id) ? $this->si($id) : $id;
         $xjs = ["class" => $class];
         if (!isset($js["no_control_class"])) {
@@ -856,7 +875,7 @@ class SettingValues extends MessageSet {
     /** @param string $name
      * @param ?array<string,mixed> $js
      * @return void */
-    function echo_checkbox_only($name, $js = null) {
+    function print_checkbox_only($name, $js = null) {
         $js["id"] = $name;
         echo Ht::hidden("has_$name", 1),
             Ht::checkbox($name, 1, !!$this->vstr($name), $this->sjs($name, $js));
@@ -867,13 +886,13 @@ class SettingValues extends MessageSet {
      * @param ?array<string,mixed> $js
      * @param string $hint
      * @return void */
-    function echo_checkbox($name, $text, $js = null, $hint = "") {
+    function print_checkbox($name, $text, $js = null, $hint = "") {
         $js = $js ?? [];
-        $this->echo_group_open($name, "checki", $js + ["no_control_class" => true]);
+        $this->print_group_open($name, "checki", $js + ["no_control_class" => true]);
         echo '<span class="checkc">';
-        $this->echo_checkbox_only($name, $js);
+        $this->print_checkbox_only($name, $js);
         echo '</span>', $this->label($name, $text, ["for" => $name, "class" => $js["label_class"] ?? null]);
-        $this->echo_feedback_at($name);
+        $this->print_feedback_at($name);
         if ($hint) {
             echo '<div class="', self::add_class("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
         }
@@ -887,7 +906,7 @@ class SettingValues extends MessageSet {
      * @param ?string $heading
      * @param string|array $rest
      * @return void */
-    function echo_radio_table($name, $varr, $heading = null, $rest = []) {
+    function print_radio_table($name, $varr, $heading = null, $rest = []) {
         $x = $this->vstr($name);
         if ($x === null || !isset($varr[$x])) {
             $x = 0;
@@ -901,7 +920,7 @@ class SettingValues extends MessageSet {
             assert(is_array($fold_values));
         }
 
-        $this->echo_group_open($name, "form-g settings-radio", $rest + ["id" => $name]);
+        $this->print_group_open($name, "form-g settings-radio", $rest + ["id" => $name]);
         if ($heading) {
             echo '<div class="settings-itemheading">', $heading, '</div>';
         }
@@ -932,7 +951,7 @@ class SettingValues extends MessageSet {
                 Ht::radio($name, $k, $k == $x, $this->sjs($name, $item)),
                 '</span>', $label, $label2, $hint, '</div>';
         }
-        $this->echo_feedback_at($name);
+        $this->print_feedback_at($name);
         if (isset($rest["after"])) {
             echo $rest["after"];
         }
@@ -966,7 +985,7 @@ class SettingValues extends MessageSet {
     /** @param string $name
      * @param ?array<string,mixed> $js
      * @return void */
-    function echo_entry($name, $js = null) {
+    function print_entry($name, $js = null) {
         echo $this->entry($name, $js);
     }
 
@@ -975,11 +994,11 @@ class SettingValues extends MessageSet {
      * @param string $control
      * @param ?array<string,mixed> $js
      * @param string $hint */
-    function echo_control_group($name, $description, $control,
-                                $js = null, $hint = "") {
+    function print_control_group($name, $description, $control,
+                                 $js = null, $hint = "") {
         $si = $this->si($name);
         $horizontal = !!($js["horizontal"] ?? false);
-        $this->echo_group_open($name, $horizontal ? "entryi" : "f-i", $js);
+        $this->print_group_open($name, $horizontal ? "entryi" : "f-i", $js);
 
         if ($description === null) {
             $description = $si->title_html($this);
@@ -988,7 +1007,7 @@ class SettingValues extends MessageSet {
         if ($horizontal) {
             echo '<div class="entry">';
         }
-        $this->echo_feedback_at($name);
+        $this->print_feedback_at($name);
         echo $control, ($js["control_after"] ?? "");
         $thint = $this->type_hint($si->type);
         if ($hint || $thint) {
@@ -1009,8 +1028,8 @@ class SettingValues extends MessageSet {
      * @param ?array<string,mixed> $js
      * @param string $hint
      * @return void */
-    function echo_entry_group($name, $description, $js = null, $hint = "") {
-        $this->echo_control_group($name, $description,
+    function print_entry_group($name, $description, $js = null, $hint = "") {
+        $this->print_control_group($name, $description,
             $this->entry($name, $js),
             $js, $hint);
     }
@@ -1030,11 +1049,11 @@ class SettingValues extends MessageSet {
      * @param array $values
      * @param ?array<string,mixed> $js
      * @param string $hint */
-    function echo_select_group($name, $description, $values, $js = null, $hint = "") {
+    function print_select_group($name, $description, $values, $js = null, $hint = "") {
         if (is_array($description)) { /* XXX backward compat */
             $tmp = $description; $description = $values; $values = $tmp;
         }
-        $this->echo_control_group($name, $description,
+        $this->print_control_group($name, $description,
             $this->select($name, $values, $js),
             $js, $hint);
     }
@@ -1069,8 +1088,8 @@ class SettingValues extends MessageSet {
      * @param ?array<string,mixed> $js
      * @param string $hint
      * @return void */
-    function echo_textarea_group($name, $description, $js = null, $hint = "") {
-        $this->echo_control_group($name, $description,
+    function print_textarea_group($name, $description, $js = null, $hint = "") {
+        $this->print_control_group($name, $description,
             $this->textarea($name, $js),
             $js, $hint);
     }
@@ -1079,7 +1098,7 @@ class SettingValues extends MessageSet {
      * @param string $description
      * @param string $hint
      * @param string $xclass */
-    private function echo_message_base($name, $description, $hint, $xclass) {
+    private function print_message_base($name, $description, $hint, $xclass) {
         $si = $this->si($name);
         $current = $this->vstr($si);
         $description = '<a class="ui q js-foldup" href="">'
@@ -1096,21 +1115,21 @@ class SettingValues extends MessageSet {
     /** @param string $name
      * @param string $description
      * @param string $hint */
-    function echo_message($name, $description, $hint = "") {
-        $this->echo_message_base($name, $description, $hint, "");
+    function print_message($name, $description, $hint = "") {
+        $this->print_message_base($name, $description, $hint, "");
     }
 
     /** @param string $name
      * @param string $description
      * @param string $hint */
-    function echo_message_minor($name, $description, $hint = "") {
-        $this->echo_message_base($name, $description, $hint, " n");
+    function print_message_minor($name, $description, $hint = "") {
+        $this->print_message_base($name, $description, $hint, " n");
     }
 
     /** @param string $name
      * @param string $description
      * @param string $hint */
-    function echo_message_horizontal($name, $description, $hint = "") {
+    function print_message_horizontal($name, $description, $hint = "") {
         $si = $this->si($name);
         $current = $this->vstr($si);
         if ($current !== $si->default_value($this)) {
@@ -1487,5 +1506,107 @@ class SettingValues extends MessageSet {
     /** @return list<string> */
     function updated_fields() {
         return array_keys($this->_diffs);
+    }
+
+
+    /** @param string $field
+     * @deprecated */
+    function echo_feedback_at($field) {
+        $this->print_feedback_at($field);
+    }
+    /** @param string|Si $id
+     * @param string $class
+     * @param ?array<string,mixed> $js
+     * @deprecated */
+    function echo_group_open($id, $class, $js = null) {
+        $this->print_group_open($id, $class, $js);
+    }
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return void
+     * @deprecated */
+    function echo_checkbox_only($name, $js = null) {
+        $this->print_checkbox_only($name, $js);
+    }
+    /** @param string $name
+     * @param string $text
+     * @param ?array<string,mixed> $js
+     * @param string $hint
+     * @return void
+     * @deprecated */
+    function echo_checkbox($name, $text, $js = null, $hint = "") {
+        $this->print_checkbox($name, $text, $js, $hint);
+    }
+    /** @param string $name
+     * @param array $varr
+     * @param ?string $heading
+     * @param string|array $rest
+     * @return void
+     * @deprecated */
+    function echo_radio_table($name, $varr, $heading = null, $rest = []) {
+        $this->print_radio_table($name, $varr, $heading, $rest);
+    }
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @return void
+     * @deprecated */
+    function echo_entry($name, $js = null) {
+        $this->print_entry($name, $js);
+    }
+    /** @param string $name
+     * @param string $description
+     * @param string $control
+     * @param ?array<string,mixed> $js
+     * @param string $hint
+     * @deprecated */
+    function echo_control_group($name, $description, $control,
+                                 $js = null, $hint = "") {
+        $this->print_control_group($name, $description, $control, $js, $hint);
+    }
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @param string $hint
+     * @return void
+     * @deprecated */
+    function echo_entry_group($name, $description, $js = null, $hint = "") {
+        $this->print_entry_group($name, $description, $js, $hint);
+    }
+    /** @param string $name
+     * @param string $description
+     * @param array $values
+     * @param ?array<string,mixed> $js
+     * @param string $hint
+     * @deprecated */
+    function echo_select_group($name, $description, $values, $js = null, $hint = "") {
+        $this->print_select_group($name, $description, $values, $js, $hint);
+    }
+    /** @param string $name
+     * @param ?array<string,mixed> $js
+     * @param string $hint
+     * @return void
+     * @deprecated */
+    function echo_textarea_group($name, $description, $js = null, $hint = "") {
+        $this->print_textarea_group($name, $description, $js, $hint);
+    }
+    /** @param string $name
+     * @param string $description
+     * @param string $hint
+     * @deprecated */
+    function echo_message($name, $description, $hint = "") {
+        $this->print_message($name, $description, $hint);
+    }
+    /** @param string $name
+     * @param string $description
+     * @param string $hint
+     * @deprecated */
+    function echo_message_minor($name, $description, $hint = "") {
+        $this->print_message_minor($name, $description, $hint);
+    }
+    /** @param string $name
+     * @param string $description
+     * @param string $hint
+     * @deprecated */
+    function echo_message_horizontal($name, $description, $hint = "") {
+        $this->print_message_horizontal($name, $description, $hint);
     }
 }

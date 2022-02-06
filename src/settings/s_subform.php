@@ -1,9 +1,9 @@
 <?php
-// src/settings/s_subform.php -- HotCRP settings > submission form page
+// settings/s_subform.php -- HotCRP settings > submission form page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SubForm_SettingRenderer {
-    static function render_abstract(SettingValues $sv) {
+    static function print_abstract(SettingValues $sv) {
         echo '<div id="foldpdfupload" class="fold2o fold3o">';
         echo '<div class="f-i">',
             $sv->label("sub_noabstract", "Abstract requirement", ["class" => "n"]),
@@ -17,26 +17,26 @@ class SubForm_SettingRenderer {
 
         if (is_executable("src/banal")) {
             echo '<div class="g fx2">';
-            Banal_SettingRenderer::render("0", $sv);
+            Banal_SettingRenderer::print("0", $sv);
             echo '</div>';
         }
         echo '</div>';
     }
 
-    static function render_conflicts(SettingValues $sv) {
+    static function print_conflicts(SettingValues $sv) {
         echo '<div id="foldpcconf" class="form-g fold', $sv->vstr("sub_pcconf") ? "o" : "c", "\">\n";
-        $sv->echo_checkbox("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "uich js-foldup"]);
+        $sv->print_checkbox("sub_pcconf", "Collect authors’ PC conflicts", ["class" => "uich js-foldup"]);
         $cflt = array();
         $confset = $sv->conf->conflict_types();
         foreach ($confset->basic_conflict_types() as $ct) {
             $cflt[] = "“" . $confset->unparse_html_description($ct) . "”";
         }
-        $sv->echo_checkbox("sub_pcconfsel", "Collect PC conflict descriptions (" . commajoin($cflt, "or") . ")", ["group_class" => "fx"]);
-        $sv->echo_checkbox("sub_collab", "Collect authors’ other conflicts and collaborators as text");
+        $sv->print_checkbox("sub_pcconfsel", "Collect PC conflict descriptions (" . commajoin($cflt, "or") . ")", ["group_class" => "fx"]);
+        $sv->print_checkbox("sub_collab", "Collect authors’ other conflicts and collaborators as text");
         echo "</div>\n";
 
         echo '<div class="form-g">';
-        $sv->echo_message_minor("conflict_description", "Definition of conflict of interest");
+        $sv->print_message_minor("conflict_description", "Definition of conflict of interest");
         echo "</div>\n";
 
         echo '<div class="form-g">', $sv->label("sub_pcconfvis", "When can reviewers see conflict information?"),

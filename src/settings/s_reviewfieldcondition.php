@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_reviewfieldcondition.php -- HotCRP review field conditions
+// settings/s_reviewfieldcondition.php -- HotCRP review field conditions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewFieldCondition_SettingParser extends SettingParser {

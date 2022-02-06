@@ -180,7 +180,7 @@ class AutoassignerInterface {
         }
     }
 
-    private function echo_profile_json($pj) {
+    private function print_profile_json($pj) {
         if ($pj) {
             echo '<p style="font-size:65%">';
             $last = false;
@@ -206,7 +206,7 @@ class AutoassignerInterface {
         }
     }
 
-    private function echo_form_start($urlarg, $attr) {
+    private function print_form_start($urlarg, $attr) {
         $urlarg["profile"] = $this->qreq->profile;
         $urlarg["XDEBUG_PROFILE"] = $this->qreq->XDEBUG_PROFILE;
         $urlarg["seed"] = $this->qreq->seed;
@@ -224,7 +224,7 @@ class AutoassignerInterface {
     }
 
     /** @return Assignment_PaperColumn */
-    private function echo_result_html_1($assignments) {
+    private function print_result_html_1($assignments) {
         // Divided into separate functions to facilitate garbage collection
         $assignset = new AssignmentSet($this->user, true);
         $assignset->set_search_type($this->qreq->t);
@@ -235,7 +235,7 @@ class AutoassignerInterface {
         if (strlen($apids) > 512) {
             $apids = substr($apids, 0, 509) . "...";
         }
-        $this->echo_form_start(["saveassignment" => 1, "assigntypes" => join(" ", $atypes), "assignpids" => $apids], []);
+        $this->print_form_start(["saveassignment" => 1, "assigntypes" => join(" ", $atypes), "assignpids" => $apids], []);
 
         $atype = $assignset->type_description();
         echo "<h3 class=\"form-h\">Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
@@ -245,14 +245,14 @@ class AutoassignerInterface {
         return $assignset->unparse_paper_column();
     }
 
-    private function echo_result_html($assignments, $profile_json) {
+    private function print_result_html($assignments, $profile_json) {
         // prepare assignment, print form entry, extract unparsed assignment
-        $pc = $this->echo_result_html_1($assignments);
+        $pc = $this->print_result_html_1($assignments);
         // echo paper list
         gc_collect_cycles();
-        Assignment_PaperColumn::echo_unparse_display($pc);
+        Assignment_PaperColumn::print_unparse_display($pc);
         // complete
-        $this->echo_profile_json($profile_json);
+        $this->print_profile_json($profile_json);
         echo '<div class="aab aabig btnp">',
             Ht::submit("submit", "Apply changes", ["class" => "btn-primary"]),
             Ht::submit("download", "Download assignment file"),
@@ -361,9 +361,9 @@ class AutoassignerInterface {
             if ($this->live) {
                 $pj = $this->profile_json();
                 $this->autoassigner = null;
-                $this->echo_result_html($assignments, $this->profile_json());
+                $this->print_result_html($assignments, $this->profile_json());
             } else {
-                $this->echo_form_start([], ["id" => "autoassign-form"]);
+                $this->print_form_start([], ["id" => "autoassign-form"]);
                 echo Ht::hidden("assignment", join("\n", $assignments));
                 if ($pj = $this->profile_json()) {
                     echo Ht::hidden("profile_json", json_encode($pj));
@@ -378,10 +378,10 @@ class AutoassignerInterface {
         }
     }
 
-    function echo_result() {
+    function print_result() {
         $assignments = explode("\n", $this->qreq->assignment);
         $profile_json = json_decode($this->qreq->profile_json ?? "null");
-        $this->echo_result_html($assignments, $profile_json);
+        $this->print_result_html($assignments, $profile_json);
         $this->conf->footer();
         exit;
     }

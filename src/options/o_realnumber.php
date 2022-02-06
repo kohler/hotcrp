@@ -53,9 +53,9 @@ class RealNumber_PaperOption extends PaperOption {
             return PaperValue::make_estop($prow, $this, "<0>Number required");
         }
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $reqx = $reqov->anno("request") ?? $reqov->data() ?? "";
-        $pt->echo_editable_option_papt($this);
+        $pt->print_editable_option_papt($this);
         echo '<div class="papev">',
             Ht::entry($this->formid, $reqx, [
                 "id" => $this->readable_formid(), "size" => 8,

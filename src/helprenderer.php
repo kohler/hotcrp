@@ -1,5 +1,5 @@
 <?php
-// src/helprenderer.php -- HotCRP help renderer class
+// helprenderer.php -- HotCRP help renderer class
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class HelpRenderer extends Ht {
@@ -200,8 +200,8 @@ class HelpRenderer extends Ht {
     }
     /** @param string $topic
      * @param bool $top */
-    function render_group($topic, $top = false) {
-        $this->_help_topics->render_group($topic, $top);
+    function print_group($topic, $top = false) {
+        $this->_help_topics->print_group($topic, $top);
     }
     function groups() {
         return $this->_help_topics->groups();
@@ -210,14 +210,22 @@ class HelpRenderer extends Ht {
         return $this->_help_topics->get($name);
     }
 
+    /** @param string $topic
+     * @param bool $top
+     * @deprecated */
+    function render_group($topic, $top = false) {
+        $this->print_group($topic, $top);
+    }
 
+    /** @return ?string */
     function meaningful_pc_tag() {
         foreach ($this->conf->viewable_user_tags($this->user) as $tag) {
             if ($tag !== "pc")
                 return $tag;
         }
-        return false;
+        return null;
     }
+    /** @return ?string */
     function meaningful_review_round_name() {
         if ($this->user->isPC) {
             $rounds = $this->conf->round_list();
@@ -226,6 +234,6 @@ class HelpRenderer extends Ht {
                     return $rounds[$i];
             }
         }
-        return false;
+        return null;
     }
 }

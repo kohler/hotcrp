@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_cacheable.php -- HotCRP cacheability helper
+// pages/p_cacheable.php -- HotCRP cacheability helper
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Cacheable_Page {

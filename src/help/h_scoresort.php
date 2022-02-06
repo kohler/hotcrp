@@ -1,9 +1,9 @@
 <?php
-// src/help/h_scoresort.php -- HotCRP help functions
+// help/h_scoresort.php -- HotCRP help functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ScoreSort_HelpTopic {
-    static function render(HelpRenderer $hth) {
+    static function print(HelpRenderer $hth) {
         echo "
 <p>Some paper search results include columns with score graphs. Click on a score
 column heading to sort the paper list using that score. Search &gt; View

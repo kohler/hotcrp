@@ -5,321 +5,321 @@
     },
     {
         "name": "chair/presubmission", "order": 0,
-        "render_function": "ChairsGuide_HelpTopic::render_presubmission",
+        "print_function": "ChairsGuide_HelpTopic::print_presubmission",
         "itemid": -1
     },
     {
         "name": "chair/presubmission/accounts", "order": 10,
-        "render_function": "ChairsGuide_HelpTopic::render_presubmission",
+        "print_function": "ChairsGuide_HelpTopic::print_presubmission",
         "itemid": 1
     },
     {
         "name": "chair/presubmission/policies", "order": 20,
-        "render_function": "ChairsGuide_HelpTopic::render_presubmission",
+        "print_function": "ChairsGuide_HelpTopic::print_presubmission",
         "itemid": 2
     },
     {
         "name": "chair/presubmission/deadlines", "order": 30,
-        "render_function": "ChairsGuide_HelpTopic::render_presubmission",
+        "print_function": "ChairsGuide_HelpTopic::print_presubmission",
         "itemid": 3
     },
     {
         "name": "chair/presubmission/subform", "order": 40,
-        "render_function": "ChairsGuide_HelpTopic::render_presubmission",
+        "print_function": "ChairsGuide_HelpTopic::print_presubmission",
         "itemid": 4
     },
     {
         "name": "chair/presubmission/verify", "order": 50,
-        "render_function": "ChairsGuide_HelpTopic::render_presubmission",
+        "print_function": "ChairsGuide_HelpTopic::print_presubmission",
         "itemid": 5
     },
     {
         "name": "chair/presubmission/open", "order": 60,
-        "render_function": "ChairsGuide_HelpTopic::render_presubmission",
+        "print_function": "ChairsGuide_HelpTopic::print_presubmission",
         "itemid": 6
     },
     {
         "name": "chair/assignments", "order": 100,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": -1
     },
     {
         "name": "chair/assignments/anomalies", "order": 10,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": 1
     },
     {
         "name": "chair/assignments/format", "order": 20,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": 2
     },
     {
         "name": "chair/assignments/reviewform", "order": 30,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": 3
     },
     {
         "name": "chair/assignments/review", "order": 40,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": 4
     },
     {
         "name": "chair/assignments/tracks", "order": 50,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": 5
     },
     {
         "name": "chair/assignments/revpref", "order": 60,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": 6
     },
     {
         "name": "chair/assignments/conflicts", "order": 70,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": 7
     },
     {
         "name": "chair/assignments/assign", "order": 80,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": 8
     },
     {
         "name": "chair/assignments/openreview", "order": 90,
-        "render_function": "ChairsGuide_HelpTopic::render_assignments",
+        "print_function": "ChairsGuide_HelpTopic::print_assignments",
         "itemid": 9
     },
     {
         "name": "chair/chair_conflicts", "order": 200,
-        "render_function": "ChairsGuide_HelpTopic::render_chair_conflicts"
+        "print_function": "ChairsGuide_HelpTopic::print_chair_conflicts"
     },
     {
         "name": "chair/premeeting", "order": 300,
-        "render_function": "ChairsGuide_HelpTopic::render_premeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_premeeting",
         "itemid": -1
     },
     {
         "name": "chair/premeeting/responses", "order": 10,
-        "render_function": "ChairsGuide_HelpTopic::render_premeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_premeeting",
         "itemid": 1
     },
     {
         "name": "chair/premeeting/pcseeallrev", "order": 20,
-        "render_function": "ChairsGuide_HelpTopic::render_premeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_premeeting",
         "itemid": 2
     },
     {
         "name": "chair/premeeting/scores", "order": 30,
-        "render_function": "ChairsGuide_HelpTopic::render_premeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_premeeting",
         "itemid": 3
     },
     {
         "name": "chair/premeeting/tags", "order": 40,
-        "render_function": "ChairsGuide_HelpTopic::render_premeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_premeeting",
         "itemid": 4
     },
     {
         "name": "chair/premeeting/leads", "order": 50,
-        "render_function": "ChairsGuide_HelpTopic::render_premeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_premeeting",
         "itemid": 5
     },
     {
         "name": "chair/premeeting/decisions", "order": 60,
-        "render_function": "ChairsGuide_HelpTopic::render_premeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_premeeting",
         "itemid": 6
     },
     {
         "name": "chair/premeeting/download", "order": 70,
-        "render_function": "ChairsGuide_HelpTopic::render_premeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_premeeting",
         "itemid": 7
     },
     {
         "name": "chair/atmeeting", "order": 400,
-        "render_function": "ChairsGuide_HelpTopic::render_atmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_atmeeting",
         "itemid": -1
     },
     {
         "name": "chair/atmeeting/tracker", "order": 10,
-        "render_function": "ChairsGuide_HelpTopic::render_atmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_atmeeting",
         "itemid": 1
     },
     {
         "name": "chair/atmeeting/scribes", "order": 20,
-        "render_function": "ChairsGuide_HelpTopic::render_atmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_atmeeting",
         "itemid": 2
     },
     {
         "name": "chair/atmeeting/decisions", "order": 30,
-        "render_function": "ChairsGuide_HelpTopic::render_atmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_atmeeting",
         "itemid": 3
     },
     {
         "name": "chair/atmeeting/shepherds", "order": 40,
-        "render_function": "ChairsGuide_HelpTopic::render_atmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_atmeeting",
         "itemid": 4
     },
     {
         "name": "chair/postmeeting", "order": 500,
-        "render_function": "ChairsGuide_HelpTopic::render_postmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_postmeeting",
         "itemid": -1
     },
     {
         "name": "chair/postmeeting/decisions", "order": 10,
-        "render_function": "ChairsGuide_HelpTopic::render_postmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_postmeeting",
         "itemid": 1
     },
     {
         "name": "chair/postmeeting/updatereviews", "order": 20,
-        "render_function": "ChairsGuide_HelpTopic::render_postmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_postmeeting",
         "itemid": 2
     },
     {
         "name": "chair/postmeeting/auseedec", "order": 30,
-        "render_function": "ChairsGuide_HelpTopic::render_postmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_postmeeting",
         "itemid": 3
     },
     {
         "name": "chair/postmeeting/mail", "order": 40,
-        "render_function": "ChairsGuide_HelpTopic::render_postmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_postmeeting",
         "itemid": 4
     },
     {
         "name": "chair/postmeeting/final", "order": 50,
-        "render_function": "ChairsGuide_HelpTopic::render_postmeeting",
+        "print_function": "ChairsGuide_HelpTopic::print_postmeeting",
         "itemid": 5
     },
     {
         "name": "search", "title": "Search",
         "description": "About paper searching.",
-        "render_function": "Search_HelpTopic::render",
+        "print_function": "Search_HelpTopic::print",
         "order": 1000
     },
     {
         "name": "keywords", "title": "Search keywords",
         "description": "Quick reference to search keywords and syntax.",
-        "render_function": "Keywords_HelpTopic::render",
+        "print_function": "Keywords_HelpTopic::print",
         "order": 2000
     },
     {   "name": "syntax", "alias": "keywords"   },
     {
         "name": "tags", "title": "Tags",
         "description": "How to use tags to define paper sets and discussion orders.",
-        "render_function": "*Tags_HelpTopic::render_intro",
+        "print_function": "*Tags_HelpTopic::print_intro",
         "order": 3000
     },
     {
         "name": "tags/finding",
-        "render_function": "*Tags_HelpTopic::render_finding",
+        "print_function": "*Tags_HelpTopic::print_finding",
         "order": 3100
     },
     {
         "name": "tags/changing",
-        "render_function": "*Tags_HelpTopic::render_changing",
+        "print_function": "*Tags_HelpTopic::print_changing",
         "order": 3200
     },
     {
         "name": "tags/values",
-        "render_function": "*Tags_HelpTopic::render_values",
+        "print_function": "*Tags_HelpTopic::print_values",
         "order": 3300
     },
     {
         "name": "tags/colors",
-        "render_function": "*Tags_HelpTopic::render_colors",
+        "print_function": "*Tags_HelpTopic::print_colors",
         "order": 3300
     },
     {
         "name": "tags/examples",
-        "render_function": "*Tags_HelpTopic::render_examples",
+        "print_function": "*Tags_HelpTopic::print_examples",
         "order": 3900
     },
     {
         "name": "tagexamples/r1reject", "order": 100,
-        "render_function": "*Tags_HelpTopic::render_example_r1reject"
+        "print_function": "*Tags_HelpTopic::print_example_r1reject"
     },
     {
         "name": "tagexamples/controversial", "order": 200,
-        "render_function": "*Tags_HelpTopic::render_example_controversial"
+        "print_function": "*Tags_HelpTopic::print_example_controversial"
     },
     {
         "name": "tagexamples/pcpaper", "order": 300,
-        "render_function": "*Tags_HelpTopic::render_example_pcpaper"
+        "print_function": "*Tags_HelpTopic::print_example_pcpaper"
     },
     {
         "name": "tagexamples/allotment", "order": 400,
-        "render_function": "*Tags_HelpTopic::render_example_allotment"
+        "print_function": "*Tags_HelpTopic::print_example_allotment"
     },
     {
         "name": "tagexamples/rank", "order": 500,
-        "render_function": "*Tags_HelpTopic::render_example_rank"
+        "print_function": "*Tags_HelpTopic::print_example_rank"
     },
     {
         "name": "tagexamples/discuss", "order": 600,
-        "render_function": "*Tags_HelpTopic::render_example_discuss"
+        "print_function": "*Tags_HelpTopic::print_example_discuss"
     },
     {
         "name": "tagexamples/decisions", "order": 700,
-        "render_function": "*Tags_HelpTopic::render_example_decisions"
+        "print_function": "*Tags_HelpTopic::print_example_decisions"
     },
     {
         "name": "scoresort", "title": "Sorting scores",
         "description": "How scores are sorted in paper lists.",
-        "render_function": "ScoreSort_HelpTopic::render",
+        "print_function": "ScoreSort_HelpTopic::print",
         "order": 5000
     },
     {
         "name": "revround", "title": "Review rounds",
         "description": "Sets of reviews with different deadlines and forms.",
-        "render_function": "RevRound_HelpTopic::render",
+        "print_function": "RevRound_HelpTopic::print",
         "order": 6000
     },
     {
         "name": "reviewratings", "title": "Review ratings",
         "description": "Rating the quality of reviews.",
-        "render_function": "RevRate_HelpTopic::render",
+        "print_function": "RevRate_HelpTopic::print",
         "order": 7000
     },
     {   "name": "revrate", "alias": "reviewratings"   },
     {
         "name": "votetags", "title": "Voting",
         "description": "PC members can vote for papers using tags.",
-        "render_function": "VoteTags_HelpTopic::render",
+        "print_function": "VoteTags_HelpTopic::print",
         "order": 8000
     },
     {
         "name": "ranking", "title": "Ranking",
         "description": "PC members can rank papers using tags.",
-        "render_function": "Ranking_HelpTopic::render",
+        "print_function": "Ranking_HelpTopic::print",
         "order": 9000
     },
     {
         "name": "formulas", "title": "Formulas",
         "description": "Create and display formulas in search orders.",
-        "render_function": "Formulas_HelpTopic::render",
+        "print_function": "Formulas_HelpTopic::print",
         "order": 10000
     },
     {
         "name": "bulkassign", "title": "Bulk assignments",
         "description": "Control the site by uploading CSV assignment files.",
-        "render_function": "BulkAssign_HelpTopic::render",
+        "print_function": "BulkAssign_HelpTopic::print",
         "order": 11000
     },
     {
         "name": "bulkassignactions/review", "order": -1,
         "title": "<code>review</code> action",
-        "render_function": "BulkAssign_HelpTopic::render_action_review"
+        "print_function": "BulkAssign_HelpTopic::print_action_review"
     },
     {
         "name": "bulkassignactions/tag",
         "title": "<code>tag</code> action",
-        "render_function": "BulkAssign_HelpTopic::render_action_tag"
+        "print_function": "BulkAssign_HelpTopic::print_action_tag"
     },
     {
         "name": "bulkassignactions/conflict",
         "title": "<code>conflict</code> action",
-        "render_function": "BulkAssign_HelpTopic::render_action_conflict"
+        "print_function": "BulkAssign_HelpTopic::print_action_conflict"
     },
     {
         "name": "bulkassignactions/follow",
         "title": "<code>follow</code> action",
-        "render_function": "BulkAssign_HelpTopic::render_action_follow"
+        "print_function": "BulkAssign_HelpTopic::print_action_follow"
     }
 ]

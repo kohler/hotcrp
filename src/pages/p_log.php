@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_log.php -- HotCRP action log page
+// pages/p_log.php -- HotCRP action log page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Log_Page {
@@ -229,7 +229,7 @@ class Log_Page {
 
     // render search list
     /** @param int $page */
-    function render_searchbar(LogEntryGenerator $leg, $page) {
+    function print_searchbar(LogEntryGenerator $leg, $page) {
         $date = "";
         $dplaceholder = null;
         if (Ht::problem_status_at("date")) {
@@ -403,7 +403,7 @@ class Log_Page {
 
     /** @param LogEntryGenerator $leg
      * @param int $page */
-    function render_page($leg, $page) {
+    function print_page($leg, $page) {
         $conf = $this->conf;
         $conf->header("Log", "actionlog");
 
@@ -516,7 +516,7 @@ class Log_Page {
             echo '</div>';
         }
 
-        $this->render_searchbar($leg, $page);
+        $this->print_searchbar($leg, $page);
         if (!empty($trs)) {
             echo "<table class=\"pltable pltable-fullw pltable-log\">\n",
                 '  <thead><tr class="pl_headrow">',
@@ -592,6 +592,6 @@ class Log_Page {
             $lp->set_date();
         }
         $page = $lp->choose_page($leg, $page);
-        $lp->render_page($leg, $page);
+        $lp->print_page($leg, $page);
     }
 }

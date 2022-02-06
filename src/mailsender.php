@@ -1,5 +1,5 @@
 <?php
-// src/mailsender.php -- HotCRP mail merge manager
+// mailsender.php -- HotCRP mail merge manager
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class MailSender {
@@ -60,7 +60,7 @@ class MailSender {
             $user->contactId, (string) $qreq->to, $qreq->cc, $qreq["reply-to"],
             $qreq->subject, $qreq->body, $qreq->q, $qreq->t,
             $user->privChair ? 0 : 1);
-        $ms->echo_request_form(true);
+        $ms->print_request_form(true);
         echo Ht::hidden("mailid", $result->insert_id),
             Ht::hidden("send", 1),
             Ht::submit("Send mail", ["class" => "btn-highlight"]),
@@ -83,7 +83,7 @@ class MailSender {
         }
     }
 
-    private function echo_actions($extra_class = "") {
+    private function print_actions($extra_class = "") {
         echo '<div class="aab aabig mt-3', $extra_class, '">',
             '<div class="aabut">', Ht::submit("send", "Send", ["class" => "btn-success"]), '</div>',
             '<div class="aabut">', Ht::submit("cancel", "Cancel"), '</div>',
@@ -98,7 +98,7 @@ class MailSender {
         Ht::stash_script('$(".need-tooltip").each(tooltip)');
     }
 
-    private function echo_request_form($include_cb) {
+    private function print_request_form($include_cb) {
         echo Ht::form($this->conf->hoturl("=mail"), ["id" => "mailform"]);
         foreach (["to", "subject", "body", "cc", "reply-to", "q", "t", "plimit", "newrev_since"] as $x) {
             if (isset($this->qreq[$x]))
@@ -115,11 +115,11 @@ class MailSender {
         }
     }
 
-    private function echo_prologue() {
+    private function print_prologue() {
         if ($this->started) {
             return;
         }
-        $this->echo_request_form(false);
+        $this->print_request_form(false);
         if ($this->phase === 2) {
             echo '<div id="foldmail" class="foldc fold2c">',
                 '<div class="fn fx2 merror">In the process of sending mail.  <strong>Do not leave this page until this message disappears!</strong><br><span id="mailcount"></span></div>',
@@ -160,7 +160,7 @@ class MailSender {
                 echo "<br />Paper selection:&nbsp;", htmlspecialchars($this->qreq->q);
             }
             echo "</div>";
-            $this->echo_actions(" fx");
+            $this->print_actions(" fx");
             // This next is only displayed when Javascript is off
             echo '<div class="fn2 warning">Scroll down to send the prepared mail once the page finishes loading.</div>',
                 "</div>\n";
@@ -169,9 +169,9 @@ class MailSender {
         $this->started = true;
     }
 
-    private function echo_mailinfo($nrows_done, $nrows_total) {
+    private function print_mailinfo($nrows_done, $nrows_total) {
         if (!$this->started) {
-            $this->echo_prologue();
+            $this->print_prologue();
         }
         $s = "document.getElementById('mailcount').innerHTML=\"";
         if ($nrows_done >= $nrows_total) {
@@ -239,7 +239,7 @@ class MailSender {
         }
 
         set_time_limit(30);
-        $this->echo_prologue();
+        $this->print_prologue();
 
         self::fix_body($prep);
         if ($this->sending) {
@@ -380,10 +380,10 @@ class MailSender {
             }
 
             if ($nwarnings !== $mailer->message_count() || $nrows_done % 5 == 0) {
-                $this->echo_mailinfo($nrows_done, $nrows_total);
+                $this->print_mailinfo($nrows_done, $nrows_total);
             }
             if ($nwarnings !== $mailer->message_count()) {
-                $this->echo_prologue();
+                $this->print_prologue();
                 $nwarnings = $mailer->message_count();
                 echo "<div id=\"foldmailwarn$nwarnings\" class=\"hidden\"><div class=\"warning\">";
                 foreach ($mailer->message_list() as $mx) {
@@ -404,7 +404,7 @@ class MailSender {
         }
 
         $this->process_prep($fake_prep, $last_prep, null);
-        $this->echo_mailinfo($nrows_done, $nrows_total);
+        $this->print_mailinfo($nrows_done, $nrows_total);
 
         if ($this->mcount === 0) {
             if ($this->recip->has_message()) {
@@ -420,7 +420,7 @@ class MailSender {
 
         $this->conf->feedback_msg($this->recip);
         if (!$this->sending) {
-            $this->echo_actions();
+            $this->print_actions();
         } else {
             $this->conf->qe("update MailLog set status=0 where mailId=?", intval($this->qreq->mailid));
             if ($revinform) {

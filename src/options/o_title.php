@@ -30,8 +30,8 @@ class Title_PaperOption extends PaperOption {
     function parse_json(PaperInfo $prow, $j) {
         return $this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_SIMPLIFY);
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $this->echo_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "rows" => 1]);
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
+        $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "rows" => 1]);
     }
     function render(FieldRender $fr, PaperValue $ov) {
         $fr->value = $ov->prow->title ? : "[No title]";

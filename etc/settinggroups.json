@@ -5,17 +5,17 @@
     {   "name": "info", "alias": "basics"   },
     {
         "name": "basics/names", "order": 10,
-        "render_function": "Basics_SettingParser::render_names",
+        "print_function": "Basics_SettingParser::print_names",
         "title": "Conference information"
     },
     {
         "name": "basics/site-contact", "order": 20,
-        "render_function": "SiteContact_SettingParser::render_site_contact",
+        "print_function": "SiteContact_SettingParser::print_site_contact",
         "title": "Site contact"
     },
     {
         "name": "basics/email", "order": 30,
-        "render_function": "Basics_SettingParser::render_email",
+        "print_function": "Basics_SettingParser::print_email",
         "title": "Email configuration"
     },
 
@@ -26,7 +26,7 @@
     {
         "name": "users/pc", "order": 10,
         "title": "Program committee &amp; system administrators",
-        "render_function": "Users_SettingRenderer::render"
+        "print_function": "Users_SettingRenderer::print"
     },
 
 
@@ -36,11 +36,11 @@
     {   "name": "msg", "alias": "messages"   },
     {
         "name": "messages/submissions", "order": 100,
-        "render_function": "Messages_SettingParser::render_submissions"
+        "print_function": "Messages_SettingParser::print_submissions"
     },
     {
         "name": "messages/reviews", "order": 200,
-        "render_function": "Messages_SettingParser::render_reviews"
+        "print_function": "Messages_SettingParser::print_reviews"
     },
 
 
@@ -54,24 +54,24 @@
     },
     {
         "name": "submissions/open", "order": 10,
-        "render_function": "Submissions_SettingRenderer::render_open"
+        "print_function": "Submissions_SettingRenderer::print_open"
     },
     {
         "name": "submissions/deadlines", "order": 20,
-        "render_function": "Submissions_SettingRenderer::render_deadlines"
+        "print_function": "Submissions_SettingRenderer::print_deadlines"
     },
     {
         "name": "submissions/updates", "order": 30,
-        "render_function": "Submissions_SettingRenderer::render_updates"
+        "print_function": "Submissions_SettingRenderer::print_updates"
     },
     {
         "name": "submissions/blind", "order": 40,
-        "render_function": "Submissions_SettingRenderer::render_blind",
+        "print_function": "Submissions_SettingRenderer::print_blind",
         "title": "Reviewer visibility"
     },
     {
         "name": "submissions/pcseeall", "order": 50,
-        "render_function": "Submissions_SettingRenderer::render_pcseeall"
+        "print_function": "Submissions_SettingRenderer::print_pcseeall"
     },
 
 
@@ -81,17 +81,17 @@
     {
         "name": "subform/abstract", "order": 10,
         "title": "Abstract and PDF",
-        "render_function": "SubForm_SettingRenderer::render_abstract"
+        "print_function": "SubForm_SettingRenderer::print_abstract"
     },
     {
         "name": "subform/conflicts", "order": 20,
         "title": "Conflicts and collaborators",
-        "render_function": "SubForm_SettingRenderer::render_conflicts"
+        "print_function": "SubForm_SettingRenderer::print_conflicts"
     },
     {
         "name": "options", "group": "subform", "order": 440,
         "title": "Submission fields",
-        "render_function": "*Options_SettingRenderer::render"
+        "print_function": "*Options_SettingRenderer::print"
     },
     {   "name": "opt", "alias": "options"   },
     {
@@ -104,44 +104,44 @@
     },
     {
         "name": "submissionfield/properties/name", "order": 1,
-        "render_function": "*Options_SettingRenderer::render_name"
+        "print_function": "*Options_SettingRenderer::print_name"
     },
     {
         "name": "submissionfield/properties/type", "order": 10,
-        "render_function": "*Options_SettingRenderer::render_type"
+        "print_function": "*Options_SettingRenderer::print_type"
     },
     {
         "name": "submissionfield/properties/description", "order": 20,
-        "render_function": "*Options_SettingRenderer::render_description"
+        "print_function": "*Options_SettingRenderer::print_description"
     },
     {
         "name": "submissionfield/properties/choices", "order": 25,
-        "render_function": "*Options_SettingRenderer::render_choices"
+        "print_function": "*Options_SettingRenderer::print_choices"
     },
     {
         "name": "submissionfield/properties/presence", "order": 30,
-        "render_function": "*Options_SettingRenderer::render_presence"
+        "print_function": "*Options_SettingRenderer::print_presence"
     },
     {
         "name": "submissionfield/properties/required", "order": 31,
-        "render_function": "*Options_SettingRenderer::render_required"
+        "print_function": "*Options_SettingRenderer::print_required"
     },
     {
         "name": "submissionfield/properties/visibility", "order": 40,
-        "render_function": "*Options_SettingRenderer::render_visibility"
+        "print_function": "*Options_SettingRenderer::print_visibility"
     },
     {
         "name": "submissionfield/properties/display", "order": 50,
-        "render_function": "*Options_SettingRenderer::render_display"
+        "print_function": "*Options_SettingRenderer::print_display"
     },
     {
         "name": "submissionfield/properties/actions", "order": 10000,
-        "render_function": "*Options_SettingRenderer::render_actions"
+        "print_function": "*Options_SettingRenderer::print_actions"
     },
     {
         "name": "topics", "group": "subform", "order": 480,
         "title": "Topics", "hashid": "topics",
-        "render_function": "Topics_SettingParser::render"
+        "print_function": "Topics_SettingParser::print"
     },
 
 
@@ -156,30 +156,30 @@
     },
     {
         "name": "reviews/main", "order": 10,
-        "render_function": "Reviews_SettingRenderer::render"
+        "print_function": "Reviews_SettingRenderer::print"
     },
     {
         "name": "reviews/rounds", "order": 20,
         "title": "Deadlines and rounds", "hashid": "rounds",
-        "render_function": "Reviews_SettingRenderer::render_rounds"
+        "print_function": "Reviews_SettingRenderer::print_rounds"
     },
     {
         "name": "reviews/pc-reviews", "order": 30,
         "title": "PC reviews",
-        "render_function": "Reviews_SettingRenderer::render_pc"
+        "print_function": "Reviews_SettingRenderer::print_pc"
     },
     {
         "name": "reviews/external", "order": 40,
         "title": "External reviews",
-        "render_function": "Reviews_SettingRenderer::render_external"
+        "print_function": "Reviews_SettingRenderer::print_external"
     },
-    [   "reviews/external/editdelegate", 10, "Reviews_SettingRenderer::render_extrev_editdelegate"   ],
-    [   "reviews/external/requestmail", 15, "Reviews_SettingRenderer::render_extrev_requestmail"   ],
-    [   "reviews/external/view", 20, "Reviews_SettingRenderer::render_extrev_view"   ],
+    [   "reviews/external/editdelegate", 10, "Reviews_SettingRenderer::print_extrev_editdelegate"   ],
+    [   "reviews/external/requestmail", 15, "Reviews_SettingRenderer::print_extrev_requestmail"   ],
+    [   "reviews/external/view", 20, "Reviews_SettingRenderer::print_extrev_view"   ],
     {
         "name": "reviews/ratings", "order": 50,
         "title": "Review ratings",
-        "render_function": "Reviews_SettingRenderer::render_ratings"
+        "print_function": "Reviews_SettingRenderer::print_ratings"
     },
 
 
@@ -188,7 +188,7 @@
     },
     {
         "name": "reviewform/main", "order": 10,
-        "render_function": "ReviewForm_SettingRenderer::render"
+        "print_function": "ReviewForm_SettingRenderer::print"
     },
     {   "name": "rfo", "alias": "reviewform"   },
     {
@@ -197,31 +197,31 @@
     },
     {
         "name": "reviewfield/properties/description", "order": 20,
-        "render_function": "ReviewForm_SettingRenderer::render_description"
+        "print_function": "ReviewForm_SettingRenderer::print_description"
     },
     {
         "name": "reviewfield/properties/choices", "order": 50,
-        "render_function": "ReviewForm_SettingRenderer::render_choices"
+        "print_function": "ReviewForm_SettingRenderer::print_choices"
     },
     {
         "name": "reviewfield/properties/presence", "order": 100,
-        "render_function": "ReviewForm_SettingRenderer::render_presence"
+        "print_function": "ReviewForm_SettingRenderer::print_presence"
     },
     {
         "name": "reviewfield/properties/required", "order": 101,
-        "render_function": "ReviewForm_SettingRenderer::render_required"
+        "print_function": "ReviewForm_SettingRenderer::print_required"
     },
     {
         "name": "reviewfield/properties/visibility", "order": 110,
-        "render_function": "ReviewForm_SettingRenderer::render_visibility"
+        "print_function": "ReviewForm_SettingRenderer::print_visibility"
     },
     {
         "name": "reviewfield/properties/display", "order": 120,
-        "render_function": "ReviewForm_SettingRenderer::render_display"
+        "print_function": "ReviewForm_SettingRenderer::print_display"
     },
     {
         "name": "reviewfield/properties/actions", "order": 10000,
-        "render_function": "ReviewForm_SettingRenderer::render_actions"
+        "print_function": "ReviewForm_SettingRenderer::print_actions"
     },
 
 
@@ -231,26 +231,26 @@
     {
         "name": "tags/main", "order": 10,
         "title": "Tags",
-        "render_function": "Tags_SettingRenderer::render"
+        "print_function": "Tags_SettingRenderer::print"
     },
     {
         "name": "__crosscheck/tags", "order": 700,
         "crosscheck_function": "Tags_SettingParser::crosscheck"
     },
-    [   "tags/main/chair", 10, "Tags_SettingRenderer::render_tag_chair"   ],
-    [   "tags/main/sitewide", 20, "Tags_SettingRenderer::render_tag_sitewide"   ],
-    [   "tags/main/approval", 30, "Tags_SettingRenderer::render_tag_approval"   ],
-    [   "tags/main/vote", 40, "Tags_SettingRenderer::render_tag_vote"   ],
-    [   "tags/main/rank", 50, "Tags_SettingRenderer::render_tag_rank"   ],
-    [   "tags/visibility/seeall", 10, "Tags_SettingRenderer::render_tag_seeall"   ],
+    [   "tags/main/chair", 10, "Tags_SettingRenderer::print_tag_chair"   ],
+    [   "tags/main/sitewide", 20, "Tags_SettingRenderer::print_tag_sitewide"   ],
+    [   "tags/main/approval", 30, "Tags_SettingRenderer::print_tag_approval"   ],
+    [   "tags/main/vote", 40, "Tags_SettingRenderer::print_tag_vote"   ],
+    [   "tags/main/rank", 50, "Tags_SettingRenderer::print_tag_rank"   ],
+    [   "tags/visibility/seeall", 10, "Tags_SettingRenderer::print_tag_seeall"   ],
     {
         "name": "tagstyles", "group": "tags", "order": 720,
         "title": "Colors and styles", "hashid": "colors-and-styles",
-        "render_function": "Tags_SettingRenderer::render_styles"
+        "print_function": "Tags_SettingRenderer::print_styles"
     },
     {
         "name": "tracks", "group": "tags", "order": 750,
-        "render_function": "Tracks_SettingRenderer::render",
+        "print_function": "Tracks_SettingRenderer::print",
         "title": "Tracks", "hashid": "tracks"
     },
     {
@@ -276,7 +276,7 @@
     {
         "name": "decisions/responses", "order": 10,
         "title": "Responses",
-        "render_function": "Responses_SettingParser::render"
+        "print_function": "Responses_SettingParser::print"
     },
     {   "name": "responses", "alias": "decisions/responses"   },
     {
@@ -302,7 +302,7 @@
     {
         "name": "decisions/review-visibility", "order": 20,
         "title": "Review visibility",
-        "render_function": "ReviewVisibility_SettingParser::render"
+        "print_function": "ReviewVisibility_SettingParser::print"
     },
     {
         "name": "__crosscheck/review-visibility", "order": 800,
@@ -311,7 +311,7 @@
     {
         "name": "decisions/decision-visibility", "order": 25,
         "title": "Decision visibility",
-        "render_function": "DecisionVisibility_SettingParser::render"
+        "print_function": "DecisionVisibility_SettingParser::print"
     },
     {
         "name": "__crosscheck/decision-visibility", "order": 805,
@@ -320,7 +320,7 @@
     {
         "name": "decisions/decision-types", "order": 30,
         "title": "Decision types",
-        "render_function": "Decisions_SettingParser::render"
+        "print_function": "Decisions_SettingParser::print"
     },
     {
         "name": "decisions/final-versions", "order": 100,
@@ -328,7 +328,7 @@
     },
     {
         "name": "decisions/final-versions-body", "order": 105,
-        "render_function": "FinalVersions_SettingParser::render"
+        "print_function": "FinalVersions_SettingParser::print"
     },
     {
         "name": "__crosscheck/final-versions-body", "order": 810,

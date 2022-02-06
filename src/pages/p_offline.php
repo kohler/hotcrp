@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_offline.php -- HotCRP offline review management page
+// pages/p_offline.php -- HotCRP offline review management page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Offline_Page {
@@ -95,7 +95,7 @@ class Offline_Page {
         }
     }
 
-    function render() {
+    function print() {
         $conf = $this->conf;
 
         $conf->header("Offline reviewing", "offline");
@@ -103,7 +103,7 @@ class Offline_Page {
         $conf->infoMsg("Use this page to download a blank review form, or to upload review forms you’ve already filled out.");
         if (!$this->user->can_clickthrough("review")) {
             echo '<div class="js-clickthrough-container">';
-            PaperTable::echo_review_clickthrough();
+            PaperTable::print_review_clickthrough();
             echo '</div>';
         }
 
@@ -183,6 +183,6 @@ class Offline_Page {
         if ($op->handle_request()) {
             return;
         }
-        $op->render();
+        $op->print();
     }
 }

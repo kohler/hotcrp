@@ -124,7 +124,7 @@ class Filer {
      * @param int $p0 - start of object
      * @param string $s - object
      * @return int */
-    static function echo_subrange($out, $r0, $r1, $p0, $s) {
+    static function print_subrange($out, $r0, $r1, $p0, $s) {
         $sz = strlen($s);
         $p1 = $p0 + $sz;
         if ($p1 <= $r0 || $r1 <= $p0 || $p0 === $p1) {
@@ -295,7 +295,7 @@ class Filer {
         if (self::check_download_opts(strlen($s), $opts)) {
             $out = fopen("php://output", "wb");
             foreach (self::download_ranges(strlen($s), $mimetype, $opts) as $r) {
-                Filer::echo_subrange($out, $r[0], $r[1], 0, $s);
+                Filer::print_subrange($out, $r[0], $r[1], 0, $s);
             }
         }
     }

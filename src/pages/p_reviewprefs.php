@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_reviewprefs.php -- HotCRP review preference global settings page
+// pages/p_reviewprefs.php -- HotCRP review preference global settings page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewPrefs_Page {
@@ -48,7 +48,7 @@ class ReviewPrefs_Page {
     /** @param Contact $user
      * @param Contact $reviewer
      * @param Qrequest $qreq */
-    static function render($user, $reviewer, $qreq) {
+    static function print($user, $reviewer, $qreq) {
         $conf = $user->conf;
 
         $conf->header("Review preferences", "revpref");
@@ -144,7 +144,7 @@ class ReviewPrefs_Page {
             '<noscript><div style="text-align:center">',
             Ht::submit("fn", "Save changes", ["value" => "saveprefs", "class" => "btn-primary"]),
             '</div></noscript>';
-        $pl->echo_table_html();
+        $pl->print_table_html();
         echo "</div></form>\n";
 
         $conf->footer();
@@ -237,6 +237,6 @@ class ReviewPrefs_Page {
             $conf->redirect_self($qreq);
         }
 
-        self::render($user, $reviewer, $qreq);
+        self::print($user, $reviewer, $qreq);
     }
 }

@@ -1,13 +1,13 @@
 <?php
-// src/settings/s_sitecontact.php -- HotCRP settings for site contact
+// settings/s_sitecontact.php -- HotCRP settings for site contact
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class SiteContact_SettingParser extends SettingParser {
     private $updated = false;
 
-    static function render_site_contact(SettingValues $sv) {
-        $sv->echo_entry_group("site_contact_name", null);
-        $sv->echo_entry_group("site_contact_email", null, null, "The site contact is the contact point for users if something goes wrong. It defaults to the chair.");
+    static function print_site_contact(SettingValues $sv) {
+        $sv->print_entry_group("site_contact_name", null);
+        $sv->print_entry_group("site_contact_email", null, null, "The site contact is the contact point for users if something goes wrong. It defaults to the chair.");
     }
 
     /** @param ?string $v

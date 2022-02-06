@@ -151,8 +151,8 @@ class Topics_PaperOption extends PaperOption {
         $ov->anno["new_topics"] = $new_topics;
         return $ov;
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
-        $pt->echo_editable_option_papt($this, null, ["id" => "topics", "context_args" => [$this->min_count, $this->max_count]]);
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
+        $pt->print_editable_option_papt($this, null, ["id" => "topics", "context_args" => [$this->min_count, $this->max_count]]);
         echo '<div class="papev"><ul class="ctable">';
         $ptopics = $pt->prow->topic_map();
         $topics = $this->conf->topic_set();

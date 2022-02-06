@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_paper.php -- HotCRP paper view and edit page
+// pages/p_paper.php -- HotCRP paper view and edit page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Paper_Page {
@@ -24,13 +24,13 @@ class Paper_Page {
         $this->qreq = $qreq;
     }
 
-    function echo_header() {
+    function print_header() {
         $m = $this->pt ? $this->pt->mode : ($this->qreq->m ?? "p");
-        PaperTable::echo_header($this->pt, "paper-" . ($m === "edit" ? "edit" : "view"), $m, $this->qreq);
+        PaperTable::print_header($this->pt, "paper-" . ($m === "edit" ? "edit" : "view"), $m, $this->qreq);
     }
 
     function error_exit($msg) {
-        $this->echo_header();
+        $this->print_header();
         Ht::stash_script("hotcrp.shortcut().add()");
         $msg && Conf::msg_error($msg);
         $this->conf->footer();
@@ -394,7 +394,7 @@ class Paper_Page {
         $this->pt->set_edit_status($this->ps, $editable, $editable && $this->useRequest);
     }
 
-    function render() {
+    function print() {
         // correct modes
         $this->pt = $pt = new PaperTable($this->user, $this->qreq, $this->prow);
         if ($pt->can_view_reviews()
@@ -408,20 +408,20 @@ class Paper_Page {
         }
 
         // produce paper table
-        $this->echo_header();
-        $pt->echo_paper_info();
+        $this->print_header();
+        $pt->print_paper_info();
 
         if ($pt->mode === "edit") {
             $pt->paptabEndWithoutReviews();
         } else {
             if ($pt->mode === "re") {
-                $pt->echo_review_form();
-                $pt->echo_main_link();
+                $pt->print_review_form();
+                $pt->print_main_link();
             } else if ($pt->can_view_reviews()) {
                 $pt->paptabEndWithReviewsAndComments();
             } else {
                 $pt->paptabEndWithReviewMessage();
-                $pt->echo_comments();
+                $pt->print_comments();
             }
             // restore comment across logout bounce
             if ($this->qreq->editcomment) {
@@ -517,6 +517,6 @@ class Paper_Page {
         }
 
         // render
-        $pp->render();
+        $pp->print();
     }
 }

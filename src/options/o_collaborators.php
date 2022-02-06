@@ -54,9 +54,9 @@ class Collaborators_PaperOption extends PaperOption {
             $ov->set_value_data([1], [$fix]);
         }
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         if ($pt->editable !== "f" || $pt->user->can_administer($pt->prow)) {
-            $this->echo_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "no_spellcheck" => true, "rows" => 5]);
+            $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "no_spellcheck" => true, "rows" => 5]);
         }
     }
     // XXX no render because paper strip

@@ -1310,13 +1310,22 @@ class UserStatus extends MessageSet {
     }
 
 
-    /** @param string $field */
-    function render_field($field, $caption, $entry, $class = "f-i w-text") {
+    /** @param string $field
+     * @param string $caption
+     * @param string $entry
+     * @param string $class */
+    function print_field($field, $caption, $entry, $class = "f-i w-text") {
         $msfield = self::$web_to_message_map[$field] ?? $field;
         echo '<div class="', $this->control_class($msfield, $class), '">',
             ($field ? Ht::label($caption, $field) : "<div class=\"f-c\">{$caption}</div>"),
             $this->feedback_html_at($field),
             $entry, "</div>";
+    }
+
+    /** @param string $field
+     * @deprecated */
+    function render_field($field, $caption, $entry, $class = "f-i w-text") {
+        $this->print_field($field, $caption, $entry, $class);
     }
 
     static function pc_role_text($cj) {
@@ -1346,7 +1355,7 @@ class UserStatus extends MessageSet {
         return "";
     }
 
-    static function render_main(UserStatus $us) {
+    static function print_main(UserStatus $us) {
         $user = $us->user;
         $qreq = $us->qreq;
         $actas = "";
@@ -1361,33 +1370,33 @@ class UserStatus extends MessageSet {
             if ($user->can_lookup_user()) {
                 $email_class .= " uii js-email-populate";
             }
-            $us->render_field("uemail", "Email" . $actas,
+            $us->print_field("uemail", "Email" . $actas,
                 Ht::entry("uemail", $qreq->email ?? $user->email, ["class" => $email_class, "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => $user->email, "type" => "email"]));
         } else if (!$user->is_empty()) {
-            $us->render_field("", "Username" . $actas,
+            $us->print_field("", "Username" . $actas,
                 htmlspecialchars($user->email));
-            $us->render_field("preferredEmail", "Email",
+            $us->print_field("preferredEmail", "Email",
                 Ht::entry("preferredEmail", $qreq->preferredEmail ?? $user->preferredEmail, ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => $user->preferredEmail, "type" => "email"]));
         } else {
-            $us->render_field("uemail", "Username",
+            $us->print_field("uemail", "Username",
                 Ht::entry("newUsername", $qreq->email ?? $user->email, ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => $user->email]));
-            $us->render_field("preferredEmail", "Email",
+            $us->print_field("preferredEmail", "Email",
                       Ht::entry("preferredEmail", $qreq->preferredEmail ?? $user->preferredEmail, ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => $user->preferredEmail, "type" => "email"]));
         }
 
         echo '<div class="f-mcol w-text">';
         $t = Ht::entry("firstName", $qreq->firstName ?? $user->firstName, ["size" => 24, "autocomplete" => $us->autocomplete("given-name"), "class" => "fullw", "id" => "firstName", "data-default-value" => $user->firstName]) . $us->global_profile_difference("firstName");
-        $us->render_field("firstName", "First name (given name)", $t, "f-i");
+        $us->print_field("firstName", "First name (given name)", $t, "f-i");
 
         $t = Ht::entry("lastName", $qreq->lastName ?? $user->lastName, ["size" => 24, "autocomplete" => $us->autocomplete("family-name"), "class" => "fullw", "id" => "lastName", "data-default-value" => $user->lastName]) . $us->global_profile_difference("lastName");
-        $us->render_field("lastName", "Last name (family name)", $t, "f-i");
+        $us->print_field("lastName", "Last name (family name)", $t, "f-i");
         echo '</div>';
 
         $t = Ht::entry("affiliation", $qreq->affiliation ?? $user->affiliation, ["size" => 52, "autocomplete" => $us->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => $user->affiliation]) . $us->global_profile_difference("affiliation");
-        $us->render_field("affiliation", "Affiliation", $t);
+        $us->print_field("affiliation", "Affiliation", $t);
     }
 
-    static function render_current_password(UserStatus $us) {
+    static function print_current_password(UserStatus $us) {
         $original_ignore_msgs = $us->swap_ignore_messages(false);
         $us->msg_at("oldpassword", "<0>Enter your current password to make changes to security settings", 1);
         $us->swap_ignore_messages($original_ignore_msgs);
@@ -1401,9 +1410,9 @@ class UserStatus extends MessageSet {
             '</div>';
     }
 
-    static function render_new_password(UserStatus $us) {
+    static function print_new_password(UserStatus $us) {
         if ($us->viewer->can_change_password($us->user)) {
-            $us->render_section("Change password");
+            $us->print_section("Change password");
             $pws = $us->_req_passwords ?? ["", ""];
             $open = $pws[0] !== "" || $pws[1] !== ""
                 || $us->has_problem_at("upassword") || $us->has_problem_at("upassword2");
@@ -1427,9 +1436,9 @@ class UserStatus extends MessageSet {
         }
     }
 
-    static function render_country(UserStatus $us) {
+    static function print_country(UserStatus $us) {
         $t = Countries::selector("country", $us->qreq->country ?? $us->user->country(), ["id" => "country", "data-default-value" => $us->user->country(), "autocomplete" => $us->autocomplete("country")]) . $us->global_profile_difference("country");
-        $us->render_field("country", "Country/region", $t);
+        $us->print_field("country", "Country/region", $t);
     }
 
     /** @param int $reqwatch
@@ -1437,14 +1446,14 @@ class UserStatus extends MessageSet {
      * @param int $wbit
      * @param string $wname
      * @param string $wlabel */
-    private static function render_watch_checkbox(UserStatus $us, $reqwatch, $iwatch, $wbit, $wname, $wlabel) {
+    private static function print_watch_checkbox(UserStatus $us, $reqwatch, $iwatch, $wbit, $wname, $wlabel) {
         echo '<label class="checki"><span class="checkc">',
             Ht::hidden("has_watch{$wname}", 1),
             Ht::checkbox("watch{$wname}", 1, ($reqwatch & $wbit) !== 0, ["data-default-checked" => ($iwatch & $wbit) !== 0]),
             '</span>', $us->conf->_($wlabel), "</label>\n";
     }
 
-    static function render_follow(UserStatus $us) {
+    static function print_follow(UserStatus $us) {
         $qreq = $us->qreq;
         $reqwatch = $iwatch = $us->user->defaultWatch;
         foreach (self::$watch_keywords as $kw => $bit) {
@@ -1455,36 +1464,36 @@ class UserStatus extends MessageSet {
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {
             echo "<table class=\"w-text\"><tr><td>Send mail for:</td><td><span class=\"sep\"></span></td><td>";
             if (!$us->user->is_empty() && $us->user->is_track_manager()) {
-                self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                self::print_watch_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_PAPER_REGISTER_ALL, "allregister", "Newly registered submissions, including draft submissions");
-                self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                self::print_watch_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_PAPER_NEWSUBMIT_ALL, "allnewsubmit", "Newly ready submissions");
             }
-            self::render_watch_checkbox($us, $reqwatch, $iwatch,
+            self::print_watch_checkbox($us, $reqwatch, $iwatch,
                 Contact::WATCH_REVIEW, "review", "Reviews and comments on authored or reviewed submissions");
             if (!$us->user->is_empty() && $us->user->is_manager()) {
-                self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                self::print_watch_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_REVIEW_MANAGED, "adminreviews", "Reviews and comments on submissions you administer");
             }
-            self::render_watch_checkbox($us, $reqwatch, $iwatch,
+            self::print_watch_checkbox($us, $reqwatch, $iwatch,
                 Contact::WATCH_REVIEW_ALL, "allreviews", "Reviews and comments on <em>all</em> submissions");
             if (!$us->user->is_empty() && $us->user->is_manager()) {
-                self::render_watch_checkbox($us, $reqwatch, $iwatch,
+                self::print_watch_checkbox($us, $reqwatch, $iwatch,
                     Contact::WATCH_FINAL_UPDATE_ALL, "allfinal", "Updates to final versions for submissions you administer");
             }
             echo "</td></tr></table>";
         } else {
-            self::render_watch_checkbox($us, $reqwatch, $iwatch,
+            self::print_watch_checkbox($us, $reqwatch, $iwatch,
                 Contact::WATCH_REVIEW, "review", "Send mail for new reviews and comments on authored or reviewed submissions");
         }
         echo "</div>\n";
     }
 
-    static function render_roles(UserStatus $us) {
+    static function print_roles(UserStatus $us) {
         if (!$us->viewer->privChair) {
             return;
         }
-        $us->render_section("Roles", "roles");
+        $us->print_section("Roles", "roles");
         echo "<table class=\"w-text\"><tr><td class=\"nw\">\n";
         if (($us->user->roles & Contact::ROLE_CHAIR) !== 0) {
             $pcrole = $cpcrole = "chair";
@@ -1516,7 +1525,7 @@ class UserStatus extends MessageSet {
             '<p class="f-h">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</p></div></td></tr></table>', "\n";
     }
 
-    static function render_collaborators(UserStatus $us) {
+    static function print_collaborators(UserStatus $us) {
         if (!$us->user->isPC
             && !$us->qreq->collaborators
             && !$us->user->collaborators()
@@ -1524,7 +1533,7 @@ class UserStatus extends MessageSet {
             return;
         }
         $cd = $us->conf->_i("conflictdef");
-        $us->cs()->render_open_section("w-text");
+        $us->cs()->print_open_section("w-text");
         echo '<h3 class="', $us->control_class("collaborators", "form-h"), '">Collaborators and other affiliations</h3>', "\n",
             "<p>List potential conflicts of interest one per line, using parentheses for affiliations and institutions. We may use this information when assigning reviews.<br>Examples: “Ping Yen Zhang (INRIA)”, “All (University College London)”</p>";
         if ($cd !== "" && preg_match('/<(?:p|div)[ >]/', $cd)) {
@@ -1540,13 +1549,13 @@ class UserStatus extends MessageSet {
             "</textarea>\n";
     }
 
-    static function render_topics(UserStatus $us) {
+    static function print_topics(UserStatus $us) {
         if (!$us->user->isPC
             && !$us->viewer->privChair) {
             return;
         }
-        $us->cs()->render_open_section("w-text fx1", "topicinterest");
-        $us->cs()->render_title("Topic interests");
+        $us->cs()->print_open_section("w-text fx1", "topicinterest");
+        $us->cs()->print_title("Topic interests");
         echo '<p>Please indicate your interest in reviewing papers on these conference
 topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
@@ -1581,7 +1590,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo "    </tbody></table>\n";
     }
 
-    static function render_tags(UserStatus $us) {
+    static function print_tags(UserStatus $us) {
         $user = $us->user;
         $tagger = new Tagger($us->viewer);
         $itags = $tagger->unparse($user->viewable_tags($us->viewer));
@@ -1589,8 +1598,8 @@ topics. We use this information to help match papers to reviewers.</p>',
             && (!$us->user->isPC || $itags === "")) {
             return;
         }
-        $us->cs()->render_open_section("w-text fx2");
-        $us->cs()->render_title("Tags");
+        $us->cs()->print_open_section("w-text fx2");
+        $us->cs()->print_title("Tags");
         if ($us->viewer->privChair) {
             echo '<div class="', $us->control_class("tags", "f-i"), '">',
                 $us->feedback_html_at("tags"),
@@ -1602,7 +1611,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         }
     }
 
-    private static function render_delete_action(UserStatus $us) {
+    private static function print_delete_action(UserStatus $us) {
         $tracks = self::user_paper_info($us->conf, $us->user->contactId);
         $args = ["class" => "ui btn-danger"];
         if (!empty($tracks->soleAuthor)) {
@@ -1630,13 +1639,13 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo Ht::button("Delete account", $args), '<p class="pt-1"></p>';
     }
 
-    static function render_main_actions(UserStatus $us) {
+    static function print_main_actions(UserStatus $us) {
         if ($us->viewer->privChair
             && !$us->is_new_user()) {
-            $us->cs()->render_open_section();
+            $us->cs()->print_open_section();
             echo '<div class="form-outline-section">';
             $us->cs()->push_close_section('</div>');
-            $us->cs()->render_title("User administration");
+            $us->cs()->print_title("User administration");
             $disablement = $us->user->disablement;
             echo '<div class="btngrid">',
                 Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf relative", "disabled" => $disablement !== 0]), '<p></p>';
@@ -1645,26 +1654,31 @@ topics. We use this information to help match papers to reviewers.</p>',
                 echo Ht::button($disablement ? "Enable account" : "Disable account", [
                     "class" => "ui js-disable-user " . ($disablement ? "btn-success" : "btn-danger")
                 ]), '<p class="pt-1 mb-0">Disabled accounts cannot sign in or view the site.</p>';
-                self::render_delete_action($us);
+                self::print_delete_action($us);
             }
             echo '</div>';
         }
     }
 
-    static function render_actions(UserStatus $us) {
+    static function print_actions(UserStatus $us) {
         $buttons = [Ht::submit("save", $us->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
             Ht::submit("cancel", "Cancel", ["formnovalidate" => true])];
         if ($us->is_auth_self()
             && $us->cs()->root === "main") {
             array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
         }
-        $us->cs()->render_close_section();
+        $us->cs()->print_close_section();
         echo Ht::actions($buttons, ["class" => "aab aabig mt-7"]);
+    }
+
+    /** @deprecated */
+    static function render_actions(UserStatus $us) {
+        self::print_actions($us);
     }
 
 
 
-    static function render_bulk_entry(UserStatus $us) {
+    static function print_bulk_entry(UserStatus $us) {
         echo Ht::textarea("bulkentry", $us->qreq->bulkentry, [
             "rows" => 1, "cols" => 80,
             "placeholder" => "Enter users one per line",
@@ -1675,13 +1689,13 @@ topics. We use this information to help match papers to reviewers.</p>',
             '<input type="file" name="bulk" size="30"></div>';
     }
 
-    static function render_bulk_actions(UserStatus $us) {
+    static function print_bulk_actions(UserStatus $us) {
         echo '<div class="aab aabig">',
             '<div class="aabut">', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>',
             '</div>';
     }
 
-    static function render_bulk_help(UserStatus $us) {
+    static function print_bulk_help(UserStatus $us) {
         echo '<section class="mt-7"><h3>Instructions</h3>',
             "<p>Enter or upload CSV data with header, such as:</p>\n",
             '<pre class="entryexample">
@@ -1715,7 +1729,7 @@ John Adams,john@earbox.org,UC Berkeley,pc
         echo '</section>';
     }
 
-    static function render_bulk_help_topics(UserStatus $us) {
+    static function print_bulk_help_topics(UserStatus $us) {
         if ($us->conf->has_topics()) {
             echo '<dl class="ctelt dd"><dt><code>topic: &lt;TOPIC NAME&gt;</code></dt>',
                 '<dd>Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)</dd></dl>';
@@ -1725,14 +1739,14 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 
     /** @param string $name */
-    function render_group($name) {
-        $this->cs()->render_group($name);
+    function print_group($name) {
+        $this->cs()->print_group($name);
     }
 
     /** @param string $title
      * @param ?string $id */
-    function render_section($title, $id = null) {
-        $this->cs()->render_section($title, $id);
+    function print_section($title, $id = null) {
+        $this->cs()->print_section($title, $id);
     }
 
     /** @param string $name */
@@ -1743,5 +1757,17 @@ John Adams,john@earbox.org,UC Berkeley,pc
                 $cs->call_function($gj, $gj->request_function, $gj);
             }
         }
+    }
+
+    /** @param string $name
+     * @deprecated */
+    function render_group($name) {
+        $this->print_group($name);
+    }
+    /** @param string $title
+     * @param ?string $id
+     * @deprecated */
+    function render_section($title, $id = null) {
+        $this->print_section($title, $id);
     }
 }

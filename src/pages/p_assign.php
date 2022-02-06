@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_assign.php -- HotCRP per-paper assignment/conflict management page
+// pages/p_assign.php -- HotCRP per-paper assignment/conflict management page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Assign_Page {
@@ -23,7 +23,7 @@ class Assign_Page {
     }
 
     function error_exit($msg) {
-        PaperTable::echo_header($this->pt, "assign", "assign", $this->qreq);
+        PaperTable::print_header($this->pt, "assign", "assign", $this->qreq);
         $msg && Conf::msg_error($msg);
         $this->conf->footer();
         throw new PageCompletion;
@@ -209,7 +209,7 @@ class Assign_Page {
         }
     }
 
-    private function render_reqrev_main($rrow, $namex, $time) {
+    private function print_reqrev_main($rrow, $namex, $time) {
         $rname = "Review " . ($rrow->reviewStatus > 0 ? " (accepted)" : " (not started)");
         if ($this->user->can_view_review($this->prow, $rrow)) {
             $rname = Ht::link($rname, $this->prow->reviewurl(["r" => $rrow->reviewId]));
@@ -236,7 +236,7 @@ class Assign_Page {
         echo '</ul></div>';
     }
 
-    private function render_reqrev_proposal($rrow, $namex, $rrowid) {
+    private function print_reqrev_proposal($rrow, $namex, $rrowid) {
         echo "Review proposal: ", $namex, '</div><div class="f-h"><ul class="x mb-0">';
         if ($rrow->timeRequested
             || $this->user->can_view_review_requester($this->prow, $rrow)) {
@@ -263,7 +263,7 @@ class Assign_Page {
         return $reason;
     }
 
-    private function render_reqrev_denied($rrow, $namex) {
+    private function print_reqrev_denied($rrow, $namex) {
         echo "Declined request: ", $namex,
             '</div><div class="f-h fx"><ul class="x mb-0">';
         if ($rrow->timeRequested
@@ -299,7 +299,7 @@ class Assign_Page {
         echo '</ul></div>';
     }
 
-    private function render_reqrev($rrow, $time) {
+    private function print_reqrev($rrow, $time) {
         echo '<div class="ctelt"><div class="ctelti has-fold';
         if ($rrow->reviewType === REVIEW_REQUEST
             && ($this->user->can_administer($this->prow)
@@ -362,11 +362,11 @@ class Assign_Page {
         echo '<div class="ui js-foldup"><a href="" class="ui js-foldup">', expander(null, 0), '</a>';
         $reason = null;
         if ($rrow->reviewType >= 0) {
-            $this->render_reqrev_main($rrow, $namex, $time);
+            $this->print_reqrev_main($rrow, $namex, $time);
         } else if ($rrow->reviewType === REVIEW_REQUEST) {
-            $reason = $this->render_reqrev_proposal($rrow, $namex, $rrowid);
+            $reason = $this->print_reqrev_proposal($rrow, $namex, $rrowid);
         } else {
-            $this->render_reqrev_denied($rrow, $namex);
+            $this->print_reqrev_denied($rrow, $namex);
         }
 
         // render form
@@ -413,7 +413,7 @@ class Assign_Page {
 
     /** @param Contact $pc
      * @param AssignmentCountSet $acs */
-    private function render_pc_assignment($pc, $acs) {
+    private function print_pc_assignment($pc, $acs) {
         // first, name and assignment
         $ct = $this->prow->conflict_type($pc);
         $rrow = $this->prow->review_by_user($pc);
@@ -484,16 +484,16 @@ class Assign_Page {
         echo "</div></div></div>\n"; // .pctbnrev .ctelti .ctelt
     }
 
-    function render() {
+    function print() {
         $prow = $this->prow;
         $user = $this->user;
         $this->pt = new PaperTable($user, $this->qreq, $prow);
         $this->pt->resolve_review(false);
         $this->allow_view_authors = $user->allow_view_authors($prow);
-        PaperTable::echo_header($this->pt, "assign", "assign", $this->qreq);
+        PaperTable::print_header($this->pt, "assign", "assign", $this->qreq);
 
         // begin form and table
-        $this->pt->echo_paper_info();
+        $this->pt->print_paper_info();
 
         // reviewer information
         $t = $this->pt->review_table();
@@ -532,7 +532,7 @@ class Assign_Page {
                 '<div class="revcard-head"><h2>Review requests</h2></div>',
                 '<div class="revcard-body"><div class="ctable-wide">';
             foreach ($requests as $req) {
-                $this->render_reqrev($req[3], $req[1]);
+                $this->print_reqrev($req[3], $req[1]);
             }
             echo '</div></div></div>';
         }
@@ -561,7 +561,7 @@ class Assign_Page {
 
             foreach ($this->conf->full_pc_members() as $pc) {
                 if ($pc->can_accept_review_assignment_ignore_conflict($prow)) {
-                    $this->render_pc_assignment($pc, $acs);
+                    $this->print_pc_assignment($pc, $acs);
                 }
             }
 
@@ -661,6 +661,6 @@ class Assign_Page {
         $ap = new Assign_Page($user, $qreq);
         $ap->assign_load();
         $ap->handle_request();
-        $ap->render();
+        $ap->print();
     }
 }

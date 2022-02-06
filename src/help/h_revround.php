@@ -1,9 +1,9 @@
 <?php
-// src/help/h_revround.php -- HotCRP help functions
+// help/h_revround.php -- HotCRP help functions
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class RevRound_HelpTopic {
-    static function render(HelpRenderer $hth) {
+    static function print(HelpRenderer $hth) {
         echo "<p>Many conferences divide their review assignments into multiple <em>rounds</em>.
 Each round is given a name, such as “R1” or “lastround.”
 (We suggest very short names like “R1”.)

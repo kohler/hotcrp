@@ -215,7 +215,7 @@ class Conf {
     private $_mail_keyword_factories;
     private $_mail_template_map;
     /** @var ?ComponentSet */
-    private $_page_partials;
+    private $_page_components;
 
     /** @var ?PaperInfo */
     public $paper; // current paper row
@@ -5454,11 +5454,11 @@ class Conf {
     // pages
 
     /** @return ComponentSet */
-    function page_partials(Contact $viewer) {
-        if (!$this->_page_partials || $this->_page_partials->viewer() !== $viewer) {
-            $this->_page_partials = new ComponentSet($viewer, ["etc/pages.json"], $this->opt("pages"));
+    function page_components(Contact $viewer) {
+        if (!$this->_page_components || $this->_page_components->viewer() !== $viewer) {
+            $this->_page_components = new ComponentSet($viewer, ["etc/pages.json"], $this->opt("pages"));
         }
-        return $this->_page_partials;
+        return $this->_page_components;
     }
 
 

@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_oauth.php -- HotCRP OAuth 2.0 authentication page
+// pages/p_oauth.php -- HotCRP OAuth 2.0 authentication page
 // Copyright (c) 2022 Eddie Kohler; see LICENSE.
 
 class OAuthInstance {

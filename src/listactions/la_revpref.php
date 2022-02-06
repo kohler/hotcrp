@@ -184,7 +184,7 @@ class Revpref_ListAction extends ListAction {
 
             echo '<h3>Proposed preference assignment</h3>';
             echo '<p>The uploaded file requests the following preference changes.</p>';
-            $aset->echo_unparse_display();
+            $aset->print_unparse_display();
 
             echo Ht::actions([
                 Ht::submit("Apply changes", ["class" => "btn-success"]),

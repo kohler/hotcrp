@@ -1,5 +1,5 @@
 <?php
-// src/reviewtimes.php -- HotCRP review form definition page
+// reviewtimes.php -- HotCRP review form definition page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewTimes {

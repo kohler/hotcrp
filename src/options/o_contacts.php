@@ -198,7 +198,7 @@ class Contacts_PaperOption extends PaperOption {
             . $pt->messages_at("contacts:email_$reqidx")
             . '</div>';
     }
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
+    function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $contacts = $ov->anno("users") ?? [];
         foreach ($ov->prow->author_list() as $au) {
             if (!$this->value_by_email($ov, $au->email)
@@ -210,7 +210,7 @@ class Contacts_PaperOption extends PaperOption {
         usort($contacts, $this->conf->user_comparator());
         $readonly = !$this->test_editable($ov->prow);
 
-        $pt->echo_editable_option_papt($this, null, ["id" => "contacts", "for" => false]);
+        $pt->print_editable_option_papt($this, null, ["id" => "contacts", "for" => false]);
         echo '<div class="papev js-row-order"><div>';
 
         $cidx = 1;

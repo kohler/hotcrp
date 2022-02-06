@@ -1,5 +1,5 @@
 <?php
-// src/pages/manualassign.php -- HotCRP chair's paper assignment page
+// pages/manualassign.php -- HotCRP chair's paper assignment page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ManualAssign_Page {
@@ -121,7 +121,7 @@ class ManualAssign_Page {
         return $show_data;
     }
 
-    private function render_reviewer(Contact $reviewer) {
+    private function print_reviewer(Contact $reviewer) {
         // search outline from old CRP, done here in a very different way
         $hlsearch = [];
         foreach ($reviewer->aucollab_matchers() as $matcher) {
@@ -206,7 +206,7 @@ class ManualAssign_Page {
 
         $pl->set_table_id_class("foldpl", "pltable-fullw");
         $pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
-        $pl->echo_table_html();
+        $pl->print_table_html();
 
         echo '<div class="aab aabr aabig"><div class="aabut">',
             Ht::submit("update", "Save assignments", ["class" => "btn-primary"]),
@@ -216,7 +216,7 @@ class ManualAssign_Page {
     }
 
 
-    function render(Contact $reviewer = null) {
+    function print(Contact $reviewer = null) {
         $this->conf->header("Assignments", "assignpc", ["subtitle" => "Manual"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
             '<li class="papmode"><a href="', $this->conf->hoturl("autoassign"), '">Automatic</a></li>',
@@ -294,7 +294,7 @@ class ManualAssign_Page {
 
         // Current PC member information
         if ($reviewer) {
-            $this->render_reviewer($reviewer);
+            $this->print_reviewer($reviewer);
         }
 
         echo '<hr class="c">';
@@ -336,7 +336,7 @@ class ManualAssign_Page {
             if ($this->qreq->update && $this->qreq->valid_post()) {
                 Conf::msg_error("You need to select a reviewer.");
             }
-            $this->render($reviewer);
+            $this->print($reviewer);
         }
 
         $this->viewer->set_overrides($overrides);

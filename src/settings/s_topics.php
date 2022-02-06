@@ -1,5 +1,5 @@
 <?php
-// src/settings/s_topics.php -- HotCRP settings > submission form page
+// settings/s_topics.php -- HotCRP settings > submission form page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Topics_SettingParser extends SettingParser {
@@ -21,7 +21,7 @@ class Topics_SettingParser extends SettingParser {
         $sv->map_object_list_ids($sv->conf->topic_set()->as_array(), "topic");
     }
 
-    static function render(SettingValues $sv) {
+    static function print(SettingValues $sv) {
         // Topics
         // load topic interests
         $result = $sv->conf->q_raw("select topicId, interest from TopicInterest where interest!=0");
@@ -51,8 +51,8 @@ class Topics_SettingParser extends SettingParser {
             foreach ($topic_counters as $ctr) {
                 $tid = $sv->vstr("topic__{$ctr}__id") ?? "new";
                 echo '<tr><td class="lentry">', Ht::hidden("topic__{$ctr}__id", $tid);
-                $sv->echo_feedback_at("topic__{$ctr}__name");
-                $sv->echo_entry("topic__{$ctr}__name", ["class" => "wide", "aria-label" => "Topic name"]);
+                $sv->print_feedback_at("topic__{$ctr}__name");
+                $sv->print_entry("topic__{$ctr}__name", ["class" => "wide", "aria-label" => "Topic name"]);
                 echo '</td>';
                 if (!empty($interests)) {
                     $ti = $interests[$tid] ?? [null, null];

@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_mergeaccounts.php -- HotCRP account merging page
+// pages/p_mergeaccounts.php -- HotCRP account merging page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class MergeAccounts_Page {
@@ -84,7 +84,7 @@ class MergeAccounts_Page {
     }
 
 
-    private function render() {
+    private function print() {
         $this->conf->header("Merge accounts", "mergeaccounts");
 
         $this->conf->infoMsg(
@@ -135,6 +135,6 @@ class MergeAccounts_Page {
             && $map->handle_merge()) {
             return;
         }
-        $map->render();
+        $map->print();
     }
 }

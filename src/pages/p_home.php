@@ -1,5 +1,5 @@
 <?php
-// src/pages/p_home.php -- HotCRP home page
+// pages/p_home.php -- HotCRP home page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Home_Page {
@@ -72,7 +72,7 @@ class Home_Page {
         }
     }
 
-    function render_head(Contact $user, Qrequest $qreq, $gx) {
+    function print_head(Contact $user, Qrequest $qreq, $gx) {
         if ($user->is_empty()) {
             $user->conf->header("Sign in", "home");
         } else {
@@ -81,73 +81,73 @@ class Home_Page {
         if ($qreq->signedout && $user->is_empty()) {
             $user->conf->msg("You have been signed out of the site.", "xconfirm");
         }
-        $gx->push_render_cleanup("__footer");
+        $gx->push_print_cleanup("__footer");
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
         if ($user->privChair) {
             echo '<div id="msg-clock-drift" class="homegrp hidden"></div>';
         }
     }
 
-    static function render_content(Contact $user, Qrequest $qreq, $gx) {
+    static function print_content(Contact $user, Qrequest $qreq, $gx) {
         echo '<div class="home-content"><div class="home-sidebar">';
-        $gx->render_group("home/sidebar");
+        $gx->print_group("home/sidebar");
         echo '</div><div class="home-main">';
-        $gx->render_group("home/main");
+        $gx->print_group("home/main");
         echo "</div></div>\n";
     }
 
-    private function render_h2_home($x) {
+    private function print_h2_home($x) {
         ++$this->_nh2;
         return "<h2 class=\"home\">" . $x . "</h2>";
     }
 
-    static function render_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
+    static function print_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
         echo '<div class="homegrp"><h2 class="home">Administration</h2><ul>';
-        $gx->render_group("home/sidebar/admin");
+        $gx->print_group("home/sidebar/admin");
         echo '</ul></div>';
     }
-    static function render_admin_settings(Contact $user) {
+    static function print_admin_settings(Contact $user) {
         echo '<li>', Ht::link("Settings", $user->conf->hoturl("settings")), '</li>';
     }
-    static function render_admin_users(Contact $user) {
+    static function print_admin_users(Contact $user) {
         echo '<li>', Ht::link("Users", $user->conf->hoturl("users", "t=all")), '</li>';
     }
-    static function render_admin_assignments(Contact $user) {
+    static function print_admin_assignments(Contact $user) {
         echo '<li>', Ht::link("Assignments", $user->conf->hoturl("autoassign")), '</li>';
     }
-    static function render_admin_mail(Contact $user) {
+    static function print_admin_mail(Contact $user) {
         echo '<li>', Ht::link("Mail", $user->conf->hoturl("mail")), '</li>';
     }
-    static function render_admin_log(Contact $user) {
+    static function print_admin_log(Contact $user) {
         echo '<li>', Ht::link("Action log", $user->conf->hoturl("log")), '</li>';
     }
 
-    static function render_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
+    static function print_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
         ob_start();
-        $gx->render_group("home/sidebar/info");
+        $gx->print_group("home/sidebar/info");
         if (($t = ob_get_clean())) {
             echo '<div class="homegrp"><h2 class="home">',
                 $user->conf->_c("home", "Conference information"),
                 '</h2><ul>', $t, '</ul></div>';
         }
     }
-    static function render_info_deadline(Contact $user) {
+    static function print_info_deadline(Contact $user) {
         if ($user->has_reportable_deadline()) {
             echo '<li>', Ht::link("Deadlines", $user->conf->hoturl("deadlines")), '</li>';
         }
     }
-    static function render_info_pc(Contact $user) {
+    static function print_info_pc(Contact $user) {
         if ($user->can_view_pc()) {
             echo '<li>', Ht::link("Program committee", $user->conf->hoturl("users", "t=pc")), '</li>';
         }
     }
-    static function render_info_site(Contact $user) {
+    static function print_info_site(Contact $user) {
         if (($site = $user->conf->opt("conferenceSite"))
             && $site !== $user->conf->opt("paperSite")) {
             echo '<li>', Ht::link("Conference site", $site), '</li>';
         }
     }
-    static function render_info_accepted(Contact $user) {
+    static function print_info_accepted(Contact $user) {
         assert($user->conf->time_all_author_view_decision());
         if ($user->conf->time_all_author_view_decision()) {
             list($n, $nyes) = $user->conf->count_submitted_accepted();
@@ -155,13 +155,13 @@ class Home_Page {
         }
     }
 
-    function render_message(Contact $user) {
+    function print_message(Contact $user) {
         if (($t = $user->conf->_i("home"))) {
             $user->conf->msg($t, 0);
         }
     }
 
-    function render_welcome(Contact $user) {
+    function print_welcome(Contact $user) {
         echo '<div class="homegrp">Welcome to the ', htmlspecialchars($user->conf->full_name()), " submissions site.";
         if (($site = $user->conf->opt("conferenceSite"))
             && $site !== $user->conf->opt("paperSite"))
@@ -169,13 +169,13 @@ class Home_Page {
         echo '</div>';
     }
 
-    function render_signin(Contact $user, Qrequest $qreq, $gx) {
+    function print_signin(Contact $user, Qrequest $qreq, $gx) {
         if (!$user->has_email() || $qreq->signin) {
-            Signin_Page::render_signin_form($user, $qreq, $gx);
+            Signin_Page::print_signin_form($user, $qreq, $gx);
         }
     }
 
-    function render_search(Contact $user, Qrequest $qreq, $gx) {
+    function print_search(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->privChair
             && ($user->isPC
@@ -186,7 +186,7 @@ class Home_Page {
 
         $limits = PaperSearch::viewable_limits($user);
         echo '<div class="homegrp d-table" id="homelist">',
-            $this->render_h2_home('<a class="q" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
+            $this->print_h2_home('<a class="q" href="' . $conf->hoturl("search") . '" id="homesearch-label">Search</a>'),
             Ht::form($conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
@@ -206,7 +206,7 @@ class Home_Page {
         return $this->_rfs;
     }
 
-    function render_reviews(Contact $user, Qrequest $qreq, $gx) {
+    function print_reviews(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->privChair
             && !($user->is_reviewer() && $conf->has_any_submitted())) {
@@ -286,7 +286,7 @@ class Home_Page {
         echo '<div class="homegrp" id="homerev">';
 
         // Overview
-        echo $this->render_h2_home("Reviews");
+        echo $this->print_h2_home("Reviews");
         if ($has_rinfo) {
             $score_texts = [];
             foreach ($this->default_review_fields($conf) as $i => $rf) {
@@ -381,7 +381,7 @@ class Home_Page {
         if ($conf->setting("rev_tokens")) {
             echo $sep;
             $this->_in_reviews = true;
-            $this->render_review_tokens($user, $qreq, $gx);
+            $this->print_review_tokens($user, $qreq, $gx);
             $sep = $xsep;
         }
 
@@ -412,7 +412,7 @@ class Home_Page {
             if (!$plist->is_empty()) {
                 echo '<div class="fx"><hr class="g">';
                 $plist->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
-                $plist->echo_table_html();
+                $plist->print_table_html();
                 echo '</div>';
             }
         }
@@ -433,14 +433,14 @@ class Home_Page {
     }
 
     // Review token printing
-    function render_review_tokens(Contact $user, Qrequest $qreq, $gx) {
+    function print_review_tokens(Contact $user, Qrequest $qreq, $gx) {
         if (!$this->_tokens_done
             && $user->has_email()
             && $user->conf->setting("rev_tokens")
             && (!$this->_in_reviews || $user->is_reviewer())) {
             if (!$this->_in_reviews) {
                 echo '<div class="homegrp" id="homerev">',
-                    $this->render_h2_home("Reviews");
+                    $this->print_h2_home("Reviews");
             }
             $tokens = array_map("encode_token", $user->review_tokens());
             $ttexts = array_map(function ($t) use ($user) {
@@ -456,14 +456,14 @@ class Home_Page {
         }
     }
 
-    function render_review_requests(Contact $user, Qrequest $qreq, $gx) {
+    function print_review_requests(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->is_requester()
             && !$user->has_review_pending_approval()
             && !$user->has_proposal_pending())
             return;
 
-        echo '<div class="homegrp">', $this->render_h2_home("Requested Reviews");
+        echo '<div class="homegrp">', $this->print_h2_home("Requested Reviews");
         if ($user->has_review_pending_approval()) {
             echo '<a href="', $conf->hoturl("paper", "m=rea&amp;q=re%3Apending-my-approval"),
                 ($user->has_review_pending_approval(true) ? '" class="attention' : ''),
@@ -476,7 +476,7 @@ class Home_Page {
         echo '<a href="', $conf->hoturl("mail", "monreq=1"), '">Monitor requested reviews</a></div>', "\n";
     }
 
-    function render_submissions(Contact $user, Qrequest $qreq, $gx) {
+    function print_submissions(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->is_author()
             && $conf->time_start_paper() <= 0
@@ -485,7 +485,7 @@ class Home_Page {
             return;
 
         echo '<div class="homegrp" id="homeau">',
-            $this->render_h2_home($user->is_author() ? "Your Submissions" : "Submissions");
+            $this->print_h2_home($user->is_author() ? "Your Submissions" : "Submissions");
 
         $startable = $conf->time_start_paper();
         if ($startable && !$user->has_email()) {
@@ -503,7 +503,7 @@ class Home_Page {
             if (!$plist->is_empty()) {
                 echo '<hr class="g">';
                 $plist->set_table_decor(PaperList::DECOR_LIST);
-                $plist->echo_table_html();
+                $plist->print_table_html();
             }
         }
 

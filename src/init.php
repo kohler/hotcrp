@@ -329,7 +329,7 @@ function initialize_request() {
 
     // redirect if disabled
     if ($guser->is_disabled()) {
-        $gj = $conf->page_partials($guser)->get($nav->page);
+        $gj = $conf->page_components($guser)->get($nav->page);
         if (!$gj || !($gj->allow_disabled ?? false)) {
             $conf->redirect_hoturl("index");
         }

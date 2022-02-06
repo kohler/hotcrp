@@ -1,5 +1,5 @@
 <?php
-// src/pages/deadlines.php -- HotCRP deadline reporting page
+// pages/deadlines.php -- HotCRP deadline reporting page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Deadlines_Page {

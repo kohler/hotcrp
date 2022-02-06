@@ -492,13 +492,13 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $zi = $this->_zipi[$d0];
             $doc = $this->docs[$d0];
             $p0 = $zi->local_offset;
-            $p0 += Filer::echo_subrange($out, $r0, $r1, $p0, $zi->localh);
+            $p0 += Filer::print_subrange($out, $r0, $r1, $p0, $zi->localh);
             if ($zi->compressed !== null) {
-                $p0 += Filer::echo_subrange($out, $r0, $r1, $p0, $zi->compressed);
+                $p0 += Filer::print_subrange($out, $r0, $r1, $p0, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
                 $p0 += Filer::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
             } else {
-                $p0 += Filer::echo_subrange($out, $r0, $r1, $p0, $doc->content());
+                $p0 += Filer::print_subrange($out, $r0, $r1, $p0, $doc->content());
             }
             if ($p0 < min($r1, $zi->local_end_offset())) {
                 throw new Exception("Failure writing {$this->ufn[$d0]}, wrote " . ($p0 - $zi->local_offset) . ", expected " . (min($r1, $zi->local_end_offset()) - $zi->local_offset));
@@ -507,7 +507,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         if ($d0 === count($this->docs)) {
             foreach ($this->_zipi as $zi) {
-                Filer::echo_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
+                Filer::print_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
             }
         }
     }

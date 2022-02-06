@@ -1,11 +1,11 @@
 <?php
-// src/settings/s_banal.php -- HotCRP settings > submission form page
+// settings/s_banal.php -- HotCRP settings > submission form page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Banal_SettingRenderer {
     /** @param string $suffix
      * @param SettingValues $sv */
-    static function render($suffix, $sv) {
+    static function print($suffix, $sv) {
         $cfs = new FormatSpec($sv->oldv("sub_banal_opt_{$suffix}"),
                               $sv->oldv("sub_banal_data_{$suffix}"));
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight", "unlimitedref"] as $k) {
@@ -16,19 +16,19 @@ class Banal_SettingRenderer {
         $uropen = !in_array($sv->vstr("sub_banal_pagelimit_{$suffix}"), ["", "any", "N/A"]);
         $editable = $sv->editable("sub_banal_{$suffix}");
         echo Ht::hidden("has_sub_banal_{$suffix}", 1);
-        $sv->echo_checkbox("sub_banal_val_{$suffix}", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
+        $sv->print_checkbox("sub_banal_val_{$suffix}", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
         echo '<div class="settings-2col fx">';
-        $sv->echo_entry_group("sub_banal_papersize_{$suffix}", "Paper size", ["horizontal" => true, "readonly" => !$editable], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
+        $sv->print_entry_group("sub_banal_papersize_{$suffix}", "Paper size", ["horizontal" => true, "readonly" => !$editable], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
         echo '<div class="entryg">';
-        $sv->echo_entry_group("sub_banal_textblock_{$suffix}", "Text block", ["horizontal" => true, "readonly" => !$editable], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
-        $sv->echo_entry_group("sub_banal_columns_{$suffix}", "Columns", ["horizontal" => true, "readonly" => !$editable]);
+        $sv->print_entry_group("sub_banal_textblock_{$suffix}", "Text block", ["horizontal" => true, "readonly" => !$editable], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
+        $sv->print_entry_group("sub_banal_columns_{$suffix}", "Columns", ["horizontal" => true, "readonly" => !$editable]);
         echo '</div><div class="entryg">';
-        $sv->echo_entry_group("sub_banal_pagelimit_{$suffix}", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit", "readonly" => !$editable]);
+        $sv->print_entry_group("sub_banal_pagelimit_{$suffix}", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit", "readonly" => !$editable]);
         echo '<div class="entryi fx2"><label></label><div class="entry settings-banal-unlimitedref">';
-        $sv->echo_checkbox("sub_banal_unlimitedref_{$suffix}", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
+        $sv->print_checkbox("sub_banal_unlimitedref_{$suffix}", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
         echo '</div></div></div>';
-        $sv->echo_entry_group("sub_banal_bodyfontsize_{$suffix}", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
-        $sv->echo_entry_group("sub_banal_bodylineheight_{$suffix}", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
+        $sv->print_entry_group("sub_banal_bodyfontsize_{$suffix}", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
+        $sv->print_entry_group("sub_banal_bodylineheight_{$suffix}", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
         echo "</div></div>\n";
     }
 }
