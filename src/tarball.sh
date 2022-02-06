@@ -316,6 +316,7 @@ src/pages/p_graph_procrastination.php
 src/pages/p_help.php
 src/pages/p_home.php
 src/pages/p_log.php
+src/pages/p_mail.php
 src/pages/p_manualassign.php
 src/pages/p_mergeaccounts.php
 src/pages/p_oauth.php

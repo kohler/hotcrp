@@ -58,6 +58,15 @@ class MailPreparation {
             && empty($this->errors)
             && empty($p->errors);
     }
+    /** @param MailPreparation $p
+     * @return bool */
+    function contains_all_recipients($p) {
+        foreach ($p->to as $dest) {
+            if (!in_array($dest, $this->to))
+                return false;
+        }
+        return true;
+    }
     /** @param MailPreparation $p */
     function merge($p) {
         foreach ($p->to as $dest) {

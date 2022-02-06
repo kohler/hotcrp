@@ -42,7 +42,17 @@ class MailRecipients extends MessageSet {
         $this->set_ignore_duplicates(true);
     }
 
-    /** @param list<int> $paper_ids
+    /** @return bool */
+    function has_paper_ids() {
+        return $this->paper_ids !== null;
+    }
+
+    /** @return list<int> */
+    function paper_ids() {
+        return $this->paper_ids ?? [];
+    }
+
+    /** @param ?list<int> $paper_ids
      * @return $this */
     function set_paper_ids($paper_ids) {
         $this->paper_ids = $paper_ids;

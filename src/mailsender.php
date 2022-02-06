@@ -20,12 +20,17 @@ class MailSender {
     private $mailer_options;
     private $started = false;
     private $group;
+    /** @var string */
     private $recipients;
+    /** @var bool */
     private $groupable = false;
+    /** @var int */
     private $mcount = 0;
+    /** @var int */
     private $skipcount = 0;
     private $mrecipients = [];
     private $prep_recipients = [];
+    /** @var int */
     private $cbcount = 0;
     private $mailid_text = "";
 
@@ -204,7 +209,7 @@ class MailSender {
         // mails from different papers, unless those mails are to the same
         // person.
         $mail_differs = !$prep->can_merge($last_prep);
-        if (!$mail_differs) {
+        if (!$mail_differs && !$prep->contains_all_recipients($last_prep)) {
             $this->groupable = true;
         }
 
