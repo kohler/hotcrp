@@ -215,7 +215,7 @@
     {   "name": "oauth", "print_function": "OAuth_Page::go", "allow_disabled": true   },
     {   "name": "offline", "print_function": "Offline_Page::go"   },
     {   "name": "paper", "print_function": "Paper_Page::go"   },
-    {   "name": "profile", "print_include": "profile.php"   },
+    {   "name": "profile", "print_function": "Profile_Page::go"   },
     {   "name": "review", "print_function": "Review_Page::go"   },
     {   "name": "reviewprefs", "print_function": "ReviewPrefs_Page::go"   },
     {   "name": "scorechart", "print_function": "Scorechart_Page::go"   },

@@ -305,6 +305,7 @@ src/pages/p_autoassign.php
 src/pages/p_bulkassign.php
 src/pages/p_buzzer.php
 src/pages/p_cacheable.php
+src/pages/p_changeemail.php
 src/pages/p_checkupdates.php
 src/pages/p_conflictassign.php
 src/pages/p_deadlines.php
@@ -320,6 +321,7 @@ src/pages/p_mergeaccounts.php
 src/pages/p_oauth.php
 src/pages/p_offline.php
 src/pages/p_paper.php
+src/pages/p_profile.php
 src/pages/p_review.php
 src/pages/p_reviewprefs.php
 src/pages/p_scorechart.php

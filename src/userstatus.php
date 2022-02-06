@@ -1398,7 +1398,7 @@ class UserStatus extends MessageSet {
 
     static function print_current_password(UserStatus $us) {
         $original_ignore_msgs = $us->swap_ignore_messages(false);
-        $us->msg_at("oldpassword", "<0>Enter your current password to make changes to security settings", 1);
+        $us->msg_at("oldpassword", "<0>Enter your current password to make changes to security settings", MessageSet::WARNING_NOTE);
         $us->swap_ignore_messages($original_ignore_msgs);
         echo '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',
             '<label for="oldpassword">',
