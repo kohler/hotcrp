@@ -102,42 +102,15 @@
         "name": "__crosscheck/submissionfieldconditions", "order": 600,
         "crosscheck_function": "SubFieldCondition_SettingParser::crosscheck"
     },
-    {
-        "name": "submissionfield/properties/name", "order": 1,
-        "print_function": "*Options_SettingRenderer::print_name"
-    },
-    {
-        "name": "submissionfield/properties/type", "order": 10,
-        "print_function": "*Options_SettingRenderer::print_type"
-    },
-    {
-        "name": "submissionfield/properties/description", "order": 20,
-        "print_function": "*Options_SettingRenderer::print_description"
-    },
-    {
-        "name": "submissionfield/properties/choices", "order": 25,
-        "print_function": "*Options_SettingRenderer::print_choices"
-    },
-    {
-        "name": "submissionfield/properties/presence", "order": 30,
-        "print_function": "*Options_SettingRenderer::print_presence"
-    },
-    {
-        "name": "submissionfield/properties/required", "order": 31,
-        "print_function": "*Options_SettingRenderer::print_required"
-    },
-    {
-        "name": "submissionfield/properties/visibility", "order": 40,
-        "print_function": "*Options_SettingRenderer::print_visibility"
-    },
-    {
-        "name": "submissionfield/properties/display", "order": 50,
-        "print_function": "*Options_SettingRenderer::print_display"
-    },
-    {
-        "name": "submissionfield/properties/actions", "order": 10000,
-        "print_function": "*Options_SettingRenderer::print_actions"
-    },
+    [   "submissionfield/properties/name", 1, "*Options_SettingRenderer::print_name"   ],
+    [   "submissionfield/properties/type", 10, "*Options_SettingRenderer::print_type"   ],
+    [   "submissionfield/properties/description", 20, "*Options_SettingRenderer::print_description"   ],
+    [   "submissionfield/properties/choices", 25, "*Options_SettingRenderer::print_choices"   ],
+    [   "submissionfield/properties/presence", 30, "*Options_SettingRenderer::print_presence"   ],
+    [   "submissionfield/properties/required", 31, "*Options_SettingRenderer::print_required"   ],
+    [   "submissionfield/properties/visibility", 40, "*Options_SettingRenderer::print_visibility"   ],
+    [   "submissionfield/properties/display", 50, "*Options_SettingRenderer::print_display"   ],
+    [   "submissionfield/properties/actions", 10000, "*Options_SettingRenderer::print_actions"   ],
     {
         "name": "topics", "group": "subform", "order": 480,
         "title": "Topics", "hashid": "topics",
@@ -195,34 +168,13 @@
         "name": "__crosscheck/reviewfieldconditions", "order": 600,
         "crosscheck_function": "ReviewFieldCondition_SettingParser::crosscheck"
     },
-    {
-        "name": "reviewfield/properties/description", "order": 20,
-        "print_function": "ReviewForm_SettingRenderer::print_description"
-    },
-    {
-        "name": "reviewfield/properties/choices", "order": 50,
-        "print_function": "ReviewForm_SettingRenderer::print_choices"
-    },
-    {
-        "name": "reviewfield/properties/presence", "order": 100,
-        "print_function": "ReviewForm_SettingRenderer::print_presence"
-    },
-    {
-        "name": "reviewfield/properties/required", "order": 101,
-        "print_function": "ReviewForm_SettingRenderer::print_required"
-    },
-    {
-        "name": "reviewfield/properties/visibility", "order": 110,
-        "print_function": "ReviewForm_SettingRenderer::print_visibility"
-    },
-    {
-        "name": "reviewfield/properties/display", "order": 120,
-        "print_function": "ReviewForm_SettingRenderer::print_display"
-    },
-    {
-        "name": "reviewfield/properties/actions", "order": 10000,
-        "print_function": "ReviewForm_SettingRenderer::print_actions"
-    },
+    [   "reviewfield/properties/description", 20, "ReviewForm_SettingRenderer::print_description"   ],
+    [   "reviewfield/properties/choices", 50, "ReviewForm_SettingRenderer::print_choices"   ],
+    [   "reviewfield/properties/presence", 100, "ReviewForm_SettingRenderer::print_presence"   ],
+    [   "reviewfield/properties/required", 101, "ReviewForm_SettingRenderer::print_required"   ],
+    [   "reviewfield/properties/visibility", 110, "ReviewForm_SettingRenderer::print_visibility"   ],
+    [   "reviewfield/properties/display", 120, "ReviewForm_SettingRenderer::print_display"   ],
+    [   "reviewfield/properties/actions", 10000, "ReviewForm_SettingRenderer::print_actions"   ],
 
 
     {
@@ -276,25 +228,13 @@
     {
         "name": "decisions/responses", "order": 10,
         "title": "Responses",
-        "print_function": "Responses_SettingParser::print"
+        "print_function": "*Responses_SettingParser::print"
     },
     {   "name": "responses", "alias": "decisions/responses"   },
-    {
-        "name": "responses/properties/name", "order": 10,
-        "render_response_property_function": "Responses_SettingParser::render_name_property"
-    },
-    {
-        "name": "responses/properties/deadline", "order": 20,
-        "render_response_property_function": "Responses_SettingParser::render_deadline_property"
-    },
-    {
-        "name": "responses/properties/word-limit", "order": 30,
-        "render_response_property_function": "Responses_SettingParser::render_wordlimit_property"
-    },
-    {
-        "name": "responses/properties/instructions", "order": 40,
-        "render_response_property_function": "Responses_SettingParser::render_instructions_property"
-    },
+    [   "responses/properties/name", 10, "*Responses_SettingParser::print_name"   ],
+    [   "responses/properties/deadline", 20, "*Responses_SettingParser::print_deadline"   ],
+    [   "responses/properties/word-limit", 30, "*Responses_SettingParser::print_wordlimit"   ],
+    [   "responses/properties/instructions", 40, "*Responses_SettingParser::print_instructions"   ],
     {
         "name": "__crosscheck/responses", "order": 800,
         "crosscheck_function": "Responses_SettingParser::crosscheck"

@@ -3,6 +3,8 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Responses_SettingParser extends SettingParser {
+    /** @var int|'$' */
+    public $ctr;
     /** @var array<string,int> */
     private $roundname_ctr = [];
     /** @var list<string> */
@@ -36,49 +38,44 @@ class Responses_SettingParser extends SettingParser {
         $sv->map_object_list_ids($sv->conf->resp_rounds(), "response");
     }
 
-    static function render_name_property(SettingValues $sv, $ctr) {
-        $sv->print_entry_group("response__{$ctr}__name", "Response name", [
+    function print_name(SettingValues $sv) {
+        $sv->print_entry_group("response__{$this->ctr}__name", "Response name", [
             "horizontal" => true,
             "control_after" => Ht::button(Icons::ui_use("trash"), ["class" => "ui js-settings-response-delete ml-2 need-tooltip", "aria-label" => "Delete response", "tabindex" => "-1"])
         ]);
     }
 
-    static function render_deadline_property(SettingValues $sv, $ctr) {
-        if ($sv->vstr("response__{$ctr}__open") == 1
-            && ($x = $sv->vstr("response__{$ctr}__done"))) {
-            $sv->conf->settings["response__{$ctr}__open"] = intval($x) - 7 * 86400;
+    function print_deadline(SettingValues $sv) {
+        if ($sv->vstr("response__{$this->ctr}__open") == 1
+            && ($x = $sv->vstr("response__{$this->ctr}__done"))) {
+            $sv->conf->settings["response__{$this->ctr}__open"] = intval($x) - 7 * 86400;
         }
-        $sv->print_entry_group("response__{$ctr}__open", "Start time", ["horizontal" => true]);
-        $sv->print_entry_group("response__{$ctr}__done", "Hard deadline", ["horizontal" => true]);
-        $sv->print_entry_group("response__{$ctr}__grace", "Grace period", ["horizontal" => true]);
+        $sv->print_entry_group("response__{$this->ctr}__open", "Start time", ["horizontal" => true]);
+        $sv->print_entry_group("response__{$this->ctr}__done", "Hard deadline", ["horizontal" => true]);
+        $sv->print_entry_group("response__{$this->ctr}__grace", "Grace period", ["horizontal" => true]);
     }
 
-    static function render_wordlimit_property(SettingValues $sv, $ctr) {
-        $sv->print_entry_group("response__{$ctr}__words", "Word limit", ["horizontal" => true], $ctr > 1 ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
+    function print_wordlimit(SettingValues $sv) {
+        $sv->print_entry_group("response__{$this->ctr}__words", "Word limit", ["horizontal" => true], is_int($this->ctr) && $this->ctr > 1 ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
     }
 
-    static function render_instructions_property(SettingValues $sv, $ctr) {
-        $sv->print_message_horizontal("response__{$ctr}__instructions", "Instructions");
+    function print_instructions(SettingValues $sv) {
+        $sv->print_message_horizontal("response__{$this->ctr}__instructions", "Instructions");
     }
 
-    static function print_one(SettingValues $sv, $ctr) {
-        $id = $sv->vstr("response__{$ctr}__id") ?? "new";
-        echo '<div id="response__', $ctr, '" class="form-g settings-response',
+    function print_one(SettingValues $sv) {
+        $id = $sv->vstr("response__{$this->ctr}__id") ?? "new";
+        echo '<div id="response__', $this->ctr, '" class="form-g settings-response',
             $id === "new" ? " is-new" : "", '">',
-            Ht::hidden("response__{$ctr}__id", $id);
-        if ($sv->has_req("response__{$ctr}__delete")) {
-            Ht::hidden("response__{$ctr}__delete", "1", ["data-default-value" => ""]);
+            Ht::hidden("response__{$this->ctr}__id", $id);
+        if ($sv->has_req("response__{$this->ctr}__delete")) {
+            Ht::hidden("response__{$this->ctr}__delete", "1", ["data-default-value" => ""]);
         }
-        foreach ($sv->group_members("responses/properties") as $gj) {
-            if (isset($gj->render_response_property_function)) {
-                Conf::xt_resolve_require($gj);
-                call_user_func($gj->render_response_property_function, $sv, $ctr, $gj);
-            }
-        }
+        $sv->print_group("responses/properties");
         echo '</div>';
     }
 
-    static function print(SettingValues $sv) {
+    function print(SettingValues $sv) {
         // Authors' response
         echo '<div class="form-g">';
         $sv->print_checkbox("response_active", '<strong>Collect authors’ responses to the reviews<span class="if-response-active">:</span></strong>', ["group_open" => true, "class" => "uich js-settings-resp-active"]);
@@ -88,11 +85,13 @@ class Responses_SettingParser extends SettingParser {
             '"><hr class="g">', Ht::hidden("has_responses", 1);
 
         foreach ($sv->object_list_counters("response") as $ctr) {
-            self::print_one($sv, $ctr);
+            $this->ctr = $ctr;
+            $this->print_one($sv);
         }
 
         echo '<template id="response__new" class="hidden">';
-        self::print_one($sv, '$');
+        $this->ctr = '$';
+        $this->print_one($sv);
         echo '</template>';
         if ($sv->editable("response__0__name")) {
             echo '<div class="form-g">',
