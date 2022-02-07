@@ -2,38 +2,6 @@
 // conference.php -- HotCRP central helper class (singleton)
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class Track {
-    const VIEW = 0;
-    const VIEWPDF = 1;
-    const VIEWREV = 2;
-    const VIEWREVID = 3;
-    const ASSREV = 4;
-    const UNASSREV = 5;
-    const VIEWTRACKER = 6;
-    const ADMIN = 7;
-    const HIDDENTAG = 8;
-    const VIEWALLREV = 9;
-
-    const BITS_VIEW = 0x1;        // 1 << VIEW
-    const BITS_REVIEW = 0x30;     // (1 << ASSREV) | (1 << UNASSREV)
-    const BITS_ADMIN = 0x80;      // 1 << ADMIN
-    const BITS_VIEWADMIN = 0x81;  // (1 << VIEW) | (1 << ADMIN)
-
-    /** @readonly */
-    static public $map = [
-        "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
-        "assrev" => 4, "unassrev" => 5, "viewtracker" => 6, "admin" => 7,
-        "hiddentag" => 8, "viewallrev" => 9
-    ];
-    /** @readonly */
-    static public $zero = [null, null, null, null, null, null, null, null, null, null];
-    /** @param int $perm
-     * @return bool */
-    static function permission_required($perm) {
-        return $perm === self::ADMIN || $perm === self::HIDDENTAG;
-    }
-}
-
 interface XtContext {
     /** @param string $str
      * @param object $xt
@@ -109,16 +77,16 @@ class Conf {
     private $_round_settings;
     /** @var ?list<ResponseRound> */
     private $_resp_rounds;
-    /** @var ?array<string,list<?string>> */
+    /** @var ?list<Track> */
     private $_tracks;
-    /** @var ?TagMap */
-    private $_tag_map;
-    /** @var bool */
-    private $_maybe_automatic_tags;
     /** @var ?list<string> */
     private $_track_tags;
     /** @var int */
     private $_track_sensitivity = 0;
+    /** @var ?TagMap */
+    private $_tag_map;
+    /** @var bool */
+    private $_maybe_automatic_tags;
     /** @var bool */
     private $_has_permtag = false;
     /** @var ?array<int,string> */
@@ -521,29 +489,25 @@ class Conf {
             return;
         }
         $this->_tracks = [];
-        $default_track = Track::$zero;
         $this->_track_tags = [];
-        foreach ((array) $j as $k => $v) {
-            if ($k !== "_") {
-                $this->_track_tags[] = $k;
+        $trest = new Track("");
+        foreach ((array) $j as $tag => $v) {
+            if ($tag === "" || $tag === "_") {
+                $tr = $trest;
+            } else if (!($tr = $this->track($tag))) {
+                $this->_tracks[] = $tr = new Track($tag);
             }
             if (!isset($v->viewpdf) && isset($v->view)) {
                 $v->viewpdf = $v->view;
             }
-            $t = Track::$zero;
             foreach (Track::$map as $tname => $idx) {
                 if (isset($v->$tname)) {
-                    $t[$idx] = $v->$tname;
+                    $tr->perm[$idx] = $v->$tname;
                     $this->_track_sensitivity |= 1 << $idx;
                 }
             }
-            if ($k === "_") {
-                $default_track = $t;
-            } else {
-                $this->_tracks[$k] = $t;
-            }
         }
-        $this->_tracks["_"] = $default_track;
+        $this->_tracks[] = $trest;
     }
 
     function refresh_options() {
@@ -1605,12 +1569,22 @@ class Conf {
         return $this->_track_tags ?? [];
     }
 
+    /** @param string $tag
+     * @return ?Track */
+    function track($tag) {
+        foreach ($this->_tracks ?? [] as $tr) {
+            if (strcasecmp($tr->tag, $tag) === 0)
+                return $tr;
+        }
+        return null;
+    }
+
     /** @param int $ttype
      * @return ?string */
     function permissive_track_tag_for(Contact $user, $ttype) {
-        foreach ($this->_tracks ?? [] as $t => $tr) {
-            if ($user->has_permission($tr[$ttype])) {
-                return $t;
+        foreach ($this->_tracks ?? [] as $tr) {
+            if ($user->has_permission($tr->perm[$ttype]) && !$tr->is_default) {
+                return $tr->tag;
             }
         }
         return null;
@@ -1621,10 +1595,10 @@ class Conf {
     function check_tracks(PaperInfo $prow, Contact $user, $ttype) {
         $unmatched = true;
         if ($this->_tracks !== null) {
-            foreach ($this->_tracks as $t => $tr) {
-                if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
+            foreach ($this->_tracks as $tr) {
+                if ($tr->is_default ? $unmatched : $prow->has_tag($tr->ltag)) {
                     $unmatched = false;
-                    if ($user->has_permission($tr[$ttype])) {
+                    if ($user->has_permission($tr->perm[$ttype])) {
                         return true;
                     }
                 }
@@ -1638,10 +1612,10 @@ class Conf {
     function check_required_tracks(PaperInfo $prow, Contact $user, $ttype) {
         if ($this->_track_sensitivity & (1 << $ttype)) {
             $unmatched = true;
-            foreach ($this->_tracks as $t => $tr) {
-                if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
+            foreach ($this->_tracks as $tr) {
+                if ($tr->is_default ? $unmatched : $prow->has_tag($tr->ltag)) {
                     $unmatched = false;
-                    if ($tr[$ttype] && $user->has_permission($tr[$ttype])) {
+                    if ($tr->perm[$ttype] && $user->has_permission($tr->perm[$ttype])) {
                         return true;
                     }
                 }
@@ -1655,20 +1629,21 @@ class Conf {
         return $this->check_required_tracks($prow, $user, Track::ADMIN);
     }
 
-    /** @return bool */
+    /** @param int $ttype
+     * @return bool */
     function check_default_track(Contact $user, $ttype) {
         return !$this->_tracks
-            || $user->has_permission($this->_tracks["_"][$ttype]);
+            || $user->has_permission($this->_tracks[count($this->_tracks) - 1]->perm[$ttype]);
     }
 
     /** @param int $ttype
      * @return bool */
     function check_any_tracks(Contact $user, $ttype) {
         if ($this->_tracks) {
-            foreach ($this->_tracks as $t => $tr) {
+            foreach ($this->_tracks as $tr) {
                 if (($ttype === Track::VIEW
-                     || $user->has_permission($tr[Track::VIEW]))
-                    && $user->has_permission($tr[$ttype])) {
+                     || $user->has_permission($tr->perm[Track::VIEW]))
+                    && $user->has_permission($tr->perm[$ttype])) {
                     return true;
                 }
             }
@@ -1679,9 +1654,9 @@ class Conf {
     /** @return bool */
     function check_any_admin_tracks(Contact $user) {
         if ($this->_track_sensitivity & Track::BITS_ADMIN) {
-            foreach ($this->_tracks as $t => $tr) {
-                if ($tr[Track::ADMIN]
-                    && $user->has_permission($tr[Track::ADMIN])) {
+            foreach ($this->_tracks as $tr) {
+                if ($tr->perm[Track::ADMIN]
+                    && $user->has_permission($tr->perm[Track::ADMIN])) {
                     return true;
                 }
             }
@@ -1689,13 +1664,14 @@ class Conf {
         return false;
     }
 
-    /** @return bool */
+    /** @param int $ttype
+     * @return bool */
     function check_all_tracks(Contact $user, $ttype) {
         if ($this->_tracks) {
-            foreach ($this->_tracks as $t => $tr) {
+            foreach ($this->_tracks as $tr) {
                 if (!(($ttype === Track::VIEW
-                       || $user->has_permission($tr[Track::VIEW]))
-                      && $user->has_permission($tr[$ttype]))) {
+                       || $user->has_permission($tr->perm[Track::VIEW]))
+                      && $user->has_permission($tr->perm[$ttype]))) {
                     return false;
                 }
             }
@@ -1703,7 +1679,8 @@ class Conf {
         return true;
     }
 
-    /** @return bool */
+    /** @param int $ttype
+     * @return bool */
     function check_track_sensitivity($ttype) {
         return ($this->_track_sensitivity & (1 << $ttype)) !== 0;
     }
@@ -1724,10 +1701,10 @@ class Conf {
     function check_paper_track_sensitivity(PaperInfo $prow, $ttype) {
         if ($this->_track_sensitivity & (1 << $ttype)) {
             $unmatched = true;
-            foreach ($this->_tracks as $t => $tr) {
-                if ($t === "_" ? $unmatched : $prow->has_tag($t)) {
+            foreach ($this->_tracks as $tr) {
+                if ($tr->is_default ? $unmatched : $prow->has_tag($tr->ltag)) {
                     $unmatched = false;
-                    if ($tr[$ttype]) {
+                    if ($tr->perm[$ttype]) {
                         return true;
                     }
                 }
@@ -1736,12 +1713,14 @@ class Conf {
         return false;
     }
 
-    /** @return ?string */
+    /** @param string $tag
+     * @param int $ttype
+     * @return ?string */
     function track_permission($tag, $ttype) {
         if ($this->_tracks) {
-            foreach ($this->_tracks as $t => $tr) {
-                if (strcasecmp($t, $tag) === 0) {
-                    return $tr[$ttype];
+            foreach ($this->_tracks as $tr) {
+                if (strcasecmp($tr->tag, $tag) === 0) {
+                    return $tr->perm[$ttype];
                 }
             }
         }
@@ -1752,8 +1731,8 @@ class Conf {
     function dangerous_track_mask(Contact $user) {
         $m = 0;
         if ($this->_tracks && $user->contactTags) {
-            foreach ($this->_tracks as $t => $tr) {
-                foreach ($tr as $i => $perm) {
+            foreach ($this->_tracks as $tr) {
+                foreach ($tr->perm as $i => $perm) {
                     if ($perm
                         && $perm[0] === "-"
                         && !$user->has_permission($perm)) {
