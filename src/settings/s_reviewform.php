@@ -500,10 +500,12 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print(SettingValues $sv) {
         echo Ht::hidden("has_review_form", 1);
+        echo '<div class="mb-4">',
+            '<div class="feedback is-note">Click on a field for more information.</div>';
         if (!$sv->conf->time_some_author_view_review()) {
-            echo '<div class="feedback is-note mb-4">Authors cannot see reviews at the moment.</div>';
+            echo '<div class="feedback is-note">Authors cannot see reviews at the moment.</div>';
         }
-        echo '<template id="rf__template" class="hidden">';
+        echo '</div><template id="rf__template" class="hidden">';
         echo '<div id="rf__$" class="settings-rf f-contain has-fold fold2c">',
             '<div id="rf__$__view" class="settings-rf-view fn2 ui js-foldup"></div>',
             '<div id="rf__$__edit" class="settings-rf-edit fx2">',

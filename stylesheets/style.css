@@ -343,7 +343,7 @@ span.nb {
 	display: inline-block; /* why? */
 	text-indent: 0;
 }
-.childfold, .js-foldup, :link label {
+.childfold, .js-foldup, .js-foldup label, :link label {
 	cursor: pointer;
 }
 .wait, body.wait input, body.wait button {
