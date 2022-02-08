@@ -8,8 +8,8 @@
 			"%PASSWORDLINK%\n\n",
 			"If you did not make this request, it’s safe to ignore this email.\n\n",
 			"The link will work for 3 days. Should it expire, obtain a new link using \"Forgot my password\".\n\n",
-			"        Site: %URL%/\n",
-			"       Email: %EMAIL%\n\n",
+			"* Site: %URL%/\n",
+			"* Email: %EMAIL%\n\n",
 			"If you already have an account under a different email address, you may merge this new account into that one. Go to your profile page and select \"Merge with another account\".\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
@@ -22,8 +22,8 @@
 		"body": [
 			"Greetings,\n\n",
 			"A system administrator has activated an account for you on the %CONFNAME% submission site.\n\n",
-			"        Site: %URL%/\n",
-			"       Email: %EMAIL%\n\n",
+			"* Site: %URL%/\n",
+			"* Email: %EMAIL%\n\n",
 			"%IF(NEEDPASSWORD)%",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
 			"%PASSWORDLINK%\n\n",
@@ -41,10 +41,10 @@
 		"body": [
 			"Greetings,\n\n",
 			"An account has been created for you on the %CONFNAME% submission site. You are now a contact for submission #%NUMBER%.%IF(ADMINUPDATE)% An administrator performed this update.%ENDIF%\n\n",
-			"        Site: %URL%/\n",
-			"       Email: %EMAIL%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n\n",
+			"* Site: %URL%/\n",
+			"* Email: %EMAIL%\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n\n",
 			"%IF(NEEDPASSWORD)%",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
 			"%PASSWORDLINK%\n\n",
@@ -62,8 +62,8 @@
 		"body": [
 			"Greetings,\n\n",
 			"You have been added to the program committee on the %CONFNAME% submission site.\n\n",
-			"        Site: %URL%/\n",
-			"       Email: %EMAIL%\n\n",
+			"* Site: %URL%/\n",
+			"* Email: %EMAIL%\n\n",
 			"%IF(NEEDPASSWORD)%",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
 			"%PASSWORDLINK%\n\n",
@@ -81,8 +81,8 @@
 		"body": [
 			"Greetings,\n\n",
 			"You are now a system administrator of the %CONFNAME% submission site.\n\n",
-			"        Site: %URL%/\n",
-			"       Email: %EMAIL%\n\n",
+			"* Site: %URL%/\n",
+			"* Email: %EMAIL%\n\n",
 			"%IF(NEEDPASSWORD)%",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
 			"%PASSWORDLINK%\n\n",
@@ -100,8 +100,8 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"Here is your account information for the %CONFNAME% submission site.\n\n",
-			"        Site: %URL%/\n",
-			"       Email: %EMAIL%\n\n",
+			"* Site: %URL%/\n",
+			"* Email: %EMAIL%\n\n",
 			"%IF(PASSWORDLINK)%",
 			"%IF(NEEDPASSWORD)%",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
@@ -171,9 +171,9 @@
 		"subject": "[%CONFSHORTNAME%] Registered #%NUMBER% %TITLEHINT%",
 		"body": [
 			"Submission #%PAPER% has been registered on the %CONFNAME% site.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
 			"%NOTES%%IF(REASON)%An administrator provided the following reason for this registration: %REASON%\n\n",
 			"%ELSEIF(ADMINUPDATE)%An administrator performed this registration.\n\n",
 			"%ENDIF%Contact %ADMIN% with any questions or concerns.\n\n",
@@ -186,9 +186,9 @@
 		"subject": "[%CONFSHORTNAME%] Updated #%NUMBER% %TITLEHINT%",
 		"body": [
 			"Submission #%PAPER% has been updated on the %CONFNAME% site.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
 			"%NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%\n\n",
 			"%ELSEIF(ADMINUPDATE)%An administrator performed this update.\n\n",
 			"%ENDIF%Contact %ADMIN% with any questions or concerns.\n\n",
@@ -201,9 +201,9 @@
 		"subject": "[%CONFSHORTNAME%] Submitted #%NUMBER% %TITLEHINT%",
 		"body": [
 			"Submission #%PAPER% is now ready for review on the %CONFNAME% site.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
 			"%NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%\n\n",
 			"%ELSEIF(ADMINUPDATE)%An administrator performed this update.\n\n",
 			"%ENDIF%Contact %ADMIN% with any questions or concerns.\n\n",
@@ -216,9 +216,9 @@
 		"subject": "[%CONFSHORTNAME%] Updated accepted #%NUMBER% %TITLEHINT%",
 		"body": [
 			"Accepted submission #%PAPER% has been updated on the %CONFNAME% submission site.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
 			"%NOTES%%IF(REASON)%An administrator provided the following reason for this update: %REASON%\n\n",
 			"%ELSEIF(ADMINUPDATE)%An administrator performed this update.\n\n",
 			"%ENDIF%Contact %ADMIN% with any questions or concerns.\n\n",
@@ -231,9 +231,9 @@
 		"subject": "[%CONFSHORTNAME%] New draft submission #%NUMBER% %TITLEHINT%",
 		"body": [
 			"A new draft submission for %CONFNAME% has been received.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Control notifications for new draft submissions on Profile > Preferences.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -244,9 +244,9 @@
 		"subject": "[%CONFSHORTNAME%] New submission #%NUMBER% %TITLEHINT%",
 		"body": [
 			"A new submission for %CONFNAME% has been received.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Control notifications for new submissions on Profile > Preferences.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -257,9 +257,9 @@
 		"subject": "[%CONFSHORTNAME%] Updated final version #%NUMBER% %TITLEHINT%",
 		"body": [
 			"The final version for %CONFNAME% submission #%NUMBER% has been updated. The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Control notifications for final version updates on Profile > Preferences.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -271,9 +271,9 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"An author of %CONFNAME% submission #%NUMBER% has withdrawn the submission from consideration. It will not be reviewed.%IF(REASON)% They gave the following reason: %REASON%%ENDIF%\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -286,9 +286,9 @@
 			"Dear %NAME%,\n\n",
 			"%CONFNAME% submission #%NUMBER% has been withdrawn from consideration and will not be reviewed.\n\n",
 			"%IF(REASON)%The submission was withdrawn by an administrator, who provided the following reason: %REASON%%ELSE%The submission was withdrawn by an administrator.%ENDIF%\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -301,9 +301,9 @@
 			"Dear %NAME%,\n\n",
 			"%CONFSHORTNAME% submission #%NUMBER%, which you reviewed or have been assigned to review, has been withdrawn from consideration for the conference.\n\n",
 			"Authors and administrators can withdraw submissions during the review process.%IF(REASON)% The following reason was provided: %REASON%%ENDIF%\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"You are not expected to complete your review (and the system will not allow it unless the submission is revived).\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
@@ -316,8 +316,8 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"Your %CONFNAME% submission #%NUMBER% has been removed from the submission database by an administrator. This can be done to eliminate duplicates. %IF(REASON)%The following reason was provided for deleting the submission: %REASON%%ENDIF%\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -331,13 +331,13 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.%IF(REASON)%\n\nThey supplied this note: %REASON%%ENDIF%\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"If you are willing to review this submission, you may enter your review on the conference site or complete a review form offline and upload it.%IF(DEADLINE(extrev_soft))% Your review is requested by %DEADLINE(extrev_soft)%.%ENDIF%\n\n",
 			"Once you've decided, please accept or decline this review request using one of these links.\n\n",
-			"      Accept: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&accept=1)%\n",
-			"     Decline: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&decline=1)%\n\n",
+			"* Accept: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&accept=1)%\n",
+			"* Decline: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&decline=1)%\n\n",
 			"%IF(NEEDPASSWORD)%",
 			"You haven't used the site as %EMAIL% before, so you may need to create a password to sign in. Use this link to set one up:\n\n",
 			"%PASSWORDLINK%\n\n",
@@ -356,9 +356,9 @@
 			"Greetings,\n\n",
 			"%REQUESTERCONTACT% would like %REVIEWERCONTACT% to review %CONFNAME% submission #%NUMBER%.%IF(REASON)% They supplied this note: %REASON%%ENDIF%\n\n",
 			"Visit the assignment page to approve or deny the proposal.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(assign, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(assign, p=%NUMBER%)%\n\n",
 			"%SIGNATURE%\n"
 		]
 	},
@@ -369,9 +369,9 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"Your proposal that %REVIEWERCONTACT% review %CONFNAME% submission #%NUMBER% has been denied by an administrator. You may want to propose someone else.\n%IF(REASON)%\nThey gave the following reason: %REASON%\n%ENDIF%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -383,8 +383,8 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"%REQUESTERNAME% has retracted a previous request that you review %CONFNAME% submission #%NUMBER%. There's no need to complete your review.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -396,9 +396,9 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"%REVIEWERCONTACT% has confirmed their intention to complete the review you requested of %CONFNAME% submission #%NUMBER%.\n%IF(REASON)%\nThey gave the following reason: %REASON%\n%ENDIF%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"%SIGNATURE%\n"
 		]
 	},
@@ -409,9 +409,9 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"%REVIEWERCONTACT% cannot complete the review you requested of %CONFNAME% submission #%NUMBER%. You may want to find an alternate reviewer.\n%IF(REASON)%\nThey gave the following reason: %REASON%\n%ENDIF%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"%SIGNATURE%\n"
 		]
 	},
@@ -422,10 +422,10 @@
 		"body": [
 			"Greetings,\n\n",
 			"%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been submitted for approval.\n\n",
-			" Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Review by: %OPT(REVIEWAUTHOR)%\n",
+			"* Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%REVIEWS%\n"
@@ -438,10 +438,10 @@
 		"body": [
 			"Greetings,\n\n",
 			"%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been resubmitted for approval.\n\n",
-			" Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Review by: %OPT(REVIEWAUTHOR)%\n",
+			"* Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n\n",
 			"You can approve the review at the link above.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
@@ -455,10 +455,10 @@
 		"body": [
 			"Greetings,\n\n",
 			"%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been approved.\n\n",
-			" Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Review by: %OPT(REVIEWAUTHOR)%\n",
+			"* Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%REVIEWS%\n"
@@ -471,10 +471,10 @@
 		"body": [
 			"Greetings,\n\n",
 			"%REVIEWAUTHOR%'s review for %CONFNAME% submission #%NUMBER% has been edited by its requester. The review has not yet been approved.\n\n",
-			" Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Review by: %OPT(REVIEWAUTHOR)%\n",
+			"* Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%REVIEWS%\n"
@@ -487,10 +487,10 @@
 		"body": [
 			"Greetings,\n\n",
 			"%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been submitted. The review is available on the submission site.\n\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Review by: %OPT(REVIEWAUTHOR)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
@@ -504,10 +504,10 @@
 		"body": [
 			"Greetings,\n\n",
 			"%REVIEWNAME% for %CONFNAME% submission #%NUMBER% has been updated. The review is available on the submission site.\n\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"   Review by: %OPT(REVIEWAUTHOR)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Review by: %OPT(REVIEWAUTHOR)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
@@ -521,8 +521,8 @@
 		"subject": "[%CONFSHORTNAME%] Comment for #%NUMBER% %TITLEHINT%",
 		"body": [
 			"A comment for %CONFNAME% submission #%NUMBER% has been posted. For the most up-to-date comments, or to unsubscribe from email notification, see the submission site.\n\n",
-			"       Title: %TITLE%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%COMMENTS%\n"
@@ -534,8 +534,8 @@
 		"subject": "[%CONFSHORTNAME%] Mentioned in #%NUMBER% %TITLEHINT%",
 		"body": [
 			"A comment for %CONFNAME% submission #%NUMBER% has been posted that mentions you. For the most up-to-date comments, see the submission site.\n\n",
-			"       Title: %TITLE%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%COMMENTS%\n"
@@ -547,8 +547,8 @@
 		"subject": "[%CONFSHORTNAME%] Comment for administrators of #%NUMBER% %TITLEHINT%",
 		"body": [
 			"A comment for the administrators of %CONFNAME% submission #%NUMBER% has been posted. For the most up-to-date comments, see the submission site.\n\n",
-			"       Title: %TITLE%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%COMMENTS%\n"
@@ -560,8 +560,8 @@
 		"subject": "[%CONFSHORTNAME%] Response for #%NUMBER% %TITLEHINT%",
 		"body": [
 			"The authors' response for %CONFNAME% submission #%NUMBER% is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
-			"       Title: %TITLE%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%COMMENTS%\n"
@@ -573,8 +573,8 @@
 		"subject": "[%CONFSHORTNAME%] Draft response for #%NUMBER% %TITLEHINT%",
 		"body": [
 			"The draft authors' response for %CONFNAME% submission #%NUMBER% has been updated as shown below. This response has not yet been submitted to reviewers. For the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
-			"       Title: %TITLE%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n\n",
 			"%COMMENTS%\n"
@@ -596,8 +596,8 @@
 		"body": [
 			"Dear authors,\n\n",
 			"Your message here.\n\n",
-			"       Title: %TITLE%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
 		]
@@ -625,8 +625,8 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"Your message here.\n\n",
-			"       Title: %TITLE%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"%SIGNATURE%\n"
 		]
 	},
@@ -640,9 +640,9 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"You have been assigned new reviews for %CONFNAME%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%.%ENDIF%\n\n",
-			"             Site: %URL%/\n",
-			"     Your reviews: %URL(search, q=re:me)%\n",
-			"  New assignments: %NEWASSIGNMENTS%\n\n",
+			"* Your reviews: %URL(search, q=re:me)%\n",
+			"* New assignments: %NEWASSIGNMENTS%\n\n",
+			"* Site: %URL%/\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
@@ -659,9 +659,9 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"This is a reminder to finish your review for %CONFNAME% submission #%NUMBER%. %IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF% If you are unable to complete the review, please decline the review using the site or contact the person who requested the review directly.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
@@ -679,9 +679,9 @@
 		"body": [
 			"Dear %NAME%,\n\n",
 			"This is a reminder from %REQUESTERCONTACT% to finish your review for %CONFNAME% submission #%NUMBER%.%IF(REVIEWDEADLINE)% Reviews are requested by %REVIEWDEADLINE%. %ENDIF%If you are unable to complete the review, please decline the review using the site or contact %REQUESTERNAME% directly.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
 			"%SIGNATURE%\n"
@@ -697,9 +697,9 @@
 		"body": [
 			"Dear author(s),\n\n",
 			"The %CONFNAME% program committee is delighted to inform you that your submission #%NUMBER% has been accepted to appear in the conference.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
 			"%NUMACCEPTED% of %NUMSUBMITTED% submissions were accepted. Congratulations!\n\n",
 			"Visit the submission site for reviews, comments, and related information. Reviews and comments are also included below.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
@@ -718,9 +718,9 @@
 		"body": [
 			"Dear author(s),\n\n",
 			"The %CONFNAME% program committee is sorry to inform you that your submission #%NUMBER% was rejected, and will not appear in the conference.\n\n",
-			"       Title: %TITLE%\n",
-			" %_(Authors, 11)%: %OPT(AUTHORS)%\n",
-			"        Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
+			"* Title: %TITLE%\n",
+			"* %_(Authors)%: %OPT(AUTHORS)%\n",
+			"* Site: %URL(paper, p=%NUMBER%, %AUTHORVIEWCAPABILITY%)%\n\n",
 			"%NUMACCEPTED% papers were accepted out of %NUMSUBMITTED% submissions.\n\n",
 			"Visit the submission site for reviews, comments, and related information. Reviews and comments are also included below.\n\n",
 			"Contact %ADMIN% with any questions or concerns.\n\n",
