@@ -481,6 +481,8 @@ xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 9, tr
             "+ This is \n- a thing \n- to be \n- wrapped.\n");
 xassert_eqq(prefix_word_wrap("+ ", "This\nis\na thing\nto\nbe wrapped.", "- ", 9, true),
             "+ This\n- is\n- a thing\n- to\n- be \n- wrapped.\n");
+xassert_eqq(prefix_word_wrap("+ long lengthy long long ", "This is a thing to be wrapped.", "- ", 10),
+            "+ long lengthy long long\n- This is\n- a thing\n- to be\n- wrapped.\n");
 
 xassert_eqq(!!preg_match('/\A\pZ\z/u', ' '), true);
 

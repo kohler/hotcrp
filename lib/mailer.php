@@ -635,25 +635,24 @@ class Mailer {
             } else if (strpos($line, "%") === false) {
                 $text .= prefix_word_wrap("", $line, 0, $this->width, $this->flowed);
             } else {
-                if ($line[0] === " " || $line[0] === "\t") {
-                    if (preg_match('/\A([ \t]*)%(\w+(?:|\([^\)]*\)))%(:.*)\z/s', $line, $m)
-                        && $this->expandvar($m[2], true)) {
-                        $line = $m[1] . $this->expandvar($m[2], false) . $m[3];
-                    }
-                    if (preg_match('/\A([ \t]*.*?: )(%(\w+(?:|\([^\)]*\)))%|\S+)\s*\z/s', $line, $m)
-                        && ($tl = tab_width($m[1], true)) <= 20) {
-                        if (str_starts_with($m[3] ?? "", "OPT(")) {
-                            $yes = $this->expandvar($m[3], true);
-                            if ($yes) {
-                                $text .= prefix_word_wrap($m[1], $this->expandvar($m[3], false), $tl, $this->width, $this->flowed);
-                            } else if ($yes === null) {
-                                $text .= $line . "\n";
-                            }
-                        } else {
-                            $text .= $this->_lineexpand($m[1], $m[2], $tl);
+                if (($line[0] === " " || $line[0] === "\t" || $line[0] === "*")
+                    && preg_match('/\A([ *\t]*)%(\w+(?:|\([^\)]*\)))%(: .*)\z/s', $line, $m)
+                    && $this->expandvar($m[2], true)) {
+                    $line = $m[1] . $this->expandvar($m[2], false) . $m[3];
+                }
+                if (($line[0] === " " || $line[0] === "\t" || $line[0] === "*")
+                    && preg_match('/\A([ \t]*\*[ \t]+|[ \t]*.*?: (?=%))(.*?: |)(%(\w+(?:|\([^\)]*\)))%)\s*\z/s', $line, $m)
+                    && ($tl = tab_width($m[1], true)) <= 20) {
+                    if (str_starts_with($m[4] ?? "", "OPT(")) {
+                        if (($yes = $this->expandvar($m[4], true))) {
+                            $text .= prefix_word_wrap($m[1] . $m[2], $this->expandvar($m[4], false), $tl, $this->width, $this->flowed);
+                        } else if ($yes === null) {
+                            $text .= $line . "\n";
                         }
-                        continue;
+                    } else {
+                        $text .= $this->_lineexpand($m[1] . $m[2], $m[3], $tl);
                     }
+                    continue;
                 }
                 $text .= $this->_lineexpand("", $line, 0);
             }

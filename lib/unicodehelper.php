@@ -273,9 +273,8 @@ class UnicodeHelper {
      * @return string */
     static function utf8_word_prefix($str, $len) {
         if (strlen($str) > $len
-            && $len > 0
-            && (preg_match('/\A\pM*\X{0,' . ($len - 1) . '}(?!\pZ|\s)\X(?=\pZ|\s)/u', $str, $m)
-                || preg_match('/\A\pM*\X{1,' . $len . '}(?:(?!\pZ|\s)\X)*/u', $str, $m))) {
+            && (preg_match('/\A\pM*\X{0,' . max($len - 1, 0) . '}(?!\pZ|\s)\X(?=\pZ|\s)/u', $str, $m)
+                || preg_match('/\A\pM*\X{1,' . max($len, 1) . '}(?:(?!\pZ|\s)\X)*/u', $str, $m))) {
             return $m[0];
         } else {
             return $str;

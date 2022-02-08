@@ -213,17 +213,30 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = f
     }
     $width = $width ?? 75;
 
-    $prefixlen = strlen($prefix);
-    $out = $prefixlen > $indentlen ? "$prefix\n" : $prefix;
-    $wx = $width - min($prefixlen, $indentlen);
+    $out = $prefix;
+    $wx = max($width - strlen($prefix), 0);
+    $first = true;
+    $itext = $text;
 
     while (($line = UnicodeHelper::utf8_line_break($text, $wx, $flowed)) !== false) {
-        if (strlen($out) === $prefixlen) {
+        if ($first
+            && $wx < $width - $indentlen
+            && strlen($line) > $wx
+            && $out !== ""
+            && !ctype_space($out)
+            && (!$flowed || strlen(rtrim($line)) > $wx)) {
+            // `$prefix` too long for even one word: add a line break and restart
+            $out = ($flowed ? $out : rtrim($out)) . "\n";
+            $text = $itext;
+            $wx = $width - $indentlen;
+        } else if ($first) {
+            // finish first line
             $out .= $line . "\n";
             $wx = $width - $indentlen;
         } else {
             $out .= $indent . preg_replace('/\A\pZ+/u', '', $line) . "\n";
         }
+        $first = false;
     }
 
     if (!str_ends_with($out, "\n")) {
