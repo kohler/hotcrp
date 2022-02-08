@@ -211,11 +211,11 @@ class Options_SettingRenderer {
         Ht::stash_html('<div id="settings-sf-caption-choices" class="hidden"><p>Enter choices one per line.</p></div>', 'settings-sf-caption-choices');
         echo Ht::unstash();
 
+        if ($sv->enumerate("sf__")) {
+            echo '<div class="feedback is-note mb-4">Click on a field for more information.</div>';
+        }
         echo '<div id="settings-sform" class="c">';
         foreach ($sv->enumerate("sf__") as $ctr) {
-            if ($ctr === 1) {
-                echo '<div class="feedback is-note mb-4">Click on a field for more information.</div>';
-            }
             $this->print_one_option($sv, $ctr);
         }
         echo "</div>";
