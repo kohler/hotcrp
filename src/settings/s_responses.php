@@ -5,8 +5,6 @@
 class Responses_SettingParser extends SettingParser {
     /** @var int|'$' */
     public $ctr;
-    /** @var array<string,int> */
-    private $roundname_ctr = [];
     /** @var list<string> */
     private $round_transform = [];
 
@@ -63,13 +61,14 @@ class Responses_SettingParser extends SettingParser {
         $sv->print_message_horizontal("response__{$this->ctr}__instructions", "Instructions");
     }
 
-    function print_one(SettingValues $sv) {
-        $id = $sv->vstr("response__{$this->ctr}__id") ?? "new";
-        echo '<div id="response__', $this->ctr, '" class="form-g settings-response',
+    function print_one(SettingValues $sv, $ctr) {
+        $this->ctr = $ctr;
+        $id = $sv->vstr("response__{$ctr}__id") ?? "new";
+        echo '<div id="response__', $ctr, '" class="form-g settings-response',
             $id === "new" ? " is-new" : "", '">',
-            Ht::hidden("response__{$this->ctr}__id", $id);
-        if ($sv->has_req("response__{$this->ctr}__delete")) {
-            Ht::hidden("response__{$this->ctr}__delete", "1", ["data-default-value" => ""]);
+            Ht::hidden("response__{$ctr}__id", $id);
+        if ($sv->has_req("response__{$ctr}__delete")) {
+            Ht::hidden("response__{$ctr}__delete", "1", ["data-default-value" => ""]);
         }
         $sv->print_group("responses/properties");
         echo '</div>';
@@ -85,13 +84,11 @@ class Responses_SettingParser extends SettingParser {
             '"><hr class="g">', Ht::hidden("has_responses", 1);
 
         foreach ($sv->object_list_counters("response") as $ctr) {
-            $this->ctr = $ctr;
-            $this->print_one($sv);
+            $this->print_one($sv, $ctr);
         }
 
         echo '<template id="response__new" class="hidden">';
-        $this->ctr = '$';
-        $this->print_one($sv);
+        $this->print_one($sv, '$');
         echo '</template>';
         if ($sv->editable("response__0__name")) {
             echo '<div class="form-g">',
@@ -113,12 +110,6 @@ class Responses_SettingParser extends SettingParser {
                 $rrd->name = $lname = "";
             } else if (($error = Conf::resp_round_name_error($rrd->name))) {
                 $sv->error_at($si->name, "<0>{$error}");
-            }
-            if (($ectr = $this->roundname_ctr[$lname] ?? null) !== null) {
-                $sv->error_at($si->name, "<0>Duplicate response name ‘" . ($lname ? : "unnamed") . "’");
-                $sv->error_at("response__{$ectr}__name");
-            } else {
-                $this->roundname_ctr[$lname] = (int) $si->part1;
             }
             return true;
         } else if ($si->part2 === "__condition") {
@@ -149,6 +140,7 @@ class Responses_SettingParser extends SettingParser {
                     $this->round_transform[] = "when {$rrd->number} then 0";
                 }
             } else {
+                $sv->error_if_duplicate_component("response__", $ctr, "__name", "Response name");
                 $sv->check_date_before("response__{$ctr}__open", "response__{$ctr}__done", false);
                 array_splice($rrds, $rrd->name === "" ? 0 : count($rrds), 0, [$rrd]);
             }
