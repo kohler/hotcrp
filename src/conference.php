@@ -496,6 +496,7 @@ class Conf {
                 $tr = $trest;
             } else if (!($tr = $this->track($tag))) {
                 $this->_tracks[] = $tr = new Track($tag);
+                $this->_track_tags[] = $tag;
             }
             if (!isset($v->viewpdf) && isset($v->view)) {
                 $v->viewpdf = $v->view;
