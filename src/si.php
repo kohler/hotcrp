@@ -76,7 +76,7 @@ class Si {
     const SI_SLICE = 4;
     const SI_OPT = 8;
     const SI_NEGATE = 16;
-    const SI_COMPONENT = 32;
+    const SI_MEMBER = 32;
 
     static private $key_storage = [
         "autogrow" => "is_bool",
@@ -184,10 +184,10 @@ class Si {
         } else if ($dot === 3 && str_starts_with($s, "msg")) {
             $this->storage_type = self::SI_DATA;
             $this->default_message = $this->default_message ?? substr($s, 4);
-        } else if ($dot === 3 && str_starts_with($s, "cmp")) {
+        } else if ($dot === 6 && str_starts_with($s, "member")) {
             assert($this->part0 !== null);
-            $this->storage_type = self::SI_COMPONENT;
-            $this->storage = substr($s, 4);
+            $this->storage_type = self::SI_MEMBER;
+            $this->storage = substr($s, 7);
         } else if ($dot === 6 && str_starts_with($s, "negval")) {
             $this->storage_type = self::SI_VALUE | self::SI_SLICE | self::SI_NEGATE;
             $this->storage = substr($s, 7);

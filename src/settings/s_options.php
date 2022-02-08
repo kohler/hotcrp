@@ -212,7 +212,7 @@ class Options_SettingRenderer {
         echo Ht::unstash();
 
         echo '<div id="settings-sform" class="c">';
-        foreach ($sv->object_list_counters("sf") as $ctr) {
+        foreach ($sv->enumerate("sf__") as $ctr) {
             $this->print_one_option($sv, $ctr);
         }
         echo "</div>";
@@ -338,8 +338,8 @@ class Options_SettingParser extends SettingParser {
         return $opts;
     }
 
-    function set_object_list_ids(SettingValues $sv, Si $si) {
-        $sv->map_object_list_ids(self::configurable_options($sv->conf), "sf");
+    function prepare_enumeration(SettingValues $sv, Si $si) {
+        $sv->map_enumeration("sf__", self::configurable_options($sv->conf));
     }
 
     /** @return bool */
@@ -351,7 +351,7 @@ class Options_SettingParser extends SettingParser {
             }
             $sv->save($si, $n);
         }
-        $sv->error_if_duplicate_component($si->part0, $si->part1, $si->part2, "Field name");
+        $sv->error_if_duplicate_member($si->part0, $si->part1, $si->part2, "Field name");
         return true;
     }
 
@@ -454,8 +454,8 @@ class Options_SettingParser extends SettingParser {
             $sv->error_at("options", "<0>You modified options settings in another tab. Please reload.");
         }
         $nsfj = [];
-        foreach ($sv->object_list_counters("sf") as $ctr) {
-            $sfj = $sv->parse_components("sf__{$ctr}");
+        foreach ($sv->enumerate("sf__") as $ctr) {
+            $sfj = $sv->parse_members("sf__{$ctr}");
             if ($sv->reqstr("sf__{$ctr}__delete")) {
                 if ($sfj->id !== DTYPE_INVALID) {
                     $this->_delete_optionids[] = $sfj->id;

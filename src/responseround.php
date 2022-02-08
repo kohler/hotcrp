@@ -4,21 +4,21 @@
 
 class ResponseRound {
     /** @var bool */
-    public $unnamed;
+    public $unnamed = false;
     /** @var string */
     public $name;
     /** @var int */
     public $number;
     /** @var bool */
-    public $active;
+    public $active = false;
     /** @var int */
-    public $open;
+    public $open = 0;
     /** @var int */
-    public $done;
+    public $done = 0;
     /** @var int */
-    public $grace;
+    public $grace = 0;
     /** @var int */
-    public $words;
+    public $words = 500;
     /** @var ?PaperSearch */
     public $search;
     /** @var ?string */

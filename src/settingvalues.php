@@ -8,7 +8,7 @@ class SettingParser {
     }
 
     /** @return void */
-    function set_object_list_ids(SettingValues $sv, Si $si) {
+    function prepare_enumeration(SettingValues $sv, Si $si) {
     }
 
     /** @return bool */
@@ -105,7 +105,7 @@ class SettingValues extends MessageSet {
     /** @var array<string,mixed> */
     private $_explicit_oldv = [];
     /** @var array<string,true> */
-    private $_ensure_object_list_ids = [];
+    private $_ensure_enumerations = [];
 
     /** @var ?object */
     public $cur_object;
@@ -429,7 +429,7 @@ class SettingValues extends MessageSet {
             $val = $this->conf->setting_data($si->storage_name()) ?? $si->default_value;
         } else if ($si->storage_type & Si::SI_VALUE) {
             $val = $this->conf->setting($si->storage_name()) ?? $si->default_value;
-        } else if (($si->storage_type & Si::SI_COMPONENT)
+        } else if (($si->storage_type & Si::SI_MEMBER)
                    && ($obj = $this->objectv($si->part0 . $si->part1))) {
             $val = $obj->{$si->storage_name()};
         } else {
@@ -520,7 +520,7 @@ class SettingValues extends MessageSet {
         if (!array_key_exists($name, $this->_explicit_oldv)) {
             $si = is_string($id) ? $this->si($id) : $id;
             if ($si && $si->parser_class) {
-                $si->part0 !== null && $this->ensure_object_list_ids($si->part0);
+                $si->part0 !== null && $this->ensure_enumeration($si->part0);
                 $this->si_parser($si)->set_oldv($this, $si);
             }
         }
@@ -529,58 +529,60 @@ class SettingValues extends MessageSet {
     }
 
     /** @param string $pfx */
-    private function ensure_object_list_ids($pfx) {
-        if (!isset($this->_ensure_object_list_ids[$pfx])) {
-            $this->_ensure_object_list_ids[$pfx] = true;
+    private function ensure_enumeration($pfx) {
+        if (!isset($this->_ensure_enumerations[$pfx])) {
+            $this->_ensure_enumerations[$pfx] = true;
             if (str_ends_with($pfx, "__")
                 && ($si = $this->conf->si("{$pfx}1"))
                 && $si->parser_class) {
-                $this->si_parser($si)->set_object_list_ids($this, $si);
+                $this->si_parser($si)->prepare_enumeration($this, $si);
             } else if (($xpfx = preg_replace('/__\d+\z/', '__', $pfx)) !== $pfx) {
-                $this->ensure_object_list_ids($xpfx);
+                $this->ensure_enumeration($xpfx);
             }
         }
     }
 
-    /** @param array $map
-     * @param string $pfx */
-    function map_object_list_ids($map, $pfx) {
+    /** @param string $pfx
+     * @param array $map */
+    function map_enumeration($pfx, $map) {
+        assert(str_ends_with($pfx, "__"));
         $ctr = 1;
         if ($this->_use_req) {
             $used = [];
-            while (($x = $this->reqstr("{$pfx}__{$ctr}__id")) !== null) {
+            while (($x = $this->reqstr("{$pfx}{$ctr}__id")) !== null) {
                 $used[$x] = true;
                 ++$ctr;
             }
             foreach ($map as $id => $obj) {
                 if (!isset($used[$id])) {
-                    $this->set_req("{$pfx}__{$ctr}__id", (string) $id);
+                    $this->set_req("{$pfx}{$ctr}__id", (string) $id);
                     ++$ctr;
                 }
             }
         } else {
             foreach ($map as $id => $obj) {
-                $this->set_oldv("{$pfx}__{$ctr}__id", (string) $id);
-                $this->set_req("{$pfx}__{$ctr}__id", (string) $id);
+                $this->set_oldv("{$pfx}{$ctr}__id", (string) $id);
+                $this->set_req("{$pfx}{$ctr}__id", (string) $id);
                 ++$ctr;
             }
         }
-        unset($this->req["{$pfx}__{$ctr}__id"]);
+        unset($this->req["{$pfx}{$ctr}__id"]);
     }
 
     /** @param string $pfx
      * @return list<int> */
-    function object_list_counters($pfx) {
-        $this->ensure_object_list_ids("{$pfx}__");
+    function enumerate($pfx) {
+        assert(str_ends_with($pfx, "__"));
+        $this->ensure_enumeration($pfx);
         $ctrs = [];
-        for ($ctr = 1; isset($this->req["{$pfx}__{$ctr}__id"]); ++$ctr) {
+        for ($ctr = 1; isset($this->req["{$pfx}{$ctr}__id"]); ++$ctr) {
             $ctrs[] = $ctr;
         }
-        if ($this->conf->si("{$pfx}__1__order")) {
+        if ($this->conf->si("{$pfx}1__order")) {
             usort($ctrs, function ($a, $b) use ($pfx) {
-                $ao = $this->vstr("{$pfx}__{$a}__order");
+                $ao = $this->vstr("{$pfx}{$a}__order");
                 $an = is_numeric($ao);
-                $bo = $this->vstr("{$pfx}__{$b}__order");
+                $bo = $this->vstr("{$pfx}{$b}__order");
                 $bn = is_numeric($bo);
                 if ($an && $bn) {
                     return floatval($ao) <=> floatval($bo);
@@ -595,11 +597,11 @@ class SettingValues extends MessageSet {
     }
 
     /** @template T
-     * @param array<T> $map
      * @param string $pfx
+     * @param array<T> $map
      * @return ?T */
-    function object_list_lookup($map, $pfx) {
-        $this->ensure_object_list_ids($pfx);
+    function unmap_enumeration_member($pfx, $map) {
+        $this->ensure_enumeration($pfx);
         $x = $this->reqstr("{$pfx}__id");
         if ($x !== null && $x !== "" && $x !== "new") {
             return $map[$x] ?? null;
@@ -608,43 +610,49 @@ class SettingValues extends MessageSet {
         }
     }
 
-    /** @param string $prefix
-     * @param string $suffix
-     * @param string $v
+    /** @param string $pfx
+     * @param string $sfx
+     * @param string $needle
      * @param ?int $min_ctr
      * @return ?int */
-    function component_search($prefix, $suffix, $v, $min_ctr = null) {
+    function search_enumeration($pfx, $sfx, $needle, $min_ctr = null) {
+        $this->ensure_enumeration($pfx);
         $result = null;
         $oim = $this->swap_ignore_messages(true);
         $collator = $this->conf->collator();
-        for ($i = $min_ctr ?? 1; isset($this->req["{$prefix}{$i}__id"]); ++$i) {
-            if (!$this->reqstr("{$prefix}{$i}__delete")) {
-                $si1 = $this->si("{$prefix}{$i}{$suffix}");
-                if ($this->has_req($si1->name)) {
-                    $v1 = $this->base_parse_req($si1);
-                } else {
-                    $v1 = $this->oldv($si1);
-                }
-                if ($v1 !== "" && $collator->compare($v, $v1) === 0) {
-                    $result = $i;
-                    break;
-                }
+        for ($i = $min_ctr ?? 1; isset($this->req["{$pfx}{$i}__id"]); ++$i) {
+            $si1 = $this->si("{$pfx}{$i}{$sfx}");
+            if ($this->has_req($si1->name)) {
+                $v1 = $this->base_parse_req($si1);
+            } else {
+                $v1 = $this->oldv($si1);
+            }
+            if ($v1 !== null && $collator->compare($needle, $v1) === 0) {
+                $result = $i;
+                break;
             }
         }
         $this->swap_ignore_messages($oim);
         return $result;
     }
 
-    /** @param string $prefix
+    /** @param string $pfx
      * @param null|int|string $ctr
-     * @param string $suffix
-     * @param string $error_prefix */
-    function error_if_duplicate_component($prefix, $ctr, $suffix, $error_prefix) {
-        if (is_int($ctr) || (is_string($ctr) && ctype_digit($ctr))) {
-            $v = $this->vstr("{$prefix}{$ctr}{$suffix}");
-            if (($ctr1 = $this->component_search($prefix, $suffix, $v, (int) $ctr + 1))) {
-                $this->error_at("{$prefix}{$ctr}{$suffix}", "<0>{$error_prefix} ‘{$v}’ is not unique");
-                $this->error_at("{$prefix}{$ctr1}{$suffix}");
+     * @param string $sfx
+     * @param string $description */
+    function error_if_duplicate_member($pfx, $ctr, $sfx, $description) {
+        if ((is_int($ctr) || (is_string($ctr) && ctype_digit($ctr)))
+            && !$this->reqstr("{$pfx}{$ctr}__delete")) {
+            $v = $this->vstr("{$pfx}{$ctr}{$sfx}");
+            $ctr1 = (int) $ctr + 1;
+            while (($ctr1 = $this->search_enumeration($pfx, $sfx, $v, $ctr1))
+                   && $this->reqstr("{$pfx}{$ctr1}__delete")) {
+                ++$ctr1;
+            }
+            if ($ctr1) {
+                $v = $v === "" ? "(empty)" : $v;
+                $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v}’ is not unique");
+                $this->error_at("{$pfx}{$ctr1}{$sfx}");
             }
         }
     }
@@ -714,7 +722,7 @@ class SettingValues extends MessageSet {
      * @param Si $si
      * @return mixed */
     private function si_savedv($storage_name, $si) {
-        assert(($si->storage_type & Si::SI_COMPONENT) === 0);
+        assert(($si->storage_type & Si::SI_MEMBER) === 0);
         if (array_key_exists($storage_name, $this->_savedv)) {
             $v = $this->_savedv[$storage_name];
             if ($v !== null) {
@@ -963,7 +971,8 @@ class SettingValues extends MessageSet {
      * @return string */
     function entry($name, $js = null) {
         $si = $this->si($name);
-        $js = $js ?? [];
+        $v = $this->vstr($si);
+        $js = $this->sjs($si, $js ?? []);
         if ($si->size && !isset($js["size"])) {
             $js["size"] = $si->size;
         }
@@ -973,13 +982,12 @@ class SettingValues extends MessageSet {
         if ($si->autogrow) {
             $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
         }
-        $v = $this->vstr($si);
         if ($si->default_value !== null
             && isset($js["placeholder"])
             && $v === (string) $si->default_value) {
             $v = "";
         }
-        return Ht::entry($name, $v, $this->sjs($si, $js));
+        return Ht::entry($name, $v, $js);
     }
 
     /** @param string $name
@@ -1064,24 +1072,20 @@ class SettingValues extends MessageSet {
     function textarea($name, $js = null) {
         $si = $this->si($name);
         $v = $this->vstr($si);
-        $rows = 10;
-        if ($si->size) {
-            $rows = $si->size;
-        }
-        $js = $js ?? [];
-        if ($si->placeholder !== null) {
+        $js = $this->sjs($si, $js ?? []);
+        if ($si->placeholder !== null && !isset($js["placeholder"])) {
             $js["placeholder"] = $si->placeholder;
         }
-        if ($si->autogrow || $si->autogrow === null) {
-            $js["class"] = ltrim(($js["class"] ?? "") . " need-autogrow");
+        if ($si->autogrow ?? true) {
+            $js["class"] = self::add_class($js["class"] ?? "", "need-autogrow");
         }
         if (!isset($js["rows"])) {
-            $js["rows"] = $rows;
+            $js["rows"] = $si->size ? : 10;
         }
         if (!isset($js["cols"])) {
             $js["cols"] = 80;
         }
-        return Ht::textarea($name, $v, $this->sjs($si, $js));
+        return Ht::textarea($name, $v, $js);
     }
 
     /** @param string $name
@@ -1217,7 +1221,7 @@ class SettingValues extends MessageSet {
         if ($value === null) {
             error_log("setting {$si->name}: setting value to null: " . debug_string_backtrace());
         }
-        $component = ($si->storage_type & Si::SI_COMPONENT) !== 0;
+        $member = ($si->storage_type & Si::SI_MEMBER) !== 0;
         if (!$si || $si->storage_type === Si::SI_NONE) {
             error_log("setting {$si->name}: no setting or cannot save value");
             return;
@@ -1226,7 +1230,7 @@ class SettingValues extends MessageSet {
             $value = !$value;
         }
         if ($value !== null
-            && !$component
+            && !$member
             && !($si->storage_type & Si::SI_DATA ? is_string($value) : is_int($value) || is_bool($value))) {
             error_log(caller_landmark() . ": setting {$si->name}: invalid value " . var_export($value, true));
             return;
@@ -1240,7 +1244,7 @@ class SettingValues extends MessageSet {
         }
 
         $s = $si->storage_name();
-        if ($component) {
+        if ($member) {
             $this->cur_object->{$s} = $value1;
         } else if ($si->storage_type & Si::SI_SLICE) {
             if (!isset($this->_savedv[$s])) {
@@ -1287,7 +1291,7 @@ class SettingValues extends MessageSet {
     function unsave($id) {
         $si = is_string($id) ? $this->si($id) : $id;
         assert($si->storage_type !== Si::SI_NONE
-               && !($si->storage_type & (Si::SI_COMPONENT | Si::SI_SLICE)));
+               && !($si->storage_type & (Si::SI_MEMBER | Si::SI_SLICE)));
         unset($this->_savedv[$si->storage_name()]);
     }
 
@@ -1303,7 +1307,7 @@ class SettingValues extends MessageSet {
     private function apply_req($si) {
         if (!$si->internal
             && !$si->disabled
-            && ($si->storage_type & Si::SI_COMPONENT ? $this->cur_object : !$this->cur_object)
+            && ($si->storage_type & Si::SI_MEMBER ? $this->cur_object : !$this->cur_object)
             && $this->editable($si)
             && (!$si->parser_class
                 || $this->si_parser($si)->apply_req($this, $si) === false)
@@ -1340,16 +1344,16 @@ class SettingValues extends MessageSet {
 
     /** @param string $oname
      * @return object */
-    function parse_components($oname) {
+    function parse_members($oname) {
         $object = $this->objectv($oname);
         assert($object && $this->_req_parsed);
         $object = clone $object;
         $old_object = $this->cur_object;
         $this->cur_object = $object;
-        // skip component parsing if object is deleted (don't want errors)
+        // skip member parsing if object is deleted (don't want errors)
         if (!$this->reqstr("{$oname}__delete")) {
             foreach ($this->_req_si as $si) {
-                if (($si->storage_type & Si::SI_COMPONENT) !== 0
+                if (($si->storage_type & Si::SI_MEMBER) !== 0
                     && $si->part0 !== null
                     && str_starts_with($oname, $si->part0)
                     && strlen($oname) === strlen($si->part0) + strlen($si->part1)

@@ -12,13 +12,13 @@ class Topics_SettingParser extends SettingParser {
         if ($si->name === "topic__newlist") {
             $sv->set_oldv($si->name, "");
         } else if ($si->part0 === "topic__") {
-            $tn = $sv->object_list_lookup($sv->conf->topic_set()->as_array(), $si->name);
+            $tn = $sv->unmap_enumeration_member($si->name, $sv->conf->topic_set()->as_array());
             $sv->set_oldv($si->name, (object) ["name" => $tn]);
         }
     }
 
-    function set_object_list_ids(SettingValues $sv, Si $si) {
-        $sv->map_object_list_ids($sv->conf->topic_set()->as_array(), "topic");
+    function prepare_enumeration(SettingValues $sv, Si $si) {
+        $sv->map_enumeration("topic__", $sv->conf->topic_set()->as_array());
     }
 
     static function print(SettingValues $sv) {
@@ -38,7 +38,7 @@ class Topics_SettingParser extends SettingParser {
         }
         echo "</p>\n", Ht::hidden("has_topics", 1);
 
-        if (($topic_counters = $sv->object_list_counters("topic"))) {
+        if (($topic_counters = $sv->enumerate("topic__"))) {
             echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
             if (!empty($interests)) {
                 echo '<span class="float-right n"># PC interests: </span>';
@@ -75,7 +75,7 @@ class Topics_SettingParser extends SettingParser {
         $ctr = null;
         foreach (explode("\n", $sv->reqstr($si->name)) as $line) {
             if (($line = simplify_whitespace($line)) !== "") {
-                $ctr = $ctr ?? max(0, 0, ...$sv->object_list_counters("topic")) + 1;
+                $ctr = $ctr ?? max(0, 0, ...$sv->enumerate("topic__")) + 1;
                 $sv->set_req("topic__{$ctr}__id", "new");
                 $sv->set_req("topic__{$ctr}__name", $line);
                 ++$ctr;
@@ -90,7 +90,7 @@ class Topics_SettingParser extends SettingParser {
         $this->topicj = $sv->conf->topic_set()->as_array();
         $this->newtopics = [];
         $oldj = json_encode_db($this->topicj);
-        foreach ($sv->object_list_counters("topic") as $ctr) {
+        foreach ($sv->enumerate("topic__") as $ctr) {
             $tid = $sv->vstr("topic__{$ctr}__id") ?? "new";
             $tname = $sv->base_parse_req("topic__{$ctr}__name");
             if ($sv->reqstr("topic__{$ctr}__delete") || $tname === "") {
@@ -107,7 +107,7 @@ class Topics_SettingParser extends SettingParser {
                         $this->newtopics[] = $tname;
                     }
                 }
-                $sv->error_if_duplicate_component("topic__", $ctr, "__name", "Topic");
+                $sv->error_if_duplicate_member("topic__", $ctr, "__name", "Topic");
             }
         }
         if (!$sv->has_error()

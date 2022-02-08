@@ -687,6 +687,7 @@ handle_ui.on("js-settings-response-new", function () {
     $rx.find("textarea").css({height: "auto"}).autogrow();
     $rx.find(".need-suggest").each(suggest);
     $rx.find(".need-tooltip").each(tooltip);
+    form_highlight(this.form);
     return false;
 });
 

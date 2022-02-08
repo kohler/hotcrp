@@ -11,7 +11,7 @@ class Responses_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         if ($si->part0 !== null) {
             if ($si->part2 === "") {
-                $rrd = $sv->object_list_lookup($sv->conf->resp_rounds(), $si->name);
+                $rrd = $sv->unmap_enumeration_member($si->name, $sv->conf->resp_rounds());
                 $sv->set_oldv($si->name, $rrd ? clone $rrd : new ResponseRound);
             } else {
                 $rrd = $sv->oldv($si->part0 . $si->part1);
@@ -19,21 +19,26 @@ class Responses_SettingParser extends SettingParser {
                     $n = $sv->oldv("response__{$si->part1}__name");
                     $sv->set_oldv($si->name, $n ? "‘{$n}’ response" : "Response");
                 } else if ($si->part2 === "__name") {
-                    if ($rrd->number !== null && $rrd->unnamed) {
-                        $si->placeholder = "unnamed";
-                    }
                     $sv->set_oldv($si->name, ($rrd->unnamed ? "" : $rrd->name) ?? "");
                 } else if ($si->part2 === "__condition") {
                     $sv->set_oldv($si->name, $rrd->search ? $rrd->search->q : "");
                 } else if ($si->part2 === "__instructions") {
-                    $sv->set_oldv($si->name, $rrd->instructions($sv->conf));
+                    $sv->set_oldv($si->name, $rrd->instructions ?? $si->default_value($sv));
                 }
             }
         }
     }
 
-    function set_object_list_ids(SettingValues $sv, Si $si) {
-        $sv->map_object_list_ids($sv->conf->resp_rounds(), "response");
+    function prepare_enumeration(SettingValues $sv, Si $si) {
+        $sv->map_enumeration("response__", $sv->conf->resp_rounds());
+        // set placeholder for unnamed round
+        $rrd = ($sv->conf->resp_rounds())[0] ?? null;
+        if ($rrd && $rrd->unnamed) {
+            $ctr = $sv->search_enumeration("response__", "__id", "0");
+            assert($ctr !== null);
+            $si = $sv->si("response__{$ctr}__name");
+            $si->placeholder = "unnamed";
+        }
     }
 
     function print_name(SettingValues $sv) {
@@ -63,10 +68,10 @@ class Responses_SettingParser extends SettingParser {
 
     function print_one(SettingValues $sv, $ctr) {
         $this->ctr = $ctr;
-        $id = $sv->vstr("response__{$ctr}__id") ?? "new";
+        $id = $ctr !== '$' ? $sv->vstr("response__{$ctr}__id") : "new";
         echo '<div id="response__', $ctr, '" class="form-g settings-response',
             $id === "new" ? " is-new" : "", '">',
-            Ht::hidden("response__{$ctr}__id", $id);
+            Ht::hidden("response__{$ctr}__id", $id, ["data-default-value" => $id === "new" ? "" : null]);
         if ($sv->has_req("response__{$ctr}__delete")) {
             Ht::hidden("response__{$ctr}__delete", "1", ["data-default-value" => ""]);
         }
@@ -83,7 +88,7 @@ class Responses_SettingParser extends SettingParser {
             $sv->vstr("response_active") ? "" : " hidden",
             '"><hr class="g">', Ht::hidden("has_responses", 1);
 
-        foreach ($sv->object_list_counters("response") as $ctr) {
+        foreach ($sv->enumerate("response__") as $ctr) {
             $this->print_one($sv, $ctr);
         }
 
@@ -108,6 +113,7 @@ class Responses_SettingParser extends SettingParser {
             $lname = strtolower($rrd->name);
             if (in_array($lname, ["1", "unnamed", "none", ""], true)) {
                 $rrd->name = $lname = "";
+                $sv->set_req($si->name, $lname);
             } else if (($error = Conf::resp_round_name_error($rrd->name))) {
                 $sv->error_at($si->name, "<0>{$error}");
             }
@@ -133,23 +139,27 @@ class Responses_SettingParser extends SettingParser {
         }
 
         $rrds = [];
-        foreach ($sv->object_list_counters("response") as $ctr) {
-            $rrd = $sv->parse_components("response__{$ctr}");
+        foreach ($sv->enumerate("response__") as $ctr) {
+            $rrd = $sv->parse_members("response__{$ctr}");
             if ($sv->reqstr("response__{$ctr}__delete")) {
                 if ($rrd->number) {
                     $this->round_transform[] = "when {$rrd->number} then 0";
                 }
             } else {
-                $sv->error_if_duplicate_component("response__", $ctr, "__name", "Response name");
                 $sv->check_date_before("response__{$ctr}__open", "response__{$ctr}__done", false);
                 array_splice($rrds, $rrd->name === "" ? 0 : count($rrds), 0, [$rrd]);
             }
         }
 
+        // having parsed all names, check for duplicates
+        foreach ($sv->enumerate("response__") as $ctr) {
+            $sv->error_if_duplicate_member("response__", $ctr, "__name", "Response name");
+        }
+
         $jrl = [];
         foreach ($rrds as $i => $rrd) {
             $jr = [];
-            $rrd->name !== "" && ($jr["name"] = $rrd->name);
+            $rrd->name !== "" && $rrd->name !== "unnamed" && ($jr["name"] = $rrd->name);
             $rrd->open > 0 && ($jr["open"] = $rrd->open);
             $rrd->done > 0 && ($jr["done"] = $rrd->done);
             $rrd->grace > 0 && ($jr["grace"] = $rrd->grace);

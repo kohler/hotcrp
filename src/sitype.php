@@ -232,12 +232,22 @@ class Float_Sitype extends Sitype {
 
 class String_Sitype extends Sitype {
     use Data_Sitype;
+    /** @var bool */
     private $simple;
+    /** @var bool */
+    private $long;
     function __construct($name) {
         $this->simple = $name === "simplestring";
+        $this->long = $name === "longstring";
     }
     function parse_valstr($vstr, Si $si, SettingValues $sv) {
-        $s = $this->simple ? simplify_whitespace($vstr) : cleannl($vstr);
+        if ($this->simple) {
+            $s = simplify_whitespace($vstr);
+        } else if ($this->long) {
+            $s = cleannl($vstr);
+        } else {
+            $s = trim($vstr);
+        }
         if ($s === "" && $si->required === true) {
             $sv->error_at($si, "<0>Entry required");
             return null;

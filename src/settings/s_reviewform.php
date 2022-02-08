@@ -72,12 +72,12 @@ class ReviewForm_SettingParser extends SettingParser {
         }
     }
 
-    function set_object_list_ids(SettingValues $sv, Si $si) {
+    function prepare_enumeration(SettingValues $sv, Si $si) {
         $fids = [];
         foreach ($sv->conf->all_review_fields() as $rf) {
             $fids[$rf->short_id] = true;
         }
-        $sv->map_object_list_ids($fids, "rf");
+        $sv->map_enumeration("rf__", $fids);
     }
 
 
@@ -92,7 +92,7 @@ class ReviewForm_SettingParser extends SettingParser {
             }
             $sv->save($si, $n);
         }
-        $sv->error_if_duplicate_component($si->part0, $si->part1, $si->part2, "Field name");
+        $sv->error_if_duplicate_member($si->part0, $si->part1, $si->part2, "Field name");
         return true;
     }
 
@@ -177,8 +177,8 @@ class ReviewForm_SettingParser extends SettingParser {
 
     private function _apply_req_review_form(SettingValues $sv, Si $si) {
         $nrfj = [];
-        foreach ($sv->object_list_counters("rf") as $ctr) {
-            $rfj = $sv->parse_components("rf__{$ctr}");
+        foreach ($sv->enumerate("rf__") as $ctr) {
+            $rfj = $sv->parse_members("rf__{$ctr}");
             if (!$sv->reqstr("rf__{$ctr}__delete")
                 && ($finfo = ReviewInfo::field_info($rfj->id))) {
                 $this->_fix_req_condition($sv, $rfj);

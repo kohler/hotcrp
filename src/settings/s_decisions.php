@@ -16,10 +16,10 @@ class Decisions_SettingParser extends SettingParser {
         $sv->set_oldv($si, $v);
     }
 
-    function set_object_list_ids(SettingValues $sv, Si $si) {
+    function prepare_enumeration(SettingValues $sv, Si $si) {
         $dmap = $sv->conf->decision_map();
         unset($dmap[0]);
-        $sv->map_object_list_ids($dmap, "decision");
+        $sv->map_enumeration("decision__", $dmap);
     }
 
     /** @param int|'$' $ctr
@@ -74,11 +74,11 @@ class Decisions_SettingParser extends SettingParser {
         echo '<div class="form-g">',
             Ht::hidden("has_decisions", 1),
             '<div id="settings-decision-types">';
-        foreach ($sv->object_list_counters("decision") as $ctr) {
+        foreach ($sv->enumerate("decision__") as $ctr) {
             self::print_decrow($sv, $ctr, $decs_pcount);
         }
         echo '</div>';
-        foreach ($sv->use_req() ? $sv->object_list_counters("decision") : [] as $ctr) {
+        foreach ($sv->use_req() ? $sv->enumerate("decision__") : [] as $ctr) {
             if ($sv->reqstr("decision__{$ctr}__delete"))
                 echo Ht::unstash_script("\$(\"#settingsform\")[0].elements.decision__{$ctr}__deleter.click()");
         }
@@ -111,7 +111,7 @@ class Decisions_SettingParser extends SettingParser {
                 $sv->error_at("decision__{$ctr}__category");
             }
         }
-        $sv->error_if_duplicate_component("decision__", $ctr, "__name", "Decision name");
+        $sv->error_if_duplicate_member("decision__", $ctr, "__name", "Decision name");
     }
 
     function apply_req(SettingValues $sv, Si $si) {
@@ -121,8 +121,8 @@ class Decisions_SettingParser extends SettingParser {
 
         $djs = [];
         $hasid = [];
-        foreach ($sv->object_list_counters("decision") as $ctr) {
-            $dsr = $sv->parse_components("decision__{$ctr}");
+        foreach ($sv->enumerate("decision__") as $ctr) {
+            $dsr = $sv->parse_members("decision__{$ctr}");
             if (!$sv->reqstr("decision__{$ctr}__delete")) {
                 $this->_check_req_name($sv, $dsr, $ctr);
                 $djs[] = $dsr;
