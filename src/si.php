@@ -14,6 +14,8 @@ class Si {
     public $part1;
     /** @var ?string */
     public $part2;
+    /** @var list<string> */
+    public $parts = [];
     /** @var string */
     public $json_name;
     /** @var ?string
@@ -114,10 +116,12 @@ class Si {
             $this->json_name = $j->json_name;
         }
         if (isset($j->parts)) {
-            assert(is_string_list($j->parts) && count($j->parts) === 3);
+            $n = count($j->parts);
+            assert(is_string_list($j->parts) && $n >= 3);
+            $this->parts = $j->parts;
             $this->part0 = $j->parts[0];
-            $this->part1 = $j->parts[1];
-            $this->part2 = $j->parts[2];
+            $this->part1 = $n === 3 ? $j->parts[1] : join("", array_slice($j->parts, 1, $n - 2));
+            $this->part2 = $j->parts[$n - 1];
         }
         foreach ((array) $j as $k => $v) {
             if (isset(self::$key_storage[$k])) {
@@ -206,54 +210,39 @@ class Si {
         }
 
         // resolve extension
-        if ($this->part0 !== null) {
-            $this->storage = $this->_expand_split($this->storage);
-            $this->hashid = $this->_expand_split($this->hashid);
+        if ($this->parts !== null && is_string($this->storage)) {
+            $this->storage = $this->_expand_pattern($this->storage, null);
         }
-    }
-
-    /** @param null|false|string $s
-     * @return null|false|string
-     * @suppress PhanTypeArraySuspiciousNullable */
-    function _expand_split($s) {
-        if (is_string($s)) {
-            $p = 0;
-            while (($p = strpos($s, "\$", $p)) !== false) {
-                if ($p === strlen($s) - 1 || $s[$p + 1] !== "{") {
-                    $s = substr($s, 0, $p) . $this->part1 . substr($s, $p + 1);
-                    $p += strlen($this->part1);
-                } else {
-                    ++$p;
-                }
-            }
+        if ($this->parts !== null && is_string($this->hashid)) {
+            $this->hashid = $this->_expand_pattern($this->hashid, null);
         }
-        return $s;
     }
 
     /** @param string $s
      * @param ?SettingValues $sv
      * @return ?string */
-    private function expand_pattern($s, $sv) {
-        $pos = 0;
-        $len = strlen($s);
-        while ($pos < $len
-               && ($dollar = strpos($s, "\$", $pos)) !== false) {
-            if ($dollar + 1 < $len
-                && $s[$dollar + 1] === "{") {
-                $rbrace = SearchSplitter::span_balanced_parens($s, $dollar + 2, "");
-                if ($rbrace < $len
-                    && $s[$rbrace] === "}"
-                    && ($r = $this->expand_pattern_call(substr($s, $dollar + 2, $rbrace - $dollar - 2), $sv)) !== null) {
-                    $s = substr($s, 0, $dollar) . $r . substr($s, $rbrace + 1);
-                    $pos = $dollar + strlen($r);
+    private function _expand_pattern($s, $sv) {
+        $p0 = 0;
+        $l = strlen($s);
+        while ($p0 < $l && ($p1 = strpos($s, '$', $p0)) !== false) {
+            $n = strspn($s, '$', $p1);
+            if ($n === 1 && $p1 + 1 < $l && $s[$p1 + 1] === "{") {
+                $rb = SearchSplitter::span_balanced_parens($s, $p1 + 2, "");
+                if ($sv
+                    && $rb < $l
+                    && $s[$rb] === "}"
+                    && ($t = $this->_expand_pattern_call(substr($s, $p1 + 2, $rb - $p1 - 2), $sv)) !== null) {
+                    $s = substr($s, 0, $p1) . $t . substr($s, $rb + 1);
+                    $p0 = $p1 + strlen($t);
                 } else {
                     return null;
                 }
-            } else if ($this->part1 !== null) {
-                $s = substr($s, 0, $dollar) . $this->part1 . substr($s, $dollar + 1);
-                $pos = $dollar + strlen($this->part1);
+            } else if ($this->parts !== null && $n * 2 - 1 < count($this->parts)) {
+                $t = $this->parts[$n * 2 - 1];
+                $s = substr($s, 0, $p1) . $t . substr($s, $p1 + $n);
+                $p0 = $p1 + strlen($t);
             } else {
-                $pos = $dollar + 1;
+                $p0 = $p1 + 1;
             }
         }
         return $s;
@@ -262,9 +251,9 @@ class Si {
     /** @param string $call
      * @param ?SettingValues $sv
      * @return ?string */
-    private function expand_pattern_call($call, $sv) {
+    private function _expand_pattern_call($call, $sv) {
         $r = null;
-        if (($f = $this->expand_pattern(trim($call), $sv)) !== null) {
+        if (($f = $this->_expand_pattern(trim($call), $sv)) !== null) {
             if (str_starts_with($f, "uc ")) {
                 $r = ucfirst(trim(substr($f, 3)));
             } else if (str_starts_with($f, "sv ")) {
@@ -278,7 +267,7 @@ class Si {
      * @return ?string */
     function title($sv = null) {
         if ($this->title_pattern
-            && ($title = $this->expand_pattern($this->title_pattern, $sv)) !== null) {
+            && ($title = $this->_expand_pattern($this->title_pattern, $sv)) !== null) {
             return $title;
         } else {
             return $this->title;
@@ -406,23 +395,75 @@ class SettingInfoSet {
 
     function _add_item($v, $k, $landmark) {
         if (isset($v->name_pattern)) {
-            $pos = strpos($v->name_pattern, "\$");
-            assert($pos !== false);
-            $prefix = substr($v->name_pattern, 0, $pos);
-            $suffix = substr($v->name_pattern, $pos + 1);
+            $parts = [];
+            $pos = 0;
+            while (($pos1 = strpos($v->name_pattern, '$', $pos)) !== false) {
+                $pos2 = $pos1 + strspn($v->name_pattern, '$', $pos1);
+                assert($pos2 - $pos1 === count($parts) / 2 + 1);
+                $parts[] = substr($v->name_pattern, $pos, $pos1 - $pos);
+                $parts[] = "";
+                $pos = $pos2;
+            }
+            $parts[] = substr($v->name_pattern, $pos);
+            $v->parts = $parts;
             $i = 0;
-            while ($i !== count($this->xlist) && $this->xlist[$i] !== $prefix) {
+            while ($i !== count($this->xlist) && $this->xlist[$i] !== $parts[0]) {
                 $i += 2;
             }
             if ($i === count($this->xlist)) {
-                array_push($this->xlist, $prefix, []);
+                array_push($this->xlist, $parts[0], []);
             }
-            array_push($this->xlist[$i + 1], $suffix, $v);
+            array_push($this->xlist[$i + 1], $parts[count($parts) - 1], $v);
         } else {
             assert(is_string($v->name));
             $this->xmap[$v->name][] = $v;
         }
         return true;
+    }
+
+    /** @param string $name
+     * @param list<string> $parts
+     * @return ?list<string> */
+    private function _match_parts($name, $parts) {
+        $nparts = count($parts);
+        $pos = strlen($parts[0]);
+        $result = [$parts[0]];
+        for ($i = 1; $i !== $nparts; $i += 2) {
+            if ($i === $nparts - 2) {
+                $npos = strlen($name) - strlen($parts[$i + 1]);
+            } else {
+                $npos = strpos($name, $parts[$i + 1], $pos);
+            }
+            if ($npos === false
+                || $npos < $pos
+                || ($m = substr($name, $pos, $npos - $pos)) === ""
+                || strpos($m, "__") !== false) {
+                return null;
+            }
+            $result[] = $m;
+            $result[] = $parts[$i + 1];
+        }
+        return $result;
+    }
+
+    /** @param string $name
+     * @param string $prefix
+     * @param list<string|object> $items */
+    private function _expand($name, $prefix, $items) {
+        $plen = strlen($prefix);
+        $nlen = strlen($name);
+        $nitems = count($items);
+        for ($i = 0; $i !== $nitems; $i += 2) {
+            $slen = strlen($items[$i]);
+            if ($plen + strlen($items[$i]) < $nlen
+                && str_ends_with($name, $items[$i])
+                && ($parts = $this->_match_parts($name, $items[$i + 1]->parts))) {
+                $jx = clone $items[$i + 1];
+                $jx->name = $name;
+                $jx->parts = $parts;
+                $this->xmap[$name][] = $jx;
+            }
+        }
     }
 
     /** @param string $name
@@ -433,20 +474,7 @@ class SettingInfoSet {
             $nlen = strlen($name);
             for ($i = 0; $i !== count($this->xlist); $i += 2) {
                 if (str_starts_with($name, $this->xlist[$i])) {
-                    $plen = strlen($this->xlist[$i]);
-                    $list = $this->xlist[$i + 1];
-                    for ($j = 0; $j !== count($list); $j += 2) {
-                        $slen = strlen($list[$j]);
-                        if ($plen + $slen < $nlen
-                            && str_ends_with($name, $list[$j])
-                            && ($part1 = substr($name, $plen, $nlen - $plen - $slen)) !== ""
-                            && strpos($part1, "__") === false) {
-                            $jx = clone $list[$j + 1];
-                            $jx->name = $name;
-                            $jx->parts = [$this->xlist[$i], $part1, $list[$j]];
-                            $this->xmap[$name][] = $jx;
-                        }
-                    }
+                    $this->_expand($name, $this->xlist[$i], $this->xlist[$i + 1]);
                 }
             }
             // create Si
