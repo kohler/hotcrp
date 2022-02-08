@@ -349,70 +349,87 @@ class IntlMsgSet {
     }
 
     /** @param string $s
+     * @param int $pos
+     * @param list<mixed> $args
+     * @param int &$argnum
+     * @param ?string $context
+     * @param ?IntlMsg $im
+     * @return array{int,?string} */
+    private function expand_percent($s, $pos, $args, &$argnum, $context, $im) {
+        if (preg_match('/%((?!\d)\w+)%/A', $s, $m, 0, $pos)
+            && ($imt = $this->find($context, strtolower($m[1]), [$m[1]], null))
+            && $imt->template) {
+            ++$this->_recursion;
+            if ($this->_recursion < 5) {
+                return [strlen($m[0]), $this->expand($imt->otext, $args, null, null)];
+            } else {
+                error_log("RECURSION ERROR ON {$m[0]} " . debug_string_backtrace());
+            }
+            --$this->_recursion;
+        } else if (($im && $im->no_conversions) || count($args) === 1) {
+            /* do nothing */
+        } else if (strlen($s) > $pos + 1 && $s[$pos + 1] === "%") {
+            return [2, "%"];
+        } else if (preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AON]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
+            $argi = $m[1] ? +$m[1] : ++$argnum;
+            if (isset($args[$argi])) {
+                $val = $args[$argi];
+                if ($m[2]) {
+                    assert(is_array($val));
+                    $val = $val[substr($m[2], 1, -1)] ?? null;
+                }
+                if ($m[3] && is_array($val)) {
+                    if ($m[3] === "#N") {
+                        $val = numrangejoin($val);
+                    } else if ($m[3] === "#O") {
+                        $val = commajoin($val, "or");
+                    } else {
+                        $val = commajoin($val, "and");
+                    }
+                }
+                $conv = $m[4];
+                if ($m[5] === "H") {
+                    $x = htmlspecialchars($conv === "" ? $val : sprintf("%{$conv}s", $val));
+                } else if ($m[5] === "U") {
+                    $x = urlencode($conv === "" ? $val : sprintf("%{$conv}s", $val));
+                } else if ($m[5] === "s" && $conv === "") {
+                    $x = (string) $val;
+                } else {
+                    $x = sprintf("%{$conv}{$m[5]}", $val);
+                }
+                return [strlen($m[0]), $x];
+            }
+        }
+        return [0, null];
+    }
+
+    /** @param string $s
      * @param list<mixed> $args
      * @param ?string $context
      * @param ?IntlMsg $im
-     * @param ?int $format
      * @return string */
-    private function expand($s, $args, $context, $im, $format) {
+    private function expand($s, $args, $context, $im) {
         if ($s === null || $s === false || $s === "") {
             return $s;
         }
-        $pos = strpos($s, "%");
+        $pos = 0;
         $argnum = 0;
-        while ($pos !== false) {
-            ++$pos;
-            if (preg_match('/(?!\d+)\w+(?=%)/A', $s, $m, 0, $pos)
-                && ($imt = $this->find($context, strtolower($m[0]), [$m[0]], null))
-                && $imt->template) {
-                $t = substr($s, 0, $pos - 1);
-                ++$this->_recursion;
-                if ($this->_recursion < 5) {
-                    $t .= $this->expand($imt->otext, $args, null, null, $format);
-                } else {
-                    error_log("RECURSION ERROR ON {$m[0]} " . debug_string_backtrace());
-                }
-                --$this->_recursion;
-                $s = $t . substr($s, $pos + strlen($m[0]) + 1);
-                $pos = strlen($t);
-            } else if (($im && $im->no_conversions) || count($args) === 1) {
-                /* do nothing */
-            } else if ($pos < strlen($s) && $s[$pos] === "%") {
-                $s = substr($s, 0, $pos) . substr($s, $pos + 1);
-            } else if (preg_match('/(?:(\d+)(\[[^\[\]\$]*\]|)\$)?(#[AON]?|)(\d*(?:\.\d+)?)([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
-                $argi = $m[1] ? +$m[1] : ++$argnum;
-                if (isset($args[$argi])) {
-                    $val = $args[$argi];
-                    if ($m[2]) {
-                        assert(is_array($val));
-                        $val = $val[substr($m[2], 1, -1)] ?? null;
-                    }
-                    if ($m[3] && is_array($val)) {
-                        if ($m[3] === "#N") {
-                            $val = numrangejoin($val);
-                        } else if ($m[3] === "#O") {
-                            $val = commajoin($val, "or");
-                        } else {
-                            $val = commajoin($val, "and");
-                        }
-                    }
-                    $conv = $m[4];
-                    if ($m[5] === "H") {
-                        $x = htmlspecialchars($conv === "" ? $val : sprintf("%{$conv}s", $val));
-                    } else if ($m[5] === "U") {
-                        $x = urlencode($conv === "" ? $val : sprintf("%{$conv}s", $val));
-                    } else if ($m[5] === "s" && $conv === "") {
-                        $x = (string) $val;
-                    } else {
-                        $x = sprintf("%{$conv}{$m[5]}", $val);
-                    }
-                    $s = substr($s, 0, $pos - 1) . $x . substr($s, $pos + strlen($m[0]));
-                    $pos = $pos - 1 + strlen($x);
-                }
+        $t = "";
+        while (true) {
+            $ppos = strpos($s, "%", $pos);
+            if ($ppos === false) {
+                return $t . $s;
             }
-            $pos = strpos($s, "%", $pos);
+            $pos = $ppos;
+            list($npos, $x) = $this->expand_percent($s, $pos, $args, $argnum, $context, $im);
+            if ($x !== null) {
+                $t .= substr($s, 0, $pos) . $x;
+                $s = substr($s, $pos + $npos);
+                $pos = 0;
+            } else {
+                ++$pos;
+            }
         }
-        return $s;
     }
 
     /** @return string */
@@ -420,7 +437,7 @@ class IntlMsgSet {
         if (($im = $this->find(null, $args[0], $args, null))) {
             $args[0] = $im->otext;
         }
-        return $this->expand($args[0], $args, null, $im, null);
+        return $this->expand($args[0], $args, null, $im);
     }
 
     /** @param string $context
@@ -429,7 +446,7 @@ class IntlMsgSet {
         if (($im = $this->find($context, $args[0], $args, null))) {
             $args[0] = $im->otext;
         }
-        return $this->expand($args[0], $args, $context, $im, null);
+        return $this->expand($args[0], $args, $context, $im);
     }
 
     /** @param string $id
@@ -440,7 +457,7 @@ class IntlMsgSet {
             && ($args[0] === "" || $im->priority > 0.0)) {
             $args[0] = $im->otext;
         }
-        return $this->expand($args[0], $args, $id, $im, null);
+        return $this->expand($args[0], $args, $id, $im);
     }
 
     /** @param string $context
@@ -453,7 +470,7 @@ class IntlMsgSet {
             $args[0] = $im->otext;
         }
         $cid = (string) $context === "" ? $id : "$context/$id";
-        return $this->expand($args[0], $args, $cid, $im, null);
+        return $this->expand($args[0], $args, $cid, $im);
     }
 
     /** @param FieldRender $fr
@@ -469,7 +486,7 @@ class IntlMsgSet {
             }
         }
         $cid = (string) $context === "" ? $id : "$context/$id";
-        $fr->value = $this->expand($args[0], $args, $cid, $im, null);
+        $fr->value = $this->expand($args[0], $args, $cid, $im);
     }
 
     /** @param string $id
