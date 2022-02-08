@@ -5,7 +5,7 @@
         "$comment": "XXX backward compat"
     },
     {
-        "match": "hcav(\\d+)[a-zA-Z]+", "type": 4,
+        "match": "hcav_?(\\d+)[a-zA-Z]+", "type": 4,
         "apply_function": "AuthorView_Capability::apply_author_view"
     },
     {
@@ -14,7 +14,7 @@
         "$comment": "XXX backward compat"
     },
     {
-        "match": "hcra([1-9][0-9]*)[a-zA-Z]+", "type": 5,
+        "match": "hcra_?([1-9][0-9]*)[a-zA-Z]+", "type": 5,
         "apply_function": "ReviewAccept_Capability::apply_review_acceptor"
     },
     {
@@ -27,7 +27,7 @@
         "$comment": "XXX backward compat"
     },
     {
-        "match": "hckk([a-zA-Z0-9]+)",
+        "match": "hckk_?([a-zA-Z0-9]+)",
         "apply_function": "MeetingTracker::apply_kiosk_capability"
     }
 ]

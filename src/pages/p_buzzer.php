@@ -61,7 +61,7 @@ class Buzzer_Page {
         if (($key = $qreq->path_component(0))
             && ($kiosk = self::kiosk_lookup($conf, $key))) {
             $user->set_capability("@kiosk", $key);
-            $user->set_default_cap_param("hckk{$key}", true);
+            $user->set_default_cap_param("hckk_{$key}", true);
         } else if (($key = $user->capability("@kiosk"))) {
             $kiosk = self::kiosk_lookup($conf, $key);
         }
