@@ -405,9 +405,6 @@ class SettingInfoSet {
     }
 
     function _add_item($v, $k, $landmark) {
-        if (isset($v->extensible) && $v->extensible && !isset($v->name_pattern)) {
-            $v->name_pattern = "{$v->name}_\$";
-        }
         if (isset($v->name_pattern)) {
             $pos = strpos($v->name_pattern, "\$");
             assert($pos !== false);
