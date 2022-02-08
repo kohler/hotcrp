@@ -56,6 +56,10 @@ class Revpref_ListAction extends ListAction {
     function run_get(Contact $user, Qrequest $qreq, SearchSelection $ssel,
                      Contact $reviewer, $extended) {
         $not_me = $user->contactId !== $reviewer->contactId;
+        $fields = [
+            "paper" => true, "title" => true, "email" => $not_me, "preference" => true,
+            "notes" => false, "authors" => false, "abstract" => !!$extended, "topics" => false
+        ];
         $has_conflict = false;
         $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
@@ -69,28 +73,29 @@ class Revpref_ListAction extends ListAction {
             $item["preference"] = unparse_preference($prow->preference($reviewer));
             if ($prow->has_conflict($reviewer)) {
                 $item["notes"] = "conflict";
-                $has_conflict = true;
+                $fields["notes"] = true;
             }
             if ($extended) {
-                $x = "";
                 if ($reviewer->can_view_authors($prow)) {
-                    $x .= prefix_word_wrap(" Authors: ", $prow->pretty_text_author_list(), "          ");
+                    $aus = array_map(function ($a) { return $a->name(NAME_P|NAME_A); }, $prow->author_list());
+                    $item["authors"] = join("\n", $aus);
+                    $fields["authors"] = true;
                 }
-                $x .= prefix_word_wrap("Abstract: ", rtrim($prow->abstract_text()), "          ");
+                $item["abstract"] = $prow->abstract_text();
                 if ($prow->topicIds !== "") {
-                    $x .= prefix_word_wrap("  Topics: ", $prow->unparse_topics_text(), "          ");
+                    $item["topics"] = $prow->unparse_topics_text();
+                    $fields["topics"] = true;
                 }
-                $item["__postcomment__"] = $x;
             }
             $texts[] = $item;
         }
-        $fields = array_merge(["paper", "title"], $not_me ? ["email"] : [], ["preference"], $has_conflict ? ["notes"] : []);
         $title = "revprefs";
         if ($not_me) {
             $title .= "-" . (preg_replace('/@.*|[^\w@.]/', "", $reviewer->email) ? : "user");
         }
         return $user->conf->make_csvg($title, CsvGenerator::FLAG_ITEM_COMMENTS)
-            ->select($fields)->append($texts);
+            ->select(array_keys(array_filter($fields)))
+            ->append($texts);
     }
     function run_setpref(Contact $user, Qrequest $qreq, SearchSelection $ssel,
                          Contact $reviewer) {

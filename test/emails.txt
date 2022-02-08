@@ -1600,12 +1600,12 @@ you that your submission #14 was rejected, and will not appear in the
 conference.
 
        Title: Network Performance Effects of HTTP/1.1, CSS1, and PNG
-     Authors: Henrik Frystyk Nielsen (World Wide Web Consortium)
+     Authors: Henrik Frystyk Nielsen (World Wide Web Consortium);
               James Gettys (Visiting Scientist, World Wide Web
-              Consortium; Digital Equipment Corporation)
-              Anselm Baird-Smith (World Wide Web Consortium)
-              Eric Prud'hommeaux (World Wide Web Consortium)
-              Håkon Wium Lie (World Wide Web Consortium)
+              Consortium; Digital Equipment Corporation);
+              Anselm Baird-Smith (World Wide Web Consortium);
+              Eric Prud'hommeaux (World Wide Web Consortium);
+              Håkon Wium Lie (World Wide Web Consortium);
               Chris Lilley (World Wide Web Consortium)
         Site: http://hotcrp.lcdf.org/test/paper/14?cap={{}}
 
@@ -1651,12 +1651,12 @@ you that your submission #14 was rejected, and will not appear in the
 conference.
 
        Title: Network Performance Effects of HTTP/1.1, CSS1, and PNG
-     Authors: Henrik Frystyk Nielsen (World Wide Web Consortium)
+     Authors: Henrik Frystyk Nielsen (World Wide Web Consortium);
               James Gettys (Visiting Scientist, World Wide Web
-              Consortium; Digital Equipment Corporation)
-              Anselm Baird-Smith (World Wide Web Consortium)
-              Eric Prud'hommeaux (World Wide Web Consortium)
-              Håkon Wium Lie (World Wide Web Consortium)
+              Consortium; Digital Equipment Corporation);
+              Anselm Baird-Smith (World Wide Web Consortium);
+              Eric Prud'hommeaux (World Wide Web Consortium);
+              Håkon Wium Lie (World Wide Web Consortium);
               Chris Lilley (World Wide Web Consortium)
         Site: http://hotcrp.lcdf.org/test/paper/14?cap={{}}
 

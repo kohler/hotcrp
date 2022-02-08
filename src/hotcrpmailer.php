@@ -359,7 +359,8 @@ class HotCRPMailer extends Mailer {
             && !$this->permuser->can_view_authors($this->row)) {
             return $isbool ? false : "Hidden for blind review";
         }
-        return rtrim($this->row->pretty_text_author_list());
+        $t = array_map(function ($a) { return $a->name(NAME_P|NAME_A); }, $this->row->author_list());
+        return join(";\n", $t);
     }
     function kw_authorviewcapability($args, $isbool) {
         $this->sensitive = true;
@@ -481,7 +482,7 @@ class HotCRPMailer extends Mailer {
         } else {
             $t = $this->conf->_c("mail", $m[1]);
         }
-        if (($n = (int) $m[2]) && strlen($t) < $n) {
+        if (($n = (int) ($m[2] ?? 0)) && strlen($t) < $n) {
             $t = str_repeat(" ", $n - strlen($t)) . $t;
         }
         return $t;

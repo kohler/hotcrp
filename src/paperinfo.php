@@ -863,19 +863,6 @@ class PaperInfo {
         return ($this->authorInformation = $ai);
     }
 
-    /** @return string */
-    function pretty_text_author_list() {
-        $info = "";
-        foreach ($this->author_list() as $au) {
-            $info .= $au->name() ? : $au->email;
-            if ($au->affiliation) {
-                $info .= " (" . $au->affiliation . ")";
-            }
-            $info .= "\n";
-        }
-        return $info;
-    }
-
     /** @param Contact|int $contact
      * @return int */
     function conflict_type($contact) {
