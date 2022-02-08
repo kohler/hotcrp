@@ -204,7 +204,6 @@ function tab_width($text, $all) {
  * @param bool $flowed
  * @return string */
 function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = false) {
-    assert($prefix !== false); // XXX backward compat
     if (is_int($indent)) {
         $indentlen = $indent;
         $indent = str_repeat(" ", $indent);
@@ -222,6 +221,7 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $width = 75, $flowed = f
         if ($first
             && $wx < $width - $indentlen
             && strlen($line) > $wx
+            && strlen($line) < $width - $indentlen
             && $out !== ""
             && !ctype_space($out)
             && (!$flowed || strlen(rtrim($line)) > $wx)) {
