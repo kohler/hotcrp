@@ -214,7 +214,7 @@ class Options_SettingRenderer {
         if ($sv->enumerate("sf__")) {
             echo '<div class="feedback is-note mb-4">Click on a field for more information.</div>';
         }
-        echo '<div id="settings-sform" class="c">';
+        echo '<div id="settings-sform" class="c">'; // must ONLY contain fields
         foreach ($sv->enumerate("sf__") as $ctr) {
             $this->print_one_option($sv, $ctr);
         }
