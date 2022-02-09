@@ -185,7 +185,7 @@ class Options_SettingRenderer {
         }
 
         echo '<div id="sf__', $ctr, '__edit" class="settings-sf-edit fx2">',
-            Ht::hidden("sf__{$ctr}__id", $this->io ? $this->io->id : "new", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
+            Ht::hidden("sf__{$ctr}__id", $this->io ? $this->io->id : "\$", ["class" => "settings-sf-id", "data-default-value" => $this->io ? $this->io->id : ""]),
             Ht::hidden("sf__{$ctr}__order", $ctr, ["class" => "settings-sf-order", "data-default-value" => $this->io ? $this->io->order : ""]);
         $sv->print_group("submissionfield/properties");
         echo '</div>';
@@ -310,7 +310,7 @@ class Options_SettingParser extends SettingParser {
     static function make_placeholder_option(SettingValues $sv) {
         return PaperOption::make($sv->conf, (object) [
             "id" => DTYPE_INVALID,
-            "name" => "Field name",
+            "name" => "",
             "description" => "",
             "type" => "none",
             "order" => 1000,
@@ -465,6 +465,7 @@ class Options_SettingParser extends SettingParser {
                 }
             } else {
                 if ($sfj->id === DTYPE_INVALID) {
+                    $sv->error_if_missing("sf__{$ctr}__name");
                     $this->_assign_new_id($sv->conf, $sfj);
                 }
                 $this->_fix_req_condition($sv, $sfj);

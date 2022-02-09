@@ -1055,7 +1055,7 @@ $sv = SettingValues::make_request($user_chair, [
     "sf__1__order" => 1,
     "sf__1__delete" => 1,
     "sf__2__name" => "Fudge",
-    "sf__2__id" => "new",
+    "sf__2__id" => "\$",
     "sf__2__type" => "checkbox",
     "sf__2__order" => 2
 ]);
@@ -1066,7 +1066,7 @@ assert_search_papers($user_mgbaker, "has:fudge", "");
 $sv = SettingValues::make_request($user_chair, [
     "has_options" => 1,
     "sf__1__name" => "Brownies",
-    "sf__1__id" => "new",
+    "sf__1__id" => "\$",
     "sf__1__order" => 100,
     "sf__1__type" => "numeric"
 ]);
@@ -1082,12 +1082,22 @@ xassert_eqq($opts[1]->name, "Brownies");
 $sv = SettingValues::make_request($user_chair, [
     "has_options" => 1,
     "sf__1__name" => "Brownies",
-    "sf__1__id" => "new",
+    "sf__1__id" => "\$",
     "sf__1__order" => 100,
     "sf__1__type" => "numeric"
 ]);
 xassert(!$sv->execute());
 xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
+xassert($sv->has_error_at("sf__1__name"));
+
+$sv = SettingValues::make_request($user_chair, [
+    "has_options" => 1,
+    "sf__1__id" => "\$",
+    "sf__1__order" => 100,
+    "sf__1__type" => "numeric"
+]);
+xassert(!$sv->execute());
+xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
 xassert($sv->has_error_at("sf__1__name"));
 
 // decision settings
@@ -1098,7 +1108,7 @@ $sv = SettingValues::make_request($user_chair, [
     "decision__1__name" => "Accepted!",
     "decision__1__id" => "1",
     "decision__2__name" => "Newly accepted",
-    "decision__2__id" => "new"
+    "decision__2__id" => "\$"
 ]);
 xassert($sv->execute());
 xassert_eqq(json_encode($Conf->decision_map()), '{"0":"Unspecified","1":"Accepted!","2":"Newly accepted","-1":"Rejected"}');
@@ -1134,6 +1144,11 @@ $sv = SettingValues::make_request($user_chair, [
 ]);
 xassert($sv->execute());
 xassert_eqq(json_encode($Conf->decision_map()), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected"}');
+$sv = SettingValues::make_request($user_chair, [
+    "has_decisions" => 1,
+    "decision__1__id" => "\$"
+]);
+xassert(!$sv->execute());
 
 // topic settings
 xassert_eqq(json_encode($Conf->topic_set()->as_array()), '[]');
@@ -1162,12 +1177,14 @@ $sv = SettingValues::make_request($user_chair, [
     "has_topics" => 1,
     "topic__1__id" => "2",
     "topic__1__name" => "Fért",
-    "topic__2__id" => "new",
+    "topic__2__id" => "",
     "topic__2__name" => "Festival Fartal",
+    "topic__3__id" => "\$",
+    "topic__3__name" => "Fet",
     "topic__newlist" => "Fart3"
 ]);
 xassert($sv->execute());
-xassert_eqq(json_encode_db($Conf->topic_set()->as_array()), '{"1":"Fart","3":"Fart2","5":"Fart3","2":"Fért","4":"Festival Fartal"}');
+xassert_eqq(json_encode_db($Conf->topic_set()->as_array()), '{"1":"Fart","3":"Fart2","6":"Fart3","2":"Fért","4":"Festival Fartal","5":"Fet"}');
 
 // review settings
 $sv = SettingValues::make_request($user_chair, [
@@ -1285,6 +1302,14 @@ xassert_eqq($rf->value_class(4), "sv sv6");
 xassert_eqq($rf->value_class(3), "sv sv7");
 xassert_eqq($rf->value_class(2), "sv sv8");
 xassert_eqq($rf->value_class(1), "sv sv9");
+
+$sv = SettingValues::make_request($user_chair, [
+    "has_review_form" => 1,
+    "rf__1__id" => "s90",
+    "rf__1__choices" => "1. A\n2. B\n"
+]);
+xassert(!$sv->execute());
+xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
 
 // review form setting updates
 $updater = new UpdateSchema($Conf);

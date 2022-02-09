@@ -603,7 +603,7 @@ class SettingValues extends MessageSet {
     function unmap_enumeration_member($pfx, $map) {
         $this->ensure_enumeration($pfx);
         $x = $this->reqstr("{$pfx}__id");
-        if ($x !== null && $x !== "" && $x !== "new") {
+        if ($x !== null && $x !== "" && $x !== "\$") {
             return $map[$x] ?? null;
         } else {
             return null;
@@ -654,6 +654,17 @@ class SettingValues extends MessageSet {
                 $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v}’ is not unique");
                 $this->error_at("{$pfx}{$ctr1}{$sfx}");
             }
+        }
+    }
+
+    /** @param string|Si ...$fields */
+    function error_if_missing(...$fields) {
+        foreach ($fields as $field) {
+            $name = is_string($field) ? $field : $field->name;
+            if (!$this->has_req($name)
+                && $this->vstr($name) === ""
+                && !$this->has_error_at($name))
+                $this->error_at($name, "<0>Entry required");
         }
     }
 

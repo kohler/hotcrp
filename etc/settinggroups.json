@@ -161,20 +161,20 @@
     },
     {
         "name": "reviewform/main", "order": 10,
-        "print_function": "ReviewForm_SettingRenderer::print"
+        "print_function": "ReviewForm_SettingParser::print"
     },
     {   "name": "rfo", "alias": "reviewform"   },
     {
         "name": "__crosscheck/reviewfieldconditions", "order": 600,
         "crosscheck_function": "ReviewFieldCondition_SettingParser::crosscheck"
     },
-    [   "reviewfield/properties/description", 20, "ReviewForm_SettingRenderer::print_description"   ],
-    [   "reviewfield/properties/choices", 50, "ReviewForm_SettingRenderer::print_choices"   ],
-    [   "reviewfield/properties/presence", 100, "ReviewForm_SettingRenderer::print_presence"   ],
-    [   "reviewfield/properties/required", 101, "ReviewForm_SettingRenderer::print_required"   ],
-    [   "reviewfield/properties/visibility", 110, "ReviewForm_SettingRenderer::print_visibility"   ],
-    [   "reviewfield/properties/display", 120, "ReviewForm_SettingRenderer::print_display"   ],
-    [   "reviewfield/properties/actions", 10000, "ReviewForm_SettingRenderer::print_actions"   ],
+    [   "reviewfield/properties/description", 20, "ReviewForm_SettingParser::print_description"   ],
+    [   "reviewfield/properties/choices", 50, "ReviewForm_SettingParser::print_choices"   ],
+    [   "reviewfield/properties/presence", 100, "ReviewForm_SettingParser::print_presence"   ],
+    [   "reviewfield/properties/required", 101, "ReviewForm_SettingParser::print_required"   ],
+    [   "reviewfield/properties/visibility", 110, "ReviewForm_SettingParser::print_visibility"   ],
+    [   "reviewfield/properties/display", 120, "ReviewForm_SettingParser::print_display"   ],
+    [   "reviewfield/properties/actions", 10000, "ReviewForm_SettingParser::print_actions"   ],
 
 
     {

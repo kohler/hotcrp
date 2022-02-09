@@ -181,6 +181,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $rfj = $sv->parse_members("rf__{$ctr}");
             if (!$sv->reqstr("rf__{$ctr}__delete")
                 && ($finfo = ReviewInfo::field_info($rfj->id))) {
+                $sv->error_if_missing("rf__{$ctr}__name");
                 $this->_fix_req_condition($sv, $rfj);
                 $rfj->order = $rfj->order ?? 1000000;
                 $nrfj[] = $rfj;
@@ -403,9 +404,8 @@ class ReviewForm_SettingParser extends SettingParser {
             });
         }
     }
-}
 
-class ReviewForm_SettingRenderer {
+
     static function stash_description_caption() {
         Ht::stash_html('<div id="settings-rf-caption-description" class="hidden">'
             . '<p>Enter an HTML description for the review form.

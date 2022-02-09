@@ -68,10 +68,10 @@ class Responses_SettingParser extends SettingParser {
 
     function print_one(SettingValues $sv, $ctr) {
         $this->ctr = $ctr;
-        $id = $ctr !== '$' ? $sv->vstr("response__{$ctr}__id") : "new";
+        $id = $ctr !== '$' ? $sv->vstr("response__{$ctr}__id") : "\$";
         echo '<div id="response__', $ctr, '" class="form-g settings-response',
-            $id === "new" ? " is-new" : "", '">',
-            Ht::hidden("response__{$ctr}__id", $id, ["data-default-value" => $id === "new" ? "" : null]);
+            $id === "\$" ? " is-new" : "", '">',
+            Ht::hidden("response__{$ctr}__id", $id, ["data-default-value" => $id === "\$" ? "" : null]);
         if ($sv->has_req("response__{$ctr}__delete")) {
             Ht::hidden("response__{$ctr}__delete", "1", ["data-default-value" => ""]);
         }

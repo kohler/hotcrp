@@ -329,6 +329,9 @@ class Tag_Sitype extends Sitype {
     function __construct($name) {
         $this->flags = $name === "tagbase" ? Tagger::NOVALUE : 0;
     }
+    function initialize_si(Si $si) {
+        $si->required = $si->required ?? true;
+    }
     function parse_valstr($vstr, Si $si, SettingValues $sv) {
         if ($vstr === "" && $si->required === false) {
             return "";

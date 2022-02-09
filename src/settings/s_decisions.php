@@ -5,7 +5,7 @@
 class Decisions_SettingParser extends SettingParser {
     function set_oldv(SettingValues $sv, Si $si) {
         assert($si->part0 === "decision__" && $si->part2 === "");
-        $did = $sv->vstr("{$si->name}__id") ?? "new";
+        $did = $sv->vstr("{$si->name}__id") ?? "\$";
         if (is_numeric($did)
             && ($dnum = intval($did)) !== 0
             && ($dname = ($sv->conf->decision_map())[$dnum] ?? null)) {
@@ -26,14 +26,14 @@ class Decisions_SettingParser extends SettingParser {
      * @param array<int> $countmap */
     static private function print_decrow(SettingValues $sv, $ctr, $countmap) {
         $did = $sv->vstr("decision__{$ctr}__id");
-        $isnew = $did === "" || $did === "new";
+        $isnew = $did === "" || $did === "\$";
         $count = $countmap[$did] ?? 0;
         $editable = $sv->editable("decisions");
         echo '<div id="decision__', $ctr, '" class="has-fold foldo settings-decision',
             $isnew ? ' is-new' : '', '"><div class="entryi">',
             $sv->feedback_at("decision__{$ctr}__name"),
             $sv->feedback_at("decision__{$ctr}__category"),
-            Ht::hidden("decision__{$ctr}__id", $isnew ? "new" : $did, ["data-default-value" => $isnew ? "" : null]),
+            Ht::hidden("decision__{$ctr}__id", $isnew ? "\$" : $did, ["data-default-value" => $isnew ? "" : null]),
             $sv->entry("decision__{$ctr}__name", ["data-submission-count" => $count, "class" => $isnew ? "uii js-settings-decision-new-name" : ""]);
         if ($sv->reqstr("decision__{$ctr}__delete")) {
             echo Ht::hidden("decision__{$ctr}__delete", "1", ["data-default-value" => ""]);
