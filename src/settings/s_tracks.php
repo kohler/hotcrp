@@ -2,81 +2,180 @@
 // settings/s_tracks.php -- HotCRP settings > tracks page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class TrackSettingInfo {
-    /** @var array<string,string> */
-    public $cur = [];
-    /** @var array<string,string> */
-    public $req = [];
-    /** @var array<string,true> */
-    public $unfolded = [];
-    /** @var bool */
-    public $readonly = false;
+class TrackPerm_Setting {
+    /** @var ''|'+'|'-'|'none' */
+    public $type;
+    /** @var string */
+    public $tag;
+
+    function __construct($type, $tag) {
+        $this->type = $type;
+        $this->tag = $tag;
+    }
 }
 
-class Tracks_SettingRenderer {
-    static public $nperm_rendered_folded;
+class Track_Setting {
+    /** @var string */
+    public $tag;
+    /** @var bool */
+    public $is_default;
+    /** @var bool */
+    public $is_new;
+    /** @var list<TrackPerm_Setting> */
+    public $perm = [];
+    /** @var object */
+    public $j;
 
-    /** @param string $perm
-     * @param string $type
-     * @return array{string,string} */
-    static function unparse_perm($perm, $type) {
-        if ($perm === "none"
-            || $perm === "+none"
-            || ($perm === "" && Track::permission_required(Track::$map[$type]))) {
-            return ["none", ""];
-        } else if ($perm !== ""
-                   && ($perm[0] === "+" || $perm[0] === "-")
-                   && ($perm !== "+pc" || Track::permission_required(Track::$map[$type]))) {
-            return [$perm[0], (string) substr($perm, 1)];
-        } else {
-            return ["", ""];
+    public function __construct(Track $tr, $j) {
+        $this->tag = $tr->tag;
+        $this->is_default = $tr->is_default;
+        $this->is_new = $tr->tag === "" && !$tr->is_default;
+        $this->j = $j;
+        foreach ($tr->perm as $perm => $p) {
+            if ((Track::perm_required($perm) && $p === null)
+                || $p === "none"
+                || $p === "+none") {
+                $this->perm[] = new TrackPerm_Setting("none", "");
+            } else if ($p === null || $p === "") {
+                $this->perm[] = new TrackPerm_Setting("", "");
+            } else {
+                $this->perm[] = new TrackPerm_Setting(substr($p, 0, 1), substr($p, 1));
+            }
         }
     }
 
-    /** @param TrackSettingInfo $trackinfo */
-    static function do_track_permission($sv, $type, $question, $tnum, $trackinfo,
-                                        $gj = null) {
-        $track_ctl = "{$type}_track$tnum";
-        $tag_ctl = "{$type}_tag_track$tnum";
-        $reqstr = self::unparse_perm($trackinfo->req[$type] ?? "", $type);
-        $curv = self::unparse_perm($trackinfo->cur[$type] ?? "", $type);
-        $defclass = Track::permission_required(Track::$map[$type]) ? "none" : "";
-        $unfolded = $curv[0] !== $defclass
-            || $reqstr[0] !== $defclass
-            || (empty($trackinfo->unfolded) && $gj && ($gj->default_unfolded ?? false))
-            || $sv->problem_status_at($track_ctl);
-        self::$nperm_rendered_folded += !$unfolded;
+    /** @return bool */
+    function is_empty() {
+        foreach ($this->perm as $p) {
+            if ($p->type !== "")
+                return false;
+        }
+        return !$this->is_new;
+    }
+}
+
+class Tracks_SettingParser extends SettingParser {
+    /** @var int|'$' */
+    public $ctr;
+    /** @var int */
+    public $nfolded;
+    /** @var object */
+    private $settings_json;
+    /** @var Track_Setting */
+    private $cur_trx;
+
+    static function permission_title($perm) {
+        if ($perm === Track::VIEW) {
+            return "submission visibility";
+        } else if ($perm === Track::VIEWPDF) {
+            return "document visibility";
+        } else if ($perm === Track::VIEWREV) {
+            return "review visibility";
+        } else if ($perm === Track::VIEWREVID) {
+            return "reviewer name";
+        } else if ($perm === Track::ASSREV) {
+            return "assignment";
+        } else if ($perm === Track::UNASSREV) {
+            return "self-assignment";
+        } else if ($perm === Track::VIEWTRACKER) {
+            return "tracker visibility";
+        } else if ($perm === Track::ADMIN) {
+            return "administrator";
+        } else if ($perm === Track::HIDDENTAG) {
+            return "hidden-tag visibility";
+        } else if ($perm === Track::VIEWALLREV) {
+            return "review visibility";
+        } else {
+            return "unknown";
+        }
+    }
+
+    function set_oldv(SettingValues $sv, Si $si) {
+        if (count($si->parts) === 3 && $si->part2 === "") {
+            $id = $sv->reqstr("{$si->part0}{$si->part1}__id") ?? "";
+            $tr = $id !== "" ? $sv->conf->track($id === "none" ? "" : $id) : null;
+            if ($tr) {
+                $this->settings_json = $this->settings_json ?? $sv->conf->setting_json("tracks");
+                $k = $tr->is_default ? "_" : $tr->tag;
+                $sv->set_oldv($si->name, new Track_Setting($tr, $this->settings_json->{$k}));
+            } else {
+                $sv->set_oldv($si->name, new Track_Setting(new Track(""), (object) []));
+            }
+        } else if (count($si->parts) === 3 && $si->part2 === "__title") {
+            $id = $sv->reqstr("{$si->part0}{$si->part1}__id") ?? "";
+            if ($id === "none") {
+                $sv->set_oldv($si->name, "Default track");
+            } else if (($tag = $sv->vstr("{$si->part0}{$si->part1}__tag") ?? "") !== "") {
+                $sv->set_oldv($si->name, "Track ‘{$tag}’");
+            } else {
+                $sv->set_oldv($si->name, "Unnamed track");
+            }
+        } else if (count($si->parts) === 5 && $si->parts[2] === "__perm__" && $si->part2 === "") {
+            $trx = $sv->oldv("{$si->parts[0]}{$si->parts[1]}");
+            if ($trx && ($perm = Track::$perm_name_map[$si->part1] ?? null) !== null) {
+                $sv->set_oldv($si->name, clone $trx->perm[$perm]);
+            } else {
+                $sv->set_oldv($si->name, new TrackPerm_Setting("", ""));
+            }
+        } else if (count($si->parts) === 5 && $si->parts[2] === "__perm__" && $si->part2 === "__title") {
+            $sv->set_oldv($si->name, self::permission_title(Track::$perm_name_map[$si->part1] ?? null));
+        }
+    }
+
+    function prepare_enumeration(SettingValues $sv, Si $si) {
+        if (count($si->parts) === 3) {
+            $trs = [];
+            foreach ($sv->conf->track_tags() as $tag) {
+                $trs[$tag] = true;
+            }
+            $trs["none"] = true;
+            $sv->map_enumeration("track__", $trs);
+        }
+    }
+
+    const PERM_DEFAULT_UNFOLDED = 1;
+
+    /** @param SettingValues $sv
+     * @param string $permname
+     * @param string|array{string,string} $label
+     * @param int $flags */
+    function print_perm($sv, $permname, $label, $flags = 0) {
+        $perm = Track::$perm_name_map[$permname];
+        $deftype = Track::perm_required($perm) ? "none" : "";
+        $trx = $sv->oldv("track__{$this->ctr}");
+        $pfx = "track__{$this->ctr}__perm__{$permname}";
+        $reqtype = $sv->reqstr("{$pfx}__type") ?? $trx->perm[$perm]->type;
+        $reqtag = $sv->reqstr("{$pfx}__tag") ?? $trx->perm[$perm]->tag;
+
+        $unfolded = $trx->perm[$perm]->type !== $deftype
+            || $reqtype !== $deftype
+            || (($flags & self::PERM_DEFAULT_UNFOLDED) !== 0 && $trx->is_empty())
+            || $sv->problem_status_at("track__{$this->ctr}");
+        if (!$unfolded) {
+            ++$this->nfolded;
+        }
 
         $permts = ["" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"];
-        if (Track::permission_required(Track::$map[$type])) {
+        if (Track::perm_required($perm)) {
             $permts = ["none" => $permts["none"], "+" => $permts["+"], "-" => $permts["-"]];
-            if ($gj && ($gj->permission_required ?? null) === "show_none") {
-                $permts["none"] = "None";
-            }
         }
 
         $hint = "";
-        if (is_array($question)) {
-            list($question, $hint) = $question;
-        }
-        $ljs = [];
-        if ($gj && ($lc = $gj->label_class ?? null)) {
-            $ljs["class"] = $lc;
+        if (is_array($label)) {
+            list($label, $hint) = $label;
         }
 
-        echo '<div class="', $sv->control_class($track_ctl, "entryi wide"),
-            ' has-fold fold', ($reqstr[0] == "" || $reqstr[0] === "none" ? "c" : "o"),
-            ($unfolded ? "" : " fx3"),
+        echo '<div class="', $sv->control_class("{$pfx}__type", "entryi wide"),
+            ' has-fold fold', $reqtype === "" || $reqtype === "none" ? "c" : "o",
+            $unfolded ? "" : " fx3",
             '" data-fold-values="+ -">',
-            $sv->label([$track_ctl, $tag_ctl], $question, $ljs),
+            $sv->label(["{$pfx}__type", "{$pfx}__tag"], $label),
             '<div class="entry">',
-            Ht::select($track_ctl, $permts, $reqstr[0],
-                       $sv->sjs($track_ctl, ["class" => "uich js-foldup", "data-default-value" => $curv[0], "disabled" => $trackinfo->readonly])),
+            Ht::select("{$pfx}__type", $permts, $reqtype, $sv->sjs("{$pfx}__type", ["class" => "uich js-foldup"])),
             " &nbsp;",
-            Ht::entry($tag_ctl, $reqstr[1],
-                      $sv->sjs($tag_ctl, ["class" => "fx need-suggest pc-tags", "placeholder" => "(tag)", "data-default-value" => $curv[1], "readonly" => $trackinfo->readonly]));
-        $sv->print_feedback_at($track_ctl);
-        $sv->print_feedback_at($tag_ctl);
+            Ht::entry("{$pfx}__tag", $reqtag, $sv->sjs("{$pfx}__tag", ["class" => "fx need-suggest pc-tags"]));
+        $sv->print_feedback_at("{$pfx}__type");
+        $sv->print_feedback_at("{$pfx}__tag");
         if ($hint) {
             $klass = "f-h";
             if (str_starts_with($hint, '<div class="fx">')
@@ -90,118 +189,125 @@ class Tracks_SettingRenderer {
         echo "</div></div>";
     }
 
-    static function render_view_permission(SettingValues $sv, $tnum, $t, $gj) {
-        self::do_track_permission($sv, "view",
-            "Who can see these submissions?", $tnum, $t, $gj);
+    function print_view_perm(SettingValues $sv, $gj) {
+        $this->print_perm($sv, "view", "Who can see these submissions?", self::PERM_DEFAULT_UNFOLDED);
     }
 
-    static function render_viewrev_permission(SettingValues $sv, $tnum, $t, $gj) {
+    function print_viewrev_perm(SettingValues $sv, $gj) {
         $hint = "<div class=\"fx\">This setting constrains all users including co-reviewers.</div>";
-        self::do_track_permission($sv, "viewrev",
-            ["Who can see reviews?", $hint], $tnum, $t, $gj);
+        $this->print_perm($sv, "viewrev", ["Who can see reviews?", $hint]);
     }
 
-    static private function get_trackinfo(SettingValues $sv, $trackname, $tnum) {
-        // Find current track data
-        $tinfo = new TrackSettingInfo;
-        if ($trackname !== ""
-            && ($tjson = $sv->conf->setting_json("tracks"))) {
-            $tinfo->cur = $tinfo->req = (array) ($tjson->$trackname ?? []);
-        }
-        // Find request track data
-        if ($sv->use_req()) {
-            $tinfo->req = [];
-            foreach (Track::$map as $type => $perm) {
-                $tclass = $sv->reqstr("{$type}_track$tnum") ?? "";
-                if ($tclass === "none") {
-                    if (!Track::permission_required($perm)) {
-                        $tinfo->req[$type] = "+none";
-                    }
-                } else if ($tclass !== "") {
-                    $tinfo->req[$type] = $tclass . ($sv->reqstr("{$type}_tag_track$tnum") ?? "");
-                }
-            }
-        }
-        // Check fold status
-        foreach (Track::$map as $type => $perm) {
-            if ($tnum === 0 || ($tinfo->req[$type] ?? "") !== "")
-                $tinfo->unfolded[$type] = true;
-        }
-        $tinfo->readonly = !$sv->editable("tracks");
-        return $tinfo;
-    }
-
-    static private function do_track(SettingValues $sv, $trackname, $tnum) {
-        $trackinfo = self::get_trackinfo($sv, $trackname, $tnum);
-        $req_trackname = $trackname;
-        if ($sv->use_req()) {
-            $req_trackname = $sv->reqstr("name_track$tnum") ?? "";
-        }
-
-        // Print track entry
-        echo "<div id=\"trackgroup$tnum\" class=\"mg has-fold fold3",
-            ($tnum ? "c" : "o hidden"),
-            "\"><div class=\"settings-tracks\"><div class=\"entryg\">";
-        if ($trackname === "_") {
-            echo "For submissions not on other tracks:", Ht::hidden("name_track$tnum", "_");
+    private function print_track(SettingValues $sv, $ctr) {
+        $this->ctr = $ctr;
+        $this->nfolded = 0;
+        $trx = $sv->oldv("track__{$ctr}");
+        echo '<div id="track__', $ctr, '" class="mg has-fold ',
+            $trx->is_new ? "fold3o" : "fold3c", '">',
+            Ht::hidden("track__{$ctr}__id",
+                $trx->is_default ? "none" : ($trx->is_new ? "\$" : $trx->tag),
+                ["data-default-value" => $trx->is_new ? "" : null]),
+            '<div class="settings-tracks"><div class="entryg">';
+        if ($trx->is_default) {
+            echo "For submissions not on other tracks:";
         } else {
-            echo $sv->label("name_track$tnum", "For submissions with tag &nbsp;"),
-                Ht::entry("name_track$tnum", $req_trackname, $sv->sjs("name_track$tnum", ["placeholder" => "(tag)", "data-default-value" => $trackname, "class" => "settings-track-name need-suggest tags", "readonly" => $trackinfo->readonly, "spellcheck" => false])), ":";
+            echo $sv->label("track__{$ctr}__tag", "For submissions with tag", ["class" => "mr-2"]),
+                $sv->entry("track__{$ctr}__tag", ["class" => "settings-track-name need-suggest tags", "spellcheck" => false]),
+                ':';
         }
-        echo "</div>";
+        echo '</div>';
 
-        self::$nperm_rendered_folded = 0;
-        foreach ($sv->group_members("tracks/permissions") as $gj) {
-            if (isset($gj->render_track_permission_function)) {
-                Conf::xt_resolve_require($gj);
-                call_user_func($gj->render_track_permission_function, $sv, $tnum, $trackinfo, $gj);
-            }
-        }
+        $sv->print_group("tracks/permissions");
 
-        if (self::$nperm_rendered_folded) {
+        if ($this->nfolded) {
             echo '<div class="entryi wide fn3">',
                 '<label><a href="" class="ui js-foldup q" data-fold-target="3">',
                 expander(true, 3), 'More…</a></label>',
                 '<div class="entry"><a href="" class="ui js-foldup q" data-fold-target="3">',
-                $sv->conf->_("(%d more permissions have default values)", self::$nperm_rendered_folded),
+                $sv->conf->_("(%d more permissions have default values)", $this->nfolded),
                 '</a></div></div>';
         }
         echo "</div></div>\n\n";
     }
 
-    static function do_cross_track(SettingValues $sv) {
+    private function print_cross_track(SettingValues $sv) {
         echo "<div class=\"settings-tracks\"><div class=\"entryg\">General permissions:</div>";
-
-        $trackinfo = self::get_trackinfo($sv, "_", 1);
-        self::do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . $sv->conf->hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", 1, $trackinfo);
+        $this->ctr = $sv->search_enumeration("track__", "__id", "none");
+        $this->print_perm($sv, "viewtracker", "Who can see the <a href=\"" . $sv->conf->hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", self::PERM_DEFAULT_UNFOLDED);
         echo "</div>\n\n";
     }
 
-    static function print(SettingValues $sv) {
+    function print(SettingValues $sv) {
         echo "<p>Tracks control the PC members allowed to view or review different sets of submissions. <span class=\"nw\">(<a href=\"" . $sv->conf->hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
-            Ht::hidden("has_tracks", 1),
-            "<div class=\"smg\"></div>\n";
-        self::do_track($sv, "", 0);
+            Ht::hidden("has_tracks", 1);
 
-        // old track names
-        $track_names = [];
-        foreach ((array) ($sv->conf->setting_json("tracks") ? : []) as $name => $x) {
-            if ($name !== "_")
-                $track_names[] = $name;
+        foreach ($sv->enumerate("track__") as $ctr) {
+            $this->print_track($sv, $ctr);
         }
-        $tnum = 2;
-        while ($tnum < count($track_names) + 2
-               || ($sv->use_req() && $sv->has_req("name_track$tnum"))) {
-            self::do_track($sv, $track_names[$tnum - 2] ?? "", $tnum);
-            ++$tnum;
-        }
-
-        // catchall track
-        self::do_track($sv, "_", 1);
-        self::do_cross_track($sv);
+        $this->print_cross_track($sv);
 
         if ($sv->editable("tracks")) {
-            echo Ht::button("Add track", ["class" => "ui js-settings-track-add", "id" => "settings_track_add"]);
+            echo '<template id="settings-track-new" class="hidden">';
+            $this->print_track($sv, '$');
+            echo '</template>',
+                Ht::button("Add track", ["class" => "ui js-settings-track-add", "id" => "settings_track_add"]);
+        }
+    }
+
+
+    private function _apply_req_perm(SettingValues $sv, Si $si) {
+        $pfx = $si->part0 . $si->part1;
+        $type = $sv->base_parse_req("{$pfx}__type");
+        $tagsi = $sv->si("{$pfx}__tag");
+        $tag = $type === "+" || $type === "-" ? $tagsi->parse_vstr($sv->vstr($tagsi), $sv) : "";
+        $perm = Track::$perm_name_map[$si->part1];
+        if ($type === "" || ($type === "+" && $tag === "")) {
+            $pv = null;
+        } else if ($type === "none" || ($type === "-" && $tag === "")) {
+            $pv = "+none";
+        } else {
+            $pv = $type . $tag;
+        }
+        if (Track::perm_required($perm) && $pv === "+none") {
+            $pv = null;
+        }
+        if ($pv === null) {
+            unset($this->cur_trx->j->{$si->part1});
+        } else {
+            $this->cur_trx->j->{$si->part1} = $pv;
+        }
+    }
+
+    function apply_req(SettingValues $sv, Si $si) {
+        if (count($si->parts) === 5
+            && $si->parts[2] === "__perm__"
+            && ($si->part2 === "__type" || $si->part2 === "__tag")) {
+            if ($si->part2 === "__type" || !$sv->has_req("{$si->part0}{$si->part1}__type")) {
+                $this->_apply_req_perm($sv, $si);
+            }
+            return true;
+        } else if ($si->name === "tracks") {
+            $j = [];
+            foreach ($sv->enumerate("track__") as $ctr) {
+                $this->cur_trx = $sv->parse_members("track__{$ctr}");
+                if (!$sv->reqstr("track__{$ctr}__delete")) {
+                    if (!$this->cur_trx->is_default) {
+                        $sv->error_if_missing("track__{$ctr}__tag");
+                        $sv->error_if_duplicate_member("track__", $ctr, "__tag", "Track tag");
+                        if ($this->cur_trx->tag === "_") {
+                            $sv->error_at("track__{$ctr}__tag", "<0>Track name ‘_’ is reserved");
+                        }
+                    }
+                    foreach ($sv->si_req_members("track__{$ctr}__perm__", true) as $permsi) {
+                        $sv->apply_req($permsi);
+                    }
+                    $j[$this->cur_trx->is_default ? "_" : $this->cur_trx->tag] = $this->cur_trx->j;
+                }
+            }
+            $sv->update("tracks", empty($j) ? "" : json_encode_db($j));
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -209,97 +315,39 @@ class Tracks_SettingRenderer {
         $conf = $sv->conf;
         if (($sv->has_interest("tracks") || $sv->has_interest("pcrev_any"))
             && $conf->has_tracks()) {
-            $tracks = (array) $conf->setting_json("tracks");
-            $tracknum = 2;
-            foreach ($tracks as $trackname => $t) {
-                $tnum = ($trackname === "_" ? 1 : $tracknum);
-                $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
-                $assrev = $t->assrev ?? null;
-                $unassrev = $t->unassrev ?? null;
-                if (($t->viewpdf ?? null)
-                    && $t->viewpdf !== $unassrev
-                    && $unassrev !== "+none"
-                    && $t->viewpdf !== ($t->view ?? null)
+            foreach (array_merge($conf->track_tags(), [""]) as $i => $trtag) {
+                $tr = $conf->track($trtag);
+                $ctr = $i + 1;
+                if ($tr->perm[Track::VIEWPDF]
+                    && $tr->perm[Track::VIEWPDF] !== $tr->perm[Track::UNASSREV]
+                    && $tr->perm[Track::UNASSREV] !== "+none"
+                    && $tr->perm[Track::VIEWPDF] !== $tr->perm[Track::VIEW]
                     && $conf->setting("pcrev_any")) {
-                    $sv->warning_at("unassrev_track$tnum", "<0>$tdesc: A track that restricts who can see documents should generally restrict review self-assignment in the same way.");
+                    $sv->warning_at("track__{$ctr}__perm__unassrev__type", "<0>A track that restricts who can see documents should generally restrict review self-assignment in the same way.");
                 }
-                if ($assrev
-                    && $unassrev
-                    && $unassrev !== "+none"
-                    && $assrev !== $unassrev
+                if ($tr->perm[Track::ASSREV]
+                    && $tr->perm[Track::UNASSREV]
+                    && $tr->perm[Track::UNASSREV] !== "+none"
+                    && $tr->perm[Track::ASSREV] !== $tr->perm[Track::UNASSREV]
                     && $conf->setting("pcrev_any")) {
                     $n = 0;
                     foreach ($conf->pc_members() as $pc) {
-                        if ($pc->has_permission($assrev) && $pc->has_permission($unassrev))
+                        if ($pc->has_permission($tr->perm[Track::ASSREV])
+                            && $pc->has_permission($tr->perm[Track::UNASSREV]))
                             ++$n;
                     }
                     if ($n === 0) {
-                        $sv->warning_at("assrev_track$tnum");
-                        $sv->warning_at("unassrev_track$tnum", "<0>$tdesc: No PC members match both review assignment permissions, so no PC members can self-assign reviews.");
+                        $sv->warning_at("track__{$ctr}__perm__assrev__type");
+                        $sv->warning_at("track__{$ctr}__perm__unassrev__type", "<0>No PC members match both review assignment permissions, so no PC members can self-assign reviews.");
                     }
                 }
-                $tracknum += ($trackname === "_" ? 0 : 1);
+                foreach ($tr->perm as $perm => $pv) {
+                    if ($pv !== null && $pv !== "+none" && !$conf->pc_tag_exists(substr($pv, 1)))
+                        $sv->warning_at("track__{$ctr}__perm__" . Track::perm_name($perm) . "__tag", "<0>No PC member has tag ‘" . substr($pv, 1) . "’. You might want to check your spelling.");
+                }
             }
         }
     }
 }
 
-class Tracks_SettingParser extends SettingParser {
-    function apply_req(SettingValues $sv, Si $si) {
-        $tagger = new Tagger($sv->user);
-        $tracks = (object) array();
-        $missing_tags = false;
-        for ($i = 1; $sv->has_req("name_track$i"); ++$i) {
-            $trackname = trim($sv->reqstr("name_track$i"));
-            $ok = true;
-            if ($trackname === "" || $trackname === "(tag)") {
-                continue;
-            }
-            $trackname = $tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE);
-            if (!$trackname || ($trackname === "_" && $i !== 1)) {
-                if ($trackname !== "_") {
-                    $sv->error_at("name_track$i", "<5>" . $tagger->error_html());
-                } else {
-                    $sv->error_at("name_track$i", "<0>Track name “_” is reserved");
-                }
-                $sv->error_at("tracks");
-                $ok = false;
-            }
-            $t = (object) array();
-            foreach (Track::$map as $type => $perm) {
-                $ttype = $sv->reqstr("{$type}_track$i");
-                $ttag = trim($sv->reqstr("{$type}_tag_track$i") ?? "");
-                if ($ttype === "+" && strcasecmp($ttag, "none") === 0) {
-                    $ttype = "none";
-                }
-                if ($ttype === "+" || $ttype === "-") {
-                    if ($ttag === "" || $ttag === "(tag)") {
-                        $sv->error_at("{$type}_track$i", "<0>Tag missing for track setting");
-                        $sv->error_at("{$type}_tag_track$i");
-                        $sv->error_at("tracks");
-                    } else if (($ttag = $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))) {
-                        $t->$type = $ttype . $ttag;
-                    } else {
-                        $sv->error_at("{$type}_track$i", "<5>Track permission tag: " . $tagger->error_html());
-                        $sv->error_at("{$type}_tag_track$i");
-                        $sv->error_at("tracks");
-                    }
-                } else if ($ttype === "none") {
-                    if (!Track::permission_required($perm)) {
-                        $t->$type = "+none";
-                    }
-                } else if ($ttype === null) {
-                    // track permission not in UI; preserve current permission
-                    if (($perm = $sv->conf->track_permission($trackname, $perm))) {
-                        $t->$type = $perm;
-                    }
-                }
-            }
-            if ($ok && (count((array) $t) || ($tracks->_ ?? null))) {
-                $tracks->$trackname = $t;
-            }
-        }
-        $sv->save("tracks", count((array) $tracks) ? json_encode_db($tracks) : "");
-        return true;
-    }
-}
+class_alias("Tracks_SettingParser", "Tracks_SettingRenderer");

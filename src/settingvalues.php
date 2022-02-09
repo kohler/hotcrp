@@ -481,13 +481,13 @@ class SettingValues extends MessageSet {
 
     /** @param string $name
      * @return bool
-     * should be deprecated */
+     * @deprecated */
     function has_reqv($name) {
         return array_key_exists($name, $this->req);
     }
 
     /** @param string $name
-     * should be deprecated */
+     * @deprecated */
     function reqv($name) {
         return $this->req[$name] ?? null;
     }
@@ -622,11 +622,7 @@ class SettingValues extends MessageSet {
         $collator = $this->conf->collator();
         for ($i = $min_ctr ?? 1; isset($this->req["{$pfx}{$i}__id"]); ++$i) {
             $si1 = $this->si("{$pfx}{$i}{$sfx}");
-            if ($this->has_req($si1->name)) {
-                $v1 = $this->base_parse_req($si1);
-            } else {
-                $v1 = $this->oldv($si1);
-            }
+            $v1 = $this->base_parse_req($si1);
             if ($v1 !== null && $collator->compare($needle, $v1) === 0) {
                 $result = $i;
                 break;
@@ -848,8 +844,8 @@ class SettingValues extends MessageSet {
             && !isset($js["data-default-checked"])) {
             if ($si && $this->has_interest($si)) {
                 $x["data-default-value"] = $si->base_unparse_reqv($this->oldv($si));
-            } else if (isset($this->_explicit_oldv[$si->name])) {
-                $x["data-default-value"] = $this->_explicit_oldv[$si->name];
+            } else if (isset($this->_explicit_oldv[$name])) {
+                $x["data-default-value"] = $this->_explicit_oldv[$name];
             }
         }
         foreach ($js ?? [] as $k => $v) {
@@ -1311,19 +1307,22 @@ class SettingValues extends MessageSet {
      * @return null|int|string */
     function base_parse_req($id) {
         $si = is_string($id) ? $this->si($id) : $id;
-        return $si->parse_valstr($this->reqstr($si->name), $this);
+        if ($this->has_req($si->name)) {
+            return $si->parse_vstr($this->reqstr($si->name), $this);
+        } else {
+            return $this->oldv($si);
+        }
     }
 
     /** @param Si $si */
-    private function apply_req($si) {
+    function apply_req($si) {
         if (!$si->internal
             && !$si->disabled
-            && ($si->storage_type & Si::SI_MEMBER ? $this->cur_object : !$this->cur_object)
             && $this->editable($si)
             && (!$si->parser_class
                 || $this->si_parser($si)->apply_req($this, $si) === false)
             && $si->storage_type !== Si::SI_NONE
-            && ($value = $si->parse_valstr($this->reqstr($si->name), $this)) !== null) {
+            && ($value = $si->parse_vstr($this->reqstr($si->name), $this)) !== null) {
             $this->save($si, $value);
         }
     }
@@ -1347,30 +1346,40 @@ class SettingValues extends MessageSet {
 
         // parse and validate settings
         foreach ($this->_req_si as $si) {
-            $this->apply_req($si);
+            if (($si->storage_type & Si::SI_MEMBER) === 0)
+                $this->apply_req($si);
         }
 
         return $this;
+    }
+
+    /** @param string $pfx
+     * @param bool $descendents
+     * @return list<Si> */
+    function si_req_members($pfx, $descendents = false) {
+        assert($this->_req_parsed && str_ends_with($pfx, "__"));
+        $sis = [];
+        foreach ($this->_req_si as $si) {
+            if (str_starts_with($si->name, $pfx)
+                && ($descendents || strlen($si->part0) + strlen($si->part1) === strlen($pfx) - 2))
+                $sis[] = $si;
+        }
+        return $sis;
     }
 
     /** @param string $oname
      * @return object */
     function parse_members($oname) {
         $object = $this->objectv($oname);
-        assert($object && $this->_req_parsed);
+        assert($object && $this->_req_parsed && !str_ends_with($oname, "__"));
         $object = clone $object;
         $old_object = $this->cur_object;
         $this->cur_object = $object;
         // skip member parsing if object is deleted (don't want errors)
         if (!$this->reqstr("{$oname}__delete")) {
-            foreach ($this->_req_si as $si) {
-                if (($si->storage_type & Si::SI_MEMBER) !== 0
-                    && $si->part0 !== null
-                    && str_starts_with($oname, $si->part0)
-                    && strlen($oname) === strlen($si->part0) + strlen($si->part1)
-                    && str_ends_with($oname, $si->part1)) {
+            foreach ($this->si_req_members("{$oname}__") as $si) {
+                if (($si->storage_type & Si::SI_MEMBER) !== 0)
                     $this->apply_req($si);
-                }
             }
         }
         $this->cur_object = $old_object;
@@ -1521,107 +1530,5 @@ class SettingValues extends MessageSet {
     /** @return list<string> */
     function updated_fields() {
         return array_keys($this->_diffs);
-    }
-
-
-    /** @param string $field
-     * @deprecated */
-    function echo_feedback_at($field) {
-        $this->print_feedback_at($field);
-    }
-    /** @param string|Si $id
-     * @param string $class
-     * @param ?array<string,mixed> $js
-     * @deprecated */
-    function echo_group_open($id, $class, $js = null) {
-        $this->print_group_open($id, $class, $js);
-    }
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @return void
-     * @deprecated */
-    function echo_checkbox_only($name, $js = null) {
-        $this->print_checkbox_only($name, $js);
-    }
-    /** @param string $name
-     * @param string $text
-     * @param ?array<string,mixed> $js
-     * @param string $hint
-     * @return void
-     * @deprecated */
-    function echo_checkbox($name, $text, $js = null, $hint = "") {
-        $this->print_checkbox($name, $text, $js, $hint);
-    }
-    /** @param string $name
-     * @param array $varr
-     * @param ?string $heading
-     * @param string|array $rest
-     * @return void
-     * @deprecated */
-    function echo_radio_table($name, $varr, $heading = null, $rest = []) {
-        $this->print_radio_table($name, $varr, $heading, $rest);
-    }
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @return void
-     * @deprecated */
-    function echo_entry($name, $js = null) {
-        $this->print_entry($name, $js);
-    }
-    /** @param string $name
-     * @param string $description
-     * @param string $control
-     * @param ?array<string,mixed> $js
-     * @param string $hint
-     * @deprecated */
-    function echo_control_group($name, $description, $control,
-                                 $js = null, $hint = "") {
-        $this->print_control_group($name, $description, $control, $js, $hint);
-    }
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @param string $hint
-     * @return void
-     * @deprecated */
-    function echo_entry_group($name, $description, $js = null, $hint = "") {
-        $this->print_entry_group($name, $description, $js, $hint);
-    }
-    /** @param string $name
-     * @param string $description
-     * @param array $values
-     * @param ?array<string,mixed> $js
-     * @param string $hint
-     * @deprecated */
-    function echo_select_group($name, $description, $values, $js = null, $hint = "") {
-        $this->print_select_group($name, $description, $values, $js, $hint);
-    }
-    /** @param string $name
-     * @param ?array<string,mixed> $js
-     * @param string $hint
-     * @return void
-     * @deprecated */
-    function echo_textarea_group($name, $description, $js = null, $hint = "") {
-        $this->print_textarea_group($name, $description, $js, $hint);
-    }
-    /** @param string $name
-     * @param string $description
-     * @param string $hint
-     * @deprecated */
-    function echo_message($name, $description, $hint = "") {
-        $this->print_message($name, $description, $hint);
-    }
-    /** @param string $name
-     * @param string $description
-     * @param string $hint
-     * @deprecated */
-    function echo_message_minor($name, $description, $hint = "") {
-        $this->print_message_minor($name, $description, $hint);
-    }
-    /** @param string $name
-     * @param string $description
-     * @param string $hint
-     * @deprecated */
-    function echo_message_horizontal($name, $description, $hint = "") {
-        $this->print_message_horizontal($name, $description, $hint);
     }
 }

@@ -723,6 +723,40 @@
         "parser_class": "Tracks_SettingParser",
         "type": "string"
     },
+    {
+        "name_pattern": "track__$", "group": "tracks",
+        "type": "object", "storage": "none", "parser_class": "Tracks_SettingParser"
+    },
+    {   "name_pattern": "track__$__id", "internal": true, "type": "string"   },
+    {
+        "name_pattern": "track__$__tag", "group": "tracks",
+        "title": "Track tag",
+        "type": "tag", "size": 20, "autogrow": true, "storage": "member.tag"
+    },
+    {
+        "name_pattern": "track__$__title", "group": "tracks",
+        "internal": true, "parser_class": "Tracks_SettingParser"
+    },
+    {
+        "name_pattern": "track__$__perm__$$", "group": "tracks",
+        "type": "object", "storage": "none", "parser_class": "Tracks_SettingParser"
+    },
+    {
+        "name_pattern": "track__$__perm__$$__type", "group": "tracks",
+        "title_pattern": "${sv track__$__title} ${sv track__$__perm__$$__title} permission",
+        "type": "radio", "values": ["", "+", "-", "none"], "storage": "member.type",
+        "parser_class": "Tracks_SettingParser"
+    },
+    {
+        "name_pattern": "track__$__perm__$$__tag", "group": "tracks",
+        "title_pattern": "${sv track__$__title} ${sv track__$__perm__$$__title} permission",
+        "type": "tag", "storage": "member.tag",
+        "parser_class": "Tracks_SettingParser"
+    },
+    {
+        "name_pattern": "track__$__perm__$$__title", "group": "tracks",
+        "internal": true, "parser_class": "Tracks_SettingParser"
+    },
 
     {   "name": "extrev_hard_0", "merge": true, "storage": "extrev_hard"   },
     {   "name": "extrev_soft_0", "merge": true, "storage": "extrev_soft"   },

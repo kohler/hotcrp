@@ -491,6 +491,7 @@ class Conf {
         $this->_tracks = [];
         $this->_track_tags = [];
         $trest = new Track("");
+        $trest->is_default = true;
         foreach ((array) $j as $tag => $v) {
             if ($tag === "" || $tag === "_") {
                 $tr = $trest;
@@ -501,7 +502,7 @@ class Conf {
             if (!isset($v->viewpdf) && isset($v->view)) {
                 $v->viewpdf = $v->view;
             }
-            foreach (Track::$map as $tname => $idx) {
+            foreach (Track::$perm_name_map as $tname => $idx) {
                 if (isset($v->$tname)) {
                     $tr->perm[$idx] = $v->$tname;
                     $this->_track_sensitivity |= 1 << $idx;

@@ -9,9 +9,8 @@ class Track {
     /** @var string
      * @readonly */
     public $tag;
-    /** @var bool
-     * @readonly */
-    public $is_default;
+    /** @var bool */
+    public $is_default = false;
     /** @var list<?string> */
     public $perm;
 
@@ -25,6 +24,7 @@ class Track {
     const ADMIN = 7;
     const HIDDENTAG = 8;
     const VIEWALLREV = 9;
+    const NPERM = 10;
 
     const BITS_VIEW = 0x1;        // 1 << VIEW
     const BITS_REVIEW = 0x30;     // (1 << ASSREV) | (1 << UNASSREV)
@@ -32,7 +32,7 @@ class Track {
     const BITS_VIEWADMIN = 0x81;  // (1 << VIEW) | (1 << ADMIN)
 
     /** @readonly */
-    static public $map = [
+    static public $perm_name_map = [
         "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
         "assrev" => 4, "unassrev" => 5, "viewtracker" => 6, "admin" => 7,
         "hiddentag" => 8, "viewallrev" => 9
@@ -42,33 +42,18 @@ class Track {
     function __construct($tag) {
         $this->ltag = strtolower($tag);
         $this->tag = $tag;
-        $this->is_default = $tag === "_" || $tag === "";
         $this->perm = [null, null, null, null, null, null, null, null, null, null];
     }
 
     /** @param int $perm
      * @return bool */
-    static function permission_required($perm) {
+    static function perm_required($perm) {
         return $perm === self::ADMIN || $perm === self::HIDDENTAG;
     }
 
-    function __set($name, $value) {
-        assert(isset(self::$map[$name]));
-        $this->perm[self::$map[$name]] = $value;
-    }
-
-    function __get($name) {
-        assert(isset(self::$map[$name]));
-        return $this->perm[self::$map[$name]];
-    }
-
-    function __isset($name) {
-        assert(isset(self::$map[$name]));
-        return isset($this->perm[self::$map[$name]]);
-    }
-
-    function __unset($name) {
-        assert(isset(self::$map[$name]));
-        $this->perm[self::$map[$name]] = null;
+    /** @param int $perm
+     * @return string */
+    static function perm_name($perm) {
+        return array_search($perm, self::$perm_name_map);
     }
 }

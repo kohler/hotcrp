@@ -1149,9 +1149,9 @@ class Tagger {
         case 0:
             return null;
         case self::EEMPTY:
-            return "Tag missing";
+            return "Tag required";
         case self::EMULTIPLE:
-            return "Expected a single tag";
+            return "Single tag required";
         case self::E2BIG:
             return "Tag too long";
         case self::ALLOWSTAR:

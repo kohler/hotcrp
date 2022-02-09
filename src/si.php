@@ -119,8 +119,8 @@ class Si {
             $n = count($j->parts);
             assert(is_string_list($j->parts) && $n >= 3);
             $this->parts = $j->parts;
-            $this->part0 = $j->parts[0];
-            $this->part1 = $n === 3 ? $j->parts[1] : join("", array_slice($j->parts, 1, $n - 2));
+            $this->part0 = $n === 3 ? $j->parts[0] : join("", array_slice($j->parts, 0, $n - 2));
+            $this->part1 = $j->parts[$n - 2];
             $this->part2 = $j->parts[$n - 1];
         }
         foreach ((array) $j as $k => $v) {
@@ -337,26 +337,19 @@ class Si {
             || ($this->_tclass && $this->_tclass->nullable($v, $this, $sv));
     }
 
-    /** @param ?string $valstr
-     * @return null|int|string
-     * @deprecated */
-    function base_parse_reqv($valstr, SettingValues $sv) {
-        return $this->parse_valstr($valstr, $sv);
-    }
-
     /** @param ?string $reqv
      * @return null|int|string */
-    function parse_valstr($reqv, SettingValues $sv) {
+    function parse_vstr($reqv, SettingValues $sv) {
         if ($reqv === null) {
-            return $this->_tclass ? $this->_tclass->parse_null_valstr($this) : null;
+            return $this->_tclass ? $this->_tclass->parse_null_vstr($this) : null;
         } else if ($this->_tclass) {
             $v = trim($reqv);
             if ($this->placeholder === $v) {
                 $v = "";
             }
-            return $this->_tclass->parse_valstr($v, $this, $sv);
+            return $this->_tclass->parse_vstr($v, $this, $sv);
         } else {
-            throw new Error("Don't know how to parse_valstr {$this->name}.");
+            throw new Error("Don't know how to parse_vstr {$this->name}.");
         }
     }
 
@@ -364,7 +357,7 @@ class Si {
      * @return string */
     function base_unparse_reqv($v) {
         if ($this->_tclass) {
-            return $this->_tclass->unparse_valstr($v, $this);
+            return $this->_tclass->unparse_vstr($v, $this);
         } else {
             return (string) $v;
         }
@@ -442,6 +435,7 @@ class SettingInfoSet {
             }
             $result[] = $m;
             $result[] = $parts[$i + 1];
+            $pos += strlen($m) + strlen($parts[$i + 1]);
         }
         return $result;
     }

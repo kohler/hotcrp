@@ -202,21 +202,21 @@
     },
     {
         "name": "tracks", "group": "tags", "order": 750,
-        "print_function": "Tracks_SettingRenderer::print",
+        "print_function": "*Tracks_SettingParser::print",
         "title": "Tracks", "hashid": "tracks"
     },
     {
         "name": "__crosscheck/tracks", "order": 750,
-        "crosscheck_function": "Tracks_SettingRenderer::crosscheck"
+        "crosscheck_function": "Tracks_SettingParser::crosscheck"
     },
     {
         "name": "tracks/permissions/view", "order": 10,
-        "render_track_permission_function": "Tracks_SettingRenderer::render_view_permission",
+        "print_function": "*Tracks_SettingParser::print_view_perm",
         "default_unfolded": true
     },
     {
         "name": "tracks/permissions/viewrev", "order": 30,
-        "render_track_permission_function": "Tracks_SettingRenderer::render_viewrev_permission"
+        "print_function": "*Tracks_SettingParser::print_viewrev_perm"
     },
 
 

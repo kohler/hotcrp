@@ -14,6 +14,7 @@ class Sitype {
         "grace" => "Grace_Sitype",
         "htmlstring" => "Html_Sitype",
         "int" => "Nonnegint_Sitype", /* XXX */
+        "longstring" => "String_Sitype",
         "nonnegint" => "Nonnegint_Sitype",
         "radio" => "Radio_Sitype",
         "simplestring" => "String_Sitype",
@@ -48,17 +49,17 @@ class Sitype {
         return Si::SI_VALUE;
     }
 
-    function parse_null_valstr(Si $si) {
+    function parse_null_vstr(Si $si) {
         return null;
     }
 
     /** @param string $vstr */
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         throw new Error("Don't know how to parse {$si->name}");
     }
 
     /** @return string */
-    function unparse_valstr($v, Si $si) {
+    function unparse_vstr($v, Si $si) {
         return (string) $v;
     }
 
@@ -82,27 +83,27 @@ trait Data_Sitype {
 
 class Checkbox_Sitype extends Sitype {
     use Positive_Sitype;
-    function parse_null_valstr(Si $si) {
+    function parse_null_vstr(Si $si) {
         return 0;
     }
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         return $vstr !== "" ? 1 : 0;
     }
-    function unparse_valstr($v, Si $si) {
+    function unparse_vstr($v, Si $si) {
         return $v ? "1" : "";
     }
 }
 
 class Radio_Sitype extends Sitype {
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         foreach ($si->values as $allowedv) {
             if ((string) $allowedv === $vstr)
                 return $allowedv;
         }
-        $sv->error_at($si, "<0>Please enter a valid choice");
+        $sv->error_at($si, "<0>‘" . ($vstr === "" ? "(empty)" : $vstr) . "’ is not a valid choice");
         return null;
     }
-    function unparse_valstr($v, Si $si) {
+    function unparse_vstr($v, Si $si) {
         return (string) $v;
     }
     function nullable($v, Si $si, SettingValues $sv) {
@@ -112,10 +113,10 @@ class Radio_Sitype extends Sitype {
 
 class Cdate_Sitype extends Sitype {
     use Positive_Sitype;
-    function parse_null_valstr(Si $si) {
+    function parse_null_vstr(Si $si) {
         return 0;
     }
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         if ($vstr !== "") {
             $curv = $sv->oldv($si);
             return $curv > 0 ? $curv : Conf::$now;
@@ -123,7 +124,7 @@ class Cdate_Sitype extends Sitype {
             return 0;
         }
     }
-    function unparse_valstr($v, Si $si) {
+    function unparse_vstr($v, Si $si) {
         return $v ? "1" : "";
     }
 }
@@ -138,7 +139,7 @@ class Date_Sitype extends Sitype {
         $si->size = $si->size ?? 32;
         $si->placeholder = $si->placeholder ?? "N/A";
     }
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         if ($vstr === ""
             || $vstr === "0"
             || strcasecmp($vstr, "N/A") === 0) {
@@ -152,7 +153,7 @@ class Date_Sitype extends Sitype {
             return null;
         }
     }
-    function unparse_valstr($v, Si $si) {
+    function unparse_vstr($v, Si $si) {
         if ($v === null) {
             return "";
         } else if ($v <= 0) {
@@ -174,7 +175,7 @@ class Grace_Sitype extends Sitype {
         $si->size = $si->size ?? 15;
         $si->placeholder = $si->placeholder ?? "none";
     }
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         if (($v = SettingParser::parse_interval($vstr)) !== false) {
             return intval($v);
         } else {
@@ -182,7 +183,7 @@ class Grace_Sitype extends Sitype {
             return null;
         }
     }
-    function unparse_valstr($v, Si $si) {
+    function unparse_vstr($v, Si $si) {
         if ($v === null || $v <= 0 || !is_numeric($v)) {
             return "none";
         } else if ($v % 3600 === 0) {
@@ -201,7 +202,7 @@ class Nonnegint_Sitype extends Sitype {
         $si->size = $si->size ?? 15;
         $si->placeholder = $si->placeholder ?? "none";
     }
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         if (preg_match('/\A\+?[0-9]+\z/', $vstr)) {
             return intval($vstr);
         } else if ($vstr === "" && $si->default_value !== null) {
@@ -218,7 +219,7 @@ class Float_Sitype extends Sitype {
         $si->size = $si->size ?? 15;
         $si->placeholder = $si->placeholder ?? "none";
     }
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         if (is_numeric($vstr)) {
             return floatval($vstr);
         } else if ($vstr === "" && $si->default_value !== null) {
@@ -240,7 +241,7 @@ class String_Sitype extends Sitype {
         $this->simple = $name === "simplestring";
         $this->long = $name === "longstring";
     }
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         if ($this->simple) {
             $s = simplify_whitespace($vstr);
         } else if ($this->long) {
@@ -264,7 +265,7 @@ class String_Sitype extends Sitype {
 
 class Url_Sitype extends Sitype {
     use Data_Sitype;
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         if (($vstr === "" && $si->required === false)
             || preg_match('/\A(?:https?|ftp):\/\/\S+\z/', $vstr)) {
             return $vstr;
@@ -280,7 +281,7 @@ class Url_Sitype extends Sitype {
 
 class Email_Sitype extends Sitype {
     use Data_Sitype;
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         if (($vstr === "" && $si->required === false)
             || validate_email($vstr)
             || $vstr === $sv->oldv($si->name)) {
@@ -297,7 +298,7 @@ class Email_Sitype extends Sitype {
 
 class EmailHeader_Sitype extends Sitype {
     use Data_Sitype;
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         $mt = new MimeText;
         $t = $mt->encode_email_header("", $vstr);
         if ($t !== false) {
@@ -311,7 +312,7 @@ class EmailHeader_Sitype extends Sitype {
 
 class Html_Sitype extends Sitype {
     use Data_Sitype;
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         $ch = CleanHTML::basic();
         if (($t = $ch->clean($vstr)) !== false) {
             return $t;
@@ -332,7 +333,7 @@ class Tag_Sitype extends Sitype {
     function initialize_si(Si $si) {
         $si->required = $si->required ?? true;
     }
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         if ($vstr === "" && $si->required === false) {
             return "";
         } else if (($t = $sv->tagger()->check($vstr, $this->flags))) {
@@ -362,7 +363,7 @@ class TagList_Sitype extends Sitype {
             $this->flags = Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE;
         }
     }
-    function parse_valstr($vstr, Si $si, SettingValues $sv) {
+    function parse_vstr($vstr, Si $si, SettingValues $sv) {
         $ts = [];
         foreach (preg_split('/[\s,;]+/', $vstr) as $t) {
             if ($t !== "" && ($tx = $sv->tagger()->check($t, $this->flags))) {

@@ -240,13 +240,13 @@ handle_ui.on("js-settings-delete-autosearch", function (event) {
 });
 
 handle_ui.on("js-settings-track-add", function () {
-    for (var i = 1; jQuery("#trackgroup" + i).length; ++i)
-        /* do nothing */;
-    $("#trackgroup" + (i - 1)).after("<div id=\"trackgroup" + i + "\" class=\"mg has-fold fold3o\"></div>");
-    var $j = jQuery("#trackgroup" + i);
-    $j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
+    for (var i = 1; jQuery("#track__" + i).length; ++i) {
+    }
+    var trhtml = $("#settings-track-new").html().replace(/__\$/g, "__" + i);
+    $("#track__" + (i - 1)).after(trhtml);
+    var $j = jQuery("#track__" + i);
     $j.find(".need-suggest").each(suggest);
-    $j.find("input[name^=name]").focus();
+    this.form.elements["track__".concat(i, "__tag")].focus();
 });
 
 handle_ui.on("js-settings-topics-copy", function () {
