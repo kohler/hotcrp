@@ -17,19 +17,19 @@ class Banal_SettingRenderer {
         $editable = $sv->editable("sub_banal_{$suffix}");
         echo Ht::hidden("has_sub_banal_{$suffix}", 1);
         $sv->print_checkbox("sub_banal_val_{$suffix}", "PDF format checker<span class=\"fx\">:</span>", ["class" => "uich js-foldup", "group_class" => "form-g has-fold " . ($open ? "foldo" : "foldc"), "group_open" => true]);
-        echo '<div class="settings-2col fx">';
+        echo '<div class="f-mcol mt-3 fx"><div class="flex-grow-0">';
         $sv->print_entry_group("sub_banal_papersize_{$suffix}", "Paper size", ["horizontal" => true, "readonly" => !$editable], "Examples: “letter”, <span class=\"nw\">“21cm x 28cm”,</span> <span class=\"nw\">“letter OR A4”</span>");
-        echo '<div class="entryg">';
         $sv->print_entry_group("sub_banal_textblock_{$suffix}", "Text block", ["horizontal" => true, "readonly" => !$editable], "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
         $sv->print_entry_group("sub_banal_columns_{$suffix}", "Columns", ["horizontal" => true, "readonly" => !$editable]);
-        echo '</div><div class="entryg">';
+        echo '</div>';
+        echo '<div class="flex-grow-0">';
         $sv->print_entry_group("sub_banal_pagelimit_{$suffix}", "Page limit", ["horizontal" => true, "class" => "uii uich js-settings-banal-pagelimit", "readonly" => !$editable]);
         echo '<div class="entryi fx2"><label></label><div class="entry settings-banal-unlimitedref">';
         $sv->print_checkbox("sub_banal_unlimitedref_{$suffix}", "Unlimited reference pages", ["disabled" => !$uropen || !$editable, "label_class" => $uropen ? null : "dim"]);
-        echo '</div></div></div>';
+        echo '</div></div>';
         $sv->print_entry_group("sub_banal_bodyfontsize_{$suffix}", "Body font size", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
         $sv->print_entry_group("sub_banal_bodylineheight_{$suffix}", "Line height", ["horizontal" => true, "control_after" => "&nbsp;pt", "readonly" => !$editable]);
-        echo "</div></div>\n";
+        echo "</div></div></div>\n";
     }
 }
 

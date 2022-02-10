@@ -329,7 +329,8 @@ class Tracks_SettingParser extends SettingParser {
 
     static function crosscheck(SettingValues $sv) {
         $conf = $sv->conf;
-        if (($sv->has_interest("tracks") || $sv->has_interest("pcrev_any"))
+        $tracks_interest = $sv->has_interest("tracks");
+        if (($tracks_interest || $sv->has_interest("pcrev_any"))
             && $conf->has_tracks()) {
             foreach ($sv->enumerate("track__") as $ctr) {
                 if (($id = $sv->reqstr("track__{$ctr}__id")) === "") {
@@ -363,7 +364,8 @@ class Tracks_SettingParser extends SettingParser {
                     if ($pv !== null
                         && $pv !== "+none"
                         && ($perm !== Track::VIEWPDF || $pv !== $tr->perm[Track::VIEW])
-                        && !$conf->pc_tag_exists(substr($pv, 1)))
+                        && !$conf->pc_tag_exists(substr($pv, 1))
+                        && $tracks_interest)
                         $sv->warning_at("track__{$ctr}__perm__" . Track::perm_name($perm) . "__tag", "<0>No PC member has tag ‘" . substr($pv, 1) . "’. You might want to check your spelling.");
                 }
             }

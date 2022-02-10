@@ -17,7 +17,8 @@ class Reviews_SettingRenderer {
         }
         $sv->set_oldv($rname, $nameval);
 
-        echo '<div class="mg js-settings-review-round" data-review-round-number="', $rnum, '"><div>';
+        echo '<div class="js-settings-review-round mt-3" data-review-round-number="', $rnum, '">',
+            '<div class="mb-2">';
         $sv->print_feedback_at($rname);
         echo $sv->label($rname, "Round"), ' &nbsp;',
             $sv->entry($rname);
@@ -47,12 +48,13 @@ class Reviews_SettingRenderer {
             }
         }
 
-        echo '<div class="settings-2col" style="margin-left:3em">';
+        echo '<div class="f-mcol ml-5"><div class="flex-grow-0">';
         $sv->print_entry_group("pcrev_soft_$rnum", "PC deadline", ["horizontal" => true]);
         $sv->print_entry_group("pcrev_hard_$rnum", "Hard deadline", ["horizontal" => true]);
+        echo '</div><div class="flex-grow-0">';
         $sv->print_entry_group("extrev_soft_$rnum", "External deadline", ["horizontal" => true]);
         $sv->print_entry_group("extrev_hard_$rnum", "Hard deadline", ["horizontal" => true]);
-        echo "</div></div>\n";
+        echo "</div></div></div>\n";
     }
 
     static function print(SettingValues $sv) {

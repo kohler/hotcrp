@@ -483,6 +483,10 @@ label.checki {
 	margin-left: 1em !important;
 	margin-left: 1rem !important;
 }
+.ml-5 {
+	margin-left: 2.25em !important;
+	margin-left: 2.25rem !important;
+}
 .ml-auto {
 	margin-left: auto !important;
 }
@@ -553,13 +557,16 @@ label.checki {
 	align-items: baseline;
 }
 .flex-row-reverse {
-	flex-direction: row-reverse;
+	flex-direction: row-reverse !important;
 }
 .flex-wrap {
-	flex-wrap: wrap;
+	flex-wrap: wrap !important;
+}
+.flex-grow-0 {
+	flex-grow: 0 !important;
 }
 .flex-grow-1 {
-	flex-grow: 1;
+	flex-grow: 1 !important;
 }
 .align-items-stretch {
 	align-items: stretch !important;
@@ -1568,21 +1575,6 @@ th.settings-simplehead {
 .settings-tracks {
 	margin-bottom: 2em;
 }
-.settings-2col {
-	-webkit-columns: 20rem 2;
-	columns: 20rem 2;
-	-webkit-column-gap: 18px;
-	column-gap: 18px;
-	margin-top: 0.5rem;
-	margin-bottom: 0.25rem;
-}
-.settings-2col > .entryi, .settings-2col > .entryg {
-	margin-bottom: 0;
-	padding-bottom: 0.5rem;
-}
-.settings-2col > .entryg > .entryi:last-child {
-	margin-bottom: 0;
-}
 
 /* help pages */
 .leftmenu-left {
@@ -1710,6 +1702,9 @@ label.f-c, .f-i > label {
 .f-h {
 	margin-top: 0.25rem;
 	margin-bottom: 0.25rem;
+}
+.entry > .f-h:last-child {
+	margin-bottom: 0;
 }
 .f-mcol {
 	display: flex;
