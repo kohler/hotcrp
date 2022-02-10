@@ -3973,12 +3973,17 @@ class Conf {
 
     /** @param string $msg */
     function error_msg($msg) {
-        $this->feedback_msg(new MessageItem(null, $msg, 2));
+        $this->feedback_msg(MessageItem::error($msg));
     }
 
     /** @param string $msg */
     function warning_msg($msg) {
-        $this->feedback_msg(new MessageItem(null, $msg, 1));
+        $this->feedback_msg(MessageItem::warning($msg));
+    }
+
+    /** @param string $msg */
+    function success_msg($msg) {
+        $this->feedback_msg(MessageItem::success($msg));
     }
 
     /** @param string|list<string> $text */
@@ -4002,7 +4007,8 @@ class Conf {
         self::msg_on(self::$main, $text, $minimal ? "xwarning" : "warning");
     }
 
-    /** @param string|list<string> $text */
+    /** @param string|list<string> $text
+     * @deprecated */
     function confirmMsg($text, $minimal = false) {
         self::msg_on($this, $text, $minimal ? "xconfirm" : "confirm");
     }

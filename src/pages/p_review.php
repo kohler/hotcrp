@@ -238,7 +238,7 @@ class Review_Page {
         $result = $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?", $this->prow->paperId, $this->rrow->reviewId);
         if ($result->affected_rows) {
             $this->user->log_activity_for($this->rrow->contactId, "Review {$this->rrow->reviewId} deleted", $this->prow);
-            $this->conf->confirmMsg("Deleted review.");
+            $this->conf->success_msg("<0>Review deleted");
             $this->conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $this->prow->paperId, $this->rrow->reviewId);
             if ($this->rrow->reviewToken !== 0) {
                 $this->conf->update_rev_tokens_setting(-1);
@@ -263,7 +263,7 @@ class Review_Page {
             $result = $this->user->unsubmit_review_row($this->rrow);
             if ($result->affected_rows) {
                 $this->user->log_activity_for($this->rrow->contactId, "Review {$this->rrow->reviewId} unsubmitted", $this->prow);
-                $this->conf->confirmMsg("Unsubmitted review.");
+                $this->conf->success_msg("<0>Review unsubmitted");
             }
             $this->conf->redirect_self($this->qreq);
         }

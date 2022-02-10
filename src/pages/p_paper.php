@@ -119,7 +119,7 @@ class Paper_Page {
 
     function handle_delete() {
         if ($this->prow->paperId <= 0) {
-            $this->conf->confirmMsg("Submission deleted.");
+            $this->conf->success_msg("<0>Submission deleted");
         } else if (!$this->user->can_administer($this->prow)) {
             Conf::msg_error("Only the program chairs can permanently delete submissions. Authors can withdraw submissions, which is effectively the same.");
         } else {
@@ -128,7 +128,7 @@ class Paper_Page {
                 HotCRPMailer::send_contacts("@deletepaper", $this->prow, ["reason" => (string) $this->qreq->emailNote, "infoNames" => 1]);
             }
             if ($this->prow->delete_from_database($this->user)) {
-                $this->conf->confirmMsg("Submission #{$this->prow->paperId} deleted.");
+                $this->conf->success_msg("<0>Submission #{$this->prow->paperId} deleted");
             }
             $this->error_exit("");
         }

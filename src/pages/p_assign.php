@@ -145,7 +145,7 @@ class Assign_Page {
         $result = RequestReview_API::denyreview($this->user, $this->qreq, $this->prow);
         $result = JsonResult::make($result);
         if ($result->content["ok"]) {
-            $this->conf->confirmMsg("Proposed reviewer denied.");
+            $this->conf->success_msg("<0>Proposed reviewer denied");
             $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "deny" => null, "denyreview" => null]);
         } else {
             $result->export_messages($this->conf);
@@ -158,9 +158,12 @@ class Assign_Page {
         $result = JsonResult::make($result);
         if ($result->content["ok"]) {
             if ($result->content["notified"]) {
-                $this->conf->confirmMsg("Review retracted. The reviewer was notified that they do not need to complete their review.");
+                $this->conf->feedback_msg(
+                    MessageItem::success("<0>Review retracted"),
+                    MessageItem::inform("<0>The reviewer was notified that they do not need to complete their review.")
+                );
             } else {
-                $this->conf->confirmMsg("Review request retracted.");
+                $this->conf->success_msg("<0>Review request retracted");
             }
             $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "retractreview" => null]);
         } else {
@@ -174,7 +177,10 @@ class Assign_Page {
         $result = JsonResult::make($result);
         if ($result->content["ok"]) {
             $email = $this->qreq->email ? : "You";
-            $this->conf->confirmMsg("Review refusal retracted. " . htmlspecialchars($email) . " may now be asked again to review this submission.");
+            $this->conf->feedback_msg(
+                MessageItem::success("<0>Review refusal removed"),
+                MessageItem::inform("<0>{$email} may now be asked again to review this submission.")
+            );
             $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "undeclinereview" => null]);
         } else {
             $result->export_messages($this->conf);

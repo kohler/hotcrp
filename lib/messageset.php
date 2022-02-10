@@ -117,6 +117,12 @@ class MessageItem implements JsonSerializable {
 
     /** @param ?string $msg
      * @return MessageItem */
+    static function warning($msg) {
+        return new MessageItem(null, $msg, 1);
+    }
+
+    /** @param ?string $msg
+     * @return MessageItem */
     static function success($msg) {
         return new MessageItem(null, $msg, MessageSet::SUCCESS);
     }

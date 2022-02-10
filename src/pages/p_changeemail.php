@@ -59,7 +59,7 @@ class ChangeEmail_Page {
             && $qreq->valid_post()) {
             $chuser->change_email($newemail);
             $capdata->delete();
-            $conf->feedback_msg(MessageItem::success("<0>Your email address has been changed"));
+            $conf->success_msg("<0>Your email address has been changed");
             if (!$user->has_account_here() || $user->contactId == $chuser->contactId) {
                 Contact::set_main_user($chuser->activate($qreq));
             }

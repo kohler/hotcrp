@@ -82,7 +82,7 @@ class Profile_Page {
                     $list->set_cookie($this->viewer);
                     $this->qreq->u = $user->email;
                 } else {
-                    $this->conf->feedback_msg(MessageItem::error("<0>User ‘{$u}’ not found"));
+                    $this->conf->error_msg("<0>User ‘{$u}’ not found");
                     unset($this->qreq->u);
                 }
                 $this->conf->redirect_self($this->qreq);
@@ -97,7 +97,6 @@ class Profile_Page {
             if ($user !== $this->viewer) {
                 unset($this->qreq->u);
                 $this->conf->redirect_self($this->qreq);
-                error_log("redir 1");
             }
         } else if (!$user
                    || ($u !== null
@@ -107,9 +106,9 @@ class Profile_Page {
                    || (isset($this->qreq->profile_contactid)
                        && $this->qreq->profile_contactid !== (string) $user->contactId)) {
             if (!$user) {
-                $this->conf->feedback_msg(MessageItem::error("<0>User not found"));
+                $this->conf->error_msg("<0>User not found");
             } else if (isset($this->qreq->save) || isset($this->qreq->savebulk)) {
-                $this->conf->feedback_msg(MessageItem::error("<0>Changes not saved; your session has changed since you last reloaded this tab"));
+                $this->conf->error_msg("<0>Changes not saved; your session has changed since you last reloaded this tab");
             }
             $this->conf->redirect_self($this->qreq, ["u" => null]);
         }
@@ -417,7 +416,7 @@ class Profile_Page {
         if ($this->qreq->has_file("bulk")) {
             $text = $this->qreq->file_contents("bulk");
             if ($text === false) {
-                $this->conf->feedback_msg(MessageItem::error("<0>Internal error: cannot read uploaded file"));
+                $this->conf->error_msg("<0>Internal error: cannot read uploaded file");
                 return;
             }
             $filename = $this->qreq->file_filename("bulk");
@@ -436,13 +435,13 @@ class Profile_Page {
 
     private function handle_delete() {
         if (!$this->viewer->privChair) {
-            $this->conf->feedback_msg(MessageItem::error("<0>Only administrators can delete accounts"));
+            $this->conf->error_msg("<0>Only administrators can delete accounts");
         } else if ($this->user === $this->viewer) {
-            $this->conf->feedback_msg(MessageItem::error("<0>You can’t delete your own account"));
+            $this->conf->error_msg("<0>You can’t delete your own account");
         } else if (!$this->user->has_account_here()) {
             $this->conf->feedback_msg(new MessageItem(null, "<0>This user’s account is not active on this site", MessageSet::MARKED_NOTE));
         } else if ($this->user->data("locked")) {
-            $this->conf->feedback_msg(MessageItem::error("<0>This account is locked and can’t be deleted"));
+            $this->conf->error_msg("<0>This account is locked and can’t be deleted");
         } else if (($tracks = UserStatus::user_paper_info($this->conf, $this->user->contactId))
                    && !empty($tracks->soleAuthor)) {
             $this->conf->feedback_msg([
@@ -465,7 +464,7 @@ class Profile_Page {
                 $this->conf->invalidate_caches(["pc" => true]);
             }
             // done
-            $this->conf->feedback_msg(MessageItem::success("<0>Account {$this->user->email} deleted"));
+            $this->conf->success_msg("<0>Account {$this->user->email} deleted");
             $this->viewer->log_activity_for($this->user, "Account deleted {$this->user->email}");
             $this->conf->redirect_hoturl("users", "t=all");
         }

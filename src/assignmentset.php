@@ -1921,9 +1921,12 @@ class AssignmentSet {
 
         // confirmation message
         if ($verbose && $this->conf->setting("pcrev_assigntime") == Conf::$now) {
-            $this->conf->confirmMsg("Assignments saved! You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".");
+            $this->conf->feedback_msg(
+                MessageItem::success("<0>Assignments saved"),
+                MessageItem::inform("<5>You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".")
+            );
         } else if ($verbose) {
-            $this->conf->confirmMsg("Assignments saved!");
+            $this->conf->success_msg("<0>Assignments saved");
         }
 
         // clean up
