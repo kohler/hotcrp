@@ -27,7 +27,7 @@ class Signin_Page {
             error_log($msg);
         }
         ensure_session();
-        $user->conf->msg($user->conf->_i("badpost"), 2);
+        $user->conf->error_msg($user->conf->_i("badpost"));
     }
 
 
@@ -112,7 +112,7 @@ class Signin_Page {
         $user->conf->header("Sign in", "home");
         $gx->push_print_cleanup("__footer");
         if ($qreq->is_get() && $qreq->redirect) {
-            $user->conf->msg("You need to sign in to access that page.", 2);
+            $user->conf->error_msg("<0>You need to sign in to access that page");
         }
     }
 
@@ -268,15 +268,15 @@ class Signin_Page {
         $prep = $user->send_mail($info["mailtemplate"], $info["mailrest"] ?? null);
         if (!$prep)  {
             if ($conf->opt("sendEmail")) {
-                $conf->msg("The email address you provided seems invalid. Please try again.", 2);
+                $conf->error_msg("<0>The email address you provided seems invalid. Please try again.");
                 Ht::error_at("email");
             } else {
-                $conf->msg("The system cannot send email at this time. You’ll need help from the site administrator to sign in.", 2);
+                $conf->error_msg("<0>The system cannot send email at this time. You’ll need help from the site administrator to sign in.");
             }
         } else if (strpos($info["mailtemplate"], "@newaccount") !== false) {
-            $conf->msg("Sent mail to " . htmlspecialchars($user->email) . ". When you receive that mail, follow the link to set a password and sign in to the site.", "xconfirm");
+            $conf->success_msg("<0>Sent mail to {$user->email}. When you receive that mail, follow the link to set a password and sign in to the site.");
         } else {
-            $conf->msg("Sent mail to " . htmlspecialchars($user->email) . ". When you receive that mail, follow the link to reset your password.", "xconfirm");
+            $conf->success_msg("<0>Sent mail to {$user->email}. When you receive that mail, follow the link to reset your password.");
             if ($prep->reset_capability) {
                 $conf->log_for($user, null, "Password link sent " . substr($prep->reset_capability, 0, 8) . "...");
             }
@@ -316,7 +316,7 @@ class Signin_Page {
                 if ($prep
                     && $prep->reset_capability
                     && isset($info["firstuser"])) {
-                    $conf->msg("As the first user, you have been assigned system administrator privilege. Use this screen to set a password. All later users will have to sign in normally.", "xconfirm");
+                    $conf->success_msg("<0>As the first user, you have been assigned system administrator privilege. Use this screen to set a password. All later users will have to sign in normally.");
                     $conf->redirect_hoturl("resetpassword", ["__PATH__" => $prep->reset_capability]);
                 } else if ($prep) {
                     $conf->redirect_hoturl("signin");
@@ -333,7 +333,7 @@ class Signin_Page {
         $user->conf->header("New account", "newaccount", ["action_bar" => false]);
         $gx->push_print_cleanup("__footer");
         if (!$user->conf->allow_user_self_register()) {
-            $user->conf->msg("New users can’t self-register for this site.", 2);
+            $user->conf->error_msg("<0>User self-registration is disabled on this site.");
             echo '<p class="mb-5">', Ht::link("Return home", $user->conf->hoturl("index")), '</p>';
             return false;
         }
@@ -365,7 +365,7 @@ class Signin_Page {
 
     // Forgot password request
     static function forgot_externallogin_message(Contact $user) {
-        $user->conf->msg("Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.", 2);
+        $user->conf->error_msg("<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.");
         echo '<p class="mb-5">', Ht::link("Return home", $user->conf->hoturl("index")), '</p>';
         return false;
     }
@@ -487,7 +487,7 @@ class Signin_Page {
                     ? : Contact::create($conf, null, $this->_reset_user);
                 $accthere->change_password($p1);
                 $accthere->log_activity("Password reset via " . substr($this->_reset_tokstr, 0, 8) . "...");
-                $conf->msg("Password changed. Use the new password to sign in below.", "xconfirm");
+                $conf->success_msg("<0>Password changed. Use the new password to sign in below.");
                 $this->_reset_token->delete();
                 $user->save_session("password_reset", (object) [
                     "time" => Conf::$now,

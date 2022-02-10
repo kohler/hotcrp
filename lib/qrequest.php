@@ -396,6 +396,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
         // $_FILES requires special processing since we want error messages.
         $errors = [];
+        $too_big = false;
         foreach ($_FILES as $nx => $fix) {
             if (is_array($fix["error"])) {
                 $fis = [];
@@ -411,19 +412,19 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
                         $qreq->set_file($n, $fi);
                     }
                 } else if ($fi["error"] != UPLOAD_ERR_NO_FILE) {
-                    $s = "";
-                    if (isset($fi["name"])) {
-                        $s .= '<span class="lineno">' . htmlspecialchars($fi["name"]) . ':</span> ';
-                    }
                     if ($fi["error"] == UPLOAD_ERR_INI_SIZE
                         || $fi["error"] == UPLOAD_ERR_FORM_SIZE) {
-                        $s .= "Uploaded file too big. The maximum upload size is " . ini_get("upload_max_filesize") . "B.";
+                        $errors[] = $e = MessageItem::error("Uploaded file too large");
+                        if (!$too_big) {
+                            $errors[] = MessageItem::inform("The maximum upload size is " . ini_get("upload_max_filesie") . "B.");
+                            $too_big = true;
+                        }
                     } else if ($fi["error"] == UPLOAD_ERR_PARTIAL) {
-                        $s .= "File upload interrupted.";
+                        $errors[] = $e = MessageItem::error("File upload interrupted");
                     } else {
-                        $s .= "Error uploading file.";
+                        $errors[] = $e = MessageItem::error("Error uploading file");
                     }
-                    $errors[] = $s;
+                    $e->landmark = $fi["name"] ?? null;
                 }
             }
         }

@@ -3542,7 +3542,7 @@ class Conf {
     function report_saved_messages() {
         $max_status = 0;
         foreach ($this->_save_msgs ?? [] as $m) {
-            $this->msg($m[0], $m[1]);
+            self::msg_on($this, $m[0], $m[1]);
             if (is_int($m[1])) {
                 $max_status = max($max_status, $m[1]);
             }
@@ -3960,7 +3960,8 @@ class Conf {
         }
     }
 
-    /** @param string|list<string> $text */
+    /** @param string|list<string> $text
+     * @deprecated */
     function msg($text, $type) {
         self::msg_on($this, $text, $type);
     }
@@ -4050,7 +4051,10 @@ class Conf {
     }
 
     function post_missing_msg() {
-        $this->msg("Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.", "merror");
+        $this->feedback_msg(
+            MessageItem::error("<0>Uploaded data was not received"),
+            MessageItem::inform("<0>This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.")
+        );
     }
 
 
@@ -4519,7 +4523,7 @@ class Conf {
             $this->report_saved_messages();
         }
         if ($Qreq && $Qreq->has_annex("upload_errors")) {
-            $this->msg($Qreq->annex("upload_errors"), MessageSet::ERROR);
+            $this->feedback_msg($Qreq->annex("upload_errors"));
         }
         echo "</div></div>\n";
 

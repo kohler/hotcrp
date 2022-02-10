@@ -21,7 +21,7 @@ class Home_Page {
     static function disabled_request(Contact $user, Qrequest $qreq) {
         if (!$user->is_empty() && $user->is_disabled()) {
             $user->conf->header("Account disabled", "home", ["action_bar" => false]);
-            $user->conf->msg("Your account on this site has been disabled by a site administrator. Please contact them with questions.", 0);
+            $user->conf->warning_msg("<0>Your account on this site has been disabled by a site administrator. Please contact them with questions.");
             $user->conf->footer();
             exit;
         }
@@ -79,7 +79,7 @@ class Home_Page {
             $user->conf->header("Home", "home");
         }
         if ($qreq->signedout && $user->is_empty()) {
-            $user->conf->msg("You have been signed out of the site.", "xconfirm");
+            $user->conf->success_msg("<0>You have been signed out of the site");
         }
         $gx->push_print_cleanup("__footer");
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
@@ -157,7 +157,7 @@ class Home_Page {
 
     function print_message(Contact $user) {
         if (($t = $user->conf->_i("home"))) {
-            $user->conf->msg($t, 0);
+            Conf::msg_on($user->conf, $t, 0);
         }
     }
 

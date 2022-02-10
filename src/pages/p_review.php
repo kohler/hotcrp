@@ -309,8 +309,8 @@ class Review_Page {
         $ref = $this->prow->review_refusals_by_user_id($capuid);
         if ($ref && $ref[0] && $ref[0]->refusedReviewId) {
             $rrid = $ref[0]->refusedReviewId;
-            $this->conf->msg(
-                "<p>You declined to complete this review. Thank you for informing us.</p>"
+            $this->conf->warning_msg(
+                "<5><p>You declined to complete this review. Thank you for informing us.</p>"
                 . Ht::form($this->conf->hoturl("=api/declinereview", ["p" => $this->prow->paperId, "r" => $rrid, "redirect" => 1]))
                 . '<div class="f-i mt-3"><label for="declinereason">Optional explanation</label>'
                 . ($ref[0]->reason ? "" : '<div class="field-d">If you’d like, you may enter a brief explanation here.</div>')
@@ -318,9 +318,9 @@ class Review_Page {
                 . '</div><div class="aab mt-3">'
                 . '<div class="aabut">' . Ht::submit("Update explanation", ["class" => "btn-primary"])
                 . '</div><div class="aabut">' . Ht::submit("Accept review", ["formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $rrid, "verbose" => 1, "redirect" => 1])])
-                . '</div></div></form>', 1);
+                . '</div></div></form>');
         } else {
-            $this->conf->msg("<p>You have declined to complete this review. Thank you for informing us.</p>", 1);
+            $this->conf->warning_msg("<5><p>You have declined to complete this review. Thank you for informing us.</p>");
         }
     }
 
@@ -343,10 +343,9 @@ class Review_Page {
                 } else {
                     $m = "<p>{$mx}</p>";
                 }
-                $this->conf->msg($m, 1);
+                $this->conf->warning_msg("<5>{$m}");
             } else {
-                $this->conf->msg(
-                    '<p>This review is assigned to ' . htmlspecialchars($u->email) . '. You can edit the review since you accessed it using a special link.</p>', 1);
+                $this->conf->warning_msg("<5><p>This review is assigned to " . htmlspecialchars($u->email) . '. You can edit the review since you accessed it using a special link.</p>');
             }
         }
     }
