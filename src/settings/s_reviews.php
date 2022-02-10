@@ -413,7 +413,7 @@ class RoundSelector_SettingParser extends SettingParser {
         } else if (!($err = Conf::round_name_error($lname))) {
             $sv->save($si, $name);
         } else {
-            $sv->error_at($si->name, $err . " ($lname)");
+            $sv->error_at($si->name, "<0>{$err} ($lname)");
         }
         return true;
     }
