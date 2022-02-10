@@ -482,13 +482,6 @@ class PaperTable {
         echo Ht::hidden("has_{$opt->formid}", 1);
     }
 
-    /** @param ?string $heading
-     * @return void
-     * @deprecated */
-    function echo_editable_option_papt(PaperOption $opt, $heading = null, $rest = []) {
-        $this->print_editable_option_papt($opt, $heading, $rest);
-    }
-
     /** @param array<string,int|string> $extra
      * @return string */
     private function papt($what, $name, $extra = []) {

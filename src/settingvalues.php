@@ -255,28 +255,10 @@ class SettingValues extends MessageSet {
         $this->cs()->print_section($title, $id);
     }
 
-    /** @param string $g
-     * @param bool $top
-     * @deprecated */
-    function render_group($g, $top = false) {
-        $this->print_group($g, $top);
-    }
-    /** @param ?string $classes
-     * @param ?string $id
-     * @deprecated */
-    function render_open_section($classes = null, $id = null) {
-        $this->print_open_section($classes, $id);
-    }
-    /** @param string $title
-     * @param ?string $id
-     * @deprecated */
-    function render_section($title, $id = null) {
-        $this->print_section($title, $id);
-    }
-
 
     /** @param null|string|Si $field
-     * @param MessageItem $mi */
+     * @param MessageItem $mi
+     * @return MessageItem */
     function append_item_at($field, $mi) {
         $fname = $field instanceof Si ? $field->name : $field;
         return parent::append_item_at($fname, $mi);
@@ -284,6 +266,7 @@ class SettingValues extends MessageSet {
 
     /** @param null|string|Si $field
      * @param ?string $msg
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
         $fname = $field instanceof Si ? $field->name : $field;

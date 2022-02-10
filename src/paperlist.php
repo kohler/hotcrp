@@ -2055,10 +2055,6 @@ class PaperList implements XtContext {
             echo $render->error;
         }
     }
-    /** @deprecated */
-    function echo_table_html() {
-        $this->print_table_html();
-    }
 
     /** @return string */
     function table_html() {

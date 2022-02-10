@@ -735,13 +735,6 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
-    /** @param int|Contact $user
-     * @return ?int
-     * @deprecated */
-    function rating_of_user($user) {
-        return $this->rating_by_rater($user);
-    }
-
     /** @param int $rating
      * @return string */
     static function unparse_rating($rating) {

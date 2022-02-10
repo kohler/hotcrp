@@ -55,12 +55,6 @@ class MessageItem implements JsonSerializable {
         return $mi;
     }
 
-    /** @deprecated
-     * @return MessageItem */
-    function replace($updates) {
-        return $this->with($updates);
-    }
-
     /** @param ?string $field
      * @return MessageItem */
     function with_field($field) {
@@ -553,28 +547,13 @@ class MessageSet {
     function message_list() {
         return $this->msgs;
     }
-    /** @return list<string>
-     * @deprecated */
-    function message_texts() {
-        return self::list_texts($this->msgs);
-    }
     /** @return \Generator<MessageItem> */
     function error_list() {
         return $this->min_status_list(self::ERROR);
     }
-    /** @return list<string>
-     * @deprecated */
-    function error_texts() {
-        return self::list_texts($this->error_list());
-    }
     /** @return \Generator<MessageItem> */
     function problem_list() {
         return $this->min_status_list(self::WARNING);
-    }
-    /** @return list<string>
-     * @deprecated */
-    function problem_texts() {
-        return self::list_texts($this->problem_list());
     }
     /** @param string $field
      * @return \Generator<MessageItem> */
@@ -586,12 +565,6 @@ class MessageSet {
                 }
             }
         }
-    }
-    /** @param string $field
-     * @return list<string>
-     * @deprecated */
-    function message_texts_at($field) {
-        return self::list_texts($this->message_list_at($field));
     }
 
 

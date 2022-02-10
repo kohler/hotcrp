@@ -1322,12 +1322,6 @@ class UserStatus extends MessageSet {
             $entry, "</div>";
     }
 
-    /** @param string $field
-     * @deprecated */
-    function render_field($field, $caption, $entry, $class = "f-i w-text") {
-        $this->print_field($field, $caption, $entry, $class);
-    }
-
     static function pc_role_text($cj) {
         if (isset($cj->roles)) {
             assert(is_array($cj->roles) && !is_associative_array($cj->roles));
@@ -1671,11 +1665,6 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo Ht::actions($buttons, ["class" => "aab aabig mt-7"]);
     }
 
-    /** @deprecated */
-    static function render_actions(UserStatus $us) {
-        self::print_actions($us);
-    }
-
 
 
     static function print_bulk_entry(UserStatus $us) {
@@ -1757,17 +1746,5 @@ John Adams,john@earbox.org,UC Berkeley,pc
                 $cs->call_function($gj, $gj->request_function, $gj);
             }
         }
-    }
-
-    /** @param string $name
-     * @deprecated */
-    function render_group($name) {
-        $this->print_group($name);
-    }
-    /** @param string $title
-     * @param ?string $id
-     * @deprecated */
-    function render_section($title, $id = null) {
-        $this->print_section($title, $id);
     }
 }

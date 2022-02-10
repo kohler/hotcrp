@@ -1221,13 +1221,6 @@ class PaperOption implements JsonSerializable {
     /** @param PaperValue $ov
      * @param PaperValue $reqov */
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        /** @phan-suppress-next-line PhanDeprecatedFunction */
-        $this->echo_web_edit($pt, $ov, $reqov);
-    }
-    /** @param PaperValue $ov
-     * @param PaperValue $reqov
-     * @deprecated */
-    function echo_web_edit(PaperTable $pt, $ov, $reqov) {
     }
     /** @param PaperValue $ov
      * @param PaperValue $reqov */

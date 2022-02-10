@@ -1652,16 +1652,6 @@ class Formula implements JsonSerializable {
         return $this->_parse->lerrors ?? [];
     }
 
-    /** @return string
-     * @deprecated */
-    function error_html() {
-        if ($this->check()) {
-            return "";
-        } else {
-            return MessageSet::feedback_html($this->_parse->lerrors);
-        }
-    }
-
     /** @param string $t
      * @param string $span
      * @return int */

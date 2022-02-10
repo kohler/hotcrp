@@ -419,44 +419,6 @@ class ComponentSet implements XtContext {
         return $result;
     }
 
-    /** @deprecated */
-    function push_render_cleanup($cleaner) {
-        $this->push_print_cleanup($cleaner);
-    }
-    /** @param ?string $classes
-     * @param ?string $id
-     * @deprecated */
-    function render_open_section($classes = null, $id = null) {
-        $this->print_open_section($classes, $id);
-    }
-    /** @deprecated */
-    function render_close_section() {
-        $this->print_close_section();
-    }
-    /** @param string $title
-     * @param ?string $hashid
-     * @deprecated */
-    function render_title($title, $hashid = null) {
-        $this->print_title($title, $hashid);
-    }
-    /** @param string $title
-     * @param ?string $hashid
-     * @deprecated */
-    function render_section($title, $hashid = null) {
-        $this->print_section($title, $hashid);
-    }
-    /** @param string|object $gj
-     * @deprecated */
-    function render($gj) {
-        return $this->print($gj);
-    }
-    /** @param string $name
-     * @param bool $top
-     * @deprecated */
-    function render_group($name, $top = false) {
-        return $this->print_group($name, $top);
-    }
-
     /** @param string $name
      * @return bool */
     function has_annex($name) {
@@ -477,5 +439,3 @@ class ComponentSet implements XtContext {
         $this->_annexes[$name] = $x;
     }
 }
-
-class_alias("ComponentSet", "GroupedExtensions"); /* XXX backward compat */
