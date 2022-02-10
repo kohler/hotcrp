@@ -35,7 +35,7 @@ class GetDocument_ListAction extends ListAction {
         $docset = new DocumentInfoSet($dn);
         foreach ($ssel->paper_set($user) as $row) {
             if (($whyNot = $user->perm_view_option($row, $opt))) {
-                $docset->add_error_html($whyNot->unparse_html());
+                $docset->error("<5>" . $whyNot->unparse_html());
             } else {
                 foreach ($row->documents($opt->id) as $doc) {
                     $docset->add_as($doc, $doc->export_filename());
@@ -44,14 +44,17 @@ class GetDocument_ListAction extends ListAction {
         }
         $user->set_overrides($old_overrides);
         if ($docset->is_empty()) {
-            Conf::msg_error(array_merge(["Nothing to download."], $docset->error_texts()));
+            $user->conf->feedback_msg([
+                new MessageItem(null, "Nothing to download", MessageSet::MARKED_NOTE),
+                ...$docset->message_list()
+            ]);
         } else {
             session_write_close();
             if ($docset->download(DocumentRequest::add_connection_options(["attachment" => true, "single" => true]))) {
                 DocumentInfo::log_download_activity($docset->as_list(), $user);
                 exit;
             } else {
-                Conf::msg_error($docset->error_texts());
+                $user->conf->feedback_msg($docset->message_list());
             }
         }
         // XXX how to return errors?

@@ -32,9 +32,10 @@ class GetJson_ListAction extends ListAction {
             if ($pj1) {
                 $pj[] = $pj1;
             } else {
-                $pj[] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
+                $pj[] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this submission"];
                 if ($this->iszip) {
-                    $this->zipdoc->add_error_html("#$prow->paperId: You don’t have permission to administer this paper.");
+                    $mi = $this->zipdoc->error("You don’t have permission to administer this submission");
+                    $mi->landmark = "#{$prow->paperId}";
                 }
             }
         }

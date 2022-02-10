@@ -10,30 +10,19 @@ class GetReviewBase_ListAction extends ListAction {
         $this->isform = $isform;
         $this->iszip = $iszip;
     }
-    /** @param list<array{string,string,?int}> $texts */
-    protected function finish(Contact $user, $texts, $errors) {
-        uksort($errors, "strnatcmp");
-
+    /** @param list<array{string,string,?int}> $texts
+     * @param MessageSet $ms */
+    protected function finish(Contact $user, $texts, $ms) {
         if (empty($texts)) {
-            if (empty($errors)) {
-                Conf::msg_error("No papers selected.");
-            } else {
-                $errors = array_map("htmlspecialchars", array_keys($errors));
-                Conf::msg_error(join("<br>", $errors) . "<br>Nothing to download.");
-            }
+            $user->conf->feedback_msg([
+                new MessageItem(null, "Nothing to download", MessageSet::MARKED_NOTE),
+                ...$ms->message_list()
+            ]);
             return;
         }
 
-        $warnings = array();
-        $nerrors = 0;
-        foreach ($errors as $ee => $iserror) {
-            $warnings[] = $ee;
-            if ($iserror) {
-                $nerrors++;
-            }
-        }
-        if ($nerrors) {
-            array_unshift($warnings, "Some " . ($this->isform ? "review forms" : "reviews") . " are missing:");
+        if ($ms->has_error()) {
+            $ms->prepend_msg($this->isform ? "<0>Some review forms are missing." : "<0>Some reviews are missing.", MessageSet::MARKED_NOTE);
         }
 
         $rfname = $this->author_view ? "aureview" : "review";
@@ -49,13 +38,13 @@ class GetReviewBase_ListAction extends ListAction {
 
         if (!$this->iszip) {
             $text = $header;
-            if (!empty($warnings) && $this->isform) {
-                foreach ($warnings as $w) {
-                    $text .= prefix_word_wrap("==-== ", $w, "==-== ");
+            if ($ms->has_message() && $this->isform) {
+                foreach ($ms->message_list() as $mi) {
+                    $text .= prefix_word_wrap("==-== ", $mi->message_as(0), "==-== ");
                 }
                 $text .= "\n";
-            } else if (!empty($warnings)) {
-                $text .= join("\n", $warnings) . "\n\n";
+            } else if ($ms->has_message()) {
+                $text .= $ms->full_feedback_text() . "\n";
             }
             foreach ($texts as $pt) {
                 $text .= $pt[1];
@@ -67,8 +56,8 @@ class GetReviewBase_ListAction extends ListAction {
             foreach ($texts as $pt) {
                 $zip->add_string_as($header . $pt[1], $user->conf->download_prefix . $rfname . $pt[0] . ".txt", null, $pt[2]);
             }
-            foreach ($warnings as $w) {
-                $zip->add_error_html($w);
+            foreach ($ms->message_list() as $mi) {
+                $zip->message_set()->append_item($mi);
             }
             $zip->download();
             exit;

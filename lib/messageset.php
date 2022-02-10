@@ -494,15 +494,6 @@ class MessageSet {
         return self::status_class($field ? $this->errf[$field] ?? 0 : 0, $rest, $prefix);
     }
 
-    /** @param iterable<MessageItem> $ms
-     * @return list<string> */
-    static private function list_texts($ms) {
-        $t = [];
-        foreach ($ms as $mi) {
-            $t[] = $mi->message;
-        }
-        return $t;
-    }
     /** @return array<string,int> */
     function message_field_map() {
         return $this->errf;

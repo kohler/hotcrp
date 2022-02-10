@@ -20,18 +20,19 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
                 ->add_string($rf->text_form_header(false) . $rf->text_form(null, null, $user, null) . "\n");
         }
 
-        $texts = $errors = [];
+        $texts = [];
+        $ms = (new MessageSet)->set_ignore_duplicates(true)->set_want_ftext(true, 0);
         foreach ($ssel->paper_set($user) as $prow) {
             $whyNot = $user->perm_edit_review($prow, null);
             if ($whyNot
                 && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"])) {
-                $errors[$whyNot->unparse(0)] = true;
+                $ms->error_at(null, "<0>" . $whyNot->unparse_text());
             } else {
                 $t = "";
                 if ($whyNot) {
-                    $m = $whyNot->unparse(0);
-                    $errors[$m] = false;
+                    $m = $whyNot->unparse_text();
+                    $ms->warning_at(null, "<0>" . $m);
                     if (!isset($whyNot["deadline"])) {
                         $t .= prefix_word_wrap("==-== ", strtoupper($m) . "\n\n", "==-== ");
                     }
@@ -56,6 +57,6 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
             }
         }
 
-        return $this->finish($user, $texts, $errors);
+        return $this->finish($user, $texts, $ms);
     }
 }
