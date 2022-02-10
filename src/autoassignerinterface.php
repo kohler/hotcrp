@@ -2,7 +2,7 @@
 // autoassignerinterface.php -- HotCRP helper classes for autoassignment
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-class AutoassignerInterface {
+class AutoassignerInterface extends MessageSet {
     /** @var Conf */
     private $conf;
     /** @var Contact */
@@ -25,9 +25,6 @@ class AutoassignerInterface {
     private $start_at;
     /** @var bool */
     private $live;
-    /** @var bool */
-    public $ok = false;
-    public $errors = [];
 
     static function current_costs(Conf $conf, Qrequest $qreq) {
         $costs = new AutoassignerCosts;
@@ -58,7 +55,7 @@ class AutoassignerInterface {
         ];
         $this->atype = $qreq->a;
         if (!$this->atype || !isset($atypes[$this->atype])) {
-            $this->errors["ass"] = "Malformed request!";
+            $this->error_at("ass", "<0>Malformed request!");
             $this->atype = "";
         }
         $this->atype_review = $atypes[$this->atype] === "r";
@@ -68,7 +65,7 @@ class AutoassignerInterface {
             $r = $qreq[$this->atype . "type"];
             if ($r != REVIEW_META && $r != REVIEW_PRIMARY
                 && $r != REVIEW_SECONDARY && $r != REVIEW_PC) {
-                $this->errors["ass"] = "Malformed request!";
+                $this->error_at("ass", "<0>Malformed request!");
             }
         } else if ($this->atype === "clear") {
             $r = $qreq->cleartype;
@@ -76,7 +73,7 @@ class AutoassignerInterface {
                 && $r != REVIEW_SECONDARY && $r != REVIEW_PC
                 && $r !== "conflict"
                 && $r !== "lead" && $r !== "shepherd") {
-                $this->errors["a-clear"] = "Malformed request!";
+                $this->error_at("a-clear", "<0>Malformed request!");
             }
         }
         $this->reviewtype = $r;
@@ -84,13 +81,13 @@ class AutoassignerInterface {
         if ($this->atype_review) {
             $this->reviewcount = cvtint($qreq[$this->atype . "ct"], -1);
             if ($this->reviewcount <= 0) {
-                $this->errors[$this->atype . "ct"] = "You must assign at least one review.";
+                $this->error_at("{$this->atype}ct", "<0>You must assign at least one review");
             }
 
             $this->reviewround = $qreq->rev_round;
             if ($this->reviewround !== ""
                 && ($err = Conf::round_name_error($this->reviewround))) {
-                $this->errors["rev_round"] = $err;
+                $this->error_at("rev_round", "<0>$err");
             }
         }
 
@@ -101,7 +98,7 @@ class AutoassignerInterface {
             if (($tag = $tagger->check($tag, Tagger::NOVALUE))) {
                 $this->discordertag = $tag;
             } else {
-                $this->errors["discordertag"] = $tagger->error_html();
+                $this->error_at("discordertag", "<5>" . $tagger->error_html());
             }
         }
 
@@ -119,8 +116,6 @@ class AutoassignerInterface {
         } else {
             $this->pcsel = array_keys($this->conf->pc_members());
         }
-
-        $this->ok = empty($this->errors);
     }
 
     /** @return list<array{Contact,Contact}> */
@@ -136,12 +131,13 @@ class AutoassignerInterface {
         return $bp;
     }
 
+    /** @return bool */
     function check() {
-        foreach ($this->errors as $etype => $msg) {
-            Conf::msg_error($msg);
-            Ht::error_at($etype);
+        $this->conf->feedback_msg($this);
+        foreach ($this->error_fields() as $field) {
+            Ht::error_at($field);
         }
-        return $this->ok;
+        return !$this->has_error();
     }
 
     private function profile_json() {
@@ -311,7 +307,7 @@ class AutoassignerInterface {
 
     /** @return bool */
     function run() {
-        assert($this->ok);
+        assert(!$this->has_error());
         session_write_close(); // this might take a long time
         set_time_limit(240);
 
