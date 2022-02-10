@@ -1681,8 +1681,10 @@ class Document_PaperOption extends PaperOption {
                ($fk !== $fk2 && ($doc = DocumentInfo::make_request($qreq, $fk2, $prow->paperId, $this->id, $this->conf)))) {
             $ov = PaperValue::make($prow, $this, -1);
             $ov->set_anno("document", $doc);
-            if (isset($doc->error_html)) {
-                $ov->error("<5>" . $doc->error_html);
+            if ($doc->has_error()) {
+                foreach ($doc->message_list() as $mi) {
+                    $ov->message_set()->append_item($mi->with_landmark($doc->export_filename()));
+                }
             }
             return $ov;
         } else if ($qreq["{$fk}:remove"] || ($fk !== $fk2 && $qreq["{$fk2}:remove"])) {
@@ -1826,14 +1828,9 @@ class Document_PaperOption extends PaperOption {
             if ($mimetypes[$i]->mimetype === $doc->mimetype)
                 return true;
         }
-        $desc = htmlspecialchars(Mimetype::list_description($mimetypes));
-        $e = "I only accept $desc files."
-            . " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and "
-            . htmlspecialchars($doc->content_text_signature())
-            . ".)<br>Please convert your file to "
-            . (count($mimetypes) > 3 ? "a supported type" : $desc)
-            . " and try again.";
-        $doc->add_error_html($e);
+        $desc = Mimetype::list_description($mimetypes);
+        $doc->message_set()->error_at(null, "<0>File type {$desc} required");
+        $doc->message_set()->inform_at(null, "<0>Your file has MIME type ‘{$doc->mimetype}’ and " . $doc->content_text_signature() . ". Please convert it to " . (count($mimetypes) > 3 ? "a supported type" : $desc) . " and try again.");
         return false;
     }
 
@@ -2040,8 +2037,10 @@ class Attachments_PaperOption extends PaperOption {
         }
         for ($i = 1; isset($qreq["has_{$this->formid}_new_$i"]); ++$i) {
             if (($doc = DocumentInfo::make_request($qreq, "{$this->formid}_new_$i", $prow->paperId, $this->id, $this->conf))) {
-                if (isset($doc->error_html)) {
-                    $ov->error("<5>" . $doc->error_html);
+                if ($doc->has_error()) {
+                    foreach ($doc->message_list() as $mi) {
+                        $ov->message_set()->append_item($mi->with_landmark($doc->export_filename()));
+                    }
                 }
                 $ov->push_anno("documents", $doc);
             }

@@ -319,8 +319,10 @@ class Filer {
     // filestore path functions
     const FPATH_EXISTS = 1;
     const FPATH_MKDIR = 2;
+    /** @param int $flags
+     * @return ?string */
     static function docstore_path(DocumentInfo $doc, $flags = 0) {
-        if ($doc->error || !($pattern = $doc->conf->docstore())) {
+        if ($doc->has_error() || !($pattern = $doc->conf->docstore())) {
             return null;
         }
         if (!($path = self::_expand_docstore($pattern, $doc, true))) {
@@ -344,7 +346,8 @@ class Filer {
         }
         if (($flags & self::FPATH_MKDIR)
             && !self::prepare_docstore(self::docstore_fixed_prefix($pattern), $path)) {
-            return $doc->add_error_html("File system storage cannot be initialized.", true);
+            $doc->message_set()->warning_at(null, "<0>File system storage cannot be initialized");
+            return null;
         } else {
             return $path;
         }

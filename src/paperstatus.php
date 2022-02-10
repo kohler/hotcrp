@@ -282,21 +282,24 @@ class PaperStatus extends MessageSet {
 
 
     /** @param ?string $msg
-     * @param int $status */
+     * @param int $status
+     * @return MessageItem */
     function msg_at_option(PaperOption $o, $msg, $status) {
-        $this->msg_at($o->field_key(), $msg, $status);
+        return $this->msg_at($o->field_key(), $msg, $status);
     }
-    /** @param ?string $msg */
+    /** @param ?string $msg
+     * @return MessageItem */
     function error_at_option(PaperOption $o, $msg) {
-        $this->error_at($o->field_key(), $msg);
+        return $this->error_at($o->field_key(), $msg);
     }
-    /** @param ?string $msg */
+    /** @param ?string $msg
+     * @return MessageItem */
     function warning_at_option(PaperOption $o, $msg) {
-        $this->warning_at($o->field_key(), $msg);
+        return $this->warning_at($o->field_key(), $msg);
     }
     function syntax_error_at($key, $value) {
-        $this->error_at($key, "<0>Validation error [{$key}]");
         error_log($this->conf->dbname . ": PaperStatus: syntax error $key " . gettype($value));
+        return $this->error_at($key, "<0>Validation error [{$key}]");
     }
     /** @return list<MessageItem> */
     function decorated_message_list() {
@@ -408,8 +411,11 @@ class PaperStatus extends MessageSet {
             }
             return $doc;
         } else {
-            error_log($doc->error_html);
-            $this->error_at_option($o, "<5>{$doc->error_html}");
+            error_log($doc->message_set()->full_feedback_text());
+            foreach ($doc->message_list() as $mi) {
+                $mi = $this->msg_at_option($o, $mi->message, $mi->status);
+                $mi->landmark = $doc->export_filename();
+            }
             return null;
         }
     }

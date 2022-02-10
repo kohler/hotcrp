@@ -58,8 +58,11 @@ class CheckFormat extends MessageSet {
         $this->set_want_ftext(true, 5);
     }
 
+    /** @param string $what
+     * @return MessageItem
+     * @deprecated */
     function msg_fail($what) {
-        $this->error_at("error", $what);
+        return $this->error_at("error", $what);
     }
 
     /** @param string $cmd
@@ -149,8 +152,8 @@ class CheckFormat extends MessageSet {
             $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
             $limit = $doc->conf->opt("banalLimit") ?? 8;
             if ($limit > 0 && $n > $limit) {
-                $this->msg_fail("<0>Server too busy to check paper formats");
-                $this->msg_at("error", "This is a transient error; feel free to try again.", MessageSet::INFORM);
+                $this->error_at("error", "<0>Server too busy to check paper formats");
+                $this->inform_at("error", "<0>This is a transient error; feel free to try again.");
                 $this->run_flags |= $flags;
                 return null;
             }
@@ -166,15 +169,19 @@ class CheckFormat extends MessageSet {
                 $this->metadata_updates["banal"] = $bj;
                 $flags &= ~(CheckFormat::RUN_ALLOWED | CheckFormat::RUN_DESIRED);
             } else {
-                $this->msg_fail("<0>" . $doc->export_filename() . " cannot be processed");
-                $this->msg_at("error", "<0>The file may be corrupted or not in PDF format.", MessageSet::INFORM);
+                $mi = $this->error_at("error", "<0>File cannot be processed");
+                $mi->landmark = $doc->export_filename();
+                $this->inform_at("error", "<0>The file may be corrupted or not in PDF format.");
             }
 
             if ($limit > 0) {
                 $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
             }
         } else {
-            $this->msg_fail("<5>" . htmlspecialchars($doc->export_filename()) . ": " . ($doc->error_html ?? "File cannot be loaded"));
+            if (!$doc->has_error()) { error_log($doc->export_filename() . ": no content, no error"); }
+            foreach ($doc->message_list() as $mi) {
+                $this->append_item($mi->with_landmark($doc->export_filename()));
+            }
             $flags &= ~CheckFormat::RUN_ALLOWED;
         }
 
@@ -229,7 +236,7 @@ class CheckFormat extends MessageSet {
             || !is_array($bj->pages)
             || !is_array($bj->papersize)
             || count($bj->papersize) != 2) {
-            $this->msg_fail("<0>Analysis failure: no pages or paper size");
+            $this->error_at("error", "<0>Analysis failure: no pages or paper size");
             return;
         }
 
@@ -485,7 +492,7 @@ class CheckFormat extends MessageSet {
         $this->clear();
         $this->run_flags |= CheckFormat::RUN_STARTED;
         if ($doc->mimetype !== "application/pdf") {
-            $this->msg_fail("<0>The format checker only works on PDF files");
+            $this->error_at("error", "<0>The format checker only works on PDF files");
             return;
         }
 
@@ -601,7 +608,7 @@ class Default_FormatChecker implements FormatChecker {
             $cf->check_banal_json($bj, $spec);
         } else {
             assert(($cf->run_flags & CheckFormat::RUN_DESIRED) !== 0);
-            $cf->msg_fail(null);
+            $cf->error_at("error", null);
         }
     }
 

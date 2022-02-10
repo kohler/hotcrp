@@ -80,11 +80,9 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
      * @return bool */
     function add_as(DocumentInfo $doc, $fn) {
         if ($this->_filename) { // might generate a .zip later; check filename
-            assert(!$doc->error && $fn !== "");
+            assert(!$doc->has_error() && $fn !== "");
             $slash = strpos($fn, "/");
-            if ($doc->error
-                || $fn === ""
-                || strlen($fn) > 1000
+            if (strlen($fn) > 1000
                 || preg_match('/[\000]|\/\/|\/\z/', $fn)) {
                 return $this->_add_fail($doc, $fn);
             }
@@ -570,10 +568,13 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         if (count($this->docs) === 1
             && !$this->has_error()
             && ($opts["single"] ?? false)) {
-            if ($this->docs[0]->download($opts)) {
+            $doc = $this->docs[0];
+            if ($doc->download($opts)) {
                 return true;
             } else {
-                $this->error("<5>" . $this->docs[0]->error_html);
+                foreach ($doc->message_list() as $mi) {
+                    $this->message_set()->append_item($mi->with_landmark($doc->export_filename()));
+                }
                 return false;
             }
         } else {

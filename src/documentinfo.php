@@ -54,10 +54,14 @@ class DocumentInfo implements JsonSerializable {
     /** @var bool */
     public $is_partial = false;
     public $filters_applied;
-    /** @var bool */
+    /** @var bool
+     * @deprecated */
     public $error = false;
-    /** @var ?string */
+    /** @var ?string
+     * @deprecated */
     public $error_html;
+    /** @var ?MessageSet */
+    private $_ms;
 
     const LINKTYPE_COMMENT_BEGIN = 0;
     const LINKTYPE_COMMENT_END = 1024;
@@ -150,6 +154,7 @@ class DocumentInfo implements JsonSerializable {
         $fnhtml = isset($args["filename"]) ? " “" . htmlspecialchars($args["filename"]) . "”" : "";
 
         $content = false;
+        $upload_error = "";
         if (isset($upload["content"])) {
             $content = $args["content"] = $upload["content"];
         } else if (isset($upload["content_file"])) {
@@ -159,12 +164,17 @@ class DocumentInfo implements JsonSerializable {
             if ($args["size"] > 0) {
                 $args["content_file"] = $upload["tmp_name"];
             } else {
-                $args["error_html"] = "Uploaded file$fnhtml was empty, not saving.";
+                $upload_error = " was empty, not saving";
             }
         } else {
-            $args["error_html"] = "Uploaded file$fnhtml could not be read.";
+            $upload_error = " could not be read";
         }
         self::fix_mimetype($args);
+        $doc = new DocumentInfo($args, $conf);
+        if ($upload_error) {
+            $filename = $args["filename"] ?? "";
+            $doc->error("<0>Uploaded file" . ($filename === "" ? "" : "‘{$filename}’") . $upload_error);
+        }
         return new DocumentInfo($args, $conf);
     }
 
@@ -292,16 +302,29 @@ class DocumentInfo implements JsonSerializable {
         return !!$this->_owner;
     }
 
-    /** @return false */
+    /** @return bool */
+    function has_error() {
+        return $this->_ms && $this->_ms->has_error();
+    }
+    /** @return MessageSet */
+    function message_set() {
+        $this->_ms = $this->_ms ?? (new MessageSet)->set_want_ftext(true, 5);
+        return $this->_ms;
+    }
+    /** @return list<MessageItem> */
+    function message_list() {
+        return $this->_ms ? $this->_ms->message_list() : [];
+    }
+    /** @param string $msg
+     * @return MessageItem */
+    function error($msg) {
+        return $this->message_set()->error_at(null, $msg);
+    }
+
+    /** @return false
+     * @deprecated */
     function add_error_html($error_html, $warning = false) {
-        if (!$warning) {
-            $this->error = true;
-        }
-        if ($this->error_html) {
-            $this->error_html .= " " . $error_html;
-        } else {
-            $this->error_html = $error_html;
-        }
+        $this->message_set()->msg_at(null, "<5>{$error_html}", $warning ? 1 : 2);
         return false;
     }
 
@@ -345,7 +368,9 @@ class DocumentInfo implements JsonSerializable {
         if ($dbNoPapers && $this->load_database()) {
             return true;
         }
-        return $this->add_error_html("Cannot load document.");
+        // not found
+        $this->error("<0>Cannot load document");
+        return false;
     }
 
     /** @return int|false */
@@ -505,7 +530,8 @@ class DocumentInfo implements JsonSerializable {
             if ($this->conf->dblink->errno) {
                 error_log("Error while saving document: " . $this->conf->dblink->error);
             }
-            return $this->add_error_html("Error while saving document.");
+            $this->error("<0>Internal error while saving document");
+            return false;
         }
     }
 
@@ -523,7 +549,8 @@ class DocumentInfo implements JsonSerializable {
             if ($this->conf->fetch_ivalue("select length(paper) from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId) === strlen($content)) {
                 return true;
             }
-            return $this->add_error_html("Error while saving document content to database.", true);
+            $this->message_set()->warning_at(".content", "<0>Internal error while saving document content to database");
+            return false;
         }
         return null;
     }
@@ -554,7 +581,8 @@ class DocumentInfo implements JsonSerializable {
                 return true;
             } else {
                 @unlink($dspath);
-                return $this->add_error_html("Error while saving document to file system.", true);
+                $this->message_set()->warning_at(".content", "<0>Internal error while saving document to file system");
+                return false;
             }
         }
         return null;
@@ -718,7 +746,8 @@ class DocumentInfo implements JsonSerializable {
                 return true;
             } else {
                 error_log("S3 error: POST $s3k: $r->status $r->status_text " . json_encode_db($r->response_headers));
-                return $this->add_error_html("Error while saving document to S3.", true);
+                $this->message_set()->warning_at(".content", "<0>Internal error while saving document to S3");
+                return false;
             }
         }
         return null;
@@ -746,7 +775,7 @@ class DocumentInfo implements JsonSerializable {
         $s3 = false;
         if ($this->_prefer_s3 && $this->check_s3()) {
             $s3 = true;
-        } else if (!$this->ensure_content() || $this->error) {
+        } else if (!$this->ensure_content() || $this->has_error()) {
             return false;
         }
 
@@ -764,15 +793,19 @@ class DocumentInfo implements JsonSerializable {
         $s2 = !$s3 && $this->store_docstore();
         $s3 = $s3 || $this->store_s3();
         if ($s0 && ($s1 || $s2 || $s3)) {
-            if ($this->error_html) {
-                error_log("Recoverable error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . $this->error_html);
-                $this->error_html = "";
+            if ($this->_ms && $this->_ms->has_problem_at(".content")) {
+                error_log("Recoverable error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . MessageSet::feedback_text($this->_ms->message_list_at(".content")));
+                $ms = $this->_ms;
+                $this->_ms = null;
+                foreach ($ms->message_list() as $mi) {
+                    if ($mi->field !== ".content")
+                        $this->message_set()->append_item($mi);
+                }
             }
             return true;
         } else {
-            error_log("Error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . $this->error_html);
-            $this->error = true; // if !($s1||$s2||$s3), may have error still false
-            $this->error_html = rtrim("Document not saved. " . $this->error_html);
+            $this->message_set()->prepend_msg("<0>Document not saved", MessageSet::ERROR);
+            error_log("Error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . $this->_ms->full_feedback_text());
             return false;
         }
     }
@@ -1397,7 +1430,7 @@ class DocumentInfo implements JsonSerializable {
      * @return bool */
     function download($opts = []) {
         if ($this->size == 0 && !$this->ensure_size()) {
-            $this->error_html = "Empty file.";
+            $this->message_set()->warning_at(null, "<0>Empty file");
             return false;
         }
 
@@ -1411,7 +1444,9 @@ class DocumentInfo implements JsonSerializable {
         $no_accel = $opts["no_accel"] ?? false;
         $s3_accel = $no_accel ? false : $this->s3_accel_redirect();
         if (!$s3_accel && !$this->ensure_content()) {
-            $this->error_html = $this->error_html ?? "Don’t know how to download.";
+            if (!$this->has_error()) {
+                $this->error("Document cannot be prepared for download");
+            }
             return false;
         }
 

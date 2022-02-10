@@ -147,9 +147,13 @@ class Doc_Page {
         // check for contents request
         if ($qreq->fn === "listing" || $qreq->fn === "consolidatedlisting") {
             if (!$doc->is_archive()) {
-                json_exit(MessageItem::make_error_json("That file is not an archive."));
+                json_exit(MessageItem::make_error_json("<0>That file is not an archive"));
             } else if (($listing = $doc->archive_listing(65536)) === false) {
-                json_exit(MessageItem::make_error_json($doc->error ? $doc->error_html : "Internal error."));
+                $ml = $doc->message_list();
+                if (empty($ml)) {
+                    $ml[] = new MessageItem(null, "<0>Internal error", 2);
+                }
+                json_exit(["ok" => false, "message_list" => $ml]);
             } else {
                 $listing = ArchiveInfo::clean_archive_listing($listing);
                 if ($qreq->fn === "consolidatedlisting") {
@@ -168,7 +172,7 @@ class Doc_Page {
         if ($doc->download(DocumentRequest::add_connection_options($opts))) {
             DocumentInfo::log_download_activity([$doc], $user);
         } else {
-            self::error("500 Server Error", $doc->error_html, $user, $qreq);
+            self::error("500 Server Error", $doc->message_set()->full_feedback_html(), $user, $qreq);
         }
     }
 }
