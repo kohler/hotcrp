@@ -222,24 +222,6 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function error($msg) {
         return $this->message_set()->error_at(null, $msg);
     }
-    /** @return bool
-     * @deprecated */
-    function has_errors() {
-        return $this->has_error();
-    }
-    /** @return list<string>
-     * @deprecated */
-    function error_texts() {
-        $t = [];
-        foreach ($this->_ms ? $this->_ms->message_list() : [] as $mi) {
-            $t[] = $mi->message_as(5);
-        }
-        return $t;
-    }
-    /** @deprecated */
-    function add_error_html($msg) {
-        $this->error($msg);
-    }
 
     /** @return string|false */
     private function _tmpdir() {
