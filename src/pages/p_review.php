@@ -134,7 +134,7 @@ class Review_Page {
 
     function handle_upload_form() {
         if (!$this->qreq->has_file("file")) {
-            Conf::msg_error("Select a review form to upload.");
+            $this->conf->error_msg("<0>File upload required");
             return;
         }
         $rv = ReviewValues::make_text($this->rf(),
@@ -200,7 +200,7 @@ class Review_Page {
 
     function handle_adopt() {
         if (!$this->rrow || !$this->rrow_explicit) {
-            Conf::msg_error("Missing review to delete.");
+            $this->conf->error_msg("<0>Review not found");
             return;
         } else if (!$this->user->can_approve_review($this->prow, $this->rrow)) {
             return;
@@ -230,7 +230,7 @@ class Review_Page {
 
     function handle_delete() {
         if (!$this->rrow || !$this->rrow_explicit) {
-            Conf::msg_error("Missing review to delete.");
+            $this->conf->error_msg("<0>Review not found");
             return;
         } else if (!$this->user->can_administer($this->prow)) {
             return;

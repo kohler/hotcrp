@@ -36,7 +36,7 @@ class Revpref_ListAction extends ListAction {
         // maybe download preferences for someone else
         $reviewer = self::lookup_reviewer($user, $qreq->reviewer);
         if (!$reviewer) {
-            return Conf::msg_error("No such reviewer");
+            return $user->conf->error_msg("<0>Reviewer ‘{$qreq->reviewer}’ not found");
         } else if (!$reviewer->isPC) {
             return self::EPERM;
         } else if ($this->name === "get/revpref") {
@@ -155,7 +155,7 @@ class Revpref_ListAction extends ListAction {
         } else if ($qreq->has_file("fileupload")) {
             $csv = self::preference_file_csv($qreq->file_contents("fileupload"), $qreq->file_filename("fileupload"));
         } else {
-            Conf::msg_error("File missing.");
+            $user->conf->error_msg("<0>File upload required");
             return;
         }
 

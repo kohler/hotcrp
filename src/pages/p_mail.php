@@ -97,7 +97,7 @@ class Mail_Page {
                 unset($qreq->p);
             } else if (($qreq->prevt !== $qreq->t || $qreq->prevq !== $qreq->q)
                        && !isset($qreq->recheck)) {
-                $this->conf->warnMsg("You changed the paper search. Please review the paper list.");
+                $this->conf->warning_msg("<0>Please review the selected submissions now that you have changed the submission search");
                 $qreq->recheck = "1";
             }
         }

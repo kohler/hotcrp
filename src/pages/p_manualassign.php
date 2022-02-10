@@ -334,7 +334,7 @@ class ManualAssign_Page {
             $this->save($reviewer);
         } else {
             if ($this->qreq->update && $this->qreq->valid_post()) {
-                Conf::msg_error("You need to select a reviewer.");
+                $this->conf->error_msg("<0>Please select a reviewer");
             }
             $this->print($reviewer);
         }

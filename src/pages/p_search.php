@@ -444,7 +444,7 @@ class Search_Page {
         // paper group
         if (!PaperSearch::viewable_limits($user, $qreq->t)) {
             $conf->header("Search", "search");
-            Conf::msg_error("You aren’t allowed to search submissions.");
+            $conf->error_msg("<0>You aren’t allowed to search submissions");
             exit;
         }
 

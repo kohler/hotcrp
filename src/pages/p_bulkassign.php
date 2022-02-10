@@ -92,7 +92,7 @@ class BulkAssign_Page {
             $filename = "";
         }
         if ($text === false) {
-            Conf::msg_error("Internal error: cannot read file.");
+            $this->conf->error_msg("<0>Internal error: could not read uploaded file");
             return false;
         }
 

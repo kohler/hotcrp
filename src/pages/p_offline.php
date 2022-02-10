@@ -28,7 +28,7 @@ class Offline_Page {
     /** @return bool */
     function handle_upload() {
         if (!$this->qreq->has_file("file")) {
-            Conf::msg_error("File required.");
+            $this->conf->error_msg("<0>File upload required");
             Ht::error_at("file");
             return false;
         }
@@ -48,14 +48,14 @@ class Offline_Page {
         $filename = null;
         if ($this->qreq->upload && $this->qreq->has_file("file")) {
             if (($text = $this->qreq->file_contents("file")) === false) {
-                Conf::msg_error("Internal error: cannot read file.");
+                $this->conf->error_msg("<0>Internal error: cannot read uploaded file");
                 return false;
             }
             $filename = $this->qreq->file_filename("file");
         } else if (($text = $this->qreq->data)) {
             $filename = "";
         } else {
-            Conf::msg_error("File required.");
+            $this->conf->error_msg("<0>File upload required");
             Ht::error_at("file");
             return false;
         }

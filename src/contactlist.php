@@ -955,7 +955,7 @@ class ContactList {
         // get paper list
         $baseFieldId = $this->listFields($listquery);
         if (!$baseFieldId) {
-            Conf::msg_error("There is no people list query named “" . htmlspecialchars($listquery) . "”.");
+            $this->conf->error_msg("<0>User set ‘{$listquery}’ not found");
             return null;
         }
 
@@ -1176,7 +1176,7 @@ class ContactList {
 
         // get paper list
         if (!($baseFieldId = $this->listFields($listname))) {
-            Conf::msg_error("There is no people list query named “" . htmlspecialchars($listname) . "”.");
+            $this->conf->error_msg("<0>User list ‘{$listname}’ not found");
             return null;
         }
         $this->limit = array_shift($baseFieldId);

@@ -308,7 +308,7 @@ class Conf {
             Dbl::$nerrors = $old_nerrors;
         }
         if ($this->sversion < 200) {
-            self::msg_error("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
+            $this->error_msg("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
         }
 
         // refresh after loading from backup
@@ -648,7 +648,7 @@ class Conf {
 
         if (isset($this->opt["timezone"])) {
             if (!date_default_timezone_set($this->opt["timezone"])) {
-                self::msg_error("Timezone option “" . htmlspecialchars($this->opt["timezone"]) . "” is invalid; falling back to “America/New_York”.");
+                $this->error_msg("<0>Timezone option ‘" . $this->opt["timezone"] . "’ is invalid; falling back to ‘America/New_York’");
                 date_default_timezone_set("America/New_York");
             }
         } else if (!ini_get("date.timezone") && !getenv("TZ")) {
@@ -866,7 +866,7 @@ class Conf {
             fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n" . debug_string_backtrace());
         } else {
             error_log("$landmark: database error: $dblink->error in $query\n" . debug_string_backtrace());
-            self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
+            $this->error_msg("<5><p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
     }
 

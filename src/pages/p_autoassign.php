@@ -39,7 +39,7 @@ class Autoassign_Page {
         if ((isset($qreq->prevt) && $qreq->prevt !== $qreq->t)
             || (isset($qreq->prevq) && $qreq->prevq !== $qreq->q)) {
             if (isset($qreq->assign)) {
-                $this->conf->warnMsg("You changed the paper search. Please review the paper list.");
+                $this->conf->warning_msg("<0>Please review the selected submissions now that you have changed the submission search");
             }
             unset($qreq->assign);
             $qreq->requery = 1;

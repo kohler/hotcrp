@@ -1792,7 +1792,6 @@ select.has-warning {
 	color: #333377;
 }
 .msg .is-note,
-.msg .is-urgent-note,
 .tooltip .is-error,
 .tooltip .is-warning,
 .tooltip .is-note,

@@ -70,7 +70,7 @@ tag," . CsvGenerator::quote(trim($qreq->tag)) . "
                     . "# " . $user->conf->hoturl_raw("offline", null, Conf::HOTURL_ABSOLUTE) . "\n\n"
                     . $real . ($real === "" ? "" : "\n") . $null);
         } else {
-            Conf::msg_error($tagger->error_html());
+            $user->conf->error_msg("<5>" . $tagger->error_html());
         }
     }
 }

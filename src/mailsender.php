@@ -80,7 +80,7 @@ class MailSender {
         $mailid = isset($qreq->mailid) && ctype_digit($qreq->mailid) ? intval($qreq->mailid) : -1;
         $result = $user->conf->qe("update MailLog set status=1 where mailId=? and status=-1", $mailid);
         if (!$result->affected_rows) {
-            Conf::msg_error("That mail was already sent.", true);
+            $user->conf->error_msg("<0>That mail has already been sent");
         }  else {
             $ms = new MailSender($user, $recip, 2, $qreq);
             $ms->run();
@@ -329,7 +329,8 @@ class MailSender {
         $paper_set = $this->recip->paper_set();
         $q = $this->recip->query($paper_set, $paper_sensitive);
         if (!$q) {
-            return Conf::msg_error("Bad recipients value");
+            $this->conf->error_msg("<0>Invalid recipients");
+            return;
         }
         $result = $this->conf->qe_raw($q);
         if (Dbl::is_error($result)) {

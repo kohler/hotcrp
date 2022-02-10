@@ -59,7 +59,7 @@ class Paper_Page {
 
     function handle_withdraw() {
         if (($whynot = $this->user->perm_withdraw_paper($this->prow))) {
-            Conf::msg_error($whynot->unparse_html() . " The submission has not been withdrawn.");
+            $this->conf->error_msg("<5>" . $whynot->unparse_html() . " The submission has not been withdrawn.");
             return;
         }
 
@@ -104,7 +104,7 @@ class Paper_Page {
 
     function handle_revive() {
         if (($whynot = $this->user->perm_revive_paper($this->prow))) {
-            Conf::msg_error($whynot->unparse_html());
+            $this->conf->error_msg("<5>" . $whynot->unparse_html());
             return;
         }
 
@@ -121,7 +121,10 @@ class Paper_Page {
         if ($this->prow->paperId <= 0) {
             $this->conf->success_msg("<0>Submission deleted");
         } else if (!$this->user->can_administer($this->prow)) {
-            Conf::msg_error("Only the program chairs can permanently delete submissions. Authors can withdraw submissions, which is effectively the same.");
+            $this->conf->feedback_msg(
+                MessageItem::error("<0>Only program chairs can permanently delete a submission"),
+                MessageItem::inform("<0>Authors can withdraw submissions.")
+            );
         } else {
             // mail first, before contact info goes away
             if ($this->qreq->doemail) {
@@ -200,7 +203,7 @@ class Paper_Page {
             }
         }
         if ($whynot) {
-            Conf::msg_error($whynot->unparse_html());
+            $this->conf->error_msg("<5>" . $whynot->unparse_html());
             $this->useRequest = !$is_new; // XXX used to have more complex logic
             return;
         }
@@ -287,15 +290,13 @@ class Paper_Page {
         } else {
             $this->ps->splice_msg($msgpos++, $conf->_("<0>$actiontext submission #%d", $new_prow->paperId), MessageSet::SUCCESS);
         }
-        if ($this->ps->has_error()) {
-            $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again."), MessageSet::URGENT_NOTE);
-        } else {
-            $this->ps->msg_at(null, "", MessageSet::WARNING);
-        }
         if ($notes) {
             $this->ps->splice_msg($msgpos++, "<5>$notes", MessageSet::PLAIN);
         }
-        $conf->msg($this->ps->feedback_html($this->ps->decorated_message_list()), $new_prow->$submitkey > 0 ? MessageSet::SUCCESS : MessageSet::WARNING);
+        if ($this->ps->has_error()) {
+            $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again."), MessageSet::URGENT_NOTE);
+        }
+        $conf->feedback_msg($this->ps->decorated_message_list());
 
         // mail confirmation to all contact authors if changed
         if (!empty($this->ps->diffs)) {
@@ -347,7 +348,7 @@ class Paper_Page {
 
         if (!$this->user->can_administer($this->prow)
             && !$this->prow->has_author($this->user)) {
-            Conf::msg_error($this->prow->make_whynot(["permission" => "edit_contacts"])->unparse_html(), true);
+            $conf->error_msg("<5>" . $this->prow->make_whynot(["permission" => "edit_contacts"])->unparse_html());
             return;
         }
 
@@ -358,11 +359,12 @@ class Paper_Page {
         }
 
         if (!$this->ps->diffs) {
-            $this->ps->prepend_msg($conf->_("<0>No changes to submission #%d.", $this->prow->paperId), MessageSet::MARKED_NOTE);
-            $conf->msg($this->ps->full_feedback_html(), MessageSet::WARNING);
+            $this->ps->prepend_msg($conf->_("<0>No changes to submission #%d", $this->prow->paperId), MessageSet::MARKED_NOTE);
+            $this->ps->warning_at(null, "");
+            $conf->feedback_msg($this->ps);
         } else if ($this->ps->execute_save()) {
-            $this->ps->prepend_msg($conf->_("<0>Updated contacts for submission #%d.", $this->prow->paperId), MessageSet::SUCCESS);
-            $conf->msg($this->ps->full_feedback_html(), MessageSet::SUCCESS);
+            $this->ps->prepend_msg($conf->_("<0>Updated contacts for submission #%d", $this->prow->paperId), MessageSet::SUCCESS);
+            $conf->feedback_msg($this->ps);
             $this->user->log_activity("Paper edited: contacts", $this->prow->paperId);
         }
 
