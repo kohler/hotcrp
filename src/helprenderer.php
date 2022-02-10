@@ -203,18 +203,14 @@ class HelpRenderer extends Ht {
     function print_group($topic, $top = false) {
         $this->_help_topics->print_group($topic, $top);
     }
+    /** @return list<object> */
     function groups() {
         return $this->_help_topics->groups();
     }
+    /** @param string $name
+     * @return ?object */
     function member($name) {
         return $this->_help_topics->get($name);
-    }
-
-    /** @param string $topic
-     * @param bool $top
-     * @deprecated */
-    function render_group($topic, $top = false) {
-        $this->print_group($topic, $top);
     }
 
     /** @return ?string */

@@ -1898,12 +1898,6 @@ class PaperSearch extends MessageSet {
         return $mi;
     }
 
-    /** @return string
-     * @deprecated */
-    function message_text() {
-        return MessageSet::feedback_text($this->message_list());
-    }
-
 
     /** @return string */
     function urlbase() {

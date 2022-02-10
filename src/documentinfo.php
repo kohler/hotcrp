@@ -54,12 +54,6 @@ class DocumentInfo implements JsonSerializable {
     /** @var bool */
     public $is_partial = false;
     public $filters_applied;
-    /** @var bool
-     * @deprecated */
-    public $error = false;
-    /** @var ?string
-     * @deprecated */
-    public $error_html;
     /** @var ?MessageSet */
     private $_ms;
 
@@ -120,9 +114,6 @@ class DocumentInfo implements JsonSerializable {
         if (isset($this->paper) && !isset($this->content)) {
             $this->content = $this->paper;
             $this->paper = null;
-        }
-        if ($this->error_html) {
-            $this->error = true;
         }
     }
 
@@ -319,13 +310,6 @@ class DocumentInfo implements JsonSerializable {
      * @return MessageItem */
     function error($msg) {
         return $this->message_set()->error_at(null, $msg);
-    }
-
-    /** @return false
-     * @deprecated */
-    function add_error_html($error_html, $warning = false) {
-        $this->message_set()->msg_at(null, "<5>{$error_html}", $warning ? 1 : 2);
-        return false;
     }
 
     /** @param string $content

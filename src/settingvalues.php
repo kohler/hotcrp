@@ -432,12 +432,6 @@ class SettingValues extends MessageSet {
         $this->_explicit_oldv[$n] = $value;
     }
 
-    /** @return mixed
-     * @deprecated */
-    function si_oldv(Si $si) {
-        return $this->oldv($si);
-    }
-
     /** @param Si $si
      * @return bool */
     private function si_find_oldv($si) {
@@ -462,19 +456,6 @@ class SettingValues extends MessageSet {
         return $this->req[$name] ?? null;
     }
 
-    /** @param string $name
-     * @return bool
-     * @deprecated */
-    function has_reqv($name) {
-        return array_key_exists($name, $this->req);
-    }
-
-    /** @param string $name
-     * @deprecated */
-    function reqv($name) {
-        return $this->req[$name] ?? null;
-    }
-
 
     /** @param string|Si $id
      * @return string */
@@ -487,12 +468,6 @@ class SettingValues extends MessageSet {
         }
         $si = is_string($id) ? $this->si($id) : $id;
         return $si->base_unparse_reqv($this->oldv($si));
-    }
-
-    /** @param string $name
-     * @deprecated */
-    function curv($name) {
-        return $this->vstr($name);
     }
 
 

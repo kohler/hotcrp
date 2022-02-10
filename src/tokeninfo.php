@@ -124,19 +124,6 @@ class TokenInfo {
         }
     }
 
-    /** @param string $token
-     * @param bool $is_cdb
-     * @return ?TokenInfo
-     * @deprecated */
-    static function find_active($token, Conf $conf, $is_cdb = false) {
-        if (($cap = self::find($token, $conf, $is_cdb))
-            && $cap->is_active()) {
-            return $cap;
-        } else {
-            return null;
-        }
-    }
-
     /** @return bool */
     function is_active() {
         return ($this->timeExpires === 0 || $this->timeExpires > Conf::$now)
