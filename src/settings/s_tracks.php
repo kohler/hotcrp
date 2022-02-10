@@ -32,6 +32,12 @@ class Track_Setting {
         $this->is_new = $tr->tag === "" && !$tr->is_default;
         $this->j = $j;
         foreach ($tr->perm as $perm => $p) {
+            // undo defaulting
+            if ($perm === Track::VIEWPDF
+                && $p === $tr->perm[Track::VIEW]
+                && !isset($this->j->viewpdf)) {
+                $p = null;
+            }
             if ((Track::perm_required($perm) && $p === null)
                 || $p === "none"
                 || $p === "+none") {
@@ -46,8 +52,8 @@ class Track_Setting {
 
     /** @return bool */
     function is_empty() {
-        foreach ($this->perm as $p) {
-            if ($p->type !== "")
+        foreach ($this->perm as $perm => $p) {
+            if ($p->type !== (Track::perm_required($perm) ? "none" : ""))
                 return false;
         }
         return !$this->is_new;
@@ -94,10 +100,14 @@ class Tracks_SettingParser extends SettingParser {
         if (count($si->parts) === 3 && $si->part2 === "") {
             $id = $sv->reqstr("{$si->part0}{$si->part1}__id") ?? "";
             $tr = $id !== "" ? $sv->conf->track($id === "none" ? "" : $id) : null;
+            if (!$tr && $id === "none") {
+                $tr = new Track("");
+                $tr->is_default = true;
+            }
             if ($tr) {
                 $this->settings_json = $this->settings_json ?? $sv->conf->setting_json("tracks");
                 $k = $tr->is_default ? "_" : $tr->tag;
-                $sv->set_oldv($si->name, new Track_Setting($tr, $this->settings_json->{$k}));
+                $sv->set_oldv($si->name, new Track_Setting($tr, $this->settings_json->{$k} ?? (object) []));
             } else {
                 $sv->set_oldv($si->name, new Track_Setting(new Track(""), (object) []));
             }
@@ -301,7 +311,13 @@ class Tracks_SettingParser extends SettingParser {
                     foreach ($sv->si_req_members("track__{$ctr}__perm__", true) as $permsi) {
                         $sv->apply_req($permsi);
                     }
-                    $j[$this->cur_trx->is_default ? "_" : $this->cur_trx->tag] = $this->cur_trx->j;
+                    if ($this->cur_trx->is_default) {
+                        if (!empty((array) $this->cur_trx->j)) {
+                            $j["_"] = $this->cur_trx->j;
+                        }
+                    } else {
+                        $j[$this->cur_trx->tag] = $this->cur_trx->j;
+                    }
                 }
             }
             $sv->update("tracks", empty($j) ? "" : json_encode_db($j));
@@ -315,9 +331,11 @@ class Tracks_SettingParser extends SettingParser {
         $conf = $sv->conf;
         if (($sv->has_interest("tracks") || $sv->has_interest("pcrev_any"))
             && $conf->has_tracks()) {
-            foreach (array_merge($conf->track_tags(), [""]) as $i => $trtag) {
-                $tr = $conf->track($trtag);
-                $ctr = $i + 1;
+            foreach ($sv->enumerate("track__") as $ctr) {
+                if (($id = $sv->reqstr("track__{$ctr}__id")) === "") {
+                    continue;
+                }
+                $tr = $conf->track($id === "none" ? "" : $id);
                 if ($tr->perm[Track::VIEWPDF]
                     && $tr->perm[Track::VIEWPDF] !== $tr->perm[Track::UNASSREV]
                     && $tr->perm[Track::UNASSREV] !== "+none"
@@ -342,12 +360,13 @@ class Tracks_SettingParser extends SettingParser {
                     }
                 }
                 foreach ($tr->perm as $perm => $pv) {
-                    if ($pv !== null && $pv !== "+none" && !$conf->pc_tag_exists(substr($pv, 1)))
+                    if ($pv !== null
+                        && $pv !== "+none"
+                        && ($perm !== Track::VIEWPDF || $pv !== $tr->perm[Track::VIEW])
+                        && !$conf->pc_tag_exists(substr($pv, 1)))
                         $sv->warning_at("track__{$ctr}__perm__" . Track::perm_name($perm) . "__tag", "<0>No PC member has tag ‘" . substr($pv, 1) . "’. You might want to check your spelling.");
                 }
             }
         }
     }
 }
-
-class_alias("Tracks_SettingParser", "Tracks_SettingRenderer");
