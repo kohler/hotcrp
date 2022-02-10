@@ -398,7 +398,7 @@ class HotCRPMailer extends Mailer {
         } else if ($value !== null) {
             return (string) $value;
         } else {
-            $this->warning_at($uf->input_string ?? null, "Paper #{$this->row->paperId} has no #{$tag} tag.");
+            $this->warning_at($uf->input_string ?? null, "<0>Submission #{$this->row->paperId} has no #{$tag} tag");
             return "(none)";
         }
     }
@@ -491,9 +491,9 @@ class HotCRPMailer extends Mailer {
 
     function unexpanded_warning_at($text) {
         if (preg_match('/\A%(?:NUMBER|TITLE|PAPER|AUTHOR|REVIEW|COMMENT)/', $text)) {
-            $this->warning_at($text, "Reference not expanded because this mail isn’t linked to submissions or reviews.");
+            $this->warning_at($text, "<0>Reference not expanded because this mail isn’t linked to submissions or reviews");
         } else if (preg_match('/\A%AUTHORVIEWCAPABILITY/', $text)) {
-            $this->warning_at($text, "Reference not expanded because this mail isn’t meant for submission authors.");
+            $this->warning_at($text, "<0>Reference not expanded because this mail isn’t meant for submission authors");
         } else {
             parent::unexpanded_warning_at($text);
         }

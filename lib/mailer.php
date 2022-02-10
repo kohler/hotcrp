@@ -794,7 +794,7 @@ class Mailer {
      * @param string $message
      * @return MessageItem */
     function warning_at($field, $message) {
-        $this->_ms = $this->_ms ?? (new MessageSet)->set_ignore_duplicates(true);
+        $this->_ms = $this->_ms ?? (new MessageSet)->set_ignore_duplicates(true)->set_want_ftext(true, 5);
         return $this->_ms->warning_at($field, $message);
     }
 
@@ -802,14 +802,14 @@ class Mailer {
     function unexpanded_warning_at($ref) {
         if (preg_match('/\A(?:RESET|)PASSWORDLINK/', $ref)) {
             if ($this->conf->external_login()) {
-                $this->warning_at($ref, "This site does not use password links.");
+                $this->warning_at($ref, "<0>This site does not use password links");
             } else if ($this->censor === self::CENSOR_ALL) {
-                $this->warning_at($ref, "Password links cannot appear in mails with Cc or Bcc.");
+                $this->warning_at($ref, "<0>Password links cannot appear in mails with Cc or Bcc");
             } else {
-                $this->warning_at($ref, "Reference not expanded.");
+                $this->warning_at($ref, "<0>Reference not expanded");
             }
         } else {
-            $this->warning_at($ref, "Reference not expanded.");
+            $this->warning_at($ref, "<0>Reference not expanded");
         }
     }
 }
