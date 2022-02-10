@@ -36,10 +36,12 @@ class GetDocument_ListAction extends ListAction {
         foreach ($ssel->paper_set($user) as $row) {
             if (($whyNot = $user->perm_view_option($row, $opt))) {
                 $docset->error("<5>" . $whyNot->unparse_html());
-            } else {
-                foreach ($row->documents($opt->id) as $doc) {
+            } else if (($docs = $row->documents($opt->id))) {
+                foreach ($docs as $doc) {
                     $docset->add_as($doc, $doc->export_filename());
                 }
+            } else {
+                $docset->message_set()->msg_at(null, "<0>#{$row->paperId} has no ‘" . $opt->title() . "’ documents", MessageSet::WARNING_NOTE);
             }
         }
         $user->set_overrides($old_overrides);

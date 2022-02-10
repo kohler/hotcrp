@@ -57,10 +57,12 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                         . "* Paper #{$prow->paperId} {$prow->title}\n\n" . $rctext;
                 }
                 $texts[] = [$prow->paperId, $rctext, $time];
-                $pids[$prow->paperId] = true;
+                $pids[] = $prow->paperId;
             } else if (($whyNot = $user->perm_view_review($prow, null))) {
                 $mi = $ms->error_at(null, "<0>" . $whyNot->unparse_text());
                 $mi->landmark = "#{$prow->paperId}";
+            } else {
+                $ms->msg_at(null, "<0>{$prow->paperId} has no visible reviews", MessageSet::WARNING_NOTE);
             }
         }
         if (!$this->iszip) {
@@ -76,7 +78,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             Contact::update_rights();
         }
         if (!empty($pids)) {
-            $user->log_activity("Download reviews", array_keys($pids));
+            $user->log_activity("Download reviews", $pids);
         }
         return $this->finish($user, $texts, $ms);
     }

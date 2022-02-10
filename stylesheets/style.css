@@ -1793,7 +1793,6 @@ select.has-warning {
 }
 .msg .is-note,
 .msg .is-urgent-note,
-.msg .is-warning-note,
 .tooltip .is-error,
 .tooltip .is-warning,
 .tooltip .is-note,
