@@ -3965,20 +3965,20 @@ class Conf {
         self::msg_on($this, $text, $type);
     }
 
-    /** @param MessageItem|iterable<MessageItem>|MessageSet $message_list */
-    function feedback_msg($message_list) {
-        $ms = Ht::feedback_msg_content($message_list);
+    /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls */
+    function feedback_msg(...$mls) {
+        $ms = Ht::feedback_msg_content(...$mls);
         $ms[0] === "" || self::msg_on($this, $ms[0], $ms[1]);
     }
 
     /** @param string $msg */
     function error_msg($msg) {
-        $this->feedback_msg([new MessageItem(null, $msg, 2)]);
+        $this->feedback_msg(new MessageItem(null, $msg, 2));
     }
 
     /** @param string $msg */
     function warning_msg($msg) {
-        $this->feedback_msg([new MessageItem(null, $msg, 1)]);
+        $this->feedback_msg(new MessageItem(null, $msg, 1));
     }
 
     /** @param string|list<string> $text */

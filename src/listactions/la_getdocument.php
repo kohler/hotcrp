@@ -44,10 +44,10 @@ class GetDocument_ListAction extends ListAction {
         }
         $user->set_overrides($old_overrides);
         if ($docset->is_empty()) {
-            $user->conf->feedback_msg([
+            $user->conf->feedback_msg(
                 new MessageItem(null, "Nothing to download", MessageSet::MARKED_NOTE),
-                ...$docset->message_list()
-            ]);
+                $docset->message_list()
+            );
         } else {
             session_write_close();
             if ($docset->download(DocumentRequest::add_connection_options(["attachment" => true, "single" => true]))) {

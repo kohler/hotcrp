@@ -703,27 +703,32 @@ class Ht {
         }
     }
 
-    /** @param MessageItem|iterable<MessageItem>|MessageSet $message_list
+    /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
      * @return array{string,int} */
-    static function feedback_msg_content($message_list) {
-        if ($message_list instanceof MessageSet) {
-            $message_list = $message_list->message_list();
-        } else if ($message_list instanceof MessageItem) {
-            $message_list = [$message_list];
-        } else if (!is_array($message_list)) {
-            $message_list = iterator_to_array($message_list);
+    static function feedback_msg_content(...$mls) {
+        $mlx = [];
+        foreach ($mls as $ml) {
+            if ($ml instanceof MessageItem) {
+                $mlx[] = $ml;
+            } else if ($ml instanceof MessageSet) {
+                array_push($mlx, ...$ml->message_list());
+            } else {
+                foreach ($ml as $mi) {
+                    $mlx[] = $mi;
+                }
+            }
         }
-        if (($h = MessageSet::feedback_html($message_list)) !== "") {
-            return [$h, MessageSet::list_status($message_list)];
+        if (($h = MessageSet::feedback_html($mlx)) !== "") {
+            return [$h, MessageSet::list_status($mlx)];
         } else {
             return ["", 0];
         }
     }
 
-    /** @param MessageItem|iterable<MessageItem>|MessageSet $message_list
+    /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
      * @return string */
-    static function feedback_msg($message_list) {
-        $ms = self::feedback_msg_content($message_list);
+    static function feedback_msg(...$mls) {
+        $ms = self::feedback_msg_content(...$mls);
         return $ms[0] === "" ? "" : self::msg($ms[0], $ms[1]);
     }
 
