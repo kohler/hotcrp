@@ -318,7 +318,7 @@ class AutoassignerInterface extends MessageSet {
         }
         $this->make_autoassigner();
         if (count($this->autoassigner->selected_pc_ids()) === 0) {
-            Conf::msg_error("Select one or more PC members to assign.");
+            $this->conf->error_msg("<0>Select one or more PC members to assign.");
             return false;
         }
 

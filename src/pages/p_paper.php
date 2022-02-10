@@ -29,10 +29,11 @@ class Paper_Page {
         PaperTable::print_header($this->pt, "paper-" . ($m === "edit" ? "edit" : "view"), $m, $this->qreq);
     }
 
-    function error_exit($msg) {
+    /** @param MessageItem ...$mls */
+    function error_exit(...$mls) {
         $this->print_header();
         Ht::stash_script("hotcrp.shortcut().add()");
-        $msg && Conf::msg_error($msg);
+        $this->conf->feedback_msg(...$mls);
         $this->conf->footer();
         throw new PageCompletion;
     }
@@ -46,7 +47,7 @@ class Paper_Page {
             assert(PaperRequest::simple_qreq($this->qreq));
             throw $redir;
         } catch (PermissionProblem $perm) {
-            $this->error_exit($perm->set("listViewable", true)->unparse_html());
+            $this->error_exit(MessageItem::error("<5>" . $perm->set("listViewable", true)->unparse_html()));
         }
     }
 
@@ -133,7 +134,7 @@ class Paper_Page {
             if ($this->prow->delete_from_database($this->user)) {
                 $this->conf->success_msg("<0>Submission #{$this->prow->paperId} deleted");
             }
-            $this->error_exit("");
+            $this->error_exit();
         }
     }
 

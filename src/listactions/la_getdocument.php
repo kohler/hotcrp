@@ -60,5 +60,6 @@ class GetDocument_ListAction extends ListAction {
             }
         }
         // XXX how to return errors?
+        return null;
     }
 }

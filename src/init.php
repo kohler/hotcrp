@@ -203,7 +203,7 @@ function initialize_user_redirect($nav, $uindex, $nusers) {
         }
         Navigation::redirect_absolute($page . $nav->query);
     } else {
-        Conf::msg_error("You have been signed out from this account.");
+        Conf::$main->error_msg("<0>You have been signed out from this account");
     }
 }
 
@@ -214,13 +214,13 @@ function initialize_request() {
     $nav = Navigation::get();
 
     // check PHP suffix
-    if (($php_suffix = Conf::$main->opt("phpSuffix")) !== null) {
+    if (($php_suffix = $conf->opt("phpSuffix")) !== null) {
         $nav->php_suffix = $php_suffix;
     }
 
     // maybe redirect to https
-    if (Conf::$main->opt("redirectToHttps")) {
-        $nav->redirect_http_to_https(Conf::$main->opt("allowLocalHttp"));
+    if ($conf->opt("redirectToHttps")) {
+        $nav->redirect_http_to_https($conf->opt("allowLocalHttp"));
     }
 
     // collect $qreq
@@ -240,7 +240,7 @@ function initialize_request() {
     header("Cache-Control: max-age=0,must-revalidate,private");
 
     // set up Content-Security-Policy if appropriate
-    Conf::$main->prepare_security_headers();
+    $conf->prepare_security_headers();
 
     // skip user initialization if requested
     if ($conf->opt["__no_main_user"] ?? null) {
@@ -309,7 +309,7 @@ function initialize_request() {
     if (isset($_GET["i"])
         && $trueemail
         && strcasecmp($_GET["i"], $trueemail) !== 0) {
-        Conf::msg_error("You are signed in as " . htmlspecialchars($trueemail) . ", not " . htmlspecialchars($_GET["i"]) . ". <a href=\"" . $conf->hoturl("signin", ["email" => $_GET["i"]]) . "\">Sign in</a>");
+        $conf->error_msg("<5>You are signed in as " . htmlspecialchars($trueemail) . ", not " . htmlspecialchars($_GET["i"]) . ". <a href=\"" . $conf->hoturl("signin", ["email" => $_GET["i"]]) . "\">Sign in</a>");
     }
 
     // look up and activate user

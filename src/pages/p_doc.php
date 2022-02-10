@@ -4,16 +4,19 @@
 
 class Doc_Page {
     /** @param string $status
-     * @param string $msg
+     * @param MessageItem|MessageSet $msg
      * @param Contact $user
      * @param Qrequest $qreq */
     static private function error($status, $msg, $user, $qreq) {
+        $ml = $msg instanceof MessageSet ? $msg->message_list() : [$msg];
+
         if (str_starts_with($status, "403") && $user->is_empty()) {
             $user->escape();
             exit;
         } else if (str_starts_with($status, "5")) {
             $navpath = $qreq->path();
-            error_log($user->conf->dbname . ": bad doc $status $msg "
+            error_log($user->conf->dbname . ": bad doc $status "
+                . MessageSet::feedback_text($ml)
                 . json_encode($qreq) . ($navpath ? " @$navpath" : "")
                 . ($user ? " {$user->email}" : "")
                 . (empty($_SERVER["HTTP_REFERER"]) ? "" : " R[" . $_SERVER["HTTP_REFERER"] . "]"));
@@ -21,10 +24,10 @@ class Doc_Page {
 
         header("HTTP/1.1 $status");
         if (isset($qreq->fn)) {
-            json_exit(MessageItem::make_error_json($msg));
+            json_exit(["ok" => false, "message_list" => $ml]);
         } else {
             $user->conf->header("Download", null);
-            $msg && Conf::msg_error($msg);
+            $user->conf->feedback_msg($ml);
             $user->conf->footer();
             exit;
         }
@@ -78,11 +81,11 @@ class Doc_Page {
         try {
             $dr = new DocumentRequest($qreq, $qreq->path(), $user);
         } catch (Exception $e) {
-            self::error("404 Not Found", htmlspecialchars($e->getMessage()), $user, $qreq);
+            self::error("404 Not Found", MessageItem::error("<0>" . $e->getMessage()), $user, $qreq);
         }
 
         if (($whyNot = $dr->perm_view_document($user))) {
-            self::error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", $whyNot->unparse_html(), $user, $qreq);
+            self::error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", MessageItem::error("<5>" . $whyNot->unparse_html()), $user, $qreq);
         }
         $prow = $dr->prow;
         $want_docid = $request_docid = (int) $dr->docid;
@@ -120,7 +123,7 @@ class Doc_Page {
         if (isset($qreq->version) && $dr->dtype >= DTYPE_FINAL) {
             $version_hash = Filer::hash_as_binary(trim($qreq->version));
             if (!$version_hash) {
-                self::error("404 Not Found", "No such version.", $user, $qreq);
+                self::error("404 Not Found", MessageItem::error("<0>Version not found"), $user, $qreq);
             }
             $want_docid = $user->conf->fetch_ivalue("select max(paperStorageId) from PaperStorage where paperId=? and documentType=? and sha1=? and filterType is null", $dr->paperId, $dr->dtype, $version_hash);
             if ($want_docid !== null && $user->can_view_document_history($prow)) {
@@ -134,9 +137,9 @@ class Doc_Page {
             $doc = $prow->document($dr->dtype, $request_docid);
         }
         if ($want_docid !== 0 && (!$doc || $doc->paperStorageId !== $want_docid)) {
-            self::error("404 Not Found", "No such version.", $user, $qreq);
+            self::error("404 Not Found", MessageItem::error("<0>Version not found"), $user, $qreq);
         } else if (!$doc || $doc->paperStorageId <= 1) {
-            self::error("404 Not Found", "No such " . ($dr->attachment ? "attachment" : "document") . " “" . htmlspecialchars($dr->req_filename) . "”.", $user, $qreq);
+            self::error("404 Not Found", MessageItem::error("<0>" . ($dr->attachment ? "Attachment" : "Document") . " ‘{$dr->req_filename}’ not found"), $user, $qreq);
         }
 
         // pass through filters
@@ -172,7 +175,7 @@ class Doc_Page {
         if ($doc->download(DocumentRequest::add_connection_options($opts))) {
             DocumentInfo::log_download_activity([$doc], $user);
         } else {
-            self::error("500 Server Error", $doc->message_set()->full_feedback_html(), $user, $qreq);
+            self::error("500 Server Error", $doc->message_set(), $user, $qreq);
         }
     }
 }

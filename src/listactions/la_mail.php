@@ -33,6 +33,6 @@ class Mail_ListAction extends ListAction {
         $args["t"] = $qreq->t;
         $args["template"] = $this->template;
         $args["to"] = $this->recipients;
-        $user->conf->redirect_hoturl("mail", $args);
+        return new Redirection($user->conf->hoturl("mail", $args));
     }
 }

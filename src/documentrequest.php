@@ -21,7 +21,7 @@ class DocumentRequest implements JsonSerializable {
         if (preg_match('/\A[-+]?\d+\z/', $pid)) {
             $this->paperId = intval($pid);
         } else {
-            throw new Exception("Document not found [submission $pid].");
+            throw new Exception("Document not found [submission $pid]");
         }
     }
 
@@ -89,7 +89,7 @@ class DocumentRequest implements JsonSerializable {
                     $this->attachment = urldecode($m[2]);
                 }
             } else {
-                throw new Exception("Document “{$this->req_filename}” not found.");
+                throw new Exception("Document ‘{$this->req_filename}’ not found");
             }
         }
 
@@ -140,7 +140,7 @@ class DocumentRequest implements JsonSerializable {
             $this->opt = $conf->options()->find($base_dtname);
             $this->dtype = $this->opt->id;
         } else if ($this->dtype === null) {
-            throw new Exception("Document “{$dtname}” not found.");
+            throw new Exception("Document ‘{$dtname}’ not found");
         }
 
         // canonicalize response naming
@@ -160,7 +160,7 @@ class DocumentRequest implements JsonSerializable {
                     if (($filter = FileFilter::find_by_name($conf, $filtername))) {
                         $this->filters[] = $filter;
                     } else {
-                        throw new Exception("Document filter “{$filtername}” not found.");
+                        throw new Exception("Document filter ‘{$filtername}’ not found");
                     }
                 }
             }
@@ -187,7 +187,7 @@ class DocumentRequest implements JsonSerializable {
 
         if ($this->dtype === null
             || ($this->opt && $this->opt->nonpaper) !== ($this->paperId < 0)) {
-            throw new Exception("Document “{$this->req_filename}” not found.");
+            throw new Exception("Document ‘{$this->req_filename}’ not found");
         }
 
         // look up paper

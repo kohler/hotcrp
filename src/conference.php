@@ -3996,7 +3996,8 @@ class Conf {
         self::msg_on(self::$main, $text, $minimal ? "xinfo" : "info");
     }
 
-    /** @param string|list<string> $text */
+    /** @param string|list<string> $text
+     * @deprecated */
     function warnMsg($text, $minimal = false) {
         self::msg_on($this, $text, $minimal ? "xwarning" : "warning");
     }
@@ -4032,7 +4033,8 @@ class Conf {
         return false;
     }
 
-    /** @param string|list<string> $text */
+    /** @param string|list<string> $text
+     * @deprecated */
     static function msg_error($text, $minimal = false) {
         self::msg_on(self::$main, $text, $minimal ? "xmerror" : "merror");
         return false;

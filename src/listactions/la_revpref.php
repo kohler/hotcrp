@@ -38,7 +38,7 @@ class Revpref_ListAction extends ListAction {
         if (!$reviewer) {
             return $user->conf->error_msg("<0>Reviewer ‘{$qreq->reviewer}’ not found");
         } else if (!$reviewer->isPC) {
-            return self::EPERM;
+            return self::eperm();
         } else if ($this->name === "get/revpref") {
             return $this->run_get($user, $qreq, $ssel, $reviewer, false);
         } else if ($this->name === "get/revprefx") {
@@ -50,7 +50,7 @@ class Revpref_ListAction extends ListAction {
                    || $this->name === "applyuploadpref") {
             return $this->run_uploadpref($user, $qreq, $ssel, $reviewer);
         } else {
-            return self::ENOENT;
+            return self::enoent();
         }
     }
     function run_get(Contact $user, Qrequest $qreq, SearchSelection $ssel,
@@ -155,8 +155,7 @@ class Revpref_ListAction extends ListAction {
         } else if ($qreq->has_file("fileupload")) {
             $csv = self::preference_file_csv($qreq->file_contents("fileupload"), $qreq->file_filename("fileupload"));
         } else {
-            $user->conf->error_msg("<0>File upload required");
-            return;
+            return MessageItem::error("<0>File upload required");
         }
 
         $aset = new AssignmentSet($user, true);

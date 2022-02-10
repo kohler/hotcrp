@@ -9,7 +9,7 @@ class GetRank_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $settingrank = $user->conf->setting("tag_rank") && $qreq->tag == "~" . $user->conf->setting_data("tag_rank");
         if (!$user->isPC && !($user->is_reviewer() && $settingrank)) {
-            return self::EPERM;
+            return self::eperm();
         }
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
@@ -70,7 +70,7 @@ tag," . CsvGenerator::quote(trim($qreq->tag)) . "
                     . "# " . $user->conf->hoturl_raw("offline", null, Conf::HOTURL_ABSOLUTE) . "\n\n"
                     . $real . ($real === "" ? "" : "\n") . $null);
         } else {
-            $user->conf->error_msg("<5>" . $tagger->error_html());
+            return MessageItem::error("<5>" . $tagger->error_html());
         }
     }
 }

@@ -2220,7 +2220,7 @@ class Contact {
             return $prep;
         } else {
             if (!($rest["quiet"] ?? false)) {
-                Conf::msg_error("Mail cannot be sent to " . htmlspecialchars($this->email) . " at this time.");
+                $this->conf->error_msg("<0>Mail cannot be sent to {$this->email} at this time");
             }
             return null;
         }

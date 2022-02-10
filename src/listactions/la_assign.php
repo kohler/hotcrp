@@ -41,17 +41,17 @@ class Assign_ListAction extends ListAction {
         } else if (($pc = $user->conf->cached_user_by_email($mpc))) {
             $mpc = $pc->email;
         } else {
-            return "“" . htmlspecialchars($mpc) . "” is not a PC member.";
+            return MessageItem::error("<0>‘{$mpc}’ is not a PC member");
         }
         if ($mpc === "none" && $mt !== "lead" && $mt !== "shepherd") {
-            return "A PC member is required.";
+            return MessageItem::error("<0>PC member required");
         }
         $mpc = CsvGenerator::quote($mpc);
 
         if (!in_array($mt, ["lead", "shepherd", "conflict", "clearconflict",
                             "optionalreview", "pcreview" /* backward compat */,
                             "secondaryreview", "primaryreview", "clearreview"])) {
-            return "Unknown assignment type.";
+            return MessageItem::error("<0>Unknown assignment type");
         }
 
         $text = "paper,action,user\n";
@@ -61,6 +61,7 @@ class Assign_ListAction extends ListAction {
         $assignset = new AssignmentSet($user, true);
         $assignset->enable_papers($ssel->selection());
         $assignset->parse($text);
-        return $assignset->execute(true);
+        $assignset->execute(true);
+        return null;
     }
 }

@@ -798,7 +798,10 @@ class Autoassigner {
             $x = ", possibly because the selected PC members didn’t review these submissions";
         }
         $y = (count($b) > 1 ? ' (' . $this->conf->hotlink("list them", "search", "q=$pidx", ["class" => "nw"]) . ')' : '');
-        $this->conf->warnMsg("I wasn’t able to complete the assignment$x. The following submissions got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
+        $this->conf->feedback_msg(
+            MessageItem::warning("<0>The assignment could not be completed{$x}"),
+            MessageItem::inform("<5>The following submissions got fewer than the required number of assignments: " . join(", ", $b) . $y . ".")
+        );
     }
 
     private function finish_assignment() {

@@ -22,9 +22,9 @@ class Assign_Page {
         $this->qreq = $qreq;
     }
 
-    function error_exit($msg) {
+    function error_exit(...$mls) {
         PaperTable::print_header($this->pt, "assign", "assign", $this->qreq);
-        $msg && Conf::msg_error($msg);
+        $this->conf->feedback_msg(...$mls);
         $this->conf->footer();
         throw new PageCompletion;
     }
@@ -41,7 +41,7 @@ class Assign_Page {
             assert(PaperRequest::simple_qreq($this->qreq));
             throw $redir;
         } catch (PermissionProblem $perm) {
-            $this->error_exit($perm->unparse_html());
+            $this->error_exit(MessageItem::error("<5>" . $perm->unparse_html()));
         }
     }
 
