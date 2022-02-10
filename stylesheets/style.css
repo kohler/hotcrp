@@ -2407,12 +2407,14 @@ div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 /* paper list tables geometry */
 table.pltable {
 	line-height: 1.25;
+	border-collapse: separate;
 }
 .pltable-fullw-container {
-	padding: 0.75em 0;
+	overflow-x: auto;
 }
 .pltable-fullw {
-	width: 100%;
+	min-width: 100%;
+	min-width: 100vw;
 	position: relative;
 }
 
@@ -2452,12 +2454,6 @@ tr.plheading:first-child > td {
 	border-top: 0px none;
 }
 
-th.pl {
-	vertical-align: bottom;
-	text-align: left;
-	line-height: 1.25;
-}
-
 tr.plx {
 	font-size: 85%;
 	line-height: 1.35;
@@ -2472,7 +2468,11 @@ em.plx {
 
 /* paper list tables */
 th.pl {
+	vertical-align: bottom;
+	text-align: left;
+	line-height: 1.25;
 	padding: 2px 6px 2px 0;
+	overflow-wrap: break-word;
 }
 td.pl {
 	padding-top: 4px;
@@ -2489,6 +2489,7 @@ th.pl:first-child, td.pl:first-child, td.plx:first-child {
 }
 
 td.pl.pl_title, td.pl.pl_text {
+	min-width: 30rem;
 	padding-right: 1em;
 }
 

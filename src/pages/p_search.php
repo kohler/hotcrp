@@ -264,7 +264,7 @@ class Search_Page {
                 '</div>';
         }
 
-        echo "<div class=\"maintabsep\"></div>\n\n<div class=\"pltable-fullw-container\">";
+        echo "<div class=\"maintabsep\"></div>\n\n";
 
         if ($this->pl->has("sel")) {
             echo Ht::form($this->conf->selfurl($qreq, ["post" => post_value(), "forceShow" => null]), ["id" => "sel", "class" => "ui-submit js-submit-paperlist"]),
@@ -274,7 +274,7 @@ class Search_Page {
                 Ht::hidden_default_submit("default", 1);
         }
 
-        echo $pl_text;
+        echo '<div class="pltable-fullw-container demargin">', $pl_text, '</div>';
 
         if ($this->pl->is_empty()
             && $search->limit() !== "s"
@@ -315,7 +315,7 @@ class Search_Page {
         $this->pl->apply_view_session();
         $this->pl->apply_view_qreq();
         if (isset($qreq->q)) {
-            $this->pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
+            $this->pl->set_table_id_class("foldpl", "pltable-fullw remargin-left remargin-right", "p#");
             $this->pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FOOTER | PaperList::DECOR_STATISTICS | PaperList::DECOR_LIST);
             $this->pl->set_table_fold_session("pldisplay.");
             if ($this->ssel->count()) {
@@ -330,7 +330,7 @@ class Search_Page {
         }
 
         // echo form
-        echo '<div id="searchform" class="clearfix" data-lquery="',
+        echo '<div id="searchform" class="mb-3 clearfix" data-lquery="',
             htmlspecialchars($search->default_limited_query()),
             '"><div class="tlx"><div class="tld is-tla active" id="tla-default">';
 

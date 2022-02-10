@@ -518,7 +518,7 @@ class Log_Page {
 
         $this->print_searchbar($leg, $page);
         if (!empty($trs)) {
-            echo "<table class=\"pltable pltable-fullw pltable-log\">\n",
+            echo "<table class=\"pltable fullw pltable-log\">\n",
                 '  <thead><tr class="pl_headrow">',
                 '<th class="pll plh pl_logtime">Time</th>',
                 '<th class="pll plh pl_logname">User</th>',

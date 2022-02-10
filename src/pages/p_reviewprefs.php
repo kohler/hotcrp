@@ -61,14 +61,14 @@ class ReviewPrefs_Page {
         $pl->apply_view_report_default();
         $pl->apply_view_session();
         $pl->apply_view_qreq();
-        $pl->set_table_id_class("foldpl", "pltable-fullw", "p#");
+        $pl->set_table_id_class("foldpl", "pltable-fullw remargin-left remargin-right", "p#");
         $pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_FOOTER | PaperList::DECOR_LIST);
         $pl->set_table_fold_session("pfdisplay.");
 
         // display options
         echo Ht::form($conf->hoturl("reviewprefs"), [
             "method" => "get", "id" => "searchform",
-            "class" => "has-fold fold10" . ($pl->viewing("authors") ? "o" : "c")
+            "class" => "mb-3 has-fold fold10" . ($pl->viewing("authors") ? "o" : "c")
         ]);
 
         if ($user->privChair) {
@@ -140,10 +140,9 @@ class ReviewPrefs_Page {
             Ht::hidden("defaultfn", ""),
             Ht::entry("____updates____", "", ["class" => "hidden ignore-diff"]),
             Ht::hidden_default_submit("default", 1);
-        echo "<div class=\"pltable-fullw-container\">\n",
-            '<noscript><div style="text-align:center">',
+        echo '<noscript><div style="text-align:center">',
             Ht::submit("fn", "Save changes", ["value" => "saveprefs", "class" => "btn-primary"]),
-            '</div></noscript>';
+            '</div></noscript><div class="pltable-fullw-container demargin">';
         $pl->print_table_html();
         echo "</div></form>\n";
 

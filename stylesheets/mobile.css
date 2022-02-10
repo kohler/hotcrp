@@ -180,6 +180,9 @@ input, textarea {
 table.pltable {
 	font-size: smaller;
 }
+td.pl.pl_title, td.pl.pl_text {
+	min-width: 20rem;
+}
 .reviewersdiv {
 	font-size: smaller;
 	overflow-x: scroll;

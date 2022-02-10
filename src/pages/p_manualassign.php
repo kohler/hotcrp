@@ -181,7 +181,7 @@ class ManualAssign_Page {
         $rev_rounds = $this->conf->round_selector_options(false);
         $expected_round = $this->conf->assignment_round_option(false);
 
-        echo '<div id="searchform" class="has-fold fold10', $pl->viewing("authors") ? "o" : "c", '">';
+        echo '<div id="searchform" class="mb-3 has-fold fold10', $pl->viewing("authors") ? "o" : "c", '">';
         if (count($rev_rounds) > 1) {
             echo '<div class="entryi"><label for="assrevround">Review round</label><div class="entry">',
                 Ht::select("rev_round", $rev_rounds, $this->qreq->rev_round ? : $expected_round, ["id" => "assrevround", "class" => "ignore-diff"]), ' <span class="barsep">·</span> ';
@@ -204,11 +204,13 @@ class ManualAssign_Page {
             Ht::submit("update", "Save assignments", ["class" => "btn-primary big"]), '</div></div>';
         echo '</div>';
 
-        $pl->set_table_id_class("foldpl", "pltable-fullw");
+        $pl->set_table_id_class("foldpl", "pltable-fullw remargin-left remargin-right");
         $pl->set_table_decor(PaperList::DECOR_HEADER | PaperList::DECOR_LIST);
+        echo '<div class="pltable-fullw-container demargin">';
         $pl->print_table_html();
+        echo '</div>';
 
-        echo '<div class="aab aabr aabig"><div class="aabut">',
+        echo '<div class="aab aabr aabig mt-2"><div class="aabut">',
             Ht::submit("update", "Save assignments", ["class" => "btn-primary"]),
             "</div></div></form>\n";
         Ht::stash_script('hotcrp.highlight_form_children("form.assignpc");$("#assrevimmediate").trigger("change");'

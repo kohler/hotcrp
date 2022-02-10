@@ -62,13 +62,14 @@ class ConflictAssign_Page {
             $paperlist = new PaperList("conflictassign", $search, $args, $qreq);
             $paperlist->set_reviewer_user($pc);
             $paperlist->set_row_filter($filter);
-            $paperlist->set_table_id_class(null, "pltable-fullw");
+            $paperlist->set_table_id_class(null, "pltable-fullw remargin-left remargin-right");
             $paperlist->set_table_decor(PaperList::DECOR_EVERYHEADER);
             $tr = $paperlist->table_render();
             if (!$tr->is_empty()) {
                 if (!$any) {
                     echo Ht::form($conf->hoturl("conflictassign")),
                         Ht::entry("____updates____", "", ["class" => "hidden ignore-diff"]),
+                        '<div class="pltable-fullw-container demargin">',
                         $tr->table_start,
                         Ht::unstash(),
                         ($tr->thead ? : ""),
@@ -86,7 +87,7 @@ class ConflictAssign_Page {
             }
         }
         if ($any) {
-            echo "  </tbody>\n</table></form>";
+            echo "  </tbody>\n</table></div></form>";
         }
 
         echo '<hr class="c" />';

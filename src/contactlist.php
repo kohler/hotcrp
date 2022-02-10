@@ -1089,7 +1089,7 @@ class ContactList {
             }
         }
 
-        $x = "<table id=\"foldul\" class=\"pltable pltable-fullw";
+        $x = "<table id=\"foldul\" class=\"pltable fullw";
         if ($foldclasses) {
             $x .= " " . join(" ", $foldclasses);
         }
