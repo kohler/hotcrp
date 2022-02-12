@@ -192,7 +192,7 @@ class DocumentRequest implements JsonSerializable {
 
         // look up paper
         if ($this->paperId < 0) {
-            $this->prow = new PaperInfo(["paperId" => -2], null, $user->conf);
+            $this->prow = PaperInfo::make_placeholder($user->conf, -2);
         } else {
             $this->prow = $user->conf->paper_by_id($this->paperId, $user);
         }

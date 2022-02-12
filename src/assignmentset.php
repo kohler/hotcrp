@@ -422,7 +422,7 @@ class AssignmentState extends MessageSet {
     /** @return PaperInfo */
     function placeholder_prow() {
         if ($this->placeholder_prow === null) {
-            $this->placeholder_prow = new PaperInfo(["paperId" => -1], null, $this->conf);
+            $this->placeholder_prow = PaperInfo::make_placeholder($this->conf, -1);
         }
         return $this->placeholder_prow;
     }

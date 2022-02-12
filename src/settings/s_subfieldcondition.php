@@ -13,7 +13,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
             $sv->append_item_at("{$pfx}__condition", $mi);
             $sv->msg_at("{$pfx}__presence", "", $mi->status);
         }
-        $fake_prow = new PaperInfo(null, null, $sv->conf);
+        $fake_prow = PaperInfo::make_placeholder($sv->conf, -1);
         if ($ps->term()->script_expression($fake_prow) === null) {
             $sv->msg_at("{$pfx}__presence", "", $status);
             $sv->msg_at("{$pfx}__condition", "<0>Invalid search in field condition", $status);

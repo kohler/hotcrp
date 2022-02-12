@@ -657,6 +657,15 @@ class PaperInfo {
         return $prow;
     }
 
+    /** @param int $paperId
+     * @return PaperInfo
+     * @suppress PhanAccessReadOnlyProperty */
+    static function make_placeholder(Conf $conf, $paperId) {
+        $prow = new PaperInfo(null, null, $conf);
+        $prow->paperId = $paperId;
+        return $prow;
+    }
+
     /** @return PaperInfo */
     static function make_new(Contact $user) {
         $prow = new PaperInfo(null, null, $user->conf);
