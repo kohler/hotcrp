@@ -99,7 +99,7 @@ class API_Page {
             global $Opt;
             $Opt["__no_main_user"] = true;
             initialize_request();
-            MeetingTracker::trackerstatus_api(new Contact(Conf::$main));
+            MeetingTracker::trackerstatus_api(Contact::make(Conf::$main));
         } else {
             initialize_request();
             self::go(Contact::$main_user, Qrequest::$main_request);

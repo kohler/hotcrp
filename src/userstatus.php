@@ -79,7 +79,7 @@ class UserStatus extends MessageSet {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         if ($viewer->is_root_user()) {
-            $this->set_user(new Contact($this->conf));
+            $this->set_user(Contact::make($this->conf));
         } else {
             $this->set_user($viewer);
         }
@@ -1641,13 +1641,15 @@ topics. We use this information to help match papers to reviewers.</p>',
             $us->cs()->push_close_section('</div>');
             $us->cs()->print_title("User administration");
             $disablement = $us->user->disablement;
-            echo '<div class="btngrid">',
-                Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo mf relative", "disabled" => $disablement !== 0]), '<p></p>';
+            echo '<div class="btngrid"><div class="d-flex mf mf-absolute">',
+                Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disablement !== 0]), '</div><p></p>';
             if (!$us->is_auth_user()
                 && ($disablement & ~Contact::DISABLEMENT_USER) === 0) {
-                echo Ht::button($disablement ? "Enable account" : "Disable account", [
-                    "class" => "ui js-disable-user " . ($disablement ? "btn-success" : "btn-danger")
-                ]), '<p class="pt-1 mb-0">Disabled accounts cannot sign in or view the site.</p>';
+                echo '<div class="d-flex mf mf-absolute">',
+                    Ht::button($disablement ? "Enable account" : "Disable account", [
+                        "class" => "ui js-disable-user flex-grow-1 " . ($disablement ? "btn-success" : "btn-danger")
+                    ]),
+                    '</div><p class="pt-1 mb-0">Disabled accounts cannot sign in or view the site.</p>';
                 self::print_delete_action($us);
             }
             echo '</div>';

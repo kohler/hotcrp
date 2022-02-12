@@ -233,6 +233,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $this->add($prow, true);
         }
     }
+    /** @param bool $copy */
     function add(PaperInfo $prow, $copy = false) {
         $this->prows[] = $prow;
         if (!isset($this->by_pid[$prow->paperId])) {
@@ -271,6 +272,7 @@ class PaperInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function is_empty() {
         return empty($this->prows);
     }
+    /** @param callable(PaperInfo,PaperInfo):int $compare */
     function sort_by($compare) {
         usort($this->prows, $compare);
         $this->_need_pid_sort = true;
@@ -377,20 +379,20 @@ class PaperInfo {
     // Always available, even in "minimal" paper skeletons
     /** @var int
      * @readonly */
-    public $paperId;
+    public $paperId = 0;
     /** @var int
      * @readonly */
     public $paperXid;      // unique among all PaperInfos
     /** @var int */
-    public $timeSubmitted;
+    public $timeSubmitted = 0;
     /** @var int */
-    public $timeWithdrawn;
+    public $timeWithdrawn = 0;
     /** @var int */
-    public $outcome;
+    public $outcome = 0;
     /** @var int */
-    public $leadContactId;
+    public $leadContactId = 0;
     /** @var int */
-    public $managerContactId;
+    public $managerContactId = 0;
     /** @var ?bool */
     public $blind;         // always available if submission blindness is optional
 
@@ -577,26 +579,15 @@ class PaperInfo {
     const SUBMITTED_AT_FOR_WITHDRAWN = 1000000000;
     static private $next_uid = 0;
 
-    /** @param ?array<string,null|string|int> $p
-     * @param ?Contact $contact */
-    function __construct($p = null, $contact = null, Conf $conf = null) {
-        $this->incorporate($p, $contact, $conf);
+    /** @param Conf $conf */
+    private function __construct(Conf $conf) {
+        $this->conf = $conf;
+        $this->paperXid = ++self::$next_uid;
     }
 
-    /** @param ?array<string,null|string|int> $p
-     * @param ?Contact $contact
-     * @param ?Conf $conf
-     * @suppress PhanAccessReadOnlyProperty */
-    private function incorporate($p, $contact, $conf) {
-        assert($contact === null ? $conf !== null : $contact instanceof Contact);
-        $this->conf = $contact ? $contact->conf : $conf;
-        if ($p) {
-            foreach ($p as $k => $v) {
-                $this->$k = $v;
-            }
-        }
+    /** @suppress PhanAccessReadOnlyProperty */
+    private function incorporate() {
         $this->paperId = (int) $this->paperId;
-        $this->paperXid = ++self::$next_uid;
         $this->timeSubmitted = (int) $this->timeSubmitted;
         $this->timeWithdrawn = (int) $this->timeWithdrawn;
         $this->outcome = (int) $this->outcome;
@@ -620,24 +611,6 @@ class PaperInfo {
         if (isset($this->finalPaperStorageId)) {
             $this->finalPaperStorageId = (int) $this->finalPaperStorageId;
         }
-        if ($contact) {
-            if ($this->myReviewPermissions !== null
-                || $this->reviewSignatures !== null) {
-                $this->_rights_version = Contact::$rights_version;
-                $this->load_my_contact_info($contact, $this);
-            } else {
-                assert($this->conflictType === null);
-            }
-            if ($this->myReviewerPreference !== null) {
-                $re = $this->myReviewerExpertise;
-                $this->_pref1 = [(int) $this->myReviewerPreference, $re === null ? $re : (int) $re];
-                $this->_pref1_cid = $contact->contactId;
-            }
-            if ($this->watch !== null) {
-                $this->watch = (int) $this->watch;
-                $this->_watch_cid = $contact->contactId;
-            }
-        }
         if (isset($this->dataOverflow) && is_string($this->dataOverflow)) {
             $this->dataOverflow = json_decode($this->dataOverflow, true);
             if ($this->dataOverflow === null) {
@@ -646,13 +619,34 @@ class PaperInfo {
         }
     }
 
+    /** @param Contact $user */
+    private function incorporate_user($user) {
+        assert($this->conf === $user->conf);
+        if ($this->myReviewPermissions !== null
+            || $this->reviewSignatures !== null) {
+            $this->_rights_version = Contact::$rights_version;
+            $this->load_my_contact_info($user, $this);
+        } else {
+            assert($this->conflictType === null);
+        }
+        if ($this->myReviewerPreference !== null) {
+            $re = $this->myReviewerExpertise;
+            $this->_pref1 = [(int) $this->myReviewerPreference, $re === null ? $re : (int) $re];
+            $this->_pref1_cid = $user->contactId;
+        }
+        if ($this->watch !== null) {
+            $this->watch = (int) $this->watch;
+            $this->_watch_cid = $user->contactId;
+        }
+    }
+
     /** @param Dbl_Result $result
-     * @param ?Contact $contact
+     * @param ?Contact $user
      * @return ?PaperInfo */
-    static function fetch($result, $contact, Conf $conf = null) {
-        $prow = $result->fetch_object("PaperInfo", [null, $contact, $conf]);
-        if ($prow && !is_int($prow->paperId)) {
-            $prow->incorporate(null, $contact, $conf);
+    static function fetch($result, $user, Conf $conf = null) {
+        if (($prow = $result->fetch_object("PaperInfo", [$conf ?? $user->conf]))) {
+            $prow->incorporate();
+            $user && $prow->incorporate_user($user);
         }
         return $prow;
     }
@@ -661,14 +655,14 @@ class PaperInfo {
      * @return PaperInfo
      * @suppress PhanAccessReadOnlyProperty */
     static function make_placeholder(Conf $conf, $paperId) {
-        $prow = new PaperInfo(null, null, $conf);
+        $prow = new PaperInfo($conf);
         $prow->paperId = $paperId;
         return $prow;
     }
 
     /** @return PaperInfo */
     static function make_new(Contact $user) {
-        $prow = new PaperInfo(null, null, $user->conf);
+        $prow = new PaperInfo($user->conf);
         $prow->abstract = $prow->title = $prow->collaborators =
             $prow->authorInformation = $prow->paperTags = $prow->optionIds =
             $prow->topicIds = "";
@@ -680,6 +674,24 @@ class PaperInfo {
         $ci->conflictType = CONFLICT_CONTACTAUTHOR;
         $prow->_contact_info[$user->contactXid] = $ci;
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
+        return $prow;
+    }
+
+    /** @param int $rtype
+     * @param string $tags
+     * @return PaperInfo
+     * @suppress PhanAccessReadOnlyProperty */
+    static function make_permissive_reviewer(Contact $user, $rtype, $tags) {
+        $prow = new PaperInfo($user->conf);
+        $prow->paperId = 1;
+        $prow->blind = false;
+        $prow->timeSubmitted = 1;
+        $prow->managerContactId = 0;
+        $prow->paperTags = $tags;
+        $prow->outcome = 1;
+        $prow->conflictType = "0";
+        $prow->myReviewPermissions = "{$rtype} 1 0";
+        $prow->incorporate_user($user);
         return $prow;
     }
 
@@ -777,7 +789,7 @@ class PaperInfo {
     /** @return Contact */
     function author_view_user() {
         if (!$this->_author_view_user) {
-            $this->_author_view_user = new Contact($this->conf);
+            $this->_author_view_user = Contact::make($this->conf);
             $this->_author_view_user->set_capability("@av{$this->paperId}", true);
         }
         return $this->_author_view_user;
@@ -861,15 +873,6 @@ class PaperInfo {
      * @return ?Author */
     function author_by_email($email) {
         return self::search_author_list_by_email($this->author_list(), $email);
-    }
-
-    /** @return string */
-    function regenerate_author_list() {
-        $ai = "";
-        foreach ($this->_author_array as $au) {
-            $ai .= $au->firstName . "\t" . $au->lastName . "\t" . $au->email . "\t" . $au->affiliation . "\n";
-        }
-        return ($this->authorInformation = $ai);
     }
 
     /** @param Contact|int $contact

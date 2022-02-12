@@ -76,15 +76,8 @@ class RequestReview_API {
 
         // check for potential conflict
         $xreviewer = $reviewer
-            ?? $user->conf->contactdb_user_by_email($email);
-        if (!$xreviewer) {
-            $xreviewer = new Contact($user->conf, [
-                "firstName" => $name_args->firstName,
-                "lastName" => $name_args->lastName,
-                "email" => $name_args->email,
-                "affiliation" => $name_args->affiliation
-            ]);
-        }
+            ?? $user->conf->contactdb_user_by_email($email)
+            ?? Contact::make_keyed($user->conf, (array) $name_args->unparse_nae_json());
         $potconflict = $prow->potential_conflict_html($xreviewer);
 
         // check requester

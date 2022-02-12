@@ -141,7 +141,7 @@ class ConfInvariants {
         Dbl::free($result);
 
         // anonymous users are disabled; primaryContactId is not recursive
-        $result = $this->conf->qe("select contactId, email, primaryContactId, disabled from ContactInfo where primaryContactId!=0 or (email>='anonymous' and email<='anonymous:')");
+        $result = $this->conf->qe("select contactId, email, primaryContactId, roles, disabled from ContactInfo where primaryContactId!=0 or (email>='anonymous' and email<='anonymous:') or (roles!=0 and (roles&~" . Contact::ROLE_DBMASK . ")!=0)");
         $primary = [];
         while (($row = $result->fetch_object())) {
             if (str_starts_with($row->email, "anonymous")
@@ -157,6 +157,9 @@ class ConfInvariants {
                 if ($primary[$cid] === 3 || $primary[$pcid] === 3) {
                     $this->invariant_error("primary_user_loop", "primary user loop involving {$cid}/{$row->email}");
                 }
+            }
+            if (($row->roles & ~Contact::ROLE_DBMASK) !== 0) {
+                $this->invariant_error("user_roles", "user {$row->email} has funky roles {$row->roles}");
             }
         }
         Dbl::free($result);

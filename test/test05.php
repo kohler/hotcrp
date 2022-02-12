@@ -16,7 +16,7 @@ $user_chair = $Conf->checked_user_by_email("chair@_.com");
 $user_estrin = $Conf->checked_user_by_email("estrin@usc.edu"); // pc
 $user_varghese = $Conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc red
 $user_sally = $Conf->checked_user_by_email("floyd@ee.lbl.gov"); // pc red blue
-$user_nobody = new Contact($Conf);
+$user_nobody = Contact::make($Conf);
 
 $ps = new PaperStatus($Conf, $user_estrin);
 

@@ -66,7 +66,7 @@ class Profile_Page {
         $u = $this->qreq->u ?? "me";
         if ($this->viewer->privChair && $u !== "me") {
             if ($u === "new" || $u === "bulk") {
-                $user = new Contact($this->conf);
+                $user = Contact::make($this->conf);
                 $this->page_type = $u === "new" ? 1 : 2;
             } else if (ctype_digit($u)) {
                 $user = $this->conf->user_by_id(intval($u));
@@ -280,7 +280,7 @@ class Profile_Page {
         $ustatus->add_csv_synonyms($csv);
 
         while (($line = $csv->next_row())) {
-            $ustatus->set_user(new Contact($this->conf));
+            $ustatus->set_user(Contact::make($this->conf));
             $ustatus->clear_messages();
             $ustatus->jval = (object) ["id" => null];
             $ustatus->csvreq = $line;

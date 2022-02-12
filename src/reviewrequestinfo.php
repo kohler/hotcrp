@@ -51,7 +51,7 @@ class ReviewRequestInfo {
 
     /** @return Contact */
     function make_user(Conf $conf) {
-        return new Contact($conf, [
+        return Contact::make_keyed($conf, [
             "contactId" => $this->contactId,
             "email" => $this->email,
             "firstName" => $this->firstName,

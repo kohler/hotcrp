@@ -12,7 +12,7 @@ class Deadlines_Page {
 
     static function go(Contact $user) {
         if ($user->contactId && $user->is_disabled()) {
-            $user = new Contact($user->conf, ["email" => $user->email]);
+            $user = Contact::make_email($user->conf, $user->email);
         }
 
         // header

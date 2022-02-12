@@ -568,7 +568,8 @@ class AssignerContacts {
     /** @return Contact */
     function none_user() {
         if (!$this->none_user) {
-            $this->none_user = new Contact($this->conf, ["email" => "", "contactId" => 0, "roles" => 0]);
+            $this->none_user = Contact::make($this->conf);
+            assert($this->none_user->email === "" && $this->none_user->contactId === 0 && $this->none_user->roles === 0);
         }
         return $this->none_user;
     }
@@ -586,10 +587,8 @@ class AssignerContacts {
             return $c;
         }
         $result = $this->conf->qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
-        $c = Contact::fetch($result, $this->conf);
-        if (!$c) {
-            $c = new Contact($this->conf, ["email" => "unknown contact $cid", "contactId" => $cid, "roles" => 0]);
-        }
+        $c = Contact::fetch($result, $this->conf)
+            ?? Contact::make_keyed($this->conf, ["email" => "unknown contact $cid", "contactId" => $cid]);
         Dbl::free($result);
         return $this->store($c);
     }
@@ -620,10 +619,11 @@ class AssignerContacts {
                 Dbl::free($result);
             }
             if (!$c) {
-                $cargs = ["email" => $email, "roles" => 0, "contactId" => 0];
-                foreach (["firstName", "lastName", "affiliation"] as $k) {
-                    if ($req && $req[$k])
-                        $cargs[$k] = $req[$k];
+                $cargs = ["email" => $email];
+                if ($req) {
+                    $cargs["firstName"] = $req["firstName"] ?? "";
+                    $cargs["lastName"] = $req["lastName"] ?? "";
+                    $cargs["affiliation"] = $req["affiliation"] ?? "";
                 }
                 if ($is_anonymous) {
                     $cargs["firstName"] = "Jane Q.";
@@ -631,7 +631,7 @@ class AssignerContacts {
                     $cargs["affiliation"] = "Unaffiliated";
                     $cargs["disabled"] = true;
                 }
-                $c = new Contact($this->conf, $cargs);
+                $c = Contact::make_keyed($this->conf, $cargs);
             }
             $c->contactXid = $c->contactId = self::$next_fake_id--;
         }
@@ -662,9 +662,20 @@ class AssignerContacts {
         if ($cx === $c) {
             // XXX assume that never fails:
             $cargs = [];
-            foreach (["email", "firstName", "lastName", "affiliation", "disabled"] as $k) {
-                if ($c->$k !== null)
-                    $cargs[$k] = $c->$k;
+            if ($c->email !== null) {
+                $cargs["email"] = $c->email;
+            }
+            if ($c->firstName !== null) {
+                $cargs["firstName"] = $c->firstName;
+            }
+            if ($c->lastName !== null) {
+                $cargs["lastName"] = $c->lastName;
+            }
+            if ($c->affiliation !== null) {
+                $cargs["affiliation"] = $c->affiliation;
+            }
+            if (($c->disablement & Contact::DISABLEMENT_USER) !== 0) {
+                $cargs["disabled"] = true;
             }
             $cx = Contact::create($this->conf, $this->viewer, $cargs, $cx->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0);
             $cx = $this->store($cx);

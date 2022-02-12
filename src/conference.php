@@ -2122,21 +2122,16 @@ class Conf {
     /** @return Contact */
     function site_contact() {
         if (!$this->_site_contact) {
-            $args = [
-                "fullName" => $this->opt("contactName"),
-                "email" => $this->opt("contactEmail"),
-                "roles" => Contact::ROLE_PC | Contact::ROLE_CHAIR,
-                "is_site_contact" => 1,
-                "contactTags" => null
-            ];
-            if ((!$args["email"] || $args["email"] === "you@example.com")
+            $args = ["email" => $this->opt("contactEmail") ?? ""];
+            if (($args["email"] === "" || $args["email"] === "you@example.com")
                 && ($row = $this->default_site_contact())) {
-                unset($args["fullName"]);
                 $args["email"] = $row->email;
                 $args["firstName"] = $row->firstName;
                 $args["lastName"] = $row->lastName;
+            } else if (($name = $this->opt("contactName"))) {
+                list($args["firstName"], $args["lastName"], $scrap) = Text::split_name($name);
             }
-            $this->_site_contact = new Contact($this, $args);
+            $this->_site_contact = Contact::make_site_contact($this, $args);
         }
         return $this->_site_contact;
     }
@@ -2144,12 +2139,7 @@ class Conf {
     /** @return Contact */
     function root_user() {
         if (!$this->_root_user) {
-            $this->_root_user = new Contact($this, [
-                "email" => "rootuser",
-                "roles" => Contact::ROLE_PC | Contact::ROLE_CHAIR,
-                "is_site_contact" => 1,
-                "contactTags" => null
-            ]);
+            $this->_root_user = Contact::make_site_contact($this, ["email" => "rootuser"]);
             $this->_root_user->set_overrides(Contact::OVERRIDE_CONFLICT);
         }
         return $this->_root_user;

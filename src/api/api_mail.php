@@ -9,16 +9,10 @@ class Mail_API {
             return new JsonResult(403, "Permission error");
         }
 
-        $recipient = [];
-        foreach (["first" => "firstName", "last" => "lastName",
-                  "affiliation" => "affiliation", "email" => "email"] as $r => $k) {
-            if (isset($qreq[$k])) {
-                $recipient[$k] = $qreq[$k];
-            } else if (isset($qreq[$r])) {
-                $recipient[$k] = $qreq[$r];
-            }
+        $recipient = null;
+        if (($args = $qreq->subset_as_array("firstName", "first", "lastName", "last", "affiliation", "email"))) {
+            $recipient = Contact::make_keyed($user->conf, $args);
         }
-        $recipient = empty($recipient) ? null : new Contact($user->conf, $recipient);
 
         $mailinfo = [
             "prow" => $prow,

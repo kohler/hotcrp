@@ -52,10 +52,12 @@ if ($users) {
     Dbl::free($result);
 
     // read current db roles
-    Contact::$allow_nonexistent_properties = true;
-    $result = Dbl::ql($Conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, unaccentedName, disabled, roles, password, passwordTime, passwordUseTime, lastLogin,
-        exists (select * from PaperConflict where contactId=ContactInfo.contactId and conflictType>=" . CONFLICT_AUTHOR . ") __isAuthor__,
-        exists (select * from PaperReview where contactId=ContactInfo.contactId) __hasReview__
+    $result = Dbl::ql($Conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, unaccentedName, disabled,
+        (ContactInfo.roles
+         | if(exists (select * from PaperConflict where contactId=ContactInfo.contactId and conflictType>=" . CONFLICT_AUTHOR . ")," . Contact::ROLE_AUTHOR . ",0)
+         | if(exists (select * from PaperReview where contactId=ContactInfo.contactId)," . Contact::ROLE_REVIEWER . ",0)) roles,
+        " . (Contact::ROLE_DBMASK | Contact::ROLE_AUTHOR | Contact::ROLE_REVIEWER) . " role_mask,
+        password, passwordTime, passwordUseTime, lastLogin
         from ContactInfo");
     $cdbids = [];
     $qv = [];

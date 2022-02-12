@@ -198,9 +198,9 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function as_array() {
         return $this->_v;
     }
-    /** @param list<string> $keys
+    /** @param string ...$keys
      * @return array<string,mixed> */
-    function subset_as_array($keys) {
+    function subset_as_array(...$keys) {
         $d = [];
         foreach ($keys as $k) {
             if (array_key_exists($k, $this->_v))

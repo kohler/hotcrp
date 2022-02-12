@@ -26,7 +26,7 @@ $user_mjh = $Conf->checked_user_by_email("mjh@isi.edu"); // pc
 $user_pdruschel = $Conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
 $user_randy = $Conf->checked_user_by_email("randy@cs.berkeley.edu"); // author
 $user_lixia = $Conf->checked_user_by_email("lixia@cs.ucla.edu"); // pc
-$user_nobody = new Contact($Conf);
+$user_nobody = Contact::make($Conf);
 
 // users are different
 xassert($user_chair->contactId != $user_estrin->contactId);
@@ -95,7 +95,7 @@ check_paper1($paper1);
 check_paper1($user_estrin->checked_paper_by_id(1));
 
 // grant user capability to read paper 1, check it doesn't allow PC view
-$user_capability = new Contact($Conf);
+$user_capability = Contact::make($Conf);
 xassert(!$user_capability->can_view_paper($paper1));
 $user_capability->apply_capability_text(AuthorView_Capability::make($paper1));
 xassert(!$user_capability->contactId);
@@ -1000,6 +1000,23 @@ xassert($user_marina->can_accept_review_assignment_ignore_conflict($paper13));
 xassert($user_marina->can_accept_review_assignment($paper13));
 xassert($user_marina->can_edit_review($paper13, null));
 
+xassert($user_jon->can_view_some_review_identity());
+xassert($user_marina->can_view_some_review_identity());
+xassert(!$user_randy->can_view_some_review_identity());
+xassert(!$user_nobody->can_view_some_review_identity());
+$Conf->save_refresh_setting("rev_blind", 0);
+Contact::update_rights();
+xassert($user_jon->can_view_some_review_identity());
+xassert($user_marina->can_view_some_review_identity());
+xassert($user_randy->can_view_some_review_identity());
+xassert($user_nobody->can_view_some_review_identity());
+$Conf->save_refresh_setting("rev_blind", null);
+Contact::update_rights();
+xassert($user_jon->can_view_some_review_identity());
+xassert($user_marina->can_view_some_review_identity());
+xassert(!$user_randy->can_view_some_review_identity());
+xassert(!$user_nobody->can_view_some_review_identity());
+
 $paper14 = $user_jon->checked_paper_by_id(14);
 xassert(!$paper14->has_tag("green"));
 xassert(!$paper14->has_author($user_jon));
@@ -1324,9 +1341,9 @@ xassert_eqq($paper16->sorted_searchable_tags($user_estrin), " 4~app#0 4~bar#0 ap
 ConfInvariants::test_all($Conf, "test01.php:D: ");
 
 // author view capabilities and multiple blank users
-$blank1 = new Contact($Conf);
+$blank1 = Contact::make($Conf);
 $blank1->set_capability("@av19", true);
-$blank2 = new Contact($Conf);
+$blank2 = Contact::make($Conf);
 $blank2->set_capability("@av16", true);
 xassert($blank1->can_view_paper($paper19));
 xassert(!$blank1->can_view_paper($paper16));

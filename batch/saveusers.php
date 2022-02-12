@@ -82,7 +82,7 @@ if (isset($arg["u"])) {
     if (isset($arg["uname"])) {
         $cj->name = $arg["uname"];
     }
-    $ustatus->set_user(new Contact($Conf));
+    $ustatus->set_user(Contact::make($Conf));
     $ustatus->clear_messages();
     save_contact($ustatus, null, $cj, $arg);
 } else if (!preg_match('/\A\s*[\[\{]/i', $content)) {
@@ -97,7 +97,7 @@ if (isset($arg["u"])) {
     }
     $ustatus->add_csv_synonyms($csv);
     while (($line = $csv->next_row())) {
-        $ustatus->set_user(new Contact($Conf));
+        $ustatus->set_user(Contact::make($Conf));
         $ustatus->clear_messages();
         $ustatus->csvreq = $line;
         $ustatus->jval = (object) ["id" => null];
@@ -119,7 +119,7 @@ if (isset($arg["u"])) {
         exit(1);
     }
     foreach ($content as $key => $cj) {
-        $ustatus->set_user(new Contact($Conf));
+        $ustatus->set_user(Contact::make($Conf));
         $ustatus->clear_messages();
         save_contact($ustatus, $key, $cj, $arg);
     }

@@ -2,8 +2,6 @@
 // contact.php -- HotCRP helper class representing system users
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
-/** @property ?string $__isAuthor__
- * @property ?string $__hasReview__ */
 class Contact {
     /** @var int */
     static public $rights_version = 1;
@@ -14,8 +12,6 @@ class Contact {
     /** The base authenticated user when "acting as"; otherwise null.
      * @var ?Contact */
     static public $base_auth_user;
-    /** @var bool */
-    static public $allow_nonexistent_properties = false;
     /** @var int */
     static public $next_xid = -2;
     /** @var ?list<string> */
@@ -47,11 +43,12 @@ class Contact {
     public $email = "";
     /** @var int */
     public $roles = 0;
+    /** @var int */
+    public $role_mask = self::ROLE_DBMASK;
     /** @var ?string */
     public $contactTags;
-    /** @var bool
-     * @deprecated */
-    public $disabled = false;
+    /** @var bool */
+    private $disabled = false;
     /** @var int */
     public $disablement = 0;
     /** @var ?int */
@@ -117,9 +114,16 @@ class Contact {
     const ROLE_ADMIN = 2;
     const ROLE_CHAIR = 4;
     const ROLE_PCLIKE = 15;
+    const ROLE_DBMASK = 15;
     const ROLE_AUTHOR = 16;
     const ROLE_REVIEWER = 32;
     const ROLE_REQUESTER = 64;
+    const ROLE_OUTSTANDING_REVIEW = 0x1000;
+    const ROLE_METAREVIEWER = 0x2000;
+    const ROLE_LEAD = 0x4000;
+    const ROLE_EXPLICIT_MANAGER = 0x8000;
+    const ROLE_APPROVABLE = 0x10000;
+    const ROLE_VIEW_SOME_REVIEW_ID = 0x20000;
     /** @var bool */
     public $isPC = false;
     /** @var bool */
@@ -127,19 +131,9 @@ class Contact {
     /** @var bool */
     public $is_site_contact = false;
     /** @var ?int */
-    private $_db_roles;
-    /** @var ?int */
-    private $_active_roles;
+    private $_session_roles;
     /** @var ?associative-array<int,int> */
     private $_conflict_types;
-    /** @var ?bool */
-    private $_has_outstanding_review;
-    /** @var ?bool */
-    private $_is_metareviewer;
-    /** @var ?bool */
-    private $_is_lead;
-    /** @var ?bool */
-    private $_is_explicit_manager;
     /** @var ?int */
     private $_dangerous_track_mask;
     /** @var ?int */
@@ -228,83 +222,83 @@ class Contact {
     ];
 
 
-    /** @param ?array<string,mixed> $values
-     * @param bool $dbload */
-    function __construct(Conf $conf, $values = null, $dbload = false) {
+    /** @param Conf $conf */
+    private function __construct($conf) {
         $this->conf = $conf;
-        $dbload && $this->fetch_incorporate();
-        $values && $this->merge($values);
-        $this->contactXid = $this->contactId ? : self::$next_xid--;
     }
 
-    /** @param ?array<string,mixed> $values
-     * @return ?Contact */
-    static function fetch($result, Conf $conf, $values = null) {
-        if (($user = $result->fetch_object("Contact", [$conf, $values, true]))) {
-            if (!$user->conf) {
-                $user->conf = $conf;
-                $user->fetch_incorporate();
-                $values && $user->merge($values);
-                $user->contactXid = $user->contactId ? : self::$next_xid--;
-            }
-        }
-        return $user;
+    /** @return Contact */
+    static function make(Conf $conf) {
+        $u = new Contact($conf);
+        $u->set_roles_properties();
+        $u->contactXid = self::$next_xid--;
+        return $u;
     }
 
-    /** @param array<string,mixed> $user
-     * @suppress PhanDeprecatedProperty */
-    private function merge($user) {
-        if ((!isset($user["dsn"]) || $user["dsn"] === $this->conf->dsn)
-            && isset($user["contactId"])) {
-            $this->contactId = (int) $user["contactId"];
-        }
-        if (isset($user["contactDbId"])) {
-            $this->contactDbId = (int) $user["contactDbId"];
-        }
-        if (isset($user["cdb_confid"])) {
-            $this->cdb_confid = $user["cdb_confid"];
-        }
+    /** @param ?string $email
+     * @return Contact */
+    static function make_email(Conf $conf, $email) {
+        $u = new Contact($conf);
+        $u->email = $email ?? "";
+        $u->set_roles_properties();
+        $u->contactXid = self::$next_xid--;
+        return $u;
+    }
 
-        // name properties
-        if (isset($user["firstName"]) && isset($user["lastName"])) {
-            $this->firstName = (string) $user["firstName"];
-            $this->lastName = (string) $user["lastName"];
-            $this->unaccentedName = $user["unaccentedName"]
-                ?? Text::name($this->firstName, $this->lastName, "", NAME_U);
-        } else {
-            $nameau = Author::make_keyed($user);
-            $this->firstName = $nameau->firstName;
-            $this->lastName = $nameau->lastName;
-            $this->unaccentedName = $nameau->name(NAME_U);
-        }
-        $this->affiliation = simplify_whitespace((string) ($user["affiliation"] ?? ""));
-        $this->email = simplify_whitespace((string) ($user["email"] ?? ""));
+    /** @param ?string $email
+     * @return Contact */
+    static function make_cdb_email(Conf $conf, $email) {
+        $u = new Contact($conf);
+        $u->email = $email ?? "";
+        $u->cdb_confid = -1;
+        $u->set_roles_properties();
+        $u->contactXid = self::$next_xid--;
+        return $u;
+    }
 
-        // role properties
-        $roles = (int) ($user["roles"] ?? 0);
-        if ($roles !== 0) {
-            $this->assign_roles($roles);
-        }
-        if (isset($user["is_site_contact"])) {
-            $this->is_site_contact = $user["is_site_contact"];
-        }
+    /** @param array{contactId?:int,email?:string,firstName?:string,first?:string,lastName?:string,last?:string,affiliation?:string,roles?:int,disabled?:bool,disablement?:int} $args
+     * @return Contact */
+    static function make_keyed(Conf $conf, $args) {
+        // email, firstName, lastName, affiliation, disabled, disablement, contactId, first, last
+        $u = new Contact($conf);
+        $u->contactId = $args["contactId"] ?? 0;
+        $u->email = trim($args["email"] ?? "");
+        $u->firstName = $args["firstName"] ?? $args["first"] ?? "";
+        $u->lastName = $args["lastName"] ?? $args["last"] ?? "";
+        $u->unaccentedName = Text::name($u->firstName, $u->lastName, "", NAME_U);
+        $u->affiliation = simplify_whitespace($args["affiliation"] ?? "");
+        $u->disabled = !!($args["disabled"] ?? false);
+        $u->disablement = $args["disablement"] ?? 0;
+        $u->set_roles_properties();
+        $u->contactXid = $u->contactId ? : self::$next_xid--;
+        return $u;
+    }
 
-        if (array_key_exists("contactTags", $user)) {
-            $this->contactTags = $user["contactTags"];
-        } else {
-            $this->contactTags = $this->contactId ? false : null;
-        }
+    /** @param array{email?:string,firstName?:string,lastName?:string} $args
+     * @return Contact */
+    static function make_site_contact(Conf $conf, $args) {
+        // email, firstName, lastName, affiliation, disabled, disablement, contactId, first, last
+        $u = new Contact($conf);
+        $u->email = $args["email"] ?? "";
+        $u->firstName = $args["firstName"] ?? "";
+        $u->lastName = $args["lastName"] ?? "";
+        $u->unaccentedName = Text::name($u->firstName, $u->lastName, "", NAME_U);
+        $u->roles = self::ROLE_PC | self::ROLE_CHAIR;
+        $u->is_site_contact = true;
+        $u->set_roles_properties();
+        $u->contactXid = self::$next_xid--;
+        return $u;
+    }
 
-        if (isset($user["disabled"])) {
-            $this->disabled = !!$user["disabled"];
+    /** @return ?Contact */
+    static function fetch($result, Conf $conf) {
+        if (($u = $result->fetch_object("Contact", [$conf]))) {
+            $u->conf = $conf;
+            $u->fetch_incorporate();
+            $u->set_roles_properties();
+            $u->contactXid = $u->contactId ? : self::$next_xid--;
         }
-        if ($user["is_deleted"] ?? false) {
-            $this->disablement |= self::DISABLEMENT_DELETED;
-        }
-
-        $this->_jdata = null;
-        $this->_contactdb_user = false;
-        $this->set_disablement();
+        return $u;
     }
 
     /** @suppress PhanDeprecatedProperty */
@@ -318,22 +312,14 @@ class Contact {
         if ($this->unaccentedName === "") {
             $this->unaccentedName = Text::name($this->firstName, $this->lastName, "", NAME_U);
         }
-        if (isset($this->roles)) {
-            $this->assign_roles((int) $this->roles);
-        }
-        if (isset($this->disabled)) {
-            $this->disabled = !!$this->disabled;
-        }
+        $this->role_mask = (int) ($this->role_mask ?? self::ROLE_DBMASK);
+        $this->roles = (int) $this->roles;
+        $this->disabled = !!$this->disabled;
+        $this->disablement = (int) $this->disablement;
         if (isset($this->primaryContactId)) {
             $this->primaryContactId = (int) $this->primaryContactId;
         }
         $this->_slice = isset($this->_slice) && $this->_slice;
-
-        // handle special role markers
-        if (isset($this->__isAuthor__)) {
-            $this->_db_roles = ((int) $this->__isAuthor__ > 0 ? self::ROLE_AUTHOR : 0)
-                | ((int) $this->__hasReview__ > 0 ? self::ROLE_REVIEWER : 0);
-        }
 
         // handle other properties
         if (!$this->_slice) {
@@ -353,13 +339,12 @@ class Contact {
             }
         }
 
-        $this->_jdata = null;
         $this->_contactdb_user = false;
-        $this->set_disablement();
     }
 
-    /** @suppress PhanDeprecatedProperty */
-    private function set_disablement() {
+    private function set_roles_properties() {
+        $this->isPC = ($this->roles & self::ROLE_PCLIKE) !== 0;
+        $this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
         $this->disablement = ($this->disabled ? self::DISABLEMENT_USER : 0)
             | (!$this->isPC && $this->conf->opt("disableNonPC") ? self::DISABLEMENT_ROLE : 0)
             | ($this->disablement & self::DISABLEMENT_DELETED);
@@ -371,6 +356,8 @@ class Contact {
     }
 
 
+    /** @param object $x
+     * @param bool $all */
     function unslice_using($x, $all = false) {
         $shapemask = self::PROP_LOCAL | self::PROP_DATA | ($all ? 0 : self::PROP_SLICE);
         foreach (self::$props as $prop => $shape) {
@@ -385,11 +372,11 @@ class Contact {
                     $this->$prop = (bool) $value;
                 }
             }
-            $this->activity_at = $this->lastLogin;
-            $this->data = $x->data;
-            $this->_jdata = null;
-            $this->_slice = false;
         }
+        $this->activity_at = $this->lastLogin;
+        $this->data = $x->data;
+        $this->_jdata = null;
+        $this->_slice = false;
     }
 
     function unslice() {
@@ -403,13 +390,6 @@ class Contact {
             Dbl::free($result);
             $this->_slice = false;
         }
-    }
-
-    function __set($name, $value) {
-        if (!self::$allow_nonexistent_properties) {
-            error_log(caller_landmark(1) . ": writing nonexistent property $name");
-        }
-        $this->$name = $value;
     }
 
 
@@ -578,13 +558,6 @@ class Contact {
         } else {
             return self::make_sorter($c, $sortspec);
         }
-    }
-
-    /** @param int $roles */
-    private function assign_roles($roles) {
-        $this->roles = $roles;
-        $this->isPC = ($roles & self::ROLE_PCLIKE) !== 0;
-        $this->privChair = ($roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
     }
 
 
@@ -776,14 +749,8 @@ class Contact {
             $this->contactXid = $u->contactXid;
             $this->unslice_using($u, true);
             $this->unaccentedName = $u->unaccentedName;
-            $this->assign_roles($this->roles);
-            $this->set_disablement();
+            $this->set_roles_properties();
         }
-    }
-
-    /** @deprecated */
-    function activate_database_account() {
-        $this->ensure_account_here();
     }
 
     /** @return ?Contact */
@@ -816,7 +783,7 @@ class Contact {
                 && $this->conf->contactdb()
                 && $this->has_email()
                 && !self::is_anonymous_email($this->email)) {
-                $u = $this->_contactdb_user = new Contact($this->conf, ["email" => $this->email, "cdb_confid" => -1]);
+                $u = $this->_contactdb_user = Contact::make_cdb_email($this->conf, $this->email);
             }
             if ($u && $this->contactId > 0) {
                 $u->contactXid = $this->contactId;
@@ -872,7 +839,7 @@ class Contact {
         }
 
         $cdbur = $this->conf->contactdb_user_by_email($this->email);
-        $cdbux = $cdbur ?? new Contact($this->conf, ["email" => $this->email, "cdb_confid" => -1]);
+        $cdbux = $cdbur ?? Contact::make_cdb_email($this->conf, $this->email);
         foreach (self::$props as $prop => $shape) {
             if (($shape & self::PROP_CDB) !== 0
                 && ($shape & self::PROP_PASSWORD) === 0
@@ -1674,7 +1641,7 @@ class Contact {
             $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
         }
         if ($prop === "disabled") {
-            $this->set_disablement();
+            $this->set_roles_properties();
         }
     }
 
@@ -1785,7 +1752,7 @@ class Contact {
         }
         $this->_mod_undo = $this->_jdata = null;
         $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
-        $this->set_disablement();
+        $this->set_roles_properties();
     }
 
 
@@ -1793,7 +1760,8 @@ class Contact {
      * @param ?Contact $actor
      * @return bool */
     function save_roles($new_roles, $actor) {
-        $old_roles = $this->roles;
+        assert(($new_roles & self::ROLE_DBMASK) === $new_roles);
+        $old_roles = $this->roles & self::ROLE_DBMASK;
         // ensure there's at least one system administrator
         if (!($new_roles & self::ROLE_ADMIN)
             && ($old_roles & self::ROLE_ADMIN)
@@ -1812,8 +1780,9 @@ class Contact {
         // save the roles bits
         if ($old_roles !== $new_roles) {
             $this->conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
-            $this->assign_roles($new_roles);
-            $this->set_disablement();
+            $this->roles = $this->_session_roles = $new_roles;
+            $this->role_mask = self::ROLE_DBMASK;
+            $this->set_roles_properties();
             $this->conf->invalidate_caches(["pc" => true]);
         }
         return $old_roles !== $new_roles;
@@ -1864,7 +1833,7 @@ class Contact {
 
         // look up existing accounts
         $valid_email = validate_email($reg->email);
-        $u = $conf->user_by_email($reg->email) ?? new Contact($conf, ["email" => $reg->email]);
+        $u = $conf->user_by_email($reg->email) ?? Contact::make_email($conf, $reg->email);
         if (($cdb = $conf->contactdb()) && $valid_email) {
             $cdbu = $conf->contactdb_user_by_email($reg->email);
         } else {
@@ -1886,7 +1855,7 @@ class Contact {
 
         // create or update contactdb user
         if ($cdb && $valid_email) {
-            $cdbu = $cdbu ?? new Contact($conf, ["email" => $reg->email, "cdb_confid" => -1]);
+            $cdbu = $cdbu ?? Contact::make_cdb_email($conf, $reg->email);
             $cdbu->import_prop($reg);
             if ($cdbu->save_prop()) {
                 $u->_contactdb_user = false;
@@ -2295,8 +2264,11 @@ class Contact {
     }
 
     private function load_author_reviewer_status() {
+        $rmask = self::ROLE_AUTHOR | self::ROLE_REVIEWER | self::ROLE_REQUESTER;
+        $this->roles &= ~$rmask;
+        $this->_session_roles &= ~$rmask;
+        $this->role_mask |= $rmask;
         // Load from database
-        $this->_db_roles = $this->_active_roles = 0;
         $this->_conflict_types = [];
         if ($this->contactId > 0) {
             $qs = ["(select group_concat(paperId, ' ', conflictType) from PaperConflict where contactId=?)",
@@ -2322,13 +2294,13 @@ class Contact {
                         $ct = (int) substr($pc, $sp + 1);
                         $this->_conflict_types[(int) substr($pc, 0, $sp)] = $ct;
                         if ($ct >= CONFLICT_AUTHOR) {
-                            $this->_db_roles |= self::ROLE_AUTHOR;
+                            $this->roles |= self::ROLE_AUTHOR;
                         }
                     }
                 }
-                $this->_db_roles |= ($row[1] > 0 ? self::ROLE_REVIEWER : 0)
+                $this->roles |= ($row[1] > 0 ? self::ROLE_REVIEWER : 0)
                     | ($row[2] > 0 ? self::ROLE_REQUESTER : 0);
-                $this->_active_roles = $this->_db_roles
+                $this->_session_roles |= ($this->roles & $rmask)
                     | ($row[3] > 0 ? self::ROLE_REVIEWER : 0);
             }
             Dbl::free($result);
@@ -2338,9 +2310,9 @@ class Contact {
         if ($this->_capabilities) {
             foreach ($this->_capabilities as $k => $v) {
                 if (str_starts_with($k, "@av") && $v) {
-                    $this->_active_roles |= self::ROLE_AUTHOR;
+                    $this->_session_roles |= self::ROLE_AUTHOR;
                 } else if (str_starts_with($k, "@ra") && $v) {
-                    $this->_active_roles |= self::ROLE_REVIEWER;
+                    $this->_session_roles |= self::ROLE_REVIEWER;
                 }
             }
         }
@@ -2348,10 +2320,10 @@ class Contact {
 
     private function check_rights_version() {
         if ($this->_rights_version !== self::$rights_version) {
-            $this->_db_roles = $this->_active_roles = $this->_conflict_types =
-                $this->_has_outstanding_review = $this->_is_lead =
-                $this->_is_explicit_manager = $this->_is_metareviewer =
-                $this->_can_view_pc = $this->_dangerous_track_mask =
+            $this->role_mask = self::ROLE_DBMASK;
+            $this->roles = $this->roles & self::ROLE_DBMASK;
+            $this->_session_roles = $this->roles;
+            $this->_conflict_types = $this->_can_view_pc = $this->_dangerous_track_mask =
                 $this->_has_approvable = $this->_authored_papers =
                 $this->_author_perm_tags = null;
             $this->_rights_version = self::$rights_version;
@@ -2387,10 +2359,10 @@ class Contact {
     /** @return bool */
     function is_author() {
         $this->check_rights_version();
-        if ($this->_active_roles === null) {
+        if (($this->role_mask & self::ROLE_AUTHOR) === 0) {
             $this->load_author_reviewer_status();
         }
-        return ($this->_active_roles & self::ROLE_AUTHOR) !== 0;
+        return ($this->_session_roles & self::ROLE_AUTHOR) !== 0;
     }
 
     /** @return list<PaperInfo> */
@@ -2414,10 +2386,10 @@ class Contact {
     /** @return bool */
     function has_review() {
         $this->check_rights_version();
-        if (!isset($this->_active_roles)) {
+        if (($this->role_mask & self::ROLE_REVIEWER) === 0) {
             $this->load_author_reviewer_status();
         }
-        return ($this->_active_roles & self::ROLE_REVIEWER) !== 0;
+        return ($this->_session_roles & self::ROLE_REVIEWER) !== 0;
     }
 
     /** @return bool */
@@ -2427,12 +2399,15 @@ class Contact {
 
     /** @return bool */
     function is_metareviewer() {
-        if (!isset($this->_is_metareviewer)) {
-            $this->_is_metareviewer = $this->isPC
+        if (($this->role_mask & self::ROLE_METAREVIEWER) === 0) {
+            $this->role_mask |= self::ROLE_METAREVIEWER;
+            if ($this->isPC
                 && $this->conf->setting("metareviews")
-                && !!$this->conf->fetch_ivalue("select exists (select * from PaperReview where contactId={$this->contactId} and reviewType=" . REVIEW_META . ")");
+                && !!$this->conf->fetch_ivalue("select exists (select * from PaperReview where contactId={$this->contactId} and reviewType=" . REVIEW_META . ")")) {
+                $this->roles |= self::ROLE_METAREVIEWER;
+            }
         }
-        return $this->_is_metareviewer;
+        return ($this->roles & self::ROLE_METAREVIEWER) !== 0;
     }
 
     /** @return int */
@@ -2440,54 +2415,65 @@ class Contact {
         if ($this->is_disabled()) {
             return 0;
         } else {
-            $this->is_author(); // load _db_roles
-            return $this->roles
-                | ($this->_db_roles & (self::ROLE_AUTHOR | self::ROLE_REVIEWER));
+            $rmask = self::ROLE_AUTHOR | self::ROLE_REVIEWER;
+            if (($this->role_mask & $rmask) !== $rmask) {
+                $this->load_author_reviewer_status();
+            }
+            return $this->roles & (self::ROLE_DBMASK | self::ROLE_AUTHOR | self::ROLE_REVIEWER);
         }
     }
 
     /** @return bool */
     function has_outstanding_review() {
         $this->check_rights_version();
-        if ($this->_has_outstanding_review === null) {
-            $this->_has_outstanding_review = $this->has_review()
-                && $this->conf->fetch_ivalue("select exists (select * from PaperReview join Paper using (paperId) where Paper.timeSubmitted>0 and " . $this->act_reviewer_sql("PaperReview") . " and reviewNeedsSubmit!=0)");
+        if (($this->role_mask & self::ROLE_OUTSTANDING_REVIEW) === 0) {
+            $this->role_mask |= self::ROLE_OUTSTANDING_REVIEW;
+            if ($this->has_review()
+                && $this->conf->fetch_ivalue("select exists (select * from PaperReview join Paper using (paperId) where Paper.timeSubmitted>0 and " . $this->act_reviewer_sql("PaperReview") . " and reviewNeedsSubmit!=0)")) {
+                $this->roles |= self::ROLE_OUTSTANDING_REVIEW;
+            }
         }
-        return $this->_has_outstanding_review;
+        return ($this->roles & self::ROLE_OUTSTANDING_REVIEW) !== 0;
     }
 
     /** @return bool */
     function is_requester() {
         $this->check_rights_version();
-        if (!isset($this->_active_roles)) {
+        if (($this->role_mask & self::ROLE_REQUESTER) === 0) {
             $this->load_author_reviewer_status();
         }
-        return ($this->_active_roles & self::ROLE_REQUESTER) !== 0;
+        return ($this->_session_roles & self::ROLE_REQUESTER) !== 0;
     }
 
     /** @return bool */
     function is_discussion_lead() {
         $this->check_rights_version();
-        if (!isset($this->_is_lead)) {
-            $this->_is_lead = $this->contactXid > 0
+        if (($this->role_mask & self::ROLE_LEAD) === 0) {
+            $this->role_mask |= self::ROLE_LEAD;
+            if ($this->contactXid > 0
                 && $this->isPC
                 && $this->conf->has_any_lead_or_shepherd()
-                && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactXid);
+                && $this->conf->fetch_ivalue("select exists (select * from Paper where leadContactId=?)", $this->contactXid)) {
+                $this->roles |= self::ROLE_LEAD;
+            }
         }
-        return $this->_is_lead;
+        return ($this->roles & self::ROLE_LEAD) !== 0;
     }
 
     /** @return bool */
     function is_explicit_manager() {
         $this->check_rights_version();
-        if (!isset($this->_is_explicit_manager)) {
-            $this->_is_explicit_manager = $this->contactXid > 0
+        if (($this->role_mask & self::ROLE_EXPLICIT_MANAGER) === 0) {
+            $this->role_mask |= self::ROLE_EXPLICIT_MANAGER;
+            if ($this->contactXid > 0
                 && $this->isPC
                 && ($this->conf->check_any_admin_tracks($this)
                     || ($this->conf->has_any_manager()
-                        && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactXid) > 0));
+                        && $this->conf->fetch_ivalue("select exists (select * from Paper where managerContactId=?)", $this->contactXid) > 0))) {
+                $this->roles |= self::ROLE_EXPLICIT_MANAGER;
+            }
         }
-        return $this->_is_explicit_manager;
+        return ($this->roles & self::ROLE_EXPLICIT_MANAGER) !== 0;
     }
 
     /** @return bool */
@@ -3846,26 +3832,25 @@ class Contact {
 
     /** @return bool */
     function can_view_some_review_identity() {
-        $tags = "";
-        if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID))) {
-            $tags = " $t#0 ";
+        if (($this->role_mask & self::ROLE_VIEW_SOME_REVIEW_ID) === 0) {
+            $this->role_mask |= self::ROLE_VIEW_SOME_REVIEW_ID;
+            $tags = "";
+            if (($t = $this->conf->permissive_track_tag_for($this, Track::VIEWREVID))) {
+                $tags = " $t#0 ";
+            }
+            if ($this->isPC) {
+                $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
+            } else {
+                $rtype = $this->is_reviewer() ? REVIEW_EXTERNAL : 0;
+            }
+            $prow = PaperInfo::make_permissive_reviewer($this, $rtype, $tags);
+            $overrides = $this->add_overrides(self::OVERRIDE_CONFLICT);
+            if ($this->can_view_review_identity($prow, null)) {
+                $this->roles |= self::ROLE_VIEW_SOME_REVIEW_ID;
+            }
+            $this->set_overrides($overrides);
         }
-        if ($this->isPC) {
-            $rtype = $this->is_metareviewer() ? REVIEW_META : REVIEW_PC;
-        } else {
-            $rtype = $this->is_reviewer() ? REVIEW_EXTERNAL : 0;
-        }
-        $prow = new PaperInfo([
-            "conflictType" => 0, "managerContactId" => 0,
-            "myReviewPermissions" => "$rtype 1 0",
-            "paperId" => 1, "timeSubmitted" => 1,
-            "blind" => "0", "outcome" => 1,
-            "paperTags" => $tags
-        ], $this);
-        $overrides = $this->add_overrides(self::OVERRIDE_CONFLICT);
-        $answer = $this->can_view_review_identity($prow, null);
-        $this->set_overrides($overrides);
-        return $answer;
+        return ($this->roles & self::ROLE_VIEW_SOME_REVIEW_ID) !== 0;
     }
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase

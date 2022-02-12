@@ -65,8 +65,10 @@ class LoginHelper {
     static private function user_lookup(Conf $conf, Qrequest $qreq) {
         // Look up the account information
         // to determine if the user is registered
-        if (!isset($qreq->email)
-            || ($qreq->email = trim($qreq->email)) === "") {
+        if (isset($qreq->email)) {
+            $qreq->email = simplify_whitespace($qreq->email);
+        }
+        if (!isset($qreq->email) || $qreq->email === "") {
             return ["ok" => false, "email" => true, "noemail" => true];
         }
         if (strpos($qreq->email, "@") === false
@@ -75,8 +77,7 @@ class LoginHelper {
                 $qreq[$k] = rawurldecode($qreq[$k]);
             }
         }
-        return $conf->user_by_email($qreq->email)
-            ?? new Contact($conf, ["email" => $qreq->email]);
+        return $conf->user_by_email($qreq->email) ?? Contact::make_email($conf, $qreq->email);
     }
 
     static function login_info(Conf $conf, Qrequest $qreq) {
@@ -296,7 +297,7 @@ class LoginHelper {
         } else if ($explicit) {
             kill_session();
         }
-        $user = new Contact($user->conf);
+        $user = Contact::make($user->conf);
         return $user->activate(null);
     }
 
