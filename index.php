@@ -88,7 +88,7 @@ if ($nav->page === "api") {
 } else {
     require_once("src/init.php");
     initialize_request();
-    if (($s = handle_request($Me, $Qreq, $nav))) {
+    if (($s = handle_request(Contact::$main_user, Qrequest::$main_request, $nav))) {
         include($s);
     }
 }

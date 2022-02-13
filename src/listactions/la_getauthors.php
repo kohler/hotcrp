@@ -25,7 +25,9 @@ class GetAuthors_ListAction extends ListAction {
             }
             if ($users === null) {
                 $users = self::contact_map($user->conf, $ssel);
-                Contact::ensure_contactdb_users($user->conf, $users);
+                foreach ($users as $u) {
+                    $user->conf->request_cached_cdb_user_by_email($u->email);
+                }
             }
             $admin = $user->allow_administer($prow);
             $aucid = [];

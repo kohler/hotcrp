@@ -379,6 +379,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
     static function make_global() : Qrequest {
+        global $Qreq;
         $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
         $qreq->set_page(Navigation::page(), Navigation::path());
         foreach ($_GET as $k => $v) {
@@ -431,7 +432,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         if (!empty($errors)) {
             $qreq->set_annex("upload_errors", $errors);
         }
-        Qrequest::$main_request = $qreq;
+        Qrequest::$main_request = $Qreq = $qreq;
         return $qreq;
     }
 }

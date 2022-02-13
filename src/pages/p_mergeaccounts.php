@@ -31,7 +31,7 @@ class MergeAccounts_Page {
         }
 
         $other = $this->conf->user_by_email($this->qreq->email)
-            ?? $this->conf->contactdb_user_by_email($this->qreq->email);
+            ?? $this->conf->cdb_user_by_email($this->qreq->email);
         if (!$other) {
             Ht::error_at("email", "<0>Account ‘{$this->qreq->email}’ not found; please check the email address");
             return false;

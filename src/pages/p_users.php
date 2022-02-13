@@ -77,10 +77,10 @@ class Users_Page {
         $users = [];
         while (($user = Contact::fetch($result, $this->conf))) {
             $users[] = $user;
+            $this->conf->request_cached_cdb_user_by_email($user->email);
         }
         Dbl::free($result);
         usort($users, $this->conf->user_comparator());
-        Contact::ensure_contactdb_users($this->conf, $users);
 
         $texts = [];
         $has_country = false;
@@ -109,11 +109,11 @@ class Users_Page {
         $users = [];
         while (($user = Contact::fetch($result, $this->conf))) {
             $users[] = $user;
+            $this->conf->request_cached_cdb_user_by_email($user->email);
         }
         Dbl::free($result);
         usort($users, $this->conf->user_comparator());
         Contact::load_topic_interests($users);
-        Contact::ensure_contactdb_users($this->conf, $users);
 
         // NB This format is expected to be parsed by profile.php's bulk upload.
         $tagger = new Tagger($this->viewer);

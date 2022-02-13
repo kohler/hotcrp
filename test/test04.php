@@ -24,6 +24,9 @@ function save_password($email, $encoded_password, $iscdb = false) {
     $dblink = $iscdb ? $Conf->contactdb() : $Conf->dblink;
     Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where email=?", $encoded_password, Conf::$now + 1, Conf::$now + 1, $email);
     Conf::advance_current_time(Conf::$now + 2);
+    if ($iscdb) {
+        $Conf->invalidate_cdb_user_by_email($email);
+    }
 }
 
 if (!$Conf->contactdb()) {
@@ -104,7 +107,7 @@ $result = Dbl::qe($Conf->contactdb(), "insert into ContactInfo set firstName='Te
 assert(!Dbl::is_error($result));
 Dbl::free($result);
 xassert(!maybe_user("te@_.com"));
-$u = $Conf->contactdb_user_by_email("te@_.com");
+$u = $Conf->cdb_user_by_email("te@_.com");
 xassert(!!$u);
 xassert_eqq($u->firstName, "Te");
 
@@ -297,43 +300,46 @@ xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_CHAIR);
 // creation interactions
 Dbl::qe($Conf->dblink, "insert into ContactInfo (email, password) values ('betty2@_.com','')");
 Dbl::qe($Conf->contactdb(), "insert into ContactInfo (email, password, firstName, lastName) values ('betty3@_.com','','Betty','Shabazz'), ('betty4@_.com','','Betty','Kelly'),('betty5@_.com','','Betty','Davis'),
-    ('cengiz@isi.edu','TEST PASSWORD','','')");
+    ('cenGiz@isi.edu','TEST PASSWORD','','')");
+foreach (["betty3@_.com", "betty4@_.com", "betty5@_.com", "cengiz@isi.edu"] as $email) {
+    $Conf->invalidate_cdb_user_by_email($email);
+}
 $u = Contact::create($Conf, null, ["email" => "betty1@_.com", "name" => "Betty Grable"]);
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Grable");
-$u = $Conf->contactdb_user_by_email("betty1@_.com");
+$u = $Conf->cdb_user_by_email("betty1@_.com");
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Grable");
 $u = Contact::create($Conf, null, ["email" => "betty2@_.com", "name" => "Betty Apiafi"]);
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Apiafi");
-$u = $Conf->contactdb_user_by_email("betty2@_.com");
+$u = $Conf->cdb_user_by_email("betty2@_.com");
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Apiafi");
 $u = Contact::create($Conf, null, ["email" => "betty3@_.com", "name" => "Betty Crocker"]);
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Shabazz");
-$u = $Conf->contactdb_user_by_email("betty3@_.com");
+$u = $Conf->cdb_user_by_email("betty3@_.com");
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Shabazz");
 $u = Contact::create($Conf, null, ["email" => "betty4@_.com", "name" => "Betty Crocker", "affiliation" => "France"]);
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Kelly");
 xassert_eqq($u->affiliation, "France");
-$u = $Conf->contactdb_user_by_email("betty4@_.com");
+$u = $Conf->cdb_user_by_email("betty4@_.com");
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Kelly");
 xassert_eqq($u->affiliation, "France");
 $u = $Conf->user_by_email("betty5@_.com");
 xassert(!$u);
-$u = $Conf->contactdb_user_by_email("betty5@_.com");
+$u = $Conf->cdb_user_by_email("betty5@_.com");
 $u->ensure_account_here();
 $u = $Conf->checked_user_by_email("betty5@_.com");
 xassert($u->has_account_here());
 xassert_eqq($u->firstName, "Betty");
 xassert_eqq($u->lastName, "Davis");
 
-$u = Contact::create($Conf, null, ["email" => "cengiz@isi.edu"]);
+$u = Contact::create($Conf, null, ["email" => "Cengiz@isi.edu"]);
 xassert($u->contactId > 0);
 xassert_eqq($u->firstName, "Cengiz");
 xassert_eqq($u->contactdb_user()->firstName, "Cengiz");
@@ -367,7 +373,7 @@ xassert_eqq($pc_json["21"]->lastpos, 5);
 Dbl::qe($Conf->contactdb(), "insert into ContactInfo set email='sophia@dros.nl', password='', firstName='Sophia', lastName='Dros'");
 $user_sophia = $Conf->user_by_email("sophia@dros.nl");
 xassert(!$user_sophia);
-$user_sophia = $Conf->contactdb_user_by_email("sophia@dros.nl");
+$user_sophia = $Conf->cdb_user_by_email("sophia@dros.nl");
 xassert(!!$user_sophia);
 $user_cengiz = $Conf->checked_user_by_email("cengiz@isi.edu");
 $rrid = $user_chair->assign_review(3, $user_cengiz->contactId, REVIEW_EXTERNAL);

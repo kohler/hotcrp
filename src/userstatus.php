@@ -801,7 +801,7 @@ class UserStatus extends MessageSet {
         if ($old_user && $old_user->contactDbId > 0) {
             $old_cdb_user = $old_user;
         } else if ($old_email) {
-            $old_cdb_user = $this->conf->contactdb_user_by_email($old_email);
+            $old_cdb_user = $this->conf->cdb_user_by_email($old_email);
         } else {
             $old_cdb_user = null;
         }
@@ -873,7 +873,8 @@ class UserStatus extends MessageSet {
         assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
         $this->created = !$old_user;
         $this->set_user($user);
-        $cdb_user = $user->ensure_contactdb_user(true);
+        $user->invalidate_cdb_user();
+        $cdb_user = $user->ensure_cdb_user();
 
         // Early properties
         $gx = $this->cs();
@@ -898,7 +899,8 @@ class UserStatus extends MessageSet {
         // Contact DB (must precede password)
         if ($cdb_user && $cdb_user->prop_changed()) {
             $cdb_user->save_prop();
-            $user->contactdb_user(true);
+            $user->invalidate_cdb_user();
+            $user->contactdb_user();
         }
         if ($roles !== $old_roles
             || ($user->disablement !== 0) !== $old_disabled) {

@@ -736,6 +736,8 @@ xassert_eqq($nprow1->conflict_type($festrin_cid), CONFLICT_AUTHOR);
 xassert_eqq($nprow1->conflict_type($gestrin_cid), CONFLICT_AUTHOR);
 xassert_eqq($nprow1->conflict_type($user_estrin), CONFLICT_CONTACTAUTHOR);
 
+xassert_eqq($Conf->resolve_primary_emails(["Gestrin@GUSC.gedu", "festrin@fusc.fedu"]), ["festrin@fusc.fedu", "festrin@fusc.fedu"]);
+
 $ps->save_paper_web(new Qrequest("POST", ["submitpaper" => 1, "has_authors" => "1", "authors:name_1" => "David Attenborough", "authors:email_1" => "atten@_.com"]), $nprow1, "update");
 xassert(!$ps->has_problem());
 xassert_array_eqq(array_keys($ps->diffs), ["authors", "contacts"], true);

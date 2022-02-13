@@ -39,7 +39,7 @@ class ChangeEmail_Page {
             return false;
         }
 
-        $newcdbu = $newemail ? $conf->contactdb_user_by_email($newemail) : null;
+        $newcdbu = $newemail ? $conf->cdb_user_by_email($newemail) : null;
         if ($newcdbu) {
             if ($newcdbu->contactdb_disabled()) { // NB do not use is_disabled()
                 Ht::error_at("changeemail", "<0>That user is disabled on all sites");

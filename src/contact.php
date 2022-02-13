@@ -88,7 +88,7 @@ class Contact {
     /** @var int */
     private $passwordUseTime = 0;
     /** @var false|null|Contact */
-    private $_contactdb_user = false;
+    private $_cdb_user = false;
 
     public $activity_at = false;
     private $lastLogin = 0;
@@ -250,7 +250,7 @@ class Contact {
     static function make_cdb_email(Conf $conf, $email) {
         $u = new Contact($conf);
         $u->email = $email ?? "";
-        $u->cdb_confid = -1;
+        $u->cdb_confid = $conf->opt("contactdb_confid") ?? -1;
         $u->set_roles_properties();
         $u->contactXid = self::$next_xid--;
         return $u;
@@ -339,7 +339,7 @@ class Contact {
             }
         }
 
-        $this->_contactdb_user = false;
+        $this->_cdb_user = false;
     }
 
     private function set_roles_properties() {
@@ -753,37 +753,19 @@ class Contact {
         }
     }
 
-    /** @return ?Contact */
-    function contactdb_user($refresh = false) {
-        if ($this->contactDbId && $this->contactId <= 0) {
-            return $this;
-        } else {
-            $u = $this->_contactdb_user;
-            if ($u === false || $refresh) {
-                $u = $this->_contactdb_user = $this->conf->contactdb_user_by_email($this->email);
-                if ($u && $this->contactId > 0) {
-                    $u->contactXid = $this->contactId;
-                }
-            }
-            return $u;
-        }
+    function invalidate_cdb_user() {
+        $this->_cdb_user = false;
+        $this->conf->invalidate_cdb_user_by_email($this->email);
     }
 
     /** @return ?Contact */
-    function ensure_contactdb_user($refresh = false) {
-        assert($this->has_email());
+    function contactdb_user() {
         if ($this->contactDbId && $this->contactId <= 0) {
             return $this;
         } else {
-            $u = $this->_contactdb_user;
-            if ($u === false || $refresh) {
-                $u = $this->_contactdb_user = $this->conf->contactdb_user_by_email($this->email);
-            }
-            if ($u === null
-                && $this->conf->contactdb()
-                && $this->has_email()
-                && !self::is_anonymous_email($this->email)) {
-                $u = $this->_contactdb_user = Contact::make_cdb_email($this->conf, $this->email);
+            $u = $this->_cdb_user;
+            if ($u === false) {
+                $u = $this->_cdb_user = $this->conf->cdb_user_by_email($this->email);
             }
             if ($u && $this->contactId > 0) {
                 $u->contactXid = $this->contactId;
@@ -792,30 +774,26 @@ class Contact {
         }
     }
 
-    /** @param iterable<Contact> $users */
-    static function ensure_contactdb_users(Conf $conf, $users) {
-        if (($cdb = $conf->contactdb())) {
-            $emails = [];
-            foreach ($users as $user) {
-                if ($user->has_email()
-                    && !self::is_anonymous_email($user->email)
-                    && $user->_contactdb_user === false) {
-                    $emails[strtolower($user->email)] = null;
-                }
+    /** @return ?Contact */
+    function ensure_cdb_user() {
+        assert($this->has_email());
+        if ($this->contactDbId && $this->contactId <= 0) {
+            return $this;
+        } else {
+            $u = $this->_cdb_user;
+            if ($u === false) {
+                $u = $this->_cdb_user = $this->conf->cdb_user_by_email($this->email);
             }
-            if (!empty($emails)) {
-                $result = $conf->contactdb_user_result("ContactInfo.email?a", array_keys($emails));
-                while (($cdbu = Contact::fetch($result, $conf))) {
-                    $emails[strtolower($cdbu->email)] = $cdbu;
-                }
-                Dbl::free($result);
-                foreach ($users as $user) {
-                    $lemail = strtolower($user->email);
-                    if (array_key_exists($lemail, $emails)) {
-                        $user->_contactdb_user = $emails[$lemail];
-                    }
-                }
+            if ($u === null
+                && $this->conf->contactdb()
+                && $this->has_email()
+                && !self::is_anonymous_email($this->email)) {
+                $u = $this->_cdb_user = Contact::make_cdb_email($this->conf, $this->email);
             }
+            if ($u && $this->contactId > 0) {
+                $u->contactXid = $this->contactId;
+            }
+            return $u;
         }
     }
 
@@ -838,7 +816,7 @@ class Contact {
             return false;
         }
 
-        $cdbur = $this->conf->contactdb_user_by_email($this->email);
+        $cdbur = $this->conf->cdb_user_by_email($this->email);
         $cdbux = $cdbur ?? Contact::make_cdb_email($this->conf, $this->email);
         foreach (self::$props as $prop => $shape) {
             if (($shape & self::PROP_CDB) !== 0
@@ -857,9 +835,9 @@ class Contact {
         if (!empty($cdbux->_mod_undo)) {
             assert($cdbux->cdb_confid !== 0);
             $cdbux->save_prop();
-            $this->_contactdb_user = false;
+            $this->invalidate_cdb_user();
         }
-        $cdbur = $cdbur ?? $this->conf->contactdb_user_by_email($this->email);
+        $cdbur = $cdbur ?? $this->conf->cdb_user_by_email($this->email);
         if ($cdbur && $cdbur->roles !== $this->contactdb_roles()) {
             $this->_contactdb_save_roles($cdbur);
         }
@@ -901,6 +879,11 @@ class Contact {
     /** @return bool */
     function is_disabled() {
         return $this->disablement !== 0;
+    }
+
+    /** @return bool */
+    function is_stored_disabled() {
+        return ($this->disablement & self::DISABLEMENT_USER) !== 0;
     }
 
     /** @return bool */
@@ -1439,8 +1422,7 @@ class Contact {
 
     /** @param ?Qrequest $qreq */
     function escape($qreq = null) {
-        global $Qreq;
-        $qreq = $qreq ?? $Qreq;
+        $qreq = $qreq ?? Qrequest::$main_request;
 
         if ($qreq->ajax) {
             if ($this->is_empty()) {
@@ -1835,7 +1817,7 @@ class Contact {
         $valid_email = validate_email($reg->email);
         $u = $conf->user_by_email($reg->email) ?? Contact::make_email($conf, $reg->email);
         if (($cdb = $conf->contactdb()) && $valid_email) {
-            $cdbu = $conf->contactdb_user_by_email($reg->email);
+            $cdbu = $conf->cdb_user_by_email($reg->email);
         } else {
             $cdbu = null;
         }
@@ -1858,7 +1840,7 @@ class Contact {
             $cdbu = $cdbu ?? Contact::make_cdb_email($conf, $reg->email);
             $cdbu->import_prop($reg);
             if ($cdbu->save_prop()) {
-                $u->_contactdb_user = false;
+                $u->invalidate_cdb_user();
             }
         }
 

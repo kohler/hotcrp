@@ -209,7 +209,6 @@ function initialize_user_redirect($nav, $uindex, $nusers) {
 
 
 function initialize_request() {
-    global $Qreq;
     $conf = Conf::$main;
     $nav = Navigation::get();
 
@@ -224,7 +223,7 @@ function initialize_request() {
     }
 
     // collect $qreq
-    $qreq = $Qreq = Qrequest::make_global();
+    $qreq = Qrequest::make_global();
 
     // check method
     if ($qreq->method() !== "GET"
@@ -313,23 +312,23 @@ function initialize_request() {
     }
 
     // look up and activate user
-    $guser = $trueemail ? $conf->user_by_email($trueemail) : null;
-    if (!$guser) {
-        $guser = Contact::make_email($conf, $trueemail);
+    $muser = $trueemail ? $conf->user_by_email($trueemail) : null;
+    if (!$muser) {
+        $muser = Contact::make_email($conf, $trueemail);
     }
-    $guser = $guser->activate($qreq, true);
-    Contact::set_main_user($guser);
+    $muser = $muser->activate($qreq, true);
+    Contact::set_main_user($muser);
 
     // author view capability documents should not be indexed
-    if (!$guser->email
-        && $guser->has_author_view_capability()
+    if (!$muser->email
+        && $muser->has_author_view_capability()
         && !$conf->opt("allowIndexPapers")) {
         header("X-Robots-Tag: noindex, noarchive");
     }
 
     // redirect if disabled
-    if ($guser->is_disabled()) {
-        $gj = $conf->page_components($guser)->get($nav->page);
+    if ($muser->is_disabled()) {
+        $gj = $conf->page_components($muser)->get($nav->page);
         if (!$gj || !($gj->allow_disabled ?? false)) {
             $conf->redirect_hoturl("index");
         }
@@ -341,7 +340,7 @@ function initialize_request() {
         unset($_SESSION["login_bounce"]);
     }
 
-    if (!$guser->is_empty()
+    if (!$muser->is_empty()
         && isset($_SESSION["login_bounce"])
         && !isset($_SESSION["testsession"])) {
         $lb = $_SESSION["login_bounce"];
@@ -360,7 +359,7 @@ function initialize_request() {
 
     // set $_SESSION["addrs"]
     if ($_SERVER["REMOTE_ADDR"]
-        && (!$guser->is_empty()
+        && (!$muser->is_empty()
             || isset($_SESSION["addrs"]))
         && (!isset($_SESSION["addrs"])
             || !is_array($_SESSION["addrs"])

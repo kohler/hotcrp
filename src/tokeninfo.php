@@ -136,7 +136,7 @@ class TokenInfo {
             if ($this->contactId <= 0) {
                 $this->_user = null;
             } else if ($this->is_cdb) {
-                $this->_user = $this->conf->contactdb_user_by_id($this->contactId);
+                $this->_user = $this->conf->cdb_user_by_id($this->contactId);
             } else {
                 $this->_user = $this->conf->user_by_id($this->contactId);
             }

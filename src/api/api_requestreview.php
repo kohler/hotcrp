@@ -76,7 +76,7 @@ class RequestReview_API {
 
         // check for potential conflict
         $xreviewer = $reviewer
-            ?? $user->conf->contactdb_user_by_email($email)
+            ?? $user->conf->cdb_user_by_email($email)
             ?? Contact::make_keyed($user->conf, (array) $name_args->unparse_nae_json());
         $potconflict = $prow->potential_conflict_html($xreviewer);
 
@@ -444,7 +444,7 @@ class RequestReview_API {
         }
 
         $destu = $user->conf->cached_user_by_email($email)
-            ?? $user->conf->contactdb_user_by_email($email);
+            ?? $user->conf->cdb_user_by_email($email);
         if ($destu && !$destu->is_disabled()) {
             $destu->ensure_account_here();
         }

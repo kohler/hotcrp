@@ -203,12 +203,11 @@ class JsonCompletion extends Exception {
 }
 
 function json_exit($json, $arg2 = null) {
-    global $Qreq;
     $json = JsonResult::make($json, $arg2);
     if (JsonCompletion::$capturing > 0) {
         throw new JsonCompletion($json);
     } else {
-        $json->emit($Qreq && $Qreq->valid_token());
+        $json->emit(Qrequest::$main_request && Qrequest::$main_request->valid_token());
         exit;
     }
 }
@@ -247,8 +246,7 @@ function expander($open, $foldnum = null, $open_tooltip = null) {
 /** @param Contact|Author|ReviewInfo|CommentInfo $userlike
  * @return string */
 function actas_link($userlike) {
-    global $Qreq;
-    return '<a href="' . Conf::$main->selfurl($Qreq, ["actas" => $userlike->email])
+    return '<a href="' . Conf::$main->selfurl(Qrequest::$main_request, ["actas" => $userlike->email])
         . '" tabindex="-1">' . Ht::img("viewas.png", "[Act as]", ["title" => "Act as " . Text::nameo($userlike, NAME_P)])
         . '</a>';
 }

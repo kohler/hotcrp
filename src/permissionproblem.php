@@ -92,7 +92,6 @@ class PermissionProblem extends Exception
     /** @param int $format
      * @return string */
     function unparse($format = 0) {
-        global $Qreq;
         $paperId = $this->_a["paperId"] ?? -1;
         $reviewId = $this->_a["reviewId"] ?? -1;
         $option = $this->_a["option"] ?? null;
@@ -256,7 +255,7 @@ class PermissionProblem extends Exception
         if (isset($this->_a["forceShow"])
             && $format === 5
             && Navigation::page() !== "api") {
-            $ms[] = $this->conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", $this->conf->selfurl($Qreq, ["forceShow" => 1]));
+            $ms[] = $this->conf->_("<a class=\"nw\" href=\"%s\">Override conflict</a>", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1]));
         }
         if (!empty($ms)
             && isset($this->_a["listViewable"])
