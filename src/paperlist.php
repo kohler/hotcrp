@@ -2052,7 +2052,12 @@ class PaperList implements XtContext {
                 $render->tfoot ?? "",
                 "</table>";
         } else {
-            echo $render->error;
+            if (strpos($this->_table_class, 'remargin') !== false) {
+                echo "<div class=\"remargin-left remargin-right\">",
+                    $render->error, "</div>";
+            } else {
+                echo $render->error;
+            }
         }
     }
 

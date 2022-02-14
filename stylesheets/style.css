@@ -12,11 +12,13 @@ html {
 p, pre {
 	margin-top: 0;
 }
+table {
+	border-spacing: 0;
+	border-collapse: collapse;
+}
 table, tr, td, th {
 	padding: 0;
-	border-spacing: 0;
 	border: 0 none;
-	border-collapse: collapse;
 	empty-cells: show;
 }
 table {
@@ -2726,10 +2728,10 @@ hr.g, hr.mg, hr.ug {
 	font-size: 90%;
 }
 
-.pltable-colored > .pl, .pltable-colored > .plheading {
+.pltable-colored > .pl > td, .pltable-colored > .plheading > td {
 	border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
-.pltable-colored > tr:first-child {
+.pltable-colored > .pl:first-child > td {
 	border-top: 0 none;
 }
 .k1, .table-striped > tbody > tr:nth-child(even) {
