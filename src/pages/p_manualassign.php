@@ -318,15 +318,12 @@ class ManualAssign_Page {
 
         $reviewer = $this->viewer;
         if (isset($this->qreq->reviewer)) {
-            foreach ($this->conf->full_pc_members() as $pcm) {
-                if (strcasecmp($pcm->email, $this->qreq->reviewer) == 0
-                    || (string) $pcm->contactId === $this->qreq->reviewer) {
-                    $reviewer = $pcm;
-                    break;
-                }
-            }
+            $this->conf->ensure_cached_user_collaborators();
+            $reviewer = ctype_digit($this->qreq->reviewer)
+                ? $this->conf->cached_user_by_id(intval($this->qreq->reviewer))
+                : $this->conf->cached_user_by_email($this->qreq->reviewer);
         }
-        if (!($reviewer->roles & Contact::ROLE_PC)) {
+        if (($reviewer->roles & Contact::ROLE_PC) === 0) {
             $reviewer = null;
         }
 

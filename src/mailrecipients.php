@@ -454,7 +454,7 @@ class MailRecipients extends MessageSet {
 
         // query construction
         $q = "select ContactInfo.contactId, firstName, lastName, unaccentedName, affiliation,
-            email, roles, contactTags, disabled, primaryContactId, 1 _slice,
+            email, roles, contactTags, disabled, primaryContactId, 3 _slice,
             password, preferredEmail, "
             . ($needpaper ? "Paper.paperId" : "-1") . " paperId
             from " . join("\n", $joins)

@@ -46,7 +46,8 @@ class PCConflicts_PaperOption extends PaperOption {
             && ($ov->prow->outcome <= 0 || !$user->can_view_decision($ov->prow))) {
             $vm = self::value_map($ov);
             $pcs = [];
-            foreach ($this->conf->full_pc_members() as $p) {
+            $this->conf->ensure_cached_user_collaborators();
+            foreach ($this->conf->pc_members() as $p) {
                 if (($vm[$p->contactId] ?? 0) === 0 /* not MAXUNCONFLICTED */
                     && $ov->prow->potential_conflict($p)) {
                     $pcs[] = Ht::link($p->name_h(NAME_P), "#pcconf:{$p->contactId}");
@@ -150,7 +151,8 @@ class PCConflicts_PaperOption extends PaperOption {
             return;
         }
 
-        $pcm = $this->conf->full_pc_members();
+        $this->conf->ensure_cached_user_collaborators();
+        $pcm = $this->conf->pc_members();
         if (empty($pcm)) {
             return;
         }

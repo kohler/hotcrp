@@ -58,7 +58,8 @@ class ConflictAssign_Page {
         $args = ["rowset" => $rowset];
 
         $any = false;
-        foreach ($conf->full_pc_members() as $pc) {
+        $conf->ensure_cached_user_collaborators();
+        foreach ($conf->pc_members() as $pc) {
             $paperlist = new PaperList("conflictassign", $search, $args, $qreq);
             $paperlist->set_reviewer_user($pc);
             $paperlist->set_row_filter($filter);

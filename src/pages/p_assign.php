@@ -565,7 +565,8 @@ class Assign_Page {
             echo ' data-review-rounds="', htmlspecialchars(json_encode($rev_rounds)), '"',
                 ' data-default-review-round="', htmlspecialchars($this->conf->assignment_round_option(false)), '">';
 
-            foreach ($this->conf->full_pc_members() as $pc) {
+            $this->conf->ensure_cached_user_collaborators();
+            foreach ($this->conf->pc_members() as $pc) {
                 if ($pc->can_accept_review_assignment_ignore_conflict($prow)) {
                     $this->print_pc_assignment($pc, $acs);
                 }

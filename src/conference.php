@@ -100,19 +100,17 @@ class Conf {
     /** @var ?Conflict */
     private $_conflict_types;
     /** @var ?array<int,Contact> */
-    private $_pc_members_cache;
-    /** @var ?array<string,string> */
-    private $_pc_tags_cache;
-    /** @var ?array<int,Contact> */
     private $_pc_user_cache;
     /** @var ?array<int,Contact> */
+    private $_pc_members_cache;
+    /** @var ?array<int,Contact> */
     private $_pc_chairs_cache;
-    /** @var bool */
-    private $_pc_members_fully_loaded = false;
+    /** @var ?array<string,string> */
+    private $_pc_tags_cache;
     /** @var bool */
     private $_pc_members_all_enabled = true;
-    /** @var bool */
-    private $_unslice = false;
+    /** @var int */
+    private $_slice = 3;
     /** @var ?array<int,?Contact> */
     private $_user_cache;
     /** @var ?list<int|string> */
@@ -2101,8 +2099,6 @@ class Conf {
     }
 
 
-    // users
-
     /** @return bool */
     function external_login() {
         return ($this->opt["ldapLogin"] ?? false) || ($this->opt["httpAuthLogin"] ?? false);
@@ -2113,6 +2109,18 @@ class Conf {
         return !$this->external_login()
             && !$this->opt("disableNewUsers")
             && !$this->opt("disableNonPC");
+    }
+
+
+    // root user, site contact
+
+    /** @return Contact */
+    function root_user() {
+        if (!$this->_root_user) {
+            $this->_root_user = Contact::make_site_contact($this, ["email" => "rootuser"]);
+            $this->_root_user->set_overrides(Contact::OVERRIDE_CONFLICT);
+        }
+        return $this->_root_user;
     }
 
     /** @return Author */
@@ -2140,14 +2148,8 @@ class Conf {
         return $this->_site_contact;
     }
 
-    /** @return Contact */
-    function root_user() {
-        if (!$this->_root_user) {
-            $this->_root_user = Contact::make_site_contact($this, ["email" => "rootuser"]);
-            $this->_root_user->set_overrides(Contact::OVERRIDE_CONFLICT);
-        }
-        return $this->_root_user;
-    }
+
+    // database users
 
     /** @param int $id
      * @return ?Contact */
@@ -2180,18 +2182,17 @@ class Conf {
         return $acct;
     }
 
-    /** @return array<int,Contact> */
-    function cached_sliced_users(Contact $firstu) {
-        $a = [];
-        if (!$this->_unslice) {
-            $this->_unslice = true;
-            foreach ($this->_user_cache ?? $this->_pc_user_cache ?? [] as $id => $u) {
-                if ($u && $u->_slice)
-                    $a[$id] = $u;
+
+    // user cache
+
+    private function _ensure_user_email_cache() {
+        if ($this->_user_email_cache === null) {
+            $this->_user_cache = $this->_user_cache ?? $this->_pc_user_cache ?? [];
+            $this->_user_email_cache = [];
+            foreach ($this->_user_cache as $u) {
+                $this->_user_email_cache[strtolower($u->email)] = $u;
             }
         }
-        $a[$firstu->contactId] = $firstu;
-        return $a;
     }
 
     /** @param int $id */
@@ -2215,9 +2216,12 @@ class Conf {
             if (is_int($reqid) && !array_key_exists($reqid, $this->_user_cache)) {
                 $this->_user_cache[$reqid] = null;
                 $reqids[] = $reqid;
-            } else if (is_string($reqid) && !array_key_exists($reqid, $this->_user_email_cache ?? [])) {
-                $this->_user_email_cache[$reqid] = null;
-                $reqemails[] = $reqid;
+            } else if (is_string($reqid)) {
+                $this->_ensure_user_email_cache();
+                if (!array_key_exists($reqid, $this->_user_email_cache)) {
+                    $this->_user_email_cache[$reqid] = null;
+                    $reqemails[] = $reqid;
+                }
             }
         }
         $this->_user_cache_missing = null;
@@ -2271,17 +2275,8 @@ class Conf {
             && strcasecmp(Contact::$main_user->email, $email) === 0) {
             return Contact::$main_user;
         }
+        $this->_ensure_user_email_cache();
         $lemail = strtolower($email);
-        $this->_user_email_cache = $this->_user_email_cache ?? [];
-        if (!array_key_exists($lemail, $this->_user_email_cache)
-            && $this->_user_cache !== null) {
-            foreach ($this->_user_cache as $u) {
-                if (strcasecmp($u->email, $lemail) === 0) {
-                    $this->_user_email_cache[$lemail] = $u;
-                    break;
-                }
-            }
-        }
         if (!array_key_exists($lemail, $this->_user_email_cache)) {
             $this->_user_cache_missing[] = $lemail;
             $this->_refresh_user_cache();
@@ -2289,140 +2284,49 @@ class Conf {
         return $this->_user_email_cache[$lemail] ?? null;
     }
 
-    /** @param ?bool $full
-     * @return string */
-    function cached_user_query($full = null) {
-        if ($full ?? $this->_pc_members_fully_loaded) {
-            return "*";
-        } else {
+    /** @return string */
+    private function cached_user_query() {
+        if ($this->_slice === 3) {
             // see also MailRecipients
-            return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled, primaryContactId, 1 _slice";
+            return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled, primaryContactId, 3 _slice";
+        } else if ($this->_slice === 2) {
+            return "contactId, firstName, lastName, unaccentedName, affiliation, email, roles, contactTags, disabled, primaryContactId, collaborators, 2 _slice";
+        } else {
+            return "*";
         }
     }
 
-
-    // contactdb
-
-    /** @return ?\mysqli */
-    static function main_contactdb() {
-        global $Opt;
-        if (self::$_cdb === false) {
-            self::$_cdb = null;
-            $dsn = Conf::$main ? Conf::$main->opt("contactdb_dsn") : $Opt["contactdb_dsn"] ?? null;
-            if ($dsn) {
-                list(self::$_cdb, $dbname) = Dbl::connect_dsn($dsn);
-            }
-        }
-        return self::$_cdb;
-    }
-
-    /** @return ?\mysqli */
-    function contactdb() {
-        return self::$_cdb === false ? self::main_contactdb() : self::$_cdb;
-    }
-
-    private function _refresh_cdb_user_cache() {
-        $cdb = $this->contactdb();
-        $reqids = $reqemails = [];
-        if ($cdb) {
-            $this->_cdb_user_cache = $this->_cdb_user_cache ?? [];
-            foreach ($this->_cdb_user_cache_missing as $reqid) {
-                if (is_int($reqid) && !array_key_exists($reqid, $this->_cdb_user_cache)) {
-                    $this->_cdb_user_cache[$reqid] = null;
-                    $reqids[] = $reqid;
-                } else if (is_string($reqid) && !array_key_exists($reqid, $this->_cdb_user_cache)) {
-                    $this->_cdb_user_cache[$reqid] = null;
-                    $reqemails[] = $reqid;
+    function ensure_cached_user_collaborators() {
+        if ($this->_slice & 1) {
+            $this->_slice &= ~1;
+            $this->_user_cache = $this->_user_cache ?? $this->_pc_user_cache;
+            if (!empty($this->_user_cache)) {
+                $result = $this->qe("select contactId, collaborators from ContactInfo where contactId?a", array_keys($this->_user_cache));
+                while (($row = $result->fetch_row())) {
+                    $this->_user_cache[intval($row[0])]->set_collaborators($row[1]);
                 }
+                Dbl::free($result);
             }
         }
-        $this->_cdb_user_cache_missing = null;
-        if (!empty($reqids) || !empty($reqemails)) {
-            $q = "select ContactInfo.*, roles, activity_at";
-            if (($confid = $this->opt("contactdb_confid") ?? 0) > 0) {
-                $q .= ", ? cdb_confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
-                $qv = [$confid, $confid];
-            } else {
-                $q .= ", coalesce(Conferences.confid,-1) cdb_confid from ContactInfo left join Conferences on (Conferences.`dbname`=?) left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)";
-                $qv = [$this->dbname];
-            }
-            if (empty($reqemails)) {
-                $q .= " where contactId?a";
-                $qv[] = $reqids;
-            } else if (empty($reqids)) {
-                $q .= " where email?a";
-                $qv[] = $reqemails;
-            } else {
-                $q .= " where contactId?a or email?a";
-                $qv[] = $reqids;
-                $qv[] = $reqemails;
-            }
-            $result = Dbl::qe_apply($cdb, $q, $qv);
-            while (($u = Contact::fetch($result, $this))) {
-                if ($confid <= 0 && $u->cdb_confid > 0) {
-                    $confid = $this->opt["contactdb_confid"] = $u->cdb_confid;
-                }
-                $this->_cdb_user_cache[$u->contactDbId] = $u;
-                $this->_cdb_user_cache[strtolower($u->email)] = $u;
+    }
+
+    /** @param Contact $u */
+    function unslice_user($u) {
+        if ($this->_user_cache !== null
+            && $u === $this->_user_cache[$u->contactId]
+            && $this->_slice) {
+            // assume we'll need to unslice all cached users (likely the PC)
+            $result = $this->qe("select * from ContactInfo where contactId?a", array_keys($this->_user_cache));
+            while (($m = $result->fetch_object())) {
+                $this->_user_cache[intval($m->contactId)]->unslice_using($m);
             }
             Dbl::free($result);
-        }
-    }
-
-    /** @param string $email */
-    function request_cached_cdb_user_by_email($email) {
-        if ($email !== "") {
-            $this->_cdb_user_cache_missing[] = strtolower($email);
-        }
-    }
-
-    /** @param int $id */
-    function request_cached_cdb_user_by_id($id) {
-        if ($id > 0) {
-            $this->_cdb_user_cache_missing[] = $id;
-        }
-    }
-
-    /** @param string $email
-     * @return ?Contact */
-    function cdb_user_by_email($email) {
-        if ($email !== "" && !Contact::is_anonymous_email($email)) {
-            $lemail = strtolower($email);
-            if (!array_key_exists($lemail, $this->_cdb_user_cache ?? [])) {
-                $this->_cdb_user_cache_missing[] = $lemail;
-                $this->_refresh_cdb_user_cache();
-            }
-            return $this->_cdb_user_cache[$lemail] ?? null;
+            $this->_slice = 0;
+        } else if (($m = $this->fetch_first_object("select * from ContactInfo where contactId=?", $u->contactId))) {
+            $u->unslice_using($m);
         } else {
-            return null;
-        }
-    }
-
-    /** @param int $id
-     * @return ?Contact */
-    function cdb_user_by_id($id) {
-        if ($id > 0) {
-            if (!array_key_exists($id, $this->_cdb_user_cache ?? [])) {
-                $this->_cdb_user_cache_missing[] = $id;
-                $this->_refresh_cdb_user_cache();
-            }
-            return $this->_cdb_user_cache[$id] ?? null;
-        } else {
-            return null;
-        }
-    }
-
-    /** @param string $email
-     * @return ?Contact
-     * @deprecated */
-    function contactdb_user_by_email($email) {
-        return $this->cdb_user_by_email($email);
-    }
-
-    /** @param string $email */
-    function invalidate_cdb_user_by_email($email) {
-        if ($this->_cdb_user_cache !== null) {
-            unset($this->_cdb_user_cache[strtolower($email)]);
+            // will rarely happen -- unslicing a user who has been deleted
+            $u->_slice = 0;
         }
     }
 
@@ -2545,6 +2449,9 @@ class Conf {
                 if ($this->_user_cache !== null) {
                     $this->_user_cache[$u->contactId] = $u;
                 }
+                if ($this->_user_email_cache !== null) {
+                    $this->_user_email_cache[strtolower($u->email)] = $u;
+                }
             }
         }
         return $this->_pc_members_cache;
@@ -2556,23 +2463,6 @@ class Conf {
             $this->pc_members();
         }
         return $this->_pc_chairs_cache;
-    }
-
-    /** @return array<int,Contact> */
-    function full_pc_members() {
-        if (!$this->_pc_members_fully_loaded) {
-            if ($this->_pc_members_cache !== null) {
-                $result = $this->q("select * from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
-                while ($result && ($u = $result->fetch_object())) {
-                    if (($pc = $this->_pc_user_cache[$u->contactId] ?? null))
-                        $pc->unslice_using($u);
-                }
-                Dbl::free($result);
-            }
-            $this->_user_cache = $this->_user_email_cache = null;
-            $this->_pc_members_fully_loaded = true;
-        }
-        return $this->pc_members();
     }
 
     /** @return bool */
@@ -2600,6 +2490,18 @@ class Conf {
         }
     }
 
+    /** @return array<int,Contact>
+     * @deprecated */
+    function full_pc_members() {
+        if ($this->_user_cache && $this->_slice) {
+            $u = (array_values($this->_user_cache))[0];
+            $this->unslice_user($u);
+        } else {
+            $this->_slice = 0;
+        }
+        return $this->pc_members();
+    }
+
     /** @param int $cid
      * @return ?Contact */
     function pc_member_by_id($cid) {
@@ -2609,11 +2511,19 @@ class Conf {
     /** @param string $email
      * @return ?Contact */
     function pc_member_by_email($email) {
-        foreach ($this->pc_members() as $p) {
-            if (strcasecmp($p->email, $email) == 0)
-                return $p;
+        if ($this->_pc_members_cache === null) {
+            $this->pc_members();
         }
-        return null;
+        if ($this->_user_email_cache === null) {
+            $this->_ensure_user_email_cache();
+        }
+        /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
+        if (($u = $this->_user_email_cache[strtolower($email)])
+            && ($u->roles & Contact::ROLE_PC) !== 0) {
+            return $u;
+        } else {
+            return null;
+        }
     }
 
     /** @return array<int,Contact> */
@@ -2670,6 +2580,132 @@ class Conf {
             return explode("#0 ", substr($t, 1, -2));
         } else {
             return [];
+        }
+    }
+
+
+    // contactdb
+
+    /** @return ?\mysqli */
+    static function main_contactdb() {
+        global $Opt;
+        if (self::$_cdb === false) {
+            self::$_cdb = null;
+            $dsn = Conf::$main ? Conf::$main->opt("contactdb_dsn") : $Opt["contactdb_dsn"] ?? null;
+            if ($dsn) {
+                list(self::$_cdb, $dbname) = Dbl::connect_dsn($dsn);
+            }
+        }
+        return self::$_cdb;
+    }
+
+    /** @return ?\mysqli */
+    function contactdb() {
+        return self::$_cdb === false ? self::main_contactdb() : self::$_cdb;
+    }
+
+    private function _refresh_cdb_user_cache() {
+        $cdb = $this->contactdb();
+        $reqids = $reqemails = [];
+        if ($cdb) {
+            $this->_cdb_user_cache = $this->_cdb_user_cache ?? [];
+            foreach ($this->_cdb_user_cache_missing as $reqid) {
+                if (is_int($reqid) && !array_key_exists($reqid, $this->_cdb_user_cache)) {
+                    $this->_cdb_user_cache[$reqid] = null;
+                    $reqids[] = $reqid;
+                } else if (is_string($reqid) && !array_key_exists($reqid, $this->_cdb_user_cache)) {
+                    $this->_cdb_user_cache[$reqid] = null;
+                    $reqemails[] = $reqid;
+                }
+            }
+        }
+        $this->_cdb_user_cache_missing = null;
+        if (!empty($reqids) || !empty($reqemails)) {
+            $q = "select ContactInfo.*, roles, activity_at";
+            if (($confid = $this->opt("contactdb_confid") ?? 0) > 0) {
+                $q .= ", ? cdb_confid from ContactInfo left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=?)";
+                $qv = [$confid, $confid];
+            } else {
+                $q .= ", coalesce(Conferences.confid,-1) cdb_confid from ContactInfo left join Conferences on (Conferences.`dbname`=?) left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)";
+                $qv = [$this->dbname];
+            }
+            if (empty($reqemails)) {
+                $q .= " where contactId?a";
+                $qv[] = $reqids;
+            } else if (empty($reqids)) {
+                $q .= " where email?a";
+                $qv[] = $reqemails;
+            } else {
+                $q .= " where contactId?a or email?a";
+                $qv[] = $reqids;
+                $qv[] = $reqemails;
+            }
+            $result = Dbl::qe_apply($cdb, $q, $qv);
+            while (($u = Contact::fetch($result, $this))) {
+                if ($confid <= 0 && $u->cdb_confid > 0) {
+                    $confid = $this->opt["contactdb_confid"] = $u->cdb_confid;
+                }
+                $this->_cdb_user_cache[$u->contactDbId] = $u;
+                $this->_cdb_user_cache[strtolower($u->email)] = $u;
+            }
+            Dbl::free($result);
+        }
+    }
+
+    /** @param int $id */
+    function request_cached_cdb_user_by_id($id) {
+        if ($id > 0) {
+            $this->_cdb_user_cache_missing[] = $id;
+        }
+    }
+
+    /** @param string $email */
+    function request_cached_cdb_user_by_email($email) {
+        if ($email !== "") {
+            $this->_cdb_user_cache_missing[] = strtolower($email);
+        }
+    }
+
+    /** @param int $id
+     * @return ?Contact */
+    function cdb_user_by_id($id) {
+        if ($id > 0) {
+            if (!array_key_exists($id, $this->_cdb_user_cache ?? [])) {
+                $this->_cdb_user_cache_missing[] = $id;
+                $this->_refresh_cdb_user_cache();
+            }
+            return $this->_cdb_user_cache[$id] ?? null;
+        } else {
+            return null;
+        }
+    }
+
+    /** @param string $email
+     * @return ?Contact */
+    function cdb_user_by_email($email) {
+        if ($email !== "" && !Contact::is_anonymous_email($email)) {
+            $lemail = strtolower($email);
+            if (!array_key_exists($lemail, $this->_cdb_user_cache ?? [])) {
+                $this->_cdb_user_cache_missing[] = $lemail;
+                $this->_refresh_cdb_user_cache();
+            }
+            return $this->_cdb_user_cache[$lemail] ?? null;
+        } else {
+            return null;
+        }
+    }
+
+    /** @param string $email
+     * @return ?Contact
+     * @deprecated */
+    function contactdb_user_by_email($email) {
+        return $this->cdb_user_by_email($email);
+    }
+
+    /** @param string $email */
+    function invalidate_cdb_user_by_email($email) {
+        if ($this->_cdb_user_cache !== null) {
+            unset($this->_cdb_user_cache[strtolower($email)]);
         }
     }
 

@@ -53,8 +53,8 @@ class Contact {
     public $disablement = 0;
     /** @var ?int */
     public $primaryContactId;
-    /** @var bool */
-    public $_slice = false;
+    /** @var int */
+    public $_slice = 0;
 
     /** @var ?bool */
     public $nameAmbiguous;
@@ -319,9 +319,9 @@ class Contact {
         if (isset($this->primaryContactId)) {
             $this->primaryContactId = (int) $this->primaryContactId;
         }
-        $this->_slice = isset($this->_slice) && $this->_slice;
+        $this->_slice = (int) $this->_slice;
 
-        // handle other properties
+        // handle unsliced properties
         if (!$this->_slice) {
             foreach (self::$props as $prop => $shape) {
                 if (($shape & (self::PROP_SLICE | self::PROP_DATA | self::PROP_STRING)) === 0
@@ -376,27 +376,27 @@ class Contact {
         $this->activity_at = $this->lastLogin;
         $this->data = $x->data;
         $this->_jdata = null;
-        $this->_slice = false;
+        $this->_slice = 0;
     }
 
     function unslice() {
         if ($this->_slice) {
             assert($this->contactId > 0);
-            $need = $this->conf->cached_sliced_users($this);
-            $result = $this->conf->qe("select * from ContactInfo where contactId?a", array_keys($need));
-            while (($m = $result->fetch_object())) {
-                $need[$m->contactId]->unslice_using($m);
-            }
-            Dbl::free($result);
-            $this->_slice = false;
+            $this->conf->unslice_user($this);
         }
     }
 
 
     /** @return string */
     function collaborators() {
-        $this->_slice && $this->unslice();
+        ($this->_slice & 1) && $this->unslice();
         return $this->collaborators ?? "";
+    }
+
+    /** @param ?string $x */
+    function set_collaborators($x) {
+        $this->_slice &= ~1;
+        $this->collaborators = $x;
     }
 
     /** @return Generator<AuthorMatcher> */

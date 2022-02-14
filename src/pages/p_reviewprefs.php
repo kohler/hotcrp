@@ -171,13 +171,14 @@ class ReviewPrefs_Page {
             && $qreq->reviewer !== $user->email
             && $qreq->reviewer !== $user->contactId) {
             $correct_reviewer = false;
-            foreach ($conf->full_pc_members() as $pcm) {
-                if (strcasecmp($qreq->reviewer, $pcm->email) == 0
-                    || $qreq->reviewer === (string) $pcm->contactId) {
-                    $reviewer = $pcm;
-                    $correct_reviewer = true;
-                    $qreq->reviewer = $pcm->email;
-                }
+            $conf->ensure_cached_user_collaborators();
+            $u = ctype_digit($qreq->reviewer)
+                ? $conf->cached_user_by_id(intval($qreq->reviewer))
+                : $conf->cached_user_by_email($qreq->reviewer);
+            if ($u && ($u->roles & Contact::ROLE_PC) !== 0) {
+                $reviewer = $u;
+                $correct_reviewer = true;
+                $qreq->reviewer = $u->email;
             }
         } else if (!$qreq->reviewer && !($user->roles & Contact::ROLE_PC)) {
             foreach ($conf->pc_members() as $pcm) {
