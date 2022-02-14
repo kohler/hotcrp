@@ -2532,9 +2532,11 @@ class Conf {
             uasort($this->_pc_user_cache, $this->user_comparator());
 
             $this->_pc_members_cache = $this->_pc_chairs_cache = [];
+            $next_pc_index = 0;
             foreach ($this->_pc_user_cache as $u) {
                 if ($u->roles & Contact::ROLE_PC) {
-                    $u->sort_order = count($this->_pc_members_cache);
+                    $u->pc_index = $next_pc_index;
+                    ++$next_pc_index;
                     $this->_pc_members_cache[$u->contactId] = $u;
                 }
                 if ($u->roles & Contact::ROLE_CHAIR) {
@@ -2656,26 +2658,6 @@ class Conf {
      * @return bool */
     function pc_tag_exists($tag) {
         return isset(($this->pc_tagmap())[strtolower($tag)]);
-    }
-
-    /** @return array<string,Contact> */
-    function pc_completion_map() {
-        $map = $bylevel = [];
-        foreach ($this->pc_users() as $pc) {
-            if (!$pc->is_disabled()) {
-                foreach ($pc->completion_items() as $k => $level) {
-                    if (!isset($bylevel[$k])
-                        || $bylevel[$k] < $level
-                        || ($map[$k] ?? null) === $pc) {
-                        $map[$k] = $pc;
-                        $bylevel[$k] = $level;
-                    } else {
-                        unset($map[$k]);
-                    }
-                }
-            }
-        }
-        return $map;
     }
 
     /** @return list<string> */

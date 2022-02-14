@@ -63,7 +63,7 @@ class Contact {
     /** @var ?int */
     private $_sortspec;
     /** @var ?int */
-    public $sort_order;
+    public $pc_index;
 
     /** @var ?string */
     private $collaborators;
@@ -1046,20 +1046,23 @@ class Contact {
         return $this->name_for("t", $x);
     }
 
-    function ksort_cid_array(&$a) {
+    /** @param array<int,mixed> &$array */
+    function ksort_cid_array(&$array) {
         $pcm = $this->conf->pc_members();
-        uksort($a, function ($a, $b) use ($pcm) {
-            if (isset($pcm[$a]) && isset($pcm[$b])) {
-                return $pcm[$a]->sort_order - $pcm[$b]->sort_order;
-            }
-            $au = $pcm[$a] ?? $this->conf->cached_user_by_id($a);
-            $bu = $pcm[$b] ?? $this->conf->cached_user_by_id($b);
-            if ($au && $bu) {
+        foreach ($array as $cid => $x) {
+            $this->conf->request_cached_user_by_id($cid);
+        }
+        uksort($array, function ($a, $b) {
+            $au = $this->conf->cached_user_by_id($a);
+            $bu = $this->conf->cached_user_by_id($b);
+            if ($au && $au->pc_index !== null && $bu && $bu->pc_index !== null) {
+                return $au->pc_index <=> $bu->pc_index;
+            } else if ($au && $bu) {
                 return call_user_func($this->conf->user_comparator(), $au, $bu);
             } else if ($au || $bu) {
                 return $au ? -1 : 1;
             } else {
-                return $a - $b;
+                return $a <=> $b;
             }
         });
     }

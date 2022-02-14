@@ -1249,7 +1249,7 @@ class PaperTable {
         foreach ($this->prow->pc_conflicts() as $id => $cflt) {
             if (Conflict::is_conflicted($cflt->conflictType)) {
                 $p = $pcm[$id];
-                $pcconf[$p->sort_order] = '<li class="odname">'
+                $pcconf[$p->pc_index] = '<li class="odname">'
                     . $this->user->reviewer_html_for($p) . '</li>';
             }
         }

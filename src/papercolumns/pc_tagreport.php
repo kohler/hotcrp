@@ -42,7 +42,7 @@ class TagReport_PaperColumn extends PaperColumn {
             if ($this->viewtype != 1) {
                 $n .= " (" . $m[2][$i] . ")";
             }
-            $a[$m[1][$i]] = $n;
+            $a[intval($m[1][$i])] = $n;
         }
         if (empty($a)) {
             return "";

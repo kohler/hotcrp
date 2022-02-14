@@ -23,7 +23,7 @@ class PCConflicts_PaperColumn extends PaperColumn {
         $pcm = $row->conf->pc_members();
         foreach ($row->conflicts() as $id => $cflt) {
             if (($pc = $pcm[$id] ?? null) && $cflt->is_conflicted())
-                $y[$pc->sort_order] = $pl->user->reviewer_html_for($pc);
+                $y[$pc->pc_index] = $pl->user->reviewer_html_for($pc);
         }
         ksort($y);
         return join(", ", $y);
@@ -33,7 +33,7 @@ class PCConflicts_PaperColumn extends PaperColumn {
         $pcm = $row->conf->pc_members();
         foreach ($row->conflicts() as $id => $cflt) {
             if (($pc = $pcm[$id] ?? null) && $cflt->is_conflicted())
-                $y[$pc->sort_order] = $pl->user->reviewer_text_for($pc);
+                $y[$pc->pc_index] = $pl->user->reviewer_text_for($pc);
         }
         ksort($y);
         return join("; ", $y);

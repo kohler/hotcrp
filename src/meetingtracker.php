@@ -605,7 +605,7 @@ class MeetingTracker {
                         if (($pc = $pcm[$cflt->contactId] ?? null)
                             && $cflt->is_conflicted()) {
                             if ($pc->include_tracker_conflict($trs[$ti_index])) {
-                                $pcc[$pc->sort_order] = $pc->contactId;
+                                $pcc[$pc->pc_index] = $pc->contactId;
                             } else {
                                 $more = true;
                             }

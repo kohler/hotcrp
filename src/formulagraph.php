@@ -186,7 +186,7 @@ class FormulaGraph extends MessageSet {
     private $searches = [];
     /** @var array<int,list<int>> */
     private $papermap = [];
-    /** @var array<int,Contact> */
+    /** @var list<Contact> */
     private $reviewers = [];
     /** @var ?array<int,string> */
     private $reviewer_color;
@@ -819,14 +819,12 @@ class FormulaGraph extends MessageSet {
         $result = $this->conf->qe("select contactId, firstName, lastName, affiliation, email, roles, contactTags from ContactInfo where contactId ?a", $cids);
         $this->reviewers = [];
         while (($c = Contact::fetch($result, $this->conf))) {
-            $this->reviewers[$c->contactId] = $c;
+            $this->reviewers[] = $c;
         }
         Dbl::free($result);
-        uasort($this->reviewers, $this->conf->user_comparator());
-        $i = 0;
+        usort($this->reviewers, $this->conf->user_comparator());
         $m = [];
-        foreach ($this->reviewers as $c) {
-            $c->sort_order = ++$i;
+        foreach ($this->reviewers as $i => $c) {
             $m[$c->contactId] = $i;
         }
         $this->_valuemap_rewrite($axes, $m);
@@ -990,7 +988,7 @@ class FormulaGraph extends MessageSet {
             }
             if ($format === Fexpr::FREVIEWER) {
                 $x = [];
-                foreach ($this->reviewers as $r) {
+                foreach ($this->reviewers as $i => $r) {
                     $rd = ["text" => $this->user->name_text_for($r),
                            "search" => "re:" . $r->email];
                     if ($this->user->can_view_user_tags()
@@ -998,7 +996,7 @@ class FormulaGraph extends MessageSet {
                         $rd["color_classes"] = $colors;
                     }
                     $rd["id"] = $r->contactId;
-                    $x[$r->sort_order] = $rd;
+                    $x[$i] = $rd;
                 }
                 $named_ticks = $x;
             } else if ($format === Fexpr::FDECISION) {
