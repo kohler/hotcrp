@@ -534,8 +534,13 @@ class AssignerContacts {
     private $none_user;
     /** @var int */
     static private $next_fake_id = -10;
+    /** @var string
+     * @readonly */
     static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, affiliation, collaborators, roles, contactTags, primaryContactId";
+    /** @var string
+     * @readonly */
     static public $cdb_query = "contactDbId, firstName, lastName, email, affiliation, collaborators, 0 roles, '' contactTags, 0 primaryContactId";
+
     function __construct(Conf $conf, Contact $viewer) {
         $this->conf = $conf;
         $this->viewer = $viewer;
@@ -545,17 +550,17 @@ class AssignerContacts {
             $this->store($user);
         }
     }
-    private function store(Contact $c) {
-        if ($c->contactId != 0) {
-            if (isset($this->by_id[$c->contactId])) {
-                return $this->by_id[$c->contactId];
+    private function store(Contact $u) {
+        if ($u->contactId != 0) {
+            if (isset($this->by_id[$u->contactId])) {
+                return $this->by_id[$u->contactId];
             }
-            $this->by_id[$c->contactId] = $c;
+            $this->by_id[$u->contactId] = $u;
         }
-        if ($c->email) {
-            $this->by_lemail[strtolower($c->email)] = $c;
+        if ($u->email) {
+            $this->by_lemail[strtolower($u->email)] = $u;
         }
-        return $c;
+        return $u;
     }
     private function ensure_pc() {
         if (!$this->has_pc) {
@@ -579,18 +584,18 @@ class AssignerContacts {
         if (!$cid) {
             return $this->none_user();
         }
-        if (($c = $this->by_id[$cid] ?? null)) {
-            return $c;
+        if (($u = $this->by_id[$cid] ?? null)) {
+            return $u;
         }
         $this->ensure_pc();
-        if (($c = $this->by_id[$cid] ?? null)) {
-            return $c;
+        if (($u = $this->by_id[$cid] ?? null)) {
+            return $u;
         }
         $result = $this->conf->qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
-        $c = Contact::fetch($result, $this->conf)
+        $u = Contact::fetch($result, $this->conf)
             ?? Contact::make_keyed($this->conf, ["email" => "unknown contact $cid", "contactId" => $cid]);
         Dbl::free($result);
-        return $this->store($c);
+        return $this->store($u);
     }
     /** @param string $email
      * @param ?CsvRow $req
@@ -660,24 +665,24 @@ class AssignerContacts {
         assert($this->by_id[$c->contactId] === $c);
         $cx = $this->by_lemail[strtolower($c->email)];
         if ($cx === $c) {
-            // XXX assume that never fails:
             $cargs = [];
-            if ($c->email !== null) {
-                $cargs["email"] = $c->email;
+            if ($cx->email !== "") {
+                $cargs["email"] = $cx->email;
             }
-            if ($c->firstName !== null) {
-                $cargs["firstName"] = $c->firstName;
+            if ($cx->firstName !== "") {
+                $cargs["firstName"] = $cx->firstName;
             }
-            if ($c->lastName !== null) {
-                $cargs["lastName"] = $c->lastName;
+            if ($cx->lastName !== "") {
+                $cargs["lastName"] = $cx->lastName;
             }
-            if ($c->affiliation !== null) {
-                $cargs["affiliation"] = $c->affiliation;
+            if ($cx->affiliation !== "") {
+                $cargs["affiliation"] = $cx->affiliation;
             }
-            if (($c->disablement & Contact::DISABLEMENT_USER) !== 0) {
+            if ($cx->is_stored_disabled()) {
                 $cargs["disabled"] = true;
             }
             $cx = Contact::create($this->conf, $this->viewer, $cargs, $cx->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0);
+            // XXX assume that never fails:
             $cx = $this->store($cx);
         }
         return $cx;

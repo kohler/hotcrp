@@ -87,7 +87,8 @@ class ReviewField implements JsonSerializable {
     public $main_storage;
     /** @var ?non-empty-string */
     public $json_storage;
-    private $_typical_score = false;
+    /** @var ?string */
+    private $_typical_score;
 
     static private $view_score_map = [
         "secret" => VIEWSCORE_ADMINONLY, "admin" => VIEWSCORE_REVIEWERONLY,
@@ -205,7 +206,7 @@ class ReviewField implements JsonSerializable {
         } else {
             $this->required = false;
         }
-        $this->_typical_score = false;
+        $this->_typical_score = null;
     }
 
     /** @param string $s
@@ -283,6 +284,7 @@ class ReviewField implements JsonSerializable {
         }
         return $j;
     }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return $this->unparse_json(0);
@@ -323,9 +325,9 @@ class ReviewField implements JsonSerializable {
 
     /** @return ?string */
     function typical_score() {
-        if ($this->_typical_score === false && $this->has_options) {
+        if ($this->_typical_score === null && $this->has_options) {
             $n = count($this->options);
-            if ($n == 1) {
+            if ($n === 1) {
                 $this->_typical_score = $this->unparse_value(1);
             } else if ($this->option_letter) {
                 $this->_typical_score = $this->unparse_value(1 + (int) (($n - 1) / 2));
@@ -359,6 +361,7 @@ class ReviewField implements JsonSerializable {
         return [$this->unparse_value($f), $this->unparse_value($l)];
     }
 
+    /** @return string */
     function search_keyword() {
         if ($this->_search_keyword === null) {
             $this->conf->abbrev_matcher();
@@ -366,15 +369,20 @@ class ReviewField implements JsonSerializable {
         }
         return $this->_search_keyword;
     }
+
     /** @return ?string */
     function abbreviation1() {
         $e = new AbbreviationEntry($this->name, $this, Conf::MFLAG_REVIEW);
         return $this->conf->abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_UNDERSCORE);
     }
+
+    /** @return string */
     function web_abbreviation() {
         return '<span class="need-tooltip" data-tooltip="' . $this->name_html
             . '" data-tooltip-anchor="s">' . htmlspecialchars($this->search_keyword()) . "</span>";
     }
+
+    /** @return string */
     function uid() {
         return $this->search_keyword();
     }
@@ -394,6 +402,8 @@ class ReviewField implements JsonSerializable {
         }
     }
 
+    /** @param int|float $value
+     * @return string */
     function value_class($value) {
         $info = self::$scheme_info[$this->scheme];
         if (count($this->options) <= 1) {
@@ -467,6 +477,7 @@ class ReviewField implements JsonSerializable {
         return (string) $this->unparse_value($value, 0, "%.2f");
     }
 
+    /** @return string */
     function unparse_graph($v, $style, $myscore) {
         assert($this->has_options);
         $max = count($this->options);
@@ -614,6 +625,9 @@ class ReviewField implements JsonSerializable {
         }
     }
 
+    /** @param ReviewField $a
+     * @param ReviewField $b
+     * @return int */
     static function order_compare($a, $b) {
         if (!$a->order !== !$b->order) {
             return $a->order ? -1 : 1;

@@ -67,7 +67,7 @@ class AdminHome_Page {
         // Any -100 preferences around?
         $result = $conf->preference_conflict_result("s", "limit 1");
         if (($row = $result->fetch_row())) {
-            $ml[] = new MessageItem(null, '<5>PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. <a href="' . $conf->hoturl("=conflictassign") . '" class="nw">Confirm these conflicts</a>', MessageSet::URGENT_NOTE);
+            $ml[] = new MessageItem(null, '<5>PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. <a href="' . $conf->hoturl("=conflictassign") . '" class="nw">Confirm these conflicts</a>', MessageSet::MARKED_NOTE);
         }
         // Weird URLs?
         foreach (["conferenceSite", "paperSite"] as $k) {

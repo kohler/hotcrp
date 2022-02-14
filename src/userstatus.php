@@ -220,6 +220,8 @@ class UserStatus extends MessageSet {
         return pluralx(count($pids), "submission") . " " . $l;
     }
 
+    /** @param string $what
+     * @return string */
     function autocomplete($what) {
         if ($this->is_auth_self()) {
             return $what;
@@ -230,6 +232,7 @@ class UserStatus extends MessageSet {
         }
     }
 
+    /** @return ?list<string> */
     static function unparse_roles_json($roles) {
         if ($roles) {
             $rj = [];
@@ -361,8 +364,9 @@ class UserStatus extends MessageSet {
         }
     }
 
+    /** @return list<string> */
     private function make_tags_array($x, $key) {
-        $t0 = array();
+        $t0 = [];
         if (is_string($x)) {
             $t0 = preg_split('/[\s,;]+/', $x);
         } else if (is_array($x)) {
@@ -371,7 +375,7 @@ class UserStatus extends MessageSet {
             $this->error_at($key, "<0>Format error [$key]");
         }
         $tagger = new Tagger($this->viewer);
-        $t1 = array();
+        $t1 = [];
         foreach ($t0 as $t) {
             if ($t !== "") {
                 if (($tx = $tagger->check($t, Tagger::NOPRIVATE))) {

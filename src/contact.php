@@ -5314,7 +5314,7 @@ class Contact {
     }
 
     /** @param ReviewInfo $rrow
-     * @return Dbl_Result */
+     * @return bool */
     function unsubmit_review_row($rrow, $extra = null) {
         $needsSubmit = 1;
         if ($rrow->reviewType == REVIEW_SECONDARY) {
@@ -5335,6 +5335,6 @@ class Contact {
         if (!$extra || !($extra["no_autosearch"] ?? false)) {
             $this->conf->update_automatic_tags($rrow->paperId, "review");
         }
-        return $result;
+        return $result->affected_rows > 0;
     }
 }
