@@ -2718,6 +2718,13 @@ class Conf {
         }
     }
 
+    /** @param string $email
+     * @return ?Contact */
+    function fresh_cdb_user_by_email($email) {
+        $this->invalidate_cdb_user_by_email($email);
+        return $this->cdb_user_by_email($email);
+    }
+
 
     // session data
 

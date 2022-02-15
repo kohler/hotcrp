@@ -620,4 +620,13 @@ function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = Me
     }
 }
 
+/** @param object $testo */
+function run_tests($testo) {
+    $ro = new ReflectionObject($testo);
+    foreach ($ro->getMethods() as $m) {
+        if (str_starts_with($m->name, "test_"))
+            $testo->{$m->name}();
+    }
+}
+
 MailChecker::clear();

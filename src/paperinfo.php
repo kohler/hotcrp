@@ -2218,6 +2218,16 @@ class PaperInfo {
         return null;
     }
 
+    /** @param int|Contact $u
+     * @return ReviewInfo */
+    function checked_review_by_user($u) {
+        if (($rrow = $this->review_by_user($u))) {
+            return $rrow;
+        } else {
+            throw new Exception("PaperInfo::checked_review_by_user failure");
+        }
+    }
+
     /** @param int|Contact $contact
      * @return list<ReviewInfo> */
     function reviews_by_user($contact, $rev_tokens = null) {
