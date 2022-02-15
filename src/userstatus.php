@@ -118,8 +118,13 @@ class UserStatus extends MessageSet {
         return $this->is_auth_user && !Contact::$base_auth_user;
     }
     /** @return ?Contact */
+    function cdb_user() {
+        return $this->user->cdb_user();
+    }
+    /** @return ?Contact
+     * @deprecated */
     function contactdb_user() {
-        return $this->user->contactdb_user();
+        return $this->cdb_user();
     }
     /** @return ?Contact */
     function actor() {
@@ -735,7 +740,7 @@ class UserStatus extends MessageSet {
             return;
         }
         $user = $us->user;
-        $cdbu = $us->contactdb_user();
+        $cdbu = $us->cdb_user();
         if ($user->firstName === ""
             && $user->lastName === ""
             && ($user->contactId > 0 || !$cdbu || ($cdbu->firstName === "" && $cdbu->lastName === ""))) {
@@ -904,7 +909,7 @@ class UserStatus extends MessageSet {
         if ($cdb_user && $cdb_user->prop_changed()) {
             $cdb_user->save_prop();
             $user->invalidate_cdb_user();
-            $user->contactdb_user();
+            $user->cdb_user();
         }
         if ($roles !== $old_roles
             || ($user->disablement !== 0) !== $old_disabled) {
@@ -955,7 +960,7 @@ class UserStatus extends MessageSet {
 
         // Profile properties
         $us->set_profile_prop($user, $us->only_update_empty($user));
-        if (($cdbu = $user->contactdb_user())) {
+        if (($cdbu = $user->cdb_user())) {
             $us->set_profile_prop($cdbu, $us->only_update_empty($cdbu));
         }
 
@@ -1342,7 +1347,7 @@ class UserStatus extends MessageSet {
 
     function global_profile_difference($key) {
         if ($this->is_auth_self()
-            && ($cdbu = $this->contactdb_user())) {
+            && ($cdbu = $this->cdb_user())) {
             $cdbprop = $cdbu->prop($key) ?? "";
             if (($this->user->prop($key) ?? "") !== $cdbprop) {
                 if ($cdbprop !== "") {

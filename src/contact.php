@@ -250,7 +250,7 @@ class Contact {
     static function make_cdb_email(Conf $conf, $email) {
         $u = new Contact($conf);
         $u->email = $email ?? "";
-        $u->cdb_confid = $conf->opt("contactdb_confid") ?? -1;
+        $u->cdb_confid = $conf->cdb_confid();
         $u->set_roles_properties();
         $u->contactXid = self::$next_xid--;
         return $u;
@@ -686,9 +686,9 @@ class Contact {
         // Maybe set up the shared contacts database
         if ($this->conf->opt("contactdb_dsn")
             && $this->has_account_here()
-            && $this->session("contactdb_roles", 0) != $this->contactdb_roles()) {
+            && $this->session("contactdb_roles", 0) != $this->cdb_roles()) {
             if ($this->contactdb_update())
-                $this->save_session("contactdb_roles", $this->contactdb_roles());
+                $this->save_session("contactdb_roles", $this->cdb_roles());
         }
 
         // Check forceShow
@@ -759,7 +759,7 @@ class Contact {
     }
 
     /** @return ?Contact */
-    function contactdb_user() {
+    function cdb_user() {
         if ($this->contactDbId && $this->contactId <= 0) {
             return $this;
         } else {
@@ -772,6 +772,12 @@ class Contact {
             }
             return $u;
         }
+    }
+
+    /** @return ?Contact
+     * @deprecated */
+    function contactdb_user() {
+        return $this->cdb_user();
     }
 
     /** @return ?Contact */
@@ -799,9 +805,8 @@ class Contact {
 
     /** @param ?Contact $cdbu */
     private function _update_cdb_roles($cdbu) {
-        if ($cdbu
-            && $cdbu->cdb_confid > 0
-            && ($roles = $this->contactdb_roles()) !== $cdbu->roles) {
+        assert(!$cdbu || $cdbu->cdb_confid > 0);
+        if ($cdbu && ($roles = $this->cdb_roles()) !== $cdbu->roles) {
             if ($roles !== 0) {
                 Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=?, activity_at=?", $cdbu->contactDbId, $cdbu->cdb_confid, $roles, Conf::$now, $roles, Conf::$now);
             } else {
@@ -893,7 +898,7 @@ class Contact {
 
     /** @return bool */
     function contactdb_disabled() {
-        $cdbu = $this->contactdb_user();
+        $cdbu = $this->cdb_user();
         return $cdbu && $cdbu->disablement;
     }
 
@@ -1474,7 +1479,7 @@ class Contact {
         $this->save_authored_papers($aupapers);
 
         if (!$this->password
-            && ($cdbu = $this->contactdb_user())
+            && ($cdbu = $this->cdb_user())
             && $cdbu->password) {
             $this->password = $cdbu->password;
         }
@@ -1552,7 +1557,7 @@ class Contact {
         $value = $this->prop1($prop, $shape);
         if ($value === null || ($value === "" && ($shape & self::PROP_NULL) !== 0)) {
             if (($shape & self::PROP_CDB) !== 0
-                && ($cdbu = $this->contactdb_user())
+                && ($cdbu = $this->cdb_user())
                 && $cdbu !== $this
                 && (($shape & self::PROP_NAME) === 0
                     || ($this->firstName === "" && $this->lastName === ""))) {
@@ -1773,7 +1778,7 @@ class Contact {
             $this->role_mask = self::ROLE_DBMASK;
             $this->set_roles_properties();
             $this->conf->invalidate_caches(["pc" => true]);
-            $this->_update_cdb_roles($this->contactdb_user());
+            $this->_update_cdb_roles($this->cdb_user());
             return true;
         } else {
             return false;
@@ -1805,7 +1810,7 @@ class Contact {
 
     /** @param ?Contact $actor
      * @return ?Contact */
-    static function create(Conf $conf, $actor, $reg, $flags = 0, $roles = 0) {
+    static function create(Conf $conf, $actor, $reg, $flags = 0) {
         // clean registration
         if (is_array($reg)) {
             $reg = (object) $reg;
@@ -1875,8 +1880,7 @@ class Contact {
         // update roles
         if ($aupapers) {
             $u->save_authored_papers($aupapers);
-            // can't use `$cdbu` itself b/c `cdb_confid` might be missing
-            $cdbu && $u->_update_cdb_roles($u->contactdb_user());
+            $u->_update_cdb_roles($cdbu);
         }
 
         // notify on creation
@@ -1917,7 +1921,7 @@ class Contact {
 
     /** @return bool */
     function password_unset() {
-        $cdbu = $this->contactdb_user();
+        $cdbu = $this->cdb_user();
         return (!$cdbu
                 || (string) $cdbu->password === ""
                 || str_starts_with($cdbu->password, " unset"))
@@ -1928,7 +1932,7 @@ class Contact {
 
     /** @return bool */
     function can_reset_password() {
-        $cdbu = $this->contactdb_user();
+        $cdbu = $this->cdb_user();
         return !$this->conf->external_login()
             && !str_starts_with((string) $this->password, " nologin")
             && (!$cdbu || !str_starts_with((string) $cdbu->password, " nologin"));
@@ -2006,7 +2010,7 @@ class Contact {
      * @return array{ok:bool} */
     function check_password_info($input, $options = []) {
         assert(!$this->conf->external_login());
-        $cdbu = $this->contactdb_user();
+        $cdbu = $this->cdb_user();
 
         // check passwords
         $local_ok = $this->contactId > 0
@@ -2083,7 +2087,7 @@ class Contact {
         // create cdb user
         if (!$cdbu && $this->conf->contactdb()) {
             $this->contactdb_update();
-            $cdbu = $this->contactdb_user();
+            $cdbu = $this->cdb_user();
         }
 
         // update cdb password
@@ -2149,7 +2153,7 @@ class Contact {
             $use_time = 0;
         }
 
-        $cdbu = $this->contactdb_user();
+        $cdbu = $this->cdb_user();
         $saveu = $cdbu ?? ($this->contactId ? $this : null);
         if ($saveu) {
             $saveu->set_prop("password", $hash);
@@ -2186,7 +2190,7 @@ class Contact {
     function mark_login() {
         // at least one login every 30 days is marked as activity
         if ((int) $this->activity_at <= Conf::$now - 2592000
-            || (($cdbu = $this->contactdb_user())
+            || (($cdbu = $this->cdb_user())
                 && ((int) $cdbu->activity_at <= Conf::$now - 2592000))) {
             $this->mark_activity();
         }
@@ -2199,7 +2203,7 @@ class Contact {
             if ($this->contactId) {
                 $this->conf->ql("update ContactInfo set lastLogin=".Conf::$now." where contactId=$this->contactId");
             }
-            if (($cdbu = $this->contactdb_user())
+            if (($cdbu = $this->cdb_user())
                 && (int) $cdbu->activity_at <= Conf::$now - 604800) {
                 $this->_update_cdb_roles($cdbu);
             }
@@ -2398,7 +2402,7 @@ class Contact {
     }
 
     /** @return int */
-    function contactdb_roles() {
+    function cdb_roles() {
         if ($this->is_disabled()) {
             return 0;
         } else {

@@ -494,7 +494,7 @@ class Profile_Page {
 
     private function prepare_and_crosscheck() {
         // import properties from cdb
-        if (($cdbu = $this->user->contactdb_user())) {
+        if (($cdbu = $this->user->cdb_user())) {
             $this->user->import_prop($cdbu);
             if ($this->user->prop_changed()) {
                 $this->user->save_prop();
@@ -697,7 +697,7 @@ class Profile_Page {
             $this->ustatus->print_group($this->topic);
             if (false
                 && $this->ustatus->is_auth_self()
-                && $this->ustatus->contactdb_user()) {
+                && $this->ustatus->cdb_user()) {
                 echo '<div class="form-g"><div class="checki"><label><span class="checkc">',
                     Ht::checkbox("saveglobal", 1, $use_req ? !!$this->qreq->saveglobal : true, ["class" => "ignore-diff"]),
                     '</span>Update global profile</label></div></div>';

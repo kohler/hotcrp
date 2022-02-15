@@ -62,7 +62,7 @@ if ($users) {
     $cdbids = [];
     $qv = [];
     while (($u = Contact::fetch($result, $Conf))) {
-        $cdb_roles = $u->contactdb_roles();
+        $cdb_roles = $u->cdb_roles();
         if ($cdb_roles == 0
             || (str_starts_with($u->email, "anonymous")
                 && preg_match('/\Aanonymous\d*\z/', $u->email))) {

@@ -2604,6 +2604,15 @@ class Conf {
         return self::$_cdb === false ? self::main_contactdb() : self::$_cdb;
     }
 
+    /** @return int */
+    function cdb_confid() {
+        $confid = $this->opt["contactdb_confid"] ?? null;
+        if ($confid === null && ($cdb = $this->contactdb())) {
+            $confid = $this->opt["contactdb_confid"] = Dbl::fetch_ivalue($cdb, "select confid from Conferences where `dbname`=?", $this->dbname) ?? -1;
+        }
+        return $confid ?? -1;
+    }
+
     private function _refresh_cdb_user_cache() {
         $cdb = $this->contactdb();
         $reqids = $reqemails = [];

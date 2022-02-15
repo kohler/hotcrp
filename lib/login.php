@@ -122,7 +122,7 @@ class LoginHelper {
 
         // if user disabled, then fail
         if (($user && $user->is_disabled())
-            || (($cdbuser = $user->contactdb_user()) && $cdbuser->is_disabled())) {
+            || (($cdbuser = $user->cdb_user()) && $cdbuser->is_disabled())) {
             return ["ok" => false, "disabled" => true, "email" => true];
         } else {
             return ["ok" => true, "user" => $user];
@@ -134,7 +134,7 @@ class LoginHelper {
         $luser = $info["user"];
 
         // mark activity
-        $xuser = $luser->contactId ? $luser : $luser->contactdb_user();
+        $xuser = $luser->contactId ? $luser : $luser->cdb_user();
         $xuser->mark_login();
 
         // store authentication
@@ -235,7 +235,7 @@ class LoginHelper {
             return $user;
         }
 
-        $cdbu = $user->contactdb_user();
+        $cdbu = $user->cdb_user();
         if ($cdbu && !$cdbu->password_unset()) {
             return ["ok" => false, "email" => true, "userexists" => true, "contactdb" => true];
         } else if (!$user->password_unset()) {
@@ -270,7 +270,7 @@ class LoginHelper {
         }
 
         // ignore reset request from disabled user
-        $cdbu = $user->contactdb_user();
+        $cdbu = $user->cdb_user();
         if (!$user->has_account_here() && !$cdbu && !$create) {
             return ["ok" => false, "email" => true, "unset" => true];
         } else if (!$user->can_reset_password()) {
