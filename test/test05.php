@@ -5,7 +5,7 @@
 declare(strict_types=1);
 require_once(preg_replace('/\/test\/[^\/]+/', '/test/setup.php', __FILE__));
 
-class Test05 {
+class PaperStatus_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
@@ -1074,6 +1074,6 @@ You can’t remove yourself from the submission’s contacts
     }
 }
 
-run_tests(new Test05($Conf));
+run_tests(new PaperStatus_Tester($Conf));
 
 xassert_exit();

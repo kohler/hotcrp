@@ -36,7 +36,7 @@ function save_password($email, $encoded_password, $iscdb = false) {
     }
 }
 
-class Test04 {
+class Cdb_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
@@ -513,6 +513,6 @@ class Test04 {
     }
 }
 
-run_tests(new Test04($Conf));
+run_tests(new Cdb_Tester($Conf));
 
 xassert_exit();
