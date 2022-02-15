@@ -797,14 +797,17 @@ class Contact {
         }
     }
 
-    /** @param Contact $cdbu */
-    private function _contactdb_save_roles($cdbu) {
-        if ($cdbu->cdb_confid > 0) {
-            if (($roles = $this->contactdb_roles())) {
+    /** @param ?Contact $cdbu */
+    private function _update_cdb_roles($cdbu) {
+        if ($cdbu
+            && $cdbu->cdb_confid > 0
+            && ($roles = $this->contactdb_roles()) !== $cdbu->roles) {
+            if ($roles !== 0) {
                 Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=?, activity_at=?", $cdbu->contactDbId, $cdbu->cdb_confid, $roles, Conf::$now, $roles, Conf::$now);
             } else {
-                Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=? and roles=0", $cdbu->contactDbId, $cdbu->cdb_confid);
+                Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=?", $cdbu->contactDbId, $cdbu->cdb_confid);
             }
+            $cdbu->roles = $roles;
         }
     }
 
@@ -816,6 +819,7 @@ class Contact {
             return false;
         }
 
+        $this->conf->invalidate_cdb_user_by_email($this->email);
         $cdbur = $this->conf->cdb_user_by_email($this->email);
         $cdbux = $cdbur ?? Contact::make_cdb_email($this->conf, $this->email);
         foreach (self::$props as $prop => $shape) {
@@ -837,11 +841,12 @@ class Contact {
             $cdbux->save_prop();
             $this->invalidate_cdb_user();
         }
-        $cdbur = $cdbur ?? $this->conf->cdb_user_by_email($this->email);
-        if ($cdbur && $cdbur->roles !== $this->contactdb_roles()) {
-            $this->_contactdb_save_roles($cdbur);
+        if (($cdbur = $cdbur ?? $this->conf->cdb_user_by_email($this->email))) {
+            $this->_update_cdb_roles($cdbur);
+            return $cdbur->contactDbId;
+        } else {
+            return false;
         }
-        return $cdbur ? $cdbur->contactDbId : false;
     }
 
 
@@ -1460,7 +1465,6 @@ class Contact {
 
     const SAVE_ANY_EMAIL = 1;
     const SAVE_IMPORT = 2;
-    const SAVE_ROLES = 4;
 
     function change_email($email) {
         assert($this->has_account_here());
@@ -1769,8 +1773,11 @@ class Contact {
             $this->role_mask = self::ROLE_DBMASK;
             $this->set_roles_properties();
             $this->conf->invalidate_caches(["pc" => true]);
+            $this->_update_cdb_roles($this->contactdb_user());
+            return true;
+        } else {
+            return false;
         }
-        return $old_roles !== $new_roles;
     }
 
     /** @param Contact|Author|object $reg */
@@ -1866,15 +1873,10 @@ class Contact {
         }
 
         // update roles
-        if ($flags & self::SAVE_ROLES) {
-            $u->save_roles($roles, $actor);
-        }
         if ($aupapers) {
             $u->save_authored_papers($aupapers);
-            if ($cdbu) {
-                // can't use `$cdbu` itself b/c `cdb_confid` might be missing
-                $u->_contactdb_save_roles($u->contactdb_user());
-            }
+            // can't use `$cdbu` itself b/c `cdb_confid` might be missing
+            $cdbu && $u->_update_cdb_roles($u->contactdb_user());
         }
 
         // notify on creation
@@ -2199,7 +2201,7 @@ class Contact {
             }
             if (($cdbu = $this->contactdb_user())
                 && (int) $cdbu->activity_at <= Conf::$now - 604800) {
-                $this->_contactdb_save_roles($cdbu);
+                $this->_update_cdb_roles($cdbu);
             }
         }
     }

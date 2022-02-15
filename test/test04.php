@@ -398,4 +398,14 @@ xassert_neqq($rrow->contactId, $user_cengiz->contactId);
 xassert_eqq($rrow->contactId, $user_sophia->contactId);
 Contact::$session_users = null;
 
+// saving roles works and updates contactdb
+$us = new UserStatus($Conf->root_user());
+$acct = $us->save((object) ["email" => "jmrv@startup.com", "lastName" => "Rutherford", "firstName" => "John", "roles" => "pc"]);
+xassert(!!$acct);
+$user_jmrv = $Conf->user_by_email("jmrv@startup.com");
+xassert(($user_jmrv->roles & Contact::ROLE_PCLIKE) === Contact::ROLE_PC);
+$Conf->invalidate_cdb_user_by_email("jmrv@startup.com");
+$cuser_jmrv = $Conf->cdb_user_by_email("jmrv@startup.com");
+xassert_eqq($cuser_jmrv->roles, Contact::ROLE_PC);
+
 xassert_exit();
