@@ -77,7 +77,7 @@ class Users_Page {
         $users = [];
         while (($user = Contact::fetch($result, $this->conf))) {
             $users[] = $user;
-            $this->conf->request_cached_cdb_user_by_email($user->email);
+            $this->conf->preload_cdb_user_by_email($user->email);
         }
         Dbl::free($result);
         usort($users, $this->conf->user_comparator());
@@ -109,7 +109,7 @@ class Users_Page {
         $users = [];
         while (($user = Contact::fetch($result, $this->conf))) {
             $users[] = $user;
-            $this->conf->request_cached_cdb_user_by_email($user->email);
+            $this->conf->preload_cdb_user_by_email($user->email);
         }
         Dbl::free($result);
         usort($users, $this->conf->user_comparator());

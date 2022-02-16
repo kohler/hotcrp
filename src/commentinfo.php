@@ -957,7 +957,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         foreach (MentionParser::parse($text, ...Completion_API::mention_lists($user, $this->prow, $this->commentType & self::CT_VISIBILITY)) as $mpx) {
             $named = $mpx[0] instanceof Contact || $mpx[0]->author_index !== -1;
             $desired_mentions[] = [$mpx[0]->contactId, $mpx[1], $mpx[2], $named];
-            $this->conf->request_cached_user_by_id($mpx[0]->contactId);
+            $this->conf->preload_user_by_id($mpx[0]->contactId);
         }
 
         $old_data = $this->commentData;

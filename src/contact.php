@@ -1066,7 +1066,7 @@ class Contact {
     function ksort_cid_array(&$array) {
         $pcm = $this->conf->pc_members();
         foreach ($array as $cid => $x) {
-            $this->conf->request_cached_user_by_id($cid);
+            $this->conf->preload_user_by_id($cid);
         }
         uksort($array, function ($a, $b) {
             $au = $this->conf->cached_user_by_id($a);

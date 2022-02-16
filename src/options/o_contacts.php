@@ -30,7 +30,7 @@ class Contacts_PaperOption extends PaperOption {
         }
         foreach ($ov->value_list() as $cid) {
             if (!isset($ca[$cid]))
-                $ps->conf->request_cached_user_by_id($cid);
+                $ps->conf->preload_user_by_id($cid);
         }
         $j = [];
         foreach ($ov->value_list() as $cid) {

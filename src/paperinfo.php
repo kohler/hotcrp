@@ -2425,7 +2425,7 @@ class PaperInfo {
     private function ensure_reviewer_names_set($row_set) {
         foreach ($row_set as $prow) {
             foreach ($prow->all_reviews() as $rrow) {
-                $this->conf->request_cached_user_by_id($rrow->contactId);
+                $this->conf->preload_user_by_id($rrow->contactId);
             }
         }
         foreach ($row_set as $prow) {
