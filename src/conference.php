@@ -2643,13 +2643,13 @@ class Conf {
                 $qv = [$this->dbname];
             }
             if (empty($reqemails)) {
-                $q .= " where contactId?a";
+                $q .= " where ContactInfo.contactDbId?a";
                 $qv[] = $reqids;
             } else if (empty($reqids)) {
                 $q .= " where email?a";
                 $qv[] = $reqemails;
             } else {
-                $q .= " where contactId?a or email?a";
+                $q .= " where ContactInfo.contactDbId?a or email?a";
                 $qv[] = $reqids;
                 $qv[] = $reqemails;
             }
