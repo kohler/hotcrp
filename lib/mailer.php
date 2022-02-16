@@ -25,6 +25,8 @@ class MailPreparation {
     /** @var bool */
     public $unique_preparation = false;
     public $reset_capability;
+    /** @var ?string */
+    public $landmark;
 
     /** @param Conf $conf
      * @param Contact|Author $recipient */

@@ -43,24 +43,25 @@ class SiteLoader {
     ];
 
     static $suffix_map = [
-        "_api.php" => ["api_", "api"],
-        "_assignable.php" => ["a_", "assigners"],
-        "_assigner.php" => ["a_", "assigners"],
-        "_assignmentparser.php" => ["a_", "assigners"],
-        "_capability.php" => ["cap_", "capabilities"],
-        "_fexpr.php" =>  ["f_", "formulas"],
-        "_helptopic.php" => ["h_", "help"],
-        "_listaction.php" => ["la_", "listactions"],
-        "_papercolumn.php" => ["pc_", "papercolumns"],
-        "_papercolumnfactory.php" => ["pc_", "papercolumns"],
-        "_paperoption.php" => ["o_", "options"],
-        "_page.php" => ["p_", "pages"],
-        "_partial.php" => ["p_", "partials"],
-        "_searchterm.php" => ["st_", "search"],
-        "_settingrenderer.php" => ["s_", "settings"],
-        "_settingparser.php" => ["s_", "settings"],
-        "_sitype.php" => ["s_", "settings"],
-        "_userinfo.php" => ["u_", "userinfo"]
+        "_api.php" => ["api_", "src/api"],
+        "_assignable.php" => ["a_", "src/assigners"],
+        "_assigner.php" => ["a_", "src/assigners"],
+        "_assignmentparser.php" => ["a_", "src/assigners"],
+        "_capability.php" => ["cap_", "src/capabilities"],
+        "_fexpr.php" =>  ["f_", "src/formulas"],
+        "_helptopic.php" => ["h_", "src/help"],
+        "_listaction.php" => ["la_", "src/listactions"],
+        "_papercolumn.php" => ["pc_", "src/papercolumns"],
+        "_papercolumnfactory.php" => ["pc_", "src/papercolumns"],
+        "_paperoption.php" => ["o_", "src/options"],
+        "_page.php" => ["p_", "src/pages"],
+        "_partial.php" => ["p_", "src/pages"],
+        "_searchterm.php" => ["st_", "src/search"],
+        "_settingrenderer.php" => ["s_", "src/settings"],
+        "_settingparser.php" => ["s_", "src/settings"],
+        "_sitype.php" => ["s_", "src/settings"],
+        "_tester.php" => ["t_", "test"],
+        "_userinfo.php" => ["u_", "src/userinfo"]
     ];
 
     /** @var string */
@@ -156,7 +157,7 @@ class SiteLoader {
                 && isset($expansions["autoload"])
                 && ($underscore = strrpos($f, "_"))
                 && ($f2 = SiteLoader::$suffix_map[substr($f, $underscore)] ?? null)) {
-                $xincludepath = array_merge($f2[1] ? ["{$root}/src/{$f2[1]}/"] : [], $includepath);
+                $xincludepath = array_merge($f2[1] ? ["{$root}/{$f2[1]}/"] : [], $includepath);
                 $matches = self::expand_includes_once($f2[0] . substr($f, 0, $underscore) . ".php", $xincludepath, $globby);
             }
             $results = array_merge($results, $matches);
