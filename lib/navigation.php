@@ -17,7 +17,7 @@ class NavigationState {
     /** @var string */
     public $site_path_relative; // "/SITEPATH/", "../"+, or ""
     /** @var string */
-    public $base_path;          // "/BASEPATH/"; always ends in /; $site_path prefix
+    public $base_path;          // "/BASEPATH/"; always ends in /; prefix of $site_path
     /** @var string */
     public $base_path_relative; // "/BASEPATH/", "../"+, or ""
     /** @var string */
@@ -106,7 +106,7 @@ class NavigationState {
                 return $m[0];
             }
         }, $uri_suffix);
-        preg_match(',\A(/[^/\?\#]*|)([^\?\#]*)(.*)\z,', $uri_suffix, $m);
+        preg_match('/\A(\/[^\/\?\#]*|)([^\?\#]*)(.*)\z/', $uri_suffix, $m);
         if ($m[1] !== "" && $m[1] !== "/") {
             $this->page = substr($m[1], 1);
         } else {

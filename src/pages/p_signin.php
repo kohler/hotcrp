@@ -263,7 +263,9 @@ class Signin_Page {
 
 
     // newaccount
-    static private function mail_user(Conf $conf, $info) {
+    /** @param array $info
+     * @return ?HotCRPMailPreparation */
+    static function mail_user(Conf $conf, $info) {
         $user = $info["user"];
         $prep = $user->send_mail($info["mailtemplate"], $info["mailrest"] ?? null);
         if (!$prep)  {

@@ -17,13 +17,12 @@ class Dbl_Result {
     public $query_string;
 
     /** @return Dbl_Result */
-    static function make(mysqli $dblink, $qstr = null) {
+    static function make(mysqli $dblink) {
         $r = new Dbl_Result;
         $r->affected_rows = $dblink->affected_rows;
         $r->insert_id = $dblink->insert_id;
         $r->warning_count = $dblink->warning_count;
         $r->errno = $dblink->errno;
-        $r->query_string = $qstr;
         return $r;
     }
     /** @return Dbl_Result */
@@ -109,7 +108,7 @@ class Dbl {
     /** @var int */
     static public $nerrors = 0;
     static public $default_dblink;
-    /** @var callable */
+    /** @var callable(\mysqli,string) */
     static private $error_handler = "Dbl::default_error_handler";
     /** @var false|array<string,array{float,int,string}> */
     static private $query_log = false;
@@ -211,20 +210,26 @@ class Dbl {
         }
     }
 
+    /** @param \mysqli $dblink */
     static function set_default_dblink($dblink) {
         self::$default_dblink = $dblink;
     }
 
+    /** @param ?callable(\mysqli,string) $callable */
     static function set_error_handler($callable) {
-        self::$error_handler = $callable ? : "Dbl::default_error_handler";
+        self::$error_handler = $callable ?? "Dbl::default_error_handler";
     }
 
+    /** @return string */
     static function landmark() {
         return caller_landmark(1, self::$landmark_sanitizer);
     }
 
+    /** @param \mysqli $dblink
+     * @param string $query */
     static function default_error_handler($dblink, $query) {
-        trigger_error(self::landmark() . ": database error: $dblink->error in $query");
+        error_log(self::landmark() . ": database error: {$dblink->error} in {$query}");
+        trigger_error(self::landmark() . ": database error: {$dblink->error} in {$query}");
     }
 
     static private function query_args($args, $flags, $log_location) {
@@ -479,7 +484,14 @@ class Dbl {
 
     /** @return Dbl_Result */
     static public function do_result($dblink, $flags, $qstr, $result) {
-        if ($result === false && $dblink->errno) {
+        if (is_bool($result)) {
+            $result = Dbl_Result::make($dblink);
+        } else if ($result === null) {
+            $result = Dbl_Result::make_empty();
+            $result->errno = 1002;
+        }
+        if ($dblink->errno) {
+            $result->query_string = $qstr;
             if (!($flags & self::F_ALLOWERROR)) {
                 ++self::$nerrors;
             }
@@ -488,12 +500,6 @@ class Dbl {
             } else if ($flags & self::F_LOG) {
                 error_log(self::landmark() . ": database error: " . $dblink->error . " in $qstr");
             }
-            $result = Dbl_Result::make($dblink, $qstr);
-        } else if ($result === false || $result === true) {
-            $result = Dbl_Result::make($dblink);
-        } else if ($result === null) {
-            $result = Dbl_Result::make_empty();
-            $result->errno = 1002;
         }
         if (self::$check_warnings
             && !($flags & self::F_ALLOWERROR)
