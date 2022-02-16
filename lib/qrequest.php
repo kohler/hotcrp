@@ -40,6 +40,25 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         $qreq2 = new Qrequest($qreq->_method);
         return $qreq2->set_page($qreq->_page, $qreq->_path);
     }
+    /** @param string $urlpart
+     * @param ?string $method
+     * @return Qrequest */
+    static function make_url($urlpart, $method = "GET") {
+        $qreq = new Qrequest($method);
+        if (preg_match('/\A\/?([^\/?#]+)(\/.*?|)(?:\?|(?=#)|\z)([^#]*)(?:#.*|)\z/', $urlpart, $m)) {
+            $qreq->set_page($m[1], $m[2]);
+            if ($m[3] !== "") {
+                preg_match_all('/([^&;=]*)=([^&;]*)/', $m[3], $n, PREG_SET_ORDER);
+                foreach ($n as $x) {
+                    $qreq->set_req(urldecode($x[1]), urldecode($x[2]));
+                }
+            }
+        }
+        if ($method === "POST") {
+            $qreq->approve_token();
+        }
+        return $qreq;
+    }
     /** @param string $page
      * @param ?string $path
      * @return $this */
