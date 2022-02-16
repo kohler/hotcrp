@@ -3,7 +3,9 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class TagReport_PaperColumn extends PaperColumn {
+    /** @var string */
     private $tag;
+    /** @var int */
     private $viewtype;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);

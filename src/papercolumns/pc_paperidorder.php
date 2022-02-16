@@ -5,6 +5,7 @@
 class PaperIDOrder_PaperColumn extends PaperColumn {
     /** @var PaperID_SearchTerm */
     private $order_term;
+    /** @var int */
     static private $type_uid = 1;
     function __construct(Conf $conf, PaperID_SearchTerm $order_term) {
         parent::__construct($conf, (object) ["name" => "__numericorder" . (++self::$type_uid), "sort" => true]);

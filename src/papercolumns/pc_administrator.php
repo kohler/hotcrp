@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Administrator_PaperColumn extends PaperColumn {
+    /** @var int */
     private $ianno;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);

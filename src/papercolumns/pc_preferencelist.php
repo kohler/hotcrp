@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class PreferenceList_PaperColumn extends PaperColumn {
+    /** @var bool */
     private $topics;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);

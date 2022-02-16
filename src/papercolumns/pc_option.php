@@ -3,7 +3,9 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Option_PaperColumn extends PaperColumn {
+    /** @var PaperOption */
     private $opt;
+    /** @var FieldRender */
     private $fr;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);

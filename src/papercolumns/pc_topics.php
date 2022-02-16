@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Topics_PaperColumn extends PaperColumn {
+    /** @var ?Contact */
     private $interest_contact;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);

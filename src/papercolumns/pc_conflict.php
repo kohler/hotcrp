@@ -3,11 +3,17 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Conflict_PaperColumn extends PaperColumn {
+    /** @var ?Contact */
     private $contact;
+    /** @var bool */
     private $show_user;
+    /** @var bool */
     private $not_me;
+    /** @var bool */
     private $show_description;
+    /** @var bool */
     private $editable = false;
+    /** @var bool */
     private $basicheader = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);

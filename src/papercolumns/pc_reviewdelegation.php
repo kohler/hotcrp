@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class ReviewDelegation_PaperColumn extends PaperColumn {
+    /** @var Contact */
     private $requester;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
