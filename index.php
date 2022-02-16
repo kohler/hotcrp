@@ -40,8 +40,6 @@ function handle_request($user, $qreq, $nav) {
             Multiconference::fail(404, "Page not found.");
         } else if ($user->is_disabled() && !($pagej->allow_disabled ?? false)) {
             Multiconference::fail(403, "Your account is disabled.");
-        } else if (isset($pagej->print_include)) {
-            return $pagej->print_include;
         } else {
             $pc->set_root($pagej->group)->set_context_args([$user, $qreq, $pc]);
             pc_call_requests($user, $qreq, $pagej->group, $pc);
@@ -88,7 +86,5 @@ if ($nav->page === "api") {
 } else {
     require_once("src/init.php");
     initialize_request();
-    if (($s = handle_request(Contact::$main_user, Qrequest::$main_request, $nav))) {
-        include($s);
-    }
+    handle_request(Contact::$main_user, Qrequest::$main_request, $nav);
 }
