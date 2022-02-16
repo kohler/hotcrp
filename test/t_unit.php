@@ -40,6 +40,7 @@ class Unit_Tester {
     }
 
     function test_dbl_compare_and_swap() {
+        Dbl::qe("delete from Settings where name='cmpxchg'");
         Dbl::qe("insert into Settings set name='cmpxchg', value=1");
         xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 1);
         xassert_eqq(Dbl::compare_and_swap(Dbl::$default_dblink,
@@ -92,6 +93,8 @@ class Unit_Tester {
         xassert(!$doc->update_metadata(["too_long" => str_repeat("!", 32768)], true));
         xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
                     '{"foo":"bar"}');
+
+        $this->conf->qe("update PaperStorage set infoJson=null where paperStorageId=?", $doc->paperStorageId);
     }
 
     function test_document_sanitize_filename() {

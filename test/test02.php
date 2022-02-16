@@ -4,7 +4,6 @@
 
 declare(strict_types=1);
 require_once(__DIR__ . '/setup.php');
-TestRunner::reset_db();
 TestRunner::go(new Unit_Tester($Conf));
 TestRunner::go(new XtCheck_Tester($Conf));
 TestRunner::go(new Navigation_Tester);
