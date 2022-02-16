@@ -77,7 +77,10 @@ class LoginHelper {
                 $qreq[$k] = rawurldecode($qreq[$k]);
             }
         }
-        return $conf->user_by_email($qreq->email) ?? Contact::make_email($conf, $qreq->email);
+        return $conf->user_by_email($qreq->email)
+            ?? Contact::make_keyed($conf, $qreq->subset_as_array(
+                "firstName", "first", "lastName", "last", "name", "email", "affiliation"
+            ));
     }
 
     static function login_info(Conf $conf, Qrequest $qreq) {
@@ -113,11 +116,9 @@ class LoginHelper {
         }
 
         // auto-create account if external login
-        if (!$user->contactId) {
-            $user = Contact::create($conf, null, $qreq->as_array(), Contact::SAVE_ANY_EMAIL);
-            if (!$user) {
-                return ["ok" => false, "internal" => true, "email" => true];
-            }
+        if (!$user->contactId
+            && !$user->store(Contact::SAVE_ANY_EMAIL)) {
+            return ["ok" => false, "internal" => true, "email" => true];
         }
 
         // if user disabled, then fail
@@ -243,8 +244,7 @@ class LoginHelper {
         } else if (!validate_email($qreq->email)) {
             return ["ok" => false, "email" => true, "invalidemail" => true];
         } else {
-            if (!$user->has_account_here()
-                && !($user = Contact::create($conf, null, $qreq->as_array()))) {
+            if (!$user->has_account_here() && !$user->store()) {
                 return ["ok" => false, "email" => true, "internal" => true];
             }
             $info = self::forgot_password_info($conf, $qreq, true);

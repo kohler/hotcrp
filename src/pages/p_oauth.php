@@ -154,7 +154,7 @@ class OAuth_Page {
             if (isset($jid->name) && is_string($jid->name)) {
                 $reg["name"] = $jid->name;
             }
-            $user = Contact::create($this->conf, $this->viewer, $reg);
+            $user = Contact::make_keyed($this->conf, $reg)->store(0, $this->viewer);
             if (!$user) {
                 return MessageItem::error("<0>Error creating your account");
             }

@@ -812,7 +812,7 @@ class PaperStatus extends MessageSet {
         $j->disabled = !!$this->disable_users;
         $conflictType = self::new_conflict_value($this->_conflict_values[strtolower($j->email)] ?? null);
         $flags = $conflictType & CONFLICT_CONTACTAUTHOR ? 0 : Contact::SAVE_IMPORT;
-        $u = Contact::create($this->conf, $this->user, $j, $flags);
+        $u = Contact::make_keyed($this->conf, (array) $j)->store($flags, $this->user);
         if ($u) {
             $this->_created_contacts[] = $u;
         } else if (!($flags & Contact::SAVE_IMPORT)) {

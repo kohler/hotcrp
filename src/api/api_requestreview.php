@@ -121,7 +121,7 @@ class RequestReview_API {
         // if we get here, we will (try to) assign a review
 
         // create account
-        $reviewer = $reviewer ?? Contact::create($user->conf, $user, $xreviewer);
+        $reviewer = $reviewer ?? $xreviewer->store(0, $user);
         if (!$reviewer) {
             return new JsonResult(400, "<0>Review assignment error: Could not create account");
         } else if ($reviewer->is_disabled()) {

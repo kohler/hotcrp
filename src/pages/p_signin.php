@@ -494,8 +494,7 @@ class Signin_Page {
                 Ht::error_at("password", "The passwords you entered did not match.");
                 Ht::error_at("password2");
             } else {
-                $accthere = $conf->user_by_email($this->_reset_user->email)
-                    ? : Contact::create($conf, null, $this->_reset_user);
+                $accthere = $this->_reset_user->store();
                 $accthere->change_password($p1);
                 $accthere->log_activity("Password reset via " . substr($this->_reset_tokstr, 0, 8) . "...");
                 $conf->success_msg("<0>Password changed. Use the new password to sign in below.");

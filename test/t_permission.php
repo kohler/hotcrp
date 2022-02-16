@@ -730,7 +730,7 @@ class Permission_Tester {
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit == 1);
         xassert(!$user_mgbaker->can_view_review($paper2, $review2a));
-        $user_external = Contact::create($conf, null, ["email" => "external@_.com", "name" => "External Reviewer"]);
+        $user_external = Contact::make_keyed($conf, ["email" => "external@_.com", "name" => "External Reviewer"])->store();
         $user_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
         $review2d = fetch_review($paper2, $user_mgbaker);
         xassert(!$review2d->reviewSubmitted);
@@ -1443,7 +1443,7 @@ class Permission_Tester {
 
         // users
         xassert(!maybe_user("sclinx@leland.stanford.edu"));
-        $u = Contact::create($conf, null, ["email" => "sclinx@leland.stanford.edu", "name" => "Stephen Lon", "affiliation" => "Fart World"]);
+        $u = Contact::make_keyed($conf, ["email" => "sclinx@leland.stanford.edu", "name" => "Stephen Lon", "affiliation" => "Fart World"])->store();
         xassert(!!$u);
         xassert($u->contactId > 0);
         xassert_eqq($u->email, "sclinx@leland.stanford.edu");
@@ -1452,7 +1452,7 @@ class Permission_Tester {
         xassert_eqq($u->affiliation, "Fart World");
 
         xassert(!maybe_user("scliny@leland.stanford.edu"));
-        $u = Contact::create($conf, null, ["email" => "scliny@leland.stanford.edu", "affiliation" => "Fart World"]);
+        $u = Contact::make_keyed($conf, ["email" => "scliny@leland.stanford.edu", "affiliation" => "Fart World"])->store();
         xassert(!!$u);
         xassert($u->contactId > 0);
         xassert_eqq($u->email, "scliny@leland.stanford.edu");
@@ -1461,7 +1461,7 @@ class Permission_Tester {
         xassert_eqq($u->affiliation, "Fart World");
 
         xassert(!maybe_user("thalerd@eecs.umich.edu"));
-        $u = Contact::create($conf, null, ["email" => "thalerd@eecs.umich.edu"]);
+        $u = Contact::make_email($conf, "thalerd@eecs.umich.edu")->store();
         assert($u !== null);
         xassert(!!$u);
         xassert($u->contactId > 0);
@@ -1472,7 +1472,7 @@ class Permission_Tester {
         xassert($conf->checked_paper_by_id(27)->has_author($u));
 
         xassert(!maybe_user("cengiz@isi.edu"));
-        $u = Contact::create($conf, null, ["email" => "cengiz@isi.edu", "first" => "cengiz!", "last" => "ALAETTINOGLU", "affiliation" => "USC ISI"]);
+        $u = Contact::make_keyed($conf, ["email" => "cengiz@isi.edu", "first" => "cengiz!", "last" => "ALAETTINOGLU", "affiliation" => "USC ISI"])->store();
         xassert(!!$u);
         xassert($u->contactId > 0);
         xassert_eqq($u->email, "cengiz@isi.edu");
@@ -1482,7 +1482,7 @@ class Permission_Tester {
         xassert($conf->checked_paper_by_id(27)->has_author($u));
 
         xassert(!maybe_user("anonymous10"));
-        $u = Contact::create($conf, null, ["email" => "anonymous10"], Contact::SAVE_ANY_EMAIL);
+        $u = Contact::make_email($conf, "anonymous10")->store(Contact::SAVE_ANY_EMAIL);
         xassert($u->contactId > 0);
         xassert_eqq($conf->fetch_value("select password from ContactInfo where email='anonymous10'"), " nologin");
 

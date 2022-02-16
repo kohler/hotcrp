@@ -276,14 +276,13 @@ class BatchSavePapers {
                 } else {
                     $this->tf->req["override"] = true;
                     $this->tf->paperId = $pid;
-                    $user_req = [
+                    $user = Contact::make_keyed($this->conf, [
                         "firstName" => $this->tf->req["reviewerFirst"] ?? "",
                         "lastName" => $this->tf->req["reviewerLast"] ?? "",
                         "email" => $this->tf->req["reviewerEmail"],
                         "affiliation" => $this->tf->req["reviewerAffiliation"] ?? null,
                         "disabled" => $this->disable_users
-                    ];
-                    $user = Contact::create($this->conf, null, $user_req);
+                    ])->store();
                     $this->tf->check_and_save($this->user, $prow, null);
                 }
             }

@@ -326,7 +326,7 @@ class Cdb_Tester {
         }
 
         // registration name populates new records
-        $u = Contact::create($this->conf, null, ["email" => "betty1@_.com", "name" => "Betty Grable"]);
+        $u = Contact::make_keyed($this->conf, ["email" => "betty1@_.com", "name" => "Betty Grable"])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Grable");
         $u = $this->conf->fresh_cdb_user_by_email("betty1@_.com");
@@ -334,7 +334,7 @@ class Cdb_Tester {
         xassert_eqq($u->lastName, "Grable");
 
         // registration name replaces empty local name, populates new cdb record
-        $u = Contact::create($this->conf, null, ["email" => "betty2@_.com", "name" => "Betty Apiafi"]);
+        $u = Contact::make_keyed($this->conf, ["email" => "betty2@_.com", "name" => "Betty Apiafi"])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Apiafi");
         $u = $this->conf->fresh_cdb_user_by_email("betty2@_.com");
@@ -342,7 +342,7 @@ class Cdb_Tester {
         xassert_eqq($u->lastName, "Apiafi");
 
         // cdb name overrides registration name
-        $u = Contact::create($this->conf, null, ["email" => "betty3@_.com", "name" => "Betty Crocker"]);
+        $u = Contact::make_keyed($this->conf, ["email" => "betty3@_.com", "name" => "Betty Crocker"])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Shabazz");
         $u = $this->conf->fresh_cdb_user_by_email("betty3@_.com");
@@ -350,7 +350,7 @@ class Cdb_Tester {
         xassert_eqq($u->lastName, "Shabazz");
 
         // registration affiliation replaces empty affiliations
-        $u = Contact::create($this->conf, null, ["email" => "betty4@_.com", "name" => "Betty Crocker", "affiliation" => "France"]);
+        $u = Contact::make_keyed($this->conf, ["email" => "betty4@_.com", "name" => "Betty Crocker", "affiliation" => "France"])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Kelly");
         xassert_eqq($u->affiliation, "France");
@@ -406,7 +406,7 @@ class Cdb_Tester {
         xassert(!!$user_sophia);
 
         // Cengiz is in both dbs
-        $u = Contact::create($this->conf, null, ["email" => "Cengiz@isi.edu"]);
+        $u = Contact::make_email($this->conf, "Cengiz@isi.edu")->store();
         xassert($u->contactId > 0);
         xassert_eqq($u->firstName, "Cengiz");
         xassert_eqq($u->cdb_user()->firstName, "Cengiz");

@@ -455,9 +455,6 @@ class AssignmentState extends MessageSet {
         }
         return $this->reviewer_users;
     }
-    function register_user(Contact $c) {
-        return $this->cmap->register_user($c);
-    }
 
     /** @param null|int|string $landmark
      * @param string $msg
@@ -530,10 +527,6 @@ class AssignerContacts {
     private $by_lemail = [];
     /** @var bool */
     private $has_pc = false;
-    /** @var ?Contact */
-    private $none_user;
-    /** @var int */
-    static private $next_fake_id = -10;
     /** @var string
      * @readonly */
     static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, affiliation, collaborators, roles, contactTags, primaryContactId";
@@ -549,7 +542,11 @@ class AssignerContacts {
             && $user->conf === $conf) {
             $this->store($user);
         }
+        $this->conf->ensure_cached_user_collaborators();
+        $this->by_id[0] = Contact::make($conf);
     }
+
+    /** @return Contact */
     private function store(Contact $u) {
         if ($u->contactId != 0) {
             if (isset($this->by_id[$u->contactId])) {
@@ -572,11 +569,7 @@ class AssignerContacts {
     }
     /** @return Contact */
     function none_user() {
-        if (!$this->none_user) {
-            $this->none_user = Contact::make($this->conf);
-            assert($this->none_user->email === "" && $this->none_user->contactId === 0 && $this->none_user->roles === 0);
-        }
-        return $this->none_user;
+        return $this->by_id[0];
     }
     /** @param int $cid
      * @return Contact */
@@ -638,7 +631,7 @@ class AssignerContacts {
                 }
                 $c = Contact::make_keyed($this->conf, $cargs);
             }
-            $c->contactXid = $c->contactId = self::$next_fake_id--;
+            $c->contactId = $c->contactXid;
         }
         return $c ? $this->store($c) : null;
     }
@@ -656,36 +649,6 @@ class AssignerContacts {
         }
         Dbl::free($result);
         return $rset;
-    }
-    /** @return Contact */
-    function register_user(Contact $c) {
-        if ($c->contactId >= 0) {
-            return $c;
-        }
-        assert($this->by_id[$c->contactId] === $c);
-        $cx = $this->by_lemail[strtolower($c->email)];
-        if ($cx === $c) {
-            $cargs = [];
-            if ($cx->email !== "") {
-                $cargs["email"] = $cx->email;
-            }
-            if ($cx->firstName !== "") {
-                $cargs["firstName"] = $cx->firstName;
-            }
-            if ($cx->lastName !== "") {
-                $cargs["lastName"] = $cx->lastName;
-            }
-            if ($cx->affiliation !== "") {
-                $cargs["affiliation"] = $cx->affiliation;
-            }
-            if ($cx->is_stored_disabled()) {
-                $cargs["disabled"] = true;
-            }
-            $cx = Contact::create($this->conf, $this->viewer, $cargs, $cx->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0);
-            // XXX assume that never fails:
-            $cx = $this->store($cx);
-        }
-        return $cx;
     }
 }
 
@@ -1910,8 +1873,8 @@ class AssignmentSet {
         $pids = [];
         foreach ($this->assigners as $assigner) {
             if (($u = $assigner->contact) && $u->contactId < 0) {
-                $assigner->contact = $this->astate->register_user($u);
-                $assigner->cid = $assigner->contact->contactId;
+                $u->store($u->is_anonymous_user() ? Contact::SAVE_ANY_EMAIL : 0, $this->user);
+                $assigner->cid = $u->contactId;
             }
             $assigner->add_locks($this, $locks);
             if ($assigner->pid > 0) {

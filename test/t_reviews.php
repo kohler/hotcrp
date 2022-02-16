@@ -757,7 +757,7 @@ class Reviews_Tester {
         xassert_eqq($rrow->fval("t04"), "Whitherto the stuff I want to add for the authors’ response.\n");
 
         // check some review visibility policies
-        $user_external = Contact::create($conf, null, ["email" => "external@_.com", "name" => "External Reviewer"]);
+        $user_external = Contact::make_keyed($conf, ["email" => "external@_.com", "name" => "External Reviewer"])->store();
         assert(!!$user_external);
         $user_mgbaker->assign_review(17, $user_external->contactId, REVIEW_EXTERNAL,
             ["round_number" => $conf->round_number("R2", false)]);

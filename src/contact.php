@@ -256,15 +256,19 @@ class Contact {
         return $u;
     }
 
-    /** @param array{contactId?:int,email?:string,firstName?:string,first?:string,lastName?:string,last?:string,affiliation?:string,roles?:int,disabled?:bool,disablement?:int} $args
+    /** @param array{contactId?:int,email?:string,firstName?:string,first?:string,lastName?:string,last?:string,name?:string,affiliation?:string,disabled?:bool,disablement?:int} $args
      * @return Contact */
     static function make_keyed(Conf $conf, $args) {
-        // email, firstName, lastName, affiliation, disabled, disablement, contactId, first, last
+        // email, firstName, lastName, affiliation, disabled, disablement, contactId, first, last:
+        // the importable properties
         $u = new Contact($conf);
         $u->contactId = $args["contactId"] ?? 0;
         $u->email = trim($args["email"] ?? "");
         $u->firstName = $args["firstName"] ?? $args["first"] ?? "";
         $u->lastName = $args["lastName"] ?? $args["last"] ?? "";
+        if (isset($args["name"]) && $u->firstName === "" && $u->lastName === "") {
+            list($u->firstName, $u->lastName, $crap) = Text::split_name($args["name"]);
+        }
         $u->unaccentedName = Text::name($u->firstName, $u->lastName, "", NAME_U);
         $u->affiliation = simplify_whitespace($args["affiliation"] ?? "");
         $u->disabled = !!($args["disabled"] ?? false);
@@ -359,6 +363,7 @@ class Contact {
     /** @param object $x
      * @param bool $all */
     function unslice_using($x, $all = false) {
+        assert($all || $this->cdb_confid <= 0);
         $shapemask = self::PROP_LOCAL | self::PROP_DATA | ($all ? 0 : self::PROP_SLICE);
         foreach (self::$props as $prop => $shape) {
             if (($shape & $shapemask) === self::PROP_LOCAL) {
@@ -372,6 +377,11 @@ class Contact {
                     $this->$prop = (bool) $value;
                 }
             }
+        }
+        if ($all) {
+            $this->contactId = $this->contactXid = $x->contactId;
+            $this->cdb_confid = $this->contactDbId = 0;
+            $this->unaccentedName = Text::name($this->firstName, $this->lastName, "", NAME_U);
         }
         $this->activity_at = $this->lastLogin;
         $this->data = $x->data;
@@ -610,7 +620,7 @@ class Contact {
         if (!$u
             && validate_email($email)
             && $this->conf->opt("debugShowSensitiveEmail")) {
-            $u = Contact::create($this->conf, null, ["email" => $email]);
+            $u = Contact::make_email($this->conf, $email)->store();
         }
         if (!$u) {
             return $this;
@@ -742,14 +752,8 @@ class Contact {
 
     function ensure_account_here() {
         assert($this->has_email());
-        if (!$this->has_account_here()
-            && ($u = Contact::create($this->conf, null, $this))) {
-            $this->contactDbId = 0;
-            $this->contactId = $u->contactId;
-            $this->contactXid = $u->contactXid;
-            $this->unslice_using($u, true);
-            $this->unaccentedName = $u->unaccentedName;
-            $this->set_roles_properties();
+        if (!$this->has_account_here()) {
+            $this->store();
         }
     }
 
@@ -804,13 +808,15 @@ class Contact {
     }
 
     /** @param ?Contact $cdbu */
-    private function _update_cdb_roles($cdbu) {
-        assert(!$cdbu || $cdbu->cdb_confid > 0);
-        if ($cdbu && ($roles = $this->cdb_roles()) !== $cdbu->roles) {
+    private function _update_cdb_roles($cdbu = null) {
+        if (($cdbu = $cdbu ?? $this->cdb_user())
+            && (($roles = $this->cdb_roles()) !== $cdbu->roles
+                || ($roles && (int) $cdbu->activity_at <= Conf::$now - 604800))) {
+            assert($cdbu->cdb_confid < 0 || $cdbu->cdb_confid == $this->conf->opt["contactdb_confid"]);
             if ($roles !== 0) {
-                Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=?, activity_at=?", $cdbu->contactDbId, $cdbu->cdb_confid, $roles, Conf::$now, $roles, Conf::$now);
+                Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=?, activity_at=?", $cdbu->contactDbId, $this->conf->cdb_confid(), $roles, Conf::$now, $roles, Conf::$now);
             } else {
-                Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=?", $cdbu->contactDbId, $cdbu->cdb_confid);
+                Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=?", $cdbu->contactDbId, $this->conf->cdb_confid());
             }
             $cdbu->roles = $roles;
         }
@@ -1501,14 +1507,14 @@ class Contact {
                     $aupapers[] = $row->paperId;
                     if ($reg
                         && ($au->firstName !== "" || $au->lastName !== "")
-                        && !isset($reg->firstName)
-                        && !isset($reg->lastName)) {
+                        && ($reg->firstName ?? "") === ""
+                        && ($reg->lastName ?? "") === "") {
                         $reg->firstName = $au->firstName;
                         $reg->lastName = $au->lastName;
                     }
                     if ($reg
                         && $au->affiliation !== ""
-                        && !isset($reg->affiliation)) {
+                        && ($reg->affiliation ?? "") === "") {
                         $reg->affiliation = $au->affiliation;
                     }
                 }
@@ -1581,7 +1587,7 @@ class Contact {
                 || (($shape & self::PROP_BOOL) !== 0 && !is_bool($value))
                 || (($shape & self::PROP_STRING) !== 0 && !is_string($value))
                 || (($shape & self::PROP_STRINGLIST) !== 0 && !is_string_list($value)))) {
-            throw new Exception("bad prop type $prop");
+            throw new Exception("bad prop type {$prop} " . var_export($value, true));
         }
         // check if property applies here
         if (($shape & ($this->cdb_confid !== 0 ? self::PROP_CDB : self::PROP_LOCAL)) === 0) {
@@ -1619,7 +1625,7 @@ class Contact {
             /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
             if ($this->_mod_undo[$prop] === $value
                 && ($value !== null
-                    || ($this->cdb_confid !== 0 ? $this->contactDbId : $this->contactId))) {
+                    || ($this->cdb_confid !== 0 ? $this->contactDbId > 0 : $this->contactId > 0))) {
                 unset($this->_mod_undo[$prop]);
                 $shape &= ~self::PROP_UPDATE;
             }
@@ -1672,9 +1678,7 @@ class Contact {
 
     /** @return bool */
     function save_prop() {
-        if (empty($this->_mod_undo)) {
-            return true;
-        } else if ($this->cdb_confid !== 0) {
+        if ($this->cdb_confid !== 0) {
             $db = $this->conf->contactdb();
             $idk = "contactDbId";
             $flag = self::PROP_CDB;
@@ -1683,18 +1687,19 @@ class Contact {
             $idk = "contactId";
             $flag = self::PROP_LOCAL;
         }
-        if (!$this->$idk) {
+        if ($this->$idk <= 0) {
             if (!array_key_exists("password", $this->_mod_undo)) {
                 $this->password = validate_email($this->email) ? " unset" : " nologin";
                 $this->passwordTime = Conf::$now;
             }
+        } else if (empty($this->_mod_undo)) {
+            return true;
         }
         $qf = $qv = [];
         foreach (self::$props as $prop => $shape) {
-            if (array_key_exists($prop, $this->_mod_undo)
-                || (!$this->$idk
-                    && ($shape & $flag) !== 0
-                    && ($shape & self::PROP_NULL) === 0)) {
+            if (($shape & $flag) !== 0
+                && (array_key_exists($prop, $this->_mod_undo)
+                    || ($this->$idk <= 0 && ($shape & self::PROP_NULL) === 0))) {
                 $qf[] = "{$prop}=?";
                 $value = $this->prop1($prop, $shape);
                 if ($value === false || $value === true) {
@@ -1716,20 +1721,20 @@ class Contact {
             $qf[] = "unaccentedName=?";
             $qv[] = Text::name($this->firstName, $this->lastName, "", NAME_U);
         }
-        if ($this->$idk) {
+        if ($this->$idk > 0) {
             $qv[] = $this->$idk;
             $result = Dbl::qe_apply($db, "update ContactInfo set " . join(", ", $qf) . " where {$idk}=?", $qv);
         } else {
             assert($this->email !== "");
             $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join(", ", $qf) . " on duplicate key update firstName=firstName", $qv);
-            if ($result->affected_rows) {
+            if ($result->affected_rows > 0) {
                 $this->$idk = (int) $result->insert_id;
                 if ($this->cdb_confid === 0) {
                     $this->contactXid = (int) $result->insert_id;
                 }
             }
         }
-        $ok = !Dbl::is_error($result);
+        $ok = $result->affected_rows > 0;
         Dbl::free($result);
         if ($ok) {
             // invalidate caches
@@ -1778,118 +1783,131 @@ class Contact {
             $this->role_mask = self::ROLE_DBMASK;
             $this->set_roles_properties();
             $this->conf->invalidate_caches(["pc" => true]);
-            $this->_update_cdb_roles($this->cdb_user());
+            $this->_update_cdb_roles();
             return true;
         } else {
             return false;
         }
     }
 
-    /** @param Contact|Author|object $reg */
-    function import_prop($reg) {
+    static function importable_props() {
+        foreach (self::$props as $prop => $shape) {
+            if (($shape & self::PROP_IMPORT) !== 0)
+                yield $prop => $shape;
+        }
+    }
+
+    /** @param Contact|Author|object $reg
+     * @param bool $ifempty */
+    function import_prop($reg, $ifempty) {
         if ($reg instanceof Contact) {
-            foreach (self::$props as $prop => $shape) {
-                if (($shape & self::PROP_IMPORT) !== 0) {
-                    $value = $reg->prop1($prop, $shape);
-                    if ($value === null && ($shape & self::PROP_NULL) === 0) {
-                        $value = "";
-                    }
-                    $this->set_prop($prop, $value, true);
-                }
+            foreach (self::importable_props() as $prop => $shape) {
+                $this->set_prop($prop, $reg->prop1($prop, $shape), $ifempty);
             }
         } else {
-            $this->set_prop("firstName", $reg->firstName ?? "", true);
-            $this->set_prop("lastName", $reg->lastName ?? "", true);
-            $this->set_prop("affiliation", $reg->affiliation ?? "", true);
+            $this->set_prop("firstName", $reg->firstName ?? "", $ifempty);
+            $this->set_prop("lastName", $reg->lastName ?? "", $ifempty);
+            $this->set_prop("affiliation", $reg->affiliation ?? "", $ifempty);
             if (!($reg instanceof Author)) {
-                $this->set_prop("phone", $reg->phone ?? "", true);
-                $this->set_prop("country", $reg->country ?? "", true);
+                $this->set_prop("phone", $reg->phone ?? "", $ifempty);
+                $this->set_prop("country", $reg->country ?? "", $ifempty);
             }
         }
     }
 
-    /** @param ?Contact $actor
+    /** @param int $flags
+     * @param ?Contact $actor
      * @return ?Contact */
-    static function create(Conf $conf, $actor, $reg, $flags = 0) {
+    function store($flags = 0, $actor = null) {
         // clean registration
-        if (is_array($reg)) {
-            $reg = (object) $reg;
-        }
-        assert(is_string($reg->email));
-        $reg->email = trim($reg->email);
-        assert($reg->email !== "");
-        if (!isset($reg->firstName) && isset($reg->first)) {
-            $reg->firstName = $reg->first;
-        }
-        if (!isset($reg->lastName) && isset($reg->last)) {
-            $reg->lastName = $reg->last;
-        }
-        if (isset($reg->name) && !isset($reg->firstName) && !isset($reg->lastName)) {
-            list($reg->firstName, $reg->lastName) = Text::split_name($reg->name);
-        }
+        assert(is_string($this->email));
+        assert($this->email === trim($this->email));
+        assert(empty($this->_mod_undo));
+        assert($this->contactId <= 0);
+        assert($this->roles === 0);
+        $valid_email = validate_email($this->email);
 
         // look up existing accounts
-        $valid_email = validate_email($reg->email);
-        $u = $conf->user_by_email($reg->email) ?? Contact::make_email($conf, $reg->email);
-        if (($cdb = $conf->contactdb()) && $valid_email) {
-            $cdbu = $conf->cdb_user_by_email($reg->email);
-        } else {
-            $cdbu = null;
-        }
-        $create = !$u->contactId;
-        $aupapers = [];
+        $u = $this->conf->user_by_email($this->email);
+        $cdb = $valid_email ? $this->conf->contactdb() : null;
+        $cdbu = $cdb ? $this->conf->cdb_user_by_email($this->email) : null;
 
-        // if local does not exist, create it
-        if (!$u->contactId) {
-            if ((($flags & self::SAVE_IMPORT) !== 0 && !$cdbu)
-                || (($flags & self::SAVE_ANY_EMAIL) === 0 && !$valid_email)) {
-                return null;
-            } else if ($valid_email) {
-                // update registration from authorship information
-                $aupapers = self::email_authored_papers($conf, $reg->email, $reg);
-            }
+        // skip creation depending on flags
+        if ((!$u && !$cdbu && ($flags & self::SAVE_IMPORT) !== 0)
+            || (!$u && !$valid_email && ($flags & self::SAVE_ANY_EMAIL) === 0)) {
+            return null;
+        }
+
+        // load authored papers (this may update name/affiliation)
+        if (!$u && $valid_email) {
+            $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
+        } else {
+            $aupapers = [];
         }
 
         // create or update contactdb user
-        if ($cdb && $valid_email) {
-            $cdbu = $cdbu ?? Contact::make_cdb_email($conf, $reg->email);
-            $cdbu->import_prop($reg);
+        if ($cdb) {
+            $cdbu = $cdbu ?? Contact::make_cdb_email($this->conf, $this->email);
+            $cdbu->import_prop($this, true);
             if ($cdbu->save_prop()) {
-                $u->invalidate_cdb_user();
+                $this->invalidate_cdb_user();
+                $u && $u->invalidate_cdb_user();
             }
         }
 
-        // create or update local user
-        $u->import_prop($cdbu ?? $reg);
-        if (!$u->contactId) {
-            if (($cdbu && $cdbu->disablement)
-                || ($reg->disabled ?? false)) {
-                $u->set_prop("disabled", true);
-            }
-            if ($cdbu) {
-                $u->set_prop("password", "");
-                $u->set_prop("passwordTime", $cdbu->passwordTime);
-                $u->set_prop("passwordUseTime", 0);
-            }
+        // update existing account
+        if ($u) {
+            $u->import_prop($this, true);
+            $u->save_prop(); // likely to do nothing
+            $this->unslice_using($u, true);
+            $this->set_roles_properties();
+            return $this;
         }
-        if (!$u->save_prop()) {
+
+        // override registration with current or cdb data
+        $this->_mod_undo = [];
+        foreach (self::importable_props() as $prop => $shape) {
+            $this->_mod_undo[$prop] = $shape & self::PROP_NULL ? null : "";
+        }
+        if ($cdbu) {
+            $this->import_prop($cdbu, false);
+            $this->_mod_undo["password"] = $this->_mod_undo["passwordTime"] = $this->_mod_undo["passwordUseTime"] = null;
+            $this->password = "";
+            $this->passwordTime = $cdbu->passwordTime;
+            $this->passwordUseTime = 0;
+        }
+        if (($cdbu && $cdbu->disablement)
+            || ($this->disablement & self::DISABLEMENT_USER) !== 0) {
+            $this->_mod_undo["disabled"] = false;
+            $this->set_prop("disabled", true);
+        }
+
+        $this->cdb_confid = $this->contactDbId = 0;
+        if ($this->save_prop()) {
+            $this->set_roles_properties();
+
+            // update roles
+            if ($aupapers) {
+                $this->save_authored_papers($aupapers);
+                $this->_update_cdb_roles($cdbu);
+            }
+
+            $type = $this->disablement ? ", disabled" : "";
+            $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, "Account created" . $type);
+        } else {
             // maybe failed because concurrent create (unlikely)
-            $u = $conf->user_by_email($reg->email);
+            $u = $this->conf->user_by_email($this->email);
+            $this->unslice_using($u, true);
         }
 
-        // update roles
-        if ($aupapers) {
-            $u->save_authored_papers($aupapers);
-            $u->_update_cdb_roles($cdbu);
-        }
+        return $this;
+    }
 
-        // notify on creation
-        if ($create) {
-            $type = $u->disablement ? ", disabled" : "";
-            $conf->log_for($actor && $actor->has_email() ? $actor : $u, $u, "Account created" . $type);
-        }
-
-        return $u;
+    /** @param ?Contact $actor
+     * @return ?Contact
+     * @deprecated */
+    static function create(Conf $conf, $actor, $reg, $flags = 0) {
+        return self::make_keyed($conf, $reg)->store($flags, $actor);
     }
 
 
@@ -2201,12 +2219,9 @@ class Contact {
             && !$this->is_anonymous_user()) {
             $this->activity_at = Conf::$now;
             if ($this->contactId) {
-                $this->conf->ql("update ContactInfo set lastLogin=".Conf::$now." where contactId=$this->contactId");
+                $this->conf->ql("update ContactInfo set lastLogin=" . Conf::$now . " where contactId=$this->contactId");
             }
-            if (($cdbu = $this->cdb_user())
-                && (int) $cdbu->activity_at <= Conf::$now - 604800) {
-                $this->_update_cdb_roles($cdbu);
-            }
+            $this->_update_cdb_roles();
         }
     }
 

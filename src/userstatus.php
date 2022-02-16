@@ -870,7 +870,7 @@ class UserStatus extends MessageSet {
         if ($old_user) {
             $old_disabled = $old_user->disablement !== 0;
         } else {
-            $user = Contact::create($this->conf, $actor, $cj);
+            $user = Contact::make_keyed($this->conf, (array) $cj)->store(0, $actor);
             $cj->email = $user->email; // adopt contactdb’s email capitalization
             $old_disabled = true;
         }
