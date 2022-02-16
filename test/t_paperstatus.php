@@ -1048,19 +1048,19 @@ You can’t remove yourself from the submission’s contacts
     function test_paper_page_redirects() {
         $pr = PaperRequest::make($this->u_estrin, (new Qrequest("GET", ["p" => "0123"]))->set_page("paper"), false);
         xassert($pr instanceof Redirection);
-        xassert_eqq($pr->url, "paper/123");
+        xassert_eqq($pr->url, "/paper/123");
         $pr = PaperRequest::make($this->u_estrin, (new Qrequest("GET", ["p" => "0123"]))->set_page("review"), false);
         xassert($pr instanceof Redirection);
-        xassert_eqq($pr->url, "review/123");
+        xassert_eqq($pr->url, "/review/123");
         $pr = PaperRequest::make($this->u_estrin, (new Qrequest("GET", ["p" => "3"]))->set_page("paper"), false);
         xassert($pr instanceof PaperRequest);
         $estrin_14_rid = $this->conf->checked_paper_by_id(14)->checked_review_by_user($this->u_estrin)->reviewId;
         $pr = PaperRequest::make($this->u_estrin, (new Qrequest("GET", ["r" => "$estrin_14_rid"]))->set_page("paper"), false);
         xassert($pr instanceof Redirection);
-        xassert_eqq($pr->url, "paper/14?r={$estrin_14_rid}");
+        xassert_eqq($pr->url, "/paper/14?r={$estrin_14_rid}");
         $pr = PaperRequest::make($this->u_varghese, (new Qrequest("GET", ["r" => "$estrin_14_rid"]))->set_page("paper"), false);
         xassert($pr instanceof Redirection);
-        xassert_eqq($pr->url, "paper/14?r={$estrin_14_rid}");
+        xassert_eqq($pr->url, "/paper/14?r={$estrin_14_rid}");
         $pr = PaperRequest::make($this->u_nobody, (new Qrequest("GET", ["r" => "$estrin_14_rid"]))->set_page("paper"), false);
         xassert($pr instanceof PermissionProblem);
         xassert($pr["missingId"]);

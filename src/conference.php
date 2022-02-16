@@ -201,7 +201,11 @@ class Conf {
     /** @var false|null|\mysqli */
     static private $_cdb = false;
 
+    /** @var bool */
+    static public $test_mode;
+    /** @var bool */
     static public $no_invalidate_caches = false;
+    /** @var int */
     static public $next_xt_source_order = 0;
     static private $xt_require_resolved = [];
 
@@ -2884,9 +2888,15 @@ class Conf {
             if (is_string($caches)) {
                 $caches = [$caches => true];
             }
-            if (!$caches || isset($caches["pc"])) {
+            if (!$caches || isset($caches["pc"]) || isset($caches["users"])) {
                 $this->_pc_members_cache = $this->_pc_tags_cache = $this->_pc_user_cache = $this->_pc_chairs_cache = null;
                 $this->_user_cache = $this->_user_email_cache = null;
+            }
+            if (!$caches || isset($caches["users"]) || isset($caches["cdb"])) {
+                $this->_cdb_user_cache = null;
+            }
+            if (isset($caches["cdb"])) {
+                unset($this->opt["contactdb_confid"]);
             }
             // NB All setting-related caches cleared here should also be cleared
             // in refresh_settings().
@@ -3746,9 +3756,13 @@ class Conf {
     /** @param ?string $url */
     function redirect($url = null) {
         $nav = Navigation::get();
-        $this->transfer_messages_to_session();
-        session_write_close();
-        Navigation::redirect_absolute($nav->make_absolute($url ?? $this->hoturl("index")));
+        if (self::$test_mode) {
+            throw new Redirection($nav->make_absolute($url ?? $this->hoturl("index")));
+        } else {
+            $this->transfer_messages_to_session();
+            session_write_close();
+            Navigation::redirect_absolute($nav->make_absolute($url ?? $this->hoturl("index")));
+        }
     }
 
     /** @param string $page

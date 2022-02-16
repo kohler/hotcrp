@@ -612,6 +612,7 @@ class TestRunner {
             $mresult = Dbl::multi_q_raw($cdb, file_get_contents(SiteLoader::find("test/cdb-schema.sql")));
             $mresult->free_all();
             $cdb->query("insert into Conferences set dbname='" . $cdb->real_escape_string($conf->dbname) . "'");
+            Contact::$props["demoBirthday"] = Contact::PROP_CDB | Contact::PROP_NULL | Contact::PROP_INT | Contact::PROP_IMPORT;
         }
         $timer->mark("contactdb");
 
@@ -669,6 +670,9 @@ class TestRunner {
     }
 }
 
+/** @param string $email
+ * @param bool $iscdb
+ * @return ?string */
 function password($email, $iscdb = false) {
     $dblink = $iscdb ? Conf::$main->contactdb() : Conf::$main->dblink;
     $result = Dbl::qe($dblink, "select password from ContactInfo where email=?", $email);
@@ -676,6 +680,9 @@ function password($email, $iscdb = false) {
     return $row[0] ?? null;
 }
 
+/** @param string $email
+ * @param ?string $encoded_password
+ * @param bool $iscdb */
 function save_password($email, $encoded_password, $iscdb = false) {
     $dblink = $iscdb ? Conf::$main->contactdb() : Conf::$main->dblink;
     Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where email=?", $encoded_password, Conf::$now + 1, Conf::$now + 1, $email);
@@ -685,4 +692,27 @@ function save_password($email, $encoded_password, $iscdb = false) {
     }
 }
 
+/** @param string $url */
+function set_navigation_base($url) {
+    Navigation::analyze();
+    $nav = Navigation::get();
+    $urlp = parse_url($url);
+    $nav->protocol = ($urlp["scheme"] ?? "http") . "://";
+    $nav->host = $urlp["host"] ?? "example.com";
+    $nav->server = $nav->protocol . $nav->host;
+    if (($s = $urlp["pass"] ?? null)) {
+        $nav->server .= ":{$s}";
+    }
+    if (($s = $urlp["user"] ?? null)) {
+        $nav->server .= "@{$s}";
+    }
+    if (($s = $urlp["port"] ?? null)) {
+        $nav->server .= ":{$s}";
+    }
+    $nav->base_path = $nav->base_path_relative = $nav->site_path = $nav->site_path_relative =
+        $urlp["path"] ?? "/";
+}
+
 TestRunner::$original_opt = $Opt;
+Conf::$test_mode = true;
+set_navigation_base("/");

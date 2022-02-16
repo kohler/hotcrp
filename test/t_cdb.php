@@ -13,81 +13,86 @@ class Cdb_Tester {
      * @readonly */
     public $user_chair;
 
+    const MARINA = "marina@poema.ru";
+
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->us1 = new UserStatus($conf->root_user());
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
     }
 
-    function test_passwords_1() {
-        $marina = "marina@poema.ru";
+    function test_setup() {
+        $removables = ["te@_.com", "te2@_.com", "akhmatova@poema.ru"];
+        $this->conf->qe("delete from ContactInfo where email?a", $removables);
+        Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email?a", $removables);
+    }
 
-        user($marina)->change_password("rosdevitch");
-        xassert_eqq(password($marina), "");
-        xassert_neqq(password($marina, true), "");
-        xassert(user($marina)->check_password("rosdevitch"));
-        $this->conf->qe("update ContactInfo set password=? where contactId=?", "rosdevitch", user($marina)->contactId);
-        xassert_neqq(password($marina), "");
-        xassert_neqq(password($marina, true), "");
-        xassert(user($marina)->check_password("rosdevitch"));
+    function test_passwords_1() {
+        user(self::MARINA)->change_password("rosdevitch");
+        xassert_eqq(password(self::MARINA), "");
+        xassert_neqq(password(self::MARINA, true), "");
+        xassert(user(self::MARINA)->check_password("rosdevitch"));
+        $this->conf->qe("update ContactInfo set password=? where contactId=?", "rosdevitch", user(self::MARINA)->contactId);
+        xassert_neqq(password(self::MARINA), "");
+        xassert_neqq(password(self::MARINA, true), "");
+        xassert(user(self::MARINA)->check_password("rosdevitch"));
 
         // different password in localdb => both passwords work
-        save_password($marina, "crapdevitch", false);
-        xassert(user($marina)->check_password("crapdevitch"));
-        xassert(user($marina)->check_password("rosdevitch"));
+        save_password(self::MARINA, "crapdevitch", false);
+        xassert(user(self::MARINA)->check_password("crapdevitch"));
+        xassert(user(self::MARINA)->check_password("rosdevitch"));
 
         // change contactdb password => both passwords change
-        user($marina)->change_password("dungdevitch");
-        xassert(user($marina)->check_password("dungdevitch"));
-        xassert(!user($marina)->check_password("assdevitch"));
-        xassert(!user($marina)->check_password("rosdevitch"));
-        xassert(!user($marina)->check_password("crapdevitch"));
+        user(self::MARINA)->change_password("dungdevitch");
+        xassert(user(self::MARINA)->check_password("dungdevitch"));
+        xassert(!user(self::MARINA)->check_password("assdevitch"));
+        xassert(!user(self::MARINA)->check_password("rosdevitch"));
+        xassert(!user(self::MARINA)->check_password("crapdevitch"));
 
         // update contactdb password => old local password useless
-        save_password($marina, "isdevitch", true);
-        xassert_eqq(password($marina), "");
-        xassert(user($marina)->check_password("isdevitch"));
-        xassert(!user($marina)->check_password("dungdevitch"));
+        save_password(self::MARINA, "isdevitch", true);
+        xassert_eqq(password(self::MARINA), "");
+        xassert(user(self::MARINA)->check_password("isdevitch"));
+        xassert(!user(self::MARINA)->check_password("dungdevitch"));
 
         // update local password only
-        save_password($marina, "ncurses", false);
-        xassert_eqq(password($marina), "ncurses");
-        xassert_neqq(password($marina, true), "ncurses");
-        xassert(user($marina)->check_password("ncurses"));
+        save_password(self::MARINA, "ncurses", false);
+        xassert_eqq(password(self::MARINA), "ncurses");
+        xassert_neqq(password(self::MARINA, true), "ncurses");
+        xassert(user(self::MARINA)->check_password("ncurses"));
 
         // logging in with global password makes local password obsolete
         Conf::advance_current_time(Conf::$now + 3);
-        xassert(user($marina)->check_password("isdevitch"));
+        xassert(user(self::MARINA)->check_password("isdevitch"));
         Conf::advance_current_time(Conf::$now + 3);
-        xassert(!user($marina)->check_password("ncurses"));
+        xassert(!user(self::MARINA)->check_password("ncurses"));
 
         // null contactdb password => password is unset
-        save_password($marina, null, true);
-        $info = user($marina)->check_password_info("ncurses");
+        save_password(self::MARINA, null, true);
+        $info = user(self::MARINA)->check_password_info("ncurses");
         xassert(!$info["ok"]);
         xassert($info["unset"] ?? null);
 
         // restore to "this is a cdb password"
-        user($marina)->change_password("isdevitch");
-        xassert_eqq(password($marina), "");
-        save_password($marina, "isdevitch", true);
-        xassert_eqq(password($marina, true), "isdevitch");
+        user(self::MARINA)->change_password("isdevitch");
+        xassert_eqq(password(self::MARINA), "");
+        save_password(self::MARINA, "isdevitch", true);
+        xassert_eqq(password(self::MARINA, true), "isdevitch");
         // current status: local password is empty, global password "isdevitch"
     }
 
     function test_password_encryption() {
         // checking an unencrypted password encrypts it
-        $marina = "marina@poema.ru";
-        $mu = user($marina);
+        $mu = user(self::MARINA);
         xassert($mu->check_password("isdevitch"));
-        xassert_eqq(substr(password($marina, true), 0, 2), " \$");
-        xassert_eqq(password($marina), "");
+        xassert_eqq(substr(password(self::MARINA, true), 0, 2), " \$");
+        xassert_eqq(password(self::MARINA), "");
 
         // checking an encrypted password doesn't change it
-        save_password($marina, ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm', true);
-        save_password($marina, '', false);
-        xassert(user($marina)->check_password("isdevitch"));
-        xassert_eqq(password($marina, true), ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm');
+        save_password(self::MARINA, ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm', true);
+        save_password(self::MARINA, '', false);
+        xassert(user(self::MARINA)->check_password("isdevitch"));
+        xassert_eqq(password(self::MARINA, true), ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm');
     }
 
     function test_cdb_import_1() {
@@ -476,5 +481,63 @@ class Cdb_Tester {
         xassert_eqq($acct->cdb_roles(), Contact::ROLE_AUTHOR | Contact::ROLE_ADMIN);
         $acct = $this->conf->fresh_cdb_user_by_email("thalerd@eecs.umich.edu");
         xassert_eqq($acct->roles, Contact::ROLE_AUTHOR | Contact::ROLE_ADMIN);
+    }
+
+    function test_login() {
+        $email = "newuser@_.com";
+        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+
+        $qreq = Qrequest::make_url("newaccount?email={$email}", "POST");
+        $info = LoginHelper::new_account_info($this->conf, $qreq);
+        xassert_eqq($info["ok"], true);
+        $prep = Signin_Page::mail_user($this->conf, $info);
+        // reset capability set, is in cdb
+        xassert(is_string($prep->reset_capability));
+        xassert(str_starts_with($prep->reset_capability, "hcpw1"));
+
+        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+
+        $user = Contact::make_email($this->conf, $email);
+        $qreq = Qrequest::make_url("resetpassword?email={$email}", "POST");
+        $qreq->set_req("password", $prep->reset_capability);
+        xassert_eqq(Signin_Page::check_password_as_reset_code($user, $qreq),
+                    $prep->reset_capability);
+
+        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+
+        $user = Contact::make_email($this->conf, $email);
+        $qreq = Qrequest::make_url("resetpassword?email={$email}", "POST");
+        $qreq->set_req("resetcap", $prep->reset_capability);
+        $qreq->set_req("password", "newuserpassword!");
+        $qreq->set_req("password2", "newuserpassword!");
+        $signinp = new Signin_Page;
+        $result = null;
+        try {
+            $signinp->reset_request($user, $qreq);
+        } catch (Redirection $redir) {
+            $result = $redir;
+        }
+        xassert(!!$result);
+        xassert(user($email)->check_password("newuserpassword!"));
+
+        $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
+        $this->conf->qe("delete from ContactInfo where email=?", $email);
+
+        $user = Contact::make($this->conf);
+        xassert_eqq($user->contactId, 0);
+        xassert_eqq($user->contactDbId, 0);
+        $qreq = Qrequest::make_url("signin?email={$email}&password=newuserpassword!", "POST");
+        $info = LoginHelper::login_info($this->conf, $qreq);
+        xassert_eqq($info["ok"], true);
+        $info = LoginHelper::login_complete($info, $qreq);
+        xassert_eqq($info["ok"], true);
+        $user = $info["user"];
+        xassert($user instanceof Contact);
+        xassert_eqq($user->email, $email);
+        xassert_eqq($user->contactId, 0);
+        xassert_neqq($user->contactDbId, 0);
+        $user->ensure_account_here();
+        xassert_neqq($user->contactId, 0);
+        xassert_eqq($user->contactDbId, 0);
     }
 }

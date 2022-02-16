@@ -75,6 +75,9 @@ const ENSURE_SESSION_ALLOW_EMPTY = 1;
 const ENSURE_SESSION_REGENERATE_ID = 2;
 
 function ensure_session($flags = 0) {
+    if (Conf::$test_mode) {
+        return;
+    }
     if (headers_sent($hsfn, $hsln)) {
         error_log("$hsfn:$hsln: headers sent: " . debug_string_backtrace());
     }

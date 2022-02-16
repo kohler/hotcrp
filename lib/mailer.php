@@ -441,6 +441,7 @@ class Mailer {
             }
             $capinfo->set_expires_after(259200);
             $token = $capinfo->create();
+            $this->preparation->reset_capability = $token;
         }
         return $this->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
     }

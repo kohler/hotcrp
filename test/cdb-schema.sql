@@ -50,6 +50,7 @@ CREATE TABLE `ContactInfo` (
   `collaborators` varbinary(8192) DEFAULT NULL,
   `passwordUseTime` bigint(11) NOT NULL DEFAULT 0,
   `updateTime` bigint(11) NOT NULL DEFAULT 0,
+  `demoBirthday` int(11) DEFAULT NULL,
   PRIMARY KEY (`contactDbId`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
