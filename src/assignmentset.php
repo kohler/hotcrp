@@ -171,16 +171,14 @@ class AssignmentState extends MessageSet {
     private $pid_attempts = [];
     /** @var ?PaperInfo */
     private $placeholder_prow;
-    /** @var list<object> */
-    public $finishers = [];
-    /** @var array<string,object> */
-    public $finisher_map = [];
     /** @var bool */
     public $paper_exact_match = true;
     /** @var list<MessageItem> */
     private $nonexact_msgs = [];
     /** @var bool */
     public $has_user_error = false;
+    /** @var array<string,AssignmentPreapplyFunction> */
+    private $preapply_functions = [];
 
     const FLAG_CSV_CONTEXT = 1;
 
@@ -513,6 +511,21 @@ class AssignmentState extends MessageSet {
         parent::clear_messages();
         $this->nonexact_msgs = [];
         $this->has_user_error = false;
+    }
+
+    /** @param string $name
+     * @param AssignmentPreapplyFunction $hook
+     * @return AssignmentPreapplyFunction */
+    function register_preapply_function($name, $hook) {
+        if (!isset($this->preapply_functions[$name])) {
+            $this->preapply_functions[$name] = $hook;
+        }
+        return $this->preapply_functions[$name];
+    }
+    function call_preapply_functions() {
+        foreach ($this->preapply_functions as $f) {
+            $f->preapply($this);
+        }
     }
 }
 
@@ -961,6 +974,10 @@ class ReviewAssigner_Data {
     }
 }
 
+interface AssignmentPreapplyFunction {
+    function preapply(AssignmentState $astate);
+}
+
 
 class AssignmentSet {
     /** @var Conf
@@ -996,8 +1013,8 @@ class AssignmentSet {
     /** @var ?string */
     private $assignment_type;
     /** @var array<string,array{callable,mixed}> */
-    private $cleanup_callbacks = [];
-    private $cleanup_notify_tracker = [];
+    private $_cleanup_callbacks = [];
+    private $_cleanup_notify_tracker = [];
     private $qe_stager;
 
     function __construct(Contact $user, $overrides = null) {
@@ -1665,10 +1682,8 @@ class AssignmentSet {
             $this->apply_req($linereq[1], $linereq[2]);
         }
 
-        // call finishers
-        foreach ($this->astate->finishers as $fin) {
-            $fin->apply_finisher($this->astate);
-        }
+        // call preapply functions
+        $this->astate->call_preapply_functions();
 
         // create assigners for difference
         $this->assigners_pidhead = $pidtail = [];
@@ -1912,15 +1927,15 @@ class AssignmentSet {
         foreach ($this->assigners as $assigner) {
             $assigner->cleanup($this);
         }
-        foreach ($this->cleanup_callbacks as $cb) {
+        foreach ($this->_cleanup_callbacks as $cb) {
             call_user_func($cb[0], $cb[1]);
         }
         if (!empty($pids)) {
             $this->conf->update_automatic_tags(array_keys($pids), $this->assigned_types());
         }
-        if (!empty($this->cleanup_notify_tracker)
+        if (!empty($this->_cleanup_notify_tracker)
             && $this->conf->opt("trackerCometSite")) {
-            MeetingTracker::contact_tracker_comet($this->conf, array_keys($this->cleanup_notify_tracker));
+            MeetingTracker::contact_tracker_comet($this->conf, array_keys($this->_cleanup_notify_tracker));
         }
         $this->conf->save_logs(false);
 
@@ -1939,20 +1954,21 @@ class AssignmentSet {
 
     /** @param string $name
      * @param callable $func */
-    function cleanup_callback($name, $func, $arg = null) {
-        if (!isset($this->cleanup_callbacks[$name])) {
-            $this->cleanup_callbacks[$name] = [$func, null];
+    function register_cleanup_function($name, $func, ...$args) {
+        if (!isset($this->_cleanup_callbacks[$name])) {
+            $this->_cleanup_callbacks[$name] = [$func, null];
         }
-        if (func_num_args() > 2) {
-            $this->cleanup_callbacks[$name][1][] = $arg;
+        if (!empty($args)) {
+            assert(count($args) === 1);
+            $this->_cleanup_callbacks[$name][1][] = $args[0];
         }
     }
-    function cleanup_update_rights() {
-        $this->cleanup_callback("update_rights", "Contact::update_rights");
+    function register_update_rights() {
+        $this->register_cleanup_function("update_rights", "Contact::update_rights");
     }
     /** @param int $pid */
-    function cleanup_notify_tracker($pid) {
-        $this->cleanup_notify_tracker[$pid] = true;
+    function register_notify_tracker($pid) {
+        $this->_cleanup_notify_tracker[$pid] = true;
     }
 
     /** @param Contact $contact

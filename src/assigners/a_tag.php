@@ -38,7 +38,7 @@ class Tag_Assignable extends Assignable {
     }
 }
 
-class NextTagAssigner {
+class NextTagAssigner implements AssignmentPreapplyFunction {
     private $tag;
     public $pidindex = array();
     private $first_index;
@@ -66,7 +66,7 @@ class NextTagAssigner {
         $this->next_index += Tagger::value_increment($isseq);
         return (float) $index;
     }
-    function apply_finisher(AssignmentState $state) {
+    function preapply(AssignmentState $state) {
         if ($this->next_index == $this->first_index) {
             return;
         }
@@ -303,10 +303,8 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     private function apply_next_index($pid, $xnext, $tag, $nvalue, AssignmentState $state) {
         $ltag = strtolower($tag);
         // NB ignore $index on second & subsequent nexttag assignments
-        if (!($fin = $state->finisher_map["seqtag $ltag"] ?? null)) {
-            $fin = $state->finishers[] = $state->finisher_map["seqtag $ltag"] =
-                new NextTagAssigner($state, $tag, $nvalue, $xnext === self::NEXTSEQ);
-        }
+        $fin = $state->register_preapply_function("seqtag $ltag", new NextTagAssigner($state, $tag, $nvalue, $xnext === self::NEXTSEQ));
+        assert($fin instanceof NextTagAssigner);
         unset($fin->pidindex[$pid]);
         return $fin->next_index($xnext === self::NEXTSEQ);
     }
@@ -445,20 +443,20 @@ class Tag_Assigner extends Assigner {
         }
         if ($this->index !== null
             && str_ends_with($this->tag, ':')) {
-            $aset->cleanup_callback("colontag", function () use ($aset) {
+            $aset->register_cleanup_function("colontag", function () use ($aset) {
                 $aset->conf->save_refresh_setting("has_colontag", 1);
             });
         }
         $isperm = strncasecmp($this->tag, 'perm:', 5) === 0;
         if ($this->index !== null && $isperm) {
-            $aset->cleanup_callback("permtag", function () use ($aset) {
+            $aset->register_cleanup_function("permtag", function () use ($aset) {
                 $aset->conf->save_refresh_setting("has_permtag", 1);
             });
         }
         if ($aset->conf->tags()->is_track($this->tag) || $isperm) {
-            $aset->cleanup_update_rights();
+            $aset->register_update_rights();
         }
         $aset->user->log_activity("Tag " . ($this->index === null ? "-" : "+") . "#$this->tag" . ($this->index ? "#$this->index" : ""), $this->pid);
-        $aset->cleanup_notify_tracker($this->pid);
+        $aset->register_notify_tracker($this->pid);
     }
 }

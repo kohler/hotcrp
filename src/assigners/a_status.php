@@ -26,7 +26,7 @@ class Status_Assignable extends Assignable {
     }
 }
 
-class Withdraw_AssignmentFinisher {
+class Withdraw_PreapplyFunction implements AssignmentPreapplyFunction {
     // When withdrawing a paper, remove voting tags so people don't have
     // phantom votes.
     private $pid;
@@ -34,7 +34,7 @@ class Withdraw_AssignmentFinisher {
     function __construct($pid) {
         $this->pid = $pid;
     }
-    function apply_finisher(AssignmentState $state) {
+    function preapply(AssignmentState $state) {
         $res = $state->query_items(new Status_Assignable($this->pid));
         if (!$res
             || $res[0]["_withdrawn"] <= 0
@@ -103,7 +103,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                 $res->_submitted = -$res->_submitted;
                 if ($state->conf->tags()->has_votish) {
                     Tag_AssignmentParser::load_tag_state($state);
-                    $state->finishers[] = new Withdraw_AssignmentFinisher($prow->paperId);
+                    $state->register_preapply_function("withdraw {$prow->paperId}", new Withdraw_PreapplyFunction($prow->paperId));
                 }
             }
             $r = $req["withdraw_reason"];
@@ -181,10 +181,10 @@ class Status_Assigner extends Assigner {
             $aset->user->log_activity($submitted > 0 ? "Paper submitted" : "Paper unsubmitted", $this->pid);
         }
         if (($submitted > 0) !== ($old_submitted > 0)) {
-            $aset->cleanup_callback("papersub", function ($vals) use ($aset) {
+            $aset->register_cleanup_function("papersub", function ($vals) use ($aset) {
                 $aset->conf->update_papersub_setting(min($vals));
             }, $submitted > 0 ? 1 : 0);
-            $aset->cleanup_callback("paperacc", function ($vals) use ($aset) {
+            $aset->register_cleanup_function("paperacc", function ($vals) use ($aset) {
                 $aset->conf->update_paperacc_setting(min($vals));
             }, 0);
         }
