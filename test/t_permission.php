@@ -1393,26 +1393,6 @@ class Permission_Tester {
         $pset = $user_mogul->paper_set(["author" => true]);
         xassert_array_eqq($pset->paper_ids(), [12, 16]);
 
-        // search canonicalization
-        xassert_eqq(PaperSearch::canonical_query("(a b) OR (c d)", "", "", "", $conf),
-                    "(a b) OR (c d)");
-        xassert_eqq(PaperSearch::canonical_query("", "a b (c d)", "", "", $conf),
-                    "a OR b OR (c d)");
-        xassert_eqq(PaperSearch::canonical_query("e ", "a b (c d)", "", "", $conf),
-                    "e AND (a OR b OR (c d))");
-        xassert_eqq(PaperSearch::canonical_query("", "a b", "c x m", "", $conf),
-                    "(a OR b) AND NOT (c OR x OR m)");
-        xassert_eqq(PaperSearch::canonical_query("", "a b", "(c OR m) (x y)", "", $conf),
-                    "(a OR b) AND NOT ((c OR m) OR (x y))");
-        xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", "", $conf),
-                    "foo HIGHLIGHT:pink bar");
-        xassert_eqq(PaperSearch::canonical_query("foo HIGHLIGHT:pink bar", "", "", "tag", $conf),
-                    "#foo HIGHLIGHT:pink #bar");
-        xassert_eqq(PaperSearch::canonical_query("foo", "", "", "tag", $conf, "s"),
-                    "#foo in:submitted");
-        xassert_eqq(PaperSearch::canonical_query("foo OR abstract:bar", "", "", "tag", $conf, "s"),
-                    "(#foo OR abstract:bar) in:submitted");
-
         // assignment synonyms
         xassert_eqq($paper16->preference($user_varghese), [0, null]);
         xassert_assign($user_varghese, "ID,Title,Preference\n16,Potential Benefits of Delta Encoding and Data Compression for HTTP,1X\n");
@@ -1441,9 +1421,15 @@ class Permission_Tester {
         assert_search_papers($user_chair, "“many applications“", "8");
         assert_search_papers($user_chair, "status:mis[take", "");
 
-        // users
+        xassert(!maybe_user("anonymous10"));
+        $u = Contact::make_email($conf, "anonymous10")->store(Contact::SAVE_ANY_EMAIL);
+        xassert($u->contactId > 0);
+        xassert_eqq($conf->fetch_value("select password from ContactInfo where email='anonymous10'"), " nologin");
+    }
+
+    function test_user_registration() {
         xassert(!maybe_user("sclinx@leland.stanford.edu"));
-        $u = Contact::make_keyed($conf, ["email" => "sclinx@leland.stanford.edu", "name" => "Stephen Lon", "affiliation" => "Fart World"])->store();
+        $u = Contact::make_keyed($this->conf, ["email" => "sclinx@leland.stanford.edu", "name" => "Stephen Lon", "affiliation" => "Fart World"])->store();
         xassert(!!$u);
         xassert($u->contactId > 0);
         xassert_eqq($u->email, "sclinx@leland.stanford.edu");
@@ -1452,7 +1438,7 @@ class Permission_Tester {
         xassert_eqq($u->affiliation, "Fart World");
 
         xassert(!maybe_user("scliny@leland.stanford.edu"));
-        $u = Contact::make_keyed($conf, ["email" => "scliny@leland.stanford.edu", "affiliation" => "Fart World"])->store();
+        $u = Contact::make_keyed($this->conf, ["email" => "scliny@leland.stanford.edu", "affiliation" => "Fart World"])->store();
         xassert(!!$u);
         xassert($u->contactId > 0);
         xassert_eqq($u->email, "scliny@leland.stanford.edu");
@@ -1460,8 +1446,9 @@ class Permission_Tester {
         xassert_eqq($u->lastName, "");
         xassert_eqq($u->affiliation, "Fart World");
 
+        // registering email of an author grants author privilege
         xassert(!maybe_user("thalerd@eecs.umich.edu"));
-        $u = Contact::make_email($conf, "thalerd@eecs.umich.edu")->store();
+        $u = Contact::make_email($this->conf, "thalerd@eecs.umich.edu")->store();
         assert($u !== null);
         xassert(!!$u);
         xassert($u->contactId > 0);
@@ -1469,28 +1456,25 @@ class Permission_Tester {
         xassert_eqq($u->firstName, "David");
         xassert_eqq($u->lastName, "Thaler");
         xassert_eqq($u->affiliation, "University of Michigan");
-        xassert($conf->checked_paper_by_id(27)->has_author($u));
+        xassert($this->conf->checked_paper_by_id(27)->has_author($u));
 
+        // registration-time name overrides author name
         xassert(!maybe_user("schwartz@ctr.columbia.edu"));
-        $u = Contact::make_keyed($conf, ["email" => "schwartz@ctr.columbia.edu", "first" => "cengiz!", "last" => "SCHwarTZ", "affiliation" => "Coyumbia"])->store();
+        $u = Contact::make_keyed($this->conf, ["email" => "schwartz@ctr.columbia.edu", "first" => "cengiz!", "last" => "SCHwarTZ", "affiliation" => "Coyumbia"])->store();
         xassert(!!$u);
         xassert($u->contactId > 0);
         xassert_eqq($u->email, "schwartz@ctr.columbia.edu");
         xassert_eqq($u->firstName, "cengiz!");
         xassert_eqq($u->lastName, "SCHwarTZ");
         xassert_eqq($u->affiliation, "Coyumbia");
-        xassert($conf->checked_paper_by_id(26)->has_author($u));
+        xassert($this->conf->checked_paper_by_id(26)->has_author($u));
+    }
 
-        xassert(!maybe_user("anonymous10"));
-        $u = Contact::make_email($conf, "anonymous10")->store(Contact::SAVE_ANY_EMAIL);
-        xassert($u->contactId > 0);
-        xassert_eqq($conf->fetch_value("select password from ContactInfo where email='anonymous10'"), " nologin");
-
-        // contact tags
-        xassert($user_chair->can_view_user_tags());
-        xassert($user_estrin->can_view_user_tags());
-        xassert(!$user_kohler->can_view_user_tags());
-        xassert(!$user_van->can_view_user_tags());
-        xassert(!$user_nobody->can_view_user_tags());
+    function test_can_view_user_tags() {
+        xassert($this->u_chair->can_view_user_tags());
+        xassert($this->u_estrin->can_view_user_tags());
+        xassert(!$this->u_kohler->can_view_user_tags());
+        xassert(!$this->u_van->can_view_user_tags());
+        xassert(!$this->u_nobody->can_view_user_tags());
     }
 }

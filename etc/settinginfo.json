@@ -45,7 +45,7 @@
     },
     {
         "name": "outcome_map", "internal": true, "group": "decisions",
-        "storage": "dat.outcome_map"
+        "storage": "dat.outcome_map", "default_value": "{\"1\":\"Accepted\",\"-1\":\"Rejected\"}"
     },
     {
         "name_pattern": "decision__$", "group": "decisions",

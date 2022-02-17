@@ -13,4 +13,7 @@ TestRunner::go(new Abbreviation_Tester($Conf));
 TestRunner::go(new DocumentBasics_Tester($Conf));
 TestRunner::go(new FixCollaborators_Tester);
 TestRunner::go(new Mention_Tester($Conf));
+TestRunner::go(new Search_Tester($Conf));
+TestRunner::go(new Settings_Tester($Conf));
+TestRunner::go(new UpdateSchema_Tester($Conf));
 xassert_exit();

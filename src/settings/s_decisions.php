@@ -150,11 +150,17 @@ class Decisions_SettingParser extends SettingParser {
                 return $collator->compare($a->name, $b->name);
             }
         });
+
         $dm = [];
         foreach ($djs as $dj) {
             $dm[$dj->id] = $dj->name;
         }
-        if ($sv->update("outcome_map", json_encode_db($dm))) {
+        $tx = json_encode_db($dm);
+
+        $olddm = $sv->conf->decision_map();
+        unset($olddm[0]);
+        if ($tx !== json_encode_db($olddm)) {
+            $sv->save("outcome_map", $tx);
             $sv->request_write_lock("Paper");
             $sv->request_store_value($si);
         }

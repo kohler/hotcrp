@@ -1363,11 +1363,13 @@ class Conf {
     /** @return array<int,string> */
     function decision_map() {
         if ($this->_decisions === null) {
-            $dmap = [];
             if (($j = $this->settingTexts["outcome_map"] ?? null)
                 && ($j = json_decode($j, true))
                 && is_array($j)) {
                 $dmap = $j;
+            } else {
+                // see also settinginfo.json default_value
+                $dmap = [1 => "Accepted", -1 => "Rejected"];
             }
             $dmap[0] = "Unspecified";
             $collator = $this->collator();

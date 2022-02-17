@@ -6,9 +6,13 @@ class Reviews_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
+    /** @var Contact
+     * @readonly */
+    public $u_chair;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+        $this->u_chair = $conf->checked_user_by_email("chair@_.com");
     }
 
     function save_round_settings($map) {
@@ -23,7 +27,7 @@ class Reviews_Tester {
         $conf = $this->conf;
 
         // load users
-        $user_chair = $conf->checked_user_by_email("chair@_.com");
+        $user_chair = $this->u_chair;
         $user_mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu"); // pc
         $user_diot = $conf->checked_user_by_email("christophe.diot@sophia.inria.fr"); // pc, red
         $user_pdruschel = $conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
@@ -674,10 +678,10 @@ class Reviews_Tester {
         $tf = new ReviewValues($conf->review_form());
         xassert($tf->parse_json(["papsum" =>
             "Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.\n\
-        \n\
-        Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.\n\
-        \n\
-        But, in a larger sense, we can not dedicate -- we can not consecrate -- we can not hallow -- this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us -- that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion -- that we here highly resolve that these dead shall not have died in vain -- that this nation, under God, shall have a new birth of freedom -- and that government of the people, by the people, for the people, shall not perish from the earth.\n"]));
+\n\
+Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.\n\
+\n\
+But, in a larger sense, we can not dedicate -- we can not consecrate -- we can not hallow -- this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us -- that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion -- that we here highly resolve that these dead shall not have died in vain -- that this nation, under God, shall have a new birth of freedom -- and that government of the people, by the people, for the people, shall not perish from the earth.\n"]));
         xassert($tf->check_and_save($user_diot, $paper18));
 
         $rrow18d = fetch_review($paper18, $user_diot);
@@ -1108,209 +1112,6 @@ class Reviews_Tester {
         xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
         xassert($sv->has_error_at("sf__1__name"));
 
-        // decision settings
-        xassert_eqq(json_encode($conf->decision_map()), '{"0":"Unspecified","1":"Accepted","-1":"Rejected"}');
-        xassert_eqq($conf->setting("decisions"), null);
-        $sv = SettingValues::make_request($user_chair, [
-            "has_decisions" => 1,
-            "decision__1__name" => "Accepted!",
-            "decision__1__id" => "1",
-            "decision__2__name" => "Newly accepted",
-            "decision__2__id" => "\$"
-        ]);
-        xassert($sv->execute());
-        xassert_eqq(json_encode($conf->decision_map()), '{"0":"Unspecified","1":"Accepted!","2":"Newly accepted","-1":"Rejected"}');
-        xassert_eqq($conf->setting("decisions"), null);
-        $sv = SettingValues::make_request($user_chair, [
-            "has_decisions" => 1,
-            "decision__1__id" => "1",
-            "decision__1__delete" => "1"
-        ]);
-        xassert($sv->execute());
-        xassert_eqq(json_encode($conf->decision_map()), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
-        $sv = SettingValues::make_request($user_chair, [
-            "has_decisions" => 1,
-            "decision__1__id" => "2",
-            "decision__1__name" => "Rejected"
-        ]);
-        xassert(!$sv->execute());
-        xassert_neqq(strpos($sv->full_feedback_text(), "Accept-category decision"), false);
-        $sv = SettingValues::make_request($user_chair, [
-            "has_decisions" => 1,
-            "decision__1__id" => "2",
-            "decision__1__name" => "Rejected",
-            "decision__1__name_force" => "1"
-        ]);
-        xassert(!$sv->execute());
-        xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
-        xassert_eqq(json_encode($conf->decision_map()), '{"0":"Unspecified","2":"Newly accepted","-1":"Rejected"}');
-        $sv = SettingValues::make_request($user_chair, [
-            "has_decisions" => 1,
-            "decision__1__id" => "2",
-            "decision__1__name" => "Really Rejected",
-            "decision__1__name_force" => "1"
-        ]);
-        xassert($sv->execute());
-        xassert_eqq(json_encode($conf->decision_map()), '{"0":"Unspecified","2":"Really Rejected","-1":"Rejected"}');
-        $sv = SettingValues::make_request($user_chair, [
-            "has_decisions" => 1,
-            "decision__1__id" => "\$"
-        ]);
-        xassert(!$sv->execute());
-
-        // topic settings
-        xassert_eqq(json_encode($conf->topic_set()->as_array()), '[]');
-        $sv = SettingValues::make_request($user_chair, [
-            "has_topics" => 1,
-            "topic__newlist" => "Fart\n   Barf"
-        ]);
-        xassert($sv->execute());
-        xassert_eqq(json_encode($conf->topic_set()->as_array()), '{"2":"Barf","1":"Fart"}');
-        $sv = SettingValues::make_request($user_chair, [
-            "has_topics" => 1,
-            "topic__newlist" => "Fart"
-        ]);
-        xassert(!$sv->execute());
-        xassert_eqq($sv->reqstr("topic__3__name"), "Fart");
-        xassert($sv->has_error_at("topic__3__name"));
-        xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
-        xassert_eqq(json_encode($conf->topic_set()->as_array()), '{"2":"Barf","1":"Fart"}');
-        $sv = SettingValues::make_request($user_chair, [
-            "has_topics" => 1,
-            "topic__newlist" => "Fart2"
-        ]);
-        xassert($sv->execute());
-        xassert_eqq(json_encode($conf->topic_set()->as_array()), '{"2":"Barf","1":"Fart","3":"Fart2"}');
-        $sv = SettingValues::make_request($user_chair, [
-            "has_topics" => 1,
-            "topic__1__id" => "2",
-            "topic__1__name" => "Fért",
-            "topic__2__id" => "",
-            "topic__2__name" => "Festival Fartal",
-            "topic__3__id" => "\$",
-            "topic__3__name" => "Fet",
-            "topic__newlist" => "Fart3"
-        ]);
-        xassert($sv->execute());
-        xassert_eqq(json_encode_db($conf->topic_set()->as_array()), '{"1":"Fart","3":"Fart2","6":"Fart3","2":"Fért","4":"Festival Fartal","5":"Fet"}');
-
-        // review settings
-        $sv = SettingValues::make_request($user_chair, [
-            "has_review_form" => 1,
-            "rf__1__name" => "B9",
-            "rf__1__id" => "s03",
-            "rf__1__choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I",
-            "rf__2__name" => "B15",
-            "rf__2__id" => "s04",
-            "rf__2__choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J\n11. K\n12. L\n13. M\n14. N\n15. O",
-            "rf__3__name" => "B10",
-            "rf__3__id" => "s06",
-            "rf__3__choices" => "1. A\n2. B\n3. C\n4. D\n5. E\n6. F\n7. G\n8. H\n9. I\n10. J",
-            "rf__4__name" => "B5",
-            "rf__4__id" => "s07",
-            "rf__4__choices" => "A. A\nB. B\nC. C\nD. D\nE. E"
-        ]);
-        xassert($sv->execute());
-        $rf = $conf->find_review_field("B5");
-        xassert_eqq($rf->value_class(1), "sv sv9");
-        xassert_eqq($rf->value_class(2), "sv sv7");
-        xassert_eqq($rf->value_class(3), "sv sv5");
-        xassert_eqq($rf->value_class(4), "sv sv3");
-        xassert_eqq($rf->value_class(5), "sv sv1");
-        $rf = $conf->find_review_field("B9");
-        xassert_eqq($rf->value_class(1), "sv sv1");
-        xassert_eqq($rf->value_class(2), "sv sv2");
-        xassert_eqq($rf->value_class(3), "sv sv3");
-        xassert_eqq($rf->value_class(4), "sv sv4");
-        xassert_eqq($rf->value_class(5), "sv sv5");
-        xassert_eqq($rf->value_class(6), "sv sv6");
-        xassert_eqq($rf->value_class(7), "sv sv7");
-        xassert_eqq($rf->value_class(8), "sv sv8");
-        xassert_eqq($rf->value_class(9), "sv sv9");
-        $rf = $conf->find_review_field("B15");
-        xassert_eqq($rf->value_class(1), "sv sv1");
-        xassert_eqq($rf->value_class(2), "sv sv2");
-        xassert_eqq($rf->value_class(3), "sv sv2");
-        xassert_eqq($rf->value_class(4), "sv sv3");
-        xassert_eqq($rf->value_class(5), "sv sv3");
-        xassert_eqq($rf->value_class(6), "sv sv4");
-        xassert_eqq($rf->value_class(7), "sv sv4");
-        xassert_eqq($rf->value_class(8), "sv sv5");
-        xassert_eqq($rf->value_class(9), "sv sv6");
-        xassert_eqq($rf->value_class(10), "sv sv6");
-        xassert_eqq($rf->value_class(11), "sv sv7");
-        xassert_eqq($rf->value_class(12), "sv sv7");
-        xassert_eqq($rf->value_class(13), "sv sv8");
-        xassert_eqq($rf->value_class(14), "sv sv8");
-        xassert_eqq($rf->value_class(15), "sv sv9");
-        $rf = $conf->find_review_field("B10");
-        xassert_eqq($rf->value_class(1), "sv sv1");
-        xassert_eqq($rf->value_class(2), "sv sv2");
-        xassert_eqq($rf->value_class(3), "sv sv3");
-        xassert_eqq($rf->value_class(4), "sv sv4");
-        xassert_eqq($rf->value_class(5), "sv sv5");
-        xassert_eqq($rf->value_class(6), "sv sv5");
-        xassert_eqq($rf->value_class(7), "sv sv6");
-        xassert_eqq($rf->value_class(8), "sv sv7");
-        xassert_eqq($rf->value_class(9), "sv sv8");
-        xassert_eqq($rf->value_class(10), "sv sv9");
-
-        $sv = SettingValues::make_request($user_chair, [
-            "has_review_form" => 1,
-            "rf__1__id" => "s03",
-            "rf__1__colors" => "svr",
-            "rf__2__id" => "s04",
-            "rf__2__colors" => "svr",
-            "rf__3__id" => "s06",
-            "rf__3__colors" => "svr",
-            "rf__4__id" => "s07",
-            "rf__4__colors" => "svr"
-        ]);
-        xassert($sv->execute());
-        $rf = $conf->find_review_field("B5");
-        xassert_eqq($rf->value_class(1), "sv sv1");
-        xassert_eqq($rf->value_class(2), "sv sv3");
-        xassert_eqq($rf->value_class(3), "sv sv5");
-        xassert_eqq($rf->value_class(4), "sv sv7");
-        xassert_eqq($rf->value_class(5), "sv sv9");
-        $rf = $conf->find_review_field("B9");
-        xassert_eqq($rf->value_class(1), "sv sv9");
-        xassert_eqq($rf->value_class(2), "sv sv8");
-        xassert_eqq($rf->value_class(3), "sv sv7");
-        xassert_eqq($rf->value_class(4), "sv sv6");
-        xassert_eqq($rf->value_class(5), "sv sv5");
-        xassert_eqq($rf->value_class(6), "sv sv4");
-        xassert_eqq($rf->value_class(7), "sv sv3");
-        xassert_eqq($rf->value_class(8), "sv sv2");
-        xassert_eqq($rf->value_class(9), "sv sv1");
-        $rf = $conf->find_review_field("B15");
-        xassert_eqq($rf->value_class(15), "sv sv1");
-        xassert_eqq($rf->value_class(14), "sv sv2");
-        xassert_eqq($rf->value_class(13), "sv sv2");
-        xassert_eqq($rf->value_class(12), "sv sv3");
-        xassert_eqq($rf->value_class(11), "sv sv3");
-        xassert_eqq($rf->value_class(10), "sv sv4");
-        xassert_eqq($rf->value_class(9), "sv sv4");
-        xassert_eqq($rf->value_class(8), "sv sv5");
-        xassert_eqq($rf->value_class(7), "sv sv6");
-        xassert_eqq($rf->value_class(6), "sv sv6");
-        xassert_eqq($rf->value_class(5), "sv sv7");
-        xassert_eqq($rf->value_class(4), "sv sv7");
-        xassert_eqq($rf->value_class(3), "sv sv8");
-        xassert_eqq($rf->value_class(2), "sv sv8");
-        xassert_eqq($rf->value_class(1), "sv sv9");
-        $rf = $conf->find_review_field("B10");
-        xassert_eqq($rf->value_class(10), "sv sv1");
-        xassert_eqq($rf->value_class(9), "sv sv2");
-        xassert_eqq($rf->value_class(8), "sv sv3");
-        xassert_eqq($rf->value_class(7), "sv sv4");
-        xassert_eqq($rf->value_class(6), "sv sv5");
-        xassert_eqq($rf->value_class(5), "sv sv5");
-        xassert_eqq($rf->value_class(4), "sv sv6");
-        xassert_eqq($rf->value_class(3), "sv sv7");
-        xassert_eqq($rf->value_class(2), "sv sv8");
-        xassert_eqq($rf->value_class(1), "sv sv9");
-
         $sv = SettingValues::make_request($user_chair, [
             "has_review_form" => 1,
             "rf__1__id" => "s90",
@@ -1318,26 +1119,5 @@ class Reviews_Tester {
         ]);
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
-
-        // review form setting updates
-        $updater = new UpdateSchema($conf);
-        xassert_eqq($updater->v258_review_form_setting('{"overAllMerit":{"name":"Overall merit","position":1,"visibility":"au","options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},"reviewerQualification":{"name":"Reviewer expertise","position":2,"visibility":"au","options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},"t01":{"name":"Paper summary","position":3,"visibility":"au"},"t02":{"name":"Comments for author","position":4,"visibility":"au"},"t03":{"name":"Comments for PC","position":5,"visibility":"pc"}}'),
-            '[{"name":"Overall merit","visibility":"au","options":["Reject","Weak reject","Weak accept","Accept","Strong accept"],"id":"s01","order":1},{"name":"Reviewer expertise","visibility":"au","options":["No familiarity","Some familiarity","Knowledgeable","Expert"],"id":"s02","order":2},{"name":"Paper summary","visibility":"au","id":"t01","order":3},{"name":"Comments for author","visibility":"au","id":"t02","order":4},{"name":"Comments for PC","visibility":"pc","id":"t03","order":5}]');
-        xassert_eqq($updater->v258_review_form_setting('[{"id":"s01","name":"Overall merit","position":1,"visibility":"au","options":["Reject","Weak reject","Weak accept","Strong accept"],"option_letter":"A","required":true},{"id":"s02","name":"Reviewer expertise","position":2,"visibility":"au","options":["Some familiarity","Knowledgeable","Expert"],"option_letter":"X","option_class_prefix":"sv-blpu","required":true},{"id":"t02","name":"Comments for author","position":3,"visibility":"au"},{"id":"t03","name":"Comments for PC","position":4,"visibility":"pc"}]'),
-            '[{"id":"s01","name":"Overall merit","visibility":"au","options":["Reject","Weak reject","Weak accept","Strong accept"],"option_letter":"A","required":true,"scheme":"svr","order":1},{"id":"s02","name":"Reviewer expertise","visibility":"au","options":["Some familiarity","Knowledgeable","Expert"],"option_letter":"X","required":true,"scheme":"publ","order":2},{"id":"t02","name":"Comments for author","visibility":"au","order":3},{"id":"t03","name":"Comments for PC","visibility":"pc","order":4}]');
-        xassert_eqq($updater->v258_review_form_setting('{"overAllMerit":{"name":"Overall merit","view_score":"author","position":1,"options":["Reject","Weak reject","Weak accept","Accept"],"round_mask":0},"reviewerQualification":{"name":"Reviewer expertise","view_score":"author","position":2,"options":["No familiarity","Some familiarity","Knowledgeable","Expert"],"round_mask":0},"paperSummary":{"name":"Paper summary","view_score":"author","position":3,"round_mask":0},"commentsToAuthor":{"name":"Comments for author","view_score":"author","position":4,"round_mask":0},"commentsToPC":{"name":"Comments for PC","view_score":"pc","position":5,"round_mask":0},"commentsToAddress":{"view_score":null,"round_mask":0},"fixability":{"view_score":null,"options":[],"round_mask":0},"grammar":{"view_score":null,"options":[],"round_mask":0},"interestToCommunity":{"view_score":null,"options":[],"round_mask":0},"likelyPresentation":{"view_score":null,"options":[],"round_mask":0},"longevity":{"view_score":null,"options":[],"round_mask":0},"novelty":{"view_score":null,"options":[],"round_mask":0},"potential":{"view_score":null,"options":[],"round_mask":0},"strengthOfPaper":{"view_score":null,"round_mask":0},"suitableForShort":{"view_score":null,"options":[],"round_mask":0},"technicalMerit":{"view_score":null,"options":[],"round_mask":0},"textField7":{"view_score":null,"round_mask":0},"textField8":{"view_score":null,"round_mask":0},"weaknessOfPaper":{"view_score":null,"round_mask":0}}'),
-            '[{"name":"Overall merit","options":["Reject","Weak reject","Weak accept","Accept"],"id":"s01","visibility":"au","order":1},{"name":"Reviewer expertise","options":["No familiarity","Some familiarity","Knowledgeable","Expert"],"id":"s02","visibility":"au","order":2},{"name":"Paper summary","id":"t01","visibility":"au","order":3},{"name":"Comments for author","id":"t02","visibility":"au","order":4},{"name":"Comments for PC","id":"t03","visibility":"pc","order":5},{"id":"t04"},{"id":"s11"},{"id":"s07"},{"id":"s05"},{"id":"s08"},{"id":"s06"},{"id":"s03"},{"id":"s10"},{"id":"t06"},{"id":"s09"},{"id":"s04"},{"id":"t07"},{"id":"t08"},{"id":"t05"}]');
-        xassert_eqq($updater->v258_review_form_setting('{"novelty":{"name":"Overall merit","position":1,"visibility":"au","options":["Reject","Weak paper, though I will not fight strongly against it","OK paper, but I will not champion it","Good paper, I will champion it"],"option_letter":"A"},"overAllMerit":{"name":"Reviewer Confidence","position":2,"visibility":"au","options":["I am not an expert; my evaluation is that of an informed outsider","I am knowledgeable in this area, but not an expert","I am an expert in this area"],"option_letter":"X"},"reviewerQualification":{"name":"How likely is the paper to spur discussion?","position":3,"visibility":"au","options":["Will not spur discussion","May spur discussion","Will definitely spur discussion"],"option_letter":"A"},"interestToCommunity":{"name":"Does the paper contain surprising results or a new research direction?","position":4,"visibility":"au","options":["no","Yes"],"option_letter":"A"},"longevity":{"name":"Accept as Paper or Poster?","description":"If you think the paper should be accepted, indicate whether you think it should be as a full paper with presentation, or as a poster to be displayed in the workshop.","position":5,"visibility":"au","options":["Paper with presentation","Poster","Not Applicable"],"option_class_prefix":"svr"},"technicalMerit":{"name":"Nominate for Outstanding New Direction Award?","position":6,"visibility":"pc","options":["Yes","No"],"option_class_prefix":"svr"},"t05":{"name":"Paper summary","description":"Please summarize the paper briefly in your own words.","position":7,"visibility":"au"},"t01":{"name":"Strengths","description":"What aspects of the paper are innovate or provocative (likely to spur discussion)? Just a couple sentences, please.","position":8,"visibility":"au"},"t04":{"name":"Weaknesses","description":"What are the paper’s weaknesses? Just a couple sentences, please.\\n\\nPlease remember that this is a workshop -- it is okay for the work to be incomplete.","position":9,"visibility":"au"},"t02":{"name":"Comments for author","position":10,"visibility":"au"},"t03":{"name":"Comments for PC","position":11,"visibility":"pc"}}'),
-            '[{"name":"Overall merit","visibility":"au","options":["Reject","Weak paper, though I will not fight strongly against it","OK paper, but I will not champion it","Good paper, I will champion it"],"option_letter":"A","id":"s03","scheme":"svr","order":1},{"name":"Reviewer Confidence","visibility":"au","options":["I am not an expert; my evaluation is that of an informed outsider","I am knowledgeable in this area, but not an expert","I am an expert in this area"],"option_letter":"X","id":"s01","scheme":"svr","order":2},{"name":"How likely is the paper to spur discussion?","visibility":"au","options":["Will not spur discussion","May spur discussion","Will definitely spur discussion"],"option_letter":"A","id":"s02","scheme":"svr","order":3},{"name":"Does the paper contain surprising results or a new research direction?","visibility":"au","options":["no","Yes"],"option_letter":"A","id":"s05","scheme":"svr","order":4},{"name":"Accept as Paper or Poster?","description":"If you think the paper should be accepted, indicate whether you think it should be as a full paper with presentation, or as a poster to be displayed in the workshop.","visibility":"au","options":["Paper with presentation","Poster","Not Applicable"],"id":"s06","scheme":"svr","order":5},{"name":"Nominate for Outstanding New Direction Award?","visibility":"pc","options":["Yes","No"],"id":"s04","scheme":"svr","order":6},{"name":"Paper summary","description":"Please summarize the paper briefly in your own words.","visibility":"au","id":"t05","order":7},{"name":"Strengths","description":"What aspects of the paper are innovate or provocative (likely to spur discussion)? Just a couple sentences, please.","visibility":"au","id":"t01","order":8},{"name":"Weaknesses","description":"What are the paper’s weaknesses? Just a couple sentences, please.\\n\\nPlease remember that this is a workshop -- it is okay for the work to be incomplete.","visibility":"au","id":"t04","order":9},{"name":"Comments for author","visibility":"au","id":"t02","order":10},{"name":"Comments for PC","visibility":"pc","id":"t03","order":11}]');
-
-        // Unambiguous renumberings
-        xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi"], ["Hello", "Hi", "Hello"]), []);
-        xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi"], ["Hello", "Fart", "Hi"]), [1 => 2]);
-        xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi"], ["Hi", "Hello"]), [0 => 1, 1 => 0]);
-        xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi", "Fart"], ["Hi", "Hello"]), [0 => 1, 1 => 0, 2 => -1]);
-        xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi", "Fart"], ["Hi", "Barf"]), [2 => -1]);
-        xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi", "Fart"], ["Fart", "Barf"]), [2 => -1]);
-        xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi", "Fart"], ["Fart", "Money", "Barf"]), []);
-        xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi", "Fart"], ["Fart", "Hello", "Hi"]), [0 => 1, 1 => 2, 2 => 0]);
     }
 }
