@@ -586,19 +586,57 @@ class TestRunner {
         }
     }
 
+    /** @param \mysqli $dblink
+     * @param string $filename
+     * @param bool $rebuild
+     * @return string */
+    static private function reset_schema($dblink, $filename, $rebuild = false) {
+        $s0 = file_get_contents($filename);
+        assert($s0 !== false);
+
+        $s = preg_replace('/\s*(?:--|#).*/m', "", $s0);
+        $truncates = [];
+        while (!$rebuild && preg_match('/\A\s*((?:DROP|CREATE)\C*?;)$/mi', $s, $m)) {
+            $stmt = $m[1];
+            $s = substr($s, strlen($m[0]));
+            if (preg_match('/\ACREATE\s*TABLE\s*\`(.*?)\`/i', $stmt, $m)) {
+                $truncates[] = "TRUNCATE TABLE `{$m[1]}`;\n";
+                if (stripos($stmt, "auto_increment") !== false) {
+                    $truncates[] = "ALTER TABLE `{$m[1]}` AUTO_INCREMENT=0;\n";
+                }
+            } else if (!preg_match('/\ADROP\s*TABLE\s*(?:IF\s*EXISTS\s*|)\`.*?\`;\z/', $stmt)) {
+                $rebuild = true;
+                break;
+            }
+        }
+
+        if ($rebuild
+            || !preg_match('/\A\s*insert into Settings[^;]*\(\'(allowPaperOption|sversion)\',\s*(\d+)\);/mi', $s, $m)
+            || Dbl::fetch_ivalue($dblink, "select value from Settings where name=?", $m[1]) !== intval($m[2])) {
+            $rebuild = true;
+        }
+
+        if ($rebuild) {
+            $query = $s0;
+        } else {
+            $query = join("", $truncates) . $s;
+        }
+
+        $mresult = Dbl::multi_q_raw($dblink, $query);
+        $mresult->free_all();
+        if ($dblink->errno) {
+            error_log("* Error initializing database.\n" . $dblink->error . "\n");
+            exit(1);
+        }
+    }
+
     static function reset_db() {
         $conf = Conf::$main;
         $timer = new ProfileTimer;
         MailChecker::clear();
 
         // Initialize from an empty database.
-        $schema = file_get_contents(SiteLoader::find("src/schema.sql"));
-        $mresult = Dbl::multi_q_raw($conf->dblink, file_get_contents(SiteLoader::find("src/schema.sql")));
-        $mresult->free_all();
-        if ($conf->dblink->errno) {
-            error_log("* Error initializing database.\n" . $conf->dblink->error . "\n");
-            exit(1);
-        }
+        self::reset_schema($conf->dblink, SiteLoader::find("src/schema.sql"));
         $timer->mark("schema");
 
         // No setup phase.
@@ -609,8 +647,7 @@ class TestRunner {
 
         // Contactdb.
         if (($cdb = $conf->contactdb())) {
-            $mresult = Dbl::multi_q_raw($cdb, file_get_contents(SiteLoader::find("test/cdb-schema.sql")));
-            $mresult->free_all();
+            self::reset_schema($cdb, SiteLoader::find("test/cdb-schema.sql"));
             $cdb->query("insert into Conferences set dbname='" . $cdb->real_escape_string($conf->dbname) . "'");
             Contact::$props["demoBirthday"] = Contact::PROP_CDB | Contact::PROP_NULL | Contact::PROP_INT | Contact::PROP_IMPORT;
         }

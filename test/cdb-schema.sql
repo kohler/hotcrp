@@ -68,3 +68,20 @@ CREATE TABLE `Roles` (
   `activity_at` bigint(20) NOT NULL DEFAULT 0,
   PRIMARY KEY (`contactDbId`,`confid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+--
+-- Table structure for table `Settings`
+--
+
+DROP TABLE IF EXISTS `Settings`;
+CREATE TABLE `Settings` (
+  `name` varbinary(256) DEFAULT NULL,
+  `value` int(11) NOT NULL,
+  `data` varbinary(32767) DEFAULT NULL,
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+insert into Settings (name, value) values ('sversion', 100);
