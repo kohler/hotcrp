@@ -425,8 +425,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         } else if ($rrow->reviewType > 0
                    && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED
                    && $rrow->reviewNeedsSubmit <= 0
-                   && !$this->status) {
-            // don't count delegated reviews unless contacts or status given
+                   && ($this->sensitivity & (self::HAS_STATUS | self::HAS_RTYPE)) === 0) {
+            // don't count delegated reviews unless contacts, status, or type given
             return false;
         }
         if ($this->wordcountexpr
