@@ -370,15 +370,17 @@ class ConfInvariants {
         return $this;
     }
 
-    /** @param string $prefix
+    /** @param ?string $prefix
      * @return bool */
-    static function test_all(Conf $conf, $prefix = "") {
+    static function test_all(Conf $conf, $prefix = null) {
+        $prefix = $prefix ?? caller_landmark() . ": ";
         return (new ConfInvariants($conf, $prefix))->exec_all()->ok();
     }
 
-    /** @param string $prefix
+    /** @param ?string $prefix
      * @return bool */
-    static function test_document_inactive(Conf $conf, $prefix = "") {
+    static function test_document_inactive(Conf $conf, $prefix = null) {
+        $prefix = $prefix ?? caller_landmark() . ": ";
         return (new ConfInvariants($conf, $prefix))->exec_document_inactive()->ok();
     }
 }

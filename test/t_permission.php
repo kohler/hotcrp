@@ -105,7 +105,7 @@ class Permission_Tester {
 
     function test_all() {
         $conf = $this->conf;
-        ConfInvariants::test_all($conf, "test01.php:A: ");
+        ConfInvariants::test_all($conf);
 
         $conf->save_setting("sub_open", 1);
         $conf->save_setting("sub_update", Conf::$now + 10);
@@ -1238,10 +1238,10 @@ class Permission_Tester {
         assert_search_papers($user_chair, "re:1 19", "19");
 
         // check rev_tokens setting
-        ConfInvariants::test_all($conf, "test01.php:B: ");
+        ConfInvariants::test_all($conf);
         xassert_assign($user_chair, "paper,action,user\n19,clearreview,anonymous\n");
         assert_search_papers($user_chair, "re:any 19", "");
-        ConfInvariants::test_all($conf, "test01.php:C: ");
+        ConfInvariants::test_all($conf);
         xassert_assign($user_chair, "paper,action,user\n19,review,anonymous\n");
 
         xassert_assign($user_chair, "paper,action,user\n19,review,anonymous\n");
@@ -1367,7 +1367,7 @@ class Permission_Tester {
         xassert_eqq($paper16->sorted_searchable_tags($user_marina), " app#2");
         xassert_eqq($paper16->sorted_searchable_tags($user_estrin), " 4~app#0 4~bar#0 app#2");
 
-        ConfInvariants::test_all($conf, "test01.php:D: ");
+        ConfInvariants::test_all($conf);
 
         // author view capabilities and multiple blank users
         $blank1 = Contact::make($conf);

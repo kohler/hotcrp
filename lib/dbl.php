@@ -58,13 +58,18 @@ class Dbl_Result {
 class Dbl_MultiResult {
     /** @var \mysqli */
     private $dblink;
+    /** @var int */
     private $flags;
-    private $qstr;
+    /** @var string */
+    private $query_string;
 
+    /** @param int $flags
+     * @param string $qstr
+     * @param bool $result */
     function __construct(mysqli $dblink, $flags, $qstr, $result) {
         $this->dblink = $dblink;
         $this->flags = $flags | Dbl::F_MULTI | ($result ? Dbl::F_MULTI_OK : 0);
-        $this->qstr = $qstr;
+        $this->query_string = $qstr;
     }
     /** @return false|Dbl_Result */
     function next() {
@@ -85,7 +90,7 @@ class Dbl_MultiResult {
         } else {
             $this->flags &= ~(Dbl::F_MULTI | Dbl::F_MULTI_OK);
         }
-        return Dbl::do_result($this->dblink, $this->flags, $this->qstr, $result);
+        return Dbl::do_result($this->dblink, $this->flags, $this->query_string, $result);
     }
     function free_all() {
         while (($result = $this->next())) {

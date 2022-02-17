@@ -92,11 +92,6 @@ class ReviewInfo implements JsonSerializable {
     private $suitableForShort;
     private $potential;
     private $fixability;
-    // These scores are private to prevent access (XXX backward compat)
-    private $s01;
-    private $t01;
-    private $t02;
-    private $t03;
 
     // sometimes joined
     /** @var ?string */
@@ -224,6 +219,12 @@ class ReviewInfo implements JsonSerializable {
             $str = substr($str, 0, $l - ($str[$l - 6] === "-" ? 7 : 6));
         }
         return self::$type_map[$str] ?? false;
+    }
+
+    /** @param int $type
+     * @return string */
+    static function unparse_type($type) {
+        return self::$type_revmap[$type];
     }
 
     /** @param int $type
@@ -823,10 +824,19 @@ class ReviewInfo implements JsonSerializable {
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        $j = ["confid" => $this->conf->dbname];
+        $j = ["confid" => $this->conf->dbname, ];
         foreach (get_object_vars($this) as $k => $v) {
-            if ($k !== "conf" && $k !== "prow" && $k !== "_data") {
+            if ($k[0] !== "_"
+                && $v !== null
+                && !in_array($k, ["conf", "prow", "sfields", "tfields", "fields"])
+                && !isset(self::$score_field_map[$k])) {
                 $j[$k] = $v;
+            }
+        }
+        if ($this->fields !== null) {
+            foreach ($this->conf->all_review_fields() as $f) {
+                if ($this->fields[$f->order] !== null)
+                    $j[$f->uid()] = $this->fields[$f->order];
             }
         }
         return $j;
