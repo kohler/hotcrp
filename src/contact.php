@@ -5217,53 +5217,55 @@ class Contact {
         $rrow = ReviewInfo::fetch($result, null, $this->conf);
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
-        $type = max((int) $type, 0);
         $oldtype = $rrow ? $rrow->reviewType : 0;
+        $type = max((int) $type, 0);
+        assert($type >= 0 && $oldtype >= 0);
+        $oldround = $rrow ? $rrow->reviewRound : null;
         $round = $extra["round_number"] ?? null;
         $new_requester_cid = $this->contactId;
+        $time = Conf::$now;
 
         // can't delete a review that's in progress
-        if ($type <= 0 && $oldtype && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
-            if ($oldtype >= REVIEW_SECONDARY) {
-                $type = REVIEW_PC;
-            } else {
-                return $reviewId;
-            }
+        if ($type === 0
+            && $oldtype > 0
+            && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
+            $type = $oldtype >= REVIEW_SECONDARY ? REVIEW_PC : $oldtype;
         }
+
         // PC members always get PC reviews
-        if ($type == REVIEW_EXTERNAL
+        if ($type === REVIEW_EXTERNAL
             && $this->conf->pc_member_by_id($reviewer_cid)) {
             $type = REVIEW_PC;
         }
 
         // change database
-        if ($type && $round === null) {
-            $round = $this->conf->assignment_round($type == REVIEW_EXTERNAL);
-        }
-        if ($type && !$oldtype) {
-            $qa = "";
-            if ($extra["mark_notify"] ?? null) {
-                $qa .= ", timeRequestNotified=" . Conf::$now;
-            }
-            if ($extra["token"] ?? null) {
-                $qa .= $this->unassigned_review_token();
-            }
+        if ($type === $oldtype
+            && ($type === 0 || $round === null || $round === $rrow->reviewRound)) {
+            return $reviewId;
+        } else if ($oldtype === 0) {
+            $round = $round ?? $this->conf->assignment_round($type === REVIEW_EXTERNAL);
             if (($new_requester = $extra["requester_contact"] ?? null)) {
                 $new_requester_cid = $new_requester->contactId;
             }
-            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, reviewRound=$round, timeRequested=".Conf::$now."$qa, requestedBy=$new_requester_cid";
-        } else if ($type && ($oldtype != $type || $rrow->reviewRound != $round)) {
-            $q = "update PaperReview set reviewType=$type, reviewRound=$round";
-            if ($type < 0) {
-                $q .= ", reviewNeedsSubmit=0";
-            } else if ($rrow->reviewStatus < ReviewInfo::RS_ADOPTED) {
-                $q .= ", reviewNeedsSubmit=1";
+            $q = "insert into PaperReview set paperId={$pid}, contactId={$reviewer_cid}, reviewType={$type}, reviewRound={$round}, timeRequested={$time}, requestedBy={$new_requester_cid}";
+            if ($extra["mark_notify"] ?? null) {
+                $q .= ", timeRequestNotified={$time}";
             }
-            $q .= " where reviewId=$reviewId";
-        } else if (!$type && $oldtype) {
-            $q = "delete from PaperReview where reviewId=$reviewId";
+            if ($extra["token"] ?? null) {
+                $q .= $this->unassigned_review_token();
+            }
+        } else if ($type === 0) {
+            $q = "delete from PaperReview where paperId={$pid} and reviewId={$reviewId}";
         } else {
-            return $reviewId;
+            $q = "update PaperReview set reviewType={$type}";
+            if ($round !== null) {
+                $q .= ", reviewRound={$round}";
+            }
+            if ($type !== REVIEW_SECONDARY && $oldtype === REVIEW_SECONDARY) {
+                $rns = $rrow->reviewStatus < ReviewInfo::RS_ADOPTED ? 1 : 0;
+                $q .= ", reviewNeedsSubmit={$rns}";
+            }
+            $q .= " where paperId={$pid} and reviewId={$reviewId}";
         }
 
         $result = $this->conf->qe_raw($q);
@@ -5271,10 +5273,10 @@ class Contact {
             return false;
         }
 
-        if ($type && !$oldtype) {
+        if ($type > 0 && $oldtype === 0) {
             $reviewId = $result->insert_id;
             $msg = "Assigned " . $this->assign_review_explanation($type, $round);
-        } else if (!$type) {
+        } else if ($type === 0) {
             $msg = "Removed " . $this->assign_review_explanation($oldtype, $rrow->reviewRound);
             $reviewId = 0;
         } else {
@@ -5283,7 +5285,7 @@ class Contact {
         $this->conf->log_for($this, $reviewer_cid, $msg, $pid);
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
-        if ($type && !$oldtype) {
+        if ($type > 0 && $oldtype === 0) {
             $this->conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
             if (($req_email = $extra["requested_email"] ?? null)) {
                 $this->conf->qe("delete from ReviewRequest where paperId=$pid and email=?", $req_email);
@@ -5295,7 +5297,7 @@ class Contact {
                 && ($this->conf->setting("pcrev_assigntime") ?? 0) < Conf::$now) {
                 $this->conf->save_setting("pcrev_assigntime", Conf::$now);
             }
-        } else if (!$type) {
+        } else if ($type === 0) {
             if ($oldtype < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
                 $this->update_review_delegation($pid, $rrow->requestedBy, -1);
             }
@@ -5303,14 +5305,12 @@ class Contact {
             if ($rrow->reviewToken !== 0) {
                 $this->conf->settings["rev_tokens"] = -1;
             }
-        } else {
-            if ($type == REVIEW_SECONDARY
-                && $oldtype != REVIEW_SECONDARY
-                && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
-                $this->update_review_delegation($pid, $reviewer_cid, 0);
-            }
+        } else if ($type === REVIEW_SECONDARY
+                   && $oldtype !== REVIEW_SECONDARY
+                   && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
+            $this->update_review_delegation($pid, $reviewer_cid, 0);
         }
-        if ($type == REVIEW_META || $oldtype == REVIEW_META) {
+        if ($type === REVIEW_META || $oldtype === REVIEW_META) {
             $this->conf->update_metareviews_setting($type == REVIEW_META ? 1 : -1);
         }
 
