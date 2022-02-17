@@ -1471,15 +1471,15 @@ class Permission_Tester {
         xassert_eqq($u->affiliation, "University of Michigan");
         xassert($conf->checked_paper_by_id(27)->has_author($u));
 
-        xassert(!maybe_user("cengiz@isi.edu"));
-        $u = Contact::make_keyed($conf, ["email" => "cengiz@isi.edu", "first" => "cengiz!", "last" => "ALAETTINOGLU", "affiliation" => "USC ISI"])->store();
+        xassert(!maybe_user("schwartz@ctr.columbia.edu"));
+        $u = Contact::make_keyed($conf, ["email" => "schwartz@ctr.columbia.edu", "first" => "cengiz!", "last" => "SCHwarTZ", "affiliation" => "Coyumbia"])->store();
         xassert(!!$u);
         xassert($u->contactId > 0);
-        xassert_eqq($u->email, "cengiz@isi.edu");
+        xassert_eqq($u->email, "schwartz@ctr.columbia.edu");
         xassert_eqq($u->firstName, "cengiz!");
-        xassert_eqq($u->lastName, "ALAETTINOGLU");
-        xassert_eqq($u->affiliation, "USC ISI");
-        xassert($conf->checked_paper_by_id(27)->has_author($u));
+        xassert_eqq($u->lastName, "SCHwarTZ");
+        xassert_eqq($u->affiliation, "Coyumbia");
+        xassert($conf->checked_paper_by_id(26)->has_author($u));
 
         xassert(!maybe_user("anonymous10"));
         $u = Contact::make_email($conf, "anonymous10")->store(Contact::SAVE_ANY_EMAIL);

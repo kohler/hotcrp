@@ -79,6 +79,9 @@ require_once(SiteLoader::find("src/helpers.php"));
 require_once(SiteLoader::find("src/conference.php"));
 require_once(SiteLoader::find("src/contact.php"));
 Conf::set_current_time(microtime(true));
+if (defined("HOTCRP_TESTHARNESS")) {
+    Conf::$test_mode = true;
+}
 
 
 // Set locale to C (so that, e.g., strtolower() on UTF-8 data doesn't explode)

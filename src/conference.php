@@ -2500,9 +2500,8 @@ class Conf {
         if ($this->_user_cache && $this->_slice) {
             $u = (array_values($this->_user_cache))[0];
             $this->unslice_user($u);
-        } else {
-            $this->_slice = 0;
         }
+        $this->_slice = 0;
         return $this->pc_members();
     }
 
@@ -2522,7 +2521,7 @@ class Conf {
             $this->_ensure_user_email_cache();
         }
         /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-        if (($u = $this->_user_email_cache[strtolower($email)])
+        if (($u = $this->_user_email_cache[strtolower($email)] ?? null)
             && ($u->roles & Contact::ROLE_PC) !== 0) {
             return $u;
         } else {

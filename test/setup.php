@@ -102,7 +102,7 @@ class MailChecker {
                 || preg_match("=\\A" . str_replace('\\{\\{\\}\\}', ".*", preg_quote($want)) . "\\z=", $have)) {
                 ++Xassert::$nsuccess;
             } else {
-                error_log(assert_location() . ": Mail failure: " . var_export($have, true) . " !== " . var_export($want, true) . "\n");
+                error_log(assert_location() . ": Mail failure: " . var_export($have, true) . " !== " . var_export($want, true));
                 $havel = explode("\n", $have);
                 foreach (explode("\n", $want) as $j => $wantl) {
                     if (!isset($havel[$j])
@@ -113,7 +113,7 @@ class MailChecker {
                         break;
                     }
                 }
-                error_log("... at " . assert_location() . "\n");
+                error_log("... at " . assert_location());
             }
         }
         self::$preps = [];
@@ -226,7 +226,7 @@ function xassert($x, $description = "") {
     if ($x) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": " . ($description ? : "Assertion failed") . "\n");
+        error_log(assert_location() . ": " . ($description ? : "Assertion failed"));
     }
     return !!$x;
 }
@@ -251,7 +251,7 @@ function xassert_eqq($a, $b) {
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " === " . var_export($b, true) . "\n");
+        error_log(assert_location() . ": Expected " . var_export($a, true) . " === " . var_export($b, true));
     }
     return $ok;
 }
@@ -263,7 +263,7 @@ function xassert_neqq($a, $b) {
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " !== " . var_export($b, true) . "\n");
+        error_log(assert_location() . ": Expected " . var_export($a, true) . " !== " . var_export($b, true));
     }
     return $ok;
 }
@@ -280,7 +280,7 @@ function xassert_in_eqq($a, $b) {
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " \\in " . var_export($b, true) . "\n");
+        error_log(assert_location() . ": Expected " . var_export($a, true) . " \\in " . var_export($b, true));
     }
     return $ok;
 }
@@ -294,7 +294,7 @@ function xassert_eq($a, $b) {
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " == " . var_export($b, true) . "\n");
+        error_log(assert_location() . ": Expected " . var_export($a, true) . " == " . var_export($b, true));
     }
     return $ok;
 }
@@ -308,7 +308,7 @@ function xassert_neq($a, $b) {
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " != " . var_export($b, true) . "\n");
+        error_log(assert_location() . ": Expected " . var_export($a, true) . " != " . var_export($b, true));
     }
     return $ok;
 }
@@ -347,7 +347,7 @@ function xassert_array_eqq($a, $b, $sort = false) {
     if ($problem === "") {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Array assertion failed, $problem\n");
+        error_log(assert_location() . ": Array assertion failed, {$problem}");
         if ($sort) {
             $aj = json_encode(array_slice($a, 0, 10));
             if (count($a) > 10) {
@@ -370,7 +370,7 @@ function xassert_match($a, $b) {
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected " . var_export($a, true) . " ~= $b\n");
+        error_log(assert_location() . ": Expected " . var_export($a, true) . " ~= {$b}");
     }
     return $ok;
 }
@@ -389,7 +389,7 @@ function xassert_int_list_eqq($a, $b) {
     if ($ok) {
         ++Xassert::$nsuccess;
     } else {
-        error_log(assert_location() . ": Expected {$x[0]} === {$x[1]}\n");
+        error_log(assert_location() . ": Expected {$x[0]} === {$x[1]}");
     }
     return $ok;
 }
@@ -495,6 +495,34 @@ function xassert_assign_fail($who, $what, $override = false) {
     return xassert(!$assignset->execute());
 }
 
+/** @param int $maxstatus */
+function xassert_paper_status(PaperStatus $ps, $maxstatus = MessageSet::PLAIN) {
+    if (!xassert($ps->problem_status() <= $maxstatus)) {
+        foreach ($ps->problem_list() as $mx) {
+            error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));
+        }
+    }
+}
+
+/** @param int $maxstatus */
+function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = MessageSet::PLAIN) {
+    xassert($ps->save_status() !== 0);
+    if ($ps->problem_status() > $maxstatus) {
+        $asserted = false;
+        foreach ($ps->problem_list() as $mx) {
+            if ($mx->message !== "<0>Entry required"
+                && $mx->message !== "<0>Entry required to complete submission") {
+                if (!$asserted) {
+                    xassert($ps->problem_status() <= $maxstatus);
+                    $asserted = true;
+                }
+                error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));
+            }
+        }
+    }
+}
+
+
 /** @param Contact $user
  * @param ?PaperInfo $prow
  * @return array */
@@ -543,30 +571,25 @@ function maybe_user($email) {
     return Conf::$main->user_by_email($email);
 }
 
-/** @param int $maxstatus */
-function xassert_paper_status(PaperStatus $ps, $maxstatus = MessageSet::PLAIN) {
-    if (!xassert($ps->problem_status() <= $maxstatus)) {
-        foreach ($ps->problem_list() as $mx) {
-            error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));
-        }
-    }
+/** @param string $email
+ * @param bool $iscdb
+ * @return ?string */
+function password($email, $iscdb = false) {
+    $dblink = $iscdb ? Conf::$main->contactdb() : Conf::$main->dblink;
+    $result = Dbl::qe($dblink, "select password from ContactInfo where email=?", $email);
+    $row = Dbl::fetch_first_row($result);
+    return $row[0] ?? null;
 }
 
-/** @param int $maxstatus */
-function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = MessageSet::PLAIN) {
-    xassert($ps->save_status() !== 0);
-    if ($ps->problem_status() > $maxstatus) {
-        $asserted = false;
-        foreach ($ps->problem_list() as $mx) {
-            if ($mx->message !== "<0>Entry required"
-                && $mx->message !== "<0>Entry required to complete submission") {
-                if (!$asserted) {
-                    xassert($ps->problem_status() <= $maxstatus);
-                    $asserted = true;
-                }
-                error_log("! {$mx->field}" . ($mx->message ? ": {$mx->message}" : ""));
-            }
-        }
+/** @param string $email
+ * @param ?string $encoded_password
+ * @param bool $iscdb */
+function save_password($email, $encoded_password, $iscdb = false) {
+    $dblink = $iscdb ? Conf::$main->contactdb() : Conf::$main->dblink;
+    Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where email=?", $encoded_password, Conf::$now + 1, Conf::$now + 1, $email);
+    Conf::advance_current_time(Conf::$now + 2);
+    if ($iscdb) {
+        Conf::$main->invalidate_cdb_user_by_email($email);
     }
 }
 
@@ -588,8 +611,7 @@ class TestRunner {
 
     /** @param \mysqli $dblink
      * @param string $filename
-     * @param bool $rebuild
-     * @return string */
+     * @param bool $rebuild */
     static private function reset_schema($dblink, $filename, $rebuild = false) {
         $s0 = file_get_contents($filename);
         assert($s0 !== false);
@@ -625,7 +647,7 @@ class TestRunner {
         $mresult = Dbl::multi_q_raw($dblink, $query);
         $mresult->free_all();
         if ($dblink->errno) {
-            error_log("* Error initializing database.\n" . $dblink->error . "\n");
+            error_log("* Error initializing database.\n{$dblink->error}");
             exit(1);
         }
     }
@@ -660,7 +682,7 @@ class TestRunner {
         // Load data.
         $json = json_decode(file_get_contents(SiteLoader::find("test/db.json")));
         if (!$json) {
-            error_log("* test/testdb.json error: " . json_last_error_msg() . "\n");
+            error_log("* test/testdb.json error: " . json_last_error_msg());
             exit(1);
         }
         $us = new UserStatus($conf->root_user());
@@ -705,51 +727,28 @@ class TestRunner {
                 $testo->{$m->name}();
         }
     }
-}
 
-/** @param string $email
- * @param bool $iscdb
- * @return ?string */
-function password($email, $iscdb = false) {
-    $dblink = $iscdb ? Conf::$main->contactdb() : Conf::$main->dblink;
-    $result = Dbl::qe($dblink, "select password from ContactInfo where email=?", $email);
-    $row = Dbl::fetch_first_row($result);
-    return $row[0] ?? null;
-}
-
-/** @param string $email
- * @param ?string $encoded_password
- * @param bool $iscdb */
-function save_password($email, $encoded_password, $iscdb = false) {
-    $dblink = $iscdb ? Conf::$main->contactdb() : Conf::$main->dblink;
-    Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where email=?", $encoded_password, Conf::$now + 1, Conf::$now + 1, $email);
-    Conf::advance_current_time(Conf::$now + 2);
-    if ($iscdb) {
-        Conf::$main->invalidate_cdb_user_by_email($email);
+    /** @param string $url */
+    static function set_navigation_base($url) {
+        Navigation::analyze();
+        $nav = Navigation::get();
+        $urlp = parse_url($url);
+        $nav->protocol = ($urlp["scheme"] ?? "http") . "://";
+        $nav->host = $urlp["host"] ?? "example.com";
+        $nav->server = $nav->protocol . $nav->host;
+        if (($s = $urlp["pass"] ?? null)) {
+            $nav->server .= ":{$s}";
+        }
+        if (($s = $urlp["user"] ?? null)) {
+            $nav->server .= "@{$s}";
+        }
+        if (($s = $urlp["port"] ?? null)) {
+            $nav->server .= ":{$s}";
+        }
+        $nav->base_path = $nav->base_path_relative = $nav->site_path = $nav->site_path_relative =
+            $urlp["path"] ?? "/";
     }
-}
-
-/** @param string $url */
-function set_navigation_base($url) {
-    Navigation::analyze();
-    $nav = Navigation::get();
-    $urlp = parse_url($url);
-    $nav->protocol = ($urlp["scheme"] ?? "http") . "://";
-    $nav->host = $urlp["host"] ?? "example.com";
-    $nav->server = $nav->protocol . $nav->host;
-    if (($s = $urlp["pass"] ?? null)) {
-        $nav->server .= ":{$s}";
-    }
-    if (($s = $urlp["user"] ?? null)) {
-        $nav->server .= "@{$s}";
-    }
-    if (($s = $urlp["port"] ?? null)) {
-        $nav->server .= ":{$s}";
-    }
-    $nav->base_path = $nav->base_path_relative = $nav->site_path = $nav->site_path_relative =
-        $urlp["path"] ?? "/";
 }
 
 TestRunner::$original_opt = $Opt;
-Conf::$test_mode = true;
-set_navigation_base("/");
+TestRunner::set_navigation_base("/");

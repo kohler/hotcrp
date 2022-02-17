@@ -121,10 +121,13 @@ class Dbl {
     static public $verbose = false;
     static public $landmark_sanitizer = "/^Dbl::/";
 
+    /** @return bool */
     static function has_error() {
         return self::$nerrors > 0;
     }
 
+    /** @param array $opt
+     * @return ?string */
     static function make_dsn($opt) {
         if (isset($opt["dsn"])) {
             if (is_string($opt["dsn"])) {
@@ -145,6 +148,8 @@ class Dbl {
         return null;
     }
 
+    /** @param string $dsn
+     * @return string */
     static function sanitize_dsn($dsn) {
         return preg_replace('{\A(\w+://[^/:]*:)[^\@/]+([\@/])}', '$1PASSWORD$2', $dsn);
     }
@@ -196,7 +201,12 @@ class Dbl {
             $dblink = new mysqli($dbhost, $dbuser, $dbpass);
         }
 
-        if (!mysqli_connect_errno() && $dblink->select_db($dbname)) {
+        if ($dblink->connect_errno || mysqli_connect_errno()) {
+            return [null, $dbname];
+        } else if (!$dblink->select_db($dbname)) {
+            $dblink->close();
+            return [null, $dbname];
+        } else {
             // We send binary strings to MySQL, so we don't want warnings
             // about non-UTF-8 data
             $dblink->set_charset("binary");
@@ -204,9 +214,6 @@ class Dbl {
             // (the default is 1024/!?))(U#*@$%&!U
             $dblink->query("set group_concat_max_len=4294967295");
             return [$dblink, $dbname];
-        } else {
-            $dblink->close();
-            return [null, $dbname];
         }
     }
 

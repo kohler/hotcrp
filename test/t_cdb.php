@@ -186,6 +186,7 @@ class Cdb_Tester {
     }
 
     function test_create_no_password_mail() {
+        MailChecker::clear();
         $anna = "akhmatova@poema.ru";
         xassert(!maybe_user($anna));
         $acct = $this->us1->save((object) ["email" => $anna, "first" => "Anna", "last" => "Akhmatova"]);
@@ -471,15 +472,16 @@ class Cdb_Tester {
 
     function test_cdb_roles_3() {
         // saving a user with a role does both role and authorship
-        $acct = $this->conf->user_by_email("thalerd@eecs.umich.edu");
+        $email = "lam@cs.utexas.edu";
+        $acct = $this->conf->user_by_email($email);
         xassert(!$acct);
-        $acct = $this->us1->save((object) ["email" => "thalerd@eecs.umich.edu", "roles" => "sysadmin"]);
+        $acct = $this->us1->save((object) ["email" => $email, "roles" => "sysadmin"]);
         xassert(!!$acct);
         xassert($acct->is_author());
         xassert($acct->isPC);
         xassert($acct->privChair);
         xassert_eqq($acct->cdb_roles(), Contact::ROLE_AUTHOR | Contact::ROLE_ADMIN);
-        $acct = $this->conf->fresh_cdb_user_by_email("thalerd@eecs.umich.edu");
+        $acct = $this->conf->fresh_cdb_user_by_email($email);
         xassert_eqq($acct->roles, Contact::ROLE_AUTHOR | Contact::ROLE_ADMIN);
     }
 
