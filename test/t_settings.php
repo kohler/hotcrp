@@ -9,10 +9,14 @@ class Settings_Tester {
     /** @var Contact
      * @readonly */
     public $u_chair;
+    /** @var Contact
+     * @readonly */
+    public $u_mgbaker;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
+        $this->u_mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
     }
 
     function test_unambiguous_renumbering() {
@@ -25,6 +29,33 @@ class Settings_Tester {
         xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi", "Fart"], ["Fart", "Barf"]), [2 => -1]);
         xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi", "Fart"], ["Fart", "Money", "Barf"]), []);
         xassert_eqq($sv->unambiguous_renumbering(["Hello", "Hi", "Fart"], ["Fart", "Hello", "Hi"]), [0 => 1, 1 => 2, 2 => 0]);
+    }
+
+    function test_setting_info() {
+        $siset = $this->conf->si_set();
+        $si = $this->conf->si("sub_banal_data_0");
+        xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
+        xassert_eqq($si->storage_name(), "sub_banal");
+        $si = $this->conf->si("sub_banal_data_4");
+        xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
+        xassert_eqq($si->storage_name(), "sub_banal_4");
+        $si = $this->conf->si("sub_banal_m1");
+        xassert_eqq($si->group, "decisions");
+    }
+
+    function test_message_defaults() {
+        $sv = SettingValues::make_request($this->u_chair, []);
+        $s = $this->conf->si("preference_instructions")->default_value($sv);
+        xassert(strpos($s, "review preference") !== false);
+        xassert(strpos($s, "topic") === false);
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_topics" => 1,
+            "topic__newlist" => "Whatever\n"
+        ])->parse();
+
+        $s = $this->conf->si("preference_instructions")->default_value($sv);
+        xassert(strpos($s, "review preference") !== false);
+        xassert(strpos($s, "topic") !== false);
     }
 
     function test_topics() {
@@ -283,5 +314,15 @@ class Settings_Tester {
         ]);
         xassert($sv->execute());
         xassert(!$this->conf->find_review_field("B5"));
+    }
+
+    function test_review_name_required() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_review_form" => 1,
+            "rf__1__id" => "s90",
+            "rf__1__choices" => "1. A\n2. B\n"
+        ]);
+        xassert(!$sv->execute());
+        xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
     }
 }

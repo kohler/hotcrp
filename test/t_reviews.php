@@ -9,10 +9,16 @@ class Reviews_Tester {
     /** @var Contact
      * @readonly */
     public $u_chair;
+    /** @var Contact
+     * @readonly */
+    public $u_mgbaker;
+    /** @var string */
+    private $review1A;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
+        $this->u_mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
     }
 
     function save_round_settings($map) {
@@ -23,191 +29,165 @@ class Reviews_Tester {
         $this->conf->save_refresh_setting("round_settings", 1, json_encode_db($settings));
     }
 
-    function test_all() {
-        $conf = $this->conf;
+    function test_initial_state() {
+        // 1-18 have 3 assignments, rest have 0
+        assert_search_papers($this->u_chair, "re:3", "1-18");
+        assert_search_papers($this->u_chair, "-re:3", "19-30");
+        assert_search_papers($this->u_chair, "ire:3", "1-18");
+        assert_search_papers($this->u_chair, "-ire:3", "19-30");
+        assert_search_papers($this->u_chair, "pre:3", "");
+        assert_search_papers($this->u_chair, "-pre:3", "1-30");
+        assert_search_papers($this->u_chair, "cre:3", "");
+        assert_search_papers($this->u_chair, "-cre:3", "1-30");
+        assert_search_papers($this->u_chair, "re<4", "1-30");
+        assert_search_papers($this->u_chair, "-re<4", "");
+        assert_search_papers($this->u_chair, "re≤3", "1-30");
+        assert_search_papers($this->u_chair, "-re≤3", "");
+        assert_search_papers($this->u_chair, "re<=3", "1-30");
+        assert_search_papers($this->u_chair, "-re<=3", "");
+        assert_search_papers($this->u_chair, "re!=3", "19-30");
+        assert_search_papers($this->u_chair, "-re!=3", "1-18");
+        assert_search_papers($this->u_chair, "re≠3", "19-30");
+        assert_search_papers($this->u_chair, "-re≠3", "1-18");
+        assert_search_papers($this->u_chair, "-re>4", "1-30");
+        assert_search_papers($this->u_chair, "re>4", "");
+        assert_search_papers($this->u_chair, "-re≥3", "19-30");
+        assert_search_papers($this->u_chair, "re≥3", "1-18");
+        assert_search_papers($this->u_chair, "-re>=3", "19-30");
+        assert_search_papers($this->u_chair, "re>=3", "1-18");
 
-        // load users
-        $user_chair = $this->u_chair;
-        $user_mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu"); // pc
-        $user_diot = $conf->checked_user_by_email("christophe.diot@sophia.inria.fr"); // pc, red
-        $user_pdruschel = $conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
-        $user_mjh = $conf->checked_user_by_email("mjh@isi.edu"); // pc
-        $conf->save_setting("rev_open", 1);
+        assert_search_papers($this->u_chair, "re:mgbaker", "1 13 17");
+        assert_search_papers($this->u_chair, "-re:mgbaker", "2-12 14-16 18-30");
+        assert_search_papers($this->u_chair, "ire:mgbaker", "1 13 17");
+        assert_search_papers($this->u_chair, "-ire:mgbaker", "2-12 14-16 18-30");
+        assert_search_papers($this->u_chair, "pre:mgbaker", "");
+        assert_search_papers($this->u_chair, "-pre:mgbaker", "1-30");
+        assert_search_papers($this->u_chair, "cre:mgbaker", "");
+        assert_search_papers($this->u_chair, "-cre:mgbaker", "1-30");
 
-        // 1-18 have 3 assignments, reset have 0
-        assert_search_papers($user_chair, "re:3", "1-18");
-        assert_search_papers($user_chair, "-re:3", "19-30");
-        assert_search_papers($user_chair, "ire:3", "1-18");
-        assert_search_papers($user_chair, "-ire:3", "19-30");
-        assert_search_papers($user_chair, "pre:3", "");
-        assert_search_papers($user_chair, "-pre:3", "1-30");
-        assert_search_papers($user_chair, "cre:3", "");
-        assert_search_papers($user_chair, "-cre:3", "1-30");
-        assert_search_papers($user_chair, "re<4", "1-30");
-        assert_search_papers($user_chair, "-re<4", "");
-        assert_search_papers($user_chair, "re≤3", "1-30");
-        assert_search_papers($user_chair, "-re≤3", "");
-        assert_search_papers($user_chair, "re<=3", "1-30");
-        assert_search_papers($user_chair, "-re<=3", "");
-        assert_search_papers($user_chair, "re!=3", "19-30");
-        assert_search_papers($user_chair, "-re!=3", "1-18");
-        assert_search_papers($user_chair, "re≠3", "19-30");
-        assert_search_papers($user_chair, "-re≠3", "1-18");
-        assert_search_papers($user_chair, "-re>4", "1-30");
-        assert_search_papers($user_chair, "re>4", "");
-        assert_search_papers($user_chair, "-re≥3", "19-30");
-        assert_search_papers($user_chair, "re≥3", "1-18");
-        assert_search_papers($user_chair, "-re>=3", "19-30");
-        assert_search_papers($user_chair, "re>=3", "1-18");
+        $this->conf->save_setting("rev_open", 1);
+    }
 
-        assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
-        assert_search_papers($user_chair, "-re:mgbaker", "2-12 14-16 18-30");
-        assert_search_papers($user_chair, "ire:mgbaker", "1 13 17");
-        assert_search_papers($user_chair, "-ire:mgbaker", "2-12 14-16 18-30");
-        assert_search_papers($user_chair, "pre:mgbaker", "");
-        assert_search_papers($user_chair, "-pre:mgbaker", "1-30");
-        assert_search_papers($user_chair, "cre:mgbaker", "");
-        assert_search_papers($user_chair, "-cre:mgbaker", "1-30");
+    function test_add_incomplete_review() {
+        save_review(1, $this->u_mgbaker, ["overAllMerit" => 5, "ready" => false]);
 
-        // Add a partial review
-        save_review(1, $user_mgbaker, ["overAllMerit" => 5, "ready" => false]);
+        assert_search_papers($this->u_chair, "re:3", "1-18");
+        assert_search_papers($this->u_chair, "-re:3", "19-30");
+        assert_search_papers($this->u_chair, "ire:3", "1-18");
+        assert_search_papers($this->u_chair, "-ire:3", "19-30");
+        assert_search_papers($this->u_chair, "pre:3", "");
+        assert_search_papers($this->u_chair, "-pre:3", "1-30");
+        assert_search_papers($this->u_chair, "cre:3", "");
+        assert_search_papers($this->u_chair, "-cre:3", "1-30");
+        assert_search_papers($this->u_chair, "pre:any", "1");
+        assert_search_papers($this->u_chair, "-pre:any", "2-30");
+        assert_search_papers($this->u_chair, "cre:any", "");
+        assert_search_papers($this->u_chair, "-cre:any", "1-30");
 
-        assert_search_papers($user_chair, "re:3", "1-18");
-        assert_search_papers($user_chair, "-re:3", "19-30");
-        assert_search_papers($user_chair, "ire:3", "1-18");
-        assert_search_papers($user_chair, "-ire:3", "19-30");
-        assert_search_papers($user_chair, "pre:3", "");
-        assert_search_papers($user_chair, "-pre:3", "1-30");
-        assert_search_papers($user_chair, "cre:3", "");
-        assert_search_papers($user_chair, "-cre:3", "1-30");
-        assert_search_papers($user_chair, "pre:any", "1");
-        assert_search_papers($user_chair, "-pre:any", "2-30");
-        assert_search_papers($user_chair, "cre:any", "");
-        assert_search_papers($user_chair, "-cre:any", "1-30");
+        assert_search_papers($this->u_chair, "re:mgbaker", "1 13 17");
+        assert_search_papers($this->u_chair, "-re:mgbaker", "2-12 14-16 18-30");
+        assert_search_papers($this->u_chair, "ire:mgbaker", "1 13 17");
+        assert_search_papers($this->u_chair, "-ire:mgbaker", "2-12 14-16 18-30");
+        assert_search_papers($this->u_chair, "pre:mgbaker", "1");
+        assert_search_papers($this->u_chair, "-pre:mgbaker", "2-30");
+        assert_search_papers($this->u_chair, "cre:mgbaker", "");
+        assert_search_papers($this->u_chair, "-cre:mgbaker", "1-30");
 
-        assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
-        assert_search_papers($user_chair, "-re:mgbaker", "2-12 14-16 18-30");
-        assert_search_papers($user_chair, "ire:mgbaker", "1 13 17");
-        assert_search_papers($user_chair, "-ire:mgbaker", "2-12 14-16 18-30");
-        assert_search_papers($user_chair, "pre:mgbaker", "1");
-        assert_search_papers($user_chair, "-pre:mgbaker", "2-30");
-        assert_search_papers($user_chair, "cre:mgbaker", "");
-        assert_search_papers($user_chair, "-cre:mgbaker", "1-30");
+        assert_search_papers($this->u_chair, "ovemer:5", "");
+    }
 
-        assert_search_papers($user_chair, "ovemer:5", "");
+    function test_complete_incomplete_review() {
+        save_review(1, $this->u_mgbaker, ["overAllMerit" => 5, "reviewerQualification" => 1, "ready" => true]);
 
-        // Add a complete review
-        save_review(1, $user_mgbaker, ["overAllMerit" => 5, "reviewerQualification" => 1, "ready" => true]);
+        assert_search_papers($this->u_chair, "re:3", "1-18");
+        assert_search_papers($this->u_chair, "-re:3", "19-30");
+        assert_search_papers($this->u_chair, "ire:3", "2-18");
+        assert_search_papers($this->u_chair, "-ire:3", "1 19-30");
+        assert_search_papers($this->u_chair, "pre:3", "");
+        assert_search_papers($this->u_chair, "-pre:3", "1-30");
+        assert_search_papers($this->u_chair, "cre:3", "");
+        assert_search_papers($this->u_chair, "-cre:3", "1-30");
+        assert_search_papers($this->u_chair, "pre:any", "");
+        assert_search_papers($this->u_chair, "-pre:any", "1-30");
+        assert_search_papers($this->u_chair, "cre:any", "1");
+        assert_search_papers($this->u_chair, "-cre:any", "2-30");
 
-        assert_search_papers($user_chair, "re:3", "1-18");
-        assert_search_papers($user_chair, "-re:3", "19-30");
-        assert_search_papers($user_chair, "ire:3", "2-18");
-        assert_search_papers($user_chair, "-ire:3", "1 19-30");
-        assert_search_papers($user_chair, "pre:3", "");
-        assert_search_papers($user_chair, "-pre:3", "1-30");
-        assert_search_papers($user_chair, "cre:3", "");
-        assert_search_papers($user_chair, "-cre:3", "1-30");
-        assert_search_papers($user_chair, "pre:any", "");
-        assert_search_papers($user_chair, "-pre:any", "1-30");
-        assert_search_papers($user_chair, "cre:any", "1");
-        assert_search_papers($user_chair, "-cre:any", "2-30");
+        assert_search_papers($this->u_chair, "re:mgbaker", "1 13 17");
+        assert_search_papers($this->u_chair, "-re:mgbaker", "2-12 14-16 18-30");
+        assert_search_papers($this->u_chair, "ire:mgbaker", "13 17");
+        assert_search_papers($this->u_chair, "-ire:mgbaker", "1-12 14-16 18-30");
+        assert_search_papers($this->u_chair, "pre:mgbaker", "");
+        assert_search_papers($this->u_chair, "-pre:mgbaker", "1-30");
+        assert_search_papers($this->u_chair, "cre:mgbaker", "1");
+        assert_search_papers($this->u_chair, "-cre:mgbaker", "2-30");
 
-        assert_search_papers($user_chair, "re:mgbaker", "1 13 17");
-        assert_search_papers($user_chair, "-re:mgbaker", "2-12 14-16 18-30");
-        assert_search_papers($user_chair, "ire:mgbaker", "13 17");
-        assert_search_papers($user_chair, "-ire:mgbaker", "1-12 14-16 18-30");
-        assert_search_papers($user_chair, "pre:mgbaker", "");
-        assert_search_papers($user_chair, "-pre:mgbaker", "1-30");
-        assert_search_papers($user_chair, "cre:mgbaker", "1");
-        assert_search_papers($user_chair, "-cre:mgbaker", "2-30");
+        assert_search_papers($this->u_chair, "ovemer:5", "1");
+    }
 
-        assert_search_papers($user_chair, "ovemer:5", "1");
+    function test_offline_review_update() {
+        $paper1 = $this->conf->checked_paper_by_id(1, $this->u_chair);
+        $rrow = fetch_review($paper1, $this->u_mgbaker);
+        $this->review1A = file_get_contents(SiteLoader::find("test/review1A.txt"));
 
-
-        // Test offline review parsing
-
-        // Change a score
-        $paper1 = $conf->checked_paper_by_id(1, $user_chair);
-        $rrow = fetch_review($paper1, $user_mgbaker);
-        $review1A = file_get_contents(SiteLoader::find("test/review1A.txt"));
-        $tf = ReviewValues::make_text($conf->review_form(), $review1A, "review1A.txt");
+        // correct update
+        $tf = ReviewValues::make_text($this->conf->review_form(), $this->review1A, "review1A.txt");
         xassert($tf->parse_text(false));
-        xassert($tf->check_and_save($user_mgbaker));
+        xassert($tf->check_and_save($this->u_mgbaker));
 
-        assert_search_papers($user_chair, "ovemer:4", "1");
-        $rrow = fetch_review($paper1, $user_mgbaker);
+        assert_search_papers($this->u_chair, "ovemer:4", "1");
+        $rrow = fetch_review($paper1, $this->u_mgbaker);
         xassert_eqq($rrow->fval("t03"), "  This is a test of leading whitespace\n\n  It should be preserved\nAnd defended\n");
 
-        // Catch different-conference form
-        $tf = ReviewValues::make_text($conf->review_form(), preg_replace('/Testconf I/', 'Testconf IIII', $review1A), "review1A-1.txt");
+        // different-conference form fails
+        $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/Testconf I/', 'Testconf IIII', $this->review1A), "review1A-1.txt");
         xassert(!$tf->parse_text(false));
         xassert($tf->has_error_at("confid"));
 
-        // Catch invalid value
-        $tf = ReviewValues::make_text($conf->review_form(), preg_replace('/^4/m', 'Mumps', $review1A), "review1A-2.txt");
+        // invalid value fails
+        $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/^4/m', 'Mumps', $this->review1A), "review1A-2.txt");
         xassert($tf->parse_text(false));
-        xassert($tf->check_and_save($user_mgbaker));
+        xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->unchanged), "#1A");
         xassert($tf->has_problem_at("overAllMerit"));
 
-        // “No entry” is invalid
-        $tf = ReviewValues::make_text($conf->review_form(), preg_replace('/^4/m', 'No entry', $review1A), "review1A-3.txt");
+        // invalid “No entry” fails
+        $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/^4/m', 'No entry', $this->review1A), "review1A-3.txt");
         xassert($tf->parse_text(false));
-        xassert($tf->check_and_save($user_mgbaker));
+        xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->unchanged), "#1A");
         xassert($tf->has_problem_at("overAllMerit"));
         xassert(strpos($tf->feedback_text_at("overAllMerit"), "Entry required") !== false);
         //error_log(var_export($tf->message_list(), true));
+    }
 
-        // Different reviewer
-        $tf = ReviewValues::make_text($conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: butt@butt.com', $review1A), "review1A-4.txt");
+    function test_offline_review_different_reviewer() {
+        $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: butt@butt.com', $this->review1A), "review1A-4.txt");
         xassert($tf->parse_text(false));
-        xassert(!$tf->check_and_save($user_mgbaker));
+        xassert(!$tf->check_and_save($this->u_mgbaker));
         xassert($tf->has_problem_at("reviewerEmail"));
 
-        // Different reviewer
-        $tf = ReviewValues::make_text($conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baaaker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5", $review1A)), "review1A-5.txt");
+        $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baaaker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5", $this->review1A)), "review1A-5.txt");
         xassert($tf->parse_text(false));
-        xassert(!$tf->check_and_save($user_mgbaker, $paper1, fetch_review($paper1, $user_mgbaker)));
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert(!$tf->check_and_save($this->u_mgbaker, $paper1, fetch_review($paper1, $this->u_mgbaker)));
         xassert($tf->has_problem_at("reviewerEmail"));
+        assert_search_papers($this->u_chair, "ovemer:4", "1");
+        assert_search_papers($this->u_chair, "ovemer:5", "");
 
-        // Different reviewer with same name (OK)
+        // it IS ok to save a form that's meant for a different EMAIL but same name
         // Also add a description of the field
-        $tf = ReviewValues::make_text($conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5. Strong accept", $review1A)), "review1A-5.txt");
+        $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5. Strong accept", $this->review1A)), "review1A-5.txt");
         xassert($tf->parse_text(false));
-        xassert($tf->check_and_save($user_mgbaker, $paper1, fetch_review($paper1, $user_mgbaker)));
+        xassert($tf->check_and_save($this->u_mgbaker, $paper1, fetch_review($paper1, $this->u_mgbaker)));
         xassert(!$tf->has_problem_at("reviewerEmail"));
+        assert_search_papers($this->u_chair, "ovemer:4", "");
+        assert_search_papers($this->u_chair, "ovemer:5", "1");
         //error_log(var_export($tf->message_list(), true));
+    }
 
-
-        // Settings changes
-
-        // Check settings aspects
-        $siset = $conf->si_set();
-        $si = $conf->si("sub_banal_data_0");
-        xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
-        xassert_eqq($si->storage_name(), "sub_banal");
-        $si = $conf->si("sub_banal_data_4");
-        xassert_eqq($si->storage_type, Si::SI_DATA | Si::SI_SLICE);
-        xassert_eqq($si->storage_name(), "sub_banal_4");
-        $si = $conf->si("sub_banal_m1");
-        xassert_eqq($si->group, "decisions");
-
-        // Check message defaults
-        $sv = SettingValues::make_request($user_chair, []);
-        $s = $conf->si("preference_instructions")->default_value($sv);
-        xassert(strpos($s, "review preference") !== false);
-        xassert(strpos($s, "topic") === false);
-        $sv = SettingValues::make_request($user_chair, [
-            "has_topics" => 1,
-            "topic__newlist" => "Whatever\n"
-        ])->parse();
-        $s = $conf->si("preference_instructions")->default_value($sv);
-        xassert(strpos($s, "review preference") !== false);
-        xassert(strpos($s, "topic") !== false);
-
-        // Add “no entry”
-        $sv = SettingValues::make_request($user_chair, [
+    function test_change_review_choices() {
+        // add “no entry” to overall merit choices
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_review_form" => 1,
             "rf__1__name" => "Overall merit",
             "rf__1__id" => "s01",
@@ -216,28 +196,26 @@ class Reviews_Tester {
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
-        // Now it's OK to save “no entry”
-        $tf = ReviewValues::make_text($conf->review_form(), preg_replace('/^4/m', 'No entry', $review1A), "review1A-6.txt");
+        // now it's OK to save “no entry”
+        $tf = ReviewValues::make_text($this->conf->review_form(), preg_replace('/^4/m', 'No entry', $this->review1A), "review1A-6.txt");
         xassert($tf->parse_text(false));
-        xassert($tf->check_and_save($user_mgbaker));
+        xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->updated ?? []), "#1A");
         xassert(!$tf->has_problem_at("overAllMerit"));
-        //error_log(var_export($tf->message_list(), true));
 
-        assert_search_papers($user_chair, "has:ovemer", "");
+        assert_search_papers($this->u_chair, "has:ovemer", "");
 
-        // Restore overall-merit 4
-        $tf = ReviewValues::make_text($conf->review_form(), $review1A, "review1A-7.txt");
+        // Restore review
+        $tf = ReviewValues::make_text($this->conf->review_form(), $this->review1A, "review1A-7.txt");
         xassert($tf->parse_text(false));
-        xassert($tf->check_and_save($user_mgbaker));
+        xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->updated), "#1A");
         xassert(!$tf->has_problem_at("overAllMerit"));
-        //error_log(var_export($tf->message_list(), true));
 
-        assert_search_papers($user_chair, "ovemer:4", "1");
+        assert_search_papers($this->u_chair, "ovemer:4", "1");
 
-        // “4” is no longer a valid overall-merit score
-        $sv = SettingValues::make_request($user_chair, [
+        // remove “4” choice from overall merit
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_review_form" => 1,
             "rf__1__name" => "Overall merit",
             "rf__1__id" => "s01",
@@ -246,15 +224,17 @@ class Reviews_Tester {
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
-        // So the 4 score has been removed
-        assert_search_papers($user_chair, "ovemer:4", "");
+        // overall-merit 4 has been removed, revexp has not
+        assert_search_papers($this->u_chair, "ovemer:4", "");
+        assert_search_papers($this->u_chair, "revexp:2", "1");
+        assert_search_papers($this->u_chair, "has:revexp", "1");
+    }
 
-        // revexp has not
-        assert_search_papers($user_chair, "revexp:2", "1");
-        assert_search_papers($user_chair, "has:revexp", "1");
+    function test_remove_review_field() {
+        assert_search_papers($this->u_chair, "has:revexp AND 1", "1");
 
         // Stop displaying reviewer expertise
-        $sv = SettingValues::make_request($user_chair, [
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_review_form" => 1,
             "rf__1__name" => "Reviewer expertise",
             "rf__1__id" => "s02",
@@ -264,7 +244,7 @@ class Reviews_Tester {
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
         // Add reviewer expertise back
-        $sv = SettingValues::make_request($user_chair, [
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_review_form" => 1,
             "rf__1__name" => "Reviewer expertise",
             "rf__1__id" => "s02",
@@ -275,38 +255,38 @@ class Reviews_Tester {
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
         // It has been removed from the review
-        assert_search_papers($user_chair, "has:revexp", "");
+        assert_search_papers($this->u_chair, "has:revexp", "");
+    }
 
-        // Text fields not there yet
-        assert_search_papers($user_chair, "has:papsum", "");
-        assert_search_papers($user_chair, "has:comaut", "");
+    function test_review_text_fields() {
+        assert_search_papers($this->u_chair, "has:papsum", "");
+        assert_search_papers($this->u_chair, "has:comaut", "");
 
-        // Check text field representation
-        save_review(1, $user_mgbaker, [
+        save_review(1, $this->u_mgbaker, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
             "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
             "ready" => true
         ]);
-        $rrow = fetch_review($paper1, $user_mgbaker);
+        $rrow = fetch_review(1, $this->u_mgbaker);
         xassert_eqq((string) $rrow->fval("s01"), "2");
         xassert_eqq((string) $rrow->fval("s02"), "1");
         xassert_eqq((string) $rrow->fval("t01"), "This is the summary\n");
         xassert_eqq((string) $rrow->fval("t02"), "Comments for äuthor\n");
         xassert_eqq((string) $rrow->fval("t03"), "Comments for PC\n");
-        //error_log($conf->setting_data("review_form"));
 
-        assert_search_papers($user_chair, "has:papsum", "1");
-        assert_search_papers($user_chair, "has:comaut", "1");
-        assert_search_papers($user_chair, "has:compc", "1");
-        assert_search_papers($user_chair, "papsum:this", "1");
-        assert_search_papers($user_chair, "comaut:author", "1");
-        assert_search_papers($user_chair, "comaut:äuthor", "1");
-        assert_search_papers($user_chair, "papsum:author", "");
-        assert_search_papers($user_chair, "comaut:pc", "");
-        assert_search_papers($user_chair, "compc:author", "");
+        assert_search_papers($this->u_chair, "has:papsum", "1");
+        assert_search_papers($this->u_chair, "has:comaut", "1");
+        assert_search_papers($this->u_chair, "has:compc", "1");
+        assert_search_papers($this->u_chair, "papsum:this", "1");
+        assert_search_papers($this->u_chair, "comaut:author", "1");
+        assert_search_papers($this->u_chair, "comaut:äuthor", "1");
+        assert_search_papers($this->u_chair, "papsum:author", "");
+        assert_search_papers($this->u_chair, "comaut:pc", "");
+        assert_search_papers($this->u_chair, "compc:author", "");
+    }
 
-        // Add extension fields
-        $sv = SettingValues::make_request($user_chair, [
+    function test_many_fields() {
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_review_form" => 1,
             "rf__1__name" => "Score 3", "rf__1__choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf__1__order" => 2.03, "rf__1__id" => "s03",
             "rf__2__name" => "Score 4", "rf__2__choices" => "1. Yes\n2. No\n3. Maybe\nNo entry\n", "rf__2__order" => 2.04, "rf__2__id" => "s04",
@@ -334,7 +314,7 @@ class Reviews_Tester {
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
-        save_review(1, $user_mgbaker, [
+        save_review(1, $this->u_mgbaker, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
             "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
             "sco3" => 1, "sco4" => 2, "sco5" => 3, "sco6" => 0,
@@ -347,34 +327,34 @@ class Reviews_Tester {
             "ready" => true
         ]);
 
-        assert_search_papers($user_chair, "has:sco3", "1");
-        assert_search_papers($user_chair, "has:sco4", "1");
-        assert_search_papers($user_chair, "has:sco5", "1");
-        assert_search_papers($user_chair, "has:sco6", "");
-        assert_search_papers($user_chair, "has:sco7", "1");
-        assert_search_papers($user_chair, "has:sco8", "1");
-        assert_search_papers($user_chair, "has:sco9", "1");
-        assert_search_papers($user_chair, "has:sco10", "");
-        assert_search_papers($user_chair, "has:sco11", "1");
-        assert_search_papers($user_chair, "has:sco12", "1");
-        assert_search_papers($user_chair, "has:sco13", "1");
-        assert_search_papers($user_chair, "has:sco14", "");
-        assert_search_papers($user_chair, "has:sco15", "1");
-        assert_search_papers($user_chair, "has:sco16", "1");
-        assert_search_papers($user_chair, "has:tex4", "1");
-        assert_search_papers($user_chair, "has:tex5", "");
-        assert_search_papers($user_chair, "has:tex6", "1");
-        assert_search_papers($user_chair, "has:tex7", "1");
-        assert_search_papers($user_chair, "has:tex8", "1");
-        assert_search_papers($user_chair, "has:tex9", "1");
-        assert_search_papers($user_chair, "has:tex10", "1");
-        assert_search_papers($user_chair, "has:tex11", "");
+        assert_search_papers($this->u_chair, "has:sco3", "1");
+        assert_search_papers($this->u_chair, "has:sco4", "1");
+        assert_search_papers($this->u_chair, "has:sco5", "1");
+        assert_search_papers($this->u_chair, "has:sco6", "");
+        assert_search_papers($this->u_chair, "has:sco7", "1");
+        assert_search_papers($this->u_chair, "has:sco8", "1");
+        assert_search_papers($this->u_chair, "has:sco9", "1");
+        assert_search_papers($this->u_chair, "has:sco10", "");
+        assert_search_papers($this->u_chair, "has:sco11", "1");
+        assert_search_papers($this->u_chair, "has:sco12", "1");
+        assert_search_papers($this->u_chair, "has:sco13", "1");
+        assert_search_papers($this->u_chair, "has:sco14", "");
+        assert_search_papers($this->u_chair, "has:sco15", "1");
+        assert_search_papers($this->u_chair, "has:sco16", "1");
+        assert_search_papers($this->u_chair, "has:tex4", "1");
+        assert_search_papers($this->u_chair, "has:tex5", "");
+        assert_search_papers($this->u_chair, "has:tex6", "1");
+        assert_search_papers($this->u_chair, "has:tex7", "1");
+        assert_search_papers($this->u_chair, "has:tex8", "1");
+        assert_search_papers($this->u_chair, "has:tex9", "1");
+        assert_search_papers($this->u_chair, "has:tex10", "1");
+        assert_search_papers($this->u_chair, "has:tex11", "");
 
-        $rrow = fetch_review($paper1, $user_mgbaker);
+        $rrow = fetch_review(1, $this->u_mgbaker);
         xassert_eqq((string) $rrow->fval("s16"), "3");
 
         // Remove some fields and truncate their options
-        $sv = SettingValues::make_request($user_chair, [
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_review_form" => 1,
             "rf__1__name" => "Score 15", "rf__1__order" => 0, "rf__1__id" => "s15",
             "rf__2__name" => "Score 16", "rf__2__choices" => "1. Yes\n2. No\nNo entry\n", "rf__2__id" => "s16",
@@ -383,7 +363,7 @@ class Reviews_Tester {
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
-        $sv = SettingValues::make_request($user_chair, [
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_review_form" => 1,
             "rf__1__name" => "Score 15", "rf__1__choices" => "1. Yes\n2. No\nNo entry\n", "rf__1__order" => 100, "rf__1__id" => "s15",
             "rf__2__name" => "Text 10", "rf__2__order" => 101, "rf__2__id" => "t10"
@@ -391,88 +371,88 @@ class Reviews_Tester {
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
 
-        $rrow = fetch_review($paper1, $user_mgbaker);
+        $rrow = fetch_review(1, $this->u_mgbaker);
         xassert($rrow->fval("s15") === null || (string) $rrow->fval("s15") === "0");
         xassert($rrow->fval("s16") === null || (string) $rrow->fval("s16") === "0");
         xassert($rrow->fval("t10") === null || (string) $rrow->fval("t10") === "");
 
-        assert_search_papers($user_chair, "has:sco3", "1");
-        assert_search_papers($user_chair, "has:sco4", "1");
-        assert_search_papers($user_chair, "has:sco5", "1");
-        assert_search_papers($user_chair, "has:sco6", "");
-        assert_search_papers($user_chair, "has:sco7", "1");
-        assert_search_papers($user_chair, "has:sco8", "1");
-        assert_search_papers($user_chair, "has:sco9", "1");
-        assert_search_papers($user_chair, "has:sco10", "");
-        assert_search_papers($user_chair, "has:sco11", "1");
-        assert_search_papers($user_chair, "has:sco12", "1");
-        assert_search_papers($user_chair, "has:sco13", "1");
-        assert_search_papers($user_chair, "has:sco14", "");
-        assert_search_papers($user_chair, "has:sco15", "");
-        assert_search_papers($user_chair, "has:sco16", "");
-        assert_search_papers($user_chair, "has:tex4", "1");
-        assert_search_papers($user_chair, "has:tex5", "");
-        assert_search_papers($user_chair, "has:tex6", "1");
-        assert_search_papers($user_chair, "has:tex7", "1");
-        assert_search_papers($user_chair, "has:tex8", "1");
-        assert_search_papers($user_chair, "has:tex9", "1");
-        assert_search_papers($user_chair, "has:tex10", "");
-        assert_search_papers($user_chair, "has:tex11", "");
+        assert_search_papers($this->u_chair, "has:sco3", "1");
+        assert_search_papers($this->u_chair, "has:sco4", "1");
+        assert_search_papers($this->u_chair, "has:sco5", "1");
+        assert_search_papers($this->u_chair, "has:sco6", "");
+        assert_search_papers($this->u_chair, "has:sco7", "1");
+        assert_search_papers($this->u_chair, "has:sco8", "1");
+        assert_search_papers($this->u_chair, "has:sco9", "1");
+        assert_search_papers($this->u_chair, "has:sco10", "");
+        assert_search_papers($this->u_chair, "has:sco11", "1");
+        assert_search_papers($this->u_chair, "has:sco12", "1");
+        assert_search_papers($this->u_chair, "has:sco13", "1");
+        assert_search_papers($this->u_chair, "has:sco14", "");
+        assert_search_papers($this->u_chair, "has:sco15", "");
+        assert_search_papers($this->u_chair, "has:sco16", "");
+        assert_search_papers($this->u_chair, "has:tex4", "1");
+        assert_search_papers($this->u_chair, "has:tex5", "");
+        assert_search_papers($this->u_chair, "has:tex6", "1");
+        assert_search_papers($this->u_chair, "has:tex7", "1");
+        assert_search_papers($this->u_chair, "has:tex8", "1");
+        assert_search_papers($this->u_chair, "has:tex9", "1");
+        assert_search_papers($this->u_chair, "has:tex10", "");
+        assert_search_papers($this->u_chair, "has:tex11", "");
 
-        assert_search_papers($user_chair, "sco3:1", "1");
-        assert_search_papers($user_chair, "sco4:2", "1");
-        assert_search_papers($user_chair, "sco5:3", "1");
-        assert_search_papers($user_chair, "sco6:0", "1");
-        assert_search_papers($user_chair, "sco7:1", "1");
-        assert_search_papers($user_chair, "sco8:2", "1");
-        assert_search_papers($user_chair, "sco9:3", "1");
-        assert_search_papers($user_chair, "sco10:0", "1");
-        assert_search_papers($user_chair, "sco11:1", "1");
-        assert_search_papers($user_chair, "sco12:2", "1");
-        assert_search_papers($user_chair, "sco13:3", "1");
-        assert_search_papers($user_chair, "sco14:0", "1");
-        assert_search_papers($user_chair, "sco15:0", "1");
-        assert_search_papers($user_chair, "sco16:0", "1");
-        assert_search_papers($user_chair, "tex4:bobcat", "1");
-        assert_search_papers($user_chair, "tex6:fisher*", "1");
-        assert_search_papers($user_chair, "tex7:tiger", "1");
-        assert_search_papers($user_chair, "tex8:leopard", "1");
-        assert_search_papers($user_chair, "tex9:tremolo", "1");
+        assert_search_papers($this->u_chair, "sco3:1", "1");
+        assert_search_papers($this->u_chair, "sco4:2", "1");
+        assert_search_papers($this->u_chair, "sco5:3", "1");
+        assert_search_papers($this->u_chair, "sco6:0", "1");
+        assert_search_papers($this->u_chair, "sco7:1", "1");
+        assert_search_papers($this->u_chair, "sco8:2", "1");
+        assert_search_papers($this->u_chair, "sco9:3", "1");
+        assert_search_papers($this->u_chair, "sco10:0", "1");
+        assert_search_papers($this->u_chair, "sco11:1", "1");
+        assert_search_papers($this->u_chair, "sco12:2", "1");
+        assert_search_papers($this->u_chair, "sco13:3", "1");
+        assert_search_papers($this->u_chair, "sco14:0", "1");
+        assert_search_papers($this->u_chair, "sco15:0", "1");
+        assert_search_papers($this->u_chair, "sco16:0", "1");
+        assert_search_papers($this->u_chair, "tex4:bobcat", "1");
+        assert_search_papers($this->u_chair, "tex6:fisher*", "1");
+        assert_search_papers($this->u_chair, "tex7:tiger", "1");
+        assert_search_papers($this->u_chair, "tex8:leopard", "1");
+        assert_search_papers($this->u_chair, "tex9:tremolo", "1");
 
         // check handling of sfields and tfields: don't lose unchanged fields
-        save_review(1, $user_mgbaker, [
+        save_review(1, $this->u_mgbaker, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
             "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
             "sco11" => 2, "sco16" => 1, "tex11" => "butt",
             "ready" => true
         ]);
 
-        assert_search_papers($user_chair, "sco3:1", "1");
-        assert_search_papers($user_chair, "sco4:2", "1");
-        assert_search_papers($user_chair, "sco5:3", "1");
-        assert_search_papers($user_chair, "sco6:0", "1");
-        assert_search_papers($user_chair, "sco7:1", "1");
-        assert_search_papers($user_chair, "sco8:2", "1");
-        assert_search_papers($user_chair, "sco9:3", "1");
-        assert_search_papers($user_chair, "sco10:0", "1");
-        assert_search_papers($user_chair, "sco11:2", "1");
-        assert_search_papers($user_chair, "sco12:2", "1");
-        assert_search_papers($user_chair, "sco13:3", "1");
-        assert_search_papers($user_chair, "sco14:0", "1");
-        assert_search_papers($user_chair, "sco15:0", "1");
-        assert_search_papers($user_chair, "sco16:1", "1");
-        assert_search_papers($user_chair, "comaut:author", "1");
-        assert_search_papers($user_chair, "comaut:äuthor", "1");
-        assert_search_papers($user_chair, "comaut:áuthor", "");
-        assert_search_papers($user_chair, "tex4:bobcat", "1");
-        assert_search_papers($user_chair, "tex6:fisher*", "1");
-        assert_search_papers($user_chair, "tex7:tiger", "1");
-        assert_search_papers($user_chair, "tex8:leopard", "1");
-        assert_search_papers($user_chair, "tex9:tremolo", "1");
-        assert_search_papers($user_chair, "tex11:butt", "1");
+        assert_search_papers($this->u_chair, "sco3:1", "1");
+        assert_search_papers($this->u_chair, "sco4:2", "1");
+        assert_search_papers($this->u_chair, "sco5:3", "1");
+        assert_search_papers($this->u_chair, "sco6:0", "1");
+        assert_search_papers($this->u_chair, "sco7:1", "1");
+        assert_search_papers($this->u_chair, "sco8:2", "1");
+        assert_search_papers($this->u_chair, "sco9:3", "1");
+        assert_search_papers($this->u_chair, "sco10:0", "1");
+        assert_search_papers($this->u_chair, "sco11:2", "1");
+        assert_search_papers($this->u_chair, "sco12:2", "1");
+        assert_search_papers($this->u_chair, "sco13:3", "1");
+        assert_search_papers($this->u_chair, "sco14:0", "1");
+        assert_search_papers($this->u_chair, "sco15:0", "1");
+        assert_search_papers($this->u_chair, "sco16:1", "1");
+        assert_search_papers($this->u_chair, "comaut:author", "1");
+        assert_search_papers($this->u_chair, "comaut:äuthor", "1");
+        assert_search_papers($this->u_chair, "comaut:áuthor", "");
+        assert_search_papers($this->u_chair, "tex4:bobcat", "1");
+        assert_search_papers($this->u_chair, "tex6:fisher*", "1");
+        assert_search_papers($this->u_chair, "tex7:tiger", "1");
+        assert_search_papers($this->u_chair, "tex8:leopard", "1");
+        assert_search_papers($this->u_chair, "tex9:tremolo", "1");
+        assert_search_papers($this->u_chair, "tex11:butt", "1");
 
         // check handling of sfields and tfields: no changes at all
-        save_review(1, $user_mgbaker, [
+        save_review(1, $this->u_mgbaker, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
             "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
             "sco13" => 3, "sco14" => 0, "sco15" => 0, "sco16" => 1,
@@ -481,29 +461,29 @@ class Reviews_Tester {
             "ready" => true
         ]);
 
-        assert_search_papers($user_chair, "sco3:1", "1");
-        assert_search_papers($user_chair, "sco4:2", "1");
-        assert_search_papers($user_chair, "sco5:3", "1");
-        assert_search_papers($user_chair, "sco6:0", "1");
-        assert_search_papers($user_chair, "sco7:1", "1");
-        assert_search_papers($user_chair, "sco8:2", "1");
-        assert_search_papers($user_chair, "sco9:3", "1");
-        assert_search_papers($user_chair, "sco10:0", "1");
-        assert_search_papers($user_chair, "sco11:2", "1");
-        assert_search_papers($user_chair, "sco12:2", "1");
-        assert_search_papers($user_chair, "sco13:3", "1");
-        assert_search_papers($user_chair, "sco14:0", "1");
-        assert_search_papers($user_chair, "sco15:0", "1");
-        assert_search_papers($user_chair, "sco16:1", "1");
-        assert_search_papers($user_chair, "tex4:bobcat", "1");
-        assert_search_papers($user_chair, "tex6:fisher*", "1");
-        assert_search_papers($user_chair, "tex7:tiger", "1");
-        assert_search_papers($user_chair, "tex8:leopard", "1");
-        assert_search_papers($user_chair, "tex9:tremolo", "1");
-        assert_search_papers($user_chair, "tex11:butt", "1");
+        assert_search_papers($this->u_chair, "sco3:1", "1");
+        assert_search_papers($this->u_chair, "sco4:2", "1");
+        assert_search_papers($this->u_chair, "sco5:3", "1");
+        assert_search_papers($this->u_chair, "sco6:0", "1");
+        assert_search_papers($this->u_chair, "sco7:1", "1");
+        assert_search_papers($this->u_chair, "sco8:2", "1");
+        assert_search_papers($this->u_chair, "sco9:3", "1");
+        assert_search_papers($this->u_chair, "sco10:0", "1");
+        assert_search_papers($this->u_chair, "sco11:2", "1");
+        assert_search_papers($this->u_chair, "sco12:2", "1");
+        assert_search_papers($this->u_chair, "sco13:3", "1");
+        assert_search_papers($this->u_chair, "sco14:0", "1");
+        assert_search_papers($this->u_chair, "sco15:0", "1");
+        assert_search_papers($this->u_chair, "sco16:1", "1");
+        assert_search_papers($this->u_chair, "tex4:bobcat", "1");
+        assert_search_papers($this->u_chair, "tex6:fisher*", "1");
+        assert_search_papers($this->u_chair, "tex7:tiger", "1");
+        assert_search_papers($this->u_chair, "tex8:leopard", "1");
+        assert_search_papers($this->u_chair, "tex9:tremolo", "1");
+        assert_search_papers($this->u_chair, "tex11:butt", "1");
 
         // check handling of sfields and tfields: clear extension fields
-        save_review(1, $user_mgbaker, [
+        save_review(1, $this->u_mgbaker, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "",
             "comaut" => "", "compc" => "", "sco12" => 0,
             "sco13" => 0, "sco14" => 0, "sco15" => 0, "sco16" => 0,
@@ -512,12 +492,12 @@ class Reviews_Tester {
             "ready" => true
         ]);
 
-        $rrow = $conf->fetch_first_object("select * from PaperReview where paperId=1 and contactId=?", $user_mgbaker->contactId);
+        $rrow = $this->conf->fetch_first_object("select * from PaperReview where paperId=1 and contactId=?", $this->u_mgbaker->contactId);
         xassert(!!$rrow);
         xassert($rrow->sfields === null);
         xassert($rrow->tfields === null);
 
-        save_review(1, $user_mgbaker, [
+        save_review(1, $this->u_mgbaker, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "This is the summary",
             "comaut" => "Comments for äuthor", "compc" => "Comments for PC",
             "sco3" => 1, "sco4" => 2, "sco5" => 3, "sco6" => 0, "sco7" => 1,
@@ -528,53 +508,53 @@ class Reviews_Tester {
             "ready" => true
         ]);
 
-        assert_search_papers($user_chair, "sco3:1", "1");
-        assert_search_papers($user_chair, "sco4:2", "1");
-        assert_search_papers($user_chair, "sco5:3", "1");
-        assert_search_papers($user_chair, "sco6:0", "1");
-        assert_search_papers($user_chair, "sco7:1", "1");
-        assert_search_papers($user_chair, "sco8:2", "1");
-        assert_search_papers($user_chair, "sco9:3", "1");
-        assert_search_papers($user_chair, "sco10:0", "1");
-        assert_search_papers($user_chair, "sco11:2", "1");
-        assert_search_papers($user_chair, "sco12:2", "1");
-        assert_search_papers($user_chair, "sco13:3", "1");
-        assert_search_papers($user_chair, "sco14:0", "1");
-        assert_search_papers($user_chair, "sco15:0", "1");
-        assert_search_papers($user_chair, "sco16:1", "1");
-        assert_search_papers($user_chair, "tex4:bobcat", "1");
-        assert_search_papers($user_chair, "tex6:fisher*", "1");
-        assert_search_papers($user_chair, "tex7:tiger", "1");
-        assert_search_papers($user_chair, "tex8:leopard", "1");
-        assert_search_papers($user_chair, "tex9:tremolo", "1");
-        assert_search_papers($user_chair, "tex11:butt", "1");
+        assert_search_papers($this->u_chair, "sco3:1", "1");
+        assert_search_papers($this->u_chair, "sco4:2", "1");
+        assert_search_papers($this->u_chair, "sco5:3", "1");
+        assert_search_papers($this->u_chair, "sco6:0", "1");
+        assert_search_papers($this->u_chair, "sco7:1", "1");
+        assert_search_papers($this->u_chair, "sco8:2", "1");
+        assert_search_papers($this->u_chair, "sco9:3", "1");
+        assert_search_papers($this->u_chair, "sco10:0", "1");
+        assert_search_papers($this->u_chair, "sco11:2", "1");
+        assert_search_papers($this->u_chair, "sco12:2", "1");
+        assert_search_papers($this->u_chair, "sco13:3", "1");
+        assert_search_papers($this->u_chair, "sco14:0", "1");
+        assert_search_papers($this->u_chair, "sco15:0", "1");
+        assert_search_papers($this->u_chair, "sco16:1", "1");
+        assert_search_papers($this->u_chair, "tex4:bobcat", "1");
+        assert_search_papers($this->u_chair, "tex6:fisher*", "1");
+        assert_search_papers($this->u_chair, "tex7:tiger", "1");
+        assert_search_papers($this->u_chair, "tex8:leopard", "1");
+        assert_search_papers($this->u_chair, "tex9:tremolo", "1");
+        assert_search_papers($this->u_chair, "tex11:butt", "1");
 
-        save_review(1, $user_mgbaker, [
+        save_review(1, $this->u_mgbaker, [
             "ovemer" => 3, "sco15" => 2,
             "tex8" => "leopardino", "ready" => true
         ]);
 
-        assert_search_papers($user_chair, "sco3:1", "1");
-        assert_search_papers($user_chair, "sco4:2", "1");
-        assert_search_papers($user_chair, "sco5:3", "1");
-        assert_search_papers($user_chair, "sco6:0", "1");
-        assert_search_papers($user_chair, "sco7:1", "1");
-        assert_search_papers($user_chair, "sco8:2", "1");
-        assert_search_papers($user_chair, "sco9:3", "1");
-        assert_search_papers($user_chair, "sco10:0", "1");
-        assert_search_papers($user_chair, "sco11:2", "1");
-        assert_search_papers($user_chair, "sco12:2", "1");
-        assert_search_papers($user_chair, "sco13:3", "1");
-        assert_search_papers($user_chair, "sco14:0", "1");
-        assert_search_papers($user_chair, "sco15:2", "1");
-        assert_search_papers($user_chair, "sco16:1", "1");
-        assert_search_papers($user_chair, "tex4:bobcat", "1");
-        assert_search_papers($user_chair, "tex6:fisher*", "1");
-        assert_search_papers($user_chair, "tex7:tiger", "1");
-        assert_search_papers($user_chair, "tex8:leopard", "");
-        assert_search_papers($user_chair, "tex8:leopardino", "1");
-        assert_search_papers($user_chair, "tex9:tremolo", "1");
-        assert_search_papers($user_chair, "tex11:butt", "1");
+        assert_search_papers($this->u_chair, "sco3:1", "1");
+        assert_search_papers($this->u_chair, "sco4:2", "1");
+        assert_search_papers($this->u_chair, "sco5:3", "1");
+        assert_search_papers($this->u_chair, "sco6:0", "1");
+        assert_search_papers($this->u_chair, "sco7:1", "1");
+        assert_search_papers($this->u_chair, "sco8:2", "1");
+        assert_search_papers($this->u_chair, "sco9:3", "1");
+        assert_search_papers($this->u_chair, "sco10:0", "1");
+        assert_search_papers($this->u_chair, "sco11:2", "1");
+        assert_search_papers($this->u_chair, "sco12:2", "1");
+        assert_search_papers($this->u_chair, "sco13:3", "1");
+        assert_search_papers($this->u_chair, "sco14:0", "1");
+        assert_search_papers($this->u_chair, "sco15:2", "1");
+        assert_search_papers($this->u_chair, "sco16:1", "1");
+        assert_search_papers($this->u_chair, "tex4:bobcat", "1");
+        assert_search_papers($this->u_chair, "tex6:fisher*", "1");
+        assert_search_papers($this->u_chair, "tex7:tiger", "1");
+        assert_search_papers($this->u_chair, "tex8:leopard", "");
+        assert_search_papers($this->u_chair, "tex8:leopardino", "1");
+        assert_search_papers($this->u_chair, "tex9:tremolo", "1");
+        assert_search_papers($this->u_chair, "tex11:butt", "1");
 
         // simplify review form
         $sx = ["has_review_form" => 1];
@@ -586,9 +566,18 @@ class Reviews_Tester {
             $sx["rf__{$ctr}__delete"] = true;
             ++$ctr;
         }
-        $sv = SettingValues::make_request($user_chair, $sx);
+        $sv = SettingValues::make_request($this->u_chair, $sx);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "review_form");
+    }
+
+    function test_body() {
+        $conf = $this->conf;
+        $user_chair = $this->u_chair;
+        $user_mgbaker = $this->u_mgbaker;
+        $user_diot = $conf->checked_user_by_email("christophe.diot@sophia.inria.fr"); // pc, red
+        $user_pdruschel = $conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
+        $user_mjh = $conf->checked_user_by_email("mjh@isi.edu"); // pc
 
         // saving a JSON review defaults to ready
         xassert_assign($user_chair, "paper,lead\n17,pdruschel\n");
@@ -1036,10 +1025,14 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_assign($user_chair, "paper,tag\n17,perm:author-read-review#clear\n");
         $paper17 = $conf->checked_paper_by_id(17);
         xassert(!$user_mjh->can_view_review($paper17, $rrow17m));
+    }
 
-        // paper options
-        assert_search_papers($user_mgbaker, "has:calories", "1 2 3 4 5");
-        $sv = SettingValues::make_request($user_chair, [
+    function test_submission_fields() {
+        assert_search_papers($this->u_chair, "has:calories", "1 2 3 4 5");
+        assert_search_papers($this->u_mgbaker, "has:calories", "1 2 3 4 5");
+
+        // rename field
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_options" => 1,
             "sf__1__name" => "Fudge",
             "sf__1__id" => 1,
@@ -1048,9 +1041,11 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         ]);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "options");
-        assert_search_papers($user_mgbaker, "has:fudge", "1 2 3 4 5");
+        assert_search_papers($this->u_chair, "has:fudge", "1 2 3 4 5");
+        assert_search_papers($this->u_mgbaker, "has:fudge", "1 2 3 4 5");
 
-        $sv = SettingValues::make_request($user_chair, [
+        // retype field => fails
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_options" => 1,
             "sf__1__name" => "Fudge",
             "sf__1__id" => 1,
@@ -1058,9 +1053,10 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
             "sf__1__type" => "checkbox"
         ]);
         xassert(!$sv->execute());
-        assert_search_papers($user_mgbaker, "has:fudge", "1 2 3 4 5");
+        assert_search_papers($this->u_mgbaker, "has:fudge", "1 2 3 4 5");
 
-        $sv = SettingValues::make_request($user_chair, [
+        // delete old field, create new field with same name
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_options" => 1,
             "sf__1__name" => "Fudge",
             "sf__1__id" => 1,
@@ -1073,9 +1069,10 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         ]);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "options");
-        assert_search_papers($user_mgbaker, "has:fudge", "");
+        assert_search_papers($this->u_mgbaker, "has:fudge", "");
 
-        $sv = SettingValues::make_request($user_chair, [
+        // new field
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_options" => 1,
             "sf__1__name" => "Brownies",
             "sf__1__id" => "\$",
@@ -1084,14 +1081,16 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         ]);
         xassert($sv->execute());
         xassert_eqq(join(" ", $sv->updated_fields()), "options");
-        assert_search_papers($user_mgbaker, "has:brownies", "");
+        assert_search_papers($this->u_mgbaker, "has:brownies", "");
 
-        $opts = array_values(Options_SettingParser::configurable_options($conf));
+        // `order` is obeyed
+        $opts = array_values(Options_SettingParser::configurable_options($this->conf));
         xassert_eqq(count($opts), 2);
         xassert_eqq($opts[0]->name, "Fudge");
         xassert_eqq($opts[1]->name, "Brownies");
 
-        $sv = SettingValues::make_request($user_chair, [
+        // nonunique name => fail
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_options" => 1,
             "sf__1__name" => "Brownies",
             "sf__1__id" => "\$",
@@ -1102,7 +1101,8 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_neqq(strpos($sv->full_feedback_text(), "is not unique"), false);
         xassert($sv->has_error_at("sf__1__name"));
 
-        $sv = SettingValues::make_request($user_chair, [
+        // no name => fail
+        $sv = SettingValues::make_request($this->u_chair, [
             "has_options" => 1,
             "sf__1__id" => "\$",
             "sf__1__order" => 100,
@@ -1111,13 +1111,5 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!$sv->execute());
         xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
         xassert($sv->has_error_at("sf__1__name"));
-
-        $sv = SettingValues::make_request($user_chair, [
-            "has_review_form" => 1,
-            "rf__1__id" => "s90",
-            "rf__1__choices" => "1. A\n2. B\n"
-        ]);
-        xassert(!$sv->execute());
-        xassert_neqq(strpos($sv->full_feedback_text(), "Entry required"), false);
     }
 }
