@@ -254,6 +254,7 @@ class ReviewInfo implements JsonSerializable {
         $rrow->reviewNeedsSubmit = 0;
         $rrow->reviewViewScore = -3;
         $rrow->reviewStatus = self::RS_EMPTY;
+        $rrow->fields = $user->conf->review_form()->order_array(null);
         return $rrow;
     }
 
