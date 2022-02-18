@@ -9773,13 +9773,24 @@ $(function () {
         && !$$("quicklink-prev")
         && !$$("quicklink-next")) {
         $(".quicklinks").each(function () {
-            var info = Hotlist.at(this.closest(".has-hotlist")), ids, pos;
+            var info = Hotlist.at(this.closest(".has-hotlist")), ids, pos, page, mode;
+            try {
+                mode = JSON.parse(this.getAttribute("data-link-params") || "{}");
+            } catch (e) {
+                mode = {};
+            }
+            page = mode.page || "paper";
+            delete mode.page;
             if ((ids = info.ids())
                 && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
-                if (pos > 0)
-                    $(this).prepend('<a id="quicklink-prev" class="ulh" href="'.concat(hoturl_html("paper", {p: ids[pos - 1]}), '">&lt; #', ids[pos - 1], '</a> '));
-                if (pos < ids.length - 1)
-                    $(this).append(' <a id="quicklink-next" class="ulh" href="'.concat(hoturl_html("paper", {p: ids[pos + 1]}), '">#', ids[pos + 1], ' &gt;</a>'));
+                if (pos > 0) {
+                    mode.p = ids[pos - 1];
+                    $(this).prepend('<a id="quicklink-prev" class="ulh" href="'.concat(hoturl_html(page, mode), '">&lt; #', ids[pos - 1], '</a> '));
+                }
+                if (pos < ids.length - 1) {
+                    mode.p = ids[pos + 1];
+                    $(this).append(' <a id="quicklink-next" class="ulh" href="'.concat(hoturl_html(page, mode), '">#', ids[pos + 1], ' &gt;</a>'));
+                }
             }
         });
     }

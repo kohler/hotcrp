@@ -472,20 +472,22 @@ function actionBar($mode = null, $qreq = null) {
     $forceShow = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 
     $paperArg = "p=*";
-    $xmode = array();
+    $xmode = [];
     $listtype = "p";
 
     $goBase = "paper";
-    if ($mode == "assign") {
+    if ($mode === "assign") {
         $goBase = "assign";
-    } else if ($mode == "re") {
+    } else if ($mode === "re") {
         $goBase = "review";
-    } else if ($mode == "account") {
+    } else if ($mode === "account") {
         $listtype = "u";
         if ($Me->privChair) {
             $goBase = "profile";
             $xmode["search"] = 1;
         }
+    } else if ($mode === "edit") {
+        $xmode["m"] = "edit";
     } else if ($qreq && ($qreq->m || $qreq->mode)) {
         $xmode["m"] = $qreq->m ? : $qreq->mode;
     }
@@ -493,16 +495,20 @@ function actionBar($mode = null, $qreq = null) {
     // quicklinks
     $x = "";
     if (($list = Conf::$main->active_list())) {
-        $x .= '<td class="vbar quicklinks">';
+        $x .= '<td class="vbar quicklinks"';
+        if ($xmode || $goBase !== "paper") {
+            $x .= ' data-link-params="' . htmlspecialchars(json_encode_browser(["page" => $goBase] + $xmode)) . '"';
+        }
+        $x .= '>';
         if (($prev = $list->neighbor_id(-1)) !== false) {
             $x .= _one_quicklink($prev, $goBase, $xmode, $listtype, true) . " ";
         }
         if ($list->description) {
             $url = $list->full_site_relative_url();
             if ($url) {
-                $x .= '<a id="quicklink-list" class="ulh" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $list->description . "</a>";
+                $x .= '<a id="quicklink-list" class="ulh" href="' . htmlspecialchars(Navigation::siteurl() . $url) . "\">{$list->description}</a>";
             } else {
-                $x .= '<span id="quicklink-list">' . $list->description . '</span>';
+                $x .= "<span id=\"quicklink-list\">{$list->description}</span>";
             }
         }
         if (($next = $list->neighbor_id(1)) !== false) {
@@ -510,7 +516,7 @@ function actionBar($mode = null, $qreq = null) {
         }
         $x .= '</td>';
 
-        if ($Me->is_track_manager() && $listtype == "p") {
+        if ($Me->is_track_manager() && $listtype === "p") {
             $x .= '<td id="tracker-connect" class="vbar"><a id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" href="" aria-label="Start meeting tracker">&#9759;</a><td>';
         }
     }
