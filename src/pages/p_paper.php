@@ -24,14 +24,14 @@ class Paper_Page {
         $this->qreq = $qreq;
     }
 
-    function print_header() {
-        $m = $this->pt ? $this->pt->mode : ($this->qreq->m ?? "p");
-        PaperTable::print_header($this->pt, "paper-" . ($m === "edit" ? "edit" : "view"), $m, $this->qreq);
+    /** @param bool $error */
+    function print_header($error) {
+        PaperTable::print_header($this->pt, $this->qreq, $error);
     }
 
     /** @param MessageItem ...$mls */
     function error_exit(...$mls) {
-        $this->print_header();
+        $this->print_header(true);
         Ht::stash_script("hotcrp.shortcut().add()");
         $this->conf->feedback_msg(...$mls);
         $this->conf->footer();
@@ -388,7 +388,7 @@ class Paper_Page {
         }
 
         // produce paper table
-        $this->print_header();
+        $this->print_header(false);
         $pt->print_paper_info();
 
         if ($pt->mode === "edit") {

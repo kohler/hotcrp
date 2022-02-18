@@ -23,7 +23,7 @@ class Assign_Page {
     }
 
     function error_exit(...$mls) {
-        PaperTable::print_header($this->pt, "assign", "assign", $this->qreq);
+        PaperTable::print_header($this->pt, $this->qreq, true);
         $this->conf->feedback_msg(...$mls);
         $this->conf->footer();
         throw new PageCompletion;
@@ -496,7 +496,7 @@ class Assign_Page {
         $this->pt = new PaperTable($user, $this->qreq, $prow);
         $this->pt->resolve_review(false);
         $this->allow_view_authors = $user->allow_view_authors($prow);
-        PaperTable::print_header($this->pt, "assign", "assign", $this->qreq);
+        PaperTable::print_header($this->pt, $this->qreq);
 
         // begin form and table
         $this->pt->print_paper_info();

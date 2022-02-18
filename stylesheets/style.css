@@ -109,6 +109,9 @@ body {
 body.paper {
 	background: linear-gradient(to right, #e2e9ec, #e2e9ec 15.5rem, white 15.5rem, white);
 }
+body.paper-error {
+	background: #dce4e8;
+}
 body.leftmenu {
 	background: linear-gradient(to right, #ecf2f4, #ecf2f4 164px, white 164px, white);
 }

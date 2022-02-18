@@ -31,13 +31,14 @@ class Review_Page {
         return $this->conf->review_form();
     }
 
-    function print_header() {
-        PaperTable::print_header($this->pt, "review", $this->qreq->m, $this->qreq);
+    /** @param bool $error */
+    function print_header($mode) {
+        PaperTable::print_header($this->pt, $this->qreq, $mode);
     }
 
     /** @param MessageItem ...$mls */
     function error_exit(...$mls) {
-        $this->print_header();
+        $this->print_header(true);
         Ht::stash_script("hotcrp.shortcut().add()");
         $this->conf->feedback_msg(...$mls);
         $this->conf->footer();
@@ -363,7 +364,7 @@ class Review_Page {
         }
 
         // paper table
-        $this->print_header();
+        $this->print_header(false);
         $pt->print_paper_info();
 
         if (!$this->user->can_view_review($this->prow, $this->rrow)

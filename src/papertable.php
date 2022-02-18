@@ -156,8 +156,9 @@ class PaperTable {
     }
 
     /** @param ?PaperTable $paperTable
-     * @param Qrequest $qreq */
-    static function print_header($paperTable, $id, $action_mode, $qreq) {
+     * @param Qrequest $qreq
+     * @param bool $error */
+    static function print_header($paperTable, $qreq, $error = false) {
         $conf = $paperTable ? $paperTable->conf : Conf::$main;
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
@@ -219,7 +220,25 @@ class PaperTable {
             $t .= $paperTable->_mode_nav();
         }
 
+        $amode = $qreq->page();
+        assert(in_array($amode, ["paper", "review", "assign"]));
+        if ($qreq->m === "edit"
+            && (!$paperTable || $paperTable->mode === "edit")) {
+            $amode = "edit";
+        }
+
+        if ($amode === "paper") {
+            $id = "paper-view";
+        } else if ($amode === "edit") {
+            $id = "paper-edit";
+        } else {
+            $id = $amode;
+        }
+
         $body_class = "paper";
+        if ($error) {
+            $body_class .= "-error";
+        }
         if ($paperTable
             && $prow->paperId
             && $paperTable->user->has_overridable_conflict($prow)
@@ -230,7 +249,7 @@ class PaperTable {
         }
 
         $conf->header($title, $id, [
-            "action_bar" => actionBar($action_mode, $qreq),
+            "action_bar" => actionBar($amode, $qreq),
             "title_div" => $t,
             "body_class" => $body_class,
             "paperId" => $qreq->paperId
