@@ -175,19 +175,21 @@ class Log_Page {
     /** @param LogEntryGenerator $leg */
     function handle_download($leg) {
         session_commit();
+        assert(Contact::ROLE_PC === 1 && Contact::ROLE_ADMIN === 2 && Contact::ROLE_CHAIR === 4);
+        $role_map = ["", "pc", "sysadmin", "pc sysadmin", "chair", "chair", "chair", "chair"];
+
         $csvg = $this->conf->make_csvg("log");
         $narrow = true;
-        $csvg->select(["date", "email", "affected_email", "via",
-                       $narrow ? "paper" : "papers", "action"]);
+        $headers = ["date", "ipaddr", "email"];
+        if ($narrow) {
+            $headers[] = "roles";
+        }
+        array_push($headers, "affected_email", "via", $narrow ? "paper" : "papers", "action");
+        $csvg->select($headers);
         foreach ($leg->page_rows(1) as $row) {
             $date = date("Y-m-d H:i:s e", (int) $row->timestamp);
-            $xusers = $xdest_users = [];
-            foreach ($leg->users_for($row, "contactId") as $u) {
-                $xusers[] = $u->email;
-            }
-            foreach ($leg->users_for($row, "destContactId") as $u) {
-                $xdest_users[] = $u->email;
-            }
+            $xusers = $leg->users_for($row, "contactId");
+            $xdest_users = $leg->users_for($row, "destContactId");
             if ($xdest_users == $xusers) {
                 $xdest_users = [];
             }
@@ -199,25 +201,32 @@ class Log_Page {
             $pids = $leg->paper_ids($row);
             $action = $leg->cleaned_action($row);
             if ($narrow) {
-                if (empty($xusers)) {
-                    $xusers = [""];
-                }
-                if (empty($xdest_users)) {
-                    $xdest_users = [""];
-                }
-                if (empty($pids)) {
-                    $pids = [];
-                }
+                empty($xusers) && ($xusers[] = null);
+                empty($xdest_users) && ($xdest_users[] = null);
+                empty($pids) && ($pids[] = "");
                 foreach ($xusers as $u1) {
+                    $u1e = $u1 ? $u1->email : "";
+                    $u1r = $u1 ? $role_map[$u1->roles & 7] : "";
                     foreach ($xdest_users as $u2) {
+                        $u2e = $u2 ? $u2->email : "";
                         foreach ($pids as $p) {
-                            $csvg->add_row([$date, $u1, $u2, $via, $p, $action]);
+                            $csvg->add_row([
+                                $date, $row->ipaddr ?? "", $u1e, $u1r, $u2e,
+                                $via, $p, $action
+                            ]);
                         }
                     }
                 }
             } else {
+                $u1es = $u2es = [];
+                foreach ($xusers as $u) {
+                    $u1es[] = $u->email;
+                }
+                foreach ($xdest_users as $u) {
+                    $u2es[] = $u->email;
+                }
                 $csvg->add_row([
-                    $date, join(" ", $xusers), join(" ", $xdest_users),
+                    $date, $row->ipaddr ?? "", join(" ", $u1es), join(" ", $u2es),
                     $via, join(" ", $pids), $action
                 ]);
             }
