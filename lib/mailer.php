@@ -563,7 +563,7 @@ class Mailer {
             } else if (($m[3] === "ELIF" || $m[3] === "ELSIF" || $m[3] === "ELSEIF")
                        && $m[4] !== "") {
                 $yes = $this->_handleIf($ifstack, $text, $m[4], true);
-            } else if ($m[3] == "ELSE" && $m[3] === "") {
+            } else if ($m[3] == "ELSE" && $m[4] === "") {
                 $yes = $this->_handleIf($ifstack, $text, false, true);
             } else if ($m[3] == "ENDIF" && $m[4] === "") {
                 $yes = $this->_popIf($ifstack, $text);
