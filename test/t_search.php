@@ -34,13 +34,13 @@ class Search_Tester {
 
     function test_sort_etag() {
         $u_shenker = $this->conf->checked_user_by_email("shenker@parc.xerox.com");
-        $pl = new PaperList("empty", new PaperSearch($this->u_shenker, "editsort:#f"));
+        $pl = new PaperList("empty", new PaperSearch($u_shenker, "editsort:#f"));
         xassert_eqq($pl->sort_etag(), "f");
-        $pl = new PaperList("empty", new PaperSearch($this->u_shenker, "editsort:#~f"));
-        xassert_eqq($pl->sort_etag(), $this->u_shenker->contactId . "~f");
-        $pl = new PaperList("empty", new PaperSearch($this->u_shenker, "sort:#me~f edit:tagval:~f"));
-        xassert_eqq($pl->sort_etag(), $this->u_shenker->contactId . "~f");
-        $pl = new PaperList("empty", new PaperSearch($this->u_shenker, "sort:[#me~f reverse] edit:tagval:~f"));
+        $pl = new PaperList("empty", new PaperSearch($u_shenker, "editsort:#~f"));
+        xassert_eqq($pl->sort_etag(), $u_shenker->contactId . "~f");
+        $pl = new PaperList("empty", new PaperSearch($u_shenker, "sort:#me~f edit:tagval:~f"));
+        xassert_eqq($pl->sort_etag(), $u_shenker->contactId . "~f");
+        $pl = new PaperList("empty", new PaperSearch($u_shenker, "sort:[#me~f reverse] edit:tagval:~f"));
         xassert_eqq($pl->sort_etag(), "");
     }
 }
